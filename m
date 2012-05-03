@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab2ECPfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 11:35:52 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47518 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab2ECPfv (ORCPT
+	id S1757483Ab2ECPhA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 11:37:00 -0400
+Received: from exprod5og109.obsmtp.com ([64.18.0.188]:59474 "EHLO
+	exprod5og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab2ECPg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 11:35:51 -0400
-Date: Thu, 3 May 2012 08:35:47 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Francois Rigaut <frigaut@gmail.com>
-Cc: Nico Schottelius <nico-linux-20120419@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Linux Support for Thunderbolt using Apple Monitor
-Message-ID: <20120503153547.GD20334@kroah.com>
-References: <20120419163800.GB13977@schottelius.org>
- <CAMVeQ8r_3vuAxzbLyKoecOHOOGijUDkLfw+MK7o-WoWbuOGSrg@mail.gmail.com>
- <20120502163629.GE928@schottelius.org>
- <20120502202509.GA26798@kroah.com>
- <20120503065003.GB13386@schottelius.org>
- <CAMVeQ8qYu4bShd_+pwRv8bShhusJMDa-jjoqu7EujS4jt7RSNA@mail.gmail.com>
+	Thu, 3 May 2012 11:36:58 -0400
+Message-ID: <4FA2A611.7040106@ge.com>
+Date: Thu, 03 May 2012 16:36:49 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMVeQ8qYu4bShd_+pwRv8bShhusJMDa-jjoqu7EujS4jt7RSNA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Manohar Vanga <manohar.vanga@cern.ch>
+Subject: Re: [PATCH] vme: vme_ca91cx42.c: local functions should not be exposed
+ globally
+References: <201205021712.22325.hartleys@visionengravers.com>
+In-Reply-To: <201205021712.22325.hartleys@visionengravers.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 May 2012 15:36:52.0709 (UTC) FILETIME=[902D7150:01CD2942]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 09:45:00PM +1000, Francois Rigaut wrote:
-> After Greg pointed to the PCIE, I realized that modules related to PCIE
-> hotpluging were not loaded in my config. I then did a whole bunch of test
-> modprobing a couple of modules: pciehp (with and without pciehp_force and/or
-> pciehp_poll_mode) and acpiphp (not together obviously). No change:connecting
-> the thunderbolt does not lead to any kernel activity. No message whatsoever in
-> /var/log/everything.log.
-> Checked /sys/bus/pci/slots, nothing appeared. No change in lspci. Added a "echo
-> 1 > /sys/bus/pci/rescan" for good measure to no avail.
+On 03/05/12 01:12, H Hartley Sweeten wrote:
+> Functions not referenced outside of a source file should be marked
+> static to prevent them from being exposed globally.
+> 
+> Quiets the sparse warnings:
+> 
+> warning: symbol 'ca91cx42_alloc_consistent' was not declared. Should it be static?
+> warning: symbol 'ca91cx42_free_consistent' was not declared. Should it be static?
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Martyn Welch <martyn.welch@ge.com>
 
-Does anything show up in there at all?
+Good catch,
 
-How about if you load the acpiphp module instead?  Some BIOSes use that
-instead of pciehp.
+Acked-by: Martyn Welch <martyn.welch@ge.com>
 
-You need one of those drivers in order for this to work properly.
+Martyn
 
-Also, speaking of BIOS, make sure you have the latest updates, there
-were a lot of initial problems with Thunderbolt hotplug issues that were
-fixed in newer BIOS versions, so that will be required to be updated.
+> 
+> ---
+> 
+> diff --git a/drivers/vme/bridges/vme_ca91cx42.c b/drivers/vme/bridges/vme_ca91cx42.c
+> index a3c0f84..e0df92e 100644
+> --- a/drivers/vme/bridges/vme_ca91cx42.c
+> +++ b/drivers/vme/bridges/vme_ca91cx42.c
+> @@ -1501,7 +1501,7 @@ static int ca91cx42_slot_get(struct vme_bridge *ca91cx42_bridge)
+>  
+>  }
+>  
+> -void *ca91cx42_alloc_consistent(struct device *parent, size_t size,
+> +static void *ca91cx42_alloc_consistent(struct device *parent, size_t size,
+>  	dma_addr_t *dma)
+>  {
+>  	struct pci_dev *pdev;
+> @@ -1512,8 +1512,8 @@ void *ca91cx42_alloc_consistent(struct device *parent, size_t size,
+>  	return pci_alloc_consistent(pdev, size, dma);
+>  }
+>  
+> -void ca91cx42_free_consistent(struct device *parent, size_t size, void *vaddr,
+> -	dma_addr_t dma)
+> +static void ca91cx42_free_consistent(struct device *parent, size_t size,
+> +	void *vaddr, dma_addr_t dma)
+>  {
+>  	struct pci_dev *pdev;
+>  
 
-thanks,
 
-greg k-h
+-- 
+Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
+GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
+T +44(0)1327322748                     | Manchester, M2 3AB
+E martyn.welch@ge.com                  | VAT:GB 927559189
