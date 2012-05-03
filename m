@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451Ab2ECHCV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 03:02:21 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35965 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469Ab2ECHCU (ORCPT
+	id S1754679Ab2ECHDx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 03:03:53 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:40494 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab2ECHDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 03:02:20 -0400
-Date: Thu, 3 May 2012 09:02:07 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V1 0/5] Rationalize time keeping
-Message-ID: <20120503070139.GA2235@netboy.at.omicron.at>
-References: <cover.1335510125.git.richardcochran@gmail.com>
- <4F9B228F.90903@linaro.org>
- <20120428080443.GA2241@netboy.at.omicron.at>
- <4F9EFC70.50405@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9EFC70.50405@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 3 May 2012 03:03:52 -0400
+Date: Thu, 03 May 2012 03:02:42 -0400 (EDT)
+Message-Id: <20120503.030242.2286535518319226860.davem@davemloft.net>
+To: hpa@zytor.com
+Cc: torvalds@linux-foundation.org, npiggin@gmail.com, jana@saout.de,
+        jlbec@evilplan.org, linux-kernel@vger.kernel.org
+Subject: Re: Oops with DCACHE_WORD_ACCESS and ocfs2, autofs4
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4FA22C75.6010001@zytor.com>
+References: <4FA227FB.7060709@zytor.com>
+	<20120503.025427.1277785208536786257.davem@davemloft.net>
+	<4FA22C75.6010001@zytor.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 03 May 2012 00:02:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 01:56:16PM -0700, John Stultz wrote:
-> No. So, on architectures that support vsyscalls/vdso (x86_64,
-> powerpc, ia64, and maybe a few others) getnstimeofday() is really
-> only an internal interface for in-kernel access. Userland uses the
-> vsyscall/vdso interface to be able to read the time completely from
-> userland context (with no syscall overhead). Since this is done in
-> different ways for each architecture, you need to export the proper
-> information out via update_vsyscall() and also update the
-> arch-specific vsyscall gettimeofday paths (which is non-trivial, as
-> some arches are implemented in asm, etc - my sympathies here, its a
-> pain).
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 02 May 2012 23:57:57 -0700
 
-Okay, so now I understand the vDSO page thingy. Help me please to
-understand exactly which architectures would need changes for my
-proposal.
+> On 05/02/2012 11:54 PM, David Miller wrote:
+>>>
+>>> Can we do the trick of aligning the pointer and ignoring the start?
+>>> That would allow even architectures that don't have unaligned accesses
+>>> to work, too.
+>> 
+>> Doing that would flub the hash computation.
+> 
+> I guess the shifts would be to expensive?
 
-The only archs exporting time variables/functions through vDSO are
-those which define CONFIG_GENERIC_TIME_VSYSCALL=y, namely:
+Yes, barrel-shifting (if that's your idea) would negate much of the
+gain from the optimization.
 
-- ia64
-- powerpc 64 and 32 bit
-- s390    64 and 32 bit
-- x86     64 bit only **
-
-  ** But 32 guest running in a 64 host also has time in the vDSO?!?
-
-Did I get that right?
-
-Thanks,
-Richard
-
+Actually, thinking some more, a barrel-shifting loop would have the
+same problem the current code has.  You don't know if you are at the
+end of the string until you do the tests on the word.  But if you're
+at the end of the page, you need to somehow elide that extra load
+to get the word you're going to barrel-shift into the previous word.
 
