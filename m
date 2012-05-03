@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab2ECNxQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 09:53:16 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:50005 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753690Ab2ECNxP (ORCPT
+	id S1755956Ab2ECNyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 09:54:13 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:43772 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754742Ab2ECNyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 09:53:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Making ARM multiplatform kernels DT-only?
-Date: Thu, 3 May 2012 13:50:35 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>, shawn.guo@linaro.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>, Nicolas Pitre <nico@fluxnic.net>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
+	Thu, 3 May 2012 09:54:11 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: inux-next: Tree for Apr 27 (uml + mm/memcontrol.c)
+In-Reply-To: <alpine.DEB.2.00.1205030208120.21476@chino.kir.corp.google.com>
+References: <20120427161146.95422142968526faaff615d4@canb.auug.org.au> <4F9ABF9C.2070707@xenotime.net> <alpine.DEB.2.00.1204271141040.28516@chino.kir.corp.google.com> <20120427132343.fbb443b9.akpm@linux-foundation.org> <alpine.DEB.2.00.1204271420350.4631@chino.kir.corp.google.com> <20120427143646.8209627e.akpm@linux-foundation.org> <87fwbnag6u.fsf@skywalker.in.ibm.com> <alpine.DEB.2.00.1205030208120.21476@chino.kir.corp.google.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 03 May 2012 19:24:00 +0530
+Message-ID: <87ehr1xtdz.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205031350.35476.arnd@arndb.de>
-X-Provags-ID: V02:K0:DaBBBk9vg9taRUk0qgE5kwBgz4nRz1L08PsIz1ab//l
- j5Tj8qXUBVCRP+sBh5oZ1of8BO+kgwfg2ctBWZIPdpSJWR+w+X
- iVT+F5Gae3zJ+76ZmPdKJsdLRWErbNbojZOyl3XKDC4Am1qbUf
- yI8n3aW14dDXHdANuWJtjcmZQYkqSRtnCRDBl6SKqNMUaus5dc
- nkKFIJn58tmUtHk+dyAwy9BCVuGbXWSVh3RyOZTeIWPHqXknum
- hmAMtUzOafCO6Iui3ee1mBBAR7iydCWQoW+kmUW5eOTUsUcp8O
- HoHs6inqw6bvheJvsMGlJBpvDAh365d2cCuDjkUn7dKdyAMlEb
- A1zb6nPD4Kye9d9fRB/4=
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12050313-5564-0000-0000-00000273E09D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+David Rientjes <rientjes@google.com> writes:
 
-I've been discussing multiplatform kernels with a few people recently,
-and we will have a lot of discussion sessions about this at Linaro
-Connect in Hong Kong.
+>> My first version was to do it as a seperate controller 
+>> 
+>> http://thread.gmane.org/gmane.linux.kernel.mm/73826
+>> 
+>> But the feedback I received was to do it as a part of memcg extension,
+>> because what the controller is limiting is memory albeit a different
+>> type. AFAIU there is also this goal of avoiding controller proliferation.
+>> 
+>
+> Maybe Kame can speak up if he feels strongly about this, but I really 
+> think it should be its own controller in its own file (which would 
+> obviously make this discussion irrelevant since mm/hugetlbcg.c would be 
+> dependent on your own config symbol).  I don't feel like this is the same 
+> as kmem since its not a global resource like hugetlb pages are.
 
-One question that came up repeatedly is whether we should support all
-possible board files for each platform in a multiplatform kernel,
-or just the ones that are already using DT probing. I would like
-to get a quick poll of opinions on that and I've tried to put those
-people on Cc that would be most impacted by this, i.e. the maintainers
-for platforms that have both DT and non-DT board files at the moment.
+> Hugetlb pages can either be allocated statically on the command line at 
+> boot or dynamically via sysfs and they are globally available to whoever 
+> mmaps them through hugetlbfs.  I see a real benefit from being able to 
+> limit the number of hugepages in the global pool to a set of tasks so they 
+> can't overuse what has been statically or dynamically allocated.  And that 
+> ability should be available, in my opinion, without having to enable 
+> memcg, the page_cgroup metadata overhead that comes along with it, and the 
+> performance impact in using it.  I also think it would be wise to seperate 
+> it out into its own file at the source level so things like this don't 
+> arise in the future.
 
-My feeling is that we should just mandate DT booting for multiplatform
-kernels, because it significantly reduces the combinatorial space
-at compile time, avoids a lot of legacy board files that we cannot
-test anyway, reduces the total kernel size and gives an incentive
-for people to move forward to DT with their existing boards.
+All the use cases I came across requested for limiting both memory
+and hugetlb pages. They want to limit the usage of both. So for the use case
+I am looking at memcg will already be enabled.
 
-The counterargument is that we won't be able to support all the
-boards we currently do when the user switches on multiplatform,
-but I think that is acceptable.
-Note that I would still want to allow users to build platforms
-separately in order to enable the ATAG style board files, even
-for platforms that are not multiplatform capable.
+-aneesh
 
-Other opinions?
-
-	Arnd
