@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443Ab2ECO5k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:57:40 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45494 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757427Ab2ECO5c (ORCPT
+	id S1757463Ab2ECO6B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:58:01 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:55935 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757315Ab2ECO5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:57:32 -0400
+	Thu, 3 May 2012 10:57:22 -0400
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
@@ -22,9 +22,9 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Hakan Akkan <hakanakkan@gmail.com>,
         Max Krasnyansky <maxk@qualcomm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
-Subject: [PATCH v1 6/6] x86: make clocksource watchdog configurable (not for mainline)
-Date: Thu,  3 May 2012 17:56:02 +0300
-Message-Id: <1336056962-10465-7-git-send-email-gilad@benyossef.com>
+Subject: [PATCH v1 4/6] mm: make lru_drain selective where it schedules work
+Date: Thu,  3 May 2012 17:56:00 +0300
+Message-Id: <1336056962-10465-5-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
 References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
@@ -32,14 +32,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The clock source watchdog wakes up idle cores.
+lru drain work is being done by scheduling a work queue on each
+CPU, whether it has LRU pages to drain or not, thus creating
+interference on isolated CPUs.
 
-Since I'm using KVM to test, where the TSC is always marked
-unstable, I've added this option to allow to disable it to
-assist testing.
-
-This is not intended for mainlining, the patch just serves
-as a reference for how I tested the patch set.
+This patch uses schedule_on_each_cpu_cond() to schedule the work
+only on CPUs where it seems that there are LRUs to drain.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 CC: Thomas Gleixner <tglx@linutronix.de>
@@ -61,50 +59,50 @@ CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: linux-kernel@vger.kernel.org
 CC: linux-mm@kvack.org
 ---
- arch/x86/Kconfig          |    9 ++++++---
- kernel/time/clocksource.c |    2 ++
- 2 files changed, 8 insertions(+), 3 deletions(-)
+ mm/swap.c |   25 ++++++++++++++++++++++++-
+ 1 files changed, 24 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 1d14cc6..6706c00 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -99,9 +99,6 @@ config ARCH_DEFCONFIG
- config GENERIC_CMOS_UPDATE
- 	def_bool y
+diff --git a/mm/swap.c b/mm/swap.c
+index 5c13f13..ab07b62 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -562,12 +562,35 @@ static void lru_add_drain_per_cpu(struct work_struct *dummy)
+ 	lru_add_drain();
+ }
  
--config CLOCKSOURCE_WATCHDOG
--	def_bool y
--
- config GENERIC_CLOCKEVENTS
- 	def_bool y
- 
-@@ -1673,6 +1670,12 @@ config HOTPLUG_CPU
- 	    automatically on SMP systems. )
- 	  Say N if you want to disable CPU hotplug.
- 
-+config CLOCKSOURCE_WATCHDOG
-+	bool "Clocksource watchdog"
-+	default y
-+	help
-+	  Enable clock source watchdog.
++static bool lru_drain_cpu(int cpu)
++{
++	struct pagevec *pvecs = per_cpu(lru_add_pvecs, cpu);
++	struct pagevec *pvec;
++	int lru;
 +
- config COMPAT_VDSO
- 	def_bool y
- 	prompt "Compat VDSO support"
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index c958338..1eb5a4e 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -450,6 +450,8 @@ static void clocksource_enqueue_watchdog(struct clocksource *cs)
- static inline void clocksource_dequeue_watchdog(struct clocksource *cs) { }
- static inline void clocksource_resume_watchdog(void) { }
- static inline int clocksource_watchdog_kthread(void *data) { return 0; }
-+void clocksource_mark_unstable(struct clocksource *cs) { }
++	for_each_lru(lru) {
++		pvec = &pvecs[lru - LRU_BASE];
++		if (pagevec_count(pvec))
++			return true;
++	}
 +
++	pvec = &per_cpu(lru_rotate_pvecs, cpu);
++	if (pagevec_count(pvec))
++		return true;
++
++	pvec = &per_cpu(lru_deactivate_pvecs, cpu);
++	if (pagevec_count(pvec))
++		return true;
++
++	return false;
++}
++
+ /*
+  * Returns 0 for success
+  */
+ int lru_add_drain_all(void)
+ {
+-	return schedule_on_each_cpu(lru_add_drain_per_cpu);
++	return schedule_on_each_cpu_cond(lru_add_drain_per_cpu, lru_drain_cpu);
+ }
  
- #endif /* CONFIG_CLOCKSOURCE_WATCHDOG */
- 
+ /*
 -- 
 1.7.0.4
 
