@@ -1,117 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757035Ab2ECJHR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 05:07:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49933 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756246Ab2ECJC4 (ORCPT
+	id S1757144Ab2ECJHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 05:07:50 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:60613 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757097Ab2ECJHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 05:02:56 -0400
-Message-Id: <20120503085034.756332161@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Thu, 03 May 2012 09:02:54 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Subject: [patch V2 14/31] m32r: Use generic init_task
-References: <20120503083859.991965503@linutronix.de>
-Content-Disposition: inline; filename=m32r-use-generic-init-task.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 3 May 2012 05:07:45 -0400
+Message-ID: <4FA24AB1.9010108@linux.vnet.ibm.com>
+Date: Thu, 03 May 2012 14:36:57 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, bpoirier@suse.de,
+        jeffrey.t.kirsher@intel.com, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        stephen.s.ko@intel.com
+Subject: Re: [GIT] Networking
+References: <20120503.025951.1393913795357644010.davem@davemloft.net>
+In-Reply-To: <20120503.025951.1393913795357644010.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12050223-0260-0000-0000-000000FB365D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Same code. Use the generic version. The special Makefile treatment is
-pointless anyway as init_task.o contains only data which is handled by
-the linker script. So no point on being treated like head text.
+On 05/03/2012 12:29 PM, David Miller wrote:
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
----
- arch/m32r/Kconfig            |    1 +
- arch/m32r/Makefile           |    2 +-
- arch/m32r/kernel/Makefile    |    2 +-
- arch/m32r/kernel/init_task.c |   34 ----------------------------------
- 4 files changed, 3 insertions(+), 36 deletions(-)
+> 
+> It's the usual jumble of small fixes, mostly in drivers, but a few in
+> core infrastructure parts and TCP.
+> 
+> 1) Transfer padding was wrong for full-speed USB in ASIX driver,
+>    fix from Ingo van Lil.
+> 
+> 2) Propagate the negative packet offset fix into the PowerPC BPF JIT.
+>    From Jan Seiffert.
+> 
+> 3) dl2k driver's private ioctls were letting unprivileged tasks make
+>    MII writes and other ugly bits like that.  Fix from Jeff Mahoney.
+> 
+> 4) Fix TX VLAN and RX packet drops in ucc_geth, from Joakim Tjernlund.
+> 
+> 5) OOPS and network namespace fixes in IPVS from Hans Schillstrom and
+>    Julian Anastasov.
+> 
+> 6) Fix races and sleeping in locked context bugs in drop_monitor, from
+>    Neil Horman.
+> 
+> 7) Fix link status indication in smsc95xx driver, from Paolo Pisati.
+> 
+> 8) Fix bridge netfilter OOPS, from Peter Huang.
+> 
+> 9) L2TP sendmsg can return on error conditions with the socket lock
+>    held, oops.  Fix from Sasha Levin.
+> 
+> 10) udp_diag should return meaningful values for socket memory usage,
+>     from Shan Wei.
+> 
+> 11) Eric Dumazet is so awesome he gets his own section:
+> 
+> 	Socket memory cgroup code (I never should have applied those
+> 	patches, grumble...) made erroneous changes to
+> 	sk_sockets_allocated_read_positive().  It was changed to
+> 	use percpu_counter_sum_positive (which requires BH disabling)
+> 	instead of percpu_counter_read_positive (which does not).
+> 	Revert back to avoid crashes and lockdep warnings.
+> 
+> 	Adjust the default tcp_adv_win_scale and tcp_rmem[2] values
+> 	to fix throughput regressions.  This is necessary as a result
+> 	of our more precise skb->truesize tracking.
+> 
+> 	Fix SKB leak in netem packet scheduler.
+> 
+> 12) New device IDs for various bluetooth devices, from Manoj Iyer,
+>     AceLan Kao, and Steven Harms.
+> 
+> 13) Fix command completion race in ipw2200, from Stanislav Yakovlev.
+> 
+> 14) Fix rtlwifi oops on unload, from Larry Finger.
+> 
+> 15) Fix hard_mtu when adjusting hard_header_len in smsc95xx driver. From
+>     Stephane Fillod.
+> 
+> 16) ehea driver registers it's IRQ before all the necessary state is
+>     setup, resulting in crashes.  Fix from Thadeu Lima de Souza
+>     Cascardo.
+> 
+> 17) Fix PHY connection failures in davinci_emac driver, from Anatolij
+>     Gustschin.
+> 
+> 18) Missing break; in switch statement in bluetooth's
+>     hci_cmd_complete_evt().  Fix from Szymon Janc.
+> 
+> 19) Fix queue programming in iwlwifi, from Johannes Berg.
+> 
+> 20) Interrupt throttling defaults not being actually programmed
+>     into the hardware, fix from Jeff Kirsher and Ying Cai.
+> 
+> 21) TLAN driver SKB encoding in descriptor busted on 64-bit, fix
+>     from Benjamin Poirier.
+> 
+> 22) Fix blind status block RX producer pointer deref in TG3 driver,
+>     from Matt Carlson.
+> 
+> 23) Promisc and multicast are busted on ehea, fixes from Thadeu Lima
+>     de Souza Cascardo.
+> 
+> 24) Fix crashes in 6lowpan, from Alexander Smirnov.
+> 
+> 25) tcp_complete_cwr() needs to be careful to not rewind the CWND to
+>     ssthresh if ssthresh has the "infinite" value.  Fix from Yuchung
+>     Cheng.
+> 
+> Please pull, thanks a lot.
+> 
+> The following changes since commit 4d634ca35a8b38530b134ae92bc9e3cc9c23c030:
+> 
+>   Merge branch 'rc-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild (2012-04-23 19:45:19 -0700)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+> 
+> for you to fetch changes up to 5a8887d39e1ba5ee2d4ccb94b14d6f2dce5ddfca:
+> 
+>   sungem: Fix WakeOnLan (2012-05-03 01:42:55 -0400)
+> 
+> ----------------------------------------------------------------
+> AceLan Kao (2):
+>       Bluetooth: Add support for Atheros [13d3:3362]
+>       Bluetooth: Add support for AR3012 [0cf3:e004]
+> 
+> Alexander Duyck (1):
+>       ixgbe: Fix a memory leak in IEEE DCB
+> 
+> Anatolij Gustschin (1):
+>       net/davinci_emac: fix failing PHY connect attempts
+> 
+> Benjamin Poirier (1):
+>       tlan: add cast needed for proper 64 bit operation
+> 
 
-Index: tip/arch/m32r/Kconfig
-===================================================================
---- tip.orig/arch/m32r/Kconfig
-+++ tip/arch/m32r/Kconfig
-@@ -11,6 +11,7 @@ config M32R
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_IRQ_SHOW
- 	select GENERIC_ATOMIC64
-+	select HAVE_GENERIC_INIT_TASK
- 
- config SBUS
- 	bool
-Index: tip/arch/m32r/Makefile
-===================================================================
---- tip.orig/arch/m32r/Makefile
-+++ tip/arch/m32r/Makefile
-@@ -31,7 +31,7 @@ KBUILD_AFLAGS += $(aflags-y)
- 
- CHECKFLAGS	+= -D__m32r__ -D__BIG_ENDIAN__=1
- 
--head-y	:= arch/m32r/kernel/head.o arch/m32r/kernel/init_task.o
-+head-y	:= arch/m32r/kernel/head.o
- 
- LIBGCC	:= $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
- 
-Index: tip/arch/m32r/kernel/Makefile
-===================================================================
---- tip.orig/arch/m32r/kernel/Makefile
-+++ tip/arch/m32r/kernel/Makefile
-@@ -2,7 +2,7 @@
- # Makefile for the Linux/M32R kernel.
- #
- 
--extra-y	:= head.o init_task.o vmlinux.lds
-+extra-y	:= head.o vmlinux.lds
- 
- obj-y	:= process.o entry.o traps.o align.o irq.o setup.o time.o \
- 	m32r_ksyms.o sys_m32r.o signal.o ptrace.o
-Index: tip/arch/m32r/kernel/init_task.c
-===================================================================
---- tip.orig/arch/m32r/kernel/init_task.c
-+++ /dev/null
-@@ -1,34 +0,0 @@
--/* orig : i386 init_task.c */
--
--#include <linux/mm.h>
--#include <linux/module.h>
--#include <linux/sched.h>
--#include <linux/init.h>
--#include <linux/init_task.h>
--#include <linux/fs.h>
--#include <linux/mqueue.h>
--
--#include <asm/uaccess.h>
--#include <asm/pgtable.h>
--
--static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
--static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
--/*
-- * Initial thread structure.
-- *
-- * We need to make sure that this is 8192-byte aligned due to the
-- * way process stacks are handled. This is done by having a special
-- * "init_task" linker map entry..
-- */
--union thread_union init_thread_union __init_task_data =
--	{ INIT_THREAD_INFO(init_task) };
--
--/*
-- * Initial task structure.
-- *
-- * All other task structs will be allocated on slabs in fork.c
-- */
--struct task_struct init_task = INIT_TASK(init_task);
--
--EXPORT_SYMBOL(init_task);
--
 
+Oh, looks like even this pull request missed the igb fix from Benjamin.
+https://lkml.org/lkml/2012/4/5/197
+
+I don't mean to rush things, but my only concern here is to ensure that
+this patch doesn't get lost, because the fix is important, is stable
+material (I see warnings/stacktraces during suspend/resume in stable
+kernels very frequently and this patch fixes it) and a similar fix for
+ixgbe (patch 2/2 in that patchset, https://lkml.org/lkml/2012/4/5/198)
+went upstream in a previous -rc (commit 34948a947d), while this one got
+left out...
+
+In case the above mentioned patch is already in the pipeline, sorry for
+the noise..
+
+Regards,
+
+Srivatsa S. Bhat
+IBM Linux Technology Center
 
