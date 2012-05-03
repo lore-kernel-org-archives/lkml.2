@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab2ECMNy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 08:13:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14791 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752432Ab2ECMNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 08:13:53 -0400
-Message-ID: <4FA2767B.5010707@redhat.com>
-Date: Thu, 03 May 2012 15:13:47 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1753750Ab2ECMTX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 08:19:23 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:43659 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243Ab2ECMTW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 08:19:22 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApB8AOR2ok9V5qg+PGdsb2JhbABFii+nUQSBIBkBAQEBNzSCCQEBBAE6HCMFCwgDRhQlChouh20JunQTixWEfWMElX2GBo0n
+X-IronPort-AV: E=Sophos;i="4.75,524,1330902000"; 
+   d="scan'208";a="109348764"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 3 May 2012 14:23:59 +0200
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephane Chatty <chatty@enac.fr>
+Subject: Re: [PATCH v3 0/6] hid: Introduce device groups
+Message-ID: <20120503122359.GA11552@polaris.bitmath.org>
+References: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
+ <alpine.LNX.2.00.1205011300540.1856@pobox.suse.cz>
+ <CAN+gG=GGVFDgf_PkovS+_OX26LH0Q19_FwwkGP2pSwnoX4d_Ug@mail.gmail.com>
+ <alpine.LNX.2.00.1205021044240.14613@pobox.suse.cz>
+ <CAN+gG=HHxzYPSD+1i5JS8HmkxusHi=e6im48VzXHy2KsFoce+w@mail.gmail.com>
+ <CAN+gG=HDZJf+73SoddWar_pRPH2NvFrvpVuAaRC8_frXmGQYfA@mail.gmail.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        Takuya Yoshikawa <takuya.yoshikawa@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 06/10] KVM: MMU: fast path of handling guest page fault
-References: <4F9776D2.7020506@linux.vnet.ibm.com> <4F9777A4.208@linux.vnet.ibm.com> <20120426234535.GA5057@amt.cnet> <4F9A3445.2060305@linux.vnet.ibm.com> <20120427145213.GB28796@amt.cnet> <20120429175004.b54d8c095a60d98c8cdbc942@gmail.com> <4FA0C8A7.9000001@linux.vnet.ibm.com> <20120502211031.GB12604@amt.cnet> <4FA27578.1010509@linux.vnet.ibm.com>
-In-Reply-To: <4FA27578.1010509@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=HDZJf+73SoddWar_pRPH2NvFrvpVuAaRC8_frXmGQYfA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2012 03:09 PM, Xiao Guangrong wrote:
-> Actually, the improvement of lockless is that it can let vcpu to be parallel
-> as possible.
->
-> From the test result, lockless gains little improvement for unix-migration,
-> in this case, the vcpus are almost idle (at least not busy).
->
-> The large improvement is from dbench-migration, in this case, all vcpus are
-> busy accessing memory which is write-protected by dirty-log. If you enable
-> page-fault/fast-page-fault tracepoints, you can see huge number of page fault
-> from different vcpu during the migration.
->
+> I'm currently on the bug fix I told you earlier. However, I found a
+> more problematic bug in the hid_groups functionality.
+> 
+> Some device, like the Perixx peripad, present several interfaces
+> (mouse, keyboard and multitouch).
+> The hid groups functionality detects the HID field Contact ID, and
+> then forwards all interfaces to hid-multitouch. The point is that
+> hid-multitouch does not know how to handle mice and keyboards, and
+> then fails handling the interfaces of the device.
 
-We can kill the page faults completely by using A/D bits in shadow page
-tables.  The latest version of the Intel SDM defines A/D bits for EPT,
-and NPT has had them from day one.
+I am a bit unclear as to which devices this applies to, but I see two
+possible solutions:
 
-Of course this comes at a cost, instead of traversing a bitmap we have
-to read all sptes, which are 64x as large.  But it's probably worthwhile
-for large guests and perhaps also for smaller ones.
+1) Add the devices in question back to the have_special_drivers list.
 
--- 
-error compiling committee.c: too many arguments to function
+2) Add the interface type to the group descision, which should
+probably be done anyway. I have a patch in the pipe that, will send it
+later today.
 
+> This particular device is then fully broken (as anyone pumped the events).
+> I also noticed the same problem (but less problematic) with cypress
+> panels: it presents different vendor interfaces and they are handled
+> by hid-multitouch.
+
+It would be great if you could test soution 1) before on a device -
+something seems wrong if those interfaces were handled by hid-generic
+before, but before getting the logic straight, it does not hurt to
+try. :-)
+
+Thanks,
+Henrik
