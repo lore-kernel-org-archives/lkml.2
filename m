@@ -1,96 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428Ab2ECKDT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 06:03:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:45397 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756177Ab2ECKDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 06:03:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="148856402"
-Date: Thu, 3 May 2012 13:04:09 +0300
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: "R, Durgadoss" <durgadoss.r@intel.com>
-Cc: "Yu, Fenghua" <fenghua.yu@intel.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH] hwmon: coretemp: use list instead of fixed
- size array for temp data
-Message-ID: <20120503100409.GA6971@otc-wbsnb-06>
-References: <20120501212512.GA4340@ericsson.com>
- <1335971436-13903-1-git-send-email-kirill.shutemov@linux.intel.com>
- <4D68720C2E767A4AA6A8796D42C8EB591070BF@BGSMSX101.gar.corp.intel.com>
+	id S1756540Ab2ECKFS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 06:05:18 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:57705 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622Ab2ECKFQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 06:05:16 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zYM0uCDKw75PZbzx"
-Content-Disposition: inline
-In-Reply-To: <4D68720C2E767A4AA6A8796D42C8EB591070BF@BGSMSX101.gar.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5b62749cb9227016ed5965fa57b96c0dccce37a8.1335894230.git.dledford@redhat.com>
+References: <1335894655-11398-1-git-send-email-dledford@redhat.com>
+	<5b62749cb9227016ed5965fa57b96c0dccce37a8.1335894230.git.dledford@redhat.com>
+Date: Thu, 3 May 2012 20:05:15 +1000
+Message-ID: <CAPa8GCCBQfR-nUOmwz6oSdCao63tHUH1jfGs2XcgCe_+g3grCQ@mail.gmail.com>
+Subject: Re: [Patch 1/4] ipc/mqueue: improve performance of send/recv
+From: Nick Piggin <npiggin@gmail.com>
+To: Doug Ledford <dledford@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        sfr@canb.auug.org.au
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2 May 2012 03:50, Doug Ledford <dledford@redhat.com> wrote:
 
---zYM0uCDKw75PZbzx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Avg time to send/recv (in nanoseconds per message)
+>  when queue empty            305/288                    349/318
+>  when queue full (65528 messages)
+>    constant priority      526589/823                    362/314
+>    increasing priority    403105/916                    495/445
+>    decreasing priority     73420/594                    482/409
+>    random priority        280147/920                    546/436
+>
+> Time to fill/drain queue (65528 messages, in seconds)
+>  constant priority         17.37/.12                    .13/.12
+>  increasing priority        4.14/.14                    .21/.18
+>  decreasing priority       12.93/.13                    .21/.18
+>  random priority            8.88/.16                    .22/.17
+>
+> So, I think the results speak for themselves.  It's possible this
+> implementation could be improved by cacheing at least one priority
+> level in the node tree (that would bring the queue empty performance
+> more in line with the old implementation), but this works and is *so*
+> much better than what we had, especially for the common case of a
+> single priority in use, that further refinements can be in follow on
+> patches.
 
-On Thu, May 03, 2012 at 05:29:43AM +0000, R, Durgadoss wrote:
-> > @@ -707,14 +787,12 @@ static void __cpuinit put_core_offline(unsigned i=
-nt cpu)
-> >=20
-> >  	pdata =3D platform_get_drvdata(pdev);
-> >=20
-> > -	indx =3D TO_ATTR_NO(cpu);
-> > -
-> > -	/* The core id is too big, just return */
-> > -	if (indx > MAX_CORE_DATA - 1)
-> > -		return;
-> > +	attr_no =3D TO_ATTR_NO(cpu);
-> >=20
-> > -	if (pdata->core_data[indx] && pdata->core_data[indx]->cpu =3D=3D cpu)
-> > -		coretemp_remove_core(pdata, &pdev->dev, indx);
-> > +	tdata =3D get_temp_data(pdata, attr_no);
-> > +	if (tdata->cpu =3D=3D cpu)
->=20
-> The get_temp_data can return a NULL. So, you might want to do,
-> if (tdata && tdata->cpu =3D=3D cpu) to avoid a potential NULL ptr crash.
+Nice work! Yeah I think if you cache a last unused entry, that
+should mostly solve the empty queue regression.
 
-Good catch, thanks.
-
-> In general, why are we using spin_locks instead of mutex_locks,
-> for list manipulations .. ?
-
-I don't think it matters here. Contention is low and nobody sleeps, but
-okay, I'll change it to mutex.
-
---=20
- Kirill A. Shutemov
-
---zYM0uCDKw75PZbzx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPolgZAAoJEAd+omnVudOM8YQQAKLcB8KEzd3SFRRKtPCNi3p8
-xJq/ZrwE8QhQwYPwvnR+E6VYp3x8boJ11TcGjwZRwmYw6H/zZQZ8FWVCbV4WFUJq
-f9kNLlFxHKP5RVH5nV+dWplYnM6AJ9Fv18TQCX2as4kfu6otvIZh+nZ/YB4pyg35
-wMmGE3uPDH3qR+tXHORjTxtqT7ney4AXFX3aUmRgzQDYQv5/Rb85+40wVQMGLtwl
-E7gwC2gYfgAhp3OVPNUcAwzgRmlrOp2of8NMLvWZCe+KTZjeIamA+iAgbwr1OWi0
-M5fuBd34F6UN50/V4DvZO7jC9SOSHNH8Tjh22KP44G6ruS2AauppM6yfwwbw6ym+
-BIyxprxSW1aZbsZVRkNrfGlwwDcnREP7laGpzWpX2Ok8X2sKmEpsoVBaIJ7zy2hY
-nw+QkAFWoBp2rgqNC5yhQUAxq8Z6lPIW4EiFcrTc1ZGyvw48TtDxUhvbVJPEBCrH
-QlTVDgehVvBXy0/WWMNNHCjSBiRg7dIsyEuNfPJAo16OcqB9UZAT/zFv4EJEZngm
-SJLcAV/PpfUgEcwBeZmjVSB92lOfRN2g91iLDIx2WYbq2PSL25ycgRv+h239JcTb
-PpEEsdpR6hL7ysDxCvefVppiX5TRqgW71Gy85oGIXMz6yjRwazKf/qfRfWl3qM8n
-usQ6GVztj/EtkMPX3RxZ
-=5AHY
------END PGP SIGNATURE-----
-
---zYM0uCDKw75PZbzx--
+I would imagine most users won't have huge queues, so the
+empty case should be important too.
