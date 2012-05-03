@@ -1,105 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab2ECIzH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 04:55:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54115 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753981Ab2ECIzE (ORCPT
+	id S1756021Ab2ECI5m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 04:57:42 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41385 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab2ECI5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 04:55:04 -0400
-Date: Thu, 3 May 2012 09:54:58 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Adrian Fita <adrian.fita@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        Ralf Jung <ralfjung-e@gmx.de>, Paolo Scarabelli <paolo@msw.it>
-Subject: Re: [bug?] Battery notifications produce flashing battery icon,
- syslog spam (Re: [PATCH 11/11] ACPI / Battery: Update information on info
- notification and resume)
-Message-ID: <20120503085458.GG3364@shadowen.org>
-References: <201101062331.17079.rjw@sisk.pl>
- <201101062342.28168.rjw@sisk.pl>
- <20120501184534.GA31731@burratino>
- <4FA032EA.1090608@gmail.com>
- <20120501191408.GD19143@burratino>
+	Thu, 3 May 2012 04:57:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120501191408.GD19143@burratino>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 3 May 2012 10:57:19 +0200
+Message-ID: <CA+1xoqd_z8Zavzraq1oXVRpwkJRoac57tojBYf7x=Kzs+cbJ_w@mail.gmail.com>
+Subject: rcu: BUG on exit_group
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 02:14:08PM -0500, Jonathan Nieder wrote:
-> (cc-ing Andy)
-> Adrian Fita wrote:
-> 
-> > Also, searching on Google after "upowerd device
-> > removed:/org/freedesktop/UPower/devices/battery_BAT0", reveals much
-> > more bug reports with the exact issue.
-> 
-> Thanks.  That confirms the high CPU consumption in upowerd ---
-> see [1], for example.
-> 
-> [1] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/987807
+Hi Paul,
 
-It does seem somewhat heavyweight to be removing and reinstalling all of
-the sysfs files every time we get one of these events.  I am assuming
-here that some BIOSs are using this interface to tell us the batery
-capacity has changed and triggering the constant add/remove of the
-devices and associated flickering.
+I've hit a BUG similar to the schedule_tail() one when. It happened
+when I've started fuzzing exit_group() syscalls, and all of the traces
+are starting with exit_group() (there's a flood of them).
 
->From the description of the change this is necessary because the
-capacity units may change over time?  Can we not use those to avoid this
-update?  I presume it is these two we are referring to?
+I've verified that it indeed BUGs due to the rcu preempt count.
 
-        int capacity_granularity_1;
-        int capacity_granularity_2;
+Here's one of the BUG()s:
 
-If those are unchanged perhaps we can just skip the update?  Something
-like the below (completly untested, for discussion).
-
-Thoughts?
-
--apw
-
-commit d558d0c38e26e2c7eae68d19f4d2fa3ecd8e31f2
-Author: Andy Whitcroft <apw@canonical.com>
-Date:   Thu May 3 09:52:28 2012 +0100
-
-    battery: only refresh the sysfs files when pertinant information changes
-    
-    We only need to regenerate the sysfs files when the capacity units
-    change, avoid the update otherwise.
-    
-    Signed-off-by: Andy Whitcroft <apw@canonical.com>
-
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index eb18c44..f8d37b4 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -643,10 +643,20 @@ static int acpi_battery_update(struct acpi_battery *battery)
- 
- static void acpi_battery_refresh(struct acpi_battery *battery)
- {
-+	int cg1, cg2;
-+
- 	if (!battery->bat.dev)
- 		return;
- 
-+	cg1 = battery->capacity_granularity_1;
-+	cg2 = battery->capacity_granularity_2;
-+
- 	acpi_battery_get_info(battery);
-+
-+	if (cg1 == battery->capacity_granularity_1 &&
-+					cg2 == capacity_granularity_2)
-+		return;
-+
- 	/* The battery may have changed its reporting units. */
- 	sysfs_remove_battery(battery);
- 	sysfs_add_battery(battery);
+[   83.820976] BUG: sleeping function called from invalid context at
+kernel/mutex.c:269
+[   83.827870] in_atomic(): 0, irqs_disabled(): 0, pid: 4506, name: trinity
+[   83.832154] 1 lock held by trinity/4506:
+[   83.834224]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff811a7d87>]
+munlock_vma_page+0x197/0x200
+[   83.839310] Pid: 4506, comm: trinity Tainted: G        W
+3.4.0-rc5-next-20120503-sasha-00002-g09f55ae-dirty #108
+[   83.849418] Call Trace:
+[   83.851182]  [<ffffffff810e7218>] __might_sleep+0x1f8/0x210
+[   83.854076]  [<ffffffff82d9540a>] mutex_lock_nested+0x2a/0x50
+[   83.857120]  [<ffffffff811b0830>] try_to_unmap_file+0x40/0x2f0
+[   83.860242]  [<ffffffff82d984bb>] ? _raw_spin_unlock_irq+0x2b/0x80
+[   83.863423]  [<ffffffff810e7ffe>] ? sub_preempt_count+0xae/0xf0
+[   83.866347]  [<ffffffff82d984e9>] ? _raw_spin_unlock_irq+0x59/0x80
+[   83.869570]  [<ffffffff811b0caa>] try_to_munlock+0x6a/0x80
+[   83.872667]  [<ffffffff811a7cc6>] munlock_vma_page+0xd6/0x200
+[   83.875646]  [<ffffffff811a7d87>] ? munlock_vma_page+0x197/0x200
+[   83.878798]  [<ffffffff811a7e7f>] munlock_vma_pages_range+0x8f/0xd0
+[   83.882235]  [<ffffffff811a8b8a>] exit_mmap+0x5a/0x160
+[   83.884880]  [<ffffffff810ba23b>] ? exit_mm+0x10b/0x130
+[   83.887508]  [<ffffffff8111d8ea>] ? __lock_release+0x1ba/0x1d0
+[   83.890399]  [<ffffffff810b4fe1>] mmput+0x81/0xe0
+[   83.892966]  [<ffffffff810ba24b>] exit_mm+0x11b/0x130
+[   83.895640]  [<ffffffff82d984e9>] ? _raw_spin_unlock_irq+0x59/0x80
+[   83.898943]  [<ffffffff810bca53>] do_exit+0x263/0x460
+[   83.901700]  [<ffffffff810bccf1>] do_group_exit+0xa1/0xe0
+[   83.907366]  [<ffffffff810bcd42>] sys_exit_group+0x12/0x20
+[   83.912450]  [<ffffffff82d993b9>] system_call_fastpath+0x16/0x1b
