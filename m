@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab2ECOac (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:30:32 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58820 "EHLO bear.ext.ti.com"
+	id S1756810Ab2ECOYN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:24:13 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:58785 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756205Ab2ECOY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:24:27 -0400
+	id S1756147Ab2ECOYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 10:24:09 -0400
 From: Venkatraman S <svenkatr@ti.com>
 To: <linux-mmc@vger.kernel.org>, <cjb@laptop.org>, <linux-mm@kvack.org>,
         <linux-fsdevel@vger.kernel.org>, <linux-omap@vger.kernel.org>
@@ -13,9 +13,9 @@ CC: <linux-kernel@vger.kernel.org>, <arnd.bergmann@linaro.org>,
         <alex.lemberg@sandisk.com>, <ilan.smith@sandisk.com>,
         <lporzio@micron.com>, <rmk+kernel@arm.linux.org.uk>,
         Venkatraman S <svenkatr@ti.com>
-Subject: [PATCH v2 06/16] block: treat DMPG and SWAPIN requests as special
-Date: Thu, 3 May 2012 19:53:05 +0530
-Message-ID: <1336054995-22988-7-git-send-email-svenkatr@ti.com>
+Subject: [PATCH v2 02/16] MM: Added page swapping markers to memory management
+Date: Thu, 3 May 2012 19:53:01 +0530
+Message-ID: <1336054995-22988-3-git-send-email-svenkatr@ti.com>
 X-Mailer: git-send-email 1.7.10.rc2
 In-Reply-To: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
 References: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
@@ -27,86 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ilan Smith <ilan.smith@sandisk.com>
 
-When exp_swapin and exp_dmpg are set, treat read requests
-marked with DMPG and SWAPIN as high priority and move to
-the front of the queue.
+Add attribute to identify swapin requests
+Mark memory management requests with swapin requests
 
 Signed-off-by: Ilan Smith <ilan.smith@sandisk.com>
 Signed-off-by: Alex Lemberg <alex.lemberg@sandisk.com>
 Signed-off-by: Venkatraman S <svenkatr@ti.com>
 ---
- block/blk-core.c |   18 ++++++++++++++++++
- block/elevator.c |   14 +++++++++++++-
- 2 files changed, 31 insertions(+), 1 deletion(-)
+ include/linux/bio.h       |    1 +
+ include/linux/blk_types.h |    2 ++
+ mm/page_io.c              |    3 ++-
+ 3 files changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 1f61b74..7a1b98b 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1306,6 +1306,12 @@ void init_request_from_bio(struct request *req, struct bio *bio)
- 	if (bio->bi_rw & REQ_RAHEAD)
- 		req->cmd_flags |= REQ_FAILFAST_MASK;
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 264e0ef..8494b2f 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -63,6 +63,7 @@ static inline bool bio_rw_flagged(struct bio *bio, unsigned long flag)
+ }
  
-+	if (bio_swapin(bio) && blk_queue_exp_swapin(req->q))
-+		req->cmd_flags |= REQ_RW_SWAPIN | REQ_NOMERGE;
-+
-+	if (bio_dmpg(bio) && blk_queue_exp_dmpg(req->q))
-+		req->cmd_flags |= REQ_RW_DMPG | REQ_NOMERGE;
-+
- 	req->errors = 0;
- 	req->__sector = bio->bi_sector;
- 	req->ioprio = bio_prio(bio);
-@@ -1333,6 +1339,18 @@ void blk_queue_bio(struct request_queue *q, struct bio *bio)
- 		goto get_rq;
+ #define bio_dmpg(bio)	bio_rw_flagged(bio, REQ_RW_DMPG)
++#define bio_swapin(bio)	bio_rw_flagged(bio, REQ_RW_SWAPIN)
+ 
+ /*
+  * various member access, note that bio_data should of course not be used
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index 87feb80..df2b9ea 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -151,6 +151,7 @@ enum rq_flag_bits {
+ 	__REQ_IO_STAT,		/* account I/O stat */
+ 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
+ 	__REQ_RW_DMPG,
++	__REQ_RW_SWAPIN,
+ 	__REQ_NR_BITS,		/* stops here */
+ };
+ 
+@@ -193,5 +194,6 @@ enum rq_flag_bits {
+ #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
+ #define REQ_SECURE		(1 << __REQ_SECURE)
+ #define REQ_RW_DMPG		(1 << __REQ_RW_DMPG)
++#define REQ_RW_SWAPIN		(1 << __REQ_RW_SWAPIN)
+ 
+ #endif /* __LINUX_BLK_TYPES_H */
+diff --git a/mm/page_io.c b/mm/page_io.c
+index dc76b4d..a148bea 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -128,8 +128,9 @@ int swap_readpage(struct page *page)
+ 		ret = -ENOMEM;
+ 		goto out;
  	}
- 
-+	if (bio_swapin(bio) && blk_queue_exp_swapin(q)) {
-+		spin_lock_irq(q->queue_lock);
-+		where = ELEVATOR_INSERT_FLUSH;
-+		goto get_rq;
-+	}
-+
-+	if (bio_dmpg(bio) && blk_queue_exp_dmpg(q)) {
-+		spin_lock_irq(q->queue_lock);
-+		where = ELEVATOR_INSERT_FLUSH;
-+		goto get_rq;
-+	}
-+
- 	/*
- 	 * Check if we can merge with the plugged list before grabbing
- 	 * any locks.
-diff --git a/block/elevator.c b/block/elevator.c
-index f016855..76d571b 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -367,7 +367,8 @@ void elv_dispatch_sort(struct request_queue *q, struct request *rq)
- 	q->nr_sorted--;
- 
- 	boundary = q->end_sector;
--	stop_flags = REQ_SOFTBARRIER | REQ_STARTED;
-+	stop_flags = REQ_SOFTBARRIER | REQ_STARTED
-+		| REQ_RW_SWAPIN	| REQ_RW_DMPG ;
- 	list_for_each_prev(entry, &q->queue_head) {
- 		struct request *pos = list_entry_rq(entry);
- 
-@@ -585,6 +586,17 @@ void elv_quiesce_end(struct request_queue *q)
- 
- void __elv_add_request(struct request_queue *q, struct request *rq, int where)
- {
-+	unsigned int hpi_flags = REQ_RW_DMPG | REQ_RW_SWAPIN;
-+
-+	if (rq->cmd_flags & hpi_flags) {
-+		/*
-+		 * Insert swap-in or demand page requests at the front. This
-+		 * causes them to be queued in the reversed order.
-+		 */
-+		where = ELEVATOR_INSERT_FRONT;
-+	} else
-+
-+
- 	trace_block_rq_insert(q, rq);
- 
- 	rq->q = q;
++	bio->bi_rw |= REQ_RW_SWAPIN;
+ 	count_vm_event(PSWPIN);
+-	submit_bio(READ, bio);
++	submit_bio(READ | REQ_RW_SWAPIN, bio);
+ out:
+ 	return ret;
+ }
 -- 
 1.7.10.rc2
 
