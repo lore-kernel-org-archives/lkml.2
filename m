@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab2ECO5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:57:30 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:44140 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215Ab2ECO51 (ORCPT
+	id S1757443Ab2ECO5k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:57:40 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:45494 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757427Ab2ECO5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:57:27 -0400
+	Thu, 3 May 2012 10:57:32 -0400
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
@@ -22,9 +22,9 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Hakan Akkan <hakanakkan@gmail.com>,
         Max Krasnyansky <maxk@qualcomm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
-Subject: [PATCH v1 5/6] mm: make vmstat_update periodic run conditional
-Date: Thu,  3 May 2012 17:56:01 +0300
-Message-Id: <1336056962-10465-6-git-send-email-gilad@benyossef.com>
+Subject: [PATCH v1 6/6] x86: make clocksource watchdog configurable (not for mainline)
+Date: Thu,  3 May 2012 17:56:02 +0300
+Message-Id: <1336056962-10465-7-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
 References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
@@ -32,24 +32,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vmstat_update runs every second from the work queue to update statistics
-and drain per cpu pages back into the global page allocator.
+The clock source watchdog wakes up idle cores.
 
-This is useful in most circumstances but is wasteful if the CPU doesn't
-actually make any VM activity. This can happen in the situtation that
-the CPU is idle or running a CPU bound long term task (e.g. CPU
-isolation), in which case the periodic vmstate_update timer needlessly
-itnerrupts the CPU.
+Since I'm using KVM to test, where the TSC is always marked
+unstable, I've added this option to allow to disable it to
+assist testing.
 
-This patch tries to make vmstat_update schedule itself for the next
-round only if there was any work for it to do in the previous run.
-The assumption is that if for a whole second we didn't see any VM
-activity it is reasnoable to assume that the CPU is not using the
-VM because it is idle or runs a long term single CPU bound task.
-
-A new single unbound system work queue item is scheduled periodically
-to monitor CPUs that have their vmstat_update work stopped and
-re-schedule them if VM activity is detected.
+This is not intended for mainlining, the patch just serves
+as a reference for how I tested the patch set.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 CC: Thomas Gleixner <tglx@linutronix.de>
@@ -71,192 +61,50 @@ CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: linux-kernel@vger.kernel.org
 CC: linux-mm@kvack.org
 ---
- include/linux/vmstat.h |    2 +-
- mm/vmstat.c            |   95 +++++++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 82 insertions(+), 15 deletions(-)
+ arch/x86/Kconfig          |    9 ++++++---
+ kernel/time/clocksource.c |    2 ++
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-index 65efb92..67bf202 100644
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -200,7 +200,7 @@ extern void __inc_zone_state(struct zone *, enum zone_stat_item);
- extern void dec_zone_state(struct zone *, enum zone_stat_item);
- extern void __dec_zone_state(struct zone *, enum zone_stat_item);
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 1d14cc6..6706c00 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -99,9 +99,6 @@ config ARCH_DEFCONFIG
+ config GENERIC_CMOS_UPDATE
+ 	def_bool y
  
--void refresh_cpu_vm_stats(int);
-+bool refresh_cpu_vm_stats(int);
- void refresh_zone_stat_thresholds(void);
+-config CLOCKSOURCE_WATCHDOG
+-	def_bool y
+-
+ config GENERIC_CLOCKEVENTS
+ 	def_bool y
  
- int calculate_pressure_threshold(struct zone *zone);
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 7db1b9b..1676132 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -14,6 +14,7 @@
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/cpu.h>
-+#include <linux/cpumask.h>
- #include <linux/vmstat.h>
- #include <linux/sched.h>
- #include <linux/math64.h>
-@@ -434,11 +435,12 @@ EXPORT_SYMBOL(dec_zone_page_state);
-  * with the global counters. These could cause remote node cache line
-  * bouncing and will have to be only done when necessary.
-  */
--void refresh_cpu_vm_stats(int cpu)
-+bool refresh_cpu_vm_stats(int cpu)
- {
- 	struct zone *zone;
- 	int i;
- 	int global_diff[NR_VM_ZONE_STAT_ITEMS] = { 0, };
-+	bool vm_activity = false;
+@@ -1673,6 +1670,12 @@ config HOTPLUG_CPU
+ 	    automatically on SMP systems. )
+ 	  Say N if you want to disable CPU hotplug.
  
- 	for_each_populated_zone(zone) {
- 		struct per_cpu_pageset *p;
-@@ -485,14 +487,21 @@ void refresh_cpu_vm_stats(int cpu)
- 		if (p->expire)
- 			continue;
++config CLOCKSOURCE_WATCHDOG
++	bool "Clocksource watchdog"
++	default y
++	help
++	  Enable clock source watchdog.
++
+ config COMPAT_VDSO
+ 	def_bool y
+ 	prompt "Compat VDSO support"
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index c958338..1eb5a4e 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -450,6 +450,8 @@ static void clocksource_enqueue_watchdog(struct clocksource *cs)
+ static inline void clocksource_dequeue_watchdog(struct clocksource *cs) { }
+ static inline void clocksource_resume_watchdog(void) { }
+ static inline int clocksource_watchdog_kthread(void *data) { return 0; }
++void clocksource_mark_unstable(struct clocksource *cs) { }
++
  
--		if (p->pcp.count)
-+		if (p->pcp.count) {
-+			vm_activity = true;
- 			drain_zone_pages(zone, &p->pcp);
-+		}
- #endif
- 	}
+ #endif /* CONFIG_CLOCKSOURCE_WATCHDOG */
  
- 	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
--		if (global_diff[i])
-+		if (global_diff[i]) {
- 			atomic_long_add(global_diff[i], &vm_stat[i]);
-+			vm_activity = true;
-+		}
-+
-+	return vm_activity;
-+
- }
- 
- #endif
-@@ -1141,22 +1150,72 @@ static const struct file_operations proc_vmstat_file_operations = {
- #ifdef CONFIG_SMP
- static DEFINE_PER_CPU(struct delayed_work, vmstat_work);
- int sysctl_stat_interval __read_mostly = HZ;
-+static struct cpumask vmstat_off_cpus;
-+struct delayed_work vmstat_monitor_work;
- 
--static void vmstat_update(struct work_struct *w)
-+static inline bool need_vmstat(int cpu)
- {
--	refresh_cpu_vm_stats(smp_processor_id());
--	schedule_delayed_work(&__get_cpu_var(vmstat_work),
--		round_jiffies_relative(sysctl_stat_interval));
-+	struct zone *zone;
-+	int i;
-+
-+	for_each_populated_zone(zone) {
-+		struct per_cpu_pageset *p;
-+
-+		p = per_cpu_ptr(zone->pageset, cpu);
-+
-+		for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
-+			if (p->vm_stat_diff[i])
-+				return true;
-+
-+		if (zone_to_nid(zone) != numa_node_id() && p->pcp.count)
-+			return true;
-+	}
-+
-+	return false;
- }
- 
--static void __cpuinit start_cpu_timer(int cpu)
-+static void vmstat_update(struct work_struct *w);
-+
-+static void start_cpu_timer(int cpu)
- {
- 	struct delayed_work *work = &per_cpu(vmstat_work, cpu);
- 
--	INIT_DELAYED_WORK_DEFERRABLE(work, vmstat_update);
-+	cpumask_clear_cpu(cpu, &vmstat_off_cpus);
- 	schedule_delayed_work_on(cpu, work, __round_jiffies_relative(HZ, cpu));
- }
- 
-+static void __cpuinit setup_cpu_timer(int cpu)
-+{
-+	struct delayed_work *work = &per_cpu(vmstat_work, cpu);
-+
-+	INIT_DELAYED_WORK_DEFERRABLE(work, vmstat_update);
-+	start_cpu_timer(cpu);
-+}
-+
-+static void vmstat_update_monitor(struct work_struct *w)
-+{
-+	int cpu;
-+
-+	for_each_cpu_and(cpu, &vmstat_off_cpus, cpu_online_mask)
-+		if (need_vmstat(cpu))
-+			start_cpu_timer(cpu);
-+
-+	queue_delayed_work(system_unbound_wq, &vmstat_monitor_work,
-+		round_jiffies_relative(sysctl_stat_interval));
-+}
-+
-+
-+static void vmstat_update(struct work_struct *w)
-+{
-+	int cpu = smp_processor_id();
-+
-+	if (likely(refresh_cpu_vm_stats(cpu)))
-+		schedule_delayed_work(&__get_cpu_var(vmstat_work),
-+				round_jiffies_relative(sysctl_stat_interval));
-+	else
-+		cpumask_set_cpu(cpu, &vmstat_off_cpus);
-+}
-+
- /*
-  * Use the cpu notifier to insure that the thresholds are recalculated
-  * when necessary.
-@@ -1171,17 +1230,19 @@ static int __cpuinit vmstat_cpuup_callback(struct notifier_block *nfb,
- 	case CPU_ONLINE:
- 	case CPU_ONLINE_FROZEN:
- 		refresh_zone_stat_thresholds();
--		start_cpu_timer(cpu);
-+		setup_cpu_timer(cpu);
- 		node_set_state(cpu_to_node(cpu), N_CPU);
- 		break;
- 	case CPU_DOWN_PREPARE:
- 	case CPU_DOWN_PREPARE_FROZEN:
--		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
--		per_cpu(vmstat_work, cpu).work.func = NULL;
-+		if (!cpumask_test_cpu(cpu, &vmstat_off_cpus)) {
-+			cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
-+			per_cpu(vmstat_work, cpu).work.func = NULL;
-+		}
- 		break;
- 	case CPU_DOWN_FAILED:
- 	case CPU_DOWN_FAILED_FROZEN:
--		start_cpu_timer(cpu);
-+		setup_cpu_timer(cpu);
- 		break;
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
-@@ -1204,8 +1265,14 @@ static int __init setup_vmstat(void)
- 
- 	register_cpu_notifier(&vmstat_notifier);
- 
-+	INIT_DELAYED_WORK_DEFERRABLE(&vmstat_monitor_work,
-+				vmstat_update_monitor);
-+	queue_delayed_work(system_unbound_wq,
-+				&vmstat_monitor_work,
-+				round_jiffies_relative(HZ));
-+
- 	for_each_online_cpu(cpu)
--		start_cpu_timer(cpu);
-+		setup_cpu_timer(cpu);
- #endif
- #ifdef CONFIG_PROC_FS
- 	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
 -- 
 1.7.0.4
 
