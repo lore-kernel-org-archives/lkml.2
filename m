@@ -1,68 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab2ECLsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 07:48:24 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:21411 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751927Ab2ECLsX (ORCPT
+	id S1753915Ab2ECLvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 07:51:06 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:54529 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752034Ab2ECLvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 07:48:23 -0400
-X-IronPort-AV: E=Sophos;i="4.75,522,1330923600"; 
-   d="scan'208";a="193210476"
-Message-ID: <4FA27084.4030005@citrix.com>
-Date: Thu, 3 May 2012 12:48:20 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120317 Icedove/3.0.11
+	Thu, 3 May 2012 07:51:03 -0400
+Date: Thu, 3 May 2012 13:50:59 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v2 3/4] leds: add LM3533 LED driver
+Message-ID: <20120503115059.GB15752@localhost>
+References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
+ <1336040799-18433-1-git-send-email-jhovold@gmail.com>
+ <1336040799-18433-4-git-send-email-jhovold@gmail.com>
+ <20120503104344.GC3955@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "JBeulich@suse.com" <JBeulich@suse.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH] auto balloon initial domain and fix dom0_mem=X inconsistencies
- (v5).
-References: <1334596539-18172-1-git-send-email-konrad.wilk@oracle.com> <20120501163707.GA8741@phenom.dumpdata.com>
-In-Reply-To: <20120501163707.GA8741@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120503104344.GC3955@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/12 17:37, Konrad Rzeszutek Wilk wrote:
-> On Mon, Apr 16, 2012 at 01:15:31PM -0400, Konrad Rzeszutek Wilk wrote:
->> Changelog v5 [since v4]:
->>  - used populate_physmap, fixed bugs.
->> [v2-v4: not posted]
->>  - reworked the code in setup.c to work properly.
->> [v1: https://lkml.org/lkml/2012/3/30/492]
->>  - initial patchset
+On Thu, May 03, 2012 at 11:43:44AM +0100, Mark Brown wrote:
+> On Thu, May 03, 2012 at 12:26:38PM +0200, Johan Hovold wrote:
 > 
-> One bug I found was that with 'dom0_mem=max:1G' (with and without these
-> patches) I would get a bunch of
+> > +What:		/sys/class/leds/<led>/risetime
+> > +Date:		April 2012
+> > +KernelVersion:	3.5
+> > +Contact:	Johan Hovold <jhovold@gmail.com>
+> > +Description:
+> > +		Set the pattern generator fall and rise times (0..7), where
+> > +
+> > +		0 - 2048 us
+> > +		1 - 262 ms
+> > +		2 - 524 ms
+> > +		3 - 1.049 s
+> > +		4 - 2.097 s
+> > +		5 - 4.194 s
+> > +		6 - 8.389 s
+> > +		7 - 16.78 s
+> > +
 > 
-> (XEN) page_alloc.c:1148:d0 Over-allocation for domain 0: 2097153 > 2097152
-> (XEN) memory.c:133:d0 Could not allocate order=0 extent: id=0 memflags=0 (0 of 17)
+> Shouldn't these be controlled by led_blink_set() rather than a custom
+> ABI?
+
+led_blink_set controls the on/off times, but the LM3533 has the two
+additional rise and fall-time settings which determine the transition
+time between these states.
+
+> > +What:		/sys/class/leds/<led>/id
+> > +Date:		April 2012
+> > +KernelVersion:	3.5
+> > +Contact:	Johan Hovold <jhovold@gmail.com>
+> > +Description:
+> > +		Get the id of this led (0..3).
+> > +
 > 
-> where the (0 of X), sometimes was 1, 2,3,4 or 17 -depending on the machine
-> I ran on it. I figured it out that the difference was in the ACPI tables
-> that are allocated - and that those regions - even though are returned
-> back to the hypervisor, cannot be repopulated. I can't find the actual
-> exact piece of code in the hypervisor to pin-point and say "Aha".
+> This should just be a generic LED subsystem thing?
 
-It was tricky to track down what is going here but I think I see what's
-happening.
+It's related to the output mapping discussed in my previous mail. The
+four logical LEDs (0..3) can be used to control either (or all) of the
+five low-voltage output. This attribute provides the identity of the
+class devices (logical LEDs) which can then be used in the output
+mapping (done in the parent device). These id's have been chosen to
+correspond to the MFD-id's, but are really device specific.
+ 
+> > +What:		/sys/class/leds/<led>/max_current
+> > +Date:		April 2012
+> > +KernelVersion:	3.5
+> > +Contact:	Johan Hovold <jhovold@gmail.com>
+> > +Description:
+> > +		Set the full-scale current I_{LED_FULLSCALE} (0..31), where
+> > +
+> > +		I_{LED_FULLSCALE} = 5mA + max_current * 0.8mA
+> > +
+> 
+> Shouldn't this be set by platform data, the maximum current you can push
+> through the LEDs seems like a board dependant thing which won't change
+> dynamically at runtime.  The brightness can already be varied.
 
-The problem pages (on the system I looked at) were located just before
-the ISA memory region (so PFN < a0) and so they are mapped in the
-bootstrap page tables and have an additional ref so are not immediately
-freed when the page is released.  They do get freed later on, presumably
-when the page tables are swapped over.
+I fully agree and it is possible to set via the platform data for that
+reason. The end-customer, however, insisted that even this setting be
+available through sysfs to facilitate their integration and testing.
 
-I think the mapping needs to be removed with
-HYPERVISOR_update_va_mapping() before releasing the page.  This is
-already done for the ISA region in xen_ident_map_ISA().
+I'd be willing drop this attribute if requested, as it would only be used
+during integration and could easily be added back by the end-customer if
+needed.
 
-I may be easier to avoid doing anything with the PFNs < 0x100 and take
-the minimal lose of memory.
+> It'd also be nicer if the kernel did the calculation for the user.
 
-David
+If it was something that was going to be changed a lot, then yes,
+perhaps. But as you point out above, this is generally a fixed setting
+set using platform data once by integrators that will have access to
+the datasheet and it's current table.
+
+Thanks,
+Johan
