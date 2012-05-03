@@ -1,122 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758574Ab2ECUTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 16:19:00 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:40187 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758553Ab2ECUS7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 16:18:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <201205032200.01823.rjw@sisk.pl>
-References: <1335816551-27756-1-git-send-email-ccross@android.com>
-	<201204302354.41969.rjw@sisk.pl>
-	<CAMbhsRQcDDW5vWbqb1FRtvOmq6UjOjXj9MCfSt2KF9fHrcY59Q@mail.gmail.com>
-	<201205032200.01823.rjw@sisk.pl>
-Date: Thu, 3 May 2012 13:18:58 -0700
-X-Google-Sender-Auth: WepOSWYUbYBtPNGa10fcYn1ZYUo
-Message-ID: <CAMbhsRS8D=d9aAbikosOis+Q+jMU04Oj9xaRg0jMVxtQ7nijTw@mail.gmail.com>
-Subject: Re: [PATCHv3 0/5] coupled cpuidle state support
-From: Colin Cross <ccross@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@lists.linux-foundation.org, Kevin Hilman <khilman@ti.com>,
-        Len Brown <len.brown@intel.com>, Trinabh Gupta <g.trinabh@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Len Brown <lenb@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1758608Ab2ECUVI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 16:21:08 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:44272 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754586Ab2ECUVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 16:21:07 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: grant.likely@secretlab.ca, arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v8] gpio: Device tree support for LPC32xx
+Date: Thu,  3 May 2012 22:20:28 +0200
+Message-Id: <1336076428-29419-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 3, 2012 at 1:00 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-<snip>
-> There are two distinct cases to consider here, (1) when the last I/O
-> device in the domain becomes idle and the question is whether or not to
-> power off the entire domain and (2) when a CPU core in a power domain
-> becomes idle while all of the devices in the domain are idle already.
->
-> Case (2) is quite straightforward, the .enter() routine for the
-> "domain" C-state has to check whether the domain can be turned off and
-> do it eventually.
->
-> Case (1) is more difficult and (assuming that all CPU cores in the domain
-> are already idle at this point) i see two possible ways to handle it:
-> (a) Wake up all of the (idle) CPU cores in the domain and let the
->  "domain" C-state's .enter() do the job (ie. turn it into case (2)),
->  similarly to your patchset.
-> (b) If cpuidle has prepared the cores for going into deeper idle,
->  turn the domain off directly without waking up the cores.
+This patch adds device tree support for gpio-lpc32xx.c.
 
-Multiple clusters is a design that has been considered in this
-patchset (all the data structures are in the right place to support
-it), and can be supported in the future, but does not exist in any
-current systems that would be using this.  In all of today's SoCs,
-there is a single cluster, so (1) can't happen - no code can be
-executing while all cpus are idle.
+The various GPIO groups correspond to the different irregular GPIO banks of the
+LPC32xx hardware. Most importantly, there are the GPI(0-27), GPO(0-23) and
+GPIO(0-5) banks. Each bank must be registered individually since they are
+implemented with different functions. Registration is done via gpiochip_add()
+which requires an individual gpio bank subnode in the device tree for each
+call.
 
-(b) is an optimization that would not be possible on any future SoC
-that is similar to the current SoCs, where "turn the domain off" is
-very tightly integrated with TrustZone secure code running on the
-primary cpu of the cluster.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-<snip>
+---
 
-> Having considered this for a while I think that it may be more straightforward
-> to avoid waking up the already idled cores.
->
-> For instance, say we have 4 CPU cores in a cluster (package) such that each
-> core has its own idle state (call it C1) and there is a multicore idle state
-> entered by turning off the entire cluster (call this state C-multi).  One of
-> the possible ways to handle this seems to be to use an identical table of
-> C-states for each core containing the C1 entry and a kind of fake entry called
-> (for example) C4 with the time characteristics of C-multi and a special
-> .enter() callback.  That callback will prepare the core it is called for to
-> enter C-multi, but instead of simply turning off the whole package it will
-> decrement a counter.  If the counte happens to be 0 at this point, the
-> package will be turned off.  Otherwise, the core will be put into the idle
-> state corresponding to C1, but it will be ready for entering C-multi at
-> any time. The counter will be incremented on exiting the C4 "state".
+Applies to v3.4-rc5
 
-I implemented something very similar to this on Tegra2 (having each
-cpu go to C1, but with enough state saved for C-multi), but it turns
-out not to work in hardware.  On every existing ARM SMP system where I
-have worked with cpuidle (Tegra2, OMAP4, Exynos5, and some Tegra3),
-only cpu 0 can trigger the transition to C-multi.  The cause of this
-restriction is different on every platform - sometimes it's by design,
-sometimes it's a bug in the SoC ROM code, but the restriction exists.
-The primary cpu of the cluster always needs to be awake.
+Changes since last version:
+* Updated patch description (above)
 
-In addition, it may not be possible to transition secondary cpus from
-C1 to C-multi without waking them.  That would generally involve
-cutting power to a CPU that is in clock gating, which is not a
-supported power transition in any SoC that I have a datasheet for.  I
-made it work for cpu1 on Tegra2, but I can't guarantee that there are
-not unsolvable HW race conditions.
+Thanks to Jean-Christophe PLAGNIOL-VILLARD, Grant Likely, Arnd Bergmann, Jon
+Smirl, Mark Brown for reviewing!
 
-The only generic way to make this work is to wake up all cpus.  Waking
-up a subset of cpus is certainly worth investigating as an
-optimization, but it would not be used on Tegra2, OMAP4, or Exynos5.
-Tegra3 may benefit from it.
+I can also provide a git branch to pull from. On top of which one should I
+provide it, if not mainline rc?
+ 
+ Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt |   65 ++++++++++++++++
+ arch/arm/mach-lpc32xx/include/mach/gpio.h               |    9 +-
+ drivers/gpio/gpio-lpc32xx.c                             |   56 +++++++++++++
+ 3 files changed, 127 insertions(+), 3 deletions(-)
 
-> It looks like this should work without modifying the cpuidle core, but
-> the drawback here is that the cpuidle core doesn't know how much time
-> spend in C4 is really in C1 and how much of it is in C-multi, so the
-> statistics reported by it won't reflect the real energy usage.
-
-Idle statistics are extremely important when determining why a
-particular use case is drawing too much power, and it is worth
-modifying the cpuidle core if only to keep them accurate.  Especially
-when justifying the move from the cpufreq hotplug governor based code
-that every SoC vendor uses in their BSP to a proper multi-CPU cpuidle
-implementation.
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
+@@ -0,0 +1,65 @@
++NXP LPC32xx SoC GPIO controller
++
++Required properties:
++- compatible: must be "nxp,lpc3220-gpio"
++- reg: Physical base address and length of the controller's registers.
++- #address-cells: Always 1, for indexing of the subnodes (GPIO groups of the
++  SoC)
++- #size-cells: Always 0
++
++Required properties of sub-nodes which describe the GPIO groups of LPC32xx:
++- gpio-controller: Marks the device node as a GPIO controller.
++- #gpio-cells: Should be two. The first cell is the pin number and the
++  second cell is used to specify optional parameters:
++  - bit 0 specifies polarity (0 for normal, 1 for inverted)
++- reg: Index of the GPIO group
++
++Optional properties of sub-nodes which describe the GPIO groups of LPC32xx:
++- status: Set to "disabled" if you don't use the respective GPIO group
++  of the LPC32xx SoC
++
++Example:
++
++	gpio: gpio@40028000 {
++		compatible = "nxp,lpc3220-gpio";
++		reg = <0x40028000 0x1000>;
++		/* create a private address space for enumeration */
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		gpio_p0: gpio-bank@0 {
++			gpio-controller;
++			#gpio-cells = <2>;
++			reg = <0>;
++		};
++
++		gpio_p1: gpio-bank@1 {
++			gpio-controller;
++			#gpio-cells = <2>;
++			reg = <1>;
++		};
++
++		gpio_p2: gpio-bank@2 {
++			gpio-controller;
++			#gpio-cells = <2>;
++			reg = <2>;
++		};
++
++		gpio_p3: gpio-bank@3 {
++			gpio-controller;
++			#gpio-cells = <2>;
++			reg = <3>;
++		};
++
++		gpi_p3: gpio-bank@4 {
++			gpio-controller;
++			#gpio-cells = <2>;
++			reg = <4>;
++		};
++
++		gpo_p3: gpio-bank@5 {
++			gpio-controller;
++			#gpio-cells = <2>;
++			reg = <5>;
++		};
++	};
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/include/mach/gpio.h
++++ linux-2.6/arch/arm/mach-lpc32xx/include/mach/gpio.h
+@@ -1 +1,8 @@
+-/* empty */
++#ifndef __MACH_GPIO_H
++#define __MACH_GPIO_H
++
++#include "gpio-lpc32xx.h"
++
++#define ARCH_NR_GPIOS (LPC32XX_GPO_P3_GRP + LPC32XX_GPO_P3_MAX)
++
++#endif /* __MACH_GPIO_H */
+--- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
++++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
+@@ -21,6 +21,9 @@
+ #include <linux/io.h>
+ #include <linux/errno.h>
+ #include <linux/gpio.h>
++#include <linux/of_gpio.h>
++#include <linux/platform_device.h>
++#include <linux/module.h>
+ 
+ #include <mach/hardware.h>
+ #include <mach/platform.h>
+@@ -454,10 +457,59 @@ static struct lpc32xx_gpio_chip lpc32xx_
+ 	},
+ };
+ 
++/* Empty now, can be removed later when mach-lpc32xx is finally switched over
++ * to DT support
++ */
+ void __init lpc32xx_gpio_init(void)
+ {
++}
++
++static void __devinit lpc32xx_gpiochip_add_dt(struct device_node *node)
++{
++	if (of_device_is_available(node)) {
++		u32 index;
++		struct gpio_chip *chip;
++
++		if (of_property_read_u32(node, "reg", &index) < 0)
++			return;
++		if (index >= ARRAY_SIZE(lpc32xx_gpiochip))
++			return;
++		chip = &lpc32xx_gpiochip[index].chip;
++		chip->of_node = of_node_get(node);
++		gpiochip_add(chip);
++	}
++}
++
++static int __devinit lpc32xx_gpio_probe(struct platform_device *pdev)
++{
++	struct device_node *node;
+ 	int i;
+ 
+-	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++)
+-		gpiochip_add(&lpc32xx_gpiochip[i].chip);
++	if (pdev->dev.of_node) {
++		for_each_child_of_node(pdev->dev.of_node, node)
++			lpc32xx_gpiochip_add_dt(node);
++	} else {
++		for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++)
++			gpiochip_add(&lpc32xx_gpiochip[i].chip);
++	}
++
++	return 0;
+ }
++
++#ifdef CONFIG_OF
++static struct of_device_id lpc32xx_gpio_of_match[] __devinitdata = {
++	{ .compatible = "nxp,lpc3220-gpio", },
++	{ },
++};
++#endif
++
++static struct platform_driver lpc32xx_gpio_driver = {
++	.driver		= {
++		.name	= "lpc32xx-gpio",
++		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(lpc32xx_gpio_of_match),
++	},
++	.probe		= lpc32xx_gpio_probe,
++};
++
++module_platform_driver(lpc32xx_gpio_driver);
