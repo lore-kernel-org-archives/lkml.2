@@ -1,97 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758810Ab2ECVmq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 17:42:46 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:55647 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753382Ab2ECVmp (ORCPT
+	id S1758839Ab2ECVos (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 17:44:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56988 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754455Ab2ECVor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 17:42:45 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1824BoVDig2HC1aACYYJEULqkTSv/IZb4+/3xg3jt
-	eo7VbZ0hIXvK34
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Thomas Winischhofer <thomas@winischhofer.net>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] video/sis: Remove unused structs SiS_SDRDRAM_TYPE/SiS_DDRDRAM_TYPE/SiS_DRAMType
-Date: Thu,  3 May 2012 23:42:39 +0200
-Message-Id: <1336081359-5643-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-X-Y-GMX-Trusted: 0
+	Thu, 3 May 2012 17:44:47 -0400
+Date: Thu, 3 May 2012 16:44:39 -0500
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, dustin.kirkland@gazzang.com,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ecryptfs@vger.kernel.org
+Subject: Re: ecryptfs: Kernel BUG when closing device
+Message-ID: <20120503214439.GC16993@boyd>
+References: <1336024803.10945.5.camel@lappy>
+ <20120503161736.GA16993@boyd>
+ <CA+1xoqeVHH_8MezKFX=gB9o5zFMjajHAVai3SxGpzZpvQ5uUHw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="AkbCVLjbJ9qUtAXD"
+Content-Disposition: inline
+In-Reply-To: <CA+1xoqeVHH_8MezKFX=gB9o5zFMjajHAVai3SxGpzZpvQ5uUHw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the unused structs SiS_SDRDRAM_TYPE and SiS_DDRDRAM_TYPE
-from init.h
 
-These are not used anywhere so we can delete them.
+--AkbCVLjbJ9qUtAXD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The SiS_DRAMType is identically defined in sis_main.c and only used
-there so we can remove it here.
+On 2012-05-03 18:22:01, Sasha Levin wrote:
+> On Thu, May 3, 2012 at 6:17 PM, Tyler Hicks <tyhicks@canonical.com> wrote:
+> > On 2012-05-03 08:00:03, Sasha Levin wrote:
+> >> Hi all,
+> >>
+> >> After some fuzzing using trinity inside a KVM guest, I've stumbled on =
+the following:
+> >
+> > Hi Sasha - Thanks for reporting this issue. Is there any way to get
+> > trinity to reproduce this fuzzing sequence?
+>=20
+> Hi Tyler,
+>=20
+> Not really, since it's not the result of a single command it can't
+> recreate it easily.
+>=20
+> On the other hand, I'd be happy to add any debugging ideas you have
+> into the tested kernel and attempt to recreate the issue.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/video/sis/init.h |   45 ---------------------------------------------
- 1 files changed, 0 insertions(+), 45 deletions(-)
+I appreciate the offer, but I was able to reproduce the issue pretty
+easily. Inherited and passed file descriptors of /dev/ecryptfs are not
+handled properly. I've opened this bug to track the resolution:
 
-diff --git a/drivers/video/sis/init.h b/drivers/video/sis/init.h
-index aff7384..85d6738 100644
---- a/drivers/video/sis/init.h
-+++ b/drivers/video/sis/init.h
-@@ -105,51 +105,6 @@ static const unsigned short ModeIndex_1920x1440[]    = {0x68, 0x69, 0x00, 0x6b};
- static const unsigned short ModeIndex_300_2048x1536[]= {0x6c, 0x6d, 0x00, 0x00};
- static const unsigned short ModeIndex_310_2048x1536[]= {0x6c, 0x6d, 0x00, 0x6e};
- 
--static const unsigned short SiS_DRAMType[17][5]={
--	{0x0C,0x0A,0x02,0x40,0x39},
--	{0x0D,0x0A,0x01,0x40,0x48},
--	{0x0C,0x09,0x02,0x20,0x35},
--	{0x0D,0x09,0x01,0x20,0x44},
--	{0x0C,0x08,0x02,0x10,0x31},
--	{0x0D,0x08,0x01,0x10,0x40},
--	{0x0C,0x0A,0x01,0x20,0x34},
--	{0x0C,0x09,0x01,0x08,0x32},
--	{0x0B,0x08,0x02,0x08,0x21},
--	{0x0C,0x08,0x01,0x08,0x30},
--	{0x0A,0x08,0x02,0x04,0x11},
--	{0x0B,0x0A,0x01,0x10,0x28},
--	{0x09,0x08,0x02,0x02,0x01},
--	{0x0B,0x09,0x01,0x08,0x24},
--	{0x0B,0x08,0x01,0x04,0x20},
--	{0x0A,0x08,0x01,0x02,0x10},
--	{0x09,0x08,0x01,0x01,0x00}
--};
--
--static const unsigned short SiS_SDRDRAM_TYPE[13][5] =
--{
--	{ 2,12, 9,64,0x35},
--	{ 1,13, 9,64,0x44},
--	{ 2,12, 8,32,0x31},
--	{ 2,11, 9,32,0x25},
--	{ 1,12, 9,32,0x34},
--	{ 1,13, 8,32,0x40},
--	{ 2,11, 8,16,0x21},
--	{ 1,12, 8,16,0x30},
--	{ 1,11, 9,16,0x24},
--	{ 1,11, 8, 8,0x20},
--	{ 2, 9, 8, 4,0x01},
--	{ 1,10, 8, 4,0x10},
--	{ 1, 9, 8, 2,0x00}
--};
--
--static const unsigned short SiS_DDRDRAM_TYPE[4][5] =
--{
--	{ 2,12, 9,64,0x35},
--	{ 2,12, 8,32,0x31},
--	{ 2,11, 8,16,0x21},
--	{ 2, 9, 8, 4,0x01}
--};
--
- static const unsigned char SiS_MDA_DAC[] =
- {
- 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
--- 
-1.7.3.4
+https://launchpad.net/bugs/994247
 
+Tyler
+
+--AkbCVLjbJ9qUtAXD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCgAGBQJPovxHAAoJENaSAD2qAscKR1EP/js/9xWND/LzZkF9cLnSzN8v
+3nZsBUnmrTNlKAHfQFd3xhbeWWU3KDUYdAU7pLyx8sfAzOU6FnmT5Wp0Eqt0zNB6
+BCznytieVpyCLsk5EwLTwhCFN9ZgmOfb03u0e4K1H69jGWYWMLa65lz81h8StH+w
+s3MuSFeQ54rD4YeWxrJ82NWlrw2POt24sP8+nlTonKec7hdW108YWLp/PY0Rqinp
+KDckw/UOjUP2mwwE5BpeOCxg8Qd3V9IEAQoUzkgQ0DLhSa9nknT53cF1DSyfCxGn
+E0vrv2PPeYChK/RSiPmcsuvpjjsUaWZqK3uksBT/iMCktmRnBuTIuHssNDv5yQoF
+XgDWDYRUaW8HbbzUfW6JZQq9+eMZRo4eRZGecAmtAxMoPTZ7lntffp1B3hWH36by
+JIHICZGaO5VyXkU4R8juFpDpXogHAFIGWn5HIZAISbqQkdgUcNu8NBcu6DTqLQw2
+En1kvA65zt22m/dcpBXaOHmzuGl2CWMrr4ctFM9vZjk33z4xipVTsNpwNt8Xrj/u
+xi0yK5pVU00yNLZh0cT89LqVVitBBR0holP8ySe7cwlUtQSZy9yMf2rbaanfmKdj
+RHwKGN1dclFfUN6VwjkF4sb1GHF2KY3aHaIMrcQe/SVV1OKKcOVlIZcBvWzFDE7R
+IPyLu5GrogiNjIF1kt5J
+=ENfT
+-----END PGP SIGNATURE-----
+
+--AkbCVLjbJ9qUtAXD--
