@@ -1,43 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab2ECSA6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 14:00:58 -0400
-Received: from matrixpower.ru ([195.178.208.66]:34824 "EHLO tservice.net.ru"
+	id S1758013Ab2ECSCF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 14:02:05 -0400
+Received: from tservice.ru ([195.178.208.66]:34832 "EHLO tservice.net.ru"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753360Ab2ECSA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 14:00:57 -0400
-Date: Thu, 3 May 2012 22:00:56 +0400
+	id S1754185Ab2ECSCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 14:02:04 -0400
+Date: Thu, 3 May 2012 22:02:02 +0400
 From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Greg KH <greg@kroah.com>
-Cc: Markus Franke <markus.franke@s2002.tu-chemnitz.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] w1: Add 1-wire slave device driver for DS28E04-100
-Message-ID: <20120503180056.GB13988@ioremap.net>
-References: <20120430021300.GA18148@kroah.com>
- <4FA1953B.40008@hrz.tu-chemnitz.de>
- <20120502202134.GB26628@kroah.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, GregKH <greg@kroah.com>
+Subject: Re: [PATCH] w1: w1_ds2408.c: quite sparse noise about using plaing
+ integer as NULL pointer
+Message-ID: <20120503180202.GC13988@ioremap.net>
+References: <201205021702.07694.hartleys@visionengravers.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120502202134.GB26628@kroah.com>
+In-Reply-To: <201205021702.07694.hartleys@visionengravers.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 01:21:34PM -0700, Greg KH (greg@kroah.com) wrote:
-> > Well, I just stuck to the way things are done in already existing
-> > drivers e.g. drivers/w1/slaves/w1_ds2433.c
+On Wed, May 02, 2012 at 05:02:07PM -0700, H Hartley Sweeten (hartleys@visionengravers.com) wrote:
+> NULL not 0 should be used with pointers. Just remove the offending
+> lines since they will default to NULL anyway.
 > 
-> Really?  Ick, where are those files documented?
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Evgeniy Polyakov <zbr@ioremap.net>
 
-I'm kinda lost here.
-
-To clarify things a bit - w1 allows to create 'private' sysfs files for
-special functionality which exists only in given driver - like
-enable/disable checksum and so on. It has to be documented and must
-follow common kernel codying standards of course.
+Looks good, thank you
+Greg, please pull it into your tree or should it be forwarded to
+janitor list?
 
 -- 
 	Evgeniy Polyakov
