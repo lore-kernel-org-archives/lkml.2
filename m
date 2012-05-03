@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2ECL04 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 07:26:56 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:53789 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043Ab2ECL0x (ORCPT
+	id S1752818Ab2ECL1r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 07:27:47 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:57235 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab2ECL1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 07:26:53 -0400
-Message-ID: <4FA26B6E.408@linux.vnet.ibm.com>
-Date: Thu, 03 May 2012 19:26:38 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Thu, 3 May 2012 07:27:46 -0400
+From: Vlad Zolotarov <vlad@scalemp.com>
+Organization: ScaleMP Ltd.
+To: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 0/2] Move x86_cpu_to_apicid to the __read_mostly section
+Date: Thu, 3 May 2012 14:27:52 +0300
+User-Agent: KMail/1.13.5 (Linux/2.6.32-41-generic; KDE/4.4.5; i686; ; )
+Cc: alan@lxorguk.ukuu.org.uk,
+        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>, ido@wizery.com
+References: <201204241429.05526.vlad@scalemp.com>
+In-Reply-To: <201204241429.05526.vlad@scalemp.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 06/10] KVM: MMU: fast path of handling guest page fault
-References: <4F9776D2.7020506@linux.vnet.ibm.com> <4F9777A4.208@linux.vnet.ibm.com> <20120426234535.GA5057@amt.cnet> <4F9A3445.2060305@linux.vnet.ibm.com> <20120427145213.GB28796@amt.cnet> <4F9B89D9.9060307@linux.vnet.ibm.com> <20120501013459.GB10142@amt.cnet> <4FA0C607.5010002@linux.vnet.ibm.com> <20120502210701.GA12604@amt.cnet>
-In-Reply-To: <20120502210701.GA12604@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12050311-4790-0000-0000-0000027468FA
+Message-Id: <201205031427.52736.vlad@scalemp.com>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2012 05:07 AM, Marcelo Tosatti wrote:
-
-
->> 'entry' is not a problem since it is from atomically read-write as
->> mentioned above, i need change this code to:
->>
->> 		/*
->> 		 * Optimization: for pte sync, if spte was writable the hash
->> 		 * lookup is unnecessary (and expensive). Write protection
->> 		 * is responsibility of mmu_get_page / kvm_sync_page.
->> 		 * Same reasoning can be applied to dirty page accounting.
->> 		 */
->> 		if (!can_unsync && is_writable_pte(entry) /* Use 'entry' instead of '*sptep'. */
->> 			goto set_pte
->>    ......
->>
->>
->>          if (is_writable_pte(entry) && !is_writable_pte(spte)) /* Use 'spte' instead of '*sptep'. */
->>                  kvm_flush_remote_tlbs(vcpu->kvm);
+On Tuesday, April 24, 2012 02:29:04 pm Vlad Zolotarov wrote:
+> Alan, pls., consider applying the following patch series.
 > 
-> What is of more importance than the ability to verify that this or that
-> particular case are ok at the moment is to write code in such a way that
-> its easy to verify that it is correct.
+> The idea is to move x86_cpu_to_apicid to the __read_mostly section
+> in order to avoid false sharing on large multiprocessing systems.
+
+Thomas, Ingo, Peter, the same here - should I respin this patch series?
+
+Pls., advice.
+
+thanks,
+vlad
+
 > 
-> Thus the suggestion above:
-> 
-> "scattered all over (as mentioned before, i think a pattern of read spte
-> once, work on top of that, atomically write and then deal with results
-> _everywhere_ (where mmu lock is held) is more consistent."
-> 
-
-
-Marcelo, thanks for your time to patiently review/reply my mail.
-
-I am confused with ' _everywhere_ ', it means all of the path read/update
-spte? why not only verify the path which depends on is_writable_pte()?
-
-For the reason of "its easy to verify that it is correct"? But these
-paths are safe since it is not care PT_WRITABLE_MASK at all. What these
-paths care is the Dirty-bit and Accessed-bit are not lost, that is why
-we always treat the spte as "volatile" if it is can be updated out of
-mmu-lock.
-
-For the further development? We can add the delta comment for
-is_writable_pte() to warn the developer use it more carefully.
-
-It is also very hard to verify spte everywhere. :(
-
-Actually, the current code to care PT_WRITABLE_MASK is just for
-tlb flush, may be we can fold it into mmu_spte_update.
-[
-  There are tree ways to modify spte, present -> nonpresent, nonpresent -> present,
-  present -> present.
-
-  But we only need care present -> present for lockless.
-]
-
-/*
- * return true means we need flush tlbs caused by changing spte from writeable
- * to read-only.
- */
-bool mmu_update_spte(u64 *sptep, u64 spte)
-{
-	u64 last_spte, old_spte = *sptep;
-	bool flush = false;
-
-	last_spte = xchg(sptep, spte);
-
-	if ((is_writable_pte(last_spte) ||
-	      spte_has_updated_lockless(old_spte, last_spte)) &&
-	         !is_writable_pte(spte) )
-		flush = true;
-
-	.... track Drity/Accessed bit ...
-
-
-	return flush		
-}
-
-Furthermore, the style of "if (spte-has-changed) goto beginning" is feasible
-in set_spte since this path is a fast path. (i can speed up mmu_need_write_protect)
-
-
+> thanks,
+> vlad
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
