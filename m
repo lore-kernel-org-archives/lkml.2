@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818Ab2ECL1r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 07:27:47 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:57235 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab2ECL1q (ORCPT
+	id S1753810Ab2ECL2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 07:28:10 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40393 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753202Ab2ECL2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 07:27:46 -0400
-From: Vlad Zolotarov <vlad@scalemp.com>
-Organization: ScaleMP Ltd.
-To: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 0/2] Move x86_cpu_to_apicid to the __read_mostly section
-Date: Thu, 3 May 2012 14:27:52 +0300
-User-Agent: KMail/1.13.5 (Linux/2.6.32-41-generic; KDE/4.4.5; i686; ; )
-Cc: alan@lxorguk.ukuu.org.uk,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>, ido@wizery.com
-References: <201204241429.05526.vlad@scalemp.com>
-In-Reply-To: <201204241429.05526.vlad@scalemp.com>
+	Thu, 3 May 2012 07:28:07 -0400
+Date: Thu, 3 May 2012 13:28:03 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] mfd: add LM3533 lighting-power core driver
+Message-ID: <20120503112803.GA15752@localhost>
+References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
+ <1336040799-18433-1-git-send-email-jhovold@gmail.com>
+ <1336040799-18433-2-git-send-email-jhovold@gmail.com>
+ <20120503103848.GB3955@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205031427.52736.vlad@scalemp.com>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120503103848.GB3955@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 24, 2012 02:29:04 pm Vlad Zolotarov wrote:
-> Alan, pls., consider applying the following patch series.
+On Thu, May 03, 2012 at 11:38:48AM +0100, Mark Brown wrote:
+> On Thu, May 03, 2012 at 12:26:36PM +0200, Johan Hovold wrote:
+> > Add support for National Semiconductor / TI LM3533 lighting power chips.
+> > 
+> > This is the core driver which provides register access over I2C and
+> > registers the ambient-light-sensor, LED and backlight sub-drivers.
 > 
-> The idea is to move x86_cpu_to_apicid to the __read_mostly section
-> in order to avoid false sharing on large multiprocessing systems.
-
-Thomas, Ingo, Peter, the same here - should I respin this patch series?
-
-Pls., advice.
-
-thanks,
-vlad
-
+> Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 > 
-> thanks,
-> vlad
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> though
+> 
+> > +	dev_dbg(lm3533->dev, "read [%02x]: %02x\n", reg, *val);
+> 
+> I'd expect you can drop these log messages, if there's stuff like this
+> missing we should add it to regmap.  At the minute the regmap logging is
+> via trace points rather than debug logs as you can leave them enabled
+> all the time.
+
+If such debugging is added to regmap we still need a way to enable them
+per driver (or rather regmap) to not clutter the logs.
+
+These three dev_dbg statements are extremely useful during debugging /
+development especially in combination with the other dynamic printks in
+these drivers.
+
+I'd actually prefer just keeping them for now.
+ 
+> Might also be worth moving some of the sysfs stuff to live with the
+> relevant drivers.
+
+Which attributes do you have in mind?
+
+The boost_freq and boost_ovp affect both backlight devices (i.e. cannot
+be set separately) and as such belong in the parent driver IMO.
+
+Same with the output_hvled{1..2}, output_lvled{1..5} attributes. The
+chip has four logical LEDs ("control banks") but five low-voltage output
+sinks. The five output_lvled attributes determine the mapping and as
+such belong in the parent driver. The two logical backlight devices can
+likewise be used to control either or both high-voltage outputs and
+belong in the parent driver for the same reasons.
+
+Thanks,
+Johan
