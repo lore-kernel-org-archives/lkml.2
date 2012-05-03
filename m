@@ -1,122 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab2ECO5K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:57:10 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:48076 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756215Ab2ECO5H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756793Ab2ECO5H (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 3 May 2012 10:57:07 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/ZZfUHn/vZ6XCEyDtZhfUF10Yf2r6jYsWPR8tfVh
-	l/Wt4hmMTLPT4Q
-Message-ID: <1336057018.8119.46.camel@marge.simpson.net>
-Subject: Re: [PATCH]  Re: [RFC PATCH] namespaces: fix leak on fork() failure
-From: Mike Galbraith <efault@gmx.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Louis Rilling <louis.rilling@kerlabs.com>
-Date: Thu, 03 May 2012 16:56:58 +0200
-In-Reply-To: <1336014721.7370.32.camel@marge.simpson.net>
-References: <1335604790.5995.22.camel@marge.simpson.net>
-	 <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org>
-	 <20120429165846.GA19054@redhat.com>
-	 <1335754867.17899.4.camel@marge.simpson.net>
-	 <m1zk9rmyh4.fsf@fess.ebiederm.org>
-	 <20120501134214.f6b44f4a.akpm@linux-foundation.org>
-	 <1336014721.7370.32.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57550 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755113Ab2ECO5F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 10:57:05 -0400
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: linux-kernel@vger.kernel.org
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
+Subject: [PATCH v1 0/6] reduce workqueue and timer noise
+Date: Thu,  3 May 2012 17:55:56 +0300
+Message-Id: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-03 at 05:12 +0200, Mike Galbraith wrote: 
-> On Tue, 2012-05-01 at 13:42 -0700, Andrew Morton wrote:
-> > On Tue, 01 May 2012 13:35:03 -0700
-> > ebiederm@xmission.com (Eric W. Biederman) wrote:
-> > 
-> > > 
-> > > Andrew can you please pick up this patch?
-> > 
-> > Sure.  I assume it's fixing a post-3.4 regression?  No -stable backport
-> > needed?
-> 
-> Dunno what all should go to stable, but anyone using vsftpd will
-> appreciate something going.  Large leakage was initially reported
-> against 3.1.  That was bisected to..
-> 423e0ab0 VFS : mount lock scalability for internal mounts 
-> 
-> Subsequent fixes which did not go to stable were applied..
-> 	905ad269 procfs: fix a vfsmount longterm reference leak
-> 	6f686574 ... and the same kind of leak for mqueue
-> ..but leakage persists even with fork failure hole plugged.
+Timers and work queues both provide a useful way to defer work 
+for a later time or a different context. However, when the 
+timer or work item runs, it interrupts the CPU it is running on.
+This is good if it is doing useful work, but it turns out this 
+is not always the case.
 
-> Whatever goes to stable, what fixes this little bugger should go too.
+This patch set tries to locate and address code paths where work queues
+items and timers are scheduled on CPUs where they have no useful work 
+to do and adapet them to be more selective.
 
-Finally have a decent trace, patch to fix the problem below.
+This includes:
 
-marge:~ # grep 0xffff8801fad5dff0 /trace3
-          vsftpd-18277 [003] ....  1779.012239: proc_set_super: get_pid_ns: 0xffff8801fad5dff0 count:1->2
-          vsftpd-18277 [003] ....  1779.012253: create_pid_namespace: create_pid_namespace: 0xffff8801fad5dff0
-          vsftpd-18277 [003] ....  1779.012258: alloc_pid: get_pid_ns: 0xffff8801fad5dff0 count:2->3
-          vsftpd-18277 [003] ....  1779.012278: proc_kill_sb: put_pid_ns: 0xffff8801fad5dff0 count:3->2
-     ksoftirqd/3-16    [003] ..s.  1779.012731: delayed_put_pid: put_pid_ns: 0xffff8801fad5dff0 count:2->1
-          vsftpd-18277 [003] ....  1779.015614: destroy_pid_namespace: destroy_pid_namespace: 0xffff8801fad5dff0
-          vsftpd-18277 [003] ....  1779.015614: free_nsproxy: put_pid_ns: 0xffff8801fad5dff0 count:1->0
-          vsftpd-18277 [003] ....  1779.249871: proc_set_super: get_pid_ns: 0xffff8801fad5dff0 count:1->2
-          vsftpd-18277 [003] ....  1779.249884: create_pid_namespace: create_pid_namespace: 0xffff8801fad5dff0
-          vsftpd-18277 [003] ....  1779.249888: alloc_pid: get_pid_ns: 0xffff8801fad5dff0 count:2->3
-          vsftpd-18351 [003] ....  1779.256337: switch_task_namespaces: exiting: 0xffff8801fad5dff0 count:3
-          vsftpd-18351 [003] ....  1779.266243: free_nsproxy: put_pid_ns: 0xffff8801fad5dff0 count:3->2
-<insert>
-              ps-18381 [000] ....  1779.298798: proc_fill_cache <-proc_pid_readdir
-              ps-18381 [000] ....  1779.298802: proc_pid_instantiate <-proc_fill_cache
-              ps-18381 [000] ....  1779.298802: proc_pid_make_inode <-proc_pid_instantiate
-              ps-18381 [000] ....  1779.298802: proc_alloc_inode <-alloc_inode
-              ps-18381 [000] ....  1779.298807: get_task_pid <-proc_pid_make_inode
-              ps-18381 [000] ....  1779.298807: get_pid <-get_task_pid
-</insert> ditto for other pid references added post task exit
-              ps-18381 [000] ....  1779.298807: get_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:1->2 pid_ns count:2
-              ps-18381 [001] ....  1779.327593: get_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:2->3 pid_ns count:2
-              ps-18381 [001] ....  1779.327653: get_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:3->4 pid_ns count:2
-              ps-18381 [001] ....  1779.327716: get_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:4->5 pid_ns count:2
-              ps-18381 [001] ....  1779.327804: get_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:5->6 pid_ns count:2
-              ps-18381 [001] ....  1779.327817: get_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:6->7 pid_ns count:2
-              ps-18381 [001] ....  1779.327818: put_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:7->6 pid_ns count:2
-          vsftpd-18277 [003] ....  1779.358887: put_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:6->5 pid_ns count:2
-          vsftpd-18277 [003] ....  1779.358889: put_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:5->4 pid_ns count:2
-          vsftpd-18277 [003] ....  1779.358891: put_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:4->3 pid_ns count:2
-          vsftpd-18277 [003] ....  1779.358894: put_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:3->2 pid_ns count:2
-          vsftpd-18277 [003] ....  1779.358897: put_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:2->1 pid_ns count:2
-          vsftpd-18277 [003] ....  1779.358918: proc_kill_sb: put_pid_ns: 0xffff8801fad5dff0 count:2->1
-              ps-18386 [001] ....  1779.370210: get_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:1->2 pid_ns count:1
-              ps-18386 [001] ....  1779.370240: get_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:2->3 pid_ns count:1
-              ps-18386 [001] ....  1779.370300: get_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:3->4 pid_ns count:1
-              ps-18386 [001] ....  1779.370361: get_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:4->5 pid_ns count:1
-              ps-18386 [001] ....  1779.370454: get_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:5->6 pid_ns count:1
-              ps-18386 [001] ....  1779.370467: get_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:6->7 pid_ns count:1
-              ps-18386 [001] ....  1779.370468: put_pid: pid: 0xffff8802031a2fc0 namespace: 0xffff8801fad5dff0 pid count:7->6 pid_ns count:1
-     ksoftirqd/3-16    [003] ..s.  1779.390717: delayed_put_pid: pid: 0xffff8802031a2fc0 LEAKED namespace: 0xffff8801fad5dff0
+- Introducing helper function to schedule work queue items on a subset
+  of CPUs in the system.
+- Use the helper function to schedule work items to attempt to drain
+  LRUs only on CPUs where there are LRU pages.
+- Stop running the per cpu work item that does per-cpu pages reclaim 
+  and VM statistics on CPUs that did not have any VM activity for the 
+  last second (time frame configurable) and re-start it when VM
+  activity is detected.
+- Fix a bug that prevented the timer code to to not program the 
+  underlying HW timer to fire periodically when no future timer 
+  event exists for a CPU
 
-Ok, that seems reasonable.
+Changelog:
 
-Create > 27k "leaked" namespaces, watch many thousands go away over
-time.. but many hundred persist and persist and persist.
+- The vmstat_update patch was changed to use a scapegoat CPU as
+  suggested by Christoph Lameter when the patch was previously
+  discussed in response to Frederic Weisbecker's adaptive tick 
+  patch set.
 
-Hm.  echo 3 > /proc/sys/vm/drop_caches.. *poof gone*
+Also included is a testing only patch, not intdented for mainline,
+that turns the clock source watchdog into a config option which
+I used while testing the timer code fix change.
 
-Grr.  I wonder who is doing the pinning when I don't monitor, but..
+The patch was boot tested on 32bit x86 in 8 way SMP and UP VMs.
 
-<patch>
-kick kick kick... it's dead Jim.
-</patch>
+For you reference, I keep a todo list for these and other noise sources 
+at: https://github.com/gby/linux/wiki
 
--Mike
+The git branched can be fetched from the git repo at 
+git@github.com:gby/linux.git on the reduce_workqueue_and_timers_noise_v1 
+branch
+
+Gilad Ben-Yossef (6):
+  timer: make __next_timer_interrupt explicit about no future event
+  workqueue: introduce schedule_on_each_cpu_mask
+  workqueue: introduce schedule_on_each_cpu_cond
+  mm: make lru_drain selective where it schedules work
+  mm: make vmstat_update periodic run conditional
+  x86: make clocksource watchdog configurable (not for mainline)
+
+ arch/x86/Kconfig          |    9 +++-
+ include/linux/vmstat.h    |    2 +-
+ include/linux/workqueue.h |    4 ++
+ kernel/time/clocksource.c |    2 +
+ kernel/timer.c            |   31 ++++++++++-----
+ kernel/workqueue.c        |   73 ++++++++++++++++++++++++++++++----
+ mm/swap.c                 |   25 +++++++++++-
+ mm/vmstat.c               |   95 ++++++++++++++++++++++++++++++++++++++-------
+ 8 files changed, 204 insertions(+), 37 deletions(-)
+
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Tejun Heo <tj@kernel.org>
+CC: John Stultz <johnstul@us.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Mike Frysinger <vapier@gentoo.org>
+CC: David Rientjes <rientjes@google.com>
+CC: Hugh Dickins <hughd@google.com>
+CC: Minchan Kim <minchan.kim@gmail.com>
+CC: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Christoph Lameter <cl@linux.com>
+CC: Chris Metcalf <cmetcalf@tilera.com>
+CC: Hakan Akkan <hakanakkan@gmail.com>
+CC: Max Krasnyansky <maxk@qualcomm.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-kernel@vger.kernel.org
+CC: linux-mm@kvack.org
 
