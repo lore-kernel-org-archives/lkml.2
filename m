@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755775Ab2ECNlM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 09:41:12 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:53970 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755426Ab2ECNlL (ORCPT
+	id S1755738Ab2ECNsd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 09:48:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54977 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab2ECNsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 09:41:11 -0400
-Message-ID: <4FA28AF4.1000205@boundarydevices.com>
-Date: Thu, 03 May 2012 06:41:08 -0700
-From: Eric Nelson <eric.nelson@boundarydevices.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        u-boot@lists.denx.de, rylv50@freescale.com, marex@denx.de,
-        vapier@gentoo.org
-Subject: Re: [PATCH] checkpatch: add check for whitespace before semicolon
- at end-of-line
-References: <http://lists.denx.de/pipermail/u-boot/2012-May/123595.html>	 <1336015938-3174-1-git-send-email-eric.nelson@boundarydevices.com> <1336017507.13866.2.camel@joe2Laptop>
-In-Reply-To: <1336017507.13866.2.camel@joe2Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1412:box284.bluehost.com:boundar4:boundarydevices.com} {sentby:smtp auth 68.230.116.166 authed with eric.nelson@boundarydevices.com}
+	Thu, 3 May 2012 09:48:32 -0400
+From: Andy Whitcroft <apw@canonical.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        Adrian Fita <adrian.fita@gmail.com>, Len Brown <lenb@kernel.org>,
+        Ralf Jung <ralfjung-e@gmx.de>, Paolo Scarabelli <paolo@msw.it>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] battery: only refresh the sysfs files when pertinant information changes
+Date: Thu,  3 May 2012 14:48:26 +0100
+Message-Id: <1336052907-15084-1-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20120503124708.GA18622@srcf.ucam.org>
+References: <20120503124708.GA18622@srcf.ucam.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Joe,
+We only need to regenerate the sysfs files when the capacity units
+change, avoid the update otherwise.
 
-On 05/02/2012 08:58 PM, Joe Perches wrote:
-> On Wed, 2012-05-02 at 20:32 -0700, Eric Nelson wrote:
->> This tests for a bad habits of mine like this:
->>
->> 	return 0 ;
->>
->> Signed-off-by: Eric Nelson<eric.nelson@boundarydevices.com>
->> ---
->>   scripts/checkpatch.pl |    6 ++++++
->>   1 files changed, 6 insertions(+), 0 deletions(-)
->>
->> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
->> index a3b9782..0e6977e 100755
->> --- a/scripts/checkpatch.pl
->> +++ b/scripts/checkpatch.pl
->> @@ -3227,6 +3227,12 @@ sub process {
->>   			 "Statements terminations use 1 semicolon\n" . $herecurr);
->>   		}
->>
->> +# check for whitespace before semicolon - not allowed at end-of-line
->> +		if ($line =~ /\s+;$/) {
->
-> 		if ($line =~ /\s+;\s*$/)
->
-Won't the extra space at end of line be caught by other tests?
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ drivers/acpi/battery.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
->> +		    WARN("SPACEBEFORE_SEMICOLON",
->
-> 		WARN("SPACING",
-> 	
+	Based on Matthew's feedback here is a version which optimises
+	based on the power_unit field as returned from the battery info.
+	Could someone who suffers from this issue please test this out
+	and report back.  Thanks.
+
+diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+index 86933ca..7dd3f9f 100644
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -643,11 +643,19 @@ static int acpi_battery_update(struct acpi_battery *battery)
+ 
+ static void acpi_battery_refresh(struct acpi_battery *battery)
+ {
++	int power_unit;
++
+ 	if (!battery->bat.dev)
+ 		return;
+ 
++	power_unit = battery->power_unit;
++
+ 	acpi_battery_get_info(battery);
+-	/* The battery may have changed its reporting units. */
++
++	if (power_unit == battery->power_unit)
++		return;
++
++	/* The battery has changed its reporting units. */
+ 	sysfs_remove_battery(battery);
+ 	sysfs_add_battery(battery);
+ }
+-- 
+1.7.9.5
+
