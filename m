@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab2ECJqE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 05:46:04 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38340 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755431Ab2ECJqC (ORCPT
+	id S1755123Ab2ECKAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 06:00:49 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:37775 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450Ab2ECKAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 05:46:02 -0400
-Date: Thu, 3 May 2012 02:44:38 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 0/3] vmevent: Implement 'low memory' attribute
-Message-ID: <20120503094438.GA17744@lizard>
-References: <20120501132409.GA22894@lizard>
- <CAOJsxLGxKdDnw6RU=1C3VVrwZJ53k_r6gOddYkjxQxjc1-kRXg@mail.gmail.com>
+	Thu, 3 May 2012 06:00:48 -0400
+Date: Thu, 3 May 2012 12:00:40 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [patch V2 22/31] s390: Use generic init_task
+Message-ID: <20120503100040.GA4162@osiris.boeblingen.de.ibm.com>
+References: <20120503083859.991965503@linutronix.de>
+ <20120503085035.271439530@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOJsxLGxKdDnw6RU=1C3VVrwZJ53k_r6gOddYkjxQxjc1-kRXg@mail.gmail.com>
+In-Reply-To: <20120503085035.271439530@linutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12050310-0342-0000-0000-000001973211
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 11:10:12AM +0300, Pekka Enberg wrote:
-> On Tue, May 1, 2012 at 4:24 PM, Anton Vorontsov
-> <anton.vorontsov@linaro.org> wrote:
-> > Accounting only free pages is very inaccurate for low memory handling,
-> > so we have to be smarter here.
+On Thu, May 03, 2012 at 09:02:58AM -0000, Thomas Gleixner wrote:
+> Same code. Use the generic version. The special Makefile treatment is
+> pointless anyway as init_task.o contains only data which is handled by
+> the linker script. So no point on being treated like head text.
 > 
-> Can you elaborate on what kind of problems there are with tracking free pages?
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-Well, there's no problem with tracking itself, the word 'inaccurate'
-was probably misleading. Tracking just free pages is inaccurate for
-our "low memory" notification needs, but NR_FREE_PAGES tracking
-itself is fine.
+Acked-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-The thing is that NR_FREE_PAGES accounts only completely unused
-(wasted) pages. Most of the time we have very low NR_FREE_PAGES,
-and lots of page cache and block buffers (i.e. NR_FILE_PAGES).
-
-The file pages are easily reclaimable (except shmem/tmpfs and
-locked pages), so file pages may be considered as "somewhat
-free" pages.
-
-The cache might contain very stale data (or not), so we have to
-maneuver between the two strategies: sacrifice caches, or start
-freeing memory (which prevents caches draining).
-
-The strategy is described in the third patch in the series.
-It might be not ideal, but the logic itself is not part of
-the ABI (this is very similar "not ABI" rules as we have for
-OOM scoring logic), and is subject for changes.
-
-Thanks,
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
