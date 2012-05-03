@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758939Ab2ECXVe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 19:21:34 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:48001 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756385Ab2ECXVc convert rfc822-to-8bit (ORCPT
+	id S1758993Ab2ECXXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 19:23:17 -0400
+Received: from 184-106-247-128.static.cloud-ips.com ([184.106.247.128]:48446
+	"EHLO cloud01.chad-versace.us" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756808Ab2ECXXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 19:21:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1205031454400.1631@chino.kir.corp.google.com>
-References: <20120427161146.95422142968526faaff615d4@canb.auug.org.au>
-	<4F9ABF9C.2070707@xenotime.net>
-	<alpine.DEB.2.00.1204271141040.28516@chino.kir.corp.google.com>
-	<20120427132343.fbb443b9.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1204271420350.4631@chino.kir.corp.google.com>
-	<20120427143646.8209627e.akpm@linux-foundation.org>
-	<87fwbnag6u.fsf@skywalker.in.ibm.com>
-	<alpine.DEB.2.00.1205030208120.21476@chino.kir.corp.google.com>
-	<CABEgKgqWo=b=o7PwOLc=QqCWXQxUaYvMX99GP9cR_Y-RoTEW3g@mail.gmail.com>
-	<alpine.DEB.2.00.1205031343300.1631@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1205031454400.1631@chino.kir.corp.google.com>
-Date: Fri, 4 May 2012 08:21:31 +0900
-Message-ID: <CABEgKgrkQ=asB2WExQb1KTd1MyoWDwJCO2_u2cJC4toEUa3C4g@mail.gmail.com>
-Subject: Re: inux-next: Tree for Apr 27 (uml + mm/memcontrol.c)
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 May 2012 19:23:16 -0400
+X-Greylist: delayed 461 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 May 2012 19:23:16 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -2.9
+Date: Thu, 3 May 2012 16:15:27 -0700
+From: Ben Widawsky <ben@bwidawsk.net>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>, dri-devel@lists.freedesktop.org
+Subject: Re: i915_driver_irq_handler: irq 42: nobody cared
+Message-ID: <20120503161527.655b48f9@bwidawsk.net>
+In-Reply-To: <20120503145422.0214a3ad@jbarnes-desktop>
+References: <20120409101119.47e770b2@jbarnes-desktop>
+	<4F83F3B5.8080704@suse.cz>
+	<20120410092619.26a15165@jbarnes-desktop>
+	<4F8477D1.4080102@suse.cz>
+	<20120410113448.540e4c1d@jbarnes-desktop>
+	<4F848F88.7060009@suse.cz>
+	<20120410203212.GN4115@phenom.ffwll.local>
+	<20120410133411.52dc52ed@jbarnes-desktop>
+	<20120411104012.GI4296@phenom.ffwll.local>
+	<4FA2E2D8.5050303@suse.cz>
+	<20120503211537.GN4983@phenom.ffwll.local>
+	<4FA2F592.1040104@suse.cz>
+	<20120503145422.0214a3ad@jbarnes-desktop>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 4, 2012 at 6:57 AM, David Rientjes <rientjes@google.com> wrote:
-> On Thu, 3 May 2012, David Rientjes wrote:
->
->> Is this a claim that memory-intensive workloads will have the exact same
->> performance with and without memcg enabled?
->
-> I've just run specjbb2005 three times on my system both with and without
-> cgroup_disable=memory on the command line and it is consistently 1% faster
-> without memcg.
-Hm, ok. Where is that overheads from ? Do you have perf output ?
-I'll need to check what is bad.
+On Thu, 3 May 2012 14:54:22 -0700
+Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
 
-> If I add XX:+UseLargePages to the command line to use
-> hugepages it's even larger.  So why must I incur this performance
-> degradation if I simply want to control who may mmap hugepages out of the
-> global pool?
+> On Thu, 03 May 2012 23:16:02 +0200
+> Jiri Slaby <jslaby@suse.cz> wrote:
+> 
+> > On 05/03/2012 11:15 PM, Daniel Vetter wrote:
+> > >>> Shot in the dark, let's disable msi a bit. Can you try the below patch?
+> > >>
+> > >> Yeah, no IRQ_NONE at the end of i915_driver_irq_handler now. So MSI is
+> > >> busted, either in the card, the chipset or the kernel. Any idea how to
+> > >> find out?
+> > > 
+> > > Ok, so MSI is busted. Can you please paste lspci -nn for you intel gpu?
+> > 
+> > Sure:
+> > 00:02.0 VGA compatible controller [0300]: Intel Corporation 82G33/G31
+> > Express Integrated Graphics Controller [8086:29c2] (rev 02)
+> 
+> Ok nevermind about the INTx-; now I'm not sure if it means anything or
+> not in an MSI context (the spec doesn't require it, but I thought our
+> devices would toggle it if they were sending interrupts).
+> 
+> But since line level works for you I guess it's ok to blacklist your
+> chipset until we poke some hw folks internally about this.
+> 
+> Thanks,
 
-Is that common use case ? If he wants to do some resource control,
-common users will limit usual memory, too. That kinds of too much flexibility
-makes cgroup complicated, hard-to-use.
+I occassionally see missed IRQ on 16 (which is my USB) but it has only
+started showing up in fairly recent dinq (haven't tried Linus') kernels
+(I'd been using this laptop for over a year).
 
-Thanks,
--Kame
+
+-- 
+Ben Widawsky, Intel Open Source Technology Center
