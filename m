@@ -1,90 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758886Ab2ECWOP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 18:14:15 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64033 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756469Ab2ECWON convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758864Ab2ECWON (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 3 May 2012 18:14:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38242 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754455Ab2ECWOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 18:14:12 -0400
+Date: Thu, 3 May 2012 15:14:09 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.4-rc4 oom killer out of control.
+In-Reply-To: <alpine.DEB.2.00.1204261437470.28376@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1205031513400.1631@chino.kir.corp.google.com>
+References: <20120426193551.GA24968@redhat.com> <alpine.DEB.2.00.1204261437470.28376@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <201205032129.41611.rjw@sisk.pl>
-References: <201202070200.55505.rjw@sisk.pl>
-	<CAMP5Xgeq2y+dcifY7tkuQVgUSpzrLHXsPpHBq+7zu=mE+wD0Ng@mail.gmail.com>
-	<201204272334.04387.rjw@sisk.pl>
-	<201205032129.41611.rjw@sisk.pl>
-Date: Thu, 3 May 2012 15:14:12 -0700
-Message-ID: <CAMP5XgdC6Tzhxi4kD7XgDqptY3D4ykfFyvEyAOtKhHTW8rFCwg@mail.gmail.com>
-Subject: Re: [PATCH 0/2]: Kconfig options for wakelocks limit and gc (was: Re:
- [RFC][PATCH 8/8] PM / Sleep: Add user space ...)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: NeilBrown <neilb@suse.de>, John Stultz <johnstul@us.ibm.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 3, 2012 at 12:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Friday, April 27, 2012, Rafael J. Wysocki wrote:
->> On Friday, April 27, 2012, Arve Hjønnevåg wrote:
->> > 2012/4/27 Rafael J. Wysocki <rjw@sisk.pl>:
->> > > On Friday, April 27, 2012, Arve Hjønnevåg wrote:
->> > >> 2012/4/26 Rafael J. Wysocki <rjw@sisk.pl>:
->> > >> ...
->> > >> > ---
->> > >> > From: Rafael J. Wysocki <rjw@sisk.pl>
->> > >> > Subject: PM / Sleep: Add user space interface for manipulating wakeup sources, v3
->> > >> >
->> > >> > Android allows user space to manipulate wakelocks using two
->> > >> > sysfs file located in /sys/power/, wake_lock and wake_unlock.
->> > >> > Writing a wakelock name and optionally a timeout to the wake_lock
->> > >> > file causes the wakelock whose name was written to be acquired (it
->> > >> > is created before is necessary), optionally with the given timeout.
->> > >> > Writing the name of a wakelock to wake_unlock causes that wakelock
->> > >> > to be released.
->> > >> >
->> > >> > Implement an analogous interface for user space using wakeup sources.
->> > >> > Add the /sys/power/wake_lock and /sys/power/wake_unlock files
->> > >> > allowing user space to create, activate and deactivate wakeup
->> > >> > sources, such that writing a name and optionally a timeout to
->> > >> > wake_lock causes the wakeup source of that name to be activated,
->> > >> > optionally with the given timeout.  If that wakeup source doesn't
->> > >> > exist, it will be created and then activated.  Writing a name to
->> > >> > wake_unlock causes the wakeup source of that name, if there is one,
->> > >> > to be deactivated.  Wakeup sources created with the help of
->> > >> > wake_lock that haven't been used for more than 5 minutes are garbage
->> > >> > collected and destroyed.  Moreover, there can be only WL_NUMBER_LIMIT
->> > >>
->> > >> I think it would be better if the garbage collection and limit was
->> > >> configurable and optional. I would probably turn both features off
->> > >> since I do not want to chase down bugs because a wakelock was ignored,
->> > >> and I think the garbage collection will erase stats that we care
->> > >> about.
->> > >
->> > > OK, but would you mind if I added the configurability as a separate incremental
->> > > patch?
->> > >
->> >
->> > That is fine with me.
->>
->> Cool, thanks!
->
-> The following two patches add the configuration options for the limit and
-> garbage collector.  Please let me know if they are OK with you.
->
+On Thu, 26 Apr 2012, David Rientjes wrote:
 
-Yes.
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -410,12 +410,13 @@ static const struct file_operations proc_lstats_operations = {
+>  
+>  static int proc_oom_score(struct task_struct *task, char *buffer)
+>  {
+> +	unsigned long totalpages = totalram_pages + total_swap_pages;
+>  	unsigned long points = 0;
+>  
+>  	read_lock(&tasklist_lock);
+>  	if (pid_alive(task))
+> -		points = oom_badness(task, NULL, NULL,
+> -					totalram_pages + total_swap_pages);
+> +		points = oom_badness(task, NULL, NULL, totalpages) *
+> +						1000 / totalpages;
+>  	read_unlock(&tasklist_lock);
+>  	return sprintf(buffer, "%lu\n", points);
+>  }
+> diff --git a/include/linux/oom.h b/include/linux/oom.h
+> index 3d76475..e4c29bc 100644
+> --- a/include/linux/oom.h
+> +++ b/include/linux/oom.h
+> @@ -43,8 +43,9 @@ enum oom_constraint {
+>  extern void compare_swap_oom_score_adj(int old_val, int new_val);
+>  extern int test_set_oom_score_adj(int new_val);
+>  
+> -extern unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+> -			const nodemask_t *nodemask, unsigned long totalpages);
+> +extern unsigned long oom_badness(struct task_struct *p,
+> +		struct mem_cgroup *memcg, const nodemask_t *nodemask,
+> +		unsigned long totalpages);
+>  extern int try_set_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
+>  extern void clear_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
+>  
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 46bf2ed5..4bbf085 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -180,10 +180,10 @@ static bool oom_unkillable_task(struct task_struct *p,
+>   * predictable as possible.  The goal is to return the highest value for the
+>   * task consuming the most memory to avoid subsequent oom failures.
+>   */
+> -unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+> -		      const nodemask_t *nodemask, unsigned long totalpages)
+> +unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+> +			  const nodemask_t *nodemask, unsigned long totalpages)
+>  {
+> -	long points;
+> +	unsigned long points;
+>  
+>  	if (oom_unkillable_task(p, memcg, nodemask))
+>  		return 0;
+> @@ -198,45 +198,33 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+>  	}
+>  
+>  	/*
+> -	 * The memory controller may have a limit of 0 bytes, so avoid a divide
+> -	 * by zero, if necessary.
+> -	 */
+> -	if (!totalpages)
+> -		totalpages = 1;
+> -
+> -	/*
+>  	 * The baseline for the badness score is the proportion of RAM that each
+>  	 * task's rss, pagetable and swap space use.
+>  	 */
+> -	points = get_mm_rss(p->mm) + p->mm->nr_ptes;
+> -	points += get_mm_counter(p->mm, MM_SWAPENTS);
+> -
+> -	points *= 1000;
+> -	points /= totalpages;
+> +	points = get_mm_rss(p->mm) + p->mm->nr_ptes +
+> +		 get_mm_counter(p->mm, MM_SWAPENTS);
+>  	task_unlock(p);
+>  
+>  	/*
+>  	 * Root processes get 3% bonus, just like the __vm_enough_memory()
+>  	 * implementation used by LSMs.
+>  	 */
+> -	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+> -		points -= 30;
+> +	if (has_capability_noaudit(p, CAP_SYS_ADMIN) && totalpages)
+> +		points -= 30 * totalpages / 1000;
+>  
+>  	/*
+>  	 * /proc/pid/oom_score_adj ranges from -1000 to +1000 such that it may
+>  	 * either completely disable oom killing or always prefer a certain
+>  	 * task.
+>  	 */
+> -	points += p->signal->oom_score_adj;
+> +	points += p->signal->oom_score_adj * totalpages / 1000;
+>  
+>  	/*
+>  	 * Never return 0 for an eligible task that may be killed since it's
+>  	 * possible that no single user task uses more than 0.1% of memory and
+>  	 * no single admin tasks uses more than 3.0%.
+>  	 */
+> -	if (points <= 0)
+> -		return 1;
+> -	return (points < 1000) ? points : 1000;
+> +	return points <= 0 ? 1 : points;
+>  }
+>  
+>  /*
+> @@ -314,7 +302,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+>  {
+>  	struct task_struct *g, *p;
+>  	struct task_struct *chosen = NULL;
+> -	*ppoints = 0;
+> +	unsigned long chosen_points = 0;
+>  
+>  	do_each_thread(g, p) {
+>  		unsigned int points;
+> @@ -354,7 +342,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+>  			 */
+>  			if (p == current) {
+>  				chosen = p;
+> -				*ppoints = 1000;
+> +				chosen_points = ULONG_MAX;
+>  			} else if (!force_kill) {
+>  				/*
+>  				 * If this task is not being ptraced on exit,
+> @@ -367,12 +355,13 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+>  		}
+>  
+>  		points = oom_badness(p, memcg, nodemask, totalpages);
+> -		if (points > *ppoints) {
+> +		if (points > chosen_points) {
+>  			chosen = p;
+> -			*ppoints = points;
+> +			chosen_points = points;
+>  		}
+>  	} while_each_thread(g, p);
+>  
+> +	*ppoints = chosen_points * 1000 / totalpages;
+>  	return chosen;
+>  }
+>  
 
--- 
-Arve Hjønnevåg
+Dave, did you get a chance to test this out?  It's something we'll want in 
+the oom killer so if I can add your Tested-by it would be great.  Thanks!
