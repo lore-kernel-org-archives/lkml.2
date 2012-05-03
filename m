@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758315Ab2ECT2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 15:28:36 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:47184 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755347Ab2ECT2f (ORCPT
+	id S1758340Ab2ECT32 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 15:29:28 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:51972 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755395Ab2ECT30 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 15:28:35 -0400
-Date: Thu, 3 May 2012 21:28:24 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V1 0/5] Rationalize time keeping
-Message-ID: <20120503192823.GA5711@netboy.at.omicron.at>
-References: <cover.1335510125.git.richardcochran@gmail.com>
- <4F9B228F.90903@linaro.org>
- <20120503182128.GB2254@netboy.at.omicron.at>
- <4FA2D21D.6010805@linaro.org>
+	Thu, 3 May 2012 15:29:26 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
+Subject: [PATCH 0/2]: Kconfig options for wakelocks limit and gc (was: Re: [RFC][PATCH 8/8] PM / Sleep: Add user space ...)
+Date: Thu, 3 May 2012 21:29:41 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: NeilBrown <neilb@suse.de>, John Stultz <johnstul@us.ibm.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+References: <201202070200.55505.rjw@sisk.pl> <CAMP5Xgeq2y+dcifY7tkuQVgUSpzrLHXsPpHBq+7zu=mE+wD0Ng@mail.gmail.com> <201204272334.04387.rjw@sisk.pl>
+In-Reply-To: <201204272334.04387.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA2D21D.6010805@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201205032129.41611.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 11:44:45AM -0700, John Stultz wrote:
-> But the changes you make to getnstimeofday() still needs to happen
-> in the vDSO code. The vDSO code basically implements
-> getnstimeofday() in userland.
+On Friday, April 27, 2012, Rafael J. Wysocki wrote:
+> On Friday, April 27, 2012, Arve Hjønnevåg wrote:
+> > 2012/4/27 Rafael J. Wysocki <rjw@sisk.pl>:
+> > > On Friday, April 27, 2012, Arve Hjønnevåg wrote:
+> > >> 2012/4/26 Rafael J. Wysocki <rjw@sisk.pl>:
+> > >> ...
+> > >> > ---
+> > >> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > >> > Subject: PM / Sleep: Add user space interface for manipulating wakeup sources, v3
+> > >> >
+> > >> > Android allows user space to manipulate wakelocks using two
+> > >> > sysfs file located in /sys/power/, wake_lock and wake_unlock.
+> > >> > Writing a wakelock name and optionally a timeout to the wake_lock
+> > >> > file causes the wakelock whose name was written to be acquired (it
+> > >> > is created before is necessary), optionally with the given timeout.
+> > >> > Writing the name of a wakelock to wake_unlock causes that wakelock
+> > >> > to be released.
+> > >> >
+> > >> > Implement an analogous interface for user space using wakeup sources.
+> > >> > Add the /sys/power/wake_lock and /sys/power/wake_unlock files
+> > >> > allowing user space to create, activate and deactivate wakeup
+> > >> > sources, such that writing a name and optionally a timeout to
+> > >> > wake_lock causes the wakeup source of that name to be activated,
+> > >> > optionally with the given timeout.  If that wakeup source doesn't
+> > >> > exist, it will be created and then activated.  Writing a name to
+> > >> > wake_unlock causes the wakeup source of that name, if there is one,
+> > >> > to be deactivated.  Wakeup sources created with the help of
+> > >> > wake_lock that haven't been used for more than 5 minutes are garbage
+> > >> > collected and destroyed.  Moreover, there can be only WL_NUMBER_LIMIT
+> > >>
+> > >> I think it would be better if the garbage collection and limit was
+> > >> configurable and optional. I would probably turn both features off
+> > >> since I do not want to chase down bugs because a wakelock was ignored,
+> > >> and I think the garbage collection will erase stats that we care
+> > >> about.
+> > >
+> > > OK, but would you mind if I added the configurability as a separate incremental
+> > > patch?
+> > >
+> > 
+> > That is fine with me.
 > 
-> If you're code is trying to make it so that the leap-second is
-> properly handled at the second boundary instead of the tick
-> boundary, there must me some change needed to the vDSO, since the
-> vDSO code is updated only each tick. Otherwise how can you enforce
-> the leap after the second boundary but before the tick?
+> Cool, thanks!
 
-Yeah, so the vDSO does the sub-tick interpolation, and this can easily
-miss an inserted leap second for a while (just like the current code).
+The following two patches add the configuration options for the limit and
+garbage collector.  Please let me know if they are OK with you.
 
-So, this patch series as it stands improves the users of the
-traditional syscalls without hurting the superduper vDSO performance
-at all. The vDSO leap second time errors are not fixed, but they are
-also no worse than today, either.
+Thanks,
+Rafael
 
-I am try to say that, even if there is resistance to adding code in
-the vDSO path for reasons of performance, that doesn't necessarily
-mean that we cannot fix the leap second for the tradition syscall
-case.
-
-Richard
