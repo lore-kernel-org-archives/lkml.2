@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab2ECFq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 01:46:59 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:34020 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab2ECFq6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 01:46:58 -0400
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1] sched: steer waking task to empty cfs_rq for better latencies
-In-Reply-To: <20120502140117.GC22740@linux.vnet.ibm.com>
-References: <20120424165619.GA28701@linux.vnet.ibm.com> <1335286696.28150.206.camel@twins> <1335287354.28150.209.camel@twins> <20120502140117.GC22740@linux.vnet.ibm.com>
-User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
-Date: Thu, 03 May 2012 11:13:24 +0530
-Message-ID: <87mx5px1j7.fsf@linux.vnet.ibm.com>
+	id S1752840Ab2ECFt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 01:49:57 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:38677 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355Ab2ECFt4 (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Thu, 3 May 2012 01:49:56 -0400
+Message-ID: <4FA21C66.1030009@suse.com>
+Date: Thu, 03 May 2012 11:19:26 +0530
+From: Suresh Jayaraman <sjayaraman@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain
-x-cbid: 12050305-8256-0000-0000-00000238CA9B
+To: Jeff Layton <jlayton@redhat.com>
+CC: Steve French <smfrench@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ian Kent <raven@themaw.net>, linux-cifs@vger.kernel.org,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cifs - check S_AUTOMOUNT in revalidate
+References: <20120427081815.4478.26011.stgit@perseus.themaw.net> <CA+55aFwx-vCQcbU5pKcRxFm1uJmjrT_OafTTMx026idX+H1oJg@mail.gmail.com> <CAH2r5mvd9PFZ5sxC+QLNObX23qWpJkUNdQmS_aqYA++zxueT6w@mail.gmail.com> <4FA11E59.9050004@suse.com> <20120502135044.6d815e62@tlielax.poochiereds.net>
+In-Reply-To: <20120502135044.6d815e62@tlielax.poochiereds.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 May 2012 19:31:17 +0530, Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> wrote:
-> * Peter Zijlstra <peterz@infradead.org> [2012-04-24 19:09:14]:
+On 05/02/2012 11:20 PM, Jeff Layton wrote:
+> On Wed, 02 May 2012 17:15:29 +0530
+> Suresh Jayaraman <sjayaraman@suse.com> wrote:
 > 
-> > On Tue, 2012-04-24 at 18:58 +0200, Peter Zijlstra wrote:
-> > > On Tue, 2012-04-24 at 22:26 +0530, Srivatsa Vaddagiri wrote:
-> > > > Steer a waking task towards a cpu where its cgroup has zero tasks (in
-> > > > order to provide it better sleeper credits and hence reduce its wakeup
-> > > > latency). 
-> > > 
-> > > That's just vile.. pjt could you post your global vruntime stuff so
-> > > vatsa can have a go at that?
-> > 
-> > That is, you're playing a deficiency we should fix, not exploit.
-> > 
-> > Also, you do a second loop over all those cpus right after we've already
-> > iterated them..
-> > 
-> > furthermore, that 100%+ gain is still way insane, what else is broken?
-> > Did you try those paravirt tlb-flush patches and other such weirdness?
+>> On 04/28/2012 09:03 AM, Steve French wrote:
+>>> The fix makes sense, but it is fairly recent and I haven't had a
+>>> chance to try it,
+>>> so unless a new release is imminent, I would prefer to put in the next merge
+>>> request (I have at least one more fix likely as well) next week.
+>>
+>> We need this fix for -stable as well, right? Please include
+>>
+>>    Cc: stable@vger.kernel.org
 > 
-> I got around to try pv-tlb-flush patches and it showed >100%
-> improvement for sysbench (without the balance-on-wake patch on host). This
-> was what readprofile showed (when pv-tlb-flush patches were absent in
-> guest):
+> The stable-kernel-rules.txt file says this:
 > 
-> 1135704 total                                   0.3265
-> 636737 native_cpuid                             18192.4857
-> 283201 __bitmap_empty                           2832.0100
-> 137853 flush_tlb_others_ipi                     569.6405
+>  - It must fix a real bug that bothers people (not a, "This could be a
+>    problem..." type thing).
 > 
-> I will try out how much they help Trade workload (which got me started
-> on this originally) and report back (part of the problem in trying out
-> is that pv-tlb-flush platches are throwing wierd problems - which Nikunj
-> is helping investigate). 
-> 
-A bug, the below patch should cure it. kvm_mmu_flush_tlb will queue the
-request, but we have already passed the phase of checking that. I will
-fold this in my next version.
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 6c42056..b114411 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1550,7 +1550,7 @@ static void kvm_set_vcpu_state(struct kvm_vcpu *vcpu)
- 
-        vs->state = 1;
-        if (vs->flush_on_enter) {
--               kvm_mmu_flush_tlb(vcpu);
-+               kvm_x86_ops->tlb_flush(vcpu);
-                vs->flush_on_enter = 0;
-        }
- 
+Doh, looks like I had assumed (wrongly) that this fixes the problem
+reported here
 
+   http://marc.info/?l=linux-cifs&m=133460168320472&w=2
+
+(mapping to a dfsroot and cd to a reflink returning "Object is remote"
+or "Not a directory" error). I didn't have a setup to verify it too.
+
+I notice that Steve has already merged this patch adding Cc to stable
+and the Cc has to be removed before sending the pull request.
+
+
+Suresh
