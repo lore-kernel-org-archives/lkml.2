@@ -1,93 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab2ECOqa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:46:30 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52689 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757035Ab2ECOqR (ORCPT
+	id S1754054Ab2ECOrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:47:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61400 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754842Ab2ECOrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:46:17 -0400
-Date: Thu, 3 May 2012 16:46:09 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>, shawn.guo@linaro.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>, Nicolas Pitre <nico@fluxnic.net>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: Making ARM multiplatform kernels DT-only?
-Message-ID: <20120503144609.GK4141@pengutronix.de>
-References: <201205031350.35476.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201205031350.35476.arnd@arndb.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 16:27:34 up 172 days, 22:14, 85 users,  load average: 4.28, 3.27,
- 1.76
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 3 May 2012 10:47:12 -0400
+Subject: Re: [PATCH 09/13] perf target: Introduce perf_target_errno
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
+In-Reply-To: <20120502185913.GE5745@infradead.org>
+References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
+	 <1335417327-11796-10-git-send-email-namhyung.kim@lge.com>
+	 <20120502185913.GE5745@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 May 2012 23:47:05 +0900
+Message-ID: <1336056425.1493.24.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 01:50:35PM +0000, Arnd Bergmann wrote:
-> Hi everyone,
-> 
-> I've been discussing multiplatform kernels with a few people recently,
-> and we will have a lot of discussion sessions about this at Linaro
-> Connect in Hong Kong.
-> 
-> One question that came up repeatedly is whether we should support all
-> possible board files for each platform in a multiplatform kernel,
-> or just the ones that are already using DT probing. I would like
-> to get a quick poll of opinions on that and I've tried to put those
-> people on Cc that would be most impacted by this, i.e. the maintainers
-> for platforms that have both DT and non-DT board files at the moment.
-> 
-> My feeling is that we should just mandate DT booting for multiplatform
-> kernels, because it significantly reduces the combinatorial space
-> at compile time, avoids a lot of legacy board files that we cannot
-> test anyway, reduces the total kernel size and gives an incentive
-> for people to move forward to DT with their existing boards.
-> 
-> The counterargument is that we won't be able to support all the
-> boards we currently do when the user switches on multiplatform,
-> but I think that is acceptable.
-> Note that I would still want to allow users to build platforms
-> separately in order to enable the ATAG style board files, even
-> for platforms that are not multiplatform capable.
-> 
-> Other opinions?
+Hi,
 
-I don't think that enforcing DT only in multiplatform kernels will speed
-up porting to DT. As a platform maintainer I am interested in building
-multiplatform Kernels, but our customers are mostly uninterested in
-this. They probably disable other platforms anyway to save the binary space.
+2012-05-02 (수), 15:59 -0300, Arnaldo Carvalho de Melo:
+> Em Thu, Apr 26, 2012 at 02:15:23PM +0900, Namhyung Kim escreveu:
+> > The perf_target_errno enumerations are used to indicate
+> > specific error cases on perf target operations. It'd
+> > help libperf being a more generic library.
+> > 
+> > Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> > Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+> > +	/* UID and SYSTEM are mutually exclusive */
+> > +	if (target->uid_str && target->system_wide) {
+> > +		target->system_wide = false;
+> > +		if (ret == PERF_TARGET__SUCCESS)
+> > +			ret = PERF_TARGET__UID_OVERRIDE_SYSTEM;
+> > +	}
+> > +
+> > +	return ret;
+> >  }
+> > diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
+> > index 1348065ada5e..c3914c8a9890 100644
+> > --- a/tools/perf/util/target.h
+> > +++ b/tools/perf/util/target.h
+> > @@ -12,6 +12,24 @@ struct perf_target {
+> >  	bool	     system_wide;
+> >  };
+> >  
+> > -void perf_target__validate(struct perf_target *target);
+> > +enum perf_target_errno {
+> > +	/*
+> > +	 * XXX: Just choose an arbitrary big number standard errno can't have
+> 
+> Here I think its better for us to use _negative_ big numbers, because
+> according to:
+> 
+> http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/errno.h.html
+> 
+> <quote>
+> Issue 6
+> 
+> The following new requirements on POSIX implementations derive from
+> alignment with the Single UNIX Specification:
+> 
+> The majority of the error conditions previously marked as extensions are
+> now mandatory, except for the STREAMS-related error conditions.
+> 
+> Values for errno are now required to be distinct positive values rather
+> than non-zero values. This change is for alignment with the ISO/IEC
+> 9899:1999 standard.
+> </quote>
+> 
+> So system errno range is all positive, since our error enumeration is a
+> superset of the system one, using negative values won't ever clash.
+> 
+> Also it would be better to have it as PERF_ERRNO__PID_OVERRIDE_CPU, etc.
+> 
+> Agreed?
+> 
 
-So unless there are real technical problems supporting DT and !DT in a
-single kernel (and Russells answer seems to say there aren't) I say no
-to creating this restriction.
+Agreed and thanks for the info. Will change the name of error constants
+too.
 
-Sascha
+Thanks,
+Namhyung
+
+
+> Anybody else with reasons not to use this ernno range scheme?
+> 
+> Ingo?
+> 
+> - Arnaldo
+> 
+> > +	 */
+> > +	__PERF_TARGET__ERRNO_START		= 0x10000,
+> > +
+> > +	PERF_TARGET__SUCCESS			= __PERF_TARGET__ERRNO_START,
+> > +
+> > +	/* for perf_target__validate() */
+> > +	PERF_TARGET__PID_OVERRIDE_CPU,
+> > +	PERF_TARGET__PID_OVERRIDE_UID,
+> > +	PERF_TARGET__UID_OVERRIDE_CPU,
+> > +	PERF_TARGET__PID_OVERRIDE_SYSTEM,
+> > +	PERF_TARGET__UID_OVERRIDE_SYSTEM,
+> > +
+> > +	__PERF_TARGET__ERRNO_END
+> > +};
+> > +
+> > +enum perf_target_errno perf_target__validate(struct perf_target *target);
+> >  
+> >  #endif /* _PERF_TARGET_H */
+> > -- 
+> > 1.7.10
+
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Regards,
+Namhyung Kim
+
+
