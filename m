@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab2ECPmX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 11:42:23 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:36697 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312Ab2ECPmW (ORCPT
+	id S1757586Ab2ECPnV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 11:43:21 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:42195 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756624Ab2ECPnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 11:42:22 -0400
-Date: Thu, 3 May 2012 08:41:40 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
-Subject: Re: rcu: BUG on exit_group
-Message-ID: <20120503154140.GA2592@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+1xoqd_z8Zavzraq1oXVRpwkJRoac57tojBYf7x=Kzs+cbJ_w@mail.gmail.com>
+	Thu, 3 May 2012 11:43:19 -0400
+Date: Thu, 3 May 2012 17:44:23 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: DRI Development <dri-devel@lists.freedesktop.org>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PULL] drm-intel-fixes
+Message-ID: <20120503154423.GK4983@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+1xoqd_z8Zavzraq1oXVRpwkJRoac57tojBYf7x=Kzs+cbJ_w@mail.gmail.com>
+X-Operating-System: Linux phenom 3.2.0-2-amd64
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12050315-4242-0000-0000-0000018B3785
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 10:57:19AM +0200, Sasha Levin wrote:
-> Hi Paul,
-> 
-> I've hit a BUG similar to the schedule_tail() one when. It happened
-> when I've started fuzzing exit_group() syscalls, and all of the traces
-> are starting with exit_group() (there's a flood of them).
-> 
-> I've verified that it indeed BUGs due to the rcu preempt count.
+Hi Dave,
 
-Hello, Sasha,
+One more regression fix and a 3 small patches:
+- Paulo fixed the hdmi infoframe regression on gm45 introduced in 3.2 by
+  Jesse.
+- snb/ilk has a nice debug register where the hw can tell us when it
+  dropped writes and we've added a WARN in 3.4 when this happens. This
+  caught code which shouldn't run on gen6+, the two patches by Chris fix
+  this. No known bad side-effects besides the WARN backtrace (and in a
+  way, not really a regression fix, but still).
+- Fix up 2 broken no-lvds quirks added in 3.4 - I've figured shipping with
+  broken quirk entries is pointless, and these are easily revertable.
 
-Which version of -next are you using?  I did some surgery on this
-yesterday based on some bugs Hugh Dickins tracked down, so if you
-are using something older, please move to the current -next.
+Yours, Daniel
 
-						Thanx, Paul
+The following changes since commit 69964ea4c7b68c9399f7977aa5b9aa6539a6a98a:
 
-> Here's one of the BUG()s:
-> 
-> [   83.820976] BUG: sleeping function called from invalid context at
-> kernel/mutex.c:269
-> [   83.827870] in_atomic(): 0, irqs_disabled(): 0, pid: 4506, name: trinity
-> [   83.832154] 1 lock held by trinity/4506:
-> [   83.834224]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff811a7d87>]
-> munlock_vma_page+0x197/0x200
-> [   83.839310] Pid: 4506, comm: trinity Tainted: G        W
-> 3.4.0-rc5-next-20120503-sasha-00002-g09f55ae-dirty #108
-> [   83.849418] Call Trace:
-> [   83.851182]  [<ffffffff810e7218>] __might_sleep+0x1f8/0x210
-> [   83.854076]  [<ffffffff82d9540a>] mutex_lock_nested+0x2a/0x50
-> [   83.857120]  [<ffffffff811b0830>] try_to_unmap_file+0x40/0x2f0
-> [   83.860242]  [<ffffffff82d984bb>] ? _raw_spin_unlock_irq+0x2b/0x80
-> [   83.863423]  [<ffffffff810e7ffe>] ? sub_preempt_count+0xae/0xf0
-> [   83.866347]  [<ffffffff82d984e9>] ? _raw_spin_unlock_irq+0x59/0x80
-> [   83.869570]  [<ffffffff811b0caa>] try_to_munlock+0x6a/0x80
-> [   83.872667]  [<ffffffff811a7cc6>] munlock_vma_page+0xd6/0x200
-> [   83.875646]  [<ffffffff811a7d87>] ? munlock_vma_page+0x197/0x200
-> [   83.878798]  [<ffffffff811a7e7f>] munlock_vma_pages_range+0x8f/0xd0
-> [   83.882235]  [<ffffffff811a8b8a>] exit_mmap+0x5a/0x160
-> [   83.884880]  [<ffffffff810ba23b>] ? exit_mm+0x10b/0x130
-> [   83.887508]  [<ffffffff8111d8ea>] ? __lock_release+0x1ba/0x1d0
-> [   83.890399]  [<ffffffff810b4fe1>] mmput+0x81/0xe0
-> [   83.892966]  [<ffffffff810ba24b>] exit_mm+0x11b/0x130
-> [   83.895640]  [<ffffffff82d984e9>] ? _raw_spin_unlock_irq+0x59/0x80
-> [   83.898943]  [<ffffffff810bca53>] do_exit+0x263/0x460
-> [   83.901700]  [<ffffffff810bccf1>] do_group_exit+0xa1/0xe0
-> [   83.907366]  [<ffffffff810bcd42>] sys_exit_group+0x12/0x20
-> [   83.912450]  [<ffffffff82d993b9>] system_call_fastpath+0x16/0x1b
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+  Linux 3.4-rc5 (2012-04-29 15:19:10 -0700)
 
+are available in the git repository at:
+
+  git://people.freedesktop.org/~danvet/drm-intel drm-intel-fixes
+
+for you to fetch changes up to c1230df7e19e0f27655c0eb9d966c7e03be7cc50:
+
+  drm/i915: enable dip before writing data on gen4 (2012-05-03 15:55:38 +0200)
+
+----------------------------------------------------------------
+Chris Wilson (2):
+      drm/i915: Do not read non-existent DPLL registers on PCH hardware
+      drm/i915: Only enable IPS polling for gen5
+
+Marc Gariepy (1):
+      fixing dmi match for hp t5745 and hp st5747 thin client
+
+Paulo Zanoni (1):
+      drm/i915: enable dip before writing data on gen4
+
+ drivers/gpu/drm/i915/i915_debugfs.c  |    3 +++
+ drivers/gpu/drm/i915/i915_dma.c      |   15 ++++++++++-----
+ drivers/gpu/drm/i915/intel_display.c |    9 +++++----
+ drivers/gpu/drm/i915/intel_hdmi.c    |    2 +-
+ drivers/gpu/drm/i915/intel_lvds.c    |    4 ++--
+ 5 files changed, 21 insertions(+), 12 deletions(-)
+
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
