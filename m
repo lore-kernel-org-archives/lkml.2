@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488Ab2ECP1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 11:27:14 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:20901 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755992Ab2ECP1N (ORCPT
+	id S1757509Ab2ECP1l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 11:27:41 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:64024 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756680Ab2ECP1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 11:27:13 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX190PVWElrvENJkVVJPV4sqB
-Date: Thu, 3 May 2012 08:27:08 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-omap@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] pinctrl: Add generic pinctrl-simple driver that
- supports omap2+ padconf
-Message-ID: <20120503152708.GC5140@atomide.com>
-References: <20120502172401.GG3739@atomide.com>
- <20120503065131.GA3738@game.jcrosoft.org>
+	Thu, 3 May 2012 11:27:39 -0400
+Date: Thu, 3 May 2012 12:27:46 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 08/13] perf target: Split out perf_target handling code
+Message-ID: <20120503152746.GA8807@infradead.org>
+References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
+ <1335417327-11796-9-git-send-email-namhyung.kim@lge.com>
+ <20120502183026.GC5745@infradead.org>
+ <1336055987.1493.17.camel@leonhard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120503065131.GA3738@game.jcrosoft.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1336055987.1493.17.camel@leonhard>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-* Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> [120503 00:16]:
+Em Thu, May 03, 2012 at 11:39:47PM +0900, Namhyung Kim escreveu:
+> 2012-05-02 (수), 15:30 -0300, Arnaldo Carvalho de Melo:
+> > Em Thu, Apr 26, 2012 at 02:15:22PM +0900, Namhyung Kim escreveu:
+> > > For further work on perf_target, it'd be better off splitting
+> > > the code into a separate file.
+> > > 
+> > > Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+> > > ---
+> > >  tools/perf/Makefile      |    2 ++
+> > >  tools/perf/perf.h        |    9 +--------
+> > >  tools/perf/util/evlist.c |    1 +
+> > >  tools/perf/util/evsel.c  |    1 +
+> > >  tools/perf/util/target.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
+> > >  tools/perf/util/target.h |   17 +++++++++++++++++
+> > >  tools/perf/util/usage.c  |   34 ----------------------------------
+> > >  tools/perf/util/util.h   |    2 --
+> > >  8 files changed, 67 insertions(+), 44 deletions(-)
+> > >  create mode 100644 tools/perf/util/target.c
+> > >  create mode 100644 tools/perf/util/target.h
+> > 
+> > Trying to fix this now...
+> > 
 > 
-> 	I really like it
+> Oops, sorry. I'll investigate it tomorrow.
 > 
-> 	I was working on something simillar
-> 
-> 	but can we split the group management so we can use it on other
-> 	bindings
 
-Hmm I'm not sure I follow on the group management splitting, can you specify
-what you have in mind here?
+I fixed it, its on my latest perf/core pull req to Ingo.
 
-If you mean moving more things into pinctrl fwk, then yeah I'd assume that
-will happen eventually and drivers like this will end up becoming more minimal.
-
-Regards,
-
-Tony
+- Arnaldo
