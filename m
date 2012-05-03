@@ -1,147 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab2ECAqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 20:46:43 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:22568 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939Ab2ECAql (ORCPT
+	id S1755152Ab2ECArd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 20:47:33 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:51901 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364Ab2ECArb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 20:46:41 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6699"; a="184816121"
-Date: Wed, 2 May 2012 19:46:38 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        linux-hexagon@vger.kernel.org
-Subject: Re: [patch 10/29] hexagon: Use generic idle_task
-Message-ID: <20120503004638.GA3541@codeaurora.org>
-References: <20120430194725.763322463@linutronix.de>
- <20120430194846.162247700@linutronix.de>
+	Wed, 2 May 2012 20:47:31 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-131.messagelabs.com!1336006050!21173266!1
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] backlight: apple_bl.c: include header for exported symbol prototypes
+Date: Wed, 2 May 2012 17:47:26 -0700
+User-Agent: KMail/1.9.9
+CC: <linux-fbdev@vger.kernel.org>, <rpurdie@rpsys.net>,
+        <FlorianSchandinat@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20120430194846.162247700@linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-ID: <201205021747.26813.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 08:15:56PM -0000, Thomas Gleixner wrote:
-> Same code. Use the generic version. The special Makefile treatment is
-> pointless anyway as init_task.o contains only data which is handled by
-> the linker script. So no point on being treated like head text.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Richard Kuo <rkuo@codeaurora.org>
-> ---
->  arch/hexagon/Kconfig            |    1 
->  arch/hexagon/Makefile           |    3 --
->  arch/hexagon/kernel/Makefile    |    2 -
->  arch/hexagon/kernel/init_task.c |   54 ----------------------------------------
->  4 files changed, 3 insertions(+), 57 deletions(-)
-> 
-> Index: tip/arch/hexagon/Kconfig
-> ===================================================================
-> --- tip.orig/arch/hexagon/Kconfig
-> +++ tip/arch/hexagon/Kconfig
-> @@ -28,6 +28,7 @@ config HEXAGON
->  	select NO_IOPORT
->  	select GENERIC_IOMAP
->  	select GENERIC_SMP_IDLE_THREAD
-> +	select HAVE_GENERIC_INIT_TASK
->  	# mostly generic routines, with some accelerated ones
->  	---help---
->  	  Qualcomm Hexagon is a processor architecture designed for high
-> Index: tip/arch/hexagon/Makefile
-> ===================================================================
-> --- tip.orig/arch/hexagon/Makefile
-> +++ tip/arch/hexagon/Makefile
-> @@ -45,8 +45,7 @@ KBUILD_AFLAGS += -DTHREADINFO_REG=$(TIR_
->  LIBGCC := $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
->  libs-y += $(LIBGCC)
->  
-> -head-y := arch/hexagon/kernel/head.o \
-> -	arch/hexagon/kernel/init_task.o
-> +head-y := arch/hexagon/kernel/head.o
->  
->  core-y += arch/hexagon/kernel/ \
->  	arch/hexagon/mm/ \
-> Index: tip/arch/hexagon/kernel/Makefile
-> ===================================================================
-> --- tip.orig/arch/hexagon/kernel/Makefile
-> +++ tip/arch/hexagon/kernel/Makefile
-> @@ -1,4 +1,4 @@
-> -extra-y := head.o vmlinux.lds init_task.o
-> +extra-y := head.o vmlinux.lds
->  
->  obj-$(CONFIG_SMP) += smp.o topology.o
->  
-> Index: tip/arch/hexagon/kernel/init_task.c
-> ===================================================================
-> --- tip.orig/arch/hexagon/kernel/init_task.c
-> +++ /dev/null
-> @@ -1,54 +0,0 @@
-> -/*
-> - * Init task definition
-> - *
-> - * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-> - *
-> - * This program is free software; you can redistribute it and/or modify
-> - * it under the terms of the GNU General Public License version 2 and
-> - * only version 2 as published by the Free Software Foundation.
-> - *
-> - * This program is distributed in the hope that it will be useful,
-> - * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> - * GNU General Public License for more details.
-> - *
-> - * You should have received a copy of the GNU General Public License
-> - * along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-> - * 02110-1301, USA.
-> - */
-> -
-> -#include <linux/mm.h>
-> -#include <linux/module.h>
-> -#include <linux/sched.h>
-> -#include <linux/init_task.h>
-> -#include <linux/fs.h>
-> -#include <linux/mqueue.h>
-> -#include <asm/thread_info.h>
-> -#include <asm/uaccess.h>
-> -#include <asm/pgtable.h>
-> -
-> -static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
-> -static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
-> -
-> -/*
-> - * Initial thread structure.
-> - *
-> - * We need to make sure that this is 8192-byte aligned due to the
-> - * way process stacks are handled. This is done by making sure
-> - * the linker maps this in the .text segment right after head.S,
-> - * and making head.S ensure the proper alignment.
-> - */
-> -union thread_union init_thread_union
-> -	__attribute__((__section__(".data.init_task"),
-> -		__aligned__(THREAD_SIZE))) = {
-> -			INIT_THREAD_INFO(init_task)
-> -		};
-> -
-> -/*
-> - * Initial task structure.
-> - *
-> - * All other task structs will be allocated on slabs in fork.c
-> - */
-> -struct task_struct init_task = INIT_TASK(init_task);
-> -EXPORT_SYMBOL(init_task);
-> 
-> 
+Include the header to pickup the exported symbol prototype.
 
-Acked-and-tested-by: Richard Kuo <rkuo@codeaurora.org>
+Quites the sparse warning:
 
+warning: symbol 'apple_bl_register' was not declared. Should it be static?
+warning: symbol 'apple_bl_unregister' was not declared. Should it be static?
 
--- 
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+---
+
+diff --git a/drivers/video/backlight/apple_bl.c b/drivers/video/backlight/apple_bl.c
+index a523b25..ef5ca0d 100644
+--- a/drivers/video/backlight/apple_bl.c
++++ b/drivers/video/backlight/apple_bl.c
+@@ -25,6 +25,7 @@
+ #include <linux/pci.h>
+ #include <linux/acpi.h>
+ #include <linux/atomic.h>
++#include <linux/apple_bl.h>
+ 
+ static struct backlight_device *apple_backlight_device;
+ 
