@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757679Ab2ECPzn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 11:55:43 -0400
-Received: from exprod5og105.obsmtp.com ([64.18.0.180]:47894 "EHLO
-	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757563Ab2ECPzl (ORCPT
+	id S1756616Ab2ECP62 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 11:58:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42734 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482Ab2ECP61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 11:55:41 -0400
-Message-ID: <4FA2AA6E.6030400@ge.com>
-Date: Thu, 03 May 2012 16:55:26 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Thu, 3 May 2012 11:58:27 -0400
+Date: Thu, 3 May 2012 12:58:29 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL 0/5] perf/annotate fixes and improvements
+Message-ID: <20120503155829.GB8807@infradead.org>
+References: <1335987758-11039-1-git-send-email-acme@infradead.org>
+ <1335988003.13683.182.camel@twins>
+ <20120502211805.GH5745@infradead.org>
+ <1336032100.13683.193.camel@twins>
+ <20120503130551.GA8115@infradead.org>
+ <1336050734.22523.21.camel@twins>
+ <1336054267.1493.11.camel@leonhard>
 MIME-Version: 1.0
-To: H Hartley Sweeten lin <hartleys@visionengravers.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Manohar Vanga <manohar.vanga@cern.ch>
-Subject: Re: [PATCH] vme: vme_tsi148.c: local functions should not be exposed
- globally
-References: <201205021708.38406.hartleys@visionengravers.com>
-In-Reply-To: <201205021708.38406.hartleys@visionengravers.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 May 2012 15:55:30.0172 (UTC) FILETIME=[2A3CC3C0:01CD2945]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1336054267.1493.11.camel@leonhard>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/12 01:08, H Hartley Sweeten lin wrote:
-> Functions not referenced outside of a source file should be marked
-> static to prevent them from being exposed globally.
+Em Thu, May 03, 2012 at 11:11:07PM +0900, Namhyung Kim escreveu:
+> Hi,
 > 
-> Quiets the sparse warnings:
+> 2012-05-03 (목), 15:12 +0200, Peter Zijlstra:
+> > On Thu, 2012-05-03 at 10:05 -0300, Arnaldo Carvalho de Melo wrote:
+> > > > Also, in this case the asm is dark blue, which is nearly invisible on my
+> > > > black background.
+> > > 
+> > > What colour do you suggest? Also what kind of term color scheme do you
+> > > use? Finding the right default combo is kinda hard. 
+> > 
+> > Yeah, I know.. I use white text on black background.
+> > 
+> > Typically for vim I use :se bg=dark
+> > 
+> > Anyway, I find it weird that the asm is coloured completely different
+> > between the two modes. If anything I would keep the asm as in the
+> > non-source variant and when you add the source, make that a different
+> > colour.
+> > 
 > 
-> warning: symbol 'tsi148_alloc_consistent' was not declared. Should it be static?
-> warning: symbol 'tsi148_free_consistent' was not declared. Should it be static?
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Martyn Welch <martyn.welch@ge.com>
-> 
+> It was changed on commit 58e817d997d1 ("perf annotate: Print asm code as
+> blue when source code is displayed") by me. I just tried to make the
+> output as same as the --stdio one, but I felt bad on printing the whole
+> asm lines as blue when no source is shown - I use similar color scheme
+> of yours - so I just ended up leaving it to the default white.
 
-Good catch,
+I'll revert that one, I agree with Peter that we should have the same
+color for asm with/without source code.
 
-Acked-by: Martyn Welch <martyn.welch@ge.com>
+If you feel like source code should be in another color, then try to
+find one that works well with some common term color schemes and propose
+a patch.
 
-Martyn
-
-> ---
-> 
-> diff --git a/drivers/vme/bridges/vme_tsi148.c b/drivers/vme/bridges/vme_tsi148.c
-> index 081e9c4..f6385f7 100644
-> --- a/drivers/vme/bridges/vme_tsi148.c
-> +++ b/drivers/vme/bridges/vme_tsi148.c
-> @@ -2141,7 +2141,7 @@ static int tsi148_slot_get(struct vme_bridge *tsi148_bridge)
->  	return (int)slot;
->  }
->  
-> -void *tsi148_alloc_consistent(struct device *parent, size_t size,
-> +static void *tsi148_alloc_consistent(struct device *parent, size_t size,
->  	dma_addr_t *dma)
->  {
->  	struct pci_dev *pdev;
-> @@ -2152,8 +2152,8 @@ void *tsi148_alloc_consistent(struct device *parent, size_t size,
->  	return pci_alloc_consistent(pdev, size, dma);
->  }
->  
-> -void tsi148_free_consistent(struct device *parent, size_t size, void *vaddr,
-> -	dma_addr_t dma)
-> +static void tsi148_free_consistent(struct device *parent, size_t size,
-> +	void *vaddr, dma_addr_t dma)
->  {
->  	struct pci_dev *pdev;
->  
-
-
--- 
-Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
-GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
-T +44(0)1327322748                     | Manchester, M2 3AB
-E martyn.welch@ge.com                  | VAT:GB 927559189
+- Arnaldo
