@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724Ab2ECIkG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 04:40:06 -0400
-Received: from 89-19-18-106.cizgi.net.tr ([89.19.18.106]:4050 "EHLO
-	mail.localhost.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753524Ab2ECIkE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 04:40:04 -0400
-X-Greylist: delayed 9554 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 May 2012 04:40:03 EDT
-Reply-To: busra.alternatifmedya@gmail.com
-Message-ID: <7a9a4fa1f8b176b35513af2d2d35c396@alternatifmedya.org>
-From: "=?iso-8859-9?B?Qvz+cmEgQUxUQd4=?=" <busra@alternatifmedya.org>
-To: <linux-kernel@vger.kernel.org>
-Subject: Haber Paketi Reklam Teklifi...
-Date: Wed, 2 May 2012 16:28:46 +0300
+	id S1756031Ab2ECIlM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 04:41:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49513 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754741Ab2ECIlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 04:41:10 -0400
+Date: Thu, 3 May 2012 11:41:15 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Liu ping fan <kernelfans@gmail.com>
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: vhost-net: is there a race for sock in handle_tx/rx?
+Message-ID: <20120503084115.GM8266@redhat.com>
+References: <CAFgQCTtKWR6F3D_mPcGe69HvZbYmmAdXreSWLZQrdi+0T3i2ag@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-9"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFgQCTtKWR6F3D_mPcGe69HvZbYmmAdXreSWLZQrdi+0T3i2ag@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sayýn Yetkili;
+On Thu, May 03, 2012 at 04:33:55PM +0800, Liu ping fan wrote:
+> Hi,
+> 
+> During reading the vhost-net code, I find the following,
+> 
+> static void handle_tx(struct vhost_net *net)
+> {
+> 	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_TX];
+> 	unsigned out, in, s;
+> 	int head;
+> 	struct msghdr msg = {
+> 		.msg_name = NULL,
+> 		.msg_namelen = 0,
+> 		.msg_control = NULL,
+> 		.msg_controllen = 0,
+> 		.msg_iov = vq->iov,
+> 		.msg_flags = MSG_DONTWAIT,
+> 	};
+> 	size_t len, total_len = 0;
+> 	int err, wmem;
+> 	size_t hdr_size;
+> 	struct socket *sock;
+> 	struct vhost_ubuf_ref *uninitialized_var(ubufs);
+> 	bool zcopy;
+> 
+> 	/* TODO: check that we are running from vhost_worker? */
+> 	sock = rcu_dereference_check(vq->private_data, 1);
+> 	if (!sock)
+> 		return;
+> 
+>            --------------------------------> Qemu calls
+> vhost_net_set_backend() to set a new backend fd, and close
+> @oldsock->file. And  sock->file refcnt==0.
+> 
+>                                               Can vhost_worker prevent
+> itself from such situation? And how?
+> 
+> 	wmem = atomic_read(&sock->sk->sk_wmem_alloc);
+>        .........................................................................
+> 
+> Is it a race?
+> 
+> Thanks and regards,
+> pingfan
 
-Günümüzde reklam tüm sektörler için vazgeçilmez bir unsur olmuþtur.
-Firmalarýn markalaþma ve rakip firmalarla rekabet avantajý saðlamasýnda özellikle televizyon reklamlarýnýn faydalarý tartýþýlmaz.
-Uygun fiyat avantajýmýzý firmanýzla paylaþarak size, bütçenize uygun reklam ve tanýtým seçenekleri sunuyorum.
-
-1.HABERTÜRK OPT(gündüz) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
-2.SAMANYOLU HABER PT(akþam) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
-3.CNNTURK OPT(gündüz) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
-4.SKYTURK PT(akþam) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
-5.NTV SPOR OPT(gündüz) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
-6.TGRT HABER PT(akþam) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
-7.KANAL24 OPT(gündüz) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
-8.TRT HABER PT(akþam) 5 ADET 8SN.LÝK KUÞAK REKLAM(40sn.)
-
-Toplam Spot: 40 adet kuþak reklam.
-Toplam Süre: 320sn.
-Toplam Bütçe : 3.650 TL+KDV
-
-Prodüksiyon ve seslendirme firmamýz tarafýndan ücretsiz hazýrlanmaktadýr.
-Ýstediðiniz kanal ve bütçeye göre de size özel planlamalar oluþturabilirim.
-
-Deðerlendirmelerinizi bekler, Ýyi çalýþmalar dilerim.
-
-Saygýlarýmla...
-
-ALTERNATÝF MEDYA
-Büþra ALTAÞ
-Reklam Satýþ Müdürü
-T:0216 459 0 444
-F:0216 459 0 555
-busra@alternatifmedya.tv & busra.alternatifmedya@gmail.com
-
-Not: Mail almak istemiyorsanýz bu maili 'listenizden çýkmak istiyorum' diye cevaplamanýz yeterlidir.
-
-
-
-
-
-
+See comment before void __rcu *private_data in vhost.h
 
 
