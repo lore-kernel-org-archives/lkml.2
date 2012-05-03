@@ -1,99 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616Ab2ECKGo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 06:06:44 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39369 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754622Ab2ECKGm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 06:06:42 -0400
+	id S1756679Ab2ECKKG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 06:10:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752250Ab2ECKKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 06:10:03 -0400
+Message-ID: <4FA2596C.7050509@redhat.com>
+Date: Thu, 03 May 2012 06:09:48 -0400
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAN+gG=HHxzYPSD+1i5JS8HmkxusHi=e6im48VzXHy2KsFoce+w@mail.gmail.com>
-References: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
-	<alpine.LNX.2.00.1205011300540.1856@pobox.suse.cz>
-	<CAN+gG=GGVFDgf_PkovS+_OX26LH0Q19_FwwkGP2pSwnoX4d_Ug@mail.gmail.com>
-	<alpine.LNX.2.00.1205021044240.14613@pobox.suse.cz>
-	<CAN+gG=HHxzYPSD+1i5JS8HmkxusHi=e6im48VzXHy2KsFoce+w@mail.gmail.com>
-Date: Thu, 3 May 2012 12:06:41 +0200
-Message-ID: <CAN+gG=HDZJf+73SoddWar_pRPH2NvFrvpVuAaRC8_frXmGQYfA@mail.gmail.com>
-Subject: Re: [PATCH v3 0/6] hid: Introduce device groups
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephane Chatty <chatty@enac.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Zheng Liu <gnehzuil.liu@gmail.com>
+CC: linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>,
+        Eric Sandeen <sandeen@redhat.com>, Ted.Ts'o.tytso@mit.edu,
+        Dave Chinner <david@fromorbit.com>,
+        Lukas Czerner <lczerner@redhat.com>,
+        Andreas Dilger <adilger@whamcloud.com>,
+        Szabolcs Szakacsits <szaka@tuxera.com>
+Subject: Re: [RFC][PATCH v2] ext4: add expose_stale_data flag in fallocate
+References: <1336018469-6421-1-git-send-email-wenqing.lz@taobao.com>
+In-Reply-To: <1336018469-6421-1-git-send-email-wenqing.lz@taobao.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 2, 2012 at 12:55 PM, Benjamin Tissoires
-<benjamin.tissoires@gmail.com> wrote:
-> On Wed, May 2, 2012 at 10:45 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->> On Wed, 2 May 2012, Benjamin Tissoires wrote:
->>
->>> > It's currently in a shape I would be okay to pushing out for -next and
->>> > scheduling for next merge window, and I will do so tomorrow if nothing
->>> > else pops up during testing or reviews.
->>>
->>> Hi Jiri,
->>>
->>> Well, I'm back in my lab this morning, and I'm testing your branch
->>> against the different devices we have here. I'm observing a strange
->>> problem: when connecting some devices, the first touch is always at
->>> 0,0. If I rmmod and insmod hid_multitouch it seems to work after....
->>>
->>> I'm investigating this bug now. I'll tell you when I'm done. I still
->>> don't now if it's related to Henrik's changes or 3.4-rc4.
->>
->> I see, thanks a lot for the heads-up, I will be waiting for your analysis
->> of this.
->>
->> I have already renamed the branch to 'device-groups' and merged it into
->> branch that goes into next, so please send me any followup patches on top
->> of that queue now.
+On 05/03/2012 12:14 AM, Zheng Liu wrote:
+> Hi all,
 >
-> Ok, I think I understood: nothing related to Henrik's changes. The bug
-> is also present in the upstream kernel.
-> In the function set_last_slot_field, I was doing a:
-> test_bit(usage->hid, hi->input->absbit);
->
-> for instance, 0x10030 (X hid field) in the absbit bit field which
-> contains only ABS_CNT (0x40) bits.... That's why it was a random bug.
-> Now I understood why Ubuntu complained about this test ;-)
->
-> I won't have the time to submit the patch right now, I have to give a
-> lecture this afternoon. Maybe this evening or tomorrow.
->
-> Cheers,
-> Benjamin
+> Here is the v2 of FALLOC_FL_NO_HIDE_STALE in fallocate.  Now no new flag is
+> added into vfs in order to reduce the impacts and avoid a huge security hole.
+> The application cannot call fallocate with a new flag to create an unwritten
+> extent.  It needs to call ioctl to enable/disable this feature.  Meanwhile, in
+> ioctl, filesystem will check CAP_SYS_RAWIO to ensure that the user has a
+> privilege to switch on/off it.  Currently, I only implement it in ext4.
 
-Hi guys,
+Hi Zheng,
 
-I'm currently on the bug fix I told you earlier. However, I found a
-more problematic bug in the hid_groups functionality.
+I thought that we had pretty much decided to try and fix the ext4 performance 
+impact, not pursue this?
 
-Some device, like the Perixx peripad, present several interfaces
-(mouse, keyboard and multitouch).
-The hid groups functionality detects the HID field Contact ID, and
-then forwards all interfaces to hid-multitouch. The point is that
-hid-multitouch does not know how to handle mice and keyboards, and
-then fails handling the interfaces of the device.
+Thanks!
 
-This particular device is then fully broken (as anyone pumped the events).
-I also noticed the same problem (but less problematic) with cypress
-panels: it presents different vendor interfaces and they are handled
-by hid-multitouch.
-
-Sorry for spotting this that late,
-Benjamin
-
+Ric
 
 >
->>
->> Thanks,
->>
->> --
->> Jiri Kosina
->> SUSE Labs
+> Even though I try to reduce its impact, this feature still brings a security
+> hole.  So the application must ensure that it initializes an unwritten extent
+> by itself before reading it, and it is used in a limited environment.
+>
+> v1 ->  v2:
+> * remove FALLOC_FL_NO_HIDE_STALE flag in vfs
+> * add 'i_expose_stale_data' in ext4 to enable/disable it
+>
+> Regards,
+> Zheng
+>
+>  From 530045b4a1f75df5afd40c0e20c89917f97d7d5a Mon Sep 17 00:00:00 2001
+> From: Zheng Liu<wenqing.lz@taobao.com>
+> Date: Thu, 3 May 2012 11:21:44 +0800
+> Subject: [RFC][PATCH v2] ext4: add expose_stale_data flag in fallocate
+>
+> We can use fallocate to preallocate sequential blocks.  But these extents are
+> uninitialized.  So when the application does a write, filesystem will
+> initialized these unwritten extents and it brings a huge overhead in some
+> cases.
+>
+> This patch adds a new flag in inode to indicate whether initialize an unwritten
+> extent or not.  This flag is enable/disable within ioctl that switch on/off this
+> feature.  The application must call ioctl to enable this feature before it tries
+> to preallocate some blocks.
+>
+> Obviously, this feature brings a huge security hole.  The application must
+> guarantee to initialize this file by itself before reading it at the same
+> offset.  So the application *MUST* use it carefully.
+>
+> CC: Ric Wheeler<rwheeler@redhat.com>
+> CC: Eric Sandeen<sandeen@redhat.com>
+> CC: Ted Ts'o tytso@mit.edu>
+> CC: Dave Chinner<david@fromorbit.com>
+> CC: Lukas Czerner<lczerner@redhat.com>
+> CC: Andreas Dilger<adilger@whamcloud.com>
+> CC: Szabolcs Szakacsits<szaka@tuxera.com>
+> Signed-off-by: Zheng Liu<wenqing.lz@taobao.com>
+> ---
+>   fs/ext4/ext4.h    |    5 +++++
+>   fs/ext4/extents.c |    6 +++++-
+>   fs/ext4/ioctl.c   |   43 +++++++++++++++++++++++++++++++++++++++++++
+>   fs/ext4/super.c   |    1 +
+>   4 files changed, 54 insertions(+), 1 deletions(-)
+>
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index 0e01e90..f56caf0 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -593,6 +593,8 @@ enum {
+>   #define EXT4_IOC_ALLOC_DA_BLKS		_IO('f', 12)
+>   #define EXT4_IOC_MOVE_EXT		_IOWR('f', 15, struct move_extent)
+>   #define EXT4_IOC_RESIZE_FS		_IOW('f', 16, __u64)
+> +#define EXT4_IOC_GET_EXPOSE_STALE	_IOR('f', 17, int)
+> +#define EXT4_IOC_SET_EXPOSE_STALE	_IOW('f', 18, int)
+>
+>   #if defined(__KERNEL__)&&  defined(CONFIG_COMPAT)
+>   /*
+> @@ -908,6 +910,9 @@ struct ext4_inode_info {
+>   	 */
+>   	tid_t i_sync_tid;
+>   	tid_t i_datasync_tid;
+> +
+> +	/* expose stale data in creating a new extent */
+> +	int i_expose_stale_data;
+>   };
+>
+>   /*
+> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+> index abcdeab..14f54f1 100644
+> --- a/fs/ext4/extents.c
+> +++ b/fs/ext4/extents.c
+> @@ -4269,6 +4269,7 @@ static void ext4_falloc_update_inode(struct inode *inode,
+>   long ext4_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+>   {
+>   	struct inode *inode = file->f_path.dentry->d_inode;
+> +	struct ext4_inode_info *ei = EXT4_I(inode);
+>   	handle_t *handle;
+>   	loff_t new_size;
+>   	unsigned int max_blocks;
+> @@ -4312,7 +4313,10 @@ long ext4_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+>   		trace_ext4_fallocate_exit(inode, offset, max_blocks, ret);
+>   		return ret;
+>   	}
+> -	flags = EXT4_GET_BLOCKS_CREATE_UNINIT_EXT;
+> +	if (ei->i_expose_stale_data)
+> +		flags = EXT4_GET_BLOCKS_CREATE;
+> +	else
+> +		flags = EXT4_GET_BLOCKS_CREATE_UNINIT_EXT;
+>   	if (mode&  FALLOC_FL_KEEP_SIZE)
+>   		flags |= EXT4_GET_BLOCKS_KEEP_SIZE;
+>   	/*
+> diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+> index 6eee255..a37db8e 100644
+> --- a/fs/ext4/ioctl.c
+> +++ b/fs/ext4/ioctl.c
+> @@ -432,6 +432,47 @@ resizefs_out:
+>   		return 0;
+>   	}
+>
+> +	case EXT4_IOC_GET_EXPOSE_STALE: {
+> +		int enable;
+> +
+> +		/* security check */
+> +		if (!capable(CAP_SYS_RAWIO))
+> +			return -EPERM;
+> +
+> +		/*
+> +		 * currently only extent-based files support (pre)allocate with
+> +		 * EXPOSE_STALE_DATA flag
+> +		 */
+> +		if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
+> +			return -EOPNOTSUPP;
+> +
+> +		enable = ei->i_expose_stale_data;
+> +
+> +		return put_user(enable, (int __user *) arg);
+> +	}
+> +
+> +	case EXT4_IOC_SET_EXPOSE_STALE: {
+> +		int enable;
+> +
+> +		/* security check */
+> +		if (!capable(CAP_SYS_RAWIO))
+> +			return -EPERM;
+> +
+> +		/*
+> +		 * currently only extent-based files support (pre)allocate with
+> +		 * EXPOSE_STALE_DATA flag
+> +		 */
+> +		if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
+> +			return -EOPNOTSUPP;
+> +
+> +		if (get_user(enable, (int __user *) arg))
+> +			return -EFAULT;
+> +
+> +		ei->i_expose_stale_data = enable;
+> +
+> +		return 0;
+> +	}
+> +
+>   	default:
+>   		return -ENOTTY;
+>   	}
+> @@ -495,6 +536,8 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+>   	case EXT4_IOC_MOVE_EXT:
+>   	case FITRIM:
+>   	case EXT4_IOC_RESIZE_FS:
+> +	case EXT4_IOC_GET_EXPOSE_STALE:
+> +	case EXT4_IOC_SET_EXPOSE_STALE:
+>   		break;
+>   	default:
+>   		return -ENOIOCTLCMD;
+> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+> index e1fb1d5..6de2db0 100644
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -943,6 +943,7 @@ static struct inode *ext4_alloc_inode(struct super_block *sb)
+>   	ei->i_datasync_tid = 0;
+>   	atomic_set(&ei->i_ioend_count, 0);
+>   	atomic_set(&ei->i_aiodio_unwritten, 0);
+> +	ei->i_expose_stale_data = 0;
+>
+>   	return&ei->vfs_inode;
+>   }
+
