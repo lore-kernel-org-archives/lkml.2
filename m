@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab2ECLYn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 07:24:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38007 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab2ECLYm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 07:24:42 -0400
-Message-ID: <1336044261.22523.11.camel@twins>
-Subject: Re: [PATCH 9/9] perf tool: Add pmu event alias support
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, mingo@elte.hu, andi@firstfloor.org,
-        eranian@google.com, ming.m.lin@intel.com, linux-kernel@vger.kernel.org
-Date: Thu, 03 May 2012 13:24:21 +0200
-In-Reply-To: <20120503105655.GB1671@m.brq.redhat.com>
-References: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com>
-	 <1335924440-11242-10-git-send-email-zheng.z.yan@intel.com>
-	 <20120503105655.GB1671@m.brq.redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1752558Ab2ECLZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 07:25:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12494 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751433Ab2ECLZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 07:25:38 -0400
+Date: Thu, 3 May 2012 13:25:30 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, riel@redhat.com,
+        mgorman@suse.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] THP: need is_vma_temporary_stack() when reference
+ transparent_hugepage_enabled
+Message-ID: <20120503112530.GE2410@redhat.com>
+References: <1335594795-30876-1-git-send-email-alex.shi@intel.com>
+ <20120430160520.4c1cc05c.akpm@linux-foundation.org>
+ <4FA0A743.2070904@intel.com>
+ <20120502175508.GC2410@redhat.com>
+ <4FA1D7D9.1050402@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA1D7D9.1050402@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-03 at 12:56 +0200, Jiri Olsa wrote:
-> - in sysfs you would have directory with aliases (now called 'events')
-> - each alias is sysfs dir, with file attrs:
->         file name = term name, file value = term value
->   eg.:
->         events/
->                 CAS_COUNT_RD/
->                         # files:
->                         config  - value 1
->                         config1 - value 2
->                         mask    - value ... 
+Hi,
 
-I'd prefer the thing Yan proposed (if the sysfs folks let us),
-
-$foo/events/QHL_REQUEST_REMOTE_READS
-
-with contents: "event=0x20,umask=0x4"
-
-> this way it's also possible to add extra terms to existing alias
-> in command line if needed... might be handy
+On Thu, May 03, 2012 at 08:56:57AM +0800, Alex Shi wrote:
 > 
-That should always be possible, if you modify the parser to take things
-like:
+> > My preference would still be to remove the is_vma_temporary_stack and
+> > use two vmas during mremap of execve, that would remove the "vma"
+> > parameter from transparent_hugepage_enabled() but others prefers to
+> > skip a vma allocation in execve and stick to is_vma_temporary_stack,
+> > which is fair enough argument.
+> 
+> 
+> Actually, current transparent_hugepage_enabled just means the vma is in
+> THP enable ENV, the vma is just possibly has some large page, no grantee
+> really has.  But in lots situations, user wants to know if a vma or a
+> part of memory really include a large page. not the possibility.
+> 
+> So, it will be great to see a real large page checking function appearing.
 
-  event=0x20,umask=0x4,event=0x21
-
-and have latter values override earlier values, so it collapses into:
-
-  umask=0x4,event=0x21
-
-you can simply take whatever comes out of the event file and stick extra
-bits at the end.
+Well, to know if a VMA (or a memory range) really includes a THP, it'd
+require to hold the page_table_lock and a loop on all pmds in the
+range, but by the time you relase the lock things may have already
+changed as split_huge_page can run at any time, madvise(MADV_DONTNEED)
+too if you only hold the mmap_sem in read mode and the THP page
+fault. In fact while holding the mmap_sem in read mode (the usual read
+lock you need to take to lookup and stabilize the vma) a THP can be
+freed and reallocated under it, and that's what pmd_trans_unstable is
+about.
