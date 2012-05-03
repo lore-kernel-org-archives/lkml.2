@@ -1,104 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab2ECHKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 03:10:18 -0400
-Received: from smtp-vbr15.xs4all.nl ([194.109.24.35]:2767 "EHLO
-	smtp-vbr15.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926Ab2ECHKO (ORCPT
+	id S1754091Ab2ECHOS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 03:14:18 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:57013 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab2ECHOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 03:10:14 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: manjunatha_halli@ti.com
-Subject: Re: [PATCH V3 2/5] [Media] New control class and features for FM RX
-Date: Thu, 3 May 2012 09:10:07 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4.0-rc3-tschai; KDE/4.7.4; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Manjunatha Halli <x0130808@ti.com>
-References: <1335994951-15842-1-git-send-email-manjunatha_halli@ti.com> <1335994951-15842-3-git-send-email-manjunatha_halli@ti.com> <201205030908.57369.hverkuil@xs4all.nl>
-In-Reply-To: <201205030908.57369.hverkuil@xs4all.nl>
+	Thu, 3 May 2012 03:14:17 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205030910.07866.hverkuil@xs4all.nl>
+In-Reply-To: <1336029206.13013.11.camel@sauron.fi.intel.com>
+References: <1335932890-25294-1-git-send-email-minchan@kernel.org>
+	<20120502124610.175e099c.akpm@linux-foundation.org>
+	<4FA1D93C.9000306@kernel.org>
+	<Pine.LNX.4.64.1205022241560.18540@cobra.newdream.net>
+	<CAPa8GCCzyB7iSX+wTzsqfe7GHvfWT2wT4aQgK30ycRnkc_BNAQ@mail.gmail.com>
+	<1336029206.13013.11.camel@sauron.fi.intel.com>
+Date: Thu, 3 May 2012 17:14:16 +1000
+Message-ID: <CAPa8GCDzgbQ5T-4eR942KswxXwRE69rwV2CKgho6LOV-us5RDw@mail.gmail.com>
+Subject: Re: [PATCH] vmalloc: add warning in __vmalloc
+From: Nick Piggin <npiggin@gmail.com>
+To: dedekind1@gmail.com
+Cc: Sage Weil <sage@newdream.net>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kosaki.motohiro@gmail.com,
+        rientjes@google.com, Neil Brown <neilb@suse.de>,
+        David Woodhouse <dwmw2@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu May 3 2012 09:08:57 Hans Verkuil wrote:
-> Just a few more minor notes:
-> 
-> On Wed May 2 2012 23:42:28 manjunatha_halli@ti.com wrote:
-> > From: Manjunatha Halli <x0130808@ti.com>
-> > 
-> > This patch creates new ctrl class for FM RX and adds new CID's for
-> > below FM features,
-> >         1) De-Emphasis filter mode
-> > 	2) RDS AF switch
-> > 
-> > Also this patch adds a field for band selection in struct v4l2_hw_freq_seek
-> > 
-> > Signed-off-by: Manjunatha Halli <x0130808@ti.com>
-> > ---
-> >  drivers/media/video/v4l2-ctrls.c |   17 +++++++++++++++++
-> >  include/linux/videodev2.h        |   11 ++++++++++-
-> >  2 files changed, 27 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/media/video/v4l2-ctrls.c b/drivers/media/video/v4l2-ctrls.c
-> > index 18015c0..e1bba7d 100644
-> > --- a/drivers/media/video/v4l2-ctrls.c
-> > +++ b/drivers/media/video/v4l2-ctrls.c
-> > @@ -372,6 +372,12 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
-> >  		NULL,
-> >  	};
-> >  
-> > +	static const char * const tune_deemphasis[] = {
-> > +		"No deemphasis",
-> > +		"50 useconds",
-> > +		"75 useconds",
-> > +		NULL,
-> > +	};
-> 
-> I suggest that we re-use tune_preemphasis[] here. Just replace the first
-> entry from "No Preemphasis" to "None" to make it generic.
-> 
-> Rename tune_preemphasis[] to tune_emphasis[] as well.
-> 
-> >  	switch (id) {
-> >  	case V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ:
-> >  		return mpeg_audio_sampling_freq;
-> > @@ -414,6 +420,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
-> >  		return colorfx;
-> >  	case V4L2_CID_TUNE_PREEMPHASIS:
-> >  		return tune_preemphasis;
-> > +	case V4L2_CID_TUNE_DEEMPHASIS:
-> > +		return tune_deemphasis;
-> >  	case V4L2_CID_FLASH_LED_MODE:
-> >  		return flash_led_mode;
-> >  	case V4L2_CID_FLASH_STROBE_SOURCE:
-> > @@ -644,6 +652,12 @@ const char *v4l2_ctrl_get_name(u32 id)
-> >  	case V4L2_CID_JPEG_COMPRESSION_QUALITY:	return "Compression Quality";
-> >  	case V4L2_CID_JPEG_ACTIVE_MARKER:	return "Active Markers";
-> >  
-> > +	/* FM Radio Receiver control */
-> > +	/* Keep the order of the 'case's the same as in videodev2.h! */
-> > +	case V4L2_CID_FM_RX_CLASS:		return "FM Radio Receiver Controls";
-> > +	case V4L2_CID_RDS_AF_SWITCH:		return "FM RX RDS AF switch";
-> 
-> I would call this "RDS AF Switch" or perhaps even better: "RDS Auto-Frequency Switch"
+On 3 May 2012 17:13, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> On Thu, 2012-05-03 at 16:30 +1000, Nick Piggin wrote:
+>> Note that in writeback paths, a "good citizen" filesystem should not require
+>> any allocations, or at least it should be able to tolerate allocation failures.
+>> So fixing that would be a good idea anyway.
+>
+> This is a good point, but UBIFS kmallocs(GFP_NOFS) when doing I/O
+> because it needs to compress/decompress. But I agree that if kmalloc
+> fails, we should have a fall-back reserve buffer protected by a mutex
+> for memory pressure situations.
 
-Sorry, that should have been: "RDS Alternate Frequency Switch".
-
-Regards,
-
-	Hans
-
-> 
-> > +	case V4L2_CID_TUNE_DEEMPHASIS:		return "FM RX De-emphasis settings";
-> 
-> Rename to "De-Emphasis" to be consistent with the existing "Pre-Emphasis" string.
-> 
-> Regards,
-> 
-> 	Hans
-> 
+AKA, a mempool :)
