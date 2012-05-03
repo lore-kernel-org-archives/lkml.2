@@ -1,84 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151Ab2ECOZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:25:09 -0400
-Received: from 3.mo4.mail-out.ovh.net ([46.105.57.129]:59329 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932123Ab2ECOZB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:25:01 -0400
-Date: Thu, 3 May 2012 15:45:46 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, Deepak Saxena <dsaxena@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>, shawn.guo@linaro.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>, Nicolas Pitre <nico@fluxnic.net>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: Making ARM multiplatform kernels DT-only?
-Message-ID: <20120503134546.GB7788@game.jcrosoft.org>
-References: <201205031350.35476.arnd@arndb.de>
+	id S932193Ab2ECOZr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:25:47 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:58883 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755927Ab2ECOZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 10:25:08 -0400
+From: Venkatraman S <svenkatr@ti.com>
+To: <linux-mmc@vger.kernel.org>, <cjb@laptop.org>, <linux-mm@kvack.org>,
+        <linux-fsdevel@vger.kernel.org>, <linux-omap@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <arnd.bergmann@linaro.org>,
+        <alex.lemberg@sandisk.com>, <ilan.smith@sandisk.com>,
+        <lporzio@micron.com>, <rmk+kernel@arm.linux.org.uk>,
+        Venkatraman S <svenkatr@ti.com>
+Subject: [PATCH v2 16/16] mmc: omap_hsmmc: Implement abort_req host_ops
+Date: Thu, 3 May 2012 19:53:15 +0530
+Message-ID: <1336054995-22988-17-git-send-email-svenkatr@ti.com>
+X-Mailer: git-send-email 1.7.10.rc2
+In-Reply-To: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
+References: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201205031350.35476.arnd@arndb.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 10453980635505470212
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtddvucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtddvucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13:50 Thu 03 May     , Arnd Bergmann wrote:
-> Hi everyone,
-> 
-> I've been discussing multiplatform kernels with a few people recently,
-> and we will have a lot of discussion sessions about this at Linaro
-> Connect in Hong Kong.
-> 
-> One question that came up repeatedly is whether we should support all
-> possible board files for each platform in a multiplatform kernel,
-> or just the ones that are already using DT probing. I would like
-> to get a quick poll of opinions on that and I've tried to put those
-> people on Cc that would be most impacted by this, i.e. the maintainers
-> for platforms that have both DT and non-DT board files at the moment.
-> 
-> My feeling is that we should just mandate DT booting for multiplatform
-> kernels, because it significantly reduces the combinatorial space
-> at compile time, avoids a lot of legacy board files that we cannot
-> test anyway, reduces the total kernel size and gives an incentive
-> for people to move forward to DT with their existing boards.
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> 
-> The counterargument is that we won't be able to support all the
-> boards we currently do when the user switches on multiplatform,
-> but I think that is acceptable.
-> Note that I would still want to allow users to build platforms
-> separately in order to enable the ATAG style board files, even
-> for platforms that are not multiplatform capable.
+Provide the abort_req implementation for omap_hsmmc host.
 
-> 
-> Other opinions?
-it will also avoid us alot of trouble and work to fix old platform that we can
-not even test
+When invoked, the host controller should stop the transfer
+and end the ongoing request as early as possible.
 
-Best Regards,
-J.
+If the aborted command is a data transfer command, dma setup is
+aborted and a STOP command is issued. The transfer state is
+marked as an error (except when the command has almost completed
+while receiving the abort request, in which case finish the command
+normally).
+
+Signed-off-by: Venkatraman S <svenkatr@ti.com>
+---
+ drivers/mmc/host/omap_hsmmc.c |   55 ++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 51 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index d15b149..a4da478 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -177,6 +177,7 @@ struct omap_hsmmc_host {
+ 	int			reqs_blocked;
+ 	int			use_reg;
+ 	int			req_in_progress;
++	int			abort_in_progress;
+ 	unsigned int		flags;
+ 	struct omap_hsmmc_next	next_data;
+ 
+@@ -982,6 +983,7 @@ static inline void omap_hsmmc_reset_controller_fsm(struct omap_hsmmc_host *host,
+ static void omap_hsmmc_do_irq(struct omap_hsmmc_host *host, int status)
+ {
+ 	struct mmc_data *data;
++	int err = 0;
+ 	int end_cmd = 0, end_trans = 0;
+ 
+ 	if (!host->req_in_progress) {
+@@ -993,6 +995,11 @@ static void omap_hsmmc_do_irq(struct omap_hsmmc_host *host, int status)
+ 		return;
+ 	}
+ 
++	if (host->abort_in_progress) {
++		end_trans = 1;
++		end_cmd = 1;
++	}
++
+ 	data = host->data;
+ 	dev_dbg(mmc_dev(host->mmc), "IRQ Status is %x\n", status);
+ 
+@@ -1021,7 +1028,7 @@ static void omap_hsmmc_do_irq(struct omap_hsmmc_host *host, int status)
+ 		if ((status & DATA_TIMEOUT) ||
+ 			(status & DATA_CRC)) {
+ 			if (host->data || host->response_busy) {
+-				int err = (status & DATA_TIMEOUT) ?
++				err = (status & DATA_TIMEOUT) ?
+ 						-ETIMEDOUT : -EILSEQ;
+ 
+ 				if (host->data)
+@@ -1045,10 +1052,13 @@ static void omap_hsmmc_do_irq(struct omap_hsmmc_host *host, int status)
+ 
+ 	OMAP_HSMMC_WRITE(host->base, STAT, status);
+ 
+-	if (end_cmd || ((status & CC) && host->cmd))
++	if ((end_cmd || (status & CC)) && host->cmd)
+ 		omap_hsmmc_cmd_done(host, host->cmd);
+-	if ((end_trans || (status & TC)) && host->mrq)
++	if ((end_trans || (status & TC)) && host->mrq) {
++		if (data)
++			data->error = err;
+ 		omap_hsmmc_xfer_done(host, data);
++	}
+ }
+ 
+ /*
+@@ -1257,7 +1267,7 @@ static void omap_hsmmc_dma_cb(int lch, u16 ch_status, void *cb_data)
+ 	}
+ 
+ 	spin_lock_irqsave(&host->irq_lock, flags);
+-	if (host->dma_ch < 0) {
++	if (host->dma_ch < 0 || host->abort_in_progress) {
+ 		spin_unlock_irqrestore(&host->irq_lock, flags);
+ 		return;
+ 	}
+@@ -1478,6 +1488,40 @@ static void omap_hsmmc_pre_req(struct mmc_host *mmc, struct mmc_request *mrq,
+ 			mrq->data->host_cookie = 0;
+ }
+ 
++static int omap_hsmmc_abort_req(struct mmc_host *mmc, struct mmc_request *req)
++{
++	struct omap_hsmmc_host *host = mmc_priv(mmc);
++	unsigned long flags;
++
++	if (!host->req_in_progress) {
++		dev_dbg(mmc_dev(host->mmc), "No request to abort\n");
++		return -EINVAL;
++	}
++	if (req && req != host->mrq) {
++		dev_dbg(mmc_dev(host->mmc), "Non matching abort request\n");
++		return -EINVAL;
++	}
++	spin_lock_irqsave(&host->irq_lock, flags);
++	host->abort_in_progress = 1;
++	omap_hsmmc_disable_irq(host);
++	spin_unlock_irqrestore(&host->irq_lock, flags);
++
++	host->response_busy = 0;
++
++	if (host->data) {
++		struct mmc_data *dat = host->data;
++		omap_hsmmc_dma_cleanup(host, -EIO);
++		dev_dbg(mmc_dev(host->mmc), "Aborting Transfer\n");
++		omap_hsmmc_xfer_done(host, dat);
++	} else if (host->cmd) {
++		dev_dbg(mmc_dev(host->mmc), "Aborting Command\n");
++		omap_hsmmc_cmd_done(host, host->cmd);
++	}
++
++	dev_dbg(mmc_dev(host->mmc), "Request %pK aborted\n", req);
++	return 0;
++
++}
+ /*
+  * Request function. for read/write operation
+  */
+@@ -1488,6 +1532,8 @@ static void omap_hsmmc_request(struct mmc_host *mmc, struct mmc_request *req)
+ 
+ 	BUG_ON(host->req_in_progress);
+ 	BUG_ON(host->dma_ch != -1);
++	host->abort_in_progress = 0;
++
+ 	if (host->protect_card) {
+ 		if (host->reqs_blocked < 3) {
+ 			/*
+@@ -1664,6 +1710,7 @@ static const struct mmc_host_ops omap_hsmmc_ops = {
+ 	.disable = omap_hsmmc_disable_fclk,
+ 	.post_req = omap_hsmmc_post_req,
+ 	.pre_req = omap_hsmmc_pre_req,
++	.abort_req = omap_hsmmc_abort_req,
+ 	.request = omap_hsmmc_request,
+ 	.set_ios = omap_hsmmc_set_ios,
+ 	.get_cd = omap_hsmmc_get_cd,
+-- 
+1.7.10.rc2
+
