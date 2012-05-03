@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758156Ab2ECSuC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 14:50:02 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:46351 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758126Ab2ECSuA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 14:50:00 -0400
-Date: Thu, 03 May 2012 14:48:44 -0400 (EDT)
-Message-Id: <20120503.144844.988487177633544388.davem@davemloft.net>
-To: hpa@zytor.com
-Cc: torvalds@linux-foundation.org, viro@zeniv.linux.org.uk, npiggin@gmail.com,
-        jana@saout.de, jlbec@evilplan.org, linux-kernel@vger.kernel.org
-Subject: Re: Oops with DCACHE_WORD_ACCESS and ocfs2, autofs4
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4FA2CE5C.8000100@zytor.com>
-References: <4FA2CAD9.6010808@zytor.com>
-	<CA+55aFxrBghonjRvS=KK=5Oqw_Wj9PDh2wkDtVh7U9jw8=uTsA@mail.gmail.com>
-	<4FA2CE5C.8000100@zytor.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1758164Ab2ECSup (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 14:50:45 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:58239 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753784Ab2ECSuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 14:50:44 -0400
+Message-ID: <1336071041.13866.39.camel@joe2Laptop>
+Subject: Re: [PATCH 2/3] params: replace printk(KERN_<LVL>...) with
+ pr_<lvl>(...)
+From: Joe Perches <joe@perches.com>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        jbaron@redhat.com
+Date: Thu, 03 May 2012 11:50:41 -0700
+In-Reply-To: <1336067860-19953-2-git-send-email-jim.cromie@gmail.com>
+References: <1336067860-19953-1-git-send-email-jim.cromie@gmail.com>
+	 <1336067860-19953-2-git-send-email-jim.cromie@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 03 May 2012 11:48:47 -0700 (PDT)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 03 May 2012 11:28:44 -0700
-
-> +		"lea" __WORDSUFFIX " %2,%1\n\t"
-> +		"and" __WORDSUFFIX " %4,%1\n\t"
-> +		"shl" __WORDSUFFIX " $3,%1\n\t"
-> +		"shr" __WORDSUFFIX " %b1,%0\n\t"
+On Thu, 2012-05-03 at 11:57 -0600, Jim Cromie wrote:
+> I left 1 printk which uses __FILE__, __LINE__ explicitly, which should
+> not be subject to generic preferences expressed via pr_fmt().
 > 
-> Also, for this sequence of instructions using %ecx unconditionally is
-> actually better (avoids REX prefixes on 64 bits.)
+> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> ---
+>  kernel/params.c |   33 ++++++++++++---------------------
+>  1 files changed, 12 insertions(+), 21 deletions(-)
+> 
+> diff --git a/kernel/params.c b/kernel/params.c
+> index be78c90..08414ba 100644
+> --- a/kernel/params.c
+> +++ b/kernel/params.c
+> @@ -201,25 +201,21 @@ int parse_args(const char *doing,
+>  		irq_was_disabled = irqs_disabled();
+>  		ret = parse_one(param, val, doing, params, num,
+>  				min_level, max_level, unknown);
+> -		if (irq_was_disabled && !irqs_disabled()) {
+> -			printk(KERN_WARNING "parse_args(): option '%s' enabled "
+> -					"irq's!\n", param);
+> -		}
+> +		if (irq_was_disabled && !irqs_disabled())
+> +			pr_warn("option '%s' enabled irq's!\n", param);
+> +
 
-If it doesn't exist already, someone should really add bits to
-binutils so you guys don't have to string paste like this.
+The other parse_args pr_<level> uses have
+	'"%s: ...", doing, ...'.
+Maybe this one should too.
 
-For example a bit a mnenomics that the assembler internally changes
-into the 64-bit or 32-bit variant based upon what bitness it is
-targetting.
+>  		switch (ret) {
+>  		case -ENOENT:
+> -			printk(KERN_ERR "%s: Unknown parameter `%s'\n",
+> -			       doing, param);
+> +			pr_err("%s: Unknown parameter `%s'\n", doing, param);
+>  			return ret;
+[]
+> @@ -753,11 +746,9 @@ static struct module_kobject * __init locate_module_kobject(const char *name)
+>  #endif
+>  		if (err) {
+>  			kobject_put(&mk->kobj);
+> -			printk(KERN_ERR
+> -				"Module '%s' failed add to sysfs, error number %d\n",
+> +			pr_err("Module '%s' failed add to sysfs, error: %d\n"
+> +				"The system will be unstable now.\n",
+>  				name, err);
+> -			printk(KERN_ERR
+> -				"The system will be unstable now.\n");
+>  			return NULL;
+>  		}
+>  
 
-We have these on sparc, for example "ldn" is transformed into "lduw"
-for 32-bit and "ldx" for 64-bit.
+It'd be nice to align the arguments and perhaps a
+single line output may be better.
+
+Maybe something like:
+
+			pr_err("Adding module '%s' to sysfs failed (%d), the system is unstable\n",
+			       name, err);
+
+though perhaps this should be pr_crit
+if it's really unstable.
+
