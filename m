@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008Ab2ECJKx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 05:10:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49892 "EHLO
+	id S1757103Ab2ECJLM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 05:11:12 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49887 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754903Ab2ECJCv (ORCPT
+	with ESMTP id S1754812Ab2ECJCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 05:02:51 -0400
-Message-Id: <20120503085034.162634519@linutronix.de>
+	Thu, 3 May 2012 05:02:50 -0400
+Message-Id: <20120503085034.032327158@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 03 May 2012 09:02:50 -0000
+Date: Thu, 03 May 2012 09:02:48 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Matt Turner <mattst88@gmail.com>
-Subject: [patch V2 05/31] alpha: Use generic init_task
+Cc: David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>
+Subject: [patch V2 03/31] task_allocator: Use config switches instead of magic
+ defines
 References: <20120503083859.991965503@linutronix.de>
-Content-Disposition: inline; filename=alpha-use-generic-init-task.patch
+Content-Disposition: inline; filename=task-alloc-use-config-switch.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -23,62 +24,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Identical code. Use the generic version.
+Replace __HAVE_ARCH_TASK_ALLOCATOR and __HAVE_ARCH_THREAD_ALLOCATOR
+with proper config switches.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Matt Turner <mattst88@gmail.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Tony Luck <tony.luck@intel.com>
 ---
- arch/alpha/Kconfig            |    1 +
- arch/alpha/kernel/Makefile    |    2 +-
- arch/alpha/kernel/init_task.c |   17 -----------------
- 3 files changed, 2 insertions(+), 18 deletions(-)
+ arch/Kconfig                        |    6 ++++++
+ arch/frv/Kconfig                    |    1 +
+ arch/frv/include/asm/thread_info.h  |    2 --
+ arch/ia64/Kconfig                   |    2 ++
+ arch/ia64/include/asm/thread_info.h |    3 ---
+ kernel/fork.c                       |    6 +++---
+ 6 files changed, 12 insertions(+), 8 deletions(-)
 
-Index: tip/arch/alpha/Kconfig
+Index: tip/arch/Kconfig
 ===================================================================
---- tip.orig/arch/alpha/Kconfig
-+++ tip/arch/alpha/Kconfig
-@@ -16,6 +16,7 @@ config ALPHA
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
+--- tip.orig/arch/Kconfig
++++ tip/arch/Kconfig
+@@ -219,4 +219,10 @@ config HAVE_CMPXCHG_DOUBLE
+ config ARCH_WANT_OLD_COMPAT_IPC
+ 	bool
+ 
++config ARCH_TASK_STRUCT_ALLOCATOR
++	bool
++
++config ARCH_THREAD_INFO_ALLOCATOR
++	bool
++
+ source "kernel/gcov/Kconfig"
+Index: tip/arch/frv/Kconfig
+===================================================================
+--- tip.orig/arch/frv/Kconfig
++++ tip/arch/frv/Kconfig
+@@ -9,6 +9,7 @@ config FRV
+ 	select GENERIC_IRQ_SHOW
  	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select GENERIC_CPU_DEVICES
++	select ARCH_THREAD_INFO_ALLOCATOR
+ 
+ config ZONE_DMA
+ 	bool
+Index: tip/arch/frv/include/asm/thread_info.h
+===================================================================
+--- tip.orig/arch/frv/include/asm/thread_info.h
++++ tip/arch/frv/include/asm/thread_info.h
+@@ -80,8 +80,6 @@ register struct thread_info *__current_t
+ 
+ #define current_thread_info() ({ __current_thread_info; })
+ 
+-#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR
+-
+ /* thread information allocation */
+ #ifdef CONFIG_DEBUG_STACK_USAGE
+ #define alloc_thread_info_node(tsk, node)			\
+Index: tip/arch/ia64/Kconfig
+===================================================================
+--- tip.orig/arch/ia64/Kconfig
++++ tip/arch/ia64/Kconfig
+@@ -34,6 +34,8 @@ config IA64
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select GENERIC_IOMAP
  	select GENERIC_SMP_IDLE_THREAD
-+	select HAVE_GENERIC_INIT_TASK
++	select ARCH_TASK_STRUCT_ALLOCATOR
++	select ARCH_THREAD_INFO_ALLOCATOR
+ 	default y
  	help
- 	  The Alpha is a 64-bit general-purpose processor designed and
- 	  marketed by the Digital Equipment Corporation of blessed memory,
-Index: tip/arch/alpha/kernel/Makefile
+ 	  The Itanium Processor Family is Intel's 64-bit successor to
+Index: tip/arch/ia64/include/asm/thread_info.h
 ===================================================================
---- tip.orig/arch/alpha/kernel/Makefile
-+++ tip/arch/alpha/kernel/Makefile
-@@ -6,7 +6,7 @@ extra-y		:= head.o vmlinux.lds
- asflags-y	:= $(KBUILD_CFLAGS)
- ccflags-y	:= -Wno-sign-compare
+--- tip.orig/arch/ia64/include/asm/thread_info.h
++++ tip/arch/ia64/include/asm/thread_info.h
+@@ -54,8 +54,6 @@ struct thread_info {
+ 	},					\
+ }
  
--obj-y    := entry.o traps.o process.o init_task.o osf_sys.o irq.o \
-+obj-y    := entry.o traps.o process.o osf_sys.o irq.o \
- 	    irq_alpha.o signal.o setup.o ptrace.o time.o \
- 	    alpha_ksyms.o systbls.o err_common.o io.o
+-#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR
+-
+ #ifndef ASM_OFFSETS_C
+ /* how to get the thread information struct from C */
+ #define current_thread_info()	((struct thread_info *) ((char *) current + IA64_TASK_SIZE))
+@@ -84,7 +82,6 @@ struct thread_info {
+ #endif
+ #define end_of_stack(p) (unsigned long *)((void *)(p) + IA64_RBS_OFFSET)
  
-Index: tip/arch/alpha/kernel/init_task.c
+-#define __HAVE_ARCH_TASK_STRUCT_ALLOCATOR
+ #define alloc_task_struct_node(node)						\
+ ({										\
+ 	struct page *page = alloc_pages_node(node, GFP_KERNEL | __GFP_COMP,	\
+Index: tip/kernel/fork.c
 ===================================================================
---- tip.orig/arch/alpha/kernel/init_task.c
-+++ /dev/null
-@@ -1,17 +0,0 @@
--#include <linux/mm.h>
--#include <linux/module.h>
--#include <linux/sched.h>
--#include <linux/init.h>
--#include <linux/init_task.h>
--#include <linux/fs.h>
--#include <linux/mqueue.h>
--#include <asm/uaccess.h>
--
--
--static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
--static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
--struct task_struct init_task = INIT_TASK(init_task);
--EXPORT_SYMBOL(init_task);
--
--union thread_union init_thread_union __init_task_data =
--	{ INIT_THREAD_INFO(init_task) };
+--- tip.orig/kernel/fork.c
++++ tip/kernel/fork.c
+@@ -111,7 +111,7 @@ int nr_processes(void)
+ 	return total;
+ }
+ 
+-#ifndef __HAVE_ARCH_TASK_STRUCT_ALLOCATOR
++#ifndef CONFIG_ARCH_TASK_STRUCT_ALLOCATOR
+ # define alloc_task_struct_node(node)		\
+ 		kmem_cache_alloc_node(task_struct_cachep, GFP_KERNEL, node)
+ # define free_task_struct(tsk)			\
+@@ -119,7 +119,7 @@ int nr_processes(void)
+ static struct kmem_cache *task_struct_cachep;
+ #endif
+ 
+-#ifndef __HAVE_ARCH_THREAD_INFO_ALLOCATOR
++#ifndef CONFIG_ARCH_THREAD_INFO_ALLOCATOR
+ static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
+ 						  int node)
+ {
+@@ -213,7 +213,7 @@ EXPORT_SYMBOL_GPL(__put_task_struct);
+ 
+ void __init fork_init(unsigned long mempages)
+ {
+-#ifndef __HAVE_ARCH_TASK_STRUCT_ALLOCATOR
++#ifndef CONFIG_ARCH_TASK_STRUCT_ALLOCATOR
+ #ifndef ARCH_MIN_TASKALIGN
+ #define ARCH_MIN_TASKALIGN	L1_CACHE_BYTES
+ #endif
 
 
