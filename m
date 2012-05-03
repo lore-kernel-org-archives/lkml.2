@@ -1,109 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab2ECRDK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 13:03:10 -0400
-Received: from smtp.fullrate.dk ([90.185.1.42]:65035 "EHLO smtp.fullrate.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753044Ab2ECRDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 13:03:08 -0400
-Message-ID: <4FA2BA49.3070902@molgaard.org>
-Date: Thu, 03 May 2012 19:03:05 +0200
-From: =?ISO-8859-1?Q?Sune_M=F8lgaard?= <sune@molgaard.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/15.0 Firefox/15.0a1 SeaMonkey/2.12a1
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: Boot failure since 3.3-rc?
-References: <4F931C6D.8040407@molgaard.org>
-In-Reply-To: <4F931C6D.8040407@molgaard.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757643Ab2ECRF0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 13:05:26 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:45332 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753072Ab2ECRFY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 13:05:24 -0400
+Date: Thu, 03 May 2012 13:04:16 -0400 (EDT)
+Message-Id: <20120503.130416.839732919427673590.davem@davemloft.net>
+To: hannes@cmpxchg.org
+Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org, tj@kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH] mm: nobootmem: Correct alloc_bootmem semantics.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120503152841.GA19918@cmpxchg.org>
+References: <CAE9FiQWYPPXA0YmgBP6SkKiEaLJJnzxMqPn2_VwOKoYSKGwULQ@mail.gmail.com>
+	<20120425.190034.632638679653622318.davem@davemloft.net>
+	<20120503152841.GA19918@cmpxchg.org>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 03 May 2012 10:04:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Incidentally, I had to swap a wifi card, and bisecting now leads to a 
-different bad commit(?)
+From: Johannes Weiner <hannes@cmpxchg.org>
+Date: Thu, 3 May 2012 17:28:41 +0200
 
-This is what it says is the culprit now (I wonder if I should bisect 
-again, and attempt booting maybe 3 or 4 times each time):
+> On Wed, Apr 25, 2012 at 07:00:34PM -0400, David Miller wrote:
+>> From: Yinghai Lu <yinghai@kernel.org>
+>> Date: Wed, 25 Apr 2012 15:46:42 -0700
+>> 
+>> > On Wed, Apr 25, 2012 at 1:10 PM, David Miller <davem@davemloft.net> wrote:
+>> >> @@ -298,13 +298,19 @@ void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+>> >>        if (WARN_ON_ONCE(slab_is_available()))
+>> >>                return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+>> >>
+>> >> +again:
+>> >>        ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
+>> >>                                         goal, -1ULL);
+>> >>        if (ptr)
+>> >>                return ptr;
+>> > 
+>> > If you want to be consistent to bootmem version.
+>> > 
+>> > again label should be here instead.
+>> 
+>> It is merely an artifact of implementation that the bootmem version
+>> doesn't try to respect the given node if the goal cannot be satisfied,
+>> and in fact I would classify that as a bug that needs to be fixed.
+>> 
+>> Therefore, I believe the bootmem case is what needs to be adjusted
+>> instead.
+> 
+> Now it does: node+goal, goal, node, anywhere
+> 
+> whereas the memblock version of __alloc_bootmem_node_nopanic() also
+> still does: node+goal, goal, anywhere
+> 
+> Your description suggests that the node should be higher prioritized
+> than the goal, which I understand as: node+goal, node, anywhere.
+> 
+> Which do we actually want?
 
-f94edacf998516ac9d849f7bc6949a703977a7f3 is the first bad commit
-commit f94edacf998516ac9d849f7bc6949a703977a7f3
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Fri Feb 17 21:48:54 2012 -0800
+I think the goal is what needs to be prioritized.  An explicit goal usually
+has a requirement, like "I need physical memory in the low 32-bits" and if
+they specified an explicit node they really mean "and give me it on NUMA
+node X if you can."  Hence the sequence:
 
-     i387: move TS_USEDFPU flag from thread_info to task_struct
+	node+goal, goal, node, any
 
-     This moves the bit that indicates whether a thread has ownership of the
-     FPU from the TS_USEDFPU bit in thread_info->status to a word of its own
-     (called 'has_fpu') in task_struct->thread.has_fpu.
+the only other reasonable option would be:
 
-     This fixes two independent bugs at the same time:
+	node+goal, node, goal, any
 
-      - changing 'thread_info->status' from the scheduler causes nasty
-        problems for the other users of that variable, since it is 
-defined to
-        be thread-synchronous (that's what the "TS_" part of the naming was
-        supposed to indicate).
-
-        So perfectly valid code could (and did) do
-
-     	ti->status |= TS_RESTORE_SIGMASK;
-
-        and the compiler was free to do that as separate load, or and store
-        instructions.  Which can cause problems with preemption, since a 
-task
-        switch could happen in between, and change the TS_USEDFPU bit. The
-        change to TS_USEDFPU would be overwritten by the final store.
-
-        In practice, this seldom happened, though, because the 'status' 
-field
-        was seldom used more than once, so gcc would generally tend to
-        generate code that used a read-modify-write instruction and thus
-        happened to avoid this problem - RMW instructions are naturally low
-        fat and preemption-safe.
-
-      - On x86-32, the current_thread_info() pointer would, during 
-interrupts
-        and softirqs, point to a *copy* of the real thread_info, because
-        x86-32 uses %esp to calculate the thread_info address, and thus the
-        separate irq (and softirq) stacks would cause these kinds of odd
-        thread_info copy aliases.
-
-        This is normally not a problem, since interrupts aren't supposed to
-        look at thread information anyway (what thread is running at
-        interrupt time really isn't very well-defined), but it confused the
-        heck out of irq_fpu_usable() and the code that tried to squirrel
-        away the FPU state.
-
-        (It also caused untold confusion for us poor kernel developers).
-
-     It also turns out that using 'task_struct' is actually much more 
-natural
-     for most of the call sites that care about the FPU state, since they
-     tend to work with the task struct for other reasons anyway (ie
-     scheduling).  And the FPU data that we are going to save/restore is
-     found there too.
-
-     Thanks to Arjan Van De Ven <arjan@linux.intel.com> for pointing us to
-     the %esp issue.
-
-     Cc: Arjan van de Ven <arjan@linux.intel.com>
-     Reported-and-tested-by: Raphael Prevost <raphael@buro.asia>
-     Acked-and-tested-by: Suresh Siddha <suresh.b.siddha@intel.com>
-     Tested-by: Peter Anvin <hpa@zytor.com>
-     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-:040000 040000 19548f49884c9745ecb3970321ff41b244d79b97 
-ec8b1a02dd7ef354f1be4c68767e4353819dd5fa M	arch
-
-For obvious reasons, this commit cannot be easily reverted, but help is 
-much appreciated!
-
-/sune
-
--- 
-Unix is not an 'a-ha' experience, it is more of a 'holy-shit' experience.
-- Colin McFadyen
-
-
+but I think that doesn't match what people want when an explicit goal
+is specified.  Do you?
