@@ -1,114 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab2ECO5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:57:07 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57550 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755113Ab2ECO5F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:57:05 -0400
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
-Subject: [PATCH v1 0/6] reduce workqueue and timer noise
-Date: Thu,  3 May 2012 17:55:56 +0300
-Message-Id: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1757380Ab2ECO5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:57:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43520 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756215Ab2ECO5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 10:57:19 -0400
+Date: Thu, 3 May 2012 15:57:14 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 05/11] mm: swap: Implement generic handler for
+ swap_activate
+Message-ID: <20120503145714.GH11435@suse.de>
+References: <1334578675-23445-1-git-send-email-mgorman@suse.de>
+ <1334578675-23445-6-git-send-email-mgorman@suse.de>
+ <20120501155747.368a1d36.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120501155747.368a1d36.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Timers and work queues both provide a useful way to defer work 
-for a later time or a different context. However, when the 
-timer or work item runs, it interrupts the CPU it is running on.
-This is good if it is doing useful work, but it turns out this 
-is not always the case.
+On Tue, May 01, 2012 at 03:57:47PM -0700, Andrew Morton wrote:
+> On Mon, 16 Apr 2012 13:17:49 +0100
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > The version of swap_activate introduced is sufficient for swap-over-NFS
+> > but would not provide enough information to implement a generic handler.
+> > This patch shuffles things slightly to ensure the same information is
+> > available for aops->swap_activate() as is available to the core.
+> > 
+> > No functionality change.
+> > 
+> > ...
+> >
+> > --- a/include/linux/fs.h
+> > +++ b/include/linux/fs.h
+> > @@ -587,6 +587,8 @@ typedef struct {
+> >  typedef int (*read_actor_t)(read_descriptor_t *, struct page *,
+> >  		unsigned long, unsigned long);
+> >  
+> > +struct swap_info_struct;
+> 
+> Please put forward declarations at top-of-file.  To prevent accidental
+> duplication later on.
+> 
 
-This patch set tries to locate and address code paths where work queues
-items and timers are scheduled on CPUs where they have no useful work 
-to do and adapet them to be more selective.
+Done.
 
-This includes:
+> >  struct address_space_operations {
+> >  	int (*writepage)(struct page *page, struct writeback_control *wbc);
+> >  	int (*readpage)(struct file *, struct page *);
+> >
+> > ...
+> >
+> > --- a/mm/page_io.c
+> > +++ b/mm/page_io.c
+> 
+> Have you tested all this code with CONFIG_SWAP=n?
+> 
 
-- Introducing helper function to schedule work queue items on a subset
-  of CPUs in the system.
-- Use the helper function to schedule work items to attempt to drain
-  LRUs only on CPUs where there are LRU pages.
-- Stop running the per cpu work item that does per-cpu pages reclaim 
-  and VM statistics on CPUs that did not have any VM activity for the 
-  last second (time frame configurable) and re-start it when VM
-  activity is detected.
-- Fix a bug that prevented the timer code to to not program the 
-  underlying HW timer to fire periodically when no future timer 
-  event exists for a CPU
+Emm, it builds. That counts, right?
 
-Changelog:
+> Have you sought to minimise additional new code when CONFIG_SWAP=n?
+> 
 
-- The vmstat_update patch was changed to use a scapegoat CPU as
-  suggested by Christoph Lameter when the patch was previously
-  discussed in response to Frederic Weisbecker's adaptive tick 
-  patch set.
+Not specifically, but generic_swapfile_activate() is defined in page_io.c
+and that is built only if CONFIG_SWAP=y. Similarly swapon is in
+swapfile.c which is only build when swap is enabled.
 
-Also included is a testing only patch, not intdented for mainline,
-that turns the clock source watchdog into a config option which
-I used while testing the timer code fix change.
-
-The patch was boot tested on 32bit x86 in 8 way SMP and UP VMs.
-
-For you reference, I keep a todo list for these and other noise sources 
-at: https://github.com/gby/linux/wiki
-
-The git branched can be fetched from the git repo at 
-git@github.com:gby/linux.git on the reduce_workqueue_and_timers_noise_v1 
-branch
-
-Gilad Ben-Yossef (6):
-  timer: make __next_timer_interrupt explicit about no future event
-  workqueue: introduce schedule_on_each_cpu_mask
-  workqueue: introduce schedule_on_each_cpu_cond
-  mm: make lru_drain selective where it schedules work
-  mm: make vmstat_update periodic run conditional
-  x86: make clocksource watchdog configurable (not for mainline)
-
- arch/x86/Kconfig          |    9 +++-
- include/linux/vmstat.h    |    2 +-
- include/linux/workqueue.h |    4 ++
- kernel/time/clocksource.c |    2 +
- kernel/timer.c            |   31 ++++++++++-----
- kernel/workqueue.c        |   73 ++++++++++++++++++++++++++++++----
- mm/swap.c                 |   25 +++++++++++-
- mm/vmstat.c               |   95 ++++++++++++++++++++++++++++++++++++++-------
- 8 files changed, 204 insertions(+), 37 deletions(-)
-
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Tejun Heo <tj@kernel.org>
-CC: John Stultz <johnstul@us.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Mike Frysinger <vapier@gentoo.org>
-CC: David Rientjes <rientjes@google.com>
-CC: Hugh Dickins <hughd@google.com>
-CC: Minchan Kim <minchan.kim@gmail.com>
-CC: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Christoph Lameter <cl@linux.com>
-CC: Chris Metcalf <cmetcalf@tilera.com>
-CC: Hakan Akkan <hakanakkan@gmail.com>
-CC: Max Krasnyansky <maxk@qualcomm.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: linux-kernel@vger.kernel.org
-CC: linux-mm@kvack.org
-
+-- 
+Mel Gorman
+SUSE Labs
