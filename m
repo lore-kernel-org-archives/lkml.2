@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757976Ab2ECSyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 14:54:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15058 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753243Ab2ECSyI (ORCPT
+	id S1758181Ab2ECSy5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 14:54:57 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:57055 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755746Ab2ECSyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 14:54:08 -0400
-X-Authority-Analysis: v=2.0 cv=J5EoHXbS c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=YECtLpki0LgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=_nkV0h_IJbvyrkjp6CoA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1336071245.14207.104.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH v6 1/3] trace: Make removal of ring buffer pages atomic
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Laurent Chavey <chavey@google.com>,
-        Justin Teravest <teravest@google.com>,
-        David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org
-Date: Thu, 03 May 2012 14:54:05 -0400
-In-Reply-To: <CAL26m8J8=-yvtW+7F+XqTKgZs4NxiT3gSYJFC3RetjBwJvzL2g@mail.gmail.com>
-References: <1328212844-11889-2-git-send-email-vnagarnaik@google.com>
-	 <1335388704-26790-1-git-send-email-vnagarnaik@google.com>
-	 <1336010118.14207.75.camel@gandalf.stny.rr.com>
-	 <CAL26m8KgvuUGhK_T91fM2dNtFt4+KSOb5-C8yNiZ888BZW1PEg@mail.gmail.com>
-	 <1336049840.14207.82.camel@gandalf.stny.rr.com>
-	 <1336054375.14207.84.camel@gandalf.stny.rr.com>
-	 <CAL26m8J8=-yvtW+7F+XqTKgZs4NxiT3gSYJFC3RetjBwJvzL2g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Thu, 3 May 2012 14:54:55 -0400
+Message-ID: <4FA2D46C.2040404@linaro.org>
+Date: Thu, 03 May 2012 11:54:36 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Richard Cochran <richardcochran@gmail.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/1] ntp: advertise correct TAI offset during leap second
+References: <cover.1335442155.git.richardcochran@gmail.com> <7af92d6eabef55ddce07007ea515eda2e1474c52.1335442155.git.richardcochran@gmail.com>
+In-Reply-To: <7af92d6eabef55ddce07007ea515eda2e1474c52.1335442155.git.richardcochran@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12050318-2398-0000-0000-000006550D90
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-03 at 11:43 -0700, Vaibhav Nagarnaik wrote:
-> On Thu, May 3, 2012 at 7:12 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > It's also giving me errors when I try to enable events or anything else
-> > when tracing_on is disabled.
-> 
-> Yes, I had to add a check to see if resizing is safe. I re-used
-> record_disabled in this patch for that purpose.
-> 
-> In the next patch for "atomic addition of pages" I added a new field
-> resize_disabled to guard against unsafe resizing. So with that patch,
-> you won't see this behavior. It also fixes the issue with trace-cmd
-> where the ring buffer doesn't get expanded.
+On 04/26/2012 05:11 AM, Richard Cochran wrote:
+> When repeating a UTC time value during a leap second (when the UTC
+> time should be 23:59:60), the TAI timescale should not stop. The kernel
+> NTP code increments the TAI offset one second too late. This patch fixes
+> the issue by incrementing the offset during the leap second itself.
 
-Would it be possible to put that resize_disabled into the first patch so
-we don't have this bug popping up in a git bisect?
+Got a chance to look at this closer and I agree its the right fix.  So 
+its queued.
+thanks
+-john
 
--- Steve
-
+> Signed-off-by: Richard Cochran<richardcochran@gmail.com>
+> ---
+>   kernel/time/ntp.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+> index f03fd83..e8c8671 100644
+> --- a/kernel/time/ntp.c
+> +++ b/kernel/time/ntp.c
+> @@ -412,6 +412,7 @@ int second_overflow(unsigned long secs)
+>   		if (secs % 86400 == 0) {
+>   			leap = -1;
+>   			time_state = TIME_OOP;
+> +			time_tai++;
+>   			printk(KERN_NOTICE
+>   				"Clock: inserting leap second 23:59:60 UTC\n");
+>   		}
+> @@ -426,7 +427,6 @@ int second_overflow(unsigned long secs)
+>   		}
+>   		break;
+>   	case TIME_OOP:
+> -		time_tai++;
+>   		time_state = TIME_WAIT;
+>   		break;
+>
 
