@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab2ECDHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 23:07:42 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60638 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187Ab2ECDHl (ORCPT
+	id S1753271Ab2ECDMJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 23:12:09 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:54491 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752472Ab2ECDMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 23:07:41 -0400
-Date: Thu, 3 May 2012 13:07:25 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-Id: <20120503130725.5064b8c0fe9c072a8763d30e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Wed, 2 May 2012 23:12:07 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18+avFz6NQ+QkXFj8q2V55EWVnXfCNNUCWGy7RZJE
+	dPOp+t7E7iKl04
+Message-ID: <1336014721.7370.32.camel@marge.simpson.net>
+Subject: Re: [PATCH]  Re: [RFC PATCH] namespaces: fix leak on fork() failure
+From: Mike Galbraith <efault@gmx.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>
+Date: Thu, 03 May 2012 05:12:01 +0200
+In-Reply-To: <20120501134214.f6b44f4a.akpm@linux-foundation.org>
+References: <1335604790.5995.22.camel@marge.simpson.net>
+	 <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org>
+	 <20120429165846.GA19054@redhat.com>
+	 <1335754867.17899.4.camel@marge.simpson.net>
+	 <m1zk9rmyh4.fsf@fess.ebiederm.org>
+	 <20120501134214.f6b44f4a.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__3_May_2012_13_07_25_+1000_Mq8fJy0H_P5vaHwU"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__3_May_2012_13_07_25_+1000_Mq8fJy0H_P5vaHwU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2012-05-01 at 13:42 -0700, Andrew Morton wrote:
+> On Tue, 01 May 2012 13:35:03 -0700
+> ebiederm@xmission.com (Eric W. Biederman) wrote:
+> 
+> > 
+> > Andrew can you please pick up this patch?
+> 
+> Sure.  I assume it's fixing a post-3.4 regression?  No -stable backport
+> needed?
 
-Hi Dave,
+Dunno what all should go to stable, but anyone using vsftpd will
+appreciate something going.  Large leakage was initially reported
+against 3.1.  That was bisected to..
+423e0ab0 VFS : mount lock scalability for internal mounts 
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/i915/intel_display.c between commit 99d9acdd0c5c
-("drm/i915: Do not set "Enable Panel Fitter" on SNB pageflips") from
-Linus' tree and (I am not sure which) commits from the drm tree.
+Subsequent fixes which did not go to stable were applied..
+	905ad269 procfs: fix a vfsmount longterm reference leak
+	6f686574 ... and the same kind of leak for mqueue
+..but leakage persists even with fork failure hole plugged.
 
-I fixed it up (the former patch got applied in completely the wrong place
-by git merge).  This file looks like it was massively rewritten in the
-drm tree :-(.  I have not included the merge diff because it was >2000
-lines.
+The one (at least) that remains, grabbing pid references while we wait
+for RCU destruction of pid/namespace and our subsequently never
+destroying namespace is being annoying.  Yesterday I ran up >4600 leaks
+with 10 background instances of the testcase (time that, egad), much
+MUCH later ~4000 were released.  Between huge delay and ftrace simply
+refusing to trace out of lined get_pid(), I'm having a jolly time trying
+to get an 8x10 color glossy of the leaky event to stare at. 
 
-Dave, as an experiment, you might like to pull that former patch into
-your tree and see if that fixes the merge with Linus' tree.
+Whatever goes to stable, what fixes this little bugger should go too.
+> hm, Mike had some test code.  If that was put in
+> tools/testing/selftests/nsproxy, this leak wouldn't happen again!
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I didn't write it, that and a perl script to monitor leakage came along
+with bug report.
 
---Signature=_Thu__3_May_2012_13_07_25_+1000_Mq8fJy0H_P5vaHwU
-Content-Type: application/pgp-signature
+-Mike
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPofZtAAoJEECxmPOUX5FETagP/3M95R1NJJ+3T9M1EnxYDKLT
-Go2NDkHU/eJ1DF82T+9isp/AhvI6rlLUsMscCC12ZxF2bq1QJSRJg7X/fkKWsWsP
-i9YfbHvFg9so5141u8J0Y5juBAW/VgXkg8l5cctN8+gCrJrUYzbSheUbTbFeY0HT
-wvK8dWquzOs/x7K+tiL4RPe8nrpJ+e8cTh2qiWwbKB6Vrx12knIp3cQ7nrGPhn/N
-Uo1wrz7gP7ew6liwkZEkRte0iNoIudQdfNC3HeadTPKX6NWdfABrmUEhueN51Kaq
-6qDc58XU8xvzcV9P+DJ0nIh1z0P8Z13lPu/rSIBxWh3bPe++jB09vRfHfj/2l+hE
-PocaKpDrQBdseOn1sSQSZle+HI+uVPgoZ4bhLnqlpeBA9/FJF8XscCXRkjl8tzgY
-vpm7tvMvzTtRkjcV1kS+89ou84squ3fNlHCBQ/HB+vQXbejqbrBGi81abaihJrhh
-7TO8EHPzlFh4+oBDPe8Q+lYB4t8TaR+z4I1L1XqhRoJOGLXvqgPrknqskh1sYz7i
-kW6sLqRJe7mxMgPYGbp6En1mvjy2fM42RrwMAIqhR3Lt3CQrrefd8o7pn+thJkF3
-LjwIqPSFHGVy6Bbww65EBoYM6Cko/ZBk4/IhKPoerKuIOQu/gVKxTyJu+L95IVDb
-E7g9C3DFXJKleClHQ+dg
-=pNwv
------END PGP SIGNATURE-----
-
---Signature=_Thu__3_May_2012_13_07_25_+1000_Mq8fJy0H_P5vaHwU--
