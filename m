@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab2ECQWY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 12:22:24 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:34108 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756238Ab2ECQWX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 12:22:23 -0400
+	id S1757702Ab2ECQW5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 12:22:57 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:42793 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757576Ab2ECQWz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 12:22:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120503161736.GA16993@boyd>
-References: <1336024803.10945.5.camel@lappy> <20120503161736.GA16993@boyd>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Thu, 3 May 2012 18:22:01 +0200
-Message-ID: <CA+1xoqeVHH_8MezKFX=gB9o5zFMjajHAVai3SxGpzZpvQ5uUHw@mail.gmail.com>
-Subject: Re: ecryptfs: Kernel BUG when closing device
-To: Tyler Hicks <tyhicks@canonical.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, dustin.kirkland@gazzang.com,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ecryptfs@vger.kernel.org
+In-Reply-To: <x49fwbhl48d.fsf@segfault.boston.devel.redhat.com>
+References: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
+ <1336054995-22988-7-git-send-email-svenkatr@ti.com> <x49fwbhl48d.fsf@segfault.boston.devel.redhat.com>
+From: "S, Venkatraman" <svenkatr@ti.com>
+Date: Thu, 3 May 2012 21:52:32 +0530
+Message-ID: <CANfBPZ-V86XfnA8CXVsupvWkfnXPC7upCqAFsx8+_2Ta5zTabA@mail.gmail.com>
+Subject: Re: [PATCH v2 06/16] block: treat DMPG and SWAPIN requests as special
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org,
+        alex.lemberg@sandisk.com, ilan.smith@sandisk.com, lporzio@micron.com,
+        rmk+kernel@arm.linux.org.uk
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 3, 2012 at 6:17 PM, Tyler Hicks <tyhicks@canonical.com> wrote:
-> On 2012-05-03 08:00:03, Sasha Levin wrote:
->> Hi all,
->>
->> After some fuzzing using trinity inside a KVM guest, I've stumbled on the following:
+On Thu, May 3, 2012 at 8:08 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> Venkatraman S <svenkatr@ti.com> writes:
 >
-> Hi Sasha - Thanks for reporting this issue. Is there any way to get
-> trinity to reproduce this fuzzing sequence?
+>> From: Ilan Smith <ilan.smith@sandisk.com>
+>>
+>> When exp_swapin and exp_dmpg are set, treat read requests
+>> marked with DMPG and SWAPIN as high priority and move to
+>> the front of the queue.
+>>
+> [...]
+>> +     if (bio_swapin(bio) && blk_queue_exp_swapin(q)) {
+>> +             spin_lock_irq(q->queue_lock);
+>> +             where = ELEVATOR_INSERT_FLUSH;
+>> +             goto get_rq;
+>> +     }
+>> +
+>> +     if (bio_dmpg(bio) && blk_queue_exp_dmpg(q)) {
+>> +             spin_lock_irq(q->queue_lock);
+>> +             where = ELEVATOR_INSERT_FLUSH;
+>> +             goto get_rq;
+>
+> Is ELEVATOR_INSERT_FRONT not good enough?  It seems wrong to use _FLUSH,
+> here.  If the semantics of ELEVATOR_INSERT_FLUSH are really what is
+> required, then perhaps we need to have another think about the naming of
+> these flags.
+>
+Actually - yes, ELEVATOR_INSERT_FRONT would do as well. In the
+previous version of MMC stack,
+we needed the _FLUSH to trigger the write operation that was to be
+preempted, to check that
+it actually works.
 
-Hi Tyler,
 
-Not really, since it's not the result of a single command it can't
-recreate it easily.
-
-On the other hand, I'd be happy to add any debugging ideas you have
-into the tested kernel and attempt to recreate the issue.
-
-Thanks.
+> Cheers,
+> Jeff
+>
+> --
