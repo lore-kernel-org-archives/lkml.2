@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550Ab2ECOCY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:02:24 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:10520 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754293Ab2ECOCW (ORCPT
+	id S1756119Ab2ECOEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:04:39 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:47750 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755730Ab2ECOEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:02:22 -0400
-X-IronPort-AV: E=Sophos;i="4.75,523,1330905600"; 
-   d="scan'208";a="12275288"
-Date: Thu, 3 May 2012 15:09:50 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [RFC PATCH v1 3/5] KVM: Add paravirt kvm_flush_tlb_others
-In-Reply-To: <4FA0688E.8030200@goop.org>
-Message-ID: <alpine.DEB.2.00.1205031443590.26786@kaball-desktop>
-References: <20120427161727.27082.43096.stgit@abhimanyu>  <20120427162401.27082.59387.stgit@abhimanyu> <4F9D32B4.8040002@redhat.com>  <1335865176.13683.120.camel@twins> <4F9FBF38.2060903@redhat.com>  <1335869827.13683.133.camel@twins> <1335869998.13683.135.camel@twins>
- <4FA0688E.8030200@goop.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 3 May 2012 10:04:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <20120503135452.GA12050@polaris.bitmath.org>
+References: <1335175627-2270-1-git-send-email-rydberg@euromail.se>
+	<alpine.LNX.2.00.1205011300540.1856@pobox.suse.cz>
+	<CAN+gG=GGVFDgf_PkovS+_OX26LH0Q19_FwwkGP2pSwnoX4d_Ug@mail.gmail.com>
+	<alpine.LNX.2.00.1205021044240.14613@pobox.suse.cz>
+	<CAN+gG=HHxzYPSD+1i5JS8HmkxusHi=e6im48VzXHy2KsFoce+w@mail.gmail.com>
+	<CAN+gG=HDZJf+73SoddWar_pRPH2NvFrvpVuAaRC8_frXmGQYfA@mail.gmail.com>
+	<20120503122359.GA11552@polaris.bitmath.org>
+	<CAN+gG=GS_aQ35ekF71oCjZXquB4X3xJvzq2_fT2d7nM+iBK=Zg@mail.gmail.com>
+	<20120503131904.GA11741@polaris.bitmath.org>
+	<CAN+gG=GU8NGJ70Yx8_roeA4LCohcmym7wEspbv4d_xMqbrP5hw@mail.gmail.com>
+	<20120503135452.GA12050@polaris.bitmath.org>
+Date: Thu, 3 May 2012 16:04:37 +0200
+Message-ID: <CAN+gG=F3c-hUqzyOv7DEkWYBN6=mATVMGSKOr-MrWvid8mc-hA@mail.gmail.com>
+Subject: Re: [PATCH v3 0/6] hid: Introduce device groups
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephane Chatty <chatty@enac.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 May 2012, Jeremy Fitzhardinge wrote:
-> On 05/01/2012 03:59 AM, Peter Zijlstra wrote:
-> > On Tue, 2012-05-01 at 12:57 +0200, Peter Zijlstra wrote:
-> >> Anyway, I don't have any idea about the costs involved with
-> >> HAVE_RCU_TABLE_FREE, but I don't think its much.. otherwise these other
-> >> platforms (PPC,SPARC) wouldn't have used it, gup_fast() is a very
-> >> specific case, whereas mmu-gather is something affecting pretty much all
-> >> tasks. 
-> > Which reminds me, I thought Xen needed this too, but a git grep on
-> > HAVE_RCU_TABLE_FREE shows its still only ppc and sparc.
-> >
-> > Jeremy?
-> 
-> Yeah, I was thinking that too, but I can't remember what we did to
-> resolve it.  For pure PV guests, gupf simply isn't used, so the problem
-> is moot.  But for dom0 or PCI-passthrough it could be.
+On Thu, May 3, 2012 at 3:54 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> >> > 2) Add the interface type to the group descision, which should
+>> >> > probably be done anyway. I have a patch in the pipe that, will send it
+>> >> > later today.
+>> >>
+>> >> A simpler solution consists in adding the macros HID_USB_MT_DEVICE(v,
+>> >> p) and HID_BLUETOOTH_MT_DEVICE(v, p) as you had introduced in a
+>> >> earlier patch (I don't know why it disappeared).
+>> >
+>> > No, the specific entries in the hid-multitouch device list matches any
+>> > group, so those defines were simplified away in the second version.
+>>
+>> disagree: a device can present several interface (because it has
+>> several "devices") and only those presenting Contact ID can and should
+>> be handled by hid-multitouch.
+>
+> Obviously this is only a problem for the devices with mixed
+> interfaces, but for those, solution 2) together with specifying the
+> group as you suggest should work. We can definitely change all devices
+> in the list, it just was not necessary before (or so I thought).
+>
+>> The think is that they do match hid-generic (they get the group
+>> HID_GROUP_GENERIC).
+>> However they also match hid-multitouch (as hid-multitouch does not ask
+>> for a particular group). So, if hid-multitouch is loaded __before__
+>> hid-generic, it will be given the device whatever the match with
+>> hid-generic.
+>
+> I suppose what you describe here is how it was working before the
+> device groups.
 
-Yes, dom0 can use gupf, for example when a userspace block backend is
-involved.
+Just to be clear: no, this last paragraph occurs after device groups.
+Before, it was working as hid-generic catch the device first, then
+released it while looking at the report descriptors. Now, it's purely
+dependent on which driver is loaded first for this particaular case.
 
-Reading the code it seems to me that xen_flush_tlb_others returns
-immediately and succesfully, no matter whether one or more vcpus are or
-are not running at the moment and no matter if one or more vcpus
-previously disabled interrupts.
+Benjamin
 
-Therefore I think that we should be using HAVE_RCU_TABLE_FREE.
-I am going to submit a patch for that.
+> Ok, I see what to do now. I will be back shortly with a
+> patch which should make USB_DEVICE_ID_TOPSEED2_PERIPAD_701 work, and
+> let's take it from there.
+>
+> Thanks for testing,
+> Henrik
