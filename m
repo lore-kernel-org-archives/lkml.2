@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757437Ab2ECO6e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:58:34 -0400
+	id S1757481Ab2ECO67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:58:59 -0400
 Received: from mail-wg0-f44.google.com ([74.125.82.44]:55935 "EHLO
 	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757199Ab2ECO5R (ORCPT
+	with ESMTP id S1755939Ab2ECO5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:57:17 -0400
+	Thu, 3 May 2012 10:57:09 -0400
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
@@ -22,9 +22,9 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Hakan Akkan <hakanakkan@gmail.com>,
         Max Krasnyansky <maxk@qualcomm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
-Subject: [PATCH v1 3/6] workqueue: introduce schedule_on_each_cpu_cond
-Date: Thu,  3 May 2012 17:55:59 +0300
-Message-Id: <1336056962-10465-4-git-send-email-gilad@benyossef.com>
+Subject: [PATCH v1 1/6] timer: make __next_timer_interrupt explicit about no future event
+Date: Thu,  3 May 2012 17:55:57 +0300
+Message-Id: <1336056962-10465-2-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
 References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
@@ -32,14 +32,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce the schedule_on_each_cpu_cond() function that schedules
-a work item on each online CPU for which the supplied condition
-function returns true.
+Current timer code fails to correctly return a value meaning
+that there is no future timer event, with the result that
+the timer keeps getting re-armed in HZ one shot mode even
+when we could turn it off, generating unneeded interrupts.
+This patch attempts to fix this problem.
 
-This function should be used instead of schedule_on_each_cpu()
-when only some of the CPUs have actual work to do and a predicate
-function can tell if a certain CPU does or does not have work to do,
-thus saving unneeded wakeups and schedules.
+What is happening is that when __next_timer_interrupt() wishes
+to return a value that signifies "there is no future timer
+event", it returns (base->timer_jiffies + NEXT_TIMER_MAX_DELTA).
+
+However, the code in tick_nohz_stop_sched_tick(), which called
+__next_timer_interrupt() via get_next_timer_interrupt(),
+compares the return value to (last_jiffies + NEXT_TIMER_MAX_DELTA)
+to see if the timer needs to be re-armed.
+
+base->timer_jiffies != last_jiffies and so
+tick_nohz_stop_sched_tick() interperts the return value as
+indication that there is a distant future event 12 days
+from now and programs the timer to fire next after KIME_MAX
+nsecs instead of avoiding to arm it. This ends up causesing
+a needless interrupt once every KTIME_MAX nsecs.
+
+I've noticed a similar but slightly different fix to the
+same problem in the Tilera kernel tree from Chris M. (I've
+wrote this before seeing that one), so some variation of this
+fix is in use on real hardware for some time now.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 CC: Thomas Gleixner <tglx@linutronix.de>
@@ -61,71 +79,93 @@ CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: linux-kernel@vger.kernel.org
 CC: linux-mm@kvack.org
 ---
- include/linux/workqueue.h |    2 ++
- kernel/workqueue.c        |   37 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 39 insertions(+), 0 deletions(-)
+ kernel/timer.c |   31 +++++++++++++++++++++----------
+ 1 files changed, 21 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 20da95a..d7bb104 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -385,6 +385,8 @@ extern int schedule_delayed_work_on(int cpu, struct delayed_work *work,
- extern int schedule_on_each_cpu(work_func_t func);
- extern int schedule_on_each_cpu_mask(work_func_t func,
- 					const struct cpumask *mask);
-+extern int schedule_on_each_cpu_cond(work_func_t func,
-+					bool (*cond_func)(int cpu));
- extern int keventd_up(void);
+diff --git a/kernel/timer.c b/kernel/timer.c
+index a297ffc..32ba64a 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1187,11 +1187,13 @@ static inline void __run_timers(struct tvec_base *base)
+  * is used on S/390 to stop all activity when a CPU is idle.
+  * This function needs to be called with interrupts disabled.
+  */
+-static unsigned long __next_timer_interrupt(struct tvec_base *base)
++static bool __next_timer_interrupt(struct tvec_base *base,
++					unsigned long *next_timer)
+ {
+ 	unsigned long timer_jiffies = base->timer_jiffies;
+ 	unsigned long expires = timer_jiffies + NEXT_TIMER_MAX_DELTA;
+-	int index, slot, array, found = 0;
++	int index, slot, array;
++	bool found = false;
+ 	struct timer_list *nte;
+ 	struct tvec *varray[4];
  
- int execute_in_process_context(work_func_t fn, struct execute_work *);
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 1c9782b..3322d30 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2828,6 +2828,43 @@ int schedule_on_each_cpu_mask(work_func_t func, const struct cpumask *mask)
+@@ -1202,12 +1204,12 @@ static unsigned long __next_timer_interrupt(struct tvec_base *base)
+ 			if (tbase_get_deferrable(nte->base))
+ 				continue;
+ 
+-			found = 1;
++			found = true;
+ 			expires = nte->expires;
+ 			/* Look at the cascade bucket(s)? */
+ 			if (!index || slot < index)
+ 				goto cascade;
+-			return expires;
++			goto out;
+ 		}
+ 		slot = (slot + 1) & TVR_MASK;
+ 	} while (slot != index);
+@@ -1233,7 +1235,7 @@ cascade:
+ 				if (tbase_get_deferrable(nte->base))
+ 					continue;
+ 
+-				found = 1;
++				found = true;
+ 				if (time_before(nte->expires, expires))
+ 					expires = nte->expires;
+ 			}
+@@ -1245,7 +1247,7 @@ cascade:
+ 				/* Look at the cascade bucket(s)? */
+ 				if (!index || slot < index)
+ 					break;
+-				return expires;
++				goto out;
+ 			}
+ 			slot = (slot + 1) & TVN_MASK;
+ 		} while (slot != index);
+@@ -1254,7 +1256,10 @@ cascade:
+ 			timer_jiffies += TVN_SIZE - index;
+ 		timer_jiffies >>= TVN_BITS;
+ 	}
+-	return expires;
++out:
++	if (found)
++		*next_timer = expires;
++	return found;
  }
  
- /**
-+ * schedule_on_each_cpu_cond - execute a function synchronously on each
-+ * online CPU for which the supplied condition function returns true
-+ * @func: the function to run on the selected CPUs
-+ * @cond_func: the function to call to select the CPUs
-+ *
-+ * schedule_on_each_cpu_cond() executes @func on each online CPU for
-+ * @cond_func returns true using the system workqueue and blocks until
-+ * all CPUs have completed.
-+ * schedule_on_each_cpu_cond() is very slow.
-+ *
-+ * RETURNS:
-+ * 0 on success, -errno on failure.
-+ */
-+int schedule_on_each_cpu_cond(work_func_t func, bool (*cond_func)(int cpu))
-+{
-+	int cpu, ret;
-+	cpumask_var_t mask;
+ /*
+@@ -1317,9 +1322,15 @@ unsigned long get_next_timer_interrupt(unsigned long now)
+ 	if (cpu_is_offline(smp_processor_id()))
+ 		return now + NEXT_TIMER_MAX_DELTA;
+ 	spin_lock(&base->lock);
+-	if (time_before_eq(base->next_timer, base->timer_jiffies))
+-		base->next_timer = __next_timer_interrupt(base);
+-	expires = base->next_timer;
++	if (time_before_eq(base->next_timer, base->timer_jiffies)) {
 +
-+	if (unlikely(!zalloc_cpumask_var(&mask, GFP_KERNEL)))
-+		return -ENOMEM;
++		if (__next_timer_interrupt(base, &expires))
++			base->next_timer = expires;
++		else
++			expires = now + NEXT_TIMER_MAX_DELTA;
++	} else
++		expires = base->next_timer;
 +
-+	get_online_cpus();
-+
-+	for_each_online_cpu(cpu)
-+		if (cond_func(cpu))
-+			cpumask_set_cpu(cpu, mask);
-+
-+	ret = schedule_on_each_cpu_mask(func, mask);
-+
-+	put_online_cpus();
-+
-+	free_cpumask_var(mask);
-+
-+	return ret;
-+}
-+
-+/**
-  * schedule_on_each_cpu - execute a function synchronously on each online CPU
-  * @func: the function to call
-  *
+ 	spin_unlock(&base->lock);
+ 
+ 	if (time_before_eq(expires, now))
 -- 
 1.7.0.4
 
