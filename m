@@ -1,53 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133Ab2ECN3B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 09:29:01 -0400
-Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:53208 "EHLO
-	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751270Ab2ECN3A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 09:29:00 -0400
-Message-ID: <4FA2881B.6010902@ti.com>
-Date: Thu, 03 May 2012 16:28:59 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120503 Thunderbird/12.0.1
+	id S1755424Ab2ECNa4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 09:30:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29021 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753690Ab2ECNay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 09:30:54 -0400
+Date: Thu, 3 May 2012 09:30:11 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@fusionio.com>
+Subject: Re: [PATCH] btrfs: lower metadata writeback threshold on low dirty
+ threshold
+Message-ID: <20120503133011.GB1914@localhost.localdomain>
+References: <20120408010600.GA31377@localhost>
+ <x494nst7z3v.fsf@segfault.boston.devel.redhat.com>
+ <20120411161344.309f12ef.akpm@linux-foundation.org>
+ <20120412013224.GA5859@localhost>
+ <20120412022040.GA6800@localhost>
+ <20120412142634.GA16559@quack.suse.cz>
+ <20120413014026.GA9027@localhost>
+ <20120503034311.GA14081@localhost>
+ <20120503092528.GA1104@quack.suse.cz>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 2/3] MFD: twl6040: Allocate IRQ numbers dynamically
-References: <1336049665-27777-1-git-send-email-peter.ujfalusi@ti.com> <1336049665-27777-3-git-send-email-peter.ujfalusi@ti.com> <20120503132004.GB14296@sirena.org.uk>
-In-Reply-To: <20120503132004.GB14296@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120503092528.GA1104@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2012 04:20 PM, Mark Brown wrote:
-> On Thu, May 03, 2012 at 03:54:24PM +0300, Peter Ujfalusi wrote:
+On Thu, May 03, 2012 at 11:25:28AM +0200, Jan Kara wrote:
+> On Thu 03-05-12 11:43:11, Wu Fengguang wrote:
+> > This helps write performance when setting the dirty threshold to tiny numbers.
+> > 
+> >      3.4.0-rc2         3.4.0-rc2-btrfs4+
+> >   ------------  ------------------------
+> >          96.92        -0.4%        96.54  bay/thresh=1000M/btrfs-100dd-1-3.4.0-rc2
+> >          98.47        +0.0%        98.50  bay/thresh=1000M/btrfs-10dd-1-3.4.0-rc2
+> >          99.38        -0.3%        99.06  bay/thresh=1000M/btrfs-1dd-1-3.4.0-rc2
+> >          98.04        -0.0%        98.02  bay/thresh=100M/btrfs-100dd-1-3.4.0-rc2
+> >          98.68        +0.3%        98.98  bay/thresh=100M/btrfs-10dd-1-3.4.0-rc2
+> >          99.34        -0.0%        99.31  bay/thresh=100M/btrfs-1dd-1-3.4.0-rc2
+> >   ==>    88.98        +9.6%        97.53  bay/thresh=10M/btrfs-10dd-1-3.4.0-rc2
+> >   ==>    86.99       +13.1%        98.39  bay/thresh=10M/btrfs-1dd-1-3.4.0-rc2
+> >   ==>     2.75     +2442.4%        69.88  bay/thresh=1M/btrfs-10dd-1-3.4.0-rc2
+> >   ==>     3.31     +2634.1%        90.54  bay/thresh=1M/btrfs-1dd-1-3.4.0-rc2
+> > 
+> > Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+> > ---
+> >  fs/btrfs/disk-io.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > --- linux-next.orig/fs/btrfs/disk-io.c	2012-05-02 14:04:00.989262395 +0800
+> > +++ linux-next/fs/btrfs/disk-io.c	2012-05-02 14:04:01.773262414 +0800
+> > @@ -930,7 +930,8 @@ static int btree_writepages(struct addre
+> >  
+> >  		/* this is a bit racy, but that's ok */
+> >  		num_dirty = root->fs_info->dirty_metadata_bytes;
+> > -		if (num_dirty < thresh)
+> > +		if (num_dirty < min(thresh,
+> > +				    global_dirty_limit << (PAGE_CACHE_SHIFT-2)))
+> >  			return 0;
+> >  	}
+> >  	return btree_write_cache_pages(mapping, wbc);
+>   Frankly, that whole condition on WB_SYNC_NONE in btree_writepages() looks
+> like a hack. I think we also had problems with this condition when we tried
+> to change b_more_io list handling. I found rather terse commit message
+> explaining the code:
+> Btrfs: Limit btree writeback to prevent seeks
 > 
->>  	/* In order to operate correctly we need valid interrupt config */
->> -	if (!client->irq || !pdata->irq_base) {
->> +	if (!client->irq) {
+>   Which I kind of understand but is it that bad? Also I think last time we
+> stumbled over this code we were discussing that these dirty metadata would
+> be simply hidden from mm which would solve the problem of flusher thread
+> trying to outsmart the filesystem... But I guess noone had time to
+> implement this for btrfs.
 > 
-> It looks like you're totally removing the use of irq_base which will
-> break any boards that didn't convert to DT.  The usual idiom is to use
-> irq_base as the base for the range of requested IRQs if it's supplied,
-> otherwise set it to -1 to allow dynamic allocation.  This should keep
-> existing users working without disruption.
 
-In the current board files the pdata->irq_base set to some #defined
-value (which is a comfortably big number).
-With irq_alloc_descs(-1, 0, nr_irqs, 0); the range which can accommodate
-the number of IRQs twl6040 will be provided so there is no need to me to
-use the board specified irq_base.
-The irq_base will be removed from the pdata structure, but that change
-will go via linux-omap to avoid compile breakage.
-This part is in preparation for DT, yes, but it is working without DT.
-The twl6040 irq range is mapped to different numbers, that's all.
+Actually I did but I ran into an OOM problem.  See we can have as much dirty
+metadata as we have ram, and having no insight into what the global dirty and
+writeback limits are for the system means btrfs was using wayyyyy more memory
+for it's dirty and writeback metadata pages than would have normally been
+allowed.  In order to avoid OOM I had to re-implement a sort of
+balance_dirty_pages for btrfs, and again having no access to the global dirty
+limits and such at the time (AFAIK, I could just be an idiot) it was very hacky
+and prone to breaking.  The shrinker doesn't get called enough to handle this
+sort of thing.  Dave mentioned at LSF that XFS will actually do the synchronous
+writeout from the shrinker which will auto-throttle everything so I was going to
+try that but I haven't gotten around to it.  Thanks,
 
--- 
-Péter
+Josef
