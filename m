@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758394Ab2ECULR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 16:11:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57513 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586Ab2ECULQ convert rfc822-to-8bit (ORCPT
+	id S1758132Ab2ECUN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 16:13:26 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45015 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754876Ab2ECUNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 16:11:16 -0400
-Message-ID: <1336075862.6509.10.camel@twins>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
- variable-length record buffer
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kay Sievers <kay@vrfy.org>, Greg Kroah-Hartmann <greg@kroah.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Date: Thu, 03 May 2012 22:11:02 +0200
-In-Reply-To: <CA+55aFx1BO-s1YZ3EwscdWh2y5C2Q2dUyH8xQmuBKTNZrZWTNA@mail.gmail.com>
-References: <1336004953.4240.9.camel@mop> <1336074483.6509.3.camel@twins>
-	 <CA+55aFxhQ3SQrZJ6KGDu0xQ6sWSDxrS1C-V_fBcgCYmSqAKSWQ@mail.gmail.com>
-	 <1336075373.6509.9.camel@twins>
-	 <CA+55aFx1BO-s1YZ3EwscdWh2y5C2Q2dUyH8xQmuBKTNZrZWTNA@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 3 May 2012 16:13:24 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <4FA2D0C4.4020608@wwwdotorg.org>
+References: <1336063897-12083-1-git-send-email-hdoyu@nvidia.com>
+	<4FA2D0C4.4020608@wwwdotorg.org>
+Date: Thu, 3 May 2012 13:13:23 -0700
+Message-ID: <CAOesGMivxdDhkEoZh=LuvtKRPfgXi=8X4chEL-cJazjgeo_ONA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ARM: tegra: Add Tegra Memory Controller(MC) driver
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Hiroshi DOYU <hdoyu@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@android.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-03 at 13:09 -0700, Linus Torvalds wrote:
-> On Thu, May 3, 2012 at 1:02 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> > Thing is, with bonkers stuff like usb-console and kms/drm that's a _lot_
-> > of code running under the logbuf/console locks.
-> 
-> The top-level console lock shouldn't be a problem - we use trylock and
-> delay if it is held.
-> 
-> It's the lower-level driver-specific locks that screw us up. And quite
-> frankly, I am *not* willing to say that that is a printk() problem.
-> That is purely a "USB serial console is damn well broken" issue, and
-> should not be considered a limitation of printk.
+Hi,
 
-I'm happy to call all that broken ;-)
+On Thu, May 3, 2012 at 11:39 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 05/03/2012 10:51 AM, Hiroshi DOYU wrote:
+>> Tegra Memory Controller(MC) driver for Tegra20/30.
+>> Added to support MC General interrupts, mainly for IOMMU.
+>
+>> The location of a file may not be suitable because of xxx_driver under arch/arm/mach-*.
+>> ---
+>> diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+>
+> Russell, Olof, Arnd,
+>
+> Where should this driver be placed? It's a completely Tegra-specific
+> module, and I don't believe there's any drivers/ directory or other
+> subsystem that's appropriate to house it right now. Should we go ahead
+> and create a drivers/arm/ for this? Perhaps drivers/misc/?
+
+TI just added their memory driver in drivers/memory, and it was merged
+through Greg K-H's driver tree. That would be a good location for this
+one as well.
+
+> Honestly, to me it seems best to keep purely platform-specific drivers
+> like this in arch/arm/mach-tegra, since that's the most closely
+> Tegra-related directory.
+
+Since tegra has a custom memory controller it's not as obvious that it
+needs to go in a shared location, indeed. But it's easier to use the
+same practices across platforms, and if there are other vendors that
+end up sharing IP blocks for memory down the road, having them in a
+common location makes sense.
+
+
+-Olof
