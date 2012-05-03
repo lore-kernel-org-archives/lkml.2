@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964Ab2ECJQp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 05:16:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49275 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752191Ab2ECJQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 05:16:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="136509374"
-Message-ID: <4FA24CA7.2070107@intel.com>
-Date: Thu, 03 May 2012 17:15:19 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1756312Ab2ECJRW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 05:17:22 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:44514 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756185Ab2ECJRU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 05:17:20 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: andi.kleen@intel.com, tim.c.chen@linux.intel.com, jeremy@goop.org,
-        chrisw@sous-sol.org, akataria@vmware.com, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
-        fweisbec@gmail.com, riel@redhat.com, luto@mit.edu, avi@redhat.com,
-        len.brown@intel.com, paul.gortmaker@windriver.com, dhowells@redhat.com,
-        fenghua.yu@intel.com, yinghai@kernel.org, cpw@sgi.com, steiner@sgi.com,
-        linux-kernel@vger.kernel.org, yongjie.ren@intel.com
-Subject: Re: [PATCH 2/3] x86/flush_tlb: try flush_tlb_single one by one in
- flush_tlb_range
-References: <1335603099-2624-1-git-send-email-alex.shi@intel.com> <1335603099-2624-3-git-send-email-alex.shi@intel.com> <20120430105440.GC9303@aftab.osrc.amd.com> <4FA0FD39.9060908@intel.com> <20120502093815.GB12914@aftab.osrc.amd.com> <4FA11CC7.5040302@intel.com> <20120502134441.GF12914@aftab.osrc.amd.com>
-In-Reply-To: <20120502134441.GF12914@aftab.osrc.amd.com>
+From: Philipp Riemer <ruderphilipp@gmail.com>
+Date: Thu, 3 May 2012 11:16:59 +0200
+Message-ID: <CAFU-uVsxa8tY+ZUJJStBLMXTtTrobeVC7z-dpwHMq0M=9vfbEQ@mail.gmail.com>
+Subject: proposal of a new mailmap file for the linux kernel git repository
+To: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2012 09:44 PM, Borislav Petkov wrote:
+Dear members of the LKML,
+one of the advantages of distributed version systems such as the here
+used Git is also the weakness of those: everyone has its own copy of
+the repository and there is no authority controlling it (in general).
+As a result every developer can use whatever name and email address he
+or she wants to use. This leads to the fact that many people have
+typos in there names or use ".local" or ".(none)" email addresses.
+Hence, Git supports .mailmap files to overcome this and correct known
+mistakes.
 
-> On Wed, May 02, 2012 at 07:38:47PM +0800, Alex Shi wrote:
->>> Are you saying you want to have this setting per family?
->>
->> Set it according to CPU type is more precise, but looks ugly.
-> 
-> By "CPU type" do you mean microarchitecture here?
+The .mailmap file of the Linux Kernel consists of around 100 entries
+at the moment. Due to my work for my thesis I am currently skim
+through all names and email addresses and add ambiguous ones to the
+mailmap file as well. This lead to a size of around 2000 lines.
 
+Because this is my first contribution to the Linux Kernel and since
+the size of the file is huge compared to most other patches, I want to
+ask if I still should post the (patch) file here or if the link to my
+GitHub clone (<https://github.com/ruderphilipp/linux>, branch
+"mailmap-changes") is enough?
+Or should I send the file directly to one maintainer? For the latter,
+who would be the best person in this case? Paul Mundt because he
+pushed the last changes of this file to the official repository? Wang
+Chen as the maintainer of the Linux Kernel Patch Statistic? Or someone
+else?
 
-Yes.
+It is not the final version, yet, since I still have around 2.5% (500
+of originally around 20000 entries) to analyze. But I would say that
+this file is as good as done.
 
-> 
->> I am wondering if it worth to do. Maybe conservative selection is
->> acceptable?
-> 
-> Well, as I said earlier, I'd run it on a couple of different machines
-> and make FLUSHALL_BAR configurable from userspace - this way you have
-> real, solid data instead of guessing the exact number.
+With regards,
+Philipp Riemer
 
-
-Consider different CPU type has different balance point, I has another
-patch will add a interface for tuning.
-
-> 
->>> Also, have you run your patches with other benchmarks beside your
->>> microbenchmark, say kernbench, SPEC<something>, i.e. some other
->>> multithreaded benchmark touching shared memory? Are you seeing any
->>> improvement there?
->>
->> I tested oltp reading and specjbb2005 with openjdk. They should not much
->> flush_tlb_range calling. So, no clear improvement.
->> Do you know benchmarks which cause enough flush_tlb_range?
-> 
-> Not really. Probably get a couple of benchmarks and count
-> flush_tlb_range calls with trace_printk or perf probe? :-)
-
-
-perf probe is enough. :)
+PS: I would appreciate if everyone searches for his or her own name in
+the list under <https://github.com/ruderphilipp/linux/blob/mailmap-changes/.mailmap>
+and corrects it if necessary.
