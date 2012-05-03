@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757194Ab2ECOkM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:40:12 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:61204 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755767Ab2ECOkJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:40:09 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: mchehab@infradead.org, jareguero@telefonica.net
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] [media] az6007: Fix dubious use of !x & y
-Date: Thu,  3 May 2012 16:42:01 +0200
-Message-Id: <1336056121-27100-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756658Ab2ECOpp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:45:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25118 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753871Ab2ECOpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 10:45:43 -0400
+Message-ID: <4FA29A00.3040303@gmail.com>
+Date: Thu, 03 May 2012 16:45:20 +0200
+From: Edward Shishkin <edward.shishkin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: reiserfs-devel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs/reiserfs/journal.c: add missing brelse
+References: <1336054373-13293-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1336054373-13293-1-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The intent here must be to check if the right most bit
-of msgs[i].flags is set and then do the logical negation.
+On 05/03/2012 04:12 PM, Julia Lawall wrote:
+> From: Julia Lawall<Julia.Lawall@lip6.fr>
+>
+> Brelse is called to put bhjh on every way out of the function except this one.
 
-Used macro:
-#define I2C_M_RD        0x0001
+Yes, thanks.
+Acked-by: Edward Shishkin <edward.shishkin@gmail.com>
 
-Sparse warns about this:
-drivers/media/dvb/dvb-usb/az6007.c:714:40:
-	warning: dubious: !x & y
-
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- drivers/media/dvb/dvb-usb/az6007.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/media/dvb/dvb-usb/az6007.c b/drivers/media/dvb/dvb-usb/az6007.c
-index 4008b9c..0019335a 100644
---- a/drivers/media/dvb/dvb-usb/az6007.c
-+++ b/drivers/media/dvb/dvb-usb/az6007.c
-@@ -711,7 +711,7 @@ static int az6007_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
- 		addr = msgs[i].addr << 1;
- 		if (((i + 1) < num)
- 		    && (msgs[i].len == 1)
--		    && (!msgs[i].flags & I2C_M_RD)
-+		    && !(msgs[i].flags & I2C_M_RD)
- 		    && (msgs[i + 1].flags & I2C_M_RD)
- 		    && (msgs[i].addr == msgs[i + 1].addr)) {
- 			/*
--- 
-1.7.9.5
+>
+> Signed-off-by: Julia Lawall<Julia.Lawall@lip6.fr>
+>
+> ---
+>   fs/reiserfs/journal.c |    4 +++-
+>   1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/fs/reiserfs/journal.c b/fs/reiserfs/journal.c
+> index b1a0857..1ef9cbc 100644
+> --- a/fs/reiserfs/journal.c
+> +++ b/fs/reiserfs/journal.c
+> @@ -2757,8 +2757,10 @@ int journal_init(struct super_block *sb, const char *j_dev_name,
+>   	    le32_to_cpu(jh->jh_journal.jp_journal_max_commit_age);
+>   	journal->j_max_trans_age = JOURNAL_MAX_TRANS_AGE;
+>
+> -	if (check_advise_trans_params(sb, journal) != 0)
+> +	if (check_advise_trans_params(sb, journal) != 0) {
+> +		brelse(bhjh);
+>   	        goto free_and_return;
+> +	}
+>   	journal->j_default_max_commit_age = journal->j_max_commit_age;
+>
+>   	if (commit_max_age != 0) {
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe reiserfs-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
