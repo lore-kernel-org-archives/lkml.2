@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab2ECBzV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 21:55:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8040 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840Ab2ECBzU (ORCPT
+	id S1755630Ab2ECB6n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 21:58:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53406 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754451Ab2ECB6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 21:55:20 -0400
-X-Authority-Analysis: v=2.0 cv=T/EOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=YECtLpki0LgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=1XWaLZrsAAAA:8 a=gpJcohBzxz6gcBSezk8A:9 a=_z5puC9tsxdNz0z75EcA:7 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1336010118.14207.75.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH v6 1/3] trace: Make removal of ring buffer pages atomic
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Laurent Chavey <chavey@google.com>,
-        Justin Teravest <teravest@google.com>,
-        David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org
-Date: Wed, 02 May 2012 21:55:18 -0400
-In-Reply-To: <1335388704-26790-1-git-send-email-vnagarnaik@google.com>
-References: <1328212844-11889-2-git-send-email-vnagarnaik@google.com>
-	 <1335388704-26790-1-git-send-email-vnagarnaik@google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Wed, 2 May 2012 21:58:41 -0400
+Message-ID: <1336009851.3590.4.camel@phoenix>
+Subject: [PATCH] IIO: industrialio-core: Use simple_open
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Thu, 03 May 2012 09:50:51 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-04-25 at 14:18 -0700, Vaibhav Nagarnaik wrote:
-> This patch adds the capability to remove pages from a ring buffer
-> without destroying any existing data in it.
-> 
-> This is done by removing the pages after the tail page. This makes sure
-> that first all the empty pages in the ring buffer are removed. If the
-> head page is one in the list of pages to be removed, then the page after
-> the removed ones is made the head page. This removes the oldest data
-> from the ring buffer and keeps the latest data around to be read.
-> 
-> To do this in a non-racey manner, tracing is stopped for a very short
-> time while the pages to be removed are identified and unlinked from the
-> ring buffer. The pages are freed after the tracing is restarted to
-> minimize the time needed to stop tracing.
-> 
-> The context in which the pages from the per-cpu ring buffer are removed
-> runs on the respective CPU. This minimizes the events not traced to only
-> NMI trace contexts.
-> 
-> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Use simple_open to replace iio_debugfs_open.
 
-Hmm, something in this patch breaks buffers_size_kb and friends.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/iio/industrialio-core.c |   10 +---------
+ 1 files changed, 1 insertions(+), 9 deletions(-)
 
--- Steve
+diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+index 72e33b8..52aa44a 100644
+--- a/drivers/iio/industrialio-core.c
++++ b/drivers/iio/industrialio-core.c
+@@ -152,14 +152,6 @@ static void __exit iio_exit(void)
+ }
+ 
+ #if defined(CONFIG_DEBUG_FS)
+-static int iio_debugfs_open(struct inode *inode, struct file *file)
+-{
+-	if (inode->i_private)
+-		file->private_data = inode->i_private;
+-
+-	return 0;
+-}
+-
+ static ssize_t iio_debugfs_read_reg(struct file *file, char __user *userbuf,
+ 			      size_t count, loff_t *ppos)
+ {
+@@ -218,7 +210,7 @@ static ssize_t iio_debugfs_write_reg(struct file *file,
+ }
+ 
+ static const struct file_operations iio_debugfs_reg_fops = {
+-	.open = iio_debugfs_open,
++	.open = simple_open,
+ 	.read = iio_debugfs_read_reg,
+ 	.write = iio_debugfs_write_reg,
+ };
+-- 
+1.7.5.4
+
 
 
