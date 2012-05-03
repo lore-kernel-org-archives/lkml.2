@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352Ab2ECP2v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 11:28:51 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:46653 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755992Ab2ECP2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 11:28:50 -0400
-Date: Thu, 3 May 2012 17:28:41 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Miller <davem@davemloft.net>
-Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org, tj@kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH] mm: nobootmem: Correct alloc_bootmem semantics.
-Message-ID: <20120503152841.GA19918@cmpxchg.org>
-References: <20120425.161050.1011838269798884593.davem@davemloft.net>
- <CAE9FiQWYPPXA0YmgBP6SkKiEaLJJnzxMqPn2_VwOKoYSKGwULQ@mail.gmail.com>
- <20120425.190034.632638679653622318.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+	id S1756962Ab2ECPaN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 11:30:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42873 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab2ECPaL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 11:30:11 -0400
+Subject: Re: [PATCH 08/13] perf target: Split out perf_target handling code
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
+In-Reply-To: <20120503152746.GA8807@infradead.org>
+References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
+	 <1335417327-11796-9-git-send-email-namhyung.kim@lge.com>
+	 <20120502183026.GC5745@infradead.org> <1336055987.1493.17.camel@leonhard>
+	 <20120503152746.GA8807@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 May 2012 00:30:05 +0900
+Message-ID: <1336059005.1493.27.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120425.190034.632638679653622318.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 07:00:34PM -0400, David Miller wrote:
-> From: Yinghai Lu <yinghai@kernel.org>
-> Date: Wed, 25 Apr 2012 15:46:42 -0700
-> 
-> > On Wed, Apr 25, 2012 at 1:10 PM, David Miller <davem@davemloft.net> wrote:
-> >> @@ -298,13 +298,19 @@ void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
-> >>        if (WARN_ON_ONCE(slab_is_available()))
-> >>                return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
-> >>
-> >> +again:
-> >>        ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
-> >>                                         goal, -1ULL);
-> >>        if (ptr)
-> >>                return ptr;
+2012-05-03 (ëª©), 12:27 -0300, Arnaldo Carvalho de Melo:
+> Em Thu, May 03, 2012 at 11:39:47PM +0900, Namhyung Kim escreveu:
+> > 2012-05-02 (ìˆ˜), 15:30 -0300, Arnaldo Carvalho de Melo:
+> > > Em Thu, Apr 26, 2012 at 02:15:22PM +0900, Namhyung Kim escreveu:
+> > > > For further work on perf_target, it'd be better off splitting
+> > > > the code into a separate file.
+> > > > 
+> > > > Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+> > > > ---
+> > > >  tools/perf/Makefile      |    2 ++
+> > > >  tools/perf/perf.h        |    9 +--------
+> > > >  tools/perf/util/evlist.c |    1 +
+> > > >  tools/perf/util/evsel.c  |    1 +
+> > > >  tools/perf/util/target.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
+> > > >  tools/perf/util/target.h |   17 +++++++++++++++++
+> > > >  tools/perf/util/usage.c  |   34 ----------------------------------
+> > > >  tools/perf/util/util.h   |    2 --
+> > > >  8 files changed, 67 insertions(+), 44 deletions(-)
+> > > >  create mode 100644 tools/perf/util/target.c
+> > > >  create mode 100644 tools/perf/util/target.h
+> > > 
+> > > Trying to fix this now...
+> > > 
 > > 
-> > If you want to be consistent to bootmem version.
+> > Oops, sorry. I'll investigate it tomorrow.
 > > 
-> > again label should be here instead.
 > 
-> It is merely an artifact of implementation that the bootmem version
-> doesn't try to respect the given node if the goal cannot be satisfied,
-> and in fact I would classify that as a bug that needs to be fixed.
+> I fixed it, its on my latest perf/core pull req to Ingo.
 > 
-> Therefore, I believe the bootmem case is what needs to be adjusted
-> instead.
 
-Now it does: node+goal, goal, node, anywhere
+Cool :). Thanks a lot, Arnaldo.
 
-whereas the memblock version of __alloc_bootmem_node_nopanic() also
-still does: node+goal, goal, anywhere
+Namhyung
 
-Your description suggests that the node should be higher prioritized
-than the goal, which I understand as: node+goal, node, anywhere.
 
-Which do we actually want?
