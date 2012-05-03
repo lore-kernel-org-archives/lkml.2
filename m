@@ -1,76 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757960Ab2ECSVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 14:21:45 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:55123 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab2ECSVo (ORCPT
+	id S1757984Ab2ECSYR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 14:24:17 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55463 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042Ab2ECSYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 14:21:44 -0400
-Date: Thu, 3 May 2012 20:21:30 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V1 0/5] Rationalize time keeping
-Message-ID: <20120503182128.GB2254@netboy.at.omicron.at>
-References: <cover.1335510125.git.richardcochran@gmail.com>
- <4F9B228F.90903@linaro.org>
+	Thu, 3 May 2012 14:24:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9B228F.90903@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4FA2CAD9.6010808@zytor.com>
+References: <1335788867.29087.19.camel@localhost> <20120501110024.GC6649@dhcp-172-17-9-228.mtv.corp.google.com>
+ <1335875321.26671.15.camel@localhost> <CAPa8GCANv=-c7HsYvDqM+8JqJq6Gr9muxAivU2Ni16x9Ru5EXw@mail.gmail.com>
+ <CA+55aFwPgWqCPA=ao6XmZy56PaJZ4WC+hOZ_CHGWpo_zO425VA@mail.gmail.com>
+ <20120503064722.GN6871@ZenIV.linux.org.uk> <CA+55aFx0EUgXCE9CfUGz6zde-6iYgUKZRxB1=-VOEG0kSX2qEA@mail.gmail.com>
+ <CA+55aFxeBHSB6iBpP55kV2bLQGg8ZC9Ve5mvCmZN0ARH9dVwKg@mail.gmail.com> <4FA2CAD9.6010808@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 3 May 2012 11:23:53 -0700
+X-Google-Sender-Auth: fWyWb0uNNGYUznXSPf1uoKBfuqw
+Message-ID: <CA+55aFxrBghonjRvS=KK=5Oqw_Wj9PDh2wkDtVh7U9jw8=uTsA@mail.gmail.com>
+Subject: Re: Oops with DCACHE_WORD_ACCESS and ocfs2, autofs4
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@gmail.com>,
+        Jana Saout <jana@saout.de>, Joel Becker <jlbec@evilplan.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=f46d041825583d1d0604bf25e97e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 03:49:51PM -0700, John Stultz wrote:
-> On 04/27/2012 01:12 AM, Richard Cochran wrote:
-> >* Performance Impacts
-> >** con
-> >    - Small extra cost when reading the time (one integer addition plus
-> >      one integer test).
-> This may not be so small when it comes to folks who are very
-> concerned about the clock_gettime hotpath.
-> Further, the correction will be needed to be made in the vsyscall
-> paths, which isn't done with your current patchset (causing userland
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> to see different time values then what kernel space calculates).
+--f46d041825583d1d0604bf25e97e
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-John, now that you clarified the vDSO thing, I am very confused about
-this statement of yours. It appears that the vDSO data are updated
-when timekeeping_update() in timekeeper.c calls update_vsyscall().
+On Thu, May 3, 2012 at 11:13 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> Just from a cleanliness point of view, I don't think you need the
+> __WORDSUFFIX for any of these instructions (it is only required if it
+> would be ambiguous, but the register names should deal with it.)
 
-I think the hunk from patch #5, below, does in fact adjust the time
-value correctly before it gets handed off to the arch-specific
-update_vsyscall() to be copied into the vDSO page. So I'll make the
-claim that:
+I get nervous about those kinds of things, but you are probably right.
 
-1. We don't have to touch the vsyscall paths for this.
-2. This change does not affect vDSO performance at all.
+> I think you want to drop the shl instruction. =A0You're loading what
+> should end up at the LSB end of the register into the MSB end of the
+> register, so shr is all you should need.
 
-Would you mind taking another look at the patch?
+Right you are.
 
-Thanks,
-Richard
+Jana - never mind that patch. It will avoid the page fault, but try to
+use the wrong (truncated) name due to the extraneous left-shift of the
+loaded value.
 
----
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 7941258..6cedf46 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -212,11 +212,14 @@ static inline s64 timekeeping_get_ns_raw(void)
- /* must hold write on timekeeper.lock */
- static void timekeeping_update(bool clearntp)
- {
-+	struct timespec ts;
- 	if (clearntp) {
- 		timekeeper.ntp_error = 0;
- 		ntp_clear();
- 	}
--	update_vsyscall(&timekeeper.xtime, &timekeeper.wall_to_monotonic,
-+	ts.tv_sec = timekeeper_utc_sec();
-+	ts.tv_nsec = timekeeper.xtime.tv_nsec;
-+	update_vsyscall(&ts, &timekeeper.wall_to_monotonic,
- 			 timekeeper.clock, timekeeper.mult);
- }
+So use the attached one instead. It just removes the extra shift that
+Peter noticed, and also allows the use of the word-at-a-time code with
+DEBUG_PAGEALLOC so that I can test it myself too.
+
+I left the instruction suffixes in place, although Peter is probably
+right that the assembler will do the right thing.
+
+                         Linus
+
+--f46d041825583d1d0604bf25e97e
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h1s57nng0
+
+RnJvbSAzYThiOGU2MzE5MDk2MWRiNzY3MThjZDk2NjQwYWM1MzViYjY5MTdhIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBMaW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRh
+dGlvbi5vcmc+CkRhdGU6IFRodSwgMyBNYXkgMjAxMiAxMDoxNjo0MyAtMDcwMApTdWJqZWN0OiBb
+UEFUQ0hdIHZmczogbWFrZSB3b3JkLWF0LWEtdGltZSBhY2Nlc3NlcyBoYW5kbGUgYSBub24tZXhp
+c3RpbmcgcGFnZQoKSXQgdHVybnMgb3V0IHRoYXQgdGhlcmUgYXJlIG1vcmUgY2FzZXMgdGhhbiBD
+T05GSUdfREVCVUdfUEFHRUFMTE9DIHRoYXQKY2FuIGhhdmUgaG9sZXMgaW4gdGhlIGtlcm5lbCBh
+ZGRyZXNzIHNwYWNlOiBpdCBzZWVtcyB0byBoYXBwZW4gZWFzaWx5CndpdGggWGVuLCBhbmQgaXQg
+bG9va3MgbGlrZSB0aGUgQU1EIGdhcnQ2NCBjb2RlIHdpbGwgYWxzbyBwdW5jaCBob2xlcwpkeW5h
+bWljYWxseS4KCkFjdHVhbGx5IGhpdHRpbmcgdGhhdCBjYXNlIGlzIHN0aWxsIHZlcnkgdW5saWtl
+bHksIHNvIGp1c3QgZG8gdGhlCmFjY2VzcywgYW5kIHRha2UgYW4gZXhjZXB0aW9uIGFuZCBmaXgg
+aXQgdXAgZm9yIHRoZSB2ZXJ5IHVubGlrZWx5IGNhc2UKb2YgaXQgYmVpbmcgYSBwYWdlLWNyb3Nz
+ZXIgd2l0aCBubyBuZXh0IHBhZ2UuCgpBbmQgaGV5LCB0aGlzIGFic3RyYWN0aW9uIG1pZ2h0IGV2
+ZW4gaGVscCBvdGhlciBhcmNoaXRlY3R1cmVzIHRoYXQgaGF2ZQpvdGhlciBpc3N1ZXMgd2l0aCB1
+bmFsaWduZWQgd29yZCBhY2Nlc3NlcyB0aGFuIHRoZSBwb3NzaWJsZSBtaXNzaW5nIG5leHQKcGFn
+ZS4gIElPVywgdGhpcyBjb3VsZCBkbyB0aGUgYnl0ZSBvcmRlciBtYWdpYyB0b28uCgpQZXRlciBB
+bnZpbiBmaXhlZCBhIHRoaW5rbyBpbiB0aGUgc2hpZnRpbmcgZm9yIHRoZSBleGNlcHRpb24gY2Fz
+ZS4KCkNjOiAgUGV0ZXIgQW52aW4gPGhwYUB6eXRvci5jb20+ClNpZ25lZC1vZmYtYnk6IExpbnVz
+IFRvcnZhbGRzIDx0b3J2YWxkc0BsaW51eC1mb3VuZGF0aW9uLm9yZz4KLS0tCiBhcmNoL3g4Ni9L
+Y29uZmlnICAgICAgICAgICAgICAgICAgICAgIHwgICAgMiArLQogYXJjaC94ODYvaW5jbHVkZS9h
+c20vd29yZC1hdC1hLXRpbWUuaCB8ICAgMzcgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KysrCiBmcy9uYW1laS5jICAgICAgICAgICAgICAgICAgICAgICAgICAgIHwgICAgNCArKy0tCiAz
+IGZpbGVzIGNoYW5nZWQsIDQwIGluc2VydGlvbnMoKyksIDMgZGVsZXRpb25zKC0pCgpkaWZmIC0t
+Z2l0IGEvYXJjaC94ODYvS2NvbmZpZyBiL2FyY2gveDg2L0tjb25maWcKaW5kZXggMWQxNGNjNmI3
+OWFkLi5jOTg2NmIwYjc3ZDggMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L0tjb25maWcKKysrIGIvYXJj
+aC94ODYvS2NvbmZpZwpAQCAtODEsNyArODEsNyBAQCBjb25maWcgWDg2CiAJc2VsZWN0IENMS0VW
+VF9JODI1MwogCXNlbGVjdCBBUkNIX0hBVkVfTk1JX1NBRkVfQ01QWENIRwogCXNlbGVjdCBHRU5F
+UklDX0lPTUFQCi0Jc2VsZWN0IERDQUNIRV9XT1JEX0FDQ0VTUyBpZiAhREVCVUdfUEFHRUFMTE9D
+CisJc2VsZWN0IERDQUNIRV9XT1JEX0FDQ0VTUwogCiBjb25maWcgSU5TVFJVQ1RJT05fREVDT0RF
+UgogCWRlZl9ib29sIChLUFJPQkVTIHx8IFBFUkZfRVZFTlRTKQpkaWZmIC0tZ2l0IGEvYXJjaC94
+ODYvaW5jbHVkZS9hc20vd29yZC1hdC1hLXRpbWUuaCBiL2FyY2gveDg2L2luY2x1ZGUvYXNtL3dv
+cmQtYXQtYS10aW1lLmgKaW5kZXggNmZlNjc2N2I3MTI0Li5mNjA5ZjA3ZTZiOTMgMTAwNjQ0Ci0t
+LSBhL2FyY2gveDg2L2luY2x1ZGUvYXNtL3dvcmQtYXQtYS10aW1lLmgKKysrIGIvYXJjaC94ODYv
+aW5jbHVkZS9hc20vd29yZC1hdC1hLXRpbWUuaApAQCAtMjIsNiArMjIsOCBAQCBzdGF0aWMgaW5s
+aW5lIGxvbmcgY291bnRfbWFza2VkX2J5dGVzKHVuc2lnbmVkIGxvbmcgbWFzaykKIAlyZXR1cm4g
+bWFzayoweDAwMDEwMjAzMDQwNTA2MDh1bCA+PiA1NjsKIH0KIAorI2RlZmluZSBfX1dPUkRTVUZG
+SVggInEiCisKICNlbHNlCS8qIDMyLWJpdCBjYXNlICovCiAKIC8qIENhcmwgQ2hhdGZpZWxkIC8g
+SmFuIEFjaHJlbml1cyBHKyB2ZXJzaW9uIGZvciAzMi1iaXQgKi8KQEAgLTMzLDYgKzM1LDggQEAg
+c3RhdGljIGlubGluZSBsb25nIGNvdW50X21hc2tlZF9ieXRlcyhsb25nIG1hc2spCiAJcmV0dXJu
+IGEgJiBtYXNrOwogfQogCisjZGVmaW5lIF9fV09SRFNVRkZJWCAibCIKKwogI2VuZGlmCiAKICNk
+ZWZpbmUgUkVQRUFUX0JZVEUoeCkJKCh+MHVsIC8gMHhmZikgKiAoeCkpCkBAIC00Myw0ICs0Nywz
+NyBAQCBzdGF0aWMgaW5saW5lIHVuc2lnbmVkIGxvbmcgaGFzX3plcm8odW5zaWduZWQgbG9uZyBh
+KQogCXJldHVybiAoKGEgLSBSRVBFQVRfQllURSgweDAxKSkgJiB+YSkgJiBSRVBFQVRfQllURSgw
+eDgwKTsKIH0KIAorLyoKKyAqIExvYWQgYW4gdW5hbGlnbmVkIHdvcmQgZnJvbSBrZXJuZWwgc3Bh
+Y2UuCisgKgorICogSW4gdGhlICh2ZXJ5IHVubGlrZWx5KSBjYXNlIG9mIHRoZSB3b3JkIGJlaW5n
+IGEgcGFnZS1jcm9zc2VyCisgKiBhbmQgdGhlIG5leHQgcGFnZSBub3QgYmVpbmcgbWFwcGVkLCB0
+YWtlIHRoZSBleGNlcHRpb24gYW5kCisgKiByZXR1cm4gemVyb2VzIGluIHRoZSBub24tZXhpc3Rp
+bmcgcGFydC4KKyAqLworc3RhdGljIGlubGluZSB1bnNpZ25lZCBsb25nIGxvYWRfdW5hbGlnbmVk
+X3plcm9wYWQoY29uc3Qgdm9pZCAqYWRkcikKK3sKKwl1bnNpZ25lZCBsb25nIHJldCwgZHVtbXk7
+CisKKwlhc20oCisJCSIxOlx0bW92IiBfX1dPUkRTVUZGSVggIiAlMiwlMFxuIgorCQkiMjpcbiIK
+KwkJIi5zZWN0aW9uIC5maXh1cCxcImF4XCJcbiIKKwkJIjM6XHQiCisJCSJsZWEiIF9fV09SRFNV
+RkZJWCAiICUyLCUxXG5cdCIKKwkJImFuZCIgX19XT1JEU1VGRklYICIgJTMsJTFcblx0IgorCQki
+bW92IiBfX1dPUkRTVUZGSVggIiAoJTEpLCUwXG5cdCIKKwkJImxlYSIgX19XT1JEU1VGRklYICIg
+JTIsJTFcblx0IgorCQkiYW5kIiBfX1dPUkRTVUZGSVggIiAlNCwlMVxuXHQiCisJCSJzaGwiIF9f
+V09SRFNVRkZJWCAiICQzLCUxXG5cdCIKKwkJInNociIgX19XT1JEU1VGRklYICIgJWIxLCUwXG5c
+dCIKKwkJImptcCAyYlxuIgorCQkiLnByZXZpb3VzXG4iCisJCV9BU01fRVhUQUJMRSgxYiwgM2Ip
+CisJCToiPSZyIiAocmV0KSwiPSZjIiAoZHVtbXkpCisJCToibSIgKCoodW5zaWduZWQgbG9uZyAq
+KWFkZHIpLAorCQkgImkiICgtc2l6ZW9mKHVuc2lnbmVkIGxvbmcpKSwKKwkJICJpIiAoc2l6ZW9m
+KHVuc2lnbmVkIGxvbmcpLTEpKTsKKwlyZXR1cm4gcmV0OworfQorCiAjZW5kaWYgLyogX0FTTV9X
+T1JEX0FUX0FfVElNRV9IICovCmRpZmYgLS1naXQgYS9mcy9uYW1laS5jIGIvZnMvbmFtZWkuYwpp
+bmRleCAwMDYyZGQxN2ViNTUuLmM0Mjc5MTkxNGY4MiAxMDA2NDQKLS0tIGEvZnMvbmFtZWkuYwor
+KysgYi9mcy9uYW1laS5jCkBAIC0xNDI5LDcgKzE0MjksNyBAQCB1bnNpZ25lZCBpbnQgZnVsbF9u
+YW1lX2hhc2goY29uc3QgdW5zaWduZWQgY2hhciAqbmFtZSwgdW5zaWduZWQgaW50IGxlbikKIAl1
+bnNpZ25lZCBsb25nIGhhc2ggPSAwOwogCiAJZm9yICg7OykgewotCQlhID0gKih1bnNpZ25lZCBs
+b25nICopbmFtZTsKKwkJYSA9IGxvYWRfdW5hbGlnbmVkX3plcm9wYWQobmFtZSk7CiAJCWlmIChs
+ZW4gPCBzaXplb2YodW5zaWduZWQgbG9uZykpCiAJCQlicmVhazsKIAkJaGFzaCArPSBhOwpAQCAt
+MTQ1OSw3ICsxNDU5LDcgQEAgc3RhdGljIGlubGluZSB1bnNpZ25lZCBsb25nIGhhc2hfbmFtZShj
+b25zdCBjaGFyICpuYW1lLCB1bnNpZ25lZCBpbnQgKmhhc2hwKQogCWRvIHsKIAkJaGFzaCA9ICho
+YXNoICsgYSkgKiA5OwogCQlsZW4gKz0gc2l6ZW9mKHVuc2lnbmVkIGxvbmcpOwotCQlhID0gKih1
+bnNpZ25lZCBsb25nICopKG5hbWUrbGVuKTsKKwkJYSA9IGxvYWRfdW5hbGlnbmVkX3plcm9wYWQo
+bmFtZStsZW4pOwogCQkvKiBEbyB3ZSBoYXZlIGFueSBOVUwgb3IgJy8nIGJ5dGVzIGluIHRoaXMg
+d29yZD8gKi8KIAkJbWFzayA9IGhhc196ZXJvKGEpIHwgaGFzX3plcm8oYSBeIFJFUEVBVF9CWVRF
+KCcvJykpOwogCX0gd2hpbGUgKCFtYXNrKTsK
+--f46d041825583d1d0604bf25e97e--
