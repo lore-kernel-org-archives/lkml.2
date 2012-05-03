@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab2ECHWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 03:22:48 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:55831 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138Ab2ECHWr (ORCPT
+	id S1755370Ab2ECHXs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 03:23:48 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:18066 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab2ECHXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 03:22:47 -0400
-Date: Thu, 3 May 2012 14:54:55 +0800
-From: Richard Yang <weiyang@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Wei Yang <weiyang.kernel@gmail.com>,
-        Richard Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: One problem in reassign pci bus number?
-Message-ID: <20120503065455.GA30042@richard>
-Reply-To: Richard Yang <weiyang@linux.vnet.ibm.com>
-References: <20120410090306.GA7056@richard>
- <20120422155202.GA13540@richard>
- <CAE9FiQXoUcUw5kOcBmsbBu_hJ+GbKk--qFt+WyUHbjJPwY+8Pw@mail.gmail.com>
- <CADLM8XPryGVVWVruB=sZ9zxPp-nEhz8xKeMhY3u8KBShk2suBQ@mail.gmail.com>
- <CAE9FiQXLxEEu68tJvph3LB53nqycK+YctwDKMEF824koXVM5AA@mail.gmail.com>
+	Thu, 3 May 2012 03:23:47 -0400
+Date: Thu, 3 May 2012 10:26:52 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: joseph daniel <josephdanielwalter@gmail.com>, devel@driverdev.osuosl.org,
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: staging/rtl8712: unhandled default case in SwLedOn function.
+Message-ID: <20120503072652.GA13252@mwanda>
+References: <CAFDqYy3OCmRHFR05=iQs-Q1hc5OMwZFiVkDbVnv5KXPA5pxfQA@mail.gmail.com>
+ <CAFDqYy03M7aZBzz30fT590YsLvZsm6JorXBGZ1CwJg2Qp01UOQ@mail.gmail.com>
+ <4FA19AE9.104@lwfinger.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQXLxEEu68tJvph3LB53nqycK+YctwDKMEF824koXVM5AA@mail.gmail.com>
+In-Reply-To: <4FA19AE9.104@lwfinger.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12050220-5140-0000-0000-0000012C06CA
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 09:28:19AM -0700, Yinghai Lu wrote:
->On Wed, Apr 25, 2012 at 2:47 AM, Wei Yang <weiyang.kernel@gmail.com> wrote:
->>> busn_alloc patchset should address your concern.
->>>
->>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->>> for-pci-busn-alloc
->>>
->> Yinghai
->>
->> You mean this patch 44b2347b fix the problem?
->>
->> In the comment, "do pass0 for all good bridge".
->> Then there are totally two pass for a whole pci domain?
->
->also other commits about strict checking to see if it is good.
->
->>
->> I tried "git grep busn_alloc", but not find anything.
->
->the commit in the patchset.
->
->  PCI: Add busn_res into struct pci_bus.
->  PCI: Add busn_res operation functions
->  PCI: Release busn_res when removing bus
->  PCI: Insert busn_res in pci_create_root_bus()
->  PCI: Checking busn_res in pci_scan_root_bus()
->  PCI: Add default busn_resource
->  PCI: Add default busn_res for pci_scan_bus()
->  x86, PCI: Add busn_res into resources list for acpi path
->  x86, PCI: Put busn resource in pci_root_info for not using _CRS path
->  PCI, ia64: Register busn_res for root buses
->  PCI, sparc: Register busn_res for root buses
->  PCI, powerpc: Register busn_res for root buses
->  PCI, parisc: Register busn_res for root buses
->  resources: Add probe_resource()
->  resources: Replace registered resource in tree.
->  PCI: Add pci_bus_extend/shrink_top()
->  PCI: Probe safe range that we can use for unassigned bridge.
->  PCI: Add pci_bus_replace_busn_res()
->  PCI: Allocate bus range instead of use max blindly
->  PCI: Strict checking of valid range for bridge
->  PCI: Kill pci_fixup_parent_subordinate_busnr()
->  PCI: Seperate child bus scanning to two passes overall
->  pcmcia: Remove workaround for fixing pci parent bus subordinate
->  PCI: Double checking setting for bus register and bus struct.
->  PCI, pciehp: Remove not needed bus number range checking
->  PCI: More strict checking of valid range for bridge
->  PCI: Don't shrink too much for hotplug bridge
+> This should do:
+> 
+> Index: staging/drivers/staging/rtl8712/rtl8712_led.c
+> ===================================================================
+> --- staging.orig/drivers/staging/rtl8712/rtl8712_led.c
+> +++ staging/drivers/staging/rtl8712/rtl8712_led.c
+> @@ -137,7 +137,8 @@ static void SwLedOn(struct _adapter *pad
+>  		r8712_write8(padapter, LEDCFG, LedCfg&0x0f);
+>  		break;
+>  	default:
+> -		break;
+> +		WARN_ONCE(1, "Default branch taken in %s\n", __func__);
+> +		return;
+>  	}
+>  	pLed->bLedOn = true;
+>  }
+> 
 
-Yinghai,
+Don't just reflexively add extra debug code.
 
-For some functions, such as probe_resource() would you mind add some
-comments?  Such as explain the parameter usage.
-That would help for reading the function.
--- 
-Richard Yang
-Help you, Help me
+In this case pLed->LedPin is either LED_PIN_LED0 or LED_PIN_LED1.
+The LED_PIN_GPIO0 and default cases are never used.  Even if it were
+I think we would want to set pLed->bLedOn = true in the default
+case.
+
+The code is ugly as pants, but it works fine as is.
+
+regards,
+dan carpenter
 
