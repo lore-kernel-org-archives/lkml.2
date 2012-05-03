@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758901Ab2ECWQD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 18:16:03 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:52360 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754455Ab2ECWQB convert rfc822-to-8bit (ORCPT
+	id S1758889Ab2ECWQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 18:16:57 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37315 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756469Ab2ECWQ4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 18:16:01 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [PATCH 0/2]: Kconfig options for wakelocks limit and gc (was: Re: [RFC][PATCH 8/8] PM / Sleep: Add user space ...)
-Date: Fri, 4 May 2012 00:20:48 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: NeilBrown <neilb@suse.de>, John Stultz <johnstul@us.ibm.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
+	Thu, 3 May 2012 18:16:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <201205040020.23460.rjw@sisk.pl>
+References: <201202070200.55505.rjw@sisk.pl>
+	<201205031528.12743.rjw@sisk.pl>
+	<CAMP5XgeXGWcWwQ77DctoWQy0BEPLAQdbSjHANbHu76M+xZzR-w@mail.gmail.com>
+	<201205040020.23460.rjw@sisk.pl>
+Date: Thu, 3 May 2012 15:16:54 -0700
+Message-ID: <CAMP5Xgd1AqaiPj6Bqna0O+vxWYmq-jAu7zo9XhLjPuf6V8-QLA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 6/8] PM / Sleep: Implement opportunistic sleep
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
         Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
@@ -22,67 +27,91 @@ Cc: NeilBrown <neilb@suse.de>, John Stultz <johnstul@us.ibm.com>,
         Alan Stern <stern@rowland.harvard.edu>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-References: <201202070200.55505.rjw@sisk.pl> <201205032129.41611.rjw@sisk.pl> <CAMP5XgdC6Tzhxi4kD7XgDqptY3D4ykfFyvEyAOtKhHTW8rFCwg@mail.gmail.com>
-In-Reply-To: <CAMP5XgdC6Tzhxi4kD7XgDqptY3D4ykfFyvEyAOtKhHTW8rFCwg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201205040020.49130.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 04, 2012, Arve Hjønnevåg wrote:
-> On Thu, May 3, 2012 at 12:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Friday, April 27, 2012, Rafael J. Wysocki wrote:
-> >> On Friday, April 27, 2012, Arve Hjønnevåg wrote:
-> >> > 2012/4/27 Rafael J. Wysocki <rjw@sisk.pl>:
-> >> > > On Friday, April 27, 2012, Arve Hjønnevåg wrote:
-> >> > >> 2012/4/26 Rafael J. Wysocki <rjw@sisk.pl>:
-> >> > >> ...
-> >> > >> > ---
-> >> > >> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >> > >> > Subject: PM / Sleep: Add user space interface for manipulating wakeup sources, v3
-> >> > >> >
-> >> > >> > Android allows user space to manipulate wakelocks using two
-> >> > >> > sysfs file located in /sys/power/, wake_lock and wake_unlock.
-> >> > >> > Writing a wakelock name and optionally a timeout to the wake_lock
-> >> > >> > file causes the wakelock whose name was written to be acquired (it
-> >> > >> > is created before is necessary), optionally with the given timeout.
-> >> > >> > Writing the name of a wakelock to wake_unlock causes that wakelock
-> >> > >> > to be released.
-> >> > >> >
-> >> > >> > Implement an analogous interface for user space using wakeup sources.
-> >> > >> > Add the /sys/power/wake_lock and /sys/power/wake_unlock files
-> >> > >> > allowing user space to create, activate and deactivate wakeup
-> >> > >> > sources, such that writing a name and optionally a timeout to
-> >> > >> > wake_lock causes the wakeup source of that name to be activated,
-> >> > >> > optionally with the given timeout.  If that wakeup source doesn't
-> >> > >> > exist, it will be created and then activated.  Writing a name to
-> >> > >> > wake_unlock causes the wakeup source of that name, if there is one,
-> >> > >> > to be deactivated.  Wakeup sources created with the help of
-> >> > >> > wake_lock that haven't been used for more than 5 minutes are garbage
-> >> > >> > collected and destroyed.  Moreover, there can be only WL_NUMBER_LIMIT
-> >> > >>
-> >> > >> I think it would be better if the garbage collection and limit was
-> >> > >> configurable and optional. I would probably turn both features off
-> >> > >> since I do not want to chase down bugs because a wakelock was ignored,
-> >> > >> and I think the garbage collection will erase stats that we care
-> >> > >> about.
-> >> > >
-> >> > > OK, but would you mind if I added the configurability as a separate incremental
-> >> > > patch?
-> >> > >
-> >> >
-> >> > That is fine with me.
-> >>
-> >> Cool, thanks!
-> >
-> > The following two patches add the configuration options for the limit and
-> > garbage collector.  Please let me know if they are OK with you.
-> >
-> 
-> Yes.
+On Thu, May 3, 2012 at 3:20 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, May 03, 2012, Arve Hjønnevåg wrote:
+>> On Thu, May 3, 2012 at 6:28 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Thursday, May 03, 2012, Arve Hjønnevåg wrote:
+>> >> On Thu, Apr 26, 2012 at 2:52 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> >> ...
+>> >> > From: Rafael J. Wysocki <rjw@sisk.pl>
+>> >> > Subject: PM / Sleep: Implement opportunistic sleep, v2
+>> >> >
+>> >> > Introduce a mechanism by which the kernel can trigger global
+>> >> > transitions to a sleep state chosen by user space if there are no
+>> >> > active wakeup sources.
+>> >> >
+>> >> > It consists of a new sysfs attribute, /sys/power/autosleep, that
+>> >> > can be written one of the strings returned by reads from
+>> >> > /sys/power/state, an ordered workqueue and a work item carrying out
+>> >> > the "suspend" operations.  If a string representing the system's
+>> >> > sleep state is written to /sys/power/autosleep, the work item
+>> >> > triggering transitions to that state is queued up and it requeues
+>> >> > itself after every execution until user space writes "off" to
+>> >> > /sys/power/autosleep.
+>> >> >
+>> >>
+>> >> This does not work. Writing something other than "off" disabled auto
+>> >> suspend for me.
+>> >
+>> > My bad, sorry about that.
+>> >
+>> >> ...
+>> >> > +static ssize_t autosleep_store(struct kobject *kobj,
+>> >> > +                              struct kobj_attribute *attr,
+>> >> > +                              const char *buf, size_t n)
+>> >> > +{
+>> >> > +       suspend_state_t state = decode_state(buf, n);
+>> >> > +       int error;
+>> >> > +
+>> >> > +       if (state == PM_SUSPEND_ON
+>> >> > +           && !(strncmp(buf, "off", 3) && strncmp(buf, "off\n", 4)))
+>> >> > +               return -EINVAL;
+>> >>
+>> >> Did you mean:
+>> >>       if (state == PM_SUSPEND_ON
+>> >>           && strcmp(buf, "off") && strcmp(buf, "off\n"))
+>> >>               return -EINVAL;
+>> >
+>> >
+>> > Yes, I did.
+>> >
+>> > I'll add the following as an incremental patch on top of the series.
+>> >
+>> > Thanks,
+>> > Rafael
+>> >
+>> > ---
+>> >  kernel/power/main.c |    2 +-
+>> >  1 file changed, 1 insertion(+), 1 deletion(-)
+>> >
+>> > Index: linux/kernel/power/main.c
+>> > ===================================================================
+>> > --- linux.orig/kernel/power/main.c
+>> > +++ linux/kernel/power/main.c
+>> > @@ -422,7 +422,7 @@ static ssize_t autosleep_store(struct ko
+>> >        int error;
+>> >
+>> >        if (state == PM_SUSPEND_ON
+>> > -           && !(strncmp(buf, "off", 3) && strncmp(buf, "off\n", 4)))
+>> > +           && strncmp(buf, "off", 3) && strncmp(buf, "off\n", 4))
+>> >                return -EINVAL;
+>> >
+>> >        error = pm_autosleep_set_state(state);
+>>
+>> You still use strncmp here, so anything that starts with "off" is
+>> allowed (and the second strncmp is redundant).
+>
+> Good point.  So I'm going to add the patch below after all.
+> OK to add your sign-off to it?
+>
 
-Good, thanks!
+Yes.
+
+-- 
+Arve Hjønnevåg
