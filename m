@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab2ECC16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 22:27:58 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:35763 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752386Ab2ECC14 (ORCPT
+	id S1755701Ab2ECCcY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 22:32:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50874 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab2ECCcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 22:27:56 -0400
-Message-ID: <4FA1ED1E.9000109@gmail.com>
-Date: Thu, 03 May 2012 10:27:42 +0800
+	Wed, 2 May 2012 22:32:23 -0400
+Message-ID: <4FA1EE2C.6050201@gmail.com>
+Date: Thu, 03 May 2012 10:32:12 +0800
 From: Wang Sheng-Hui <shhuiw@gmail.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
@@ -48,17 +48,8 @@ On 2012年05月03日 10:15, Benjamin Herrenschmidt wrote:
 > with interrupts hard disabled... Do you see any code path
 > where that is not the case ?
 
-This is the only case.
-I have run LTP test suite on my system without oprofile over 24 hours
-with 3.4-rc4 kernel. 
-Then I started oprofile, and the system crashed quickly.
-
-I wonder if oprofile does some special changes with the running.
-But I'm not familiar with the internal of oprofile.
-
-I tried to change BUG_ON to WARN_ON, and got lots of warnning messages
-in dmesg. So I changed it to local var here.
-
+Since __check_irq_replay() should always be called with interrupts hard disabled,
+I think it's harmless to use local var here.
 
 > 
 > Cheers,
