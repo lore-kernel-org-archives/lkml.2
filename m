@@ -1,116 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758877Ab2ECWTv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 18:19:51 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:52391 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754494Ab2ECWTu convert rfc822-to-8bit (ORCPT
+	id S1758904Ab2ECWWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 18:22:34 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35213 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756630Ab2ECWWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 18:19:50 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [RFC][PATCH 6/8] PM / Sleep: Implement opportunistic sleep
-Date: Fri, 4 May 2012 00:24:36 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-References: <201202070200.55505.rjw@sisk.pl> <201205040020.23460.rjw@sisk.pl> <CAMP5Xgd1AqaiPj6Bqna0O+vxWYmq-jAu7zo9XhLjPuf6V8-QLA@mail.gmail.com>
-In-Reply-To: <CAMP5Xgd1AqaiPj6Bqna0O+vxWYmq-jAu7zo9XhLjPuf6V8-QLA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201205040024.37008.rjw@sisk.pl>
+	Thu, 3 May 2012 18:22:32 -0400
+From: mathieu.poirier@linaro.org
+To: mchehab@infradead.org
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        mathieu.poirier@linaro.org
+Subject: [PATCH 0/6] drivers/media: randconfig patches for kernel 3.4
+Date: Thu,  3 May 2012 16:22:21 -0600
+Message-Id: <1336083747-3142-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 04, 2012, Arve Hjønnevåg wrote:
-> On Thu, May 3, 2012 at 3:20 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday, May 03, 2012, Arve Hjønnevåg wrote:
-> >> On Thu, May 3, 2012 at 6:28 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > On Thursday, May 03, 2012, Arve Hjønnevåg wrote:
-> >> >> On Thu, Apr 26, 2012 at 2:52 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> >> ...
-> >> >> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >> >> > Subject: PM / Sleep: Implement opportunistic sleep, v2
-> >> >> >
-> >> >> > Introduce a mechanism by which the kernel can trigger global
-> >> >> > transitions to a sleep state chosen by user space if there are no
-> >> >> > active wakeup sources.
-> >> >> >
-> >> >> > It consists of a new sysfs attribute, /sys/power/autosleep, that
-> >> >> > can be written one of the strings returned by reads from
-> >> >> > /sys/power/state, an ordered workqueue and a work item carrying out
-> >> >> > the "suspend" operations.  If a string representing the system's
-> >> >> > sleep state is written to /sys/power/autosleep, the work item
-> >> >> > triggering transitions to that state is queued up and it requeues
-> >> >> > itself after every execution until user space writes "off" to
-> >> >> > /sys/power/autosleep.
-> >> >> >
-> >> >>
-> >> >> This does not work. Writing something other than "off" disabled auto
-> >> >> suspend for me.
-> >> >
-> >> > My bad, sorry about that.
-> >> >
-> >> >> ...
-> >> >> > +static ssize_t autosleep_store(struct kobject *kobj,
-> >> >> > +                              struct kobj_attribute *attr,
-> >> >> > +                              const char *buf, size_t n)
-> >> >> > +{
-> >> >> > +       suspend_state_t state = decode_state(buf, n);
-> >> >> > +       int error;
-> >> >> > +
-> >> >> > +       if (state == PM_SUSPEND_ON
-> >> >> > +           && !(strncmp(buf, "off", 3) && strncmp(buf, "off\n", 4)))
-> >> >> > +               return -EINVAL;
-> >> >>
-> >> >> Did you mean:
-> >> >>       if (state == PM_SUSPEND_ON
-> >> >>           && strcmp(buf, "off") && strcmp(buf, "off\n"))
-> >> >>               return -EINVAL;
-> >> >
-> >> >
-> >> > Yes, I did.
-> >> >
-> >> > I'll add the following as an incremental patch on top of the series.
-> >> >
-> >> > Thanks,
-> >> > Rafael
-> >> >
-> >> > ---
-> >> >  kernel/power/main.c |    2 +-
-> >> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >> >
-> >> > Index: linux/kernel/power/main.c
-> >> > ===================================================================
-> >> > --- linux.orig/kernel/power/main.c
-> >> > +++ linux/kernel/power/main.c
-> >> > @@ -422,7 +422,7 @@ static ssize_t autosleep_store(struct ko
-> >> >        int error;
-> >> >
-> >> >        if (state == PM_SUSPEND_ON
-> >> > -           && !(strncmp(buf, "off", 3) && strncmp(buf, "off\n", 4)))
-> >> > +           && strncmp(buf, "off", 3) && strncmp(buf, "off\n", 4))
-> >> >                return -EINVAL;
-> >> >
-> >> >        error = pm_autosleep_set_state(state);
-> >>
-> >> You still use strncmp here, so anything that starts with "off" is
-> >> allowed (and the second strncmp is redundant).
-> >
-> > Good point.  So I'm going to add the patch below after all.
-> > OK to add your sign-off to it?
-> >
-> 
-> Yes.
+From: Arnd Bergmann <arnd@arndb.de>
 
-OK, done.
+These patches fix miscellaneous problems when working
+with make randconfig.  They were discovered on kernel
+3.1-rc4 and have been reformatted for 3.4.
+
+Arnd Bergmann (6):
+  drivers/media: add missing __devexit_p() annotations
+  v4l/dvb: fix Kconfig dependencies on VIDEO_CAPTURE_DRIVERS
+  media/rc: IR_SONY_DECODER depends on BITREVERSE
+  media/video: add I2C dependencies
+  dvb/drxd: stub out drxd_attach when not built
+  video/omap24xxcam: use __iomem annotations
+
+ drivers/media/dvb/Kconfig                  |    2 +-
+ drivers/media/dvb/ddbridge/ddbridge-core.c |    2 +-
+ drivers/media/dvb/frontends/drxd.h         |   14 ++++++++++++++
+ drivers/media/radio/radio-timb.c           |    2 +-
+ drivers/media/radio/saa7706h.c             |    2 +-
+ drivers/media/radio/tef6862.c              |    2 +-
+ drivers/media/rc/Kconfig                   |    1 +
+ drivers/media/rc/imon.c                    |    2 +-
+ drivers/media/rc/mceusb.c                  |    2 +-
+ drivers/media/rc/redrat3.c                 |    2 +-
+ drivers/media/video/davinci/Kconfig        |    1 +
+ drivers/media/video/omap24xxcam-dma.c      |   20 ++++++++++----------
+ drivers/media/video/omap24xxcam.c          |    3 +--
+ drivers/media/video/omap24xxcam.h          |   14 +++++++-------
+ 14 files changed, 42 insertions(+), 27 deletions(-)
+
+-- 
+1.7.5.4
+
