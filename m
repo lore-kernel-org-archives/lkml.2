@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab2ECOLP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:11:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34318 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807Ab2ECOLM (ORCPT
+	id S1756328Ab2ECOLR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:11:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41021 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753807Ab2ECOLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:11:12 -0400
-Date: Thu, 3 May 2012 23:11:07 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        kvm@vger.kernel.org, mtosatti@redhat.com,
-        yoshikawa.takuya@oss.ntt.co.jp
-Subject: Re: [RFC] sched: make callers check lock contention for
- cond_resched_lock()
-Message-Id: <20120503231107.e8c5a5dde90e109e570ba32e@gmail.com>
-In-Reply-To: <4FA27E5E.5000002@redhat.com>
-References: <20120503171244.2debdd80931ccf35f387c5fe@gmail.com>
-	<1336034127.13683.197.camel@twins>
-	<20120503212244.6abbfa8bc3f46a7f7a932bb7@gmail.com>
-	<1336048150.22523.17.camel@twins>
-	<4FA27E5E.5000002@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+	Thu, 3 May 2012 10:11:15 -0400
+Subject: Re: [GIT PULL 0/5] perf/annotate fixes and improvements
+From: Namhyung Kim <namhyung@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+In-Reply-To: <1336050734.22523.21.camel@twins>
+References: <1335987758-11039-1-git-send-email-acme@infradead.org>
+	 <1335988003.13683.182.camel@twins> <20120502211805.GH5745@infradead.org>
+	 <1336032100.13683.193.camel@twins> <20120503130551.GA8115@infradead.org>
+	 <1336050734.22523.21.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 May 2012 23:11:07 +0900
+Message-ID: <1336054267.1493.11.camel@leonhard>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 03 May 2012 15:47:26 +0300
-Avi Kivity <avi@redhat.com> wrote:
+Hi,
 
-> On 05/03/2012 03:29 PM, Peter Zijlstra wrote:
-> > On Thu, 2012-05-03 at 21:22 +0900, Takuya Yoshikawa wrote:
-> > > Although the real use case is out of this RFC patch, we are now discussing
-> > > a case in which we may hold a spin_lock for long time, ms order, depending
-> > > on workload;  and in that case, other threads -- VCPU threads -- should be
-> > > given higher priority for that problematic lock. 
-> >
-> > Firstly, if you can hold a lock that long, it shouldn't be a spinlock,
+2012-05-03 (목), 15:12 +0200, Peter Zijlstra:
+> On Thu, 2012-05-03 at 10:05 -0300, Arnaldo Carvalho de Melo wrote:
+> > > Also, in this case the asm is dark blue, which is nearly invisible on my
+> > > black background.
+> > 
+> > What colour do you suggest? Also what kind of term color scheme do you
+> > use? Finding the right default combo is kinda hard. 
 > 
-> In fact with your mm preemptibility work it can be made into a mutex, if
-> the entire mmu notifier path can be done in task context.  However it
-> ends up a strange mutex - you can sleep while holding it but you may not
-> allocate, because you might recurse into an mmu notifier again.
+> Yeah, I know.. I use white text on black background.
 > 
-> Most uses of the lock only involve tweaking some bits though.
+> Typically for vim I use :se bg=dark
+> 
+> Anyway, I find it weird that the asm is coloured completely different
+> between the two modes. If anything I would keep the asm as in the
+> non-source variant and when you add the source, make that a different
+> colour.
+> 
 
-I might find a real way to go.
-
-After your "mmu_lock -- TLB-flush" decoupling, we can change the current
-get_dirty work flow like this:
-
-	for ... {
-		take mmu_lock
-		for 4K*8 gfns {		// with 4KB dirty_bitmap_buffer
-			xchg dirty bits	// 64/32 gfns at once
-			write protect them
-		}
-		release mmu_lock
-		copy_to_user
-	}
-	TLB flush
-
-This reduces the size of dirty_bitmap_buffer and does not hold mmu_lock
-so long.
-
-I should have think of a way not to hold the spin_lock so long as Peter
-said.  My lack of thinking might be the real problem.
+It was changed on commit 58e817d997d1 ("perf annotate: Print asm code as
+blue when source code is displayed") by me. I just tried to make the
+output as same as the --stdio one, but I felt bad on printing the whole
+asm lines as blue when no source is shown - I use similar color scheme
+of yours - so I just ended up leaving it to the default white.
 
 Thanks,
-	Takuya
+Namhyung
+
+
+
