@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424Ab2ECNFx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 09:05:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38933 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab2ECNFw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 09:05:52 -0400
-Date: Thu, 3 May 2012 10:05:51 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL 0/5] perf/annotate fixes and improvements
-Message-ID: <20120503130551.GA8115@infradead.org>
-References: <1335987758-11039-1-git-send-email-acme@infradead.org>
- <1335988003.13683.182.camel@twins>
- <20120502211805.GH5745@infradead.org>
- <1336032100.13683.193.camel@twins>
+	id S1754547Ab2ECNHa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 09:07:30 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:55078 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751957Ab2ECNH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 09:07:27 -0400
+Date: Thu, 3 May 2012 09:07:07 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, linux-man@vger.kernel.org,
+        viro@zeniv.linux.org.uk, Richard Weinberger <richard@nod.at>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] open(2): document O_PATH
+Message-ID: <20120503130707.GF18002@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+	"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+	Mike Frysinger <vapier@gentoo.org>, linux-man@vger.kernel.org,
+	viro@zeniv.linux.org.uk, Richard Weinberger <richard@nod.at>,
+	lkml <linux-kernel@vger.kernel.org>
+References: <1335669917-23970-1-git-send-email-vapier@gentoo.org>
+ <CAKgNAkgykZJV59WJXW9c9gVwXhn=WNYKxo_W1GM7ocHEEFqEXg@mail.gmail.com>
+ <877gwxacti.fsf@skywalker.in.ibm.com>
+ <20120430114410.GB28308@thunk.org>
+ <87fwbhhdp2.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1336032100.13683.193.camel@twins>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <87fwbhhdp2.fsf@skywalker.in.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 03, 2012 at 10:01:40AM +0200, Peter Zijlstra escreveu:
-> On Wed, 2012-05-02 at 18:18 -0300, Arnaldo Carvalho de Melo wrote:
-> > I.e. the fixed vertical line now has a diff color and the jump arrows are
-> > _after_ the jump labels that then stands out as a separated columns.
+On Thu, May 03, 2012 at 01:57:21PM +0530, Aneesh Kumar K.V wrote:
 > 
-> Note that if you have the source-code annotated thing enabled (which
-> seems to be the default) the arrows go straight through the source.
+> fstat won't work, but fstatat with an empty path name would work. O_PATH
+> descriptors are suppose to be used as "location only descriptors". 
+> We then extended the *at syscalls to work with EMPTY pathnames so that
+> O_PATH descriptors can be used with readlink, fchownat and fstatat().
+> This was done to enable us to do these operation on symlinks.
+> (65cfc6722361570bfe255698d9cd4dccaf47570d)
 
-I thought I had that fixed, damn, will fix.
+Could you define explicitly what you mean by "EMPTY" pathnames?  Do
+you mean a path name that doesn't exist?  (i.e., one of the
+directories specified in the pathname does not currently exist in the
+directory hierarchy visible to the process).
 
-> Also, in this case the asm is dark blue, which is nearly invisible on my
-> black background.
+					- Ted
 
-What colour do you suggest? Also what kind of term color scheme do you
-use? Finding the right default combo is kinda hard.
- 
-> > In addition, as you suggested, the extra arrows on the ends of a jump->label
-> > arrow gets swallowed by the jump->label arrow.
-> 
-> Does look nice, thanks!
-> 
-> An alternative to all this arrow drawing could be to high-light the
-> jump-target, maybe not a full bar like the cursor line but something
-> like that.
-> 
-> Also, is there a key to jump to the jump target? I was instinctively
-> pressing '%' to do that, but that could be my vim brain-damage :-)
-
-Enter or ->, just like on calls and rets, what is missing is using <- to
-go back the stack of navigated jumps, like with calls.
- 
-> > Now a question: when I add multiple event column overheads, do you think we
-> > should have N fixed vertical lines separating them?
-> 
-> I'd start with that and go from there.
-
-Ok
- 
-> > I probably need to add an space before the instructions and the arrow
-> > start/end, or not? 
-> 
-> Since its a dynamic arrow (in a nearly invisible colour) it doesn't
-> really matter. But what happens when a function is large enough that
-> function offset doesn't fit in 2 hex digits anymore? Aah I see, that
-> width is dynamic, OK.
-
-Yes, it is, it is calculated at function start and when switching
-to/from "O"ffset view.
-
-I need to add a help window with the ever growing list of hot keys.
-
-Also will try to asap make the last features toggled persistent.
-
-- Arnaldo
