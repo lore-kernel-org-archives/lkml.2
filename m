@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab2ECJC5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 05:02:57 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49921 "EHLO
+	id S1756740Ab2ECJDV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 05:03:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49984 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756239Ab2ECJCy (ORCPT
+	with ESMTP id S1756419Ab2ECJDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 05:02:54 -0400
-Message-Id: <20120503085034.623666760@linutronix.de>
+	Thu, 3 May 2012 05:03:02 -0400
+Message-Id: <20120503085035.669622065@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 03 May 2012 09:02:53 -0000
+Date: Thu, 03 May 2012 09:03:00 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
-Subject: [patch V2 12/31] h8300: Use generic init_task
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: [patch V2 28/31] unicore32: Use generic init_task
 References: <20120503083859.991965503@linutronix.de>
-Content-Disposition: inline; filename=h8300-use-generic-idle-task.patch
+Content-Disposition: inline; filename=unicore-use-generic-init-task.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -23,81 +23,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Same code. Use the generic version.
+Same code. Use the generic version. The special Makefile treatment is
+pointless anyway as init_task.o contains only data which is handled by
+the linker script. So no point on being treated like head text.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 ---
- arch/h8300/Kconfig            |    1 +
- arch/h8300/kernel/Makefile    |    2 +-
- arch/h8300/kernel/init_task.c |   36 ------------------------------------
- 3 files changed, 2 insertions(+), 37 deletions(-)
+ arch/unicore32/Kconfig            |    1 
+ arch/unicore32/Makefile           |    1 
+ arch/unicore32/kernel/Makefile    |    2 -
+ arch/unicore32/kernel/init_task.c |   44 --------------------------------------
+ 4 files changed, 2 insertions(+), 46 deletions(-)
 
-Index: tip/arch/h8300/Kconfig
+Index: tip/arch/unicore32/Kconfig
 ===================================================================
---- tip.orig/arch/h8300/Kconfig
-+++ tip/arch/h8300/Kconfig
-@@ -5,6 +5,7 @@ config H8300
- 	select HAVE_GENERIC_HARDIRQS
+--- tip.orig/arch/unicore32/Kconfig
++++ tip/arch/unicore32/Kconfig
+@@ -13,6 +13,7 @@ config UNICORE32
  	select GENERIC_IRQ_SHOW
- 	select GENERIC_CPU_DEVICES
+ 	select ARCH_WANT_FRAME_POINTERS
+ 	select GENERIC_IOMAP
 +	select HAVE_GENERIC_INIT_TASK
- 
- config SYMBOL_PREFIX
- 	string
-Index: tip/arch/h8300/kernel/Makefile
+ 	help
+ 	  UniCore-32 is 32-bit Instruction Set Architecture,
+ 	  including a series of low-power-consumption RISC chip
+Index: tip/arch/unicore32/Makefile
 ===================================================================
---- tip.orig/arch/h8300/kernel/Makefile
-+++ tip/arch/h8300/kernel/Makefile
-@@ -6,7 +6,7 @@ extra-y := vmlinux.lds
+--- tip.orig/arch/unicore32/Makefile
++++ tip/arch/unicore32/Makefile
+@@ -33,7 +33,6 @@ endif
+ CHECKFLAGS		+= -D__unicore32__
  
- obj-y := process.o traps.o ptrace.o irq.o \
- 	 sys_h8300.o time.o signal.o \
--         setup.o gpio.o init_task.o syscalls.o \
-+         setup.o gpio.o syscalls.o \
- 	 entry.o timer/
+ head-y			:= arch/unicore32/kernel/head.o
+-head-y			+= arch/unicore32/kernel/init_task.o
  
- obj-$(CONFIG_MODULES) += module.o h8300_ksyms.o 
-Index: tip/arch/h8300/kernel/init_task.c
+ core-y			+= arch/unicore32/kernel/
+ core-y			+= arch/unicore32/mm/
+Index: tip/arch/unicore32/kernel/Makefile
 ===================================================================
---- tip.orig/arch/h8300/kernel/init_task.c
+--- tip.orig/arch/unicore32/kernel/Makefile
++++ tip/arch/unicore32/kernel/Makefile
+@@ -29,4 +29,4 @@ obj-$(CONFIG_PUV3_NB0916)	+= puv3-nb0916
+ head-y				:= head.o
+ obj-$(CONFIG_DEBUG_LL)		+= debug.o
+ 
+-extra-y				:= $(head-y) init_task.o vmlinux.lds
++extra-y				:= $(head-y) vmlinux.lds
+Index: tip/arch/unicore32/kernel/init_task.c
+===================================================================
+--- tip.orig/arch/unicore32/kernel/init_task.c
 +++ /dev/null
-@@ -1,36 +0,0 @@
+@@ -1,44 +0,0 @@
 -/*
-- *  linux/arch/h8300/kernel/init_task.c
+- * linux/arch/unicore32/kernel/init_task.c
+- *
+- * Code specific to PKUnity SoC and UniCore ISA
+- *
+- * Copyright (C) 2001-2010 GUAN Xue-tao
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
 - */
 -#include <linux/mm.h>
 -#include <linux/module.h>
+-#include <linux/fs.h>
 -#include <linux/sched.h>
 -#include <linux/init.h>
 -#include <linux/init_task.h>
--#include <linux/fs.h>
 -#include <linux/mqueue.h>
+-#include <linux/uaccess.h>
 -
--#include <asm/uaccess.h>
 -#include <asm/pgtable.h>
 -
 -static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 -static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
 -/*
+- * Initial thread structure.
+- *
+- * We need to make sure that this is 8192-byte aligned due to the
+- * way process stacks are handled. This is done by making sure
+- * the linker maps this in the .text segment right after head.S,
+- * and making head.S ensure the proper alignment.
+- *
+- * The things we do for performance..
+- */
+-union thread_union init_thread_union __init_task_data = {
+-	INIT_THREAD_INFO(init_task) };
+-
+-/*
 - * Initial task structure.
 - *
 - * All other task structs will be allocated on slabs in fork.c
 - */
--__asm__(".align 4");
 -struct task_struct init_task = INIT_TASK(init_task);
--
 -EXPORT_SYMBOL(init_task);
--
--/*
-- * Initial thread structure.
-- *
-- * We need to make sure that this is 8192-byte aligned due to the
-- * way process stacks are handled. This is done by having a special
-- * "init_task" linker map entry..
-- */
--union thread_union init_thread_union __init_task_data =
--	{ INIT_THREAD_INFO(init_task) };
--
 
 
