@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab2ECPpg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 11:45:36 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:24192 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492Ab2ECPpe (ORCPT
+	id S932112Ab2ECPqA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 11:46:00 -0400
+Received: from olympic.calvaedi.com ([89.202.194.163]:46703 "EHLO
+	olympic.calvaedi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756238Ab2ECPp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 11:45:34 -0400
-Message-ID: <4FA2A81C.8020402@tilera.com>
-Date: Thu, 3 May 2012 11:45:32 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 3 May 2012 11:45:59 -0400
+X-Greylist: delayed 650 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 May 2012 11:45:58 EDT
+Message-ID: <4FA2A581.10308@calva.com>
+Date: Thu, 03 May 2012 17:34:25 +0200
+From: John Hughes <john@calva.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <arnd@arndb.de>, <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH v3] tilegx network driver: initial support
-References: <201204291859.q3TIxIWB007275@farm-0027.internal.tilera.com> <201204301435.08810.arnd@arndb.de> <201205011759.q41HxR21020043@farm-0012.internal.tilera.com> <20120503.014156.149171097979026872.davem@davemloft.net>
-In-Reply-To: <20120503.014156.149171097979026872.davem@davemloft.net>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Jonathan Nieder <jrnieder@gmail.com>
+CC: Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        John Hughes <john@calvaedi.com>, John Hughes <john@atlantech.com>,
+        Jeff Layton <jlayton@poochiereds.net>, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Eric Paris <eparis@redhat.com>
+Subject: Re: [Sony Vaio TX3] TPM chip prevents machine from suspending a second
+ time
+References: <20110328100846.0ba2e039@tlielax.poochiereds.net> <4D90C472.3090908@linux.vnet.ibm.com> <20110328141241.06a435f8@tlielax.poochiereds.net> <20110328154543.1bb979fd@tlielax.poochiereds.net> <4D91157F.2020502@linux.vnet.ibm.com> <20120121170157.GA18053@burratino> <4F1DC8A3.60901@linux.vnet.ibm.com> <4F252441.3090507@calvaedi.com> <4F258E4C.8020606@linux.vnet.ibm.com> <4F265E74.4040602@Calva.COM> <20120226154405.GA12590@burratino>
+In-Reply-To: <20120226154405.GA12590@burratino>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/3/2012 1:41 AM, David Miller wrote:
-> From: Chris Metcalf <cmetcalf@tilera.com>
-> Date: Mon, 17 Sep 2001 00:00:00 -0400
->
->> +/* #define USE_SIM_PRINTF */
->> +
->> +#ifdef USE_SIM_PRINTF
->> +
->> +static __attribute__((unused, format (printf, 1, 2))) void
->> +sim_printf(const char *format, ...)
->  ...
->> +/* HACK: Allow use of "sim_printf()" instead of "printk()". */
->> +#define printk sim_printf
->> +
->> +#endif
-> This doesn't belong in a driver.
->
-> You want a debugging console driver that uses that special SIM output
-> facility instead.
->
-> Therefore, please remove this sim_printf stuff completely.
+On 26/02/12 16:44, Jonathan Nieder wrote:
+> John Hughes wrote:
+>> On 29/01/12 19:22, Stefan Berger wrote:
+>>> Thanks. Please try the attached patch.
+>>>
+>>> I am not sure whether this is the right way to go, though: Is it a
+>>> problem particular to this BIOS + Board or a general problem of
+>>> this BIOS? Is it specific to the TX3 or to all VAIOs?
+>> I'll try the patch.
+> How did it go?
 
-Thanks, I've removed it from my branch.  (Since it's a trivial update, I
-won't repost the change on LKML unless I get any more feedback that needs
-addressing.)
+Sorry for the radio silence.
 
-I've checked in support for a "sim_console" boot flag that modifies the
-behavior of the tile-specific console driver to use the simulator output
-facility instead.  I'll plan to push that to LKML with the next batch of
-changes I post.
+I didn't get to try the patch in the end - the disk in my Vaio died for 
+the second time and a replacement (1.8" disk with a funny connector) is 
+just too expensive to be worth it.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Thanks for your help anyway.
 
