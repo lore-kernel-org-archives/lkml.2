@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471Ab2ECOXj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:23:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40860 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756048Ab2ECOXi (ORCPT
+	id S1756695Ab2ECOXy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:23:54 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:39440 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756659Ab2ECOXw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:23:38 -0400
-Date: Thu, 3 May 2012 11:23:40 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL 0/5] perf/annotate fixes and improvements
-Message-ID: <20120503142340.GB8115@infradead.org>
-References: <1335987758-11039-1-git-send-email-acme@infradead.org>
- <1335988003.13683.182.camel@twins>
- <20120502211805.GH5745@infradead.org>
- <1336032100.13683.193.camel@twins>
- <20120503130551.GA8115@infradead.org>
- <1336050734.22523.21.camel@twins>
+	Thu, 3 May 2012 10:23:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336050734.22523.21.camel@twins>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20120503141853.GC897@n2100.arm.linux.org.uk>
+References: <201205031350.35476.arnd@arndb.de>
+	<20120503141853.GC897@n2100.arm.linux.org.uk>
+Date: Thu, 3 May 2012 23:23:51 +0900
+Message-ID: <CANqRtoRLmqLWfUYZRy8yuPWXybj0=RGxmYDEfuH+kqjT_009Jw@mail.gmail.com>
+Subject: Re: Making ARM multiplatform kernels DT-only?
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Deepak Saxena <dsaxena@linaro.org>, Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>, shawn.guo@linaro.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>, Nicolas Pitre <nico@fluxnic.net>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 03, 2012 at 03:12:14PM +0200, Peter Zijlstra escreveu:
-> On Thu, 2012-05-03 at 10:05 -0300, Arnaldo Carvalho de Melo wrote:
-> > > Also, in this case the asm is dark blue, which is nearly invisible on my
-> > > black background.
-> > 
-> > What colour do you suggest? Also what kind of term color scheme do you
-> > use? Finding the right default combo is kinda hard. 
-> 
-> Yeah, I know.. I use white text on black background.
-> 
-> Typically for vim I use :se bg=dark
-> 
-> Anyway, I find it weird that the asm is coloured completely different
-> between the two modes. If anything I would keep the asm as in the
-> non-source variant and when you add the source, make that a different
-> colour.
+On Thu, May 3, 2012 at 11:18 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Thu, May 03, 2012 at 01:50:35PM +0000, Arnd Bergmann wrote:
+>> My feeling is that we should just mandate DT booting for multiplatform
+>> kernels, because it significantly reduces the combinatorial space
+>> at compile time, avoids a lot of legacy board files that we cannot
+>> test anyway, reduces the total kernel size and gives an incentive
+>> for people to move forward to DT with their existing boards.
+>
+> On this point, I strongly object, especially as I'm one who uses the
+> existing non-DT multiplatform support extensively.  It's really not
+> a problem for what you're trying to achieve.
 
-Its a bug, it should be coloured the same in both modes. Will implement
-as you suggest.
+Perhaps not so surprisingly, but I'm with Russell on this one.
 
-- Arnaldo
+I'd like our work-in-progress DT support to coexist with all non-DT platforms.
+
+Thanks,
+
+/ magnus
