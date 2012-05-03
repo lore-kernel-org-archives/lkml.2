@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab2ECNA4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 09:00:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49979 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2ECNAz (ORCPT
+	id S1755082Ab2ECNCG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 09:02:06 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:51148 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751642Ab2ECNCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 09:00:55 -0400
-Date: Thu, 3 May 2012 22:00:50 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        kvm@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
-        yoshikawa.takuya@oss.ntt.co.jp
-Subject: Re: [RFC] sched: make callers check lock contention for
- cond_resched_lock()
-Message-Id: <20120503220050.e91938418f882b4075526e08@gmail.com>
-In-Reply-To: <1336048150.22523.17.camel@twins>
-References: <20120503171244.2debdd80931ccf35f387c5fe@gmail.com>
-	<1336034127.13683.197.camel@twins>
-	<20120503212244.6abbfa8bc3f46a7f7a932bb7@gmail.com>
-	<1336048150.22523.17.camel@twins>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 May 2012 09:02:04 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        Liam Girdwood <lrg@ti.com>
+Subject: [PATCH 0/3] MFD: twl6040: Device tree support
+Date: Thu,  3 May 2012 15:54:22 +0300
+Message-Id: <1336049665-27777-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 03 May 2012 14:29:10 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+Hello,
 
-> On Thu, 2012-05-03 at 21:22 +0900, Takuya Yoshikawa wrote:
-> > Although the real use case is out of this RFC patch, we are now discussing
-> > a case in which we may hold a spin_lock for long time, ms order, depending
-> > on workload;  and in that case, other threads -- VCPU threads -- should be
-> > given higher priority for that problematic lock. 
-> 
-> Firstly, if you can hold a lock that long, it shouldn't be a spinlock,
+The following series adds device tree support for the twl6040 MFD core driver.
+Support for the child drivers (vibra, ASoC codec) will be submitted via the
+corresponding subsystem since there is no compile time dependency between them.
 
-I agree with you in principle, but isn't cond_resched_lock() there for that?
+The first patch is a minor clean up patch to remove wrapped lines in the
+twl6040-irq.c. The resulting code is more natural to read to me.
 
-> secondly why isn't TIF_RESCHED being set if its running that long? That
-> should still make cond_resched_lock() break.
+The series depends on the regulator support patch for the twl6040:
+http://marc.info/?l=linux-kernel&m=133596703610515&w=2
 
-I see.
+Regards,
+Peter
+---
+Peter Ujfalusi (3):
+  MFD: twl6040: Code cleanup in interrupt initialization part
+  MFD: twl6040: Allocate IRQ numbers dynamically
+  MFD: twl6040: Support for DT
 
-I did some tests using spin_is_contended() and need_resched() and saw
-that need_resched() was called as often as spin_is_contended(), so
-experimentally I understand your point.
+ Documentation/devicetree/bindings/mfd/twl6040.txt |   51 +++++++++++++++++++++
+ drivers/mfd/twl6040-core.c                        |   26 +++++++---
+ drivers/mfd/twl6040-irq.c                         |   32 +++++++++----
+ 3 files changed, 92 insertions(+), 17 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/twl6040.txt
 
-But as I could not see why spin_needbreak() was differently implemented
-depending on CONFIG_PREEMPT, I wanted to understand the meaning.
+-- 
+1.7.8.6
 
-Thanks,
-	Takuya
