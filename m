@@ -1,171 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab2ECO67 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:58:59 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:55935 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755939Ab2ECO5J (ORCPT
+	id S1757052Ab2ECPAq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 11:00:46 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44892 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312Ab2ECPAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:57:09 -0400
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
-Subject: [PATCH v1 1/6] timer: make __next_timer_interrupt explicit about no future event
-Date: Thu,  3 May 2012 17:55:57 +0300
-Message-Id: <1336056962-10465-2-git-send-email-gilad@benyossef.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
-References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
+	Thu, 3 May 2012 11:00:44 -0400
+Date: Thu, 3 May 2012 17:00:40 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] mfd: add LM3533 lighting-power core driver
+Message-ID: <20120503150040.GC15752@localhost>
+References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
+ <1336040799-18433-1-git-send-email-jhovold@gmail.com>
+ <1336040799-18433-2-git-send-email-jhovold@gmail.com>
+ <20120503103848.GB3955@opensource.wolfsonmicro.com>
+ <20120503112803.GA15752@localhost>
+ <20120503113801.GE3955@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120503113801.GE3955@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current timer code fails to correctly return a value meaning
-that there is no future timer event, with the result that
-the timer keeps getting re-armed in HZ one shot mode even
-when we could turn it off, generating unneeded interrupts.
-This patch attempts to fix this problem.
+On Thu, May 03, 2012 at 12:38:02PM +0100, Mark Brown wrote:
+> On Thu, May 03, 2012 at 01:28:03PM +0200, Johan Hovold wrote:
+> > On Thu, May 03, 2012 at 11:38:48AM +0100, Mark Brown wrote:
+> 
+> > > I'd expect you can drop these log messages, if there's stuff like this
+> > > missing we should add it to regmap.  At the minute the regmap logging is
+> > > via trace points rather than debug logs as you can leave them enabled
+> > > all the time.
+> 
+> > If such debugging is added to regmap we still need a way to enable them
+> > per driver (or rather regmap) to not clutter the logs.
+> 
+> This is one of the reasons why we currently use tracepoints (they just
+> don't have this issue as they're trivial to filter), though
+> adding some sort of infrastructure for it ought not to be too difficult
+> even if it's just at the regmap level.
 
-What is happening is that when __next_timer_interrupt() wishes
-to return a value that signifies "there is no future timer
-event", it returns (base->timer_jiffies + NEXT_TIMER_MAX_DELTA).
+So a /sys/kernel/debug/regmap/<device>/io_printk attribute (with a
+better name) to enable debug printks in io paths
+(regmap*{read,write,update} outside of mutex) in regmap.c would be
+acceptable?
 
-However, the code in tick_nohz_stop_sched_tick(), which called
-__next_timer_interrupt() via get_next_timer_interrupt(),
-compares the return value to (last_jiffies + NEXT_TIMER_MAX_DELTA)
-to see if the timer needs to be re-armed.
+> > These three dev_dbg statements are extremely useful during debugging /
+> > development especially in combination with the other dynamic printks in
+> > these drivers.
+> 
+> > I'd actually prefer just keeping them for now.
+> 
+> OTOH the whole point in having stuff like this is to factor out repeated
+> code like this so if the infrastructure isn't working we should fix
+> that.
 
-base->timer_jiffies != last_jiffies and so
-tick_nohz_stop_sched_tick() interperts the return value as
-indication that there is a distant future event 12 days
-from now and programs the timer to fire next after KIME_MAX
-nsecs instead of avoiding to arm it. This ends up causesing
-a needless interrupt once every KTIME_MAX nsecs.
+Ok, I'll drop them if you will consider a regmap patch to enable debug
+printks to trace reg/val/mask.
 
-I've noticed a similar but slightly different fix to the
-same problem in the Tilera kernel tree from Chris M. (I've
-wrote this before seeing that one), so some variation of this
-fix is in use on real hardware for some time now.
+> > > Might also be worth moving some of the sysfs stuff to live with the
+> > > relevant drivers.
+> 
+> > Which attributes do you have in mind?
+> 
+> Pretty much all of those on the MFD.
+> 
+> > The boost_freq and boost_ovp affect both backlight devices (i.e. cannot
+> > be set separately) and as such belong in the parent driver IMO.
+> 
+> > Same with the output_hvled{1..2}, output_lvled{1..5} attributes. The
+> > chip has four logical LEDs ("control banks") but five low-voltage output
+> > sinks. The five output_lvled attributes determine the mapping and as
+> > such belong in the parent driver. The two logical backlight devices can
+> > likewise be used to control either or both high-voltage outputs and
+> > belong in the parent driver for the same reasons.
+> 
+> Actually, the other question I had but forgot to ask (or I think punted
+> on for your response) was why these are in sysfs at all - things like
+> which things are connected to the backlight are going to be a property
+> of the board design so should be defined by the machine not tweaked from
+> userspace.
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Tejun Heo <tj@kernel.org>
-CC: John Stultz <johnstul@us.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Mike Frysinger <vapier@gentoo.org>
-CC: David Rientjes <rientjes@google.com>
-CC: Hugh Dickins <hughd@google.com>
-CC: Minchan Kim <minchan.kim@gmail.com>
-CC: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Christoph Lameter <cl@linux.com>
-CC: Chris Metcalf <cmetcalf@tilera.com>
-CC: Hakan Akkan <hakanakkan@gmail.com>
-CC: Max Krasnyansky <maxk@qualcomm.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: linux-kernel@vger.kernel.org
-CC: linux-mm@kvack.org
----
- kernel/timer.c |   31 +++++++++++++++++++++----------
- 1 files changed, 21 insertions(+), 10 deletions(-)
+I agree with you and the reason is the same as for the max_current
+attribute (discussed in the other thread) -- it was an explicit request
+from the end customer.
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index a297ffc..32ba64a 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1187,11 +1187,13 @@ static inline void __run_timers(struct tvec_base *base)
-  * is used on S/390 to stop all activity when a CPU is idle.
-  * This function needs to be called with interrupts disabled.
-  */
--static unsigned long __next_timer_interrupt(struct tvec_base *base)
-+static bool __next_timer_interrupt(struct tvec_base *base,
-+					unsigned long *next_timer)
- {
- 	unsigned long timer_jiffies = base->timer_jiffies;
- 	unsigned long expires = timer_jiffies + NEXT_TIMER_MAX_DELTA;
--	int index, slot, array, found = 0;
-+	int index, slot, array;
-+	bool found = false;
- 	struct timer_list *nte;
- 	struct tvec *varray[4];
- 
-@@ -1202,12 +1204,12 @@ static unsigned long __next_timer_interrupt(struct tvec_base *base)
- 			if (tbase_get_deferrable(nte->base))
- 				continue;
- 
--			found = 1;
-+			found = true;
- 			expires = nte->expires;
- 			/* Look at the cascade bucket(s)? */
- 			if (!index || slot < index)
- 				goto cascade;
--			return expires;
-+			goto out;
- 		}
- 		slot = (slot + 1) & TVR_MASK;
- 	} while (slot != index);
-@@ -1233,7 +1235,7 @@ cascade:
- 				if (tbase_get_deferrable(nte->base))
- 					continue;
- 
--				found = 1;
-+				found = true;
- 				if (time_before(nte->expires, expires))
- 					expires = nte->expires;
- 			}
-@@ -1245,7 +1247,7 @@ cascade:
- 				/* Look at the cascade bucket(s)? */
- 				if (!index || slot < index)
- 					break;
--				return expires;
-+				goto out;
- 			}
- 			slot = (slot + 1) & TVN_MASK;
- 		} while (slot != index);
-@@ -1254,7 +1256,10 @@ cascade:
- 			timer_jiffies += TVN_SIZE - index;
- 		timer_jiffies >>= TVN_BITS;
- 	}
--	return expires;
-+out:
-+	if (found)
-+		*next_timer = expires;
-+	return found;
- }
- 
- /*
-@@ -1317,9 +1322,15 @@ unsigned long get_next_timer_interrupt(unsigned long now)
- 	if (cpu_is_offline(smp_processor_id()))
- 		return now + NEXT_TIMER_MAX_DELTA;
- 	spin_lock(&base->lock);
--	if (time_before_eq(base->next_timer, base->timer_jiffies))
--		base->next_timer = __next_timer_interrupt(base);
--	expires = base->next_timer;
-+	if (time_before_eq(base->next_timer, base->timer_jiffies)) {
-+
-+		if (__next_timer_interrupt(base, &expires))
-+			base->next_timer = expires;
-+		else
-+			expires = now + NEXT_TIMER_MAX_DELTA;
-+	} else
-+		expires = base->next_timer;
-+
- 	spin_unlock(&base->lock);
- 
- 	if (time_before_eq(expires, now))
--- 
-1.7.0.4
+I could replace the boost attributes with a platform_data entry where it
+really belongs.
 
+Regarding the output configuration, the chip defaults are probably what
+will be used in most cases (i.e. one-one map of logical backlights/leds
+and hvled/lvled outputs except for the last led which controls two
+outputs). The plan was to add this to the platform data later.
+
+There is a use case (beyond testing/integration) for keeping the (lvled)
+outputs configurable from userspace, in that it provides a way to
+synchronise LED activity such as blinking. So I still want to keep those,
+at least for the lvleds.
+
+Thanks,
+Johan
