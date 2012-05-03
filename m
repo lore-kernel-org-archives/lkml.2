@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758685Ab2ECVEi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 17:04:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46683 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488Ab2ECVEh convert rfc822-to-8bit (ORCPT
+	id S1758715Ab2ECVGl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 17:06:41 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58114 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754928Ab2ECVGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 17:04:37 -0400
-Message-ID: <1336079060.6509.17.camel@twins>
-Subject: Re: [PATCH 5/9] perf: Add Nehalem and Sandy Bridge uncore support
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: mingo@elte.hu, andi@firstfloor.org, eranian@google.com, jolsa@redhat.com,
-        ming.m.lin@intel.com, linux-kernel@vger.kernel.org
-Date: Thu, 03 May 2012 23:04:20 +0200
-In-Reply-To: <1335924440-11242-6-git-send-email-zheng.z.yan@intel.com>
-References: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com>
-	 <1335924440-11242-6-git-send-email-zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 3 May 2012 17:06:39 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 1/3] tty_lock: undo the old tty_lock use on the ctty
+To: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Date: Thu, 03 May 2012 22:21:53 +0100
+Message-ID: <20120503212151.568.91854.stgit@bob.linux.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-02 at 10:07 +0800, Yan, Zheng wrote:
->         switch (boot_cpu_data.x86_model) {
-> +       case 26: /* Nehalem */
-> +       case 30:
-> +       case 31:
-> +       case 37: /* Westmere */
-> +               msr_uncores = nhm_msr_uncores;
-> +               break;
-> +       case 42: /* Sandy Bridge */
-> +               msr_uncores = snb_msr_uncores;
-> +               break;
->         default:
->                 return 0;
->         } 
+From: Alan Cox <alan@linux.intel.com>
 
-I really hate we're duplicating all these things all over the place, but
-I don't really know what to do about it either.
+get_current_tty has its own consistent locking. That means a pile of the
+tty lock cases are not needed. As get_current_tty also keeps a reference the
+tty object lifetime means we can propogate the lock removal out.
 
-Anyway, it looks like perf_event_intel.c is missing 31, that said I
-cannot seem to find model 31 on wikipedia either.
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-What about 44, WSM-EP ?
+ drivers/tty/tty_io.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-I understand NHM-EX (46) and WSM-EX (47) have different uncores not
-implemented in this series, will those follow?
+
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index d939bd7..b425c79 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -855,10 +855,11 @@ void disassociate_ctty(int on_exit)
+  */
+ void no_tty(void)
+ {
++	/* FIXME: Review locking here. The tty_lock never covered any race
++	   between a new association and proc_clear_tty but possible we need
++	   to protect against this anyway */
+ 	struct task_struct *tsk = current;
+-	tty_lock();
+ 	disassociate_ctty(0);
+-	tty_unlock();
+ 	proc_clear_tty(tsk);
+ }
+ 
+@@ -1800,6 +1801,9 @@ int tty_release(struct inode *inode, struct file *filp)
+  *
+  *	We cannot return driver and index like for the other nodes because
+  *	devpts will not work then. It expects inodes to be from devpts FS.
++ *
++ *	We need to move to returning a refcounted object from all the lookup
++ *	paths including this one.
+  */
+ static struct tty_struct *tty_open_current_tty(dev_t device, struct file *filp)
+ {
+@@ -1816,6 +1820,7 @@ static struct tty_struct *tty_open_current_tty(dev_t device, struct file *filp)
+ 	/* noctty = 1; */
+ 	tty_kref_put(tty);
+ 	/* FIXME: we put a reference and return a TTY! */
++	/* This is only safe because the caller holds tty_mutex */
+ 	return tty;
+ }
+ 
+
