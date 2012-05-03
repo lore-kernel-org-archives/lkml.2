@@ -1,104 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758891Ab2ECWPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 18:15:04 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:42608 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755943Ab2ECWPB (ORCPT
+	id S1758888Ab2ECWPh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 18:15:37 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:52339 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756469Ab2ECWPf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 18:15:01 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18ZoyFQ3kAZ0yNOXfWM++dV30zIerfsGjNwZbpEUi
-	SALb/tkz4TKNvC
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Thomas Winischhofer <thomas@winischhofer.net>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] video/sis: Annotate SiS_DRAMType as __devinitconst
-Date: Fri,  4 May 2012 00:14:55 +0200
-Message-Id: <1336083295-7327-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <4FA2FD10.6090306@gmx.de>
-References: <4FA2FD10.6090306@gmx.de>
-X-Y-GMX-Trusted: 0
+	Thu, 3 May 2012 18:15:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
+Subject: Re: [RFC][PATCH 6/8] PM / Sleep: Implement opportunistic sleep
+Date: Fri, 4 May 2012 00:20:23 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+References: <201202070200.55505.rjw@sisk.pl> <201205031528.12743.rjw@sisk.pl> <CAMP5XgeXGWcWwQ77DctoWQy0BEPLAQdbSjHANbHu76M+xZzR-w@mail.gmail.com>
+In-Reply-To: <CAMP5XgeXGWcWwQ77DctoWQy0BEPLAQdbSjHANbHu76M+xZzR-w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201205040020.23460.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SiS_DRAMType is const and only used by sisfb_post_300_rwtest which is
-marked __devinit we can annotate SiS_DRAMType with __devinitconst and
-move it into the file scope in order to not have it created on the
-stack.
-This patch decreases the compiled module size by about 100bytes.
+On Thursday, May 03, 2012, Arve Hjønnevåg wrote:
+> On Thu, May 3, 2012 at 6:28 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Thursday, May 03, 2012, Arve Hjønnevåg wrote:
+> >> On Thu, Apr 26, 2012 at 2:52 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> ...
+> >> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >> > Subject: PM / Sleep: Implement opportunistic sleep, v2
+> >> >
+> >> > Introduce a mechanism by which the kernel can trigger global
+> >> > transitions to a sleep state chosen by user space if there are no
+> >> > active wakeup sources.
+> >> >
+> >> > It consists of a new sysfs attribute, /sys/power/autosleep, that
+> >> > can be written one of the strings returned by reads from
+> >> > /sys/power/state, an ordered workqueue and a work item carrying out
+> >> > the "suspend" operations.  If a string representing the system's
+> >> > sleep state is written to /sys/power/autosleep, the work item
+> >> > triggering transitions to that state is queued up and it requeues
+> >> > itself after every execution until user space writes "off" to
+> >> > /sys/power/autosleep.
+> >> >
+> >>
+> >> This does not work. Writing something other than "off" disabled auto
+> >> suspend for me.
+> >
+> > My bad, sorry about that.
+> >
+> >> ...
+> >> > +static ssize_t autosleep_store(struct kobject *kobj,
+> >> > +                              struct kobj_attribute *attr,
+> >> > +                              const char *buf, size_t n)
+> >> > +{
+> >> > +       suspend_state_t state = decode_state(buf, n);
+> >> > +       int error;
+> >> > +
+> >> > +       if (state == PM_SUSPEND_ON
+> >> > +           && !(strncmp(buf, "off", 3) && strncmp(buf, "off\n", 4)))
+> >> > +               return -EINVAL;
+> >>
+> >> Did you mean:
+> >>       if (state == PM_SUSPEND_ON
+> >>           && strcmp(buf, "off") && strcmp(buf, "off\n"))
+> >>               return -EINVAL;
+> >
+> >
+> > Yes, I did.
+> >
+> > I'll add the following as an incremental patch on top of the series.
+> >
+> > Thanks,
+> > Rafael
+> >
+> > ---
+> >  kernel/power/main.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > Index: linux/kernel/power/main.c
+> > ===================================================================
+> > --- linux.orig/kernel/power/main.c
+> > +++ linux/kernel/power/main.c
+> > @@ -422,7 +422,7 @@ static ssize_t autosleep_store(struct ko
+> >        int error;
+> >
+> >        if (state == PM_SUSPEND_ON
+> > -           && !(strncmp(buf, "off", 3) && strncmp(buf, "off\n", 4)))
+> > +           && strncmp(buf, "off", 3) && strncmp(buf, "off\n", 4))
+> >                return -EINVAL;
+> >
+> >        error = pm_autosleep_set_state(state);
+> 
+> You still use strncmp here, so anything that starts with "off" is
+> allowed (and the second strncmp is redundant).
 
-And since hardcoded values are bad we use ARRAY_SIZE for determining
-the size of SiS_DRAMType ;)
+Good point.  So I'm going to add the patch below after all.
+OK to add your sign-off to it?
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Rafael
+
+
 ---
- drivers/video/sis/sis_main.c |   41 +++++++++++++++++++++--------------------
- 1 files changed, 21 insertions(+), 20 deletions(-)
+ kernel/power/main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
-index 078ca21..a7a48db 100644
---- a/drivers/video/sis/sis_main.c
-+++ b/drivers/video/sis/sis_main.c
-@@ -4222,6 +4222,26 @@ sisfb_post_300_buswidth(struct sis_video_info *ivideo)
- 	return 1;			/* 32bit */
- }
+Index: linux/kernel/power/main.c
+===================================================================
+--- linux.orig/kernel/power/main.c
++++ linux/kernel/power/main.c
+@@ -422,7 +422,7 @@ static ssize_t autosleep_store(struct ko
+ 	int error;
  
-+static const unsigned short __devinitconst SiS_DRAMType[17][5] = {
-+	{0x0C,0x0A,0x02,0x40,0x39},
-+	{0x0D,0x0A,0x01,0x40,0x48},
-+	{0x0C,0x09,0x02,0x20,0x35},
-+	{0x0D,0x09,0x01,0x20,0x44},
-+	{0x0C,0x08,0x02,0x10,0x31},
-+	{0x0D,0x08,0x01,0x10,0x40},
-+	{0x0C,0x0A,0x01,0x20,0x34},
-+	{0x0C,0x09,0x01,0x08,0x32},
-+	{0x0B,0x08,0x02,0x08,0x21},
-+	{0x0C,0x08,0x01,0x08,0x30},
-+	{0x0A,0x08,0x02,0x04,0x11},
-+	{0x0B,0x0A,0x01,0x10,0x28},
-+	{0x09,0x08,0x02,0x02,0x01},
-+	{0x0B,0x09,0x01,0x08,0x24},
-+	{0x0B,0x08,0x01,0x04,0x20},
-+	{0x0A,0x08,0x01,0x02,0x10},
-+	{0x09,0x08,0x01,0x01,0x00}
-+};
-+
- static int __devinit
- sisfb_post_300_rwtest(struct sis_video_info *ivideo, int iteration, int buswidth,
- 			int PseudoRankCapacity, int PseudoAdrPinCount,
-@@ -4231,27 +4251,8 @@ sisfb_post_300_rwtest(struct sis_video_info *ivideo, int iteration, int buswidth
- 	unsigned short sr14;
- 	unsigned int k, RankCapacity, PageCapacity, BankNumHigh, BankNumMid;
- 	unsigned int PhysicalAdrOtherPage, PhysicalAdrHigh, PhysicalAdrHalfPage;
--	static const unsigned short SiS_DRAMType[17][5] = {
--		{0x0C,0x0A,0x02,0x40,0x39},
--		{0x0D,0x0A,0x01,0x40,0x48},
--		{0x0C,0x09,0x02,0x20,0x35},
--		{0x0D,0x09,0x01,0x20,0x44},
--		{0x0C,0x08,0x02,0x10,0x31},
--		{0x0D,0x08,0x01,0x10,0x40},
--		{0x0C,0x0A,0x01,0x20,0x34},
--		{0x0C,0x09,0x01,0x08,0x32},
--		{0x0B,0x08,0x02,0x08,0x21},
--		{0x0C,0x08,0x01,0x08,0x30},
--		{0x0A,0x08,0x02,0x04,0x11},
--		{0x0B,0x0A,0x01,0x10,0x28},
--		{0x09,0x08,0x02,0x02,0x01},
--		{0x0B,0x09,0x01,0x08,0x24},
--		{0x0B,0x08,0x01,0x04,0x20},
--		{0x0A,0x08,0x01,0x02,0x10},
--		{0x09,0x08,0x01,0x01,0x00}
--	};
+ 	if (state == PM_SUSPEND_ON
+-	    && !(strncmp(buf, "off", 3) && strncmp(buf, "off\n", 4)))
++	    && strcmp(buf, "off") && strcmp(buf, "off\n"))
+ 		return -EINVAL;
  
--	 for(k = 0; k <= 16; k++) {
-+	 for(k = 0; k < ARRAY_SIZE(SiS_DRAMType); k++) {
- 
- 		RankCapacity = buswidth * SiS_DRAMType[k][3];
- 
--- 
-1.7.3.4
-
+ 	error = pm_autosleep_set_state(state);
