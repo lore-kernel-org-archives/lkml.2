@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758370Ab2ECT3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 15:29:34 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:51999 "EHLO ogre.sisk.pl"
+	id S1758413Ab2ECT3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 15:29:50 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:51985 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758306Ab2ECT32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 15:29:28 -0400
+	id S1757812Ab2ECT31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 15:29:27 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: [PATCH 2/2] PM / Sleep: User space wakeup sources garbage collector Kconfig option
-Date: Thu, 3 May 2012 21:34:05 +0200
+Subject: [PATCH 1/2] PM / Sleep: Make the limit of user space wakeup sources configurable
+Date: Thu, 3 May 2012 21:30:41 +0200
 User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
 Cc: NeilBrown <neilb@suse.de>, John Stultz <johnstul@us.ibm.com>,
         Linux PM list <linux-pm@vger.kernel.org>,
@@ -27,34 +27,35 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205032134.05843.rjw@sisk.pl>
+Message-Id: <201205032130.41519.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Make it possible to configure out the user space wakeup sources
-garbage collector for debugging and default Android builds.
+Make it possible to configure out the check against the limit of
+user space wakeup sources for debugging and default Android builds.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- kernel/power/Kconfig    |    5 ++
- kernel/power/wakelock.c |  101 +++++++++++++++++++++++++++++-------------------
- 2 files changed, 67 insertions(+), 39 deletions(-)
+ kernel/power/Kconfig    |    6 ++++++
+ kernel/power/wakelock.c |   31 ++++++++++++++++++++++++++-----
+ 2 files changed, 32 insertions(+), 5 deletions(-)
 
 Index: linux/kernel/power/Kconfig
 ===================================================================
 --- linux.orig/kernel/power/Kconfig
 +++ linux/kernel/power/Kconfig
-@@ -125,6 +125,11 @@ config PM_WAKELOCKS_LIMIT
- 	default 100
- 	depends on PM_WAKELOCKS
+@@ -119,6 +119,12 @@ config PM_WAKELOCKS
+ 	Allow user space to create, activate and deactivate wakeup source
+ 	objects with the help of a sysfs-based interface.
  
-+config PM_WAKELOCKS_GC
-+	bool "Garbage collector for user space wakeup sources"
++config PM_WAKELOCKS_LIMIT
++	int "Maximum number of user space wakeup sources (0 = no limit)"
++	range 0 100000
++	default 100
 +	depends on PM_WAKELOCKS
-+	default y
 +
  config PM_RUNTIME
  	bool "Run-time PM core functionality"
@@ -63,156 +64,77 @@ Index: linux/kernel/power/wakelock.c
 ===================================================================
 --- linux.orig/kernel/power/wakelock.c
 +++ linux/kernel/power/wakelock.c
-@@ -17,21 +17,18 @@
+@@ -17,7 +17,6 @@
  #include <linux/rbtree.h>
  #include <linux/slab.h>
  
--#define WL_GC_COUNT_MAX	100
--#define WL_GC_TIME_SEC	300
--
- static DEFINE_MUTEX(wakelocks_lock);
+-#define WL_NUMBER_LIMIT	100
+ #define WL_GC_COUNT_MAX	100
+ #define WL_GC_TIME_SEC	300
  
- struct wakelock {
- 	char			*name;
- 	struct rb_node		node;
- 	struct wakeup_source	ws;
-+#ifdef CONFIG_PM_WAKELOCKS_GC
- 	struct list_head	lru;
-+#endif
- };
+@@ -32,7 +31,6 @@ struct wakelock {
  
  static struct rb_root wakelocks_tree = RB_ROOT;
--static LIST_HEAD(wakelocks_lru_list);
--static unsigned int wakelocks_gc_count;
+ static LIST_HEAD(wakelocks_lru_list);
+-static unsigned int number_of_wakelocks;
+ static unsigned int wakelocks_gc_count;
  
  ssize_t pm_show_wakelocks(char *buf, bool show_active)
- {
-@@ -79,6 +76,61 @@ static inline void increment_wakelocks_n
- static inline void decrement_wakelocks_number(void) {}
- #endif /* CONFIG_PM_WAKELOCKS_LIMIT */
+@@ -58,6 +56,29 @@ ssize_t pm_show_wakelocks(char *buf, boo
+ 	return (str - buf);
+ }
  
-+#ifdef CONFIG_PM_WAKELOCKS_GC
-+#define WL_GC_COUNT_MAX	100
-+#define WL_GC_TIME_SEC	300
++#if CONFIG_PM_WAKELOCKS_LIMIT > 0
++static unsigned int number_of_wakelocks;
 +
-+static LIST_HEAD(wakelocks_lru_list);
-+static unsigned int wakelocks_gc_count;
-+
-+static inline void wakelocks_lru_add(struct wakelock *wl)
++static inline bool wakelocks_limit_exceeded(void)
 +{
-+	list_add(&wl->lru, &wakelocks_lru_list);
++	return number_of_wakelocks > CONFIG_PM_WAKELOCKS_LIMIT;
 +}
 +
-+static inline void wakelocks_lru_most_recent(struct wakelock *wl)
++static inline void increment_wakelocks_number(void)
 +{
-+	list_move(&wl->lru, &wakelocks_lru_list);
++	number_of_wakelocks++;
 +}
 +
-+static void wakelocks_gc(void)
++static inline void decrement_wakelocks_number(void)
 +{
-+	struct wakelock *wl, *aux;
-+	ktime_t now;
-+
-+	if (++wakelocks_gc_count <= WL_GC_COUNT_MAX)
-+		return;
-+
-+	now = ktime_get();
-+	list_for_each_entry_safe_reverse(wl, aux, &wakelocks_lru_list, lru) {
-+		u64 idle_time_ns;
-+		bool active;
-+
-+		spin_lock_irq(&wl->ws.lock);
-+		idle_time_ns = ktime_to_ns(ktime_sub(now, wl->ws.last_time));
-+		active = wl->ws.active;
-+		spin_unlock_irq(&wl->ws.lock);
-+
-+		if (idle_time_ns < ((u64)WL_GC_TIME_SEC * NSEC_PER_SEC))
-+			break;
-+
-+		if (!active) {
-+			wakeup_source_remove(&wl->ws);
-+			rb_erase(&wl->node, &wakelocks_tree);
-+			list_del(&wl->lru);
-+			kfree(wl->name);
-+			kfree(wl);
-+			decrement_wakelocks_number();
-+		}
-+	}
-+	wakelocks_gc_count = 0;
++	number_of_wakelocks--;
 +}
-+#else /* !CONFIG_PM_WAKELOCKS_GC */
-+static inline void wakelocks_lru_add(struct wakelock *wl) {}
-+static inline void wakelocks_lru_most_recent(struct wakelock *wl) {}
-+static inline void wakelocks_gc(void) {}
-+#endif /* !CONFIG_PM_WAKELOCKS_GC */
++#else /* CONFIG_PM_WAKELOCKS_LIMIT = 0 */
++static inline bool wakelocks_limit_exceeded(void) { return false; }
++static inline void increment_wakelocks_number(void) {}
++static inline void decrement_wakelocks_number(void) {}
++#endif /* CONFIG_PM_WAKELOCKS_LIMIT */
 +
  static struct wakelock *wakelock_lookup_add(const char *name, size_t len,
  					    bool add_if_not_found)
  {
-@@ -123,7 +175,7 @@ static struct wakelock *wakelock_lookup_
- 	wakeup_source_add(&wl->ws);
+@@ -85,7 +106,7 @@ static struct wakelock *wakelock_lookup_
+ 	if (!add_if_not_found)
+ 		return ERR_PTR(-EINVAL);
+ 
+-	if (number_of_wakelocks > WL_NUMBER_LIMIT)
++	if (wakelocks_limit_exceeded())
+ 		return ERR_PTR(-ENOSPC);
+ 
+ 	/* Not found, we have to add a new one. */
+@@ -103,7 +124,7 @@ static struct wakelock *wakelock_lookup_
  	rb_link_node(&wl->node, parent, node);
  	rb_insert_color(&wl->node, &wakelocks_tree);
--	list_add(&wl->lru, &wakelocks_lru_list);
-+	wakelocks_lru_add(wl);
- 	increment_wakelocks_number();
+ 	list_add(&wl->lru, &wakelocks_lru_list);
+-	number_of_wakelocks++;
++	increment_wakelocks_number();
  	return wl;
  }
-@@ -166,42 +218,13 @@ int pm_wake_lock(const char *buf)
- 		__pm_stay_awake(&wl->ws);
+ 
+@@ -175,7 +196,7 @@ static void wakelocks_gc(void)
+ 			list_del(&wl->lru);
+ 			kfree(wl->name);
+ 			kfree(wl);
+-			number_of_wakelocks--;
++			decrement_wakelocks_number();
+ 		}
  	}
- 
--	list_move(&wl->lru, &wakelocks_lru_list);
-+	wakelocks_lru_most_recent(wl);
- 
-  out:
- 	mutex_unlock(&wakelocks_lock);
- 	return ret;
- }
- 
--static void wakelocks_gc(void)
--{
--	struct wakelock *wl, *aux;
--	ktime_t now = ktime_get();
--
--	list_for_each_entry_safe_reverse(wl, aux, &wakelocks_lru_list, lru) {
--		u64 idle_time_ns;
--		bool active;
--
--		spin_lock_irq(&wl->ws.lock);
--		idle_time_ns = ktime_to_ns(ktime_sub(now, wl->ws.last_time));
--		active = wl->ws.active;
--		spin_unlock_irq(&wl->ws.lock);
--
--		if (idle_time_ns < ((u64)WL_GC_TIME_SEC * NSEC_PER_SEC))
--			break;
--
--		if (!active) {
--			wakeup_source_remove(&wl->ws);
--			rb_erase(&wl->node, &wakelocks_tree);
--			list_del(&wl->lru);
--			kfree(wl->name);
--			kfree(wl);
--			decrement_wakelocks_number();
--		}
--	}
--	wakelocks_gc_count = 0;
--}
--
- int pm_wake_unlock(const char *buf)
- {
- 	struct wakelock *wl;
-@@ -226,9 +249,9 @@ int pm_wake_unlock(const char *buf)
- 		goto out;
- 	}
- 	__pm_relax(&wl->ws);
--	list_move(&wl->lru, &wakelocks_lru_list);
--	if (++wakelocks_gc_count > WL_GC_COUNT_MAX)
--		wakelocks_gc();
-+
-+	wakelocks_lru_most_recent(wl);
-+	wakelocks_gc();
- 
-  out:
- 	mutex_unlock(&wakelocks_lock);
+ 	wakelocks_gc_count = 0;
 
