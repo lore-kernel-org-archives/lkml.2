@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab2ECG7h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 02:59:37 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:58180 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab2ECG7g (ORCPT
+	id S1754650Ab2ECG7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 02:59:49 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:60170 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754451Ab2ECG7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 02:59:36 -0400
-Message-ID: <4FA22CC5.3010107@gmail.com>
-Date: Thu, 03 May 2012 14:59:17 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Thu, 3 May 2012 02:59:48 -0400
+Date: Thu, 3 May 2012 08:50:03 +0200
+From: Nico Schottelius <nico-linux-20120419@schottelius.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Nico Schottelius <nico-linux-20120419@schottelius.org>,
+        Francois Rigaut <frigaut@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Linux Support for Thunderbolt using Apple Monitor
+Message-ID: <20120503065003.GB13386@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20120419@schottelius.org>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Francois Rigaut <frigaut@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20120419163800.GB13977@schottelius.org>
+ <CAMVeQ8r_3vuAxzbLyKoecOHOOGijUDkLfw+MK7o-WoWbuOGSrg@mail.gmail.com>
+ <20120502163629.GE928@schottelius.org>
+ <20120502202509.GA26798@kroah.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Milton Miller <miltonm@bga.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] powerpc: use local var instead of local_paca->irq_happened
- directly in __check_irq_replay
-References: <4FA1E527.1090807@gmail.com> <1336011306.2653.3.camel@pasglop> <1336018961.2653.11.camel@pasglop> <4FA226A8.1080903@gmail.com>
-In-Reply-To: <4FA226A8.1080903@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120502202509.GA26798@kroah.com>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: brief (Linux 3.3.3-1-ARCH x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012年05月03日 14:33, Wang Sheng-Hui wrote:
-> if (unlikely(irq_happened != PACA_IRQ_HARD_DIS))
->> 		__hard_irq_disable();
+Greg KH [Wed, May 02, 2012 at 01:25:09PM -0700]:
+> Thunderbolt should show up to the kernel just as a "normal" PCIE link,
+> so there shouldn't be anything special we need to do to handle this at
+> all (or at least my Intel contacts said that.)
 
-I have commented out the 2 lines.
+Well, at least from my lspci point of view (before/after disconnect same
+output), this seems to be wrong (no dmesg output as well).
 
-FYI.
+Additionally as far as I understand
+thunderbolt, it's bundling display port and pci-e into a single channel,
+so I'm not sure if this is 100% transparent pci-e + displayport from our
+side.
 
-thanks,
+Or, the better question is probably: How should Linux realise that there
+is a change (apple monitor with ethernet, usb, co. plugged in) going on?
+
+> Note, I haven't tested this yet, so I can't verify it, but if you have
+> the hardware, you should be able to.
+
+I can test stuff here, but would be thankful for a round of pointers on
+how to debug / approach this.
+
+Cheers,
+
+Nico
+
+-- 
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
