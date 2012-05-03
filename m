@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab2ECJN4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 05:13:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51914 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754995Ab2ECJNy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 05:13:54 -0400
-Date: Thu, 3 May 2012 02:13:52 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: inux-next: Tree for Apr 27 (uml + mm/memcontrol.c)
-In-Reply-To: <87fwbnag6u.fsf@skywalker.in.ibm.com>
-Message-ID: <alpine.DEB.2.00.1205030208120.21476@chino.kir.corp.google.com>
-References: <20120427161146.95422142968526faaff615d4@canb.auug.org.au> <4F9ABF9C.2070707@xenotime.net> <alpine.DEB.2.00.1204271141040.28516@chino.kir.corp.google.com> <20120427132343.fbb443b9.akpm@linux-foundation.org> <alpine.DEB.2.00.1204271420350.4631@chino.kir.corp.google.com>
- <20120427143646.8209627e.akpm@linux-foundation.org>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu) <87fwbnag6u.fsf@skywalker.in.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755964Ab2ECJQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 05:16:45 -0400
+Received: from mga02.intel.com ([134.134.136.20]:49275 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752191Ab2ECJQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 05:16:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="136509374"
+Message-ID: <4FA24CA7.2070107@intel.com>
+Date: Thu, 03 May 2012 17:15:19 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Borislav Petkov <bp@amd64.org>
+CC: andi.kleen@intel.com, tim.c.chen@linux.intel.com, jeremy@goop.org,
+        chrisw@sous-sol.org, akataria@vmware.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
+        fweisbec@gmail.com, riel@redhat.com, luto@mit.edu, avi@redhat.com,
+        len.brown@intel.com, paul.gortmaker@windriver.com, dhowells@redhat.com,
+        fenghua.yu@intel.com, yinghai@kernel.org, cpw@sgi.com, steiner@sgi.com,
+        linux-kernel@vger.kernel.org, yongjie.ren@intel.com
+Subject: Re: [PATCH 2/3] x86/flush_tlb: try flush_tlb_single one by one in
+ flush_tlb_range
+References: <1335603099-2624-1-git-send-email-alex.shi@intel.com> <1335603099-2624-3-git-send-email-alex.shi@intel.com> <20120430105440.GC9303@aftab.osrc.amd.com> <4FA0FD39.9060908@intel.com> <20120502093815.GB12914@aftab.osrc.amd.com> <4FA11CC7.5040302@intel.com> <20120502134441.GF12914@aftab.osrc.amd.com>
+In-Reply-To: <20120502134441.GF12914@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Apr 2012, Aneesh Kumar K.V wrote:
+On 05/02/2012 09:44 PM, Borislav Petkov wrote:
 
-> My first version was to do it as a seperate controller 
+> On Wed, May 02, 2012 at 07:38:47PM +0800, Alex Shi wrote:
+>>> Are you saying you want to have this setting per family?
+>>
+>> Set it according to CPU type is more precise, but looks ugly.
 > 
-> http://thread.gmane.org/gmane.linux.kernel.mm/73826
+> By "CPU type" do you mean microarchitecture here?
+
+
+Yes.
+
 > 
-> But the feedback I received was to do it as a part of memcg extension,
-> because what the controller is limiting is memory albeit a different
-> type. AFAIU there is also this goal of avoiding controller proliferation.
+>> I am wondering if it worth to do. Maybe conservative selection is
+>> acceptable?
 > 
+> Well, as I said earlier, I'd run it on a couple of different machines
+> and make FLUSHALL_BAR configurable from userspace - this way you have
+> real, solid data instead of guessing the exact number.
 
-Maybe Kame can speak up if he feels strongly about this, but I really 
-think it should be its own controller in its own file (which would 
-obviously make this discussion irrelevant since mm/hugetlbcg.c would be 
-dependent on your own config symbol).  I don't feel like this is the same 
-as kmem since its not a global resource like hugetlb pages are.
 
-Hugetlb pages can either be allocated statically on the command line at 
-boot or dynamically via sysfs and they are globally available to whoever 
-mmaps them through hugetlbfs.  I see a real benefit from being able to 
-limit the number of hugepages in the global pool to a set of tasks so they 
-can't overuse what has been statically or dynamically allocated.  And that 
-ability should be available, in my opinion, without having to enable 
-memcg, the page_cgroup metadata overhead that comes along with it, and the 
-performance impact in using it.  I also think it would be wise to seperate 
-it out into its own file at the source level so things like this don't 
-arise in the future.
+Consider different CPU type has different balance point, I has another
+patch will add a interface for tuning.
 
-What do you think?  Kame?
+> 
+>>> Also, have you run your patches with other benchmarks beside your
+>>> microbenchmark, say kernbench, SPEC<something>, i.e. some other
+>>> multithreaded benchmark touching shared memory? Are you seeing any
+>>> improvement there?
+>>
+>> I tested oltp reading and specjbb2005 with openjdk. They should not much
+>> flush_tlb_range calling. So, no clear improvement.
+>> Do you know benchmarks which cause enough flush_tlb_range?
+> 
+> Not really. Probably get a couple of benchmarks and count
+> flush_tlb_range calls with trace_printk or perf probe? :-)
+
+
+perf probe is enough. :)
