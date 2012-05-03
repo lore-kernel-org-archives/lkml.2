@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab2ECT5v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 15:57:51 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:40259 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755319Ab2ECT5t (ORCPT
+	id S1758202Ab2ECUDJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 16:03:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57504 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab2ECUDI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 15:57:49 -0400
-Message-ID: <4FA2E334.7040601@linaro.org>
-Date: Thu, 03 May 2012 12:57:40 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V1 0/5] Rationalize time keeping
-References: <cover.1335510125.git.richardcochran@gmail.com>
-In-Reply-To: <cover.1335510125.git.richardcochran@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12050319-2398-0000-0000-00000655A555
+	Thu, 3 May 2012 16:03:08 -0400
+Message-ID: <1336075373.6509.9.camel@twins>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
+ variable-length record buffer
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kay Sievers <kay@vrfy.org>, Greg Kroah-Hartmann <greg@kroah.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Date: Thu, 03 May 2012 22:02:53 +0200
+In-Reply-To: <CA+55aFxhQ3SQrZJ6KGDu0xQ6sWSDxrS1C-V_fBcgCYmSqAKSWQ@mail.gmail.com>
+References: <1336004953.4240.9.camel@mop> <1336074483.6509.3.camel@twins>
+	 <CA+55aFxhQ3SQrZJ6KGDu0xQ6sWSDxrS1C-V_fBcgCYmSqAKSWQ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2012 01:12 AM, Richard Cochran wrote:
-> Just in time for this year's leap second, this patch series presents a
-> solution for the UTC leap second mess.
->
-> Of course, the POSIX UTC system is broken by design, and the Linux
-> kernel cannot fix that. However, what we can do is correctly execute
-> leap seconds and always report the time variables (UTC time, TAI
-> offset, and leap second status) with consistency.
->
-> The basic idea is to keep the internal time using a continuous
-> timescale and to convert to UTC by testing the time value against the
-> current threshold and adding the appropriate offset. Since the UTC
-> time and the leap second status is provided on demand, this eliminates
-> the need to set a timer or to constantly monitor for leap seconds, as
-> was done up until now.
+On Thu, 2012-05-03 at 12:56 -0700, Linus Torvalds wrote:
+> On Thu, May 3, 2012 at 12:48 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Thu, 2012-05-03 at 02:29 +0200, Kay Sievers wrote:
+> >> + * This is printk(). It can be called from any context. We want it to work.
+> >
+> > This is not true..
+> 
+> Well, it is very very nearly true, and people should basically expect it to be.
+> 
+> There are exceptions, but they are ridiculously specific
+>  - no NMI context
 
-So as I mentioned in my earlier review of this patch set, I'm not as 
-excited about the meta-layer you added in utc-tai.h.
+With the new record design you could actually make the thing lockless
+and allow writing to it from NMI context. IIRC vsnprintf() doesn't do
+any allocations/locks.
 
-So I figured I'd give it a short go and see if a good chunk of what your 
-proposing could be done in a simpler way.
+>  - we've had trouble with the percpu runqueue lock (due to the stupid wakeup)
 
-Please check out:
-http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=shortlog;h=refs/heads/dev/clktai
+Yep :-(
 
-The untested patch set there basically pushes TAI time management into 
-the timekeeping core, and then exports a CLOCK_TAI clockid.
+>  - for similar reasons, we've had trouble with printk called from
+> within some terminal locks.
+> 
+> But basically, it damn well should be considered a hard rule that you
+> can printk from pretty much anything. The few cases where that is not
+> true are big problems, and should be considered to be real problems,
+> not "oh, you can't printk from here".
 
-This patch set *does not* address the tick-granularity delayed 
-leap-second processing issue that your patch also addresses. But I feel 
-like the basic handling of tai is a little simpler.
-
-Take a look at it and let me know what you think.
-thanks
--john
-
+Thing is, with bonkers stuff like usb-console and kms/drm that's a _lot_
+of code running under the logbuf/console locks.
