@@ -1,100 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab2ECSOG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 14:14:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50924 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754042Ab2ECSOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 14:14:04 -0400
-Message-ID: <4FA2CAD9.6010808@zytor.com>
-Date: Thu, 03 May 2012 11:13:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1757909Ab2ECSRx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 14:17:53 -0400
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:59882 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753637Ab2ECSRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 14:17:52 -0400
+Date: Thu, 3 May 2012 14:10:54 -0300
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+To: jmorris@namei.org
+Cc: pebolle@tiscali.nl, linux-kernel@vger.kernel.org, tpmdd@selhorst.net
+Subject: [PULL] TPM: MAINTAINERS contacts update and error report fix
+Message-ID: <20120503171054.GA6165@localhost.br.ibm.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@gmail.com>,
-        Jana Saout <jana@saout.de>, Joel Becker <jlbec@evilplan.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Oops with DCACHE_WORD_ACCESS and ocfs2, autofs4
-References: <1335788867.29087.19.camel@localhost> <20120501110024.GC6649@dhcp-172-17-9-228.mtv.corp.google.com> <1335875321.26671.15.camel@localhost> <CAPa8GCANv=-c7HsYvDqM+8JqJq6Gr9muxAivU2Ni16x9Ru5EXw@mail.gmail.com> <CA+55aFwPgWqCPA=ao6XmZy56PaJZ4WC+hOZ_CHGWpo_zO425VA@mail.gmail.com> <20120503064722.GN6871@ZenIV.linux.org.uk> <CA+55aFx0EUgXCE9CfUGz6zde-6iYgUKZRxB1=-VOEG0kSX2qEA@mail.gmail.com> <CA+55aFxeBHSB6iBpP55kV2bLQGg8ZC9Ve5mvCmZN0ARH9dVwKg@mail.gmail.com>
-In-Reply-To: <CA+55aFxeBHSB6iBpP55kV2bLQGg8ZC9Ve5mvCmZN0ARH9dVwKg@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12050318-8936-0000-0000-000006A675E8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2012 10:30 AM, Linus Torvalds wrote:
-> On Thu, May 3, 2012 at 9:15 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> So I guess I need to do the exception handling that I was hoping I
->> wouldn't have to. Give me a jiffy.
-> 
-> Ok, that took longer than a jiffy, the asm was just nasty to get right
-> with all the proper suffixes for 32-bit vs 64-bit, and the fact that
-> gas apparently really needs %cl for the shift count, and doesn't like
-> %rcx. Silly assembler.
-> 
 
-Yes, although it's a fixed register you can also just write as %%cl.
+Hi James,
 
-> Also, the asm would have been much simpler if I didn't care so much
-> about the regular fast-path. I wanted the fast-path for the asm to be
-> a single load, with no downside, and everything fixed up in the
-> exception case.
-> 
-> And it's close. It's a single load, and the only downside is that
-> register '%rcx' is marked as used, because *if* the exception happens,
-> we want to use %rcx do the alignment fixup.
-> 
-> Peter, in particular, can you double (and triple-) check my asm, to
-> see if I missed anything? It does that "lea" of the address into %rcx
-> twice, because that way we don't need any other register temporaries.
+The following changes since commit 08162e6a23d476544adfe1164afe9ea8b34ab859:
 
-Just from a cleanliness point of view, I don't think you need the
-__WORDSUFFIX for any of these instructions (it is only required if it
-would be ambiguous, but the register names should deal with it.)
+  Yama: remove an unused variable (2012-04-23 17:20:22 +1000)
 
->  - fast-path single-instruction unaligned load (with gcc free to pick
-> registers and addressing modes):
-> 
->       movl (%edi,%edx),%eax
-> 
->  - with the exception fixup code becoming:
-> 
->         leal (%edi,%edx),%ecx
->         andl $-4,%ecx
->         movl (%ecx),%eax
->         leal (%edi,%edx),%ecx
->         andl $3,%ecx
->         shll $3,%ecx
->         shll %cl,%eax
->         shrl %cl,%eax
->         jmp 2b
+are available in the git repository at:
+  git://github.com/srajiv/tpm.git for-james
 
-I think you want to drop the shl instruction.  You're loading what
-should end up at the LSB end of the register into the MSB end of the
-register, so shr is all you should need.
+The first as the subject implies is just a contacts update, and the second
+makes the driver avoid to mistakenly report the disabled and deactivated TPM
+states as an error.
 
-Let's say %edi+%edx points to 0xcccccffd with the values 66 77 88 99
-starting at 0xcccccffc.  If the next page is present and zero, you'd end
-up with %eax = 0x00998877, and so you would expect the same.
+Marcel Selhorst (1):
+      MAINTAINERS: TPM maintainers' contacts update
 
-	lea (%edi,%edx),%ecx	-> %ecx = 0xcccccffd
-	and $-4,%ecx		-> %ecx = 0xcccccffc
-	mov (%ecx),%eax		-> %eax = 0x99887766
-	lea (%edi,%edx),%ecx	-> %ecx = 0xcccccffd
-	and $3,%ecx		-> %ecx = 1
-	shl $3,%ecx		-> %ecx = 8
-	shr %cl,%eax		-> %eax = 0x00998877
+Rajiv Andrade (1):
+      TPM: chip disabled state erronously being reported as error
 
-	-hpa
+ MAINTAINERS                     |    4 ++--
+ drivers/char/tpm/tpm.c          |   13 +++++++++++--
+ drivers/char/tpm/tpm_infineon.c |    6 +++---
+ 3 files changed, 16 insertions(+), 7 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index f31aa0c..731440f 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6746,10 +6746,10 @@ F:	include/linux/shmem_fs.h
+ F:	mm/shmem.c
+ 
+ TPM DEVICE DRIVER
+-M:	Debora Velarde <debora@linux.vnet.ibm.com>
+ M:	Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+ W:	http://tpmdd.sourceforge.net
+-M:	Marcel Selhorst <m.selhorst@sirrix.com>
++M:	Marcel Selhorst <tpmdd@selhorst.net>
++M:	Sirrix AG <tpmdd@sirrix.com>
+ W:	http://www.sirrix.com
+ L:	tpmdd-devel@lists.sourceforge.net (moderated for non-subscribers)
+ S:	Maintained
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index ad7c732..9511abd 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -827,10 +827,10 @@ EXPORT_SYMBOL_GPL(tpm_pcr_extend);
+ int tpm_do_selftest(struct tpm_chip *chip)
+ {
+ 	int rc;
+-	u8 digest[TPM_DIGEST_SIZE];
+ 	unsigned int loops;
+ 	unsigned int delay_msec = 1000;
+ 	unsigned long duration;
++	struct tpm_cmd_t cmd;
+ 
+ 	duration = tpm_calc_ordinal_duration(chip,
+ 	                                     TPM_ORD_CONTINUE_SELFTEST);
+@@ -845,7 +845,16 @@ int tpm_do_selftest(struct tpm_chip *chip)
+ 		return rc;
+ 
+ 	do {
+-		rc = __tpm_pcr_read(chip, 0, digest);
++		/* Attempt to read a PCR value */
++		cmd.header.in = pcrread_header;
++		cmd.params.pcrread_in.pcr_idx = cpu_to_be32(0);
++		rc = tpm_transmit(chip, (u8 *) &cmd, READ_PCR_RESULT_SIZE);
++
++		if (rc < TPM_HEADER_SIZE)
++			return -EFAULT;
++		else
++			rc = be32_to_cpu(cmd.header.out.return_code);
++
+ 		if (rc == TPM_ERR_DISABLED || rc == TPM_ERR_DEACTIVATED) {
+ 			dev_info(chip->dev,
+ 				 "TPM is disabled/deactivated (0x%X)\n", rc);
+diff --git a/drivers/char/tpm/tpm_infineon.c b/drivers/char/tpm/tpm_infineon.c
+index 76da32e..3251a44 100644
+--- a/drivers/char/tpm/tpm_infineon.c
++++ b/drivers/char/tpm/tpm_infineon.c
+@@ -4,8 +4,8 @@
+  * SLD 9630 TT 1.1 and SLB 9635 TT 1.2 Trusted Platform Module
+  * Specifications at www.trustedcomputinggroup.org
+  *
+- * Copyright (C) 2005, Marcel Selhorst <m.selhorst@sirrix.com>
+- * Sirrix AG - security technologies, http://www.sirrix.com and
++ * Copyright (C) 2005, Marcel Selhorst <tpmdd@selhorst.net>
++ * Sirrix AG - security technologies <tpmdd@sirrix.com> and
+  * Applied Data Security Group, Ruhr-University Bochum, Germany
+  * Project-Homepage: http://www.trust.rub.de/projects/linux-device-driver-infineon-tpm/ 
+  *
+@@ -671,7 +671,7 @@ static void __exit cleanup_inf(void)
+ module_init(init_inf);
+ module_exit(cleanup_inf);
+ 
+-MODULE_AUTHOR("Marcel Selhorst <m.selhorst@sirrix.com>");
++MODULE_AUTHOR("Marcel Selhorst <tpmdd@sirrix.com>");
+ MODULE_DESCRIPTION("Driver for Infineon TPM SLD 9630 TT 1.1 / SLB 9635 TT 1.2");
+ MODULE_VERSION("1.9.2");
+ MODULE_LICENSE("GPL");
 
 
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+
+
 
