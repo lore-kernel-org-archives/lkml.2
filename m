@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab2ECJqF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 05:46:05 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58251 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755724Ab2ECJqC convert rfc822-to-8bit (ORCPT
+	id S1756645Ab2ECJqE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 05:46:04 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38340 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755431Ab2ECJqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 May 2012 05:46:02 -0400
+Date: Thu, 3 May 2012 02:44:38 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 0/3] vmevent: Implement 'low memory' attribute
+Message-ID: <20120503094438.GA17744@lizard>
+References: <20120501132409.GA22894@lizard>
+ <CAOJsxLGxKdDnw6RU=1C3VVrwZJ53k_r6gOddYkjxQxjc1-kRXg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1336037548-13718-1-git-send-email-sachin.kamat@linaro.org>
-References: <1336037548-13718-1-git-send-email-sachin.kamat@linaro.org>
-Date: Thu, 3 May 2012 15:16:01 +0530
-Message-ID: <CAJe_ZhfmNt5jL1LrPJFM4XPiz-dA4yaBRMn92HTB7PWRXQJzRA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] DMA: PL330: Remove duplicate header file inclusion
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, vinod.koul@intel.com,
-        dan.j.williams@intel.com, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAOJsxLGxKdDnw6RU=1C3VVrwZJ53k_r6gOddYkjxQxjc1-kRXg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 May 2012 15:02, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> Removes <linux/interrupt.h> file which was included twice.
->
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
->  drivers/dma/pl330.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> index 2ee6e23..e8ebca7 100644
-> --- a/drivers/dma/pl330.c
-> +++ b/drivers/dma/pl330.c
-> @@ -21,7 +21,6 @@
->  #include <linux/interrupt.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/dmaengine.h>
-> -#include <linux/interrupt.h>
->  #include <linux/amba/bus.h>
->  #include <linux/amba/pl330.h>
->  #include <linux/pm_runtime.h>
+On Thu, May 03, 2012 at 11:10:12AM +0300, Pekka Enberg wrote:
+> On Tue, May 1, 2012 at 4:24 PM, Anton Vorontsov
+> <anton.vorontsov@linaro.org> wrote:
+> > Accounting only free pages is very inaccurate for low memory handling,
+> > so we have to be smarter here.
+> 
+> Can you elaborate on what kind of problems there are with tracking free pages?
 
-Acked-by: Jassi Brar <jaswinder.singh@linaro.org>
+Well, there's no problem with tracking itself, the word 'inaccurate'
+was probably misleading. Tracking just free pages is inaccurate for
+our "low memory" notification needs, but NR_FREE_PAGES tracking
+itself is fine.
 
-Thanks.
+The thing is that NR_FREE_PAGES accounts only completely unused
+(wasted) pages. Most of the time we have very low NR_FREE_PAGES,
+and lots of page cache and block buffers (i.e. NR_FILE_PAGES).
+
+The file pages are easily reclaimable (except shmem/tmpfs and
+locked pages), so file pages may be considered as "somewhat
+free" pages.
+
+The cache might contain very stale data (or not), so we have to
+maneuver between the two strategies: sacrifice caches, or start
+freeing memory (which prevents caches draining).
+
+The strategy is described in the third patch in the series.
+It might be not ideal, but the logic itself is not part of
+the ABI (this is very similar "not ABI" rules as we have for
+OOM scoring logic), and is subject for changes.
+
+Thanks,
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
