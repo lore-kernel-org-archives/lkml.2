@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab2ECDff (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 23:35:35 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48221 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab2ECDfd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 23:35:33 -0400
+	id S1754202Ab2ECDnX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 23:43:23 -0400
+Received: from mga01.intel.com ([192.55.52.88]:30606 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753154Ab2ECDnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 23:43:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="148757558"
+Date: Thu, 3 May 2012 11:43:11 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@fusionio.com>
+Subject: [PATCH] btrfs: lower metadata writeback threshold on low dirty
+ threshold
+Message-ID: <20120503034311.GA14081@localhost>
+References: <20120408010600.GA31377@localhost>
+ <x494nst7z3v.fsf@segfault.boston.devel.redhat.com>
+ <20120411161344.309f12ef.akpm@linux-foundation.org>
+ <20120412013224.GA5859@localhost>
+ <20120412022040.GA6800@localhost>
+ <20120412142634.GA16559@quack.suse.cz>
+ <20120413014026.GA9027@localhost>
 MIME-Version: 1.0
-In-Reply-To: <4FA19AE9.104@lwfinger.net>
-References: <CAFDqYy3OCmRHFR05=iQs-Q1hc5OMwZFiVkDbVnv5KXPA5pxfQA@mail.gmail.com>
-	<CAFDqYy03M7aZBzz30fT590YsLvZsm6JorXBGZ1CwJg2Qp01UOQ@mail.gmail.com>
-	<4FA19AE9.104@lwfinger.net>
-Date: Thu, 3 May 2012 09:35:32 +0600
-Message-ID: <CAFDqYy3NDWRZuKQU3TrL8q8jzKo_c3wDiVZdQ=7W0KnHWUVcTA@mail.gmail.com>
-Subject: Re: staging/rtl8712: unhandled default case in SwLedOn function.
-From: joseph daniel <josephdanielwalter@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ali Bahar <ali@internetdog.org>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120413014026.GA9027@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 3, 2012 at 2:36 AM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
-> On 05/02/2012 03:12 PM, joseph daniel wrote:
->>
->> On Thu, May 3, 2012 at 2:10 AM, joseph daniel
->> <josephdanielwalter@gmail.com>  wrote:
->>>
->>> Hi kernel developers,
->>>
->>> In the function SwLedOn in rtl8712_led.c, we put the bLedOn = true,
->>> even if its a default case. may be we need to return? or BUG()?.
->>>
->>> the code listing is:
->>>
->>> if ((padapter->bSurpriseRemoved == true) ||
->>>        (padapter->bDriverStopped == true))
->>>        return;
->>>    LedCfg = r8712_read8(padapter, LEDCFG);
->>>    switch (pLed->LedPin) {
->>>    case LED_PIN_GPIO0:
->>>        break;
->>>    case LED_PIN_LED0:
->>>        /* SW control led0 on.*/
->>>        r8712_write8(padapter, LEDCFG, LedCfg&0xf0);
->>>        break;
->>>    case LED_PIN_LED1:
->>>        /* SW control led1 on.*/
->>>        r8712_write8(padapter, LEDCFG, LedCfg&0x0f);
->>>        break;
->>>    default:
->>
->> /* at this point of the code */
->>>
->>>       /* break; */
->>
->>          return; /* or */
->>          /* BUG(); */ /*since we may not be getting into here */
->>>
->>>    }
->>>    pLed->bLedOn = true;
->>>
->
-> This should do:
->
-> Index: staging/drivers/staging/rtl8712/rtl8712_led.c
-> ===================================================================
-> --- staging.orig/drivers/staging/rtl8712/rtl8712_led.c
-> +++ staging/drivers/staging/rtl8712/rtl8712_led.c
-> @@ -137,7 +137,8 @@ static void SwLedOn(struct _adapter *pad
->
->                r8712_write8(padapter, LEDCFG, LedCfg&0x0f);
->                break;
->        default:
-> -               break;
-> +               WARN_ONCE(1, "Default branch taken in %s\n", __func__);
-> +               return;
->        }
->        pLed->bLedOn = true;
->  }
->
-> If you agree, then I will push the patch to Greg.
->
-Agreed. Thanks Greg and Larry.
-Acked-by: josephdanielwalter@gmail.com
+This helps write performance when setting the dirty threshold to tiny numbers.
 
-> Larry
+     3.4.0-rc2         3.4.0-rc2-btrfs4+
+  ------------  ------------------------
+         96.92        -0.4%        96.54  bay/thresh=1000M/btrfs-100dd-1-3.4.0-rc2
+         98.47        +0.0%        98.50  bay/thresh=1000M/btrfs-10dd-1-3.4.0-rc2
+         99.38        -0.3%        99.06  bay/thresh=1000M/btrfs-1dd-1-3.4.0-rc2
+         98.04        -0.0%        98.02  bay/thresh=100M/btrfs-100dd-1-3.4.0-rc2
+         98.68        +0.3%        98.98  bay/thresh=100M/btrfs-10dd-1-3.4.0-rc2
+         99.34        -0.0%        99.31  bay/thresh=100M/btrfs-1dd-1-3.4.0-rc2
+  ==>    88.98        +9.6%        97.53  bay/thresh=10M/btrfs-10dd-1-3.4.0-rc2
+  ==>    86.99       +13.1%        98.39  bay/thresh=10M/btrfs-1dd-1-3.4.0-rc2
+  ==>     2.75     +2442.4%        69.88  bay/thresh=1M/btrfs-10dd-1-3.4.0-rc2
+  ==>     3.31     +2634.1%        90.54  bay/thresh=1M/btrfs-1dd-1-3.4.0-rc2
 
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ fs/btrfs/disk-io.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks,
+--- linux-next.orig/fs/btrfs/disk-io.c	2012-05-02 14:04:00.989262395 +0800
++++ linux-next/fs/btrfs/disk-io.c	2012-05-02 14:04:01.773262414 +0800
+@@ -930,7 +930,8 @@ static int btree_writepages(struct addre
+ 
+ 		/* this is a bit racy, but that's ok */
+ 		num_dirty = root->fs_info->dirty_metadata_bytes;
+-		if (num_dirty < thresh)
++		if (num_dirty < min(thresh,
++				    global_dirty_limit << (PAGE_CACHE_SHIFT-2)))
+ 			return 0;
+ 	}
+ 	return btree_write_cache_pages(mapping, wbc);
