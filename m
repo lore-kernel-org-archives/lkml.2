@@ -1,93 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab2ECOj6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:39:58 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56882 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767Ab2ECOj4 (ORCPT
+	id S1757194Ab2ECOkM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:40:12 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:61204 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755767Ab2ECOkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:39:56 -0400
-Subject: Re: [PATCH 08/13] perf target: Split out perf_target handling code
-From: Namhyung Kim <namhyung@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
-In-Reply-To: <20120502183026.GC5745@infradead.org>
-References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
-	 <1335417327-11796-9-git-send-email-namhyung.kim@lge.com>
-	 <20120502183026.GC5745@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 May 2012 23:39:47 +0900
-Message-ID: <1336055987.1493.17.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 3 May 2012 10:40:09 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: mchehab@infradead.org, jareguero@telefonica.net
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] [media] az6007: Fix dubious use of !x & y
+Date: Thu,  3 May 2012 16:42:01 +0200
+Message-Id: <1336056121-27100-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-05-02 (수), 15:30 -0300, Arnaldo Carvalho de Melo:
-> Em Thu, Apr 26, 2012 at 02:15:22PM +0900, Namhyung Kim escreveu:
-> > For further work on perf_target, it'd be better off splitting
-> > the code into a separate file.
-> > 
-> > Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-> > ---
-> >  tools/perf/Makefile      |    2 ++
-> >  tools/perf/perf.h        |    9 +--------
-> >  tools/perf/util/evlist.c |    1 +
-> >  tools/perf/util/evsel.c  |    1 +
-> >  tools/perf/util/target.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
-> >  tools/perf/util/target.h |   17 +++++++++++++++++
-> >  tools/perf/util/usage.c  |   34 ----------------------------------
-> >  tools/perf/util/util.h   |    2 --
-> >  8 files changed, 67 insertions(+), 44 deletions(-)
-> >  create mode 100644 tools/perf/util/target.c
-> >  create mode 100644 tools/perf/util/target.h
-> 
-> Trying to fix this now...
-> 
+The intent here must be to check if the right most bit
+of msgs[i].flags is set and then do the logical negation.
 
-Oops, sorry. I'll investigate it tomorrow.
+Used macro:
+#define I2C_M_RD        0x0001
 
-Thanks,
-Namhyung
+Sparse warns about this:
+drivers/media/dvb/dvb-usb/az6007.c:714:40:
+	warning: dubious: !x & y
 
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ drivers/media/dvb/dvb-usb/az6007.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> [acme@sandy linux]$ make -C tools/perf/ O=/home/git/build/perf install
-> make: Entering directory `/home/git/linux/tools/perf'
->     CC /home/git/build/perf/builtin-bench.o
->     CC /home/git/build/perf/bench/sched-messaging.o
->     CC /home/git/build/perf/bench/sched-pipe.o
->     CC /home/git/build/perf/scripts/perl/Perf-Trace-Util/Context.o
-> In file included from
-> scripts/perl/Perf-Trace-Util/../../../util/target.h:4,
->                  from scripts/perl/Perf-Trace-Util/../../../perf.h:210,
->                  from Context.xs:25:
-> scripts/perl/Perf-Trace-Util/../../../util/util.h:44:1: error:
-> "HAS_BOOL" redefined
-> In file included from /usr/lib64/perl5/CORE/perl.h:2424,
->                  from Context.xs:23:
-> /usr/lib64/perl5/CORE/handy.h:110:1: error: this is the location of the
-> previous definition
-> In file included from
-> scripts/perl/Perf-Trace-Util/../../../util/target.h:4,
->                  from scripts/perl/Perf-Trace-Util/../../../perf.h:210,
->                  from Context.xs:25:
-> scripts/perl/Perf-Trace-Util/../../../util/util.h:133: error:
-> conflicting types for ‘Perl_die_nocontext’
-> /usr/lib64/perl5/CORE/proto.h:331: note: previous declaration of
-> ‘Perl_die_nocontext’ was here
-> make: *** [/home/git/build/perf/scripts/perl/Perf-Trace-Util/Context.o]
-> Error 1
-> make: Leaving directory `/home/git/linux/tools/perf'
-> [acme@sandy linux]$
-
-
+diff --git a/drivers/media/dvb/dvb-usb/az6007.c b/drivers/media/dvb/dvb-usb/az6007.c
+index 4008b9c..0019335a 100644
+--- a/drivers/media/dvb/dvb-usb/az6007.c
++++ b/drivers/media/dvb/dvb-usb/az6007.c
+@@ -711,7 +711,7 @@ static int az6007_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
+ 		addr = msgs[i].addr << 1;
+ 		if (((i + 1) < num)
+ 		    && (msgs[i].len == 1)
+-		    && (!msgs[i].flags & I2C_M_RD)
++		    && !(msgs[i].flags & I2C_M_RD)
+ 		    && (msgs[i + 1].flags & I2C_M_RD)
+ 		    && (msgs[i].addr == msgs[i + 1].addr)) {
+ 			/*
 -- 
-Regards,
-Namhyung Kim
-
+1.7.9.5
 
