@@ -1,120 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757787Ab2ECRVq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 13:21:46 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37877 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752641Ab2ECRVo (ORCPT
+	id S1757846Ab2ECRXQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 13:23:16 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57867 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752722Ab2ECRXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 13:21:44 -0400
-Date: Thu, 3 May 2012 13:21:42 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-cc: Greg KH <gregkh@linuxfoundation.org>, Kay Sievers <kay@vrfy.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: Re: proper struct device selection for dev_printk()
-In-Reply-To: <20120503171058.GA20605@core.coreip.homeip.net>
-Message-ID: <Pine.LNX.4.44L0.1205031317070.1232-100000@iolanthe.rowland.org>
+	Thu, 3 May 2012 13:23:13 -0400
+Date: Thu, 3 May 2012 18:23:10 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] mfd: add LM3533 lighting-power core driver
+Message-ID: <20120503172309.GT3955@opensource.wolfsonmicro.com>
+References: <1336040799-18433-1-git-send-email-jhovold@gmail.com>
+ <1336040799-18433-2-git-send-email-jhovold@gmail.com>
+ <20120503103848.GB3955@opensource.wolfsonmicro.com>
+ <20120503112803.GA15752@localhost>
+ <20120503113801.GE3955@opensource.wolfsonmicro.com>
+ <20120503150040.GC15752@localhost>
+ <20120503152407.GK3955@opensource.wolfsonmicro.com>
+ <20120503165437.GF15752@localhost>
+ <20120503165748.GS3955@opensource.wolfsonmicro.com>
+ <20120503171402.GG15752@localhost>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7Ha3rcGc4ZVRbLT1"
+Content-Disposition: inline
+In-Reply-To: <20120503171402.GG15752@localhost>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 May 2012, Dmitry Torokhov wrote:
 
-> On Thu, May 03, 2012 at 09:09:37AM -0700, Greg KH wrote:
-> > Hi Kay,
-> > 
-> > I've been working on removing the old err() and dbg() functions in usb.h
-> > that have been there since the 2.2 kernel and replace them with calls to
-> > dev_err() and dev_dbg(), as that's what we want to have, especially with
-> > your dev_printk() reworks.
-> > 
-> > In some recent changes in the input drivers, Dmitry noted that I was
-> > picking the "wrong" struct device to pass to these functions.  I was
-> > using the "farthest down the tree" struct device that I could get to, in
-> > the USB input driver's case, the struct device for the input device, a
-> > "class" device.
-> > 
-> > But that seems to produce an output that is less than helpful.  Dmitry
-> > used this as an example output to show this for a serio device:
-> > 	dev_warn(&input_dev->dev, "warning using input device\n");
-> > 	dev_warn(&serio->dev, "warning using parent serio device\n");
-> > 
-> > Produces:
-> > 	[    1.903608] input input6: warning using input device
-> > 	[    1.903612] psmouse serio1: warning using parent serio device
-> > 
-> > Here it seems that the "one up from the lowest struct device" works
-> > best.
-> > 
-> > So I tried this out with a usb to serial device, and got the following
-> > results.  With the code:
-> > 	dev_err(&port->dev, "dev_err port->dev output\n");
-> > 	dev_err(&serial->dev->dev, "dev_err serial->dev->dev output\n");
-> > 	dev_err(&serial->interface->dev, "dev_err serial->interface->dev output\n");
-> > 	dev_err(port->port.tty->dev, "dev_err port->port.tty->dev output\n");
-> > 
-> > I get:
-> > 	[   68.519639] pl2303 ttyUSB0: dev_err port->dev output
-> > 	[   68.519645] usb 2-1.2: dev_err serial->dev->dev output
-> > 	[   68.519649] pl2303 2-1.2:1.0: dev_err serial->interface->dev output
-> > 	[   68.519653] tty ttyUSB0: dev_err port->port.tty->dev output
-> > 
-> > All of these "describe" the device being operated on in one fashion or
-> > the other, as they are struct devices that are easily accessable from
-> > the driver.
-> > 
-> > My question is, what is the "best" thing to be doing here?
-> > 
-> > I still think the "lowest" struct device would be best (in this case,
-> > the last line above from the port->port.tty->dev pointer), but what do
-> > you think is best for userspace to have here?
-> 
-> My $.02:
-> 
-> In general, drivers should emit messages for the devices they bind to.
-> This way driver like psmouse (which is serio subsystem driver) will emit
-> messages using serio port it is bound (or attempting to bind to):
-> 
-> 	[    1.903612] psmouse serio1: warning using parent serio device
-> 
-> and drivers like wacom which bind to a USB interface will emit messages
-> using USB intraface, like:
-> 
-> 	[    1.234567] wacom 2-1.2:1.0: some error happened
-> 
-> The benefit of using the device we are binding to is that it allows us
-> to crearly identify the driver that emits the error and we are using the
-> same device throughout (leaf device might not have been created yet and
-> we already need to emit an error or a warning).
+--7Ha3rcGc4ZVRbLT1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-That's just what I was going to say.
+On Thu, May 03, 2012 at 07:14:02PM +0200, Johan Hovold wrote:
 
-So for example, in the USB-serial example, the
+> Assigning a current sink to a control bank corresponds, then, to
+> setting, for example, output_lvled3 to (led) 1.
 
-	usb 2-1.2: dev_err serial->dev->dev output
+This seems sensible enough, though it does feel like what we're offering
+up to the LED subsystem is relly the LED control banks rather than the
+LEDs themselves - or some mix of this and other stuff.
 
-line isn't specific enough because it doesn't say which interface it 
-applies to.  The
+--7Ha3rcGc4ZVRbLT1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	tty ttyUSB0: dev_err port->port.tty->dev output
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-line is appropriate for a message emanating from the tty core, but not 
-from a usb-serial driver.
+iQIcBAEBAgAGBQJPor7yAAoJEBus8iNuMP3doTAQAJbTPKp+sTnKvltziyw51dLx
+GhKI4d8jp5P/v0e5Ljto/+b4EQPY5IOkWZiCRpshUv/Uq5pRo9fO1MztwFGTW9pB
+WntV0NASs/cCA6HWKcwg+S5Dls/cFt3kzzfJGiwgSd60yuE6PvK1hi6s5LSFP8xM
+4MixB7LB45F4oqOrO1JCTrmmdMpTVu57C6jWjqk5oRoBhXNaj97S9M9/U8jSpwg9
++QXU0LiyCl0cBS1DlH7kr2MTjbxVOMH+wGDI8DFOesce/T0ATrRIXriqBk4clwc0
+V/8LKZvpRX3wzqSBEUptdzMCyzLZFa5/daqB8+NMKA3Q29XSlnZeQoO40cDNTbGa
+oPfAZRBrD51P6+qZ+jUxs5MJN1T+nLtLo3ZzGkG+ve+gMHKFjiNy2sO7eA7ceU1i
+UGkLtTq/vzHos0h4Ws/62cUTKSPGIE4hpSk3JWvH5rQEb3/s4ukIOvRVBUQt8EHw
+MLSAX5VpZzAJlivwdqLUuAV8yHqLtMQFgQf/fWVUw11s+uDrFW66fW53vW5LVLoj
+IdbFq1MaU6Gy9hjaOKgBn9y2s7YDVZZ39gS+UKIkQLvHFJqqtPtOD44kIyLA2p9Z
+GmYWxpCKfsnyH8r2ohNLW/kdxQTo0xJAGy8LZPNdiV/8WzsX2trJz9z31sYWAn63
+X/b6HlJWTeVszT2DD8jv
+=ac5q
+-----END PGP SIGNATURE-----
 
-As for the other two:
-
-	pl2303 ttyUSB0: dev_err port->dev output
-	pl2303 2-1.2:1.0: dev_err serial->interface->dev output
-
-either one would be okay.  You could choose between them depending on 
-what part of the driver is involved.  A part that handles the tty 
-functions would use the first and a part that handles the USB 
-communication would use the second.
-
-Alan Stern
-
+--7Ha3rcGc4ZVRbLT1--
