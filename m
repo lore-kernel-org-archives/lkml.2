@@ -1,90 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab2ECKak (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 06:30:40 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:38408 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab2ECKai convert rfc822-to-8bit (ORCPT
+	id S1756575Ab2ECKdw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 06:33:52 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:59214 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129Ab2ECKdv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 06:30:38 -0400
+	Thu, 3 May 2012 06:33:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1205030208120.21476@chino.kir.corp.google.com>
-References: <20120427161146.95422142968526faaff615d4@canb.auug.org.au>
-	<4F9ABF9C.2070707@xenotime.net>
-	<alpine.DEB.2.00.1204271141040.28516@chino.kir.corp.google.com>
-	<20120427132343.fbb443b9.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1204271420350.4631@chino.kir.corp.google.com>
-	<20120427143646.8209627e.akpm@linux-foundation.org>
-	<87fwbnag6u.fsf@skywalker.in.ibm.com>
-	<alpine.DEB.2.00.1205030208120.21476@chino.kir.corp.google.com>
-Date: Thu, 3 May 2012 19:30:37 +0900
-Message-ID: <CABEgKgqWo=b=o7PwOLc=QqCWXQxUaYvMX99GP9cR_Y-RoTEW3g@mail.gmail.com>
-Subject: Re: inux-next: Tree for Apr 27 (uml + mm/memcontrol.c)
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120501132620.GC24226@lizard>
+References: <20120501132409.GA22894@lizard>
+	<20120501132620.GC24226@lizard>
+Date: Thu, 3 May 2012 13:33:50 +0300
+X-Google-Sender-Auth: gVX0-DKtp0ohYrKOF6emWaLCjos
+Message-ID: <CAOJsxLGu3xqTry=Rf62Ly+jkCH16b+6gereoxDrg98E9TFvVfw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] vmevent: Implement special low-memory attribute
+From: Pekka Enberg <penberg@kernel.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        Minchan Kim <minchan@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 3, 2012 at 6:13 PM, David Rientjes <rientjes@google.com> wrote:
-> On Sat, 28 Apr 2012, Aneesh Kumar K.V wrote:
+On Tue, May 1, 2012 at 4:26 PM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> This is specially "blended" attribute, the event triggers when kernel
+> decides that we're close to the low memory threshold. Userspace should
+> not expect very precise meaning of low memory situation, mostly, it's
+> just a guess on the kernel's side.
 >
->> My first version was to do it as a seperate controller
->>
->> http://thread.gmane.org/gmane.linux.kernel.mm/73826
->>
->> But the feedback I received was to do it as a part of memcg extension,
->> because what the controller is limiting is memory albeit a different
->> type. AFAIU there is also this goal of avoiding controller proliferation.
->>
+> Well, this is the same as userland should not know or care how exactly
+> kernel manages the memory, or assume that memory management behaviour
+> is a part of the "ABI". So, all the 'low memory' is just guessing, but
+> we're trying to do our best. It might be that we will end up with two
+> or three variations of 'low memory' thresholds, and all of them would
+> be useful for different use cases.
 >
-> Maybe Kame can speak up if he feels strongly about this, but I really
-> think it should be its own controller in its own file (which would
-> obviously make this discussion irrelevant since mm/hugetlbcg.c would be
-> dependent on your own config symbol).  I don't feel like this is the same
-> as kmem since its not a global resource like hugetlb pages are.
+> For this implementation, we assume that there's a low memory situation
+> for the N pages threshold when we have neither N pages of completely
+> free pages, nor we have N reclaimable pages in the cache. This
+> effectively means, that if userland expects to allocate N pages, it
+> would consume all the free pages, and any further allocations (above
+> N) would start draining caches.
 >
-> Hugetlb pages can either be allocated statically on the command line at
-> boot or dynamically via sysfs and they are globally available to whoever
-> mmaps them through hugetlbfs.  I see a real benefit from being able to
-> limit the number of hugepages in the global pool to a set of tasks so they
-> can't overuse what has been statically or dynamically allocated.  And that
-> ability should be available, in my opinion, without having to enable
-> memcg, the page_cgroup metadata overhead that comes along with it, and the
-> performance impact in using it.  I also think it would be wise to seperate
-> it out into its own file at the source level so things like this don't
-> arise in the future.
+> In the worst case, prior to hitting the threshold, we might have only
+> N pages in cache, and nearly no memory as free pages.
 >
-> What do you think?  Kame?
+> The same 'low memory' meaning is used in the current Android Low
+> Memory Killer driver.
+>
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-I think hugetlb should be handled under memcg.
+I don't see why we couldn't add this. Minchan, thoughts?
 
-1. I think Hugetlb is memory.
-
-2. The characteristics of hugetlb usage you pointed out is
-characteristics comes from
-   "current" implementation.
-    Yes, it's now unreclaimable and should be allocated by hands of
-admin. But,
-    considering recent improvements, memory-defrag, CMA, it can be less
-    hard-to-use thing by updating implementation and on-demand allocation
-    can be allowed.
-
-3. If overhead is the problem, and it's better to disable memcg,
-    Please show numbers with HPC apps. I didn't think memcg has very
-bad overhead
-    with Bull's presentation in collaboration summit, this April.
-
-4. I guess a user who uses hugetlbfs will use usual memory at the same time.
-    Having 2 hierarchy for memory and hugetlb will bring him a confusion.
-
-Thanks,
--Kame
+> ---
+>  include/linux/vmevent.h              |    7 ++++++
+>  mm/vmevent.c                         |   40 ++++++++++++++++++++++++++++++++++
+>  tools/testing/vmevent/vmevent-test.c |   12 +++++++++-
+>  3 files changed, 58 insertions(+), 1 deletion(-)
+>
+> diff --git a/include/linux/vmevent.h b/include/linux/vmevent.h
+> index aae0d24..9bfa244 100644
+> --- a/include/linux/vmevent.h
+> +++ b/include/linux/vmevent.h
+> @@ -10,6 +10,13 @@ enum {
+>        VMEVENT_ATTR_NR_AVAIL_PAGES     = 1UL,
+>        VMEVENT_ATTR_NR_FREE_PAGES      = 2UL,
+>        VMEVENT_ATTR_NR_SWAP_PAGES      = 3UL,
+> +       /*
+> +        * This is specially blended attribute, the event triggers
+> +        * when kernel decides that we're close to the low memory threshold.
+> +        * Don't expect very precise meaning of low memory situation, mostly,
+> +        * it's just a guess on the kernel's side.
+> +        */
+> +       VMEVENT_ATTR_LOWMEM_PAGES       = 4UL,
+>
+>        VMEVENT_ATTR_MAX                /* non-ABI */
+>  };
+> diff --git a/mm/vmevent.c b/mm/vmevent.c
+> index b312236..d278a25 100644
+> --- a/mm/vmevent.c
+> +++ b/mm/vmevent.c
+> @@ -68,10 +68,50 @@ static u64 vmevent_attr_avail_pages(struct vmevent_watch *watch,
+>        return totalram_pages;
+>  }
+>
+> +/*
+> + * Here's some implementation details for the "low memory" meaning.
+> + *
+> + * (The explanation is not in the header file as userland should not
+> + * know these details, nor it should assume that the meaning will
+> + * always be the same. As well as it should not know how exactly kernel
+> + * manages the memory, or assume that memory management behaviour is a
+> + * part of the "ABI". So, all the 'low memory' is just guessing, but
+> + * we're trying to do our best.)
+> + *
+> + * For this implementation, we assume that there's a low memory situation
+> + * for the N pages threshold when we have neither N pages of completely
+> + * free pages, nor we have N reclaimable pages in the cache. This
+> + * effectively means, that if userland expects to allocate N pages, it
+> + * would consume all the free pages, and any further allocations (above
+> + * N) would start draining caches.
+> + *
+> + * In the worst case, prior hitting the threshold, we might have only
+> + * N pages in cache, and nearly no memory as free pages.
+> + */
+> +static u64 vmevent_attr_lowmem_pages(struct vmevent_watch *watch,
+> +                                    struct vmevent_attr *attr)
+> +{
+> +       int free = global_page_state(NR_FREE_PAGES);
+> +       int file = global_page_state(NR_FILE_PAGES) -
+> +                  global_page_state(NR_SHMEM); /* TODO: account locked pages */
+> +       int val = attr->value;
+> +
+> +       /*
+> +        * For convenience we return 0 or attr value (instead of 0/1), it
+> +        * makes it easier for vmevent_match() to cope with blended
+> +        * attributes, plus userland might use the value to find out which
+> +        * threshold triggered.
+> +        */
+> +       if (free < val && file < val)
+> +               return val;
+> +       return 0;
+> +}
+> +
+>  static vmevent_attr_sample_fn attr_samplers[] = {
+>        [VMEVENT_ATTR_NR_AVAIL_PAGES]   = vmevent_attr_avail_pages,
+>        [VMEVENT_ATTR_NR_FREE_PAGES]    = vmevent_attr_free_pages,
+>        [VMEVENT_ATTR_NR_SWAP_PAGES]    = vmevent_attr_swap_pages,
+> +       [VMEVENT_ATTR_LOWMEM_PAGES]     = vmevent_attr_lowmem_pages,
+>  };
+>
+>  static u64 vmevent_sample_attr(struct vmevent_watch *watch, struct vmevent_attr *attr)
+> diff --git a/tools/testing/vmevent/vmevent-test.c b/tools/testing/vmevent/vmevent-test.c
+> index fd9a174..c61aed7 100644
+> --- a/tools/testing/vmevent/vmevent-test.c
+> +++ b/tools/testing/vmevent/vmevent-test.c
+> @@ -33,7 +33,7 @@ int main(int argc, char *argv[])
+>
+>        config = (struct vmevent_config) {
+>                .sample_period_ns       = 1000000000L,
+> -               .counter                = 6,
+> +               .counter                = 7,
+>                .attrs                  = {
+>                        {
+>                                .type   = VMEVENT_ATTR_NR_FREE_PAGES,
+> @@ -59,6 +59,13 @@ int main(int argc, char *argv[])
+>                                .type   = VMEVENT_ATTR_NR_SWAP_PAGES,
+>                        },
+>                        {
+> +                               .type   = VMEVENT_ATTR_LOWMEM_PAGES,
+> +                               .state  = VMEVENT_ATTR_STATE_VALUE_LT |
+> +                                         VMEVENT_ATTR_STATE_VALUE_EQ |
+> +                                         VMEVENT_ATTR_STATE_ONE_SHOT,
+> +                               .value  = phys_pages / 2,
+> +                       },
+> +                       {
+>                                .type   = 0xffff, /* invalid */
+>                        },
+>                },
+> @@ -108,6 +115,9 @@ int main(int argc, char *argv[])
+>                        case VMEVENT_ATTR_NR_SWAP_PAGES:
+>                                printf("  VMEVENT_ATTR_NR_SWAP_PAGES: %Lu\n", attr->value);
+>                                break;
+> +                       case VMEVENT_ATTR_LOWMEM_PAGES:
+> +                               printf("  VMEVENT_ATTR_LOWMEM_PAGES: %Lu\n", attr->value);
+> +                               break;
+>                        default:
+>                                printf("  Unknown attribute: %Lu\n", attr->value);
+>                        }
+> --
+> 1.7.9.2
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
