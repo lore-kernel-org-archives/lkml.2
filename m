@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501Ab2ECDvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 23:51:52 -0400
-Received: from edison.jonmasters.org ([173.255.233.168]:49018 "EHLO
-	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab2ECDvv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 23:51:51 -0400
-X-Greylist: delayed 1434 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 May 2012 23:51:51 EDT
-Mime-Version: 1.0 (Apple Message framework v1257)
+	id S1755059Ab2ECDxZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 23:53:25 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10235 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754004Ab2ECDxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 23:53:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="148759364"
+Date: Thu, 3 May 2012 11:53:13 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@fusionio.com>
+Subject: [PATCH] writeback: initialize global_dirty_limit
+Message-ID: <20120503035313.GA14606@localhost>
+References: <20120408010600.GA31377@localhost>
+ <x494nst7z3v.fsf@segfault.boston.devel.redhat.com>
+ <20120411161344.309f12ef.akpm@linux-foundation.org>
+ <20120412013224.GA5859@localhost>
+ <20120412022040.GA6800@localhost>
+ <20120412142634.GA16559@quack.suse.cz>
+ <20120413014026.GA9027@localhost>
+ <20120503034311.GA14081@localhost>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Jon Masters <jonathan@jonmasters.org>
-In-Reply-To: <20120410234527.GA1401@p4.domain>
-Date: Wed, 2 May 2012 23:27:58 -0400
-Cc: linux-kernel@vger.kernel.org, jcm@jonmasters.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <DEAA41EB-6F96-4C87-BD87-94F9C25A07AF@jonmasters.org>
-References: <20120410234527.GA1401@p4.domain>
-To: Luming Yu <luming.yu@gmail.com>
-X-Mailer: Apple Mail (2.1257)
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-Subject: Re: [RFC PATCH] a simple hardware detector for lattency as well as throughput
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
-X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
+Content-Disposition: inline
+In-Reply-To: <20120503034311.GA14081@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 10, 2012, at 7:45 PM, Luming Yu wrote:
+This prevents global_dirty_limit from remaining 0 (the initial value)
+for long time, since it's only updated in update_dirty_limit() when
+above the dirty freerun area.
 
-> The rfc patch reuses some code and idea from jcm's hwlat_detector but
-> target for a broader problem that sometime we need to run a simple few minutes
-> hardware test to understand if there is any hardware latency as well as
-> throughput problem exposed on bare metal or left behind by BIOS or
-> interfered by SMI.
+It will avoid unexpected consequences when some random code use it as a
+convenient approximation of the global dirty threshold.
 
-Hey thanks. This is totally something I hoped would eventually go upstream,
-but I never got around to cleaning it up enough for mass consumption beyond
-the use case we had in mind (beating certain folks over the head when they
-have "value add" in BIOS code that causes huge SMIs, and the like, for RT).
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Did anyone ever get back to you on this one? I never saw any followup. I
-will be happy to do some testing and help you get this mainlined.
-
-Jon.
-
+--- linux-next.orig/mm/page-writeback.c	2012-04-25 20:16:12.766859391 +0800
++++ linux-next/mm/page-writeback.c	2012-05-03 11:44:32.746272930 +0800
+@@ -1568,6 +1568,7 @@ void writeback_set_ratelimit(void)
+ 	unsigned long background_thresh;
+ 	unsigned long dirty_thresh;
+ 	global_dirty_limits(&background_thresh, &dirty_thresh);
++	global_dirty_limit = dirty_thresh;
+ 	ratelimit_pages = dirty_thresh / (num_online_cpus() * 32);
+ 	if (ratelimit_pages < 16)
+ 		ratelimit_pages = 16;
