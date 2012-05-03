@@ -1,55 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758534Ab2ECUSr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 16:18:47 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:52492 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754168Ab2ECUSq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 16:18:46 -0400
-X-Sasl-enc: PIB5SsSUHIznhDjnLilE1akpdi1Ki6v+TvCop4lzej5m 1336076325
-Date: Thu, 3 May 2012 13:18:44 -0700
-From: Greg Kroah-Hartmann <greg@kroah.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
- variable-length record buffer
-Message-ID: <20120503201844.GA21584@kroah.com>
-References: <1336004953.4240.9.camel@mop>
- <1336074483.6509.3.camel@twins>
- <CA+55aFxhQ3SQrZJ6KGDu0xQ6sWSDxrS1C-V_fBcgCYmSqAKSWQ@mail.gmail.com>
- <1336075373.6509.9.camel@twins>
- <CA+55aFx1BO-s1YZ3EwscdWh2y5C2Q2dUyH8xQmuBKTNZrZWTNA@mail.gmail.com>
- <1336075862.6509.10.camel@twins>
+	id S1758574Ab2ECUTA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 16:19:00 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:40187 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758553Ab2ECUS7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 16:18:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336075862.6509.10.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201205032200.01823.rjw@sisk.pl>
+References: <1335816551-27756-1-git-send-email-ccross@android.com>
+	<201204302354.41969.rjw@sisk.pl>
+	<CAMbhsRQcDDW5vWbqb1FRtvOmq6UjOjXj9MCfSt2KF9fHrcY59Q@mail.gmail.com>
+	<201205032200.01823.rjw@sisk.pl>
+Date: Thu, 3 May 2012 13:18:58 -0700
+X-Google-Sender-Auth: WepOSWYUbYBtPNGa10fcYn1ZYUo
+Message-ID: <CAMbhsRS8D=d9aAbikosOis+Q+jMU04Oj9xaRg0jMVxtQ7nijTw@mail.gmail.com>
+Subject: Re: [PATCHv3 0/5] coupled cpuidle state support
+From: Colin Cross <ccross@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@lists.linux-foundation.org, Kevin Hilman <khilman@ti.com>,
+        Len Brown <len.brown@intel.com>, Trinabh Gupta <g.trinabh@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 10:11:02PM +0200, Peter Zijlstra wrote:
-> On Thu, 2012-05-03 at 13:09 -0700, Linus Torvalds wrote:
-> > On Thu, May 3, 2012 at 1:02 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > >
-> > > Thing is, with bonkers stuff like usb-console and kms/drm that's a _lot_
-> > > of code running under the logbuf/console locks.
-> > 
-> > The top-level console lock shouldn't be a problem - we use trylock and
-> > delay if it is held.
-> > 
-> > It's the lower-level driver-specific locks that screw us up. And quite
-> > frankly, I am *not* willing to say that that is a printk() problem.
-> > That is purely a "USB serial console is damn well broken" issue, and
-> > should not be considered a limitation of printk.
-> 
-> I'm happy to call all that broken ;-)
+On Thu, May 3, 2012 at 1:00 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+<snip>
+> There are two distinct cases to consider here, (1) when the last I/O
+> device in the domain becomes idle and the question is whether or not to
+> power off the entire domain and (2) when a CPU core in a power domain
+> becomes idle while all of the devices in the domain are idle already.
+>
+> Case (2) is quite straightforward, the .enter() routine for the
+> "domain" C-state has to check whether the domain can be turned off and
+> do it eventually.
+>
+> Case (1) is more difficult and (assuming that all CPU cores in the domain
+> are already idle at this point) i see two possible ways to handle it:
+> (a) Wake up all of the (idle) CPU cores in the domain and let the
+>  "domain" C-state's .enter() do the job (ie. turn it into case (2)),
+>  similarly to your patchset.
+> (b) If cpuidle has prepared the cores for going into deeper idle,
+>  turn the domain off directly without waking up the cores.
 
-USB serial console was a drunken bet gone wrong.  I'm amazed that it
-even works at times, and it should never be considered critical enough
-to affect any core kernel code.
+Multiple clusters is a design that has been considered in this
+patchset (all the data structures are in the right place to support
+it), and can be supported in the future, but does not exist in any
+current systems that would be using this.  In all of today's SoCs,
+there is a single cluster, so (1) can't happen - no code can be
+executing while all cpus are idle.
 
-greg k-h
+(b) is an optimization that would not be possible on any future SoC
+that is similar to the current SoCs, where "turn the domain off" is
+very tightly integrated with TrustZone secure code running on the
+primary cpu of the cluster.
+
+<snip>
+
+> Having considered this for a while I think that it may be more straightforward
+> to avoid waking up the already idled cores.
+>
+> For instance, say we have 4 CPU cores in a cluster (package) such that each
+> core has its own idle state (call it C1) and there is a multicore idle state
+> entered by turning off the entire cluster (call this state C-multi).  One of
+> the possible ways to handle this seems to be to use an identical table of
+> C-states for each core containing the C1 entry and a kind of fake entry called
+> (for example) C4 with the time characteristics of C-multi and a special
+> .enter() callback.  That callback will prepare the core it is called for to
+> enter C-multi, but instead of simply turning off the whole package it will
+> decrement a counter.  If the counte happens to be 0 at this point, the
+> package will be turned off.  Otherwise, the core will be put into the idle
+> state corresponding to C1, but it will be ready for entering C-multi at
+> any time. The counter will be incremented on exiting the C4 "state".
+
+I implemented something very similar to this on Tegra2 (having each
+cpu go to C1, but with enough state saved for C-multi), but it turns
+out not to work in hardware.  On every existing ARM SMP system where I
+have worked with cpuidle (Tegra2, OMAP4, Exynos5, and some Tegra3),
+only cpu 0 can trigger the transition to C-multi.  The cause of this
+restriction is different on every platform - sometimes it's by design,
+sometimes it's a bug in the SoC ROM code, but the restriction exists.
+The primary cpu of the cluster always needs to be awake.
+
+In addition, it may not be possible to transition secondary cpus from
+C1 to C-multi without waking them.  That would generally involve
+cutting power to a CPU that is in clock gating, which is not a
+supported power transition in any SoC that I have a datasheet for.  I
+made it work for cpu1 on Tegra2, but I can't guarantee that there are
+not unsolvable HW race conditions.
+
+The only generic way to make this work is to wake up all cpus.  Waking
+up a subset of cpus is certainly worth investigating as an
+optimization, but it would not be used on Tegra2, OMAP4, or Exynos5.
+Tegra3 may benefit from it.
+
+> It looks like this should work without modifying the cpuidle core, but
+> the drawback here is that the cpuidle core doesn't know how much time
+> spend in C4 is really in C1 and how much of it is in C-multi, so the
+> statistics reported by it won't reflect the real energy usage.
+
+Idle statistics are extremely important when determining why a
+particular use case is drawing too much power, and it is worth
+modifying the cpuidle core if only to keep them accurate.  Especially
+when justifying the move from the cpufreq hotplug governor based code
+that every SoC vendor uses in their BSP to a proper multi-CPU cpuidle
+implementation.
