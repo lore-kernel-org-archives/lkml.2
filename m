@@ -1,107 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab2ECOZO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:25:14 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45767 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932123Ab2ECOZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:25:10 -0400
-From: Venkatraman S <svenkatr@ti.com>
-To: <linux-mmc@vger.kernel.org>, <cjb@laptop.org>, <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <arnd.bergmann@linaro.org>,
-        <alex.lemberg@sandisk.com>, <ilan.smith@sandisk.com>,
-        <lporzio@micron.com>, <rmk+kernel@arm.linux.org.uk>,
-        Venkatraman S <svenkatr@ti.com>
-Subject: [PATCH v2 15/16] mmc: Update preempted request with CORRECTLY_PRG_SECTORS_NUM info
-Date: Thu, 3 May 2012 19:53:14 +0530
-Message-ID: <1336054995-22988-16-git-send-email-svenkatr@ti.com>
-X-Mailer: git-send-email 1.7.10.rc2
-In-Reply-To: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
-References: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
+	id S932151Ab2ECOZJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:25:09 -0400
+Received: from 3.mo4.mail-out.ovh.net ([46.105.57.129]:59329 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932123Ab2ECOZB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 10:25:01 -0400
+Date: Thu, 3 May 2012 15:45:46 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, Deepak Saxena <dsaxena@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>, shawn.guo@linaro.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>, Nicolas Pitre <nico@fluxnic.net>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: Making ARM multiplatform kernels DT-only?
+Message-ID: <20120503134546.GB7788@game.jcrosoft.org>
+References: <201205031350.35476.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201205031350.35476.arnd@arndb.de>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 10453980635505470212
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtddvucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtddvucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ongoing request that was preempted during 'programming' state is partially
-completed. Number of correctly programmed sectors is available in the
-ext_csd field CORRECTLY_PRG_SECTORS_NUM. Read this field to update
-the bytes_xfered field of the request
+On 13:50 Thu 03 May     , Arnd Bergmann wrote:
+> Hi everyone,
+> 
+> I've been discussing multiplatform kernels with a few people recently,
+> and we will have a lot of discussion sessions about this at Linaro
+> Connect in Hong Kong.
+> 
+> One question that came up repeatedly is whether we should support all
+> possible board files for each platform in a multiplatform kernel,
+> or just the ones that are already using DT probing. I would like
+> to get a quick poll of opinions on that and I've tried to put those
+> people on Cc that would be most impacted by this, i.e. the maintainers
+> for platforms that have both DT and non-DT board files at the moment.
+> 
+> My feeling is that we should just mandate DT booting for multiplatform
+> kernels, because it significantly reduces the combinatorial space
+> at compile time, avoids a lot of legacy board files that we cannot
+> test anyway, reduces the total kernel size and gives an incentive
+> for people to move forward to DT with their existing boards.
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> 
+> The counterargument is that we won't be able to support all the
+> boards we currently do when the user switches on multiplatform,
+> but I think that is acceptable.
+> Note that I would still want to allow users to build platforms
+> separately in order to enable the ATAG style board files, even
+> for platforms that are not multiplatform capable.
 
-Signed-off-by: Venkatraman S <svenkatr@ti.com>
----
- drivers/mmc/core/core.c |   26 ++++++++++++++++++++++++--
- include/linux/mmc/mmc.h |    4 ++++
- 2 files changed, 28 insertions(+), 2 deletions(-)
+> 
+> Other opinions?
+it will also avoid us alot of trouble and work to fix old platform that we can
+not even test
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index e6430f8..354dd7a 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -122,6 +122,23 @@ static inline void mmc_should_fail_request(struct mmc_host *host,
- 
- #endif /* CONFIG_FAIL_MMC_REQUEST */
- 
-+static int mmc_get_programmed_sectors(struct mmc_card *card, int *nsectors)
-+{
-+	int err;
-+	u8 ext_csd[512];
-+
-+	mmc_claim_host(card->host);
-+	err = mmc_send_ext_csd(card, ext_csd);
-+	mmc_release_host(card->host);
-+	if (err)
-+		return err;
-+	*nsectors = ext_csd[EXT_CSD_C_PRG_SECTORS_NUM0] +
-+			(ext_csd[EXT_CSD_C_PRG_SECTORS_NUM1] << 7) +
-+			(ext_csd[EXT_CSD_C_PRG_SECTORS_NUM2] << 15) +
-+			(ext_csd[EXT_CSD_C_PRG_SECTORS_NUM3] << 23);
-+
-+	return 0;
-+}
- /**
-  *	mmc_request_done - finish processing an MMC request
-  *	@host: MMC host which completed request
-@@ -470,6 +487,7 @@ int mmc_preempt_foreground_request(struct mmc_card *card,
- 	struct mmc_request *req)
- {
- 	int ret;
-+	int nsectors;
- 
- 	ret = mmc_abort_req(card->host, req);
- 	if (ret == -ENOSYS)
-@@ -490,8 +508,12 @@ int mmc_preempt_foreground_request(struct mmc_card *card,
- 	 */
- 	if (req->data && req->data->error) {
- 		mmc_interrupt_hpi(card);
--		/* TODO : Take out the CORRECTLY_PRG_SECTORS_NUM
--		 * from ext_csd and add it to the request */
-+
-+		ret = mmc_get_programmed_sectors(card, &nsectors);
-+		if (ret)
-+			req->data->bytes_xfered = 0;
-+		else
-+			req->data->bytes_xfered = nsectors * 512;
- 	}
- 
- 	return 0;
-diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-index ec2f195..4a3453f 100644
---- a/include/linux/mmc/mmc.h
-+++ b/include/linux/mmc/mmc.h
-@@ -315,6 +315,10 @@ struct _mmc_csd {
- #define EXT_CSD_PWR_CL_200_360		237	/* RO */
- #define EXT_CSD_PWR_CL_DDR_52_195	238	/* RO */
- #define EXT_CSD_PWR_CL_DDR_52_360	239	/* RO */
-+#define EXT_CSD_C_PRG_SECTORS_NUM0	242	/* RO */
-+#define EXT_CSD_C_PRG_SECTORS_NUM1	243	/* RO */
-+#define EXT_CSD_C_PRG_SECTORS_NUM2	244	/* RO */
-+#define EXT_CSD_C_PRG_SECTORS_NUM3	245	/* RO */
- #define EXT_CSD_POWER_OFF_LONG_TIME	247	/* RO */
- #define EXT_CSD_GENERIC_CMD6_TIME	248	/* RO */
- #define EXT_CSD_CACHE_SIZE		249	/* RO, 4 bytes */
--- 
-1.7.10.rc2
-
+Best Regards,
+J.
