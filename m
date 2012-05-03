@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab2ECA5Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 20:57:24 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:55830 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753483Ab2ECA5X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 20:57:23 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-132.messagelabs.com!1336006641!10394791!1
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] tty: mxser: local variables should not be exposed globally
-Date: Wed, 2 May 2012 17:57:17 -0700
-User-Agent: KMail/1.9.9
-CC: <jirislaby@gmail.com>, <gregkh@linuxfoundation.org>
+	id S1755366Ab2ECA6N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 20:58:13 -0400
+Received: from mga14.intel.com ([143.182.124.37]:46671 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753483Ab2ECA6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 20:58:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="95759756"
+Message-ID: <4FA1D7D9.1050402@intel.com>
+Date: Thu, 03 May 2012 08:56:57 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, riel@redhat.com,
+        mgorman@suse.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] THP: need is_vma_temporary_stack() when reference transparent_hugepage_enabled
+References: <1335594795-30876-1-git-send-email-alex.shi@intel.com> <20120430160520.4c1cc05c.akpm@linux-foundation.org> <4FA0A743.2070904@intel.com> <20120502175508.GC2410@redhat.com>
+In-Reply-To: <20120502175508.GC2410@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201205021757.18003.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The variable 'mxser_port_ops' is only referenced in this file and
-should be marked static to prevent it from being exposed globally.
 
-Quites the sparse warning:
+> My preference would still be to remove the is_vma_temporary_stack and
+> use two vmas during mremap of execve, that would remove the "vma"
+> parameter from transparent_hugepage_enabled() but others prefers to
+> skip a vma allocation in execve and stick to is_vma_temporary_stack,
+> which is fair enough argument.
 
-warning: symbol 'mxser_port_ops' was not declared. Should it be static?
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Actually, current transparent_hugepage_enabled just means the vma is in
+THP enable ENV, the vma is just possibly has some large page, no grantee
+really has.  But in lots situations, user wants to know if a vma or a
+part of memory really include a large page. not the possibility.
 
----
+So, it will be great to see a real large page checking function appearing.
 
-diff --git a/drivers/tty/mxser.c b/drivers/tty/mxser.c
-index c6f372d..90cc680 100644
---- a/drivers/tty/mxser.c
-+++ b/drivers/tty/mxser.c
-@@ -2326,7 +2326,7 @@ static const struct tty_operations mxser_ops = {
- 	.get_icount = mxser_get_icount,
- };
- 
--struct tty_port_operations mxser_port_ops = {
-+static struct tty_port_operations mxser_port_ops = {
- 	.carrier_raised = mxser_carrier_raised,
- 	.dtr_rts = mxser_dtr_rts,
- 	.activate = mxser_activate,
+> 
+>> Oh, yes. Since is_vma_temporay_stack is just used in rmap.c and huge_memory.c
+>> . is it better to move it to huge_mm.h?
+> 
+> I guess it was cleaner on rmap.h as this is not related to THP, but
+> clearly it works better in huge_mm.h (and rmap.h->mm.h->huge_mm.h is
+> included automatically) so the patch looks fine to me.
+
+
+Thanks for point out.
