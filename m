@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208Ab2ECO1c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:27:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10401 "EHLO mx1.redhat.com"
+	id S932228Ab2ECO1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:27:42 -0400
+Received: from fieldses.org ([174.143.236.118]:52393 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756280Ab2ECO1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:27:30 -0400
-Message-ID: <4FA295BE.7010706@redhat.com>
-Date: Thu, 03 May 2012 17:27:10 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S932212Ab2ECO1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 10:27:39 -0400
+Date: Thu, 3 May 2012 10:27:35 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH v3 0/2] SUNRPC: separate per-net data creation from
+ service
+Message-ID: <20120503142735.GA16940@fieldses.org>
+References: <20120502120536.8794.22210.stgit@localhost.localdomain>
+ <20120502215837.GA12089@fieldses.org>
 MIME-Version: 1.0
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        kvm@vger.kernel.org, mtosatti@redhat.com,
-        yoshikawa.takuya@oss.ntt.co.jp
-Subject: Re: [RFC] sched: make callers check lock contention for cond_resched_lock()
-References: <20120503171244.2debdd80931ccf35f387c5fe@gmail.com> <1336034127.13683.197.camel@twins> <20120503212244.6abbfa8bc3f46a7f7a932bb7@gmail.com> <1336048150.22523.17.camel@twins> <4FA27E5E.5000002@redhat.com> <20120503231107.e8c5a5dde90e109e570ba32e@gmail.com>
-In-Reply-To: <20120503231107.e8c5a5dde90e109e570ba32e@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120502215837.GA12089@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2012 05:11 PM, Takuya Yoshikawa wrote:
-> On Thu, 03 May 2012 15:47:26 +0300
-> Avi Kivity <avi@redhat.com> wrote:
->
-> > On 05/03/2012 03:29 PM, Peter Zijlstra wrote:
-> > > On Thu, 2012-05-03 at 21:22 +0900, Takuya Yoshikawa wrote:
-> > > > Although the real use case is out of this RFC patch, we are now discussing
-> > > > a case in which we may hold a spin_lock for long time, ms order, depending
-> > > > on workload;  and in that case, other threads -- VCPU threads -- should be
-> > > > given higher priority for that problematic lock. 
-> > >
-> > > Firstly, if you can hold a lock that long, it shouldn't be a spinlock,
+On Wed, May 02, 2012 at 05:58:37PM -0400, J. Bruce Fields wrote:
+> Thanks, applying.
+
+Whoops, no--I'm hitting the BUG at net/sunrpc/svc.c:558 (the first of
+the two BUG_ON()s in svc_destroy()) when restarting nfsd.  Could you
+look into this?
+
+--b.
+
+> 
+> --b.
+> 
+> On Wed, May 02, 2012 at 04:08:29PM +0400, Stanislav Kinsbursky wrote:
+> > creation
 > > 
-> > In fact with your mm preemptibility work it can be made into a mutex, if
-> > the entire mmu notifier path can be done in task context.  However it
-> > ends up a strange mutex - you can sleep while holding it but you may not
-> > allocate, because you might recurse into an mmu notifier again.
+> > v3: "SUNRPC: new svc_bind() routine introduced" patch was squashed with the
+> >     "SUNRPC: check rpcbind clients usage counter before decrement" patch.
 > > 
-> > Most uses of the lock only involve tweaking some bits though.
->
-> I might find a real way to go.
->
-> After your "mmu_lock -- TLB-flush" decoupling, we can change the current
-> get_dirty work flow like this:
->
-> 	for ... {
-> 		take mmu_lock
-> 		for 4K*8 gfns {		// with 4KB dirty_bitmap_buffer
-> 			xchg dirty bits	// 64/32 gfns at once
-> 			write protect them
-> 		}
-> 		release mmu_lock
-> 		copy_to_user
-> 	}
-> 	TLB flush
->
-> This reduces the size of dirty_bitmap_buffer and does not hold mmu_lock
-> so long.
-
-Good idea.  Hopefully the lock acquisition costs are low enough - we're
-adding two atomic operations per iteration here.
-
-
--- 
-error compiling committee.c: too many arguments to function
-
+> > v2: Increase per-net usage counted in lockd_up_net().
+> > 
+> > This is a cleanup patch set.
+> > It will be followed my LockD start/stop cleanup patch set and NFS callback
+> > service containerization patch set (yes, I forgot to implement it).
+> > 
+> > Today per-net data is created with service, and then is service is starting in
+> > other network namespace. And thus it's destroyed with service too. Moreover,
+> > network context for destroying of per-net data is taken from current process.
+> > This is correct, but code looks ugly.
+> > This patch set separates per-net data allocation from service allocation and
+> > destruction.
+> > IOW, per-net data have to be destroyed by service users - not service itself.
+> > 
+> > BTW, NFSd code become uglier with this patch set. Sorry.
+> > But I assume, that these new ugly parts will be replaced later by NFSd service
+> > containerization code.
+> > 
+> > The following series implements...
+> > 
+> > ---
+> > 
+> > Stanislav Kinsbursky (2):
+> >       SUNRPC: new svc_bind() routine introduced
+> >       SUNRPC: move per-net operations from svc_destroy()
+> > 
+> > 
+> >  fs/lockd/svc.c             |   33 +++++++++++++++++++++------------
+> >  fs/nfs/callback.c          |   11 +++++++++++
+> >  fs/nfsd/nfsctl.c           |    4 ++++
+> >  fs/nfsd/nfssvc.c           |   16 ++++++++++++++++
+> >  include/linux/sunrpc/svc.h |    1 +
+> >  net/sunrpc/rpcb_clnt.c     |   12 +++++++-----
+> >  net/sunrpc/svc.c           |   23 ++++++++++-------------
+> >  7 files changed, 70 insertions(+), 30 deletions(-)
+> > 
