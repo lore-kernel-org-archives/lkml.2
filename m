@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab2ECNZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 09:25:58 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:40408 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753050Ab2ECNZ4 (ORCPT
+	id S1755133Ab2ECN3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 09:29:01 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:53208 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751270Ab2ECN3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 09:25:56 -0400
+	Thu, 3 May 2012 09:29:00 -0400
+Message-ID: <4FA2881B.6010902@ti.com>
+Date: Thu, 03 May 2012 16:28:59 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120503 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAJDhSdc5J1xzvxYhvru6kjqAbq1NAtvWQCu-tXbi4aE_NXGXrg@mail.gmail.com>
-References: <CAJDhSdc5J1xzvxYhvru6kjqAbq1NAtvWQCu-tXbi4aE_NXGXrg@mail.gmail.com>
-Date: Thu, 3 May 2012 15:25:56 +0200
-Message-ID: <CAJDhSdfd=k2VOO4X=vUUsSA1yFRHuFbwH67BuS6WiX3A6T2iMg@mail.gmail.com>
-Subject: arcnet: protocol is buggy messages in 3.0 kernel, not in 2.33 kernel
-From: Rob Janssen <rob.janssen76@gmail.com>
-To: linux-kernel@vger.kernel.org
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Misael Lopez Cruz <misael.lopez@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 2/3] MFD: twl6040: Allocate IRQ numbers dynamically
+References: <1336049665-27777-1-git-send-email-peter.ujfalusi@ti.com> <1336049665-27777-3-git-send-email-peter.ujfalusi@ti.com> <20120503132004.GB14296@sirena.org.uk>
+In-Reply-To: <20120503132004.GB14296@sirena.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all
+On 05/03/2012 04:20 PM, Mark Brown wrote:
+> On Thu, May 03, 2012 at 03:54:24PM +0300, Peter Ujfalusi wrote:
+> 
+>>  	/* In order to operate correctly we need valid interrupt config */
+>> -	if (!client->irq || !pdata->irq_base) {
+>> +	if (!client->irq) {
+> 
+> It looks like you're totally removing the use of irq_base which will
+> break any boards that didn't convert to DT.  The usual idiom is to use
+> irq_base as the base for the range of requested IRQs if it's supplied,
+> otherwise set it to -1 to allow dynamic allocation.  This should keep
+> existing users working without disruption.
 
-Since we've moved from the 2.33 kernel to the 3.0 kernel, we see the
-following kernel messages in dmesg:
+In the current board files the pdata->irq_base set to some #defined
+value (which is a comfortably big number).
+With irq_alloc_descs(-1, 0, nr_irqs, 0); the range which can accommodate
+the number of IRQs twl6040 will be provided so there is no need to me to
+use the board specified irq_base.
+The irq_base will be removed from the pdata structure, but that change
+will go via linux-omap to avoid compile breakage.
+This part is in preparation for DT, yes, but it is working without DT.
+The twl6040 irq range is mapped to different numbers, that's all.
 
-protocol 001a is buggy, dev arc0 skb=c702e2f4
-
-The device involved is an arcnet device.
-The warning is logged by dev.c, see the following code snippet:
-
-if (skb_network_header(skb2) < skb2->data ||
-                           skb2->network_header > skb2->tail) {
-                               if (net_ratelimit())
-                                       printk(KERN_CRIT "protocol %04x is "
-                                              "buggy, dev %s skb=%04x\n",
-                                              ntohs(skb2->protocol),
-                                              dev->name,
-skb_network_header(skb2));
-                               skb_reset_network_header(skb2);
-                       }
-I added some logging, and it appears that skb2->network_header is
-placed in memory beyond skb2->tail (the second check).
-
-Does anyone have what causes this message in the 3.0 kernel and/or how
-to fix this ?
-
-Thanks in advance,
-
-Rob Janssen
+-- 
+Péter
