@@ -1,80 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab2ECGtH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 02:49:07 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:21165
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751934Ab2ECGtF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 02:49:05 -0400
-X-SpamScore: -9
-X-BigFish: VPS-9(zz936eK1432Nzz1202hzz8275bhz2dh2a8h668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Jonathan Cameron <jic23@cam.ac.uk>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Thu, 3 May 2012 07:49:05 +0100
-Subject: RE: [PATCH] IIO: industrialio-core: Use simple_open
-Thread-Topic: [PATCH] IIO: industrialio-core: Use simple_open
-Thread-Index: Ac0o0Ey/ZwBDBMwgSPqo406NWKlDrwAKID1g
-Message-ID: <544AC56F16B56944AEC3BD4E3D5917714E79717075@LIMKCMBX1.ad.analog.com>
-References: <1336009851.3590.4.camel@phoenix>
-In-Reply-To: <1336009851.3590.4.camel@phoenix>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+	id S1753923Ab2ECGwv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 02:52:51 -0400
+Received: from gate.crashing.org ([63.228.1.57]:38768 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751934Ab2ECGwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 02:52:49 -0400
+Message-ID: <1336027947.12740.8.camel@pasglop>
+Subject: Re: [PATCH] powerpc: use local var instead of
+ local_paca->irq_happened directly in __check_irq_replay
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+Cc: Milton Miller <miltonm@bga.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 03 May 2012 16:52:27 +1000
+In-Reply-To: <4FA21CD8.4060800@gmail.com>
+References: <4FA1E527.1090807@gmail.com> <1336011306.2653.3.camel@pasglop>
+	 <1336018961.2653.11.camel@pasglop> <4FA21CD8.4060800@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q436nRue025990
 
-Axel Lin wrote on 2012-05-03:
-> Use simple_open to replace iio_debugfs_open.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
-> ---
->  drivers/iio/industrialio-core.c |   10 +---------
->  1 files changed, 1 insertions(+), 9 deletions(-)
-> diff --git a/drivers/iio/industrialio-core.c
-> b/drivers/iio/industrialio-core.c index 72e33b8..52aa44a 100644 ---
-> a/drivers/iio/industrialio-core.c +++ b/drivers/iio/industrialio-core.c
-> @@ -152,14 +152,6 @@ static void __exit iio_exit(void)
->  }
->
->  #if defined(CONFIG_DEBUG_FS)
-> -static int iio_debugfs_open(struct inode *inode, struct file *file) -{
-> -     if (inode->i_private) -         file->private_data = inode->i_private; -
-> -     return 0; -} -
->  static ssize_t iio_debugfs_read_reg(struct file *file, char __user
->  *userbuf,                          size_t count, loff_t *ppos) {
-> @@ -218,7 +210,7 @@ static ssize_t iio_debugfs_write_reg(struct file
-> *file,
->  }
->
->  static const struct file_operations iio_debugfs_reg_fops = {
-> -     .open = iio_debugfs_open,
-> +     .open = simple_open,
->       .read = iio_debugfs_read_reg,
->       .write = iio_debugfs_write_reg,
->  };
+On Thu, 2012-05-03 at 13:51 +0800, Wang Sheng-Hui wrote:
+> On 2012å¹´05æœˆ03æ—¥ 12:22, Benjamin Herrenschmidt wrote:
+> > 
+> >> It should not as __check_irq_replay() should always be called
+> >> with interrupts hard disabled... Do you see any code path
+> >> where that is not the case ?
+> > 
+> > More specifically, your backtrace seems to indicate that
+> > __check_irq_repay() was called from arch_local_irq_restore() which
+> > should have done this before calling __check_irq_replay():
+> > 
+> > 	if (unlikely(irq_happened != PACA_IRQ_HARD_DIS))
+> > 		__hard_irq_disable();
+> > 
+> > Now, the only possibility that I can see for an interrupt to come in
+> > and trip the problem you observed would be if for some reason we
+> > had irq_happened set to PACA_IRQ_HARD_DIS while interrupts were
+> > not hard disabled.
+> 
+> I have a chance to notice that the value is 0x05, not just 0x01.
+> So I think this is not the case.
 
-Greetings,
-Michael
+Well, it depends, the value could have been 0x01 before it hit there... 
 
---
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
-Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin, Margaret Seif
+However 0x05 means that EE is set too which means it should never have
+hard-enabled to begin with. This is all very odd, we'll need to dig.
+
+If the value had been anything other than 0x01 it would have hard
+disabled interrupts meaning that paca->irq_happened cannot change
+anymore until they are re-enabled at the bottom of the function.
+
+So please try making this disable unconditional see if that makes any
+difference...
+
+Cheers,
+Ben.
+> > Can you try if removing the test (and thus unconditionally calling
+> > __hard_irq_disable()) fixes the problem for you ?
+> > 
+> > If that is the case, then we need to audit the code to figure out how we
+> > can end up with that bit in irq_happened set and interrupts hard
+> > enabled.
+> > 
+> > Something like may_hard_irq_enable() shouldn't cause it since it should
+> > only be called while hard disabled but adding a check in there might be
+> > worth it (something like WARN_ON(mfmsr() & MSR_EE)).
+> > 
+> > Cheers,
+> > Ben.
+> > 
+> >> Cheers,
+> >> Ben.
+> >>
+> >>> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+> >>> ---
+> >>>  arch/powerpc/kernel/irq.c |   46 +++++++++++++++++++++++++++++---------------
+> >>>  1 files changed, 30 insertions(+), 16 deletions(-)
+> >>>
+> >>> diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
+> >>> index 5ec1b23..3d48b23 100644
+> >>> --- a/arch/powerpc/kernel/irq.c
+> >>> +++ b/arch/powerpc/kernel/irq.c
+> >>> @@ -137,15 +137,17 @@ static inline notrace int decrementer_check_overflow(void)
+> >>>   */
+> >>>  notrace unsigned int __check_irq_replay(void)
+> >>>  {
+> >>> +	unsigned int ret_val;
+> >>>  	/*
+> >>>  	 * We use local_paca rather than get_paca() to avoid all
+> >>>  	 * the debug_smp_processor_id() business in this low level
+> >>>  	 * function
+> >>>  	 */
+> >>> -	unsigned char happened = local_paca->irq_happened;
+> >>> +	unsigned char happened, irq_happened;
+> >>> +	happened = irq_happened = local_paca->irq_happened;
+> >>>  
+> >>>  	/* Clear bit 0 which we wouldn't clear otherwise */
+> >>> -	local_paca->irq_happened &= ~PACA_IRQ_HARD_DIS;
+> >>> +	irq_happened &= ~PACA_IRQ_HARD_DIS;
+> >>>  
+> >>>  	/*
+> >>>  	 * Force the delivery of pending soft-disabled interrupts on PS3.
+> >>> @@ -161,33 +163,45 @@ notrace unsigned int __check_irq_replay(void)
+> >>>  	 * decrementer itself rather than the paca irq_happened field
+> >>>  	 * in case we also had a rollover while hard disabled
+> >>>  	 */
+> >>> -	local_paca->irq_happened &= ~PACA_IRQ_DEC;
+> >>> -	if (decrementer_check_overflow())
+> >>> -		return 0x900;
+> >>> +	irq_happened &= ~PACA_IRQ_DEC;
+> >>> +	if (decrementer_check_overflow()) {
+> >>> +		ret_val = 0x900;
+> >>> +		goto replay;
+> >>> +	}
+> >>>  
+> >>>  	/* Finally check if an external interrupt happened */
+> >>> -	local_paca->irq_happened &= ~PACA_IRQ_EE;
+> >>> -	if (happened & PACA_IRQ_EE)
+> >>> -		return 0x500;
+> >>> +	irq_happened &= ~PACA_IRQ_EE;
+> >>> +	if (happened & PACA_IRQ_EE) {
+> >>> +		ret_val = 0x500;
+> >>> +		goto replay;
+> >>> +	}
+> >>>  
+> >>>  #ifdef CONFIG_PPC_BOOK3E
+> >>>  	/* Finally check if an EPR external interrupt happened
+> >>>  	 * this bit is typically set if we need to handle another
+> >>>  	 * "edge" interrupt from within the MPIC "EPR" handler
+> >>>  	 */
+> >>> -	local_paca->irq_happened &= ~PACA_IRQ_EE_EDGE;
+> >>> -	if (happened & PACA_IRQ_EE_EDGE)
+> >>> -		return 0x500;
+> >>> +	irq_happened &= ~PACA_IRQ_EE_EDGE;
+> >>> +	if (happened & PACA_IRQ_EE_EDGE) {
+> >>> +		ret_val = 0x500;
+> >>> +		goto replay;
+> >>> +	}
+> >>>  
+> >>> -	local_paca->irq_happened &= ~PACA_IRQ_DBELL;
+> >>> -	if (happened & PACA_IRQ_DBELL)
+> >>> -		return 0x280;
+> >>> +	irq_happened &= ~PACA_IRQ_DBELL;
+> >>> +	if (happened & PACA_IRQ_DBELL) {
+> >>> +		ret_val = 0x280;
+> >>> +		goto replay;
+> >>> +	}
+> >>>  #endif /* CONFIG_PPC_BOOK3E */
+> >>>  
+> >>>  	/* There should be nothing left ! */
+> >>> -	BUG_ON(local_paca->irq_happened != 0);
+> >>> +	BUG_ON(irq_happened != 0);
+> >>> +	ret_val = 0;
+> >>>  
+> >>> -	return 0;
+> >>> +replay:
+> >>> +	local_paca->irq_happened = irq_happened;
+> >>> +
+> >>> +	return ret_val;
+> >>>  }
+> >>>  
+> >>>  notrace void arch_local_irq_restore(unsigned long en)
+> >>
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> > 
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
