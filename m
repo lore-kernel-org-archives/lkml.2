@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111Ab2ECSjG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 14:39:06 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34415 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab2ECSjE (ORCPT
+	id S1758091Ab2ECSki (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 14:40:38 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:39881 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754926Ab2ECSkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 14:39:04 -0400
-Message-ID: <4FA2D0C4.4020608@wwwdotorg.org>
-Date: Thu, 03 May 2012 12:39:00 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Thu, 3 May 2012 14:40:37 -0400
+Date: Thu, 3 May 2012 20:40:08 +0200
+From: Nico Schottelius <nico-linux-20120419@schottelius.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Francois Rigaut <frigaut@gmail.com>,
+        Nico Schottelius <nico-linux-20120419@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Linux Support for Thunderbolt using Apple Monitor
+Message-ID: <20120503184008.GB9432@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20120419@schottelius.org>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Francois Rigaut <frigaut@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20120419163800.GB13977@schottelius.org>
+ <CAMVeQ8r_3vuAxzbLyKoecOHOOGijUDkLfw+MK7o-WoWbuOGSrg@mail.gmail.com>
+ <20120502163629.GE928@schottelius.org>
+ <20120502202509.GA26798@kroah.com>
+ <20120503065003.GB13386@schottelius.org>
+ <CAMVeQ8qYu4bShd_+pwRv8bShhusJMDa-jjoqu7EujS4jt7RSNA@mail.gmail.com>
+ <20120503153547.GD20334@kroah.com>
 MIME-Version: 1.0
-To: Hiroshi DOYU <hdoyu@nvidia.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
-CC: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Colin Cross <ccross@android.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/1] ARM: tegra: Add Tegra Memory Controller(MC) driver
-References: <1336063897-12083-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1336063897-12083-1-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120503153547.GD20334@kroah.com>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: brief (Linux 3.3.3-1-ARCH x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2012 10:51 AM, Hiroshi DOYU wrote:
-> Tegra Memory Controller(MC) driver for Tegra20/30.
-> Added to support MC General interrupts, mainly for IOMMU.
+Greg,
 
-> The location of a file may not be suitable because of xxx_driver under arch/arm/mach-*.
-> ---
-> diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+Greg KH [Thu, May 03, 2012 at 08:35:47AM -0700]:
+> [...]
+> 
+> How about if you load the acpiphp module instead?  Some BIOSes use that
+> instead of pciehp.
+> 
+> You need one of those drivers in order for this to work properly.
+> 
+> Also, speaking of BIOS, make sure you have the latest updates, there
+> were a lot of initial problems with Thunderbolt hotplug issues that were
+> fixed in newer BIOS versions, so that will be required to be updated.
 
-Russell, Olof, Arnd,
+I'm confused - to which BIOS are you referring to? I understood that
+Apple's Mac Book Air has its custom "similar to EFI" (*) code and not a
+traditional BIOS in place.
 
-Where should this driver be placed? It's a completely Tegra-specific
-module, and I don't believe there's any drivers/ directory or other
-subsystem that's appropriate to house it right now. Should we go ahead
-and create a drivers/arm/ for this? Perhaps drivers/misc/?
+Cheers,
 
-Honestly, to me it seems best to keep purely platform-specific drivers
-like this in arch/arm/mach-tegra, since that's the most closely
-Tegra-related directory.
+Nico
 
-Hiroshi,
+(*) Which would also be interesting to replace with something like
+    LinuxBios/Coreboot.
 
-This driver attempts to cover both Tegra20 and Tegra30. However, there's
-almost no common code. I think it'd be best as separate tegra20-mc.c and
-tegra30-mc.c.
-
-This patch should include DT binding documentation.
-
-That all said, I'd hold off on reposting this until we work out how the
-MC/GART/SMMU parent-child relationship stuff is worked out; see my
-immediately previous email.
+-- 
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
