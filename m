@@ -1,148 +1,519 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758941Ab2ECWi5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 18:38:57 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40740 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756344Ab2ECWiz convert rfc822-to-8bit (ORCPT
+	id S1758898Ab2ECWtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 18:49:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58303 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756195Ab2ECWtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 18:38:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <1335529449-28046-1-git-send-email-santosh.shilimkar@ti.com>
-References: <1335529449-28046-1-git-send-email-santosh.shilimkar@ti.com>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Thu, 3 May 2012 18:38:23 -0400
-X-Google-Sender-Auth: m6WTeB7uDFDhlIDcENf2UwvqVtA
-Message-ID: <CAP=VYLrCTOb9Qtz_HU5976cew_FR=qN6=x=_nD48ZprTcCjoUg@mail.gmail.com>
-Subject: Re: [PATCH v5 0/7] Add TI EMIF SDRAM controller driver
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com, linux-omap@vger.kernel.org,
+	Thu, 3 May 2012 18:49:07 -0400
+Date: Fri, 4 May 2012 00:48:34 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Thomas Abraham <thomas.abraham@linaro.org>
+cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-samsung-soc@vger.kernel.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kgene.kim@samsung.com, cjb@laptop.org,
         linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH 3/7] mmc: dw_mmc: add device tree support
+In-Reply-To: <1335935266-25289-4-git-send-email-thomas.abraham@linaro.org>
+Message-ID: <Pine.LNX.4.64.1205040047280.18111@axis700.grange>
+References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
+ <1335935266-25289-4-git-send-email-thomas.abraham@linaro.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:HcewT63UYOtPj6fUtIR1SHI16mdK73On6RlYQw9fJSR
+ hZPzjAaSUUGNV2FSxeSybc/nmQWuS55l0ZkRt9ItwM1DrwwaLY
+ fuEr3FFXxFN8OEwnr8ShjR1gWZ0c/+1FdpDNSxqHlmhvMxSsh9
+ cEKZCtmT6aSWQ77qbtkrqF/MFu0leVk5SzTRd8dh5joNN3VOmx
+ 0Yh55m5pLrAJBt9CMxQmpzgtGu4NRZTMJNyrYZ5WHAAZ4SYGMq
+ 29+fHTrn+/RYb1V+6sN1Pf+kXFRTd4zvLNpwcUDc+IgUOXDVFz
+ ZjWbcWwwRxpYOZbeTf0PaLtLAQPje0P4pZK3ix31OBbTjhXILO
+ 5Kf8D7mLpKQ7tAE1ovrZVU66psiXQx85hmQnOx7kjrx29jVL+Y
+ LA95BY7sM3TQw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 8:24 AM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> Add a driver for the EMIF SDRAM controller used in Texas Instrument SoCs
+On Tue, 1 May 2012, Thomas Abraham wrote:
 
-Hi Santosh,
+> Add device tree based discovery support.
+> 
+> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+> ---
+>  .../devicetree/bindings/mmc/synposis-dw-mshc.txt   |   85 +++++++++
+>  drivers/mmc/host/dw_mmc-pltfm.c                    |   24 +++
+>  drivers/mmc/host/dw_mmc.c                          |  181 +++++++++++++++++++-
+>  drivers/mmc/host/dw_mmc.h                          |   10 +
+>  include/linux/mmc/dw_mmc.h                         |    2 +
+>  5 files changed, 296 insertions(+), 6 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
+> new file mode 100644
+> index 0000000..c1ed70e
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
+> @@ -0,0 +1,85 @@
+> +* Synopsis Designware Mobile Storage Host Controller
+> +
+> +The Synopsis designware mobile storage host controller is used to interface
+> +a SoC with storage medium such as eMMC or SD/MMC cards.
+> +
+> +Required Properties:
+> +
+> +* compatible: should be one of the following
+> +	- synopsis,dw-mshc: for controllers compliant with synopsis dw-mshc.
+> +
+> +* reg: physical base address of the dw-mshc controller and size of its memory
+> +  region.
+> +
+> +* interrupts: interrupt specifier for the controller. The format and value of
+> +  the interrupt specifier depends on the interrupt parent for the controller.
+> +
+> +# Slots: The slot specific information are contained within child-nodes with
+> +  each child-node representing a supported slot. There should be atleast one
+> +  child node representing a card slot. The name of the slot child node should
+> +  be 'slot{n}' where n is the unique number of the slot connnected to the
+> +  controller. The following are optional properties which can be included in
+> +  the slot child node.
+> +
+> +	* bus-width: specifies the width of the data bus connected from the
+> +	  controller to the card slot. The value should be 1, 4 or 8. In case
+> +	  this property is not specified, a default value of 1 is assumed for
+> +	  this property.
+> +
+> +	* cd-gpios: specifies the card detect gpio line. The format of the
+> +	  gpio specifier depends on the gpio controller.
+> +
+> +	* wp-gpios: specifies the write protect gpio line. The format of the
+> +	  gpio specifier depends on the gpio controller.
+> +
+> +	* gpios: specifies a list of gpios used for command, clock and data
+> +	  bus. The first gpio is the command line and the second gpio is the
+> +	  clock line. The rest of the gpios (depending on the bus-width
+> +	  property) are the data lines in no particular order. The format of
+> +	  the gpio specifier depends on the gpio controller.
+> +
+> +Optional properties:
+> +
+> +* fifo-depth: The maximum size of the tx/rx fifo's. If this property is not
+> +  specified, the default value of the fifo size is determined from the
+> +  controller registers.
+> +
+> +*  card-detect-delay: Delay in milli-seconds before detecting card after card
+> +   insert event. The default value is 0.
+> +
+> +* supports-highspeed: Enables support for high speed cards (upto 50MHz)
+> +
+> +* card-detection-broken: The card detection functionality is not available on
+> +  any of the slots.
+> +
+> +* no-write-protect: The write protect pad of the controller is not connected
+> +  to the write protect pin on the slot.
 
-Can you send Greg a patch that adds proper dependencies to the Kconfig?
-I was going to simply add an ARM dependency, but perhaps you want to
-restrict it further to a subset of OMAP platforms?
+What do you think about this patch
 
-At the moment it is causing build failures in other architectures.
+http://www.spinics.net/lists/linux-sh/msg11259.html
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/6243036/
+and about using mmc-generic OF properties instead of creating yet another 
+copy of proprietary ones?
 
-Thanks,
-Paul.
---
->
-> EMIF is an SDRAM controller that supports, based on its revision,
-> one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
-> for LPDDR2.
->
-> The driver supports the following features:
-> - Calculates the DDR AC timing parameters to be set in EMIF
->  registers using data from the device data-sheets and based
->  on the DDR frequency. If data from data-sheets is not available
->  default timing values from the JEDEC spec are used. These
->  will be safe, but not necessarily optimal
-> - API for changing timings during DVFS or at boot-up
-> - Temperature alert configuration and handling of temperature
->  alerts, if any for LPDDR2 devices
->  * temperature alert is based on periodic polling of MR4 mode
->    register in DDR devices automatically performed by hardware
->  * timings are de-rated and brought back to nominal when
->    temperature raises and falls respectively
-> - Cache of calculated register values to avoid re-calculating
->  them
->
-> The driver will need some minor updates when it is eventually
-> integrated with Dynamic Voltage and Frequency Scaling (DVFS).
-> This can not be done now as DVFS support is not available in
-> the mainline yet.
->
-> Discussions with Santosh Shilimkar <santosh.shilimkar@ti.com>
-> were immensely helpful in shaping up the interfaces. Vibhore Vardhan
-> <vvardhan@gmail.com> did the initial code snippet for thermal
-> handling.
->
-> Testing:
-> - The driver is tested on OMAP4430 SDP.
-> - The driver in a slightly adapted form is also tested on OMAP5.
-> - Since mainline kernel doesn't have DVFS support yet,
->  testing was done using a test module.
-> - Temperature alert handling was tested with simulated interrupts
->  and faked temperature values as testing all cases in real-life
->  scenarios is difficult.
-> - Tested the driver as a module
->
-> Cc: Greg KH <greg@kroah.com>
->
-> v5:
-> - Moved the EMIF driver to drivers/memory as per discussion thread [2]
->
-> v4:
-> - Converted instances of EXPORT_SYMBOL to EXPORT_SYMBOL_GPL
-> - Removed un-necessary "#ifndef __ASSEMBLY__'
-> - Minor formatting fix
->
-> v2:
-> - Fixed a bug found in the implementation of errata i728
->  workaround
-> - Fixed the value of frequency printed in debugfs
-> - Dropped the hwmod patch as Paul has already posted a
->  a hwmod series [1] that adds hwmod for EMIF
-> - Converted instances of __init to __init_or_module
->
-> Regards
-> Santosh
->
-> [1] http://thread.gmane.org/gmane.linux.ports.arm.omap/72855
-> [2] https://lkml.org/lkml/2012/4/12/173
->
->
-> Aneesh V (7):
->  ddr: add LPDDR2 data from JESD209-2
->  memory: emif: add register definitions for EMIF
->  memory: emif: add basic infrastructure for EMIF driver
->  memory: emif: handle frequency and voltage change events
->  memory: emif: add interrupt and temperature handling
->  memory: emif: add one-time settings
->  memory: emif: add debugfs entries for emif
->
->  Documentation/memory-devices/ti-emif.txt |   57 +
->  drivers/Kconfig                          |    4 +
->  drivers/Makefile                         |    3 +
->  drivers/memory/Kconfig                   |   22 +
->  drivers/memory/Makefile                  |    5 +
->  drivers/memory/emif.c                    | 1670 ++++++++++++++++++++++++++++++
->  drivers/memory/emif.h                    |  589 +++++++++++
->  include/linux/platform_data/emif_plat.h  |  128 +++
->  include/memory/jedec_ddr.h               |  175 ++++
->  lib/Kconfig                              |    8 +
->  lib/Makefile                             |    2 +
->  lib/jedec_ddr_data.c                     |  135 +++
->  12 files changed, 2798 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/memory-devices/ti-emif.txt
->  create mode 100644 drivers/memory/Kconfig
->  create mode 100644 drivers/memory/Makefile
->  create mode 100644 drivers/memory/emif.c
->  create mode 100644 drivers/memory/emif.h
->  create mode 100644 include/linux/platform_data/emif_plat.h
->  create mode 100644 include/memory/jedec_ddr.h
->  create mode 100644 lib/jedec_ddr_data.c
->
-> --
+Thanks
+Guennadi
+
+> +
+> +Example:
+> +
+> +  The MSHC controller node can be split into two portions, SoC specific and
+> +  board specific portions as listed below.
+> +
+> +	dwmmc0@12200000 {
+> +		compatible = "synopsis,dw-mshc";
+> +		reg = <0x12200000 0x1000>;
+> +		interrupts = <0 75 0>;
+> +	};
+> +
+> +	dwmmc0@12200000 {
+> +		supports-highspeed;
+> +		card-detection-broken;
+> +		no-write-protect;
+> +		fifo-depth = <0x80>;
+> +		card-detect-delay = <200>;
+> +
+> +		slot0 {
+> +			bus-width = <8>;
+> +			cd-gpios = <&gpc0 2 2 3 3>;
+> +			gpios = <&gpc0 0 2 0 3>, <&gpc0 1 2 0 3>,
+> +				<&gpc1 0 2 3 3>, <&gpc1 1 2 3 3>,
+> +				<&gpc1 2 2 3 3>, <&gpc1 3 2 3 3>,
+> +				<&gpc0 3 2 3 3>, <&gpc0 4 2 3 3>,
+> +				<&gpc0 5 2 3 3>, <&gpc0 6 2 3 3>;
+> +		};
+> +	};
+> diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
+> index 92ec3eb..2b2c9bd 100644
+> --- a/drivers/mmc/host/dw_mmc-pltfm.c
+> +++ b/drivers/mmc/host/dw_mmc-pltfm.c
+> @@ -19,8 +19,24 @@
+>  #include <linux/mmc/host.h>
+>  #include <linux/mmc/mmc.h>
+>  #include <linux/mmc/dw_mmc.h>
+> +#include <linux/of.h>
+>  #include "dw_mmc.h"
+>  
+> +#ifdef CONFIG_OF
+> +static struct dw_mci_drv_data synopsis_drv_data = {
+> +	.ctrl_type	= DW_MCI_TYPE_SYNOPSIS,
+> +};
+> +
+> +static const struct of_device_id dw_mci_pltfm_match[] = {
+> +	{ .compatible = "synopsis,dw-mshc",
+> +			.data = (void *)&synopsis_drv_data, },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
+> +#else
+> +static const struct of_device_id dw_mci_pltfm_match[];
+> +#endif
+> +
+>  static int dw_mci_pltfm_probe(struct platform_device *pdev)
+>  {
+>  	struct dw_mci *host;
+> @@ -51,6 +67,13 @@ static int dw_mci_pltfm_probe(struct platform_device *pdev)
+>  	if (!host->regs)
+>  		goto err_free;
+>  	platform_set_drvdata(pdev, host);
+> +
+> +	if (pdev->dev.of_node) {
+> +		const struct of_device_id *match;
+> +		match = of_match_node(dw_mci_pltfm_match, pdev->dev.of_node);
+> +		host->drv_data = match->data;
+> +	}
+> +
+>  	ret = dw_mci_probe(host);
+>  	if (ret)
+>  		goto err_out;
+> @@ -111,6 +134,7 @@ static struct platform_driver dw_mci_pltfm_driver = {
+>  	.remove		= __exit_p(dw_mci_pltfm_remove),
+>  	.driver		= {
+>  		.name		= "dw_mmc",
+> +		.of_match_table	= of_match_ptr(dw_mci_pltfm_match),
+>  		.pm		= &dw_mci_pltfm_pmops,
+>  	},
+>  };
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index 38cb7f8..bcf66d7 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -33,9 +33,13 @@
+>  #include <linux/bitops.h>
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/workqueue.h>
+> +#include <linux/of.h>
+> +#include <linux/of_gpio.h>
+>  
+>  #include "dw_mmc.h"
+>  
+> +#define NUM_PINS(x) (x + 2)
+> +
+>  /* Common flag combinations */
+>  #define DW_MCI_DATA_ERROR_FLAGS	(SDMMC_INT_DTO | SDMMC_INT_DCRC | \
+>  				 SDMMC_INT_HTO | SDMMC_INT_SBE  | \
+> @@ -86,6 +90,8 @@ struct idmac_desc {
+>  struct dw_mci_slot {
+>  	struct mmc_host		*mmc;
+>  	struct dw_mci		*host;
+> +	int			wp_gpio;
+> +	int			cd_gpio;
+>  
+>  	u32			ctype;
+>  
+> @@ -816,6 +822,8 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
+>  		read_only = 0;
+>  	else if (brd->get_ro)
+>  		read_only = brd->get_ro(slot->id);
+> +	else if (gpio_is_valid(slot->wp_gpio))
+> +		read_only = gpio_get_value(slot->wp_gpio);
+>  	else
+>  		read_only =
+>  			mci_readl(slot->host, WRTPRT) & (1 << slot->id) ? 1 : 0;
+> @@ -837,6 +845,8 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
+>  		present = 1;
+>  	else if (brd->get_cd)
+>  		present = !brd->get_cd(slot->id);
+> +	else if (gpio_is_valid(slot->cd_gpio))
+> +		present = gpio_get_value(slot->cd_gpio);
+>  	else
+>  		present = (mci_readl(slot->host, CDETECT) & (1 << slot->id))
+>  			== 0 ? 1 : 0;
+> @@ -1747,6 +1757,96 @@ static void dw_mci_work_routine_card(struct work_struct *work)
+>  	}
+>  }
+>  
+> +#ifdef CONFIG_OF
+> +static struct device_node *dw_mci_of_find_slot_node(struct device *dev, u8 slot)
+> +{
+> +	struct device_node *np;
+> +	char name[7];
+> +
+> +	if (!dev || !dev->of_node)
+> +		return NULL;
+> +
+> +	for_each_child_of_node(dev->of_node, np) {
+> +		sprintf(name, "slot%d", slot);
+> +		if (!strcmp(name, np->name))
+> +			return np;
+> +	}
+> +	return NULL;
+> +}
+> +
+> +static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
+> +{
+> +	struct device_node *np = dw_mci_of_find_slot_node(dev, slot);
+> +	u32 bus_wd = 1;
+> +
+> +	if (!np)
+> +		return 1;
+> +
+> +	if (of_property_read_u32(np, "bus-width", &bus_wd))
+> +		dev_err(dev, "bus-width property not found, assuming width"
+> +				" as 1\n");
+> +	return bus_wd;
+> +}
+> +
+> +static int dw_mci_of_setup_bus(struct dw_mci *host, u8 slot, u32 bus_wd)
+> +{
+> +	struct device_node *np = dw_mci_of_find_slot_node(&host->dev, slot);
+> +	int idx, gpio, ret;
+> +
+> +	for (idx = 0; idx < NUM_PINS(bus_wd); idx++) {
+> +		gpio = of_get_gpio(np, idx);
+> +		if (!gpio_is_valid(gpio)) {
+> +			dev_err(&host->dev, "invalid gpio: %d\n", gpio);
+> +			return -EINVAL;
+> +		}
+> +
+> +		ret = devm_gpio_request(&host->dev, gpio, "dw-mci-bus");
+> +		if (ret) {
+> +			dev_err(&host->dev, "gpio [%d] request failed\n", gpio);
+> +			return -EBUSY;
+> +		}
+> +	}
+> +
+> +	host->slot[slot]->wp_gpio = -1;
+> +	gpio = of_get_named_gpio(np, "wp_gpios", 0);
+> +	if (!gpio_is_valid(gpio)) {
+> +		dev_info(&host->dev, "wp gpio not available");
+> +	} else {
+> +		ret = devm_gpio_request(&host->dev, gpio, "dw-mci-wp");
+> +		if (ret)
+> +			dev_info(&host->dev, "gpio [%d] request failed\n",
+> +						gpio);
+> +		else
+> +			host->slot[slot]->wp_gpio = gpio;
+> +	}
+> +
+> +	host->slot[slot]->cd_gpio = -1;
+> +	gpio = of_get_named_gpio(np, "cd-gpios", 0);
+> +	if (!gpio_is_valid(gpio)) {
+> +		dev_info(&host->dev, "cd gpio not available");
+> +	} else {
+> +		ret = devm_gpio_request(&host->dev, gpio, "dw-mci-cd");
+> +		if (ret)
+> +			dev_err(&host->dev, "gpio [%d] request failed\n", gpio);
+> +		else
+> +			host->slot[slot]->cd_gpio = gpio;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +#else /* CONFIG_OF */
+> +static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
+> +{
+> +	return 1;
+> +}
+> +
+> +static int dw_mci_of_setup_bus(struct dw_mci *host, u8 slot, u32 bus_wd)
+> +{
+> +	return -EINVAL;
+> +}
+> +#endif /* CONFIG_OF */
+> +
+>  static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>  {
+>  	struct mmc_host *mmc;
+> @@ -1760,6 +1860,7 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>  	slot->id = id;
+>  	slot->mmc = mmc;
+>  	slot->host = host;
+> +	host->slot[id] = slot;
+>  
+>  	mmc->ops = &dw_mci_ops;
+>  	mmc->f_min = DIV_ROUND_UP(host->bus_hz, 510);
+> @@ -1780,12 +1881,21 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>  	if (host->pdata->caps)
+>  		mmc->caps = host->pdata->caps;
+>  
+> +	mmc->caps |= host->drv_data->caps;
+> +
+>  	if (host->pdata->caps2)
+>  		mmc->caps2 = host->pdata->caps2;
+>  
+> -	if (host->pdata->get_bus_wd)
+> +	if (host->pdata->get_bus_wd) {
+>  		if (host->pdata->get_bus_wd(slot->id) >= 4)
+>  			mmc->caps |= MMC_CAP_4_BIT_DATA;
+> +	} else if (host->dev.of_node) {
+> +		unsigned int bus_width;
+> +		bus_width = dw_mci_of_get_bus_wd(&host->dev, slot->id);
+> +		if (bus_width >= 4)
+> +			mmc->caps |= MMC_CAP_4_BIT_DATA;
+> +		dw_mci_of_setup_bus(host, slot->id, bus_width);
+> +	}
+>  
+>  	if (host->pdata->quirks & DW_MCI_QUIRK_HIGHSPEED)
+>  		mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
+> @@ -1830,7 +1940,6 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>  	else
+>  		clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+>  
+> -	host->slot[id] = slot;
+>  	mmc_add_host(mmc);
+>  
+>  #if defined(CONFIG_DEBUG_FS)
+> @@ -1923,15 +2032,75 @@ static bool mci_wait_reset(struct device *dev, struct dw_mci *host)
+>  	return false;
+>  }
+>  
+> +#ifdef CONFIG_OF
+> +static struct dw_mci_of_quirks {
+> +	char *quirk;
+> +	int id;
+> +} of_quriks[] = {
+> +	{
+> +		.quirk	= "supports-highspeed",
+> +		.id	= DW_MCI_QUIRK_HIGHSPEED,
+> +	}, {
+> +		.quirk	= "card-detection-broken",
+> +		.id	= DW_MCI_QUIRK_BROKEN_CARD_DETECTION,
+> +	}, {
+> +		.quirk	= "no-write-protect",
+> +		.id	= DW_MCI_QUIRK_NO_WRITE_PROTECT,
+> +	},
+> +	{ }
+> +};
+> +
+> +static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
+> +{
+> +	struct dw_mci_board *pdata;
+> +	struct device *dev = &host->dev;
+> +	struct device_node *np = dev->of_node, *slot;
+> +	u32 timing[3];
+> +	int idx, cnt;
+> +
+> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> +	if (!pdata) {
+> +		dev_err(dev, "could not allocate memory for pdata\n");
+> +		return ERR_PTR(-ENOMEM);
+> +	}
+> +
+> +	/* find out number of slots supported */
+> +	for_each_child_of_node(np, slot)
+> +		pdata->num_slots++;
+> +
+> +	/* get quirks */
+> +	cnt = sizeof(of_quriks) / sizeof(struct dw_mci_of_quirks);
+> +	for (idx = 0; idx < cnt; idx++)
+> +		if (of_get_property(np, of_quriks[idx].quirk, NULL))
+> +			pdata->quirks |= of_quriks[idx].id;
+> +
+> +	if (of_property_read_u32(np, "fifo-depth", &pdata->fifo_depth))
+> +		dev_info(dev, "fifo-depth property not found, using "
+> +				"value of FIFOTH register as default\n");
+> +
+> +	of_property_read_u32(np, "card-detect-delay", &pdata->detect_delay_ms);
+> +
+> +	return pdata;
+> +}
+> +
+> +#else /* CONFIG_OF */
+> +static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
+> +{
+> +	return ERR_PTR(-EINVAL);
+> +}
+> +#endif /* CONFIG_OF */
+> +
+>  int dw_mci_probe(struct dw_mci *host)
+>  {
+>  	int width, i, ret = 0;
+>  	u32 fifo_size;
+>  
+> -	if (!host->pdata || !host->pdata->init) {
+> -		dev_err(&host->dev,
+> -			"Platform data must supply init function\n");
+> -		return -ENODEV;
+> +	if (!host->pdata) {
+> +		host->pdata = dw_mci_parse_dt(host);
+> +		if (IS_ERR(host->pdata)) {
+> +			dev_err(&host->dev, "platform data not available\n");
+> +			return -EINVAL;
+> +		}
+>  	}
+>  
+>  	if (!host->pdata->select_slot && host->pdata->num_slots > 1) {
+> diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
+> index 15c27e1..8b8862b 100644
+> --- a/drivers/mmc/host/dw_mmc.h
+> +++ b/drivers/mmc/host/dw_mmc.h
+> @@ -182,4 +182,14 @@ extern int dw_mci_suspend(struct dw_mci *host);
+>  extern int dw_mci_resume(struct dw_mci *host);
+>  #endif
+>  
+> +/* Variations in the dw_mci controller */
+> +#define DW_MCI_TYPE_SYNOPSIS		0
+> +#define DW_MCI_TYPE_EXYNOS5250		1 /* Samsung Exynos5250 Extensions */
+> +
+> +/* dw_mci platform driver data */
+> +struct dw_mci_drv_data {
+> +	unsigned long		ctrl_type;
+> +	unsigned long		caps;
+> +};
+> +
+>  #endif /* _DW_MMC_H_ */
+> diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+> index fb51a5f..71d2b56 100644
+> --- a/include/linux/mmc/dw_mmc.h
+> +++ b/include/linux/mmc/dw_mmc.h
+> @@ -78,6 +78,7 @@ struct mmc_data;
+>   * @data_offset: Set the offset of DATA register according to VERID.
+>   * @dev: Device associated with the MMC controller.
+>   * @pdata: Platform data associated with the MMC controller.
+> + * @drv_data: Driver specific data for identified variant of the controller
+>   * @biu_clk: Pointer to bus interface unit clock instance.
+>   * @ciu_clk: Pointer to card interface unit clock instance.
+>   * @slot: Slots sharing this MMC controller.
+> @@ -160,6 +161,7 @@ struct dw_mci {
+>  	u16			data_offset;
+>  	struct device		dev;
+>  	struct dw_mci_board	*pdata;
+> +	struct dw_mci_drv_data	*drv_data;
+>  	struct clk		*biu_clk;
+>  	struct clk		*ciu_clk;
+>  	struct dw_mci_slot	*slot[MAX_MCI_SLOTS];
+> -- 
 > 1.7.5.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
