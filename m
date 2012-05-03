@@ -1,98 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481Ab2ECJo4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 05:44:56 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47439 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756041Ab2ECJoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 05:44:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="138369641"
-Message-ID: <1336038292.2656.64.camel@jtkirshe-mobl>
-Subject: Re: [GIT] Networking
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bpoirier@suse.de, rjw@sisk.pl,
-        linux-pm@vger.kernel.org, stephen.s.ko@intel.com
-Date: Thu, 03 May 2012 02:44:52 -0700
-In-Reply-To: <4FA251B5.8080109@linux.vnet.ibm.com>
-References: <20120503.025951.1393913795357644010.davem@davemloft.net>
-	 <4FA24AB1.9010108@linux.vnet.ibm.com>
-	 <20120503.053246.92708809581536438.davem@davemloft.net>
-	 <4FA251B5.8080109@linux.vnet.ibm.com>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-jvzXcgtMPYpsFUz4ry2W"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1756716Ab2ECJqF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 05:46:05 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:58251 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755724Ab2ECJqC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 05:46:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <1336037548-13718-1-git-send-email-sachin.kamat@linaro.org>
+References: <1336037548-13718-1-git-send-email-sachin.kamat@linaro.org>
+Date: Thu, 3 May 2012 15:16:01 +0530
+Message-ID: <CAJe_ZhfmNt5jL1LrPJFM4XPiz-dA4yaBRMn92HTB7PWRXQJzRA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] DMA: PL330: Remove duplicate header file inclusion
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, vinod.koul@intel.com,
+        dan.j.williams@intel.com, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 3 May 2012 15:02, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+> Removes <linux/interrupt.h> file which was included twice.
+>
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  drivers/dma/pl330.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> index 2ee6e23..e8ebca7 100644
+> --- a/drivers/dma/pl330.c
+> +++ b/drivers/dma/pl330.c
+> @@ -21,7 +21,6 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/dmaengine.h>
+> -#include <linux/interrupt.h>
+>  #include <linux/amba/bus.h>
+>  #include <linux/amba/pl330.h>
+>  #include <linux/pm_runtime.h>
 
---=-jvzXcgtMPYpsFUz4ry2W
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Jassi Brar <jaswinder.singh@linaro.org>
 
-On Thu, 2012-05-03 at 15:06 +0530, Srivatsa S. Bhat wrote:
-> On 05/03/2012 03:02 PM, David Miller wrote:
->=20
-> > From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-> > Date: Thu, 03 May 2012 14:36:57 +0530
-> >=20
-> >> https://lkml.org/lkml/2012/4/5/197
-> >=20
-> > Networking patches not posted to netdev and the Intel ethernet driver
-> > maintainers will be ignored.
-> >=20
->=20
->=20
-> Jeff Kirsher (Intel ethernet driver maintainer) already acked that
-> patchset (both patches).
->=20
-> https://lkml.org/lkml/2012/4/5/376
-> https://lkml.org/lkml/2012/4/5/377
->=20
-> One went upstream, the other didn't (yet). That's my concern.
->=20
-> Regards,
-> Srivatsa S. Bhat
->=20
-
-The second has not been ignored or dropped.  I pushed one of the patches
-and we are finishing up the validation on the second patch.  I should
-have the second patch pushed here in the next day or so.  I apologize
-for not being able to push both patches at the same time.
-
-Cheers,
-Jeff
-
---=-jvzXcgtMPYpsFUz4ry2W
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABCgAGBQJPolOUAAoJEOVv75VaS+3OJEkP/02wN4ZZGCdgS09DCDvmcxio
-r5QlFrAGqfXOENF4H/Tj0HPCat7ai9CyiH8iHwD2lK5lCqDuxHSeKW4Lphf/Eh+b
-hoOh2ixgDixA+nc23kfVGzpwkkys4FK3Y3CIQw/WA7oVyrlJsIL8USA5wbs0XBis
-umD09inqnVZWVGyPtWc3ZSGcyRtIH+zBHixBHmt7FOUsoXnYgOgcnkTX2O4JnbCY
-Gt798nX2f5xRSxvxA4ShAXeQvjL0b0Q4Z8AE6IFvQaftlRREr+tJ7YuCIGg34MXc
-uDmhK65Sy3yCkPsjaQptslqU3aMwKc0FC+++ZuP/P4z7jIau1NHzeCk/0DIl/3kT
-o6aeB39ZGwhwFPUvp65HEeCNIUA97Hmokxb0WVYcerWpK1LqePkEGf2HPookeeLf
-H/sA4eR5larUlPwDLZUT6ttdfRDsd5q4IIm1z+Ea0FRXyredJz3KHGZH0yjzppgh
-OQle19Ab9r0rrbwfwjDXlEtOiYEsqcO8TLBBxD6eIYg/7gZ2r5zb1/uAvp5fnRdD
-MGkLvKrUCCnV8IppvM4NJ7bpq4OMe+pAzMc1TX1twTkY8t1Hg7JnWtu4vui9LYO/
-K03rbssG7satfBt4ilQ8KqSj0uFkseGXnfLrPu2dsY2MREgD2OxGghoxTa/TBcdH
-bF48JuisCS56goKHfD5q
-=1sgJ
------END PGP SIGNATURE-----
-
---=-jvzXcgtMPYpsFUz4ry2W--
-
+Thanks.
