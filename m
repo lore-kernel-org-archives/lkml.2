@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab2ECOMP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:12:15 -0400
-Received: from smtprelay-b11.telenor.se ([62.127.194.20]:35711 "EHLO
-	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756409Ab2ECOMN (ORCPT
+	id S1756489Ab2ECOM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:12:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3711 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754773Ab2ECOM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:12:13 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiN3APiRok9V5qg+PGdsb2JhbABEii+nIQSBIRkBAQEBNzSCCQEBBAE6HCMQCANGFCUKGogbCbo7E4sVhH1jBJV9hgaNJw
-X-IronPort-AV: E=Sophos;i="4.75,524,1330902000"; 
-   d="scan'208";a="109416796"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 3 May 2012 16:16:51 +0200
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephane Chatty <chatty@enac.fr>
-Subject: Re: [PATCH v3 0/6] hid: Introduce device groups
-Message-ID: <20120503141651.GA12157@polaris.bitmath.org>
-References: <CAN+gG=GGVFDgf_PkovS+_OX26LH0Q19_FwwkGP2pSwnoX4d_Ug@mail.gmail.com>
- <alpine.LNX.2.00.1205021044240.14613@pobox.suse.cz>
- <CAN+gG=HHxzYPSD+1i5JS8HmkxusHi=e6im48VzXHy2KsFoce+w@mail.gmail.com>
- <CAN+gG=HDZJf+73SoddWar_pRPH2NvFrvpVuAaRC8_frXmGQYfA@mail.gmail.com>
- <20120503122359.GA11552@polaris.bitmath.org>
- <CAN+gG=GS_aQ35ekF71oCjZXquB4X3xJvzq2_fT2d7nM+iBK=Zg@mail.gmail.com>
- <20120503131904.GA11741@polaris.bitmath.org>
- <CAN+gG=GU8NGJ70Yx8_roeA4LCohcmym7wEspbv4d_xMqbrP5hw@mail.gmail.com>
- <20120503135452.GA12050@polaris.bitmath.org>
- <CAN+gG=F3c-hUqzyOv7DEkWYBN6=mATVMGSKOr-MrWvid8mc-hA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN+gG=F3c-hUqzyOv7DEkWYBN6=mATVMGSKOr-MrWvid8mc-hA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 3 May 2012 10:12:57 -0400
+X-Authority-Analysis: v=2.0 cv=N/Wr5hBB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=YECtLpki0LgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Er_tMXHLL19sWfeMzaQA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1336054375.14207.84.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH v6 1/3] trace: Make removal of ring buffer pages atomic
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Laurent Chavey <chavey@google.com>,
+        Justin Teravest <teravest@google.com>,
+        David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org
+Date: Thu, 03 May 2012 10:12:55 -0400
+In-Reply-To: <1336049840.14207.82.camel@gandalf.stny.rr.com>
+References: <1328212844-11889-2-git-send-email-vnagarnaik@google.com>
+	 <1335388704-26790-1-git-send-email-vnagarnaik@google.com>
+	 <1336010118.14207.75.camel@gandalf.stny.rr.com>
+	 <CAL26m8KgvuUGhK_T91fM2dNtFt4+KSOb5-C8yNiZ888BZW1PEg@mail.gmail.com>
+	 <1336049840.14207.82.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I suppose what you describe here is how it was working before the
-> > device groups.
-> 
-> Just to be clear: no, this last paragraph occurs after device groups.
-> Before, it was working as hid-generic catch the device first, then
-> released it while looking at the report descriptors. Now, it's purely
-> dependent on which driver is loaded first for this particaular case.
+On Thu, 2012-05-03 at 08:57 -0400, Steven Rostedt wrote:
 
-Thanks for the clarification, and I agree. It also means you are
-completely right, it will suffice to change those devices from the
-wildcard group to the multitouch group. I don't mind switching them
-all.
+> So it seems to be trace-cmd doing something different that prevents the
+> expand from happening. Not sure what it is. If I get time, I'll
+> investigate it a little more.
 
-Thanks,
-Henrik
+Do the following:
+
+echo 0 > /debug/tracing/tracing_on
+echo nop  > /debug/tracing/current_tracer
+
+then look at buffer_size_kb.
+
+It's also giving me errors when I try to enable events or anything else
+when tracing_on is disabled.
+
+-- Steve
+
+
