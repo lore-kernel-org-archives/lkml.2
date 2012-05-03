@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab2ECDuI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 23:50:08 -0400
-Received: from fed1rmfepi101.cox.net ([68.230.241.132]:58864 "EHLO
-	fed1rmfepi101.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab2ECDuG (ORCPT
+	id S1754501Ab2ECDvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 23:51:52 -0400
+Received: from edison.jonmasters.org ([173.255.233.168]:49018 "EHLO
+	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464Ab2ECDvv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 23:50:06 -0400
-X-Greylist: delayed 1065 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 May 2012 23:50:05 EDT
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020205.4FA1FC44.0049,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=RVIG98EmAZX5jXArMQd8FxtCZcYhwc9mn7hyf7cAkwU=
- c=1 sm=1 a=mP9BgSo-EEkA:10 a=rcTfVT_afHIA:10 a=zukJ/Oo2bNzQHA4rRbcyFw==:17
- a=R_N1NMmAAAAA:8 a=yDHarTkmhRPoGD_PITYA:9 a=QOiTB_lUNkwA:10
- a=zukJ/Oo2bNzQHA4rRbcyFw==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-From: Eric Nelson <eric.nelson@boundarydevices.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-kbuild@vger.kernel.org, u-boot@lists.denx.de, rylv50@freescale.com,
-        marex@denx.de, vapier@gentoo.org,
-        Eric Nelson <eric.nelson@boundarydevices.com>
-Subject: [PATCH] checkpatch: add check for whitespace before semicolon at end-of-line
-Date: Wed,  2 May 2012 20:32:18 -0700
-Message-Id: <1336015938-3174-1-git-send-email-eric.nelson@boundarydevices.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <http://lists.denx.de/pipermail/u-boot/2012-May/123595.html>
-References: <http://lists.denx.de/pipermail/u-boot/2012-May/123595.html>
+	Wed, 2 May 2012 23:51:51 -0400
+X-Greylist: delayed 1434 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 May 2012 23:51:51 EDT
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=us-ascii
+From: Jon Masters <jonathan@jonmasters.org>
+In-Reply-To: <20120410234527.GA1401@p4.domain>
+Date: Wed, 2 May 2012 23:27:58 -0400
+Cc: linux-kernel@vger.kernel.org, jcm@jonmasters.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <DEAA41EB-6F96-4C87-BD87-94F9C25A07AF@jonmasters.org>
+References: <20120410234527.GA1401@p4.domain>
+To: Luming Yu <luming.yu@gmail.com>
+X-Mailer: Apple Mail (2.1257)
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+Subject: Re: [RFC PATCH] a simple hardware detector for lattency as well as throughput
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
+X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This tests for a bad habits of mine like this:
+On Apr 10, 2012, at 7:45 PM, Luming Yu wrote:
 
-	return 0 ;
+> The rfc patch reuses some code and idea from jcm's hwlat_detector but
+> target for a broader problem that sometime we need to run a simple few minutes
+> hardware test to understand if there is any hardware latency as well as
+> throughput problem exposed on bare metal or left behind by BIOS or
+> interfered by SMI.
 
-Signed-off-by: Eric Nelson <eric.nelson@boundarydevices.com>
----
- scripts/checkpatch.pl |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Hey thanks. This is totally something I hoped would eventually go upstream,
+but I never got around to cleaning it up enough for mass consumption beyond
+the use case we had in mind (beating certain folks over the head when they
+have "value add" in BIOS code that causes huge SMIs, and the like, for RT).
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index a3b9782..0e6977e 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3227,6 +3227,12 @@ sub process {
- 			 "Statements terminations use 1 semicolon\n" . $herecurr);
- 		}
- 
-+# check for whitespace before semicolon - not allowed at end-of-line
-+		if ($line =~ /\s+;$/) {
-+		    WARN("SPACEBEFORE_SEMICOLON",
-+			 "Whitespace before semicolon\n" . $herecurr);
-+		}
-+
- # check for gcc specific __FUNCTION__
- 		if ($line =~ /__FUNCTION__/) {
- 			WARN("USE_FUNC",
--- 
-1.7.9
+Did anyone ever get back to you on this one? I never saw any followup. I
+will be happy to do some testing and help you get this mainlined.
+
+Jon.
 
