@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab2ECPZi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 11:25:38 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51639 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756800Ab2ECPZh (ORCPT
+	id S1757256Ab2ECP0h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 11:26:37 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:45329 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756681Ab2ECP0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 11:25:37 -0400
-Date: Thu, 3 May 2012 17:25:34 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mark Salter <msalter@redhat.com>
-cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch V2 09/31] cx6: Use generic init_task
-In-Reply-To: <1336052760.9422.6.camel@deneb.redhat.com>
-Message-ID: <alpine.LFD.2.02.1205031725080.6271@ionos>
-References: <20120503083859.991965503@linutronix.de>  <20120503085034.412398724@linutronix.de> <1336052760.9422.6.camel@deneb.redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 3 May 2012 11:26:36 -0400
+Message-ID: <4FA2A2F0.3030509@linux.vnet.ibm.com>
+Date: Thu, 03 May 2012 10:23:28 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Nitin Gupta <ngupta@vflare.org>
+CC: Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+References: <1336027242-372-1-git-send-email-minchan@kernel.org> <1336027242-372-3-git-send-email-minchan@kernel.org> <4FA28907.9020300@vflare.org>
+In-Reply-To: <4FA28907.9020300@vflare.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12050315-5518-0000-0000-0000041DBB12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 May 2012, Mark Salter wrote:
+On 05/03/2012 08:32 AM, Nitin Gupta wrote:
 
-> On Thu, 2012-05-03 at 09:02 +0000, Thomas Gleixner wrote:
-> > Same code. Use the generic version.
-> > 
-> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Mark Salter <msalter@redhat.com>
-> > ---
-> >  arch/c6x/Kconfig          |    1 +
-> >  arch/c6x/kernel/process.c |   16 ----------------
-> >  2 files changed, 1 insertion(+), 16 deletions(-)
-> > 
-> > Index: tip/arch/c6x/Kconfig
-> > ===================================================================
-> > --- tip.orig/arch/c6x/Kconfig
-> > +++ tip/arch/c6x/Kconfig
-> > @@ -15,6 +15,7 @@ config TMS320C6X
-> >         select IRQ_DOMAIN
-> >         select OF
-> >         select OF_EARLY_FLATTREE
-> > +       select HAVE_GENERIC_INIT_TASK
+> On 5/3/12 2:40 AM, Minchan Kim wrote:
+>> We should use zs_handle instead of void * to avoid any
+>> confusion. Without this, users may just treat zs_malloc return value as
+>> a pointer and try to deference it.
+>>
+>> Cc: Dan Magenheimer<dan.magenheimer@oracle.com>
+>> Cc: Konrad Rzeszutek Wilk<konrad.wilk@oracle.com>
+>> Signed-off-by: Minchan Kim<minchan@kernel.org>
+>> ---
+>>   drivers/staging/zcache/zcache-main.c     |    8 ++++----
+>>   drivers/staging/zram/zram_drv.c          |    8 ++++----
+>>   drivers/staging/zram/zram_drv.h          |    2 +-
+>>   drivers/staging/zsmalloc/zsmalloc-main.c |   28
+>> ++++++++++++++--------------
+>>   drivers/staging/zsmalloc/zsmalloc.h      |   15 +++++++++++----
+>>   5 files changed, 34 insertions(+), 27 deletions(-)
 > 
-> I'd like to keep this list in alphabetical order.
+> This was a long pending change. Thanks!
 
-ok,
- 
-> Change cx6 to c6x in subject.
 
-Oops
- 
-> It does test okay with no problems on c6x.
+The reason I hadn't done it before is that it introduces a checkpatch
+warning:
 
-Thanks,
+WARNING: do not add new typedefs
+#303: FILE: drivers/staging/zsmalloc/zsmalloc.h:19:
++typedef void * zs_handle;
 
-	tglx
+In addition this particular patch has a checkpatch error:
+
+ERROR: "foo * bar" should be "foo *bar"
+#303: FILE: drivers/staging/zsmalloc/zsmalloc.h:19:
++typedef void * zs_handle;
+
+--
+Seth
+
