@@ -1,104 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758915Ab2ECW7m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 18:59:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46664 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756108Ab2ECW7l (ORCPT
+	id S1758959Ab2ECXDP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 19:03:15 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48934 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758908Ab2ECXDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 18:59:41 -0400
+	Thu, 3 May 2012 19:03:13 -0400
+Date: Fri, 4 May 2012 01:03:08 +0200
+From: Domenico Andreoli <cavokz@gmail.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
+        Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: [PATCH] clk: Use a separate struct for holding init data.
+Message-ID: <20120503230308.GA13016@glitch>
+Mail-Followup-To: Saravana Kannan <skannan@codeaurora.org>,
+	Mike Turquette <mturquette@linaro.org>,
+	Arnd Bergman <arnd.bergmann@linaro.org>,
+	linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
+	Paul Walmsley <paul@pwsan.com>,
+	Russell King <linux@arm.linux.org.uk>,
+	Linus Walleij <linus.walleij@stericsson.com>,
+	Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+	Sascha Hauer <s.hauer@pengutronix.de>,
+	Mark Brown <broonie@opensource.wolfsonmicro.com>,
+	Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+	Rob Herring <rob.herring@calxeda.com>,
+	Richard Zhao <richard.zhao@linaro.org>,
+	Grant Likely <grant.likely@secretlab.ca>,
+	Deepak Saxena <dsaxena@linaro.org>,
+	Amit Kucheria <amit.kucheria@linaro.org>,
+	Jamie Iles <jamie@jamieiles.com>,
+	Jeremy Kerr <jeremy.kerr@canonical.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Shawn Guo <shawn.guo@freescale.com>
+References: <1335419936-10881-1-git-send-email-skannan@codeaurora.org>
 MIME-Version: 1.0
-Date: Thu, 3 May 2012 15:59:41 -0700
-Message-ID: <CAOsG7to=Ap9O0vbJGSbC72fyDBa6dzBxvwBYqCJiB=GVnu=S4A@mail.gmail.com>
-Subject: process migration during vfp_init() generates kernel crash
-From: Hyungwoo Yang <hwoo.yang@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335419936-10881-1-git-send-email-skannan@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Apr 25, 2012 at 10:58:56PM -0700, Saravana Kannan wrote:
+>
+> diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+> index 90627e4..8ea11b4 100644
+> --- a/drivers/clk/clk-divider.c
+> +++ b/drivers/clk/clk-divider.c
+> @@ -167,6 +167,7 @@ struct clk *clk_register_divider(struct device *dev, const char *name,
+>  {
+>  	struct clk_divider *div;
+>  	struct clk *clk;
+> +	struct clk_init_data init;
+>  
+>  	/* allocate the divider */
+>  	div = kzalloc(sizeof(struct clk_divider), GFP_KERNEL);
+> @@ -175,19 +176,22 @@ struct clk *clk_register_divider(struct device *dev, const char *name,
+>  		return ERR_PTR(-ENOMEM);
+>  	}
+>  
+> +	init.name = name;
+> +	init.ops = &clk_divider_ops;
+> +	init.flags = flags;
+> +	init.parent_names = (parent_name ? &parent_name: NULL);
+> +	init.num_parents = (parent_name ? 1 : 0);
+> +
+>  	/* struct clk_divider assignments */
+>  	div->reg = reg;
+>  	div->shift = shift;
+>  	div->width = width;
+>  	div->flags = clk_divider_flags;
+>  	div->lock = lock;
+> +	div->hw.init = &init;
+>  
+>  	/* register the clock */
+> -	clk = clk_register(dev, name,
+> -			&clk_divider_ops, &div->hw,
+> -			(parent_name ? &parent_name: NULL),
+> -			(parent_name ? 1 : 0),
+> -			flags);
+> +	clk = clk_register(dev, &div->hw);
+>  
+>  	if (IS_ERR(clk))
+>  		kfree(div);
 
-I think I've found a bug but actually I'm not sure whether it only
-happens to me due to our changes in kernel.
+I would prefer to rip the parent _settings_ configuration out of
+clk_register(). It's optional right? And passing a single parent is a
+common case.
 
-In vfp_init() in "arch/arm/vfp/vfpmodule.c", if there is process
-migration between vfp_enable() and smp_call_function() then kernel
-crashes.
+Three cases:
 
-===== original code =====
+  1) one parent:
+     __clk_register_parent(clk, parent_name);
+     clk_register(dev, name, &ops, flags);
 
-	if (cpu_arch >= CPU_ARCH_ARMv6)
-		vfp_enable(NULL); <== if migration happens just after
-vfp_enable(NULL), kernel crashes.
-                  :
-                  :
-        vfpsid = fmrx(FPSID); <== if migration happens, read tries to
-access disbled VFP unit.
-                  :
-                  :
-       if (VFP_arch)
-		printk("not present\n");
-	else if (vfpsid & FPSID_NODOUBLE) {
-		printk("no double precision support\n");
-	} else {
-		hotcpu_notifier(vfp_hotplug, 0);
+  2) many parents:
+     __clk_register_parents(clk, parent_names, num_parents);
+     clk_register(dev, name, &ops, flags);
 
-		smp_call_function(vfp_enable, NULL, 1); <== if migration happens,
-smp_call_function will not work as it is expected.
-=======================
+  3) no parents:
+     clk_register(dev, name, &ops, flags);
 
-Do you have any opinion?
+You may also want to move the whole parent initialization into
+__clk_register_parents() and call it after clk_register(), it would
+simplify some error paths.
 
+This pattern could be used also with other common clocks registration
+functions (fixed rate, divider, mux, etc) that may have complex
+initializations and/or optional parameters that cannot go all on the
+same function call.
 
-There're a few ways of preventing migration (like set affinity or
-disable premption) but the following is one of the way.
-
-====== modified code =====
-/*
- * VFP support code initialisation.
- */
-static int __init vfp_init(void)
-{
-	unsigned int vfpsid;
-	unsigned int cpu_arch = cpu_architecture();
-#ifdef CONFIG_SMP
-	preempt_disable(); <== disable preemption !!!!!!
-#endif
-	if (cpu_arch >= CPU_ARCH_ARMv6)
-		vfp_enable(NULL);
-
-	/*
-	 * First check that there is a VFP that we can use.
-	 * The handler is already setup to just log calls, so
-	 * we just need to read the VFPSID register.
-	 */
-	vfp_vector = vfp_testing_entry;
-	barrier();
-	vfpsid = fmrx(FPSID);
-	barrier();
-	vfp_vector = vfp_null_entry;
-#ifdef CONFIG_SMP
-	preempt_enable(); <== enable preemption  !!!!!!
-#endif
-
-	printk(KERN_INFO "VFP support v0.3: ");
-	if (VFP_arch)
-		printk("not present\n");
-	else if (vfpsid & FPSID_NODOUBLE) {
-		printk("no double precision support\n");
-	} else {
-		hotcpu_notifier(vfp_hotplug, 0);
-
-		on_each_cpu(vfp_enable, NULL, 1); <== call on_each_cpu() instead of
-smp_call_function() !!!!!!
-                                :
-                                :		
-                                :
-	}
-	return 0;
-}
-=====================================================
-
-- Hyungwoo Yang
+cheers,
+Domenico
