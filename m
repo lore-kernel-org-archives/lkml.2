@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759032Ab2ECXdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 19:33:45 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:64962 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756385Ab2ECXdo (ORCPT
+	id S1759035Ab2ECXf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 19:35:56 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60295 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756559Ab2ECXfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 19:33:44 -0400
+	Thu, 3 May 2012 19:35:55 -0400
+Message-ID: <4FA31653.5090103@gmail.com>
+Date: Fri, 04 May 2012 07:35:47 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <CABEgKgrkQ=asB2WExQb1KTd1MyoWDwJCO2_u2cJC4toEUa3C4g@mail.gmail.com>
-References: <20120427161146.95422142968526faaff615d4@canb.auug.org.au>
-	<4F9ABF9C.2070707@xenotime.net>
-	<alpine.DEB.2.00.1204271141040.28516@chino.kir.corp.google.com>
-	<20120427132343.fbb443b9.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1204271420350.4631@chino.kir.corp.google.com>
-	<20120427143646.8209627e.akpm@linux-foundation.org>
-	<87fwbnag6u.fsf@skywalker.in.ibm.com>
-	<alpine.DEB.2.00.1205030208120.21476@chino.kir.corp.google.com>
-	<CABEgKgqWo=b=o7PwOLc=QqCWXQxUaYvMX99GP9cR_Y-RoTEW3g@mail.gmail.com>
-	<alpine.DEB.2.00.1205031343300.1631@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1205031454400.1631@chino.kir.corp.google.com>
-	<CABEgKgrkQ=asB2WExQb1KTd1MyoWDwJCO2_u2cJC4toEUa3C4g@mail.gmail.com>
-Date: Fri, 4 May 2012 08:33:43 +0900
-Message-ID: <CABEgKgoPf69-Ps5Gc6Rv-TVVBxvTdjOJCdnbh6DzTa4A2m2y9A@mail.gmail.com>
-Subject: Re: inux-next: Tree for Apr 27 (uml + mm/memcontrol.c)
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Milton Miller <miltonm@bga.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc: use local var instead of local_paca->irq_happened
+ directly in __check_irq_replay
+References: <4FA1E527.1090807@gmail.com> <1336011306.2653.3.camel@pasglop>	 <1336018961.2653.11.camel@pasglop> <4FA226A8.1080903@gmail.com>	 <4FA22CC5.3010107@gmail.com> <1336032561.18712.1.camel@pasglop>
+In-Reply-To: <1336032561.18712.1.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 4, 2012 at 8:21 AM, Hiroyuki Kamezawa
-<kamezawa.hiroyuki@gmail.com> wrote:
-> On Fri, May 4, 2012 at 6:57 AM, David Rientjes <rientjes@google.com> wrote:
->> On Thu, 3 May 2012, David Rientjes wrote:
->> If I add XX:+UseLargePages to the command line to use
->> hugepages it's even larger.
+On 2012年05月03日 16:09, Benjamin Herrenschmidt wrote:
+> On Thu, 2012-05-03 at 14:59 +0800, Wang Sheng-Hui wrote:
+>> On 2012年05月03日 14:33, Wang Sheng-Hui wrote:
+>>> if (unlikely(irq_happened != PACA_IRQ_HARD_DIS))
+>>>> 		__hard_irq_disable();
+>>
+>> I have commented out the 2 lines.
+> 
+> No, Only comment the test, you must absolutely leave the
+> __hard_irq_disable() call ! That's the whole point of the test, make
+> sure we unconditionally disable to see if that fixes the problem, in
+> which case that will tell us that we somewhere accidentally leave
+> irq_happened set to 0x01 while irqs are hard enabled.
 
-Ah, sorry. I couldn't understand this. Why performance difference gets larger if
-usage of anon memory decreases ? I guess overheads are just added to anon page
-faults and file cache handling. If you use Hugepage, anon memory overheads will
-disappear.
+It can work.
+My system has been running for about 15 hours without crash.
 
-Thanks,
--Kame
+> 
+> Cheers,
+> Ben.
+> 
+> 
+
