@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751405Ab2ECEhA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 00:37:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38061 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab2ECEg7 (ORCPT
+	id S1751520Ab2ECEic (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 00:38:32 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:58956 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab2ECEia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 00:36:59 -0400
-Date: Wed, 2 May 2012 21:36:51 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Sven Neumann <s.neumann@raumfeld.com>
-Cc: Olof Johansson <olof@lixom.net>, Daniel Mack <daniel@caiaq.de>,
-        Daniel Mack <zonque@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: eeti_ts: Mark as CONFIG_BROKEN
-Message-ID: <20120503043651.GA11830@core.coreip.homeip.net>
-References: <1333777207-4151-1-git-send-email-olof@lixom.net>
- <20120407070206.GA17623@core.coreip.homeip.net>
- <4F8089A9.6080704@raumfeld.com>
+	Thu, 3 May 2012 00:38:30 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: [PATCH -V6 07/14] memcg: Add HugeTLB extension
+In-Reply-To: <CAP=VYLqgaCabQGDVgUXnCwKCZHtz0nWxpm_a6Cgz_ciMzGe9gQ@mail.gmail.com>
+References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1334573091-18602-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <CAP=VYLqgaCabQGDVgUXnCwKCZHtz0nWxpm_a6Cgz_ciMzGe9gQ@mail.gmail.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 03 May 2012 10:07:59 +0530
+Message-ID: <87pqalhobc.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F8089A9.6080704@raumfeld.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12050304-4790-0000-0000-00000271B4AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sven,
+Paul Gortmaker <paul.gortmaker@windriver.com> writes:
 
-On Sat, Apr 07, 2012 at 08:38:33PM +0200, Sven Neumann wrote:
-> Hi,
-> 
-> On 07.04.12 09:02, Dmitry Torokhov wrote:
-> >On Fri, Apr 06, 2012 at 10:40:07PM -0700, Olof Johansson wrote:
-> >>This seems to have been broken since 2010, so obviously noone actually
-> >>cares about the driver:
-> >>
-> >>make[4]: *** [drivers/input/touchscreen/eeti_ts.o] Error 1
-> >>drivers/input/touchscreen/eeti_ts.c: In function 'eeti_ts_irq_active':
-> >>drivers/input/touchscreen/eeti_ts.c:65:2: error: implicit declaration of function 'irq_to_gpio' [-Werror=implicit-function-declaration]
-> >>
-> >>irq_to_gpio isn't available on most platforms today, so the driver
-> >>will need some rework by someone who has hardware access and can test
-> >>(to make sure that, for example, switching to level interrupts and just
-> >>keep taking them while there's more to process works).
-> >>
-> >>I guess it could just be scheduled for removal, but let's start with
-> >>marking it CONFIG_BROKEN.
-> >
-> >Well, it probably works quite well on arches that do have irq_to_gpio(),
-> >let's ask Daniel and Sven if they still have this hardware and if they
-> >can try the patch below that implements what you suggested.
-> 
-> This hardware is still in use and we also still follow kernel
-> development and try to update our customer devices to recent kernel
-> versions regularly. Currently we are at 3.1.10 and the touchscreen
-> works well with that. I'll try to update to a more recent kernel
-> next week and will try your patch.
-> 
+> On Mon, Apr 16, 2012 at 6:44 AM, Aneesh Kumar K.V
+> <aneesh.kumar@linux.vnet.ibm.com> wrote:
+>> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+>>
+>> This patch implements a memcg extension that allows us to control HugeTLB
+>> allocations via memory controller. The extension allows to limit the
+>
+> Hi Aneesh,
+>
+> This breaks linux-next on some arch because they don't have any
+> HUGE_MAX_HSTATE in scope with the current #ifdef layout.
+>
+> The breakage is in sh4, m68k, s390, and possibly others.
+>
+> http://kisskb.ellerman.id.au/kisskb/buildresult/6228689/
+> http://kisskb.ellerman.id.au/kisskb/buildresult/6228670/
+> http://kisskb.ellerman.id.au/kisskb/buildresult/6228484/
+>
+> This is a commit in akpm's mmotm queue, which used to be here:
+>
+> http://userweb.kernel.org/~akpm/mmotm
+>
+> Of course the above is invalid since userweb.kernel.org is dead.
+> I don't have a post-kernel.org break-in link handy and a quick
+> search didn't give me one, but I'm sure you'll recognize the change.
+>
 
-Did you have a chance to test the patch?
+Andrew have the below patch 
 
-Thanks.
+http://article.gmane.org/gmane.linux.kernel.commits.mm/71649
 
--- 
-Dmitry
+Does that fix the error ?
+
+-aneesh
+
