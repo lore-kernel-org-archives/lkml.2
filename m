@@ -1,105 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab2ECAac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 20:30:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45311 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754679Ab2ECAa3 (ORCPT
+	id S1754795Ab2ECAds (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 20:33:48 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60015 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364Ab2ECAdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 20:30:29 -0400
-X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 May 2012 20:30:29 EDT
-Date: Wed, 2 May 2012 17:24:04 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: linux-next ppc64: RCU mods cause __might_sleep BUGs
-In-Reply-To: <20120503001433.GO2450@linux.vnet.ibm.com>
-Message-ID: <alpine.LSU.2.00.1205021721350.24869@eggly.anvils>
-References: <alpine.LSU.2.00.1204301451270.2986@eggly.anvils> <1335832418.20866.95.camel@pasglop> <alpine.LSU.2.00.1204302142310.27208@eggly.anvils> <20120501142208.GA2441@linux.vnet.ibm.com> <alpine.LSU.2.00.1205011410360.28232@eggly.anvils>
- <20120501232516.GR2441@linux.vnet.ibm.com> <alpine.LSU.2.00.1205021324430.24246@eggly.anvils> <1335993615.4088.1.camel@pasglop> <20120502215406.GL2450@linux.vnet.ibm.com> <CANsGZ6bw4JwMRgUriooDvFB=g-HkpyL8XJa9s47RPfOEPCMcpw@mail.gmail.com>
- <20120503001433.GO2450@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Wed, 2 May 2012 20:33:46 -0400
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Junio C Hamano <gitster@pobox.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Git Mailing List <git@vger.kernel.org>
+Subject: Re: [PATCH 0/2] [GIT PULL] ktest: A couple of fixes
+References: <20120502004439.965120020@goodmis.org>
+	<CA+55aFy02d13HkfwY-TEGwu=2cd8en+_rnrnwcwixGKRmdJRtA@mail.gmail.com>
+	<7v62cf6y3d.fsf@alter.siamese.dyndns.org>
+	<1335966292.14207.40.camel@gandalf.stny.rr.com>
+	<7vsjfigx23.fsf@alter.siamese.dyndns.org>
+	<1336003655.14207.71.camel@gandalf.stny.rr.com>
+From: Jakub Narebski <jnareb@gmail.com>
+Date: Wed, 02 May 2012 17:33:44 -0700 (PDT)
+In-Reply-To: <1336003655.14207.71.camel@gandalf.stny.rr.com>
+Message-ID: <m3havyqf17.fsf@localhost.localdomain>
+User-Agent: Gnus/5.09 (Gnus v5.9.0) Emacs/21.4
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-985873367-1336004652=:24869"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Steven Rostedt <rostedt@goodmis.org> writes:
 
---8323584-985873367-1336004652=:24869
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+> I'll throw in one more feature request, that you can take or leave (I
+> have another script for it ;-), something that does a listing of
+> branches in order of date. I have over a hundred branches in my repo,
+> and I forget which branch was the last one I was working on. So I
+> created a script called git-ls (attached).
+> 
+> Here's what the output looks like:
+> 
+> $ git-ls | tail
+> 681d1c4    2012-04-19    trace/tip/perf/urgent                         tracing: Fix stacktrace of latency tracers (irqsoff and friends)
+> 59cfede    2012-04-19    trace/rfc/iolatency                           tracing: Add iolatency tracer
+> 61463fa    2012-04-24    trace/tip/perf/core                           ftrace/x86: Remove the complex ftrace NMI handling code
+> e201738    2012-04-26    trace/tip/perf/core-2                         ftrace/x86: Remove the complex ftrace NMI handling code
+> 053cef1    2012-04-27    trace/rfc/tracing/fentry                      ftrace/x86: Add support for -mfentry to x86_64
+> 4a6d70c    2012-04-27    trace/tip/perf/core-3                         ftrace/x86: Remove the complex ftrace NMI handling code
+> a76c3eb    2012-04-30    trace/rfc/kprobes/ftrace                      ftrace/x86: Add support for x86_32 to pass pt_regs to function tracer
+> 6e1b77e    2012-05-02    trace/rfc/kprobes/ftrace-v2                   kprobes: Update header for ftrace optimization
+> a4cc5f1    2012-05-02    trace/tip/perf/next-2                         ftrace/x86: Add separate function to save regs
+> 9bd8569    2012-05-02    trace/tip/perf/next                           trace: Make removal of ring buffer pages atomic
+> 
+> It lists the branches in order of date of last commit.
+> 
+> Again, just showing some things that I find useful. If no one else finds
+> these interesting, then just ignore it. I have my scripts :-)
 
-On Wed, 2 May 2012, Paul E. McKenney wrote:
-> On Wed, May 02, 2012 at 03:54:24PM -0700, Hugh Dickins wrote:
-> > On Wed, May 2, 2012 at 2:54 PM, Paul E. McKenney
-> > <paulmck@linux.vnet.ibm.com> wrote:
-> > > On Thu, May 03, 2012 at 07:20:15AM +1000, Benjamin Herrenschmidt wrot=
-e:
-> > >> On Wed, 2012-05-02 at 13:25 -0700, Hugh Dickins wrote:
-> > >> > Got it at last. =A0Embarrassingly obvious. =A0__rcu_read_lock() an=
-d
-> > >> > __rcu_read_unlock() are not safe to be using __this_cpu operations=
-,
-> > >> > the cpu may change in between the rmw's read and write: they shoul=
-d
-> > >> > be using this_cpu operations (or, I put preempt_disable/enable in =
-the
-> > >> > __rcu_read_unlock below). =A0__this_cpus there work out fine on x8=
-6,
-> > >> > which was given good instructions to use; but not so well on Power=
-PC.
-> > >> >
-> > >> > I've been running successfully for an hour now with the patch belo=
-w;
-> > >> > but I expect you'll want to consider the tradeoffs, and may choose=
- a
-> > >> > different solution.
-> > >>
-> > >> Didn't Linus recently rant about these __this_cpu vs this_cpu nonsen=
-se ?
-> > >>
-> > >> I thought that was going out..
-> > >
-> > > Linus did rant about __raw_get_cpu_var() because it cannot use the x8=
-6
-> > > %fs segement overrides a bit more than a month ago. =A0The __this_cpu
-> > > stuff is useful if you have preemption disabled -- avoids the extra
-> > > layer of preempt_disable().
-> > >
-> > > Or was this a different rant?
-> >=20
-> > https://lkml.org/lkml/2011/11/29/321
-> >=20
-> > I think it ended up with Christoph removing the more egregious
-> > variants, but this_cpu_that and __this_cpu_the_other remaining.
->=20
-> Ah, thank you for the pointer.
->=20
-> It would be nice to have the CPU transparency of x86 on other
-> architectures, but from what I can see, that would require dedicating
-> a register to this purpose -- and even then requires that the arch
-> have indexed addressing modes.  There are some other approaches, for
-> example, having __this_cpu_that() be located at a special address that
-> the scheduler treated as implicitly preempt_disable().  Or I suppose
-> that the arch-specific trap-handling code could fake it.  A little
-> bit messy, but the ability to access a given CPU's per-CPU variable
-> while running on that CPU does appear to have at least a couple of
-> uses -- inlining RCU and also making preempt_disable() use per-CPU
-> variables.
->=20
-> In any case, I must confess that I feel quite silly about my series
-> of patches.  I have reverted them aside from a couple that did useful
-> optimizations, and they should show up in -next shortly.
+Well, there is "git branch -v -v":
 
-A wee bit sad, but thank you - it was an experiment worth trying,
-and perhaps there will be reason to come back to it future.
+  $ git branch -v -v
+  [...]
+    gsoc2012-wiki                  0e71ecb [gsoc2012/wiki/master: ahead 11, behind 4] '"Published" and "secret" commits' project
+    html                           8b94cd8 Autogenerated HTML docs for v1.7.7.1-488-ge8e1c
+    i18n-po.pl                     aa8ce2e [git-i18n/ab/i18n-po: ahead 1] po/pl.po: Eliminate fuzzy translations
+    maint                          bf50515 Git 1.7.10.1
+  [...]
+    t/doc-config-extraction        451c2ef [git/trast/t/doc-config-extraction-v2: ahead 2257, behind 3] Documentation: complete config list from other manpages
+    test                           b77178e gitweb: Separate features with no project specific override
+    todo                           10c7888 Meta/dodoc: assign default values
+    user-manual                    4c22f3d Comments to user-manual (WIP)
 
-Hugh
---8323584-985873367-1336004652=:24869--
+
+I guess that git-for-each-ref could be extended with behind / ahead
+information, perhaps as modifiers to existing %(upstream) field...
+
+P.S. I would associate "git ls" with listing worktree files.
+
+-- 
+Jakub Narebski
+
