@@ -1,89 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919Ab2ECL0q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 07:26:46 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34666 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab2ECL0p (ORCPT
+	id S1753517Ab2ECL04 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 07:26:56 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:53789 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043Ab2ECL0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 07:26:45 -0400
-Date: Thu, 3 May 2012 13:26:23 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] i2c: Convert i2c-octeon.c to use device tree.
-Message-ID: <20120503112623.GF9574@pengutronix.de>
-References: <1335489630-27017-1-git-send-email-ddaney.cavm@gmail.com>
- <1335489630-27017-2-git-send-email-ddaney.cavm@gmail.com>
+	Thu, 3 May 2012 07:26:53 -0400
+Message-ID: <4FA26B6E.408@linux.vnet.ibm.com>
+Date: Thu, 03 May 2012 19:26:38 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="p8PhoBjPxaQXD0vg"
-Content-Disposition: inline
-In-Reply-To: <1335489630-27017-2-git-send-email-ddaney.cavm@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 06/10] KVM: MMU: fast path of handling guest page fault
+References: <4F9776D2.7020506@linux.vnet.ibm.com> <4F9777A4.208@linux.vnet.ibm.com> <20120426234535.GA5057@amt.cnet> <4F9A3445.2060305@linux.vnet.ibm.com> <20120427145213.GB28796@amt.cnet> <4F9B89D9.9060307@linux.vnet.ibm.com> <20120501013459.GB10142@amt.cnet> <4FA0C607.5010002@linux.vnet.ibm.com> <20120502210701.GA12604@amt.cnet>
+In-Reply-To: <20120502210701.GA12604@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12050311-4790-0000-0000-0000027468FA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/03/2012 05:07 AM, Marcelo Tosatti wrote:
 
---p8PhoBjPxaQXD0vg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Apr 26, 2012 at 06:20:26PM -0700, David Daney wrote:
-> From: David Daney <david.daney@cavium.com>
->=20
-> There are three parts to this:
->=20
-> 1) Remove the definitions of OCTEON_IRQ_TWSI and OCTEON_IRQ_TWSI2.
->    The interrupts are specified by the device tree and these hard
->    coded irq numbers block the used of the irq lines by the irq_domain
->    code.
->=20
-> 2) Remove platform device setup code from octeon-platform.c, it is
->    now unused.
->=20
-> 3) Convert i2c-octeon.c to use device tree.  Part of this includes
->    using the devm_* functions instead of the raw counterparts, thus
->    simplifying error handling.  No functionality is changed.
->=20
-> Signed-off-by: David Daney <david.daney@cavium.com>
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
-> Cc: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
-> Cc: "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>
-> Cc: linux-i2c@vger.kernel.org
+>> 'entry' is not a problem since it is from atomically read-write as
+>> mentioned above, i need change this code to:
+>>
+>> 		/*
+>> 		 * Optimization: for pte sync, if spte was writable the hash
+>> 		 * lookup is unnecessary (and expensive). Write protection
+>> 		 * is responsibility of mmu_get_page / kvm_sync_page.
+>> 		 * Same reasoning can be applied to dirty page accounting.
+>> 		 */
+>> 		if (!can_unsync && is_writable_pte(entry) /* Use 'entry' instead of '*sptep'. */
+>> 			goto set_pte
+>>    ......
+>>
+>>
+>>          if (is_writable_pte(entry) && !is_writable_pte(spte)) /* Use 'spte' instead of '*sptep'. */
+>>                  kvm_flush_remote_tlbs(vcpu->kvm);
+> 
+> What is of more importance than the ability to verify that this or that
+> particular case are ok at the moment is to write code in such a way that
+> its easy to verify that it is correct.
+> 
+> Thus the suggestion above:
+> 
+> "scattered all over (as mentioned before, i think a pattern of read spte
+> once, work on top of that, atomically write and then deal with results
+> _everywhere_ (where mmu lock is held) is more consistent."
+> 
 
-I2C changes look okay. I'd think this goes in via MIPS-tree?
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Marcelo, thanks for your time to patiently review/reply my mail.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+I am confused with ' _everywhere_ ', it means all of the path read/update
+spte? why not only verify the path which depends on is_writable_pte()?
 
---p8PhoBjPxaQXD0vg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+For the reason of "its easy to verify that it is correct"? But these
+paths are safe since it is not care PT_WRITABLE_MASK at all. What these
+paths care is the Dirty-bit and Accessed-bit are not lost, that is why
+we always treat the spte as "volatile" if it is can be updated out of
+mmu-lock.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+For the further development? We can add the delta comment for
+is_writable_pte() to warn the developer use it more carefully.
 
-iEYEARECAAYFAk+ia18ACgkQD27XaX1/VRvy0QCgw45MhoPCDZwSKlGvSSUYtFT4
-KqgAn0dIv9IJZIyeWi2K8dXNg2coKDbO
-=pvhr
------END PGP SIGNATURE-----
+It is also very hard to verify spte everywhere. :(
 
---p8PhoBjPxaQXD0vg--
+Actually, the current code to care PT_WRITABLE_MASK is just for
+tlb flush, may be we can fold it into mmu_spte_update.
+[
+  There are tree ways to modify spte, present -> nonpresent, nonpresent -> present,
+  present -> present.
+
+  But we only need care present -> present for lockless.
+]
+
+/*
+ * return true means we need flush tlbs caused by changing spte from writeable
+ * to read-only.
+ */
+bool mmu_update_spte(u64 *sptep, u64 spte)
+{
+	u64 last_spte, old_spte = *sptep;
+	bool flush = false;
+
+	last_spte = xchg(sptep, spte);
+
+	if ((is_writable_pte(last_spte) ||
+	      spte_has_updated_lockless(old_spte, last_spte)) &&
+	         !is_writable_pte(spte) )
+		flush = true;
+
+	.... track Drity/Accessed bit ...
+
+
+	return flush		
+}
+
+Furthermore, the style of "if (spte-has-changed) goto beginning" is feasible
+in set_spte since this path is a fast path. (i can speed up mmu_need_write_protect)
+
+
