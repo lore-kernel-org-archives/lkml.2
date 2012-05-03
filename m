@@ -1,277 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab2ECGlQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 02:41:16 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:62341 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451Ab2ECGlO (ORCPT
+	id S1754812Ab2ECGmM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 02:42:12 -0400
+Received: from szxga01-in.huawei.com ([58.251.152.64]:59416 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647Ab2ECGmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 02:41:14 -0400
-X-AuditID: 9c930197-b7badae000000cfd-38-4fa22888765c
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/4] zsmalloc use zs_handle instead of void *
-Date: Thu,  3 May 2012 15:40:41 +0900
-Message-Id: <1336027242-372-3-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1336027242-372-1-git-send-email-minchan@kernel.org>
-References: <1336027242-372-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 3 May 2012 02:42:09 -0400
+Date: Thu, 03 May 2012 14:39:05 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+Subject: Re: [PATCH 2/2] PCI, ACPI,
+ x86: update MMCFG information when hot-plugging PCI host bridges
+In-reply-to: <CAErSpo5K-foOsdantKQhK0=KOmV6-GCRGfjYYrdyi7ijecv-3w@mail.gmail.com>
+X-Originating-IP: [10.107.208.49]
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>, Keping Chen <chenkeping@huawei.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        "Pearson, Greg" <greg.pearson@hp.com>
+Message-id: <4FA22809.1010701@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222
+ Thunderbird/9.0.1
+X-CFilter-Loop: Reflected
+References: <20120406115948.3536e6c8.izumi.taku@jp.fujitsu.com>
+ <1333905129-8776-1-git-send-email-jiang.liu@huawei.com>
+ <1333905129-8776-3-git-send-email-jiang.liu@huawei.com>
+ <CAErSpo5K-foOsdantKQhK0=KOmV6-GCRGfjYYrdyi7ijecv-3w@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should use zs_handle instead of void * to avoid any
-confusion. Without this, users may just treat zs_malloc return value as
-a pointer and try to deference it.
+On 2012-5-3 7:55, Bjorn Helgaas wrote:
+> On Sun, Apr 8, 2012 at 11:12 AM, Jiang Liu<liuj97@gmail.com>  wrote:
+>> This patch enhances pci_root driver to update MMCFG information when
+>> hot-plugging PCI root bridges on x86 platforms.
+>>
+>> Signed-off-by: Jiang Liu<jiang.liu@huawei.com>
+>> ---
+>>   arch/x86/pci/acpi.c      |   58 ++++++++++++++++++++++++++++++++++++++++++++++
+>>   drivers/acpi/pci_root.c  |   20 ++++++++++++++++
+>>   include/acpi/acnames.h   |    1 +
+>>   include/linux/pci-acpi.h |    3 ++
+>>   4 files changed, 82 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+>> index da0149d..9184970 100644
+>> --- a/arch/x86/pci/acpi.c
+>> +++ b/arch/x86/pci/acpi.c
+>> @@ -488,6 +488,64 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+>>         return bus;
+>>   }
+>>
+>> +int arch_acpi_pci_root_add(struct acpi_pci_root *root)
+>> +{
+>> +       int result = 0;
+>> +       acpi_status status;
+>> +       unsigned long long base_addr;
+>> +       struct pci_mmcfg_region *cfg;
+>> +
+>> +       /*
+>> +        * Try to insert MMCFG information for host bridges with _CBA method
+>> +        */
+>> +       status = acpi_evaluate_integer(root->device->handle, METHOD_NAME__CBA,
+>> +                                      NULL,&base_addr);
+>
+> I would prefer to have _CBA evaluated in drivers/acpi/pci_root.c, not
+> in the arch code.  It's true that _CBA is probably only used by x86
+> today, but the spec says nothing about it being arch-dependent, and I
+> suspect it may be used on arm soon.
+Good point. I just noticed that IA64 doesn't need MMCFG, but haven't
+realized there's still another candidate.
 
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- drivers/staging/zcache/zcache-main.c     |    8 ++++----
- drivers/staging/zram/zram_drv.c          |    8 ++++----
- drivers/staging/zram/zram_drv.h          |    2 +-
- drivers/staging/zsmalloc/zsmalloc-main.c |   28 ++++++++++++++--------------
- drivers/staging/zsmalloc/zsmalloc.h      |   15 +++++++++++----
- 5 files changed, 34 insertions(+), 27 deletions(-)
+>
+>> +       if (ACPI_SUCCESS(status)) {
+>> +               result = pci_mmconfig_insert(root->segment,
+>> +                                            root->secondary.start,
+>> +                                            root->secondary.end,
+>> +                                            base_addr);
+>> +               /*
+>> +                * MMCFG information for hot-pluggable host bridges may have
+>> +                * already been added by __pci_mmcfg_init();
+>> +                */
+>> +               if (result == -EEXIST)
+>> +                       result = 0;
+>> +       } else if (status == AE_NOT_FOUND) {
+>> +               /*
+>> +                * Check whether MMCFG information has been added for
+>> +                * host bridges without _CBA method.
+>> +                */
+>> +               rcu_read_lock();
+>> +               cfg = pci_mmconfig_lookup(root->segment, root->secondary.start);
+>> +               if (!cfg || cfg->end_bus<  root->secondary.end)
+>> +                       result = -ENODEV;
+>> +               rcu_read_unlock();
+>> +       } else
+>> +               result = -ENODEV;
+>> +
+>> +       return result;
+>> +}
+>> +
+>> +int arch_acpi_pci_root_remove(struct acpi_pci_root *root)
+>> +{
+>> +       acpi_status status;
+>> +       unsigned long long base_addr;
+>> +
+>> +       /* Remove MMCFG information for host bridges with _CBA method */
+>> +       status = acpi_evaluate_integer(root->device->handle, METHOD_NAME__CBA,
+>> +                                      NULL,&base_addr);
+>
+> I think the arch-specific "map MMCONFIG space at this addr" should
+> return a pointer or something that we can save and use to unmap it on
+> remove.  That way we don't have to evaluate _CBA again.
+OK, will change to follow that way.
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 2734dac..9b06948 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -700,12 +700,12 @@ static struct zv_hdr *zv_create(struct zs_pool *pool, uint32_t pool_id,
- 	struct zv_hdr *zv;
- 	u32 size = clen + sizeof(struct zv_hdr);
- 	int chunks = (size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
--	void *handle = NULL;
-+	zs_handle handle;
- 
- 	BUG_ON(!irqs_disabled());
- 	BUG_ON(chunks >= NCHUNKS);
- 	handle = zs_malloc(pool, size);
--	if (!handle)
-+	if (zs_handle_invalid(handle))
- 		goto out;
- 	atomic_inc(&zv_curr_dist_counts[chunks]);
- 	atomic_inc(&zv_cumul_dist_counts[chunks]);
-@@ -721,7 +721,7 @@ out:
- 	return handle;
- }
- 
--static void zv_free(struct zs_pool *pool, void *handle)
-+static void zv_free(struct zs_pool *pool, zs_handle handle)
- {
- 	unsigned long flags;
- 	struct zv_hdr *zv;
-@@ -743,7 +743,7 @@ static void zv_free(struct zs_pool *pool, void *handle)
- 	local_irq_restore(flags);
- }
- 
--static void zv_decompress(struct page *page, void *handle)
-+static void zv_decompress(struct page *page, zs_handle handle)
- {
- 	unsigned int clen = PAGE_SIZE;
- 	char *to_va;
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 685d612..7e42aa2 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -135,7 +135,7 @@ static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
- 
- static void zram_free_page(struct zram *zram, size_t index)
- {
--	void *handle = zram->table[index].handle;
-+	zs_handle handle = zram->table[index].handle;
- 
- 	if (unlikely(!handle)) {
- 		/*
-@@ -317,7 +317,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	int ret;
- 	u32 store_offset;
- 	size_t clen;
--	void *handle;
-+	zs_handle handle;
- 	struct zobj_header *zheader;
- 	struct page *page, *page_store;
- 	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
-@@ -406,7 +406,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	}
- 
- 	handle = zs_malloc(zram->mem_pool, clen + sizeof(*zheader));
--	if (!handle) {
-+	if (zs_handle_invalid(handle)) {
- 		pr_info("Error allocating memory for compressed "
- 			"page: %u, size=%zu\n", index, clen);
- 		ret = -ENOMEM;
-@@ -592,7 +592,7 @@ void __zram_reset_device(struct zram *zram)
- 
- 	/* Free all pages that are still in this zram device */
- 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
--		void *handle = zram->table[index].handle;
-+		zs_handle handle = zram->table[index].handle;
- 		if (!handle)
- 			continue;
- 
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index fbe8ac9..07d3192 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -81,7 +81,7 @@ enum zram_pageflags {
- 
- /* Allocated for each disk page */
- struct table {
--	void *handle;
-+	zs_handle handle;
- 	u16 size;	/* object size (excluding header) */
- 	u8 count;	/* object ref count (not yet used) */
- 	u8 flags;
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 4496737..51074fa 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -247,7 +247,7 @@ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
- }
- 
- /* Decode <page, obj_idx> pair from the given object handle */
--static void obj_handle_to_location(void *handle, struct page **page,
-+static void obj_handle_to_location(zs_handle handle, struct page **page,
- 				unsigned long *obj_idx)
- {
- 	unsigned long hval = (unsigned long)handle;
-@@ -571,9 +571,9 @@ EXPORT_SYMBOL_GPL(zs_destroy_pool);
-  * otherwise NULL.
-  * Allocation requests with size > ZS_MAX_ALLOC_SIZE will fail.
-  */
--void *zs_malloc(struct zs_pool *pool, size_t size)
-+zs_handle zs_malloc(struct zs_pool *pool, size_t size)
- {
--	void *obj;
-+	zs_handle handle;
- 	struct link_free *link;
- 	int class_idx;
- 	struct size_class *class;
-@@ -602,8 +602,8 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
- 		class->pages_allocated += class->pages_per_zspage;
- 	}
- 
--	obj = first_page->freelist;
--	obj_handle_to_location(obj, &m_page, &m_objidx);
-+	handle = first_page->freelist;
-+	obj_handle_to_location(handle, &m_page, &m_objidx);
- 	m_offset = obj_idx_to_offset(m_page, m_objidx, class->size);
- 
- 	link = (struct link_free *)kmap_atomic(m_page) +
-@@ -617,11 +617,11 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
- 	fix_fullness_group(pool, first_page);
- 	spin_unlock(&class->lock);
- 
--	return obj;
-+	return handle;
- }
- EXPORT_SYMBOL_GPL(zs_malloc);
- 
--void zs_free(struct zs_pool *pool, void *obj)
-+void zs_free(struct zs_pool *pool, zs_handle handle)
- {
- 	struct link_free *link;
- 	struct page *first_page, *f_page;
-@@ -631,10 +631,10 @@ void zs_free(struct zs_pool *pool, void *obj)
- 	struct size_class *class;
- 	enum fullness_group fullness;
- 
--	if (unlikely(!obj))
-+	if (unlikely(zs_handle_invalid(handle)))
- 		return;
- 
--	obj_handle_to_location(obj, &f_page, &f_objidx);
-+	obj_handle_to_location(handle, &f_page, &f_objidx);
- 	first_page = get_first_page(f_page);
- 
- 	get_zspage_mapping(first_page, &class_idx, &fullness);
-@@ -648,7 +648,7 @@ void zs_free(struct zs_pool *pool, void *obj)
- 							+ f_offset);
- 	link->next = first_page->freelist;
- 	kunmap_atomic(link);
--	first_page->freelist = obj;
-+	first_page->freelist = handle;
- 
- 	first_page->inuse--;
- 	fullness = fix_fullness_group(pool, first_page);
-@@ -672,7 +672,7 @@ EXPORT_SYMBOL_GPL(zs_free);
-  * this function. When done with the object, it must be unmapped using
-  * zs_unmap_object
- */
--void *zs_map_object(struct zs_pool *pool, void *handle)
-+void *zs_map_object(struct zs_pool *pool, zs_handle handle)
- {
- 	struct page *page;
- 	unsigned long obj_idx, off;
-@@ -682,7 +682,7 @@ void *zs_map_object(struct zs_pool *pool, void *handle)
- 	struct size_class *class;
- 	struct mapping_area *area;
- 
--	BUG_ON(!handle);
-+	BUG_ON(zs_handle_invalid(handle));
- 
- 	obj_handle_to_location(handle, &page, &obj_idx);
- 	get_zspage_mapping(get_first_page(page), &class_idx, &fg);
-@@ -712,7 +712,7 @@ void *zs_map_object(struct zs_pool *pool, void *handle)
- }
- EXPORT_SYMBOL_GPL(zs_map_object);
- 
--void zs_unmap_object(struct zs_pool *pool, void *handle)
-+void zs_unmap_object(struct zs_pool *pool, zs_handle handle)
- {
- 	struct page *page;
- 	unsigned long obj_idx, off;
-@@ -722,7 +722,7 @@ void zs_unmap_object(struct zs_pool *pool, void *handle)
- 	struct size_class *class;
- 	struct mapping_area *area;
- 
--	BUG_ON(!handle);
-+	BUG_ON(zs_handle_invalid(handle));
- 
- 	obj_handle_to_location(handle, &page, &obj_idx);
- 	get_zspage_mapping(get_first_page(page), &class_idx, &fg);
-diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
-index 949384e..1ba6d0c 100644
---- a/drivers/staging/zsmalloc/zsmalloc.h
-+++ b/drivers/staging/zsmalloc/zsmalloc.h
-@@ -16,15 +16,22 @@
- #include <linux/types.h>
- 
- struct zs_pool;
-+typedef void * zs_handle;
-+
-+/*
-+ * zs_malloc's caller should use zs_handle_invalid instead of if (!handle)
-+ * to test successful allocation.
-+ */
-+#define zs_handle_invalid(zs_handle) !zs_handle
- 
- struct zs_pool *zs_create_pool(const char *name, gfp_t flags);
- void zs_destroy_pool(struct zs_pool *pool);
- 
--void *zs_malloc(struct zs_pool *pool, size_t size);
--void zs_free(struct zs_pool *pool, void *obj);
-+zs_handle zs_malloc(struct zs_pool *pool, size_t size);
-+void zs_free(struct zs_pool *pool, zs_handle handle);
- 
--void *zs_map_object(struct zs_pool *pool, void *handle);
--void zs_unmap_object(struct zs_pool *pool, void *handle);
-+void *zs_map_object(struct zs_pool *pool, zs_handle handle);
-+void zs_unmap_object(struct zs_pool *pool, zs_handle handle);
- 
- u64 zs_get_total_size_bytes(struct zs_pool *pool);
- 
--- 
-1.7.9.5
+>
+>> +       if (ACPI_SUCCESS(status))
+>> +               return pci_mmconfig_delete(root->segment,
+>> +                                          root->secondary.start,
+>> +                                          root->secondary.end,
+>> +                                          base_addr);
+>> +       else if (status != AE_NOT_FOUND)
+>> +               return -ENODEV;
+>> +
+>> +       return 0;
+>> +}
+>> +
+>>   int __init pci_acpi_init(void)
+>>   {
+>>         struct pci_dev *dev = NULL;
+>> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+>> index 4a7d575..a62bfa8 100644
+>> --- a/drivers/acpi/pci_root.c
+>> +++ b/drivers/acpi/pci_root.c
+>> @@ -448,6 +448,16 @@ out:
+>>   }
+>>   EXPORT_SYMBOL(acpi_pci_osc_control_set);
+>>
+>> +int __weak arch_acpi_pci_root_add(struct acpi_pci_root *root)
+>> +{
+>> +       return 0;
+>> +}
+>> +
+>> +int __weak arch_acpi_pci_root_remove(struct acpi_pci_root *root)
+>> +{
+>> +       return 0;
+>> +}
+>> +
+>>   static int __devinit acpi_pci_root_add(struct acpi_device *device)
+>>   {
+>>         unsigned long long segment, bus;
+>> @@ -504,6 +514,14 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+>>         strcpy(acpi_device_class(device), ACPI_PCI_ROOT_CLASS);
+>>         device->driver_data = root;
+>>
+>> +       if (arch_acpi_pci_root_add(root)) {
+>> +               printk(KERN_ERR PREFIX
+>> +                       "can't add MMCFG information for Bus %04x:%02x\n",
+>> +                       root->segment, (unsigned int)root->secondary.start);
+>> +               result = -ENODEV;
+>> +               goto out_free;
+>> +       }
+>> +
+>>         /*
+>>          * All supported architectures that use ACPI have support for
+>>          * PCI domains, so we indicate this in _OSC support capabilities.
+>> @@ -629,6 +647,7 @@ out_del_root:
+>>         list_del_rcu(&root->node);
+>>         mutex_unlock(&acpi_pci_root_lock);
+>>         synchronize_rcu();
+>> +       arch_acpi_pci_root_remove(root);
+>>   out_free:
+>>         kfree(root);
+>>         return result;
+>> @@ -679,6 +698,7 @@ out:
+>>         list_del_rcu(&root->node);
+>>         mutex_unlock(&acpi_pci_root_lock);
+>>         synchronize_rcu();
+>> +       arch_acpi_pci_root_remove(root);
+>>         kfree(root);
+>>
+>>         return 0;
+>> diff --git a/include/acpi/acnames.h b/include/acpi/acnames.h
+>> index 38f5088..99bda75 100644
+>> --- a/include/acpi/acnames.h
+>> +++ b/include/acpi/acnames.h
+>> @@ -62,6 +62,7 @@
+>>   #define METHOD_NAME__AEI        "_AEI"
+>>   #define METHOD_NAME__PRW        "_PRW"
+>>   #define METHOD_NAME__SRS        "_SRS"
+>> +#define METHOD_NAME__CBA       "_CBA"
+>>
+>>   /* Method names - these methods must appear at the namespace root */
+>>
+>> diff --git a/include/linux/pci-acpi.h b/include/linux/pci-acpi.h
+>> index ac93634..816b971 100644
+>> --- a/include/linux/pci-acpi.h
+>> +++ b/include/linux/pci-acpi.h
+>> @@ -38,6 +38,9 @@ static inline acpi_handle acpi_pci_get_bridge_handle(struct pci_bus *pbus)
+>>
+>>   void acpi_pci_root_rescan(void);
+>>
+>> +extern int arch_acpi_pci_root_add(struct acpi_pci_root *root);
+>> +extern int arch_acpi_pci_root_remove(struct acpi_pci_root *root);
+>> +
+>>   #else
+>>
+>>   static inline void acpi_pci_root_rescan(void) { }
+>
+> I don't know where to put this in the conversation, but I think we
+> should separate the question of whether we do blind probing from the
+> question of how we set up MMCONFIG space from MCFG.
+>
+> We currently parse the entire MCFG in some sort of initcall, but I
+> think we *could* change the x86 blind probing routines to attempt to
+> set up MMCONFIG space for the buses they find, just like
+> acpi_pci_root_add() does it for the ACPI host bridges.
+>
+> That way we can continue blind probing, but make MMCONFIG init more sensible.
+Good suggestion, will do more investigation about that.
+
+>
+> Bjorn
+>
+> .
+>
+
 
