@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab2ECOM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:12:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3711 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754773Ab2ECOM5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:12:57 -0400
-X-Authority-Analysis: v=2.0 cv=N/Wr5hBB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=YECtLpki0LgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Er_tMXHLL19sWfeMzaQA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1336054375.14207.84.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH v6 1/3] trace: Make removal of ring buffer pages atomic
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Laurent Chavey <chavey@google.com>,
-        Justin Teravest <teravest@google.com>,
-        David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org
-Date: Thu, 03 May 2012 10:12:55 -0400
-In-Reply-To: <1336049840.14207.82.camel@gandalf.stny.rr.com>
-References: <1328212844-11889-2-git-send-email-vnagarnaik@google.com>
-	 <1335388704-26790-1-git-send-email-vnagarnaik@google.com>
-	 <1336010118.14207.75.camel@gandalf.stny.rr.com>
-	 <CAL26m8KgvuUGhK_T91fM2dNtFt4+KSOb5-C8yNiZ888BZW1PEg@mail.gmail.com>
-	 <1336049840.14207.82.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756650Ab2ECONE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:13:04 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:38951 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754773Ab2ECONA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 10:13:00 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: reiserfs-devel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] fs/reiserfs/journal.c: add missing brelse
+Date: Thu,  3 May 2012 16:12:53 +0200
+Message-Id: <1336054373-13293-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-03 at 08:57 -0400, Steven Rostedt wrote:
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> So it seems to be trace-cmd doing something different that prevents the
-> expand from happening. Not sure what it is. If I get time, I'll
-> investigate it a little more.
+Brelse is called to put bhjh on every way out of the function except this one.
 
-Do the following:
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-echo 0 > /debug/tracing/tracing_on
-echo nop  > /debug/tracing/current_tracer
+---
+ fs/reiserfs/journal.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-then look at buffer_size_kb.
-
-It's also giving me errors when I try to enable events or anything else
-when tracing_on is disabled.
-
--- Steve
-
+diff --git a/fs/reiserfs/journal.c b/fs/reiserfs/journal.c
+index b1a0857..1ef9cbc 100644
+--- a/fs/reiserfs/journal.c
++++ b/fs/reiserfs/journal.c
+@@ -2757,8 +2757,10 @@ int journal_init(struct super_block *sb, const char *j_dev_name,
+ 	    le32_to_cpu(jh->jh_journal.jp_journal_max_commit_age);
+ 	journal->j_max_trans_age = JOURNAL_MAX_TRANS_AGE;
+ 
+-	if (check_advise_trans_params(sb, journal) != 0)
++	if (check_advise_trans_params(sb, journal) != 0) {
++		brelse(bhjh);
+ 	        goto free_and_return;
++	}
+ 	journal->j_default_max_commit_age = journal->j_max_commit_age;
+ 
+ 	if (commit_max_age != 0) {
 
