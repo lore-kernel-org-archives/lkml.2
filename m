@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab2ECBio (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 21:38:44 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:38541 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab2ECBim (ORCPT
+	id S1755332Ab2ECBlf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 21:41:35 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44585 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753461Ab2ECBle convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 21:38:42 -0400
-Date: Wed, 02 May 2012 21:35:32 -0400 (EDT)
-Message-Id: <20120502.213532.2065398707446945634.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: linville@tuxdriver.com, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ashok@cozybit.com,
-        netdev@vger.kernel.org
-Subject: Re: linux-next: manual merge of the wireless-next tree with the
- net-next tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120503113110.3eded43c5dc526a471c69dd2@canb.auug.org.au>
-References: <20120503113110.3eded43c5dc526a471c69dd2@canb.auug.org.au>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 02 May 2012 18:35:34 -0700 (PDT)
+	Wed, 2 May 2012 21:41:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120502230654.GB6926@localhost>
+References: <201205021441.q42Ef1ap026902@drepperk.user.openhosting.com>
+ <4FA17A95.9050603@gmail.com> <20120502230654.GB6926@localhost>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Wed, 2 May 2012 21:41:11 -0400
+Message-ID: <CAHGf_=oMo4Rii8e=V5OTeCJoMc2wTY6Cx1HzKaaGzHT5TL30yw@mail.gmail.com>
+Subject: Re: [PATCH] Cleanup page-type.c
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Ulrich Drepper <drepper@akkadia.org>, akpm@linux-foundation.org,
+        dyoung@redhat.com, linux-kernel@vger.kernel.org,
+        n-horiguchi@ah.jp.nec.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 3 May 2012 11:31:10 +1000
+On Wed, May 2, 2012 at 7:06 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> On Wed, May 02, 2012 at 02:19:01PM -0400, KOSAKI Motohiro wrote:
+>> (5/2/12 10:41 AM), Ulrich Drepper wrote:
+>> > Compiling page-type.c with a recent compiler produces many warnings,
+>> > mostly related to signed/unsigned comparisons.  This patch cleans up
+>> > most of them.
+>> >
+>> > One remaining warning is about an unused parameter.  The<compiler.h>
+>> > file doesn't define a __unused macro (or the like) yet.  This can be
+>> > addressed later.
+>> >
+>> > The line numbers for this patch correspond to the file changed to remove
+>> > the duplicate definitions of the KPF_* macros which is contained in
+>> > another patch.  It should apply cleanly albeit with warnings even without
+>> > that patch applied first.
+>> >
+>> >
+>> > Signed-off-by: Ulrich Drepper<drepper@gmail.com>
+>> >
+>> >   page-types.c |   22 +++++++++++-----------
+>> >   1 file changed, 11 insertions(+), 11 deletions(-)
+>>
+>> Looks good to me.
+>>  Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>
+> Acked-by: Fengguang Wu <fengguang.wu@intel.com>
+>
+>> offtopic:
+>> Wu, I have (unrelated) one question. page-type is used from production
+>> systems nowadays. Why don't you want to move page-type.c into tools/ dir?
+>
+> I was actually thinking the same with you, and the good news is, it's
+> recently moved into tools/ by Dave Young:
+>
+> commit c6dd897f3bfc54a44942d742d6dfa842e33d88e0
+> Author: Dave Young <dyoung@redhat.com>
+> Date:   Wed Mar 28 14:42:55 2012 -0700
+>
+>    mm: move page-types.c from Documentation to tools/vm
 
-> Today's linux-next merge of the wireless-next tree got a conflict in
-> net/wireless/nl80211.c between commit 9360ffd18597 ("wireless: Stop using
-> NLA_PUT*()") from the net-next tree and commit 0a9b3782ef40 ("{nl,cfg,mac}
-> 80211: Allow user to see/configure HT protection mode") from the
-> wireless-next tree.
-
-John, the NLA_PUT macros were removed from the net-next tree more
-than a month ago.
-
-There is zero reason why this should still be happening, and this
-issue is causing a large, unnecessary, burdon upon Stephen.
-
-Please take care of this, thanks.
+Nice! :)
