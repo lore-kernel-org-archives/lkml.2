@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928Ab2ECRgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 13:36:09 -0400
-Received: from ironport-out.teksavvy.com ([206.248.143.162]:5309 "EHLO
-	ironport-out.teksavvy.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab2ECRgI (ORCPT
+	id S1757858Ab2ECRlm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 13:41:42 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48107 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784Ab2ECRll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 13:36:08 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuEBACxOgk8Y9geI/2dsb2JhbAANNoVzsCSGLAEBAQECASNVARALDgoCAgUWCwICCQMCAQIBRQYNAQcBAYgFrB+KGIEvjhOBGASpJQ
-X-IronPort-AV: E=Sophos;i="4.75,391,1330923600"; 
-   d="scan'208";a="178210421"
-Message-ID: <4FA2C205.3030801@teksavvy.com>
-Date: Thu, 03 May 2012 13:36:05 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 3 May 2012 13:41:41 -0400
+Message-ID: <4FA2C34F.5060406@wwwdotorg.org>
+Date: Thu, 03 May 2012 11:41:35 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
-References: <1335953452-10460-1-git-send-email-jack@suse.cz> <4FA1092E.9090603@redhat.com> <20120502115447.7dcc3a54@pyramind.ukuu.org.uk> <4FA11454.2010103@redhat.com> <20120502121208.3c19a9bc@pyramind.ukuu.org.uk> <4FA11963.3040007@redhat.com> <4FA18D33.3060607@teksavvy.com> <4FA23809.2090905@redhat.com> <4FA27CDB.2080103@teksavvy.com> <4FA27E7C.6070802@redhat.com>
-In-Reply-To: <4FA27E7C.6070802@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Hiroshi DOYU <hdoyu@nvidia.com>
+CC: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Felipe Balbi <balbi@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCHv3 1/4] ARM: tegra: Add Tegra AHB driver
+References: <1336061147-10245-1-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1336061147-10245-1-git-send-email-hdoyu@nvidia.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-05-03 08:47 AM, Paolo Bonzini wrote:
-> Il 03/05/2012 14:40, Mark Lord ha scritto:
->>>>
->>>> Breaking "hdparm --write-sector /dev/sda1"?  I call it a security fix.
->> No, that would plain stupid on both our parts.  :)
->> The --write-sector flag is allowed only for non-partitions by hdparm itself.
+On 05/03/2012 10:05 AM, Hiroshi DOYU wrote:
+> Tegra AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
+> High-performance Bus (AHB) architecture.
 > 
-> Excuse my laziness--how does it check?
-
-I don't know if there's a feasible fool-proof method or not.
-But what hdparm does is look at the sector offset of the device.
-Partitions normally have a non-zero offset.
-
->> But other flags commonly used by distros at boot time
->> seem to be triggering the current in-kernel noise.
->> Dunno which flags, I'm just ignoring them and waiting
->> for the noise message to get reverted.
+> The AHB Arbiter controls AHB bus master arbitration. This effectively
+> forms a second level of arbitration for access to the memory
+> controller through the AHB Slave Memory device. The AHB pre-fetch
+> logic can be configured to enhance performance for devices doing
+> sequential access. Each AHB master is assigned to either the high or
+> low priority bin. Both Tegra20/30 have this AHB bus.
 > 
-> That's exactly the behavior I hoped to get when I added the warnings.
-> Or maybe not. :)  What are the messages?
-> i.e. what ioctl do they complain about?
+> Some of configuration param could be passed from DT too.
 
-As above:
+> diff --git a/drivers/amba/tegra-ahb.c b/drivers/amba/tegra-ahb.c
+> +static u32 tegra_ahb_gizmo[] = {
 
->> Dunno which flags, I'm just ignoring them and waiting
->> for the noise message to get reverted.
+const?
+
+> +static int __init tegra_ahb_module_init(void)
+> +{
+> +	return platform_driver_register(&tegra_ahb_driver);
+> +}
+> +postcore_initcall(tegra_ahb_module_init);
+
+Can this be a module_init() instead of postcore_initcall()?
+
+> +
+> +static void __exit tegra_ahb_module_exit(void)
+> +{
+> +	platform_driver_unregister(&tegra_ahb_driver);
+> +}
+> +module_exit(tegra_ahb_module_exit);
+
+If so, all of the previous two quoted chunks can be replaced with just:
+
+module_platform_driver(tegra_ahb_module_init);
