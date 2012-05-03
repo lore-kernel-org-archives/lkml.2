@@ -1,101 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab2ECNX1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 09:23:27 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:51289 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752160Ab2ECNXZ convert rfc822-to-8bit (ORCPT
+	id S1755257Ab2ECNZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 09:25:58 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:40408 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050Ab2ECNZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 09:23:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [RFC][PATCH 6/8] PM / Sleep: Implement opportunistic sleep
-Date: Thu, 3 May 2012 15:28:12 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-References: <201202070200.55505.rjw@sisk.pl> <201204262352.43254.rjw@sisk.pl> <CAMP5Xgfur0Pj2agG9zRcdfPxENnhPvK+00n23tbVGvP0PwKnTQ@mail.gmail.com>
-In-Reply-To: <CAMP5Xgfur0Pj2agG9zRcdfPxENnhPvK+00n23tbVGvP0PwKnTQ@mail.gmail.com>
+	Thu, 3 May 2012 09:25:56 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201205031528.12743.rjw@sisk.pl>
+In-Reply-To: <CAJDhSdc5J1xzvxYhvru6kjqAbq1NAtvWQCu-tXbi4aE_NXGXrg@mail.gmail.com>
+References: <CAJDhSdc5J1xzvxYhvru6kjqAbq1NAtvWQCu-tXbi4aE_NXGXrg@mail.gmail.com>
+Date: Thu, 3 May 2012 15:25:56 +0200
+Message-ID: <CAJDhSdfd=k2VOO4X=vUUsSA1yFRHuFbwH67BuS6WiX3A6T2iMg@mail.gmail.com>
+Subject: arcnet: protocol is buggy messages in 3.0 kernel, not in 2.33 kernel
+From: Rob Janssen <rob.janssen76@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 03, 2012, Arve Hjønnevåg wrote:
-> On Thu, Apr 26, 2012 at 2:52 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> ...
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > Subject: PM / Sleep: Implement opportunistic sleep, v2
-> >
-> > Introduce a mechanism by which the kernel can trigger global
-> > transitions to a sleep state chosen by user space if there are no
-> > active wakeup sources.
-> >
-> > It consists of a new sysfs attribute, /sys/power/autosleep, that
-> > can be written one of the strings returned by reads from
-> > /sys/power/state, an ordered workqueue and a work item carrying out
-> > the "suspend" operations.  If a string representing the system's
-> > sleep state is written to /sys/power/autosleep, the work item
-> > triggering transitions to that state is queued up and it requeues
-> > itself after every execution until user space writes "off" to
-> > /sys/power/autosleep.
-> >
-> 
-> This does not work. Writing something other than "off" disabled auto
-> suspend for me.
+Hello all
 
-My bad, sorry about that.
+Since we've moved from the 2.33 kernel to the 3.0 kernel, we see the
+following kernel messages in dmesg:
 
-> ...
-> > +static ssize_t autosleep_store(struct kobject *kobj,
-> > +                              struct kobj_attribute *attr,
-> > +                              const char *buf, size_t n)
-> > +{
-> > +       suspend_state_t state = decode_state(buf, n);
-> > +       int error;
-> > +
-> > +       if (state == PM_SUSPEND_ON
-> > +           && !(strncmp(buf, "off", 3) && strncmp(buf, "off\n", 4)))
-> > +               return -EINVAL;
-> 
-> Did you mean:
-> 	if (state == PM_SUSPEND_ON
-> 	    && strcmp(buf, "off") && strcmp(buf, "off\n"))
-> 		return -EINVAL;
+protocol 001a is buggy, dev arc0 skb=c702e2f4
 
+The device involved is an arcnet device.
+The warning is logged by dev.c, see the following code snippet:
 
-Yes, I did.
+if (skb_network_header(skb2) < skb2->data ||
+                           skb2->network_header > skb2->tail) {
+                               if (net_ratelimit())
+                                       printk(KERN_CRIT "protocol %04x is "
+                                              "buggy, dev %s skb=%04x\n",
+                                              ntohs(skb2->protocol),
+                                              dev->name,
+skb_network_header(skb2));
+                               skb_reset_network_header(skb2);
+                       }
+I added some logging, and it appears that skb2->network_header is
+placed in memory beyond skb2->tail (the second check).
 
-I'll add the following as an incremental patch on top of the series.
+Does anyone have what causes this message in the 3.0 kernel and/or how
+to fix this ?
 
-Thanks,
-Rafael
+Thanks in advance,
 
----
- kernel/power/main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux/kernel/power/main.c
-===================================================================
---- linux.orig/kernel/power/main.c
-+++ linux/kernel/power/main.c
-@@ -422,7 +422,7 @@ static ssize_t autosleep_store(struct ko
- 	int error;
- 
- 	if (state == PM_SUSPEND_ON
--	    && !(strncmp(buf, "off", 3) && strncmp(buf, "off\n", 4)))
-+	    && strncmp(buf, "off", 3) && strncmp(buf, "off\n", 4))
- 		return -EINVAL;
- 
- 	error = pm_autosleep_set_state(state);
+Rob Janssen
