@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278Ab2ECKZj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 06:25:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13797 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525Ab2ECKZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 06:25:38 -0400
-Date: Thu, 3 May 2012 12:25:03 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, rostedt@goodmis.org,
-        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com,
-        Arun Sharma <asharma@fb.com>
-Subject: Re: [PATCH 02/16] perf: Unified API to record selective sets of arch
- registers
-Message-ID: <20120503102503.GA1671@m.brq.redhat.com>
-References: <1334661441-4420-1-git-send-email-jolsa@redhat.com>
- <1334661441-4420-3-git-send-email-jolsa@redhat.com>
- <CABPqkBRqG5WhWYY5viVW3j89WUrpmkk1j7VA=oUhY_TGXg=14g@mail.gmail.com>
- <20120423103350.GB1720@m.brq.redhat.com>
- <20120426152840.GC1659@m.brq.redhat.com>
- <CABPqkBSC02vBxAPLrS6j4bVFGme3ibKH=VOkT0yHVCP=pJMnYA@mail.gmail.com>
- <20120502122618.GE1548@m.brq.redhat.com>
- <CABPqkBTFfHtqd0Zk7go4w6aC26vdjHirOyWRqXFct_5Q-ndx5A@mail.gmail.com>
- <20120502125830.GF1548@m.brq.redhat.com>
- <CABPqkBSkdo8spm17qjBANJ5oYnU0Ri1wegxx4i0fQVvz976e+A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBSkdo8spm17qjBANJ5oYnU0Ri1wegxx4i0fQVvz976e+A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756689Ab2ECK1B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 06:27:01 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44447 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755404Ab2ECK05 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 06:26:57 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-fbdev@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH v2 0/4] mfd: add LM3533 lighting-power chip driver
+Date: Thu,  3 May 2012 12:26:35 +0200
+Message-Id: <1336040799-18433-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.7.8.5
+In-Reply-To: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
+References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 04:46:33PM +0200, Stephane Eranian wrote:
-> On Wed, May 2, 2012 at 2:58 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> >
-> > SNIP
-> >
-> >> >
-> >> > I just sent v3, with changed design to be more generic, please check
-> >> >
-> >> > anyway, currently there's no way to mix 32 and 64 bit registers in sample.
-> >> >
-> >> > As I mentioned above, once running compat task, 64 bit registers
-> >> > are stored anyway. Given that all 32 bit registers have 64 equiv.
-> >> > you can ask to store RAX|RBX|R15.
-> >> >
-> >> Well, R8-R15 do not exist in 32-bit mode. So I wonder what is saved
-> >> on the stack for those, probably nothing. And in that case, how do you
-> >> handle the case where the user asked for R15 but it is not available and
-> >> you know that only on PMU interrupt.
-> >
-> > right, R8-R15 do not exist in 32 bit mode, meaning that the 32 bit task
-> > do not use them... but when you enter 64 bit kernel from 32 bit compat
-> > task, still 64bits registers are saved.. as for native 64 process,
-> 
-> I am confused by your term '64-bit registers' here. I assume you
-> mean registers are saved as 64-bit integers. But that does not means
-> that the full set of 64-bit registers (incl. R8-R15) is saved. Unless
-same set as for 64 bit tasks.. it's not allways full as I described
-in previous email
+These patches (against v3.4-rc5) add support for the National Semiconductor /
+Texas Instruments LM3533 lighting-power chip.
 
-> you're telling
-> me that whatever values are in those 64-bit ABI only registers are thus saved
-> on the stack.
-yep, thats what I see in arch/x86/ia32/ia32entry.S
+This multi-function device has four LEDs, two backlights and an
+ambient-light-sensor interface.
 
-jirka
+The LEDs and backlights can be controlled directly, through PWM input,
+or by the ambient-light-sensor interface. Hardware-accelerated blinking is
+provided for the LEDs.
+
+ALS control is done through defining five light zones and three sets of
+corresponding brightness target levels. The ALS iio-driver provides raw and
+mean adc readings along with the current light zone through sysfs. A threshold
+event can be generated on zone changes.
+
+Further details and specifications are now available from:
+
+        http://www.ti.com/product/lm3533
+
+Changes since v1 includes a rewrite of the ambient-light-sensor driver against
+iio, the addition of sysfs-ABI documentation, and a switch to regmap for
+register io.
+
+This work has been done on behalf of National Semiconductor / Texas
+Instruments.
+
+Thanks,
+Johan
+
+
+Johan Hovold (4):
+  mfd: add LM3533 lighting-power core driver
+  iio: add LM3533 ambient light sensor driver
+  leds: add LM3533 LED driver
+  backlight: add LM3533 backlight driver
+
+ .../ABI/testing/sysfs-bus-i2c-devices-lm3533       |   38 +
+ .../testing/sysfs-class-backlight-driver-lm3533    |   50 ++
+ .../ABI/testing/sysfs-class-led-driver-lm3533      |   67 ++
+ drivers/leds/Kconfig                               |   13 +
+ drivers/leds/Makefile                              |    1 +
+ drivers/leds/leds-lm3533.c                         |  741 ++++++++++++++++++++
+ drivers/mfd/Kconfig                                |   13 +
+ drivers/mfd/Makefile                               |    1 +
+ drivers/mfd/lm3533-core.c                          |  717 +++++++++++++++++++
+ drivers/mfd/lm3533-ctrlbank.c                      |  134 ++++
+ .../Documentation/sysfs-bus-iio-light-lm3533-als   |   62 ++
+ drivers/staging/iio/light/Kconfig                  |   16 +
+ drivers/staging/iio/light/Makefile                 |    1 +
+ drivers/staging/iio/light/lm3533-als.c             |  617 ++++++++++++++++
+ drivers/video/backlight/Kconfig                    |   12 +
+ drivers/video/backlight/Makefile                   |    1 +
+ drivers/video/backlight/lm3533_bl.c                |  458 ++++++++++++
+ include/linux/mfd/lm3533.h                         |   89 +++
+ 18 files changed, 3031 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-i2c-devices-lm3533
+ create mode 100644 Documentation/ABI/testing/sysfs-class-backlight-driver-lm3533
+ create mode 100644 Documentation/ABI/testing/sysfs-class-led-driver-lm3533
+ create mode 100644 drivers/leds/leds-lm3533.c
+ create mode 100644 drivers/mfd/lm3533-core.c
+ create mode 100644 drivers/mfd/lm3533-ctrlbank.c
+ create mode 100644 drivers/staging/iio/Documentation/sysfs-bus-iio-light-lm3533-als
+ create mode 100644 drivers/staging/iio/light/lm3533-als.c
+ create mode 100644 drivers/video/backlight/lm3533_bl.c
+ create mode 100644 include/linux/mfd/lm3533.h
+
+-- 
+1.7.8.5
+
