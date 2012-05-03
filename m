@@ -1,34 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758651Ab2ECUcC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 16:32:02 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:35496 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382Ab2ECUcA (ORCPT
+	id S1758666Ab2ECUcI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 16:32:08 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:44899 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754866Ab2ECUcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 16:32:00 -0400
-Date: Thu, 3 May 2012 21:31:54 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
-        platform-driver-x86@vger.kernel.org, Frank Seidel <frank@f-seidel.de>,
-        Robert Love <rml@novell.com>
-Subject: Re: [PATCH][trivial] hdaps: Jesper Juhl: Fix outdated email address
-Message-ID: <20120503203154.GB29437@srcf.ucam.org>
-References: <alpine.LNX.2.00.1204290157060.30870@swampdragon.chaosbits.net>
+	Thu, 3 May 2012 16:32:01 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AowFAMLqok9bdWOb/2dsb2JhbABFgx6sA4NbgQeCCQEBBXkQCxgJJQ8CRgYNAQcCiA26cpEIBJV+kEKCag
+X-IronPort-AV: E=Sophos;i="4.75,527,1330902000"; 
+   d="scan'208";a="984800212"
+Message-ID: <4FA2EC70.30809@igalia.com>
+Date: Thu, 03 May 2012 22:37:04 +0200
+From: =?ISO-8859-1?Q?Javier_Mu=F1oz?= <jmunhoz@igalia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20120104 Icedove/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1204290157060.30870@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: gregkh@linuxfoundation.org, gewang@siliconmotion.com,
+        boyod.yang@siliconmotion.com.cn, wuzhangjin@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 0/7] staging: sm7xx: code improvements and cleanup
+References: <20120425205532.GA9642@kroah.com> <1335465955-32057-1-git-send-email-jmunhoz@igalia.com> <20120427074448.GG6447@mwanda>
+In-Reply-To: <20120427074448.GG6447@mwanda>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merged for -next, thanks
+On 04/27/2012 09:44 AM, Dan Carpenter wrote:
+> On Thu, Apr 26, 2012 at 08:45:48PM +0200, Javier M. Mellid wrote:
+>> This set of patches implement some code improvements, dead code removal
+>> and cleanup. New code uses dynamic debug support.
+>>
+>> The patches address new checkpatch warnings.
+>>
+>> Patches tested with SM712.
+>>
+> 
+> Thanks for breaking that up into separate patches.  Nicely done.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Thanks Dan!
+
+Javier
+
