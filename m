@@ -1,303 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758172Ab2ECVNa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 17:13:30 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53649 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004Ab2ECVN2 convert rfc822-to-8bit (ORCPT
+	id S1758719Ab2ECVOf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 17:14:35 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:40005 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754928Ab2ECVOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 17:13:28 -0400
+	Thu, 3 May 2012 17:14:33 -0400
+Date: Thu, 3 May 2012 23:15:38 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: i915_driver_irq_handler: irq 42: nobody cared
+Message-ID: <20120503211537.GN4983@phenom.ffwll.local>
+Mail-Followup-To: Jiri Slaby <jslaby@suse.cz>,
+	Jesse Barnes <jbarnes@virtuousgeek.org>,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Jiri Slaby <jirislaby@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	dri-devel@lists.freedesktop.org
+References: <20120409101119.47e770b2@jbarnes-desktop>
+ <4F83F3B5.8080704@suse.cz>
+ <20120410092619.26a15165@jbarnes-desktop>
+ <4F8477D1.4080102@suse.cz>
+ <20120410113448.540e4c1d@jbarnes-desktop>
+ <4F848F88.7060009@suse.cz>
+ <20120410203212.GN4115@phenom.ffwll.local>
+ <20120410133411.52dc52ed@jbarnes-desktop>
+ <20120411104012.GI4296@phenom.ffwll.local>
+ <4FA2E2D8.5050303@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1336078827.14207.109.camel@gandalf.stny.rr.com>
-References: <1335816551-27756-1-git-send-email-ccross@android.com>
-	<1335816551-27756-6-git-send-email-ccross@android.com>
-	<1336078827.14207.109.camel@gandalf.stny.rr.com>
-Date: Thu, 3 May 2012 14:13:27 -0700
-X-Google-Sender-Auth: WesVK0-DxJObSvox80gR-9FsbYo
-Message-ID: <CAMbhsRQWwp6TLVbHefV5c0fsb0W5=B_EVEdWtHcwc799dWEHGg@mail.gmail.com>
-Subject: Re: [PATCHv3 5/5] cpuidle: coupled: add trace events
-From: Colin Cross <ccross@android.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@lists.linux-foundation.org, Kevin Hilman <khilman@ti.com>,
-        Len Brown <len.brown@intel.com>, Trinabh Gupta <g.trinabh@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA2E2D8.5050303@suse.cz>
+X-Operating-System: Linux phenom 3.2.0-2-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 3, 2012 at 2:00 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Mon, 2012-04-30 at 13:09 -0700, Colin Cross wrote:
->
->> diff --git a/include/trace/events/cpuidle.h b/include/trace/events/cpuidle.h
->> new file mode 100644
->> index 0000000..9b2cbbb
->> --- /dev/null
->> +++ b/include/trace/events/cpuidle.h
->> @@ -0,0 +1,243 @@
->> +#undef TRACE_SYSTEM
->> +#define TRACE_SYSTEM cpuidle
->> +
->> +#if !defined(_TRACE_CPUIDLE_H) || defined(TRACE_HEADER_MULTI_READ)
->> +#define _TRACE_CPUIDLE_H
->> +
->> +#include <linux/atomic.h>
->> +#include <linux/tracepoint.h>
->> +
->> +extern atomic_t cpuidle_trace_seq;
->> +
->> +TRACE_EVENT(coupled_enter,
->> +
->> +     TP_PROTO(unsigned int cpu),
->> +
->> +     TP_ARGS(cpu),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(unsigned int, cpu)
->> +             __field(unsigned int, seq)
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->cpu = cpu;
->> +             __entry->seq = atomic_inc_return(&cpuidle_trace_seq);
->> +     ),
->> +
->> +     TP_printk("%u %u", __entry->seq, __entry->cpu)
->> +);
->> +
->> +TRACE_EVENT(coupled_exit,
->> +
->> +     TP_PROTO(unsigned int cpu),
->> +
->> +     TP_ARGS(cpu),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(unsigned int, cpu)
->> +             __field(unsigned int, seq)
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->cpu = cpu;
->> +             __entry->seq = atomic_inc_return(&cpuidle_trace_seq);
->> +     ),
->> +
->> +     TP_printk("%u %u", __entry->seq, __entry->cpu)
->> +);
->> +
->> +TRACE_EVENT(coupled_spin,
->> +
->> +     TP_PROTO(unsigned int cpu),
->> +
->> +     TP_ARGS(cpu),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(unsigned int, cpu)
->> +             __field(unsigned int, seq)
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->cpu = cpu;
->> +             __entry->seq = atomic_inc_return(&cpuidle_trace_seq);
->> +     ),
->> +
->> +     TP_printk("%u %u", __entry->seq, __entry->cpu)
->> +);
->> +
->> +TRACE_EVENT(coupled_unspin,
->> +
->> +     TP_PROTO(unsigned int cpu),
->> +
->> +     TP_ARGS(cpu),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(unsigned int, cpu)
->> +             __field(unsigned int, seq)
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->cpu = cpu;
->> +             __entry->seq = atomic_inc_return(&cpuidle_trace_seq);
->> +     ),
->> +
->> +     TP_printk("%u %u", __entry->seq, __entry->cpu)
->> +);
->> +
->> +TRACE_EVENT(coupled_safe_enter,
->> +
->> +     TP_PROTO(unsigned int cpu),
->> +
->> +     TP_ARGS(cpu),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(unsigned int, cpu)
->> +             __field(unsigned int, seq)
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->cpu = cpu;
->> +             __entry->seq = atomic_inc_return(&cpuidle_trace_seq);
->> +     ),
->> +
->> +     TP_printk("%u %u", __entry->seq, __entry->cpu)
->> +);
->> +
->> +TRACE_EVENT(coupled_safe_exit,
->> +
->> +     TP_PROTO(unsigned int cpu),
->> +
->> +     TP_ARGS(cpu),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(unsigned int, cpu)
->> +             __field(unsigned int, seq)
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->cpu = cpu;
->> +             __entry->seq = atomic_inc_return(&cpuidle_trace_seq);
->> +     ),
->> +
->> +     TP_printk("%u %u", __entry->seq, __entry->cpu)
->> +);
->> +
->> +TRACE_EVENT(coupled_idle_enter,
->> +
->> +     TP_PROTO(unsigned int cpu),
->> +
->> +     TP_ARGS(cpu),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(unsigned int, cpu)
->> +             __field(unsigned int, seq)
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->cpu = cpu;
->> +             __entry->seq = atomic_inc_return(&cpuidle_trace_seq);
->> +     ),
->> +
->> +     TP_printk("%u %u", __entry->seq, __entry->cpu)
->> +);
->> +
->> +TRACE_EVENT(coupled_idle_exit,
->> +
->> +     TP_PROTO(unsigned int cpu),
->> +
->> +     TP_ARGS(cpu),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(unsigned int, cpu)
->> +             __field(unsigned int, seq)
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->cpu = cpu;
->> +             __entry->seq = atomic_inc_return(&cpuidle_trace_seq);
->> +     ),
->> +
->> +     TP_printk("%u %u", __entry->seq, __entry->cpu)
->> +);
->> +
->> +TRACE_EVENT(coupled_abort,
->> +
->> +     TP_PROTO(unsigned int cpu),
->> +
->> +     TP_ARGS(cpu),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(unsigned int, cpu)
->> +             __field(unsigned int, seq)
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->cpu = cpu;
->> +             __entry->seq = atomic_inc_return(&cpuidle_trace_seq);
->> +     ),
->> +
->> +     TP_printk("%u %u", __entry->seq, __entry->cpu)
->> +);
->> +
->> +TRACE_EVENT(coupled_detected_abort,
->> +
->> +     TP_PROTO(unsigned int cpu),
->> +
->> +     TP_ARGS(cpu),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(unsigned int, cpu)
->> +             __field(unsigned int, seq)
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->cpu = cpu;
->> +             __entry->seq = atomic_inc_return(&cpuidle_trace_seq);
->> +     ),
->> +
->> +     TP_printk("%u %u", __entry->seq, __entry->cpu)
->> +);
->> +
->> +TRACE_EVENT(coupled_poke,
->> +
->> +     TP_PROTO(unsigned int cpu),
->> +
->> +     TP_ARGS(cpu),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(unsigned int, cpu)
->> +             __field(unsigned int, seq)
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->cpu = cpu;
->> +             __entry->seq = atomic_inc_return(&cpuidle_trace_seq);
->> +     ),
->> +
->> +     TP_printk("%u %u", __entry->seq, __entry->cpu)
->> +);
->> +
->> +TRACE_EVENT(coupled_poked,
->> +
->> +     TP_PROTO(unsigned int cpu),
->> +
->> +     TP_ARGS(cpu),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(unsigned int, cpu)
->> +             __field(unsigned int, seq)
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->cpu = cpu;
->> +             __entry->seq = atomic_inc_return(&cpuidle_trace_seq);
->> +     ),
->> +
->> +     TP_printk("%u %u", __entry->seq, __entry->cpu)
->> +);
->
-> Egad! Please use DECLARE_EVENT_CLASS() and DEFINE_EVENT() when adding
-> events that are basically the same. Every TRACE_EVENT() can bloat the
-> kernel by 5k, using the DEFINE_EVENT()s keeps each event around just a
-> few hundred bytes.
->
-> See include/trace/events/ext4.h for examples.
+On Thu, May 03, 2012 at 09:56:08PM +0200, Jiri Slaby wrote:
+> On 04/11/2012 12:40 PM, Daniel Vetter wrote:
+> > On Tue, Apr 10, 2012 at 01:34:11PM -0700, Jesse Barnes wrote:
+> >> On Tue, 10 Apr 2012 22:32:12 +0200
+> >> Daniel Vetter <daniel@ffwll.ch> wrote:
+> >>
+> >>> On Tue, Apr 10, 2012 at 09:52:40PM +0200, Jiri Slaby wrote:
+> >>>> Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort-
+> >>>> <TAbort- <MAbort- >SERR- <PERR- INTx-
+> >>>>
+> >>>> I tried 3.2 and 3.3. Although the spurious interrupts were always
+> >>>> there, they occurred with frequency lower by a magnitude (15 vs. 300
+> >>>> after X starts). So I bisected that and it lead to a commit which
+> >>>> fixes bad tiling for me:
+> >>>> http://cgit.freedesktop.org/~ickle/linux-2.6/commit/?h=for-jiri&id=79710e6ccabdac80c65cd13b944695ecc3e42a9d
+> >>>
+> >>> Pipelined fencing is pretty much just broken and we'll completely rip it
+> >>> out in 3.5. Does this also happen with 3.4-rc2?
+> >>
+> >> Does INTx- stay that way?  Or does it frequently read INTx+ if you
+> >> sample it a lot?  If it stays as INTx-, then something other than the
+> >> GPU is getting stuck (though it's possible this could be related to
+> >> pipelined fencing, if the fences are programmed to point at some funky
+> >> memory space).
+> 
+> Hi and sorry for the delay. It stays INTx-. And I tested that with patch
+> removing fencing.
+> 
+> > Shot in the dark, let's disable msi a bit. Can you try the below patch?
+> 
+> Yeah, no IRQ_NONE at the end of i915_driver_irq_handler now. So MSI is
+> busted, either in the card, the chipset or the kernel. Any idea how to
+> find out?
 
-Thanks, I'll take a look.  There is no mention in Documentation/ or
-samples/ of DECLARE_EVENT_CLASS() or DEFINE_EVENT(), nor any mention
-of the cost of TRACE_EVENT().
-
-Looking at the new power tracing code, I will also rework these events
-to be more similar to the existing ones.
-
-I suggest skipping this patch for 3.5, and I'll post an updated one for 3.6.
+Ok, so MSI is busted. Can you please paste lspci -nn for you intel gpu?
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
