@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab2ECMky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 08:40:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35644 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942Ab2ECMkx (ORCPT
+	id S1755165Ab2ECMlE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 08:41:04 -0400
+Received: from ironport-out.teksavvy.com ([206.248.143.162]:23697 "EHLO
+	ironport-out.teksavvy.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754983Ab2ECMlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 08:40:53 -0400
-Date: Thu, 3 May 2012 21:40:46 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 06/10] KVM: MMU: fast path of handling guest page
- fault
-Message-Id: <20120503214046.178f62e646836e6e9e210810@gmail.com>
-In-Reply-To: <4FA278B6.5090208@linux.vnet.ibm.com>
-References: <4F9776D2.7020506@linux.vnet.ibm.com>
-	<4F9777A4.208@linux.vnet.ibm.com>
-	<20120426234535.GA5057@amt.cnet>
-	<4F9A3445.2060305@linux.vnet.ibm.com>
-	<20120427145213.GB28796@amt.cnet>
-	<20120429175004.b54d8c095a60d98c8cdbc942@gmail.com>
-	<4FA0C8A7.9000001@linux.vnet.ibm.com>
-	<20120503091558.866e158916f0dd67daf5a9a2@gmail.com>
-	<4FA278B6.5090208@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-2022-JP
+	Thu, 3 May 2012 08:41:02 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuEBACxOgk8Y9geI/2dsb2JhbAANNoVzsCSGLAEBAQEDI1UBEAsOCgICBRYLAgIJAwIBAgFFBg0BBwEBtCSKGIEvjhOBGASpJQ
+X-IronPort-AV: E=Sophos;i="4.75,391,1330923600"; 
+   d="scan'208";a="178177001"
+Message-ID: <4FA27CDB.2080103@teksavvy.com>
+Date: Thu, 03 May 2012 08:40:59 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
+References: <1335953452-10460-1-git-send-email-jack@suse.cz> <4FA1092E.9090603@redhat.com> <20120502115447.7dcc3a54@pyramind.ukuu.org.uk> <4FA11454.2010103@redhat.com> <20120502121208.3c19a9bc@pyramind.ukuu.org.uk> <4FA11963.3040007@redhat.com> <4FA18D33.3060607@teksavvy.com> <4FA23809.2090905@redhat.com>
+In-Reply-To: <4FA23809.2090905@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 03 May 2012 20:23:18 +0800
-Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+On 12-05-03 03:47 AM, Paolo Bonzini wrote:
+> Il 02/05/2012 21:38, Mark Lord ha scritto:
+>>>>
+>>>> Indeed, RHEL doesn't have the warning at all and blocks all ioctls
+>>>> including SG_IO (and in the past six months nobody has complained that
+>>>> something stopped working for them).  Never said the patch is perfect...
+>> hdparm.
+>>
+> 
+> Breaking "hdparm --write-sector /dev/sda1"?  I call it a security fix.
 
-> Takuya, i am sorry, please forgive my rudeness! Since my English is
-> so poor that it is easy for me to misunderstand the mail.　:(
+No, that would plain stupid on both our parts.  :)
+The --write-sector flag is allowed only for non-partitions by hdparm itself.
 
-Me too, I am not good at reading/speaking English!
-No problem.
+But other flags commonly used by distros at boot time
+seem to be triggering the current in-kernel noise.
+Dunno which flags, I'm just ignoring them and waiting
+for the noise message to get reverted.
 
-> > But this is your work and it's up to you.  Although I was thinking to help
-> > your measurement, I cannot do that knowing the fact that you would not
-> > welcome my help.
+Cheers
 
-> Of course, any measurement is appreciative!
-
-I am interested in checking the improvement in my own eyes.
-
-> > Sorry for disturbing.
-
-> Sorry again.
-
-No problem, really.
-Let's discuss more from now on!
-
-What I am really worrying about is the lack of review in this area.
-I am not the person who is good at MMU things.
-
-We should collect more comments if possible from other developers.
-
-Thanks,
-	Takuya
