@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab2ECIge (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 04:36:34 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34530 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753223Ab2ECIgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 04:36:31 -0400
-Date: Thu, 3 May 2012 09:36:30 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm nouveau fixes
-Message-ID: <alpine.DEB.2.00.1205030935350.4416@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755710Ab2ECIi2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 04:38:28 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47390 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752710Ab2ECIi0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 04:38:26 -0400
+Date: Thu, 3 May 2012 11:38:17 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: jim.cromie@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: re: params: add 3rd arg to option handler callback signature
+Message-ID: <20120503083809.GA15622@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Jim Cromie,
 
-Hi Linus,
+This is a semi-automatic email about new static checker warnings in
+linux-next.
 
-just some regression fixes from Ben along with a variable that gcc failed 
-to spot is uninitialised.
+The patch 9fb48c744ba6: "params: add 3rd arg to option handler
+callback signature" from Apr 27, 2012, leads to the following Smatch
+complaint:
 
-Dave.
+kernel/params.c:196 parse_args()
+	 error: we previously assumed 'args' could be null (see line 193)
 
-The following changes since commit 655861e328cea83320190f4a57b3656ee952388c:
+kernel/params.c
+   192	
+   193		if (args && *args)
+                    ^^^^
+New check.
 
-  Merge branch 'fixes' of git://git.linaro.org/people/rmk/linux-arm (2012-04-30 15:34:41 -0700)
+   194			pr_debug("doing %s, parsing ARGS: '%s'\n", doing, args);
+   195	
+   196		while (*args) {
+                       ^^^^^
+Old dereference.
 
-are available in the git repository at:
+   197			int ret;
+   198			int irq_was_disabled;
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
+regards,
+dan carpenter
 
-Ben Skeggs (3):
-      drm/nouveau/bios: fix regression on some nv4x board
-      drm/nouveau/hdmi: use correct hdmi regs for nvaa/nvac
-      drm/nv10/gpio: fix thinko in mask for gpio lines 2-9
-
-Christoph Bumiller (1):
-      nvc0/fb: shut up PMFB interrupt after the first occurrence
-
-Dave Airlie (2):
-      Merge branch 'drm-nouveau-fixes' of git://git.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
-      nouveau: initialise has_optimus variable.
-
- drivers/gpu/drm/nouveau/nouveau_acpi.c |    2 +-
- drivers/gpu/drm/nouveau/nouveau_bios.c |   10 +++++++---
- drivers/gpu/drm/nouveau/nouveau_hdmi.c |    4 +++-
- drivers/gpu/drm/nouveau/nv10_gpio.c    |    2 +-
- drivers/gpu/drm/nouveau/nvc0_fb.c      |    5 +++++
- 5 files changed, 17 insertions(+), 6 deletions(-)
