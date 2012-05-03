@@ -1,68 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097Ab2ECHoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 03:44:18 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4616 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab2ECHoQ (ORCPT
+	id S1752647Ab2ECHsD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 03:48:03 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:59900 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab2ECHsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 03:44:16 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 03 May 2012 00:44:16 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: dan.j.williams@intel.com, vinod.koul@intel.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-tegra@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2 1/2] dma: dmaengine: add slave req id in slave_config
-Date: Thu,  3 May 2012 13:11:28 +0530
-Message-Id: <1336030889-32269-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1336030889-32269-1-git-send-email-ldewangan@nvidia.com>
-References: <1336030889-32269-1-git-send-email-ldewangan@nvidia.com>
+	Thu, 3 May 2012 03:48:00 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvwEAFo3ok9bdWOb/2dsb2JhbABEsyOBB4J3EoE+iCS7BJEIBJV+hXaKTIJq
+X-IronPort-AV: E=Sophos;i="4.75,522,1330902000"; 
+   d="scan'208";a="508220738"
+From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] add support for IndustryPack devices
+Date: Thu,  3 May 2012 09:47:44 +0200
+Message-Id: <1336031267-10689-1-git-send-email-siglesias@igalia.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dma controller like Nvidia's Tegra Dma controller
-supports the different slave requestor id from different slave.
-This need to be configure in dma controller to handle the request
-properly.
+Hello Kernel Developers,
 
-Adding the slave-id in the slave configuration so that information
-can be passed from client when configuring for slave.
+The bunch of patches add support for IndustryPack devices as a carrier board
+called TEWS TPCI-200 and a mezzanine board called IP-OCTAL, among a virtual bus
+driver called ipack.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
+TPCI-200 is a bridge between PCIe and IndustryPack with 4 slots. IP-OCTAL is a
+8 channel serial port device that, depending of the model, can talk RS-232,
+RS-422 or RS-485.
 
-This change is require to get rid of tegra_dma header to pass the
-slave requestor id.
+The ipack driver is just an abstraction of the bus providing the common
+operations between the two aforementioned devices.
 
- include/linux/dmaengine.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+These drivers have been tested some time ago in an old kernel version at CERN
+(2.6.24) and they are working there. The present ones are just a clean-up of the
+original ones to be, hopefully, integrated mainstream.
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 1082698..b0b275f 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -338,6 +338,9 @@ enum dma_slave_buswidth {
-  * @device_fc: Flow Controller Settings. Only valid for slave channels. Fill
-  * with 'true' if peripheral should be flow controller. Direction will be
-  * selected at Runtime.
-+ * @slave_id: Slave requester id. Only valid for slave channels. The dma
-+ * slave peripheral will have unique id as dma requester which need to be
-+ * pass as slave config.
-  *
-  * This struct is passed in as configuration data to a DMA engine
-  * in order to set up a certain channel for DMA transport at runtime.
-@@ -365,6 +368,7 @@ struct dma_slave_config {
- 	u32 src_maxburst;
- 	u32 dst_maxburst;
- 	bool device_fc;
-+	int slave_id;
- };
- 
- static inline const char *dma_chan_name(struct dma_chan *chan)
+These drivers have several ugly hacks that I want to fix:
+
+* TPCI-200: it receives the name of the mezzanine plugged in each slot by SYSFS.
+  No autodetection supported yet, because the mezzanine driver could not be
+  loaded at the time that the tpci200 driver loads.
+
+* IP-OCTAL: it has a linked list which saves the devices it is currently
+  managing. It should use the driver_for_each_device() function. It is not there
+  due to the impossibility of using container_of macro to recover the
+  corresponding "struct ipoctal" because the attribute "struct ipack_device" is
+  a pointer. This code should be refactored.
+
+* Ipack: the structures and API exported can be improved a lot. For example, the
+  way to unregistering mezzanine devices, doing the mezzanine driver a call to
+  remove_device() to notify the carrier driver, or the opposite with the call to
+  the ipack_driver_ops' remove() function could be improved.   
+
+The idea is to receive some feedback: comments, suggestions, critics... 
+improving the code's quality. Also, public this development to receive new
+contributions.
+
+Thanks,
+
+Sam
+
+Samuel Iglesias Gonsalvez (3):
+  Staging: IndustryPack bus for the Linux Kernel
+  Staging: ipack: added support for the TEWS TPCI-200 carrier board
+  Staging: ipack: add support for IP-OCTAL mezzanine board
+
+ drivers/staging/Kconfig                 |    2 +
+ drivers/staging/Makefile                |    1 +
+ drivers/staging/ipack/Kconfig           |   17 +
+ drivers/staging/ipack/Makefile          |    6 +
+ drivers/staging/ipack/TODO              |   15 +
+ drivers/staging/ipack/bridges/Kconfig   |    7 +
+ drivers/staging/ipack/bridges/Makefile  |    1 +
+ drivers/staging/ipack/bridges/tpci200.c | 1163 +++++++++++++++++++++++++++++++
+ drivers/staging/ipack/bridges/tpci200.h |  165 +++++
+ drivers/staging/ipack/devices/Kconfig   |    7 +
+ drivers/staging/ipack/devices/Makefile  |    1 +
+ drivers/staging/ipack/devices/ipoctal.c |  841 ++++++++++++++++++++++
+ drivers/staging/ipack/devices/ipoctal.h |   81 +++
+ drivers/staging/ipack/devices/scc2698.h |  229 ++++++
+ drivers/staging/ipack/ipack.c           |  179 +++++
+ drivers/staging/ipack/ipack.h           |  186 +++++
+ 16 files changed, 2901 insertions(+)
+ create mode 100644 drivers/staging/ipack/Kconfig
+ create mode 100644 drivers/staging/ipack/Makefile
+ create mode 100644 drivers/staging/ipack/TODO
+ create mode 100644 drivers/staging/ipack/bridges/Kconfig
+ create mode 100644 drivers/staging/ipack/bridges/Makefile
+ create mode 100644 drivers/staging/ipack/bridges/tpci200.c
+ create mode 100644 drivers/staging/ipack/bridges/tpci200.h
+ create mode 100644 drivers/staging/ipack/devices/Kconfig
+ create mode 100644 drivers/staging/ipack/devices/Makefile
+ create mode 100644 drivers/staging/ipack/devices/ipoctal.c
+ create mode 100644 drivers/staging/ipack/devices/ipoctal.h
+ create mode 100644 drivers/staging/ipack/devices/scc2698.h
+ create mode 100644 drivers/staging/ipack/ipack.c
+ create mode 100644 drivers/staging/ipack/ipack.h
+
 -- 
-1.7.1.1
+1.7.10
 
