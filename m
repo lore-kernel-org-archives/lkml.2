@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756371Ab2ECPjs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 11:39:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54278 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab2ECPjr (ORCPT
+	id S1757522Ab2ECPmX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 11:42:23 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:36697 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312Ab2ECPmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 11:39:47 -0400
-Date: Thu, 3 May 2012 08:39:41 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
-Subject: Re: [PATCH v1 3/6] workqueue: introduce schedule_on_each_cpu_cond
-Message-ID: <20120503153941.GA5528@google.com>
-References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
- <1336056962-10465-4-git-send-email-gilad@benyossef.com>
+	Thu, 3 May 2012 11:42:22 -0400
+Date: Thu, 3 May 2012 08:41:40 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
+Subject: Re: rcu: BUG on exit_group
+Message-ID: <20120503154140.GA2592@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CA+1xoqd_z8Zavzraq1oXVRpwkJRoac57tojBYf7x=Kzs+cbJ_w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1336056962-10465-4-git-send-email-gilad@benyossef.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+1xoqd_z8Zavzraq1oXVRpwkJRoac57tojBYf7x=Kzs+cbJ_w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12050315-4242-0000-0000-0000018B3785
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Thu, May 03, 2012 at 05:55:59PM +0300, Gilad Ben-Yossef wrote:
-> Introduce the schedule_on_each_cpu_cond() function that schedules
-> a work item on each online CPU for which the supplied condition
-> function returns true.
+On Thu, May 03, 2012 at 10:57:19AM +0200, Sasha Levin wrote:
+> Hi Paul,
 > 
-> This function should be used instead of schedule_on_each_cpu()
-> when only some of the CPUs have actual work to do and a predicate
-> function can tell if a certain CPU does or does not have work to do,
-> thus saving unneeded wakeups and schedules.
->
->  /**
-> + * schedule_on_each_cpu_cond - execute a function synchronously on each
-> + * online CPU for which the supplied condition function returns true
-> + * @func: the function to run on the selected CPUs
-> + * @cond_func: the function to call to select the CPUs
-> + *
-> + * schedule_on_each_cpu_cond() executes @func on each online CPU for
-> + * @cond_func returns true using the system workqueue and blocks until
-> + * all CPUs have completed.
-> + * schedule_on_each_cpu_cond() is very slow.
-> + *
-> + * RETURNS:
-> + * 0 on success, -errno on failure.
-> + */
-> +int schedule_on_each_cpu_cond(work_func_t func, bool (*cond_func)(int cpu))
-> +{
-> +	int cpu, ret;
-> +	cpumask_var_t mask;
-> +
-> +	if (unlikely(!zalloc_cpumask_var(&mask, GFP_KERNEL)))
-> +		return -ENOMEM;
-> +
-> +	get_online_cpus();
-> +
-> +	for_each_online_cpu(cpu)
-> +		if (cond_func(cpu))
-> +			cpumask_set_cpu(cpu, mask);
-> +
-> +	ret = schedule_on_each_cpu_mask(func, mask);
-> +
-> +	put_online_cpus();
-> +
-> +	free_cpumask_var(mask);
-> +
-> +	return ret;
-> +}
+> I've hit a BUG similar to the schedule_tail() one when. It happened
+> when I've started fuzzing exit_group() syscalls, and all of the traces
+> are starting with exit_group() (there's a flood of them).
+> 
+> I've verified that it indeed BUGs due to the rcu preempt count.
 
-I'm usually not a big fan of callback based interface.  They tend to
-be quite clunky to use.  e.g. in this case, wouldn't it be better to
-have helper functions which allocate cpumask and disables cpu hotplug
-and undo that afterwards?  That is, if such convenience helpers are
-necessary at all.  Also, callback which doesn't have a private data
-argument tends to be PITA.
+Hello, Sasha,
 
-Thanks.
+Which version of -next are you using?  I did some surgery on this
+yesterday based on some bugs Hugh Dickins tracked down, so if you
+are using something older, please move to the current -next.
 
--- 
-tejun
+						Thanx, Paul
+
+> Here's one of the BUG()s:
+> 
+> [   83.820976] BUG: sleeping function called from invalid context at
+> kernel/mutex.c:269
+> [   83.827870] in_atomic(): 0, irqs_disabled(): 0, pid: 4506, name: trinity
+> [   83.832154] 1 lock held by trinity/4506:
+> [   83.834224]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff811a7d87>]
+> munlock_vma_page+0x197/0x200
+> [   83.839310] Pid: 4506, comm: trinity Tainted: G        W
+> 3.4.0-rc5-next-20120503-sasha-00002-g09f55ae-dirty #108
+> [   83.849418] Call Trace:
+> [   83.851182]  [<ffffffff810e7218>] __might_sleep+0x1f8/0x210
+> [   83.854076]  [<ffffffff82d9540a>] mutex_lock_nested+0x2a/0x50
+> [   83.857120]  [<ffffffff811b0830>] try_to_unmap_file+0x40/0x2f0
+> [   83.860242]  [<ffffffff82d984bb>] ? _raw_spin_unlock_irq+0x2b/0x80
+> [   83.863423]  [<ffffffff810e7ffe>] ? sub_preempt_count+0xae/0xf0
+> [   83.866347]  [<ffffffff82d984e9>] ? _raw_spin_unlock_irq+0x59/0x80
+> [   83.869570]  [<ffffffff811b0caa>] try_to_munlock+0x6a/0x80
+> [   83.872667]  [<ffffffff811a7cc6>] munlock_vma_page+0xd6/0x200
+> [   83.875646]  [<ffffffff811a7d87>] ? munlock_vma_page+0x197/0x200
+> [   83.878798]  [<ffffffff811a7e7f>] munlock_vma_pages_range+0x8f/0xd0
+> [   83.882235]  [<ffffffff811a8b8a>] exit_mmap+0x5a/0x160
+> [   83.884880]  [<ffffffff810ba23b>] ? exit_mm+0x10b/0x130
+> [   83.887508]  [<ffffffff8111d8ea>] ? __lock_release+0x1ba/0x1d0
+> [   83.890399]  [<ffffffff810b4fe1>] mmput+0x81/0xe0
+> [   83.892966]  [<ffffffff810ba24b>] exit_mm+0x11b/0x130
+> [   83.895640]  [<ffffffff82d984e9>] ? _raw_spin_unlock_irq+0x59/0x80
+> [   83.898943]  [<ffffffff810bca53>] do_exit+0x263/0x460
+> [   83.901700]  [<ffffffff810bccf1>] do_group_exit+0xa1/0xe0
+> [   83.907366]  [<ffffffff810bcd42>] sys_exit_group+0x12/0x20
+> [   83.912450]  [<ffffffff82d993b9>] system_call_fastpath+0x16/0x1b
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
