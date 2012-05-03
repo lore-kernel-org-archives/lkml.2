@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758541Ab2ECUOq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 16:14:46 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53723 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755317Ab2ECUOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 16:14:45 -0400
-Message-ID: <1336076080.13866.49.camel@joe2Laptop>
-Subject: Re: [PULL] TPM: MAINTAINERS contacts update and error report fix
-From: Joe Perches <joe@perches.com>
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Cc: jmorris@namei.org, pebolle@tiscali.nl, linux-kernel@vger.kernel.org,
-        tpmdd@selhorst.net
-Date: Thu, 03 May 2012 13:14:40 -0700
-In-Reply-To: <20120503171054.GA6165@localhost.br.ibm.com>
-References: <20120503171054.GA6165@localhost.br.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758534Ab2ECUSr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 16:18:47 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:52492 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754168Ab2ECUSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 16:18:46 -0400
+X-Sasl-enc: PIB5SsSUHIznhDjnLilE1akpdi1Ki6v+TvCop4lzej5m 1336076325
+Date: Thu, 3 May 2012 13:18:44 -0700
+From: Greg Kroah-Hartmann <greg@kroah.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
+ variable-length record buffer
+Message-ID: <20120503201844.GA21584@kroah.com>
+References: <1336004953.4240.9.camel@mop>
+ <1336074483.6509.3.camel@twins>
+ <CA+55aFxhQ3SQrZJ6KGDu0xQ6sWSDxrS1C-V_fBcgCYmSqAKSWQ@mail.gmail.com>
+ <1336075373.6509.9.camel@twins>
+ <CA+55aFx1BO-s1YZ3EwscdWh2y5C2Q2dUyH8xQmuBKTNZrZWTNA@mail.gmail.com>
+ <1336075862.6509.10.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336075862.6509.10.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-03 at 14:10 -0300, Rajiv Andrade wrote:
-> The first as the subject implies is just a contacts update, and the second
-> makes the driver avoid to mistakenly report the disabled and deactivated TPM
-> states as an error.
+On Thu, May 03, 2012 at 10:11:02PM +0200, Peter Zijlstra wrote:
+> On Thu, 2012-05-03 at 13:09 -0700, Linus Torvalds wrote:
+> > On Thu, May 3, 2012 at 1:02 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > >
+> > > Thing is, with bonkers stuff like usb-console and kms/drm that's a _lot_
+> > > of code running under the logbuf/console locks.
+> > 
+> > The top-level console lock shouldn't be a problem - we use trylock and
+> > delay if it is held.
+> > 
+> > It's the lower-level driver-specific locks that screw us up. And quite
+> > frankly, I am *not* willing to say that that is a printk() problem.
+> > That is purely a "USB serial console is damn well broken" issue, and
+> > should not be considered a limitation of printk.
+> 
+> I'm happy to call all that broken ;-)
 
-trivia:
+USB serial console was a drunken bet gone wrong.  I'm amazed that it
+even works at times, and it should never be considered critical enough
+to affect any core kernel code.
 
-> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-[]
-> @@ -845,7 +845,16 @@ int tpm_do_selftest(struct tpm_chip *chip)
->  		return rc;
->  
->  	do {
-> -		rc = __tpm_pcr_read(chip, 0, digest);
-> +		/* Attempt to read a PCR value */
-> +		cmd.header.in = pcrread_header;
-> +		cmd.params.pcrread_in.pcr_idx = cpu_to_be32(0);
-> +		rc = tpm_transmit(chip, (u8 *) &cmd, READ_PCR_RESULT_SIZE);
-> +
-> +		if (rc < TPM_HEADER_SIZE)
-> +			return -EFAULT;
-> +		else
-> +			rc = be32_to_cpu(cmd.header.out.return_code);
-
-The else shouldn't be used here.
-Indented code followed by an unindented test is not nice.
-
-> +
->  		if (rc == TPM_ERR_DISABLED || rc == TPM_ERR_DEACTIVATED) {
->  			dev_info(chip->dev,
->  				 "TPM is disabled/deactivated (0x%X)\n", rc);
-
-A more kernel style conformant style looks like:
-
-		rc = tpm_transmit(chip, (u8 *)&cmd, READ_PCR_RESULT_SIZE);
-		if (rc < TPM_HEADER_SIZE)
-			return -EFAULT;
-
-		rc = be32_to_cpu(cmd.header.out.return_code);
- 		if (rc == TPM_ERR_DISABLED || rc == TPM_ERR_DEACTIVATED) {
-			etc...
-
-
+greg k-h
