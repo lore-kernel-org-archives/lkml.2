@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab2ECNud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 09:50:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3936 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755939Ab2ECNuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 09:50:32 -0400
-Subject: Re: [PATCH] vmalloc: add warning in __vmalloc
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: Sage Weil <sage@newdream.net>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kosaki.motohiro@gmail.com,
-        rientjes@google.com, Neil Brown <neilb@suse.de>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <jmorris@namei.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-In-Reply-To: <CAPa8GCCzyB7iSX+wTzsqfe7GHvfWT2wT4aQgK30ycRnkc_BNAQ@mail.gmail.com>
-References: <1335932890-25294-1-git-send-email-minchan@kernel.org>
-	 <20120502124610.175e099c.akpm@linux-foundation.org>
-	 <4FA1D93C.9000306@kernel.org>
-	 <Pine.LNX.4.64.1205022241560.18540@cobra.newdream.net>
-	 <CAPa8GCCzyB7iSX+wTzsqfe7GHvfWT2wT4aQgK30ycRnkc_BNAQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Thu, 03 May 2012 14:48:36 +0100
-Message-ID: <1336052916.7030.7.camel@menhir>
-Mime-Version: 1.0
+	id S1755863Ab2ECNxQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 09:53:16 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:50005 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753690Ab2ECNxP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 09:53:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Making ARM multiplatform kernels DT-only?
+Date: Thu, 3 May 2012 13:50:35 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>, shawn.guo@linaro.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>, Nicolas Pitre <nico@fluxnic.net>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201205031350.35476.arnd@arndb.de>
+X-Provags-ID: V02:K0:DaBBBk9vg9taRUk0qgE5kwBgz4nRz1L08PsIz1ab//l
+ j5Tj8qXUBVCRP+sBh5oZ1of8BO+kgwfg2ctBWZIPdpSJWR+w+X
+ iVT+F5Gae3zJ+76ZmPdKJsdLRWErbNbojZOyl3XKDC4Am1qbUf
+ yI8n3aW14dDXHdANuWJtjcmZQYkqSRtnCRDBl6SKqNMUaus5dc
+ nkKFIJn58tmUtHk+dyAwy9BCVuGbXWSVh3RyOZTeIWPHqXknum
+ hmAMtUzOafCO6Iui3ee1mBBAR7iydCWQoW+kmUW5eOTUsUcp8O
+ HoHs6inqw6bvheJvsMGlJBpvDAh365d2cCuDjkUn7dKdyAMlEb
+ A1zb6nPD4Kye9d9fRB/4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi everyone,
 
-On Thu, 2012-05-03 at 16:30 +1000, Nick Piggin wrote:
-> On 3 May 2012 15:46, Sage Weil <sage@newdream.net> wrote:
-> > On Thu, 3 May 2012, Minchan Kim wrote:
-> >> On 05/03/2012 04:46 AM, Andrew Morton wrote:
-> >> > Well.  What are we actually doing here?  Causing the kernel to spew a
-> >> > warning due to known-buggy callsites, so that users will report the
-> >> > warnings, eventually goading maintainers into fixing their stuff.
-> >> >
-> >> > This isn't very efficient :(
-> >>
-> >>
-> >> Yes. I hope maintainers fix it before merging this.
-> >>
-> >> >
-> >> > It would be better to fix that stuff first, then add the warning to
-> >> > prevent reoccurrences.  Yes, maintainers are very naughty and probably
-> >> > do need cattle prods^W^W warnings to motivate them to fix stuff, but we
-> >> > should first make an effort to get these things fixed without
-> >> > irritating and alarming our users.
-> >> >
-> >> > Where are these offending callsites?
-> >
-> > Okay, maybe this is a stupid question, but: if an fs can't call vmalloc
-> > with GFP_NOFS without risking deadlock, calling with GFP_KERNEL instead
-> > doesn't fix anything (besides being more honest).  This really means that
-> > vmalloc is effectively off-limits for file systems in any
-> > writeback-related path, right?
-> 
-> Anywhere it cannot reenter the filesystem, yes. GFP_NOFS is effectively
-> GFP_KERNEL when calling vmalloc.
-> 
-> Note that in writeback paths, a "good citizen" filesystem should not require
-> any allocations, or at least it should be able to tolerate allocation failures.
-> So fixing that would be a good idea anyway.
+I've been discussing multiplatform kernels with a few people recently,
+and we will have a lot of discussion sessions about this at Linaro
+Connect in Hong Kong.
 
-For cluster filesystems, there is an additional issue. When we allocate
-memory with GFP_KERNEL we might land up pushing inodes out of cache,
-which can also mean deallocating them. That process involves taking
-cluster locks, and so it is not valid to do this while holding another
-cluster lock (since the locks may be taken in random order).
+One question that came up repeatedly is whether we should support all
+possible board files for each platform in a multiplatform kernel,
+or just the ones that are already using DT probing. I would like
+to get a quick poll of opinions on that and I've tried to put those
+people on Cc that would be most impacted by this, i.e. the maintainers
+for platforms that have both DT and non-DT board files at the moment.
 
-In the GFS2 use case for vmalloc, this is being done if kmalloc fails
-and also if the memory required is too large for kmalloc (very unlikely,
-but possible with very large directories). Also, it is being done under
-a cluster lock (shared mode).
+My feeling is that we should just mandate DT booting for multiplatform
+kernels, because it significantly reduces the combinatorial space
+at compile time, avoids a lot of legacy board files that we cannot
+test anyway, reduces the total kernel size and gives an incentive
+for people to move forward to DT with their existing boards.
 
-I recently looked back at the thread which resulted in that particular
-vmalloc call being left there:
-http://www.redhat.com/archives/cluster-devel/2010-July/msg00021.html
-http://www.redhat.com/archives/cluster-devel/2010-July/msg00022.html
-http://www.redhat.com/archives/cluster-devel/2010-July/msg00023.html
+The counterargument is that we won't be able to support all the
+boards we currently do when the user switches on multiplatform,
+but I think that is acceptable.
+Note that I would still want to allow users to build platforms
+separately in order to enable the ATAG style board files, even
+for platforms that are not multiplatform capable.
 
-which reminded me of the problem. So this might not be so easy to
-resolve...
+Other opinions?
 
-Steve.
-
-
+	Arnd
