@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab2ECDMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 23:12:09 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:54491 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752472Ab2ECDMH (ORCPT
+	id S1753546Ab2ECDPP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 23:15:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40713 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752472Ab2ECDPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 23:12:07 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18+avFz6NQ+QkXFj8q2V55EWVnXfCNNUCWGy7RZJE
-	dPOp+t7E7iKl04
-Message-ID: <1336014721.7370.32.camel@marge.simpson.net>
-Subject: Re: [PATCH]  Re: [RFC PATCH] namespaces: fix leak on fork() failure
-From: Mike Galbraith <efault@gmx.de>
+	Wed, 2 May 2012 23:15:13 -0400
+X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 May 2012 23:15:13 EDT
+Message-ID: <4FA1F6FD.7060100@gmail.com>
+Date: Thu, 03 May 2012 11:09:49 +0800
+From: Sha Zhengju <handai.szj@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+MIME-Version: 1.0
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Louis Rilling <louis.rilling@kerlabs.com>
-Date: Thu, 03 May 2012 05:12:01 +0200
-In-Reply-To: <20120501134214.f6b44f4a.akpm@linux-foundation.org>
-References: <1335604790.5995.22.camel@marge.simpson.net>
-	 <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org>
-	 <20120429165846.GA19054@redhat.com>
-	 <1335754867.17899.4.camel@marge.simpson.net>
-	 <m1zk9rmyh4.fsf@fess.ebiederm.org>
-	 <20120501134214.f6b44f4a.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+CC: Sha Zhengju <handai.szj@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH RESEND] memcg: Free spare array to avoid memory leak
+References: <1334825690-9065-1-git-send-email-handai.szj@taobao.com> <20120501140314.1d7312fb.akpm@linux-foundation.org>
+In-Reply-To: <20120501140314.1d7312fb.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-01 at 13:42 -0700, Andrew Morton wrote:
-> On Tue, 01 May 2012 13:35:03 -0700
-> ebiederm@xmission.com (Eric W. Biederman) wrote:
-> 
-> > 
-> > Andrew can you please pick up this patch?
-> 
-> Sure.  I assume it's fixing a post-3.4 regression?  No -stable backport
-> needed?
+On 05/02/2012 05:03 AM, Andrew Morton wrote:
+> On Thu, 19 Apr 2012 16:54:50 +0800
+> Sha Zhengju<handai.szj@gmail.com>  wrote:
+>
+>> From: Sha Zhengju<handai.szj@taobao.com>
+>>
+>> When the last event is unregistered, there is no need to keep the spare
+>> array anymore. So free it to avoid memory leak.
+> How serious is this leak?  Is there any way in which it can be used to
+> consume unbounded amounts of memory?
 
-Dunno what all should go to stable, but anyone using vsftpd will
-appreciate something going.  Large leakage was initially reported
-against 3.1.  That was bisected to..
-423e0ab0 VFS : mount lock scalability for internal mounts 
+While registering events, the ->primary will apply for a larger array to 
+store
+the new threshold info and the ->spare holds the old primary space.
+But once unregistering event, the ->primary and ->spare pointer will be 
+swapped
+after updating thresholds info. So if we have an eventfd with many(>1) 
+thresholds
+attached to it, mem_cgroup_usage_unregister_event() will finally leave 
+->spare
+holding a large array and have no chance to be freed.
 
-Subsequent fixes which did not go to stable were applied..
-	905ad269 procfs: fix a vfsmount longterm reference leak
-	6f686574 ... and the same kind of leak for mqueue
-..but leakage persists even with fork failure hole plugged.
+I hope it is clear.
 
-The one (at least) that remains, grabbing pid references while we wait
-for RCU destruction of pid/namespace and our subsequently never
-destroying namespace is being annoying.  Yesterday I ran up >4600 leaks
-with 10 background instances of the testcase (time that, egad), much
-MUCH later ~4000 were released.  Between huge delay and ftrace simply
-refusing to trace out of lined get_pid(), I'm having a jolly time trying
-to get an 8x10 color glossy of the leaky event to stare at. 
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -4412,6 +4412,12 @@ static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
+>>   swap_buffers:
+>>   	/* Swap primary and spare array */
+>>   	thresholds->spare = thresholds->primary;
+>> +	/* If all events are unregistered, free the spare array */
+>> +	if (!new) {
+>> +		kfree(thresholds->spare);
+>> +		thresholds->spare = NULL;
+>> +	}
+>> +
+>>   	rcu_assign_pointer(thresholds->primary, new);
+>>
+> The resulting code is really quite convoluted.  Try to read through it
+> and follow the handling of ->primary and ->spare.  Head spins.
+>
+> What is the protocol here?  If ->primary is NULL then ->spare must also
+> be NULL?
+>
 
-Whatever goes to stable, what fixes this little bugger should go too.
-> hm, Mike had some test code.  If that was put in
-> tools/testing/selftests/nsproxy, this leak wouldn't happen again!
+To be simple:  if new(->primary) is NULL, it means we are unregistering
+the last threshold and there is no need to keep ->spare any more.
+So give the ->spare array a chance to be freed.
 
-I didn't write it, that and a perl script to monitor leakage came along
-with bug report.
+Thanks,
+Sha
 
--Mike
+> I'll apply the patch, although I don't (yet) have sufficient info to
+> know which kernels it should be applied to.  Perhaps someone could
+> revisit this code and see if it can be made more straightforward.
+>
+> .
+>
 
