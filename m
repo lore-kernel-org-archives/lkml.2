@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab2ECDnX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 May 2012 23:43:23 -0400
-Received: from mga01.intel.com ([192.55.52.88]:30606 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753154Ab2ECDnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 May 2012 23:43:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="148757558"
-Date: Thu, 3 May 2012 11:43:11 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@fusionio.com>
-Subject: [PATCH] btrfs: lower metadata writeback threshold on low dirty
- threshold
-Message-ID: <20120503034311.GA14081@localhost>
-References: <20120408010600.GA31377@localhost>
- <x494nst7z3v.fsf@segfault.boston.devel.redhat.com>
- <20120411161344.309f12ef.akpm@linux-foundation.org>
- <20120412013224.GA5859@localhost>
- <20120412022040.GA6800@localhost>
- <20120412142634.GA16559@quack.suse.cz>
- <20120413014026.GA9027@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120413014026.GA9027@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754277Ab2ECDuI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 May 2012 23:50:08 -0400
+Received: from fed1rmfepi101.cox.net ([68.230.241.132]:58864 "EHLO
+	fed1rmfepi101.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464Ab2ECDuG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 May 2012 23:50:06 -0400
+X-Greylist: delayed 1065 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 May 2012 23:50:05 EDT
+X-CT-Class: Clean
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020205.4FA1FC44.0049,ss=1,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=RVIG98EmAZX5jXArMQd8FxtCZcYhwc9mn7hyf7cAkwU=
+ c=1 sm=1 a=mP9BgSo-EEkA:10 a=rcTfVT_afHIA:10 a=zukJ/Oo2bNzQHA4rRbcyFw==:17
+ a=R_N1NMmAAAAA:8 a=yDHarTkmhRPoGD_PITYA:9 a=QOiTB_lUNkwA:10
+ a=zukJ/Oo2bNzQHA4rRbcyFw==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+From: Eric Nelson <eric.nelson@boundarydevices.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-kbuild@vger.kernel.org, u-boot@lists.denx.de, rylv50@freescale.com,
+        marex@denx.de, vapier@gentoo.org,
+        Eric Nelson <eric.nelson@boundarydevices.com>
+Subject: [PATCH] checkpatch: add check for whitespace before semicolon at end-of-line
+Date: Wed,  2 May 2012 20:32:18 -0700
+Message-Id: <1336015938-3174-1-git-send-email-eric.nelson@boundarydevices.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <http://lists.denx.de/pipermail/u-boot/2012-May/123595.html>
+References: <http://lists.denx.de/pipermail/u-boot/2012-May/123595.html>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helps write performance when setting the dirty threshold to tiny numbers.
+This tests for a bad habits of mine like this:
 
-     3.4.0-rc2         3.4.0-rc2-btrfs4+
-  ------------  ------------------------
-         96.92        -0.4%        96.54  bay/thresh=1000M/btrfs-100dd-1-3.4.0-rc2
-         98.47        +0.0%        98.50  bay/thresh=1000M/btrfs-10dd-1-3.4.0-rc2
-         99.38        -0.3%        99.06  bay/thresh=1000M/btrfs-1dd-1-3.4.0-rc2
-         98.04        -0.0%        98.02  bay/thresh=100M/btrfs-100dd-1-3.4.0-rc2
-         98.68        +0.3%        98.98  bay/thresh=100M/btrfs-10dd-1-3.4.0-rc2
-         99.34        -0.0%        99.31  bay/thresh=100M/btrfs-1dd-1-3.4.0-rc2
-  ==>    88.98        +9.6%        97.53  bay/thresh=10M/btrfs-10dd-1-3.4.0-rc2
-  ==>    86.99       +13.1%        98.39  bay/thresh=10M/btrfs-1dd-1-3.4.0-rc2
-  ==>     2.75     +2442.4%        69.88  bay/thresh=1M/btrfs-10dd-1-3.4.0-rc2
-  ==>     3.31     +2634.1%        90.54  bay/thresh=1M/btrfs-1dd-1-3.4.0-rc2
+	return 0 ;
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Eric Nelson <eric.nelson@boundarydevices.com>
 ---
- fs/btrfs/disk-io.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ scripts/checkpatch.pl |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
---- linux-next.orig/fs/btrfs/disk-io.c	2012-05-02 14:04:00.989262395 +0800
-+++ linux-next/fs/btrfs/disk-io.c	2012-05-02 14:04:01.773262414 +0800
-@@ -930,7 +930,8 @@ static int btree_writepages(struct addre
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index a3b9782..0e6977e 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3227,6 +3227,12 @@ sub process {
+ 			 "Statements terminations use 1 semicolon\n" . $herecurr);
+ 		}
  
- 		/* this is a bit racy, but that's ok */
- 		num_dirty = root->fs_info->dirty_metadata_bytes;
--		if (num_dirty < thresh)
-+		if (num_dirty < min(thresh,
-+				    global_dirty_limit << (PAGE_CACHE_SHIFT-2)))
- 			return 0;
- 	}
- 	return btree_write_cache_pages(mapping, wbc);
++# check for whitespace before semicolon - not allowed at end-of-line
++		if ($line =~ /\s+;$/) {
++		    WARN("SPACEBEFORE_SEMICOLON",
++			 "Whitespace before semicolon\n" . $herecurr);
++		}
++
+ # check for gcc specific __FUNCTION__
+ 		if ($line =~ /__FUNCTION__/) {
+ 			WARN("USE_FUNC",
+-- 
+1.7.9
+
