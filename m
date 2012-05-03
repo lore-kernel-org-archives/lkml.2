@@ -1,60 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757306Ab2ECO5S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:57:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41032 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215Ab2ECO5M (ORCPT
+	id S1757163Ab2ECO5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:57:16 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57550 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756967Ab2ECO5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:57:12 -0400
-Message-ID: <1336057018.4205.2.camel@phoenix>
-Subject: [PATCH] IIO: industrialio-core: Checking NULL instead of IS_ERR for
- debugfs_create_dir()
-From: Axel Lin <axel.lin@gmail.com>
+	Thu, 3 May 2012 10:57:13 -0400
+From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        linux-iio@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Thu, 03 May 2012 22:56:58 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
+Subject: [PATCH v1 2/6] workqueue: introduce schedule_on_each_cpu_mask
+Date: Thu,  3 May 2012 17:55:58 +0300
+Message-Id: <1336056962-10465-3-git-send-email-gilad@benyossef.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
+References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If defined CONFIG_DEBUG_FS, debugfs_create_dir returns NULL on failure.
+Introduce schedule_on_each_cpu_mask function to schedule a work
+item on each online CPU which is included in the mask provided.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Then re-implement schedule_on_each_cpu on top of the new function.
+
+This function should be prefered to schedule_on_each_cpu in
+any case where some of the CPUs, especially on a big multi-core
+system, might not have actual work to perform in order to save
+needless wakeups and schedules.
+
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Tejun Heo <tj@kernel.org>
+CC: John Stultz <johnstul@us.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Mike Frysinger <vapier@gentoo.org>
+CC: David Rientjes <rientjes@google.com>
+CC: Hugh Dickins <hughd@google.com>
+CC: Minchan Kim <minchan.kim@gmail.com>
+CC: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Christoph Lameter <cl@linux.com>
+CC: Chris Metcalf <cmetcalf@tilera.com>
+CC: Hakan Akkan <hakanakkan@gmail.com>
+CC: Max Krasnyansky <maxk@qualcomm.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-kernel@vger.kernel.org
+CC: linux-mm@kvack.org
 ---
- drivers/iio/industrialio-core.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+ include/linux/workqueue.h |    2 ++
+ kernel/workqueue.c        |   36 ++++++++++++++++++++++++++++--------
+ 2 files changed, 30 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-index 72e33b8..c74412b 100644
---- a/drivers/iio/industrialio-core.c
-+++ b/drivers/iio/industrialio-core.c
-@@ -235,15 +235,12 @@ static int iio_device_register_debugfs(struct iio_dev *indio_dev)
- 	if (indio_dev->info->debugfs_reg_access == NULL)
- 		return 0;
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index af15545..20da95a 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -383,6 +383,8 @@ extern int schedule_delayed_work(struct delayed_work *work, unsigned long delay)
+ extern int schedule_delayed_work_on(int cpu, struct delayed_work *work,
+ 					unsigned long delay);
+ extern int schedule_on_each_cpu(work_func_t func);
++extern int schedule_on_each_cpu_mask(work_func_t func,
++					const struct cpumask *mask);
+ extern int keventd_up(void);
  
--	if (IS_ERR(iio_debugfs_dentry))
-+	if (!iio_debugfs_dentry)
- 		return 0;
+ int execute_in_process_context(work_func_t fn, struct execute_work *);
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 5abf42f..1c9782b 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2787,43 +2787,63 @@ int schedule_delayed_work_on(int cpu,
+ EXPORT_SYMBOL(schedule_delayed_work_on);
  
- 	indio_dev->debugfs_dentry =
- 		debugfs_create_dir(dev_name(&indio_dev->dev),
- 				   iio_debugfs_dentry);
--	if (IS_ERR(indio_dev->debugfs_dentry))
--		return PTR_ERR(indio_dev->debugfs_dentry);
--
- 	if (indio_dev->debugfs_dentry == NULL) {
- 		dev_warn(indio_dev->dev.parent,
- 			 "Failed to create debugfs directory\n");
+ /**
+- * schedule_on_each_cpu - execute a function synchronously on each online CPU
++ * schedule_on_each_cpu_mask - execute a function synchronously on each
++ * online CPU which is specified in the supplied cpumask
+  * @func: the function to call
++ * @mask: the cpu mask
+  *
+- * schedule_on_each_cpu() executes @func on each online CPU using the
+- * system workqueue and blocks until all CPUs have completed.
+- * schedule_on_each_cpu() is very slow.
++ * schedule_on_each_cpu_mask() executes @func on each online CPU which
++ * is part of the @mask using the * system workqueue and blocks until
++ * all CPUs have completed
++ * schedule_on_each_cpu_mask() is very slow.
+  *
+  * RETURNS:
+  * 0 on success, -errno on failure.
+  */
+-int schedule_on_each_cpu(work_func_t func)
++int schedule_on_each_cpu_mask(work_func_t func, const struct cpumask *mask)
+ {
+ 	int cpu;
+ 	struct work_struct __percpu *works;
+ 
+ 	works = alloc_percpu(struct work_struct);
+-	if (!works)
++	if (unlikely(!works))
+ 		return -ENOMEM;
+ 
+ 	get_online_cpus();
+ 
+-	for_each_online_cpu(cpu) {
++	for_each_cpu_and(cpu, mask, cpu_online_mask) {
+ 		struct work_struct *work = per_cpu_ptr(works, cpu);
+ 
+ 		INIT_WORK(work, func);
+ 		schedule_work_on(cpu, work);
+ 	}
+ 
+-	for_each_online_cpu(cpu)
++	for_each_cpu_and(cpu, mask, cpu_online_mask)
+ 		flush_work(per_cpu_ptr(works, cpu));
+ 
+ 	put_online_cpus();
+ 	free_percpu(works);
++
+ 	return 0;
+ }
+ 
+ /**
++ * schedule_on_each_cpu - execute a function synchronously on each online CPU
++ * @func: the function to call
++ *
++ * schedule_on_each_cpu() executes @func on each online CPU using the
++ * system workqueue and blocks until all CPUs have completed.
++ * schedule_on_each_cpu() is very slow.
++ *
++ * RETURNS:
++ * 0 on success, -errno on failure.
++ */
++int schedule_on_each_cpu(work_func_t func)
++{
++	return schedule_on_each_cpu_mask(func, cpu_online_mask);
++}
++
++/**
+  * flush_scheduled_work - ensure that any scheduled work has run to completion.
+  *
+  * Forces execution of the kernel-global workqueue and blocks until its
 -- 
-1.7.5.4
-
-
+1.7.0.4
 
