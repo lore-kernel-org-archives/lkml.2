@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab2ECGQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 02:16:40 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53997 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914Ab2ECGQi (ORCPT
+	id S1753726Ab2ECGXn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 02:23:43 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:34979 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab2ECGXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 02:16:38 -0400
-Date: Thu, 3 May 2012 16:16:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>
-Subject: linux-next: build failure after merge of the final tree (net-next
- tree related)
-Message-Id: <20120503161623.ad219e088031fd66be212407@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__3_May_2012_16_16_23_+1000_ivTM+H94r94IGoid"
+	Thu, 3 May 2012 02:23:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFwPgWqCPA=ao6XmZy56PaJZ4WC+hOZ_CHGWpo_zO425VA@mail.gmail.com>
+References: <1335788867.29087.19.camel@localhost>
+	<20120501110024.GC6649@dhcp-172-17-9-228.mtv.corp.google.com>
+	<1335875321.26671.15.camel@localhost>
+	<CAPa8GCANv=-c7HsYvDqM+8JqJq6Gr9muxAivU2Ni16x9Ru5EXw@mail.gmail.com>
+	<CA+55aFwPgWqCPA=ao6XmZy56PaJZ4WC+hOZ_CHGWpo_zO425VA@mail.gmail.com>
+Date: Thu, 3 May 2012 16:23:41 +1000
+Message-ID: <CAPa8GCDF3nfNpqaftwf3nYu+KCJpE1q-+=Ufko_4zPgfjYGt=w@mail.gmail.com>
+Subject: Re: Oops with DCACHE_WORD_ACCESS and ocfs2, autofs4
+From: Nick Piggin <npiggin@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jana Saout <jana@saout.de>, Joel Becker <jlbec@evilplan.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__3_May_2012_16_16_23_+1000_ivTM+H94r94IGoid
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 3 May 2012 15:57, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Wed, May 2, 2012 at 10:02 PM, Nick Piggin <npiggin@gmail.com> wrote:
+>> Linus did you see this thread?
+>
+> I did not..
+>
+>>Any ideas what is going on?
+>
+> Note that the discussion about aligned allocations is irrelevant. It
+> doesn't matter at all if the pathname allocation is aligned - what
+> matters if whether the last *component* of the pathname is aligned or
+> not, and that is not going to depend on the allocation alignment.
+>
+> The word-at-a-time code assumes that no allocation will be the last
+> page (whether kmalloc or normal page allocation), which was always
+> somewhat optimistic but I thought it would be true on PC's.
+>
+> And that %rbp value does *not* look like end-of-memory, but maybe
+> there is something else than just the CONFIG_DEBUG_PAGEALLOC that
+> causes us to punch holes even in the kernel memory map.
+>
+> Peter, Ingo - do we unmap kernel pages for PAT etc attributes?
+>
+> Jana, can you send me the whole dmesg for the bootup up to and
+> including the oops?
+>
+> There are multiple ways to fix this, including just marking that
+> unaligned word access as being able to take an exception, but I had
+> hoped to avoid having to do that. There are alternatives, like always
+> padding allocations up by 7 bytes, but those are nasty too. So I'd
+> like to understand what triggers this for Jana, it's possible we can
+> just work around that particular issue.
 
-Hi all,
+Ah, I see what you mean. kmalloc is padded to 8 bytes, but that's
+irrelevant if the full string was exactly modulo 8 bytes long, but the
+last component starts inside the last 8 bytes.
 
-After merging the final tree, today's linux-next build (sparc32 defconfig)
-failed like this:
+That seems to exonerate OCFS2 and autofs.
 
-net/core/sock.c: In function '__release_sock':
-net/core/sock.c:1703:4: error: implicit declaration of function 'prefetch' =
-[-Werror=3Dimplicit-function-declaration]
+vmalloc of course does guard pages, and that creeps into percpu
+data and other things. It's not the case here, but would it be worth
+putting a check in to catch that, or is it just a totally insane thing
+to pass vmalloc()/percpu_alloc()/etc name string?
 
-Caused by commit e4cbb02a1070 ("net: add a prefetch in socket backlog
-processing").
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__3_May_2012_16_16_23_+1000_ivTM+H94r94IGoid
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPoiK3AAoJEECxmPOUX5FEIGoP/iFFZK3g3lM7rFx0pM51ojqA
-rOK0p8I5wo2fsZkd1ODN5ROJ2Q9Hf0w6h4GKEdMaJ13RqhnFFcDLiNLw002QRFPx
-q3LKsbIcwOACG+KTB+Kj4+4iYzT7HE6gt6PudPf0cDs9n1iezN8xXaLnRGT5UvXr
-SenXPbV0JMyt7s9W7tbG8Ak2ttbjYZJuK6/rleWA5UeRWnHNT5zK/qOtmHGwPzlC
-zYn0LnUA0oSYi47zkSsfTVTI5VWYp2I4yM+s0qJdFGX6q24xWBpruKrzD/hQtQVO
-ZhCr4aFrOPSA8z6A+FQSJROGTKfsgEaRo30qSjMCVDAM6Ew62+L/1940LQmYZvSd
-2kWguO5WQKbLBpYzhbD5Ta8wCD2J/p1Qm8MCDqKKCQr5AdDMdMnhHFsbl3O7Hxrl
-53xLlqCb8xapVpkyWrIbvGNLcwh6lpq8Cxrbyi5H2YLOBcc/QjKTCVs5qFt9uyQJ
-ERVaBjzV9Nr6jTvsEKiUiEYNtv/IrW/1H5ADA+6HJa8DrrAMJgnqWsKOIXc8HNfR
-bzZNQltFgkmMTH75i8E1S6v4EiOnTZRIv9l9s8plkJZfydcDViV40J6okcOKgEaD
-BsW2KR8nkpKt82w0+70sIdAiThW41bGqCnuGgV8aAwiC+evDWPwUqWbcrSGEhuEP
-Yeec9w4gJTUb7A7hr/Gf
-=/B9u
------END PGP SIGNATURE-----
-
---Signature=_Thu__3_May_2012_16_16_23_+1000_ivTM+H94r94IGoid--
+Any other strange possible corner cases? If we put a string on stack,
+do any architectures use vmalloc or anything strange for stacks?
