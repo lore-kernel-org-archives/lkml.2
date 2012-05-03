@@ -1,86 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab2ECO5Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 10:57:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43520 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756215Ab2ECO5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 10:57:19 -0400
-Date: Thu, 3 May 2012 15:57:14 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 05/11] mm: swap: Implement generic handler for
- swap_activate
-Message-ID: <20120503145714.GH11435@suse.de>
-References: <1334578675-23445-1-git-send-email-mgorman@suse.de>
- <1334578675-23445-6-git-send-email-mgorman@suse.de>
- <20120501155747.368a1d36.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120501155747.368a1d36.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757421Ab2ECO5a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 10:57:30 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:44140 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756215Ab2ECO51 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 10:57:27 -0400
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: linux-kernel@vger.kernel.org
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
+Subject: [PATCH v1 5/6] mm: make vmstat_update periodic run conditional
+Date: Thu,  3 May 2012 17:56:01 +0300
+Message-Id: <1336056962-10465-6-git-send-email-gilad@benyossef.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
+References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 03:57:47PM -0700, Andrew Morton wrote:
-> On Mon, 16 Apr 2012 13:17:49 +0100
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > The version of swap_activate introduced is sufficient for swap-over-NFS
-> > but would not provide enough information to implement a generic handler.
-> > This patch shuffles things slightly to ensure the same information is
-> > available for aops->swap_activate() as is available to the core.
-> > 
-> > No functionality change.
-> > 
-> > ...
-> >
-> > --- a/include/linux/fs.h
-> > +++ b/include/linux/fs.h
-> > @@ -587,6 +587,8 @@ typedef struct {
-> >  typedef int (*read_actor_t)(read_descriptor_t *, struct page *,
-> >  		unsigned long, unsigned long);
-> >  
-> > +struct swap_info_struct;
-> 
-> Please put forward declarations at top-of-file.  To prevent accidental
-> duplication later on.
-> 
+vmstat_update runs every second from the work queue to update statistics
+and drain per cpu pages back into the global page allocator.
 
-Done.
+This is useful in most circumstances but is wasteful if the CPU doesn't
+actually make any VM activity. This can happen in the situtation that
+the CPU is idle or running a CPU bound long term task (e.g. CPU
+isolation), in which case the periodic vmstate_update timer needlessly
+itnerrupts the CPU.
 
-> >  struct address_space_operations {
-> >  	int (*writepage)(struct page *page, struct writeback_control *wbc);
-> >  	int (*readpage)(struct file *, struct page *);
-> >
-> > ...
-> >
-> > --- a/mm/page_io.c
-> > +++ b/mm/page_io.c
-> 
-> Have you tested all this code with CONFIG_SWAP=n?
-> 
+This patch tries to make vmstat_update schedule itself for the next
+round only if there was any work for it to do in the previous run.
+The assumption is that if for a whole second we didn't see any VM
+activity it is reasnoable to assume that the CPU is not using the
+VM because it is idle or runs a long term single CPU bound task.
 
-Emm, it builds. That counts, right?
+A new single unbound system work queue item is scheduled periodically
+to monitor CPUs that have their vmstat_update work stopped and
+re-schedule them if VM activity is detected.
 
-> Have you sought to minimise additional new code when CONFIG_SWAP=n?
-> 
+Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Tejun Heo <tj@kernel.org>
+CC: John Stultz <johnstul@us.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Mike Frysinger <vapier@gentoo.org>
+CC: David Rientjes <rientjes@google.com>
+CC: Hugh Dickins <hughd@google.com>
+CC: Minchan Kim <minchan.kim@gmail.com>
+CC: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Christoph Lameter <cl@linux.com>
+CC: Chris Metcalf <cmetcalf@tilera.com>
+CC: Hakan Akkan <hakanakkan@gmail.com>
+CC: Max Krasnyansky <maxk@qualcomm.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-kernel@vger.kernel.org
+CC: linux-mm@kvack.org
+---
+ include/linux/vmstat.h |    2 +-
+ mm/vmstat.c            |   95 +++++++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 82 insertions(+), 15 deletions(-)
 
-Not specifically, but generic_swapfile_activate() is defined in page_io.c
-and that is built only if CONFIG_SWAP=y. Similarly swapon is in
-swapfile.c which is only build when swap is enabled.
-
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index 65efb92..67bf202 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -200,7 +200,7 @@ extern void __inc_zone_state(struct zone *, enum zone_stat_item);
+ extern void dec_zone_state(struct zone *, enum zone_stat_item);
+ extern void __dec_zone_state(struct zone *, enum zone_stat_item);
+ 
+-void refresh_cpu_vm_stats(int);
++bool refresh_cpu_vm_stats(int);
+ void refresh_zone_stat_thresholds(void);
+ 
+ int calculate_pressure_threshold(struct zone *zone);
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 7db1b9b..1676132 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -14,6 +14,7 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/cpu.h>
++#include <linux/cpumask.h>
+ #include <linux/vmstat.h>
+ #include <linux/sched.h>
+ #include <linux/math64.h>
+@@ -434,11 +435,12 @@ EXPORT_SYMBOL(dec_zone_page_state);
+  * with the global counters. These could cause remote node cache line
+  * bouncing and will have to be only done when necessary.
+  */
+-void refresh_cpu_vm_stats(int cpu)
++bool refresh_cpu_vm_stats(int cpu)
+ {
+ 	struct zone *zone;
+ 	int i;
+ 	int global_diff[NR_VM_ZONE_STAT_ITEMS] = { 0, };
++	bool vm_activity = false;
+ 
+ 	for_each_populated_zone(zone) {
+ 		struct per_cpu_pageset *p;
+@@ -485,14 +487,21 @@ void refresh_cpu_vm_stats(int cpu)
+ 		if (p->expire)
+ 			continue;
+ 
+-		if (p->pcp.count)
++		if (p->pcp.count) {
++			vm_activity = true;
+ 			drain_zone_pages(zone, &p->pcp);
++		}
+ #endif
+ 	}
+ 
+ 	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
+-		if (global_diff[i])
++		if (global_diff[i]) {
+ 			atomic_long_add(global_diff[i], &vm_stat[i]);
++			vm_activity = true;
++		}
++
++	return vm_activity;
++
+ }
+ 
+ #endif
+@@ -1141,22 +1150,72 @@ static const struct file_operations proc_vmstat_file_operations = {
+ #ifdef CONFIG_SMP
+ static DEFINE_PER_CPU(struct delayed_work, vmstat_work);
+ int sysctl_stat_interval __read_mostly = HZ;
++static struct cpumask vmstat_off_cpus;
++struct delayed_work vmstat_monitor_work;
+ 
+-static void vmstat_update(struct work_struct *w)
++static inline bool need_vmstat(int cpu)
+ {
+-	refresh_cpu_vm_stats(smp_processor_id());
+-	schedule_delayed_work(&__get_cpu_var(vmstat_work),
+-		round_jiffies_relative(sysctl_stat_interval));
++	struct zone *zone;
++	int i;
++
++	for_each_populated_zone(zone) {
++		struct per_cpu_pageset *p;
++
++		p = per_cpu_ptr(zone->pageset, cpu);
++
++		for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
++			if (p->vm_stat_diff[i])
++				return true;
++
++		if (zone_to_nid(zone) != numa_node_id() && p->pcp.count)
++			return true;
++	}
++
++	return false;
+ }
+ 
+-static void __cpuinit start_cpu_timer(int cpu)
++static void vmstat_update(struct work_struct *w);
++
++static void start_cpu_timer(int cpu)
+ {
+ 	struct delayed_work *work = &per_cpu(vmstat_work, cpu);
+ 
+-	INIT_DELAYED_WORK_DEFERRABLE(work, vmstat_update);
++	cpumask_clear_cpu(cpu, &vmstat_off_cpus);
+ 	schedule_delayed_work_on(cpu, work, __round_jiffies_relative(HZ, cpu));
+ }
+ 
++static void __cpuinit setup_cpu_timer(int cpu)
++{
++	struct delayed_work *work = &per_cpu(vmstat_work, cpu);
++
++	INIT_DELAYED_WORK_DEFERRABLE(work, vmstat_update);
++	start_cpu_timer(cpu);
++}
++
++static void vmstat_update_monitor(struct work_struct *w)
++{
++	int cpu;
++
++	for_each_cpu_and(cpu, &vmstat_off_cpus, cpu_online_mask)
++		if (need_vmstat(cpu))
++			start_cpu_timer(cpu);
++
++	queue_delayed_work(system_unbound_wq, &vmstat_monitor_work,
++		round_jiffies_relative(sysctl_stat_interval));
++}
++
++
++static void vmstat_update(struct work_struct *w)
++{
++	int cpu = smp_processor_id();
++
++	if (likely(refresh_cpu_vm_stats(cpu)))
++		schedule_delayed_work(&__get_cpu_var(vmstat_work),
++				round_jiffies_relative(sysctl_stat_interval));
++	else
++		cpumask_set_cpu(cpu, &vmstat_off_cpus);
++}
++
+ /*
+  * Use the cpu notifier to insure that the thresholds are recalculated
+  * when necessary.
+@@ -1171,17 +1230,19 @@ static int __cpuinit vmstat_cpuup_callback(struct notifier_block *nfb,
+ 	case CPU_ONLINE:
+ 	case CPU_ONLINE_FROZEN:
+ 		refresh_zone_stat_thresholds();
+-		start_cpu_timer(cpu);
++		setup_cpu_timer(cpu);
+ 		node_set_state(cpu_to_node(cpu), N_CPU);
+ 		break;
+ 	case CPU_DOWN_PREPARE:
+ 	case CPU_DOWN_PREPARE_FROZEN:
+-		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
+-		per_cpu(vmstat_work, cpu).work.func = NULL;
++		if (!cpumask_test_cpu(cpu, &vmstat_off_cpus)) {
++			cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
++			per_cpu(vmstat_work, cpu).work.func = NULL;
++		}
+ 		break;
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_DOWN_FAILED_FROZEN:
+-		start_cpu_timer(cpu);
++		setup_cpu_timer(cpu);
+ 		break;
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+@@ -1204,8 +1265,14 @@ static int __init setup_vmstat(void)
+ 
+ 	register_cpu_notifier(&vmstat_notifier);
+ 
++	INIT_DELAYED_WORK_DEFERRABLE(&vmstat_monitor_work,
++				vmstat_update_monitor);
++	queue_delayed_work(system_unbound_wq,
++				&vmstat_monitor_work,
++				round_jiffies_relative(HZ));
++
+ 	for_each_online_cpu(cpu)
+-		start_cpu_timer(cpu);
++		setup_cpu_timer(cpu);
+ #endif
+ #ifdef CONFIG_PROC_FS
+ 	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
 -- 
-Mel Gorman
-SUSE Labs
+1.7.0.4
+
