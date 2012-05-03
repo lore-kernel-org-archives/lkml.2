@@ -1,33 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757858Ab2ECRlm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 13:41:42 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48107 "EHLO
+	id S1757830Ab2ECRno (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 13:43:44 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43281 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753784Ab2ECRll (ORCPT
+	with ESMTP id S1752558Ab2ECRnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 13:41:41 -0400
-Message-ID: <4FA2C34F.5060406@wwwdotorg.org>
-Date: Thu, 03 May 2012 11:41:35 -0600
+	Thu, 3 May 2012 13:43:43 -0400
+Message-ID: <4FA2C3CB.60204@wwwdotorg.org>
+Date: Thu, 03 May 2012 11:43:39 -0600
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
 To: Hiroshi DOYU <hdoyu@nvidia.com>
 CC: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Felipe Balbi <balbi@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCHv3 1/4] ARM: tegra: Add Tegra AHB driver
-References: <1336061147-10245-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1336061147-10245-1-git-send-email-hdoyu@nvidia.com>
+        Felipe Balbi <balbi@ti.com>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/4] ARM: tegra: Add SMMU enabler in AHB
+References: <1336061147-10245-1-git-send-email-hdoyu@nvidia.com> <1336061147-10245-2-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1336061147-10245-2-git-send-email-hdoyu@nvidia.com>
 X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -36,38 +31,10 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 05/03/2012 10:05 AM, Hiroshi DOYU wrote:
-> Tegra AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
-> High-performance Bus (AHB) architecture.
+> Add extern func, "tegra_ahb_enable_smmu()" to inform AHB that SMMU is
+> ready.
 > 
-> The AHB Arbiter controls AHB bus master arbitration. This effectively
-> forms a second level of arbitration for access to the memory
-> controller through the AHB Slave Memory device. The AHB pre-fetch
-> logic can be configured to enhance performance for devices doing
-> sequential access. Each AHB master is assigned to either the high or
-> low priority bin. Both Tegra20/30 have this AHB bus.
-> 
-> Some of configuration param could be passed from DT too.
+> Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+> Cc: Felipe Balbi <balbi@ti.com>
 
-> diff --git a/drivers/amba/tegra-ahb.c b/drivers/amba/tegra-ahb.c
-> +static u32 tegra_ahb_gizmo[] = {
-
-const?
-
-> +static int __init tegra_ahb_module_init(void)
-> +{
-> +	return platform_driver_register(&tegra_ahb_driver);
-> +}
-> +postcore_initcall(tegra_ahb_module_init);
-
-Can this be a module_init() instead of postcore_initcall()?
-
-> +
-> +static void __exit tegra_ahb_module_exit(void)
-> +{
-> +	platform_driver_unregister(&tegra_ahb_driver);
-> +}
-> +module_exit(tegra_ahb_module_exit);
-
-If so, all of the previous two quoted chunks can be replaced with just:
-
-module_platform_driver(tegra_ahb_module_init);
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
