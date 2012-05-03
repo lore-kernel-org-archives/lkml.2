@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab2ECJEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 05:04:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49979 "EHLO
+	id S1756864Ab2ECJEy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 05:04:54 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49967 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756405Ab2ECJDB (ORCPT
+	with ESMTP id S1756375Ab2ECJDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 05:03:01 -0400
-Message-Id: <20120503085035.592937512@linutronix.de>
+	Thu, 3 May 2012 05:03:00 -0400
+Message-Id: <20120503085035.398257169@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 03 May 2012 09:03:00 -0000
+Date: Thu, 03 May 2012 09:02:59 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Richard Weinberger <richard@nod.at>
-Subject: [patch V2 27/31] um: Use generic init_task
+Cc: Paul Mundt <lethal@linux-sh.org>
+Subject: [patch V2 24/31] sh: Use generic init_task
 References: <20120503083859.991965503@linutronix.de>
-Content-Disposition: inline; filename=um-use-generic-init-task.patch
+Content-Disposition: inline; filename=sh-use-generic-init-task.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -23,107 +23,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Same code. Use the generic version.
+Same code. Use the generic version. The special Makefile treatment is
+pointless anyway as init_task.o contains only data which is handled by
+the linker script. So no point on being treated like head text.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: Richard Weinberger <richard@nod.at>
+Acked-by: Paul Mundt <lethal@linux-sh.org>
 ---
- arch/um/Kconfig.common     |    1 +
- arch/um/kernel/Makefile    |    2 +-
- arch/um/kernel/init_task.c |   38 --------------------------------------
- arch/um/kernel/um_arch.c   |    5 +++++
- 4 files changed, 7 insertions(+), 39 deletions(-)
+ arch/sh/Kconfig            |    1 +
+ arch/sh/Makefile           |    2 +-
+ arch/sh/kernel/Makefile    |    2 +-
+ arch/sh/kernel/init_task.c |   30 ------------------------------
+ 4 files changed, 3 insertions(+), 32 deletions(-)
 
-Index: tip/arch/um/Kconfig.common
+Index: tip/arch/sh/Kconfig
 ===================================================================
---- tip.orig/arch/um/Kconfig.common
-+++ tip/arch/um/Kconfig.common
-@@ -10,6 +10,7 @@ config UML
+--- tip.orig/arch/sh/Kconfig
++++ tip/arch/sh/Kconfig
+@@ -29,6 +29,7 @@ config SUPERH
+ 	select GENERIC_ATOMIC64
  	select GENERIC_IRQ_SHOW
- 	select GENERIC_CPU_DEVICES
- 	select GENERIC_IO
+ 	select GENERIC_SMP_IDLE_THREAD
 +	select HAVE_GENERIC_INIT_TASK
- 
- config MMU
- 	bool
-Index: tip/arch/um/kernel/Makefile
+ 	help
+ 	  The SuperH is a RISC processor targeted for use in embedded systems
+ 	  and consumer electronics; it was also used in the Sega Dreamcast
+Index: tip/arch/sh/Makefile
 ===================================================================
---- tip.orig/arch/um/kernel/Makefile
-+++ tip/arch/um/kernel/Makefile
-@@ -10,7 +10,7 @@ CPPFLAGS_vmlinux.lds := -DSTART=$(LDS_ST
- extra-y := vmlinux.lds
- clean-files :=
+--- tip.orig/arch/sh/Makefile
++++ tip/arch/sh/Makefile
+@@ -124,7 +124,7 @@ endif
  
--obj-y = config.o exec.o exitcode.o init_task.o irq.o ksyms.o mem.o \
-+obj-y = config.o exec.o exitcode.o irq.o ksyms.o mem.o \
- 	physmem.o process.o ptrace.o reboot.o sigio.o \
- 	signal.o smp.o syscall.o sysrq.o time.o tlb.o trap.o \
- 	um_arch.o umid.o skas/
-Index: tip/arch/um/kernel/init_task.c
+ export ld-bfd BITS
+ 
+-head-y	:= arch/sh/kernel/init_task.o arch/sh/kernel/head_$(BITS).o
++head-y	:= arch/sh/kernel/head_$(BITS).o
+ 
+ core-y				+= arch/sh/kernel/ arch/sh/mm/ arch/sh/boards/
+ core-$(CONFIG_SH_FPU_EMU)	+= arch/sh/math-emu/
+Index: tip/arch/sh/kernel/Makefile
 ===================================================================
---- tip.orig/arch/um/kernel/init_task.c
+--- tip.orig/arch/sh/kernel/Makefile
++++ tip/arch/sh/kernel/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the Linux/SuperH kernel.
+ #
+ 
+-extra-y	:= head_$(BITS).o init_task.o vmlinux.lds
++extra-y	:= head_$(BITS).o vmlinux.lds
+ 
+ ifdef CONFIG_FUNCTION_TRACER
+ # Do not profile debug and lowlevel utilities
+Index: tip/arch/sh/kernel/init_task.c
+===================================================================
+--- tip.orig/arch/sh/kernel/init_task.c
 +++ /dev/null
-@@ -1,38 +0,0 @@
--/*
-- * Copyright (C) 2000 - 2007 Jeff Dike (jdike@{addtoit,intel.linux}.com)
-- * Licensed under the GPL
-- */
--
--#include "linux/sched.h"
--#include "linux/init_task.h"
--#include "linux/fs.h"
--#include "linux/module.h"
--#include "linux/mqueue.h"
--#include "asm/uaccess.h"
+@@ -1,30 +0,0 @@
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/sched.h>
+-#include <linux/init_task.h>
+-#include <linux/mqueue.h>
+-#include <linux/fs.h>
+-#include <asm/uaccess.h>
+-#include <asm/pgtable.h>
 -
 -static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 -static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
+-struct pt_regs fake_swapper_regs;
+-/*
+- * Initial thread structure.
+- *
+- * We need to make sure that this is 8192-byte aligned due to the
+- * way process stacks are handled. This is done by having a special
+- * "init_task" linker map entry..
+- */
+-union thread_union init_thread_union __init_task_data =
+-	{ INIT_THREAD_INFO(init_task) };
+-
 -/*
 - * Initial task structure.
 - *
 - * All other task structs will be allocated on slabs in fork.c
 - */
--
 -struct task_struct init_task = INIT_TASK(init_task);
 -
 -EXPORT_SYMBOL(init_task);
--
--/*
-- * Initial thread structure.
-- *
-- * We need to make sure that this is aligned due to the
-- * way process stacks are handled. This is done by having a special
-- * "init_task" linker map entry..
-- */
--
--union thread_union init_thread_union __init_task_data =
--	{ INIT_THREAD_INFO(init_task) };
--
--union thread_union cpu0_irqstack
--	__attribute__((__section__(".data..init_irqstack"))) =
--		{ INIT_THREAD_INFO(init_task) };
-Index: tip/arch/um/kernel/um_arch.c
-===================================================================
---- tip.orig/arch/um/kernel/um_arch.c
-+++ tip/arch/um/kernel/um_arch.c
-@@ -10,6 +10,7 @@
- #include <linux/seq_file.h>
- #include <linux/string.h>
- #include <linux/utsname.h>
-+#include <linux/sched.h>
- #include <asm/pgtable.h>
- #include <asm/processor.h>
- #include <asm/setup.h>
-@@ -47,6 +48,10 @@ struct cpuinfo_um boot_cpu_data = {
- 	.ipi_pipe		= { -1, -1 }
- };
- 
-+union thread_union cpu0_irqstack
-+	__attribute__((__section__(".data..init_irqstack"))) =
-+		{ INIT_THREAD_INFO(init_task) };
-+
- unsigned long thread_saved_pc(struct task_struct *task)
- {
- 	/* FIXME: Need to look up userspace_pid by cpu */
 
 
