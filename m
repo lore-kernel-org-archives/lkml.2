@@ -1,44 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab2ECLIp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 07:08:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37869 "EHLO mx1.redhat.com"
+	id S1757297Ab2ECLIy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 07:08:54 -0400
+Received: from mga03.intel.com ([143.182.124.21]:32816 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756994Ab2ECLIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 07:08:44 -0400
-Date: Thu, 3 May 2012 14:08:45 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH RFC] virtio-net: remove useless disable on freeze
-Message-ID: <20120503110845.GA25569@redhat.com>
-References: <20120404091954.GA3776@redhat.com>
- <20120503105959.GM13421@amit.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120503105959.GM13421@amit.redhat.com>
+	id S1752846Ab2ECLIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 07:08:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="138393419"
+Message-ID: <1336043475.13013.47.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] vmalloc: add warning in __vmalloc
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kosaki.motohiro@gmail.com,
+        rientjes@google.com, Neil Brown <neilb@suse.de>,
+        David Woodhouse <dwmw2@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Sage Weil <sage@newdream.net>
+Date: Thu, 03 May 2012 14:11:15 +0300
+In-Reply-To: <20120502124610.175e099c.akpm@linux-foundation.org>
+References: <1335932890-25294-1-git-send-email-minchan@kernel.org>
+	 <20120502124610.175e099c.akpm@linux-foundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-57Lh1wuEjZihfs+vd2pa"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 04:29:59PM +0530, Amit Shah wrote:
-> On (Wed) 04 Apr 2012 [12:19:55], Michael S. Tsirkin wrote:
-> > disable_cb is just an optimization: it
-> > can not guarantee that there are no callbacks.
-> 
-> Even then, what's the harm in keeping it?  If indeed there's an
-> attempt to raise an interrupt after the host has been notified, it
-> will be suppressed.
 
-It won't. It's not a guarantee, e.g. with event index on
-it does nothing at all.
+--=-57Lh1wuEjZihfs+vd2pa
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Also, disable_cb seems to be used elsewhere in the virtio_net.c file,
-> to suit similar purposes.
-> 
-> 		Amit
+On Wed, 2012-05-02 at 12:46 -0700, Andrew Morton wrote:
+> On Wed,  2 May 2012 13:28:09 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
+>=20
+> > Now there are several places to use __vmalloc with GFP_ATOMIC,
+> > GFP_NOIO, GFP_NOFS but unfortunately __vmalloc calls map_vm_area
+> > which calls alloc_pages with GFP_KERNEL to allocate page tables.
+> > It means it's possible to happen deadlock.
+> > I don't know why it doesn't have reported until now.
+> >=20
+> > Firstly, I tried passing gfp_t to lower functions to support __vmalloc
+> > with such flags but other mm guys don't want and decided that
+> > all of caller should be fixed.
+> >=20
+> > http://marc.info/?l=3Dlinux-kernel&m=3D133517143616544&w=3D2
+> >=20
+> > To begin with, let's listen other's opinion whether they can fix it
+> > by other approach without calling __vmalloc with such flags.
+> >=20
+> > So this patch adds warning in __vmalloc_node_range to detect it and
+> > to be fixed hopely. __vmalloc_node_range isn't random chocie because
+> > all caller which has gfp_mask of map_vm_area use it through __vmalloc_a=
+rea_node.
+> > And __vmalloc_area_node is current static function and is called by onl=
+y
+> > __vmalloc_node_range. So warning in __vmalloc_node_range would cover al=
+l
+> > vmalloc functions which have gfp_t argument.
+> >
+> > I Cced related maintainers.
+> > If I miss someone, please Cced them.
+> >=20
+> > --- a/mm/vmalloc.c
+> > +++ b/mm/vmalloc.c
+> > @@ -1648,6 +1648,10 @@ void *__vmalloc_node_range(unsigned long size, u=
+nsigned long align,
+> >  	void *addr;
+> >  	unsigned long real_size =3D size;
+> > =20
+> > +	WARN_ON_ONCE(!(gfp_mask & __GFP_WAIT) ||
+> > +			!(gfp_mask & __GFP_IO) ||
+> > +			!(gfp_mask & __GFP_FS));
+> > +
+> >  	size =3D PAGE_ALIGN(size);
+> >  	if (!size || (size >> PAGE_SHIFT) > totalram_pages)
+> >  		goto fail;
+>=20
+> Well.  What are we actually doing here?  Causing the kernel to spew a
+> warning due to known-buggy callsites, so that users will report the
+> warnings, eventually goading maintainers into fixing their stuff.
+>=20
+> This isn't very efficient :(
+>=20
+> It would be better to fix that stuff first, then add the warning to
+> prevent reoccurrences.  Yes, maintainers are very naughty and probably
+> do need cattle prods^W^W warnings to motivate them to fix stuff, but we
+> should first make an effort to get these things fixed without
+> irritating and alarming our users. =20
+>=20
+> Where are these offending callsites?
 
-Where?
+OK, I checked my part - both UBI and UBIFS call __vmalloc() with
+GFP_NOFS in several places of the _debugging_ code, and this is why we
+do not see any issues - the debugging code is used very rarely for
+validating purposes. All the places look fixable, I'll fix them a bit
+later.
+
+WARN_ON_ONCE() looks like a good first step. An I think it is better if
+maintainers fix their areas rather than if someone who does not know how
+the subsystem works starts trying to do that.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-57Lh1wuEjZihfs+vd2pa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPomfTAAoJECmIfjd9wqK0Le0P/jVKUGL5CYTbVVuaczEr0YHG
+3u1H1H5PdbSh+nZh1k+B4954w5tS96bPRrJi2HsFGTSdAvWudF0w5jOaXZqxE9y9
+JRIqsYO1n4yJcYM6vNFOTOxk0gUCap4hR+AvqBGEB8C/fiC3f5E/FxISwSrzLBFx
+xMaScsYuaJJv0IzOD+MuPEDW2YuX3dyiKssqh8yWIcPNtS/o8LQ/im06HZugYvXo
+cuslXW3/vtcV7npEvyXNxRioKlsouWfuEh2ukrIvHRN7hGgAkUeW87ht2Z10065U
+oK+kWKd8PjrT7j0tzjnbGWZNkgUnIzo+4p91RzszfdVo/pZRQRogNAT4U6zRwbMZ
+MoW9prWmwT57iI4MIu9eCvqMug+nQesCvMlok7Bh8bvESxl6+CzTGGu0VwjKkUty
+xgPH3XRDGjrPPGwOUDL4Rv9ugCh8IVQE4punSIjGxwVrjtEDpLGObF7bj2Zzl46Q
+7ye17JDT3p4HwtNgcDvNCUlyZ7xT2hReSQ8+GOMGuH94Wz9okMAg/eF2UHGsT1+d
+pbcy2a2YbikOooG1hVMcKf3YjJHeMwVNH/Eag8zpcKg5+Hl7Gf/BxrbzetubAow2
+/i01lJ7nYieCXTp+AzJiRsaBIiQ7YXhcY6pK4NCu5EeQJfl9ugxyoUBGr7h/6YlG
+h5DV5VzMJrgsGpxoKonm
+=U6kO
+-----END PGP SIGNATURE-----
+
+--=-57Lh1wuEjZihfs+vd2pa--
+
