@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab2ECMTn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 08:19:43 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:56720 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab2ECMTl convert rfc822-to-8bit (ORCPT
+	id S1754004Ab2ECMWv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 08:22:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52935 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323Ab2ECMWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 08:19:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120502212205.GA12212@kroah.com>
-References: <20120502124642.30480.41373.sendpatchset@w520>
-	<20120502124736.30480.48207.sendpatchset@w520>
-	<4FA14788.6090000@windriver.com>
-	<20120502212205.GA12212@kroah.com>
-Date: Thu, 3 May 2012 21:19:40 +0900
-Message-ID: <CANqRtoR7rtJW65jY3urnTcaS5S6swY84C-Xa8NMQkZP66m+==w@mail.gmail.com>
-Subject: Re: [PATCH 06/06] serial8250-em: Add Emma Mobile UART driver
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-serial@vger.kernel.org, horms@verge.net.au, arnd@arndb.de,
-        linux-sh@vger.kernel.org, swarren@wwwdotorg.org,
-        linux-kernel@vger.kernel.org, rjw@sisk.pl, lethal@linux-sh.org,
-        olof@lixom.net, dan.j.williams@intel.com, alan@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 May 2012 08:22:49 -0400
+Date: Thu, 3 May 2012 21:22:44 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        kvm@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
+        yoshikawa.takuya@oss.ntt.co.jp
+Subject: Re: [RFC] sched: make callers check lock contention for
+ cond_resched_lock()
+Message-Id: <20120503212244.6abbfa8bc3f46a7f7a932bb7@gmail.com>
+In-Reply-To: <1336034127.13683.197.camel@twins>
+References: <20120503171244.2debdd80931ccf35f387c5fe@gmail.com>
+	<1336034127.13683.197.camel@twins>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 3, 2012 at 6:22 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Wed, May 02, 2012 at 10:41:12AM -0400, Paul Gortmaker wrote:
->> On 12-05-02 08:47 AM, Magnus Damm wrote:
->> > From: Magnus Damm <damm@opensource.se>
->> >
->> > Add a platform driver for Emma Mobile 8250 hardware.
->>
->>
->> [...]
->>
->> > +
->> > +config SERIAL_8250_EM
->> > +   tristate "Support for Emma Mobile intergrated serial port"
->> > +   depends on SERIAL_8250
->>
->> Should we depend on arch=ARM or something similar?  Even if the
->> driver is written to be arch independent, if the Emma itself is
->> physically tied to ARM platforms, we probably don't need to be
->> building it for sparc allyesconfig etc.
->
-> Yeah, it doesn't build on x86-64, I get the following build problems:
->        ERROR: "clk_get_rate" [drivers/tty/serial/8250/8250_em.ko] undefined!
->        ERROR: "clk_enable" [drivers/tty/serial/8250/8250_em.ko] undefined!
->        ERROR: "clk_get" [drivers/tty/serial/8250/8250_em.ko] undefined!
->        ERROR: "clk_put" [drivers/tty/serial/8250/8250_em.ko] undefined!
->        ERROR: "clk_disable" [drivers/tty/serial/8250/8250_em.ko] undefined!
->
-> So it should depend on some arch that has clk at the least.
->
-> Magnus, care to redo just this one patch that fixes this up?  I've
-> applied the first 5 already.
+On Thu, 03 May 2012 10:35:27 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-Done!
+> On Thu, 2012-05-03 at 17:12 +0900, Takuya Yoshikawa wrote:
+> > 
+> > Although we can do that using spin_is_contended() and cond_resched(),
+> > changing cond_resched_lock() to satisfy such a need is another option.
+> > 
+> Yeah, not a pretty patch. Changing all cond_resched_lock() sites just to
+> change one and in such an ugly way too.
+> 
+> So what's the impact of making spin_needbreak() work for !PREEMPT?
 
-I decided to go with SERIAL_8250 && ARM && HAVE_CLK to limit the
-exposure a bit but not hinder any single ARM kernel image work. Hope
-this balance is making everyone happy.
+Although the real use case is out of this RFC patch, we are now discussing
+a case in which we may hold a spin_lock for long time, ms order, depending
+on workload;  and in that case, other threads -- VCPU threads -- should be
+given higher priority for that problematic lock.
 
-It is not impossible that this driver can be used on older MIPS based
-SoCs from NEC, but that can easily be dealt with later if needed.
+I wanted to hear whether other users also have similar needs.  If so, it
+may be worth making the API a bit more generic.
 
-Thanks for your help!
+But I could not find a clean solution for that.  Do you think that using
+spin_is_contended() directly is the way to go?
 
-/ magnus
+Thanks,
+	Takuya
