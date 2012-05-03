@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab2ECGjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 02:39:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47358 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751351Ab2ECGjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 02:39:15 -0400
-Message-ID: <4FA227FB.7060709@zytor.com>
-Date: Wed, 02 May 2012 23:38:51 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1753605Ab2ECGkB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 02:40:01 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44695 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356Ab2ECGkA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 02:40:00 -0400
+Date: Thu, 3 May 2012 08:39:56 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Rob Lee <rob.lee@linaro.org>
+Cc: kernel@pengutronix.de, shawn.guo@linaro.org, amit.kucheria@linaro.org,
+        daniel.lezcano@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, jj@chaosbits.net
+Subject: Re: [PATCH v2 2/3] ARM: imx: Add imx5 cpuidle driver
+Message-ID: <20120503063956.GE4141@pengutronix.de>
+References: <1335924760-796-1-git-send-email-rob.lee@linaro.org>
+ <1335924760-796-3-git-send-email-rob.lee@linaro.org>
+ <20120502073331.GS4141@pengutronix.de>
+ <CAMXH7KE1jao1p5ZQ1aw8p7qzOQUftck22QTMKJ1oGwiPhY=FMA@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Nick Piggin <npiggin@gmail.com>, Jana Saout <jana@saout.de>,
-        Joel Becker <jlbec@evilplan.org>, linux-kernel@vger.kernel.org
-Subject: Re: Oops with DCACHE_WORD_ACCESS and ocfs2, autofs4
-References: <1335788867.29087.19.camel@localhost> <20120501110024.GC6649@dhcp-172-17-9-228.mtv.corp.google.com> <1335875321.26671.15.camel@localhost> <CAPa8GCANv=-c7HsYvDqM+8JqJq6Gr9muxAivU2Ni16x9Ru5EXw@mail.gmail.com> <CA+55aFwPgWqCPA=ao6XmZy56PaJZ4WC+hOZ_CHGWpo_zO425VA@mail.gmail.com>
-In-Reply-To: <CA+55aFwPgWqCPA=ao6XmZy56PaJZ4WC+hOZ_CHGWpo_zO425VA@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMXH7KE1jao1p5ZQ1aw8p7qzOQUftck22QTMKJ1oGwiPhY=FMA@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:38:28 up 172 days, 14:25, 37 users,  load average: 0.00, 0.02,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2012 10:57 PM, Linus Torvalds wrote:
+On Wed, May 02, 2012 at 03:11:35PM -0500, Rob Lee wrote:
+> Sascha,
 > 
-> There are multiple ways to fix this, including just marking that
-> unaligned word access as being able to take an exception, but I had
-> hoped to avoid having to do that. There are alternatives, like always
-> padding allocations up by 7 bytes, but those are nasty too. So I'd
-> like to understand what triggers this for Jana, it's possible we can
-> just work around that particular issue.
+> >>       mxc_iomux_v3_init(MX51_IO_ADDRESS(MX51_IOMUXC_BASE_ADDR));
+> >>       mxc_arch_reset_init(MX51_IO_ADDRESS(MX51_WDOG1_BASE_ADDR));
+> >> -     arm_pm_idle = imx5_idle;
+> >> +     arm_pm_idle = (void *)imx5_idle;
+> >
+> > I don't like this. It will cover all warnings when the prototype of
+> > arm_pm_idle changes in future. Better add a static void imx5_idle
+> > which calls a static int imx5_do_idle, then you have an idle function
+> > which returns an int.
+> >
 > 
+> What about using the following:
+> 
+> arm_pm_idle =  (void (*)(void))imx5_idle;
+> 
+> This will give warnings if arm_pm_idle prototype changes.
 
-Can we do the trick of aligning the pointer and ignoring the start?
-That would allow even architectures that don't have unaligned accesses
-to work, too.
+This surely works but will look suspicious for people looking at the
+code.
 
-> Apr 30 14:02:46 web5 kernel: RIP: e030:[<ffffffff8113c29b>]
-[<ffffffff8113c29b>] link_path_walk+0xab/0x890
-> Apr 30 14:02:46 web5 kernel: RSP: e02b:ffff88001e7a3bc8  EFLAGS: 00010257
-> Apr 30 14:02:46 web5 kernel: CS:  e033
+Sascha
 
-These segment values look odd in the extreme...
-
-> Apr 30 14:02:46 web5 kernel:  [<ffffffff810056c9>] ?
-__raw_callee_save_xen_pmd_val+0x11/0x1e
-
-... because he's running under Xen-PV.  So his memory map can be
-arbitrarily screwed seven ways to Sunday.
-
-	-hpa
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
