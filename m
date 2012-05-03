@@ -1,167 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab2ECQ1c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 12:27:32 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:54807 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756157Ab2ECQ1b (ORCPT
+	id S1757574Ab2ECQfv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 12:35:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52463 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177Ab2ECQfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 12:27:31 -0400
-X-IronPort-AV: E=Sophos;i="4.75,524,1330923600"; 
-   d="scan'208";a="193271122"
-Message-ID: <4FA2B1EF.8080900@citrix.com>
-Date: Thu, 3 May 2012 17:27:27 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120317 Icedove/3.0.11
-MIME-Version: 1.0
-To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "JBeulich@suse.com" <JBeulich@suse.com>
-Subject: Re: [Xen-devel] [PATCH] auto balloon initial domain and fix dom0_mem=X
- inconsistencies (v5).
-References: <1334596539-18172-1-git-send-email-konrad.wilk@oracle.com>	<20120501163707.GA8741@phenom.dumpdata.com> <4FA27084.4030005@citrix.com> <4FA2A11E.1060907@cantab.net>
-In-Reply-To: <4FA2A11E.1060907@cantab.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Thu, 3 May 2012 12:35:50 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 1/3] perf ui browser: Introduce routine to draw vertical line
+Date: Thu,  3 May 2012 13:35:33 -0300
+Message-Id: <1336062935-19964-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1336062935-19964-1-git-send-email-acme@infradead.org>
+References: <1336062935-19964-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/12 16:15, David Vrabel wrote:
-> 
-> xen: update VA mapping when releasing memory during setup
-> 
-> In xen_memory_setup(), if a page that is being released has a VA
-> mapping this must also be updated.  Otherwise, the page will be not
-> released completely -- it will still be referenced in Xen and won't be
-> freed util the mapping is removed and this prevents it from being
-> reallocated at a different PFN.
-> 
-> This was already being done for the ISA memory region in
-> xen_ident_map_ISA() but on many systems this was omitting a few pages
-> as many systems marked a few pages below the ISA memory region as
-> reserved in the e820 map.
-> 
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> ---
-[...]
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1929,29 +1929,6 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
->  #endif
->  }
->  
-> -void __init xen_ident_map_ISA(void)
-> -{
-> -	unsigned long pa;
-> -
-> -	/*
-> -	 * If we're dom0, then linear map the ISA machine addresses into
-> -	 * the kernel's address space.
-> -	 */
-> -	if (!xen_initial_domain())
-> -		return;
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-It might look like this test has gone, however the new code which
-updates the VA mapping uses the e820 map and for a domU its map will not
-have a ISA region so there's no mapping to be updated.
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-umb4jlu0ee8r2rc3x4jkahgk@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/ui/browser.c |    9 +++++++++
+ tools/perf/ui/browser.h |    2 ++
+ 2 files changed, 11 insertions(+)
 
-David
-
-> -
-> -	xen_raw_printk("Xen: setup ISA identity maps\n");
-> -
-> -	for (pa = ISA_START_ADDRESS; pa < ISA_END_ADDRESS; pa += PAGE_SIZE) {
-> -		pte_t pte = mfn_pte(PFN_DOWN(pa), PAGE_KERNEL_IO);
-> -
-> -		if (HYPERVISOR_update_va_mapping(PAGE_OFFSET + pa, pte, 0))
-> -			BUG();
-> -	}
-> -
-> -	xen_flush_tlb();
-> -}
-> -
->  static void __init xen_post_allocator_init(void)
->  {
->  	pv_mmu_ops.set_pte = xen_set_pte;
-> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> index 506a3e6..d5f8714 100644
-> --- a/arch/x86/xen/setup.c
-> +++ b/arch/x86/xen/setup.c
-> @@ -139,6 +139,13 @@ static unsigned long __init xen_do_chunk(unsigned long start,
->  
->  	return len;
->  }
-> +
-> +static unsigned long __init xen_release_chunk(unsigned long start,
-> +					      unsigned long end)
-> +{
-> +	return xen_do_chunk(start, end, true);
-> +}
-> +
->  static unsigned long __init xen_populate_chunk(
->  	const struct e820entry *list, size_t map_size,
->  	unsigned long max_pfn, unsigned long *last_pfn,
-> @@ -197,6 +204,29 @@ static unsigned long __init xen_populate_chunk(
->  	}
->  	return done;
->  }
-> +
-> +static void __init xen_set_identity_and_release_chunk(
-> +	unsigned long start_pfn, unsigned long end_pfn, unsigned long nr_pages,
-> +	unsigned long *released, unsigned long *identity)
-> +{
-> +	unsigned long pfn;
-> +
-> +	/*
-> +	 * If the PFNs are currently mapped, the VA mapping also needs
-> +	 * to be updated to be 1:1.
-> +	 */
-> +	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++)
-> +		(void)HYPERVISOR_update_va_mapping(
-> +			(unsigned long)__va(pfn << PAGE_SHIFT),
-> +			mfn_pte(pfn, PAGE_KERNEL_IO), 0);
-> +
-> +	if (start_pfn < nr_pages)
-> +		*released += xen_release_chunk(
-> +			start_pfn, min(end_pfn, nr_pages));
-> +
-> +	*identity += set_phys_range_identity(start_pfn, end_pfn);
-> +}
-> +
->  static unsigned long __init xen_set_identity_and_release(
->  	const struct e820entry *list, size_t map_size, unsigned long nr_pages)
->  {
-> @@ -226,14 +256,11 @@ static unsigned long __init xen_set_identity_and_release(
->  			if (entry->type == E820_RAM)
->  				end_pfn = PFN_UP(entry->addr);
->  
-> -			if (start_pfn < end_pfn) {
-> -				if (start_pfn < nr_pages)
-> -					released += xen_do_chunk(
-> -						start_pfn, min(end_pfn, nr_pages), true);
-> +			if (start_pfn < end_pfn)
-> +				xen_set_identity_and_release_chunk(
-> +					start_pfn, end_pfn, nr_pages,
-> +					&released, &identity);
->  
-> -				identity += set_phys_range_identity(
-> -					start_pfn, end_pfn);
-> -			}
->  			start = end;
->  		}
->  	}
-> diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-> index b095739..506fa08 100644
-> --- a/arch/x86/xen/xen-ops.h
-> +++ b/arch/x86/xen/xen-ops.h
-> @@ -28,7 +28,6 @@ void xen_setup_shared_info(void);
->  void xen_build_mfn_list_list(void);
->  void xen_setup_machphys_mapping(void);
->  pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn);
-> -void xen_ident_map_ISA(void);
->  void xen_reserve_top(void);
->  extern unsigned long xen_max_p2m_pfn;
->  
+diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
+index f4b2530..b075e09 100644
+--- a/tools/perf/ui/browser.c
++++ b/tools/perf/ui/browser.c
+@@ -593,6 +593,15 @@ unsigned int ui_browser__argv_refresh(struct ui_browser *browser)
+ 	return row;
+ }
+ 
++void __ui_browser__vline(struct ui_browser *browser, unsigned int column,
++			 u16 start, u16 end)
++{
++	SLsmg_set_char_set(1);
++	ui_browser__gotorc(browser, start, column);
++	SLsmg_draw_vline(end - start + 1);
++	SLsmg_set_char_set(0);
++}
++
+ void ui_browser__write_graph(struct ui_browser *browser __used, int graph)
+ {
+ 	SLsmg_set_char_set(1);
+diff --git a/tools/perf/ui/browser.h b/tools/perf/ui/browser.h
+index 059764b..511e24d 100644
+--- a/tools/perf/ui/browser.h
++++ b/tools/perf/ui/browser.h
+@@ -49,6 +49,8 @@ int ui_browser__refresh(struct ui_browser *self);
+ int ui_browser__run(struct ui_browser *browser, int delay_secs);
+ void ui_browser__update_nr_entries(struct ui_browser *browser, u32 nr_entries);
+ void ui_browser__handle_resize(struct ui_browser *browser);
++void __ui_browser__vline(struct ui_browser *browser, unsigned int column,
++			 u16 start, u16 end);
+ 
+ int ui_browser__warning(struct ui_browser *browser, int timeout,
+ 			const char *format, ...);
+-- 
+1.7.9.2.358.g22243
 
