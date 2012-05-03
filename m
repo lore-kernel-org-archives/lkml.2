@@ -1,56 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758693Ab2ECUmJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 16:42:09 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:54309 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755442Ab2ECUmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 16:42:07 -0400
-Date: Thu, 3 May 2012 17:42:12 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/13] perf target: Introduce perf_target_errno
-Message-ID: <20120503204212.GC8807@infradead.org>
-References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
- <1335417327-11796-10-git-send-email-namhyung.kim@lge.com>
- <20120502185913.GE5745@infradead.org>
- <4FA2EBCC.5060905@gmail.com>
+	id S1758709Ab2ECUp2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 16:45:28 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:52159 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755042Ab2ECUp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 16:45:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Colin Cross <ccross@android.com>
+Subject: Re: [PATCHv3 1/5] cpuidle: refactor out cpuidle_enter_state
+Date: Thu, 3 May 2012 22:50:14 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@lists.linux-foundation.org, Kevin Hilman <khilman@ti.com>,
+        Len Brown <len.brown@intel.com>, Trinabh Gupta <g.trinabh@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+References: <1335816551-27756-1-git-send-email-ccross@android.com> <1335816551-27756-2-git-send-email-ccross@android.com>
+In-Reply-To: <1335816551-27756-2-git-send-email-ccross@android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA2EBCC.5060905@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205032250.14730.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 03, 2012 at 02:34:20PM -0600, David Ahern escreveu:
-> On 5/2/12 12:59 PM, Arnaldo Carvalho de Melo wrote:
-> >Also it would be better to have it as PERF_ERRNO__PID_OVERRIDE_CPU, etc.
+On Monday, April 30, 2012, Colin Cross wrote:
+> Split the code to enter a state and update the stats into a helper
+> function, cpuidle_enter_state, and export it.  This function will
+> be called by the coupled state code to handle entering the safe
+> state and the final coupled state.
 > 
-> I thought you wanted subsystem based errno's (PERF_TARGET__XXXXX)
-> versus one big set (PERF_ERRNO__XXXXX). Did you change your mind?
+> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Reviewed-by: Kevin Hilman <khilman@ti.com>
+> Tested-by: Kevin Hilman <khilman@ti.com>
+> Signed-off-by: Colin Cross <ccross@android.com>
 
-Oops, I didn't realize PID being the subsys, then yeah, that is ok.
+Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-But that would make it PERF_ERR__TARGET_, as PERF_TARGET__ doesn't
-straight away brings back "error enumeration", at least for me :)
+> ---
+>  drivers/cpuidle/cpuidle.c |   42 +++++++++++++++++++++++++++++-------------
+>  drivers/cpuidle/cpuidle.h |    2 ++
+>  2 files changed, 31 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index 2f0083a..3e3e3e4 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -103,6 +103,34 @@ int cpuidle_play_dead(void)
+>  }
+>  
+>  /**
+> + * cpuidle_enter_state - enter the state and update stats
+> + * @dev: cpuidle device for this cpu
+> + * @drv: cpuidle driver for this cpu
+> + * @next_state: index into drv->states of the state to enter
+> + */
+> +int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+> +		int next_state)
+> +{
+> +	int entered_state;
+> +
+> +	entered_state = cpuidle_enter_ops(dev, drv, next_state);
+> +
+> +	if (entered_state >= 0) {
+> +		/* Update cpuidle counters */
+> +		/* This can be moved to within driver enter routine
+> +		 * but that results in multiple copies of same code.
+> +		 */
+> +		dev->states_usage[entered_state].time +=
+> +				(unsigned long long)dev->last_residency;
+> +		dev->states_usage[entered_state].usage++;
+> +	} else {
+> +		dev->last_residency = 0;
+> +	}
+> +
+> +	return entered_state;
+> +}
+> +
+> +/**
+>   * cpuidle_idle_call - the main idle loop
+>   *
+>   * NOTE: no locks or semaphores should be used here
+> @@ -143,23 +171,11 @@ int cpuidle_idle_call(void)
+>  	trace_power_start_rcuidle(POWER_CSTATE, next_state, dev->cpu);
+>  	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+>  
+> -	entered_state = cpuidle_enter_ops(dev, drv, next_state);
+> +	entered_state = cpuidle_enter_state(dev, drv, next_state);
+>  
+>  	trace_power_end_rcuidle(dev->cpu);
+>  	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+>  
+> -	if (entered_state >= 0) {
+> -		/* Update cpuidle counters */
+> -		/* This can be moved to within driver enter routine
+> -		 * but that results in multiple copies of same code.
+> -		 */
+> -		dev->states_usage[entered_state].time +=
+> -				(unsigned long long)dev->last_residency;
+> -		dev->states_usage[entered_state].usage++;
+> -	} else {
+> -		dev->last_residency = 0;
+> -	}
+> -
+>  	/* give the governor an opportunity to reflect on the outcome */
+>  	if (cpuidle_curr_governor->reflect)
+>  		cpuidle_curr_governor->reflect(dev, entered_state);
+> diff --git a/drivers/cpuidle/cpuidle.h b/drivers/cpuidle/cpuidle.h
+> index 7db1866..d8a3ccc 100644
+> --- a/drivers/cpuidle/cpuidle.h
+> +++ b/drivers/cpuidle/cpuidle.h
+> @@ -14,6 +14,8 @@
+>  extern struct mutex cpuidle_lock;
+>  extern spinlock_t cpuidle_driver_lock;
+>  extern int cpuidle_disabled(void);
+> +extern int cpuidle_enter_state(struct cpuidle_device *dev,
+> +		struct cpuidle_driver *drv, int next_state);
+>  
+>  /* idle loop */
+>  extern void cpuidle_install_idle_handler(void);
+> 
 
-But this is getting overly long, ideas?
-
-PERF_ we need, its libperf's "namespace", then ERRNO looks needed too,
-heck, make it long:
-
-PERF_ERRNO_TARGET__PID_OVERRIDE_CPU
-
-After all most of the time this will just be inside the function setting
-the error and the strerrno function that will convert this to an string,
-right?
-
-- Arnaldo
