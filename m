@@ -1,113 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab2ECKnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 06:43:49 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33470 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754121Ab2ECKns (ORCPT
+	id S1755703Ab2ECKwY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 06:52:24 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:41370 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753981Ab2ECKwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 06:43:48 -0400
-Date: Thu, 3 May 2012 11:43:44 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH v2 3/4] leds: add LM3533 LED driver
-Message-ID: <20120503104344.GC3955@opensource.wolfsonmicro.com>
-References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
- <1336040799-18433-1-git-send-email-jhovold@gmail.com>
- <1336040799-18433-4-git-send-email-jhovold@gmail.com>
+	Thu, 3 May 2012 06:52:23 -0400
+Date: Thu, 3 May 2012 13:52:11 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH v4] vmevent: Implement greater-than attribute state and
+ one-shot mode
+In-Reply-To: <20120501131806.GA22249@lizard>
+Message-ID: <alpine.LFD.2.02.1205031351470.11258@tux.localdomain>
+References: <20120418083208.GA24904@lizard> <20120418083523.GB31556@lizard> <alpine.LFD.2.02.1204182259580.11868@tux.localdomain> <20120418224629.GA22150@lizard> <alpine.LFD.2.02.1204190841290.1704@tux.localdomain> <20120419162923.GA26630@lizard>
+ <20120501131806.GA22249@lizard>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="f+W+jCU1fRNres8c"
-Content-Disposition: inline
-In-Reply-To: <1336040799-18433-4-git-send-email-jhovold@gmail.com>
-X-Cookie: You will get what you deserve.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 1 May 2012, Anton Vorontsov wrote:
+> This patch implements a new event type, it will trigger whenever a
+> value becomes greater than user-specified threshold, it complements
+> the 'less-then' trigger type.
+> 
+> Also, let's implement the one-shot mode for the events, when set,
+> userspace will only receive one notification per crossing the
+> boundaries.
+> 
+> Now when both LT and GT are set on the same level, the event type
+> works as a cross event type: it triggers whenever a value crosses
+> the threshold from a lesser values side to a greater values side,
+> and vice versa.
+> 
+> We use the event types in an userspace low-memory killer: we get a
+> notification when memory becomes low, so we start freeing memory by
+> killing unneeded processes, and we get notification when memory hits
+> the threshold from another side, so we know that we freed enough of
+> memory.
+> 
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 
---f+W+jCU1fRNres8c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Thu, May 03, 2012 at 12:26:38PM +0200, Johan Hovold wrote:
-
-> +What:		/sys/class/leds/<led>/risetime
-> +Date:		April 2012
-> +KernelVersion:	3.5
-> +Contact:	Johan Hovold <jhovold@gmail.com>
-> +Description:
-> +		Set the pattern generator fall and rise times (0..7), where
-> +
-> +		0 - 2048 us
-> +		1 - 262 ms
-> +		2 - 524 ms
-> +		3 - 1.049 s
-> +		4 - 2.097 s
-> +		5 - 4.194 s
-> +		6 - 8.389 s
-> +		7 - 16.78 s
-> +
-
-Shouldn't these be controlled by led_blink_set() rather than a custom
-ABI?
-
-> +What:		/sys/class/leds/<led>/id
-> +Date:		April 2012
-> +KernelVersion:	3.5
-> +Contact:	Johan Hovold <jhovold@gmail.com>
-> +Description:
-> +		Get the id of this led (0..3).
-> +
-
-This should just be a generic LED subsystem thing?
-
-> +What:		/sys/class/leds/<led>/max_current
-> +Date:		April 2012
-> +KernelVersion:	3.5
-> +Contact:	Johan Hovold <jhovold@gmail.com>
-> +Description:
-> +		Set the full-scale current I_{LED_FULLSCALE} (0..31), where
-> +
-> +		I_{LED_FULLSCALE} = 5mA + max_current * 0.8mA
-> +
-
-Shouldn't this be set by platform data, the maximum current you can push
-through the LEDs seems like a board dependant thing which won't change
-dynamically at runtime.  The brightness can already be varied.
-
-It'd also be nicer if the kernel did the calculation for the user.
-
---f+W+jCU1fRNres8c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPomFVAAoJEBus8iNuMP3dwXYP/26BDCj2JjFnbKVydftL4SXY
-bXWCVd8s1vyKT6O+1REW6+W00GMJMV0q+CKeLbyk/aJu3I8f8aAiKnYpgcImxnmB
-vA7QxdsCRfpn4LbVa4lFYQ4SBzVyMpEUG4WAL6Oo8Yi102EskprXu0PhMehrQNyK
-gGCBmxnZf1gIep4aytRBN2geAdWAcG27rkIWXBDD9/Ijl7u6XK9CrIx57sG4Qlnu
-fKXQRuzFxRc/kPwfrq1Tmc7WE8T13SVDRksxbpssmMmvan+sXOTIJxuaZaLebPWg
-l6m0+nnpjsfqEsGqtMoZvuJVolGfBFCipyEDSdRbBy9uzXlm2V1vBpapqp/3kmQ2
-SzWV8e2ykDijaghkttGiLmecarLYjxZCRkNSWJwW13CNMDg/aUle0o5F5SchArrx
-eL4R3QiiHaworVKqn/OGjHP1x2YYASHyTIjNLPjUdBkdTZryKWWKIpJ3HKNldx0X
-rWVt1HpEKM2hywYurA+zT5raQkaVW7odM/DF2LFIk+Jm6Bal9iuLn0eA9Dp/fCbv
-WHTAwFjq82UtJS364InYV2QjS7fKT+Op7QQoyC2oqTQslJhtTyT2PVwdH3lQyqbE
-XzEKvzrXMXcY8QDuF5YLtBRMnupUiWhsEJ7lfcfGnc9bvm+KFoAxB0lz33R063EV
-HU+IjxgVk0CnQgxD8G7d
-=80WU
------END PGP SIGNATURE-----
-
---f+W+jCU1fRNres8c--
+Applied, thanks!
