@@ -1,65 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817Ab2ECIeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 04:34:00 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38211 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448Ab2ECId4 (ORCPT
+	id S1755022Ab2ECIfp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 04:35:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35861 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752710Ab2ECIfn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 04:33:56 -0400
-MIME-Version: 1.0
-Date: Thu, 3 May 2012 16:33:55 +0800
-Message-ID: <CAFgQCTtKWR6F3D_mPcGe69HvZbYmmAdXreSWLZQrdi+0T3i2ag@mail.gmail.com>
-Subject: vhost-net: is there a race for sock in handle_tx/rx?
-From: Liu ping fan <kernelfans@gmail.com>
-To: netdev@vger.kernel.org
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 3 May 2012 04:35:43 -0400
+Message-ID: <1336034127.13683.197.camel@twins>
+Subject: Re: [RFC] sched: make callers check lock contention for
+ cond_resched_lock()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        kvm@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
+        yoshikawa.takuya@oss.ntt.co.jp
+Date: Thu, 03 May 2012 10:35:27 +0200
+In-Reply-To: <20120503171244.2debdd80931ccf35f387c5fe@gmail.com>
+References: <20120503171244.2debdd80931ccf35f387c5fe@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2012-05-03 at 17:12 +0900, Takuya Yoshikawa wrote:
+> 
+> Although we can do that using spin_is_contended() and cond_resched(),
+> changing cond_resched_lock() to satisfy such a need is another option.
+> 
+Yeah, not a pretty patch. Changing all cond_resched_lock() sites just to
+change one and in such an ugly way too.
 
-During reading the vhost-net code, I find the following,
-
-static void handle_tx(struct vhost_net *net)
-{
-	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_TX];
-	unsigned out, in, s;
-	int head;
-	struct msghdr msg = {
-		.msg_name = NULL,
-		.msg_namelen = 0,
-		.msg_control = NULL,
-		.msg_controllen = 0,
-		.msg_iov = vq->iov,
-		.msg_flags = MSG_DONTWAIT,
-	};
-	size_t len, total_len = 0;
-	int err, wmem;
-	size_t hdr_size;
-	struct socket *sock;
-	struct vhost_ubuf_ref *uninitialized_var(ubufs);
-	bool zcopy;
-
-	/* TODO: check that we are running from vhost_worker? */
-	sock = rcu_dereference_check(vq->private_data, 1);
-	if (!sock)
-		return;
-
-           --------------------------------> Qemu calls
-vhost_net_set_backend() to set a new backend fd, and close
-@oldsock->file. And  sock->file refcnt==0.
-
-                                              Can vhost_worker prevent
-itself from such situation? And how?
-
-	wmem = atomic_read(&sock->sk->sk_wmem_alloc);
-       .........................................................................
-
-Is it a race?
-
-Thanks and regards,
-pingfan
+So what's the impact of making spin_needbreak() work for !PREEMPT?
