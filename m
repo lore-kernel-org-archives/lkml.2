@@ -1,131 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757909Ab2ECSRx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 14:17:53 -0400
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:59882 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753637Ab2ECSRw (ORCPT
+	id S1757960Ab2ECSVp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 14:21:45 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55123 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab2ECSVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 14:17:52 -0400
-Date: Thu, 3 May 2012 14:10:54 -0300
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-To: jmorris@namei.org
-Cc: pebolle@tiscali.nl, linux-kernel@vger.kernel.org, tpmdd@selhorst.net
-Subject: [PULL] TPM: MAINTAINERS contacts update and error report fix
-Message-ID: <20120503171054.GA6165@localhost.br.ibm.com>
+	Thu, 3 May 2012 14:21:44 -0400
+Date: Thu, 3 May 2012 20:21:30 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V1 0/5] Rationalize time keeping
+Message-ID: <20120503182128.GB2254@netboy.at.omicron.at>
+References: <cover.1335510125.git.richardcochran@gmail.com>
+ <4F9B228F.90903@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12050318-8936-0000-0000-000006A675E8
+In-Reply-To: <4F9B228F.90903@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 27, 2012 at 03:49:51PM -0700, John Stultz wrote:
+> On 04/27/2012 01:12 AM, Richard Cochran wrote:
+> >* Performance Impacts
+> >** con
+> >    - Small extra cost when reading the time (one integer addition plus
+> >      one integer test).
+> This may not be so small when it comes to folks who are very
+> concerned about the clock_gettime hotpath.
+> Further, the correction will be needed to be made in the vsyscall
+> paths, which isn't done with your current patchset (causing userland
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> to see different time values then what kernel space calculates).
 
-Hi James,
+John, now that you clarified the vDSO thing, I am very confused about
+this statement of yours. It appears that the vDSO data are updated
+when timekeeping_update() in timekeeper.c calls update_vsyscall().
 
-The following changes since commit 08162e6a23d476544adfe1164afe9ea8b34ab859:
+I think the hunk from patch #5, below, does in fact adjust the time
+value correctly before it gets handed off to the arch-specific
+update_vsyscall() to be copied into the vDSO page. So I'll make the
+claim that:
 
-  Yama: remove an unused variable (2012-04-23 17:20:22 +1000)
+1. We don't have to touch the vsyscall paths for this.
+2. This change does not affect vDSO performance at all.
 
-are available in the git repository at:
-  git://github.com/srajiv/tpm.git for-james
+Would you mind taking another look at the patch?
 
-The first as the subject implies is just a contacts update, and the second
-makes the driver avoid to mistakenly report the disabled and deactivated TPM
-states as an error.
+Thanks,
+Richard
 
-Marcel Selhorst (1):
-      MAINTAINERS: TPM maintainers' contacts update
-
-Rajiv Andrade (1):
-      TPM: chip disabled state erronously being reported as error
-
- MAINTAINERS                     |    4 ++--
- drivers/char/tpm/tpm.c          |   13 +++++++++++--
- drivers/char/tpm/tpm_infineon.c |    6 +++---
- 3 files changed, 16 insertions(+), 7 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index f31aa0c..731440f 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6746,10 +6746,10 @@ F:	include/linux/shmem_fs.h
- F:	mm/shmem.c
- 
- TPM DEVICE DRIVER
--M:	Debora Velarde <debora@linux.vnet.ibm.com>
- M:	Rajiv Andrade <srajiv@linux.vnet.ibm.com>
- W:	http://tpmdd.sourceforge.net
--M:	Marcel Selhorst <m.selhorst@sirrix.com>
-+M:	Marcel Selhorst <tpmdd@selhorst.net>
-+M:	Sirrix AG <tpmdd@sirrix.com>
- W:	http://www.sirrix.com
- L:	tpmdd-devel@lists.sourceforge.net (moderated for non-subscribers)
- S:	Maintained
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index ad7c732..9511abd 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -827,10 +827,10 @@ EXPORT_SYMBOL_GPL(tpm_pcr_extend);
- int tpm_do_selftest(struct tpm_chip *chip)
+---
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 7941258..6cedf46 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -212,11 +212,14 @@ static inline s64 timekeeping_get_ns_raw(void)
+ /* must hold write on timekeeper.lock */
+ static void timekeeping_update(bool clearntp)
  {
- 	int rc;
--	u8 digest[TPM_DIGEST_SIZE];
- 	unsigned int loops;
- 	unsigned int delay_msec = 1000;
- 	unsigned long duration;
-+	struct tpm_cmd_t cmd;
- 
- 	duration = tpm_calc_ordinal_duration(chip,
- 	                                     TPM_ORD_CONTINUE_SELFTEST);
-@@ -845,7 +845,16 @@ int tpm_do_selftest(struct tpm_chip *chip)
- 		return rc;
- 
- 	do {
--		rc = __tpm_pcr_read(chip, 0, digest);
-+		/* Attempt to read a PCR value */
-+		cmd.header.in = pcrread_header;
-+		cmd.params.pcrread_in.pcr_idx = cpu_to_be32(0);
-+		rc = tpm_transmit(chip, (u8 *) &cmd, READ_PCR_RESULT_SIZE);
-+
-+		if (rc < TPM_HEADER_SIZE)
-+			return -EFAULT;
-+		else
-+			rc = be32_to_cpu(cmd.header.out.return_code);
-+
- 		if (rc == TPM_ERR_DISABLED || rc == TPM_ERR_DEACTIVATED) {
- 			dev_info(chip->dev,
- 				 "TPM is disabled/deactivated (0x%X)\n", rc);
-diff --git a/drivers/char/tpm/tpm_infineon.c b/drivers/char/tpm/tpm_infineon.c
-index 76da32e..3251a44 100644
---- a/drivers/char/tpm/tpm_infineon.c
-+++ b/drivers/char/tpm/tpm_infineon.c
-@@ -4,8 +4,8 @@
-  * SLD 9630 TT 1.1 and SLB 9635 TT 1.2 Trusted Platform Module
-  * Specifications at www.trustedcomputinggroup.org
-  *
-- * Copyright (C) 2005, Marcel Selhorst <m.selhorst@sirrix.com>
-- * Sirrix AG - security technologies, http://www.sirrix.com and
-+ * Copyright (C) 2005, Marcel Selhorst <tpmdd@selhorst.net>
-+ * Sirrix AG - security technologies <tpmdd@sirrix.com> and
-  * Applied Data Security Group, Ruhr-University Bochum, Germany
-  * Project-Homepage: http://www.trust.rub.de/projects/linux-device-driver-infineon-tpm/ 
-  *
-@@ -671,7 +671,7 @@ static void __exit cleanup_inf(void)
- module_init(init_inf);
- module_exit(cleanup_inf);
- 
--MODULE_AUTHOR("Marcel Selhorst <m.selhorst@sirrix.com>");
-+MODULE_AUTHOR("Marcel Selhorst <tpmdd@sirrix.com>");
- MODULE_DESCRIPTION("Driver for Infineon TPM SLD 9630 TT 1.1 / SLB 9635 TT 1.2");
- MODULE_VERSION("1.9.2");
- MODULE_LICENSE("GPL");
-
-
-
-
-
-
++	struct timespec ts;
+ 	if (clearntp) {
+ 		timekeeper.ntp_error = 0;
+ 		ntp_clear();
+ 	}
+-	update_vsyscall(&timekeeper.xtime, &timekeeper.wall_to_monotonic,
++	ts.tv_sec = timekeeper_utc_sec();
++	ts.tv_nsec = timekeeper.xtime.tv_nsec;
++	update_vsyscall(&ts, &timekeeper.wall_to_monotonic,
+ 			 timekeeper.clock, timekeeper.mult);
+ }
