@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab2ECJhs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 05:37:48 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:39699 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756058Ab2ECJhq (ORCPT
+	id S1756268Ab2ECJil (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 05:38:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54265 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196Ab2ECJik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 05:37:46 -0400
-Message-ID: <4FA251B5.8080109@linux.vnet.ibm.com>
-Date: Thu, 03 May 2012 15:06:53 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, bpoirier@suse.de,
-        jeffrey.t.kirsher@intel.com, rjw@sisk.pl, linux-pm@vger.kernel.org,
-        stephen.s.ko@intel.com
-Subject: Re: [GIT] Networking
-References: <20120503.025951.1393913795357644010.davem@davemloft.net> <4FA24AB1.9010108@linux.vnet.ibm.com> <20120503.053246.92708809581536438.davem@davemloft.net>
-In-Reply-To: <20120503.053246.92708809581536438.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12050309-5816-0000-0000-00000265065E
+	Thu, 3 May 2012 05:38:40 -0400
+From: Ike Panhc <ike.pan@canonical.com>
+To: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Cc: Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 1/2] ideapad: remove unused define and fix a typo
+Date: Thu,  3 May 2012 17:38:35 +0800
+Message-Id: <1336037915-9953-1-git-send-email-ike.pan@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1336037865-9918-1-git-send-email-ike.pan@canonical.com>
+References: <1336037865-9918-1-git-send-email-ike.pan@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2012 03:02 PM, David Miller wrote:
+After review the current ideapad-laptop, found an unused define and
+a typo.
 
-> From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-> Date: Thu, 03 May 2012 14:36:57 +0530
-> 
->> https://lkml.org/lkml/2012/4/5/197
-> 
-> Networking patches not posted to netdev and the Intel ethernet driver
-> maintainers will be ignored.
-> 
+Signed-off-by: Ike Panhc <ike.pan@canonical.com>
+---
+ drivers/platform/x86/ideapad-laptop.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-
-Jeff Kirsher (Intel ethernet driver maintainer) already acked that
-patchset (both patches).
-
-https://lkml.org/lkml/2012/4/5/376
-https://lkml.org/lkml/2012/4/5/377
-
-One went upstream, the other didn't (yet). That's my concern.
-
-Regards,
-Srivatsa S. Bhat
+diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
+index ac902f7..00d82f1 100644
+--- a/drivers/platform/x86/ideapad-laptop.c
++++ b/drivers/platform/x86/ideapad-laptop.c
+@@ -194,7 +194,6 @@ static int write_ec_cmd(acpi_handle handle, int cmd, unsigned long data)
+ /*
+  * debugfs
+  */
+-#define DEBUGFS_EVENT_LEN (4096)
+ static int debugfs_status_show(struct seq_file *s, void *data)
+ {
+ 	unsigned long value;
+@@ -315,7 +314,7 @@ static int __devinit ideapad_debugfs_init(struct ideapad_private *priv)
+ 	node = debugfs_create_file("status", S_IRUGO, priv->debug, NULL,
+ 				   &debugfs_status_fops);
+ 	if (!node) {
+-		pr_err("failed to create event in debugfs");
++		pr_err("failed to create status in debugfs");
+ 		goto errout;
+ 	}
+ 
+-- 
+1.7.9.5
 
