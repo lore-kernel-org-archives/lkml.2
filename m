@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab2EDJgB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 05:36:01 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59627 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752427Ab2EDJgA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 05:36:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120430214718.GB4414@opensource.wolfsonmicro.com>
-References: <CAEqHmAstczdi2seTHFE0-jLK9fJaKosHjJyo4AJ7E9UKYBrVsg@mail.gmail.com>
-	<20120430214718.GB4414@opensource.wolfsonmicro.com>
-Date: Fri, 4 May 2012 11:35:58 +0200
-Message-ID: <CAEqHmAsyJntRMqX+7NbQN0OmDXz6ZGh0LzAMp5KB=-cAMgpsJA@mail.gmail.com>
-Subject: Re: Linux 3.4-rc2 register mapping and paging on I2C device.
-From: dd diasemi <dd.diasemi@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Anthony Olech <Anthony.Olech@diasemi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754214Ab2EDJjd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 05:39:33 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:2817 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752731Ab2EDJjc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 05:39:32 -0400
+Message-ID: <1336124366.2046.20.camel@t41.thuisdomein>
+Subject: Re: [v3.4-rc5]: drm references experimental
+From: Paul Bolle <pebolle@tiscali.nl>
+To: =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@googlemail.com>
+Cc: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
+Date: Fri, 04 May 2012 11:39:26 +0200
+In-Reply-To: <CADDKRnA7XMczevE2JRsMR508mdz+Rgs+QvV4QCMqnts8t+1y3A@mail.gmail.com>
+References: <CADDKRnDR=baZtQfyQLxYGB2zVDMGi2C_V2ffNkSUhipJB-+t=A@mail.gmail.com>
+	 <1335995781.30754.27.camel@x61.thuisdomein>
+	 <CADDKRnA7XMczevE2JRsMR508mdz+Rgs+QvV4QCMqnts8t+1y3A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.5.1 (3.5.1-1.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 04 May 2012 09:39:26.0831 (UTC) FILETIME=[CBD9E7F0:01CD29D9]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 30, 2012 at 11:47 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Apr 30, 2012 at 06:31:37PM +0100, dd diasemi wrote:
->
->> 3. Update regmap API to enable support for register page switching.
->
-> Clearly this is the most sensible option.  Open coding this in all the
-> drivers that need it is going to lead to a lot of duplicated effort.
+On Thu, 2012-05-03 at 14:02 +0200, Jörg Otte wrote:
+> this means especially the following is not possible or does not occure:
+> 
+> NON-EXP:
+> driver "A" uses library function "B"
+> 
+> EXP:
+> unchanged driver "A" now uses EXPERIMENTAL function "B-EXP"
 
-Below you can find my proposition of API for regmap paging support. It
-is sufficient for my driver needs.
-If you are OK with this proposition or you find any issues with it, let me know.
+There's a number of things I can think of for "EXPERIMENTAL function".
+What exactly do you mean here?
 
-Kind Regards,
-Krystian
+> The question is whether this is guaranteed.
 
----
-diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
-index 0f6c7fb..590d72c 100644
---- a/drivers/base/regmap/Kconfig
-+++ b/drivers/base/regmap/Kconfig
-@@ -16,3 +16,6 @@ config REGMAP_SPI
+If you were thinking about usage of CONFIG_EXPERIMENTAL in code or in
+Makefiles: no, I don't think there's a guarantee that this won't be
+done. But it should be clear that EXPERIMENTAL is intended as, say, a
+tag for config options. So it's likely that usage of EXPERIMENTAL
+outside that scope will be prevented.
 
- config REGMAP_IRQ
-        bool
-+
-+config REGMAP_PAGING
-+       bool
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index a90abb6..81a11c1 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -50,6 +50,15 @@ struct reg_default {
-  * @pad_bits: Number of bits of padding between register and value.
-  * @val_bits: Number of bits in a register value, mandatory.
-  *
-+ * @page_bits: Number of bits of register page number. These are the top-most
-+ *             bits exdending register address. These bits will be written
-+ *             to page register, for page switch.
-+ * @page_reg: Page register used for page update (available for any page).
-+ * @page_shift: Formatting bit shift for page number, made prior to write to
-+ *              page register.
-+ * @nonpageable_reg: Optional callback returning true if the register
-+ *                  needs NO page switching (eg. page is irrelevant).
-+ *
-  * @writeable_reg: Optional callback returning true if the register
-  *                 can be written to.
-  * @readable_reg: Optional callback returning true if the register
-@@ -81,6 +90,13 @@ struct regmap_config {
-        int pad_bits;
-        int val_bits;
 
-+#ifdef CONFIG_REGMAP_PAGING
-+       int page_bits;
-+       int page_shift;
-+       unsigned int page_reg;
-+       bool (*nonpageable_reg)(struct device *dev, unsigned int reg);
-+#endif
-+
-        bool (*writeable_reg)(struct device *dev, unsigned int reg);
-        bool (*readable_reg)(struct device *dev, unsigned int reg);
-        bool (*volatile_reg)(struct device *dev, unsigned int reg);
+Paul Bolle
+
