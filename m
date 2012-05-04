@@ -1,130 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034Ab2EDH2Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 03:28:24 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53429 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab2EDH2X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 03:28:23 -0400
-Date: Fri, 4 May 2012 08:27:57 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Deepak Saxena <dsaxena@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>, shawn.guo@linaro.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>, Nicolas Pitre <nico@fluxnic.net>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jon Medhurst <tixy@linaro.org>
-Subject: Re: Making ARM multiplatform kernels DT-only?
-Message-ID: <20120504072756.GA26481@n2100.arm.linux.org.uk>
-References: <201205031350.35476.arnd@arndb.de> <20120503140428.GB897@n2100.arm.linux.org.uk> <CAK2p4sLagEw+ubrG-oAk_bjWeSkEnCQyS_mJFPLCkpbnMfOZ_A@mail.gmail.com>
+	id S1753343Ab2EDHdH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 03:33:07 -0400
+Received: from mga02.intel.com ([134.134.136.20]:35252 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751265Ab2EDHdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 03:33:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="139988788"
+Message-ID: <4FA3862E.7030203@intel.com>
+Date: Fri, 04 May 2012 15:33:02 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAK2p4sLagEw+ubrG-oAk_bjWeSkEnCQyS_mJFPLCkpbnMfOZ_A@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: mingo@elte.hu, andi@firstfloor.org, eranian@google.com, jolsa@redhat.com,
+        ming.m.lin@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] perf: Generic intel uncore support
+References: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com>  <1335924440-11242-5-git-send-email-zheng.z.yan@intel.com> <1336065156.22523.34.camel@twins>
+In-Reply-To: <1336065156.22523.34.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 11:31:13PM -0700, Deepak Saxena wrote:
-> On 3 May 2012 07:04, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > On Thu, May 03, 2012 at 01:50:35PM +0000, Arnd Bergmann wrote:
-> >> Hi everyone,
-> >>
-> >> I've been discussing multiplatform kernels with a few people recently,
-> >> and we will have a lot of discussion sessions about this at Linaro
-> >> Connect in Hong Kong.
-> >>
-> >> One question that came up repeatedly is whether we should support all
-> >> possible board files for each platform in a multiplatform kernel,
-> >> or just the ones that are already using DT probing. I would like
-> >> to get a quick poll of opinions on that and I've tried to put those
-> >> people on Cc that would be most impacted by this, i.e. the maintainers
-> >> for platforms that have both DT and non-DT board files at the moment.
-> >>
-> >> My feeling is that we should just mandate DT booting for multiplatform
-> >> kernels, because it significantly reduces the combinatorial space
-> >> at compile time, avoids a lot of legacy board files that we cannot
-> >> test anyway, reduces the total kernel size and gives an incentive
-> >> for people to move forward to DT with their existing boards.
-> >>
-> >> The counterargument is that we won't be able to support all the
-> >> boards we currently do when the user switches on multiplatform,
-> >> but I think that is acceptable.
-> >> Note that I would still want to allow users to build platforms
-> >> separately in order to enable the ATAG style board files, even
-> >> for platforms that are not multiplatform capable.
-> >
-> > I'm basing my comments off mach-zynq.
-> >
-> > How about we take the following steps towards it?
-> >
-> > 1. create arch/arm/include/mach/ which contains standardized headers
-> >   for DT based implementations.  This must include all headers included
-> >   by asm/ or linux/ includes.  This will also be the only mach/ header
-> >   directory included for code outside of arch/arm/mach-*.  This also
-> >   acts as the 'default' set of mach/* includes for stuff like timex.h
-> >   and the empty hardware.h
-> >
-> > 2. DT based mach-* directories do not have an include directory; their
-> >   include files must be located in the main include/ heirarchy if shared
-> >   with other parts of the kernel, otherwise they must be in the mach-*
-> >   directory.
+On 05/04/2012 01:12 AM, Peter Zijlstra wrote:
+> On Wed, 2012-05-02 at 10:07 +0800, Yan, Zheng wrote:
+>> +static struct intel_uncore_box *
+>> +__uncore_pmu_find_box(struct intel_uncore_pmu *pmu, int phyid)
+>> +{
+>> +       struct intel_uncore_box *box;
+>> +       struct hlist_head *head;
+>> +       struct hlist_node *node;
+>> +
+>> +       head = &pmu->box_hash[phyid % UNCORE_BOX_HASH_SIZE];
+>> +       hlist_for_each_entry_rcu(box, node, head, hlist) {
+>> +               if (box->phy_id == phyid)
+>> +                       return box;
+>> +       }
+>> +
+>> +       return NULL;
+>> +} 
 > 
-> What do we do about all the mach-specific driver related headers that are
-> currently littered all over arch/arm/mach*? Things like <mach/mx3fb.h> and
-> <mach/ohci.h>?
-
-Such platforms with that kind of stuff haven't fully converted to DT,
-because these sorts of things are platform dependent yet aren't represented
-in DT.
-
-> Arnd (or maybe Nicolas?) suggested something along the lines
-> of scripting something to figure out the constants required for a
-> specific driver and pulling them out of <mach/*.h> and into that
-> driver as a starting point.
-
-But that doesn't solve the problem.  Take a USB driver where the register
-layouts are different.  To have it work on two different platforms, you'd
-need to build the driver twice.  Not only that, you'd also need to figure
-out some way to register only one copy of that.
-
-So really, the header file thing is just a sign of larger blocking issues
-to getting those kinds of drivers working on a multiplatform kernel, and
-no amount of header munging will sort it out.  The fact of that situation
-is the driver concerned is _not_ multiplatform and shouldn't be built in
-that situation until it is fixed.
-
-> > 3. Allow build multiple mach-* directories (which we already do... see
-> >   the samsung stuff.)
-> >
-> > We still have irqs.h being SoC dependent, and we still haven't taken
-> > debug-macros.S far enough along to get rid of that.  Then there's also
-> > the problem of uncompress.h.  The last piece of the puzzle is the common
-> > clock stuff.
+> I still don't get why something like:
 > 
-> There's also some stuff outside of arch/arm that needs cleanup
-> including USB driver
-> refactoring and some other bits that I can't recall atm. Right now we
-> can build one and
-> only one host controller   inteface, even as modules. Not too
-> difficult of a problem to
-> solve and not critical to get the SOCs booting, but needed to be
-> usable on real devices.
+> static struct intel_uncore_box *
+> pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
+> {
+> 	return per_cpu_ptr(pmu->box, cpu);
+> }
+> 
+> doesn't work.
+> 
+> Last time you mumbled something about PCI devices, but afaict those are
+> in all respects identical to MSR devices except you talk to them using
+> PCI-mmio instead of MSR registers.
+> 
+> In fact, since its all local to the generic code there's nothing
+> different between pci/msr already.
+> 
+> So how about something like this:
+> 
+> ---
+>  Makefile                  |    4 +-
+>  perf_event_intel_uncore.c |   92 ++++++++++++++++++----------------------------
+>  perf_event_intel_uncore.h |    4 +-
+>  3 files changed, 42 insertions(+), 58 deletions(-)
+> 
+> --- a/arch/x86/kernel/cpu/Makefile
+> +++ b/arch/x86/kernel/cpu/Makefile
+> @@ -32,7 +32,9 @@ obj-$(CONFIG_PERF_EVENTS)		+= perf_event
+>  
+>  ifdef CONFIG_PERF_EVENTS
+>  obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o
+> -obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_p4.o perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o perf_event_intel_uncore.o
+> +obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_p4.o 
+> +obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o 
+> +obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o
+>  endif
+>  
+>  obj-$(CONFIG_X86_MCE)			+= mcheck/
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> @@ -116,40 +116,21 @@ struct intel_uncore_box *uncore_alloc_bo
+>  }
+>  
+>  static struct intel_uncore_box *
+> -__uncore_pmu_find_box(struct intel_uncore_pmu *pmu, int phyid)
+> +uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
+>  {
+> -	struct intel_uncore_box *box;
+> -	struct hlist_head *head;
+> -	struct hlist_node *node;
+> -
+> -	head = &pmu->box_hash[phyid % UNCORE_BOX_HASH_SIZE];
+> -	hlist_for_each_entry_rcu(box, node, head, hlist) {
+> -		if (box->phy_id == phyid)
+> -			return box;
+> -	}
+> -
+> -	return NULL;
+> -}
+> -
+> -static struct intel_uncore_box *
+> -uncore_pmu_find_box(struct intel_uncore_pmu *pmu, int phyid)
+> -{
+> -	struct intel_uncore_box *box;
+> -
+> -	rcu_read_lock();
+> -	box = __uncore_pmu_find_box(pmu, phyid);
+> -	rcu_read_unlock();
+> -
+> -	return box;
+> +	return per_cpu_ptr(pmu->box, cpu);
+>  }
+>  
+>  static void uncore_pmu_add_box(struct intel_uncore_pmu *pmu,
+>  				struct intel_uncore_box *box)
+>  {
+> -	struct hlist_head *head;
+> +	int cpu;
+>  
+> -	head = &pmu->box_hash[box->phy_id % UNCORE_BOX_HASH_SIZE];
+> -	hlist_add_head_rcu(&box->hlist, head);
+> +	for_each_cpu(cpu) {
+> +		if (box->phys_id != topology_physical_package_id(cpu))
+> +			continue;
+> +		per_cpu_ptr(pmu->box, cpu) = box;
+> +	}
+>  }
+Thank you for your suggestion. One reason I choose hash table is that I'm uncertain
+the system behavior when hot-plug a CPU, the PCI uncore device is probed first or
+the CPU data is initialized first? If the PCI device is probed first, I think your
+code won't work because topology_physical_package_id may return incorrect id.
 
-That's already a problem today, and has nothing to do with this current
-issue - what I'm saying is the problem can't be made to go away through
-header file stuff, so this issue is not relevant to this discussion.
+Regards
+Yan, Zheng
 
-That's not to say it doesn't need to be resolved, because it does.  It's
-just no reason to argue against what I've said.
+> 
+>  static struct intel_uncore_pmu *uncore_event_to_pmu(struct perf_event *event)
+> @@ -163,8 +144,7 @@ static struct intel_uncore_box *uncore_e
+>  	 * perf core schedules event on the basis of cpu, uncore events are
+>  	 * collected by one of the cpus inside a physical package.
+>  	 */
+> -	int phyid = topology_physical_package_id(smp_processor_id());
+> -	return uncore_pmu_find_box(uncore_event_to_pmu(event), phyid);
+> +	return uncore_pmu_to_box(uncore_event_to_pmu(event), smp_processor_id());
+>  }
+>  
+>  static int uncore_collect_events(struct intel_uncore_box *box,
+> @@ -478,8 +458,7 @@ int uncore_pmu_event_init(struct perf_ev
+>  	 */
+>  	if (event->cpu < 0)
+>  		return -EINVAL;
+> -	box = uncore_pmu_find_box(pmu,
+> -			topology_physical_package_id(event->cpu));
+> +	box = uncore_pmu_to_box(pmu, event->cpu);
+>  	if (!box || box->cpu < 0)
+>  		return -EINVAL;
+>  	event->cpu = box->cpu;
+> @@ -541,7 +520,11 @@ static int __init uncore_pmu_register(st
+>  
+>  static void __init uncore_type_exit(struct intel_uncore_type *type)
+>  {
+> +	int i;
+> +
+>  	kfree(type->attr_groups[1]);
+> +	for (i = 0; i < type->num_boxes; i++)
+> +		free_percpu(type->pmus[i].box);
+>  	kfree(type->pmus);
+>  	type->attr_groups[1] = NULL;
+>  	type->pmus = NULL;
+> @@ -566,9 +549,9 @@ static int __init uncore_type_init(struc
+>  		pmus[i].func_id = -1;
+>  		pmus[i].pmu_idx = i;
+>  		pmus[i].type = type;
+> -
+> -		for (j = 0; j < ARRAY_SIZE(pmus[0].box_hash); j++)
+> -			INIT_HLIST_HEAD(&pmus[i].box_hash[j]);
+> +		pmus[i].box = alloc_percpu(struct intel_uncore_box *);
+> +		if (!pmus[i].box)
+> +			goto fail_percpu;
+>  	}
+>  
+>  	if (type->event_descs) {
+> @@ -591,6 +574,11 @@ static int __init uncore_type_init(struc
+>  
+>  	type->pmus = pmus;
+>  	return 0;
+> +
+> +fail_percpu:
+> +	for (i = 0; i < type->num_boxes; i++)
+> +		free_percpu(pmus[i].box);
+> +
+>  fail:
+>  	uncore_type_exit(type);
+>  	return -ENOMEM;
+> @@ -617,15 +605,13 @@ static void __cpuinit uncore_cpu_dying(i
+>  	struct intel_uncore_type *type;
+>  	struct intel_uncore_pmu *pmu;
+>  	struct intel_uncore_box *box;
+> -	int i, j, phyid;
+> -
+> -	phyid = topology_physical_package_id(cpu);
+> +	int i, j;
+>  
+>  	for (i = 0; msr_uncores[i]; i++) {
+>  		type = msr_uncores[i];
+>  		for (j = 0; j < type->num_boxes; j++) {
+>  			pmu = &type->pmus[j];
+> -			box = uncore_pmu_find_box(pmu, phyid);
+> +			box = uncore_pmu_to_box(pmu, cpu);
+>  			if (box && --box->refcnt == 0) {
+>  				hlist_del_rcu(&box->hlist);
+>  				kfree_rcu(box, rcu_head);
+> @@ -639,15 +625,13 @@ static int __cpuinit uncore_cpu_starting
+>  	struct intel_uncore_type *type;
+>  	struct intel_uncore_pmu *pmu;
+>  	struct intel_uncore_box *box;
+> -	int i, j, phyid;
+> -
+> -	phyid = topology_physical_package_id(cpu);
+> +	int i, j;
+>  
+>  	for (i = 0; msr_uncores[i]; i++) {
+>  		type = msr_uncores[i];
+>  		for (j = 0; j < type->num_boxes; j++) {
+>  			pmu = &type->pmus[j];
+> -			box = uncore_pmu_find_box(pmu, phyid);
+> +			box = uncore_pmu_to_box(pmu, cpu);
+>  			if (box)
+>  				uncore_box_init(box);
+>  		}
+> @@ -660,9 +644,7 @@ static int __cpuinit uncore_cpu_prepare(
+>  	struct intel_uncore_type *type;
+>  	struct intel_uncore_pmu *pmu;
+>  	struct intel_uncore_box *exist, *box;
+> -	int i, j, phyid;
+> -
+> -	phyid = topology_physical_package_id(cpu);
+> +	int i, j;
+>  
+>  	/* allocate the box data structure */
+>  	for (i = 0; msr_uncores[i]; i++) {
+> @@ -673,7 +655,7 @@ static int __cpuinit uncore_cpu_prepare(
+>  
+>  			if (pmu->func_id < 0)
+>  				pmu->func_id = j;
+> -			exist = uncore_pmu_find_box(pmu, phyid);
+> +			exist = uncore_pmu_to_box(pmu, cpu);
+>  			if (exist)
+>  				exist->refcnt++;
+>  			if (exist)
+> @@ -684,7 +666,7 @@ static int __cpuinit uncore_cpu_prepare(
+>  				return -ENOMEM;
+>  
+>  			box->pmu = pmu;
+> -			box->phy_id = phyid;
+> +			box->phys_id = topology_physical_package_id(cpu);
+>  			uncore_pmu_add_box(pmu, box);
+>  		}
+>  	}
+> @@ -696,19 +678,19 @@ static void __cpuinit uncore_event_exit_
+>  	struct intel_uncore_type *type;
+>  	struct intel_uncore_pmu *pmu;
+>  	struct intel_uncore_box *box;
+> -	int i, j, phyid, target;
+> +	int i, j, phys_id, target;
+>  
+>  	/* if exiting cpu is used for collecting uncore events */
+>  	if (!cpumask_test_and_clear_cpu(cpu, &uncore_cpu_mask))
+>  		return;
+>  
+>  	/* find a new cpu to collect uncore events */
+> -	phyid = topology_physical_package_id(cpu);
+> +	phys_id = topology_physical_package_id(cpu);
+>  	target = -1;
+>  	for_each_online_cpu(i) {
+>  		if (i == cpu)
+>  			continue;
+> -		if (phyid == topology_physical_package_id(i)) {
+> +		if (phys_id == topology_physical_package_id(i)) {
+>  			target = i;
+>  			break;
+>  		}
+> @@ -722,7 +704,7 @@ static void __cpuinit uncore_event_exit_
+>  		type = msr_uncores[i];
+>  		for (j = 0; j < type->num_boxes; j++) {
+>  			pmu = &type->pmus[j];
+> -			box = uncore_pmu_find_box(pmu, phyid);
+> +			box = uncore_pmu_to_box(pmu, phys_id);
+>  			WARN_ON_ONCE(box->cpu != cpu);
+>  
+>  			if (target >= 0) {
+> @@ -742,11 +724,11 @@ static void __cpuinit uncore_event_init_
+>  	struct intel_uncore_type *type;
+>  	struct intel_uncore_pmu *pmu;
+>  	struct intel_uncore_box *box;
+> -	int i, j, phyid;
+> +	int i, j, phys_id;
+>  
+> -	phyid = topology_physical_package_id(cpu);
+> +	phys_id = topology_physical_package_id(cpu);
+>  	for_each_cpu(i, &uncore_cpu_mask) {
+> -		if (phyid == topology_physical_package_id(i))
+> +		if (phys_id == topology_physical_package_id(i))
+>  			return;
+>  	}
+>  
+> @@ -756,7 +738,7 @@ static void __cpuinit uncore_event_init_
+>  		type = msr_uncores[i];
+>  		for (j = 0; j < type->num_boxes; j++) {
+>  			pmu = &type->pmus[j];
+> -			box = uncore_pmu_find_box(pmu, phyid);
+> +			box = uncore_pmu_to_box(pmu, cpu);
+>  			WARN_ON_ONCE(box->cpu != -1);
+>  			box->cpu = cpu;
+>  		}
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> @@ -59,12 +59,12 @@ struct intel_uncore_pmu {
+>  	int pmu_idx;
+>  	int func_id;
+>  	struct intel_uncore_type *type;
+> -	struct hlist_head box_hash[UNCORE_BOX_HASH_SIZE];
+> +	struct intel_uncore_box * __per_cpu box;
+>  };
+>  
+>  struct intel_uncore_box {
+>  	struct hlist_node hlist;
+> -	int phy_id;
+> +	int phys_id;
+>  	int refcnt;
+>  	int n_active;	/* number of active events */
+>  	int n_events;
+> 
+
