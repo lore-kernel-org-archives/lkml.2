@@ -1,59 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760173Ab2EDVMP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:12:15 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:54195 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760161Ab2EDVML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 17:12:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 00/02] mach-shmobile: Emma Mobile EV2 - first shot
-Date: Fri, 4 May 2012 23:16:55 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        horms@verge.net.au, linux@arm.linux.org.uk, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lethal@linux-sh.org, olof@lixom.net
-References: <20120503144645.6390.62303.sendpatchset@w520> <201205041957.14205.arnd@arndb.de>
-In-Reply-To: <201205041957.14205.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205042316.55593.rjw@sisk.pl>
+	id S1760185Ab2EDVMk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:12:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932377Ab2EDUpz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 16:45:55 -0400
+Message-Id: <20120504204227.729592036@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 04 May 2012 13:43:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 39/75] ARM: 7396/1: errata: only handle ARM erratum #326103 on affected cores
+In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 04, 2012, Arnd Bergmann wrote:
-> On Thursday 03 May 2012, Magnus Damm wrote:
-> > mach-shmobile: Emma Mobile EV2 - first shot
-> > 
-> > [PATCH 01/02] mach-shmobile: Emma Mobile EV2 SoC base support
-> > [PATCH 02/02] mach-shmobile: KZM9D board prototype support
-> > 
-> > This series adds experimental Emma Mobile EV2 support to
-> > mach-shmobile. Yet another dual core Cortex-A9 SoC.
-> > 
-> > At this point only serial and timer is supported. Future work
-> > includes GPIO, network device, SMP and DT support. If possible
-> > it would be nice to use the common clocks on this platform.
-> > 
-> > To boot this on actual hardware you also need the following:
-> > "[PATCH] serial8250-em: Emma Mobile UART driver V2"
-> > "[PATCH] clocksource: em_sti: Emma Mobile STI driver"
-> > 
-> > Any reason to not put this in mach-shmobile?
-> 
-> Well, from all I can tell it shares basically zero code with the
-> rest of mach-shmobile, so I would be more comfortable with creating
-> a new mach-emma directory for this.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-I'm not sure if I understand your point correctly, so please let me clarify.
+------------------
 
-Do you think it's better to have a separate mach-emma directory for the
-new hardware because technically it is a different platform and the fact
-that it was developed by the same manufacturer as the mach-shmobile hardware
-is less important?
+From: Will Deacon <will.deacon@arm.com>
 
-Rafael
+commit f0c4b8d653f5ee091fb8d4d02ed7eaad397491bb upstream.
+
+Erratum #326103 ("FSR write bit incorrect on a SWP to read-only memory")
+only affects the ARM 1136 core prior to r1p0. The workaround
+disassembles the faulting instruction to determine whether it was a read
+or write access on all v6 cores.
+
+An issue has been reported on the ARM 11MPCore whereby loading the
+faulting instruction may happen in parallel with that page being
+unmapped, resulting in a deadlock due to the lack of TLB broadcasting
+in hardware:
+
+http://lists.infradead.org/pipermail/linux-arm-kernel/2012-March/091561.html
+
+This patch limits the workaround so that it is only used on affected
+cores, which are known to be UP only. Other v6 cores can rely on the
+FSR to indicate the access type correctly.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm/Kconfig        |    9 +++++++++
+ arch/arm/mm/abort-ev6.S |   17 +++++++++++------
+ 2 files changed, 20 insertions(+), 6 deletions(-)
+
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1163,6 +1163,15 @@ if !MMU
+ source "arch/arm/Kconfig-nommu"
+ endif
+ 
++config ARM_ERRATA_326103
++	bool "ARM errata: FSR write bit incorrect on a SWP to read-only memory"
++	depends on CPU_V6
++	help
++	  Executing a SWP instruction to read-only memory does not set bit 11
++	  of the FSR on the ARM 1136 prior to r1p0. This causes the kernel to
++	  treat the access as a read, preventing a COW from occurring and
++	  causing the faulting task to livelock.
++
+ config ARM_ERRATA_411920
+ 	bool "ARM errata: Invalidation of the Instruction Cache operation can fail"
+ 	depends on CPU_V6 || CPU_V6K
+--- a/arch/arm/mm/abort-ev6.S
++++ b/arch/arm/mm/abort-ev6.S
+@@ -26,18 +26,23 @@ ENTRY(v6_early_abort)
+ 	mrc	p15, 0, r1, c5, c0, 0		@ get FSR
+ 	mrc	p15, 0, r0, c6, c0, 0		@ get FAR
+ /*
+- * Faulty SWP instruction on 1136 doesn't set bit 11 in DFSR (erratum 326103).
+- * The test below covers all the write situations, including Java bytecodes
++ * Faulty SWP instruction on 1136 doesn't set bit 11 in DFSR.
+  */
+-	bic	r1, r1, #1 << 11		@ clear bit 11 of FSR
++#ifdef CONFIG_ARM_ERRATA_326103
++	ldr	ip, =0x4107b36
++	mrc	p15, 0, r3, c0, c0, 0		@ get processor id
++	teq	ip, r3, lsr #4			@ r0 ARM1136?
++	bne	do_DataAbort
+ 	tst	r5, #PSR_J_BIT			@ Java?
++	tsteq	r5, #PSR_T_BIT			@ Thumb?
+ 	bne	do_DataAbort
+-	do_thumb_abort fsr=r1, pc=r4, psr=r5, tmp=r3
+-	ldreq	r3, [r4]			@ read aborted ARM instruction
++	bic	r1, r1, #1 << 11		@ clear bit 11 of FSR
++	ldr	r3, [r4]			@ read aborted ARM instruction
+ #ifdef CONFIG_CPU_ENDIAN_BE8
+-	reveq	r3, r3
++	rev	r3, r3
+ #endif
+ 	do_ldrd_abort tmp=ip, insn=r3
+ 	tst	r3, #1 << 20			@ L = 0 -> write
+ 	orreq	r1, r1, #1 << 11		@ yes.
++#endif
+ 	b	do_DataAbort
+
+
