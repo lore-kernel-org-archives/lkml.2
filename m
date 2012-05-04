@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466Ab2EDUqa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:46:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
+	id S932501Ab2EDUqm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:46:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759706Ab2EDUqZ (ORCPT
+	with ESMTP id S932478Ab2EDUqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:46:25 -0400
-Message-Id: <20120504204228.477486913@linuxfoundation.org>
+	Fri, 4 May 2012 16:46:34 -0400
+Message-Id: <20120504204228.732924419@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:12 -0700
+Date: Fri, 04 May 2012 13:43:15 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [ 48/75] tools/include: Add byteshift headers for endian access
+        alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@zytor.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [ 51/75] x86, efi: Fix endian issues and unaligned accesses
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,171 +29,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-commit a07f7672d7cf0ff0d6e548a9feb6e0bd016d9c6c upstream.
+commit 92f42c50f227ad228f815a8f4eec872524dae3a5 upstream.
 
-There are various hostprogs in the kernel that are rolling their own
-implementations of {get,put}_unaligned_le*(). Copy the byteshift
-headers from include/linux/unaligned so that they can all use a single
-implementation.
+We may need to convert the endianness of the data we read from/write
+to 'buf', so let's use {get,put}_unaligned_le32() to do that. Failure
+to do so can result in accessing invalid memory, leading to a
+segfault.  Stephen Rothwell noticed this bug while cross-building an
+x86_64 allmodconfig kernel on PowerPC.
 
-This requires changing some of the data types to the userspace
-exported ones (u32 -> __u32, etc).
+We need to read from and write to 'buf' a byte at a time otherwise
+it's possible we'll perform an unaligned access, which can lead to bus
+errors when cross-building an x86 kernel on risc architectures.
 
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>
+Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Link: http://lkml.kernel.org/r/1330436245-24875-2-git-send-email-matt@console-pimps.org
+Link: http://lkml.kernel.org/r/1330436245-24875-6-git-send-email-matt@console-pimps.org
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/include/tools/be_byteshift.h |   70 +++++++++++++++++++++++++++++++++++++
- tools/include/tools/le_byteshift.h |   70 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 140 insertions(+)
+ arch/x86/boot/tools/build.c |   31 +++++++++++++++----------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
 
---- /dev/null
-+++ b/tools/include/tools/be_byteshift.h
-@@ -0,0 +1,70 @@
-+#ifndef _TOOLS_BE_BYTESHIFT_H
-+#define _TOOLS_BE_BYTESHIFT_H
+--- a/arch/x86/boot/tools/build.c
++++ b/arch/x86/boot/tools/build.c
+@@ -34,6 +34,7 @@
+ #include <fcntl.h>
+ #include <sys/mman.h>
+ #include <asm/boot.h>
++#include <tools/le_byteshift.h>
+ 
+ typedef unsigned char  u8;
+ typedef unsigned short u16;
+@@ -41,6 +42,7 @@ typedef unsigned long  u32;
+ 
+ #define DEFAULT_MAJOR_ROOT 0
+ #define DEFAULT_MINOR_ROOT 0
++#define DEFAULT_ROOT_DEV (DEFAULT_MAJOR_ROOT << 8 | DEFAULT_MINOR_ROOT)
+ 
+ /* Minimal number of setup sectors */
+ #define SETUP_SECT_MIN 5
+@@ -159,7 +161,7 @@ int main(int argc, char ** argv)
+ 		die("read-error on `setup'");
+ 	if (c < 1024)
+ 		die("The setup must be at least 1024 bytes");
+-	if (buf[510] != 0x55 || buf[511] != 0xaa)
++	if (get_unaligned_le16(&buf[510]) != 0xAA55)
+ 		die("Boot block hasn't got boot flag (0xAA55)");
+ 	fclose(file);
+ 
+@@ -171,8 +173,7 @@ int main(int argc, char ** argv)
+ 	memset(buf+c, 0, i-c);
+ 
+ 	/* Set the default root device */
+-	buf[508] = DEFAULT_MINOR_ROOT;
+-	buf[509] = DEFAULT_MAJOR_ROOT;
++	put_unaligned_le16(DEFAULT_ROOT_DEV, &buf[508]);
+ 
+ 	fprintf(stderr, "Setup is %d bytes (padded to %d bytes).\n", c, i);
+ 
+@@ -192,44 +193,42 @@ int main(int argc, char ** argv)
+ 
+ 	/* Patch the setup code with the appropriate size parameters */
+ 	buf[0x1f1] = setup_sectors-1;
+-	buf[0x1f4] = sys_size;
+-	buf[0x1f5] = sys_size >> 8;
+-	buf[0x1f6] = sys_size >> 16;
+-	buf[0x1f7] = sys_size >> 24;
++	put_unaligned_le32(sys_size, &buf[0x1f4]);
+ 
+ #ifdef CONFIG_EFI_STUB
+ 	file_sz = sz + i + ((sys_size * 16) - sz);
+ 
+-	pe_header = *(unsigned int *)&buf[0x3c];
++	pe_header = get_unaligned_le32(&buf[0x3c]);
+ 
+ 	/* Size of code */
+-	*(unsigned int *)&buf[pe_header + 0x1c] = file_sz;
++	put_unaligned_le32(file_sz, &buf[pe_header + 0x1c]);
+ 
+ 	/* Size of image */
+-	*(unsigned int *)&buf[pe_header + 0x50] = file_sz;
++	put_unaligned_le32(file_sz, &buf[pe_header + 0x50]);
+ 
+ #ifdef CONFIG_X86_32
+ 	/* Address of entry point */
+-	*(unsigned int *)&buf[pe_header + 0x28] = i;
++	put_unaligned_le32(i, &buf[pe_header + 0x28]);
+ 
+ 	/* .text size */
+-	*(unsigned int *)&buf[pe_header + 0xb0] = file_sz;
++	put_unaligned_le32(file_sz, &buf[pe_header + 0xb0]);
+ 
+ 	/* .text size of initialised data */
+-	*(unsigned int *)&buf[pe_header + 0xb8] = file_sz;
++	put_unaligned_le32(file_sz, &buf[pe_header + 0xb8]);
+ #else
+ 	/*
+ 	 * Address of entry point. startup_32 is at the beginning and
+ 	 * the 64-bit entry point (startup_64) is always 512 bytes
+ 	 * after.
+ 	 */
+-	*(unsigned int *)&buf[pe_header + 0x28] = i + 512;
++	put_unaligned_le32(i + 512, &buf[pe_header + 0x28]);
+ 
+ 	/* .text size */
+-	*(unsigned int *)&buf[pe_header + 0xc0] = file_sz;
++	put_unaligned_le32(file_sz, &buf[pe_header + 0xc0]);
+ 
+ 	/* .text size of initialised data */
+-	*(unsigned int *)&buf[pe_header + 0xc8] = file_sz;
++	put_unaligned_le32(file_sz, &buf[pe_header + 0xc8]);
 +
-+#include <linux/types.h>
-+
-+static inline __u16 __get_unaligned_be16(const __u8 *p)
-+{
-+	return p[0] << 8 | p[1];
-+}
-+
-+static inline __u32 __get_unaligned_be32(const __u8 *p)
-+{
-+	return p[0] << 24 | p[1] << 16 | p[2] << 8 | p[3];
-+}
-+
-+static inline __u64 __get_unaligned_be64(const __u8 *p)
-+{
-+	return (__u64)__get_unaligned_be32(p) << 32 |
-+	       __get_unaligned_be32(p + 4);
-+}
-+
-+static inline void __put_unaligned_be16(__u16 val, __u8 *p)
-+{
-+	*p++ = val >> 8;
-+	*p++ = val;
-+}
-+
-+static inline void __put_unaligned_be32(__u32 val, __u8 *p)
-+{
-+	__put_unaligned_be16(val >> 16, p);
-+	__put_unaligned_be16(val, p + 2);
-+}
-+
-+static inline void __put_unaligned_be64(__u64 val, __u8 *p)
-+{
-+	__put_unaligned_be32(val >> 32, p);
-+	__put_unaligned_be32(val, p + 4);
-+}
-+
-+static inline __u16 get_unaligned_be16(const void *p)
-+{
-+	return __get_unaligned_be16((const __u8 *)p);
-+}
-+
-+static inline __u32 get_unaligned_be32(const void *p)
-+{
-+	return __get_unaligned_be32((const __u8 *)p);
-+}
-+
-+static inline __u64 get_unaligned_be64(const void *p)
-+{
-+	return __get_unaligned_be64((const __u8 *)p);
-+}
-+
-+static inline void put_unaligned_be16(__u16 val, void *p)
-+{
-+	__put_unaligned_be16(val, p);
-+}
-+
-+static inline void put_unaligned_be32(__u32 val, void *p)
-+{
-+	__put_unaligned_be32(val, p);
-+}
-+
-+static inline void put_unaligned_be64(__u64 val, void *p)
-+{
-+	__put_unaligned_be64(val, p);
-+}
-+
-+#endif /* _TOOLS_BE_BYTESHIFT_H */
---- /dev/null
-+++ b/tools/include/tools/le_byteshift.h
-@@ -0,0 +1,70 @@
-+#ifndef _TOOLS_LE_BYTESHIFT_H
-+#define _TOOLS_LE_BYTESHIFT_H
-+
-+#include <linux/types.h>
-+
-+static inline __u16 __get_unaligned_le16(const __u8 *p)
-+{
-+	return p[0] | p[1] << 8;
-+}
-+
-+static inline __u32 __get_unaligned_le32(const __u8 *p)
-+{
-+	return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
-+}
-+
-+static inline __u64 __get_unaligned_le64(const __u8 *p)
-+{
-+	return (__u64)__get_unaligned_le32(p + 4) << 32 |
-+	       __get_unaligned_le32(p);
-+}
-+
-+static inline void __put_unaligned_le16(__u16 val, __u8 *p)
-+{
-+	*p++ = val;
-+	*p++ = val >> 8;
-+}
-+
-+static inline void __put_unaligned_le32(__u32 val, __u8 *p)
-+{
-+	__put_unaligned_le16(val >> 16, p + 2);
-+	__put_unaligned_le16(val, p);
-+}
-+
-+static inline void __put_unaligned_le64(__u64 val, __u8 *p)
-+{
-+	__put_unaligned_le32(val >> 32, p + 4);
-+	__put_unaligned_le32(val, p);
-+}
-+
-+static inline __u16 get_unaligned_le16(const void *p)
-+{
-+	return __get_unaligned_le16((const __u8 *)p);
-+}
-+
-+static inline __u32 get_unaligned_le32(const void *p)
-+{
-+	return __get_unaligned_le32((const __u8 *)p);
-+}
-+
-+static inline __u64 get_unaligned_le64(const void *p)
-+{
-+	return __get_unaligned_le64((const __u8 *)p);
-+}
-+
-+static inline void put_unaligned_le16(__u16 val, void *p)
-+{
-+	__put_unaligned_le16(val, p);
-+}
-+
-+static inline void put_unaligned_le32(__u32 val, void *p)
-+{
-+	__put_unaligned_le32(val, p);
-+}
-+
-+static inline void put_unaligned_le64(__u64 val, void *p)
-+{
-+	__put_unaligned_le64(val, p);
-+}
-+
-+#endif /* _TOOLS_LE_BYTESHIFT_H */
+ #endif /* CONFIG_X86_32 */
+ #endif /* CONFIG_EFI_STUB */
+ 
 
 
