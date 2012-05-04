@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759810Ab2EDUoc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:44:32 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759799Ab2EDUo3 (ORCPT
+	id S1759859Ab2EDUoo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:44:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759825Ab2EDUoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:44:29 -0400
-Message-Id: <20120504204225.474980735@linuxfoundation.org>
+	Fri, 4 May 2012 16:44:39 -0400
+Message-Id: <20120504204224.963510763@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:37 -0700
+Date: Fri, 04 May 2012 13:42:31 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 13/75] ASoC: dapm: Ensure power gets managed for line widgets
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [ 07/75] x86, microcode: Ensure that module is only loaded on supported AMD CPUs
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit 7e1f7c8a6e517900cd84da1b8ae020f08f286c3b upstream.
+commit 283c1f2558ef4a4411fe908364b15b73b6ab44cf upstream.
 
-Line widgets had not been included in either the power up or power down
-sequences so if a widget had an event associated with it that event would
-never be run. Fix this minimally by adding them to the sequences, we
-should probably be doing away with the specific widget types as they all
-have the same priority anyway.
+Exit early when there's no support for a particular CPU family. Also,
+fixup the "no support for this CPU vendor" to be issued only when the
+driver is attempted to be loaded on an unsupported vendor.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Link: http://lkml.kernel.org/r/20120411163849.GE4794@alberich.amd.com
+[Boris: add a commit msg because Andreas is lazy]
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/soc-dapm.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kernel/microcode_amd.c  |   12 +++++++-----
+ arch/x86/kernel/microcode_core.c |    6 +++---
+ 2 files changed, 10 insertions(+), 8 deletions(-)
 
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -70,6 +70,7 @@ static int dapm_up_seq[] = {
- 	[snd_soc_dapm_out_drv] = 10,
- 	[snd_soc_dapm_hp] = 10,
- 	[snd_soc_dapm_spk] = 10,
-+	[snd_soc_dapm_line] = 10,
- 	[snd_soc_dapm_post] = 11,
- };
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -82,11 +82,6 @@ static int collect_cpu_info_amd(int cpu,
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
  
-@@ -78,6 +79,7 @@ static int dapm_down_seq[] = {
- 	[snd_soc_dapm_adc] = 1,
- 	[snd_soc_dapm_hp] = 2,
- 	[snd_soc_dapm_spk] = 2,
-+	[snd_soc_dapm_line] = 2,
- 	[snd_soc_dapm_out_drv] = 2,
- 	[snd_soc_dapm_pga] = 4,
- 	[snd_soc_dapm_mixer_named_ctl] = 5,
+-	if (c->x86_vendor != X86_VENDOR_AMD || c->x86 < 0x10) {
+-		pr_warning("CPU%d: family %d not supported\n", cpu, c->x86);
+-		return -1;
+-	}
+-
+ 	csig->rev = c->microcode;
+ 	pr_info("CPU%d: patch_level=0x%08x\n", cpu, csig->rev);
+ 
+@@ -380,6 +375,13 @@ static struct microcode_ops microcode_am
+ 
+ struct microcode_ops * __init init_amd_microcode(void)
+ {
++	struct cpuinfo_x86 *c = &cpu_data(0);
++
++	if (c->x86_vendor != X86_VENDOR_AMD || c->x86 < 0x10) {
++		pr_warning("AMD CPU family 0x%x not supported\n", c->x86);
++		return NULL;
++	}
++
+ 	patch = (void *)get_zeroed_page(GFP_KERNEL);
+ 	if (!patch)
+ 		return NULL;
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -511,11 +511,11 @@ static int __init microcode_init(void)
+ 		microcode_ops = init_intel_microcode();
+ 	else if (c->x86_vendor == X86_VENDOR_AMD)
+ 		microcode_ops = init_amd_microcode();
+-
+-	if (!microcode_ops) {
++	else
+ 		pr_err("no support for this CPU vendor\n");
++
++	if (!microcode_ops)
+ 		return -ENODEV;
+-	}
+ 
+ 	microcode_pdev = platform_device_register_simple("microcode", -1,
+ 							 NULL, 0);
 
 
