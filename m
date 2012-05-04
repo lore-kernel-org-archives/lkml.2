@@ -1,57 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932795Ab2EDVDx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:03:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53995 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932749Ab2EDVDu (ORCPT
+	id S932751Ab2EDVEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:04:25 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932680Ab2EDUrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 17:03:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: Handling of modular boards
-Date: Fri, 4 May 2012 21:03:34 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: Wolfgang Denk <wd@denx.de>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-embedded@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Igor Grinberg <grinberg@compulab.co.il>,
-        Olof Johansson <olof@lixom.net>, Lee Jones <lee.jones@linaro.org>
-References: <20120504185850.GO14230@opensource.wolfsonmicro.com> <201205042039.25794.arnd@arndb.de> <20120504205441.D293120645E@gemini.denx.de>
-In-Reply-To: <20120504205441.D293120645E@gemini.denx.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205042103.34285.arnd@arndb.de>
-X-Provags-ID: V02:K0:/ZJ+c8iM/moKkzxpg5bbLAGqAgf+ym2o95Kf+LNU0DF
- q769YhAE0JbxN2pdpKNjMwUyv73nvgqgsN7I7H2zi1v3woRKTa
- ADc+8ULTWXZ6ks0rtNH0PKORKcxxTFi7uY9/ukfZ+KHeNLQlFT
- eOqFHoTYx7Y0EZ+B/wV+7vYJGVU61NQaJgdGx7eI7uLdh2IM26
- sVlkh4HQGtYbAvWcyXQFmPU3sorQcQEgGuLAhzxW9xgj7pHqN0
- P86ti4xQWzyHcRzd4DeeQjoSDraK5PCO0yIglusiqJ3RwYImSX
- ky4AGiT7q4CIxjRZLUAom8RfuEac4gQAtbVWrnf4uWSl5ent27
- dTsosOtb9MgfRfem/GAE=
+	Fri, 4 May 2012 16:47:49 -0400
+Message-Id: <20120504204230.664242281@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 04 May 2012 13:43:38 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 74/75] iwlwifi: fix hardware queue programming
+In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 04 May 2012, Wolfgang Denk wrote:
-> There are systems (and I bet it will be a growing number) where U-Boot
-> itself uses the DT for configuration.  Also, there are functions that
-> are needed both by the boot loader and the kernel - for example to
-> dislay a splash screen the boot loader needs to initialize the
-> display, so it must be able to detect which type of LCD is attached
-> (resolution, color-depth, orientation) - the device tree comes in very
-> handy here.  Why should Linux re-do all such things?
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-Sure, there are a lot of things that the boot loader can use from the
-device tree, but I'm not sure if the LCD panel connection fits into
-the same category as the devices that Mark was thinking of.
+------------------
 
-Anyway, display controllers are definitely something that needs to
-be handled in some way, which may or may not be the same way we
-handle more complex collections of arbitrary devices.
+From: Johannes Berg <johannes.berg@intel.com>
 
-	Arnd
+commit 5ef4acd58ab2abd0dd0c8e3cacd61a0dc5d73646 upstream.
+
+Newer devices have 20 (5000 series) or 30 (6000 series)
+hardware queues, rather than the 16 that 4965 had. This
+was added to the driver a long time ago, but improperly:
+the queue registers for the higher queues aren't just
+continuations of the registers for the first 16 queues,
+they are in other places. Therefore, the hardware would
+lock up when trying to activate queue 16 or above and
+the device would have to be restarted.
+
+Thanks goes to Emmanuel who identified this and told me
+how the queue programming should be done.
+
+Note that we don't use queues 20 and higher today and
+doing so needs more work than this.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/iwlwifi/iwl-fh.h   |   22 ++++++++++++++++++----
+ drivers/net/wireless/iwlwifi/iwl-prph.h |   27 ++++++++++++++++++++++++---
+ 2 files changed, 42 insertions(+), 7 deletions(-)
+
+--- a/drivers/net/wireless/iwlwifi/iwl-fh.h
++++ b/drivers/net/wireless/iwlwifi/iwl-fh.h
+@@ -104,15 +104,29 @@
+  * (see struct iwl_tfd_frame).  These 16 pointer registers are offset by 0x04
+  * bytes from one another.  Each TFD circular buffer in DRAM must be 256-byte
+  * aligned (address bits 0-7 must be 0).
++ * Later devices have 20 (5000 series) or 30 (higher) queues, but the registers
++ * for them are in different places.
+  *
+  * Bit fields in each pointer register:
+  *  27-0: TFD CB physical base address [35:8], must be 256-byte aligned
+  */
+-#define FH_MEM_CBBC_LOWER_BOUND          (FH_MEM_LOWER_BOUND + 0x9D0)
+-#define FH_MEM_CBBC_UPPER_BOUND          (FH_MEM_LOWER_BOUND + 0xA10)
++#define FH_MEM_CBBC_0_15_LOWER_BOUND		(FH_MEM_LOWER_BOUND + 0x9D0)
++#define FH_MEM_CBBC_0_15_UPPER_BOUND		(FH_MEM_LOWER_BOUND + 0xA10)
++#define FH_MEM_CBBC_16_19_LOWER_BOUND		(FH_MEM_LOWER_BOUND + 0xBF0)
++#define FH_MEM_CBBC_16_19_UPPER_BOUND		(FH_MEM_LOWER_BOUND + 0xC00)
++#define FH_MEM_CBBC_20_31_LOWER_BOUND		(FH_MEM_LOWER_BOUND + 0xB20)
++#define FH_MEM_CBBC_20_31_UPPER_BOUND		(FH_MEM_LOWER_BOUND + 0xB80)
+ 
+-/* Find TFD CB base pointer for given queue (range 0-15). */
+-#define FH_MEM_CBBC_QUEUE(x)  (FH_MEM_CBBC_LOWER_BOUND + (x) * 0x4)
++/* Find TFD CB base pointer for given queue */
++static inline unsigned int FH_MEM_CBBC_QUEUE(unsigned int chnl)
++{
++	if (chnl < 16)
++		return FH_MEM_CBBC_0_15_LOWER_BOUND + 4 * chnl;
++	if (chnl < 20)
++		return FH_MEM_CBBC_16_19_LOWER_BOUND + 4 * (chnl - 16);
++	WARN_ON_ONCE(chnl >= 32);
++	return FH_MEM_CBBC_20_31_LOWER_BOUND + 4 * (chnl - 20);
++}
+ 
+ 
+ /**
+--- a/drivers/net/wireless/iwlwifi/iwl-prph.h
++++ b/drivers/net/wireless/iwlwifi/iwl-prph.h
+@@ -227,12 +227,33 @@
+ #define SCD_AIT			(SCD_BASE + 0x0c)
+ #define SCD_TXFACT		(SCD_BASE + 0x10)
+ #define SCD_ACTIVE		(SCD_BASE + 0x14)
+-#define SCD_QUEUE_WRPTR(x)	(SCD_BASE + 0x18 + (x) * 4)
+-#define SCD_QUEUE_RDPTR(x)	(SCD_BASE + 0x68 + (x) * 4)
+ #define SCD_QUEUECHAIN_SEL	(SCD_BASE + 0xe8)
+ #define SCD_AGGR_SEL		(SCD_BASE + 0x248)
+ #define SCD_INTERRUPT_MASK	(SCD_BASE + 0x108)
+-#define SCD_QUEUE_STATUS_BITS(x)	(SCD_BASE + 0x10c + (x) * 4)
++
++static inline unsigned int SCD_QUEUE_WRPTR(unsigned int chnl)
++{
++	if (chnl < 20)
++		return SCD_BASE + 0x18 + chnl * 4;
++	WARN_ON_ONCE(chnl >= 32);
++	return SCD_BASE + 0x284 + (chnl - 20) * 4;
++}
++
++static inline unsigned int SCD_QUEUE_RDPTR(unsigned int chnl)
++{
++	if (chnl < 20)
++		return SCD_BASE + 0x68 + chnl * 4;
++	WARN_ON_ONCE(chnl >= 32);
++	return SCD_BASE + 0x2B4 + (chnl - 20) * 4;
++}
++
++static inline unsigned int SCD_QUEUE_STATUS_BITS(unsigned int chnl)
++{
++	if (chnl < 20)
++		return SCD_BASE + 0x10c + chnl * 4;
++	WARN_ON_ONCE(chnl >= 32);
++	return SCD_BASE + 0x384 + (chnl - 20) * 4;
++}
+ 
+ /*********************** END TX SCHEDULER *************************************/
+ 
+
+
