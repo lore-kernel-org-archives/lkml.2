@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932976Ab2EDVCC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:02:02 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33335 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932592Ab2EDVB6 convert rfc822-to-8bit (ORCPT
+	id S932858Ab2EDVC0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:02:26 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932711Ab2EDUsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 17:01:58 -0400
-Message-ID: <1336165294.6509.76.camel@twins>
-Subject: Re: [PATCH v2 0/7] CPU hotplug, cpusets: Fix issues with cpusets
- handling upon CPU hotplug
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mingo@kernel.org,
-        pjt@google.com, paul@paulmenage.org, akpm@linux-foundation.org,
-        rjw@sisk.pl, nacc@us.ibm.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com, rob@landley.net,
-        tj@kernel.org, mschmidt@redhat.com, berrange@redhat.com,
-        nikunj@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Fri, 04 May 2012 23:01:34 +0200
-In-Reply-To: <20120504204908.GC18177@linux.vnet.ibm.com>
-References: <20120504191535.4603.83236.stgit@srivatsabhat>
-	 <1336159496.6509.51.camel@twins> <4FA434E9.6000305@linux.vnet.ibm.com>
-	 <1336162456.6509.63.camel@twins> <1336163281.6509.69.camel@twins>
-	 <20120504204908.GC18177@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 4 May 2012 16:48:20 -0400
+Message-Id: <20120504204245.554405815@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 04 May 2012 13:42:52 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 08/47] ASoC: dapm: Ensure power gets managed for line widgets
+In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-04 at 13:49 -0700, Nishanth Aravamudan wrote:
-> I think it's ok for hotplug to be destructive. But I guess I'm not
-> entirely sure why cpusets can't retain user-inputted
-> configuration/policy information even while destroying things currently?
-> And re-instating that policy if possible in the future? 
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Two issues here:
- - if you retain it for cpuset but not others that's confusing (too);
- - we never retain anything, if you unload a module you loose all state
-that was associated with it too. What makes this special?
+------------------
+
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+commit 7e1f7c8a6e517900cd84da1b8ae020f08f286c3b upstream.
+
+Line widgets had not been included in either the power up or power down
+sequences so if a widget had an event associated with it that event would
+never be run. Fix this minimally by adding them to the sequences, we
+should probably be doing away with the specific widget types as they all
+have the same priority anyway.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/soc/soc-dapm.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -67,6 +67,7 @@ static int dapm_up_seq[] = {
+ 	[snd_soc_dapm_out_drv] = 10,
+ 	[snd_soc_dapm_hp] = 10,
+ 	[snd_soc_dapm_spk] = 10,
++	[snd_soc_dapm_line] = 10,
+ 	[snd_soc_dapm_post] = 11,
+ };
+ 
+@@ -75,6 +76,7 @@ static int dapm_down_seq[] = {
+ 	[snd_soc_dapm_adc] = 1,
+ 	[snd_soc_dapm_hp] = 2,
+ 	[snd_soc_dapm_spk] = 2,
++	[snd_soc_dapm_line] = 2,
+ 	[snd_soc_dapm_out_drv] = 2,
+ 	[snd_soc_dapm_pga] = 4,
+ 	[snd_soc_dapm_mixer_named_ctl] = 5,
 
 
