@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932730Ab2EDUsE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:48:04 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932700Ab2EDUr7 (ORCPT
+	id S932760Ab2EDVDW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:03:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932722Ab2EDUsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:47:59 -0400
-Message-Id: <20120504204245.028324509@linuxfoundation.org>
+	Fri, 4 May 2012 16:48:02 -0400
+Message-Id: <20120504204244.944862179@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:46 -0700
+Date: Fri, 04 May 2012 13:42:45 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 02/47] NFSv4: Ensure that the LOCK code sets exception->inode
+        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>, Jan Kara <jack@suse.cz>
+Subject: [ 01/47] nfs: Enclose hostname in brackets when needed in
+ nfs_do_root_mount
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,51 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 05ffe24f5290dc095f98fbaf84afe51ef404ccc5 upstream.
+commit 98a2139f4f4d7b5fcc3a54c7fddbe88612abed20 upstream.
 
-All callers of nfs4_handle_exception() that need to handle
-NFS4ERR_OPENMODE correctly should set exception->inode
+When hostname contains colon (e.g. when it is an IPv6 address) it needs
+to be enclosed in brackets to make parsing of NFS device string possible.
+Fix nfs_do_root_mount() to enclose hostname properly when needed. NFS code
+actually does not need this as it does not parse the string passed by
+nfs_do_root_mount() but the device string is exposed to userspace in
+/proc/mounts.
 
+CC: Josh Boyer <jwboyer@redhat.com>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ fs/nfs/super.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4424,7 +4424,9 @@ static int _nfs4_do_setlk(struct nfs4_st
- static int nfs4_lock_reclaim(struct nfs4_state *state, struct file_lock *request)
- {
- 	struct nfs_server *server = NFS_SERVER(state->inode);
--	struct nfs4_exception exception = { };
-+	struct nfs4_exception exception = {
-+		.inode = state->inode,
-+	};
- 	int err;
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -2694,11 +2694,15 @@ static struct vfsmount *nfs_do_root_moun
+ 	char *root_devname;
+ 	size_t len;
  
- 	do {
-@@ -4442,7 +4444,9 @@ static int nfs4_lock_reclaim(struct nfs4
- static int nfs4_lock_expired(struct nfs4_state *state, struct file_lock *request)
- {
- 	struct nfs_server *server = NFS_SERVER(state->inode);
--	struct nfs4_exception exception = { };
-+	struct nfs4_exception exception = {
-+		.inode = state->inode,
-+	};
- 	int err;
- 
- 	err = nfs4_set_lock_state(state, request);
-@@ -4508,6 +4512,7 @@ static int nfs4_proc_setlk(struct nfs4_s
- {
- 	struct nfs4_exception exception = {
- 		.state = state,
-+		.inode = state->inode,
- 	};
- 	int err;
- 
+-	len = strlen(hostname) + 3;
++	len = strlen(hostname) + 5;
+ 	root_devname = kmalloc(len, GFP_KERNEL);
+ 	if (root_devname == NULL)
+ 		return ERR_PTR(-ENOMEM);
+-	snprintf(root_devname, len, "%s:/", hostname);
++	/* Does hostname needs to be enclosed in brackets? */
++	if (strchr(hostname, ':'))
++		snprintf(root_devname, len, "[%s]:/", hostname);
++	else
++		snprintf(root_devname, len, "%s:/", hostname);
+ 	root_mnt = vfs_kern_mount(fs_type, flags, root_devname, data);
+ 	kfree(root_devname);
+ 	return root_mnt;
 
 
