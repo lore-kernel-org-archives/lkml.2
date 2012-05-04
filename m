@@ -1,208 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab2EDMF5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 08:05:57 -0400
-Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:36366 "EHLO
-	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756491Ab2EDMFz (ORCPT
+	id S1756039Ab2EDMFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 08:05:09 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:43097 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755395Ab2EDMFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 08:05:55 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Dmitry Torokhov <dtor@mail.ru>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        Liam Girdwood <lrg@ti.com>
-Subject: [PATCH] Input: tl6040-vibra: Device Tree support
-Date: Fri,  4 May 2012 15:05:13 +0300
-Message-Id: <1336133113-12224-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.8.6
+	Fri, 4 May 2012 08:05:07 -0400
+Date: Fri, 4 May 2012 14:04:58 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>, linux-mm@kvack.org
+Subject: Re: [PATCH v1 1/6] timer: make __next_timer_interrupt explicit about
+ no future event
+Message-ID: <20120504120455.GB4413@somewhere.redhat.com>
+References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
+ <1336056962-10465-2-git-send-email-gilad@benyossef.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336056962-10465-2-git-send-email-gilad@benyossef.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable DT based probing of the vibra driver.
+On Thu, May 03, 2012 at 05:55:57PM +0300, Gilad Ben-Yossef wrote:
+> Current timer code fails to correctly return a value meaning
+> that there is no future timer event, with the result that
+> the timer keeps getting re-armed in HZ one shot mode even
+> when we could turn it off, generating unneeded interrupts.
+> This patch attempts to fix this problem.
+> 
+> What is happening is that when __next_timer_interrupt() wishes
+> to return a value that signifies "there is no future timer
+> event", it returns (base->timer_jiffies + NEXT_TIMER_MAX_DELTA).
+> 
+> However, the code in tick_nohz_stop_sched_tick(), which called
+> __next_timer_interrupt() via get_next_timer_interrupt(),
+> compares the return value to (last_jiffies + NEXT_TIMER_MAX_DELTA)
+> to see if the timer needs to be re-armed.
+> 
+> base->timer_jiffies != last_jiffies and so
+> tick_nohz_stop_sched_tick() interperts the return value as
+> indication that there is a distant future event 12 days
+> from now and programs the timer to fire next after KIME_MAX
+> nsecs instead of avoiding to arm it. This ends up causesing
+> a needless interrupt once every KTIME_MAX nsecs.
 
-Example of dts section to load the twl6040-vibra driver:
-twl6040: twl6040@4b {
-	...
-	twl6040_vibra: twl6040@1 {
-		compatible = "ti,twl6040-vibra";
-		interrupts = <4>;
-		vddvibl-supply = <&vbat>;
-		vddvibr-supply = <&vbat>;
-		vibldrv_res = <8>;
-		vibrdrv_res = <3>;
-		viblmotor_res = <10>;
-		vibrmotor_res = <10>;
-	};
-};
+Good catch! So if I understand correctly, base->timer_jiffies can
+be backward compared to last_jiffies. If we return
+base->timer_jiffies + NEXT_TIMER_MAX_DELTA, the next_jiffies - last_jiffies
+diff gives a delta that is a bit before NEXT_TIMER_MAX_DELTA.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
+And this can indeed happen if we haven't got any timer list executed since
+we updated jiffies last, timer_jiffies can be a backward compared to last_jiffies.
 
-Hello,
+This is harmless but causes needless timers.
 
-Device tree support for the other twl6040 drivers (MFD core, ASoC codec) will
-go via the appropriate subsystem since we do not have compile time or runtime
-dependencies on them.
+I just have small comment below:
 
-Regards,
-Peter
+> 
+> I've noticed a similar but slightly different fix to the
+> same problem in the Tilera kernel tree from Chris M. (I've
+> wrote this before seeing that one), so some variation of this
+> fix is in use on real hardware for some time now.
+> 
+> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: John Stultz <johnstul@us.ibm.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Mel Gorman <mel@csn.ul.ie>
+> CC: Mike Frysinger <vapier@gentoo.org>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Hugh Dickins <hughd@google.com>
+> CC: Minchan Kim <minchan.kim@gmail.com>
+> CC: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Chris Metcalf <cmetcalf@tilera.com>
+> CC: Hakan Akkan <hakanakkan@gmail.com>
+> CC: Max Krasnyansky <maxk@qualcomm.com>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> CC: linux-kernel@vger.kernel.org
+> CC: linux-mm@kvack.org
+> ---
+>  kernel/timer.c |   31 +++++++++++++++++++++----------
+>  1 files changed, 21 insertions(+), 10 deletions(-)
+> 
+> diff --git a/kernel/timer.c b/kernel/timer.c
+> index a297ffc..32ba64a 100644
+> --- a/kernel/timer.c
+> +++ b/kernel/timer.c
+> @@ -1187,11 +1187,13 @@ static inline void __run_timers(struct tvec_base *base)
+>   * is used on S/390 to stop all activity when a CPU is idle.
+>   * This function needs to be called with interrupts disabled.
+>   */
+> -static unsigned long __next_timer_interrupt(struct tvec_base *base)
+> +static bool __next_timer_interrupt(struct tvec_base *base,
+> +					unsigned long *next_timer)
+>  {
+>  	unsigned long timer_jiffies = base->timer_jiffies;
+>  	unsigned long expires = timer_jiffies + NEXT_TIMER_MAX_DELTA;
+> -	int index, slot, array, found = 0;
+> +	int index, slot, array;
+> +	bool found = false;
+>  	struct timer_list *nte;
+>  	struct tvec *varray[4];
+>  
+> @@ -1202,12 +1204,12 @@ static unsigned long __next_timer_interrupt(struct tvec_base *base)
+>  			if (tbase_get_deferrable(nte->base))
+>  				continue;
+>  
+> -			found = 1;
+> +			found = true;
+>  			expires = nte->expires;
+>  			/* Look at the cascade bucket(s)? */
+>  			if (!index || slot < index)
+>  				goto cascade;
+> -			return expires;
+> +			goto out;
+>  		}
+>  		slot = (slot + 1) & TVR_MASK;
+>  	} while (slot != index);
+> @@ -1233,7 +1235,7 @@ cascade:
+>  				if (tbase_get_deferrable(nte->base))
+>  					continue;
+>  
+> -				found = 1;
+> +				found = true;
+>  				if (time_before(nte->expires, expires))
+>  					expires = nte->expires;
+>  			}
+> @@ -1245,7 +1247,7 @@ cascade:
+>  				/* Look at the cascade bucket(s)? */
+>  				if (!index || slot < index)
+>  					break;
+> -				return expires;
+> +				goto out;
+>  			}
+>  			slot = (slot + 1) & TVN_MASK;
+>  		} while (slot != index);
+> @@ -1254,7 +1256,10 @@ cascade:
+>  			timer_jiffies += TVN_SIZE - index;
+>  		timer_jiffies >>= TVN_BITS;
+>  	}
+> -	return expires;
+> +out:
+> +	if (found)
+> +		*next_timer = expires;
+> +	return found;
+>  }
+>  
+>  /*
+> @@ -1317,9 +1322,15 @@ unsigned long get_next_timer_interrupt(unsigned long now)
+>  	if (cpu_is_offline(smp_processor_id()))
+>  		return now + NEXT_TIMER_MAX_DELTA;
+>  	spin_lock(&base->lock);
+> -	if (time_before_eq(base->next_timer, base->timer_jiffies))
+> -		base->next_timer = __next_timer_interrupt(base);
+> -	expires = base->next_timer;
+> +	if (time_before_eq(base->next_timer, base->timer_jiffies)) {
+> +
+> +		if (__next_timer_interrupt(base, &expires))
+> +			base->next_timer = expires;
+> +		else
+> +			expires = now + NEXT_TIMER_MAX_DELTA;
 
- .../devicetree/bindings/input/twl6040-vibra.txt    |   37 ++++++++++++++++
- drivers/input/misc/twl6040-vibra.c                 |   46 +++++++++++++++-----
- 2 files changed, 72 insertions(+), 11 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/input/twl6040-vibra.txt
-
-diff --git a/Documentation/devicetree/bindings/input/twl6040-vibra.txt b/Documentation/devicetree/bindings/input/twl6040-vibra.txt
-new file mode 100644
-index 0000000..5b1918b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/twl6040-vibra.txt
-@@ -0,0 +1,37 @@
-+Vibra driver for the twl6040 family
-+
-+The vibra driver is a child of the twl6040 MFD dirver.
-+Documentation/devicetree/bindings/mfd/twl6040.txt
-+
-+Required properties:
-+- compatible : Must be "ti,twl6040-vibra";
-+- interrupts: 4, Vibra overcurrent interrupt
-+- vddvibl-supply: Regulator supplying the left vibra motor
-+- vddvibr-supply: Regulator supplying the right vibra motor
-+- vibldrv_res: Board specific left driver resistance
-+- vibrdrv_res: Board specific right driver resistance
-+- viblmotor_res: Board specific left motor resistance
-+- vibrmotor_res: Board specific right motor resistance
-+
-+Optional properties:
-+- vddvibl_uV: If the vddvibl default voltage need to be changed
-+- vddvibr_uV: If the vddvibr default voltage need to be changed
-+
-+Example:
-+/*
-+ * 8-channel high quality low-power audio codec
-+ * http://www.ti.com/lit/ds/symlink/twl6040.pdf
-+ */
-+twl6040: twl6040@4b {
-+	...
-+	twl6040_vibra: twl6040@1 {
-+		compatible = "ti,twl6040-vibra";
-+		interrupts = <4>;
-+		vddvibl-supply = <&vbat>;
-+		vddvibr-supply = <&vbat>;
-+		vibldrv_res = <8>;
-+		vibrdrv_res = <3>;
-+		viblmotor_res = <10>;
-+		vibrmotor_res = <10>;
-+	};
-+};
-diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
-index 14e94f5..bb134ce 100644
---- a/drivers/input/misc/twl6040-vibra.c
-+++ b/drivers/input/misc/twl6040-vibra.c
-@@ -27,6 +27,7 @@
-  */
- #include <linux/module.h>
- #include <linux/platform_device.h>
-+#include <linux/of_device.h>
- #include <linux/workqueue.h>
- #include <linux/input.h>
- #include <linux/mfd/twl6040.h>
-@@ -258,10 +259,13 @@ static SIMPLE_DEV_PM_OPS(twl6040_vibra_pm_ops, twl6040_vibra_suspend, NULL);
- static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
- {
- 	struct twl6040_vibra_data *pdata = pdev->dev.platform_data;
-+	struct device_node *node = pdev->dev.of_node;
- 	struct vibra_info *info;
-+	int vddvibl_uV = 0;
-+	int vddvibr_uV = 0;
- 	int ret;
- 
--	if (!pdata) {
-+	if (!pdata && !node) {
- 		dev_err(&pdev->dev, "platform_data not available\n");
- 		return -EINVAL;
- 	}
-@@ -273,11 +277,26 @@ static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
- 	}
- 
- 	info->dev = &pdev->dev;
-+
- 	info->twl6040 = dev_get_drvdata(pdev->dev.parent);
--	info->vibldrv_res = pdata->vibldrv_res;
--	info->vibrdrv_res = pdata->vibrdrv_res;
--	info->viblmotor_res = pdata->viblmotor_res;
--	info->vibrmotor_res = pdata->vibrmotor_res;
-+	if (pdata) {
-+		info->vibldrv_res = pdata->vibldrv_res;
-+		info->vibrdrv_res = pdata->vibrdrv_res;
-+		info->viblmotor_res = pdata->viblmotor_res;
-+		info->vibrmotor_res = pdata->vibrmotor_res;
-+		vddvibl_uV = pdata->vddvibl_uV;
-+		vddvibr_uV = pdata->vddvibr_uV;
-+	} else {
-+		of_property_read_u32(node, "vibldrv_res", &info->vibldrv_res);
-+		of_property_read_u32(node, "vibrdrv_res", &info->vibrdrv_res);
-+		of_property_read_u32(node, "viblmotor_res",
-+				     &info->viblmotor_res);
-+		of_property_read_u32(node, "vibrmotor_res",
-+				     &info->vibrmotor_res);
-+		of_property_read_u32(node, "vddvibl_uV", &vddvibl_uV);
-+		of_property_read_u32(node, "vddvibr_uV", &vddvibr_uV);
-+	}
-+
- 	if ((!info->vibldrv_res && !info->viblmotor_res) ||
- 	    (!info->vibrdrv_res && !info->vibrmotor_res)) {
- 		dev_err(info->dev, "invalid vibra driver/motor resistance\n");
-@@ -339,10 +358,9 @@ static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
- 		goto err_regulator;
- 	}
- 
--	if (pdata->vddvibl_uV) {
-+	if (vddvibl_uV) {
- 		ret = regulator_set_voltage(info->supplies[0].consumer,
--					    pdata->vddvibl_uV,
--					    pdata->vddvibl_uV);
-+					    vddvibl_uV, vddvibl_uV);
- 		if (ret) {
- 			dev_err(info->dev, "failed to set VDDVIBL volt %d\n",
- 				ret);
-@@ -350,10 +368,9 @@ static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
- 		}
- 	}
- 
--	if (pdata->vddvibr_uV) {
-+	if (vddvibr_uV) {
- 		ret = regulator_set_voltage(info->supplies[1].consumer,
--					    pdata->vddvibr_uV,
--					    pdata->vddvibr_uV);
-+					    vddvibr_uV, vddvibr_uV);
- 		if (ret) {
- 			dev_err(info->dev, "failed to set VDDVIBR volt %d\n",
- 				ret);
-@@ -401,6 +418,12 @@ static int __devexit twl6040_vibra_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static const struct of_device_id twl6040_vibra_of_match[] = {
-+	{.compatible = "ti,twl6040-vibra", },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, twl6040_vibra_of_match);
-+
- static struct platform_driver twl6040_vibra_driver = {
- 	.probe		= twl6040_vibra_probe,
- 	.remove		= __devexit_p(twl6040_vibra_remove),
-@@ -408,6 +431,7 @@ static struct platform_driver twl6040_vibra_driver = {
- 		.name	= "twl6040-vibra",
- 		.owner	= THIS_MODULE,
- 		.pm	= &twl6040_vibra_pm_ops,
-+		.of_match_table = twl6040_vibra_of_match,
- 	},
- };
- module_platform_driver(twl6040_vibra_driver);
--- 
-1.7.8.6
-
+I believe you can update base->next_timer to now + NEXT_TIMER_MAX_DELTA,
+so on any further idle interrupt exit that call tick_nohz_stop_sched_tick(),
+we won't get again the overhead of __next_timer_interrupt().
