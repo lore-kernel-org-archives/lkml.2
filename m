@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758174Ab2EDNif (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 09:38:35 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41199 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756056Ab2EDNie (ORCPT
+	id S1758256Ab2EDNj1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 09:39:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55565 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753416Ab2EDNj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 09:38:34 -0400
+	Fri, 4 May 2012 09:39:26 -0400
+Date: Fri, 4 May 2012 10:39:27 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL 0/3] perf/annotate improvements
+Message-ID: <20120504133927.GB10068@infradead.org>
+References: <1336062935-19964-1-git-send-email-acme@infradead.org>
+ <20120504070048.GA10289@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4FA3D2DF.9070000@intel.com>
-References: <1336114210-25687-1-git-send-email-alex.shi@intel.com>
-	<1336114210-25687-4-git-send-email-alex.shi@intel.com>
-	<CAJd=RBDi1cJ=HmjoLdMG1hMU5GZNDV5ysXqvCT9PP09rEi342w@mail.gmail.com>
-	<4FA3D2DF.9070000@intel.com>
-Date: Fri, 4 May 2012 21:38:33 +0800
-Message-ID: <CAJd=RBA8JSAckF0=jAdqtVCym3O1CAr97OObiqqvERQuYCgVNA@mail.gmail.com>
-Subject: Re: [PATH v2 3/5] x86/tlb: fall back to flush all when meet a THP
- large page
-From: Hillf Danton <dhillf@gmail.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
-        fweisbec@gmail.com, bp@amd64.org, npiggin@gmail.com, jeremy@goop.org,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, yinghai@kernel.org,
-        borislav.petkov@amd.com, ak@linux.intel.com, cpw@sgi.com,
-        steiner@sgi.com, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120504070048.GA10289@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q44Dcex0002928
 
-On Fri, May 4, 2012 at 9:00 PM, Alex Shi <alex.shi@intel.com> wrote:
-> On 05/04/2012 08:11 PM, Hillf Danton wrote:
->
->> Hi Alex,
->>
->> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  if (vmflag & VM_EXEC)
->> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  tlb_entries = tlb_lli_4k[ENTRIES];
->> @@ -22,11 +23,15 @@ void flush_tlb_range(struct vm_area_stru
->> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  act_entries = tlb_entries > mm->total_vm ?
->> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  mm->total_vm : tlb_entries;
->>
->> - Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  if ((end - start)/PAGE_SIZE > act_entries/FLUSHALL_BAR)
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  pg_sz = (transparent_hugepage_enabled(vma) ||
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  is_vm_hugetlb_page(vma)) ?
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  HPAGE_SIZE : PAGE_SIZE;
->> +
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  if ((end - start)/pg_sz > act_entries/FLUSHALL_BAR)
->
->
-> Your patch should base on the second patch that expel the HUGETLB page.
->
-The diff is only for showing idea.
+Em Fri, May 04, 2012 at 09:00:48AM +0200, Ingo Molnar escreveu:
+> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> 
+> Hm, this regresses for some symbols, the annotation window only 
+> shows this:
 
-> But the key fact is I did not find invlpg is help on HUGETLB.
+I'll check this, and as well provide a "screenshot" feature to write a
+__strlen_sse2_pminub.annotation file stripping the spaces all the way to
+the scrollbar, to ease posting problems :-)
 
-Yep, I only assume flushing huge TLB is not far from regular TLB.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+- Arnaldo
+ 
+> __strlen_sse2_pminub                                                                               
+>        â”‚
+>        â”‚
+> 
+> It used to show the full thing:
+> 
+> __strlen_sse2_pminub                                                                               
+>     0.00 :          392a35dbde:   jne    392a35dc30 
+> <__strlen_sse2_pminub+0x2a0>                  â–’
+>     0.00 :          392a35dbe0:   pcmpeqb 0x40(%rax),%xmm3                                        
+> â–’
+>     0.00 :          392a35dbe5:   pmovmskb %xmm3,%edx                                             
+> â–’
+>     0.00 :          392a35dbe9:   sub    %rdi,%rax                                                
+> â–’
+>     0.00 :          392a35dbec:   bsf    %rdx,%rdx                                                
+> â–’
+>     0.00 :          392a35dbf0:   add    %rdx,%rax                                                
+> â–’
+>     0.00 :          392a35dbf3:   add    $0x40,%rax                                               
+> â–’
+>     0.00 :          392a35dbf7:   retq                                           
+> 
+> Other symbols are fine.
+> 
+> 	Ingo
