@@ -1,155 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758385Ab2EDONY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 10:13:24 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51837 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322Ab2EDONX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 10:13:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120504135217.GB1049@phenom.dumpdata.com>
-References: <CAEe-dwgCR55urie0c1MdBWTS6-E=3faXj68=WMcb6NvQCQX0rg@mail.gmail.com>
-	<20120504135217.GB1049@phenom.dumpdata.com>
-Date: Fri, 4 May 2012 11:13:22 -0300
-X-Google-Sender-Auth: M3xDy_XOIk0x_acKEv6w1531eZ0
-Message-ID: <CAEe-dwj4JP-U0tc3wpmHvzv=aQU5zy3cG_E9FrriPw_sdfg2bg@mail.gmail.com>
-Subject: Re: [RFC][PATCH] ACPI: Ignore invalid _PSS entries, but use valid ones
-From: Marco Aurelio da Costa <costa@gamic.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+	id S1758381Ab2EDOek (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 10:34:40 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:47619 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757189Ab2EDOej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 10:34:39 -0400
+Date: Fri, 4 May 2012 15:26:13 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1205041525020.10373@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Konrad.
 
-On Fri, May 4, 2012 at 10:52 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Fri, May 04, 2012 at 10:46:01AM -0300, Marco Aurelio da Costa wrote:
->> From: Marco Aurelio da Costa <costa@gamic.com>
->> Signed-off-by: Marco Aurelio da Costa <costa@gamic.com>
->>
->> The EliteBook 8560W has non-initialized entries in its _PSS ACPI
->> table. Instead of bailing out when the first non-initialized entry is
->> found, ignore it and use only  the valid entries. Only bail out if there
->> is no valid entry at all.
->
-> Is that safe? Meaning re-use the other CPU's _PSS states? Perhaps the
-> warning at the end should say: "Trying to compensate by using the
-> other CPU's PSS state).
+Some minor fixes from Intel and a radeon fix.
 
-This case in question was created by HP removing the overclock options
-and leaving the entries in a invalid/empty situation. In this specific
-case, it is safe.
-I am not changing the table in any way, I just ignore the
-non-initialized entries. The code only use listed states. If they are
-CPU bound, the code doesn't assume anything.
+I have the nouveau fix for the i2c regression queued for next week,
+its mostly a revert and seems to work on the system it was originally
+introduced for thanks to some i2c core changes.
 
->
->>
->> ---
->> --- linux-3.3.3/drivers/acpi/processor_perflib.c.orig   2012-04-24
->> 22:18:23.288041268 +0200
->> +++ linux-3.3.3/drivers/acpi/processor_perflib.c        2012-04-24
->> 22:19:25.912042603 +0200
->> @@ -311,6 +311,7 @@ static int acpi_processor_get_performanc
->>        struct acpi_buffer state = { 0, NULL };
->>        union acpi_object *pss = NULL;
->>        int i;
->> +       int last_invalid = -1;
->>
->>
->>        status = acpi_evaluate_object(pr->handle, "_PSS", NULL, &buffer);
->> @@ -374,12 +375,30 @@ static int acpi_processor_get_performanc
->>                        printk(KERN_ERR FW_BUG PREFIX
->>                               "Invalid BIOS _PSS frequency: 0x%llx MHz\n",
->>                               px->core_frequency);
->> -                       result = -EFAULT;
->> -                       kfree(pr->performance->states);
->> -                       goto end;
->> +                       if (-1 == last_invalid)
->
-> Swap it around or just do it this way:
+Dave.
 
-Ok.
+The following changes since commit addde4ec31456c5f1e9b61aae3edcfeb0f338f87:
 
->
-> if (last_invalid < 0)
->
->> +                               last_invalid = i;
->> +               } else {
->> +                       if (last_invalid != -1) {
->
-> if (last_invalid >= 0)
->
->> +                               /*
->> +                                * Copy this valid entry over last_invalid entry
->> +                                */
->> +                               memcpy(&(pr->performance->states[last_invalid]),
->> +                                      px, sizeof(struct acpi_processor_px));
->> +                               ++last_invalid;
->> +                       }
->>                }
->>        }
->>
->> +       if (0 == last_invalid) {
->
-> So if _PSS that is missing is at CPU2, this own't print it.
+  nouveau: initialise has_optimus variable. (2012-05-03 09:30:58 +0100)
 
-I don't get what do you mean by CPU. last_invalid is just the last
-invalid _PSS entry item. Nothing to do with the CPU.
+are available in the git repository at:
+  git://people.freedesktop.org/~airlied/linux drm-fixes
 
->
-> I think you want 'if (last_invalid >= 0)'
+Alex Deucher (1):
+      drm/radeon: clarify and extend wb setup on APUs and NI+ asics
 
-No, it is correct. If the last invalid found item is the item 0, than
-it means that no valid item was found.
+Chris Wilson (2):
+      drm/i915: Do not read non-existent DPLL registers on PCH hardware
+      drm/i915: Only enable IPS polling for gen5
 
->
->> +               printk(KERN_ERR FW_BUG PREFIX
->> +                      "No valid BIOS _PSS frequency found\n");
->
-> And you should mention which CPU has it busted - as there are
-> some that are working.
+Dave Airlie (1):
+      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
 
-No CPU here, just the _PSS item.
+Marc Gariepy (1):
+      fixing dmi match for hp t5745 and hp st5747 thin client
 
->
->
->> +               result = -EFAULT;
->> +               kfree(pr->performance->states);
->> +       }
->> +
->> +       if (last_invalid > 0)
->
-> Don't you want 'last_invalid >= 0' ?
+Paulo Zanoni (1):
+      drm/i915: enable dip before writing data on gen4
 
-No. It is correct. If the last invalid item is greater than 0, then
-there was at least 1 valid _PSS entry. And the count of valid entries
-is the same as the last_invalid variable.
-
->
->> +               pr->performance->state_count = last_invalid;
->> +
->>       end:
->>        kfree(buffer.pointer);
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-I will send the corrected patch next.
-
-
--- 
-Marco Costa
-Customer Support
---
-GAMIC mbH
-Roermonder Strasse, 151
-52072 Aachen
-Germany
+ drivers/gpu/drm/i915/i915_debugfs.c    |    3 +++
+ drivers/gpu/drm/i915/i915_dma.c        |   15 ++++++++++-----
+ drivers/gpu/drm/i915/intel_display.c   |    9 +++++----
+ drivers/gpu/drm/i915/intel_hdmi.c      |    2 +-
+ drivers/gpu/drm/i915/intel_lvds.c      |    4 ++--
+ drivers/gpu/drm/radeon/radeon_device.c |    4 ++--
+ 6 files changed, 23 insertions(+), 14 deletions(-)
