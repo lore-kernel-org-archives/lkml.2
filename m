@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932936Ab2EDU7d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:59:33 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932843Ab2EDUsv (ORCPT
+	id S932971Ab2EDU7n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:59:43 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43208 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932403Ab2EDU7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:48:51 -0400
-Message-Id: <20120504204246.438929398@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:02 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>,
-        Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 18/47] Fix modpost failures in fedora 17
-In-Reply-To: <20120504204307.GA13761@kroah.com>
+	Fri, 4 May 2012 16:59:41 -0400
+Message-ID: <4FA44339.2010808@wwwdotorg.org>
+Date: Fri, 04 May 2012 14:59:37 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Wolfgang Denk <wd@denx.de>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@ardb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        linux-arm-kernel@lists.infradead.org, linux-embedded@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Handling of modular boards
+References: <20120504185850.GO14230@opensource.wolfsonmicro.com> <4FA432E9.9050606@wwwdotorg.org> <20120504203857.49EAD206451@gemini.denx.de>
+In-Reply-To: <20120504203857.49EAD206451@gemini.denx.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On 05/04/2012 02:38 PM, Wolfgang Denk wrote:
+> Dear Stephen,
+> 
+> In message <4FA432E9.9050606@wwwdotorg.org> you wrote:
+>>
+>> representation of how to identify the child boards, and then have the
+>> kernel only use/parse certain chunks of the DT based on the ID results.
+> 
+> I expect that this will quickly cause problems, for example in those
+> many cases where pins and peripheral functions are multiplexed, or
+> usable for different purposes. I would not want to maintain a DT that
+> has to describe all combinations used by some boards - in a way that
+> does not cause conflicts on either of them.
 
-------------------
-
-From: David Miller <davem@davemloft.net>
-
-commit e88aa7bbbe3046a125ea1936b16bb921cc9c6349 upstream.
-
-The symbol table on x86-64 starts to have entries that have names
-like:
-
-_GLOBAL__sub_I_65535_0___mod_x86cpu_device_table
-
-They are of type STT_FUNCTION and this one had a length of 18.  This
-matched the device ID validation logic and it barfed because the
-length did not meet the device type's criteria.
-
---------------------
-FATAL: arch/x86/crypto/aesni-intel: sizeof(struct x86cpu_device_id)=16 is not a modulo of the size of section __mod_x86cpu_device_table=18.
-Fix definition of struct x86cpu_device_id in mod_devicetable.h
---------------------
-
-These are some kind of compiler tool internal stuff being emitted and
-not something we want to inspect in modpost's device ID table
-validation code.
-
-So skip the symbol if it is not of type STT_OBJECT.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
-Thanks,
-Jonathan
-
- scripts/mod/file2alias.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -905,6 +905,10 @@ void handle_moddevtable(struct module *m
- 	if (!sym->st_shndx || get_secindex(info, sym) >= info->num_sections)
- 		return;
- 
-+	/* We're looking for an object */
-+	if (ELF_ST_TYPE(sym->st_info) != STT_OBJECT)
-+		return;
-+
- 	/* Handle all-NULL symbols allocated into .bss */
- 	if (info->sechdrs[get_secindex(info, sym)].sh_type & SHT_NOBITS) {
- 		zeros = calloc(1, sym->st_size);
-
-
+With the DT pinctrl bindings, you can define the pinctrl configuration
+required to interact with particular child boards in the DT chunk for
+that child board. So, I think this would work out fine; you wouldn't
+have to represent a huge maze/array of conditional pinctrl settings in
+the main board file.
