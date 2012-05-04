@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760293Ab2EDVSy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:18:54 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759819Ab2EDUoh (ORCPT
+	id S1760302Ab2EDVT1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:19:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759664Ab2EDUoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:44:37 -0400
-Message-Id: <20120504204225.661768143@linuxfoundation.org>
+	Fri, 4 May 2012 16:44:25 -0400
+Message-Id: <20120504204225.390919138@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:39 -0700
+Date: Fri, 04 May 2012 13:42:36 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>
-Subject: [ 15/75] dmaengine: at_hdmac: remove clear-on-read in atc_dostart()
+        alan@lxorguk.ukuu.org.uk,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 12/75] xen/smp: Fix crash when booting with ACPI hotplug CPUs.
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +25,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit ed8b0d67f33518a16c6b2450fe5ebebf180c2d04 upstream.
+commit cf405ae612b0f7e2358db7ff594c0e94846137aa upstream.
 
-This loop on EBCISR register was designed to clear IRQ sources before enabling
-a DMA channel. This register is clear-on-read so a race condition can appear if
-another channel is already active and has just finished its transfer.
-Removing this read on EBCISR is fixing the issue as there is no case where an IRQ
-could be pending: we already make sure that this register is drained at probe()
-time and during resume.
+When we boot on a machine that can hotplug CPUs and we
+are using 'dom0_max_vcpus=X' on the Xen hypervisor line
+to clip the amount of CPUs available to the initial domain,
+we get this:
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+(XEN) Command line: com1=115200,8n1 dom0_mem=8G noreboot dom0_max_vcpus=8 sync_console mce_verbosity=verbose console=com1,vga loglvl=all guest_loglvl=all
+.. snip..
+DMI: Intel Corporation S2600CP/S2600CP, BIOS SE5C600.86B.99.99.x032.072520111118 07/25/2011
+.. snip.
+SMP: Allowing 64 CPUs, 32 hotplug CPUs
+installing Xen timer for CPU 7
+cpu 7 spinlock event irq 361
+NMI watchdog: disabled (cpu7): hardware events not enabled
+Brought up 8 CPUs
+.. snip..
+	[acpi processor finds the CPUs are not initialized and starts calling
+	arch_register_cpu, which creates /sys/devices/system/cpu/cpu8/online]
+CPU 8 got hotplugged
+CPU 9 got hotplugged
+CPU 10 got hotplugged
+.. snip..
+initcall 1_acpi_battery_init_async+0x0/0x1b returned 0 after 406 usecs
+calling  erst_init+0x0/0x2bb @ 1
+
+	[and the scheduler sticks newly started tasks on the new CPUs, but
+	said CPUs cannot be initialized b/c the hypervisor has limited the
+	amount of vCPUS to 8 - as per the dom0_max_vcpus=8 flag.
+	The spinlock tries to kick the other CPU, but the structure for that
+	is not initialized and we crash.]
+BUG: unable to handle kernel paging request at fffffffffffffed8
+IP: [<ffffffff81035289>] xen_spin_lock+0x29/0x60
+PGD 180d067 PUD 180e067 PMD 0
+Oops: 0002 [#1] SMP
+CPU 7
+Modules linked in:
+
+Pid: 1, comm: swapper/0 Not tainted 3.4.0-rc2upstream-00001-gf5154e8 #1 Intel Corporation S2600CP/S2600CP
+RIP: e030:[<ffffffff81035289>]  [<ffffffff81035289>] xen_spin_lock+0x29/0x60
+RSP: e02b:ffff8801fb9b3a70  EFLAGS: 00010282
+
+With this patch, we cap the amount of vCPUS that the initial domain
+can run, to exactly what dom0_max_vcpus=X has specified.
+
+In the future, if there is a hypercall that will allow a running
+domain to expand past its initial set of vCPUS, this patch should
+be re-evaluated.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/at_hdmac.c |    4 ----
- 1 file changed, 4 deletions(-)
+ arch/x86/xen/smp.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -241,10 +241,6 @@ static void atc_dostart(struct at_dma_ch
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -172,6 +172,7 @@ static void __init xen_fill_possible_map
+ static void __init xen_filter_cpu_maps(void)
+ {
+ 	int i, rc;
++	unsigned int subtract = 0;
  
- 	vdbg_dump_regs(atchan);
+ 	if (!xen_initial_domain())
+ 		return;
+@@ -186,8 +187,22 @@ static void __init xen_filter_cpu_maps(v
+ 		} else {
+ 			set_cpu_possible(i, false);
+ 			set_cpu_present(i, false);
++			subtract++;
+ 		}
+ 	}
++#ifdef CONFIG_HOTPLUG_CPU
++	/* This is akin to using 'nr_cpus' on the Linux command line.
++	 * Which is OK as when we use 'dom0_max_vcpus=X' we can only
++	 * have up to X, while nr_cpu_ids is greater than X. This
++	 * normally is not a problem, except when CPU hotplugging
++	 * is involved and then there might be more than X CPUs
++	 * in the guest - which will not work as there is no
++	 * hypercall to expand the max number of VCPUs an already
++	 * running guest has. So cap it up to X. */
++	if (subtract)
++		nr_cpu_ids = nr_cpu_ids - subtract;
++#endif
++
+ }
  
--	/* clear any pending interrupt */
--	while (dma_readl(atdma, EBCISR))
--		cpu_relax();
--
- 	channel_writel(atchan, SADDR, 0);
- 	channel_writel(atchan, DADDR, 0);
- 	channel_writel(atchan, CTRLA, 0);
+ static void __init xen_smp_prepare_boot_cpu(void)
 
 
