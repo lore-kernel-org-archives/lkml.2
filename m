@@ -1,56 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab2EDNAd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 09:00:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43587 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755856Ab2EDNAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 09:00:32 -0400
-Message-ID: <4FA3D2D8.8010906@redhat.com>
-Date: Fri, 04 May 2012 09:00:08 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1758169Ab2EDNAv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 09:00:51 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8308 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756794Ab2EDNAt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 09:00:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 04 May 2012 06:00:41 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+CC: "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Date: Fri, 4 May 2012 15:00:35 +0200
+Subject: Re: [PATCH 1/1] ARM: tegra: Add Tegra Memory Controller(MC) driver
+Thread-Topic: [PATCH 1/1] ARM: tegra: Add Tegra Memory Controller(MC) driver
+Thread-Index: Ac0p9eZxIZt6T5vxTCy1CcyHkSNUKQ==
+Message-ID: <20120504.160035.1828735037330038337.hdoyu@nvidia.com>
+References: <1336063897-12083-1-git-send-email-hdoyu@nvidia.com><4FA2D0C4.4020608@wwwdotorg.org>
+In-Reply-To: <4FA2D0C4.4020608@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        john stultz <johnstul@us.ibm.com>, Don Zickus <dzickus@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, gregkh@linuxfoundation.org
-Subject: Re: [RFC PATCH] tty, add kref to sysrq handlers
-References: <1335546920-28492-1-git-send-email-prarit@redhat.com> <20120427183922.47436912@pyramind.ukuu.org.uk>
-In-Reply-To: <20120427183922.47436912@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 1/1] ARM: tegra: Add Tegra Memory Controller(MC) driver
+Date: Thu, 3 May 2012 20:39:00 +0200
+Message-ID: <4FA2D0C4.4020608@wwwdotorg.org>
 
-
-On 04/27/2012 01:39 PM, Alan Cox wrote:
->> If the lock were removed, however, there is one _unlikely_ circumstance in
->> which the array would be left unprotected.  That would be the situation in
->> which a module was loaded and the sysrq handler was registered during the
->> execution of the module.  Again, the possibility of the scenario is very
->> small and given the existing usage of unregister_sysrq_key() in the tree
->> it seems like removing the lock is sufficient.
+> On 05/03/2012 10:51 AM, Hiroshi DOYU wrote:
+> > Tegra Memory Controller(MC) driver for Tegra20/30.
+> > Added to support MC General interrupts, mainly for IOMMU.
 > 
-> It's asking for later disasters I think.
+> > The location of a file may not be suitable because of xxx_driver under arch/arm/mach-*.
+> > ---
+> > diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
 > 
-> I'm not sure I see we need a kref - that looks like overkill, and its
-> probably even more elegantly done with RCU ?
+> Russell, Olof, Arnd,
+> 
+> Where should this driver be placed? It's a completely Tegra-specific
+> module, and I don't believe there's any drivers/ directory or other
+> subsystem that's appropriate to house it right now. Should we go ahead
+> and create a drivers/arm/ for this? Perhaps drivers/misc/?
+> 
+> Honestly, to me it seems best to keep purely platform-specific drivers
+> like this in arch/arm/mach-tegra, since that's the most closely
+> Tegra-related directory.
+> 
+> Hiroshi,
+> 
+> This driver attempts to cover both Tegra20 and Tegra30. However, there's
+> almost no common code. I think it'd be best as separate tegra20-mc.c and
+> tegra30-mc.c.
+> 
+> This patch should include DT binding documentation.
+> 
+> That all said, I'd hold off on reposting this until we work out how the
+> MC/GART/SMMU parent-child relationship stuff is worked out; see my
+> immediately previous email.
 
-Alan,
+Ok.
 
-Thanks for the suggestions.  As always they are much appreciated.
+What about the following AHB patches? AHB patches are independent of
+MC/GART/SMMU DT issue basically. If you think that they are ready to
+merge, I'll post the update version, I fixed some of your latest
+comments.
 
-I looked into this, and unfortunately the RCU implementation in the kernel is
-dynamic-list based.  I could do some funky stuff to make it work with an array
-or even implement an RCU for arrays but I'm wondering if that is wasted code.
+ [PATCH 1/3] ARM: tegra: Add Tegra AHB driver
+ [PATCH 2/3] ARM: tegra: Add SMMU enabler in AHB
+ [PATCH 3/3] ARM: dt: tegra: Add device tree support for AHB
 
-Most arrays in the kernel that require RCU-like locking seem to use seqlocks.
-The problem with any lock, unfortunately, is that I would have to still block
-irqs, which is exactly what I'm trying to avoid.
 
-I'll submit my patch as a real PATCH and see what everyone thinks of it ...
+I'll hold off on the following until we get some direction for
+MC/GART/SMMU. They are related to how dt info is passed via MC.
 
-P.
+ [PATCH 1/3] ARM: tegra: Add Tegra Memory Controller(MC) driver
+ [PATCH 2/3] ARM: dt: tegra: Add device tree support for Memory Controller(MC)
+ [PATCH 3/3] iommu/tegra: smmu: Refrain from accessing to AHB
