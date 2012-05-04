@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757111Ab2EDCYO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 22:24:14 -0400
-Received: from mga14.intel.com ([143.182.124.37]:50832 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755810Ab2EDCYN convert rfc822-to-8bit (ORCPT
+	id S1757305Ab2EDCY7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 22:24:59 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63572 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755884Ab2EDCY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 22:24:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="96222603"
-From: "Ren, Yongjie" <yongjie.ren@intel.com>
-To: "Shi, Alex" <alex.shi@intel.com>, "Kleen, Andi" <andi.kleen@intel.com>,
-        "tim.c.chen@linux.intel.com" <tim.c.chen@linux.intel.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
-        "akataria@vmware.com" <akataria@vmware.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>
-CC: "riel@redhat.com" <riel@redhat.com>, "luto@mit.edu" <luto@mit.edu>,
-        "avi@redhat.com" <avi@redhat.com>, "Brown, Len" <len.brown@intel.com>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "borislav.petkov@amd.com" <borislav.petkov@amd.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>, "cpw@sgi.com" <cpw@sgi.com>,
-        "steiner@sgi.com" <steiner@sgi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/3] x86/flush_tlb: try flush_tlb_single one by one in
- flush_tlb_range
-Thread-Topic: [PATCH 2/3] x86/flush_tlb: try flush_tlb_single one by one in
- flush_tlb_range
-Thread-Index: AQHNJRxX0OEfnjcKCEqtRYUJcj3uBZa47ing
-Date: Fri, 4 May 2012 02:24:07 +0000
-Message-ID: <1B4B44D9196EFF41AE41FDA404FC0A100AC423@SHSMSX101.ccr.corp.intel.com>
-References: <1335603099-2624-1-git-send-email-alex.shi@intel.com>
- <1335603099-2624-3-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1335603099-2624-3-git-send-email-alex.shi@intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 May 2012 22:24:58 -0400
+X-AuditID: 9c930179-b7c19ae000000486-f8-4fa33df8a801
+Message-ID: <4FA33DF6.8060107@kernel.org>
+Date: Fri, 04 May 2012 11:24:54 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel,gmane.linux.kernel.mm
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Nitin Gupta <ngupta@vflare.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+References: <1336027242-372-1-git-send-email-minchan@kernel.org> <1336027242-372-3-git-send-email-minchan@kernel.org> <4FA28907.9020300@vflare.org> <4FA2A2F0.3030509@linux.vnet.ibm.com>
+In-Reply-To: <4FA2A2F0.3030509@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  arch/x86/include/asm/paravirt.h       |    5 +-
->  arch/x86/include/asm/paravirt_types.h |    3 +-
->  arch/x86/include/asm/tlbflush.h       |   19 +++----
->  arch/x86/include/asm/uv/uv.h          |    5 +-
->  arch/x86/mm/tlb.c                     |   97
-> +++++++++++++++++++++++++++------
->  arch/x86/platform/uv/tlb_uv.c         |    6 +-
->  arch/x86/xen/mmu.c                    |    9 ++--
->  include/trace/events/xen.h            |   12 +++--
->  8 files changed, 113 insertions(+), 43 deletions(-)
+On 05/04/2012 12:23 AM, Seth Jennings wrote:
 
-As the patch series touched some Xen virtualization code, I just did some simple test on Xen and KVM.
-It seems these patches work fine on Xen/KVM virtual side.
-I started an SMP PV guest and an SMP HVM guest on Xen, and an SMP guest on KVM.
+> On 05/03/2012 08:32 AM, Nitin Gupta wrote:
+> 
+>> On 5/3/12 2:40 AM, Minchan Kim wrote:
+>>> We should use zs_handle instead of void * to avoid any
+>>> confusion. Without this, users may just treat zs_malloc return value as
+>>> a pointer and try to deference it.
+>>>
+>>> Cc: Dan Magenheimer<dan.magenheimer@oracle.com>
+>>> Cc: Konrad Rzeszutek Wilk<konrad.wilk@oracle.com>
+>>> Signed-off-by: Minchan Kim<minchan@kernel.org>
+>>> ---
+>>>   drivers/staging/zcache/zcache-main.c     |    8 ++++----
+>>>   drivers/staging/zram/zram_drv.c          |    8 ++++----
+>>>   drivers/staging/zram/zram_drv.h          |    2 +-
+>>>   drivers/staging/zsmalloc/zsmalloc-main.c |   28
+>>> ++++++++++++++--------------
+>>>   drivers/staging/zsmalloc/zsmalloc.h      |   15 +++++++++++----
+>>>   5 files changed, 34 insertions(+), 27 deletions(-)
+>>
+>> This was a long pending change. Thanks!
+> 
+> 
+> The reason I hadn't done it before is that it introduces a checkpatch
+> warning:
+> 
+> WARNING: do not add new typedefs
+> #303: FILE: drivers/staging/zsmalloc/zsmalloc.h:19:
+> +typedef void * zs_handle;
+> 
 
-Best Regards,
-     Yongjie (Jay)
 
+Yes. I did it but I think we are (a) of chapter 5: Typedefs in Documentation/CodingStyle.
+
+ (a) totally opaque objects (where the typedef is actively used to _hide_
+     what the object is).
+
+No?
+
+> In addition this particular patch has a checkpatch error:
+> 
+> ERROR: "foo * bar" should be "foo *bar"
+> #303: FILE: drivers/staging/zsmalloc/zsmalloc.h:19:
+> +typedef void * zs_handle;
+
+
+It was my mistake. Will fix.
+Thanks!
+
+-- 
+Kind regards,
+Minchan Kim
