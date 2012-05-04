@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760222Ab2EDVN7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:13:59 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932306Ab2EDUph (ORCPT
+	id S1760239Ab2EDVOn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:14:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932267Ab2EDUpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:45:37 -0400
-Message-Id: <20120504204227.207027961@linuxfoundation.org>
+	Fri, 4 May 2012 16:45:24 -0400
+Message-Id: <20120504204226.438889916@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:57 -0700
+Date: Fri, 04 May 2012 13:42:48 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Fernandez Gonzalo <gfernandez@copreci.es>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: [ 33/75] usb gadget: uvc: uvc_request_data::length field must be signed
+        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 24/75] drm/i915: fix integer overflow in i915_gem_execbuffer2()
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit 6f6543f53f9ce136e01d7114bf6f0818ca54fb41 upstream.
+commit ed8cd3b2cd61004cab85380c52b1817aca1ca49b upstream.
 
-The field is used to pass the UVC request data length, but can also be
-used to signal an error when setting it to a negative value. Switch from
-unsigned int to __s32.
+On 32-bit systems, a large args->buffer_count from userspace via ioctl
+may overflow the allocation size, leading to out-of-bounds access.
 
-Reported-by: Fernandez Gonzalo <gfernandez@copreci.es>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+This vulnerability was introduced in commit 8408c282 ("drm/i915:
+First try a normal large kmalloc for the temporary exec buffers").
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/uvc.h      |    2 +-
- drivers/usb/gadget/uvc_v4l2.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/gadget/uvc.h
-+++ b/drivers/usb/gadget/uvc.h
-@@ -28,7 +28,7 @@
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -1353,7 +1353,8 @@ i915_gem_execbuffer2(struct drm_device *
+ 	struct drm_i915_gem_exec_object2 *exec2_list = NULL;
+ 	int ret;
  
- struct uvc_request_data
- {
--	unsigned int length;
-+	__s32 length;
- 	__u8 data[60];
- };
- 
---- a/drivers/usb/gadget/uvc_v4l2.c
-+++ b/drivers/usb/gadget/uvc_v4l2.c
-@@ -39,7 +39,7 @@ uvc_send_response(struct uvc_device *uvc
- 	if (data->length < 0)
- 		return usb_ep_set_halt(cdev->gadget->ep0);
- 
--	req->length = min(uvc->event_length, data->length);
-+	req->length = min_t(unsigned int, uvc->event_length, data->length);
- 	req->zero = data->length < uvc->event_length;
- 	req->dma = DMA_ADDR_INVALID;
- 
+-	if (args->buffer_count < 1) {
++	if (args->buffer_count < 1 ||
++	    args->buffer_count > UINT_MAX / sizeof(*exec2_list)) {
+ 		DRM_ERROR("execbuf2 with %d buffers\n", args->buffer_count);
+ 		return -EINVAL;
+ 	}
 
 
