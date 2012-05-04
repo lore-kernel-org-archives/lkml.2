@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757499Ab2EDCdP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 22:33:15 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:51571 "HELO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1756247Ab2EDCdP (ORCPT
+	id S1757404Ab2EDCfG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 22:35:06 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:49230 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482Ab2EDCfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 22:33:15 -0400
-From: Chao Xie <chao.xie@marvell.com>
-To: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        haojian.zhuang@marvell.com
-Cc: Chao Xie <chao.xie@marvell.com>
-Subject: [PATCH V2] mfd: fix gpadc initialization
-Date: Fri,  4 May 2012 10:36:19 +0800
-Message-Id: <1336098979-32287-1-git-send-email-chao.xie@marvell.com>
-X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 04 May 2012 02:33:06.0842 (UTC) FILETIME=[3CFD57A0:01CD299E]
+	Thu, 3 May 2012 22:35:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACqU3MWLKMhTdh-HUh0MhE_hZmwNPG5FOxWarjO4BsRemmG8sA@mail.gmail.com>
+References: <20120503215748.GA18995@kroah.com>
+	<87sjfgafqj.fsf@sejong.aot.lge.com>
+	<20120503.215020.954262287222794218.davem@davemloft.net>
+	<CACqU3MVqpz=azeUOUfmtoLEPvqngfJHSHFe7ujemeRT1-B=osA@mail.gmail.com>
+	<CACqU3MWLKMhTdh-HUh0MhE_hZmwNPG5FOxWarjO4BsRemmG8sA@mail.gmail.com>
+Date: Thu, 3 May 2012 22:35:02 -0400
+Message-ID: <CACqU3MVVgo7R8CmGwi6utE0F0urf5NW58s23bmNU_rSQAg2pww@mail.gmail.com>
+Subject: Re: perf build failure on Linus's tree
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: namhyung.kim@lge.com, gregkh@linuxfoundation.org, a.p.zijlstra@chello.nl,
+        paulus@samba.org, mingo@redhat.com, acme@ghostprotocols.net,
+        jolsa@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gpadc initialization failure is acceptable. It should not make
-88pm860x initialization abort.
+Hi,
 
-Signed-off-by: Chao Xie <chao.xie@marvell.com>
----
- drivers/mfd/88pm860x-core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Thu, May 3, 2012 at 10:29 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> [...]
+> [0]: http://pkgs.fedoraproject.org/gitweb/?p=flex.git;a=blob;f=flex-2.5.35-hardening.patch;h=7d608ea2371fa3295bdb8eb97c15eeb03029c02b;hb=HEAD
+>
+as a side note, this patch sounds more being about "silencing" than
+"hardening"...
 
-diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index 87bd5ba..bfd8323 100644
---- a/drivers/mfd/88pm860x-core.c
-+++ b/drivers/mfd/88pm860x-core.c
-@@ -846,7 +846,7 @@ static void __devinit device_8607_init(struct pm860x_chip *chip,
- 
- 	ret = device_gpadc_init(chip, pdata);
- 	if (ret < 0)
--		goto out;
-+		dev_info(chip->dev, "Failed to init gpadc\n");
- 
- 	ret = device_irq_init(chip, pdata);
- 	if (ret < 0)
--- 
-1.7.0.4
-
+ - Arnaud
