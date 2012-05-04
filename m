@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760134Ab2EDVKs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:10:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
+	id S932438Ab2EDUqR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:46:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932404Ab2EDUqV (ORCPT
+	with ESMTP id S932404Ab2EDUqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:46:21 -0400
-Message-Id: <20120504204228.395201850@linuxfoundation.org>
+	Fri, 4 May 2012 16:46:12 -0400
+Message-Id: <20120504204228.144125133@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:11 -0700
+Date: Fri, 04 May 2012 13:43:08 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 47/75] x86, efi: Fix pointer math issue in handle_ramdisks()
+        alan@lxorguk.ukuu.org.uk,
+        Andrzej Jakowski <andrzej.jakowski@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 44/75] SCSI: libsas: fix false positive device attached conditions
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,63 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit c7b738351ba92f48b943ac59aff6b5b0f17f37c9 upstream.
+commit 7d1d865181185bdf1316d236b1b4bd02c9020729 upstream.
 
-"filename" is a efi_char16_t string so this check for reaching the end
-of the array doesn't work.  We need to cast the pointer to (u8 *) before
-doing the math.
+Normalize phy->attached_sas_addr to return a zero-address in the case
+when device-type == NO_DEVICE or the linkrate is invalid to handle
+expanders that put non-zero sas addresses in the discovery response:
 
-This patch changes the "filename" to "filename_16" to avoid confusion in
-the future.
+ sas: ex 5001b4da000f903f phy02:U:0 attached: 0100000000000000 (no device)
+ sas: ex 5001b4da000f903f phy01:U:0 attached: 0100000000000000 (no device)
+ sas: ex 5001b4da000f903f phy03:U:0 attached: 0100000000000000 (no device)
+ sas: ex 5001b4da000f903f phy00:U:0 attached: 0100000000000000 (no device)
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Link: http://lkml.kernel.org/r/20120305180614.GA26880@elgon.mountain
-Acked-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reported-by: Andrzej Jakowski <andrzej.jakowski@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/boot/compressed/eboot.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/scsi/libsas/sas_expander.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -539,7 +539,7 @@ static efi_status_t handle_ramdisks(efi_
- 		struct initrd *initrd;
- 		efi_file_handle_t *h;
- 		efi_file_info_t *info;
--		efi_char16_t filename[256];
-+		efi_char16_t filename_16[256];
- 		unsigned long info_sz;
- 		efi_guid_t info_guid = EFI_FILE_INFO_ID;
- 		efi_char16_t *p;
-@@ -552,14 +552,14 @@ static efi_status_t handle_ramdisks(efi_
- 		str += 7;
- 
- 		initrd = &initrds[i];
--		p = filename;
-+		p = filename_16;
- 
- 		/* Skip any leading slashes */
- 		while (*str == '/' || *str == '\\')
- 			str++;
- 
- 		while (*str && *str != ' ' && *str != '\n') {
--			if (p >= filename + sizeof(filename))
-+			if ((u8 *)p >= (u8 *)filename_16 + sizeof(filename_16))
- 				break;
- 
- 			*p++ = *str++;
-@@ -583,7 +583,7 @@ static efi_status_t handle_ramdisks(efi_
- 				goto free_initrds;
- 		}
- 
--		status = efi_call_phys5(fh->open, fh, &h, filename,
-+		status = efi_call_phys5(fh->open, fh, &h, filename_16,
- 					EFI_FILE_MODE_READ, (u64)0);
- 		if (status != EFI_SUCCESS)
- 			goto close_handles;
+--- a/drivers/scsi/libsas/sas_expander.c
++++ b/drivers/scsi/libsas/sas_expander.c
+@@ -192,7 +192,14 @@ static void sas_set_ex_phy(struct domain
+ 	phy->attached_sata_ps   = dr->attached_sata_ps;
+ 	phy->attached_iproto = dr->iproto << 1;
+ 	phy->attached_tproto = dr->tproto << 1;
+-	memcpy(phy->attached_sas_addr, dr->attached_sas_addr, SAS_ADDR_SIZE);
++	/* help some expanders that fail to zero sas_address in the 'no
++	 * device' case
++	 */
++	if (phy->attached_dev_type == NO_DEVICE ||
++	    phy->linkrate < SAS_LINK_RATE_1_5_GBPS)
++		memset(phy->attached_sas_addr, 0, SAS_ADDR_SIZE);
++	else
++		memcpy(phy->attached_sas_addr, dr->attached_sas_addr, SAS_ADDR_SIZE);
+ 	phy->attached_phy_id = dr->attached_phy_id;
+ 	phy->phy_change_count = dr->change_count;
+ 	phy->routing_attr = dr->routing_attr;
 
 
