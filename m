@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759861Ab2EDUtT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:49:19 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
+	id S1760089Ab2EDUzt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:55:49 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:38140 "EHLO
 	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932895Ab2EDUtN (ORCPT
+	with ESMTP id S1759681Ab2EDUtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:49:13 -0400
-Message-Id: <20120504204247.035699415@linuxfoundation.org>
+	Fri, 4 May 2012 16:49:15 -0400
+Message-Id: <20120504204247.120439383@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:09 -0700
+Date: Fri, 04 May 2012 13:43:10 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrey Rahmatullin <wrar@wrar.name>,
-        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>
-Subject: [ 25/47] USB: EHCI: fix crash during suspend on ASUS computers
+        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 26/47] USB: gadget: storage gadgets send wrong error code for unknown commands
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,86 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 151b61284776be2d6f02d48c23c3625678960b97 upstream.
+commit c85dcdac5852295cf6822f5c4331a6ddab72581f upstream.
 
-This patch (as1545) fixes a problem affecting several ASUS computers:
-The machine crashes or corrupts memory when going into suspend if the
-ehci-hcd driver is bound to any controllers.  Users have been forced
-to unbind or unload ehci-hcd before putting their systems to sleep.
+This patch (as1539) fixes a minor bug in the mass-storage gadget
+drivers.  When an unknown command is received, the error code sent
+back is "Invalid Field in CDB" rather than "Invalid Command".  This is
+because the bitmask of CDB bytes allowed to be nonzero is incorrect.
 
-After extensive testing, it was determined that the machines don't
-like going into suspend when any EHCI controllers are in the PCI D3
-power state.  Presumably this is a firmware bug, but there's nothing
-we can do about it except to avoid putting the controllers in D3
-during system sleep.
-
-The patch adds a new flag to indicate whether the problem is present,
-and avoids changing the controller's power state if the flag is set.
-Runtime suspend is unaffected; this matters only for system suspend.
-However as a side effect, the controller will not respond to remote
-wakeup requests while the system is asleep.  Hence USB wakeup is not
-functional -- but of course, this is already true in the current state
-of affairs.
-
-This fixes Bugzilla #42728.
+When handling an unknown command, we don't care which command bytes
+are nonzero.  All the bits in the mask should be set, not just eight
+of them.
 
 Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Steven Rostedt <rostedt@goodmis.org>
-Tested-by: Andrey Rahmatullin <wrar@wrar.name>
-Tested-by: Oleksij Rempel (fishor) <bug-track@fisher-privat.net>
+CC: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hcd-pci.c  |    9 +++++++++
- drivers/usb/host/ehci-pci.c |    8 ++++++++
- include/linux/usb/hcd.h     |    2 ++
- 3 files changed, 19 insertions(+)
+ drivers/usb/gadget/f_mass_storage.c |    2 +-
+ drivers/usb/gadget/file_storage.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -495,6 +495,15 @@ static int hcd_pci_suspend_noirq(struct
- 
- 	pci_save_state(pci_dev);
- 
-+	/*
-+	 * Some systems crash if an EHCI controller is in D3 during
-+	 * a sleep transition.  We have to leave such controllers in D0.
-+	 */
-+	if (hcd->broken_pci_sleep) {
-+		dev_dbg(dev, "Staying in PCI D0\n");
-+		return retval;
-+	}
-+
- 	/* If the root hub is dead rather than suspended, disallow remote
- 	 * wakeup.  usb_hc_died() should ensure that both hosts are marked as
- 	 * dying, so we only need to check the primary roothub.
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -144,6 +144,14 @@ static int ehci_pci_setup(struct usb_hcd
- 			hcd->has_tt = 1;
- 			tdi_reset(ehci);
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -2187,7 +2187,7 @@ unknown_cmnd:
+ 		common->data_size_from_cmnd = 0;
+ 		sprintf(unknown, "Unknown x%02x", common->cmnd[0]);
+ 		reply = check_command(common, common->cmnd_size,
+-				      DATA_DIR_UNKNOWN, 0xff, 0, unknown);
++				      DATA_DIR_UNKNOWN, ~0, 0, unknown);
+ 		if (reply == 0) {
+ 			common->curlun->sense_data = SS_INVALID_COMMAND;
+ 			reply = -EINVAL;
+--- a/drivers/usb/gadget/file_storage.c
++++ b/drivers/usb/gadget/file_storage.c
+@@ -2553,7 +2553,7 @@ static int do_scsi_command(struct fsg_de
+ 		fsg->data_size_from_cmnd = 0;
+ 		sprintf(unknown, "Unknown x%02x", fsg->cmnd[0]);
+ 		if ((reply = check_command(fsg, fsg->cmnd_size,
+-				DATA_DIR_UNKNOWN, 0xff, 0, unknown)) == 0) {
++				DATA_DIR_UNKNOWN, ~0, 0, unknown)) == 0) {
+ 			fsg->curlun->sense_data = SS_INVALID_COMMAND;
+ 			reply = -EINVAL;
  		}
-+		if (pdev->subsystem_vendor == PCI_VENDOR_ID_ASUSTEK) {
-+			/* EHCI #1 or #2 on 6 Series/C200 Series chipset */
-+			if (pdev->device == 0x1c26 || pdev->device == 0x1c2d) {
-+				ehci_info(ehci, "broken D3 during system sleep on ASUS\n");
-+				hcd->broken_pci_sleep = 1;
-+				device_set_wakeup_capable(&pdev->dev, false);
-+			}
-+		}
- 		break;
- 	case PCI_VENDOR_ID_TDI:
- 		if (pdev->device == PCI_DEVICE_ID_TDI_EHCI) {
---- a/include/linux/usb/hcd.h
-+++ b/include/linux/usb/hcd.h
-@@ -128,6 +128,8 @@ struct usb_hcd {
- 	unsigned		wireless:1;	/* Wireless USB HCD */
- 	unsigned		authorized_default:1;
- 	unsigned		has_tt:1;	/* Integrated TT in root hub */
-+	unsigned		broken_pci_sleep:1;	/* Don't put the
-+			controller in PCI-D3 for system sleep */
- 
- 	int			irq;		/* irq allocated */
- 	void __iomem		*regs;		/* device memory/io */
 
 
