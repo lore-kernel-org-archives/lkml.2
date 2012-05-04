@@ -1,75 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758462Ab2EDOKX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 10:10:23 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18085 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758338Ab2EDOKT (ORCPT
+	id S1758421Ab2EDOKV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 10:10:21 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:39810 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758332Ab2EDOKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 May 2012 10:10:19 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/4] xen/pte: Fix crashes when trying to see non-existent PGD/PMD/PUD/PTEs
-Date: Fri,  4 May 2012 10:04:26 -0400
-Message-Id: <1336140267-7399-4-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 2/4] xen/apic: Return the APIC ID (and version) for CPU 0.
+Date: Fri,  4 May 2012 10:04:25 -0400
+Message-Id: <1336140267-7399-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
 In-Reply-To: <1336140267-7399-1-git-send-email-konrad.wilk@oracle.com>
 References: <1336140267-7399-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If I try to do "cat /sys/kernel/debug/kernel_page_tables"
-I end up with:
+On x86_64 on AMD machines where the first APIC_ID is not zero, we get:
 
-BUG: unable to handle kernel paging request at ffffc7fffffff000
-IP: [<ffffffff8106aa51>] ptdump_show+0x221/0x480
-PGD 0
-Oops: 0000 [#1] SMP
-CPU 0
-.. snip..
-RAX: 0000000000000000 RBX: ffffc00000000fff RCX: 0000000000000000
-RDX: 0000800000000000 RSI: 0000000000000000 RDI: ffffc7fffffff000
+ACPI: LAPIC (acpi_id[0x01] lapic_id[0x10] enabled)
+BIOS bug: APIC version is 0 for CPU 1/0x10, fixing up to 0x10
+BIOS bug: APIC version mismatch, boot CPU: 0, CPU 1: version 10
 
-which is due to the fact we are trying to access a PFN that is not
-accessible to us. The reason (at least in this case) was that
-PGD[256] is set to __HYPERVISOR_VIRT_START which setup (by the
-hypervisor) to point to a read-only linear map of the MFN->PFN array.
-During our parsing we would get the MFN (a valid one), try to look
-it up in the MFN->PFN tree and find it invalid and return ~0 as PFN.
-Then pte_mfn_to_pfn would happilly feed that in, attach the flags
-and return it back to the caller. In this case the ptdump_show
-bitshifts it and we get this invalid value.
+which means that when the ACPI processor driver loads and
+tries to parse the _Pxx states it fails to do as, as it
+ends up calling acpi_get_cpuid which does this:
 
-Instead of doing all of that, we detect the ~0 case and just return
-!_PAGE_PRESENT.
+for_each_possible_cpu(i) {
+        if (cpu_physical_id(i) == apic_id)
+                return i;
+}
 
+And the bootup CPU, has not been found so it fails and returns -1
+for the first CPU - which then subsequently in the loop that
+"acpi_processor_get_info" does results in returning an error, which
+means that "acpi_processor_add" failing and per_cpu(processor)
+is never set (and is NULL).
+
+That means that when xen-acpi-processor tries to load (much much
+later on) and parse the P-states it gets -ENODEV from
+acpi_processor_register_performance() (which tries to read
+the per_cpu(processor)) and fails to parse the data.
+
+Reported-by-and-Tested-by:  Stefan Bader <stefan.bader@canonical.com>
+Suggested-by:  Boris Ostrovsky <boris.ostrovsky@amd.com>
+[v2: Bit-shift APIC ID by 24 bits]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/mmu.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ arch/x86/xen/enlighten.c |   35 ++++++++++++++++++++++++++++++++++-
+ 1 files changed, 34 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index b8e2794..69f5857 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -353,8 +353,13 @@ static pteval_t pte_mfn_to_pfn(pteval_t val)
- {
- 	if (val & _PAGE_PRESENT) {
- 		unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
-+		unsigned long pfn = mfn_to_pfn(mfn);
-+
- 		pteval_t flags = val & PTE_FLAGS_MASK;
--		val = ((pteval_t)mfn_to_pfn(mfn) << PAGE_SHIFT) | flags;
-+		if (unlikely(pfn == ~0))
-+			val = flags & ~_PAGE_PRESENT;
-+		else
-+			val = ((pteval_t)pfn << PAGE_SHIFT) | flags;
- 	}
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index a8f8844..4f437de 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -809,9 +809,40 @@ static void xen_io_delay(void)
+ }
  
- 	return val;
+ #ifdef CONFIG_X86_LOCAL_APIC
++static unsigned long xen_set_apic_id(unsigned int x)
++{
++	WARN_ON(1);
++	return x;
++}
++static unsigned int xen_get_apic_id(unsigned long x)
++{
++	return ((x)>>24) & 0xFFu;
++}
+ static u32 xen_apic_read(u32 reg)
+ {
+-	return 0;
++	struct xen_platform_op op = {
++		.cmd = XENPF_get_cpuinfo,
++		.interface_version = XENPF_INTERFACE_VERSION,
++		.u.pcpu_info.xen_cpuid = 0,
++	};
++	int ret = 0;
++
++	/* Shouldn't need this as APIC is turned off for PV, and we only
++	 * get called on the bootup processor. But just in case. */
++	if (!xen_initial_domain() || smp_processor_id())
++		return 0;
++
++	if (reg == APIC_LVR)
++		return 0x10;
++
++	if (reg != APIC_ID)
++		return 0;
++
++	ret = HYPERVISOR_dom0_op(&op);
++	if (ret)
++		return 0;
++
++	return op.u.pcpu_info.apic_id << 24;
+ }
+ 
+ static void xen_apic_write(u32 reg, u32 val)
+@@ -849,6 +880,8 @@ static void set_xen_basic_apic_ops(void)
+ 	apic->icr_write = xen_apic_icr_write;
+ 	apic->wait_icr_idle = xen_apic_wait_icr_idle;
+ 	apic->safe_wait_icr_idle = xen_safe_apic_wait_icr_idle;
++	apic->set_apic_id = xen_set_apic_id;
++	apic->get_apic_id = xen_get_apic_id;
+ }
+ 
+ #endif
 -- 
 1.7.7.5
 
