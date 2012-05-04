@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932517Ab2EDUqs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:46:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932503Ab2EDUqn (ORCPT
+	id S932654Ab2EDVI2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:08:28 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932521Ab2EDUqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:46:43 -0400
-Message-Id: <20120504204228.984671465@linuxfoundation.org>
+	Fri, 4 May 2012 16:46:49 -0400
+Message-Id: <20120504204229.151017761@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:18 -0700
+Date: Fri, 04 May 2012 13:43:20 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Timur Tabi <timur@freescale.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-Subject: [ 54/75] powerpc/85xx: dont call of_platform_bus_probe() twice
+        alan@lxorguk.ukuu.org.uk, Doug Smythies <dsmythies@telus.net>,
+        =?UTF-8?q?Les=C3=85=82aw=20Kope=C4=87?= 
+	<leslaw.kopec@nasza-klasa.pl>,
+        Aman Gupta <aman@tmm1.net>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>, Kerin Millar <kerframil@gmail.com>
+Subject: [ 56/75] sched: Fix nohz load accounting -- again!
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,99 +28,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Timur Tabi <timur@freescale.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 8a95bc8dfe06982fc2b8a0a2adda7baa2346a17b upstream.
+commit c308b56b5398779cd3da0f62ab26b0453494c3d4 upstream.
 
-Commit 46d026ac ("powerpc/85xx: consolidate of_platform_bus_probe calls")
-replaced platform-specific of_device_id tables with a single function
-that probes the most of the busses in 85xx device trees.  If a specific
-platform needed additional busses probed, then it could call
-of_platform_bus_probe() again.  Typically, the additional platform-specific
-busses are children of existing busses that have already been probed.
-of_platform_bus_probe() does not handle those child busses automatically.
+Various people reported nohz load tracking still being wrecked, but Doug
+spotted the actual problem. We fold the nohz remainder in too soon,
+causing us to loose samples and under-account.
 
-Unfortunately, this doesn't actually work.  The second (platform-specific)
-call to of_platform_bus_probe() never finds any of the busses it's asked
-to find.
+So instead of playing catch-up up-front, always do a single load-fold
+with whatever state we encounter and only then fold the nohz remainder
+and play catch-up.
 
-To remedy this, the platform-specific of_device_id tables are eliminated,
-and their entries are merged into mpc85xx_common_ids[], so that all busses
-are probed at once.
-
-Signed-off-by: Timur Tabi <timur@freescale.com>
-Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+Reported-by: Doug Smythies <dsmythies@telus.net>
+Reported-by: LesÅ=82aw Kope=C4=87 <leslaw.kopec@nasza-klasa.pl>
+Reported-by: Aman Gupta <aman@tmm1.net>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-4v31etnhgg9kwd6ocgx3rxl8@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Cc: Kerin Millar <kerframil@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/85xx/common.c      |    6 ++++++
- arch/powerpc/platforms/85xx/mpc85xx_mds.c |   11 +----------
- arch/powerpc/platforms/85xx/p1022_ds.c    |   13 +------------
- 3 files changed, 8 insertions(+), 22 deletions(-)
+ kernel/sched/core.c |   53 +++++++++++++++++++++++++---------------------------
+ 1 file changed, 26 insertions(+), 27 deletions(-)
 
---- a/arch/powerpc/platforms/85xx/common.c
-+++ b/arch/powerpc/platforms/85xx/common.c
-@@ -21,6 +21,12 @@ static struct of_device_id __initdata mp
- 	{ .compatible = "fsl,qe", },
- 	{ .compatible = "fsl,cpm2", },
- 	{ .compatible = "fsl,srio", },
-+	/* So that the DMA channel nodes can be probed individually: */
-+	{ .compatible = "fsl,eloplus-dma", },
-+	/* For the PMC driver */
-+	{ .compatible = "fsl,mpc8548-guts", },
-+	/* Probably unnecessary? */
-+	{ .compatible = "gpio-leds", },
- 	{},
- };
- 
---- a/arch/powerpc/platforms/85xx/mpc85xx_mds.c
-+++ b/arch/powerpc/platforms/85xx/mpc85xx_mds.c
-@@ -405,12 +405,6 @@ static int __init board_fixups(void)
- machine_arch_initcall(mpc8568_mds, board_fixups);
- machine_arch_initcall(mpc8569_mds, board_fixups);
- 
--static struct of_device_id mpc85xx_ids[] = {
--	{ .compatible = "fsl,mpc8548-guts", },
--	{ .compatible = "gpio-leds", },
--	{},
--};
--
- static int __init mpc85xx_publish_devices(void)
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2266,13 +2266,10 @@ calc_load_n(unsigned long load, unsigned
+  * Once we've updated the global active value, we need to apply the exponential
+  * weights adjusted to the number of cycles missed.
+  */
+-static void calc_global_nohz(unsigned long ticks)
++static void calc_global_nohz(void)
  {
- 	if (machine_is(mpc8568_mds))
-@@ -418,10 +412,7 @@ static int __init mpc85xx_publish_device
- 	if (machine_is(mpc8569_mds))
- 		simple_gpiochip_init("fsl,mpc8569mds-bcsr-gpio");
+ 	long delta, active, n;
  
--	mpc85xx_common_publish_devices();
--	of_platform_bus_probe(NULL, mpc85xx_ids, NULL);
+-	if (time_before(jiffies, calc_load_update))
+-		return;
 -
--	return 0;
-+	return mpc85xx_common_publish_devices();
+ 	/*
+ 	 * If we crossed a calc_load_update boundary, make sure to fold
+ 	 * any pending idle changes, the respective CPUs might have
+@@ -2284,31 +2281,25 @@ static void calc_global_nohz(unsigned lo
+ 		atomic_long_add(delta, &calc_load_tasks);
+ 
+ 	/*
+-	 * If we were idle for multiple load cycles, apply them.
++	 * It could be the one fold was all it took, we done!
+ 	 */
+-	if (ticks >= LOAD_FREQ) {
+-		n = ticks / LOAD_FREQ;
++	if (time_before(jiffies, calc_load_update + 10))
++		return;
+ 
+-		active = atomic_long_read(&calc_load_tasks);
+-		active = active > 0 ? active * FIXED_1 : 0;
++	/*
++	 * Catch-up, fold however many we are behind still
++	 */
++	delta = jiffies - calc_load_update - 10;
++	n = 1 + (delta / LOAD_FREQ);
+ 
+-		avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
+-		avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
+-		avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
++	active = atomic_long_read(&calc_load_tasks);
++	active = active > 0 ? active * FIXED_1 : 0;
+ 
+-		calc_load_update += n * LOAD_FREQ;
+-	}
++	avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
++	avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
++	avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
+ 
+-	/*
+-	 * Its possible the remainder of the above division also crosses
+-	 * a LOAD_FREQ period, the regular check in calc_global_load()
+-	 * which comes after this will take care of that.
+-	 *
+-	 * Consider us being 11 ticks before a cycle completion, and us
+-	 * sleeping for 4*LOAD_FREQ + 22 ticks, then the above code will
+-	 * age us 4 cycles, and the test in calc_global_load() will
+-	 * pick up the final one.
+-	 */
++	calc_load_update += n * LOAD_FREQ;
+ }
+ #else
+ void calc_load_account_idle(struct rq *this_rq)
+@@ -2320,7 +2311,7 @@ static inline long calc_load_fold_idle(v
+ 	return 0;
  }
  
- machine_device_initcall(mpc8568_mds, mpc85xx_publish_devices);
---- a/arch/powerpc/platforms/85xx/p1022_ds.c
-+++ b/arch/powerpc/platforms/85xx/p1022_ds.c
-@@ -303,18 +303,7 @@ static void __init p1022_ds_setup_arch(v
- 	pr_info("Freescale P1022 DS reference board\n");
+-static void calc_global_nohz(unsigned long ticks)
++static void calc_global_nohz(void)
+ {
+ }
+ #endif
+@@ -2348,8 +2339,6 @@ void calc_global_load(unsigned long tick
+ {
+ 	long active;
+ 
+-	calc_global_nohz(ticks);
+-
+ 	if (time_before(jiffies, calc_load_update + 10))
+ 		return;
+ 
+@@ -2361,6 +2350,16 @@ void calc_global_load(unsigned long tick
+ 	avenrun[2] = calc_load(avenrun[2], EXP_15, active);
+ 
+ 	calc_load_update += LOAD_FREQ;
++
++	/*
++	 * Account one period with whatever state we found before
++	 * folding in the nohz state and ageing the entire idle period.
++	 *
++	 * This avoids loosing a sample when we go idle between
++	 * calc_load_account_active() (10 ticks ago) and now and thus
++	 * under-accounting.
++	 */
++	calc_global_nohz();
  }
  
--static struct of_device_id __initdata p1022_ds_ids[] = {
--	/* So that the DMA channel nodes can be probed individually: */
--	{ .compatible = "fsl,eloplus-dma", },
--	{},
--};
--
--static int __init p1022_ds_publish_devices(void)
--{
--	mpc85xx_common_publish_devices();
--	return of_platform_bus_probe(NULL, p1022_ds_ids, NULL);
--}
--machine_device_initcall(p1022_ds, p1022_ds_publish_devices);
-+machine_device_initcall(p1022_ds, mpc85xx_common_publish_devices);
- 
- machine_arch_initcall(p1022_ds, swiotlb_setup_bus_notifier);
- 
+ /*
 
 
