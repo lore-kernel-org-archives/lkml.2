@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932761Ab2EDUsP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:48:15 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932745Ab2EDUsJ (ORCPT
+	id S932777Ab2EDUsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:48:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57129 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932759Ab2EDUsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:48:09 -0400
-Message-Id: <20120504204245.285839471@linuxfoundation.org>
+	Fri, 4 May 2012 16:48:15 -0400
+Message-Id: <20120504204245.463144806@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:49 -0700
+Date: Fri, 04 May 2012 13:42:51 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ian Kent <raven@themaw.net>
-Subject: [ 05/47] Revert "autofs: work around unhappy compat problem on x86-64"
+        alan@lxorguk.ukuu.org.uk,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 07/47] xen/smp: Fix crash when booting with ACPI hotplug CPUs.
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,123 +25,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit fcbf94b9dedd2ce08e798a99aafc94fec8668161 upstream.
+commit cf405ae612b0f7e2358db7ff594c0e94846137aa upstream.
 
-This reverts commit a32744d4abae24572eff7269bc17895c41bd0085.
+When we boot on a machine that can hotplug CPUs and we
+are using 'dom0_max_vcpus=X' on the Xen hypervisor line
+to clip the amount of CPUs available to the initial domain,
+we get this:
 
-While that commit was technically the right thing to do, and made the
-x86-64 compat mode work identically to native 32-bit mode (and thus
-fixing the problem with a 32-bit systemd install on a 64-bit kernel), it
-turns out that the automount binaries had workarounds for this compat
-problem.
+(XEN) Command line: com1=115200,8n1 dom0_mem=8G noreboot dom0_max_vcpus=8 sync_console mce_verbosity=verbose console=com1,vga loglvl=all guest_loglvl=all
+.. snip..
+DMI: Intel Corporation S2600CP/S2600CP, BIOS SE5C600.86B.99.99.x032.072520111118 07/25/2011
+.. snip.
+SMP: Allowing 64 CPUs, 32 hotplug CPUs
+installing Xen timer for CPU 7
+cpu 7 spinlock event irq 361
+NMI watchdog: disabled (cpu7): hardware events not enabled
+Brought up 8 CPUs
+.. snip..
+	[acpi processor finds the CPUs are not initialized and starts calling
+	arch_register_cpu, which creates /sys/devices/system/cpu/cpu8/online]
+CPU 8 got hotplugged
+CPU 9 got hotplugged
+CPU 10 got hotplugged
+.. snip..
+initcall 1_acpi_battery_init_async+0x0/0x1b returned 0 after 406 usecs
+calling  erst_init+0x0/0x2bb @ 1
 
-Now, the workarounds are disgusting: doing an "uname()" to find out the
-architecture of the kernel, and then comparing it for the 64-bit cases
-and fixing up the size of the read() in automount for those.  And they
-were confused: it's not actually a generic 64-bit issue at all, it's
-very much tied to just x86-64, which has different alignment for an
-'u64' in 64-bit mode than in 32-bit mode.
+	[and the scheduler sticks newly started tasks on the new CPUs, but
+	said CPUs cannot be initialized b/c the hypervisor has limited the
+	amount of vCPUS to 8 - as per the dom0_max_vcpus=8 flag.
+	The spinlock tries to kick the other CPU, but the structure for that
+	is not initialized and we crash.]
+BUG: unable to handle kernel paging request at fffffffffffffed8
+IP: [<ffffffff81035289>] xen_spin_lock+0x29/0x60
+PGD 180d067 PUD 180e067 PMD 0
+Oops: 0002 [#1] SMP
+CPU 7
+Modules linked in:
 
-But the end result is that fixing the compat layer actually breaks the
-case of a 32-bit automount on a x86-64 kernel.
+Pid: 1, comm: swapper/0 Not tainted 3.4.0-rc2upstream-00001-gf5154e8 #1 Intel Corporation S2600CP/S2600CP
+RIP: e030:[<ffffffff81035289>]  [<ffffffff81035289>] xen_spin_lock+0x29/0x60
+RSP: e02b:ffff8801fb9b3a70  EFLAGS: 00010282
 
-There are various approaches to fix this (including just doing a
-"strcmp()" on current->comm and comparing it to "automount"), but I
-think that I will do the one that teaches pipes about a special "packet
-mode", which will allow user space to not have to care too deeply about
-the padding at the end of the autofs packet.
+With this patch, we cap the amount of vCPUS that the initial domain
+can run, to exactly what dom0_max_vcpus=X has specified.
 
-That change will make the compat workaround unnecessary, so let's revert
-it first, and get automount working again in compat mode.  The
-packetized pipes will then fix autofs for systemd.
+In the future, if there is a hypercall that will allow a running
+domain to expand past its initial set of vCPUS, this patch should
+be re-evaluated.
 
-Reported-and-requested-by: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Ian Kent <raven@themaw.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/autofs4/autofs_i.h  |    1 -
- fs/autofs4/dev-ioctl.c |    1 -
- fs/autofs4/inode.c     |    2 --
- fs/autofs4/waitq.c     |   20 ++------------------
- 4 files changed, 2 insertions(+), 22 deletions(-)
+ arch/x86/xen/smp.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/fs/autofs4/autofs_i.h
-+++ b/fs/autofs4/autofs_i.h
-@@ -120,7 +120,6 @@ struct autofs_sb_info {
- 	int sub_version;
- 	int min_proto;
- 	int max_proto;
--	int compat_daemon;
- 	unsigned long exp_timeout;
- 	unsigned int type;
- 	int reghost_enabled;
---- a/fs/autofs4/dev-ioctl.c
-+++ b/fs/autofs4/dev-ioctl.c
-@@ -385,7 +385,6 @@ static int autofs_dev_ioctl_setpipefd(st
- 		sbi->pipefd = pipefd;
- 		sbi->pipe = pipe;
- 		sbi->catatonic = 0;
--		sbi->compat_daemon = is_compat_task();
- 	}
- out:
- 	mutex_unlock(&sbi->wq_mutex);
---- a/fs/autofs4/inode.c
-+++ b/fs/autofs4/inode.c
-@@ -19,7 +19,6 @@
- #include <linux/parser.h>
- #include <linux/bitops.h>
- #include <linux/magic.h>
--#include <linux/compat.h>
- #include "autofs_i.h"
- #include <linux/module.h>
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -172,6 +172,7 @@ static void __init xen_fill_possible_map
+ static void __init xen_filter_cpu_maps(void)
+ {
+ 	int i, rc;
++	unsigned int subtract = 0;
  
-@@ -225,7 +224,6 @@ int autofs4_fill_super(struct super_bloc
- 	set_autofs_type_indirect(&sbi->type);
- 	sbi->min_proto = 0;
- 	sbi->max_proto = 0;
--	sbi->compat_daemon = is_compat_task();
- 	mutex_init(&sbi->wq_mutex);
- 	spin_lock_init(&sbi->fs_lock);
- 	sbi->queues = NULL;
---- a/fs/autofs4/waitq.c
-+++ b/fs/autofs4/waitq.c
-@@ -91,23 +91,6 @@ static int autofs4_write(struct file *fi
- 	return (bytes > 0);
+ 	if (!xen_initial_domain())
+ 		return;
+@@ -186,8 +187,22 @@ static void __init xen_filter_cpu_maps(v
+ 		} else {
+ 			set_cpu_possible(i, false);
+ 			set_cpu_present(i, false);
++			subtract++;
+ 		}
+ 	}
++#ifdef CONFIG_HOTPLUG_CPU
++	/* This is akin to using 'nr_cpus' on the Linux command line.
++	 * Which is OK as when we use 'dom0_max_vcpus=X' we can only
++	 * have up to X, while nr_cpu_ids is greater than X. This
++	 * normally is not a problem, except when CPU hotplugging
++	 * is involved and then there might be more than X CPUs
++	 * in the guest - which will not work as there is no
++	 * hypercall to expand the max number of VCPUs an already
++	 * running guest has. So cap it up to X. */
++	if (subtract)
++		nr_cpu_ids = nr_cpu_ids - subtract;
++#endif
++
  }
  
--/*
-- * The autofs_v5 packet was misdesigned.
-- *
-- * The packets are identical on x86-32 and x86-64, but have different
-- * alignment. Which means that 'sizeof()' will give different results.
-- * Fix it up for the case of running 32-bit user mode on a 64-bit kernel.
-- */
--static noinline size_t autofs_v5_packet_size(struct autofs_sb_info *sbi)
--{
--	size_t pktsz = sizeof(struct autofs_v5_packet);
--#if defined(CONFIG_X86_64) && defined(CONFIG_COMPAT)
--	if (sbi->compat_daemon > 0)
--		pktsz -= 4;
--#endif
--	return pktsz;
--}
--
- static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
- 				 struct autofs_wait_queue *wq,
- 				 int type)
-@@ -164,7 +147,8 @@ static void autofs4_notify_daemon(struct
- 	{
- 		struct autofs_v5_packet *packet = &pkt.v5_pkt.v5_packet;
- 
--		pktsz = autofs_v5_packet_size(sbi);
-+		pktsz = sizeof(*packet);
-+
- 		packet->wait_queue_token = wq->wait_queue_token;
- 		packet->len = wq->name.len;
- 		memcpy(packet->name, wq->name.name, wq->name.len);
+ static void __init xen_smp_prepare_boot_cpu(void)
 
 
