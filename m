@@ -1,478 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab2EDGvm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 02:51:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:2723 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752170Ab2EDGvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 02:51:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="96284502"
-From: Alex Shi <alex.shi@intel.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
-        fweisbec@gmail.com, bp@amd64.org, npiggin@gmail.com
-Cc: jeremy@goop.org, riel@redhat.com, luto@mit.edu, alex.shi@intel.com,
-        avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
-        fenghua.yu@intel.com, yinghai@kernel.org, borislav.petkov@amd.com,
-        ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, yongjie.ren@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATH v2 2/5] x86/flush_tlb: try flush_tlb_single one by one in flush_tlb_range
-Date: Fri,  4 May 2012 14:50:07 +0800
-Message-Id: <1336114210-25687-3-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1336114210-25687-1-git-send-email-alex.shi@intel.com>
-References: <1336114210-25687-1-git-send-email-alex.shi@intel.com>
+	id S1752543Ab2EDHAz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 03:00:55 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35781 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab2EDHAy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 03:00:54 -0400
+Date: Fri, 4 May 2012 09:00:48 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/3] perf/annotate improvements
+Message-ID: <20120504070048.GA10289@gmail.com>
+References: <1336062935-19964-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1336062935-19964-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86 has no flush_tlb_range support in instruction level. Currently the
-flush_tlb_range just implemented by flushing all page table. That is not
-the best solution for all scenarios. In fact, if we just use 'invlpg' to
-flush few lines from TLB, we can get the performance gain from later
-remain TLB lines accessing.
 
-But the 'invlpg' instruction costs much of time. Its execution time can
-compete with cr3 rewriting, and even a bit more on SNB CPU.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-So, on a 512 4KB TLB entries CPU, the balance points is at:
-	(512 - X) * 100ns(assumed TLB refill cost) =
-		X(TLB flush entries) * 100ns(assumed invlpg cost)
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> 	Just a bit on top of yesterday's pile.
+> 
+> - Arnaldo
+> 
+> The following changes since commit 0822cc80d9aee026b1ebe43c02dc01e0a0227864:
+> 
+>   perf annotate browser: Don't display 0.00 percentages (2012-04-27 17:13:53 -0300)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/annotate
+> 
+> for you to fetch changes up to 64aa17ca5a4e428fcb6d0806823a99a18c548506:
+> 
+>   perf annotate browser: Don't change the asm line color when toggling source (2012-05-03 13:23:00 -0300)
+> 
+> ----------------------------------------------------------------
+> Perf annotate browser improvements.
+> 
+> . Get back the line separating the overheads from the disassembly, requested by
+>   Peter Zijlstra, Linus agreed now that it is a solid line and more column real
+>   state was harvested. Also it has the jump->arrow lines separated from it by
+>   the address/jump target column.
+> 
+> . Don't change asm line color when toggling source code view. Requested by
+>   Peter Zijlstra.
+> 
+> Current snapshot:
+> 
+> avtab_search_node
+>        │      push   %rbp
+>        │      mov    %rsp,%rbp
+>        │    → callq  mcount
+>        │      movzwl 0x6(%rsi),%edx
+>        │      and    $0x7fff,%dx
+>        │      test   %rdi,%rdi
+>        │    ↓ jne    20
+>   0.42 │17:┌─→xor    %eax,%eax
+>        │19:│  leaveq
+>   0.42 │   │← retq
+>        │   │  nopl   0x0(%rax,%rax,1)
+>        │20:│  mov    (%rdi),%rax
+>   0.08 │   │  test   %rax,%rax
+>        │   └──je     17
+>        │      movzwl (%rsi),%ecx
+>        │      movzwl 0x2(%rsi),%r9d
+>        │      movzwl 0x4(%rsi),%r8d
+>        │      movzwl %cx,%esi
+>        │      movzwl %r9w,%r10d
+>        │      shl    $0x9,%esi
+>        │      lea    (%rsi,%r10,4),%esi
+>        │      lea    (%r8,%rsi,1),%esi
+>        │      and    0x10(%rdi),%si
+>        │      movzwl %si,%esi
+>        │      mov    (%rax,%rsi,8),%rax
+>   1.01 │      test   %rax,%rax
+>        │    ↑ je     19
+>        │      nopw   0x0(%rax,%rax,1)
+>   3.19 │60:   cmp    %cx,(%rax)
+>        │    ↓ jne    7e
+>   0.08 │      cmp    %r9w,0x2(%rax)
+>        │    ↓ jne    7e
+>        │      cmp    %r8w,0x4(%rax)
+>        │    ↓ jne    79
+>        │      test   %dx,0x6(%rax)
+>        │    ↑ jne    19
+>        │79:   cmp    %r8w,0x4(%rax)
+>  83.45 │7e: ↑ ja     17
+>   3.36 │      mov    0x10(%rax),%rax
+>   7.98 │      test   %rax,%rax
+>        │    ↑ jne    60
+>        │      leaveq
+>        │    ← retq
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (3):
+>       perf ui browser: Introduce routine to draw vertical line
+>       perf annotate browser: More clearly separate columns
+>       perf annotate browser: Don't change the asm line color when toggling source
+> 
+>  tools/perf/ui/browser.c           |   23 ++++++++++++-----
+>  tools/perf/ui/browser.h           |    4 ++-
+>  tools/perf/ui/browsers/annotate.c |   51 ++++++++++++++++++++-----------------
+>  3 files changed, 47 insertions(+), 31 deletions(-)
 
-Here, X is 256, that is 1/2 of 512 entries.
+Hm, this regresses for some symbols, the annotation window only 
+shows this:
 
-But with the mysterious CPU pre-fetcher and page miss handler Unit, the
-assumed TLB refill cost is far lower then 100ns in sequential access. And
-2 HT siblings in one core makes the memory access more faster if they are
-accessing the same memory. So, in the patch, I just do the change when
-the target entries is less than 1/16 of whole active tlb entries.
-Actually, I have no data support for the percentage '1/16', so any
-suggestions are welcomed.
+__strlen_sse2_pminub                                                                               
+       │
+       │
 
-As to hugetlb, guess due to smaller page table, and smaller active TLB
-entries, I didn't see benefit via my benchmark, so no optimizing now.
+It used to show the full thing:
 
-My macro benchmark show in ideal scenarios, the performance improves 70
-percent in reading. And in worst scenario, the reading/writing
-performance is similar with unpatched 3.4-rc4 kernel.
+__strlen_sse2_pminub                                                                               
+    0.00 :          392a35dbde:   jne    392a35dc30 
+<__strlen_sse2_pminub+0x2a0>                  ▒
+    0.00 :          392a35dbe0:   pcmpeqb 0x40(%rax),%xmm3                                        
+▒
+    0.00 :          392a35dbe5:   pmovmskb %xmm3,%edx                                             
+▒
+    0.00 :          392a35dbe9:   sub    %rdi,%rax                                                
+▒
+    0.00 :          392a35dbec:   bsf    %rdx,%rdx                                                
+▒
+    0.00 :          392a35dbf0:   add    %rdx,%rax                                                
+▒
+    0.00 :          392a35dbf3:   add    $0x40,%rax                                               
+▒
+    0.00 :          392a35dbf7:   retq                                           
 
-Here is the reading data on my 2P * 4cores *HT NHM EP machine, with THP
-'always':
+Other symbols are fine.
 
-multi thread testing, '-t' paramter is thread number:
-	       	        with patch   unpatched 3.4-rc4
-./mprotect -t 1           14ns		24ns
-./mprotect -t 2           13ns		22ns
-./mprotect -t 4           12ns		19ns
-./mprotect -t 8           14ns		16ns
-./mprotect -t 16          28ns		26ns
-./mprotect -t 32          54ns		51ns
-./mprotect -t 128         200ns		199ns
-
-Single process with sequencial flushing and memory accessing:
-
-		       	with patch   unpatched 3.4-rc4
-./mprotect		    7ns			11ns
-./mprotect -p 4096  -l 8 -n 10240
-			    21ns		21ns
-
-I also tried other benchmarks on Intel core2/NHM/SNB EP and NHM EX machine.
-No clear performance change on specjbb2005 with openjdk, and oltp reading.
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- arch/x86/include/asm/paravirt.h       |    5 +-
- arch/x86/include/asm/paravirt_types.h |    3 +-
- arch/x86/include/asm/tlbflush.h       |   19 +++----
- arch/x86/include/asm/uv/uv.h          |    5 +-
- arch/x86/mm/tlb.c                     |   97 +++++++++++++++++++++++++++------
- arch/x86/platform/uv/tlb_uv.c         |    6 +-
- arch/x86/xen/mmu.c                    |    9 ++--
- include/trace/events/xen.h            |   12 +++--
- 8 files changed, 113 insertions(+), 43 deletions(-)
-
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index aa0f913..03da4ab 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -397,9 +397,10 @@ static inline void __flush_tlb_single(unsigned long addr)
- 
- static inline void flush_tlb_others(const struct cpumask *cpumask,
- 				    struct mm_struct *mm,
--				    unsigned long va)
-+				    unsigned long start,
-+				    unsigned long end)
- {
--	PVOP_VCALL3(pv_mmu_ops.flush_tlb_others, cpumask, mm, va);
-+	PVOP_VCALL4(pv_mmu_ops.flush_tlb_others, cpumask, mm, start, end);
- }
- 
- static inline int paravirt_pgd_alloc(struct mm_struct *mm)
-diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-index 8e8b9a4..600a5fc 100644
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -250,7 +250,8 @@ struct pv_mmu_ops {
- 	void (*flush_tlb_single)(unsigned long addr);
- 	void (*flush_tlb_others)(const struct cpumask *cpus,
- 				 struct mm_struct *mm,
--				 unsigned long va);
-+				 unsigned long start,
-+				 unsigned long end);
- 
- 	/* Hooks for allocating and freeing a pagetable top-level */
- 	int  (*pgd_alloc)(struct mm_struct *mm);
-diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-index c0e108e..ec30dfb 100644
---- a/arch/x86/include/asm/tlbflush.h
-+++ b/arch/x86/include/asm/tlbflush.h
-@@ -77,7 +77,7 @@ static inline void __flush_tlb_one(unsigned long addr)
-  *  - flush_tlb_page(vma, vmaddr) flushes one page
-  *  - flush_tlb_range(vma, start, end) flushes a range of pages
-  *  - flush_tlb_kernel_range(start, end) flushes a range of kernel pages
-- *  - flush_tlb_others(cpumask, mm, va) flushes TLBs on other cpus
-+ *  - flush_tlb_others(cpumask, mm, start, end) flushes TLBs on other cpus
-  *
-  * ..but the i386 has somewhat limited tlb flushing capabilities,
-  * and page-granular flushes are available only on i486 and up.
-@@ -115,7 +115,8 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
- 
- static inline void native_flush_tlb_others(const struct cpumask *cpumask,
- 					   struct mm_struct *mm,
--					   unsigned long va)
-+					   unsigned long start,
-+					   unsigned long end)
- {
- }
- 
-@@ -133,17 +134,14 @@ extern void flush_tlb_all(void);
- extern void flush_tlb_current_task(void);
- extern void flush_tlb_mm(struct mm_struct *);
- extern void flush_tlb_page(struct vm_area_struct *, unsigned long);
-+extern void flush_tlb_range(struct vm_area_struct *vma,
-+				   unsigned long start, unsigned long end);
- 
- #define flush_tlb()	flush_tlb_current_task()
- 
--static inline void flush_tlb_range(struct vm_area_struct *vma,
--				   unsigned long start, unsigned long end)
--{
--	flush_tlb_mm(vma->vm_mm);
--}
--
- void native_flush_tlb_others(const struct cpumask *cpumask,
--			     struct mm_struct *mm, unsigned long va);
-+				struct mm_struct *mm,
-+				unsigned long start, unsigned long end);
- 
- #define TLBSTATE_OK	1
- #define TLBSTATE_LAZY	2
-@@ -163,7 +161,8 @@ static inline void reset_lazy_tlbstate(void)
- #endif	/* SMP */
- 
- #ifndef CONFIG_PARAVIRT
--#define flush_tlb_others(mask, mm, va)	native_flush_tlb_others(mask, mm, va)
-+#define flush_tlb_others(mask, mm, start, end)	\
-+	native_flush_tlb_others(mask, mm, start, end)
- #endif
- 
- static inline void flush_tlb_kernel_range(unsigned long start,
-diff --git a/arch/x86/include/asm/uv/uv.h b/arch/x86/include/asm/uv/uv.h
-index 3bb9491..b47c2a8 100644
---- a/arch/x86/include/asm/uv/uv.h
-+++ b/arch/x86/include/asm/uv/uv.h
-@@ -15,7 +15,8 @@ extern void uv_nmi_init(void);
- extern void uv_system_init(void);
- extern const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 						 struct mm_struct *mm,
--						 unsigned long va,
-+						 unsigned long start,
-+						 unsigned end,
- 						 unsigned int cpu);
- 
- #else	/* X86_UV */
-@@ -26,7 +27,7 @@ static inline void uv_cpu_init(void)	{ }
- static inline void uv_system_init(void)	{ }
- static inline const struct cpumask *
- uv_flush_tlb_others(const struct cpumask *cpumask, struct mm_struct *mm,
--		    unsigned long va, unsigned int cpu)
-+		    unsigned long start, unsigned long end, unsigned int cpu)
- { return cpumask; }
- 
- #endif	/* X86_UV */
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index d6c0418..c4e694d 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -41,7 +41,8 @@ DEFINE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate)
- union smp_flush_state {
- 	struct {
- 		struct mm_struct *flush_mm;
--		unsigned long flush_va;
-+		unsigned long flush_start;
-+		unsigned long flush_end;
- 		raw_spinlock_t tlbstate_lock;
- 		DECLARE_BITMAP(flush_cpumask, NR_CPUS);
- 	};
-@@ -154,10 +155,19 @@ void smp_invalidate_interrupt(struct pt_regs *regs)
- 
- 	if (f->flush_mm == percpu_read(cpu_tlbstate.active_mm)) {
- 		if (percpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
--			if (f->flush_va == TLB_FLUSH_ALL)
-+			if (f->flush_start == TLB_FLUSH_ALL
-+					|| !cpu_has_invlpg)
- 				local_flush_tlb();
--			else
--				__flush_tlb_one(f->flush_va);
-+			else if (!f->flush_end)
-+				__flush_tlb_single(f->flush_start);
-+			else {
-+				unsigned long addr;
-+				addr = f->flush_start;
-+				while (addr <= f->flush_end) {
-+					__flush_tlb_single(addr);
-+					addr += PAGE_SIZE;
-+				}
-+			}
- 		} else
- 			leave_mm(cpu);
- 	}
-@@ -170,7 +180,8 @@ out:
- }
- 
- static void flush_tlb_others_ipi(const struct cpumask *cpumask,
--				 struct mm_struct *mm, unsigned long va)
-+				 struct mm_struct *mm, unsigned long start,
-+				 unsigned long end)
- {
- 	unsigned int sender;
- 	union smp_flush_state *f;
-@@ -183,7 +194,8 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
- 		raw_spin_lock(&f->tlbstate_lock);
- 
- 	f->flush_mm = mm;
--	f->flush_va = va;
-+	f->flush_start = start;
-+	f->flush_end = end;
- 	if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
- 		/*
- 		 * We have to send the IPI only to
-@@ -197,24 +209,26 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
- 	}
- 
- 	f->flush_mm = NULL;
--	f->flush_va = 0;
-+	f->flush_start = 0;
-+	f->flush_end = 0;
- 	if (nr_cpu_ids > NUM_INVALIDATE_TLB_VECTORS)
- 		raw_spin_unlock(&f->tlbstate_lock);
- }
- 
- void native_flush_tlb_others(const struct cpumask *cpumask,
--			     struct mm_struct *mm, unsigned long va)
-+				 struct mm_struct *mm, unsigned long start,
-+				 unsigned long end)
- {
- 	if (is_uv_system()) {
- 		unsigned int cpu;
- 
- 		cpu = smp_processor_id();
--		cpumask = uv_flush_tlb_others(cpumask, mm, va, cpu);
-+		cpumask = uv_flush_tlb_others(cpumask, mm, start, end, cpu);
- 		if (cpumask)
--			flush_tlb_others_ipi(cpumask, mm, va);
-+			flush_tlb_others_ipi(cpumask, mm, start, end);
- 		return;
- 	}
--	flush_tlb_others_ipi(cpumask, mm, va);
-+	flush_tlb_others_ipi(cpumask, mm, start, end);
- }
- 
- static void __cpuinit calculate_tlb_offset(void)
-@@ -280,7 +294,7 @@ void flush_tlb_current_task(void)
- 
- 	local_flush_tlb();
- 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
--		flush_tlb_others(mm_cpumask(mm), mm, TLB_FLUSH_ALL);
-+		flush_tlb_others(mm_cpumask(mm), mm, TLB_FLUSH_ALL, 0UL);
- 	preempt_enable();
- }
- 
-@@ -295,12 +309,63 @@ void flush_tlb_mm(struct mm_struct *mm)
- 			leave_mm(smp_processor_id());
- 	}
- 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
--		flush_tlb_others(mm_cpumask(mm), mm, TLB_FLUSH_ALL);
-+		flush_tlb_others(mm_cpumask(mm), mm, TLB_FLUSH_ALL, 0UL);
-+
-+	preempt_enable();
-+}
-+
-+#define FLUSHALL_BAR	16
-+
-+void flush_tlb_range(struct vm_area_struct *vma,
-+				   unsigned long start, unsigned long end)
-+{
-+	struct mm_struct *mm;
-+
-+	if (!cpu_has_invlpg || vma->vm_flags & VM_HUGETLB) {
-+		flush_tlb_mm(vma->vm_mm);
-+		return;
-+	}
-+
-+	preempt_disable();
-+	mm = vma->vm_mm;
-+	if (current->active_mm == mm) {
-+		if (current->mm) {
-+			unsigned long addr, vmflag = vma->vm_flags;
-+			unsigned act_entries, tlb_entries = 0;
-+
-+			if (vmflag & VM_EXEC)
-+				tlb_entries = tlb_lli_4k[ENTRIES];
-+			else
-+				tlb_entries = tlb_lld_4k[ENTRIES];
-+
-+			act_entries = tlb_entries > mm->total_vm ?
-+					mm->total_vm : tlb_entries;
- 
-+			if ((end - start)/PAGE_SIZE > act_entries/FLUSHALL_BAR)
-+				local_flush_tlb();
-+			else {
-+				for (addr = start; addr <= end;
-+						addr += PAGE_SIZE)
-+					__flush_tlb_single(addr);
-+
-+				if (cpumask_any_but(mm_cpumask(mm),
-+					smp_processor_id()) < nr_cpu_ids)
-+					flush_tlb_others(mm_cpumask(mm), mm,
-+								start, end);
-+				preempt_enable();
-+				return;
-+			}
-+		} else {
-+			leave_mm(smp_processor_id());
-+		}
-+	}
-+	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
-+		flush_tlb_others(mm_cpumask(mm), mm, TLB_FLUSH_ALL, 0UL);
- 	preempt_enable();
- }
- 
--void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
-+
-+void flush_tlb_page(struct vm_area_struct *vma, unsigned long start)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 
-@@ -308,13 +373,13 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
- 
- 	if (current->active_mm == mm) {
- 		if (current->mm)
--			__flush_tlb_one(va);
-+			__flush_tlb_one(start);
- 		else
- 			leave_mm(smp_processor_id());
- 	}
- 
- 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
--		flush_tlb_others(mm_cpumask(mm), mm, va);
-+		flush_tlb_others(mm_cpumask(mm), mm, start, 0UL);
- 
- 	preempt_enable();
- }
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 3ae0e61..0df5ad2 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1068,8 +1068,8 @@ static int set_distrib_bits(struct cpumask *flush_mask, struct bau_control *bcp,
-  * done.  The returned pointer is valid till preemption is re-enabled.
-  */
- const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
--				struct mm_struct *mm, unsigned long va,
--				unsigned int cpu)
-+				struct mm_struct *mm, unsigned long start,
-+				unsigned end, unsigned int cpu)
- {
- 	int locals = 0;
- 	int remotes = 0;
-@@ -1112,7 +1112,7 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 
- 	record_send_statistics(stat, locals, hubs, remotes, bau_desc);
- 
--	bau_desc->payload.address = va;
-+	bau_desc->payload.address = start;
- 	bau_desc->payload.sending_cpu = cpu;
- 	/*
- 	 * uv_flush_send_and_wait returns 0 if all cpu's were messaged,
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index b8e2794..75bab52 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1239,7 +1239,8 @@ static void xen_flush_tlb_single(unsigned long addr)
- }
- 
- static void xen_flush_tlb_others(const struct cpumask *cpus,
--				 struct mm_struct *mm, unsigned long va)
-+				 struct mm_struct *mm, unsigned long start,
-+				 unsigned long end)
- {
- 	struct {
- 		struct mmuext_op op;
-@@ -1251,7 +1252,7 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
- 	} *args;
- 	struct multicall_space mcs;
- 
--	trace_xen_mmu_flush_tlb_others(cpus, mm, va);
-+	trace_xen_mmu_flush_tlb_others(cpus, mm, start, end);
- 
- 	if (cpumask_empty(cpus))
- 		return;		/* nothing to do */
-@@ -1264,11 +1265,11 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
- 	cpumask_and(to_cpumask(args->mask), cpus, cpu_online_mask);
- 	cpumask_clear_cpu(smp_processor_id(), to_cpumask(args->mask));
- 
--	if (va == TLB_FLUSH_ALL) {
-+	if (start == TLB_FLUSH_ALL) {
- 		args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
- 	} else {
- 		args->op.cmd = MMUEXT_INVLPG_MULTI;
--		args->op.arg1.linear_addr = va;
-+		args->op.arg1.linear_addr = start;
- 	}
- 
- 	MULTI_mmuext_op(mcs.mc, &args->op, 1, NULL, DOMID_SELF);
-diff --git a/include/trace/events/xen.h b/include/trace/events/xen.h
-index 92f1a79..15ba03b 100644
---- a/include/trace/events/xen.h
-+++ b/include/trace/events/xen.h
-@@ -397,18 +397,20 @@ TRACE_EVENT(xen_mmu_flush_tlb_single,
- 
- TRACE_EVENT(xen_mmu_flush_tlb_others,
- 	    TP_PROTO(const struct cpumask *cpus, struct mm_struct *mm,
--		     unsigned long addr),
--	    TP_ARGS(cpus, mm, addr),
-+		     unsigned long addr, unsigned long end),
-+	    TP_ARGS(cpus, mm, addr, end),
- 	    TP_STRUCT__entry(
- 		    __field(unsigned, ncpus)
- 		    __field(struct mm_struct *, mm)
- 		    __field(unsigned long, addr)
-+		    __field(unsigned long, end)
- 		    ),
- 	    TP_fast_assign(__entry->ncpus = cpumask_weight(cpus);
- 			   __entry->mm = mm;
--			   __entry->addr = addr),
--	    TP_printk("ncpus %d mm %p addr %lx",
--		      __entry->ncpus, __entry->mm, __entry->addr)
-+			   __entry->addr = addr,
-+			   __entry->end = end),
-+	    TP_printk("ncpus %d mm %p addr %lx, end %lx",
-+		      __entry->ncpus, __entry->mm, __entry->addr, __entry->end)
- 	);
- 
- TRACE_EVENT(xen_mmu_write_cr3,
--- 
-1.7.0.1
-
+	Ingo
