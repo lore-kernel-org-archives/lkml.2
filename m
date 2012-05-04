@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab2EDJcr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 05:32:47 -0400
-Received: from lebrac.rtp-net.org ([88.191.135.105]:40083 "EHLO
-	lebrac.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256Ab2EDJcq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 05:32:46 -0400
-X-Greylist: delayed 489 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 May 2012 05:32:46 EDT
-From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Kukjin Kim <kgene.kim@samsung.com>,
-        linaro-dev@lists.linaro.org, Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>, shawn.guo@linaro.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Making ARM multiplatform kernels DT-only?
-Organization: RtpNet
-References: <201205031350.35476.arnd@arndb.de>
-	<20120503141853.GC897@n2100.arm.linux.org.uk>
-Date: Fri, 04 May 2012 11:22:55 +0200
-In-Reply-To: <20120503141853.GC897@n2100.arm.linux.org.uk> (Russell King's
-	message of "Thu, 3 May 2012 15:18:53 +0100")
-Message-ID: <87fwbg8fm8.fsf@lebrac.rtp-net.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1754289Ab2EDJgB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 05:36:01 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59627 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752427Ab2EDJgA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 05:36:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20120430214718.GB4414@opensource.wolfsonmicro.com>
+References: <CAEqHmAstczdi2seTHFE0-jLK9fJaKosHjJyo4AJ7E9UKYBrVsg@mail.gmail.com>
+	<20120430214718.GB4414@opensource.wolfsonmicro.com>
+Date: Fri, 4 May 2012 11:35:58 +0200
+Message-ID: <CAEqHmAsyJntRMqX+7NbQN0OmDXz6ZGh0LzAMp5KB=-cAMgpsJA@mail.gmail.com>
+Subject: Re: Linux 3.4-rc2 register mapping and paging on I2C device.
+From: dd diasemi <dd.diasemi@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Anthony Olech <Anthony.Olech@diasemi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
-
-Hi,
-
-> On Thu, May 03, 2012 at 01:50:35PM +0000, Arnd Bergmann wrote:
->> My feeling is that we should just mandate DT booting for multiplatform
->> kernels, because it significantly reduces the combinatorial space
->> at compile time, avoids a lot of legacy board files that we cannot
->> test anyway, reduces the total kernel size and gives an incentive
->> for people to move forward to DT with their existing boards.
+On Mon, Apr 30, 2012 at 11:47 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Mon, Apr 30, 2012 at 06:31:37PM +0100, dd diasemi wrote:
 >
-> On this point, I strongly object, especially as I'm one who uses the
-> existing non-DT multiplatform support extensively.  It's really not
-> a problem for what you're trying to achieve.
+>> 3. Update regmap API to enable support for register page switching.
 >
+> Clearly this is the most sensible option.  Open coding this in all the
+> drivers that need it is going to lead to a lot of duplicated effort.
 
-Please, don't do this. afaik, the idea was to reduce the numbers of
-kernel to deal with. Unfortunately, this kind of restriction would
-increase it. Consider orion platforms. This would mean having to deal
-with 4 kernels (1 for DT, 1 for orion5x, 1 for kirkwood, 1 for mv78xx0).
+Below you can find my proposition of API for regmap paging support. It
+is sufficient for my driver needs.
+If you are OK with this proposition or you find any issues with it, let me know.
 
-Dropping HW support because one wants to encourage people to convert
-their board file into DT seems weird. Doing this, imho, should even be
-called a regression. The DT conversion won't happen in an eye blink so
-non-DT kernels are still something we should take care of.
+Kind Regards,
+Krystian
 
-> I think what you're proposing is a totally artificial restriction.
-> There's no problem with a kernel supporting DT and non-DT together.
-> We've proven that many many times.  I prove it _every_ night that my
-> build and boot system runs - the OMAP LDP boots a multiplatform kernel
-> just fine without DT.
+---
+diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
+index 0f6c7fb..590d72c 100644
+--- a/drivers/base/regmap/Kconfig
++++ b/drivers/base/regmap/Kconfig
+@@ -16,3 +16,6 @@ config REGMAP_SPI
 
-I think it's true for imx too. iirc, one can build a single image for
-armv4/armv5 and one other for armv6/armv7 without having to use DT.
+ config REGMAP_IRQ
+        bool
++
++config REGMAP_PAGING
++       bool
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index a90abb6..81a11c1 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -50,6 +50,15 @@ struct reg_default {
+  * @pad_bits: Number of bits of padding between register and value.
+  * @val_bits: Number of bits in a register value, mandatory.
+  *
++ * @page_bits: Number of bits of register page number. These are the top-most
++ *             bits exdending register address. These bits will be written
++ *             to page register, for page switch.
++ * @page_reg: Page register used for page update (available for any page).
++ * @page_shift: Formatting bit shift for page number, made prior to write to
++ *              page register.
++ * @nonpageable_reg: Optional callback returning true if the register
++ *                  needs NO page switching (eg. page is irrelevant).
++ *
+  * @writeable_reg: Optional callback returning true if the register
+  *                 can be written to.
+  * @readable_reg: Optional callback returning true if the register
+@@ -81,6 +90,13 @@ struct regmap_config {
+        int pad_bits;
+        int val_bits;
 
-Regards,
-Arnaud
++#ifdef CONFIG_REGMAP_PAGING
++       int page_bits;
++       int page_shift;
++       unsigned int page_reg;
++       bool (*nonpageable_reg)(struct device *dev, unsigned int reg);
++#endif
++
+        bool (*writeable_reg)(struct device *dev, unsigned int reg);
+        bool (*readable_reg)(struct device *dev, unsigned int reg);
+        bool (*volatile_reg)(struct device *dev, unsigned int reg);
