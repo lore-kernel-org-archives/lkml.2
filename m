@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759482Ab2EDTca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 15:32:30 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:53771 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752731Ab2EDTc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 15:32:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Huang Ying <ying.huang@intel.com>
-Subject: Re: [RFC v2 1/5] PM, Runtime, Add power_must_be_on flag
-Date: Fri, 4 May 2012 21:37:16 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>, ming.m.lin@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Zheng Yan <zheng.z.yan@intel.com>
-References: <1336119221-21146-1-git-send-email-ying.huang@intel.com> <1336119221-21146-2-git-send-email-ying.huang@intel.com>
-In-Reply-To: <1336119221-21146-2-git-send-email-ying.huang@intel.com>
+	id S1759518Ab2EDTeP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 15:34:15 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:63897 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752731Ab2EDTeN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 15:34:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>
+Subject: Re: Handling of modular boards
+Date: Fri, 4 May 2012 19:34:08 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@ardb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        linux-embedded@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+References: <20120504185850.GO14230@opensource.wolfsonmicro.com>
+In-Reply-To: <20120504185850.GO14230@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-2"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205042137.16425.rjw@sisk.pl>
+Message-Id: <201205041934.08830.arnd@arndb.de>
+X-Provags-ID: V02:K0:udWoBleikcwWNuT+Eovdp1VU8pspMwL9eXfWZ0j/lvP
+ tf1FR2DdmcJm5Xumzg2wSE1ge+ercdbXQh2y8kMWYhYBIP9qp7
+ nB/kQiq9ZT4K+F0hXuUFEpSfVT6Nw9avNR6gxMlKpb5gyogkKR
+ ia0M13F65hF/bwyT+jfgaVjh36WFbijhaHRxipLF/WQCUAgfrc
+ QG+4peeTQb+8bT593lghDJ/I2gIMt3vGfJNEmJoR9DilX51NO1
+ PWYrZ99myofjluGwpN0kiV6tG5b3xQWWBDDMFWpxy1bQuiUTp/
+ QFBOajgrj/YkpK9iJ20vrb88hbQKTx5mmY5fLq9cUNW9dySrpr
+ 1BgNSPvFgPq1LAA4P6Ys=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 04, 2012, Huang Ying wrote:
-> The extreme way to save device power in runtime is to turn off power
-> of device.  For example, D3cold for PCIe bus and ZPODD (Zero Power
-> Optical Disk Drive) for SATA bus will do that.
+On Friday 04 May 2012, Mark Brown wrote:
+> Quite a few reference platforms (including Wolfson ones, which is why
+> I'm particularly interested) use replaceable modules to allow
+> configuration changes.  Since we can often identify the configuration at
+> runtime we should ideally do that but currently there's no infrastructure 
+> to help with that, generally this seems to be done in arch code for the
+> machine but this doesn't scale when even the CPU might change and isn't
+> terribly device tree compatible either.
 > 
-> But sometimes power off is not expected, some possible reason is as
-> follow
-> 
-> - power off device usually incurs longer resume latency, if it exceeds
->   power QoS requirement, power off should be disabled.
-> 
-> - For some buses, device in power off state can not support remote
->   wakeup.  If remote wakeup is desired, power off should be disabled.
-> 
-> In general, whether to put a device into power off state should be
-> decided by the driver of the device, but for some buses, whether to
-> put a device into power off state may be done by the parent of the
-> device.  For example, a PCIe end point device may be put into power
-> off state by the PCIe port connected to it.
-> 
-> So a flag is introduced for the children devices to tell the parent
-> device, whether it should be put into power off state.
-> 
-> This flag is also used for device driver to tell bus layer whether it
-> is OK to be powered off.
-> 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> For reference the code for current Wolfson plugin modules is in
+> arch/arm/mach-s3c64xx/mach-crag6410-module.c.
 
-I would be almost fine with this patch, if [2/5] were not present.
+Hi Mark,
 
-However, if you introduce a flag like this, you need to put checks
-against it into all places where power may be removed from devices,
-like the generic PM domains framework (but not only there).
+Thanks for getting the discussion started. I've seen the same issue come
+up for arch/arm/mach-ux500/board-mop500*uib.c and for the beaglebone.
+I'm sure there are many more, but we should make sure that everyone
+of these can live with whatever we come up with.
 
-Thanks,
-Rafael
-
-
-> ---
->  include/linux/pm.h |    1 +
->  1 file changed, 1 insertion(+)
+> The most obvious current fit here is the MFD subsystem but it feels like
+> we need some slightly different infastructure to what MFD currently
+> provides.  MFD is really set up to handle platform devices with a core
+> and linear ranges of resources fanning out from that core since they're
+> really oriented around chips.  In contrast these boards are more about
+> remapping random collections of potentially unrelated resources and
+> instantiating devices on all sorts of buses and share more with board
+> files.
 > 
-> --- a/include/linux/pm.h
-> +++ b/include/linux/pm.h
-> @@ -536,6 +536,7 @@ struct dev_pm_info {
->  	unsigned int		irq_safe:1;
->  	unsigned int		use_autosuspend:1;
->  	unsigned int		timer_autosuspends:1;
-> +	unsigned int		power_must_be_on:1;
->  	enum rpm_request	request;
->  	enum rpm_status		runtime_status;
->  	int			runtime_error;
-> 
-> 
+> I'm just starting to put some stuff together for this so I was wondering
+> if anyone had been thinking about this and had any bright ideas for how
+> to handle it, and also if people think that MFD is a good fit for this
+> or if we should split the silicon MFDs from these PCBs.
 
+One idea that I've heard before is to put device tree fragments into the
+kernel and dynamically add them to the device tree that was passed by the
+boot loader whenever we detect the presence of a specific device.
+This obviously means it works only for boards using DT for booting, but
+it allows us to use some infrastructure that we already have.
+
+Another idea was to put all the possible extensions into the device tree
+for a given board and disable them by default, putting it into the
+responsibility of the boot loader to enable the one that is actually
+being used. This has serious scalibility problems when there are many
+possible extensions and also relies more on the boot loader than I would
+like.
+
+An intermediate solution that I really like is the ability to
+stuff device tree fragments on extension board themselves, but that
+can only work for new designs and causes problems when that information
+is not actually correct.
+
+	Arnd
