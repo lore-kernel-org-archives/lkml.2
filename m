@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759236Ab2EDQwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 12:52:38 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:50138 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478Ab2EDQwh (ORCPT
+	id S1759203Ab2EDQyE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 12:54:04 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47870 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478Ab2EDQyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 12:52:37 -0400
-Date: Fri, 4 May 2012 09:52:32 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Lockdep false positive in sysfs
-Message-ID: <20120504165232.GB24639@google.com>
-References: <20120427160902.GO27486@google.com>
- <Pine.LNX.4.44L0.1205031720480.1232-100000@iolanthe.rowland.org>
+	Fri, 4 May 2012 12:54:01 -0400
+Message-ID: <4FA409A6.3020700@wwwdotorg.org>
+Date: Fri, 04 May 2012 10:53:58 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1205031720480.1232-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 1/1] ARM: tegra: Add Tegra Memory Controller(MC) driver
+References: <1336063897-12083-1-git-send-email-hdoyu@nvidia.com><4FA2D0C4.4020608@wwwdotorg.org> <20120504.160035.1828735037330038337.hdoyu@nvidia.com>
+In-Reply-To: <20120504.160035.1828735037330038337.hdoyu@nvidia.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 05:30:30PM -0400, Alan Stern wrote:
-> On Fri, 27 Apr 2012, Tejun Heo wrote:
+On 05/04/2012 07:00 AM, Hiroshi Doyu wrote:
+...
+> What about the following AHB patches? AHB patches are independent of
+> MC/GART/SMMU DT issue basically. If you think that they are ready to
+> merge, I'll post the update version, I fixed some of your latest
+> comments.
 > 
-> > > Would it be better to release just the lockdep annotation while
-> > > continuing to hold the actual lock, or to really drop the lock?
-> > 
-> > Just the lockdep annotation, I think.
-> 
-> This is turning out to be harder than it looked.
-> 
-> In order to release the lockdep annotation, I need the lockdep_map
-> which is stored in the sysfs_dirent structure.  But when the attribute
-> method is called, all it is given is a pointer to the attribute itself
-> (which contains the lockdep_class_key but not the lockdep_map) and a
-> pointer to the corresponding kobject.
-> 
-> Is there any reasonable way to get from the kobject and the attribute
-> to the appropriate sysfs_dirent?  Search through all the groups
-> attached to the kobject?  Restrict the new interface so that it can be
-> used only by attributes at the kobject's top level (i.e., not in a
-> named group)?
-> 
-> Any suggestions?
+>  [PATCH 1/3] ARM: tegra: Add Tegra AHB driver
+>  [PATCH 2/3] ARM: tegra: Add SMMU enabler in AHB
+>  [PATCH 3/3] ARM: dt: tegra: Add device tree support for AHB
 
-Urgh... I can't think of anything pretty.  How about just marking the
-attr as "I'm special" and let sysfs code override lockdep annotation?
+Yes, I think they be reposted and go in now.
 
-Thanks.
-
--- 
-tejun
+> I'll hold off on the following until we get some direction for
+> MC/GART/SMMU. They are related to how dt info is passed via MC.
+> 
+>  [PATCH 1/3] ARM: tegra: Add Tegra Memory Controller(MC) driver
+>  [PATCH 2/3] ARM: dt: tegra: Add device tree support for Memory Controller(MC)
+>  [PATCH 3/3] iommu/tegra: smmu: Refrain from accessing to AHB
