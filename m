@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637Ab2EDVHz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:07:55 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932553Ab2EDUrE (ORCPT
+	id S932517Ab2EDUqs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:46:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503Ab2EDUqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:47:04 -0400
-Message-Id: <20120504204229.411480457@linuxfoundation.org>
+	Fri, 4 May 2012 16:46:43 -0400
+Message-Id: <20120504204228.984671465@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:23 -0700
+Date: Fri, 04 May 2012 13:43:18 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, majianpeng <majianpeng@gmail.com>,
-        NeilBrown <neilb@suse.de>, Jes Sorensen <Jes.Sorensen@redhat.com>
-Subject: [ 59/75] md/raid5: Fix a bug about judging if the operation is syncing or replacing
+        alan@lxorguk.ukuu.org.uk, Timur Tabi <timur@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: [ 54/75] powerpc/85xx: dont call of_platform_bus_probe() twice
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +25,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: majianpeng <majianpeng@gmail.com>
+From: Timur Tabi <timur@freescale.com>
 
-commit c6d2e084c7411f61f2b446d94989e5aaf9879b0f upstream.
+commit 8a95bc8dfe06982fc2b8a0a2adda7baa2346a17b upstream.
 
-When create a raid5 using assume-clean and echo check or repair to
-sync_action.Then component disks did not operated IO but the raid
-check/resync faster than normal.
-Because the judgement in function analyse_stripe():
-		if (do_recovery ||
-		    sh->sector >= conf->mddev->recovery_cp)
-			s->syncing = 1;
-		else
-			s->replacing = 1;
-When check or repair,the recovery_cp == MaxSectore,so syncing equal zero
-not one.
+Commit 46d026ac ("powerpc/85xx: consolidate of_platform_bus_probe calls")
+replaced platform-specific of_device_id tables with a single function
+that probes the most of the busses in 85xx device trees.  If a specific
+platform needed additional busses probed, then it could call
+of_platform_bus_probe() again.  Typically, the additional platform-specific
+busses are children of existing busses that have already been probed.
+of_platform_bus_probe() does not handle those child busses automatically.
 
-This bug was introduced by commit 9a3e1101b827
-    md/raid5:  detect and handle replacements during recovery.
-so this patch is suitable for 3.3-stable.
+Unfortunately, this doesn't actually work.  The second (platform-specific)
+call to of_platform_bus_probe() never finds any of the busses it's asked
+to find.
 
-Signed-off-by: majianpeng <majianpeng@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Cc: Jes Sorensen <Jes.Sorensen@redhat.com>
+To remedy this, the platform-specific of_device_id tables are eliminated,
+and their entries are merged into mpc85xx_common_ids[], so that all busses
+are probed at once.
+
+Signed-off-by: Timur Tabi <timur@freescale.com>
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid5.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/powerpc/platforms/85xx/common.c      |    6 ++++++
+ arch/powerpc/platforms/85xx/mpc85xx_mds.c |   11 +----------
+ arch/powerpc/platforms/85xx/p1022_ds.c    |   13 +------------
+ 3 files changed, 8 insertions(+), 22 deletions(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -3277,12 +3277,14 @@ static void analyse_stripe(struct stripe
- 		/* If there is a failed device being replaced,
- 		 *     we must be recovering.
- 		 * else if we are after recovery_cp, we must be syncing
-+		 * else if MD_RECOVERY_REQUESTED is set, we also are syncing.
- 		 * else we can only be replacing
- 		 * sync and recovery both need to read all devices, and so
- 		 * use the same flag.
- 		 */
- 		if (do_recovery ||
--		    sh->sector >= conf->mddev->recovery_cp)
-+		    sh->sector >= conf->mddev->recovery_cp ||
-+		    test_bit(MD_RECOVERY_REQUESTED, &(conf->mddev->recovery)))
- 			s->syncing = 1;
- 		else
- 			s->replacing = 1;
+--- a/arch/powerpc/platforms/85xx/common.c
++++ b/arch/powerpc/platforms/85xx/common.c
+@@ -21,6 +21,12 @@ static struct of_device_id __initdata mp
+ 	{ .compatible = "fsl,qe", },
+ 	{ .compatible = "fsl,cpm2", },
+ 	{ .compatible = "fsl,srio", },
++	/* So that the DMA channel nodes can be probed individually: */
++	{ .compatible = "fsl,eloplus-dma", },
++	/* For the PMC driver */
++	{ .compatible = "fsl,mpc8548-guts", },
++	/* Probably unnecessary? */
++	{ .compatible = "gpio-leds", },
+ 	{},
+ };
+ 
+--- a/arch/powerpc/platforms/85xx/mpc85xx_mds.c
++++ b/arch/powerpc/platforms/85xx/mpc85xx_mds.c
+@@ -405,12 +405,6 @@ static int __init board_fixups(void)
+ machine_arch_initcall(mpc8568_mds, board_fixups);
+ machine_arch_initcall(mpc8569_mds, board_fixups);
+ 
+-static struct of_device_id mpc85xx_ids[] = {
+-	{ .compatible = "fsl,mpc8548-guts", },
+-	{ .compatible = "gpio-leds", },
+-	{},
+-};
+-
+ static int __init mpc85xx_publish_devices(void)
+ {
+ 	if (machine_is(mpc8568_mds))
+@@ -418,10 +412,7 @@ static int __init mpc85xx_publish_device
+ 	if (machine_is(mpc8569_mds))
+ 		simple_gpiochip_init("fsl,mpc8569mds-bcsr-gpio");
+ 
+-	mpc85xx_common_publish_devices();
+-	of_platform_bus_probe(NULL, mpc85xx_ids, NULL);
+-
+-	return 0;
++	return mpc85xx_common_publish_devices();
+ }
+ 
+ machine_device_initcall(mpc8568_mds, mpc85xx_publish_devices);
+--- a/arch/powerpc/platforms/85xx/p1022_ds.c
++++ b/arch/powerpc/platforms/85xx/p1022_ds.c
+@@ -303,18 +303,7 @@ static void __init p1022_ds_setup_arch(v
+ 	pr_info("Freescale P1022 DS reference board\n");
+ }
+ 
+-static struct of_device_id __initdata p1022_ds_ids[] = {
+-	/* So that the DMA channel nodes can be probed individually: */
+-	{ .compatible = "fsl,eloplus-dma", },
+-	{},
+-};
+-
+-static int __init p1022_ds_publish_devices(void)
+-{
+-	mpc85xx_common_publish_devices();
+-	return of_platform_bus_probe(NULL, p1022_ds_ids, NULL);
+-}
+-machine_device_initcall(p1022_ds, p1022_ds_publish_devices);
++machine_device_initcall(p1022_ds, mpc85xx_common_publish_devices);
+ 
+ machine_arch_initcall(p1022_ds, swiotlb_setup_bus_notifier);
+ 
 
 
