@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760353Ab2EDWNi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 18:13:38 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58067 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754464Ab2EDWNh (ORCPT
+	id S1760343Ab2EDWPl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 18:15:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47891 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757872Ab2EDWPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 18:13:37 -0400
-Date: Fri, 4 May 2012 23:13:33 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Joe Perches <joe@perches.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: drivers: Probable misuses of ||
-Message-ID: <20120504221333.GU14230@opensource.wolfsonmicro.com>
-References: <1333580415.23520.29.camel@joe2Laptop>
- <1336168477.11505.6.camel@joe2Laptop>
- <20120504220241.GA6279@sirena.org.uk>
- <1336169378.11505.10.camel@joe2Laptop>
+	Fri, 4 May 2012 18:15:38 -0400
+Date: Fri, 4 May 2012 15:15:34 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: balbi@ti.com, Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        target-devel@vger.kernel.org
+Subject: Re: linux-next: Tree for Apr 20 (usb & target)
+Message-ID: <20120504221534.GA16430@kroah.com>
+References: <20120420155151.3fcac4c2d1002ade5ccf44ac@canb.auug.org.au>
+ <4F91D9D9.6020609@xenotime.net>
+ <1334999263.30707.129.camel@haakon2.linux-iscsi.org>
+ <20120421153402.GA22953@kroah.com>
+ <20120422190136.GA31242@linutronix.de>
+ <1336102463.22393.121.camel@haakon2.linux-iscsi.org>
+ <20120504094141.GC1156@arwen.pp.htv.fi>
+ <1336150599.22393.298.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="r3KnbM2MoJFBL7Dl"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1336169378.11505.10.camel@joe2Laptop>
-X-Cookie: Advancement in position.
+In-Reply-To: <1336150599.22393.298.camel@haakon2.linux-iscsi.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 04, 2012 at 09:56:39AM -0700, Nicholas A. Bellinger wrote:
+> On Fri, 2012-05-04 at 12:41 +0300, Felipe Balbi wrote:
+> > Hi,
+> > 
+> 
+> <SNIP>
+> 
+> > > 
+> > > After the recommended change, the in-kernel config using a single gadget
+> > > driver (the target) are able to build.  Thanks for the detailed
+> > > explanation btw.. ;)
+> > > 
+> > > I've made the same change for tcm_usb_gadget in lio-core, and updated
+> > > for-next-merge with the following merge patch:
+> > > 
+> > > http://git.kernel.org/?p=linux/kernel/git/nab/target-pending.git;a=commit;h=0c41520201bc0933d65b8644173802778f426234
+> > > 
+> > > Please let me know if you have any other changes that should go into
+> > > sunday's linux-next build.
+> > 
+> > It looks ok to me. You can add my Acked-by: Felipe Balbi <balbi@ti.com>
+> > 
+> 
+> Thanks Felipe!
+> 
+> So with your Ack in place and if there are no more objections, the plan
+> is now to take tcm_usb_gadget through target-pending/for-next-merge
+> (along with sbp-target) for an initial upstream merge.
+> 
+> Also, I'm fine if USB folks would prefer to take this via their tree
+> now that the gadget target is residing within drivers/usb/gadget/, but
+> AFAICT this looks harmless enough to merge directly via the target tree.
 
---r3KnbM2MoJFBL7Dl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+That's fine with me as well.
 
-On Fri, May 04, 2012 at 03:09:38PM -0700, Joe Perches wrote:
-> On Fri, 2012-05-04 at 23:02 +0100, Mark Brown wrote:
-> > On Fri, May 04, 2012 at 02:54:37PM -0700, Joe Perches wrote:
-
-> > > > drivers/media/rc/fintek-cir.c:	if ((chip != 0x0408) || (chip != 0x0804))
-
-> > It'd probably help if you were to supply more analysis as to what the
-> > issues you think you're seeing are - in the cases quoted above
-> > (especially the last one) there's no obvious bug without further
-> > analysis.
-
-> Likely the || should be &&.
-
-> 	if (val != foo || test != bar)
-
-> is always true when foo != bar
-
-Right, but you need to look at the code and explain why this is a
-problem.  For example, the case I've left quoted above reads to me like
-the intention is "If the chip isn't one I know doesn't like this then
-let's do it" which is a perfectly sensible thing to write.
-
---r3KnbM2MoJFBL7Dl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPpFSGAAoJEBus8iNuMP3d2KMQAIO7IxLZX1I+Kf5jGeYPNzln
-nwtAomN18xFn5wvuodBuQK1AQDfki9681oPqCeLZb4uNq+4pVfLmYcrDhIVmXF+6
-NfKQ1TM2/yemXt+T5jM5E4j65EHf6Li5TqFAWmt1ayvwFey700bS8527jsNYDSUV
-0RrGcmp9r8tn3DEy9irhxu2RtLhOlVlCBQ+h19XCubOcltpXkbeKxpk5NTudDRQP
-CNu+0JAZnbNOVnR0YfhjhmMWDQaRMft/QJk/YxIBU4jiU1Fky4HN7OxdQ+5GEJIJ
-SY56dAr40m9nSUZWb3oR/VJ39JKUklZbzO8ZwHyuj1hVdQ3YXwin9rWpxVC8052c
-rnEZbqzdGjfpWN7E/D1FlGwL4RYTrRiDHlnF4rAxRvSkdu3vvykAq9Crsz2fhKbN
-cSIyWYAP6SgnSRip5/nO9nq23NxnS+EhNky2WvIZxymQtao8+frR1SMKEBCH6PPr
-JKEBgM3tVvSUTxnywupIapB23ilyn+Opcm6p0ZyASvwAyFJ1EO/hH6Tv/PNtDJzy
-npZCpRCMlOm1g45ehVQYZLNUIpmRrwPwNo1SfvTFTlP8gVK72hQBLwuuROkYkXq7
-ynQ48w4XQBtd/CztMJ0GHgEcTi51oXoImr5mI/SdO4fRH0qZruWOUsBu/m+vARU6
-dydXTtxncd+ynOxeq211
-=vFxt
------END PGP SIGNATURE-----
-
---r3KnbM2MoJFBL7Dl--
+greg k-h
