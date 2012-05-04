@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab2EDXyS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 19:54:18 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:60202 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760698Ab2EDXyQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760679Ab2EDXyQ (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 4 May 2012 19:54:16 -0400
-Date: Fri, 4 May 2012 16:54:12 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 3/3] tty_lock: Localise the lock
-Message-ID: <20120504235412.GA5694@kroah.com>
-References: <20120503212151.568.91854.stgit@bob.linux.org.uk>
- <20120503212219.568.15653.stgit@bob.linux.org.uk>
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47236 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754717Ab2EDXyO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 19:54:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120503212219.568.15653.stgit@bob.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120504190939.GA12976@kroah.com>
+References: <20120504190939.GA12976@kroah.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 4 May 2012 16:53:47 -0700
+X-Google-Sender-Auth: wbmVrUWZzzQtsSyPPxQiyZ0HN7o
+Message-ID: <CA+55aFxuqi5e_zNFUddmtOXfA5hBFfL4weEYG9NdRx9UKhP6ZQ@mail.gmail.com>
+Subject: Re: [PATCH] hfsplus: Fix potential buffer overflows
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Timo Warns <warns@pre-sense.de>,
+        WANG Cong <amwang@redhat.com>,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Miklos Szeredi <mszeredi@suse.cz>, Sage Weil <sage@newdream.net>,
+        Eugene Teo <eteo@redhat.com>, Roman Zippel <zippel@linux-m68k.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Dave Anderson <anderson@redhat.com>, stable <stable@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 10:24:08PM +0100, Alan Cox wrote:
-> From: Alan Cox <alan@linux.intel.com>
-> 
-> In each remaining case the tty_lock is associated with a specific tty. This
-> means we can now lock on a per tty basis. We do need tty_lock_pair() for
-> the pty case. Uglier but still a step in the right direction.
-> 
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-> 
->  drivers/tty/amiserial.c   |   12 ++++----
->  drivers/tty/cyclades.c    |    2 +
->  drivers/tty/n_r3964.c     |   11 ++++---
->  drivers/tty/pty.c         |   23 +++++++++------
->  drivers/tty/synclink.c    |    4 +--
->  drivers/tty/synclink_gt.c |    4 +--
->  drivers/tty/synclinkmp.c  |    4 +--
->  drivers/tty/tty_io.c      |   67 +++++++++++++++++++++++++++------------------
->  drivers/tty/tty_ldisc.c   |   30 ++++++++++----------
->  drivers/tty/tty_mutex.c   |   60 ++++++++++++++++++++++++++++++----------
->  drivers/tty/tty_port.c    |    6 ++--
->  include/linux/tty.h       |   23 +++++++++------
->  12 files changed, 149 insertions(+), 97 deletions(-)
+On Fri, May 4, 2012 at 12:09 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+>
+> Reported-by: Timo Warns <warns@pre-sense.de>
+> Cc: WANG Cong <amwang@redhat.com>
 
-You forgot the call in net/bluetooth/rfcomm/tty.c, I'll go fix that
-up...
+Tssk. You got an ack at least from Cong.
 
+> Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> Cc: Cong Wang <amwang@redhat.com>
+
+.. who you have listed twice with just a cc.
+
+                      Linus
