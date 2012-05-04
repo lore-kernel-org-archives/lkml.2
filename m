@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751159Ab2EDE2E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 00:28:04 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:60284 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750747Ab2EDE2D (ORCPT
+	id S1751249Ab2EDEdW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 00:33:22 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:59453 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab2EDEdV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 00:28:03 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/Ed5gx7xzEQ9/GYuwN1p9lQOT95UEtWxc0lKcvcd
-	V6qgTtLTALvJtx
-Message-ID: <1336105676.7356.42.camel@marge.simpson.net>
-Subject: Re: [PATCH]  Re: [RFC PATCH] namespaces: fix leak on fork() failure
-From: Mike Galbraith <efault@gmx.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Louis Rilling <louis.rilling@kerlabs.com>
-Date: Fri, 04 May 2012 06:27:56 +0200
-In-Reply-To: <1336057018.8119.46.camel@marge.simpson.net>
-References: <1335604790.5995.22.camel@marge.simpson.net>
-	 <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org>
-	 <20120429165846.GA19054@redhat.com>
-	 <1335754867.17899.4.camel@marge.simpson.net>
-	 <m1zk9rmyh4.fsf@fess.ebiederm.org>
-	 <20120501134214.f6b44f4a.akpm@linux-foundation.org>
-	 <1336014721.7370.32.camel@marge.simpson.net>
-	 <1336057018.8119.46.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Fri, 4 May 2012 00:33:21 -0400
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Avi Kivity <avi@redhat.com>, mingo@elte.hu, jeremy@goop.org,
+        mtosatti@redhat.com, kvm@vger.kernel.org, x86@kernel.org,
+        vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [RFC PATCH v1 3/5] KVM: Add paravirt kvm_flush_tlb_others
+In-Reply-To: <1335954040.13683.175.camel@twins>
+References: <20120427161727.27082.43096.stgit@abhimanyu> <20120427162401.27082.59387.stgit@abhimanyu> <4F9D32B4.8040002@redhat.com> <1335865176.13683.120.camel@twins> <87obq7ge4d.fsf@linux.vnet.ibm.com> <1335954040.13683.175.camel@twins>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
+Date: Fri, 04 May 2012 10:02:48 +0530
+Message-ID: <87mx5olg5r.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+x-cbid: 12050404-9574-0000-0000-00000279E68A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namespaces have something in common with cgroups.  synchronize_rcu()
-makes them somewhat less than wonderful for dynamic use.
-
-default flags = SIGCHLD
-
--namespace:  flag |= CLONE_NEWPID 
--all:  flags |= CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWUSER
-
-marge:/usr/local/tmp/starvation # ./hackbench
-Running with 10*40 (== 400) tasks.
-Time: 2.636
-marge:/usr/local/tmp/starvation # ./hackbench -namespace
-Running with 10*40 (== 400) tasks.
-Time: 11.624
-marge:/usr/local/tmp/starvation # ./hackbench -namespace -all
-Running with 10*40 (== 400) tasks.
-Time: 51.474
-
-You can create trash quickly, but you have to haul it away.
-
--Mike
+On Wed, 02 May 2012 12:20:40 +0200, Peter Zijlstra <peterz@infradead.org> wrote:
+[...] 
+> diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
+> index f96a5b5..8ca33e9 100644
+> --- a/include/asm-generic/tlb.h
+> +++ b/include/asm-generic/tlb.h
+> @@ -19,6 +19,8 @@
+>  #include <asm/pgalloc.h>
+>  #include <asm/tlbflush.h>
+>  
+> +static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page);
+> +
+>  #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+>  /*
+>   * Semi RCU freeing of the page directories.
+> @@ -60,6 +62,13 @@ struct mmu_table_batch {
+>  extern void tlb_table_flush(struct mmu_gather *tlb);
+>  extern void tlb_remove_table(struct mmu_gather *tlb, void *table);
+>  
+> +#else
+> +
+> +static inline void tlb_remove_table(struct mmu_gather *tlb, void *table)
+> +{
+> +	tlb_remove_page(tlb, page);
+>
+tlb_remove_page(tlb, table);
 
