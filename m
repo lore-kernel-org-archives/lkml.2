@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932912Ab2EDU6y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:58:54 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932710Ab2EDUtE (ORCPT
+	id S932940Ab2EDU7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:59:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57129 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932857Ab2EDUs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:49:04 -0400
-Message-Id: <20120504204246.784170518@linuxfoundation.org>
+	Fri, 4 May 2012 16:48:57 -0400
+Message-Id: <20120504204245.825317429@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:06 -0700
+Date: Fri, 04 May 2012 13:42:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 22/47] nfsd: fix error values returned by nfsd4_lockt() when nfsd_open() fails
+        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 11/47] hwmon: (fam15h_power) Fix pci_device_id array
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,72 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Guenter Roeck <guenter.roeck@ericsson.com>
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+commit c3e40a9972428d6e2d8e287ed0233a57a218c30f upstream.
 
-commit 04da6e9d63427b2d0fd04766712200c250b3278f upstream.
+pci_match_id() takes an *array* of IDs which must be properly zero-
+terminated.
 
-nfsd_open() already returns an NFS error value; only vfs_test_lock()
-result needs to be fed through nfserrno().  Broken by commit 55ef12
-(nfsd: Ensure nfsv4 calls the underlying filesystem on LOCKT)
-three years ago...
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4state.c |   23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+ drivers/hwmon/fam15h_power.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -3956,16 +3956,14 @@ out:
-  * vfs_test_lock.  (Arguably perhaps test_lock should be done with an
-  * inode operation.)
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -128,17 +128,20 @@ static bool __devinit fam15h_power_is_in
+  * counter saturations resulting in bogus power readings.
+  * We correct this value ourselves to cope with older BIOSes.
   */
--static int nfsd_test_lock(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file_lock *lock)
-+static __be32 nfsd_test_lock(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file_lock *lock)
- {
- 	struct file *file;
--	int err;
--
--	err = nfsd_open(rqstp, fhp, S_IFREG, NFSD_MAY_READ, &file);
--	if (err)
--		return err;
--	err = vfs_test_lock(file, lock);
--	nfsd_close(file);
-+	__be32 err = nfsd_open(rqstp, fhp, S_IFREG, NFSD_MAY_READ, &file);
-+	if (!err) {
-+		err = nfserrno(vfs_test_lock(file, lock));
-+		nfsd_close(file);
-+	}
- 	return err;
- }
- 
-@@ -3978,7 +3976,6 @@ nfsd4_lockt(struct svc_rqst *rqstp, stru
- {
- 	struct inode *inode;
- 	struct file_lock file_lock;
--	int error;
- 	__be32 status;
- 
- 	if (locks_in_grace())
-@@ -4030,12 +4027,10 @@ nfsd4_lockt(struct svc_rqst *rqstp, stru
- 
- 	nfs4_transform_lock_offset(&file_lock);
- 
--	status = nfs_ok;
--	error = nfsd_test_lock(rqstp, &cstate->current_fh, &file_lock);
--	if (error) {
--		status = nfserrno(error);
-+	status = nfsd_test_lock(rqstp, &cstate->current_fh, &file_lock);
-+	if (status)
- 		goto out;
--	}
++static DEFINE_PCI_DEVICE_TABLE(affected_device) = {
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
++	{ 0 }
++};
 +
- 	if (file_lock.fl_type != F_UNLCK) {
- 		status = nfserr_denied;
- 		nfs4_set_lock_denied(&file_lock, &lockt->lt_denied);
+ static void __devinit tweak_runavg_range(struct pci_dev *pdev)
+ {
+ 	u32 val;
+-	const struct pci_device_id affected_device = {
+-		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
+ 
+ 	/*
+ 	 * let this quirk apply only to the current version of the
+ 	 * northbridge, since future versions may change the behavior
+ 	 */
+-	if (!pci_match_id(&affected_device, pdev))
++	if (!pci_match_id(affected_device, pdev))
+ 		return;
+ 
+ 	pci_bus_read_config_dword(pdev->bus,
 
 
