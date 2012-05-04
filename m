@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759898Ab2EDUo5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:44:57 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
+	id S1759911Ab2EDUpB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:45:01 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
 	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759863Ab2EDUox (ORCPT
+	with ESMTP id S1759891Ab2EDUo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:44:53 -0400
-Message-Id: <20120504204226.003541401@linuxfoundation.org>
+	Fri, 4 May 2012 16:44:57 -0400
+Message-Id: <20120504204226.094841068@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:43 -0700
+Date: Fri, 04 May 2012 13:42:44 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
+        alan@lxorguk.ukuu.org.uk, Martin Nyhus <martin.nyhus@gmx.com>,
+        Matthew Garrett <mjg@redhat.com>,
         Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 19/75] hwmon: (fam15h_power) Fix pci_device_id array
+        Jens Gustedt <Jens.Gustedt@loria.fr>
+Subject: [ 20/75] dell-laptop: Terminate quirks list properly
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <guenter.roeck@ericsson.com>
+From: Martin Nyhus <martin.nyhus@gmx.com>
 
-commit c3e40a9972428d6e2d8e287ed0233a57a218c30f upstream.
+commit d62d421b071b08249361044d8e56c8b5c3ed6aa7 upstream.
 
-pci_match_id() takes an *array* of IDs which must be properly zero-
-terminated.
+Add missing DMI_NONE entry to end of the quirks list so
+dmi_check_system() won't read past the end of the list.
 
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Martin Nyhus <martin.nyhus@gmx.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+Tested-by: Jens Gustedt <Jens.Gustedt@loria.fr>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/fam15h_power.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/platform/x86/dell-laptop.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -128,17 +128,20 @@ static bool __devinit fam15h_power_is_in
-  * counter saturations resulting in bogus power readings.
-  * We correct this value ourselves to cope with older BIOSes.
-  */
-+static DEFINE_PCI_DEVICE_TABLE(affected_device) = {
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
-+	{ 0 }
-+};
-+
- static void __devinit tweak_runavg_range(struct pci_dev *pdev)
- {
- 	u32 val;
--	const struct pci_device_id affected_device = {
--		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -211,6 +211,7 @@ static struct dmi_system_id __devinitdat
+ 		},
+ 		.driver_data = &quirk_dell_vostro_v130,
+ 	},
++	{ }
+ };
  
- 	/*
- 	 * let this quirk apply only to the current version of the
- 	 * northbridge, since future versions may change the behavior
- 	 */
--	if (!pci_match_id(&affected_device, pdev))
-+	if (!pci_match_id(affected_device, pdev))
- 		return;
- 
- 	pci_bus_read_config_dword(pdev->bus,
+ static struct calling_interface_buffer *buffer;
 
 
