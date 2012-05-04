@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab2EDUqe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:46:34 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932469Ab2EDUqb (ORCPT
+	id S932548Ab2EDUq4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:46:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57129 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932536Ab2EDUqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:46:31 -0400
-Message-Id: <20120504204228.639743899@linuxfoundation.org>
+	Fri, 4 May 2012 16:46:52 -0400
+Message-Id: <20120504204228.559400369@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:14 -0700
+Date: Fri, 04 May 2012 13:43:13 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@zytor.com>,
         Matt Fleming <matt.fleming@intel.com>
-Subject: [ 50/75] x86, boot: Restrict CFLAGS for hostprogs
+Subject: [ 49/75] x86, mkpiggy: Dont open code put_unaligned_le32()
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-commit d40f833630a1299fd377408dc8d8fac370d621b0 upstream.
+commit 12871c568305a0b20f116315479a18cd46882e9b upstream.
 
-Currently tools/build has access to all the kernel headers in
-$(srctree). This is unnecessary and could potentially allow
-tools/build to erroneously include kernel headers when it should only
-be including userspace-exported headers.
-
-Unfortunately, mkcpustr still needs access to some of the asm kernel
-headers, so explicitly special case that hostprog.
+Use the new headers in tools/include instead of rolling our own
+put_unaligned_le32() implementation.
 
 Cc: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Link: http://lkml.kernel.org/r/1330436245-24875-5-git-send-email-matt@console-pimps.org
+Link: http://lkml.kernel.org/r/1330436245-24875-4-git-send-email-matt@console-pimps.org
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/boot/Makefile |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/boot/compressed/Makefile  |    1 +
+ arch/x86/boot/compressed/mkpiggy.c |   11 ++---------
+ 2 files changed, 3 insertions(+), 9 deletions(-)
 
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -37,8 +37,9 @@ setup-y		+= video-bios.o
- targets		+= $(setup-y)
- hostprogs-y	:= mkcpustr tools/build
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -22,6 +22,7 @@ LDFLAGS := -m elf_$(UTS_MACHINE)
+ LDFLAGS_vmlinux := -T
  
--HOST_EXTRACFLAGS += $(LINUXINCLUDE)
+ hostprogs-y	:= mkpiggy
++HOST_EXTRACFLAGS += -I$(srctree)/tools/include
+ 
+ VMLINUX_OBJS = $(obj)/vmlinux.lds $(obj)/head_$(BITS).o $(obj)/misc.o \
+ 	$(obj)/string.o $(obj)/cmdline.o $(obj)/early_serial_console.o \
+--- a/arch/x86/boot/compressed/mkpiggy.c
++++ b/arch/x86/boot/compressed/mkpiggy.c
+@@ -29,14 +29,7 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <inttypes.h>
 -
-+HOSTCFLAGS_mkcpustr.o := -I$(srctree)/arch/$(SRCARCH)/include
-+HOST_EXTRACFLAGS += -I$(objtree)/include -I$(srctree)/tools/include \
-+                   -include $(srctree)/include/linux/kconfig.h
- $(obj)/cpu.o: $(obj)/cpustr.h
+-static uint32_t getle32(const void *p)
+-{
+-	const uint8_t *cp = p;
+-
+-	return (uint32_t)cp[0] + ((uint32_t)cp[1] << 8) +
+-		((uint32_t)cp[2] << 16) + ((uint32_t)cp[3] << 24);
+-}
++#include <tools/le_byteshift.h>
  
- quiet_cmd_cpustr = CPUSTR  $@
+ int main(int argc, char *argv[])
+ {
+@@ -69,7 +62,7 @@ int main(int argc, char *argv[])
+ 	}
+ 
+ 	ilen = ftell(f);
+-	olen = getle32(&olen);
++	olen = get_unaligned_le32(&olen);
+ 	fclose(f);
+ 
+ 	/*
 
 
