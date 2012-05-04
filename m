@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932789Ab2EDUsa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:48:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57129 "EHLO
+	id S932859Ab2EDVBC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:01:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932759Ab2EDUsZ (ORCPT
+	with ESMTP id S932793Ab2EDUsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:48:25 -0400
-Message-Id: <20120504204245.732108538@linuxfoundation.org>
+	Fri, 4 May 2012 16:48:31 -0400
+Message-Id: <20120504204245.923894313@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:54 -0700
+Date: Fri, 04 May 2012 13:42:56 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [ 10/47] hwmon: fam15h_power: fix bogus values with current BIOSes
+        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 12/47] drm/i915: handle input/output sdvo timings separately in mode_set
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,90 +25,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Przywara <andre.przywara@amd.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 00250ec90963b7ef6678438888f3244985ecde14 upstream.
+commit 6651819b4b4fc3caa6964c5d825eb4bb996f3905 upstream.
 
-Newer BKDG[1] versions recommend a different initialization value for
-the running average range register in the northbridge. This improves
-the power reading by avoiding counter saturations resulting in bogus
-values for anything below about 80% of TDP power consumption.
-Updated BIOSes will have this new value set up from the beginning,
-but meanwhile we correct this value ourselves.
-This needs to be done on all northbridges, even on those where the
-driver itself does not register at.
+We seem to have a decent confusion between the output timings and the
+input timings of the sdvo encoder. If I understand the code correctly,
+we use the original mode unchanged for the output timings, safe for
+the lvds case. And we should use the adjusted mode for input timings.
 
-This fixes the driver on all current machines to provide proper
-values for idle load.
+Clarify the situation by adding an explicit output_dtd to the sdvo
+mode_set function and streamline the code-flow by moving the input and
+output mode setting in the sdvo encode together.
 
-[1]
-http://support.amd.com/us/Processor_TechDocs/42301_15h_Mod_00h-0Fh_BKDG.pdf
-Chapter 3.8: D18F5xE0 Processor TDP Running Average (p. 452)
+Furthermore testing showed that the sdvo input timing needs the
+unadjusted dotclock, the sdvo chip will automatically compute the
+required pixel multiplier to get a dotclock above 100 MHz.
 
-Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-[guenter.roeck@ericsson.com: Removed unnecessary return statement]
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Fix this up when converting a drm mode to an sdvo dtd.
+
+This regression was introduced in
+
+commit c74696b9c890074c1e1ee3d7496fc71eb3680ced
+Author: Pavel Roskin <proski@gnu.org>
+Date:   Thu Sep 2 14:46:34 2010 -0400
+
+    i915: revert some checks added by commit 32aad86f
+
+particularly the following hunk:
+
+#	diff --git a/drivers/gpu/drm/i915/intel_sdvo.c
+#	b/drivers/gpu/drm/i915/intel_sdvo.c
+#	index 093e914..62d22ae 100644
+#	--- a/drivers/gpu/drm/i915/intel_sdvo.c
+#	+++ b/drivers/gpu/drm/i915/intel_sdvo.c
+#	@@ -1122,11 +1123,9 @@ static void intel_sdvo_mode_set(struct drm_encoder *encoder,
+#
+#	     /* We have tried to get input timing in mode_fixup, and filled into
+#		adjusted_mode */
+#	-    if (intel_sdvo->is_tv || intel_sdvo->is_lvds) {
+#	-        intel_sdvo_get_dtd_from_mode(&input_dtd, adjusted_mode);
+#	+    intel_sdvo_get_dtd_from_mode(&input_dtd, adjusted_mode);
+#	+    if (intel_sdvo->is_tv || intel_sdvo->is_lvds)
+#		 input_dtd.part2.sdvo_flags = intel_sdvo->sdvo_flags;
+#	-    } else
+#	-        intel_sdvo_get_dtd_from_mode(&input_dtd, mode);
+#
+#	     /* If it's a TV, we already set the output timing in mode_fixup.
+#	      * Otherwise, the output timing is equal to the input timing.
+
+Due to questions raised in review, below a more elaborate analysis of
+the bug at hand:
+
+Sdvo seems to have two timings, one is the output timing which will be
+sent over whatever is connected on the other side of the sdvo chip (panel,
+hdmi screen, tv), the other is the input timing which will be generated by
+the gmch pipe. It looks like sdvo is expected to scale between the two.
+
+To make things slightly more complicated, we have a bunch of special
+cases:
+- For lvds panel we always use a fixed output timing, namely
+  intel_sdvo->sdvo_lvds_fixed_mode, hence that special case.
+- Sdvo has an interface to generate a preferred input timing for a given
+  output timing. This is the confusing thing that I've tried to clear up
+  with the follow-on patches.
+- A special requirement is that the input pixel clock needs to be between
+  100MHz and 200MHz (likely to keep it within the electromechanical design
+  range of PCIe), 270MHz on later gen4+. Lower pixel clocks are
+  doubled/quadrupled.
+
+The thing this patch tries to fix is that the pipe needs to be
+explicitly instructed to double/quadruple the pixels and needs the
+correspondingly higher pixel clock, whereas the sdvo adaptor seems to
+do that itself and needs the unadjusted pixel clock. For the sdvo
+encode side we already set the pixel mutliplier with a different
+command (0x21).
+
+This patch tries to fix this mess by:
+- Keeping the output mode timing in the unadjusted plain mode, safe
+  for the lvds case.
+- Storing the input timing in the adjusted_mode with the adjusted
+  pixel clock. This way we don't need to frob around with the core
+  crtc mode set code.
+- Fixing up the pixelclock when constructing the sdvo dtd timing
+  struct. This is why the first hunk of the patch is an integral part
+  of the series.
+- Dropping the is_tv special case because input_dtd is equivalent to
+  adjusted_mode after these changes. Follow-up patches clear this up
+  further (by simply ripping out intel_sdvo->input_dtd because it's
+  not needed).
+
+v2: Extend commit message with an in-depth bug analysis.
+
+Reported-and-Tested-by: Bernard Blackham <b-linuxgit@largestprime.net>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=48157
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/fam15h_power.c |   39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+ drivers/gpu/drm/i915/intel_sdvo.c |   34 ++++++++++++++++++----------------
+ 1 file changed, 18 insertions(+), 16 deletions(-)
 
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -122,6 +122,38 @@ static bool __devinit fam15h_power_is_in
- 	return true;
- }
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -724,6 +724,7 @@ static void intel_sdvo_get_dtd_from_mode
+ 	uint16_t width, height;
+ 	uint16_t h_blank_len, h_sync_len, v_blank_len, v_sync_len;
+ 	uint16_t h_sync_offset, v_sync_offset;
++	int mode_clock;
  
-+/*
-+ * Newer BKDG versions have an updated recommendation on how to properly
-+ * initialize the running average range (was: 0xE, now: 0x9). This avoids
-+ * counter saturations resulting in bogus power readings.
-+ * We correct this value ourselves to cope with older BIOSes.
-+ */
-+static void __devinit tweak_runavg_range(struct pci_dev *pdev)
-+{
-+	u32 val;
-+	const struct pci_device_id affected_device = {
-+		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
-+
-+	/*
-+	 * let this quirk apply only to the current version of the
-+	 * northbridge, since future versions may change the behavior
-+	 */
-+	if (!pci_match_id(&affected_device, pdev))
-+		return;
-+
-+	pci_bus_read_config_dword(pdev->bus,
-+		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
-+		REG_TDP_RUNNING_AVERAGE, &val);
-+	if ((val & 0xf) != 0xe)
-+		return;
-+
-+	val &= ~0xf;
-+	val |=  0x9;
-+	pci_bus_write_config_dword(pdev->bus,
-+		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
-+		REG_TDP_RUNNING_AVERAGE, val);
-+}
-+
- static void __devinit fam15h_power_init_data(struct pci_dev *f4,
- 					     struct fam15h_power_data *data)
- {
-@@ -155,6 +187,13 @@ static int __devinit fam15h_power_probe(
- 	struct device *dev;
- 	int err;
+ 	width = mode->crtc_hdisplay;
+ 	height = mode->crtc_vdisplay;
+@@ -738,7 +739,11 @@ static void intel_sdvo_get_dtd_from_mode
+ 	h_sync_offset = mode->crtc_hsync_start - mode->crtc_hblank_start;
+ 	v_sync_offset = mode->crtc_vsync_start - mode->crtc_vblank_start;
  
-+	/*
-+	 * though we ignore every other northbridge, we still have to
-+	 * do the tweaking on _each_ node in MCM processors as the counters
-+	 * are working hand-in-hand
-+	 */
-+	tweak_runavg_range(pdev);
+-	dtd->part1.clock = mode->clock / 10;
++	mode_clock = mode->clock;
++	mode_clock /= intel_mode_get_pixel_multiplier(mode) ?: 1;
++	mode_clock /= 10;
++	dtd->part1.clock = mode_clock;
 +
- 	if (!fam15h_power_is_internal_node0(pdev)) {
- 		err = -ENODEV;
- 		goto exit;
+ 	dtd->part1.h_active = width & 0xff;
+ 	dtd->part1.h_blank = h_blank_len & 0xff;
+ 	dtd->part1.h_high = (((width >> 8) & 0xf) << 4) |
+@@ -990,7 +995,7 @@ static void intel_sdvo_mode_set(struct d
+ 	struct intel_sdvo *intel_sdvo = to_intel_sdvo(encoder);
+ 	u32 sdvox;
+ 	struct intel_sdvo_in_out_map in_out;
+-	struct intel_sdvo_dtd input_dtd;
++	struct intel_sdvo_dtd input_dtd, output_dtd;
+ 	int pixel_multiplier = intel_mode_get_pixel_multiplier(adjusted_mode);
+ 	int rate;
+ 
+@@ -1015,20 +1020,13 @@ static void intel_sdvo_mode_set(struct d
+ 					  intel_sdvo->attached_output))
+ 		return;
+ 
+-	/* We have tried to get input timing in mode_fixup, and filled into
+-	 * adjusted_mode.
+-	 */
+-	if (intel_sdvo->is_tv || intel_sdvo->is_lvds) {
+-		input_dtd = intel_sdvo->input_dtd;
+-	} else {
+-		/* Set the output timing to the screen */
+-		if (!intel_sdvo_set_target_output(intel_sdvo,
+-						  intel_sdvo->attached_output))
+-			return;
+-
+-		intel_sdvo_get_dtd_from_mode(&input_dtd, adjusted_mode);
+-		(void) intel_sdvo_set_output_timing(intel_sdvo, &input_dtd);
+-	}
++	/* lvds has a special fixed output timing. */
++	if (intel_sdvo->is_lvds)
++		intel_sdvo_get_dtd_from_mode(&output_dtd,
++					     intel_sdvo->sdvo_lvds_fixed_mode);
++	else
++		intel_sdvo_get_dtd_from_mode(&output_dtd, mode);
++	(void) intel_sdvo_set_output_timing(intel_sdvo, &output_dtd);
+ 
+ 	/* Set the input timing to the screen. Assume always input 0. */
+ 	if (!intel_sdvo_set_target_input(intel_sdvo))
+@@ -1046,6 +1044,10 @@ static void intel_sdvo_mode_set(struct d
+ 	    !intel_sdvo_set_tv_format(intel_sdvo))
+ 		return;
+ 
++	/* We have tried to get input timing in mode_fixup, and filled into
++	 * adjusted_mode.
++	 */
++	intel_sdvo_get_dtd_from_mode(&input_dtd, adjusted_mode);
+ 	(void) intel_sdvo_set_input_timing(intel_sdvo, &input_dtd);
+ 
+ 	switch (pixel_multiplier) {
 
 
