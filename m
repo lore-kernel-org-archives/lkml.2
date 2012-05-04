@@ -1,176 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760007Ab2EDW0x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 18:26:53 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:29160 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755445Ab2EDW0w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 18:26:52 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-209.messagelabs.com!1336170410!4818738!1
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor mpc8260cpm driver and use module_comedi_driver
-Date: Fri, 4 May 2012 15:26:44 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	id S1760415Ab2EDW1S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 18:27:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59142 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757796Ab2EDW1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 18:27:16 -0400
+Date: Sat, 5 May 2012 00:24:42 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] kbuild: Add error handling to KCONFIG_ALL_CONFIG
+Message-ID: <20120504222442.GB13701@sepie.suse.cz>
+References: <m1aa22rllb.fsf@fess.ebiederm.org>
+ <4F96705C.5030901@suse.cz>
+ <m1aa21nxzg.fsf_-_@fess.ebiederm.org>
+ <20120424123305.GA30068@sepie.suse.cz>
+ <m1k415mgrv.fsf@fess.ebiederm.org>
+ <4F96AC7F.6080603@suse.cz>
+ <m1wr52dgff.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201205041526.45033.hartleys@visionengravers.com>
+In-Reply-To: <m1wr52dgff.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the module_init/module_exit routines and the associated
-struct comedi_driver and other variables to the end of the source.
-This is more typical of how other drivers are written and removes
-the need for the forward declarations.
+On Thu, Apr 26, 2012 at 01:51:32AM -0700, Eric W. Biederman wrote:
+> 
+> - Only try to read the file specified if KCONFIG_ALL_CONFIG is set to
+>   something other than the empty string or "1".
+> 
+> - Don't use stat to check the name passed to conf_read_simple so that
+>   zconf_fopen can find the file in the current directory or in SRCTREE
+>   removing a extremely source of confusing failure, where KCONFIG_ALL_CONFIG
+>   was not interpreted with respect to the directory make was called in.
+> 
+> - If conf_read_simple fails complain clearly and stop processing.
+>   Allowing the simple debugging of typos.
+> 
+> - Clearly document the behavior so it is clear to users which
+>   values are treated as flags and which values are treated as
+>   filenames.
 
-Convert the driver to use the module_comedi_driver() macro which
-makes the code smaller and a bit simpler.
+Thanks, applied to kbuild.git#kconfig.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
-
-diff --git a/drivers/staging/comedi/drivers/mpc8260cpm.c b/drivers/staging/comedi/drivers/mpc8260cpm.c
-index 5f6816a..f468775 100644
---- a/drivers/staging/comedi/drivers/mpc8260cpm.c
-+++ b/drivers/staging/comedi/drivers/mpc8260cpm.c
-@@ -46,75 +46,6 @@ struct mpc8260cpm_private {
- 
- #define devpriv ((struct mpc8260cpm_private *)dev->private)
- 
--static int mpc8260cpm_attach(struct comedi_device *dev,
--			     struct comedi_devconfig *it);
--static int mpc8260cpm_detach(struct comedi_device *dev);
--static struct comedi_driver driver_mpc8260cpm = {
--	.driver_name = "mpc8260cpm",
--	.module = THIS_MODULE,
--	.attach = mpc8260cpm_attach,
--	.detach = mpc8260cpm_detach,
--};
--
--static int __init driver_mpc8260cpm_init_module(void)
--{
--	return comedi_driver_register(&driver_mpc8260cpm);
--}
--
--static void __exit driver_mpc8260cpm_cleanup_module(void)
--{
--	comedi_driver_unregister(&driver_mpc8260cpm);
--}
--
--module_init(driver_mpc8260cpm_init_module);
--module_exit(driver_mpc8260cpm_cleanup_module);
--
--static int mpc8260cpm_dio_config(struct comedi_device *dev,
--				 struct comedi_subdevice *s,
--				 struct comedi_insn *insn, unsigned int *data);
--static int mpc8260cpm_dio_bits(struct comedi_device *dev,
--			       struct comedi_subdevice *s,
--			       struct comedi_insn *insn, unsigned int *data);
--
--static int mpc8260cpm_attach(struct comedi_device *dev,
--			     struct comedi_devconfig *it)
--{
--	struct comedi_subdevice *s;
--	int i;
--
--	printk("comedi%d: mpc8260cpm: ", dev->minor);
--
--	dev->board_ptr = mpc8260cpm_boards + dev->board;
--
--	dev->board_name = thisboard->name;
--
--	if (alloc_private(dev, sizeof(struct mpc8260cpm_private)) < 0)
--		return -ENOMEM;
--
--	if (alloc_subdevices(dev, 4) < 0)
--		return -ENOMEM;
--
--	for (i = 0; i < 4; i++) {
--		s = dev->subdevices + i;
--		s->type = COMEDI_SUBD_DIO;
--		s->subdev_flags = SDF_READABLE | SDF_WRITABLE;
--		s->n_chan = 32;
--		s->maxdata = 1;
--		s->range_table = &range_digital;
--		s->insn_config = mpc8260cpm_dio_config;
--		s->insn_bits = mpc8260cpm_dio_bits;
--	}
--
--	return 1;
--}
--
--static int mpc8260cpm_detach(struct comedi_device *dev)
--{
--	printk("comedi%d: mpc8260cpm: remove\n", dev->minor);
--
--	return 0;
--}
--
- static unsigned long *cpm_pdat(int port)
- {
- 	switch (port) {
-@@ -184,3 +115,50 @@ static int mpc8260cpm_dio_bits(struct comedi_device *dev,
- 
- 	return 2;
- }
-+
-+static int mpc8260cpm_attach(struct comedi_device *dev,
-+			     struct comedi_devconfig *it)
-+{
-+	struct comedi_subdevice *s;
-+	int i;
-+
-+	printk("comedi%d: mpc8260cpm: ", dev->minor);
-+
-+	dev->board_ptr = mpc8260cpm_boards + dev->board;
-+
-+	dev->board_name = thisboard->name;
-+
-+	if (alloc_private(dev, sizeof(struct mpc8260cpm_private)) < 0)
-+		return -ENOMEM;
-+
-+	if (alloc_subdevices(dev, 4) < 0)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < 4; i++) {
-+		s = dev->subdevices + i;
-+		s->type = COMEDI_SUBD_DIO;
-+		s->subdev_flags = SDF_READABLE | SDF_WRITABLE;
-+		s->n_chan = 32;
-+		s->maxdata = 1;
-+		s->range_table = &range_digital;
-+		s->insn_config = mpc8260cpm_dio_config;
-+		s->insn_bits = mpc8260cpm_dio_bits;
-+	}
-+
-+	return 1;
-+}
-+
-+static int mpc8260cpm_detach(struct comedi_device *dev)
-+{
-+	printk("comedi%d: mpc8260cpm: remove\n", dev->minor);
-+
-+	return 0;
-+}
-+
-+static struct comedi_driver mpc8260cpm_driver = {
-+	.driver_name	= "mpc8260cpm",
-+	.module		= THIS_MODULE,
-+	.attach		= mpc8260cpm_attach,
-+	.detach		= mpc8260cpm_detach,
-+};
-+module_comedi_driver(mpc8260cpm_driver);
+Michal
