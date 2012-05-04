@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758041Ab2EDM6s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 08:58:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51925 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056Ab2EDM6q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 08:58:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH RESEND v5] rtc: Add device tree support for LPC32xx
-Date: Fri, 4 May 2012 12:58:31 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: a.zummo@towertech.it, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-References: <1336073581-25667-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1336073581-25667-1-git-send-email-stigge@antcom.de>
+	id S1758009Ab2EDNAd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 09:00:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43587 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755856Ab2EDNAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 09:00:32 -0400
+Message-ID: <4FA3D2D8.8010906@redhat.com>
+Date: Fri, 04 May 2012 09:00:08 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        john stultz <johnstul@us.ibm.com>, Don Zickus <dzickus@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, gregkh@linuxfoundation.org
+Subject: Re: [RFC PATCH] tty, add kref to sysrq handlers
+References: <1335546920-28492-1-git-send-email-prarit@redhat.com> <20120427183922.47436912@pyramind.ukuu.org.uk>
+In-Reply-To: <20120427183922.47436912@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205041258.31137.arnd@arndb.de>
-X-Provags-ID: V02:K0:knmQjo4QF/CymTAc42EAIO6+sSI1054HUtnZI042kTs
- WBMLTiNWJO1TGXntbMW1voqC3/IjrC/pmqWkWxq1cneCpQFSU8
- oJFJPOi+IGPentEpt9aCdLagRvgEAfJtJ9zqMK4DV9wX9c4s71
- yURYBIvKmWYWWPqt+BimmoEiXn7bSqC1TSxVKb5v98eTH/d8kZ
- ZPj1lMpBMewP1fNNazP5mNvfAtM+wWi6OWZZaIPGzCrdsDhv2R
- 1+ZPLxEeJ35bwVY2GH4nzzNhzJDwtSoXEX3h34lZNAhqhoZox1
- pxym5oPf82Szho1GHa6LUfJ7GLi5ZKjd1GXiZxr09igWsr1Dfz
- NTaXby6va2ue7Unj24GU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 May 2012, Roland Stigge wrote:
-> This patch adds device tree support for rtc-lpc32xx.c
-> 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> 
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+On 04/27/2012 01:39 PM, Alan Cox wrote:
+>> If the lock were removed, however, there is one _unlikely_ circumstance in
+>> which the array would be left unprotected.  That would be the situation in
+>> which a module was loaded and the sysrq handler was registered during the
+>> execution of the module.  Again, the possibility of the scenario is very
+>> small and given the existing usage of unregister_sysrq_key() in the tree
+>> it seems like removing the lock is sufficient.
+> 
+> It's asking for later disasters I think.
+> 
+> I'm not sure I see we need a kref - that looks like overkill, and its
+> probably even more elegantly done with RCU ?
+
+Alan,
+
+Thanks for the suggestions.  As always they are much appreciated.
+
+I looked into this, and unfortunately the RCU implementation in the kernel is
+dynamic-list based.  I could do some funky stuff to make it work with an array
+or even implement an RCU for arrays but I'm wondering if that is wasted code.
+
+Most arrays in the kernel that require RCU-like locking seem to use seqlocks.
+The problem with any lock, unfortunately, is that I would have to still block
+irqs, which is exactly what I'm trying to avoid.
+
+I'll submit my patch as a real PATCH and see what everyone thinks of it ...
+
+P.
