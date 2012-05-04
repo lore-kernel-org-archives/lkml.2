@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab2EDVRT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:17:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759891Ab2EDUpG (ORCPT
+	id S1760251Ab2EDVRo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:17:44 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759866Ab2EDUpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:45:06 -0400
-Message-Id: <20120504204226.355894568@linuxfoundation.org>
+	Fri, 4 May 2012 16:45:00 -0400
+Message-Id: <20120504204226.183520567@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:47 -0700
+Date: Fri, 04 May 2012 13:42:45 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Rob Castle <futuredub@gmail.com>,
-        Eric Appleman <erappleman@gmail.com>,
-        Keith Packard <keithp@keithp.com>,
-        Kenneth Graunke <kenneth@whitecape.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
         Dave Airlie <airlied@redhat.com>
-Subject: [ 23/75] drm/i915: Set the Stencil Cache eviction policy to non-LRA mode.
+Subject: [ 21/75] drm/radeon/kms: need to set up ss on DP bridges as well
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,64 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kenneth Graunke <kenneth@whitecape.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 3a69ddd6f872180b6f61fda87152b37202118fbc upstream.
+commit 700698e7c303f5095107c62a81872c2c3dad1702 upstream.
 
-Clearing bit 5 of CACHE_MODE_0 is necessary to prevent GPU hangs in
-OpenGL programs such as Google MapsGL, Google Earth, and gzdoom when
-using separate stencil buffers.  Without it, the GPU tries to use the
-LRA eviction policy, which isn't supported.  This was supposed to be off
-by default, but seems to be on for many machines.
+Makes Nutmeg DP to VGA bridges work for me.
 
-This cannot be done in gen6_init_clock_gating with most of the other
-workaround bits; the render ring needs to exist.  Otherwise, the
-register write gets dropped on the floor (one printk will show it
-changed, but a second printk immediately following shows the value
-reverts to the old one).
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=42490
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=47535
-Cc: Rob Castle <futuredub@gmail.com>
-Cc: Eric Appleman <erappleman@gmail.com>
-Cc: aaron667@gmx.net
-Cc: Keith Packard <keithp@keithp.com>
-Signed-off-by: Kenneth Graunke <kenneth@whitecape.org>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Noticed by Jerome Glisse (after weeks of debugging).
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h         |    1 +
- drivers/gpu/drm/i915/intel_ringbuffer.c |    8 ++++++++
- 2 files changed, 9 insertions(+)
+ drivers/gpu/drm/radeon/atombios_crtc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -523,6 +523,7 @@
- #define   CM0_MASK_SHIFT          16
- #define   CM0_IZ_OPT_DISABLE      (1<<6)
- #define   CM0_ZR_OPT_DISABLE      (1<<5)
-+#define	  CM0_STC_EVICT_DISABLE_LRA_SNB	(1<<5)
- #define   CM0_DEPTH_EVICT_DISABLE (1<<4)
- #define   CM0_COLOR_EVICT_DISABLE (1<<3)
- #define   CM0_DEPTH_WRITE_DISABLE (1<<1)
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -417,6 +417,14 @@ static int init_render_ring(struct intel
- 	if (INTEL_INFO(dev)->gen >= 6) {
- 		I915_WRITE(INSTPM,
- 			   INSTPM_FORCE_ORDERING << 16 | INSTPM_FORCE_ORDERING);
-+
-+		/* From the Sandybridge PRM, volume 1 part 3, page 24:
-+		 * "If this bit is set, STCunit will have LRA as replacement
-+		 *  policy. [...] This bit must be reset.  LRA replacement
-+		 *  policy is not supported."
-+		 */
-+		I915_WRITE(CACHE_MODE_0,
-+			   CM0_STC_EVICT_DISABLE_LRA_SNB << CM0_MASK_SHIFT);
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -912,8 +912,8 @@ static void atombios_crtc_set_pll(struct
+ 		break;
  	}
  
- 	return ret;
+-	if (radeon_encoder->active_device &
+-	    (ATOM_DEVICE_LCD_SUPPORT | ATOM_DEVICE_DFP_SUPPORT)) {
++	if ((radeon_encoder->active_device & (ATOM_DEVICE_LCD_SUPPORT | ATOM_DEVICE_DFP_SUPPORT)) ||
++	    (radeon_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_OBJECT_ID_NONE)) {
+ 		struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
+ 		struct drm_connector *connector =
+ 			radeon_get_connector_for_encoder(encoder);
 
 
