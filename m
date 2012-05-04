@@ -1,110 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759068Ab2EDQp2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 12:45:28 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41140 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751134Ab2EDQp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 12:45:26 -0400
-Message-ID: <1336149924.7920.14.camel@joe2Laptop>
-Subject: Re: [PATCH V2] checkpatch: add check for whitespace before
- semicolon at end-of-line
-From: Joe Perches <joe@perches.com>
-To: Eric Nelson <eric.nelson@boundarydevices.com>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        u-boot@lists.denx.de, rylv50@freescale.com, marex@denx.de,
-        vapier@gentoo.org
-Date: Fri, 04 May 2012 09:45:24 -0700
-In-Reply-To: <1336147186-27853-1-git-send-email-eric.nelson@boundarydevices.com>
-References: <1336147186-27853-1-git-send-email-eric.nelson@boundarydevices.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1759181Ab2EDQtD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 12:49:03 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44615 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab2EDQtB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 12:49:01 -0400
+Message-ID: <4FA40878.7070709@wwwdotorg.org>
+Date: Fri, 04 May 2012 10:48:56 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "balbi@ti.com" <balbi@ti.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCHv3 1/4] ARM: tegra: Add Tegra AHB driver
+References: <1336061147-10245-1-git-send-email-hdoyu@nvidia.com><4FA2C34F.5060406@wwwdotorg.org> <20120504.091736.839941449020176796.hdoyu@nvidia.com>
+In-Reply-To: <20120504.091736.839941449020176796.hdoyu@nvidia.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-04 at 08:59 -0700, Eric Nelson wrote:
-> Requires --strict option during invocation:
-> 	~/linux$ scripts/checkpatch --strict foo.patch
+On 05/04/2012 12:17 AM, Hiroshi Doyu wrote:
+> Stephen Warren wrote at Thu, 3 May 2012 19:41:35 +0200:
+>> On 05/03/2012 10:05 AM, Hiroshi DOYU wrote:
+>>> Tegra AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
+>>> High-performance Bus (AHB) architecture.
+...
+>>> +static int __init tegra_ahb_module_init(void)
+>>> +{
+>>> +	return platform_driver_register(&tegra_ahb_driver);
+>>> +}
+>>> +postcore_initcall(tegra_ahb_module_init);
+>>
+>> Can this be a module_init() instead of postcore_initcall()?
 > 
-> This tests for a bad habits of mine like this:
-> 
-> 	return 0 ;
-> 
-> Note that it does allow a special case of a bare semicolon
-> for empty loops:
-> 
-> 	while (foo())
-> 		;
-> 
-> ---
-> V2 adds the special case and requirement for --strict based on
-> recommendations of Joe Perches.
-> 
->  scripts/checkpatch.pl |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index a3b9782..e711122 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -3227,6 +3227,12 @@ sub process {
->  			 "Statements terminations use 1 semicolon\n" . $herecurr);
->  		}
->  
-> +# check for whitespace before semicolon - not allowed at end-of-line
-> +		if ($line =~ /\S+\s+;$/) {
-> +		    CHK("SPACING",
-> +			 "Whitespace before semicolon\n" . $herecurr);
+> Since this driver configures prefetch size from AHB client devices,
+> it's better to make this driver available before other AHB client
+> drivers get ready. So "postcore_initcall()" seems to make sense if
+> there's no other better initcall.
 
-Hey Eric.
+I believe this only affects when the driver is registered and has no
+influence over when the device itself is probed.
 
-This is still a suboptimal test because it should
-allow optional spacing after the semicolon before
-the EOL.
+When booting with board files rather than DT, it was possible to
+register drivers and platform devices early using various initcalls to
+control the order. However, with DT, I believe all the devices are
+instantiated from DT at the same time (well, one by one in whatever
+order as the DT is parsed), so the time when the driver is registered
+isn't relevant.
 
-	if ($line =~ /\S\s+;\s*$/)
+So, if the other AHB devices really need this AHB driver to initialize
+first, you'd better move all the AHB devices inside the AHB node in DT,
+so that the AHB driver can influence when the children get probed.
+Still, I'd suggest leaving that to a later patch, since everything
+clearly works fine right now without this driver even existing.
 
-I still think it's not really necessary to
-check for end of line.  It'd also be OK to
-report spacing issues on code like:
-
-	for (i = 0 ; i < 100 ; i++)
-and
-	case foo: x = 1 ; break;
-
-So maybe the test should be
-
-	if ($line =~ /\S\s+;/)
-
-But this test emits a CHK on lines
-that add a line with just a ; so that
-needs a small update to
-
-	if ($line =~ /^\+.*\S\s+;/)
-
-Also the test should probably be adjacent
-to all the other "SPACING" tests so maybe:
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index cb08290..aadcfba 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2461,6 +2461,13 @@ sub process {
- 				     "space prohibited between function name and open parenthesis '('\n" . $herecurr);
- 			}
- 		}
-+
-+# check for whitespace before a non-naked semicolon
-+		if ($line =~ /^\+.*\S\s+;/) {
-+			CHK("SPACING",
-+			    "space prohibited before semicolon\n" . $herecurr);
-+		}
-+
- # Check operator spacing.
- 		if (!($line=~/\#\s*include/)) {
- 			my $ops = qr{
-
-
+>>> +
+>>> +static void __exit tegra_ahb_module_exit(void)
+>>> +{
+>>> +	platform_driver_unregister(&tegra_ahb_driver);
+>>> +}
+>>> +module_exit(tegra_ahb_module_exit);
+>>
+>> If so, all of the previous two quoted chunks can be replaced with just:
+>>
+>> module_platform_driver(tegra_ahb_module_init);
