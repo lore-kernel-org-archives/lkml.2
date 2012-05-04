@@ -1,156 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758926Ab2EDPXK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 11:23:10 -0400
+	id S1758805Ab2EDPWt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 11:22:49 -0400
 Received: from mga14.intel.com ([143.182.124.37]:15107 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758821Ab2EDPWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 11:22:53 -0400
+	id S1751035Ab2EDPWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 11:22:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="138930599"
+   d="scan'208";a="138930561"
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH v3 4/4] fat: switch to fsinfo_inode
-Date: Fri,  4 May 2012 18:23:38 +0300
-Message-Id: <1336145018-23319-5-git-send-email-dedekind1@gmail.com>
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH v3 0/4] do not use s_dirt in FAT FS
+Date: Fri,  4 May 2012 18:23:34 +0300
+Message-Id: <1336145018-23319-1-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1336145018-23319-1-git-send-email-dedekind1@gmail.com>
-References: <1336145018-23319-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+This is version 3 of the patch-set which makes FAT file-system stop using
+the VFS '->write_super()' method for writing out the FSINFO block.
 
-Currently FAT file-system maps the VFS "superblock" abstraction to the FSINFO
-block. The FSINFO block contains non-essential data about the amount of free
-clusters and the next free cluster. FAT file-system can always find out this
-information by scanning the FAT table, but having it in the FSINFO block may
-speed things up sometimes. So FAT file-system relies on the VFS superblock
-write-out services to make sure the FSINFO block is written out to the media
-from time to time.
+Fist version:   https://lkml.org/lkml/2012/4/11/147
+Second version: https://lkml.org/lkml/2012/4/13/215
 
-The whole "superblock write-out" VFS infrastructure is served by the
-'sync_supers()' kernel thread, which wakes up every 5 (by default) seconds and
-writes out all dirty superblock using the '->write_super()' call-back. But the
-problem with this thread is that it wastes power by waking up the system every
-5 seconds no matter what. So we want to kill it completely and thus, we need to
-make file-systems to stop using the '->write_super' VFS service, and then
-remove it together with the kernel thread.
+Comparing to v2 - not much changes except that I fixed patch 3 and now only
+mark the fsinfo inode as dirty when there were some changes, as Hirofumi
+requested. I think it is OK to attach FSINFO to an inode, unlike Hirofumi
+would say, so this part is unchanged.
 
-This patch switches the FAT FSINFO block management from
-'->write_super()'/'->s_dirt' to 'fsinfo_inode'/'->write_inode'. Now, instead of
-setting the 's_dirt' flag, we just mark the special 'fsinfo_inode' inode as
-dirty and let VFS invoke the '->write_inode' call-back when needed, where we
-write-out the FSINFO block.
+Hirofumi, if you insist there is an issue, could you please again provide more
+details and we'd start the conversation over? I think my patches do not change
+ordering and even if they were, I do not see what would be the problem.
 
-This patch also makes sure we do not mark the 'fsinfo_inode' inode as dirty if
-we are not FAT32 (FAT16 and FAT12 do not have the FSINFO block) or if we are in
-R/O mode.
+Let me recap why I am doing this, and the current status of this exercises.
 
-As a bonus, we can also remove the '->sync_fs()' and '->write_super()' FAT
-call-back function because they become unneeded.
+The final goal is to get rid of the 'sync_supers()' kernel thread. This kernel
+thread wakes up every 5 seconds (by default) and calls '->write_super()' for
+all mounted file-systems. And the bad thing is that this is done even if all
+the superblocks are clean. Moreover, some file-systems do not even need this
+end they do not register the '->write_super()' method at all (e.g., btrfs).
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- fs/fat/fatent.c |    7 ++++++-
- fs/fat/inode.c  |   42 ++++++++++++------------------------------
- 2 files changed, 18 insertions(+), 31 deletions(-)
+So 'sync_supers()' most often just generates useless wake-ups and wastes power.
+I am trying to make all file-systems independent of '->write_super()' and plan
+to remove 'sync_supers()' and '->write_super' completely once there are no more
+users.
 
-diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
-index 8181548..31f08ab 100644
---- a/fs/fat/fatent.c
-+++ b/fs/fat/fatent.c
-@@ -310,7 +310,12 @@ void fat_ent_access_init(struct super_block *sb)
- 
- static void mark_fsinfo_dirty(struct super_block *sb)
- {
--	sb->s_dirt = 1;
-+	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-+
-+	if (sb->s_flags & MS_RDONLY || sbi->fat_bits != 32)
-+		return;
-+
-+	__mark_inode_dirty(sbi->fsinfo_inode, I_DIRTY_SYNC);
- }
- 
- static inline int fat_ent_update_ptr(struct super_block *sb,
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 91e9a8a..9a87ec4 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -459,37 +459,10 @@ static void fat_evict_inode(struct inode *inode)
- 	fat_detach(inode);
- }
- 
--static void fat_write_super(struct super_block *sb)
--{
--	lock_super(sb);
--	sb->s_dirt = 0;
--
--	if (!(sb->s_flags & MS_RDONLY))
--		fat_clusters_flush(sb);
--	unlock_super(sb);
--}
--
--static int fat_sync_fs(struct super_block *sb, int wait)
--{
--	int err = 0;
--
--	if (sb->s_dirt) {
--		lock_super(sb);
--		sb->s_dirt = 0;
--		err = fat_clusters_flush(sb);
--		unlock_super(sb);
--	}
--
--	return err;
--}
--
- static void fat_put_super(struct super_block *sb)
- {
- 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
- 
--	if (sb->s_dirt)
--		fat_write_super(sb);
--
- 	iput(sbi->fsinfo_inode);
- 	iput(sbi->fat_inode);
- 
-@@ -662,7 +635,18 @@ retry:
- 
- static int fat_write_inode(struct inode *inode, struct writeback_control *wbc)
- {
--	return __fat_write_inode(inode, wbc->sync_mode == WB_SYNC_ALL);
-+	int err;
-+
-+	if (inode->i_ino == MSDOS_FSINFO_INO) {
-+		struct super_block *sb = inode->i_sb;
-+
-+		lock_super(sb);
-+		err = fat_clusters_flush(sb);
-+		unlock_super(sb);
-+	} else
-+		err = __fat_write_inode(inode, wbc->sync_mode == WB_SYNC_ALL);
-+
-+	return err;
- }
- 
- int fat_sync_inode(struct inode *inode)
-@@ -679,8 +663,6 @@ static const struct super_operations fat_sops = {
- 	.write_inode	= fat_write_inode,
- 	.evict_inode	= fat_evict_inode,
- 	.put_super	= fat_put_super,
--	.write_super	= fat_write_super,
--	.sync_fs	= fat_sync_fs,
- 	.statfs		= fat_statfs,
- 	.remount_fs	= fat_remount,
- 
--- 
-1.7.7.6
+The '->write_supers()' method is mostly used by baroque file-systems like hfs,
+udf, etc. Modern file-systems like btrfs and xfs do not use it. This justifies
+removing this stuff from VFS completely and make every FS self-manage own
+superblock.
 
+Tested with xfstests.
+
+Note: in the past I was trying to upstream patches which optimized 'sync_super()',
+but Al Viro wanted me to kill it completely instead, which I am trying to do
+now, see http://lkml.org/lkml/2010/7/22/96
+
+======
+Overall status:
+
+1. ext4: patches submitted, waiting for reply from Ted Ts'o:
+   https://lkml.org/lkml/2012/4/2/111
+   Ted keeps silence so far WRT the fate of this patch
+2. ext2: patches are in the ext2 tree maintained by Jan Kara:
+   git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_next
+3. FAT FS patches discussion is ongoin on lkml and fsdevel
+
+TODO: affs, exofs, hfs, hfsplus, jffs2, reiserfs, sysv, udf, ufs
+======
+
+ fs/fat/fat.h             |    1 +
+ fs/fat/fatent.c          |   22 +++++++++++++-----
+ fs/fat/inode.c           |   54 ++++++++++++++++++++-------------------------
+ include/linux/msdos_fs.h |    3 +-
+ 4 files changed, 43 insertions(+), 37 deletions(-)
+
+Thanks,
+Artem.
