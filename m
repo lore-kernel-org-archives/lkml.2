@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760608Ab2EDXFW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 19:05:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60945 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753342Ab2EDXFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 19:05:19 -0400
-Message-ID: <4FA460AB.6060309@suse.cz>
-Date: Sat, 05 May 2012 01:05:15 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
-MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: linux arch <linux-arch@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        "David S. Miller" <davem@davemloft.net>,
-        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 3/4] kbuild: link of vmlinux moved to a script
-References: <20120428205651.GA7426@merkur.ravnborg.org> <20120428205919.GC7442@merkur.ravnborg.org>
-In-Reply-To: <20120428205919.GC7442@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760614Ab2EDXNJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 19:13:09 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44932 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757894Ab2EDXNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 19:13:07 -0400
+Message-ID: <1336173184.11505.25.camel@joe2Laptop>
+Subject: Re: drivers: Probable misuses of ||
+From: Joe Perches <joe@perches.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>
+Date: Fri, 04 May 2012 16:13:04 -0700
+In-Reply-To: <20120504235630.6b79d938@pyramind.ukuu.org.uk>
+References: <1333580415.23520.29.camel@joe2Laptop>
+	 <1336168477.11505.6.camel@joe2Laptop>
+	 <20120504235630.6b79d938@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sam,
+On Fri, 2012-05-04 at 23:56 +0100, Alan Cox wrote:
+> On Fri, 04 May 2012 14:54:37 -0700
+> Joe Perches <joe@perches.com> wrote:
+> 
+> > On Wed, 2012-04-04 at 16:00 -0700, Joe Perches wrote:
+> > > Likely these should be && not ||
+> > > 
+> > > drivers/scsi/FlashPoint.c:				if(bit_cnt != 0 || bit_cnt != 8)
+> > 
+> > It's been a month.
+> > 
+> > Do you maintainers not care about these obvious defects?
+> 
+> You are assuming the code in question has maintainers.
 
-Thanks a lot for this work and sorry for the delay.
+Nope.  I'm assuming the nominal subsystem maintainers
+haven't bothered to look at it or are in "don't care"
+mode and I am simply prompting people to look again.
 
-Dne 28.4.2012 22:59, Sam Ravnborg napsal(a):
-> +kallsymso=""
-> +kallsyms_vmlinux=""
-> +if [ -n "${CONFIG_KALLSYMS}" ]; then
-> +
-[...]
-> +
-> +	kallsymso=.tmp_kallsyms2.o
-> +	kallsyms_vmlinux=.tmp_vmlinux2
-> +
-> +	# step 1
-> +	vmlinux_link "" .tmp_vmlinux1
-> +	kallsyms .tmp_vmlinux1 .tmp_kallsyms1.o
-> +
-> +	# step 2
-> +	vmlinux_link .tmp_kallsyms1.o .tmp_vmlinux2
-> +	kallsyms .tmp_vmlinux2 .tmp_kallsyms2.o
-> +
-> +	# step 2a
-> +	if [ -n "${KALLSYMS_EXTRA_PASS}" ]; then
-> +		kallsymso=.tmp_kallsyms3.o
-> +		kallsyms_vmlinux=.tmp_vmlinux2
+Richard Weinberger replied showing that the flashpoint
+bit was commented out.  Thanks Richard.
 
-This should read ".tmp_vmlinux3". Also, how about storing these two
-variables in the kallsyms() function instead? That way, you have the
-assignment in one place only and this block becomes a little simpler.
+cheers, Joe
 
-This was the only error I spotted, it looks fine otherwise. Please
-resubmit with the above typo fixed (whether or not you move the variable
-assignments I leave up to you) and I'll add it to linux-next.
 
-Thanks,
-Michal
