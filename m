@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab2EDCnl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 22:43:41 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:43505 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755481Ab2EDCnk (ORCPT
+	id S1757535Ab2EDCoy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 22:44:54 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50991 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755481Ab2EDCox convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 22:43:40 -0400
-Message-ID: <4FA34244.4000405@linux.vnet.ibm.com>
-Date: Fri, 04 May 2012 10:43:16 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Thu, 3 May 2012 22:44:53 -0400
 MIME-Version: 1.0
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        kvm@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
-        yoshikawa.takuya@oss.ntt.co.jp
-Subject: Re: [RFC] sched: make callers check lock contention for cond_resched_lock()
-References: <20120503171244.2debdd80931ccf35f387c5fe@gmail.com> <1336034127.13683.197.camel@twins> <20120503212244.6abbfa8bc3f46a7f7a932bb7@gmail.com> <1336048150.22523.17.camel@twins> <20120503220050.e91938418f882b4075526e08@gmail.com>
-In-Reply-To: <20120503220050.e91938418f882b4075526e08@gmail.com>
+X-Originating-IP: [115.42.131.38]
+In-Reply-To: <4FA2F742.9010000@fold.natur.cuni.cz>
+References: <1336058460-19924-1-git-send-email-daniel@quora.org>
+	<4FA2F742.9010000@fold.natur.cuni.cz>
+Date: Fri, 4 May 2012 10:44:51 +0800
+Message-ID: <CAMVG2svuo+JhSDp87y9RJG91d5u9oq1=xSXQOchLg7pOHBzB=A@mail.gmail.com>
+Subject: Re: [PATCH] Prevent interface errors with Seagate FreeAgent GoFlex
+From: Daniel J Blueman <daniel@quora.org>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12050316-0260-0000-0000-000000FC555D
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2012 09:00 PM, Takuya Yoshikawa wrote:
-
-> On Thu, 03 May 2012 14:29:10 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> 
->> On Thu, 2012-05-03 at 21:22 +0900, Takuya Yoshikawa wrote:
->>> Although the real use case is out of this RFC patch, we are now discussing
->>> a case in which we may hold a spin_lock for long time, ms order, depending
->>> on workload;  and in that case, other threads -- VCPU threads -- should be
->>> given higher priority for that problematic lock. 
+On 4 May 2012 05:23, Martin Mokrejs <mmokrejs@fold.natur.cuni.cz> wrote:
+> Daniel J Blueman wrote:
+>> When connected by the optional eSATAp cable, various interface errors
+>> occur with my new external Seagate FreeAgent GoFlex (firmware 0110) until
+>> the interface is forced to 1.5Gbps mode. Blacklist 3.0Gbps mode with it
+>> to avoid the error messages, delays and dataloss potential.
 >>
->> Firstly, if you can hold a lock that long, it shouldn't be a spinlock,
-> 
-> I agree with you in principle, but isn't cond_resched_lock() there for that?
-> 
->> secondly why isn't TIF_RESCHED being set if its running that long? That
->> should still make cond_resched_lock() break.
-> 
-> I see.
-> 
-> I did some tests using spin_is_contended() and need_resched() and saw
-> that need_resched() was called as often as spin_is_contended(), so
-> experimentally I understand your point.
-> 
-> But as I could not see why spin_needbreak() was differently implemented
-> depending on CONFIG_PREEMPT, I wanted to understand the meaning.
+[]
+>  maybe I am talking nonsense but recently there were some fixes to bus speed posted here at
+> linux-ide list from Lin Ming <ming.m.lin@intel.com>.
+>
+> In 3.4-rc5 it is already fixed so that if you unplug and re-plug a SATA disk it can be detected
+> at 3.0Gbps instead of just 1.5 (because previous unplug caused errors). An additional patch
+> "Subject: [PATCH v2] libata: skip old error history when counting probe trials"
+> was just applied few hours ago some maybe you want to re-test? So is your blacklisting necessary?
 
+This is an unrelated issue. The problems with the FreeAgent GoFlex
+eSATAp optional cable are that it has buggy SATA2 support, and there
+is a 100% correlation with errors regularly but infrequently (eg once
+every few minutes) occurring at 3Gbps and no errors occurring at
+1.5Gbps. The Seagate support forums tell the tale also (but largely on
+Windows).
 
-I think enable CONFIG_PREEMPT means allow preemption in kernel, so if
-disabled, we can't reschedule a task if it is running in kernel not the
-user space at a given time.
+> When inspecting my "lspci -vvvxx" outputs I see that lots of my chipset devices in my SandyBridge
+> laptop lifted up with the above mentioned patch from 2.5Gbps to 5Gbps
+> (was about in a thread "Re: Hotplug borked after suspend/resume in Linux-3.3 ?") which did not
+> original tackle the error counter issue which broke the re-plugging.
 
-As the cond_resched_lock() was invoked in kernel, and looks like
-cpu_relax() will give up cpu(I'm not sure whether this will invoke
-schedule on some arch, just because that name...), so we can't do break
-if CONFIG_PREEMPT disabled, because that will cause kernel preemption
-while not allowed.
+Another patch will have correctly restored the PCIe 2.0 link training
+registers, so this isn't connected.
 
-May be that's the reason why we need to consider CONFIG_PREEMPT in
-spin_needbreak().
+> (I still do see problems with 3.4-rc5 on ExpressCard housed sata_sil24 so that unplug of a disk
+> and its re-plug results still only in 1.5Gbps instead of 3.0 Gbps, but if one waits a while
+> so that the SCSI device is removed, then a re-plug catches up at 3 Gbps. Probably have to apply
+> the patch to null the error counter. ;-))
 
-Regards,
-Michael Wang
+You're observing the ~5 second delay on unplug before the disk is
+considered removed, to prevent dropping disks with intermittent
+link/power/controller reset issues, so here 1.5Gbps link state is held
+if unplugged for less than ~5 seconds.
 
-> 
-> Thanks,
-> 	Takuya
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
+Thanks!
+  Daniel
+-- 
+Daniel J Blueman
