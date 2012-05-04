@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759102Ab2EDQJq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 12:09:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57676 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758970Ab2EDQJp convert rfc822-to-8bit (ORCPT
+	id S1759125Ab2EDQOx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 12:14:53 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:9890
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752105Ab2EDQOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 12:09:45 -0400
-Message-ID: <1336147765.6509.41.camel@twins>
-Subject: Re: [RFC][PATCH 1/5] sched, fair: Let minimally loaded cpu balance
- the group
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>, mingo@kernel.org,
-        pjt@google.com, efault@gmx.de, linux-kernel@vger.kernel.org
-Date: Fri, 04 May 2012 18:09:25 +0200
-In-Reply-To: <1336089945.28674.460.camel@sbsiddha-desk.sc.intel.com>
-References: <20120501181430.007891123@chello.nl>
-	 <20120501182610.745844312@chello.nl>
-	 <20120502102541.GA22740@linux.vnet.ibm.com>
-	 <1335954690.13683.178.camel@twins>
-	 <20120502103453.GB22740@linux.vnet.ibm.com>
-	 <1336089945.28674.460.camel@sbsiddha-desk.sc.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 4 May 2012 12:14:51 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bh)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M3IAGJ-01-9YV-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH] KVM: X86: Remove stale values from ctxt->memop before emulation
+Date: Fri, 4 May 2012 18:14:16 +0200
+Message-ID: <1336148056-15662-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-03 at 17:05 -0700, Suresh Siddha wrote:
-> On Wed, 2012-05-02 at 16:04 +0530, Srivatsa Vaddagiri wrote:
-> > * Peter Zijlstra <a.p.zijlstra@chello.nl> [2012-05-02 12:31:30]:
-> > 
-> > > > IOW :
-> > > > 
-> > > > 		balance_load = 0 iff idle_cpu(i) ??
-> > > 
-> > > I think so, even for !0 load_idx, load will only reach zero when we're
-> > > idle, just takes longer.
-> > 
-> > Right ...so should we force it to select a idle_cpu by having
-> > balance_load = 0 for a idle cpu (ignoring what target_load(i, load_idx)
-> > told us as its load?
-> 
-> I think Peter is trying to find the leastly loaded among idle cpu's (in
-> other words the longest idle cpu ;)
+When instruction decoding begins there could be stale values
+in the ctxt->memop structure. This causes problems when an
+instruction is emulated with more op-bytes then the guest
+wants (like the bsr instruction which is always emulated
+with 4 or 8 op-bytes).
 
-Nah, Peter isn't trying to do anything smart like that, he's just trying
-to pick the least loaded when they're all busy or any idle otherwise.
+The stale value in this structure causes the unit-test for
+the bsrw instruction to fail. Initialize the memop.val with
+0 to prevent such bugs (an alternative fix could be to
+always emulate instructions with the number of op-bytes
+requested by the guest).
 
-Afaict the code as it is today is the worst possible choice, always
-picking the same (first) will result in that one being the busiest at
-all times.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/kvm/emulate.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-I mean anything will converge (eventually) due to the lower levels
-spreading load again, but by pulling to the idlest it should converge
-faster.
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index d4bf50c..1b516ec 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -3937,6 +3937,7 @@ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len)
+ 	struct opcode opcode;
+ 
+ 	ctxt->memop.type = OP_NONE;
++	ctxt->memop.val  = 0;
+ 	ctxt->memopp = NULL;
+ 	ctxt->_eip = ctxt->eip;
+ 	ctxt->fetch.start = ctxt->_eip;
+-- 
+1.7.9.5
 
-Picking a random cpu would also work.
+
