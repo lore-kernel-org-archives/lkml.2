@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932908Ab2EDVAg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:00:36 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932815Ab2EDUsh (ORCPT
+	id S932789Ab2EDUsa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:48:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57129 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932759Ab2EDUsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:48:37 -0400
-Message-Id: <20120504204246.091942865@linuxfoundation.org>
+	Fri, 4 May 2012 16:48:25 -0400
+Message-Id: <20120504204245.732108538@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:58 -0700
+Date: Fri, 04 May 2012 13:42:54 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 14/47] drm/i915: fix integer overflow in i915_gem_do_execbuffer()
+        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [ 10/47] hwmon: fam15h_power: fix bogus values with current BIOSes
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +26,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Andre Przywara <andre.przywara@amd.com>
 
-commit 44afb3a04391a74309d16180d1e4f8386fdfa745 upstream.
+commit 00250ec90963b7ef6678438888f3244985ecde14 upstream.
 
-On 32-bit systems, a large args->num_cliprects from userspace via ioctl
-may overflow the allocation size, leading to out-of-bounds access.
+Newer BKDG[1] versions recommend a different initialization value for
+the running average range register in the northbridge. This improves
+the power reading by avoiding counter saturations resulting in bogus
+values for anything below about 80% of TDP power consumption.
+Updated BIOSes will have this new value set up from the beginning,
+but meanwhile we correct this value ourselves.
+This needs to be done on all northbridges, even on those where the
+driver itself does not register at.
 
-This vulnerability was introduced in commit 432e58ed ("drm/i915: Avoid
-allocation for execbuffer object list").
+This fixes the driver on all current machines to provide proper
+values for idle load.
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[1]
+http://support.amd.com/us/Processor_TechDocs/42301_15h_Mod_00h-0Fh_BKDG.pdf
+Chapter 3.8: D18F5xE0 Processor TDP Running Average (p. 452)
+
+Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+[guenter.roeck@ericsson.com: Removed unnecessary return statement]
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/hwmon/fam15h_power.c |   39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -1046,6 +1046,11 @@ i915_gem_do_execbuffer(struct drm_device
- 			return -EINVAL;
- 		}
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -122,6 +122,38 @@ static bool __devinit fam15h_power_is_in
+ 	return true;
+ }
  
-+		if (args->num_cliprects > UINT_MAX / sizeof(*cliprects)) {
-+			DRM_DEBUG("execbuf with %u cliprects\n",
-+				  args->num_cliprects);
-+			return -EINVAL;
-+		}
- 		cliprects = kmalloc(args->num_cliprects * sizeof(*cliprects),
- 				    GFP_KERNEL);
- 		if (cliprects == NULL) {
++/*
++ * Newer BKDG versions have an updated recommendation on how to properly
++ * initialize the running average range (was: 0xE, now: 0x9). This avoids
++ * counter saturations resulting in bogus power readings.
++ * We correct this value ourselves to cope with older BIOSes.
++ */
++static void __devinit tweak_runavg_range(struct pci_dev *pdev)
++{
++	u32 val;
++	const struct pci_device_id affected_device = {
++		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
++
++	/*
++	 * let this quirk apply only to the current version of the
++	 * northbridge, since future versions may change the behavior
++	 */
++	if (!pci_match_id(&affected_device, pdev))
++		return;
++
++	pci_bus_read_config_dword(pdev->bus,
++		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
++		REG_TDP_RUNNING_AVERAGE, &val);
++	if ((val & 0xf) != 0xe)
++		return;
++
++	val &= ~0xf;
++	val |=  0x9;
++	pci_bus_write_config_dword(pdev->bus,
++		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
++		REG_TDP_RUNNING_AVERAGE, val);
++}
++
+ static void __devinit fam15h_power_init_data(struct pci_dev *f4,
+ 					     struct fam15h_power_data *data)
+ {
+@@ -155,6 +187,13 @@ static int __devinit fam15h_power_probe(
+ 	struct device *dev;
+ 	int err;
+ 
++	/*
++	 * though we ignore every other northbridge, we still have to
++	 * do the tweaking on _each_ node in MCM processors as the counters
++	 * are working hand-in-hand
++	 */
++	tweak_runavg_range(pdev);
++
+ 	if (!fam15h_power_is_internal_node0(pdev)) {
+ 		err = -ENODEV;
+ 		goto exit;
 
 
