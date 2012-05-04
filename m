@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371Ab2EDUpx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:45:53 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932354Ab2EDUpq (ORCPT
+	id S1760189Ab2EDVNF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:13:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932364Ab2EDUpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:45:46 -0400
-Message-Id: <20120504204227.471045745@linuxfoundation.org>
+	Fri, 4 May 2012 16:45:52 -0400
+Message-Id: <20120504204227.646162655@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:00 -0700
+Date: Fri, 04 May 2012 13:43:02 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Horia Geanta <horia.geanta@freescale.com>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 36/75] crypto: talitos - properly lock access to global talitos registers
+        alan@lxorguk.ukuu.org.uk, Stephen Warren <swarren@nvidia.com>
+Subject: [ 38/75] USB: ehci-tegra: remove redundant gpio_set_value
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,94 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Horia Geanta <horia.geanta@freescale.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit 511d63cb19329235bc9298b64010ec494b5e1408 upstream.
+commit 04c235c92ce8474e9f2b358bd97f013a500385f2 upstream.
 
-Access to global talitos registers must be protected for the case when
-affinities are configured such that primary and secondary talitos irqs
-run on different cpus.
+The immediately preceding gpio_direction_output() already set the value,
+so there's no need to repeat it. This also prevents gpio_set_value() from
+WARNing when the GPIO is sleepable (e.g. is on an I2C expander); the set
+direction API is always sleepable, but plain set_value isn't.
 
-Signed-off-by: Horia Geanta <horia.geanta@freescale.com>
-Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/crypto/talitos.c |   20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ drivers/usb/host/ehci-tegra.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/crypto/talitos.c
-+++ b/drivers/crypto/talitos.c
-@@ -124,6 +124,9 @@ struct talitos_private {
- 	void __iomem *reg;
- 	int irq[2];
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -601,7 +601,6 @@ static int setup_vbus_gpio(struct platfo
+ 		dev_err(&pdev->dev, "can't enable vbus\n");
+ 		return err;
+ 	}
+-	gpio_set_value(gpio, 1);
  
-+	/* SEC global registers lock  */
-+	spinlock_t reg_lock ____cacheline_aligned;
-+
- 	/* SEC version geometry (from device tree node) */
- 	unsigned int num_channels;
- 	unsigned int chfifo_len;
-@@ -412,6 +415,7 @@ static void talitos_done_##name(unsigned
- {									\
- 	struct device *dev = (struct device *)data;			\
- 	struct talitos_private *priv = dev_get_drvdata(dev);		\
-+	unsigned long flags;						\
- 									\
- 	if (ch_done_mask & 1)						\
- 		flush_channel(dev, 0, 0, 0);				\
-@@ -427,8 +431,10 @@ static void talitos_done_##name(unsigned
- out:									\
- 	/* At this point, all completed channels have been processed */	\
- 	/* Unmask done interrupts for channels completed later on. */	\
-+	spin_lock_irqsave(&priv->reg_lock, flags);			\
- 	setbits32(priv->reg + TALITOS_IMR, ch_done_mask);		\
- 	setbits32(priv->reg + TALITOS_IMR_LO, TALITOS_IMR_LO_INIT);	\
-+	spin_unlock_irqrestore(&priv->reg_lock, flags);			\
+ 	return err;
  }
- DEF_TALITOS_DONE(4ch, TALITOS_ISR_4CHDONE)
- DEF_TALITOS_DONE(ch0_2, TALITOS_ISR_CH_0_2_DONE)
-@@ -619,22 +625,28 @@ static irqreturn_t talitos_interrupt_##n
- 	struct device *dev = data;					       \
- 	struct talitos_private *priv = dev_get_drvdata(dev);		       \
- 	u32 isr, isr_lo;						       \
-+	unsigned long flags;						       \
- 									       \
-+	spin_lock_irqsave(&priv->reg_lock, flags);			       \
- 	isr = in_be32(priv->reg + TALITOS_ISR);				       \
- 	isr_lo = in_be32(priv->reg + TALITOS_ISR_LO);			       \
- 	/* Acknowledge interrupt */					       \
- 	out_be32(priv->reg + TALITOS_ICR, isr & (ch_done_mask | ch_err_mask)); \
- 	out_be32(priv->reg + TALITOS_ICR_LO, isr_lo);			       \
- 									       \
--	if (unlikely((isr & ~TALITOS_ISR_4CHDONE) & ch_err_mask || isr_lo))    \
--		talitos_error(dev, isr, isr_lo);			       \
--	else								       \
-+	if (unlikely(isr & ch_err_mask || isr_lo)) {			       \
-+		spin_unlock_irqrestore(&priv->reg_lock, flags);		       \
-+		talitos_error(dev, isr & ch_err_mask, isr_lo);		       \
-+	}								       \
-+	else {								       \
- 		if (likely(isr & ch_done_mask)) {			       \
- 			/* mask further done interrupts. */		       \
- 			clrbits32(priv->reg + TALITOS_IMR, ch_done_mask);      \
- 			/* done_task will unmask done interrupts at exit */    \
- 			tasklet_schedule(&priv->done_task[tlet]);	       \
- 		}							       \
-+		spin_unlock_irqrestore(&priv->reg_lock, flags);		       \
-+	}								       \
- 									       \
- 	return (isr & (ch_done_mask | ch_err_mask) || isr_lo) ? IRQ_HANDLED :  \
- 								IRQ_NONE;      \
-@@ -2718,6 +2730,8 @@ static int talitos_probe(struct platform
- 
- 	priv->ofdev = ofdev;
- 
-+	spin_lock_init(&priv->reg_lock);
-+
- 	err = talitos_probe_irq(ofdev);
- 	if (err)
- 		goto err_out;
 
 
