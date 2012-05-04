@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932836Ab2EDUsq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:48:46 -0400
+	id S932919Ab2EDUtg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:49:36 -0400
 Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
 	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932781Ab2EDUsl (ORCPT
+	with ESMTP id S1759967Ab2EDUtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:48:41 -0400
-Message-Id: <20120504204246.171956758@linuxfoundation.org>
+	Fri, 4 May 2012 16:49:31 -0400
+Message-Id: <20120504204247.544433554@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:59 -0700
+Date: Fri, 04 May 2012 13:43:15 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Greear <greearb@candelatech.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 15/47] nl80211: ensure interface is up in various APIs
+        alan@lxorguk.ukuu.org.uk, Thomas Jackson <thomas.p.jackson@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 31/47] SCSI: libsas: fix sas_find_bcast_phy() in the presence of vacant phys
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,150 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Thomas Jackson <thomas.p.jackson@intel.com>
 
-commit 2b5f8b0b44e17e625cfba1e7b88db44f4dcc0441 upstream.
-[backported by Ben Greear]
+commit 1699490db339e2c6b3037ea8e7dcd6b2755b688e upstream.
 
-The nl80211 handling code should ensure as much as
-it can that the interface is in a valid state, it
-can certainly ensure the interface is running.
+If an expander reports 'PHY VACANT' for a phy index prior to the one
+that generated a BCN libsas fails rediscovery.  Since a vacant phy is
+defined as a valid phy index that will never have an attached device
+just continue the search.
 
-Not doing so can cause calls through mac80211 into
-the driver that result in warnings and unspecified
-behaviour in the driver.
-
-Reported-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Thomas Jackson <thomas.p.jackson@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/nl80211.c |   29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
+ drivers/scsi/libsas/sas_expander.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -1181,6 +1181,11 @@ static int nl80211_set_wiphy(struct sk_b
- 			goto bad_res;
- 		}
+--- a/drivers/scsi/libsas/sas_expander.c
++++ b/drivers/scsi/libsas/sas_expander.c
+@@ -1632,9 +1632,17 @@ static int sas_find_bcast_phy(struct dom
+ 		int phy_change_count = 0;
  
-+		if (!netif_running(netdev)) {
-+			result = -ENETDOWN;
-+			goto bad_res;
+ 		res = sas_get_phy_change_count(dev, i, &phy_change_count);
+-		if (res)
+-			goto out;
+-		else if (phy_change_count != ex->ex_phy[i].phy_change_count) {
++		switch (res) {
++		case SMP_RESP_PHY_VACANT:
++		case SMP_RESP_NO_PHY:
++			continue;
++		case SMP_RESP_FUNC_ACC:
++			break;
++		default:
++			return res;
 +		}
 +
- 		nla_for_each_nested(nl_txq_params,
- 				    info->attrs[NL80211_ATTR_WIPHY_TXQ_PARAMS],
- 				    rem_txq_params) {
-@@ -5432,7 +5437,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_get_key,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5464,7 +5469,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
- 		.doit = nl80211_addset_beacon,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5472,7 +5477,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
- 		.doit = nl80211_addset_beacon,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5496,7 +5501,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_set_station,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5512,7 +5517,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_del_station,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5545,7 +5550,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_del_mpath,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5553,7 +5558,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_set_bss,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5579,7 +5584,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_get_mesh_config,
- 		.policy = nl80211_policy,
- 		/* can be retrieved by unprivileged users */
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5711,7 +5716,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_setdel_pmksa,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5719,7 +5724,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_setdel_pmksa,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5727,7 +5732,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_flush_pmksa,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5815,7 +5820,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_set_wds_peer,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
++		if (phy_change_count != ex->ex_phy[i].phy_change_count) {
+ 			if (update)
+ 				ex->ex_phy[i].phy_change_count =
+ 					phy_change_count;
+@@ -1642,8 +1650,7 @@ static int sas_find_bcast_phy(struct dom
+ 			return 0;
+ 		}
+ 	}
+-out:
+-	return res;
++	return 0;
+ }
+ 
+ static int sas_get_ex_change_count(struct domain_device *dev, int *ecc)
 
 
