@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944Ab2EDK1k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 06:27:40 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:35532 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754662Ab2EDK1j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 06:27:39 -0400
-Subject: Re: [PATCH 0/3] x86, efi: EFI boot stub documentation
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matthew Garret <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-In-Reply-To: <1331907517-3985-1-git-send-email-matt@console-pimps.org>
-References: <1331907517-3985-1-git-send-email-matt@console-pimps.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 May 2012 11:27:35 +0100
-Message-ID: <1336127255.18999.53.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1755276Ab2EDKcj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 06:32:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54536 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754698Ab2EDKch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 06:32:37 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
+        Hu Tao <hutao@cn.fujitsu.com>
+Subject: [PATCH v2 for 3.4] virtio-scsi: fix TMF use-after-free
+Date: Fri,  4 May 2012 12:32:04 +0200
+Message-Id: <1336127524-28216-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping? I can't find these patches in tip.
+Fix a use-after-free in the TMF path, where cmd may have been already
+freed by virtscsi_complete_free when wait_for_completion restarts
+executing virtscsi_tmf.  Technically a race, but in practice the command
+will always be freed long before the completion waiter is awoken.
 
-On Fri, 2012-03-16 at 14:18 +0000, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
-> 
-> Some people trying out the EFI stub have been confused about the
-> syntax for the initrd= option, so this series adds some information to
-> Documentation/x86. It also adds some helpful error messages, as
-> previously if the user specified an incorrect initrd filename the
-> machine just appeared to hang. Now at least it will print a message
-> saying that it couldn't open the file.
-> 
-> The first patch is actually a bug fix for an issue where the wrong
-> loop counter was used when trying to close initrd files in the error
-> path, which caused the machine to hang because a garbage pointer was
-> dereferenced.
-> 
-> Ideally I'd like to squeeze at least the last two patches in before
-> v3.3 is released.
-> 
-> Matt Fleming (3):
->   x86, efi: Only close open files in error path
->   x86, efi; Add EFI boot stub console support
->   x86, efi: Add EFI boot stub documentation
-> 
->  Documentation/x86/efi-stub.txt   |   65 ++++++++++++++++++++++++++++
->  arch/x86/Kconfig                 |    2 +
->  arch/x86/boot/compressed/eboot.c |   88 ++++++++++++++++++++++++++++++-------
->  arch/x86/boot/compressed/eboot.h |    6 +++
->  4 files changed, 144 insertions(+), 17 deletions(-)
->  create mode 100644 Documentation/x86/efi-stub.txt
-> 
+The fix is to make callers specifying a completion responsible for
+freeing the command in all cases.
 
+Cc: James Bottomley <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
+Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+        v1->v2: same patch, with a decent commit message
 
+ drivers/scsi/virtio_scsi.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index efccd72..1b38431 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -175,7 +175,8 @@ static void virtscsi_complete_free(void *buf)
+ 
+ 	if (cmd->comp)
+ 		complete_all(cmd->comp);
+-	mempool_free(cmd, virtscsi_cmd_pool);
++	else
++		mempool_free(cmd, virtscsi_cmd_pool);
+ }
+ 
+ static void virtscsi_ctrl_done(struct virtqueue *vq)
+@@ -311,21 +312,22 @@ out:
+ static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
+ {
+ 	DECLARE_COMPLETION_ONSTACK(comp);
+-	int ret;
++	int ret = FAILED;
+ 
+ 	cmd->comp = &comp;
+-	ret = virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd,
+-			       sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
+-			       GFP_NOIO);
+-	if (ret < 0)
+-		return FAILED;
++	if (virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd,
++			      sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
++			      GFP_NOIO) < 0)
++		goto out;
+ 
+ 	wait_for_completion(&comp);
+-	if (cmd->resp.tmf.response != VIRTIO_SCSI_S_OK &&
+-	    cmd->resp.tmf.response != VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
+-		return FAILED;
++	if (cmd->resp.tmf.response == VIRTIO_SCSI_S_OK ||
++	    cmd->resp.tmf.response == VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
++		ret = SUCCESS;
+ 
+-	return SUCCESS;
++out:
++	mempool_free(cmd, virtscsi_cmd_pool);
++	return ret;
+ }
+ 
+ static int virtscsi_device_reset(struct scsi_cmnd *sc)
+-- 
+1.7.9.3
 
