@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068Ab2EDBYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 21:24:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:50522 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754053Ab2EDBYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 21:24:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="96207453"
-Date: Fri, 4 May 2012 09:26:55 +0800
-From: Xudong Hao <xudong.hao@linux.intel.com>
-To: dwmw2@infradead.org
-Cc: chrisw@sous-sol.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, xiantao.zhang@intel.com,
-        xudong.hao@intel.com
-Subject: [PATCH v2 1/1] intel-iommu: Add device info into list before doing
-	context mapping
-Message-ID: <20120504012655.GA8468@hp-xd.sh.intel.com>
+	id S1756920Ab2EDBi2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 21:38:28 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57810 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755737Ab2EDBi1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 21:38:27 -0400
+X-AuditID: 9c930179-b7c19ae000000486-41-4fa33310268d
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Arnaud Lacombe <lacombar@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: perf build failure on Linus's tree
+References: <20120503215748.GA18995@kroah.com>
+Date: Fri, 04 May 2012 10:37:24 +0900
+In-Reply-To: <20120503215748.GA18995@kroah.com> (Greg KH's message of "Thu, 3
+	May 2012 14:57:48 -0700")
+Message-ID: <87sjfgafqj.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device info into list before do context mapping, because device info will be
- used by iommu_enable_dev_iotlb function, in this function, pci_enable_ats would
- not be called without this patch.
+Hi,
 
-Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-Signed-off-by: Xiantao Zhang <xiantao.zhang@intel.com>
-Acked-by: Chris Wright <chrisw@sous-sol.org>
----
- drivers/iommu/intel-iommu.c |   17 +++++++++++------
- 1 files changed, 11 insertions(+), 6 deletions(-)
+On Thu, 3 May 2012 14:57:48 -0700, Greg KH wrote:
+> Linus's tree right now (3.4.rc5.67.gac001.dirty) gives me the following
+> build error when I try to build perf:
+>     CC util/parse-events-flex.o
+> <stdout>: In function ‘yy_get_next_buffer’:
+> <stdout>:1510:3: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
+> util/parse-events.l: In function ‘parse_events_lex’:
+> util/parse-events.l:122:1: error: ignoring return value of ‘fwrite’, declared with attribute warn_unused_result [-Werror=unused-result]
+> cc1: all warnings being treated as errors
+>
+> Do you really want to ensure that flex's build warnings fail the build?
+>
+> thanks,
+>
+> greg k-h
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index f93d5ac..5fda348 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -2286,12 +2286,6 @@ static int domain_add_dev_info(struct dmar_domain *domain,
-    if (!info)
-        return -ENOMEM;
+Can't reproduce it on my Fedora 17 box:
 
--   ret = domain_context_mapping(domain, pdev, translation);
--   if (ret) {
--       free_devinfo_mem(info);
--       return ret;
--   }
--
-    info->segment = pci_domain_nr(pdev->bus);
-    info->bus = pdev->bus->number;
-    info->devfn = pdev->devfn;
-@@ -2304,6 +2298,17 @@ static int domain_add_dev_info(struct dmar_domain *domain,
-    pdev->dev.archdata.iommu = info;
-    spin_unlock_irqrestore(&device_domain_lock, flags);
+namhyung@sejong:perf$ make
+PERF_VERSION = 3.4.rc5.67.gac001
+    GEN common-cmds.h
+    * new build flags or prefix
+    CC perf.o
+    CC builtin-annotate.o
+    CC builtin-bench.o
+    CC bench/sched-messaging.o
+    CC bench/sched-pipe.o
+[SNIP]
+    CC util/trace-event-parse.o
+    CC util/parse-events-flex.o
+    CC util/parse-events-bison.o
+    CC util/pmu-flex.o
+    CC util/pmu-bison.o
+[SNIP]
+    CC util/scripting-engines/trace-event-python.o
+    CC scripts/python/Perf-Trace-Util/Context.o
+    AR libperf.a
+    LINK perf
+    GEN perf-archive
+    GEN python/perf.so
 
-+   ret = domain_context_mapping(domain, pdev, translation);
-+   if (ret) {
-+       spin_lock_irqsave(&device_domain_lock, flags);
-+       list_del(&info->link);
-+       list_del(&info->global);
-+       pdev->dev.archdata.iommu = NULL;
-+       spin_unlock_irqrestore(&device_domain_lock, flags);
-+       free_devinfo_mem(info);
-+       return ret;
-+   }
-+
-    return 0;
- }
 
---
-1.6.0.rc1
+What are versions of tools you are using?
 
+Thanks,
+Namhyung
