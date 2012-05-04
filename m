@@ -1,87 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab2EDJJC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 05:09:02 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33001 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752674Ab2EDJJA (ORCPT
+	id S1753975Ab2EDJM0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 05:12:26 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47658 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752674Ab2EDJMZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 05:09:00 -0400
-Date: Fri, 4 May 2012 10:08:56 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 2/3] MFD: twl6040: Allocate IRQ numbers dynamically
-Message-ID: <20120504090856.GA14230@opensource.wolfsonmicro.com>
-References: <1336049665-27777-1-git-send-email-peter.ujfalusi@ti.com>
- <1336049665-27777-3-git-send-email-peter.ujfalusi@ti.com>
- <20120503132004.GB14296@sirena.org.uk>
- <4FA2881B.6010902@ti.com>
- <20120503145248.GJ3955@opensource.wolfsonmicro.com>
- <4FA2A08C.5000403@ti.com>
- <20120503152643.GM3955@opensource.wolfsonmicro.com>
- <4FA3958A.4080206@ti.com>
+	Fri, 4 May 2012 05:12:25 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: "J, KEERTHY" <j-keerthy@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Hilman, Kevin" <khilman@ti.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+CC: "Pihet-XID, Jean" <j-pihet@ti.com>
+Subject: RE: [PATCH V3 05/10] ARM: OMAP2+: SmartReflex: introduce a busy
+ loop condition test macro
+Thread-Topic: [PATCH V3 05/10] ARM: OMAP2+: SmartReflex: introduce a busy
+ loop condition test macro
+Thread-Index: AQHNI9QqacStCvxp2EqO7BVNbqIaSpa5YatQ
+Date: Fri, 4 May 2012 09:12:13 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9B1B40@DBDE01.ent.ti.com>
+References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
+ <1335462041-4949-6-git-send-email-j-keerthy@ti.com>
+In-Reply-To: <1335462041-4949-6-git-send-email-j-keerthy@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.132.210]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
-Content-Disposition: inline
-In-Reply-To: <4FA3958A.4080206@ti.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 26, 2012 at 23:10:36, J, KEERTHY wrote:
+> From: Jean Pihet <j-pihet@ti.com>
+> 
+> Now that omap_test_timeout is only accessible from mach-omap2/,
+> introduce a similar function for SR.
+> 
+> This change makes the SmartReflex implementation ready for the move
+> to drivers/.
+> 
+> Signed-off-by: Jean Pihet <j-pihet@ti.com>
+> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> ---
+>  arch/arm/mach-omap2/smartreflex.c |   12 ++++++------
+>  include/linux/power/smartreflex.h |   23 ++++++++++++++++++++++-
+>  2 files changed, 28 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
+> index d859277..acef08d 100644
+> --- a/arch/arm/mach-omap2/smartreflex.c
+> +++ b/arch/arm/mach-omap2/smartreflex.c
+> @@ -289,9 +289,9 @@ static void sr_v1_disable(struct omap_sr *sr)
+>  	 * Wait for SR to be disabled.
+>  	 * wait until ERRCONFIG.MCUDISACKINTST = 1. Typical latency is 1us.
+>  	 */
+> -	omap_test_timeout((sr_read_reg(sr, ERRCONFIG_V1) &
+> -			ERRCONFIG_MCUDISACKINTST), SR_DISABLE_TIMEOUT,
+> -			timeout);
+> +	sr_test_cond_timeout((sr_read_reg(sr, ERRCONFIG_V1) &
+> +			     ERRCONFIG_MCUDISACKINTST), SR_DISABLE_TIMEOUT,
+> +			     timeout);
+>  
+>  	if (timeout >= SR_DISABLE_TIMEOUT)
+>  		dev_warn(&sr->pdev->dev, "%s: Smartreflex disable timedout\n",
+> @@ -334,9 +334,9 @@ static void sr_v2_disable(struct omap_sr *sr)
+>  	 * Wait for SR to be disabled.
+>  	 * wait until IRQSTATUS.MCUDISACKINTST = 1. Typical latency is 1us.
+>  	 */
+> -	omap_test_timeout((sr_read_reg(sr, IRQSTATUS) &
+> -			IRQSTATUS_MCUDISABLEACKINT), SR_DISABLE_TIMEOUT,
+> -			timeout);
+> +	sr_test_cond_timeout((sr_read_reg(sr, IRQSTATUS) &
+> +			     IRQSTATUS_MCUDISABLEACKINT), SR_DISABLE_TIMEOUT,
+> +			     timeout);
+>  
+>  	if (timeout >= SR_DISABLE_TIMEOUT)
+>  		dev_warn(&sr->pdev->dev, "%s: Smartreflex disable timedout\n",
+> diff --git a/include/linux/power/smartreflex.h b/include/linux/power/smartreflex.h
+> index 884eaee..78b795e 100644
+> --- a/include/linux/power/smartreflex.h
+> +++ b/include/linux/power/smartreflex.h
+> @@ -22,7 +22,7 @@
+>  
+>  #include <linux/types.h>
+>  #include <linux/platform_device.h>
+> -
+> +#include <linux/delay.h>
+>  #include <plat/voltage.h>
+>  
+>  /*
+> @@ -168,6 +168,27 @@ struct omap_sr {
+>  };
+>  
+>  /**
+> + * test_cond_timeout - busy-loop, testing a condition
+> + * @cond: condition to test until it evaluates to true
+> + * @timeout: maximum number of microseconds in the timeout
+> + * @index: loop index (integer)
+> + *
+> + * Loop waiting for @cond to become true or until at least @timeout
+> + * microseconds have passed.  To use, define some integer @index in the
+> + * calling code.  After running, if @index == @timeout, then the loop has
+> + * timed out.
+> + *
+> + * Copied from omap_test_timeout */
+> +#define sr_test_cond_timeout(cond, timeout, index)		\
+> +({								\
+> +	for (index = 0; index < timeout; index++) {		\
+> +		if (cond)					\
+> +			break;					\
+> +		udelay(1);					\
+> +	}							\
+> +})
 
---BOKacYhQ+x31HxR3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I think we can use time_after()/time_before() APIs for timeout and cpu_relax() for
+tight loops instead of udelay().
 
-On Fri, May 04, 2012 at 11:38:34AM +0300, Peter Ujfalusi wrote:
-
-> The irq_base was used to map the nested interrupt numbers somewhere high
-> enough. twl6040 has one irq line towards the CPU (comes via
-> i2c_client->irq).
-> With this change we just change the mapping of the nested interrupt
-> range provided by twl6040 (instead of hardwired number we ask for
-> suitable range).
-
-You're not understanding the issue at all - the issue is that if
-some driver outside the twl6040 driver is using an interrupt in that
-range based off the irq_base that they supplied then you'll break them.
-The most common case here is using GPIOs on the device as interrupts.
-
-If this is safe you should at least be making it clear why...
-
-> We have sdp4430 and PandaBoard with twl6040. They are fine. The other
-> non upstream boards should be fine as well with this change.
-
-...ideally in a more concrete way than just saying it works on your
-reference boards.
-
---BOKacYhQ+x31HxR3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPo5yeAAoJEBus8iNuMP3dtbYP/2iCwbJLD2d0ESRZnuZ7RDas
-JAFaY1/QWI9fTMqBjhm7TlD6iKaxgsXFYrJFOzM9w49X318Dh8PxWbGaopMS1jm4
-MDsoBdmKi3bVhMvB2S6rgUE7zXbLRX1T0dlXbCkJtQvBjkKvEPeLguSPIjcMf2Ep
-33gf47N/+ikaLa4/LiSUOamLTpQ9Vt4w70vfXTwRO6z6iSZE/+EwhpgSPEpCV/3x
-yii8xbu7aLfetr8U9EtgtfFsoPGaBVH6hdLCcewwo1/5U4/POoISOTf+6G9/jJK8
-kUiaZaeO3UHFzFLgQGDszP2C0NZ2cJ98WMQi5Bj0WqM2B8iR7MyLpvkzkzwkxVCF
-VoHyHx1Wm7nUJywMDzX5KP1E0z2OhSGSCkgFUH2pOrzyv+osUXaDmKpO5lYL9zEs
-liHL0sRBSfxUU2ZHOcszgVOTGot/6OaxE8z3HA2uY4Uvt4VBa7wKH3TiXoH0MKyK
-uonC5j8C7/5rguTefypXQ8tUxIIYsiEn1rt2crL2daYLEPpImCEToALqU1VITnsX
-KCgl7kEPIRsgeLw2SBaULzVuY/pfGhdx0JhBBuQL2diCxYzFMlTY7TiD8k5EP4mM
-rB9N7aox+ZeAEBFEsMubQENUugepxNxzjoRIAWmHQZ/L6z3I2bidsBVNOBb68Jrk
-N4dWecBceV2m+ndDb46s
-=Otg/
------END PGP SIGNATURE-----
-
---BOKacYhQ+x31HxR3--
+Regards
+AnilKumar
