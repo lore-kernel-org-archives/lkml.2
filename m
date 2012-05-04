@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760687Ab2EDXd1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 19:33:27 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:3075 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757008Ab2EDXdZ (ORCPT
+	id S1760667Ab2EDXhM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 19:37:12 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:33824 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229Ab2EDXhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 19:33:25 -0400
-Date: Sat, 5 May 2012 09:30:00 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Mark Lord <kernel@teksavvy.com>
-Subject: Re: Hard drive detection
-Message-ID: <20120505093000.1d9789dd@ubuntu>
-In-Reply-To: <4FA3D60F.9090601@teksavvy.com>
-References: <20120504185604.3addfd2e@ubuntu>
-	<4FA3D60F.9090601@teksavvy.com>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-1.967, required 4, AWL 0.53, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
+	Fri, 4 May 2012 19:37:11 -0400
+Date: Fri, 4 May 2012 16:37:07 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: Brian Swetland <swetland@google.com>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: android: logger: Allocate logs dynamically at
+ boot
+Message-ID: <20120504233707.GA24213@kroah.com>
+References: <4FA4673C.7010209@am.sony.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA4673C.7010209@am.sony.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 04 May 2012 09:13:51 -0400
-Mark Lord <kernel@teksavvy.com> wrote:
+On Fri, May 04, 2012 at 04:33:16PM -0700, Tim Bird wrote:
+> +#define MAX_LOGS	5
+> +struct logger_log *logs_array[MAX_LOGS];
 
-> On 12-05-04 04:56 AM, Chris Jones wrote:
-> > What section of the kernel detects internal hard drives upon boot?
+You are going to make this a list and not a static array in the
+future, right?
+
+> -static int __init init_log(struct logger_log *log)
+> +static int __init add_log(struct logger_log *log)
+>  {
+> -	int ret;
+> +	int i;
 > 
-> That depends upon how the drive is connected.
-> But generally speaking, the device driver for the drive-controller
-> will probe and find any attached drives.
-> 
-> So for modern kernels, on systems with SATA drives,
-> the code is in linux/drivers/ata/
-> 
-> 
+> +	for (i = 0; i < MAX_LOGS; i++) {
+> +		if (logs_array[i] == 0) {
+> +			logs_array[i] = log;
+> +			return 0;
+> +		}
+> +	}
+> +	return -1;
+> +}
 
-Thanks Mark. That's exactly what I was looking for. And are both PATA
-and SATA internal drives both located in drivers/ata?
+I see you didn't run your patch through sparse :(
 
+Care to fix up the sparse warnings and resend?
 
-Regards
+thanks,
 
-Chris Jones
+greg k-h
