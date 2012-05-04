@@ -1,100 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab2EDC1Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 22:27:24 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46325 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215Ab2EDC1X (ORCPT
+	id S1757043Ab2EDC3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 22:29:07 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52352 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756624Ab2EDC3F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 22:27:23 -0400
-X-AuditID: 9c930179-b7c19ae000000486-89-4fa33e8a94ae
-Message-ID: <4FA33E89.6080206@kernel.org>
-Date: Fri, 04 May 2012 11:27:21 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Thu, 3 May 2012 22:29:05 -0400
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Nitin Gupta <ngupta@vflare.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 4/4] zsmalloc: zsmalloc: align cache line size
-References: <1336027242-372-1-git-send-email-minchan@kernel.org> <1336027242-372-4-git-send-email-minchan@kernel.org> <4FA28EFD.5070002@vflare.org>
-In-Reply-To: <4FA28EFD.5070002@vflare.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <CACqU3MVqpz=azeUOUfmtoLEPvqngfJHSHFe7ujemeRT1-B=osA@mail.gmail.com>
+References: <20120503215748.GA18995@kroah.com>
+	<87sjfgafqj.fsf@sejong.aot.lge.com>
+	<20120503.215020.954262287222794218.davem@davemloft.net>
+	<CACqU3MVqpz=azeUOUfmtoLEPvqngfJHSHFe7ujemeRT1-B=osA@mail.gmail.com>
+Date: Thu, 3 May 2012 22:29:03 -0400
+Message-ID: <CACqU3MWLKMhTdh-HUh0MhE_hZmwNPG5FOxWarjO4BsRemmG8sA@mail.gmail.com>
+Subject: Re: perf build failure on Linus's tree
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: namhyung.kim@lge.com, gregkh@linuxfoundation.org, a.p.zijlstra@chello.nl,
+        paulus@samba.org, mingo@redhat.com, acme@ghostprotocols.net,
+        jolsa@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2012 10:58 PM, Nitin Gupta wrote:
+Hi,
 
-> On 5/3/12 2:40 AM, Minchan Kim wrote:
->> It's a overkill to align pool size with PAGE_SIZE to avoid
->> false-sharing. This patch aligns it with just cache line size.
+On Thu, May 3, 2012 at 10:14 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> Hi,
+>
+> On Thu, May 3, 2012 at 9:50 PM, David Miller <davem@davemloft.net> wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> Date: Fri, 04 May 2012 10:37:24 +0900
 >>
->> Signed-off-by: Minchan Kim<minchan@kernel.org>
->> ---
->>   drivers/staging/zsmalloc/zsmalloc-main.c |    6 +++---
->>   1 file changed, 3 insertions(+), 3 deletions(-)
+>>> Hi,
+>>>
+>>> On Thu, 3 May 2012 14:57:48 -0700, Greg KH wrote:
+>>>> Linus's tree right now (3.4.rc5.67.gac001.dirty) gives me the following
+>>>> build error when I try to build perf:
+>>>>     CC util/parse-events-flex.o
+>>>> <stdout>: In function ‘yy_get_next_buffer’:
+>>>> <stdout>:1510:3: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
+>>>> util/parse-events.l: In function ‘parse_events_lex’:
+>>>> util/parse-events.l:122:1: error: ignoring return value of ‘fwrite’, declared with attribute warn_unused_result [-Werror=unused-result]
+>>>> cc1: all warnings being treated as errors
+>>>>
+>>>> Do you really want to ensure that flex's build warnings fail the build?
+>>>>
+>>>> thanks,
+>>>>
+>>>> greg k-h
+>>>
+>>> Can't reproduce it on my Fedora 17 box:
 >>
->> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c
->> b/drivers/staging/zsmalloc/zsmalloc-main.c
->> index 51074fa..3991b03 100644
->> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
->> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
->> @@ -489,14 +489,14 @@ fail:
+>> Because your glibc headers probably don't have the warn_unused_result attribute
+>> in the extern declaration of fwrite() like Greg's do.
 >>
->>   struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
->>   {
->> -    int i, error, ovhd_size;
->> +    int i, error;
->>       struct zs_pool *pool;
->>
->>       if (!name)
->>           return NULL;
->>
->> -    ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
->> -    pool = kzalloc(ovhd_size, GFP_KERNEL);
->> +    pool = kzalloc(ALIGN(sizeof(*pool), cache_line_size()),
->> +                GFP_KERNEL);
-> 
-> a basic question:
->  Is rounding off allocation size to cache_line_size enough to ensure
-> that the object is cache-line-aligned? Isn't it possible that even
-> though the object size is multiple of cache-line, it may still not be
-> properly aligned and end up sharing cache line with some other
-> read-mostly object?
+> `tools/perf/Makefile' adds -D_FORTIFY_SOURCE=2 on the compiler's
+> command line, which in turn adds `__attribute__
+> ((__warn_unused_result__))' to fwrite(3)'s prototypes, via `__wur'. I
+> double checked by pre-processing `util/parse-events-flex.c' with the
+> same arguments used by perf. fwrite(3) ends up being declared as:
+>
+> extern size_t fwrite (__const void *__restrict __ptr, size_t __size,
+>        size_t __n, FILE *__restrict __s) __attribute__
+> ((__warn_unused_result__));
+>
+> So it is definitively enabled, and used, on Fedora.
+>
+> Above tests were done on Fedora 15/x86_64 and Fedora 16/x86_64, `perf'
+> build without any issue there too.
+>
+it would seem that OpenSuse 12.1 and Fedora ship the same `flex'
+package, upstream version 2.5.35. However, Fedora specifically harden
+flex(1) wrt. lacks of fwrite(3)'s return value check, see [0] for the
+exact patch.
 
+ - Arnaud
 
-AFAIK, SLAB allocates object aligned cache-size so I think that problem cannot happen.
-But needs double check.
-Cced Pekka.
+[0]: http://pkgs.fedoraproject.org/gitweb/?p=flex.git;a=blob;f=flex-2.5.35-hardening.patch;h=7d608ea2371fa3295bdb8eb97c15eeb03029c02b;hb=HEAD
 
-> 
-> Thanks,
-> Nitin
-> 
-> 
->>       if (!pool)
->>           return NULL;
->>
-> 
-> -- 
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign
-> http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
-
-
--- 
-Kind regards,
-Minchan Kim
+> my 0.2c,
+>  - Arnaud
