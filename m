@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932929Ab2EDUtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:49:41 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
+	id S1759993Ab2EDUtw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:49:52 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
 	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759971Ab2EDUti (ORCPT
+	with ESMTP id S932945Ab2EDUtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:49:38 -0400
-Message-Id: <20120504204247.708821730@linuxfoundation.org>
+	Fri, 4 May 2012 16:49:47 -0400
+Message-Id: <20120504204247.957402972@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:17 -0700
+Date: Fri, 04 May 2012 13:43:20 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>
-Subject: [ 33/47] efi: Add new variable attributes
+Subject: [ 36/47] efi: Validate UEFI boot variables
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +26,227 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matthew Garrett <mjg@redhat.com>
 
-commit 41b3254c93acc56adc3c4477fef7c9512d47659e upstream.
+commit fec6c20b570bcf541e581fc97f2e0cbdb9725b98 upstream.
 
-More recent versions of the UEFI spec have added new attributes for
-variables. Add them.
+A common flaw in UEFI systems is a refusal to POST triggered by a malformed
+boot variable. Once in this state, machines may only be restored by
+reflashing their firmware with an external hardware device. While this is
+obviously a firmware bug, the serious nature of the outcome suggests that
+operating systems should filter their variable writes in order to prevent
+a malicious user from rendering the machine unusable.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/efi.h |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/firmware/efivars.c |  182 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 182 insertions(+)
 
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -347,7 +347,18 @@ extern int __init efi_setup_pcdp_console
- #define EFI_VARIABLE_NON_VOLATILE       0x0000000000000001
- #define EFI_VARIABLE_BOOTSERVICE_ACCESS 0x0000000000000002
- #define EFI_VARIABLE_RUNTIME_ACCESS     0x0000000000000004
-+#define EFI_VARIABLE_HARDWARE_ERROR_RECORD 0x0000000000000008
-+#define EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS 0x0000000000000010
-+#define EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS 0x0000000000000020
-+#define EFI_VARIABLE_APPEND_WRITE	0x0000000000000040
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -166,6 +166,176 @@ utf16_strsize(efi_char16_t *data, unsign
+ 	return utf16_strnlen(data, maxlength/sizeof(efi_char16_t)) * sizeof(efi_char16_t);
+ }
  
-+#define EFI_VARIABLE_MASK 	(EFI_VARIABLE_NON_VOLATILE | \
-+				EFI_VARIABLE_BOOTSERVICE_ACCESS | \
-+				EFI_VARIABLE_RUNTIME_ACCESS | \
-+				EFI_VARIABLE_HARDWARE_ERROR_RECORD | \
-+				EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS | \
-+				EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS | \
-+				EFI_VARIABLE_APPEND_WRITE)
- /*
-  * EFI Device Path information
-  */
++static bool
++validate_device_path(struct efi_variable *var, int match, u8 *buffer, int len)
++{
++	struct efi_generic_dev_path *node;
++	int offset = 0;
++
++	node = (struct efi_generic_dev_path *)buffer;
++
++	while (offset < len) {
++		offset += node->length;
++
++		if (offset > len)
++			return false;
++
++		if ((node->type == EFI_DEV_END_PATH ||
++		     node->type == EFI_DEV_END_PATH2) &&
++		    node->sub_type == EFI_DEV_END_ENTIRE)
++			return true;
++
++		node = (struct efi_generic_dev_path *)(buffer + offset);
++	}
++
++	/*
++	 * If we're here then either node->length pointed past the end
++	 * of the buffer or we reached the end of the buffer without
++	 * finding a device path end node.
++	 */
++	return false;
++}
++
++static bool
++validate_boot_order(struct efi_variable *var, int match, u8 *buffer, int len)
++{
++	/* An array of 16-bit integers */
++	if ((len % 2) != 0)
++		return false;
++
++	return true;
++}
++
++static bool
++validate_load_option(struct efi_variable *var, int match, u8 *buffer, int len)
++{
++	u16 filepathlength;
++	int i, desclength = 0;
++
++	/* Either "Boot" or "Driver" followed by four digits of hex */
++	for (i = match; i < match+4; i++) {
++		if (hex_to_bin(var->VariableName[i] & 0xff) < 0)
++			return true;
++	}
++
++	/* A valid entry must be at least 6 bytes */
++	if (len < 6)
++		return false;
++
++	filepathlength = buffer[4] | buffer[5] << 8;
++
++	/*
++	 * There's no stored length for the description, so it has to be
++	 * found by hand
++	 */
++	desclength = utf16_strsize((efi_char16_t *)(buffer + 6), len) + 2;
++
++	/* Each boot entry must have a descriptor */
++	if (!desclength)
++		return false;
++
++	/*
++	 * If the sum of the length of the description, the claimed filepath
++	 * length and the original header are greater than the length of the
++	 * variable, it's malformed
++	 */
++	if ((desclength + filepathlength + 6) > len)
++		return false;
++
++	/*
++	 * And, finally, check the filepath
++	 */
++	return validate_device_path(var, match, buffer + desclength + 6,
++				    filepathlength);
++}
++
++static bool
++validate_uint16(struct efi_variable *var, int match, u8 *buffer, int len)
++{
++	/* A single 16-bit integer */
++	if (len != 2)
++		return false;
++
++	return true;
++}
++
++static bool
++validate_ascii_string(struct efi_variable *var, int match, u8 *buffer, int len)
++{
++	int i;
++
++	for (i = 0; i < len; i++) {
++		if (buffer[i] > 127)
++			return false;
++
++		if (buffer[i] == 0)
++			return true;
++	}
++
++	return false;
++}
++
++struct variable_validate {
++	char *name;
++	bool (*validate)(struct efi_variable *var, int match, u8 *data,
++			 int len);
++};
++
++static const struct variable_validate variable_validate[] = {
++	{ "BootNext", validate_uint16 },
++	{ "BootOrder", validate_boot_order },
++	{ "DriverOrder", validate_boot_order },
++	{ "Boot*", validate_load_option },
++	{ "Driver*", validate_load_option },
++	{ "ConIn", validate_device_path },
++	{ "ConInDev", validate_device_path },
++	{ "ConOut", validate_device_path },
++	{ "ConOutDev", validate_device_path },
++	{ "ErrOut", validate_device_path },
++	{ "ErrOutDev", validate_device_path },
++	{ "Timeout", validate_uint16 },
++	{ "Lang", validate_ascii_string },
++	{ "PlatformLang", validate_ascii_string },
++	{ "", NULL },
++};
++
++static bool
++validate_var(struct efi_variable *var, u8 *data, int len)
++{
++	int i;
++	u16 *unicode_name = var->VariableName;
++
++	for (i = 0; variable_validate[i].validate != NULL; i++) {
++		const char *name = variable_validate[i].name;
++		int match;
++
++		for (match = 0; ; match++) {
++			char c = name[match];
++			u16 u = unicode_name[match];
++
++			/* All special variables are plain ascii */
++			if (u > 127)
++				return true;
++
++			/* Wildcard in the matching name means we've matched */
++			if (c == '*')
++				return variable_validate[i].validate(var,
++							     match, data, len);
++
++			/* Case sensitive match */
++			if (c != u)
++				break;
++
++			/* Reached the end of the string while matching */
++			if (!c)
++				return variable_validate[i].validate(var,
++							     match, data, len);
++		}
++	}
++
++	return true;
++}
++
+ static efi_status_t
+ get_var_data(struct efivars *efivars, struct efi_variable *var)
+ {
+@@ -289,6 +459,12 @@ efivar_store_raw(struct efivar_entry *en
+ 		return -EINVAL;
+ 	}
+ 
++	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
++	    validate_var(new_var, new_var->Data, new_var->DataSize) == false) {
++		printk(KERN_ERR "efivars: Malformed variable content\n");
++		return -EINVAL;
++	}
++
+ 	spin_lock(&efivars->lock);
+ 	status = efivars->ops->set_variable(new_var->VariableName,
+ 					    &new_var->VendorGuid,
+@@ -414,6 +590,12 @@ static ssize_t efivar_create(struct file
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+ 
++	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
++	    validate_var(new_var, new_var->Data, new_var->DataSize) == false) {
++		printk(KERN_ERR "efivars: Malformed variable content\n");
++		return -EINVAL;
++	}
++
+ 	spin_lock(&efivars->lock);
+ 
+ 	/*
 
 
