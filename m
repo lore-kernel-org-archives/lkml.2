@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947Ab2EDUtr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:49:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932932Ab2EDUtn (ORCPT
+	id S932929Ab2EDUtl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:49:41 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759971Ab2EDUti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:49:43 -0400
-Message-Id: <20120504204247.868714186@linuxfoundation.org>
+	Fri, 4 May 2012 16:49:38 -0400
+Message-Id: <20120504204247.708821730@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:19 -0700
+Date: Fri, 04 May 2012 13:43:17 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>,
-        Mike Waychison <mikew@google.com>, Tony Luck <tony.luck@intel.com>
-Subject: [ 35/47] efivars: fix warnings when CONFIG_PSTORE=n
+        alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>
+Subject: [ 33/47] efi: Add new variable attributes
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +24,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: Matthew Garrett <mjg@redhat.com>
 
-commit b728a5c806fb36f9adebf2a862bbd015e074afca upstream.
+commit 41b3254c93acc56adc3c4477fef7c9512d47659e upstream.
 
-drivers/firmware/efivars.c:161: warning: ‘utf16_strlen’ defined but not used
-utf16_strlen() is only used inside CONFIG_PSTORE - make this "static inline"
-to shut the compiler up [thanks to hpa for the suggestion].
+More recent versions of the UEFI spec have added new attributes for
+variables. Add them.
 
-drivers/firmware/efivars.c:602: warning: initialization from incompatible pointer type
-Between v1 and v2 of this patch series we decided to make the "part" number
-unsigned - but missed fixing the stub version of efi_pstore_write()
-
-Acked-by: Matthew Garrett <mjg@redhat.com>
-Acked-by: Mike Waychison <mikew@google.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-[took the static part of the patch, not the pstore part, for 3.0-stable,
-to fix the compiler warning we had - gregkh]
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/efivars.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/efi.h |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -150,7 +150,7 @@ utf16_strnlen(efi_char16_t *s, size_t ma
- 	return length;
- }
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -347,7 +347,18 @@ extern int __init efi_setup_pcdp_console
+ #define EFI_VARIABLE_NON_VOLATILE       0x0000000000000001
+ #define EFI_VARIABLE_BOOTSERVICE_ACCESS 0x0000000000000002
+ #define EFI_VARIABLE_RUNTIME_ACCESS     0x0000000000000004
++#define EFI_VARIABLE_HARDWARE_ERROR_RECORD 0x0000000000000008
++#define EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS 0x0000000000000010
++#define EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS 0x0000000000000020
++#define EFI_VARIABLE_APPEND_WRITE	0x0000000000000040
  
--static unsigned long
-+static inline unsigned long
- utf16_strlen(efi_char16_t *s)
- {
- 	return utf16_strnlen(s, ~0UL);
++#define EFI_VARIABLE_MASK 	(EFI_VARIABLE_NON_VOLATILE | \
++				EFI_VARIABLE_BOOTSERVICE_ACCESS | \
++				EFI_VARIABLE_RUNTIME_ACCESS | \
++				EFI_VARIABLE_HARDWARE_ERROR_RECORD | \
++				EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS | \
++				EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS | \
++				EFI_VARIABLE_APPEND_WRITE)
+ /*
+  * EFI Device Path information
+  */
 
 
