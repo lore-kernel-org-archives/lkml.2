@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab2EDIOe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 04:14:34 -0400
-Received: from mga14.intel.com ([143.182.124.37]:6829 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131Ab2EDINw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 04:13:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="138801422"
-From: Huang Ying <ying.huang@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Huang Ying <ying.huang@intel.com>, Zheng Yan <zheng.z.yan@intel.com>
-Subject: [RFC v2 1/5] PM, Runtime, Add power_must_be_on flag
-Date: Fri,  4 May 2012 16:13:37 +0800
-Message-Id: <1336119221-21146-2-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1336119221-21146-1-git-send-email-ying.huang@intel.com>
-References: <1336119221-21146-1-git-send-email-ying.huang@intel.com>
+	id S1753524Ab2EDITm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 04:19:42 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:39857 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752474Ab2EDITj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 04:19:39 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/vrKF2113v7CuLg1uVlia9+IJrnc+nBY8I/HR0tC
+	ssW9qXzY6o7ThD
+Message-ID: <1336119571.25479.6.camel@marge.simpson.net>
+Subject: Re: [PATCH]  Re: [RFC PATCH] namespaces: fix leak on fork() failure
+From: Mike Galbraith <efault@gmx.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>
+Date: Fri, 04 May 2012 10:19:31 +0200
+In-Reply-To: <m1sjfggyp3.fsf@fess.ebiederm.org>
+References: <1335604790.5995.22.camel@marge.simpson.net>
+	 <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org>
+	 <20120429165846.GA19054@redhat.com>
+	 <1335754867.17899.4.camel@marge.simpson.net>
+	 <m1zk9rmyh4.fsf@fess.ebiederm.org>
+	 <20120501134214.f6b44f4a.akpm@linux-foundation.org>
+	 <1336014721.7370.32.camel@marge.simpson.net>
+	 <1336057018.8119.46.camel@marge.simpson.net>
+	 <m1sjfggyp3.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The extreme way to save device power in runtime is to turn off power
-of device.  For example, D3cold for PCIe bus and ZPODD (Zero Power
-Optical Disk Drive) for SATA bus will do that.
+On Fri, 2012-05-04 at 01:03 -0700, Eric W. Biederman wrote: 
+> Mike Galbraith <efault@gmx.de> writes:
 
-But sometimes power off is not expected, some possible reason is as
-follow
+> > Hm.  echo 3 > /proc/sys/vm/drop_caches.. *poof gone*
+> 
+> Good to hear.  I am sad to hear that proc_flush_task isn't doing a
+> better job but at least memory pressure will now free everything up as
+> it is supposed to.
+> 
+> > Grr.  I wonder who is doing the pinning when I don't monitor, but..
+> >
+> > <patch>
+> > kick kick kick... it's dead Jim.
+> > </patch>
+> 
+> Are you saying all known bugs are fixed?  Thanks for digging into this
+> by the way.  A fresh set of eyeballs is always nice.
 
-- power off device usually incurs longer resume latency, if it exceeds
-  power QoS requirement, power off should be disabled.
+Think so.  I'm beating it up in our 3.0 kernel with all fixes, since the
+patch that started this odyssey got backported to that kernel as well.
 
-- For some buses, device in power off state can not support remote
-  wakeup.  If remote wakeup is desired, power off should be disabled.
+Too bad I had so much ftrace trouble, I chased a dead bug for a week :)
 
-In general, whether to put a device into power off state should be
-decided by the driver of the device, but for some buses, whether to
-put a device into power off state may be done by the parent of the
-device.  For example, a PCIe end point device may be put into power
-off state by the PCIe port connected to it.
+-Mike
 
-So a flag is introduced for the children devices to tell the parent
-device, whether it should be put into power off state.
-
-This flag is also used for device driver to tell bus layer whether it
-is OK to be powered off.
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- include/linux/pm.h |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -536,6 +536,7 @@ struct dev_pm_info {
- 	unsigned int		irq_safe:1;
- 	unsigned int		use_autosuspend:1;
- 	unsigned int		timer_autosuspends:1;
-+	unsigned int		power_must_be_on:1;
- 	enum rpm_request	request;
- 	enum rpm_status		runtime_status;
- 	int			runtime_error;
