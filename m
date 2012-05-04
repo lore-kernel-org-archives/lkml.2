@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759758Ab2EDUoS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:44:18 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759729Ab2EDUoM (ORCPT
+	id S1760313Ab2EDVT4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:19:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759735Ab2EDUoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:44:12 -0400
-Message-Id: <20120504204225.053903239@linuxfoundation.org>
+	Fri, 4 May 2012 16:44:16 -0400
+Message-Id: <20120504204225.132840652@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:32 -0700
+Date: Fri, 04 May 2012 13:42:33 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Bryan ODonoghue <bryan.odonoghue@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 08/75] x86, apic: APIC code touches invalid MSR on P5 class machines
+        alan@lxorguk.ukuu.org.uk, Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>, <sp@numascale.com>,
+        <bp@amd64.org>, <daniel@numascale-asia.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 09/75] x86/platform: Remove incorrect error message in x86_default_fixup_cpu_id()
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,88 +27,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan O'Donoghue <bryan.odonoghue@linux.intel.com>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit cbf2829b61c136edcba302a5e1b6b40e97d32c00 upstream.
+commit 68894632afb2729a1d8785c877840953894c7283 upstream.
 
-Current APIC code assumes MSR_IA32_APICBASE is present for all systems.
-Pentium Classic P5 and friends didn't have this MSR. MSR_IA32_APICBASE
-was introduced as an architectural MSR by Intel @ P6.
+It's only called from amd.c:srat_detect_node(). The introduced
+condition for calling the fixup code is true for all AMD
+multi-node processors, e.g. Magny-Cours and Interlagos. There we
+have 2 NUMA nodes on one socket. Thus there are cores having
+different numa-node-id but with equal phys_proc_id.
 
-Code paths that can touch this MSR invalidly are when vendor == Intel &&
-cpu-family == 5 and APIC bit is set in CPUID - or when you simply pass
-lapic on the kernel command line, on a P5.
+There is no point to print error messages in such a situation.
 
-The below patch stops Linux incorrectly interfering with the
-MSR_IA32_APICBASE for P5 class machines. Other code paths exist that
-touch the MSR - however those paths are not currently reachable for a
-conformant P5.
+The confusing/misleading error message was introduced with
+commit 64be4c1c2428e148de6081af235e2418e6a66dda ("x86: Add
+x86_init platform override to fix up NUMA core numbering").
 
-Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linux.intel.com>
-Link: http://lkml.kernel.org/r/4F8EEDD3.1080404@linux.intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Remove the default fixup function (especially the error message)
+and replace it by a NULL pointer check, move the
+Numascale-specific condition for calling the fixup into the
+fixup-function itself and slightly adapt the comment.
+
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+Cc: <sp@numascale.com>
+Cc: <bp@amd64.org>
+Cc: <daniel@numascale-asia.com>
+Link: http://lkml.kernel.org/r/20120402160648.GR27684@alberich.amd.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/apic/apic.c |   34 ++++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 14 deletions(-)
+ arch/x86/include/asm/x86_init.h      |    1 -
+ arch/x86/kernel/apic/apic_numachip.c |    7 +++++--
+ arch/x86/kernel/cpu/amd.c            |    7 ++++---
+ arch/x86/kernel/cpu/common.c         |    9 ---------
+ arch/x86/kernel/x86_init.c           |    1 -
+ 5 files changed, 9 insertions(+), 16 deletions(-)
 
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1632,9 +1632,11 @@ static int __init apic_verify(void)
- 	mp_lapic_addr = APIC_DEFAULT_PHYS_BASE;
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -189,6 +189,5 @@ extern struct x86_msi_ops x86_msi;
  
- 	/* The BIOS may have set up the APIC at some other address */
--	rdmsr(MSR_IA32_APICBASE, l, h);
--	if (l & MSR_IA32_APICBASE_ENABLE)
--		mp_lapic_addr = l & MSR_IA32_APICBASE_BASE;
-+	if (boot_cpu_data.x86 >= 6) {
-+		rdmsr(MSR_IA32_APICBASE, l, h);
-+		if (l & MSR_IA32_APICBASE_ENABLE)
-+			mp_lapic_addr = l & MSR_IA32_APICBASE_BASE;
+ extern void x86_init_noop(void);
+ extern void x86_init_uint_noop(unsigned int unused);
+-extern void x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node);
+ 
+ #endif
+--- a/arch/x86/kernel/apic/apic_numachip.c
++++ b/arch/x86/kernel/apic/apic_numachip.c
+@@ -201,8 +201,11 @@ static void __init map_csrs(void)
+ 
+ static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+ {
+-	c->phys_proc_id = node;
+-	per_cpu(cpu_llc_id, smp_processor_id()) = node;
++
++	if (c->phys_proc_id != node) {
++		c->phys_proc_id = node;
++		per_cpu(cpu_llc_id, smp_processor_id()) = node;
 +	}
- 
- 	pr_info("Found and enabled local APIC!\n");
- 	return 0;
-@@ -1652,13 +1654,15 @@ int __init apic_force_enable(unsigned lo
- 	 * MSR. This can only be done in software for Intel P6 or later
- 	 * and AMD K7 (Model > 1) or later.
- 	 */
--	rdmsr(MSR_IA32_APICBASE, l, h);
--	if (!(l & MSR_IA32_APICBASE_ENABLE)) {
--		pr_info("Local APIC disabled by BIOS -- reenabling.\n");
--		l &= ~MSR_IA32_APICBASE_BASE;
--		l |= MSR_IA32_APICBASE_ENABLE | addr;
--		wrmsr(MSR_IA32_APICBASE, l, h);
--		enabled_via_apicbase = 1;
-+	if (boot_cpu_data.x86 >= 6) {
-+		rdmsr(MSR_IA32_APICBASE, l, h);
-+		if (!(l & MSR_IA32_APICBASE_ENABLE)) {
-+			pr_info("Local APIC disabled by BIOS -- reenabling.\n");
-+			l &= ~MSR_IA32_APICBASE_BASE;
-+			l |= MSR_IA32_APICBASE_ENABLE | addr;
-+			wrmsr(MSR_IA32_APICBASE, l, h);
-+			enabled_via_apicbase = 1;
-+		}
- 	}
- 	return apic_verify();
  }
-@@ -2204,10 +2208,12 @@ static void lapic_resume(void)
- 		 * FIXME! This will be wrong if we ever support suspend on
- 		 * SMP! We'll need to do this as part of the CPU restore!
- 		 */
--		rdmsr(MSR_IA32_APICBASE, l, h);
--		l &= ~MSR_IA32_APICBASE_BASE;
--		l |= MSR_IA32_APICBASE_ENABLE | mp_lapic_addr;
--		wrmsr(MSR_IA32_APICBASE, l, h);
-+		if (boot_cpu_data.x86 >= 6) {
-+			rdmsr(MSR_IA32_APICBASE, l, h);
-+			l &= ~MSR_IA32_APICBASE_BASE;
-+			l |= MSR_IA32_APICBASE_ENABLE | mp_lapic_addr;
-+			wrmsr(MSR_IA32_APICBASE, l, h);
-+		}
- 	}
  
- 	maxlvt = lapic_get_maxlvt();
+ static int __init numachip_system_init(void)
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -352,10 +352,11 @@ static void __cpuinit srat_detect_node(s
+ 		node = per_cpu(cpu_llc_id, cpu);
+ 
+ 	/*
+-	 * If core numbers are inconsistent, it's likely a multi-fabric platform,
+-	 * so invoke platform-specific handler
++	 * On multi-fabric platform (e.g. Numascale NumaChip) a
++	 * platform-specific handler needs to be called to fixup some
++	 * IDs of the CPU.
+ 	 */
+-	if (c->phys_proc_id != node)
++	if (x86_cpuinit.fixup_cpu_id)
+ 		x86_cpuinit.fixup_cpu_id(c, node);
+ 
+ 	if (!node_online(node)) {
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1163,15 +1163,6 @@ static void dbg_restore_debug_regs(void)
+ #endif /* ! CONFIG_KGDB */
+ 
+ /*
+- * Prints an error where the NUMA and configured core-number mismatch and the
+- * platform didn't override this to fix it up
+- */
+-void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+-{
+-	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
+-}
+-
+-/*
+  * cpu_init() initializes state that is per-CPU. Some data is already
+  * initialized (naturally) in the bootstrap process, such as the GDT
+  * and IDT. We reload them nevertheless, this function acts as a
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -92,7 +92,6 @@ struct x86_init_ops x86_init __initdata
+ 
+ struct x86_cpuinit_ops x86_cpuinit __cpuinitdata = {
+ 	.setup_percpu_clockev		= setup_secondary_APIC_clock,
+-	.fixup_cpu_id			= x86_default_fixup_cpu_id,
+ };
+ 
+ static void default_nmi_init(void) { };
 
 
