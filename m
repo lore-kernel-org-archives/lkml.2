@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab2EDKFp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 06:05:45 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:42706 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256Ab2EDKFn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 06:05:43 -0400
-Date: Fri, 4 May 2012 11:04:55 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Colin Cross <ccross@android.com>, Kevin Hilman <khilman@ti.com>,
-        Len Brown <len.brown@intel.com>, Trinabh Gupta <g.trinabh@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [PATCHv3 0/5] coupled cpuidle state support
-Message-ID: <20120504100455.GA14578@e102568-lin.cambridge.arm.com>
-References: <1335816551-27756-1-git-send-email-ccross@android.com>
- <201204302354.41969.rjw@sisk.pl>
- <CAMbhsRQcDDW5vWbqb1FRtvOmq6UjOjXj9MCfSt2KF9fHrcY59Q@mail.gmail.com>
- <201205032200.01823.rjw@sisk.pl>
-MIME-Version: 1.0
-In-Reply-To: <201205032200.01823.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 04 May 2012 10:06:31.0847 (UTC) FILETIME=[946FAB70:01CD29DD]
-X-MC-Unique: 112050411051212701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754805Ab2EDKJt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 06:09:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8281 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752751Ab2EDKJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 06:09:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="140041063"
+Message-ID: <1336126390.4275.12.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v2 4/4] fat: switch to fsinfo_inode
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>
+Date: Fri, 04 May 2012 13:13:10 +0300
+In-Reply-To: <87y5pyfoe0.fsf@devron.myhome.or.jp>
+References: <1334326795-2446-1-git-send-email-dedekind1@gmail.com>
+	 <1334326795-2446-5-git-send-email-dedekind1@gmail.com>
+	 <87fwc6hazv.fsf@devron.myhome.or.jp> <1334399379.2263.8.camel@koala>
+	 <87bomuha77.fsf@devron.myhome.or.jp> <1334401307.2263.24.camel@koala>
+	 <873986h6qa.fsf@devron.myhome.or.jp> <1334406974.2263.38.camel@koala>
+	 <87y5pyfoe0.fsf@devron.myhome.or.jp>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-sTIFxmwXqJ7wE+CwARi9"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 09:00:01PM +0100, Rafael J. Wysocki wrote:
-> On Tuesday, May 01, 2012, Colin Cross wrote:
-> > On Mon, Apr 30, 2012 at 2:54 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > On Monday, April 30, 2012, Colin Cross wrote:
-> > >> On Mon, Apr 30, 2012 at 2:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
 
-[...]
+--=-sTIFxmwXqJ7wE+CwARi9
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Having considered this for a while I think that it may be more straightforward
-> to avoid waking up the already idled cores.
-> 
-> For instance, say we have 4 CPU cores in a cluster (package) such that each
-> core has its own idle state (call it C1) and there is a multicore idle state
-> entered by turning off the entire cluster (call this state C-multi).  One of
-> the possible ways to handle this seems to be to use an identical table of
-> C-states for each core containing the C1 entry and a kind of fake entry called
-> (for example) C4 with the time characteristics of C-multi and a special
-> .enter() callback.  That callback will prepare the core it is called for to
-> enter C-multi, but instead of simply turning off the whole package it will
-> decrement a counter.  If the counte happens to be 0 at this point, the
-> package will be turned off.  Otherwise, the core will be put into the idle
-> state corresponding to C1, but it will be ready for entering C-multi at
-> any time. The counter will be incremented on exiting the C4 "state".
-> 
-> It looks like this should work without modifying the cpuidle core, but
-> the drawback here is that the cpuidle core doesn't know how much time
-> spend in C4 is really in C1 and how much of it is in C-multi, so the
-> statistics reported by it won't reflect the real energy usage.
+Hi,
 
-This is exactly what has been done in some ARM platforms with per-CPU power
-rails ("C1" means shutdown here) and that are completely symmetric (ie every
-CPU can trigger cluster shutdown); a "C4" multi-CPU state with target_residency
-equivalent to the cluster shutdown implied power break-even point.
+I was having a leave, but now came back to this stuff.
 
-There are two issues with this approach. One you already mentioned it.
-Second is that CPUs go idle at different times. Hence, by the time the last
-CPU calls C4.enter() other CPUs in the package might already have a timer
-that is about to expire. If we start cluster shutdown we are wasting power
-(eg caches write-back to DDR) for nothing.
+On Sat, 2012-04-14 at 22:12 +0900, OGAWA Hirofumi wrote:
+> If fsinfo is inode, the order can be
+>=20
+> 1) flush inodes
+>     1a) flush fsinfo inode
+>     1b) flush normal inodes
+> 2) last iput(normal inodes)
+>       truncate()
+>            dirty fsinfo inode
 
-Colin and Santosh mentioned it already, we have to peek at the next event for
-all CPUs in the package (or peek the broadcast global timer if CPUs rely
-on it) and make a decision accordingly.
+3) a bit later fsinfo inode is flushed again.
 
-Lorenzo
+Sorry, I do not still see where is the issue.
+
+Also, how is it different form the current situation where
+you have absolutely the same.
+
+I really still do not see the issue.=20
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-sTIFxmwXqJ7wE+CwARi9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPo6u2AAoJECmIfjd9wqK0feEQAJp4bxhOb0gV2swzpSE8lndC
+qip7NIMoklsUKdQsBJe3FKF2D81XHNaTpoPNpmWyG6IaeoiXePeYvE1EwierWmv4
+NDbH4VCsAorvz9HtHOrhTs8mgdOp3oqa4AT4FQMcLuGODSgrWX+mtMhUtON53vIP
+rK5fGG2IdcWVr0iaXxUbdfl6SNOM6bocipXLA3HsDMBgMfK9V/2xkyOB05qNNxce
+q/jvWGv5m0z+xSftyBDaDlVOH5GRf8MeusFtAdoq182l05YEXSbbWszhfs34wQkz
+BERyeVVTfXoAoZ8JUi2uvN1fGyfVtwBiLeWQW94LYFerBjSdHnPxBsHFb8kGAKeJ
+WcGrJqx57XslSYtta4Pubm8nDPMxT9eNyph646NIxNYbh1CS88xYIwgFKZjmrcki
+6EA7560vtlVP5ItmZkgWB27OuK6piyy4Iy3vddIGRvgT7zKsmTYq2GWud+TRM2zn
+bS34NVOGGreOzpokUO22Be8guC1VGZJ74MwmCI9DMJGqvxmZP6j7QvrLHQPre8IW
+gn/GyLZvP8z6GkFB8B/bajd3lS3pI248/bOYmjBbT4q47PCMfr+5jkE+IiOBrXOS
+EMQPzS8z+jzk9iG3hS7ziw++TjCiPsndjRC6nm8rZ8GAuC4me0AMG9+LCiF4EwuJ
+EyNRtcneIDH9afT25OzH
+=seXG
+-----END PGP SIGNATURE-----
+
+--=-sTIFxmwXqJ7wE+CwARi9--
 
