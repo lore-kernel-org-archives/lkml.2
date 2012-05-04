@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab2EDMGn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 08:06:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58094 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755603Ab2EDMGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 08:06:41 -0400
-Date: Fri, 4 May 2012 14:06:38 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?ISO-8859-15?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-Subject: Re: [PATCH] HID: hid-multitouch: Only match MT interfaces
-In-Reply-To: <CAN+gG=FSg+eZxGUY1BU0k_mkxiPZQ9BHuqUb00NTij_JWbDUcA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1205041405520.14613@pobox.suse.cz>
-References: <1336056176-2508-1-git-send-email-rydberg@euromail.se> <CAN+gG=FSg+eZxGUY1BU0k_mkxiPZQ9BHuqUb00NTij_JWbDUcA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756526Ab2EDMOy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 08:14:54 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45265 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755472Ab2EDMOx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 08:14:53 -0400
+Date: Fri, 4 May 2012 13:14:50 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: dd diasemi <dd.diasemi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Anthony Olech <Anthony.Olech@diasemi.com>
+Subject: Re: Linux 3.4-rc2 register mapping and paging on I2C device.
+Message-ID: <20120504121449.GF14230@opensource.wolfsonmicro.com>
+References: <CAEqHmAstczdi2seTHFE0-jLK9fJaKosHjJyo4AJ7E9UKYBrVsg@mail.gmail.com>
+ <20120430214718.GB4414@opensource.wolfsonmicro.com>
+ <CAEqHmAsyJntRMqX+7NbQN0OmDXz6ZGh0LzAMp5KB=-cAMgpsJA@mail.gmail.com>
+ <20120504103358.GD14230@opensource.wolfsonmicro.com>
+ <CAEqHmAv+KTrJdiTL=76taTmu5YLYjukEiqk9UPbqCc-fDpQASw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="B0nZA57HJSoPbsHY"
+Content-Disposition: inline
+In-Reply-To: <CAEqHmAv+KTrJdiTL=76taTmu5YLYjukEiqk9UPbqCc-fDpQASw@mail.gmail.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 May 2012, Benjamin Tissoires wrote:
 
-> > All known hid-multitouch devices currently match any device group.
-> > However, some devices present interfaces belonging to different groups,
-> > resulting in a race between the hid-generic and hid-multitouch modules.
-> > This patch narrows the MT device list to match only HID_GROUP_MULTITOUCH,
-> > which solves the problem.
-> >
-> > Reported-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> > ---
-> >  drivers/hid/hid-multitouch.c |  145 +++++++++++++++++++++---------------------
-> >  1 file changed, 74 insertions(+), 71 deletions(-)
-> >
-> > diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> > index ea465f1..20e9552 100644
-> > --- a/drivers/hid/hid-multitouch.c
-> > +++ b/drivers/hid/hid-multitouch.c
-> > @@ -110,6 +110,9 @@ struct mt_device {
-> >
-> >  #define MT_DEFAULT_MAXCONTACT  10
-> >
-> > +#define MT_USB_DEVICE(v, p)    HID_DEVICE(BUS_USB, HID_GROUP_MULTITOUCH, v, p)
-> > +#define MT_BT_DEVICE(v, p)     HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_MULTITOUCH, v, p)
-> > +
-> >  /*
-> >  * these device-dependent functions determine what slot corresponds
-> >  * to a valid contact that was just read.
-> > @@ -735,276 +738,276 @@ static const struct hid_device_id mt_devices[] = {
-> >
-> >        /* 3M panels */
-> >        { .driver_data = MT_CLS_3M,
-> > -               HID_USB_DEVICE(USB_VENDOR_ID_3M,
-> > +               MT_USB_DEVICE(USB_VENDOR_ID_3M,
-> >                        USB_DEVICE_ID_3M1968) },
-> >        { .driver_data = MT_CLS_3M,
-> > -               HID_USB_DEVICE(USB_VENDOR_ID_3M,
-> > +               MT_USB_DEVICE(USB_VENDOR_ID_3M,
-> >                        USB_DEVICE_ID_3M2256) },
-> >        { .driver_data = MT_CLS_3M,
-> > -               HID_USB_DEVICE(USB_VENDOR_ID_3M,
-> > +               MT_USB_DEVICE(USB_VENDOR_ID_3M,
-> >                        USB_DEVICE_ID_3M3266) },
-> >
-> >        /* ActionStar panels */
-> >        { .driver_data = MT_CLS_DEFAULT,
-> > -               HID_USB_DEVICE(USB_VENDOR_ID_ACTIONSTAR,
-> > +               MT_USB_DEVICE(USB_VENDOR_ID_ACTIONSTAR,
-> >                        USB_DEVICE_ID_ACTIONSTAR_1011) },
-> >
-> >        /* Atmel panels */
-> >        { .driver_data = MT_CLS_SERIAL,
-> > -               HID_USB_DEVICE(USB_VENDOR_ID_ATMEL,
-> > +               MT_USB_DEVICE(USB_VENDOR_ID_ATMEL,
-> >                        USB_DEVICE_ID_ATMEL_MULTITOUCH) },
-> >        { .driver_data = MT_CLS_SERIAL,
-> > -               HID_USB_DEVICE(USB_VENDOR_ID_ATMEL,
-> > +               MT_USB_DEVICE(USB_VENDOR_ID_ATMEL,
-> >                        USB_DEVICE_ID_ATMEL_MXT_DIGITIZER) },
-> >
-> 
-> You are missing /* Baanto multitouch devices */ here. Please use the
-> branch for-next of Jiri....
+--B0nZA57HJSoPbsHY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This is not necessary ... I will have to fix the merge conflict one way or 
-another anyway, that's fine.
+On Fri, May 04, 2012 at 01:40:18PM +0200, dd diasemi wrote:
 
-Thanks,
+> If you are asking about the details, I guess, comments may need to
+> improvement anyway to give a clearer view, how the API could be used,
+> right?
 
--- 
-Jiri Kosina
-SUSE Labs
+Well, it's more that I'm thinking about how this gets implemented - even
+if things are nice and simple from a user point of view we have to make
+sure that the implementation doesn't conflict with other features or
+make the code too complex to think about.
+
+--B0nZA57HJSoPbsHY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPo8cOAAoJEBus8iNuMP3daSwP/AsEqpt54t+l459g5m8etzRF
+d/p7OmrYkhYDkRkaMyoDsY2T/OKYmlkmn+kPFCU1pM+MNDSR2T1G+7tMACiL9Ofx
+qW4iIVPTh9UqgPleTl3TqKIGjT6vYHW13QKBPc/tCiV+pQk/Vq5GyvCi1QMj7Hq+
+O0q9+w05TB1p98tD5BxaIJOTCj1kdv3pl3MuMlSt3JVXnPGVElB++Y0oIypVAf9U
+TzY/XxWK6oTaNAq71TF2XhGHp5ZnDqurgGoU3+zb7uZcRF4GUZO/kq8UH9qGVyAM
+ujp+8I9G8ul91gbqLSAb2sZAnzbJQV7t3rC9YJgboUIjTHWP33Whq6WTdSTBVW5v
+5SZtip9XYK3zErr4AI/IcJR0pkGZB3K5Qz3CRE2zyhP54mMnd+hq4/Uzle+LEcZN
+37XQeHDmFzUJ94p5H08Eo9f6LuinfqieRLKUlZeNo39nfmNVmk6SgbYi6sA8g884
+XUUB0MgoXBRo+QpOLkbHdjjfRvVZ9zN7G9WQVmEJ0HpP4I0aYsdDrr6vC0FuoS4h
++HKFdj/HgFeFKS5VwARKkKXhDm0qo42dqVpZJ6MT0CG64gx6W4Y8RZPMqtMLBt8R
+Kz3b8bbYPAKYFR+IxB2jU6mBniugfmY/kv5c7i/8H4vjtCntn+/sG5QkaqoPfRa9
+9ePn85EXFcKO5CDLBIdj
+=RB0n
+-----END PGP SIGNATURE-----
+
+--B0nZA57HJSoPbsHY--
