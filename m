@@ -1,133 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550Ab2EDNHw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 09:07:52 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60798 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756440Ab2EDNHv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 09:07:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [PATCH 01/02] mach-shmobile: Emma Mobile EV2 SoC base support
-Date: Fri, 4 May 2012 13:07:45 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-sh@vger.kernel.org, lethal@linux-sh.org,
-        linux-kernel@vger.kernel.org, rjw@sisk.pl, horms@verge.net.au,
-        olof@lixom.net
-References: <20120503144645.6390.62303.sendpatchset@w520> <20120503144654.6390.56399.sendpatchset@w520>
-In-Reply-To: <20120503144654.6390.56399.sendpatchset@w520>
+	id S1757942Ab2EDNIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 09:08:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52831 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756361Ab2EDNIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 09:08:40 -0400
+Message-ID: <4FA3D4B1.9040308@redhat.com>
+Date: Fri, 04 May 2012 15:08:01 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120425 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Mark Lord <kernel@teksavvy.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
+References: <1335953452-10460-1-git-send-email-jack@suse.cz> <4FA1092E.9090603@redhat.com> <20120502115447.7dcc3a54@pyramind.ukuu.org.uk> <4FA11454.2010103@redhat.com> <20120502121208.3c19a9bc@pyramind.ukuu.org.uk> <4FA11963.3040007@redhat.com> <4FA18D33.3060607@teksavvy.com> <4FA23809.2090905@redhat.com> <4FA27CDB.2080103@teksavvy.com> <4FA27E7C.6070802@redhat.com> <4FA2C205.3030801@teksavvy.com> <4FA3799A.6010908@redhat.com> <4FA3D442.9050801@teksavvy.com>
+In-Reply-To: <4FA3D442.9050801@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205041307.46080.arnd@arndb.de>
-X-Provags-ID: V02:K0:vNHy25jrq4Fb71uiYTVLgJdwhxWA/uGjOzXGkyG/IWk
- ihJt4JQpjWh9BWFiJoq2teFZVE+a9oOZHtXRCa64K8g+5C7Aqm
- gPzYDhLKntd3Ujmqe4wfnQi/BiDnMVInXcDijtOIUEma0YRIF1
- cBKnNI4r+ycYQ268X4Ifn6c+CbThndTwy/yXPMvpqudcOUlefw
- wwTzGNs5t5NjFVbKJMRmSAqyn0TO9fCdxLbrk918lRfdhZl3ky
- OSdWmSsJN2L3yeCVc9SuOvlG/SIj8ETzaB4AQxWkwcOAafHcIi
- naKC0mPq04DwsQaPq4/OX/X3UHKKJVEjZLKBrZOqNQRFWTQNsP
- jwFpgmCSjHFuG9UfpmiA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 May 2012, Magnus Damm wrote:
+Il 04/05/2012 15:06, Mark Lord ha scritto:
+>> > I said which ioctls, not which options.  I.e. cut-and-paste from dmesg.
+> Here are some:
 
-> +
-> +/* EMEV2 SMU registers */
-> +#define USIAU0_RSTCTRL 0xe0110094
-> +#define USIBU1_RSTCTRL 0xe01100ac
-> +#define USIBU2_RSTCTRL 0xe01100b0
-> +#define USIBU3_RSTCTRL 0xe01100b4
-> +#define STI_RSTCTRL 0xe0110124
-> +#define USIAU0GCLKCTRL 0xe01104a0
-> +#define USIBU1GCLKCTRL 0xe01104b8
-> +#define USIBU2GCLKCTRL 0xe01104bc
-> +#define USIBU3GCLKCTRL 0xe01104c0
-> +#define STIGCLKCTRL 0xe0110528
-> +#define USIAU0SCLKDIV 0xe011061c
-> +#define USIB2SCLKDIV 0xe011065c
-> +#define USIB3SCLKDIV 0xe0110660
-> +#define STI_CLKSEL 0xe0110688
+Thanks!
 
-Please cast to __iomem* here, e.g. using the IOMEM() macro, as these are
-virtual addresses.
+> messages.1:Apr 28 14:08:09 zbox5 kernel: [  268.800536] hdparm: sending ioctl 330 to a partition!
+> messages.1:Apr 28 14:08:09 zbox5 kernel: [  268.800547] hdparm: sending ioctl 330 to a partition!
+> messages.1:Apr 28 14:08:57 zbox5 kernel: [  316.413944] hdparm: sending ioctl 330 to a partition!
+> messages.1:Apr 28 14:08:57 zbox5 kernel: [  316.413951] hdparm: sending ioctl 330 to a partition!
+> messages.1:Apr 28 14:20:10 zbox5 kernel: [  989.525085] hdparm: sending ioctl 330 to a partition!
+> messages.1:Apr 28 14:20:10 zbox5 kernel: [  989.525093] hdparm: sending ioctl 330 to a partition!
+> 
+> The in <linux/hdreg.h> say this about 330:
+> 
+> ...
+> /* 0x330 is reserved - used to be HDIO_GETGEO_BIG */
+> ...
+> 
+> So it's HDIO_GETGEO_BIG, which doesn't exist in newer kernels.
+> I wonder when that got removed?  Minor userspace breakage there.
+> 
+> hdparm issues it first as a backward-compatibility thing,
+> before falling back to the even-more obsolete HDIO_GETGEO,
+> which curiously enough is still in modern kernels.
 
-> +void __init emev2_clock_init(void)
-> +{
-> +	int k, ret = 0;
-> +
-> +	/* setup STI timer to run on 37.768 kHz and deassert reset */
-> +	__raw_writel(0, STI_CLKSEL);
-> +	__raw_writel(1, STI_RSTCTRL);
-> +
-> +	/* deassert reset for UART0->UART3 */
-> +	__raw_writel(2, USIAU0_RSTCTRL);
-> +	__raw_writel(2, USIBU1_RSTCTRL);
-> +	__raw_writel(2, USIBU2_RSTCTRL);
-> +	__raw_writel(2, USIBU3_RSTCTRL);
+Ok, so hdparm is not broken.  My patch (which left the warning only for
+SG_IO, and failed all other ioctls) would have worked, too.
 
-Better use iowrite32 or writel or writel_relaxed here, but not __raw_*.
-
-> --- 0003/arch/arm/mach-shmobile/include/mach/common.h
-> +++ work/arch/arm/mach-shmobile/include/mach/common.h	2012-05-03 20:45:56.000000000 +0900
-> @@ -85,4 +85,10 @@ extern void r8a7779_secondary_init(unsig
->  extern int r8a7779_boot_secondary(unsigned int cpu);
->  extern void r8a7779_smp_prepare_cpus(void);
->  
-> +extern void emev2_init_irq(void);
-> +extern void emev2_map_io(void);
-> +extern void emev2_add_early_devices(void);
-> +extern void emev2_add_standard_devices(void);
-> +extern void emev2_clock_init(void);
-> +
->  #endif /* __ARCH_MACH_COMMON_H */
-
-I would feel more comfortable with a separate header for this than putting
-it into the same file as everything else, but it's not important to me.
-
-> --- /dev/null
-> +++ work/arch/arm/mach-shmobile/intc-emev2.c	2012-05-03 20:45:57.000000000 +0900
-
-> +
-> +void __init emev2_init_irq(void)
-> +{
-> +	void __iomem *gic_dist_base = IOMEM(0xe0028000);
-> +	void __iomem *gic_cpu_base = IOMEM(0xe0020000);
-> +
-> +	/* use GIC to handle interrupts */
-> +	gic_init(0, 29, gic_dist_base, gic_cpu_base);
-> +}
-
-This could just go into teh setup-emev2.c file, it doesn't actually do much,
-and the other file is where the constants are coming from anyway. Then you
-can put it right next to this code:
-
-> +static struct map_desc emev2_io_desc[] __initdata = {
-> +	/* 128K entity map for 0xe0020000 (GIC) */
-> +	{
-> +		.virtual	= 0xe0020000,
-> +		.pfn		= __phys_to_pfn(0xe0020000),
-> +		.length		= SZ_128K,
-> +		.type		= MT_UNCACHED
-> +	},
-> +	/* 128K entity map for 0xe0100000 (SMU) */
-> +	{
-> +		.virtual	= 0xe0100000,
-> +		.pfn		= __phys_to_pfn(0xe0100000),
-> +		.length		= SZ_128K,
-> +		.type		= MT_DEVICE
-> +	},
-> +};
-> +
-> +void __init emev2_map_io(void)
-> +{
-> +	iotable_init(emev2_io_desc, ARRAY_SIZE(emev2_io_desc));
-> +}
-
-
-	Arnd
+Paolo
