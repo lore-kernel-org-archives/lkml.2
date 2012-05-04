@@ -1,102 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373Ab2EDFK5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 01:10:57 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:39095 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab2EDFK4 (ORCPT
+	id S1751581Ab2EDFL2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 01:11:28 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:37367 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab2EDFL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 01:10:56 -0400
-Message-ID: <4FA36045.9080504@linux.vnet.ibm.com>
-Date: Fri, 04 May 2012 10:21:17 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	Fri, 4 May 2012 01:11:26 -0400
+Date: Fri, 4 May 2012 12:52:05 +0800
+From: Richard Yang <weiyang@linux.vnet.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Richard Yang <weiyang@linux.vnet.ibm.com>,
+        Wei Yang <weiyang.kernel@gmail.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: One problem in reassign pci bus number?
+Message-ID: <20120504045205.GA21624@richard>
+Reply-To: Richard Yang <weiyang@linux.vnet.ibm.com>
+References: <20120410090306.GA7056@richard>
+ <20120422155202.GA13540@richard>
+ <CAE9FiQXoUcUw5kOcBmsbBu_hJ+GbKk--qFt+WyUHbjJPwY+8Pw@mail.gmail.com>
+ <CADLM8XPryGVVWVruB=sZ9zxPp-nEhz8xKeMhY3u8KBShk2suBQ@mail.gmail.com>
+ <CAE9FiQXLxEEu68tJvph3LB53nqycK+YctwDKMEF824koXVM5AA@mail.gmail.com>
+ <20120503065455.GA30042@richard>
+ <CAE9FiQUVNA_jdRfsSR9Rv47aa6JX-HKET0z3SfK19wT=Fcd9Cg@mail.gmail.com>
+ <20120504024721.GA6775@richard>
+ <CAE9FiQUz2w815gU5vY5b0BPf+1pz_pafgzqVKizJC++z27RTaQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Tejun Heo <tj@kernel.org>, John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
-Subject: Re: [PATCH v1 3/6] workqueue: introduce schedule_on_each_cpu_cond
-References: <1336056962-10465-1-git-send-email-gilad@benyossef.com> <1336056962-10465-4-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1336056962-10465-4-git-send-email-gilad@benyossef.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12050319-3568-0000-0000-000001A773F3
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQUz2w815gU5vY5b0BPf+1pz_pafgzqVKizJC++z27RTaQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12050318-1618-0000-0000-000001786976
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2012 08:25 PM, Gilad Ben-Yossef wrote:
+On Thu, May 03, 2012 at 08:15:29PM -0700, Yinghai Lu wrote:
+>>>
+>>>I updated for-pci-busn-alloc branch with updating of probe_resource()...
+>>>and removing bus->secondary and subordinate.
+>>>
+>> You mean you remove the bus->secondary field?
+>> So the pci_bus->number hold the bus number?
+>> I think this is a huge work.
+>>>Please check if you can understand it ...
+>>>
+>>>http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=7de8df57b223d54af95ffe67f8da2dd39a265971
+>> Some question:
+>>
+>> +static resource_size_t __find_res_top_free_size(struct resource *res,
+>> +                                                int skip_nr)
+>> +{
+>> +       resource_size_t n_size;
+>> +       struct resource tmp_res;
+>> +
+>> +       */
+>> +        *   find out free number below res->end that we can use.
+>> +        *      res->start to res->start + skip_nr - 1 can not be used.
+>> +        */
+>> +       n_size = resource_size(res);
+>> +       if (n_size <= skip_nr)
+>> +               return 0;
+>> +
+>> +       n_size -= skip_nr;
+>> +       memset(&tmp_res, 0, sizeof(struct resource));
+>> +       while (n_size > 0) {
+>> +               int ret;
+>> +
+>> +               ret = __allocate_resource(res, &tmp_res, n_size,
+>> +                       res->end - n_size + skip_nr, res->end,
+>> +                       1, NULL, NULL, false);
+>> +               if (ret == 0) {
+>> +                       __release_resource(&tmp_res);
+>> +                       break;
+>> +               }
+>> +               n_size--;
+>> +       }
+>> +
+>> +       return n_size;
+>> +}
+>> So this is trying to find out the biggest free space of res?
+>> On the right side?
+>>
+>> For example we have , res like
+>>   90-150
+>>        105-140
+>> The __find_res_top_free_size() will return 10 instead of 15.
+>> So this is the design decision to find the right side free resouce not
+>> the left side?
+>
+> __find_res_top_free_size()  is called by probe_resource().
+>
+>probe_resource will return [91-104].
+Hmm... I think the result is returned by this while loop.
++       while (n_size >= needed_size) {
++               ret = allocate_resource(b_res, busn_res, n_size,
++                               b_res->start + skip_nr, b_res->end,
++                               1, NULL, NULL);
++               if (!ret)
++                       return ret;
++               n_size--;
++       }
+__find_res_top_free_size() is not called.
 
-> Introduce the schedule_on_each_cpu_cond() function that schedules
-> a work item on each online CPU for which the supplied condition
-> function returns true.
-> 
-> This function should be used instead of schedule_on_each_cpu()
-> when only some of the CPUs have actual work to do and a predicate
-> function can tell if a certain CPU does or does not have work to do,
-> thus saving unneeded wakeups and schedules.
-> 
-> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-> ---
+BTW, even if this value is returned by __find_res_top_free_size(), or
+returned after this function is called, the purpose of the
+__find_res_top_free_size() is to get the biggest free space under the
+first parameter?
+>
+>Thanks
+>
+>Yinghai
 
-
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 1c9782b..3322d30 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -2828,6 +2828,43 @@ int schedule_on_each_cpu_mask(work_func_t func, const struct cpumask *mask)
->  }
-> 
->  /**
-> + * schedule_on_each_cpu_cond - execute a function synchronously on each
-> + * online CPU for which the supplied condition function returns true
-> + * @func: the function to run on the selected CPUs
-> + * @cond_func: the function to call to select the CPUs
-> + *
-> + * schedule_on_each_cpu_cond() executes @func on each online CPU for
-> + * @cond_func returns true using the system workqueue and blocks until
-
-    ^^^
-(for) which
-
-Regards,
-Srivatsa S. Bhat
-
-> + * all CPUs have completed.
-> + * schedule_on_each_cpu_cond() is very slow.
-> + *
-> + * RETURNS:
-> + * 0 on success, -errno on failure.
-> + */
-> +int schedule_on_each_cpu_cond(work_func_t func, bool (*cond_func)(int cpu))
-> +{
-> +	int cpu, ret;
-> +	cpumask_var_t mask;
-> +
-> +	if (unlikely(!zalloc_cpumask_var(&mask, GFP_KERNEL)))
-> +		return -ENOMEM;
-> +
-> +	get_online_cpus();
-> +
-> +	for_each_online_cpu(cpu)
-> +		if (cond_func(cpu))
-> +			cpumask_set_cpu(cpu, mask);
-> +
-> +	ret = schedule_on_each_cpu_mask(func, mask);
-> +
-> +	put_online_cpus();
-> +
-> +	free_cpumask_var(mask);
-> +
-> +	return ret;
+-- 
+Richard Yang
+Help you, Help me
 
