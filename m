@@ -1,106 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758813Ab2EDPSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 11:18:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:50710 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab2EDPSH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 11:18:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: Making ARM multiplatform kernels DT-only?
-Date: Fri, 4 May 2012 15:17:58 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: Wookey <wookey@wookware.org>, Deepak Saxena <dsaxena@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, linaro-dev@lists.linaro.org,
-        Jason Cooper <jason@lakedaemon.net>, Nicolas Pitre <nico@fluxnic.net>,
-        Tony Lindgren <tony@atomide.com>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-References: <201205031350.35476.arnd@arndb.de> <20120504142057.GQ27023@stoneboat.aleph1.co.uk> <20120504143518.GF26481@n2100.arm.linux.org.uk>
-In-Reply-To: <20120504143518.GF26481@n2100.arm.linux.org.uk>
+	id S1758757Ab2EDPVG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 11:21:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64620 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750866Ab2EDPVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 11:21:04 -0400
+Date: Fri, 4 May 2012 17:02:11 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        David Miller <davem@davemloft.net>, namhyung.kim@lge.com,
+        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Subject: Re: [patch] perf: Fix build failure on OpenSuse userspace
+Message-ID: <20120504150211.GA2995@m.brq.redhat.com>
+References: <87sjfgafqj.fsf@sejong.aot.lge.com>
+ <20120503.215020.954262287222794218.davem@davemloft.net>
+ <CACqU3MVqpz=azeUOUfmtoLEPvqngfJHSHFe7ujemeRT1-B=osA@mail.gmail.com>
+ <CACqU3MWLKMhTdh-HUh0MhE_hZmwNPG5FOxWarjO4BsRemmG8sA@mail.gmail.com>
+ <CACqU3MVVgo7R8CmGwi6utE0F0urf5NW58s23bmNU_rSQAg2pww@mail.gmail.com>
+ <20120504024706.GA10461@kroah.com>
+ <CACqU3MUwDaRXwAd3fu7sUmM2ApH+pfu4rf1-TNKt1ja+wYpJ9w@mail.gmail.com>
+ <20120504031614.GA12048@kroah.com>
+ <20120504070928.GA18351@gmail.com>
+ <CACqU3MXRGP3Ep2sJwAB+aOTp9ezifRy+FhVkGjZpzTSW2PhCqg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205041517.58830.arnd@arndb.de>
-X-Provags-ID: V02:K0:zAXpRU1G/vjTCN/H9SLf5LwxMyCYSIAjfr8h9+aCp4m
- abkeXdRh3ai6BeHy6EFlORf4brKx9XSAXGqCNW01JJ0MSSNiVv
- xk3EQoIPy/pd1UcZMq7n873SbdbOo6ti2BZ0Olhf6T4tomsKgi
- gvi2ZvRT0os3Cr7oqPdOPpL98QhX5S744Kh+v9q+pIgknB0jSQ
- ElgB6ontRANs24i8V2bUpPlkKPXkcBQqnC5x2fr8gVf4m3aD5w
- wRVFo2w8No7UlMhpyQqWQB9A+/PX+LFZBshg9tc3M9xJwy2uGP
- gHP8utCUOobzKhYAhjmBgzm1PjUu0CH5DH2t36L7QTGwJjy0UU
- 78zjcbSHjz9Mc5aEP/+o=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACqU3MXRGP3Ep2sJwAB+aOTp9ezifRy+FhVkGjZpzTSW2PhCqg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 04 May 2012, Russell King - ARM Linux wrote:
+On Fri, May 04, 2012 at 10:44:28AM -0400, Arnaud Lacombe wrote:
+> Hi,
 > 
-> On Fri, May 04, 2012 at 03:20:57PM +0100, Wookey wrote:
-> > Debian tries very hard not to support anything in the kernel that
-> > upstream don't support in the kernel because otherwise it's way too
-> > much work. The current list of supplied arm kernels is:
-> > 
-> > iop32x (ThecusN2100, intel SS4000, GLAN tank)
-> > ixp4xx (Linksys NSLU2)
-> > kirkwood (*plugs, QNAP NAS, OPenRD)
-> > orion5x (QNAP NAS, HP mv2120)
-> > versatile
-> > mx5
-> > omap
-> > 
-> > because that's a good compromise between coverage and 'building 20-odd
-> > images'. I have no idea how much of that lot is going to get DTified,
-> > but I'm guessing the older stuff won't be?
+> On Fri, May 4, 2012 at 3:09 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Greg KH <gregkh@linuxfoundation.org> wrote:
+> >
 
-Thanks for the list, Wookey!
+SNIP
 
-This is very important because distros are obviously the primary consumer
-of multiplatform builds (aside from build testing). The goal should very
-much be to reduce the number of distinct kernels that folks like debian,
-fedora or cyanogenmod have to build.
+> > diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> > index 7055a00..3174e9b 100644
+> > --- a/tools/perf/Makefile
+> > +++ b/tools/perf/Makefile
+> > @@ -729,10 +729,10 @@ $(OUTPUT)perf.o perf.spec \
+> >  # over the general rule for .o
+> >
+> >  $(OUTPUT)util/%-flex.o: $(OUTPUT)util/%-flex.c $(OUTPUT)PERF-CFLAGS
+> > -       $(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
+> > +       $(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function -Wno-unused-parameter $<
+> >
+> >  $(OUTPUT)util/%-bison.o: $(OUTPUT)util/%-bison.c $(OUTPUT)PERF-CFLAGS
+> > -       $(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
+> > +       $(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function -Wno-unused-parameter $<
+> >
+> >  $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
+> >        $(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
+> >
+> You can find the build failure log in
+> <20120503215748.GA18995@kroah.com>, pasted here for reference:
+> 
+>     CC util/parse-events-flex.o
+> <stdout>: In function â€˜yy_get_next_bufferâ€™:
+> <stdout>:1510:3: error: comparison between signed and unsigned integer
+> expressions [-Werror=sign-compare]
+> util/parse-events.l: In function â€˜parse_events_lexâ€™:
+> util/parse-events.l:122:1: error: ignoring return value of
+> â€˜fwriteâ€™, declared with attribute warn_unused_result
+> [-Werror=unused-result]
+> cc1: all warnings being treated as errors
+> 
+> So I doubt -Wno-unused-parameter will do any good here.
+I think we need also -Wno-sign-compare, please check the attached patch
 
-> Well, my understanding is that there's DT patches around for Versatile.
-> OMAP and MX5 are both heading for DT.  I'm less certain about the Orion
-> and Kirkwood stuff, but as they're only about 4 years old, I would hope
-> that there was some active movement for these.
+jirka
 
-FWIW, there is a lot of new activity on orion5x and kirkwood (less on
-mv78xxx and dove) and new board support for those platforms is being done
-using DT already, at least for the drivers that have been converted.
 
-As soon as the support is complete, I would hope that we can add dts files
-for the older boards that people are using as well, and a few releases
-later remove the respective board files.
+---
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 7055a00..8f7b6cf 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -729,10 +729,10 @@ $(OUTPUT)perf.o perf.spec \
+ # over the general rule for .o
  
-> The iop32x and ixp4xx stuff hasn't seen much in the way of maintenance
-> so its highly likely that these won't be converted to DT unless someone
-> with the hardware decides to step up and do it.
-
-Right. For those, I agree that it makes sense to support them without DT
-even in a multiplatform kernel. So I'll revise my initial proposal to
-
-* For mach-* directories that we expect to support using DT in the
-  near future, support the ATAG based board files only in the current
-  (single-platform, multi-board) way but not for multiplatform (i.e.
-  multiple mach-*/ combined) builds.
-* For mach-* directories that look like they will not support DT anytime
-  soon, support them as is in the multiplatform build, possibly enabling
-  all their boards (or a well-defined subset) unconditionally.
-
-> So, that means your list should reduce down to five kernels, or three if
-> the Orion/Kirkwood stuff gets converted to DT.
-
-I count four if we were to proceed with the initial proposal:
-
-1. ARMv6/v7 multiplatform: omap2plus, mx5/mx6, vexpress, ...
-2. ARMv4/v5 multiplatform: versatile, orion5x, kirkwood, , ...
-3. iop32x
-4. ixp4xx
-
-	Arnd
+ $(OUTPUT)util/%-flex.o: $(OUTPUT)util/%-flex.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function -Wno-unused-parameter -Wno-sign-compare $<
+ 
+ $(OUTPUT)util/%-bison.o: $(OUTPUT)util/%-bison.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function -Wno-unused-parameter -Wno-sign-compare $<
+ 
+ $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
