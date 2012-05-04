@@ -1,163 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759954Ab2EDVJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:09:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57129 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932489Ab2EDUqk (ORCPT
+	id S1760058Ab2EDVJZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:09:25 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60693 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754390Ab2EDVJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:46:40 -0400
-Message-Id: <20120504204228.899301844@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:17 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matt Fleming <matt.hfleming@intel.com>,
-        Jordan Justen <jordan.l.justen@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 53/75] x86, efi: Add dedicated EFI stub entry point
-In-Reply-To: <20120504204258.GA12552@kroah.com>
+	Fri, 4 May 2012 17:09:22 -0400
+Message-ID: <4FA4457F.1010900@wwwdotorg.org>
+Date: Fri, 04 May 2012 15:09:19 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, Wolfgang Denk <wd@denx.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-embedded@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Igor Grinberg <grinberg@compulab.co.il>,
+        Olof Johansson <olof@lixom.net>, Lee Jones <lee.jones@linaro.org>
+Subject: Re: Handling of modular boards
+References: <20120504185850.GO14230@opensource.wolfsonmicro.com> <201205042039.25794.arnd@arndb.de> <20120504205441.D293120645E@gemini.denx.de> <201205042103.34285.arnd@arndb.de>
+In-Reply-To: <201205042103.34285.arnd@arndb.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On 05/04/2012 03:03 PM, Arnd Bergmann wrote:
+> On Friday 04 May 2012, Wolfgang Denk wrote:
+>> There are systems (and I bet it will be a growing number) where U-Boot
+>> itself uses the DT for configuration.  Also, there are functions that
+>> are needed both by the boot loader and the kernel - for example to
+>> dislay a splash screen the boot loader needs to initialize the
+>> display, so it must be able to detect which type of LCD is attached
+>> (resolution, color-depth, orientation) - the device tree comes in very
+>> handy here.  Why should Linux re-do all such things?
+> 
+> Sure, there are a lot of things that the boot loader can use from the
+> device tree, but I'm not sure if the LCD panel connection fits into
+> the same category as the devices that Mark was thinking of.
 
-------------------
+A board I have sitting on my desk right now has separate boards for (and
+multiple options for each of):
 
-From: Matt Fleming <matt.fleming@intel.com>
+* Motherboard
+* CPU+DRAM
+* PMU/PMIC
+* Display (LCD)
+... and many more.
 
-commit b1994304fc399f5d3a5368c81111d713490c4799 upstream.
+Interaction with the PMU/PMIC is required for at least some of the boot
+media options.
 
-The method used to work out whether we were booted by EFI firmware or
-via a boot loader is broken. Because efi_main() is always executed
-when booting from a boot loader we will dereference invalid pointers
-either on the stack (CONFIG_X86_32) or contained in %rdx
-(CONFIG_X86_64) when searching for an EFI System Table signature.
+Interaction with the display (LCD) while not technically required to
+simply boot the kernel is required by desired use-cases, in order to
+display a splash screen ASAP during early boot.
 
-Instead of dereferencing these invalid system table pointers, add a
-new entry point that is only used when booting from EFI firmware, when
-we know the pointer arguments will be valid. With this change legacy
-boot loaders will no longer execute efi_main(), but will instead skip
-EFI stub initialisation completely.
-
-[ hpa: Marking this for urgent/stable since it is a regression when
-  the option is enabled; without the option the patch has no effect ]
-
-Signed-off-by: Matt Fleming <matt.hfleming@intel.com>
-Link: http://lkml.kernel.org/r/1334584744.26997.14.camel@mfleming-mobl1.ger.corp.intel.com
-Reported-by: Jordan Justen <jordan.l.justen@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/boot/compressed/head_32.S |   14 +++++++++++---
- arch/x86/boot/compressed/head_64.S |   22 ++++++++++++++++------
- arch/x86/boot/tools/build.c        |   15 +++++++++++----
- 3 files changed, 38 insertions(+), 13 deletions(-)
-
---- a/arch/x86/boot/compressed/head_32.S
-+++ b/arch/x86/boot/compressed/head_32.S
-@@ -33,6 +33,9 @@
- 	__HEAD
- ENTRY(startup_32)
- #ifdef CONFIG_EFI_STUB
-+	jmp	preferred_addr
-+
-+	.balign	0x10
- 	/*
- 	 * We don't need the return address, so set up the stack so
- 	 * efi_main() can find its arugments.
-@@ -41,12 +44,17 @@ ENTRY(startup_32)
- 
- 	call	efi_main
- 	cmpl	$0, %eax
--	je	preferred_addr
- 	movl	%eax, %esi
--	call	1f
-+	jne	2f
- 1:
-+	/* EFI init failed, so hang. */
-+	hlt
-+	jmp	1b
-+2:
-+	call	3f
-+3:
- 	popl	%eax
--	subl	$1b, %eax
-+	subl	$3b, %eax
- 	subl	BP_pref_address(%esi), %eax
- 	add	BP_code32_start(%esi), %eax
- 	leal	preferred_addr(%eax), %eax
---- a/arch/x86/boot/compressed/head_64.S
-+++ b/arch/x86/boot/compressed/head_64.S
-@@ -200,18 +200,28 @@ ENTRY(startup_64)
- 	 * entire text+data+bss and hopefully all of memory.
- 	 */
- #ifdef CONFIG_EFI_STUB
--	pushq	%rsi
-+	/*
-+	 * The entry point for the PE/COFF executable is 0x210, so only
-+	 * legacy boot loaders will execute this jmp.
-+	 */
-+	jmp	preferred_addr
-+
-+	.org 0x210
- 	mov	%rcx, %rdi
- 	mov	%rdx, %rsi
- 	call	efi_main
--	popq	%rsi
--	cmpq	$0,%rax
--	je	preferred_addr
- 	movq	%rax,%rsi
--	call	1f
-+	cmpq	$0,%rax
-+	jne	2f
- 1:
-+	/* EFI init failed, so hang. */
-+	hlt
-+	jmp	1b
-+2:
-+	call	3f
-+3:
- 	popq	%rax
--	subq	$1b, %rax
-+	subq	$3b, %rax
- 	subq	BP_pref_address(%rsi), %rax
- 	add	BP_code32_start(%esi), %eax
- 	leaq	preferred_addr(%rax), %rax
---- a/arch/x86/boot/tools/build.c
-+++ b/arch/x86/boot/tools/build.c
-@@ -207,8 +207,13 @@ int main(int argc, char ** argv)
- 	put_unaligned_le32(file_sz, &buf[pe_header + 0x50]);
- 
- #ifdef CONFIG_X86_32
--	/* Address of entry point */
--	put_unaligned_le32(i, &buf[pe_header + 0x28]);
-+	/*
-+	 * Address of entry point.
-+	 *
-+	 * The EFI stub entry point is +16 bytes from the start of
-+	 * the .text section.
-+	 */
-+	put_unaligned_le32(i + 16, &buf[pe_header + 0x28]);
- 
- 	/* .text size */
- 	put_unaligned_le32(file_sz, &buf[pe_header + 0xb0]);
-@@ -219,9 +224,11 @@ int main(int argc, char ** argv)
- 	/*
- 	 * Address of entry point. startup_32 is at the beginning and
- 	 * the 64-bit entry point (startup_64) is always 512 bytes
--	 * after.
-+	 * after. The EFI stub entry point is 16 bytes after that, as
-+	 * the first instruction allows legacy loaders to jump over
-+	 * the EFI stub initialisation
- 	 */
--	put_unaligned_le32(i + 512, &buf[pe_header + 0x28]);
-+	put_unaligned_le32(i + 528, &buf[pe_header + 0x28]);
- 
- 	/* .text size */
- 	put_unaligned_le32(file_sz, &buf[pe_header + 0xc0]);
-
-
+Oh, and the motherboard has a gazillion different HW mux options, which
+affect, amongst many other things, which SD/eMMC/SDIO ports are usable
+on the motherboard, and which are routed to various daughter boards. I'm
+not actually 100% sure if the switches controlling those mux settings
+are readable from SW. I certainly hope so...
