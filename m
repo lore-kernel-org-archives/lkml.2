@@ -1,173 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552Ab2EDFXY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 01:23:24 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:57040 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751301Ab2EDFXU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 01:23:20 -0400
+	id S1751910Ab2EDFdq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 01:33:46 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:57327 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab2EDFdp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 01:33:45 -0400
+Date: Thu, 3 May 2012 22:33:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, yinghan@google.com,
+        kosaki.motohiro@jp.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: rcu: BUG on exit_group
+Message-ID: <20120504053331.GA16836@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CA+1xoqd_z8Zavzraq1oXVRpwkJRoac57tojBYf7x=Kzs+cbJ_w@mail.gmail.com>
+ <20120503154140.GA2592@linux.vnet.ibm.com>
+ <CA+1xoqepggR4YRzDXFz=Hk9EeXACMRyeXorQm7rE3r5MQyY6Fw@mail.gmail.com>
+ <20120503170101.GF2592@linux.vnet.ibm.com>
+ <CA+1xoqcXMVG0J4r8XhtzcxxDqLuyR30x5a3o8BsrBqDakDdHgg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120423015247.GA1119@localhost.amd.com>
-References: <1335143029.4927.45.camel@minggr>
-	<20120423015247.GA1119@localhost.amd.com>
-Date: Fri, 4 May 2012 13:23:19 +0800
-X-Google-Sender-Auth: yq0FynMc87kMXUbE7HpVPGQYmfc
-Message-ID: <CAF1ivSb+FWm6LUUA65em7mZSKiG0GSHEUe3VQgZ-TEuTjqoLcQ@mail.gmail.com>
-Subject: Re: [PATCH v3] ACPI: D3 states cleanup
-From: Lin Ming <ming.m.lin@intel.com>
-To: Aaron Lu <aaron.lu@amd.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, lenb <lenb@kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+1xoqcXMVG0J4r8XhtzcxxDqLuyR30x5a3o8BsrBqDakDdHgg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12050405-4242-0000-0000-0000018D892D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 9:52 AM, Aaron Lu <aaron.lu@amd.com> wrote:
-> On Mon, Apr 23, 2012 at 09:03:49AM +0800, Lin Ming wrote:
->> There are two ACPI D3 states defined now:
->> ACPI_STATE_D3 and ACPI_STATE_D3_COLD.
->>
->> But the uses of these states are not clear/correct in some code.
->> For example, some code refer ACPI_STATE_D3 as D3hot and others refer
->> it as D3cold.
->>
->> This patch introduces ACPI_STATE_D3_HOT to refer to ACPI D3hot state.
->> D3hot is only valid if _PR3 present.
->> And changes ACPI_STATE_D3 to refer to ACPI D3cold state only.
->> Also redefines ACPI_STATE_D3_COLD the same as ACPI_STATE_D3.
->>
->
-> Reviewed-by: Aaron Lu <aaron.lu@amd.com>
->
-> Thanks,
-> Aaron
->
->> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+On Fri, May 04, 2012 at 06:08:34AM +0200, Sasha Levin wrote:
+> On Thu, May 3, 2012 at 7:01 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Thu, May 03, 2012 at 05:55:14PM +0200, Sasha Levin wrote:
+> >> On Thu, May 3, 2012 at 5:41 PM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> > On Thu, May 03, 2012 at 10:57:19AM +0200, Sasha Levin wrote:
+> >> >> Hi Paul,
+> >> >>
+> >> >> I've hit a BUG similar to the schedule_tail() one when. It happened
+> >> >> when I've started fuzzing exit_group() syscalls, and all of the traces
+> >> >> are starting with exit_group() (there's a flood of them).
+> >> >>
+> >> >> I've verified that it indeed BUGs due to the rcu preempt count.
+> >> >
+> >> > Hello, Sasha,
+> >> >
+> >> > Which version of -next are you using?  I did some surgery on this
+> >> > yesterday based on some bugs Hugh Dickins tracked down, so if you
+> >> > are using something older, please move to the current -next.
+> >>
+> >> I'm using -next from today (3.4.0-rc5-next-20120503-sasha-00002-g09f55ae-dirty).
+> >
+> > Hmmm...  Looking at this more closely, it looks like there really is
+> > an attempt to acquire a mutex within an RCU read-side critical section,
+> > which is illegal.  Could you please bisect this?
+> 
+> Right, the issue is as you described, taking a mutex inside rcu_read_lock().
+> 
+> The offending commit is (I've cc'ed all parties from it):
+> 
+> commit adf79cc03092ee4aec70da10e91b05fb8116ac7b
+> Author: Ying Han <yinghan@google.com>
+> Date:   Thu May 3 15:44:01 2012 +1000
+> 
+>     memcg: add mlock statistic in memory.stat
+> 
+> With the issue there being is that in munlock_vma_page(), it now does
+> a mem_cgroup_begin_update_page_stat() which takes the rcu_read_lock(),
+> so when the older code that was there previously will try taking a
+> mutex you'll get a BUG.
 
-Len,
+Hmmm...  One approach would be to switch from rcu_read_lock() to
+srcu_read_lock(), though this means carrying the index returned from
+the srcu_read_lock() to the matching srcu_read_unlock() -- and making
+the update side use synchronize_srcu() rather than synchronize_rcu().
+Alternatively, it might be possible to defer acquiring the lock until
+after exiting the RCU read-side critical section, but I don't know enough
+about mm to even guess whether this might be possible.
 
-Will you apply this patch?
+There are probably other approaches as well...
 
-Thanks,
-Lin Ming
+							Thanx, Paul
 
->> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
->> ---
->>
->> v3: D3hot is only valid if _PR3 present
->>
->>  drivers/acpi/power.c   |    2 +-
->>  drivers/acpi/scan.c    |   17 +++++++----------
->>  drivers/pci/pci-acpi.c |    4 ++--
->>  include/acpi/actypes.h |    7 ++++---
->>  4 files changed, 14 insertions(+), 16 deletions(-)
->>
->> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
->> index 7049a7d..330bb4d 100644
->> --- a/drivers/acpi/power.c
->> +++ b/drivers/acpi/power.c
->> @@ -631,7 +631,7 @@ int acpi_power_get_inferred_state(struct acpi_device *device, int *state)
->>        * We know a device's inferred power state when all the resources
->>        * required for a given D-state are 'on'.
->>        */
->> -     for (i = ACPI_STATE_D0; i < ACPI_STATE_D3; i++) {
->> +     for (i = ACPI_STATE_D0; i < ACPI_STATE_D3_HOT; i++) {
->>               list = &device->power.states[i].resources;
->>               if (list->count < 1)
->>                       continue;
->> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
->> index 767e2dc..7417267 100644
->> --- a/drivers/acpi/scan.c
->> +++ b/drivers/acpi/scan.c
->> @@ -869,7 +869,7 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
->>       /*
->>        * Enumerate supported power management states
->>        */
->> -     for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3; i++) {
->> +     for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3_HOT; i++) {
->>               struct acpi_device_power_state *ps = &device->power.states[i];
->>               char object_name[5] = { '_', 'P', 'R', '0' + i, '\0' };
->>
->> @@ -884,21 +884,18 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
->>                               acpi_bus_add_power_resource(ps->resources.handles[j]);
->>               }
->>
->> -             /* The exist of _PR3 indicates D3Cold support */
->> -             if (i == ACPI_STATE_D3) {
->> -                     status = acpi_get_handle(device->handle, object_name, &handle);
->> -                     if (ACPI_SUCCESS(status))
->> -                             device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
->> -             }
->> -
->>               /* Evaluate "_PSx" to see if we can do explicit sets */
->>               object_name[2] = 'S';
->>               status = acpi_get_handle(device->handle, object_name, &handle);
->>               if (ACPI_SUCCESS(status))
->>                       ps->flags.explicit_set = 1;
->>
->> -             /* State is valid if we have some power control */
->> -             if (ps->resources.count || ps->flags.explicit_set)
->> +             /*
->> +              * State is valid if there are means to put the device into it.
->> +              * D3hot is only valid if _PR3 present.
->> +              */
->> +             if (ps->resources.count ||
->> +                 (ps->flags.explicit_set && i < ACPI_STATE_D3_HOT))
->>                       ps->flags.valid = 1;
->>
->>               ps->power = -1; /* Unknown - driver assigned */
->> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
->> index 0f150f2..1929c0c 100644
->> --- a/drivers/pci/pci-acpi.c
->> +++ b/drivers/pci/pci-acpi.c
->> @@ -200,7 +200,7 @@ static pci_power_t acpi_pci_choose_state(struct pci_dev *pdev)
->>               return PCI_D1;
->>       case ACPI_STATE_D2:
->>               return PCI_D2;
->> -     case ACPI_STATE_D3:
->> +     case ACPI_STATE_D3_HOT:
->>               return PCI_D3hot;
->>       case ACPI_STATE_D3_COLD:
->>               return PCI_D3cold;
->> @@ -223,7 +223,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->>               [PCI_D0] = ACPI_STATE_D0,
->>               [PCI_D1] = ACPI_STATE_D1,
->>               [PCI_D2] = ACPI_STATE_D2,
->> -             [PCI_D3hot] = ACPI_STATE_D3,
->> +             [PCI_D3hot] = ACPI_STATE_D3_HOT,
->>               [PCI_D3cold] = ACPI_STATE_D3
->>       };
->>       int error = -EINVAL;
->> diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
->> index eba6604..e8bcc47 100644
->> --- a/include/acpi/actypes.h
->> +++ b/include/acpi/actypes.h
->> @@ -499,9 +499,10 @@ typedef u64 acpi_integer;
->>  #define ACPI_STATE_D0                   (u8) 0
->>  #define ACPI_STATE_D1                   (u8) 1
->>  #define ACPI_STATE_D2                   (u8) 2
->> -#define ACPI_STATE_D3                   (u8) 3
->> -#define ACPI_STATE_D3_COLD              (u8) 4
->> -#define ACPI_D_STATES_MAX               ACPI_STATE_D3_COLD
->> +#define ACPI_STATE_D3_HOT               (u8) 3
->> +#define ACPI_STATE_D3                   (u8) 4
->> +#define ACPI_STATE_D3_COLD              ACPI_STATE_D3
->> +#define ACPI_D_STATES_MAX               ACPI_STATE_D3
->>  #define ACPI_D_STATE_COUNT              5
->>
->>  #define ACPI_STATE_C0                   (u8) 0
->> --
->> 1.7.2.5
->>
->>
->>
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
