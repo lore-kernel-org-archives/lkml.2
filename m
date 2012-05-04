@@ -1,140 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760589Ab2EDW5p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 18:57:45 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:29456 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760485Ab2EDW5n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 18:57:43 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-9.tower-160.messagelabs.com!1336172243!5563390!6
-X-Originating-IP: [216.166.12.98]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor jr3_pci driver to remove forward declarations
-Date: Fri, 4 May 2012 15:57:24 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	id S1760608Ab2EDXFW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 19:05:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60945 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753342Ab2EDXFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 19:05:19 -0400
+Message-ID: <4FA460AB.6060309@suse.cz>
+Date: Sat, 05 May 2012 01:05:15 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: linux arch <linux-arch@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>,
+        "David S. Miller" <davem@davemloft.net>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 3/4] kbuild: link of vmlinux moved to a script
+References: <20120428205651.GA7426@merkur.ravnborg.org> <20120428205919.GC7442@merkur.ravnborg.org>
+In-Reply-To: <20120428205919.GC7442@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201205041557.24738.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the struct comedi_driver and associated variables to the
-end of the source. This is more typical of how other drivers are
-written and removes the need for the forward declarations.
+Hi Sam,
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Thanks a lot for this work and sorry for the delay.
 
----
+Dne 28.4.2012 22:59, Sam Ravnborg napsal(a):
+> +kallsymso=""
+> +kallsyms_vmlinux=""
+> +if [ -n "${CONFIG_KALLSYMS}" ]; then
+> +
+[...]
+> +
+> +	kallsymso=.tmp_kallsyms2.o
+> +	kallsyms_vmlinux=.tmp_vmlinux2
+> +
+> +	# step 1
+> +	vmlinux_link "" .tmp_vmlinux1
+> +	kallsyms .tmp_vmlinux1 .tmp_kallsyms1.o
+> +
+> +	# step 2
+> +	vmlinux_link .tmp_kallsyms1.o .tmp_vmlinux2
+> +	kallsyms .tmp_vmlinux2 .tmp_kallsyms2.o
+> +
+> +	# step 2a
+> +	if [ -n "${KALLSYMS_EXTRA_PASS}" ]; then
+> +		kallsymso=.tmp_kallsyms3.o
+> +		kallsyms_vmlinux=.tmp_vmlinux2
 
-diff --git a/drivers/staging/comedi/drivers/jr3_pci.c b/drivers/staging/comedi/drivers/jr3_pci.c
-index 114885d..9e21de0 100644
---- a/drivers/staging/comedi/drivers/jr3_pci.c
-+++ b/drivers/staging/comedi/drivers/jr3_pci.c
-@@ -59,28 +59,6 @@ Devices: [JR3] PCI force sensor board (jr3_pci)
- #define PCI_DEVICE_ID_JR3_3_CHANNEL 0x3113
- #define PCI_DEVICE_ID_JR3_4_CHANNEL 0x3114
- 
--static int jr3_pci_attach(struct comedi_device *dev,
--			  struct comedi_devconfig *it);
--static int jr3_pci_detach(struct comedi_device *dev);
--
--static struct comedi_driver driver_jr3_pci = {
--	.driver_name = "jr3_pci",
--	.module = THIS_MODULE,
--	.attach = jr3_pci_attach,
--	.detach = jr3_pci_detach,
--};
--
--static DEFINE_PCI_DEVICE_TABLE(jr3_pci_pci_table) = {
--	{ PCI_DEVICE(PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_1_CHANNEL) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_1_CHANNEL_NEW) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_2_CHANNEL) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_3_CHANNEL) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_4_CHANNEL) },
--	{0}
--};
--
--MODULE_DEVICE_TABLE(pci, jr3_pci_pci_table);
--
- struct jr3_pci_dev_private {
- 
- 	struct pci_dev *pci_dev;
-@@ -948,8 +926,6 @@ out:
- 	return result;
- }
- 
--MODULE_FIRMWARE("comedi/jr3pci.idm");
--
- static int jr3_pci_detach(struct comedi_device *dev)
- {
- 	int i;
-@@ -974,6 +950,13 @@ static int jr3_pci_detach(struct comedi_device *dev)
- 	return 0;
- }
- 
-+static struct comedi_driver driver_jr3_pci = {
-+	.driver_name	= "jr3_pci",
-+	.module		= THIS_MODULE,
-+	.attach		= jr3_pci_attach,
-+	.detach		= jr3_pci_detach,
-+};
-+
- static int __devinit driver_jr3_pci_pci_probe(struct pci_dev *dev,
- 					      const struct pci_device_id *ent)
- {
-@@ -985,10 +968,20 @@ static void __devexit driver_jr3_pci_pci_remove(struct pci_dev *dev)
- 	comedi_pci_auto_unconfig(dev);
- }
- 
-+static DEFINE_PCI_DEVICE_TABLE(jr3_pci_pci_table) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_1_CHANNEL) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_1_CHANNEL_NEW) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_2_CHANNEL) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_3_CHANNEL) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_4_CHANNEL) },
-+	{ 0 }
-+};
-+MODULE_DEVICE_TABLE(pci, jr3_pci_pci_table);
-+
- static struct pci_driver driver_jr3_pci_pci_driver = {
--	.id_table = jr3_pci_pci_table,
--	.probe = &driver_jr3_pci_pci_probe,
--	.remove = __devexit_p(&driver_jr3_pci_pci_remove)
-+	.id_table	= jr3_pci_pci_table,
-+	.probe		= driver_jr3_pci_pci_probe,
-+	.remove		= __devexit_p(driver_jr3_pci_pci_remove),
- };
- 
- static int __init driver_jr3_pci_init_module(void)
-@@ -1002,16 +995,16 @@ static int __init driver_jr3_pci_init_module(void)
- 	driver_jr3_pci_pci_driver.name = (char *)driver_jr3_pci.driver_name;
- 	return pci_register_driver(&driver_jr3_pci_pci_driver);
- }
-+module_init(driver_jr3_pci_init_module);
- 
- static void __exit driver_jr3_pci_cleanup_module(void)
- {
- 	pci_unregister_driver(&driver_jr3_pci_pci_driver);
- 	comedi_driver_unregister(&driver_jr3_pci);
- }
--
--module_init(driver_jr3_pci_init_module);
- module_exit(driver_jr3_pci_cleanup_module);
- 
- MODULE_AUTHOR("Comedi http://www.comedi.org");
- MODULE_DESCRIPTION("Comedi low-level driver");
- MODULE_LICENSE("GPL");
-+MODULE_FIRMWARE("comedi/jr3pci.idm");
+This should read ".tmp_vmlinux3". Also, how about storing these two
+variables in the kallsyms() function instead? That way, you have the
+assignment in one place only and this block becomes a little simpler.
+
+This was the only error I spotted, it looks fine otherwise. Please
+resubmit with the above typo fixed (whether or not you move the variable
+assignments I leave up to you) and I'll add it to linux-next.
+
+Thanks,
+Michal
