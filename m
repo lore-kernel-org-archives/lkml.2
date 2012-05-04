@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747Ab2EDUsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:48:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57129 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932733Ab2EDUsG (ORCPT
+	id S932761Ab2EDUsP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:48:15 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932745Ab2EDUsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:48:06 -0400
-Message-Id: <20120504204245.193979697@linuxfoundation.org>
+	Fri, 4 May 2012 16:48:09 -0400
+Message-Id: <20120504204245.285839471@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:48 -0700
+Date: Fri, 04 May 2012 13:42:49 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Bryan ODonoghue <bryan.odonoghue@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 04/47] x86, apic: APIC code touches invalid MSR on P5 class machines
+        alan@lxorguk.ukuu.org.uk, Ian Kent <raven@themaw.net>
+Subject: [ 05/47] Revert "autofs: work around unhappy compat problem on x86-64"
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,88 +24,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan O'Donoghue <bryan.odonoghue@linux.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit cbf2829b61c136edcba302a5e1b6b40e97d32c00 upstream.
+commit fcbf94b9dedd2ce08e798a99aafc94fec8668161 upstream.
 
-Current APIC code assumes MSR_IA32_APICBASE is present for all systems.
-Pentium Classic P5 and friends didn't have this MSR. MSR_IA32_APICBASE
-was introduced as an architectural MSR by Intel @ P6.
+This reverts commit a32744d4abae24572eff7269bc17895c41bd0085.
 
-Code paths that can touch this MSR invalidly are when vendor == Intel &&
-cpu-family == 5 and APIC bit is set in CPUID - or when you simply pass
-lapic on the kernel command line, on a P5.
+While that commit was technically the right thing to do, and made the
+x86-64 compat mode work identically to native 32-bit mode (and thus
+fixing the problem with a 32-bit systemd install on a 64-bit kernel), it
+turns out that the automount binaries had workarounds for this compat
+problem.
 
-The below patch stops Linux incorrectly interfering with the
-MSR_IA32_APICBASE for P5 class machines. Other code paths exist that
-touch the MSR - however those paths are not currently reachable for a
-conformant P5.
+Now, the workarounds are disgusting: doing an "uname()" to find out the
+architecture of the kernel, and then comparing it for the 64-bit cases
+and fixing up the size of the read() in automount for those.  And they
+were confused: it's not actually a generic 64-bit issue at all, it's
+very much tied to just x86-64, which has different alignment for an
+'u64' in 64-bit mode than in 32-bit mode.
 
-Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linux.intel.com>
-Link: http://lkml.kernel.org/r/4F8EEDD3.1080404@linux.intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+But the end result is that fixing the compat layer actually breaks the
+case of a 32-bit automount on a x86-64 kernel.
+
+There are various approaches to fix this (including just doing a
+"strcmp()" on current->comm and comparing it to "automount"), but I
+think that I will do the one that teaches pipes about a special "packet
+mode", which will allow user space to not have to care too deeply about
+the padding at the end of the autofs packet.
+
+That change will make the compat workaround unnecessary, so let's revert
+it first, and get automount working again in compat mode.  The
+packetized pipes will then fix autofs for systemd.
+
+Reported-and-requested-by: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Ian Kent <raven@themaw.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/apic/apic.c |   34 ++++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 14 deletions(-)
+ fs/autofs4/autofs_i.h  |    1 -
+ fs/autofs4/dev-ioctl.c |    1 -
+ fs/autofs4/inode.c     |    2 --
+ fs/autofs4/waitq.c     |   20 ++------------------
+ 4 files changed, 2 insertions(+), 22 deletions(-)
 
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1558,9 +1558,11 @@ static int __init apic_verify(void)
- 	mp_lapic_addr = APIC_DEFAULT_PHYS_BASE;
- 
- 	/* The BIOS may have set up the APIC at some other address */
--	rdmsr(MSR_IA32_APICBASE, l, h);
--	if (l & MSR_IA32_APICBASE_ENABLE)
--		mp_lapic_addr = l & MSR_IA32_APICBASE_BASE;
-+	if (boot_cpu_data.x86 >= 6) {
-+		rdmsr(MSR_IA32_APICBASE, l, h);
-+		if (l & MSR_IA32_APICBASE_ENABLE)
-+			mp_lapic_addr = l & MSR_IA32_APICBASE_BASE;
-+	}
- 
- 	pr_info("Found and enabled local APIC!\n");
- 	return 0;
-@@ -1578,13 +1580,15 @@ int __init apic_force_enable(unsigned lo
- 	 * MSR. This can only be done in software for Intel P6 or later
- 	 * and AMD K7 (Model > 1) or later.
- 	 */
--	rdmsr(MSR_IA32_APICBASE, l, h);
--	if (!(l & MSR_IA32_APICBASE_ENABLE)) {
--		pr_info("Local APIC disabled by BIOS -- reenabling.\n");
--		l &= ~MSR_IA32_APICBASE_BASE;
--		l |= MSR_IA32_APICBASE_ENABLE | addr;
--		wrmsr(MSR_IA32_APICBASE, l, h);
--		enabled_via_apicbase = 1;
-+	if (boot_cpu_data.x86 >= 6) {
-+		rdmsr(MSR_IA32_APICBASE, l, h);
-+		if (!(l & MSR_IA32_APICBASE_ENABLE)) {
-+			pr_info("Local APIC disabled by BIOS -- reenabling.\n");
-+			l &= ~MSR_IA32_APICBASE_BASE;
-+			l |= MSR_IA32_APICBASE_ENABLE | addr;
-+			wrmsr(MSR_IA32_APICBASE, l, h);
-+			enabled_via_apicbase = 1;
-+		}
+--- a/fs/autofs4/autofs_i.h
++++ b/fs/autofs4/autofs_i.h
+@@ -120,7 +120,6 @@ struct autofs_sb_info {
+ 	int sub_version;
+ 	int min_proto;
+ 	int max_proto;
+-	int compat_daemon;
+ 	unsigned long exp_timeout;
+ 	unsigned int type;
+ 	int reghost_enabled;
+--- a/fs/autofs4/dev-ioctl.c
++++ b/fs/autofs4/dev-ioctl.c
+@@ -385,7 +385,6 @@ static int autofs_dev_ioctl_setpipefd(st
+ 		sbi->pipefd = pipefd;
+ 		sbi->pipe = pipe;
+ 		sbi->catatonic = 0;
+-		sbi->compat_daemon = is_compat_task();
  	}
- 	return apic_verify();
+ out:
+ 	mutex_unlock(&sbi->wq_mutex);
+--- a/fs/autofs4/inode.c
++++ b/fs/autofs4/inode.c
+@@ -19,7 +19,6 @@
+ #include <linux/parser.h>
+ #include <linux/bitops.h>
+ #include <linux/magic.h>
+-#include <linux/compat.h>
+ #include "autofs_i.h"
+ #include <linux/module.h>
+ 
+@@ -225,7 +224,6 @@ int autofs4_fill_super(struct super_bloc
+ 	set_autofs_type_indirect(&sbi->type);
+ 	sbi->min_proto = 0;
+ 	sbi->max_proto = 0;
+-	sbi->compat_daemon = is_compat_task();
+ 	mutex_init(&sbi->wq_mutex);
+ 	spin_lock_init(&sbi->fs_lock);
+ 	sbi->queues = NULL;
+--- a/fs/autofs4/waitq.c
++++ b/fs/autofs4/waitq.c
+@@ -91,23 +91,6 @@ static int autofs4_write(struct file *fi
+ 	return (bytes > 0);
  }
-@@ -2112,10 +2116,12 @@ static void lapic_resume(void)
- 		 * FIXME! This will be wrong if we ever support suspend on
- 		 * SMP! We'll need to do this as part of the CPU restore!
- 		 */
--		rdmsr(MSR_IA32_APICBASE, l, h);
--		l &= ~MSR_IA32_APICBASE_BASE;
--		l |= MSR_IA32_APICBASE_ENABLE | mp_lapic_addr;
--		wrmsr(MSR_IA32_APICBASE, l, h);
-+		if (boot_cpu_data.x86 >= 6) {
-+			rdmsr(MSR_IA32_APICBASE, l, h);
-+			l &= ~MSR_IA32_APICBASE_BASE;
-+			l |= MSR_IA32_APICBASE_ENABLE | mp_lapic_addr;
-+			wrmsr(MSR_IA32_APICBASE, l, h);
-+		}
- 	}
  
- 	maxlvt = lapic_get_maxlvt();
+-/*
+- * The autofs_v5 packet was misdesigned.
+- *
+- * The packets are identical on x86-32 and x86-64, but have different
+- * alignment. Which means that 'sizeof()' will give different results.
+- * Fix it up for the case of running 32-bit user mode on a 64-bit kernel.
+- */
+-static noinline size_t autofs_v5_packet_size(struct autofs_sb_info *sbi)
+-{
+-	size_t pktsz = sizeof(struct autofs_v5_packet);
+-#if defined(CONFIG_X86_64) && defined(CONFIG_COMPAT)
+-	if (sbi->compat_daemon > 0)
+-		pktsz -= 4;
+-#endif
+-	return pktsz;
+-}
+-
+ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
+ 				 struct autofs_wait_queue *wq,
+ 				 int type)
+@@ -164,7 +147,8 @@ static void autofs4_notify_daemon(struct
+ 	{
+ 		struct autofs_v5_packet *packet = &pkt.v5_pkt.v5_packet;
+ 
+-		pktsz = autofs_v5_packet_size(sbi);
++		pktsz = sizeof(*packet);
++
+ 		packet->wait_queue_token = wq->wait_queue_token;
+ 		packet->len = wq->name.len;
+ 		memcpy(packet->name, wq->name.name, wq->name.len);
 
 
