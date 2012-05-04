@@ -1,233 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751049Ab2EDE0w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 00:26:52 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59724 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab2EDE0v (ORCPT
+	id S1751159Ab2EDE2E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 00:28:04 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:60284 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750747Ab2EDE2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 00:26:51 -0400
-X-AuditID: 9c930197-b7badae000000cfd-bf-4fa35a881fa9
-Message-ID: <4FA35A85.4070804@kernel.org>
-Date: Fri, 04 May 2012 13:26:45 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: Pekka Enberg <penberg@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 3/3] vmevent: Implement special low-memory attribute
-References: <20120501132409.GA22894@lizard> <20120501132620.GC24226@lizard>
-In-Reply-To: <20120501132620.GC24226@lizard>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 4 May 2012 00:28:03 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/Ed5gx7xzEQ9/GYuwN1p9lQOT95UEtWxc0lKcvcd
+	V6qgTtLTALvJtx
+Message-ID: <1336105676.7356.42.camel@marge.simpson.net>
+Subject: Re: [PATCH]  Re: [RFC PATCH] namespaces: fix leak on fork() failure
+From: Mike Galbraith <efault@gmx.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>
+Date: Fri, 04 May 2012 06:27:56 +0200
+In-Reply-To: <1336057018.8119.46.camel@marge.simpson.net>
+References: <1335604790.5995.22.camel@marge.simpson.net>
+	 <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org>
+	 <20120429165846.GA19054@redhat.com>
+	 <1335754867.17899.4.camel@marge.simpson.net>
+	 <m1zk9rmyh4.fsf@fess.ebiederm.org>
+	 <20120501134214.f6b44f4a.akpm@linux-foundation.org>
+	 <1336014721.7370.32.camel@marge.simpson.net>
+	 <1336057018.8119.46.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2012 10:26 PM, Anton Vorontsov wrote:
+Namespaces have something in common with cgroups.  synchronize_rcu()
+makes them somewhat less than wonderful for dynamic use.
 
-> This is specially "blended" attribute, the event triggers when kernel
-> decides that we're close to the low memory threshold. Userspace should
-> not expect very precise meaning of low memory situation, mostly, it's
-> just a guess on the kernel's side.
-> 
-> Well, this is the same as userland should not know or care how exactly
-> kernel manages the memory, or assume that memory management behaviour
-> is a part of the "ABI". So, all the 'low memory' is just guessing, but
-> we're trying to do our best. It might be that we will end up with two
-> or three variations of 'low memory' thresholds, and all of them would
+default flags = SIGCHLD
 
+-namespace:  flag |= CLONE_NEWPID 
+-all:  flags |= CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWUSER
 
-First of all, your calculation for available pages is very simple and 
-it's very specific of recent mobile phone.
-But recent systems have various devices.
-For example,
+marge:/usr/local/tmp/starvation # ./hackbench
+Running with 10*40 (== 400) tasks.
+Time: 2.636
+marge:/usr/local/tmp/starvation # ./hackbench -namespace
+Running with 10*40 (== 400) tasks.
+Time: 11.624
+marge:/usr/local/tmp/starvation # ./hackbench -namespace -all
+Running with 10*40 (== 400) tasks.
+Time: 51.474
 
-SSD : very fast server SSD which has lots of internal ram so that write is very fast.
-thumb usb : very slow whihc has small ram 
+You can create trash quickly, but you have to haul it away.
 
-1) We can consider anon pages and dirty pages as available pages.
+-Mike
 
-       	SSD 	thumb usb	
-rootfs 	 0
-swap	 0
-
-2) We can consider anon pages as available pages but dirty page doesn't
-
-       	SSD 	thumb usb	
-rootfs		   O 	 
-swap	 0
-
-3) We can consider dirty pages as available pages but anon doesn't
-
-       	SSD 	thumb usb	
-rootfs 	 O
-swap	 	   O
-
-4) We can't consider dirty pages and anon pages as available pages
-
-       	SSD 	thumb usb	
-rootfs 	 	   0
-swap	 	   0
-
-5) If we use zram as swap?
-6) Another idea. If we use both zram and swap device(eMMC), then when zram is full,
-   we writes zram pages into swap device with align cluster size?
-
-I mean we can select various option to define low memory state.
-
-> be useful for different use cases.
-
-
-Why should we do it in kernel side?
-If vmevent will have VMEVENT_ATTR_[FILE|MOCK|DIRTY|WRITEBACK|SHMEM|ANON|SWAP]_PAGES
-and so on which is needed by calculation, we can calculate it in userspace without
-forking /proc/vmstat to see it. So I think there is no problem to do it in userspace.
-
-And even though we can solve above problem, it is possible to show up another new "blended" attribute
-in future and it will suffer same problem, again. So IMHO, let's leave vmevent as it is which is 
-very raw attribute and let's do blended attribute in user space.
-
-> 
-> For this implementation, we assume that there's a low memory situation
-> for the N pages threshold when we have neither N pages of completely
-> free pages, nor we have N reclaimable pages in the cache. This
-> effectively means, that if userland expects to allocate N pages, it
-> would consume all the free pages, and any further allocations (above
-> N) would start draining caches.
-> 
-> In the worst case, prior to hitting the threshold, we might have only
-> N pages in cache, and nearly no memory as free pages.
-> 
-> The same 'low memory' meaning is used in the current Android Low
-> Memory Killer driver.
-> 
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-> ---
->  include/linux/vmevent.h              |    7 ++++++
->  mm/vmevent.c                         |   40 ++++++++++++++++++++++++++++++++++
->  tools/testing/vmevent/vmevent-test.c |   12 +++++++++-
->  3 files changed, 58 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/vmevent.h b/include/linux/vmevent.h
-> index aae0d24..9bfa244 100644
-> --- a/include/linux/vmevent.h
-> +++ b/include/linux/vmevent.h
-> @@ -10,6 +10,13 @@ enum {
->  	VMEVENT_ATTR_NR_AVAIL_PAGES	= 1UL,
->  	VMEVENT_ATTR_NR_FREE_PAGES	= 2UL,
->  	VMEVENT_ATTR_NR_SWAP_PAGES	= 3UL,
-> +	/*
-> +	 * This is specially blended attribute, the event triggers
-> +	 * when kernel decides that we're close to the low memory threshold.
-> +	 * Don't expect very precise meaning of low memory situation, mostly,
-> +	 * it's just a guess on the kernel's side.
-> +	 */
-> +	VMEVENT_ATTR_LOWMEM_PAGES	= 4UL,
->  
->  	VMEVENT_ATTR_MAX		/* non-ABI */
->  };
-> diff --git a/mm/vmevent.c b/mm/vmevent.c
-> index b312236..d278a25 100644
-> --- a/mm/vmevent.c
-> +++ b/mm/vmevent.c
-> @@ -68,10 +68,50 @@ static u64 vmevent_attr_avail_pages(struct vmevent_watch *watch,
->  	return totalram_pages;
->  }
->  
-> +/*
-> + * Here's some implementation details for the "low memory" meaning.
-> + *
-> + * (The explanation is not in the header file as userland should not
-> + * know these details, nor it should assume that the meaning will
-> + * always be the same. As well as it should not know how exactly kernel
-> + * manages the memory, or assume that memory management behaviour is a
-> + * part of the "ABI". So, all the 'low memory' is just guessing, but
-> + * we're trying to do our best.)
-> + *
-> + * For this implementation, we assume that there's a low memory situation
-> + * for the N pages threshold when we have neither N pages of completely
-> + * free pages, nor we have N reclaimable pages in the cache. This
-> + * effectively means, that if userland expects to allocate N pages, it
-> + * would consume all the free pages, and any further allocations (above
-> + * N) would start draining caches.
-> + *
-> + * In the worst case, prior hitting the threshold, we might have only
-> + * N pages in cache, and nearly no memory as free pages.
-> + */
-> +static u64 vmevent_attr_lowmem_pages(struct vmevent_watch *watch,
-> +				     struct vmevent_attr *attr)
-> +{
-> +	int free = global_page_state(NR_FREE_PAGES);
-> +	int file = global_page_state(NR_FILE_PAGES) -
-> +		   global_page_state(NR_SHMEM); /* TODO: account locked pages */
-> +	int val = attr->value;
-> +
-> +	/*
-> +	 * For convenience we return 0 or attr value (instead of 0/1), it
-> +	 * makes it easier for vmevent_match() to cope with blended
-> +	 * attributes, plus userland might use the value to find out which
-> +	 * threshold triggered.
-> +	 */
-> +	if (free < val && file < val)
-> +		return val;
-> +	return 0;
-> +}
-> +
->  static vmevent_attr_sample_fn attr_samplers[] = {
->  	[VMEVENT_ATTR_NR_AVAIL_PAGES]   = vmevent_attr_avail_pages,
->  	[VMEVENT_ATTR_NR_FREE_PAGES]    = vmevent_attr_free_pages,
->  	[VMEVENT_ATTR_NR_SWAP_PAGES]    = vmevent_attr_swap_pages,
-> +	[VMEVENT_ATTR_LOWMEM_PAGES]     = vmevent_attr_lowmem_pages,
->  };
->  
->  static u64 vmevent_sample_attr(struct vmevent_watch *watch, struct vmevent_attr *attr)
-> diff --git a/tools/testing/vmevent/vmevent-test.c b/tools/testing/vmevent/vmevent-test.c
-> index fd9a174..c61aed7 100644
-> --- a/tools/testing/vmevent/vmevent-test.c
-> +++ b/tools/testing/vmevent/vmevent-test.c
-> @@ -33,7 +33,7 @@ int main(int argc, char *argv[])
->  
->  	config = (struct vmevent_config) {
->  		.sample_period_ns	= 1000000000L,
-> -		.counter		= 6,
-> +		.counter		= 7,
->  		.attrs			= {
->  			{
->  				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
-> @@ -59,6 +59,13 @@ int main(int argc, char *argv[])
->  				.type	= VMEVENT_ATTR_NR_SWAP_PAGES,
->  			},
->  			{
-> +				.type	= VMEVENT_ATTR_LOWMEM_PAGES,
-> +				.state	= VMEVENT_ATTR_STATE_VALUE_LT |
-> +					  VMEVENT_ATTR_STATE_VALUE_EQ |
-> +					  VMEVENT_ATTR_STATE_ONE_SHOT,
-> +				.value	= phys_pages / 2,
-> +			},
-> +			{
->  				.type	= 0xffff, /* invalid */
->  			},
->  		},
-> @@ -108,6 +115,9 @@ int main(int argc, char *argv[])
->  			case VMEVENT_ATTR_NR_SWAP_PAGES:
->  				printf("  VMEVENT_ATTR_NR_SWAP_PAGES: %Lu\n", attr->value);
->  				break;
-> +			case VMEVENT_ATTR_LOWMEM_PAGES:
-> +				printf("  VMEVENT_ATTR_LOWMEM_PAGES: %Lu\n", attr->value);
-> +				break;
->  			default:
->  				printf("  Unknown attribute: %Lu\n", attr->value);
->  			}
-
-
-
--- 
-Kind regards,
-Minchan Kim
