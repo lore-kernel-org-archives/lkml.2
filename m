@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760702Ab2EDXwF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 19:52:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:30340 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758151Ab2EDXwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 19:52:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="139103666"
-Subject: RE: [PATCH] sched: Enable arch-specific asym packing option in
- sched domain
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Diwakar Tundlam <dtundlam@nvidia.com>
-Cc: "'Peter Zijlstra'" <a.p.zijlstra@chello.nl>,
-        "'Ingo Molnar'" <mingo@kernel.org>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Christoph Lameter'" <cl@gentwo.org>,
-        "'Michael Neuling'" <mikey@neuling.org>,
-        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        "'David Rientjes'" <rientjes@google.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Date: Fri, 04 May 2012 16:55:18 -0700
-In-Reply-To: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF103@HQMAIL04.nvidia.com>
-References: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF0FF@HQMAIL04.nvidia.com>
-	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF101@HQMAIL04.nvidia.com>
-	 <1336169422.16236.1.camel@twins>
-	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF102@HQMAIL04.nvidia.com>
-	 <1336170586.16236.11.camel@twins>
-	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF103@HQMAIL04.nvidia.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1336175718.16162.16.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1760716Ab2EDXwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 19:52:51 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42298 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758151Ab2EDXwt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 19:52:49 -0400
+Date: Sat, 5 May 2012 00:52:25 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@ardb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        linux-embedded@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Handling of modular boards
+Message-ID: <20120504235225.GN897@n2100.arm.linux.org.uk>
+References: <20120504185850.GO14230@opensource.wolfsonmicro.com> <20120504225514.GM897@n2100.arm.linux.org.uk> <20120504234056.GV14230@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120504234056.GV14230@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-04 at 16:18 -0700, Diwakar Tundlam wrote:
-> Yes, this is for Nvidia's ARM Quad-core Tegra CPU. It is a single package, organized flatly.
-> To save power, we want cores to be loaded up in order from cpu0, 1, etc.
-> The ASYM_PACKING flag seems to do exactly what we need if set in the domain flag.
+On Sat, May 05, 2012 at 12:40:57AM +0100, Mark Brown wrote:
+> On Fri, May 04, 2012 at 11:55:14PM +0100, Russell King - ARM Linux wrote:
+> > On Fri, May 04, 2012 at 07:58:51PM +0100, Mark Brown wrote:
+> 
+> > > I'm just starting to put some stuff together for this so I was wondering
+> > > if anyone had been thinking about this and had any bright ideas for how
+> > > to handle it, and also if people think that MFD is a good fit for this
+> > > or if we should split the silicon MFDs from these PCBs.
+> 
+> > I don't think its true to say that there's no support for this kind of
+> > thing.
+> 
+> > If you're thinking about a motherboard with separate add-on cards, then
+> > you can view the cards as their own separate platform device.  Your
+> > platform device driver would be a "whole board driver" responsible
+> > for creating and registering the specific devices found on the board
+> > in its probe function, and unregistering them in the remove function.
+> 
+> Oh, absolutely - there's support there at that level and several boards
+> doing some or all of this in mainline already.  It's not that you can't
+> do it, it's that there's a bunch of generic stuff to do with how you map
+> the resources through to the devices on the modules and describe the
+> chips that are on the modules for which there's no infrastructure so
+> everything needs to be hand coded on a per board basis.  The board
+> identification bits are board specific but the remapping and subdevice
+> instantiation bits seem like they shouldn't be.
 
-Diwakar, But ASYM_PACKING will lead to more task migrations and also it
-relies on the periodic load balancing to correct it.
+How about this - we have struct platform_device_info, which is used to
+create platform devices.  We can use this as an array to describe what
+platform devices to create in the sub-driver, including what the resources
+should be etc.
 
-Perhaps we should expose this info more natively and prefer the lower
-siblings during task wakeup etc. And perhaps be more aggressive in
-moving the load to lower siblings etc.
+However, there's a problem with this - what if you need to do some board
+level init before hand?  That needs to be handled somehow before these
+devices are instantiated.  That could be done via a callback through
+platform data.
 
-Can you elaborate more about the power-saving scenario and what causes
-the power-savings etc to better understand the problem.
+But... this all seems wrong, because rather than having a driver which
+knows about the details of the board, we now have all the details of the
+board in question back in platform code which originally declared the
+board device.  That's wrong, because a daughter board may be shared
+between different platforms, and we don't want multiple copies of that
+data all around the place.
 
-thanks,
-suresh
+I don't think there's an easy or generic solution to this.
 
-
-
-
+The best I can think of is ACPI, where they _do_ handle devices and
+such like coming and going dynamically (I know this, it happens to my
+serial and printer ports every time I dock and undock the laptop - and
+stock Linux doesn't support that.  Which reminds me I need to get those
+patches properly prepared and submitted...)  I'd assume that it also
+deals with PCI bridges and buses behind that if you have one of those
+docking stations too (I don't)...
