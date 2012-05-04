@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924Ab2EDU5c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:57:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932877Ab2EDUtG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:49:06 -0400
-Message-Id: <20120504204246.865253021@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:07 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chen Peter-B29397 <B29397@freescale.com>,
-        Ramneek Mehresh <ramneek.mehresh@freescale.com>,
-        Peter Chen <peter.chen@freescale.com>
-Subject: [ 23/47] [PATCH] Revert "usb: Fix build error due to dma_mask is not at
- pdev_archdata at ARM"
-In-Reply-To: <20120504204307.GA13761@kroah.com>
+	id S932480Ab2EDU5a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:57:30 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55730 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932879Ab2EDUtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 16:49:07 -0400
+From: <manjunatha_halli@ti.com>
+To: <linux-media@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Manjunatha Halli <x0130808@ti.com>
+Subject: [PATCH V4 3/5] Add new CID for FM TX RDS Alternate Frequency
+Date: Fri, 4 May 2012 15:49:00 -0500
+Message-ID: <1336164542-11014-4-git-send-email-manjunatha_halli@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1336164542-11014-1-git-send-email-manjunatha_halli@ti.com>
+References: <1336164542-11014-1-git-send-email-manjunatha_halli@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+From: Manjunatha Halli <x0130808@ti.com>
 
-------------------
-
-This reverts commit d39514c14bd941232976b68e2750dc725b90e724 which is
-e90fc3cb087ce5c5f81e814358222cd6d197b5db upstream as it causes oopses on
-some ppc systems.
-
-Reported-by: Chen Peter-B29397 <B29397@freescale.com>
-Cc: Ramneek Mehresh <ramneek.mehresh@freescale.com>
-Cc: Peter Chen <peter.chen@freescale.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Manjunatha Halli <x0130808@ti.com>
 ---
- drivers/usb/host/fsl-mph-dr-of.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/video/v4l2-ctrls.c |    1 +
+ include/linux/videodev2.h        |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
---- a/drivers/usb/host/fsl-mph-dr-of.c
-+++ b/drivers/usb/host/fsl-mph-dr-of.c
-@@ -93,6 +93,7 @@ struct platform_device * __devinit fsl_u
- 	pdev->dev.parent = &ofdev->dev;
+diff --git a/drivers/media/video/v4l2-ctrls.c b/drivers/media/video/v4l2-ctrls.c
+index 9d7608e..610076c 100644
+--- a/drivers/media/video/v4l2-ctrls.c
++++ b/drivers/media/video/v4l2-ctrls.c
+@@ -608,6 +608,7 @@ const char *v4l2_ctrl_get_name(u32 id)
+ 	case V4L2_CID_RDS_TX_PTY:		return "RDS Program Type";
+ 	case V4L2_CID_RDS_TX_PS_NAME:		return "RDS PS Name";
+ 	case V4L2_CID_RDS_TX_RADIO_TEXT:	return "RDS Radio Text";
++	case V4L2_CID_RDS_TX_AF_FREQ:		return "RDS Alternate Frequency";
+ 	case V4L2_CID_AUDIO_LIMITER_ENABLED:	return "Audio Limiter Feature Enabled";
+ 	case V4L2_CID_AUDIO_LIMITER_RELEASE_TIME: return "Audio Limiter Release Time";
+ 	case V4L2_CID_AUDIO_LIMITER_DEVIATION:	return "Audio Limiter Deviation";
+diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+index 534a3f1..e7a8e96 100644
+--- a/include/linux/videodev2.h
++++ b/include/linux/videodev2.h
+@@ -1699,6 +1699,7 @@ enum  v4l2_exposure_auto_type {
+ #define V4L2_CID_RDS_TX_PTY			(V4L2_CID_FM_TX_CLASS_BASE + 3)
+ #define V4L2_CID_RDS_TX_PS_NAME			(V4L2_CID_FM_TX_CLASS_BASE + 5)
+ #define V4L2_CID_RDS_TX_RADIO_TEXT		(V4L2_CID_FM_TX_CLASS_BASE + 6)
++#define V4L2_CID_RDS_TX_AF_FREQ			(V4L2_CID_FM_TX_CLASS_BASE + 7)
  
- 	pdev->dev.coherent_dma_mask = ofdev->dev.coherent_dma_mask;
-+	pdev->dev.dma_mask = &pdev->archdata.dma_mask;
- 	*pdev->dev.dma_mask = *ofdev->dev.dma_mask;
- 
- 	retval = platform_device_add_data(pdev, pdata, sizeof(*pdata));
-
+ #define V4L2_CID_AUDIO_LIMITER_ENABLED		(V4L2_CID_FM_TX_CLASS_BASE + 64)
+ #define V4L2_CID_AUDIO_LIMITER_RELEASE_TIME	(V4L2_CID_FM_TX_CLASS_BASE + 65)
+-- 
+1.7.4.1
 
