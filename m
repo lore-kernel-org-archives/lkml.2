@@ -1,176 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932768Ab2EDVDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:03:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57129 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932698Ab2EDUrz (ORCPT
+	id S932795Ab2EDVDx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:03:53 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:53995 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932749Ab2EDVDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:47:55 -0400
-Message-Id: <20120504204230.580609792@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:37 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 73/75] iwlwifi: use correct released ucode version
-In-Reply-To: <20120504204258.GA12552@kroah.com>
+	Fri, 4 May 2012 17:03:50 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: Handling of modular boards
+Date: Fri, 4 May 2012 21:03:34 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: Wolfgang Denk <wd@denx.de>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-embedded@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Igor Grinberg <grinberg@compulab.co.il>,
+        Olof Johansson <olof@lixom.net>, Lee Jones <lee.jones@linaro.org>
+References: <20120504185850.GO14230@opensource.wolfsonmicro.com> <201205042039.25794.arnd@arndb.de> <20120504205441.D293120645E@gemini.denx.de>
+In-Reply-To: <20120504205441.D293120645E@gemini.denx.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205042103.34285.arnd@arndb.de>
+X-Provags-ID: V02:K0:/ZJ+c8iM/moKkzxpg5bbLAGqAgf+ym2o95Kf+LNU0DF
+ q769YhAE0JbxN2pdpKNjMwUyv73nvgqgsN7I7H2zi1v3woRKTa
+ ADc+8ULTWXZ6ks0rtNH0PKORKcxxTFi7uY9/ukfZ+KHeNLQlFT
+ eOqFHoTYx7Y0EZ+B/wV+7vYJGVU61NQaJgdGx7eI7uLdh2IM26
+ sVlkh4HQGtYbAvWcyXQFmPU3sorQcQEgGuLAhzxW9xgj7pHqN0
+ P86ti4xQWzyHcRzd4DeeQjoSDraK5PCO0yIglusiqJ3RwYImSX
+ ky4AGiT7q4CIxjRZLUAom8RfuEac4gQAtbVWrnf4uWSl5ent27
+ dTsosOtb9MgfRfem/GAE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On Friday 04 May 2012, Wolfgang Denk wrote:
+> There are systems (and I bet it will be a growing number) where U-Boot
+> itself uses the DT for configuration.  Also, there are functions that
+> are needed both by the boot loader and the kernel - for example to
+> dislay a splash screen the boot loader needs to initialize the
+> display, so it must be able to detect which type of LCD is attached
+> (resolution, color-depth, orientation) - the device tree comes in very
+> handy here.  Why should Linux re-do all such things?
 
-------------------
+Sure, there are a lot of things that the boot loader can use from the
+device tree, but I'm not sure if the LCD panel connection fits into
+the same category as the devices that Mark was thinking of.
 
-From: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
+Anyway, display controllers are definitely something that needs to
+be handled in some way, which may or may not be the same way we
+handle more complex collections of arbitrary devices.
 
-commit 78cbcf2b9dbe0565820dc7721316f9c401000a68 upstream.
-
-Report correctly the latest released version
-of the iwlwifi firmware for all
-iwlwifi-supported devices.
-
-Signed-off-by: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/wireless/iwlwifi/iwl-1000.c |    8 ++++----
- drivers/net/wireless/iwlwifi/iwl-2000.c |   16 ++++++++--------
- drivers/net/wireless/iwlwifi/iwl-5000.c |   11 +++++++++--
- drivers/net/wireless/iwlwifi/iwl-6000.c |   10 ++++++----
- 4 files changed, 27 insertions(+), 18 deletions(-)
-
---- a/drivers/net/wireless/iwlwifi/iwl-1000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-1000.c
-@@ -45,8 +45,8 @@
- #include "iwl-cfg.h"
- 
- /* Highest firmware API version supported */
--#define IWL1000_UCODE_API_MAX 6
--#define IWL100_UCODE_API_MAX 6
-+#define IWL1000_UCODE_API_MAX 5
-+#define IWL100_UCODE_API_MAX 5
- 
- /* Oldest version we won't warn about */
- #define IWL1000_UCODE_API_OK 5
-@@ -235,5 +235,5 @@ struct iwl_cfg iwl100_bg_cfg = {
- 	IWL_DEVICE_100,
- };
- 
--MODULE_FIRMWARE(IWL1000_MODULE_FIRMWARE(IWL1000_UCODE_API_MAX));
--MODULE_FIRMWARE(IWL100_MODULE_FIRMWARE(IWL100_UCODE_API_MAX));
-+MODULE_FIRMWARE(IWL1000_MODULE_FIRMWARE(IWL1000_UCODE_API_OK));
-+MODULE_FIRMWARE(IWL100_MODULE_FIRMWARE(IWL100_UCODE_API_OK));
---- a/drivers/net/wireless/iwlwifi/iwl-2000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-2000.c
-@@ -51,10 +51,10 @@
- #define IWL135_UCODE_API_MAX 6
- 
- /* Oldest version we won't warn about */
--#define IWL2030_UCODE_API_OK 5
--#define IWL2000_UCODE_API_OK 5
--#define IWL105_UCODE_API_OK 5
--#define IWL135_UCODE_API_OK 5
-+#define IWL2030_UCODE_API_OK 6
-+#define IWL2000_UCODE_API_OK 6
-+#define IWL105_UCODE_API_OK 6
-+#define IWL135_UCODE_API_OK 6
- 
- /* Lowest firmware API version supported */
- #define IWL2030_UCODE_API_MIN 5
-@@ -338,7 +338,7 @@ struct iwl_cfg iwl135_bgn_cfg = {
- 	.ht_params = &iwl2000_ht_params,
- };
- 
--MODULE_FIRMWARE(IWL2000_MODULE_FIRMWARE(IWL2000_UCODE_API_MAX));
--MODULE_FIRMWARE(IWL2030_MODULE_FIRMWARE(IWL2030_UCODE_API_MAX));
--MODULE_FIRMWARE(IWL105_MODULE_FIRMWARE(IWL105_UCODE_API_MAX));
--MODULE_FIRMWARE(IWL135_MODULE_FIRMWARE(IWL135_UCODE_API_MAX));
-+MODULE_FIRMWARE(IWL2000_MODULE_FIRMWARE(IWL2000_UCODE_API_OK));
-+MODULE_FIRMWARE(IWL2030_MODULE_FIRMWARE(IWL2030_UCODE_API_OK));
-+MODULE_FIRMWARE(IWL105_MODULE_FIRMWARE(IWL105_UCODE_API_OK));
-+MODULE_FIRMWARE(IWL135_MODULE_FIRMWARE(IWL135_UCODE_API_OK));
---- a/drivers/net/wireless/iwlwifi/iwl-5000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
-@@ -50,6 +50,10 @@
- #define IWL5000_UCODE_API_MAX 5
- #define IWL5150_UCODE_API_MAX 2
- 
-+/* Oldest version we won't warn about */
-+#define IWL5000_UCODE_API_OK 5
-+#define IWL5150_UCODE_API_OK 2
-+
- /* Lowest firmware API version supported */
- #define IWL5000_UCODE_API_MIN 1
- #define IWL5150_UCODE_API_MIN 1
-@@ -359,6 +363,7 @@ static struct iwl_ht_params iwl5000_ht_p
- #define IWL_DEVICE_5000						\
- 	.fw_name_pre = IWL5000_FW_PRE,				\
- 	.ucode_api_max = IWL5000_UCODE_API_MAX,			\
-+	.ucode_api_ok = IWL5000_UCODE_API_OK,			\
- 	.ucode_api_min = IWL5000_UCODE_API_MIN,			\
- 	.eeprom_ver = EEPROM_5000_EEPROM_VERSION,		\
- 	.eeprom_calib_ver = EEPROM_5000_TX_POWER_VERSION,	\
-@@ -402,6 +407,7 @@ struct iwl_cfg iwl5350_agn_cfg = {
- 	.name = "Intel(R) WiMAX/WiFi Link 5350 AGN",
- 	.fw_name_pre = IWL5000_FW_PRE,
- 	.ucode_api_max = IWL5000_UCODE_API_MAX,
-+	.ucode_api_ok = IWL5000_UCODE_API_OK,
- 	.ucode_api_min = IWL5000_UCODE_API_MIN,
- 	.eeprom_ver = EEPROM_5050_EEPROM_VERSION,
- 	.eeprom_calib_ver = EEPROM_5050_TX_POWER_VERSION,
-@@ -415,6 +421,7 @@ struct iwl_cfg iwl5350_agn_cfg = {
- #define IWL_DEVICE_5150						\
- 	.fw_name_pre = IWL5150_FW_PRE,				\
- 	.ucode_api_max = IWL5150_UCODE_API_MAX,			\
-+	.ucode_api_ok = IWL5150_UCODE_API_OK,			\
- 	.ucode_api_min = IWL5150_UCODE_API_MIN,			\
- 	.eeprom_ver = EEPROM_5050_EEPROM_VERSION,		\
- 	.eeprom_calib_ver = EEPROM_5050_TX_POWER_VERSION,	\
-@@ -436,5 +443,5 @@ struct iwl_cfg iwl5150_abg_cfg = {
- 	IWL_DEVICE_5150,
- };
- 
--MODULE_FIRMWARE(IWL5000_MODULE_FIRMWARE(IWL5000_UCODE_API_MAX));
--MODULE_FIRMWARE(IWL5150_MODULE_FIRMWARE(IWL5150_UCODE_API_MAX));
-+MODULE_FIRMWARE(IWL5000_MODULE_FIRMWARE(IWL5000_UCODE_API_OK));
-+MODULE_FIRMWARE(IWL5150_MODULE_FIRMWARE(IWL5150_UCODE_API_OK));
---- a/drivers/net/wireless/iwlwifi/iwl-6000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
-@@ -53,6 +53,8 @@
- /* Oldest version we won't warn about */
- #define IWL6000_UCODE_API_OK 4
- #define IWL6000G2_UCODE_API_OK 5
-+#define IWL6050_UCODE_API_OK 5
-+#define IWL6000G2B_UCODE_API_OK 6
- 
- /* Lowest firmware API version supported */
- #define IWL6000_UCODE_API_MIN 4
-@@ -349,7 +351,7 @@ static struct iwl_bt_params iwl6000_bt_p
- #define IWL_DEVICE_6005						\
- 	.fw_name_pre = IWL6005_FW_PRE,				\
- 	.ucode_api_max = IWL6000G2_UCODE_API_MAX,		\
--	.ucode_api_ok = IWL6000G2_UCODE_API_OK,			\
-+	.ucode_api_ok = IWL6000G2B_UCODE_API_OK,		\
- 	.ucode_api_min = IWL6000G2_UCODE_API_MIN,		\
- 	.eeprom_ver = EEPROM_6005_EEPROM_VERSION,		\
- 	.eeprom_calib_ver = EEPROM_6005_TX_POWER_VERSION,	\
-@@ -548,6 +550,6 @@ struct iwl_cfg iwl6000_3agn_cfg = {
- };
- 
- MODULE_FIRMWARE(IWL6000_MODULE_FIRMWARE(IWL6000_UCODE_API_OK));
--MODULE_FIRMWARE(IWL6050_MODULE_FIRMWARE(IWL6050_UCODE_API_MAX));
--MODULE_FIRMWARE(IWL6005_MODULE_FIRMWARE(IWL6000G2_UCODE_API_MAX));
--MODULE_FIRMWARE(IWL6030_MODULE_FIRMWARE(IWL6000G2_UCODE_API_MAX));
-+MODULE_FIRMWARE(IWL6050_MODULE_FIRMWARE(IWL6050_UCODE_API_OK));
-+MODULE_FIRMWARE(IWL6005_MODULE_FIRMWARE(IWL6000G2_UCODE_API_OK));
-+MODULE_FIRMWARE(IWL6030_MODULE_FIRMWARE(IWL6000G2B_UCODE_API_OK));
-
-
+	Arnd
