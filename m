@@ -1,113 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758573Ab2EDOuD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 10:50:03 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:34219 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757506Ab2EDOuB (ORCPT
+	id S1758427Ab2EDOwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 10:52:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52545 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064Ab2EDOwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 10:50:01 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/mWFVO7ZXm3NBlGkwtdO3shGQM/9CpEiYrmmTTu2
-	om1agKEfMNMC4a
-Message-ID: <1336142995.25479.49.camel@marge.simpson.net>
-Subject: Re: [PATCH]  Re: [RFC PATCH] namespaces: fix leak on fork() failure
-From: Mike Galbraith <efault@gmx.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Louis Rilling <louis.rilling@kerlabs.com>
-Date: Fri, 04 May 2012 16:49:55 +0200
-In-Reply-To: <m1vckcdoey.fsf@fess.ebiederm.org>
-References: <1335604790.5995.22.camel@marge.simpson.net>
-	 <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org>
-	 <20120429165846.GA19054@redhat.com>
-	 <1335754867.17899.4.camel@marge.simpson.net>
-	 <m1zk9rmyh4.fsf@fess.ebiederm.org>
-	 <20120501134214.f6b44f4a.akpm@linux-foundation.org>
-	 <1336014721.7370.32.camel@marge.simpson.net>
-	 <1336057018.8119.46.camel@marge.simpson.net>
-	 <1336105676.7356.42.camel@marge.simpson.net>
-	 <m1aa1oidmn.fsf@fess.ebiederm.org>
-	 <1336124716.25479.36.camel@marge.simpson.net>
-	 <m1vckcdoey.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Fri, 4 May 2012 10:52:50 -0400
+Date: Fri, 4 May 2012 07:52:45 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, David Miller <davem@davemloft.net>,
+        namhyung.kim@lge.com, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, acme@ghostprotocols.net, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] perf: Fix build failure on OpenSuse userspace
+Message-ID: <20120504145245.GA9210@kroah.com>
+References: <20120503215748.GA18995@kroah.com>
+ <87sjfgafqj.fsf@sejong.aot.lge.com>
+ <20120503.215020.954262287222794218.davem@davemloft.net>
+ <CACqU3MVqpz=azeUOUfmtoLEPvqngfJHSHFe7ujemeRT1-B=osA@mail.gmail.com>
+ <CACqU3MWLKMhTdh-HUh0MhE_hZmwNPG5FOxWarjO4BsRemmG8sA@mail.gmail.com>
+ <CACqU3MVVgo7R8CmGwi6utE0F0urf5NW58s23bmNU_rSQAg2pww@mail.gmail.com>
+ <20120504024706.GA10461@kroah.com>
+ <CACqU3MUwDaRXwAd3fu7sUmM2ApH+pfu4rf1-TNKt1ja+wYpJ9w@mail.gmail.com>
+ <20120504031614.GA12048@kroah.com>
+ <20120504070928.GA18351@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120504070928.GA18351@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-04 at 07:13 -0700, Eric W. Biederman wrote: 
-> Mike Galbraith <efault@gmx.de> writes:
-> 
-> > On Fri, 2012-05-04 at 00:55 -0700, Eric W. Biederman wrote:
-> >
-> >> CLONE_NEWUSER?  I presume you have applied my latest user namespace
-> >> patches?  Otherwise you are running completely half baked code.
-> >
-> > I Removed CLONE_NEWUSER flag.
-> >
-> >> hackbench?  Which kernel are you running.  Hackbench in some kernels is
-> >> really good at triggering cache ping-pong effects with pids, and creds.
-> >
-> > Not when pinned.  3.0 kernel without the debug stuff enabled in 3.4.git.
-> > 
-> > marge:/usr/local/tmp/starvation # taskset -c 3 ./hackbench
-> > Running with 10*40 (== 400) tasks.
-> > Time: 0.868
-> > marge:/usr/local/tmp/starvation # taskset -c 3 ./hackbench -namespace
-> > Running with 10*40 (== 400) tasks.
-> > Time: 7.582
-> > marge:/usr/local/tmp/starvation # taskset -c 3 ./hackbench -namespace -all
-> > Running with 10*40 (== 400) tasks.
-> > Time: 29.677
-> 
-> Interesting.  I guess what truly puzzles me is what serializes all of
-> the processes.  Even synchronize_rcu should sleep and thus let other
-> synchronize_rcu calls run in parallel.
-> 
-> Did you have HZ=100 in that kernel?  400 tasks at 100Hz all serialized
-> somehow and then doing synchronize_rcu at a jiffy each would account
-> for 4 seconds.  And the nsproxy certainly has a synchronize_rcu call.
+On Fri, May 04, 2012 at 09:09:28AM +0200, Ingo Molnar wrote:
+> Does the (untested) patch below help?
 
-HZ=250
+No :(
 
-> The network namespace is comparatively heavy weight, at least in the
-> amount of code and other things it has to go through, so that would be
-> my prime suspect for those 29 seconds.  There are 2-4 synchronize_rcu
-> calls needed to put the loopback device.  Still we use
-> synchronize_rcu_expedited and that work should be out of line and all of
-> those calls should batch.
-> 
-> Mike is this something you are looking at a pursuing farther?
+> If not then please paste me the build failure output (it will 
+> most likely change due to the patch), and until we fix this 
+> build regression on OpenSuse userspace you can work it around 
+> via:
 
-Not really, but I can put it on my good intentions list.
+Here's the error, it looks identical to what I previously had:
 
-> I want to guess the serialization comes from waiting on children to be
-> reaped but the namespaces are all cleaned up in exit_notify() called
-> from do_exit() so that theory doesn't hold water.  The worst case
-> I can see is detach_pid from exit_signal running under the task list lock.
-> but nothing sleeps under that lock.  :(
+    CC perf.o
+    CC util/parse-events-flex.o
+<stdout>: In function ‘yy_get_next_buffer’:
+<stdout>:1510:3: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
+util/parse-events.l: In function ‘parse_events_lex’:
+util/parse-events.l:122:1: error: ignoring return value of ‘fwrite’, declared with attribute warn_unused_result [-Werror=unused-result]
+cc1: all warnings being treated as errors
 
-I'm up to my ears in zombies with several instances of the testcase
-running in parallel, so I imagine it's the same with hackbench.
+>   make WERROR=0
 
-marge:/usr/local/tmp/starvation # taskset -c 3 ./hackbench -namespace& for i in 1 2 3 4 5 6 7 ; do ps ax|grep defunct|wc -l;sleep 1; done
-[1] 29985
-Running with 10*40 (== 400) tasks.
-1
-397
-327
-261
-199
-135
-72
-marge:/usr/local/tmp/starvation # Time: 7.675
+Thanks, that works for me for now, but obviously, not a real solution :)
 
--Mike
-
+greg k-h
