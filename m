@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932861Ab2EDUtb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:49:31 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
+	id S932900Ab2EDUt1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:49:27 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:38140 "EHLO
 	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932903Ab2EDUt2 (ORCPT
+	with ESMTP id S1759922Ab2EDUtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:49:28 -0400
-Message-Id: <20120504204247.454102356@linuxfoundation.org>
+	Fri, 4 May 2012 16:49:22 -0400
+Message-Id: <20120504204246.606929528@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:14 -0700
+Date: Fri, 04 May 2012 13:43:04 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        =?UTF-8?q?Eric=20B=E9nard?= <eric@eukrea.com>
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 30/47] ARM: 7403/1: tls: remove covert channel via TPIDRURW
+        alan@lxorguk.ukuu.org.uk, Wolfram Sang <w.sang@pengutronix.de>,
+        Chris Ball <cjb@laptop.org>, Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 20/47] mmc: unbreak sdhci-esdhc-imx on i.MX25
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Eric Bénard <eric@eukrea.com>
 
-commit 6a1c53124aa161eb624ce7b1e40ade728186d34c upstream.
+commit b89152824f993a9572b47eb31f4579feadeac34c upstream.
 
-TPIDRURW is a user read/write register forming part of the group of
-thread registers in more recent versions of the ARM architecture (~v6+).
+This was broken by me in 37865fe91582582a6f6c00652f6a2b1ff71f8a78
+("mmc: sdhci-esdhc-imx: fix timeout on i.MX's sdhci") where more
+extensive tests would have shown that read or write of data to the
+card were failing (even if the partition table was correctly read).
 
-Currently, the kernel does not touch this register, which allows tasks
-to communicate covertly by reading and writing to the register without
-context-switching affecting its contents.
-
-This patch clears TPIDRURW when TPIDRURO is updated via the set_tls
-macro, which is called directly from __switch_to. Since the current
-behaviour makes the register useless to userspace as far as thread
-pointers are concerned, simply clearing the register (rather than saving
-and restoring it) will not cause any problems to userspace.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Eric BÃ©nard <eric@eukrea.com>
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/include/asm/tls.h |    4 ++++
- 1 file changed, 4 insertions(+)
+Thanks,
+Jonathan
 
---- a/arch/arm/include/asm/tls.h
-+++ b/arch/arm/include/asm/tls.h
-@@ -7,6 +7,8 @@
+ drivers/mmc/host/sdhci-esdhc-imx.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/drivers/mmc/host/sdhci-esdhc-imx.c
++++ b/drivers/mmc/host/sdhci-esdhc-imx.c
+@@ -245,8 +245,7 @@ static int esdhc_pltfm_init(struct sdhci
+ 	}
+ 	pltfm_host->priv = imx_data;
  
- 	.macro set_tls_v6k, tp, tmp1, tmp2
- 	mcr	p15, 0, \tp, c13, c0, 3		@ set TLS register
-+	mov	\tmp1, #0
-+	mcr	p15, 0, \tmp1, c13, c0, 2	@ clear user r/w TLS register
- 	.endm
+-	if (!cpu_is_mx25())
+-		host->quirks |= SDHCI_QUIRK_BROKEN_TIMEOUT_VAL;
++	host->quirks |= SDHCI_QUIRK_BROKEN_TIMEOUT_VAL;
  
- 	.macro set_tls_v6, tp, tmp1, tmp2
-@@ -15,6 +17,8 @@
- 	mov	\tmp2, #0xffff0fff
- 	tst	\tmp1, #HWCAP_TLS		@ hardware TLS available?
- 	mcrne	p15, 0, \tp, c13, c0, 3		@ yes, set TLS register
-+	movne	\tmp1, #0
-+	mcrne	p15, 0, \tmp1, c13, c0, 2	@ clear user r/w TLS register
- 	streq	\tp, [\tmp2, #-15]		@ set TLS value at 0xffff0ff0
- 	.endm
- 
+ 	if (cpu_is_mx25() || cpu_is_mx35()) {
+ 		/* Fix errata ENGcm07207 present on i.MX25 and i.MX35 */
 
 
