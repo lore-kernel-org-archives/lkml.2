@@ -1,39 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759259Ab2EDRLt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 13:11:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2062 "EHLO mx1.redhat.com"
+	id S1759272Ab2EDRLx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 13:11:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56124 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759246Ab2EDRLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 13:11:46 -0400
+	id S1758830Ab2EDRLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 13:11:51 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCHv2 0/4] perf, tool: Fix endian issues
-Date: Fri,  4 May 2012 19:11:29 +0200
-Message-Id: <1336151493-8328-1-git-send-email-jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 2/4] perf, tool: Carry perf_event_attr bitfield throught different endians
+Date: Fri,  4 May 2012 19:11:31 +0200
+Message-Id: <1336151493-8328-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1336151493-8328-1-git-send-email-jolsa@redhat.com>
+References: <1336151493-8328-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-sending fixies to properly handle perf.data endians.
+When the perf data file is read cross architectures, the perf_event__attr_swap
+function takes care about endianness of all the struct fields except the
+bitfield flags.
 
-v2 changes:
-  - added patches 3 and 4 to handle sample_id_all header endianity
+The bitfield flags need to be transformed as well, since the bitfield
+binary storage differs for both endians.
 
-Attached patches:
-  1/4 perf, tool: Handle different endians properly during symbol load
-  2/4 perf, tool: Carry perf_event_attr bitfield throught different endians
-  3/4 perf, tool: Handle endianity swap on sample_id_all header data
-  4/4 perf, tool: Fix 32 bit values endianity swap for sample_id_all header
+ABI says:
+  Bit-fields are allocated from right to left (least to most significant)
+  on little-endian implementations and from left to right (most to least
+  significant) on big-endian implementations.
 
-thanks,
-jirka
+The above seems to be byte specific, so we need to reverse each
+byte of the bitfield. 'Internet' also says this might be implementation
+specific and we probably need proper fix and carry perf_event_attr
+bitfield flags in separate data file FEAT_ section. Thought this seems
+to work for now.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/evsel.c   |   32 +++++++++++---
- tools/perf/util/session.c |  101 +++++++++++++++++++++++++++++++++++++++-----
- tools/perf/util/symbol.c  |   33 ++++++++++++++-
- tools/perf/util/symbol.h  |   30 +++++++++++++
- 4 files changed, 176 insertions(+), 20 deletions(-)
+ tools/perf/util/session.c |   34 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 1efd3be..07fda7c 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -481,6 +481,38 @@ static void perf_event__read_swap(union perf_event *event)
+ 	event->read.id		 = bswap_64(event->read.id);
+ }
+ 
++static u8 revbyte(u8 b)
++{
++	int rev = (b >> 4) | ((b & 0xf) << 4);
++	rev = ((rev & 0xcc) >> 2) | ((rev & 0x33) << 2);
++	rev = ((rev & 0xaa) >> 1) | ((rev & 0x55) << 1);
++	return (u8) rev;
++}
++
++/*
++ * XXX this is hack in attempt to carry flags bitfield
++ * throught endian village. ABI says:
++ *
++ * Bit-fields are allocated from right to left (least to most significant)
++ * on little-endian implementations and from left to right (most to least
++ * significant) on big-endian implementations.
++ *
++ * The above seems to be byte specific, so we need to reverse each
++ * byte of the bitfield. 'Internet' also says this might be implementation
++ * specific and we probably need proper fix and carry perf_event_attr
++ * bitfield flags in separate data file FEAT_ section. Thought this seems
++ * to work for now.
++ */
++static void swap_bitfield(u8 *p, unsigned len)
++{
++	unsigned i;
++
++	for (i = 0; i < len; i++) {
++		*p = revbyte(*p);
++		p++;
++	}
++}
++
+ /* exported for swapping attributes in file header */
+ void perf_event__attr_swap(struct perf_event_attr *attr)
+ {
+@@ -494,6 +526,8 @@ void perf_event__attr_swap(struct perf_event_attr *attr)
+ 	attr->bp_type		= bswap_32(attr->bp_type);
+ 	attr->bp_addr		= bswap_64(attr->bp_addr);
+ 	attr->bp_len		= bswap_64(attr->bp_len);
++
++	swap_bitfield((u8 *) (&attr->read_format + 1), sizeof(u64));
+ }
+ 
+ static void perf_event__hdr_attr_swap(union perf_event *event)
+-- 
+1.7.7.6
+
