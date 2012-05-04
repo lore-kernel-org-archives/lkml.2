@@ -1,71 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932760Ab2EDVDW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:03:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
+	id S932768Ab2EDVDm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:03:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57129 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932722Ab2EDUsC (ORCPT
+	with ESMTP id S932698Ab2EDUrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:48:02 -0400
-Message-Id: <20120504204244.944862179@linuxfoundation.org>
+	Fri, 4 May 2012 16:47:55 -0400
+Message-Id: <20120504204230.580609792@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:45 -0700
+Date: Fri, 04 May 2012 13:43:37 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>, Jan Kara <jack@suse.cz>
-Subject: [ 01/47] nfs: Enclose hostname in brackets when needed in
- nfs_do_root_mount
-In-Reply-To: <20120504204307.GA13761@kroah.com>
+        alan@lxorguk.ukuu.org.uk,
+        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 73/75] iwlwifi: use correct released ucode version
+In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
 
-commit 98a2139f4f4d7b5fcc3a54c7fddbe88612abed20 upstream.
+commit 78cbcf2b9dbe0565820dc7721316f9c401000a68 upstream.
 
-When hostname contains colon (e.g. when it is an IPv6 address) it needs
-to be enclosed in brackets to make parsing of NFS device string possible.
-Fix nfs_do_root_mount() to enclose hostname properly when needed. NFS code
-actually does not need this as it does not parse the string passed by
-nfs_do_root_mount() but the device string is exposed to userspace in
-/proc/mounts.
+Report correctly the latest released version
+of the iwlwifi firmware for all
+iwlwifi-supported devices.
 
-CC: Josh Boyer <jwboyer@redhat.com>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/super.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-1000.c |    8 ++++----
+ drivers/net/wireless/iwlwifi/iwl-2000.c |   16 ++++++++--------
+ drivers/net/wireless/iwlwifi/iwl-5000.c |   11 +++++++++--
+ drivers/net/wireless/iwlwifi/iwl-6000.c |   10 ++++++----
+ 4 files changed, 27 insertions(+), 18 deletions(-)
 
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2694,11 +2694,15 @@ static struct vfsmount *nfs_do_root_moun
- 	char *root_devname;
- 	size_t len;
+--- a/drivers/net/wireless/iwlwifi/iwl-1000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-1000.c
+@@ -45,8 +45,8 @@
+ #include "iwl-cfg.h"
  
--	len = strlen(hostname) + 3;
-+	len = strlen(hostname) + 5;
- 	root_devname = kmalloc(len, GFP_KERNEL);
- 	if (root_devname == NULL)
- 		return ERR_PTR(-ENOMEM);
--	snprintf(root_devname, len, "%s:/", hostname);
-+	/* Does hostname needs to be enclosed in brackets? */
-+	if (strchr(hostname, ':'))
-+		snprintf(root_devname, len, "[%s]:/", hostname);
-+	else
-+		snprintf(root_devname, len, "%s:/", hostname);
- 	root_mnt = vfs_kern_mount(fs_type, flags, root_devname, data);
- 	kfree(root_devname);
- 	return root_mnt;
+ /* Highest firmware API version supported */
+-#define IWL1000_UCODE_API_MAX 6
+-#define IWL100_UCODE_API_MAX 6
++#define IWL1000_UCODE_API_MAX 5
++#define IWL100_UCODE_API_MAX 5
+ 
+ /* Oldest version we won't warn about */
+ #define IWL1000_UCODE_API_OK 5
+@@ -235,5 +235,5 @@ struct iwl_cfg iwl100_bg_cfg = {
+ 	IWL_DEVICE_100,
+ };
+ 
+-MODULE_FIRMWARE(IWL1000_MODULE_FIRMWARE(IWL1000_UCODE_API_MAX));
+-MODULE_FIRMWARE(IWL100_MODULE_FIRMWARE(IWL100_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL1000_MODULE_FIRMWARE(IWL1000_UCODE_API_OK));
++MODULE_FIRMWARE(IWL100_MODULE_FIRMWARE(IWL100_UCODE_API_OK));
+--- a/drivers/net/wireless/iwlwifi/iwl-2000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-2000.c
+@@ -51,10 +51,10 @@
+ #define IWL135_UCODE_API_MAX 6
+ 
+ /* Oldest version we won't warn about */
+-#define IWL2030_UCODE_API_OK 5
+-#define IWL2000_UCODE_API_OK 5
+-#define IWL105_UCODE_API_OK 5
+-#define IWL135_UCODE_API_OK 5
++#define IWL2030_UCODE_API_OK 6
++#define IWL2000_UCODE_API_OK 6
++#define IWL105_UCODE_API_OK 6
++#define IWL135_UCODE_API_OK 6
+ 
+ /* Lowest firmware API version supported */
+ #define IWL2030_UCODE_API_MIN 5
+@@ -338,7 +338,7 @@ struct iwl_cfg iwl135_bgn_cfg = {
+ 	.ht_params = &iwl2000_ht_params,
+ };
+ 
+-MODULE_FIRMWARE(IWL2000_MODULE_FIRMWARE(IWL2000_UCODE_API_MAX));
+-MODULE_FIRMWARE(IWL2030_MODULE_FIRMWARE(IWL2030_UCODE_API_MAX));
+-MODULE_FIRMWARE(IWL105_MODULE_FIRMWARE(IWL105_UCODE_API_MAX));
+-MODULE_FIRMWARE(IWL135_MODULE_FIRMWARE(IWL135_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL2000_MODULE_FIRMWARE(IWL2000_UCODE_API_OK));
++MODULE_FIRMWARE(IWL2030_MODULE_FIRMWARE(IWL2030_UCODE_API_OK));
++MODULE_FIRMWARE(IWL105_MODULE_FIRMWARE(IWL105_UCODE_API_OK));
++MODULE_FIRMWARE(IWL135_MODULE_FIRMWARE(IWL135_UCODE_API_OK));
+--- a/drivers/net/wireless/iwlwifi/iwl-5000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
+@@ -50,6 +50,10 @@
+ #define IWL5000_UCODE_API_MAX 5
+ #define IWL5150_UCODE_API_MAX 2
+ 
++/* Oldest version we won't warn about */
++#define IWL5000_UCODE_API_OK 5
++#define IWL5150_UCODE_API_OK 2
++
+ /* Lowest firmware API version supported */
+ #define IWL5000_UCODE_API_MIN 1
+ #define IWL5150_UCODE_API_MIN 1
+@@ -359,6 +363,7 @@ static struct iwl_ht_params iwl5000_ht_p
+ #define IWL_DEVICE_5000						\
+ 	.fw_name_pre = IWL5000_FW_PRE,				\
+ 	.ucode_api_max = IWL5000_UCODE_API_MAX,			\
++	.ucode_api_ok = IWL5000_UCODE_API_OK,			\
+ 	.ucode_api_min = IWL5000_UCODE_API_MIN,			\
+ 	.eeprom_ver = EEPROM_5000_EEPROM_VERSION,		\
+ 	.eeprom_calib_ver = EEPROM_5000_TX_POWER_VERSION,	\
+@@ -402,6 +407,7 @@ struct iwl_cfg iwl5350_agn_cfg = {
+ 	.name = "Intel(R) WiMAX/WiFi Link 5350 AGN",
+ 	.fw_name_pre = IWL5000_FW_PRE,
+ 	.ucode_api_max = IWL5000_UCODE_API_MAX,
++	.ucode_api_ok = IWL5000_UCODE_API_OK,
+ 	.ucode_api_min = IWL5000_UCODE_API_MIN,
+ 	.eeprom_ver = EEPROM_5050_EEPROM_VERSION,
+ 	.eeprom_calib_ver = EEPROM_5050_TX_POWER_VERSION,
+@@ -415,6 +421,7 @@ struct iwl_cfg iwl5350_agn_cfg = {
+ #define IWL_DEVICE_5150						\
+ 	.fw_name_pre = IWL5150_FW_PRE,				\
+ 	.ucode_api_max = IWL5150_UCODE_API_MAX,			\
++	.ucode_api_ok = IWL5150_UCODE_API_OK,			\
+ 	.ucode_api_min = IWL5150_UCODE_API_MIN,			\
+ 	.eeprom_ver = EEPROM_5050_EEPROM_VERSION,		\
+ 	.eeprom_calib_ver = EEPROM_5050_TX_POWER_VERSION,	\
+@@ -436,5 +443,5 @@ struct iwl_cfg iwl5150_abg_cfg = {
+ 	IWL_DEVICE_5150,
+ };
+ 
+-MODULE_FIRMWARE(IWL5000_MODULE_FIRMWARE(IWL5000_UCODE_API_MAX));
+-MODULE_FIRMWARE(IWL5150_MODULE_FIRMWARE(IWL5150_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL5000_MODULE_FIRMWARE(IWL5000_UCODE_API_OK));
++MODULE_FIRMWARE(IWL5150_MODULE_FIRMWARE(IWL5150_UCODE_API_OK));
+--- a/drivers/net/wireless/iwlwifi/iwl-6000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
+@@ -53,6 +53,8 @@
+ /* Oldest version we won't warn about */
+ #define IWL6000_UCODE_API_OK 4
+ #define IWL6000G2_UCODE_API_OK 5
++#define IWL6050_UCODE_API_OK 5
++#define IWL6000G2B_UCODE_API_OK 6
+ 
+ /* Lowest firmware API version supported */
+ #define IWL6000_UCODE_API_MIN 4
+@@ -349,7 +351,7 @@ static struct iwl_bt_params iwl6000_bt_p
+ #define IWL_DEVICE_6005						\
+ 	.fw_name_pre = IWL6005_FW_PRE,				\
+ 	.ucode_api_max = IWL6000G2_UCODE_API_MAX,		\
+-	.ucode_api_ok = IWL6000G2_UCODE_API_OK,			\
++	.ucode_api_ok = IWL6000G2B_UCODE_API_OK,		\
+ 	.ucode_api_min = IWL6000G2_UCODE_API_MIN,		\
+ 	.eeprom_ver = EEPROM_6005_EEPROM_VERSION,		\
+ 	.eeprom_calib_ver = EEPROM_6005_TX_POWER_VERSION,	\
+@@ -548,6 +550,6 @@ struct iwl_cfg iwl6000_3agn_cfg = {
+ };
+ 
+ MODULE_FIRMWARE(IWL6000_MODULE_FIRMWARE(IWL6000_UCODE_API_OK));
+-MODULE_FIRMWARE(IWL6050_MODULE_FIRMWARE(IWL6050_UCODE_API_MAX));
+-MODULE_FIRMWARE(IWL6005_MODULE_FIRMWARE(IWL6000G2_UCODE_API_MAX));
+-MODULE_FIRMWARE(IWL6030_MODULE_FIRMWARE(IWL6000G2_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL6050_MODULE_FIRMWARE(IWL6050_UCODE_API_OK));
++MODULE_FIRMWARE(IWL6005_MODULE_FIRMWARE(IWL6000G2_UCODE_API_OK));
++MODULE_FIRMWARE(IWL6030_MODULE_FIRMWARE(IWL6000G2B_UCODE_API_OK));
 
 
