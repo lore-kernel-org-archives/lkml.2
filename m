@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607Ab2EDVIs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:08:48 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932507Ab2EDUqq (ORCPT
+	id S1759954Ab2EDVJJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:09:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57129 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932489Ab2EDUqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:46:46 -0400
-Message-Id: <20120504204229.068408039@linuxfoundation.org>
+	Fri, 4 May 2012 16:46:40 -0400
+Message-Id: <20120504204228.899301844@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:19 -0700
+Date: Fri, 04 May 2012 13:43:17 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Bojan Smojver <bojan@rexursive.com>,
-        "Rafael J. Wysocki" <rjw@suse.de>
-Subject: [ 55/75] PM / Hibernate: fix the number of pages used for hibernate/thaw buffering
+        alan@lxorguk.ukuu.org.uk, Matt Fleming <matt.hfleming@intel.com>,
+        Jordan Justen <jordan.l.justen@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 53/75] x86, efi: Add dedicated EFI stub entry point
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,97 +26,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bojan Smojver <bojan@rexursive.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit f8262d476823a7ea1eb497ff9676d1eab2393c75 upstream.
+commit b1994304fc399f5d3a5368c81111d713490c4799 upstream.
 
-Hibernation regression fix, since 3.2.
+The method used to work out whether we were booted by EFI firmware or
+via a boot loader is broken. Because efi_main() is always executed
+when booting from a boot loader we will dereference invalid pointers
+either on the stack (CONFIG_X86_32) or contained in %rdx
+(CONFIG_X86_64) when searching for an EFI System Table signature.
 
-Calculate the number of required free pages based on non-high memory
-pages only, because that is where the buffers will come from.
+Instead of dereferencing these invalid system table pointers, add a
+new entry point that is only used when booting from EFI firmware, when
+we know the pointer arguments will be valid. With this change legacy
+boot loaders will no longer execute efi_main(), but will instead skip
+EFI stub initialisation completely.
 
-Commit 081a9d043c983f161b78fdc4671324d1342b86bc introduced a new buffer
-page allocation logic during hibernation, in order to improve the
-performance. The amount of pages allocated was calculated based on total
-amount of pages available, although only non-high memory pages are
-usable for this purpose. This caused hibernation code to attempt to over
-allocate pages on platforms that have high memory, which led to hangs.
+[ hpa: Marking this for urgent/stable since it is a regression when
+  the option is enabled; without the option the patch has no effect ]
 
-Signed-off-by: Bojan Smojver <bojan@rexursive.com>
-Signed-off-by: Rafael J. Wysocki <rjw@suse.de>
+Signed-off-by: Matt Fleming <matt.hfleming@intel.com>
+Link: http://lkml.kernel.org/r/1334584744.26997.14.camel@mfleming-mobl1.ger.corp.intel.com
+Reported-by: Jordan Justen <jordan.l.justen@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/power/swap.c |   28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
+ arch/x86/boot/compressed/head_32.S |   14 +++++++++++---
+ arch/x86/boot/compressed/head_64.S |   22 ++++++++++++++++------
+ arch/x86/boot/tools/build.c        |   15 +++++++++++----
+ 3 files changed, 38 insertions(+), 13 deletions(-)
 
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -51,6 +51,23 @@
- 
- #define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
- 
-+/*
-+ * Number of free pages that are not high.
-+ */
-+static inline unsigned long low_free_pages(void)
-+{
-+	return nr_free_pages() - nr_free_highpages();
-+}
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -33,6 +33,9 @@
+ 	__HEAD
+ ENTRY(startup_32)
+ #ifdef CONFIG_EFI_STUB
++	jmp	preferred_addr
 +
-+/*
-+ * Number of pages required to be kept free while writing the image. Always
-+ * half of all available low pages before the writing starts.
-+ */
-+static inline unsigned long reqd_free_pages(void)
-+{
-+	return low_free_pages() / 2;
-+}
-+
- struct swap_map_page {
- 	sector_t entries[MAP_PAGE_ENTRIES];
- 	sector_t next_swap;
-@@ -72,7 +89,7 @@ struct swap_map_handle {
- 	sector_t cur_swap;
- 	sector_t first_sector;
- 	unsigned int k;
--	unsigned long nr_free_pages, written;
-+	unsigned long reqd_free_pages;
- 	u32 crc32;
- };
- 
-@@ -316,8 +333,7 @@ static int get_swap_writer(struct swap_m
- 		goto err_rel;
- 	}
- 	handle->k = 0;
--	handle->nr_free_pages = nr_free_pages() >> 1;
--	handle->written = 0;
-+	handle->reqd_free_pages = reqd_free_pages();
- 	handle->first_sector = handle->cur_swap;
- 	return 0;
- err_rel:
-@@ -352,11 +368,11 @@ static int swap_write_page(struct swap_m
- 		handle->cur_swap = offset;
- 		handle->k = 0;
- 	}
--	if (bio_chain && ++handle->written > handle->nr_free_pages) {
-+	if (bio_chain && low_free_pages() <= handle->reqd_free_pages) {
- 		error = hib_wait_on_bio_chain(bio_chain);
- 		if (error)
- 			goto out;
--		handle->written = 0;
-+		handle->reqd_free_pages = reqd_free_pages();
- 	}
-  out:
- 	return error;
-@@ -618,7 +634,7 @@ static int save_image_lzo(struct swap_ma
- 	 * Adjust number of free pages after all allocations have been done.
- 	 * We don't want to run out of pages when writing.
- 	 */
--	handle->nr_free_pages = nr_free_pages() >> 1;
-+	handle->reqd_free_pages = reqd_free_pages();
- 
++	.balign	0x10
  	/*
- 	 * Start the CRC32 thread.
+ 	 * We don't need the return address, so set up the stack so
+ 	 * efi_main() can find its arugments.
+@@ -41,12 +44,17 @@ ENTRY(startup_32)
+ 
+ 	call	efi_main
+ 	cmpl	$0, %eax
+-	je	preferred_addr
+ 	movl	%eax, %esi
+-	call	1f
++	jne	2f
+ 1:
++	/* EFI init failed, so hang. */
++	hlt
++	jmp	1b
++2:
++	call	3f
++3:
+ 	popl	%eax
+-	subl	$1b, %eax
++	subl	$3b, %eax
+ 	subl	BP_pref_address(%esi), %eax
+ 	add	BP_code32_start(%esi), %eax
+ 	leal	preferred_addr(%eax), %eax
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -200,18 +200,28 @@ ENTRY(startup_64)
+ 	 * entire text+data+bss and hopefully all of memory.
+ 	 */
+ #ifdef CONFIG_EFI_STUB
+-	pushq	%rsi
++	/*
++	 * The entry point for the PE/COFF executable is 0x210, so only
++	 * legacy boot loaders will execute this jmp.
++	 */
++	jmp	preferred_addr
++
++	.org 0x210
+ 	mov	%rcx, %rdi
+ 	mov	%rdx, %rsi
+ 	call	efi_main
+-	popq	%rsi
+-	cmpq	$0,%rax
+-	je	preferred_addr
+ 	movq	%rax,%rsi
+-	call	1f
++	cmpq	$0,%rax
++	jne	2f
+ 1:
++	/* EFI init failed, so hang. */
++	hlt
++	jmp	1b
++2:
++	call	3f
++3:
+ 	popq	%rax
+-	subq	$1b, %rax
++	subq	$3b, %rax
+ 	subq	BP_pref_address(%rsi), %rax
+ 	add	BP_code32_start(%esi), %eax
+ 	leaq	preferred_addr(%rax), %rax
+--- a/arch/x86/boot/tools/build.c
++++ b/arch/x86/boot/tools/build.c
+@@ -207,8 +207,13 @@ int main(int argc, char ** argv)
+ 	put_unaligned_le32(file_sz, &buf[pe_header + 0x50]);
+ 
+ #ifdef CONFIG_X86_32
+-	/* Address of entry point */
+-	put_unaligned_le32(i, &buf[pe_header + 0x28]);
++	/*
++	 * Address of entry point.
++	 *
++	 * The EFI stub entry point is +16 bytes from the start of
++	 * the .text section.
++	 */
++	put_unaligned_le32(i + 16, &buf[pe_header + 0x28]);
+ 
+ 	/* .text size */
+ 	put_unaligned_le32(file_sz, &buf[pe_header + 0xb0]);
+@@ -219,9 +224,11 @@ int main(int argc, char ** argv)
+ 	/*
+ 	 * Address of entry point. startup_32 is at the beginning and
+ 	 * the 64-bit entry point (startup_64) is always 512 bytes
+-	 * after.
++	 * after. The EFI stub entry point is 16 bytes after that, as
++	 * the first instruction allows legacy loaders to jump over
++	 * the EFI stub initialisation
+ 	 */
+-	put_unaligned_le32(i + 512, &buf[pe_header + 0x28]);
++	put_unaligned_le32(i + 528, &buf[pe_header + 0x28]);
+ 
+ 	/* .text size */
+ 	put_unaligned_le32(file_sz, &buf[pe_header + 0xc0]);
 
 
