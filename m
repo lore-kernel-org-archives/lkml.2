@@ -1,71 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760368Ab2EDWaJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 18:30:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34493 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292Ab2EDWaI convert rfc822-to-8bit (ORCPT
+	id S1760413Ab2EDWd3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 18:33:29 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:62178 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755319Ab2EDWd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 18:30:08 -0400
-Message-ID: <1336170586.16236.11.camel@twins>
-Subject: RE: [PATCH] sched: Enable arch-specific asym packing option in
- sched domain
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Diwakar Tundlam <dtundlam@nvidia.com>
-Cc: "'Ingo Molnar'" <mingo@kernel.org>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Christoph Lameter'" <cl@gentwo.org>,
-        "'Michael Neuling'" <mikey@neuling.org>,
-        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        "'David Rientjes'" <rientjes@google.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Date: Sat, 05 May 2012 00:29:46 +0200
-In-Reply-To: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF102@HQMAIL04.nvidia.com>
-References: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF0FF@HQMAIL04.nvidia.com>
-	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF101@HQMAIL04.nvidia.com>
-	 <1336169422.16236.1.camel@twins>
-	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF102@HQMAIL04.nvidia.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 4 May 2012 18:33:28 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-132.messagelabs.com!1336170806!10610820!1
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: refactor mpc624 driver and use module_comedi_driver
+Date: Fri, 4 May 2012 15:33:17 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201205041533.17755.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-04 at 15:18 -0700, Diwakar Tundlam wrote:
-> 
-> arch_sd_sibling_asym_packing() is already present under ifdef CONFIG_SMT.
-> I didn't touch that. I only added it to SD_CPU_INIT for all cpu's.
-> I assumed Power7 shouldn't use SD_CPU_INIT.
+Move the struct comedi_driver and associated attach/detach
+routines to the end of the source. This is more typical of how
+other drivers are written and removes the need for the forward
+declarations.
 
-All archs use SD_CPU_INIT, its the default topology level for a
-package/socket. So now you've made Power7 prefer lower numbered sockets
-over higher numbered sockets.. not fatal, but not really nice either.
+Convert the driver to use the module_comedi_driver() macro which
+makes the code smaller and a bit simpler.
 
-[ power7 is the only one that implements arch_sd_sibling_asym_packing ]
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> Maybe I should define a separate weak symbol, say arch_sd_bias_to_lower_num_cpu()?
-> Then Power7 can define arch_sd_sibling_asym_packing() to be '1' and it will not
-> break all-cpu init.
+---
 
-A slightly saner name would be:
-
-  arch_sd_package_asym_packing()
-
-FWIW, I suspect you're wanting to use this for some ARM chip (nvidia
-doesn't do much else -- aside from this graphics stuff) so that if
-there's hardly anything it runs on cpu0. Now, last time I checked, these
-ARM things had only 1 package, so I still don't see the point :-)
-
-I suspect you want to modify SD_MC_INIT() with something like:
-
-  arch_sd_mc_asym_packing()
-
-Or is this the big-little thing and you're representing them as separate
-packages?
-
-See how a little extra information avoids me having to endlessly second
-guess wtf you're actually wanting to do?
+diff --git a/drivers/staging/comedi/drivers/mpc624.c b/drivers/staging/comedi/drivers/mpc624.c
+index dd09a6d..25d8553 100644
+--- a/drivers/staging/comedi/drivers/mpc624.c
++++ b/drivers/staging/comedi/drivers/mpc624.c
+@@ -148,131 +148,6 @@ static const struct comedi_lrange range_mpc624_bipolar10 = {
+ 	 }
+ };
+ 
+-/* -------------------------------------------------------------------------- */
+-static int mpc624_attach(struct comedi_device *dev,
+-			 struct comedi_devconfig *it);
+-static int mpc624_detach(struct comedi_device *dev);
+-/* -------------------------------------------------------------------------- */
+-static struct comedi_driver driver_mpc624 = {
+-	.driver_name = "mpc624",
+-	.module = THIS_MODULE,
+-	.attach = mpc624_attach,
+-	.detach = mpc624_detach
+-};
+-
+-/* -------------------------------------------------------------------------- */
+-static int mpc624_ai_rinsn(struct comedi_device *dev,
+-			   struct comedi_subdevice *s, struct comedi_insn *insn,
+-			   unsigned int *data);
+-/* -------------------------------------------------------------------------- */
+-static int mpc624_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+-{
+-	struct comedi_subdevice *s;
+-	unsigned long iobase;
+-
+-	iobase = it->options[0];
+-	printk(KERN_INFO "comedi%d: mpc624 [0x%04lx, ", dev->minor, iobase);
+-	if (request_region(iobase, MPC624_SIZE, "mpc624") == NULL) {
+-		printk(KERN_ERR "I/O port(s) in use\n");
+-		return -EIO;
+-	}
+-
+-	dev->iobase = iobase;
+-	dev->board_name = "mpc624";
+-
+-	/*  Private structure initialization */
+-	if (alloc_private(dev, sizeof(struct skel_private)) < 0)
+-		return -ENOMEM;
+-
+-	switch (it->options[1]) {
+-	case 0:
+-		devpriv->ulConvertionRate = MPC624_SPEED_3_52_kHz;
+-		printk(KERN_INFO "3.52 kHz, ");
+-		break;
+-	case 1:
+-		devpriv->ulConvertionRate = MPC624_SPEED_1_76_kHz;
+-		printk(KERN_INFO "1.76 kHz, ");
+-		break;
+-	case 2:
+-		devpriv->ulConvertionRate = MPC624_SPEED_880_Hz;
+-		printk(KERN_INFO "880 Hz, ");
+-		break;
+-	case 3:
+-		devpriv->ulConvertionRate = MPC624_SPEED_440_Hz;
+-		printk(KERN_INFO "440 Hz, ");
+-		break;
+-	case 4:
+-		devpriv->ulConvertionRate = MPC624_SPEED_220_Hz;
+-		printk(KERN_INFO "220 Hz, ");
+-		break;
+-	case 5:
+-		devpriv->ulConvertionRate = MPC624_SPEED_110_Hz;
+-		printk(KERN_INFO "110 Hz, ");
+-		break;
+-	case 6:
+-		devpriv->ulConvertionRate = MPC624_SPEED_55_Hz;
+-		printk(KERN_INFO "55 Hz, ");
+-		break;
+-	case 7:
+-		devpriv->ulConvertionRate = MPC624_SPEED_27_5_Hz;
+-		printk(KERN_INFO "27.5 Hz, ");
+-		break;
+-	case 8:
+-		devpriv->ulConvertionRate = MPC624_SPEED_13_75_Hz;
+-		printk(KERN_INFO "13.75 Hz, ");
+-		break;
+-	case 9:
+-		devpriv->ulConvertionRate = MPC624_SPEED_6_875_Hz;
+-		printk(KERN_INFO "6.875 Hz, ");
+-		break;
+-	default:
+-		printk
+-		    (KERN_ERR "illegal conversion rate setting!"
+-			" Valid numbers are 0..9. Using 9 => 6.875 Hz, ");
+-		devpriv->ulConvertionRate = MPC624_SPEED_3_52_kHz;
+-	}
+-
+-	/*  Subdevices structures */
+-	if (alloc_subdevices(dev, 1) < 0)
+-		return -ENOMEM;
+-
+-	s = dev->subdevices + 0;
+-	s->type = COMEDI_SUBD_AI;
+-	s->subdev_flags = SDF_READABLE | SDF_DIFF;
+-	s->n_chan = 8;
+-	switch (it->options[1]) {
+-	default:
+-		s->maxdata = 0x3FFFFFFF;
+-		printk(KERN_INFO "30 bit, ");
+-	}
+-
+-	switch (it->options[1]) {
+-	case 0:
+-		s->range_table = &range_mpc624_bipolar1;
+-		printk(KERN_INFO "1.01V]: ");
+-		break;
+-	default:
+-		s->range_table = &range_mpc624_bipolar10;
+-		printk(KERN_INFO "10.1V]: ");
+-	}
+-	s->len_chanlist = 1;
+-	s->insn_read = mpc624_ai_rinsn;
+-
+-	printk(KERN_INFO "attached\n");
+-
+-	return 1;
+-}
+-
+-static int mpc624_detach(struct comedi_device *dev)
+-{
+-	printk(KERN_INFO "comedi%d: mpc624: remove\n", dev->minor);
+-
+-	if (dev->iobase)
+-		release_region(dev->iobase, MPC624_SIZE);
+-
+-	return 0;
+-}
+-
+ /* Timeout 200ms */
+ #define TIMEOUT 200
+ 
+@@ -406,18 +281,121 @@ static int mpc624_ai_rinsn(struct comedi_device *dev,
+ 	return n;
+ }
+ 
+-static int __init driver_mpc624_init_module(void)
++static int mpc624_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ {
+-	return comedi_driver_register(&driver_mpc624);
++	struct comedi_subdevice *s;
++	unsigned long iobase;
++
++	iobase = it->options[0];
++	printk(KERN_INFO "comedi%d: mpc624 [0x%04lx, ", dev->minor, iobase);
++	if (request_region(iobase, MPC624_SIZE, "mpc624") == NULL) {
++		printk(KERN_ERR "I/O port(s) in use\n");
++		return -EIO;
++	}
++
++	dev->iobase = iobase;
++	dev->board_name = "mpc624";
++
++	/*  Private structure initialization */
++	if (alloc_private(dev, sizeof(struct skel_private)) < 0)
++		return -ENOMEM;
++
++	switch (it->options[1]) {
++	case 0:
++		devpriv->ulConvertionRate = MPC624_SPEED_3_52_kHz;
++		printk(KERN_INFO "3.52 kHz, ");
++		break;
++	case 1:
++		devpriv->ulConvertionRate = MPC624_SPEED_1_76_kHz;
++		printk(KERN_INFO "1.76 kHz, ");
++		break;
++	case 2:
++		devpriv->ulConvertionRate = MPC624_SPEED_880_Hz;
++		printk(KERN_INFO "880 Hz, ");
++		break;
++	case 3:
++		devpriv->ulConvertionRate = MPC624_SPEED_440_Hz;
++		printk(KERN_INFO "440 Hz, ");
++		break;
++	case 4:
++		devpriv->ulConvertionRate = MPC624_SPEED_220_Hz;
++		printk(KERN_INFO "220 Hz, ");
++		break;
++	case 5:
++		devpriv->ulConvertionRate = MPC624_SPEED_110_Hz;
++		printk(KERN_INFO "110 Hz, ");
++		break;
++	case 6:
++		devpriv->ulConvertionRate = MPC624_SPEED_55_Hz;
++		printk(KERN_INFO "55 Hz, ");
++		break;
++	case 7:
++		devpriv->ulConvertionRate = MPC624_SPEED_27_5_Hz;
++		printk(KERN_INFO "27.5 Hz, ");
++		break;
++	case 8:
++		devpriv->ulConvertionRate = MPC624_SPEED_13_75_Hz;
++		printk(KERN_INFO "13.75 Hz, ");
++		break;
++	case 9:
++		devpriv->ulConvertionRate = MPC624_SPEED_6_875_Hz;
++		printk(KERN_INFO "6.875 Hz, ");
++		break;
++	default:
++		printk
++		    (KERN_ERR "illegal conversion rate setting!"
++			" Valid numbers are 0..9. Using 9 => 6.875 Hz, ");
++		devpriv->ulConvertionRate = MPC624_SPEED_3_52_kHz;
++	}
++
++	/*  Subdevices structures */
++	if (alloc_subdevices(dev, 1) < 0)
++		return -ENOMEM;
++
++	s = dev->subdevices + 0;
++	s->type = COMEDI_SUBD_AI;
++	s->subdev_flags = SDF_READABLE | SDF_DIFF;
++	s->n_chan = 8;
++	switch (it->options[1]) {
++	default:
++		s->maxdata = 0x3FFFFFFF;
++		printk(KERN_INFO "30 bit, ");
++	}
++
++	switch (it->options[1]) {
++	case 0:
++		s->range_table = &range_mpc624_bipolar1;
++		printk(KERN_INFO "1.01V]: ");
++		break;
++	default:
++		s->range_table = &range_mpc624_bipolar10;
++		printk(KERN_INFO "10.1V]: ");
++	}
++	s->len_chanlist = 1;
++	s->insn_read = mpc624_ai_rinsn;
++
++	printk(KERN_INFO "attached\n");
++
++	return 1;
+ }
+ 
+-static void __exit driver_mpc624_cleanup_module(void)
++static int mpc624_detach(struct comedi_device *dev)
+ {
+-	comedi_driver_unregister(&driver_mpc624);
++	printk(KERN_INFO "comedi%d: mpc624: remove\n", dev->minor);
++
++	if (dev->iobase)
++		release_region(dev->iobase, MPC624_SIZE);
++
++	return 0;
+ }
+ 
+-module_init(driver_mpc624_init_module);
+-module_exit(driver_mpc624_cleanup_module);
++static struct comedi_driver mpc624_driver = {
++	.driver_name	= "mpc624",
++	.module		= THIS_MODULE,
++	.attach		= mpc624_attach,
++	.detach		= mpc624_detach
++};
++module_comedi_driver(mpc624_driver);
+ 
+ MODULE_AUTHOR("Comedi http://www.comedi.org");
+ MODULE_DESCRIPTION("Comedi low-level driver");
