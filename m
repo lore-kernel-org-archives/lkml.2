@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758398Ab2EDN6K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 09:58:10 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:31211 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758300Ab2EDN6H (ORCPT
+	id S1757452Ab2EDOBS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 10:01:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64238 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab2EDOBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 09:58:07 -0400
-Date: Fri, 4 May 2012 09:52:17 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Marco Aurelio da Costa <costa@gamic.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] ACPI: Ignore invalid _PSS entries, but use valid
- ones
-Message-ID: <20120504135217.GB1049@phenom.dumpdata.com>
-References: <CAEe-dwgCR55urie0c1MdBWTS6-E=3faXj68=WMcb6NvQCQX0rg@mail.gmail.com>
+	Fri, 4 May 2012 10:01:17 -0400
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Namhyung Kim <namhyung.kim@lge.com>, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/13] perf evlist: Fix creation of cpu map
+References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
+	<1335417327-11796-8-git-send-email-namhyung.kim@lge.com>
+	<4F996433.7040003@gmail.com> <1335474778.1497.14.camel@leonhard>
+	<4F99BCAF.1080309@gmail.com> <87397qhvvx.fsf@sejong.aot.lge.com>
+	<20120502184033.GD5745@infradead.org>
+	<87fwbga8v7.fsf@sejong.aot.lge.com>
+	<20120504133706.GA10068@infradead.org>
+Date: Fri, 04 May 2012 22:53:29 +0900
+In-Reply-To: <20120504133706.GA10068@infradead.org> (Arnaldo Carvalho de
+	Melo's message of "Fri, 4 May 2012 10:37:06 -0300")
+Message-ID: <87bom4xdba.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAEe-dwgCR55urie0c1MdBWTS6-E=3faXj68=WMcb6NvQCQX0rg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 04, 2012 at 10:46:01AM -0300, Marco Aurelio da Costa wrote:
-> From: Marco Aurelio da Costa <costa@gamic.com>
-> Signed-off-by: Marco Aurelio da Costa <costa@gamic.com>
-> 
-> The EliteBook 8560W has non-initialized entries in its _PSS ACPI
-> table. Instead of bailing out when the first non-initialized entry is
-> found, ignore it and use only  the valid entries. Only bail out if there
-> is no valid entry at all.
+Hi,
 
-Is that safe? Meaning re-use the other CPU's _PSS states? Perhaps the
-warning at the end should say: "Trying to compensate by using the
-other CPU's PSS state).
+On Fri, 4 May 2012 10:37:06 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Fri, May 04, 2012 at 01:05:48PM +0900, Namhyung Kim escreveu:
+>> On Wed, 2 May 2012 15:40:33 -0300, Arnaldo Carvalho de Melo wrote:
+>> > Em Fri, Apr 27, 2012 at 09:16:18AM +0900, Namhyung Kim escreveu:
+>> >> So as long as you set perf_event_paranoid to -1 or run perf test as
+>> >> root, you cannot see the failure.
+>> >
+>> > Ok, as root try 'perf top', here I get, with this patch:
+>> >
+>> > [root@sandy ~]# perf top --stdio
+>> > Warning:
+>> > The sys_perf_event_open() syscall returned with 22 (Invalid argument).
+>> > /bin/dmesg may provide additional information.
+>> > No CONFIG_PERF_EVENTS=y kernel support configured?
+>> > [root@sandy ~]#
+>> >
+>> > Skipping this one, will look again later.
+>> >
+>> Sorry. It is because perf top depends on an undefined behaviour that
+>> if neither target nor command line argument was specified it'd open
+>> events for all online cpus. In contrast, perf record and perf stat will
+>> show the help message in this case.
+>> 
+>> This patch makes it clear that we have to prepare a sane target
+>> configuration before opening a perf event fd. So I think we should fix
+>> perf top to set top.target.system_wide to true by default.
+>
+> So please provide a preparatory patch for top before this one, ok?
+>
 
-> 
-> ---
-> --- linux-3.3.3/drivers/acpi/processor_perflib.c.orig   2012-04-24
-> 22:18:23.288041268 +0200
-> +++ linux-3.3.3/drivers/acpi/processor_perflib.c        2012-04-24
-> 22:19:25.912042603 +0200
-> @@ -311,6 +311,7 @@ static int acpi_processor_get_performanc
->        struct acpi_buffer state = { 0, NULL };
->        union acpi_object *pss = NULL;
->        int i;
-> +       int last_invalid = -1;
-> 
-> 
->        status = acpi_evaluate_object(pr->handle, "_PSS", NULL, &buffer);
-> @@ -374,12 +375,30 @@ static int acpi_processor_get_performanc
->                        printk(KERN_ERR FW_BUG PREFIX
->                               "Invalid BIOS _PSS frequency: 0x%llx MHz\n",
->                               px->core_frequency);
-> -                       result = -EFAULT;
-> -                       kfree(pr->performance->states);
-> -                       goto end;
-> +                       if (-1 == last_invalid)
+Okay, will do.
 
-Swap it around or just do it this way:
-
-if (last_invalid < 0)
-
-> +                               last_invalid = i;
-> +               } else {
-> +                       if (last_invalid != -1) {
-
-if (last_invalid >= 0)
-
-> +                               /*
-> +                                * Copy this valid entry over last_invalid entry
-> +                                */
-> +                               memcpy(&(pr->performance->states[last_invalid]),
-> +                                      px, sizeof(struct acpi_processor_px));
-> +                               ++last_invalid;
-> +                       }
->                }
->        }
-> 
-> +       if (0 == last_invalid) {
-
-So if _PSS that is missing is at CPU2, this own't print it.
-
-I think you want 'if (last_invalid >= 0)'
-
-> +               printk(KERN_ERR FW_BUG PREFIX
-> +                      "No valid BIOS _PSS frequency found\n");
-
-And you should mention which CPU has it busted - as there are
-some that are working.
-
-
-> +               result = -EFAULT;
-> +               kfree(pr->performance->states);
-> +       }
-> +
-> +       if (last_invalid > 0)
-
-Don't you want 'last_invalid >= 0' ?
-
-> +               pr->performance->state_count = last_invalid;
-> +
->       end:
->        kfree(buffer.pointer);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks,
+Namhyung
