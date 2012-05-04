@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758283Ab2EDNhE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 09:37:04 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:57327 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046Ab2EDNhC (ORCPT
+	id S1758174Ab2EDNif (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 09:38:35 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:41199 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756056Ab2EDNie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 09:37:02 -0400
-Date: Fri, 4 May 2012 10:37:06 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/13] perf evlist: Fix creation of cpu map
-Message-ID: <20120504133706.GA10068@infradead.org>
-References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
- <1335417327-11796-8-git-send-email-namhyung.kim@lge.com>
- <4F996433.7040003@gmail.com>
- <1335474778.1497.14.camel@leonhard>
- <4F99BCAF.1080309@gmail.com>
- <87397qhvvx.fsf@sejong.aot.lge.com>
- <20120502184033.GD5745@infradead.org>
- <87fwbga8v7.fsf@sejong.aot.lge.com>
+	Fri, 4 May 2012 09:38:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fwbga8v7.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FA3D2DF.9070000@intel.com>
+References: <1336114210-25687-1-git-send-email-alex.shi@intel.com>
+	<1336114210-25687-4-git-send-email-alex.shi@intel.com>
+	<CAJd=RBDi1cJ=HmjoLdMG1hMU5GZNDV5ysXqvCT9PP09rEi342w@mail.gmail.com>
+	<4FA3D2DF.9070000@intel.com>
+Date: Fri, 4 May 2012 21:38:33 +0800
+Message-ID: <CAJd=RBA8JSAckF0=jAdqtVCym3O1CAr97OObiqqvERQuYCgVNA@mail.gmail.com>
+Subject: Re: [PATH v2 3/5] x86/tlb: fall back to flush all when meet a THP
+ large page
+From: Hillf Danton <dhillf@gmail.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
+        fweisbec@gmail.com, bp@amd64.org, npiggin@gmail.com, jeremy@goop.org,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, yinghai@kernel.org,
+        borislav.petkov@amd.com, ak@linux.intel.com, cpw@sgi.com,
+        steiner@sgi.com, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q44Dcex0002928
 
-Em Fri, May 04, 2012 at 01:05:48PM +0900, Namhyung Kim escreveu:
-> Hi,
-> 
-> On Wed, 2 May 2012 15:40:33 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Fri, Apr 27, 2012 at 09:16:18AM +0900, Namhyung Kim escreveu:
-> >> So as long as you set perf_event_paranoid to -1 or run perf test as
-> >> root, you cannot see the failure.
-> >
-> > Ok, as root try 'perf top', here I get, with this patch:
-> >
-> > [root@sandy ~]# perf top --stdio
-> > Warning:
-> > The sys_perf_event_open() syscall returned with 22 (Invalid argument).
-> > /bin/dmesg may provide additional information.
-> > No CONFIG_PERF_EVENTS=y kernel support configured?
-> > [root@sandy ~]#
-> >
-> > Skipping this one, will look again later.
-> >
-> > - Arnaldo
-> 
-> Sorry. It is because perf top depends on an undefined behaviour that
-> if neither target nor command line argument was specified it'd open
-> events for all online cpus. In contrast, perf record and perf stat will
-> show the help message in this case.
-> 
-> This patch makes it clear that we have to prepare a sane target
-> configuration before opening a perf event fd. So I think we should fix
-> perf top to set top.target.system_wide to true by default.
+On Fri, May 4, 2012 at 9:00 PM, Alex Shi <alex.shi@intel.com> wrote:
+> On 05/04/2012 08:11 PM, Hillf Danton wrote:
+>
+>> Hi Alex,
+>>
+>> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  if (vmflag & VM_EXEC)
+>> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  tlb_entries = tlb_lli_4k[ENTRIES];
+>> @@ -22,11 +23,15 @@ void flush_tlb_range(struct vm_area_stru
+>> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  act_entries = tlb_entries > mm->total_vm ?
+>> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  mm->total_vm : tlb_entries;
+>>
+>> - Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  if ((end - start)/PAGE_SIZE > act_entries/FLUSHALL_BAR)
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  pg_sz = (transparent_hugepage_enabled(vma) ||
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  is_vm_hugetlb_page(vma)) ?
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  HPAGE_SIZE : PAGE_SIZE;
+>> +
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  if ((end - start)/pg_sz > act_entries/FLUSHALL_BAR)
+>
+>
+> Your patch should base on the second patch that expel the HUGETLB page.
+>
+The diff is only for showing idea.
 
-So please provide a preparatory patch for top before this one, ok?
+> But the key fact is I did not find invlpg is help on HUGETLB.
 
-- Arnaldo
+Yep, I only assume flushing huge TLB is not far from regular TLB.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
