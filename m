@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759322Ab2EDVlS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:41:18 -0400
-Received: from smtp06.smtpout.orange.fr ([80.12.242.128]:16432 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517Ab2EDVlR convert rfc822-to-8bit (ORCPT
+	id S1755361Ab2EDVmy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:42:54 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59614 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131Ab2EDVmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 17:41:17 -0400
-Message-ID: <4FA44CF9.7050604@wanadoo.fr>
-Date: Fri, 04 May 2012 23:41:13 +0200
-From: Pascal Chapperon <pascal.chapperon@wanadoo.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	Fri, 4 May 2012 17:42:53 -0400
+Date: Fri, 4 May 2012 23:42:51 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT pull] timers: fixes for 3.4
+Message-ID: <alpine.LFD.2.02.1205042341460.6271@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-team@fedoraproject.org
-Subject: Re: RCU related performance regression in 3.3
-References: <20177034.34764.1335528920975.JavaMail.www@wwinf1f04> <20120428034257.GA2495@linux.vnet.ibm.com> <20120501000245.GA4329@linux.vnet.ibm.com> <4F9FA50C.9070600@wanadoo.fr> <20120501154513.GD2441@linux.vnet.ibm.com> <4FA3EAEE.9030601@wanadoo.fr> <20120504150411.GC2411@linux.vnet.ibm.com>
-In-Reply-To: <20120504150411.GC2411@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 04/05/2012 17:04, Paul E. McKenney a écrit :
-> On Fri, May 04, 2012 at 04:42:54PM +0200, Pascal Chapperon wrote:
->> Le 01/05/2012 17:45, Paul E. McKenney a écrit :
->>
->>> Here is my RCU_FAST_NO_HZ patch stack on top of v3.4-rc4.
->>>
->>> Or you can pull branch fnh.2012.05.01a from:
->>>
->>> 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
->>>
->>> 							Thanx, Paul
->>>
->> I applied your global patch on top of v3.4-rc4. But the slowdown is
->> worse than before : boot sequence took 80s instead 20-30s (12s for
->> initramfs instead of 2s).
->>
->> I'll send you rcu tracing log in a second mail.
->
-> Hmmm...  Well, I guess I am glad that I finally did something that
-> had an effect, but I sure wish that the effect had been in the other
-> direction!
->
-> Just to make sure I understand: the difference between the 20-30s and
-> the 80s is exactly the patch I sent you?
->
-> 							Thanx, Paul
->
->
-Yes. Exactly same kernel config as in previous results, I applied your 
-patch against v3.4-rc4, and sorry, the result is exactly what I said;
-I saw that your global patch was quite huge, and addresses things which
-are not directly related with the initial patch (commit 
-7cb92499000e3c86dae653077b1465458a039ef6); maybe a side effect?
+Linus,
 
-However, I'm ready to try this patch on my smaller laptop which
-supports well CONFIG_FAST_NO_HZ=y and systemd, if you think it can
-help ?
+please pull the latest timers-urgent-for-linus git tree from:
 
-Another thought: this issue as nothing to do with i7 Hyper-threading
-capacities ? (as I test core2duo, Pentium ulv in same conditions and I
-don't encountered any slowdown ?)
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
 
-Pascal
+Thanks,
 
+	tglx
+
+------------------>
+John Stultz (1):
+      rtc: Fix possible null pointer dereference in rtc-mpc5121.c
+
+
+ drivers/rtc/rtc-mpc5121.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/rtc/rtc-mpc5121.c b/drivers/rtc/rtc-mpc5121.c
+index 42f5f82..029e421 100644
+--- a/drivers/rtc/rtc-mpc5121.c
++++ b/drivers/rtc/rtc-mpc5121.c
+@@ -360,12 +360,11 @@ static int __devinit mpc5121_rtc_probe(struct platform_device *op)
+ 						&mpc5200_rtc_ops, THIS_MODULE);
+ 	}
+ 
+-	rtc->rtc->uie_unsupported = 1;
+-
+ 	if (IS_ERR(rtc->rtc)) {
+ 		err = PTR_ERR(rtc->rtc);
+ 		goto out_free_irq;
+ 	}
++	rtc->rtc->uie_unsupported = 1;
+ 
+ 	return 0;
+ 
