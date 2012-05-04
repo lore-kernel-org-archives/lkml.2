@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab2EDBYd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 21:24:33 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:33195 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757206Ab2EDBYJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 21:24:09 -0400
-Subject: Re: [PATCH] target: Handle GET_EVENT_STATUS_NOTIFICATION
- passthrough
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Cc: target-devel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1335800113-28075-1-git-send-email-stefanha@linux.vnet.ibm.com>
-References: <1335800113-28075-1-git-send-email-stefanha@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 May 2012 18:24:06 -0700
-Message-ID: <1336094646.22393.102.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757068Ab2EDBYF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 21:24:05 -0400
+Received: from mga03.intel.com ([143.182.124.21]:50522 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754053Ab2EDBYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 21:24:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="96207453"
+Date: Fri, 4 May 2012 09:26:55 +0800
+From: Xudong Hao <xudong.hao@linux.intel.com>
+To: dwmw2@infradead.org
+Cc: chrisw@sous-sol.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, xiantao.zhang@intel.com,
+        xudong.hao@intel.com
+Subject: [PATCH v2 1/1] intel-iommu: Add device info into list before doing
+	context mapping
+Message-ID: <20120504012655.GA8468@hp-xd.sh.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-04-30 at 16:35 +0100, Stefan Hajnoczi wrote:
-> The SCSI MMC GET_EVENT_STATUS_NOTIFICATION command can be used to find
-> out about media change, among other things.  This patch adds it to the
-> command sequencer so that PSCSI CD-ROM passthrough works with modern
-> Linux guests that issue this command.
-> 
-> Tested-by: Cong Meng <mengcong@cn.ibm.com>
-> Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-> ---
->  drivers/target/target_core_transport.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-> index a953ca0..5b83fd2 100644
-> --- a/drivers/target/target_core_transport.c
-> +++ b/drivers/target/target_core_transport.c
-> @@ -3146,6 +3146,10 @@ static int transport_generic_cmd_sequencer(
->  			cmd->sam_task_attr = MSG_HEAD_TAG;
->  		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
->  		break;
-> +	case GET_EVENT_STATUS_NOTIFICATION:
-> +		size = (cdb[7] << 8) | cdb[8];
-> +		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
-> +		break;
->  	default:
->  		pr_warn("TARGET_CORE[%s]: Unsupported SCSI Opcode"
->  			" 0x%02x, sending CHECK_CONDITION.\n",
+Add device info into list before do context mapping, because device info will be
+ used by iommu_enable_dev_iotlb function, in this function, pci_enable_ats would
+ not be called without this patch.
 
-Applied to lio-core, and will get this added into for-next for 3.5-rc1
+Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+Signed-off-by: Xiantao Zhang <xiantao.zhang@intel.com>
+Acked-by: Chris Wright <chrisw@sous-sol.org>
+---
+ drivers/iommu/intel-iommu.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
 
-Thanks Cong + Stefan!
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index f93d5ac..5fda348 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -2286,12 +2286,6 @@ static int domain_add_dev_info(struct dmar_domain *domain,
+    if (!info)
+        return -ENOMEM;
 
---nab
+-   ret = domain_context_mapping(domain, pdev, translation);
+-   if (ret) {
+-       free_devinfo_mem(info);
+-       return ret;
+-   }
+-
+    info->segment = pci_domain_nr(pdev->bus);
+    info->bus = pdev->bus->number;
+    info->devfn = pdev->devfn;
+@@ -2304,6 +2298,17 @@ static int domain_add_dev_info(struct dmar_domain *domain,
+    pdev->dev.archdata.iommu = info;
+    spin_unlock_irqrestore(&device_domain_lock, flags);
+
++   ret = domain_context_mapping(domain, pdev, translation);
++   if (ret) {
++       spin_lock_irqsave(&device_domain_lock, flags);
++       list_del(&info->link);
++       list_del(&info->global);
++       pdev->dev.archdata.iommu = NULL;
++       spin_unlock_irqrestore(&device_domain_lock, flags);
++       free_devinfo_mem(info);
++       return ret;
++   }
++
+    return 0;
+ }
+
+--
+1.6.0.rc1
 
