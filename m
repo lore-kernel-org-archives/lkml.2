@@ -1,49 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab2EDIii (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 04:38:38 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:60800 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753352Ab2EDIie (ORCPT
+	id S1753644Ab2EDInZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 04:43:25 -0400
+Received: from relay.parallels.com ([195.214.232.42]:44502 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab2EDInW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 04:38:34 -0400
-Message-ID: <4FA3958A.4080206@ti.com>
-Date: Fri, 04 May 2012 11:38:34 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120503 Thunderbird/12.0.1
+	Fri, 4 May 2012 04:43:22 -0400
+Message-ID: <4FA3969A.5080205@parallels.com>
+Date: Fri, 4 May 2012 12:43:06 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 2/3] MFD: twl6040: Allocate IRQ numbers dynamically
-References: <1336049665-27777-1-git-send-email-peter.ujfalusi@ti.com> <1336049665-27777-3-git-send-email-peter.ujfalusi@ti.com> <20120503132004.GB14296@sirena.org.uk> <4FA2881B.6010902@ti.com> <20120503145248.GJ3955@opensource.wolfsonmicro.com> <4FA2A08C.5000403@ti.com> <20120503152643.GM3955@opensource.wolfsonmicro.com>
-In-Reply-To: <20120503152643.GM3955@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v3 0/2] SUNRPC: separate per-net data creation from service
+References: <20120502120536.8794.22210.stgit@localhost.localdomain> <20120502215837.GA12089@fieldses.org> <20120503142735.GA16940@fieldses.org>
+In-Reply-To: <20120503142735.GA16940@fieldses.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2012 06:26 PM, Mark Brown wrote:
-> On Thu, May 03, 2012 at 06:13:16PM +0300, Peter Ujfalusi wrote:
->> On 05/03/2012 05:52 PM, Mark Brown wrote:
->>> Are you sure there aren't any boards out there which rely on the
->>> interrupt base (eg, using a GPIO with the IRQ output of a chip)?
-> 
->> Yes, I'm sure.
-> 
-> Because...?
+On 03.05.2012 18:27, J. Bruce Fields wrote:
+> On Wed, May 02, 2012 at 05:58:37PM -0400, J. Bruce Fields wrote:
+>> Thanks, applying.
+>
+> Whoops, no--I'm hitting the BUG at net/sunrpc/svc.c:558 (the first of
+> the two BUG_ON()s in svc_destroy()) when restarting nfsd.  Could you
+> look into this?
+>
 
-The irq_base was used to map the nested interrupt numbers somewhere high
-enough. twl6040 has one irq line towards the CPU (comes via
-i2c_client->irq).
-With this change we just change the mapping of the nested interrupt
-range provided by twl6040 (instead of hardwired number we ask for
-suitable range).
-We have sdp4430 and PandaBoard with twl6040. They are fine. The other
-non upstream boards should be fine as well with this change.
+My fault. Sorry. Investigating.
+
+> --b.
+>
+>>
+>> --b.
+>>
+>> On Wed, May 02, 2012 at 04:08:29PM +0400, Stanislav Kinsbursky wrote:
+>>> creation
+>>>
+>>> v3: "SUNRPC: new svc_bind() routine introduced" patch was squashed with the
+>>>      "SUNRPC: check rpcbind clients usage counter before decrement" patch.
+>>>
+>>> v2: Increase per-net usage counted in lockd_up_net().
+>>>
+>>> This is a cleanup patch set.
+>>> It will be followed my LockD start/stop cleanup patch set and NFS callback
+>>> service containerization patch set (yes, I forgot to implement it).
+>>>
+>>> Today per-net data is created with service, and then is service is starting in
+>>> other network namespace. And thus it's destroyed with service too. Moreover,
+>>> network context for destroying of per-net data is taken from current process.
+>>> This is correct, but code looks ugly.
+>>> This patch set separates per-net data allocation from service allocation and
+>>> destruction.
+>>> IOW, per-net data have to be destroyed by service users - not service itself.
+>>>
+>>> BTW, NFSd code become uglier with this patch set. Sorry.
+>>> But I assume, that these new ugly parts will be replaced later by NFSd service
+>>> containerization code.
+>>>
+>>> The following series implements...
+>>>
+>>> ---
+>>>
+>>> Stanislav Kinsbursky (2):
+>>>        SUNRPC: new svc_bind() routine introduced
+>>>        SUNRPC: move per-net operations from svc_destroy()
+>>>
+>>>
+>>>   fs/lockd/svc.c             |   33 +++++++++++++++++++++------------
+>>>   fs/nfs/callback.c          |   11 +++++++++++
+>>>   fs/nfsd/nfsctl.c           |    4 ++++
+>>>   fs/nfsd/nfssvc.c           |   16 ++++++++++++++++
+>>>   include/linux/sunrpc/svc.h |    1 +
+>>>   net/sunrpc/rpcb_clnt.c     |   12 +++++++-----
+>>>   net/sunrpc/svc.c           |   23 ++++++++++-------------
+>>>   7 files changed, 70 insertions(+), 30 deletions(-)
+>>>
+
 
 -- 
-Péter
+Best regards,
+Stanislav Kinsbursky
