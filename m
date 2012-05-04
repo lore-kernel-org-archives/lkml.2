@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759221Ab2EDRPI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 13:15:08 -0400
-Received: from 3.mo4.mail-out.ovh.net ([46.105.57.129]:46145 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750807Ab2EDRPG (ORCPT
+	id S1759250Ab2EDRQW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 13:16:22 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48888 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab2EDRQU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 13:15:06 -0400
-Date: Fri, 4 May 2012 18:51:28 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>, linaro-dev@lists.linaro.org,
-        Jason Cooper <jason@lakedaemon.net>, Nicolas Pitre <nico@fluxnic.net>,
-        Tony Lindgren <tony@atomide.com>, Magnus Damm <magnus.damm@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>, shawn.guo@linaro.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Marc Zyngier <marc.zyngier@arm.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: Making ARM multiplatform kernels DT-only?
-Message-ID: <20120504165128.GI7788@game.jcrosoft.org>
-References: <201205031350.35476.arnd@arndb.de>
- <20120503140428.GB897@n2100.arm.linux.org.uk>
- <201205041220.24747.arnd@arndb.de>
- <4FA40642.5040203@gmail.com>
- <20120504165603.GK897@n2100.arm.linux.org.uk>
+	Fri, 4 May 2012 13:16:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120504165603.GK897@n2100.arm.linux.org.uk>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 1019783841601268659
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtdehucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtdehucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+In-Reply-To: <CAErSpo7mwheYBxM5_PhSmUdbybRbO9s1nTmZrL83NPuNW6g8SA@mail.gmail.com>
+References: <20120427190033.GA17588@ldl.usa.hp.com> <CAErSpo7mwheYBxM5_PhSmUdbybRbO9s1nTmZrL83NPuNW6g8SA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 4 May 2012 11:15:58 -0600
+Message-ID: <CAErSpo7LEDFq6=6vzBg+1eT-v+Y+oEm=AoUo2hiJ4-i3NafPYw@mail.gmail.com>
+Subject: Re: [PATCH] Disable Bus Master on PCI device shutdown
+To: linux-pci@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17:56 Fri 04 May     , Russell King - ARM Linux wrote:
-> On Fri, May 04, 2012 at 11:39:30AM -0500, Rob Herring wrote:
-> > Many of the headers are simply platform_data structs which may still be
-> > needed on DT platforms, but could be moved elsewhere.
-> 
-> Those should be in include/linux/platform.
-> 
-> > >> Then there's also the problem of uncompress.h.  The last piece of the
-> > >> puzzle is the common clock stuff.
-> > 
-> > The smp/hotplug/localtimer related functions are still global. Marc Z
-> > has posted patches for this, but I haven't seen recent activity. This
-> > and clocks were the 2 main issues I saw trying to build 2 platforms
-> > together. highbank and picoxcell could be built together since only
-> > highbank has clocks and smp.
-> > 
-> > gpio.h is still required, but empty for most platforms.
-> 
-> Those empty gpio.h files are definitely a candidate for going into
-> arch/arm/include/mach/gpio.h, and then all those 12-byte mach/gpio.h can
-> be deleted (13 files).
-> 
-> We've not had any progress on the gpio.h issue since I did the last round
-> of cleanup; the next stage was to persuade SoC maintainers to get rid of
-> their optimized versions which aren't compatible with multi-platform
-> kernels.
-> 
-> I don't know if folk are expecting me to push that forwards or whether
-> there's someone else working on that aspect of it...
-> 
-> So this issue really does need to be progressed too.
-same with CLOCK_TICK_RATE
+On Thu, May 3, 2012 at 5:52 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Fri, Apr 27, 2012 at 1:00 PM, Khalid Aziz <khalid.aziz@hp.com> wrote:
+>> Disable Bus Master bit on the device in
+>> pci_device_shutdown() to ensure PCI devices do not continue
+>> to DMA data after shutdown. This can cause memory
+>> corruption in case of a kexec where the current kernel
+>> shuts down and transfers control to a new kernel while a
+>> PCI device continues to DMA to memory that does not belong
+>> to it any more in the new kernel.
+>>
+>> I have tested this code on two laptops, two workstations and
+>> a 16-socket server. kexec worked correctly on all of them.
+>>
+>>
+>> Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
+>> ---
+>>  drivers/pci/pci-driver.c |    6 ++++++
+>>  1 files changed, 6 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+>> index 6b54b23..9db5940 100644
+>> --- a/drivers/pci/pci-driver.c
+>> +++ b/drivers/pci/pci-driver.c
+>> @@ -420,6 +420,12 @@ static void pci_device_shutdown(struct device *dev)
+>>        pci_msi_shutdown(pci_dev);
+>>        pci_msix_shutdown(pci_dev);
+>>
+>> +       /*
+>> +        * Turn off Bus Master bit on the device to tell it to not
+>> +        * continue to do DMA
+>> +        */
+>> +       pci_disable_device(pci_dev);
+>> +
+>>        /*
+>>         * Devices may be enabled to wake up by runtime PM, but they need not
+>>         * be supposed to wake up the system from its "power off" state (e.g.
+>
+> Any comment on this, Eric?  It seems reasonable to me.
 
-at91 (expect at91x40) and imx we drop it but nearly on the other platform
-did not
+Applied to my "next" branch, thanks.
 
-Best Regards,
-J.
+Bjorn
