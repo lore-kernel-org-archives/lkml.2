@@ -1,414 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758191Ab2EDN2A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 09:28:00 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:47643 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056Ab2EDN17 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 09:27:59 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AplZADTZo09V5qg+PGdsb2JhbABFijCoMBkBAQEBNzSCZhMBDxgRWRgKGhOHfwMPsTQNiVMTiXiHAgScA4U6h20
-X-IronPort-AV: E=Sophos;i="4.75,531,1330902000"; 
-   d="scan'208";a="326900527"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH v2] HID: hid-multitouch: Only match MT interfaces
-Date: Fri,  4 May 2012 15:32:04 +0200
-Message-Id: <1336138324-8217-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.10
+	id S1758247Ab2EDN3M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 09:29:12 -0400
+Received: from ralfj.de ([85.214.220.216]:54235 "EHLO ralfj.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754010Ab2EDN3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 09:29:11 -0400
+From: Ralf Jung <post@ralfj.de>
+To: Andy Whitcroft <apw@canonical.com>
+Subject: Re: [PATCH 1/1] battery: only refresh the sysfs files when pertinant information changes
+Date: Fri, 4 May 2012 15:29:06 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4.0-rc5+; KDE/4.7.4; x86_64; ; )
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        Adrian Fita <adrian.fita@gmail.com>, Len Brown <lenb@kernel.org>,
+        Paolo Scarabelli <paolo@msw.it>, linux-kernel@vger.kernel.org
+References: <20120503124708.GA18622@srcf.ucam.org> <1336052907-15084-1-git-send-email-apw@canonical.com>
+In-Reply-To: <1336052907-15084-1-git-send-email-apw@canonical.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205041529.07142.post@ralfj.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All known hid-multitouch devices currently match any device group.
-However, some devices present interfaces belonging to different groups,
-resulting in a race between the hid-generic and hid-multitouch modules.
-This patch narrows the MT device list to match only HID_GROUP_MULTITOUCH,
-which solves the problem.
+Hi,
 
-As an exception, the USB_DEVICE_ID_CYPRESS_TRUETOUCH panel is not
-modified, in order to suppress the unwanted extra interfaces of the
-device.
+I applied this to 3.4-rc5, and it fixes the issue. Thanks a lot :)
 
-Reported-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
-Ok, here is the version without changing the cypress device. Jiri assured
-that he will take care of the merge with the baanto device, so that one is
-omitted here.
+> We only need to regenerate the sysfs files when the capacity units
+> change, avoid the update otherwise.
+> 
+> Signed-off-by: Andy Whitcroft <apw@canonical.com>
+Tested-by: Ralf Jung <post@ralfj.de>
+> ---
+>  drivers/acpi/battery.c |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+> 
+> 	Based on Matthew's feedback here is a version which optimises
+> 	based on the power_unit field as returned from the battery info.
+> 	Could someone who suffers from this issue please test this out
+> 	and report back.  Thanks.
+> 
+> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+> index 86933ca..7dd3f9f 100644
+> --- a/drivers/acpi/battery.c
+> +++ b/drivers/acpi/battery.c
+> @@ -643,11 +643,19 @@ static int acpi_battery_update(struct acpi_battery
+> *battery)
+> 
+>  static void acpi_battery_refresh(struct acpi_battery *battery)
+>  {
+> +	int power_unit;
+> +
+>  	if (!battery->bat.dev)
+>  		return;
+> 
+> +	power_unit = battery->power_unit;
+> +
+>  	acpi_battery_get_info(battery);
+> -	/* The battery may have changed its reporting units. */
+> +
+> +	if (power_unit == battery->power_unit)
+> +		return;
+> +
+> +	/* The battery has changed its reporting units. */
+>  	sysfs_remove_battery(battery);
+>  	sysfs_add_battery(battery);
+>  }
 
-Thanks,
-Henrik
-
- drivers/hid/hid-multitouch.c |  143 +++++++++++++++++++++---------------------
- 1 file changed, 73 insertions(+), 70 deletions(-)
-
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index ea465f1..b10c204 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -110,6 +110,9 @@ struct mt_device {
- 
- #define MT_DEFAULT_MAXCONTACT	10
- 
-+#define MT_USB_DEVICE(v, p)	HID_DEVICE(BUS_USB, HID_GROUP_MULTITOUCH, v, p)
-+#define MT_BT_DEVICE(v, p)	HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_MULTITOUCH, v, p)
-+
- /*
-  * these device-dependent functions determine what slot corresponds
-  * to a valid contact that was just read.
-@@ -735,50 +738,50 @@ static const struct hid_device_id mt_devices[] = {
- 
- 	/* 3M panels */
- 	{ .driver_data = MT_CLS_3M,
--		HID_USB_DEVICE(USB_VENDOR_ID_3M,
-+		MT_USB_DEVICE(USB_VENDOR_ID_3M,
- 			USB_DEVICE_ID_3M1968) },
- 	{ .driver_data = MT_CLS_3M,
--		HID_USB_DEVICE(USB_VENDOR_ID_3M,
-+		MT_USB_DEVICE(USB_VENDOR_ID_3M,
- 			USB_DEVICE_ID_3M2256) },
- 	{ .driver_data = MT_CLS_3M,
--		HID_USB_DEVICE(USB_VENDOR_ID_3M,
-+		MT_USB_DEVICE(USB_VENDOR_ID_3M,
- 			USB_DEVICE_ID_3M3266) },
- 
- 	/* ActionStar panels */
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_ACTIONSTAR,
-+		MT_USB_DEVICE(USB_VENDOR_ID_ACTIONSTAR,
- 			USB_DEVICE_ID_ACTIONSTAR_1011) },
- 
- 	/* Atmel panels */
- 	{ .driver_data = MT_CLS_SERIAL,
--		HID_USB_DEVICE(USB_VENDOR_ID_ATMEL,
-+		MT_USB_DEVICE(USB_VENDOR_ID_ATMEL,
- 			USB_DEVICE_ID_ATMEL_MULTITOUCH) },
- 	{ .driver_data = MT_CLS_SERIAL,
--		HID_USB_DEVICE(USB_VENDOR_ID_ATMEL,
-+		MT_USB_DEVICE(USB_VENDOR_ID_ATMEL,
- 			USB_DEVICE_ID_ATMEL_MXT_DIGITIZER) },
- 
- 	/* Cando panels */
- 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
--		HID_USB_DEVICE(USB_VENDOR_ID_CANDO,
-+		MT_USB_DEVICE(USB_VENDOR_ID_CANDO,
- 			USB_DEVICE_ID_CANDO_MULTI_TOUCH) },
- 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
--		HID_USB_DEVICE(USB_VENDOR_ID_CANDO,
-+		MT_USB_DEVICE(USB_VENDOR_ID_CANDO,
- 			USB_DEVICE_ID_CANDO_MULTI_TOUCH_10_1) },
- 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
--		HID_USB_DEVICE(USB_VENDOR_ID_CANDO,
-+		MT_USB_DEVICE(USB_VENDOR_ID_CANDO,
- 			USB_DEVICE_ID_CANDO_MULTI_TOUCH_11_6) },
- 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
--		HID_USB_DEVICE(USB_VENDOR_ID_CANDO,
-+		MT_USB_DEVICE(USB_VENDOR_ID_CANDO,
- 			USB_DEVICE_ID_CANDO_MULTI_TOUCH_15_6) },
- 
- 	/* Chunghwa Telecom touch panels */
- 	{  .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_CHUNGHWAT,
-+		MT_USB_DEVICE(USB_VENDOR_ID_CHUNGHWAT,
- 			USB_DEVICE_ID_CHUNGHWAT_MULTITOUCH) },
- 
- 	/* CVTouch panels */
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_CVTOUCH,
-+		MT_USB_DEVICE(USB_VENDOR_ID_CVTOUCH,
- 			USB_DEVICE_ID_CVTOUCH_SCREEN) },
- 
- 	/* Cypress panel */
-@@ -788,223 +791,223 @@ static const struct hid_device_id mt_devices[] = {
- 
- 	/* eGalax devices (resistive) */
- 	{ .driver_data = MT_CLS_EGALAX,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480D) },
- 	{ .driver_data = MT_CLS_EGALAX,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480E) },
- 
- 	/* eGalax devices (capacitive) */
- 	{ .driver_data = MT_CLS_EGALAX,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C) },
- 	{ .driver_data = MT_CLS_EGALAX_SERIAL,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7207) },
- 	{ .driver_data = MT_CLS_EGALAX_SERIAL,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_725E) },
- 	{ .driver_data = MT_CLS_EGALAX_SERIAL,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7224) },
- 	{ .driver_data = MT_CLS_EGALAX_SERIAL,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_722A) },
- 	{ .driver_data = MT_CLS_EGALAX,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B) },
- 	{ .driver_data = MT_CLS_EGALAX_SERIAL,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7262) },
- 	{ .driver_data = MT_CLS_EGALAX,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72A1) },
- 	{ .driver_data = MT_CLS_EGALAX_SERIAL,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72AA) },
- 	{ .driver_data = MT_CLS_EGALAX,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72FA) },
- 	{ .driver_data = MT_CLS_EGALAX,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7302) },
- 	{ .driver_data = MT_CLS_EGALAX_SERIAL,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7349) },
- 	{ .driver_data = MT_CLS_EGALAX_SERIAL,
--		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001) },
- 
- 	/* Elo TouchSystems IntelliTouch Plus panel */
- 	{ .driver_data = MT_CLS_DUAL_NSMU_CONTACTID,
--		HID_USB_DEVICE(USB_VENDOR_ID_ELO,
-+		MT_USB_DEVICE(USB_VENDOR_ID_ELO,
- 			USB_DEVICE_ID_ELO_TS2515) },
- 
- 	/* GeneralTouch panel */
- 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
--		HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
- 			USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS) },
- 
- 	/* Gametel game controller */
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_FRUCTEL,
-+		MT_BT_DEVICE(USB_VENDOR_ID_FRUCTEL,
- 			USB_DEVICE_ID_GAMETEL_MT_MODE) },
- 
- 	/* GoodTouch panels */
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_GOODTOUCH,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GOODTOUCH,
- 			USB_DEVICE_ID_GOODTOUCH_000f) },
- 
- 	/* Hanvon panels */
- 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
--		HID_USB_DEVICE(USB_VENDOR_ID_HANVON_ALT,
-+		MT_USB_DEVICE(USB_VENDOR_ID_HANVON_ALT,
- 			USB_DEVICE_ID_HANVON_ALT_MULTITOUCH) },
- 
- 	/* Ideacom panel */
- 	{ .driver_data = MT_CLS_SERIAL,
--		HID_USB_DEVICE(USB_VENDOR_ID_IDEACOM,
-+		MT_USB_DEVICE(USB_VENDOR_ID_IDEACOM,
- 			USB_DEVICE_ID_IDEACOM_IDC6650) },
- 	{ .driver_data = MT_CLS_SERIAL,
--		HID_USB_DEVICE(USB_VENDOR_ID_IDEACOM,
-+		MT_USB_DEVICE(USB_VENDOR_ID_IDEACOM,
- 			USB_DEVICE_ID_IDEACOM_IDC6651) },
- 
- 	/* Ilitek dual touch panel */
- 	{  .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_ILITEK,
-+		MT_USB_DEVICE(USB_VENDOR_ID_ILITEK,
- 			USB_DEVICE_ID_ILITEK_MULTITOUCH) },
- 
- 	/* IRTOUCH panels */
- 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
--		HID_USB_DEVICE(USB_VENDOR_ID_IRTOUCHSYSTEMS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_IRTOUCHSYSTEMS,
- 			USB_DEVICE_ID_IRTOUCH_INFRARED_USB) },
- 
- 	/* LG Display panels */
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_LG,
-+		MT_USB_DEVICE(USB_VENDOR_ID_LG,
- 			USB_DEVICE_ID_LG_MULTITOUCH) },
- 
- 	/* Lumio panels */
- 	{ .driver_data = MT_CLS_CONFIDENCE_MINUS_ONE,
--		HID_USB_DEVICE(USB_VENDOR_ID_LUMIO,
-+		MT_USB_DEVICE(USB_VENDOR_ID_LUMIO,
- 			USB_DEVICE_ID_CRYSTALTOUCH) },
- 	{ .driver_data = MT_CLS_CONFIDENCE_MINUS_ONE,
--		HID_USB_DEVICE(USB_VENDOR_ID_LUMIO,
-+		MT_USB_DEVICE(USB_VENDOR_ID_LUMIO,
- 			USB_DEVICE_ID_CRYSTALTOUCH_DUAL) },
- 
- 	/* MosArt panels */
- 	{ .driver_data = MT_CLS_CONFIDENCE_MINUS_ONE,
--		HID_USB_DEVICE(USB_VENDOR_ID_ASUS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_ASUS,
- 			USB_DEVICE_ID_ASUS_T91MT)},
- 	{ .driver_data = MT_CLS_CONFIDENCE_MINUS_ONE,
--		HID_USB_DEVICE(USB_VENDOR_ID_ASUS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_ASUS,
- 			USB_DEVICE_ID_ASUSTEK_MULTITOUCH_YFO) },
- 	{ .driver_data = MT_CLS_CONFIDENCE_MINUS_ONE,
--		HID_USB_DEVICE(USB_VENDOR_ID_TURBOX,
-+		MT_USB_DEVICE(USB_VENDOR_ID_TURBOX,
- 			USB_DEVICE_ID_TURBOX_TOUCHSCREEN_MOSART) },
- 
- 	/* Panasonic panels */
- 	{ .driver_data = MT_CLS_PANASONIC,
--		HID_USB_DEVICE(USB_VENDOR_ID_PANASONIC,
-+		MT_USB_DEVICE(USB_VENDOR_ID_PANASONIC,
- 			USB_DEVICE_ID_PANABOARD_UBT780) },
- 	{ .driver_data = MT_CLS_PANASONIC,
--		HID_USB_DEVICE(USB_VENDOR_ID_PANASONIC,
-+		MT_USB_DEVICE(USB_VENDOR_ID_PANASONIC,
- 			USB_DEVICE_ID_PANABOARD_UBT880) },
- 
- 	/* PenMount panels */
- 	{ .driver_data = MT_CLS_CONFIDENCE,
--		HID_USB_DEVICE(USB_VENDOR_ID_PENMOUNT,
-+		MT_USB_DEVICE(USB_VENDOR_ID_PENMOUNT,
- 			USB_DEVICE_ID_PENMOUNT_PCI) },
- 
- 	/* PixArt optical touch screen */
- 	{ .driver_data = MT_CLS_INRANGE_CONTACTNUMBER,
--		HID_USB_DEVICE(USB_VENDOR_ID_PIXART,
-+		MT_USB_DEVICE(USB_VENDOR_ID_PIXART,
- 			USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN) },
- 	{ .driver_data = MT_CLS_INRANGE_CONTACTNUMBER,
--		HID_USB_DEVICE(USB_VENDOR_ID_PIXART,
-+		MT_USB_DEVICE(USB_VENDOR_ID_PIXART,
- 			USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1) },
- 	{ .driver_data = MT_CLS_INRANGE_CONTACTNUMBER,
--		HID_USB_DEVICE(USB_VENDOR_ID_PIXART,
-+		MT_USB_DEVICE(USB_VENDOR_ID_PIXART,
- 			USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2) },
- 
- 	/* PixCir-based panels */
- 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
--		HID_USB_DEVICE(USB_VENDOR_ID_HANVON,
-+		MT_USB_DEVICE(USB_VENDOR_ID_HANVON,
- 			USB_DEVICE_ID_HANVON_MULTITOUCH) },
- 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
--		HID_USB_DEVICE(USB_VENDOR_ID_CANDO,
-+		MT_USB_DEVICE(USB_VENDOR_ID_CANDO,
- 			USB_DEVICE_ID_CANDO_PIXCIR_MULTI_TOUCH) },
- 
- 	/* Quanta-based panels */
- 	{ .driver_data = MT_CLS_CONFIDENCE_CONTACT_ID,
--		HID_USB_DEVICE(USB_VENDOR_ID_QUANTA,
-+		MT_USB_DEVICE(USB_VENDOR_ID_QUANTA,
- 			USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
- 	{ .driver_data = MT_CLS_CONFIDENCE_CONTACT_ID,
--		HID_USB_DEVICE(USB_VENDOR_ID_QUANTA,
-+		MT_USB_DEVICE(USB_VENDOR_ID_QUANTA,
- 			USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3001) },
- 	{ .driver_data = MT_CLS_CONFIDENCE_CONTACT_ID,
--		HID_USB_DEVICE(USB_VENDOR_ID_QUANTA,
-+		MT_USB_DEVICE(USB_VENDOR_ID_QUANTA,
- 			USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008) },
- 
- 	/* Stantum panels */
- 	{ .driver_data = MT_CLS_CONFIDENCE,
--		HID_USB_DEVICE(USB_VENDOR_ID_STANTUM,
-+		MT_USB_DEVICE(USB_VENDOR_ID_STANTUM,
- 			USB_DEVICE_ID_MTP)},
- 	{ .driver_data = MT_CLS_CONFIDENCE,
--		HID_USB_DEVICE(USB_VENDOR_ID_STANTUM_STM,
-+		MT_USB_DEVICE(USB_VENDOR_ID_STANTUM_STM,
- 			USB_DEVICE_ID_MTP_STM)},
- 	{ .driver_data = MT_CLS_CONFIDENCE,
--		HID_USB_DEVICE(USB_VENDOR_ID_STANTUM_SITRONIX,
-+		MT_USB_DEVICE(USB_VENDOR_ID_STANTUM_SITRONIX,
- 			USB_DEVICE_ID_MTP_SITRONIX)},
- 
- 	/* TopSeed panels */
- 	{ .driver_data = MT_CLS_TOPSEED,
--		HID_USB_DEVICE(USB_VENDOR_ID_TOPSEED2,
-+		MT_USB_DEVICE(USB_VENDOR_ID_TOPSEED2,
- 			USB_DEVICE_ID_TOPSEED2_PERIPAD_701) },
- 
- 	/* Touch International panels */
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_TOUCH_INTL,
-+		MT_USB_DEVICE(USB_VENDOR_ID_TOUCH_INTL,
- 			USB_DEVICE_ID_TOUCH_INTL_MULTI_TOUCH) },
- 
- 	/* Unitec panels */
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_UNITEC,
-+		MT_USB_DEVICE(USB_VENDOR_ID_UNITEC,
- 			USB_DEVICE_ID_UNITEC_USB_TOUCH_0709) },
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_UNITEC,
-+		MT_USB_DEVICE(USB_VENDOR_ID_UNITEC,
- 			USB_DEVICE_ID_UNITEC_USB_TOUCH_0A19) },
- 	/* XAT */
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_XAT,
-+		MT_USB_DEVICE(USB_VENDOR_ID_XAT,
- 			USB_DEVICE_ID_XAT_CSR) },
- 
- 	/* Xiroku */
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_XIROKU,
-+		MT_USB_DEVICE(USB_VENDOR_ID_XIROKU,
- 			USB_DEVICE_ID_XIROKU_SPX) },
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_XIROKU,
-+		MT_USB_DEVICE(USB_VENDOR_ID_XIROKU,
- 			USB_DEVICE_ID_XIROKU_MPX) },
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_XIROKU,
-+		MT_USB_DEVICE(USB_VENDOR_ID_XIROKU,
- 			USB_DEVICE_ID_XIROKU_CSR) },
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_XIROKU,
-+		MT_USB_DEVICE(USB_VENDOR_ID_XIROKU,
- 			USB_DEVICE_ID_XIROKU_SPX1) },
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_XIROKU,
-+		MT_USB_DEVICE(USB_VENDOR_ID_XIROKU,
- 			USB_DEVICE_ID_XIROKU_MPX1) },
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_XIROKU,
-+		MT_USB_DEVICE(USB_VENDOR_ID_XIROKU,
- 			USB_DEVICE_ID_XIROKU_CSR1) },
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_XIROKU,
-+		MT_USB_DEVICE(USB_VENDOR_ID_XIROKU,
- 			USB_DEVICE_ID_XIROKU_SPX2) },
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_XIROKU,
-+		MT_USB_DEVICE(USB_VENDOR_ID_XIROKU,
- 			USB_DEVICE_ID_XIROKU_MPX2) },
- 	{ .driver_data = MT_CLS_DEFAULT,
--		HID_USB_DEVICE(USB_VENDOR_ID_XIROKU,
-+		MT_USB_DEVICE(USB_VENDOR_ID_XIROKU,
- 			USB_DEVICE_ID_XIROKU_CSR2) },
- 
- 	/* Generic MT device */
--- 
-1.7.10
-
+Kind regards,
+Ralf Jung
