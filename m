@@ -1,125 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760661Ab2EDXZm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 19:25:42 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17892 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756783Ab2EDXZl convert rfc822-to-8bit (ORCPT
+	id S1760673Ab2EDXdM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 19:33:12 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:58769
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757008Ab2EDXdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 19:25:41 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 04 May 2012 16:25:16 -0700
-From: Diwakar Tundlam <dtundlam@nvidia.com>
-To: "'Michael Neuling'" <mikey@neuling.org>
-CC: "'Peter Zijlstra'" <a.p.zijlstra@chello.nl>,
-        "'Ingo Molnar'" <mingo@kernel.org>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Christoph Lameter'" <cl@gentwo.org>,
-        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        "'David Rientjes'" <rientjes@google.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Date: Fri, 4 May 2012 16:25:16 -0700
-Subject: RE: [PATCH] sched: Enable arch-specific asym packing option in
- sched domain
-Thread-Topic: [PATCH] sched: Enable arch-specific asym packing option in
- sched domain
-Thread-Index: Ac0qTIR81dajrD3zSfyfaTGtipVnygAACJrQ
-Message-ID: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF104@HQMAIL04.nvidia.com>
-References: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF0FF@HQMAIL04.nvidia.com>
- <1DD7BFEDD3147247B1355BEFEFE46652379C3DF101@HQMAIL04.nvidia.com>
- <1336169422.16236.1.camel@twins>
- <1DD7BFEDD3147247B1355BEFEFE46652379C3DF102@HQMAIL04.nvidia.com>
- <1336170586.16236.11.camel@twins>
- <1DD7BFEDD3147247B1355BEFEFE46652379C3DF103@HQMAIL04.nvidia.com>
- <19500.1336173634@neuling.org>
-In-Reply-To: <19500.1336173634@neuling.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 4 May 2012 19:33:11 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bh84d07hz2fh668h839hd25h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4FA4673C.7010209@am.sony.com>
+Date: Fri, 4 May 2012 16:33:16 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Brian Swetland <swetland@google.com>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: android: logger: Allocate logs dynamically at boot
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Arrh, so it's not a performance issue but power savings.. that would this asymmetric packing a lot more appropriate to use.
+This changes the log initialization to be dynamic, but still
+at boot time.  These changes are a predecessor to implementing
+runtime allocation and freeing of logs, to make the Android logger
+less hard-coded.
 
-Yes, it is for power saving..
+This makes no ABI changes with user space.
 
-Could you suggest a way t use this flag without affecting Power7, then?
-I was thinking to define a different weak arch_sd_package_asym_packing() in SD_CPU_INIT.
-And the flag is set only for arch/arm/mach-tegra/tegra3.
+Signed-off-by: Tim Bird <tim.bird@am.sony.com>
+---
+ drivers/staging/android/logger.c |  117 ++++++++++++++++++++++++--------------
+ 1 file changed, 75 insertions(+), 42 deletions(-)
 
-Thanks,
---Diwakar.
+diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
+index ea69b6a..fa5fd71 100644
+--- a/drivers/staging/android/logger.c
++++ b/drivers/staging/android/logger.c
+@@ -25,6 +25,7 @@
+ #include <linux/poll.h>
+ #include <linux/slab.h>
+ #include <linux/time.h>
++#include <linux/vmalloc.h>
+ #include "logger.h"
 
------Original Message-----
-From: Michael Neuling [mailto:mikey@neuling.org] 
-Sent: Friday, May 04, 2012 4:21 PM
-To: Diwakar Tundlam
-Cc: 'Peter Zijlstra'; 'Ingo Molnar'; 'Andrew Morton'; 'Christoph Lameter'; 'Stephen Rothwell'; 'Benjamin Herrenschmidt'; 'David Rientjes'; 'linux-kernel@vger.kernel.org'; Peter De Schrijver
-Subject: Re: [PATCH] sched: Enable arch-specific asym packing option in sched domain
+ #include <asm/ioctls.h>
+@@ -564,81 +565,113 @@ static const struct file_operations logger_fops = {
+ 	.release = logger_release,
+ };
 
-> Thanks for clarifying the Power7. I see the point - package vs cpu's within a package.
-> 
-> Yes, this is for Nvidia's ARM Quad-core Tegra CPU. It is a single 
-> package, organized flatly.  To save power, we want cores to be loaded 
-> up in order from cpu0, 1, etc.  The ASYM_PACKING flag seems to do 
-> exactly what we need if set in the domain flag.
+-/*
+- * Defines a log structure with name 'NAME' and a size of 'SIZE' bytes, which
+- * must be a power of two, greater than LOGGER_ENTRY_MAX_LEN, and less than
+- * LONG_MAX minus LOGGER_ENTRY_MAX_LEN.
+- */
+-#define DEFINE_LOGGER_DEVICE(VAR, NAME, SIZE) \
+-static unsigned char _buf_ ## VAR[SIZE]; \
+-static struct logger_log VAR = { \
+-	.buffer = _buf_ ## VAR, \
+-	.misc = { \
+-		.minor = MISC_DYNAMIC_MINOR, \
+-		.name = NAME, \
+-		.fops = &logger_fops, \
+-		.parent = NULL, \
+-	}, \
+-	.wq = __WAIT_QUEUE_HEAD_INITIALIZER(VAR .wq), \
+-	.readers = LIST_HEAD_INIT(VAR .readers), \
+-	.mutex = __MUTEX_INITIALIZER(VAR .mutex), \
+-	.w_off = 0, \
+-	.head = 0, \
+-	.size = SIZE, \
+-};
+-
+-DEFINE_LOGGER_DEVICE(log_main, LOGGER_LOG_MAIN, 256*1024)
+-DEFINE_LOGGER_DEVICE(log_events, LOGGER_LOG_EVENTS, 256*1024)
+-DEFINE_LOGGER_DEVICE(log_radio, LOGGER_LOG_RADIO, 256*1024)
+-DEFINE_LOGGER_DEVICE(log_system, LOGGER_LOG_SYSTEM, 256*1024)
++#define MAX_LOGS	5
++struct logger_log *logs_array[MAX_LOGS];
 
-Arrh, so it's not a performance issue but power savings.. that would this asymmetric packing a lot more appropriate to use.
+ static struct logger_log *get_log_from_minor(int minor)
+ {
+-	if (log_main.misc.minor == minor)
+-		return &log_main;
+-	if (log_events.misc.minor == minor)
+-		return &log_events;
+-	if (log_radio.misc.minor == minor)
+-		return &log_radio;
+-	if (log_system.misc.minor == minor)
+-		return &log_system;
++	int i;
++
++	for (i = 0; i < MAX_LOGS; i++) {
++		if (logs_array[i]->misc.minor == minor)
++			return logs_array[i];
++	}
+ 	return NULL;
+ }
 
-Mikey
+-static int __init init_log(struct logger_log *log)
++static int __init add_log(struct logger_log *log)
+ {
+-	int ret;
++	int i;
 
-> 
-> Thanks,
-> --Diwakar.
-> 
-> -----Original Message-----
-> From: Peter Zijlstra [mailto:a.p.zijlstra@chello.nl]
-> Sent: Friday, May 04, 2012 3:30 PM
-> To: Diwakar Tundlam
-> Cc: 'Ingo Molnar'; 'Andrew Morton'; 'Christoph Lameter'; 'Michael 
-> Neuling'; 'Stephen Rothwell'; 'Benjamin Herrenschmidt'; 'David 
-> Rientjes'; 'linux-kernel@vger.kernel.org'; Peter De Schrijver
-> Subject: RE: [PATCH] sched: Enable arch-specific asym packing option 
-> in sched domain
-> 
-> On Fri, 2012-05-04 at 15:18 -0700, Diwakar Tundlam wrote:
-> > 
-> > arch_sd_sibling_asym_packing() is already present under ifdef CONFIG_SMT.
-> > I didn't touch that. I only added it to SD_CPU_INIT for all cpu's.
-> > I assumed Power7 shouldn't use SD_CPU_INIT.
-> 
-> All archs use SD_CPU_INIT, its the default topology level for a package/socket. So now you've made Power7 prefer lower numbered sockets over higher numbered sockets.. not fatal, but not really nice either.
-> 
-> [ power7 is the only one that implements arch_sd_sibling_asym_packing 
-> ]
-> 
-> > Maybe I should define a separate weak symbol, say arch_sd_bias_to_lower_num_cpu()?
-> > Then Power7 can define arch_sd_sibling_asym_packing() to be '1' and 
-> > it will not break all-cpu init.
-> 
-> A slightly saner name would be:
-> 
->   arch_sd_package_asym_packing()
-> 
-> FWIW, I suspect you're wanting to use this for some ARM chip (nvidia 
-> doesn't do much else -- aside from this graphics stuff) so that if 
-> there's hardly anything it runs on cpu0. Now, last time I checked, 
-> these ARM things had only 1 package, so I still don't see the point 
-> :-)
-> 
-> I suspect you want to modify SD_MC_INIT() with something like:
-> 
->   arch_sd_mc_asym_packing()
-> 
-> Or is this the big-little thing and you're representing them as separate packages?
-> 
-> See how a little extra information avoids me having to endlessly second guess wtf you're actually wanting to do?
-> 
++	for (i = 0; i < MAX_LOGS; i++) {
++		if (logs_array[i] == 0) {
++			logs_array[i] = log;
++			return 0;
++		}
++	}
++	return -1;
++}
++
++/*
++ * Log size must be a power of two, greater than LOGGER_ENTRY_MAX_LEN,
++ * and less than LONG_MAX minus LOGGER_ENTRY_MAX_LEN.
++ */
++static int __init create_log(char *log_name, int size)
++{
++	int ret = 0;
++	struct logger_log *log;
++	unsigned char *buffer;
++
++	buffer = vmalloc(size);
++	if (buffer == NULL)
++		return -1;
++
++	log = kzalloc(sizeof(struct logger_log), GFP_KERNEL);
++	if (log == NULL) {
++		ret = -1;
++		goto out_free_buffer;
++	}
++	log->buffer = buffer;
++
++	log->misc.minor = MISC_DYNAMIC_MINOR;
++	log->misc.name = kstrdup(log_name, GFP_KERNEL);
++	if (log->misc.name == NULL) {
++		ret = -1;
++		goto out_free_log;
++	}
++
++	log->misc.fops = &logger_fops;
++	log->misc.parent = NULL;
++
++	init_waitqueue_head(&log->wq);
++	INIT_LIST_HEAD(&log->readers);
++	mutex_init(&log->mutex);
++	log->w_off = 0;
++	log->head = 0;
++	log->size = size;
++
++	ret = add_log(log);
++	if (unlikely(ret))
++		goto out_free_log;
++
++	/* finally, initialize the misc device for this log */
+ 	ret = misc_register(&log->misc);
+ 	if (unlikely(ret)) {
+ 		printk(KERN_ERR "logger: failed to register misc "
+ 		       "device for log '%s'!\n", log->misc.name);
+-		return ret;
++		goto out_free_log;
+ 	}
+
+ 	printk(KERN_INFO "logger: created %luK log '%s'\n",
+ 	       (unsigned long) log->size >> 10, log->misc.name);
+
+ 	return 0;
++
++out_free_log:
++	kfree(log);
++
++out_free_buffer:
++	vfree(buffer);
++	return ret;
+ }
+
+ static int __init logger_init(void)
+ {
+ 	int ret;
+
+-	ret = init_log(&log_main);
++	ret = create_log(LOGGER_LOG_MAIN, 256*1024);
+ 	if (unlikely(ret))
+ 		goto out;
+
+-	ret = init_log(&log_events);
++	ret = create_log(LOGGER_LOG_EVENTS, 256*1024);
+ 	if (unlikely(ret))
+ 		goto out;
+
+-	ret = init_log(&log_radio);
++	ret = create_log(LOGGER_LOG_RADIO, 256*1024);
+ 	if (unlikely(ret))
+ 		goto out;
+
+-	ret = init_log(&log_system);
++	ret = create_log(LOGGER_LOG_SYSTEM, 256*1024);
+ 	if (unlikely(ret))
+ 		goto out;
+
+-- 
+1.7.9.5
+
