@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900Ab2EDUt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:49:27 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:38140 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759922Ab2EDUtW (ORCPT
+	id S1760118Ab2EDUyq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:54:46 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:37249 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759982Ab2EDUyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:49:22 -0400
-Message-Id: <20120504204246.606929528@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:04 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        =?UTF-8?q?Eric=20B=E9nard?= <eric@eukrea.com>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Wolfram Sang <w.sang@pengutronix.de>,
-        Chris Ball <cjb@laptop.org>, Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 20/47] mmc: unbreak sdhci-esdhc-imx on i.MX25
-In-Reply-To: <20120504204307.GA13761@kroah.com>
+	Fri, 4 May 2012 16:54:43 -0400
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        linux-embedded@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+From: Wolfgang Denk <wd@denx.de>
+Subject: Re: Handling of modular boards
+MIME-Version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8bit
+In-reply-to: <201205042039.25794.arnd@arndb.de>
+References: <20120504185850.GO14230@opensource.wolfsonmicro.com> <201205041934.08830.arnd@arndb.de> <20120504203357.6B79B206451@gemini.denx.de> <201205042039.25794.arnd@arndb.de>
+Comments: In-reply-to Arnd Bergmann <arnd@arndb.de>
+   message dated "Fri, 04 May 2012 20:39:25 -0000."
+Date: Fri, 04 May 2012 22:54:41 +0200
+Message-Id: <20120504205441.D293120645E@gemini.denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Dear Arnd,
 
-------------------
+In message <201205042039.25794.arnd@arndb.de> you wrote:
+>
+> > On the other hand, some of the issues we're trying to solve here
+> > for the kernel are also present in the boot loader, so this needs to
+> > do this anyway - whether by inserting new or modifying (enabling or
+> > disabling) existing properties in the DT is not really relevant here.
+> 
+> I haven't seen a case where the add-on board is actually required
+> for booting. What examples are you thinking of?
 
-From: Eric Bénard <eric@eukrea.com>
+There are systems (and I bet it will be a growing number) where U-Boot
+itself uses the DT for configuration.  Also, there are functions that
+are needed both by the boot loader and the kernel - for example to
+dislay a splash screen the boot loader needs to initialize the
+display, so it must be able to detect which type of LCD is attached
+(resolution, color-depth, orientation) - the device tree comes in very
+handy here.  Why should Linux re-do all such things?
 
-commit b89152824f993a9572b47eb31f4579feadeac34c upstream.
+Best regards,
 
-This was broken by me in 37865fe91582582a6f6c00652f6a2b1ff71f8a78
-("mmc: sdhci-esdhc-imx: fix timeout on i.MX's sdhci") where more
-extensive tests would have shown that read or write of data to the
-card were failing (even if the partition table was correctly read).
+Wolfgang Denk
 
-Signed-off-by: Eric BÃ©nard <eric@eukrea.com>
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
-Signed-off-by: Chris Ball <cjb@laptop.org>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
-Thanks,
-Jonathan
-
- drivers/mmc/host/sdhci-esdhc-imx.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
---- a/drivers/mmc/host/sdhci-esdhc-imx.c
-+++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-@@ -245,8 +245,7 @@ static int esdhc_pltfm_init(struct sdhci
- 	}
- 	pltfm_host->priv = imx_data;
- 
--	if (!cpu_is_mx25())
--		host->quirks |= SDHCI_QUIRK_BROKEN_TIMEOUT_VAL;
-+	host->quirks |= SDHCI_QUIRK_BROKEN_TIMEOUT_VAL;
- 
- 	if (cpu_is_mx25() || cpu_is_mx35()) {
- 		/* Fix errata ENGcm07207 present on i.MX25 and i.MX35 */
-
-
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
+I must follow the people.  Am I not their leader? - Benjamin Disraeli
