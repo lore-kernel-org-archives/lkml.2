@@ -1,52 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab2EDJjd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 05:39:33 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:2817 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752731Ab2EDJjc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 05:39:32 -0400
-Message-ID: <1336124366.2046.20.camel@t41.thuisdomein>
-Subject: Re: [v3.4-rc5]: drm references experimental
-From: Paul Bolle <pebolle@tiscali.nl>
-To: =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@googlemail.com>
-Cc: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
-Date: Fri, 04 May 2012 11:39:26 +0200
-In-Reply-To: <CADDKRnA7XMczevE2JRsMR508mdz+Rgs+QvV4QCMqnts8t+1y3A@mail.gmail.com>
-References: <CADDKRnDR=baZtQfyQLxYGB2zVDMGi2C_V2ffNkSUhipJB-+t=A@mail.gmail.com>
-	 <1335995781.30754.27.camel@x61.thuisdomein>
-	 <CADDKRnA7XMczevE2JRsMR508mdz+Rgs+QvV4QCMqnts8t+1y3A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.5.1 (3.5.1-1.fc18) 
-Mime-Version: 1.0
+	id S1754368Ab2EDJlP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 05:41:15 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:47480 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753676Ab2EDJlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 05:41:14 -0400
+Date: Fri, 4 May 2012 11:41:05 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Miller <davem@davemloft.net>
+Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org, tj@kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH] mm: nobootmem: Correct alloc_bootmem semantics.
+Message-ID: <20120504094105.GD31780@cmpxchg.org>
+References: <CAE9FiQWYPPXA0YmgBP6SkKiEaLJJnzxMqPn2_VwOKoYSKGwULQ@mail.gmail.com>
+ <20120425.190034.632638679653622318.davem@davemloft.net>
+ <20120503152841.GA19918@cmpxchg.org>
+ <20120503.130416.839732919427673590.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 04 May 2012 09:39:26.0831 (UTC) FILETIME=[CBD9E7F0:01CD29D9]
-X-RcptDomain: vger.kernel.org
+In-Reply-To: <20120503.130416.839732919427673590.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-03 at 14:02 +0200, JÃ¶rg Otte wrote:
-> this means especially the following is not possible or does not occure:
+On Thu, May 03, 2012 at 01:04:16PM -0400, David Miller wrote:
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Date: Thu, 3 May 2012 17:28:41 +0200
 > 
-> NON-EXP:
-> driver "A" uses library function "B"
+> > On Wed, Apr 25, 2012 at 07:00:34PM -0400, David Miller wrote:
+> >> From: Yinghai Lu <yinghai@kernel.org>
+> >> Date: Wed, 25 Apr 2012 15:46:42 -0700
+> >> 
+> >> > On Wed, Apr 25, 2012 at 1:10 PM, David Miller <davem@davemloft.net> wrote:
+> >> >> @@ -298,13 +298,19 @@ void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+> >> >>        if (WARN_ON_ONCE(slab_is_available()))
+> >> >>                return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+> >> >>
+> >> >> +again:
+> >> >>        ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
+> >> >>                                         goal, -1ULL);
+> >> >>        if (ptr)
+> >> >>                return ptr;
+> >> > 
+> >> > If you want to be consistent to bootmem version.
+> >> > 
+> >> > again label should be here instead.
+> >> 
+> >> It is merely an artifact of implementation that the bootmem version
+> >> doesn't try to respect the given node if the goal cannot be satisfied,
+> >> and in fact I would classify that as a bug that needs to be fixed.
+> >> 
+> >> Therefore, I believe the bootmem case is what needs to be adjusted
+> >> instead.
+> > 
+> > Now it does: node+goal, goal, node, anywhere
+> > 
+> > whereas the memblock version of __alloc_bootmem_node_nopanic() also
+> > still does: node+goal, goal, anywhere
+> > 
+> > Your description suggests that the node should be higher prioritized
+> > than the goal, which I understand as: node+goal, node, anywhere.
+> > 
+> > Which do we actually want?
 > 
-> EXP:
-> unchanged driver "A" now uses EXPERIMENTAL function "B-EXP"
+> I think the goal is what needs to be prioritized.  An explicit goal usually
+> has a requirement, like "I need physical memory in the low 32-bits" and if
+> they specified an explicit node they really mean "and give me it on NUMA
+> node X if you can."  Hence the sequence:
+> 
+> 	node+goal, goal, node, any
+> 
+> the only other reasonable option would be:
+> 
+> 	node+goal, node, goal, any
+> 
+> but I think that doesn't match what people want when an explicit goal
+> is specified.  Do you?
 
-There's a number of things I can think of for "EXPERIMENTAL function".
-What exactly do you mean here?
+Oh I think that's what limit is for.  The goal is usually to allocate
+high address memory for users that can deal with it and keep lowmem
+for users that can't.
 
-> The question is whether this is guaranteed.
+For example, I can imagine sparsemem usemap allocation in the memory
+hotplug case would prefer having the usemap on the same node as the
+corresponding pgdat descriptor than allocating on any node above the
+goal and possibly create circular dependencies.
 
-If you were thinking about usage of CONFIG_EXPERIMENTAL in code or in
-Makefiles: no, I don't think there's a guarantee that this won't be
-done. But it should be clear that EXPERIMENTAL is intended as, say, a
-tag for config options. So it's likely that usage of EXPERIMENTAL
-outside that scope will be prevented.
+But that is quite rare/unlikely anyway, and I guess in most other
+cases it's better to go for preventing lowmem exhaustian than to
+preserve node locality.
 
+So I'm fine with this priority order, but it's a judgement call.
 
-Paul Bolle
-
+I'll send patches to make everything use the same policy.
