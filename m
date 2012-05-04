@@ -1,139 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab2EDGpO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 02:45:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6086 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752026Ab2EDGpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 02:45:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="149221826"
-Date: Fri, 4 May 2012 09:46:06 +0300
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, Durgadoss R <durgadoss.r@intel.com>,
-        Andi Kleen <ak@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, v2] hwmon: coretemp: use list instead of fixed size
- array for temp data
-Message-ID: <20120504064606.GA11744@otc-wbsnb-06>
-References: <1335971436-13903-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1336043936-11105-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120504054122.GA19334@ericsson.com>
+	id S1752805Ab2EDGvI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 02:51:08 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34136 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859Ab2EDGvG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 02:51:06 -0400
+Date: Fri, 4 May 2012 08:50:59 +0200
+From: Domenico Andreoli <cavokz@gmail.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
+        Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: [PATCH] clk: Use a separate struct for holding init data.
+Message-ID: <20120504065059.GA16265@glitch>
+Mail-Followup-To: Saravana Kannan <skannan@codeaurora.org>,
+	Mike Turquette <mturquette@linaro.org>,
+	Arnd Bergman <arnd.bergmann@linaro.org>,
+	linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
+	Paul Walmsley <paul@pwsan.com>,
+	Russell King <linux@arm.linux.org.uk>,
+	Linus Walleij <linus.walleij@stericsson.com>,
+	Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+	Sascha Hauer <s.hauer@pengutronix.de>,
+	Mark Brown <broonie@opensource.wolfsonmicro.com>,
+	Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+	Rob Herring <rob.herring@calxeda.com>,
+	Richard Zhao <richard.zhao@linaro.org>,
+	Grant Likely <grant.likely@secretlab.ca>,
+	Deepak Saxena <dsaxena@linaro.org>,
+	Amit Kucheria <amit.kucheria@linaro.org>,
+	Jamie Iles <jamie@jamieiles.com>,
+	Jeremy Kerr <jeremy.kerr@canonical.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Shawn Guo <shawn.guo@freescale.com>
+References: <1335419936-10881-1-git-send-email-skannan@codeaurora.org>
+ <20120503230308.GA13016@glitch>
+ <4FA32CDC.3070005@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mYCpIKhGyMATD0i+"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120504054122.GA19334@ericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FA32CDC.3070005@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 03, 2012 at 06:11:56PM -0700, Saravana Kannan wrote:
+> On 05/03/2012 04:03 PM, Domenico Andreoli wrote:
+> >On Wed, Apr 25, 2012 at 10:58:56PM -0700, Saravana Kannan wrote:
+> >>
+> >>diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+> >>index 90627e4..8ea11b4 100644
+> >>--- a/drivers/clk/clk-divider.c
+> >>+++ b/drivers/clk/clk-divider.c
+> >>@@ -167,6 +167,7 @@ struct clk *clk_register_divider(struct device *dev, const char *name,
+> >>  {
+> >>  	struct clk_divider *div;
+> >>  	struct clk *clk;
+> >>+	struct clk_init_data init;
+> >>
+> >>  	/* allocate the divider */
+> >>  	div = kzalloc(sizeof(struct clk_divider), GFP_KERNEL);
+> >>@@ -175,19 +176,22 @@ struct clk *clk_register_divider(struct device *dev, const char *name,
+> >>  		return ERR_PTR(-ENOMEM);
+> >>  	}
+> >>
+> >>+	init.name = name;
+> >>+	init.ops =&clk_divider_ops;
+> >>+	init.flags = flags;
+> >>+	init.parent_names = (parent_name ?&parent_name: NULL);
+> >>+	init.num_parents = (parent_name ? 1 : 0);
+> >>+
+> >>  	/* struct clk_divider assignments */
+> >>  	div->reg = reg;
+> >>  	div->shift = shift;
+> >>  	div->width = width;
+> >>  	div->flags = clk_divider_flags;
+> >>  	div->lock = lock;
+> >>+	div->hw.init =&init;
+> >>
+> >>  	/* register the clock */
+> >>-	clk = clk_register(dev, name,
+> >>-			&clk_divider_ops,&div->hw,
+> >>-			(parent_name ?&parent_name: NULL),
+> >>-			(parent_name ? 1 : 0),
+> >>-			flags);
+> >>+	clk = clk_register(dev,&div->hw);
+> >>
+> >>  	if (IS_ERR(clk))
+> >>  		kfree(div);
+> >
+> >I would prefer to rip the parent _settings_ configuration out of
+> >clk_register(). It's optional right? And passing a single parent is a
+> >common case.
+> >
+> >Three cases:
+> >
+> >   1) one parent:
+> >      __clk_register_parent(clk, parent_name);
+> >      clk_register(dev, name,&ops, flags);
+> >
+> >   2) many parents:
+> >      __clk_register_parents(clk, parent_names, num_parents);
+> >      clk_register(dev, name,&ops, flags);
+> >
+> >   3) no parents:
+> >      clk_register(dev, name,&ops, flags);
+> >
+> >You may also want to move the whole parent initialization into
+> >__clk_register_parents() and call it after clk_register(), it would
+> >simplify some error paths.
+> >
+> >This pattern could be used also with other common clocks registration
+> >functions (fixed rate, divider, mux, etc) that may have complex
+> >initializations and/or optional parameters that cannot go all on the
+> >same function call.
+> 
+> Please no. If anything, make those other register functions go in
+> the direction of clk_register(). Have a long list of params to a
+> function and then having it fill up a structure just makes the code
+> less readable. Why would that be any better than having the whole
+> structure statically declared or the whole structure dynamically
+> populated (by device tree) and then calling clk_register()?
+> 
+> Take about 50 clocks with 3 parents each and try to register them in
+> the way you suggested and in a way how clk_register() in this patch
+> will need you to declare them statically. Compare the two and see
+> which would be more readable.
 
---mYCpIKhGyMATD0i+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I was not thinking at the static initialization at all (but I was
+forgetting that clk does not yet exist before the invocation of
+clk_register).
 
-On Thu, May 03, 2012 at 10:41:22PM -0700, Guenter Roeck wrote:
-> On Thu, May 03, 2012 at 07:18:56AM -0400, Kirill A. Shutemov wrote:
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> >=20
-> > Let's rework code to allow arbitrary number of cores on a CPU, not
-> > limited by hardcoded array size.
-> >=20
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > ---
-> >  v2:
-> >    - fix NULL pointer dereference. Thanks to R, Durgadoss;
-> >    - use mutex instead of spinlock for list locking.
-> > ---
-> >  drivers/hwmon/coretemp.c |  178 +++++++++++++++++++++++++++++++++-----=
---------
-> >  1 files changed, 129 insertions(+), 49 deletions(-)
-> >=20
-> > diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-> > index 54a70fe..1c66131 100644
-> > --- a/drivers/hwmon/coretemp.c
-> > +++ b/drivers/hwmon/coretemp.c
-> > @@ -36,6 +36,8 @@
-> >  #include <linux/cpu.h>
-> >  #include <linux/pci.h>
-> >  #include <linux/smp.h>
-> > +#include <linux/list.h>
-> > +#include <linux/kref.h>
-> >  #include <linux/moduleparam.h>
-> >  #include <asm/msr.h>
-> >  #include <asm/processor.h>
-> > @@ -52,11 +54,9 @@ module_param_named(tjmax, force_tjmax, int, 0444);
-> >  MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsius");
-> >=20
-> >  #define BASE_SYSFS_ATTR_NO     2       /* Sysfs Base attr no for coret=
-emp */
-> > -#define NUM_REAL_CORES         16      /* Number of Real cores per cpu=
- */
-> >  #define CORETEMP_NAME_LENGTH   17      /* String Length of attrs */
-> >  #define MAX_CORE_ATTRS         4       /* Maximum no of basic attrs */
-> >  #define TOTAL_ATTRS            (MAX_CORE_ATTRS + 1)
-> > -#define MAX_CORE_DATA          (NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
-> >=20
-> >  #define TO_PHYS_ID(cpu)                (cpu_data(cpu).phys_proc_id)
-> >  #define TO_CORE_ID(cpu)                (cpu_data(cpu).cpu_core_id)
-> > @@ -82,6 +82,9 @@ MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsi=
-us");
-> >   * @valid: If this is 1, the current temperature is valid.
-> >   */
-> >  struct temp_data {
-> > +       struct list_head list;
-> > +       struct kref refcount;
->=20
-> Hi,
->=20
-> the kref is not needed. The attribute access functions don't
-> need to be protected since the attributes for a core are deleted
-> before the core data itself is deleted. So it is not neccessary=20
-> to hold a lock while accessing/using temp_data in the attribute
-> access functions. All you need is to hold a mutex while you are
-> manipulating or walking the list.
+For a few hours I was convinced that moving the parent initialization
+stuff in a separate function would have allowed also to ditch the (IMHO)
+horrible whole name caching (whose purpose is... allowing to register
+clock with a parent not yet known to the clock subsystem?)
 
-Without kref, what prevents following situation:
+Unfortunately the whole idea is quite invasive and the benefits
+debatable, it's simply too late to speak.
 
-		CPU-A				CPU-B
-	tdata =3D get_temp_data();
-					coretemp_remove_core() {
-					    device_remove_file();
-					    kfree(tdata);
-					}
-	<tdata dereference>
+Thanks anyway.
 
-?
-
---=20
- Kirill A. Shutemov
-
---mYCpIKhGyMATD0i+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPo3stAAoJEAd+omnVudOMx6YQAI0UQCIS0DvOXDISIpCszwtM
-pWgBICEIBG4SW/EWpbqIQZJZf4MdRSewiUMt3Mui+9YHXXK4nzUzmX8U+J4T+Dkr
-jwZ8XI4Bv1UyH2B2ZCCeXxLdpU5roSlRGrquftwFufyFc/0siL62pUUxHTaIYA81
-9RZ65NGAbswWfYUGrACfvxdKn96DtiTyY5GTx9URBIo+xs3opjX5MqFUmTyJf7NS
-KFDOaHquoIaPlej/QyhFub3eVK84eKZs5SrzVyOQKrpbxEx6KoUbUnxGMUX0GYbS
-+/HKrGEZ58iGzSZWFH7JRurYxVHtYeeAI1W5L2ceHPOAUZlY/3Q/MUpjNgeqWz09
-9+QZRTWjw26YeZL/hOA2RZhMWjbknFpz0bGalYLjBhs/jL4DWbmQKMTkH+xEi300
-ms3UNnCvPhAc6hxy4ZhaaM+EHLX1QY5T47esHur9KsWTGc1yijAkO+Db+kQH7Pxj
-P+/B3i5Duu740K36FijjBrnyqbJbkh9n9tnpn0gjaZsaEO2hHCjYlpj1ThjrXT3Z
-rDDJ04gvWJY4iiEUhHpt43L+JTM62sxaC99wpQsxQvsm23JYGcf0Z9EmxKHuvnMa
-RMR63x3pXHoLfol5hIAWMjnJ2/IMlp1P9+2ucaUNckZC865r2rNsrRnJD8fEJrmG
-6aI8TCHVQF9AxuHHciHr
-=tpUh
------END PGP SIGNATURE-----
-
---mYCpIKhGyMATD0i+--
+Domenico
