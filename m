@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab2EDGkp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 02:40:45 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14821 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab2EDGkn convert rfc822-to-8bit (ORCPT
+	id S1752716Ab2EDGm3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 02:42:29 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:50650 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab2EDGm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 02:40:43 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 03 May 2012 23:40:34 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "balbi@ti.com" <balbi@ti.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Date: Fri, 4 May 2012 08:40:30 +0200
-Subject: Re: [PATCHv3 1/4] ARM: tegra: Add Tegra AHB driver
-Thread-Topic: [PATCHv3 1/4] ARM: tegra: Add Tegra AHB driver
-Thread-Index: Ac0pwM0sh0+oBPcRTF+H9nCvsfT6zg==
-Message-ID: <20120504.094030.1816474762821188264.hdoyu@nvidia.com>
-References: <1336061147-10245-1-git-send-email-hdoyu@nvidia.com><4FA2C785.2080703@wwwdotorg.org>
-In-Reply-To: <4FA2C785.2080703@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Fri, 4 May 2012 02:42:28 -0400
+Date: Fri, 04 May 2012 02:42:16 -0400 (EDT)
+Message-Id: <20120504.024216.1730395431103337434.davem@davemloft.net>
+To: cmetcalf@tilera.com
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v4] tilegx network driver: initial support
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201205031936.q43Ja9Xb031644@lab-41.internal.tilera.com>
+References: <201205011759.q41HxR21020043@farm-0012.internal.tilera.com>
+	<20120503.014156.149171097979026872.davem@davemloft.net>
+	<201205031936.q43Ja9Xb031644@lab-41.internal.tilera.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 03 May 2012 23:42:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCHv3 1/4] ARM: tegra: Add Tegra AHB driver
-Date: Thu, 3 May 2012 19:59:33 +0200
-Message-ID: <4FA2C785.2080703@wwwdotorg.org>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Thu, 3 May 2012 12:41:56 -0400
 
-> On 05/03/2012 10:05 AM, Hiroshi DOYU wrote:
-> > Tegra AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
-> > High-performance Bus (AHB) architecture.
-> > 
-> > The AHB Arbiter controls AHB bus master arbitration. This effectively
-> > forms a second level of arbitration for access to the memory
-> > controller through the AHB Slave Memory device. The AHB pre-fetch
-> > logic can be configured to enhance performance for devices doing
-> > sequential access. Each AHB master is assigned to either the high or
-> > low priority bin. Both Tegra20/30 have this AHB bus.
-> > 
-> > Some of configuration param could be passed from DT too.
-> 
-> This patch should add
-> Documentation/devicetree/bindings/arm/tegra/tegra20-ahb.txt to describe
-> the DT binding.
+> +/* First, "tile_net_init_module()" initializes each network cpu to
+> + * handle incoming packets, and initializes all the network devices.
+> + *
+> + * Then, "ifconfig DEVICE up" calls "tile_net_open()", which will
+> + * turn on packet processing, if needed.
+> + *
+> + * If "ifconfig DEVICE down" is called, it uses "tile_net_stop()" to
+> + * stop egress, and possibly turn off packet processing.
+> + *
+> + * We start out with the ingress IRQ enabled on each CPU.  When it
+> + * fires, it is automatically disabled, and we call "napi_schedule()".
+> + * This will cause "tile_net_poll()" to be called, which will pull
+> + * packets from the netio queue, filtering them out, or passing them
+> + * to "netif_receive_skb()".  If our budget is exhausted, we will
+> + * return, knowing we will be called again later.  Otherwise, we
+> + * reenable the ingress IRQ, and call "napi_complete()".
 
->From 'dts' POV, there's no difference between tegra20 and
-tegra30. They just have a register range. Is
-"../bindings/arm/tegra/tegra-ahb.txt" ok, instead of having both
-tegra{20,30}-ahb.txt?
+This is not the place where you document how the generic networking
+brings devices up and down, and what driver methods are called during
+those actions.
+
+Imagine if every driver writer decided to do this.
+
+> +#define TILE_NET_MAX_COMPS 64
+> +
+> +
+
+Please get rid of all of these more-than-one empty line sequences.
+
+> +#define ROUND_UP(n, align) (((n) + (align) - 1) & -(align))
+
+This is ALIGN() from linux/kernel.h, please us it.
+
+At this rate I anticipate at least 20 rounds of review, this driver
+still needs quite a bit of work.
