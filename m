@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759859Ab2EDUoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:44:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759825Ab2EDUoj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759837Ab2EDUoj (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 4 May 2012 16:44:39 -0400
-Message-Id: <20120504204224.963510763@linuxfoundation.org>
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759816Ab2EDUoe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 16:44:34 -0400
+Message-Id: <20120504204225.569663381@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:31 -0700
+Date: Fri, 04 May 2012 13:42:38 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [ 07/75] x86, microcode: Ensure that module is only loaded on supported AMD CPUs
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 14/75] ASoC: wm8994: Improve sequencing of AIF channel enables
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,71 +25,386 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 283c1f2558ef4a4411fe908364b15b73b6ab44cf upstream.
+commit 1a38336b8611a04f0a624330c1f815421f4bf5f4 upstream.
 
-Exit early when there's no support for a particular CPU family. Also,
-fixup the "no support for this CPU vendor" to be issued only when the
-driver is attempted to be loaded on an unsupported vendor.
+This ensures a clean startup of the channels, without this change some
+use cases could result in issues in a small proportion of cases.
 
-Cc: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Link: http://lkml.kernel.org/r/20120411163849.GE4794@alberich.amd.com
-[Boris: add a commit msg because Andreas is lazy]
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/microcode_amd.c  |   12 +++++++-----
- arch/x86/kernel/microcode_core.c |    6 +++---
- 2 files changed, 10 insertions(+), 8 deletions(-)
+ sound/soc/codecs/wm8994.c |  276 +++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 222 insertions(+), 54 deletions(-)
 
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -82,11 +82,6 @@ static int collect_cpu_info_amd(int cpu,
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -929,61 +929,170 @@ static void wm8994_update_class_w(struct
+ 	}
+ }
+ 
+-static int late_enable_ev(struct snd_soc_dapm_widget *w,
+-			  struct snd_kcontrol *kcontrol, int event)
++static int aif1clk_ev(struct snd_soc_dapm_widget *w,
++		      struct snd_kcontrol *kcontrol, int event)
  {
- 	struct cpuinfo_x86 *c = &cpu_data(cpu);
- 
--	if (c->x86_vendor != X86_VENDOR_AMD || c->x86 < 0x10) {
--		pr_warning("CPU%d: family %d not supported\n", cpu, c->x86);
--		return -1;
--	}
--
- 	csig->rev = c->microcode;
- 	pr_info("CPU%d: patch_level=0x%08x\n", cpu, csig->rev);
- 
-@@ -380,6 +375,13 @@ static struct microcode_ops microcode_am
- 
- struct microcode_ops * __init init_amd_microcode(void)
- {
-+	struct cpuinfo_x86 *c = &cpu_data(0);
+ 	struct snd_soc_codec *codec = w->codec;
+-	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
++	struct wm8994 *control = codec->control_data;
++	int mask = WM8994_AIF1DAC1L_ENA | WM8994_AIF1DAC1R_ENA;
++	int dac;
++	int adc;
++	int val;
 +
-+	if (c->x86_vendor != X86_VENDOR_AMD || c->x86 < 0x10) {
-+		pr_warning("AMD CPU family 0x%x not supported\n", c->x86);
-+		return NULL;
++	switch (control->type) {
++	case WM8994:
++	case WM8958:
++		mask |= WM8994_AIF1DAC2L_ENA | WM8994_AIF1DAC2R_ENA;
++		break;
++	default:
++		break;
++	}
+ 
+ 	switch (event) {
+ 	case SND_SOC_DAPM_PRE_PMU:
+-		if (wm8994->aif1clk_enable) {
+-			snd_soc_update_bits(codec, WM8994_AIF1_CLOCKING_1,
+-					    WM8994_AIF1CLK_ENA_MASK,
+-					    WM8994_AIF1CLK_ENA);
+-			wm8994->aif1clk_enable = 0;
+-		}
+-		if (wm8994->aif2clk_enable) {
+-			snd_soc_update_bits(codec, WM8994_AIF2_CLOCKING_1,
+-					    WM8994_AIF2CLK_ENA_MASK,
+-					    WM8994_AIF2CLK_ENA);
+-			wm8994->aif2clk_enable = 0;
+-		}
++		val = snd_soc_read(codec, WM8994_AIF1_CONTROL_1);
++		if ((val & WM8994_AIF1ADCL_SRC) &&
++		    (val & WM8994_AIF1ADCR_SRC))
++			adc = WM8994_AIF1ADC1R_ENA | WM8994_AIF1ADC2R_ENA;
++		else if (!(val & WM8994_AIF1ADCL_SRC) &&
++			 !(val & WM8994_AIF1ADCR_SRC))
++			adc = WM8994_AIF1ADC1L_ENA | WM8994_AIF1ADC2L_ENA;
++		else
++			adc = WM8994_AIF1ADC1R_ENA | WM8994_AIF1ADC2R_ENA |
++				WM8994_AIF1ADC1L_ENA | WM8994_AIF1ADC2L_ENA;
++
++		val = snd_soc_read(codec, WM8994_AIF1_CONTROL_2);
++		if ((val & WM8994_AIF1DACL_SRC) &&
++		    (val & WM8994_AIF1DACR_SRC))
++			dac = WM8994_AIF1DAC1R_ENA | WM8994_AIF1DAC2R_ENA;
++		else if (!(val & WM8994_AIF1DACL_SRC) &&
++			 !(val & WM8994_AIF1DACR_SRC))
++			dac = WM8994_AIF1DAC1L_ENA | WM8994_AIF1DAC2L_ENA;
++		else
++			dac = WM8994_AIF1DAC1R_ENA | WM8994_AIF1DAC2R_ENA |
++				WM8994_AIF1DAC1L_ENA | WM8994_AIF1DAC2L_ENA;
++
++		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_4,
++				    mask, adc);
++		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_5,
++				    mask, dac);
++		snd_soc_update_bits(codec, WM8994_CLOCKING_1,
++				    WM8994_AIF1DSPCLK_ENA |
++				    WM8994_SYSDSPCLK_ENA,
++				    WM8994_AIF1DSPCLK_ENA |
++				    WM8994_SYSDSPCLK_ENA);
++		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_4, mask,
++				    WM8994_AIF1ADC1R_ENA |
++				    WM8994_AIF1ADC1L_ENA |
++				    WM8994_AIF1ADC2R_ENA |
++				    WM8994_AIF1ADC2L_ENA);
++		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_5, mask,
++				    WM8994_AIF1DAC1R_ENA |
++				    WM8994_AIF1DAC1L_ENA |
++				    WM8994_AIF1DAC2R_ENA |
++				    WM8994_AIF1DAC2L_ENA);
+ 		break;
+-	}
+ 
+-	/* We may also have postponed startup of DSP, handle that. */
+-	wm8958_aif_ev(w, kcontrol, event);
++	case SND_SOC_DAPM_PRE_PMD:
++	case SND_SOC_DAPM_POST_PMD:
++		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_5,
++				    mask, 0);
++		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_4,
++				    mask, 0);
++
++		val = snd_soc_read(codec, WM8994_CLOCKING_1);
++		if (val & WM8994_AIF2DSPCLK_ENA)
++			val = WM8994_SYSDSPCLK_ENA;
++		else
++			val = 0;
++		snd_soc_update_bits(codec, WM8994_CLOCKING_1,
++				    WM8994_SYSDSPCLK_ENA |
++				    WM8994_AIF1DSPCLK_ENA, val);
++		break;
++	}
+ 
+ 	return 0;
+ }
+ 
+-static int late_disable_ev(struct snd_soc_dapm_widget *w,
+-			   struct snd_kcontrol *kcontrol, int event)
++static int aif2clk_ev(struct snd_soc_dapm_widget *w,
++		      struct snd_kcontrol *kcontrol, int event)
+ {
+ 	struct snd_soc_codec *codec = w->codec;
+-	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
++	int dac;
++	int adc;
++	int val;
+ 
+ 	switch (event) {
++	case SND_SOC_DAPM_PRE_PMU:
++		val = snd_soc_read(codec, WM8994_AIF2_CONTROL_1);
++		if ((val & WM8994_AIF2ADCL_SRC) &&
++		    (val & WM8994_AIF2ADCR_SRC))
++			adc = WM8994_AIF2ADCR_ENA;
++		else if (!(val & WM8994_AIF2ADCL_SRC) &&
++			 !(val & WM8994_AIF2ADCR_SRC))
++			adc = WM8994_AIF2ADCL_ENA;
++		else
++			adc = WM8994_AIF2ADCL_ENA | WM8994_AIF2ADCR_ENA;
++
++
++		val = snd_soc_read(codec, WM8994_AIF2_CONTROL_2);
++		if ((val & WM8994_AIF2DACL_SRC) &&
++		    (val & WM8994_AIF2DACR_SRC))
++			dac = WM8994_AIF2DACR_ENA;
++		else if (!(val & WM8994_AIF2DACL_SRC) &&
++			 !(val & WM8994_AIF2DACR_SRC))
++			dac = WM8994_AIF2DACL_ENA;
++		else
++			dac = WM8994_AIF2DACL_ENA | WM8994_AIF2DACR_ENA;
++
++		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_4,
++				    WM8994_AIF2ADCL_ENA |
++				    WM8994_AIF2ADCR_ENA, adc);
++		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_5,
++				    WM8994_AIF2DACL_ENA |
++				    WM8994_AIF2DACR_ENA, dac);
++		snd_soc_update_bits(codec, WM8994_CLOCKING_1,
++				    WM8994_AIF2DSPCLK_ENA |
++				    WM8994_SYSDSPCLK_ENA,
++				    WM8994_AIF2DSPCLK_ENA |
++				    WM8994_SYSDSPCLK_ENA);
++		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_4,
++				    WM8994_AIF2ADCL_ENA |
++				    WM8994_AIF2ADCR_ENA,
++				    WM8994_AIF2ADCL_ENA |
++				    WM8994_AIF2ADCR_ENA);
++		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_5,
++				    WM8994_AIF2DACL_ENA |
++				    WM8994_AIF2DACR_ENA,
++				    WM8994_AIF2DACL_ENA |
++				    WM8994_AIF2DACR_ENA);
++		break;
++
++	case SND_SOC_DAPM_PRE_PMD:
+ 	case SND_SOC_DAPM_POST_PMD:
+-		if (wm8994->aif1clk_disable) {
+-			snd_soc_update_bits(codec, WM8994_AIF1_CLOCKING_1,
+-					    WM8994_AIF1CLK_ENA_MASK, 0);
+-			wm8994->aif1clk_disable = 0;
+-		}
+-		if (wm8994->aif2clk_disable) {
+-			snd_soc_update_bits(codec, WM8994_AIF2_CLOCKING_1,
+-					    WM8994_AIF2CLK_ENA_MASK, 0);
+-			wm8994->aif2clk_disable = 0;
+-		}
++		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_5,
++				    WM8994_AIF2DACL_ENA |
++				    WM8994_AIF2DACR_ENA, 0);
++		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_5,
++				    WM8994_AIF2ADCL_ENA |
++				    WM8994_AIF2ADCR_ENA, 0);
++
++		val = snd_soc_read(codec, WM8994_CLOCKING_1);
++		if (val & WM8994_AIF1DSPCLK_ENA)
++			val = WM8994_SYSDSPCLK_ENA;
++		else
++			val = 0;
++		snd_soc_update_bits(codec, WM8994_CLOCKING_1,
++				    WM8994_SYSDSPCLK_ENA |
++				    WM8994_AIF2DSPCLK_ENA, val);
+ 		break;
+ 	}
+ 
+ 	return 0;
+ }
+ 
+-static int aif1clk_ev(struct snd_soc_dapm_widget *w,
+-		      struct snd_kcontrol *kcontrol, int event)
++static int aif1clk_late_ev(struct snd_soc_dapm_widget *w,
++			   struct snd_kcontrol *kcontrol, int event)
+ {
+ 	struct snd_soc_codec *codec = w->codec;
+ 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
+@@ -1000,8 +1109,8 @@ static int aif1clk_ev(struct snd_soc_dap
+ 	return 0;
+ }
+ 
+-static int aif2clk_ev(struct snd_soc_dapm_widget *w,
+-		      struct snd_kcontrol *kcontrol, int event)
++static int aif2clk_late_ev(struct snd_soc_dapm_widget *w,
++			   struct snd_kcontrol *kcontrol, int event)
+ {
+ 	struct snd_soc_codec *codec = w->codec;
+ 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
+@@ -1018,6 +1127,63 @@ static int aif2clk_ev(struct snd_soc_dap
+ 	return 0;
+ }
+ 
++static int late_enable_ev(struct snd_soc_dapm_widget *w,
++			  struct snd_kcontrol *kcontrol, int event)
++{
++	struct snd_soc_codec *codec = w->codec;
++	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
++
++	switch (event) {
++	case SND_SOC_DAPM_PRE_PMU:
++		if (wm8994->aif1clk_enable) {
++			aif1clk_ev(w, kcontrol, event);
++			snd_soc_update_bits(codec, WM8994_AIF1_CLOCKING_1,
++					    WM8994_AIF1CLK_ENA_MASK,
++					    WM8994_AIF1CLK_ENA);
++			wm8994->aif1clk_enable = 0;
++		}
++		if (wm8994->aif2clk_enable) {
++			aif2clk_ev(w, kcontrol, event);
++			snd_soc_update_bits(codec, WM8994_AIF2_CLOCKING_1,
++					    WM8994_AIF2CLK_ENA_MASK,
++					    WM8994_AIF2CLK_ENA);
++			wm8994->aif2clk_enable = 0;
++		}
++		break;
 +	}
 +
- 	patch = (void *)get_zeroed_page(GFP_KERNEL);
- 	if (!patch)
- 		return NULL;
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -511,11 +511,11 @@ static int __init microcode_init(void)
- 		microcode_ops = init_intel_microcode();
- 	else if (c->x86_vendor == X86_VENDOR_AMD)
- 		microcode_ops = init_amd_microcode();
--
--	if (!microcode_ops) {
-+	else
- 		pr_err("no support for this CPU vendor\n");
++	/* We may also have postponed startup of DSP, handle that. */
++	wm8958_aif_ev(w, kcontrol, event);
 +
-+	if (!microcode_ops)
- 		return -ENODEV;
--	}
++	return 0;
++}
++
++static int late_disable_ev(struct snd_soc_dapm_widget *w,
++			   struct snd_kcontrol *kcontrol, int event)
++{
++	struct snd_soc_codec *codec = w->codec;
++	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
++
++	switch (event) {
++	case SND_SOC_DAPM_POST_PMD:
++		if (wm8994->aif1clk_disable) {
++			snd_soc_update_bits(codec, WM8994_AIF1_CLOCKING_1,
++					    WM8994_AIF1CLK_ENA_MASK, 0);
++			aif1clk_ev(w, kcontrol, event);
++			wm8994->aif1clk_disable = 0;
++		}
++		if (wm8994->aif2clk_disable) {
++			snd_soc_update_bits(codec, WM8994_AIF2_CLOCKING_1,
++					    WM8994_AIF2CLK_ENA_MASK, 0);
++			aif2clk_ev(w, kcontrol, event);
++			wm8994->aif2clk_disable = 0;
++		}
++		break;
++	}
++
++	return 0;
++}
++
+ static int adc_mux_ev(struct snd_soc_dapm_widget *w,
+ 		      struct snd_kcontrol *kcontrol, int event)
+ {
+@@ -1314,9 +1480,9 @@ static const struct snd_kcontrol_new aif
+ 	SOC_DAPM_ENUM("AIF2DACR Mux", aif2dacr_src_enum);
  
- 	microcode_pdev = platform_device_register_simple("microcode", -1,
- 							 NULL, 0);
+ static const struct snd_soc_dapm_widget wm8994_lateclk_revd_widgets[] = {
+-SND_SOC_DAPM_SUPPLY("AIF1CLK", SND_SOC_NOPM, 0, 0, aif1clk_ev,
++SND_SOC_DAPM_SUPPLY("AIF1CLK", SND_SOC_NOPM, 0, 0, aif1clk_late_ev,
+ 	SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
+-SND_SOC_DAPM_SUPPLY("AIF2CLK", SND_SOC_NOPM, 0, 0, aif2clk_ev,
++SND_SOC_DAPM_SUPPLY("AIF2CLK", SND_SOC_NOPM, 0, 0, aif2clk_late_ev,
+ 	SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
+ 
+ SND_SOC_DAPM_PGA_E("Late DAC1L Enable PGA", SND_SOC_NOPM, 0, 0, NULL, 0,
+@@ -1345,8 +1511,10 @@ SND_SOC_DAPM_POST("Late Disable PGA", la
+ };
+ 
+ static const struct snd_soc_dapm_widget wm8994_lateclk_widgets[] = {
+-SND_SOC_DAPM_SUPPLY("AIF1CLK", WM8994_AIF1_CLOCKING_1, 0, 0, NULL, 0),
+-SND_SOC_DAPM_SUPPLY("AIF2CLK", WM8994_AIF2_CLOCKING_1, 0, 0, NULL, 0),
++SND_SOC_DAPM_SUPPLY("AIF1CLK", WM8994_AIF1_CLOCKING_1, 0, 0, aif1clk_ev,
++		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_PRE_PMD),
++SND_SOC_DAPM_SUPPLY("AIF2CLK", WM8994_AIF2_CLOCKING_1, 0, 0, aif2clk_ev,
++		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_PRE_PMD),
+ SND_SOC_DAPM_PGA("Direct Voice", SND_SOC_NOPM, 0, 0, NULL, 0),
+ SND_SOC_DAPM_MIXER("SPKL", WM8994_POWER_MANAGEMENT_3, 8, 0,
+ 		   left_speaker_mixer, ARRAY_SIZE(left_speaker_mixer)),
+@@ -1399,30 +1567,30 @@ SND_SOC_DAPM_SUPPLY("VMID", SND_SOC_NOPM
+ SND_SOC_DAPM_SUPPLY("CLK_SYS", SND_SOC_NOPM, 0, 0, clk_sys_event,
+ 		    SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD),
+ 
+-SND_SOC_DAPM_SUPPLY("DSP1CLK", WM8994_CLOCKING_1, 3, 0, NULL, 0),
+-SND_SOC_DAPM_SUPPLY("DSP2CLK", WM8994_CLOCKING_1, 2, 0, NULL, 0),
+-SND_SOC_DAPM_SUPPLY("DSPINTCLK", WM8994_CLOCKING_1, 1, 0, NULL, 0),
++SND_SOC_DAPM_SUPPLY("DSP1CLK", SND_SOC_NOPM, 3, 0, NULL, 0),
++SND_SOC_DAPM_SUPPLY("DSP2CLK", SND_SOC_NOPM, 2, 0, NULL, 0),
++SND_SOC_DAPM_SUPPLY("DSPINTCLK", SND_SOC_NOPM, 1, 0, NULL, 0),
+ 
+ SND_SOC_DAPM_AIF_OUT("AIF1ADC1L", NULL,
+-		     0, WM8994_POWER_MANAGEMENT_4, 9, 0),
++		     0, SND_SOC_NOPM, 9, 0),
+ SND_SOC_DAPM_AIF_OUT("AIF1ADC1R", NULL,
+-		     0, WM8994_POWER_MANAGEMENT_4, 8, 0),
++		     0, SND_SOC_NOPM, 8, 0),
+ SND_SOC_DAPM_AIF_IN_E("AIF1DAC1L", NULL, 0,
+-		      WM8994_POWER_MANAGEMENT_5, 9, 0, wm8958_aif_ev,
++		      SND_SOC_NOPM, 9, 0, wm8958_aif_ev,
+ 		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
+ SND_SOC_DAPM_AIF_IN_E("AIF1DAC1R", NULL, 0,
+-		      WM8994_POWER_MANAGEMENT_5, 8, 0, wm8958_aif_ev,
++		      SND_SOC_NOPM, 8, 0, wm8958_aif_ev,
+ 		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
+ 
+ SND_SOC_DAPM_AIF_OUT("AIF1ADC2L", NULL,
+-		     0, WM8994_POWER_MANAGEMENT_4, 11, 0),
++		     0, SND_SOC_NOPM, 11, 0),
+ SND_SOC_DAPM_AIF_OUT("AIF1ADC2R", NULL,
+-		     0, WM8994_POWER_MANAGEMENT_4, 10, 0),
++		     0, SND_SOC_NOPM, 10, 0),
+ SND_SOC_DAPM_AIF_IN_E("AIF1DAC2L", NULL, 0,
+-		      WM8994_POWER_MANAGEMENT_5, 11, 0, wm8958_aif_ev,
++		      SND_SOC_NOPM, 11, 0, wm8958_aif_ev,
+ 		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
+ SND_SOC_DAPM_AIF_IN_E("AIF1DAC2R", NULL, 0,
+-		      WM8994_POWER_MANAGEMENT_5, 10, 0, wm8958_aif_ev,
++		      SND_SOC_NOPM, 10, 0, wm8958_aif_ev,
+ 		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
+ 
+ SND_SOC_DAPM_MIXER("AIF1ADC1L Mixer", SND_SOC_NOPM, 0, 0,
+@@ -1449,14 +1617,14 @@ SND_SOC_DAPM_MIXER("DAC1R Mixer", SND_SO
+ 		   dac1r_mix, ARRAY_SIZE(dac1r_mix)),
+ 
+ SND_SOC_DAPM_AIF_OUT("AIF2ADCL", NULL, 0,
+-		     WM8994_POWER_MANAGEMENT_4, 13, 0),
++		     SND_SOC_NOPM, 13, 0),
+ SND_SOC_DAPM_AIF_OUT("AIF2ADCR", NULL, 0,
+-		     WM8994_POWER_MANAGEMENT_4, 12, 0),
++		     SND_SOC_NOPM, 12, 0),
+ SND_SOC_DAPM_AIF_IN_E("AIF2DACL", NULL, 0,
+-		      WM8994_POWER_MANAGEMENT_5, 13, 0, wm8958_aif_ev,
++		      SND_SOC_NOPM, 13, 0, wm8958_aif_ev,
+ 		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD),
+ SND_SOC_DAPM_AIF_IN_E("AIF2DACR", NULL, 0,
+-		      WM8994_POWER_MANAGEMENT_5, 12, 0, wm8958_aif_ev,
++		      SND_SOC_NOPM, 12, 0, wm8958_aif_ev,
+ 		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD),
+ 
+ SND_SOC_DAPM_AIF_IN("AIF1DACDAT", "AIF1 Playback", 0, SND_SOC_NOPM, 0, 0),
 
 
