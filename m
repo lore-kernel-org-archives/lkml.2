@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759022Ab2ECXwe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 19:52:34 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51780 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756672Ab2ECXwc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 19:52:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120427190033.GA17588@ldl.usa.hp.com>
-References: <20120427190033.GA17588@ldl.usa.hp.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 3 May 2012 17:52:10 -0600
-Message-ID: <CAErSpo7mwheYBxM5_PhSmUdbybRbO9s1nTmZrL83NPuNW6g8SA@mail.gmail.com>
-Subject: Re: [PATCH] Disable Bus Master on PCI device shutdown
-To: linux-pci@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1759055Ab2EDACc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 20:02:32 -0400
+Received: from mga11.intel.com ([192.55.52.93]:4971 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756946Ab2EDACb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 May 2012 20:02:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="161690213"
+Subject: Re: [RFC][PATCH 1/5] sched, fair: Let minimally loaded cpu balance
+ the group
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@kernel.org, pjt@google.com,
+        efault@gmx.de, linux-kernel@vger.kernel.org
+Date: Thu, 03 May 2012 17:05:45 -0700
+In-Reply-To: <20120502103453.GB22740@linux.vnet.ibm.com>
+References: <20120501181430.007891123@chello.nl>
+	 <20120501182610.745844312@chello.nl>
+	 <20120502102541.GA22740@linux.vnet.ibm.com>
+	 <1335954690.13683.178.camel@twins>
+	 <20120502103453.GB22740@linux.vnet.ibm.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1336089945.28674.460.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 1:00 PM, Khalid Aziz <khalid.aziz@hp.com> wrote:
-> Disable Bus Master bit on the device in
-> pci_device_shutdown() to ensure PCI devices do not continue
-> to DMA data after shutdown. This can cause memory
-> corruption in case of a kexec where the current kernel
-> shuts down and transfers control to a new kernel while a
-> PCI device continues to DMA to memory that does not belong
-> to it any more in the new kernel.
->
-> I have tested this code on two laptops, two workstations and
-> a 16-socket server. kexec worked correctly on all of them.
->
->
-> Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
-> ---
->  drivers/pci/pci-driver.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-> index 6b54b23..9db5940 100644
-> --- a/drivers/pci/pci-driver.c
-> +++ b/drivers/pci/pci-driver.c
-> @@ -420,6 +420,12 @@ static void pci_device_shutdown(struct device *dev)
->        pci_msi_shutdown(pci_dev);
->        pci_msix_shutdown(pci_dev);
->
-> +       /*
-> +        * Turn off Bus Master bit on the device to tell it to not
-> +        * continue to do DMA
-> +        */
-> +       pci_disable_device(pci_dev);
-> +
->        /*
->         * Devices may be enabled to wake up by runtime PM, but they need not
->         * be supposed to wake up the system from its "power off" state (e.g.
+On Wed, 2012-05-02 at 16:04 +0530, Srivatsa Vaddagiri wrote:
+> * Peter Zijlstra <a.p.zijlstra@chello.nl> [2012-05-02 12:31:30]:
+> 
+> > > IOW :
+> > > 
+> > > 		balance_load = 0 iff idle_cpu(i) ??
+> > 
+> > I think so, even for !0 load_idx, load will only reach zero when we're
+> > idle, just takes longer.
+> 
+> Right ...so should we force it to select a idle_cpu by having
+> balance_load = 0 for a idle cpu (ignoring what target_load(i, load_idx)
+> told us as its load?
 
-Any comment on this, Eric?  It seems reasonable to me.
+I think Peter is trying to find the leastly loaded among idle cpu's (in
+other words the longest idle cpu ;)
+
+should be ok, isn't it?
+
+thanks,
+suresh
+
+
+
