@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759291Ab2EDRx7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 13:53:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54755 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025Ab2EDRx5 convert rfc822-to-8bit (ORCPT
+	id S1753899Ab2EDRzp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 13:55:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35878 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029Ab2EDRzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 13:53:57 -0400
-Message-ID: <1336154008.6509.48.camel@twins>
-Subject: Re: [PATCH v2] perf/x86-ibs: Precise event sampling with IBS for
- AMD CPUs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 04 May 2012 19:53:28 +0200
-In-Reply-To: <1335957283.13683.180.camel@twins>
-References: <1333390758-10893-1-git-send-email-robert.richter@amd.com>
-	 <1333390758-10893-7-git-send-email-robert.richter@amd.com>
-	 <20120502103309.GP18810@erda.amd.com> <1335957283.13683.180.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 4 May 2012 13:55:44 -0400
+Date: Fri, 4 May 2012 10:55:40 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Sundar <sunder.svit@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: workqueue tracing removed?
+Message-ID: <20120504175540.GG24639@google.com>
+References: <CAMHCuPWNAWGMvEQz4yyBVuBJ9R86AZoH0MdUJbtumT+yd2CNMQ@mail.gmail.com>
+ <1336078454.14207.105.camel@gandalf.stny.rr.com>
+ <20120504170948.GE24639@google.com>
+ <CAMHCuPWjCTDvGihodaojU84q0LuFa6VYPBmS+DdeeX0XPdtOiw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMHCuPWjCTDvGihodaojU84q0LuFa6VYPBmS+DdeeX0XPdtOiw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-02 at 13:14 +0200, Peter Zijlstra wrote:
-> On Wed, 2012-05-02 at 12:33 +0200, Robert Richter wrote:
-> > Updated version. Level 1 and 2 are handled the same way now. Don't
-> > drop samples in precise level 2 if rip is invalid, instead support the
-> > PERF_EFLAGS_EXACT flag.
-> > 
-> > No changes in other patches of
-> > 
-> >  [PATCH 00/12] perf/x86-ibs: Precise event sampling with IBS for AMD CPUs
+On Fri, May 04, 2012 at 11:22:43PM +0530, Sundar wrote:
+> I can get the workqueue insertion/execution/end events; but in the
+> latest kernels, i see that worker:0/1 or worker:u/0 (similar) shows
+> prominently on the traces, but I am not able to exactly pin point
+> which worker thread was being executed; i remember on the older
+> kernels, it used to be visible as something like work_dbs (ondemand
+> governor) or work_*.
 > 
-> Thanks!, I managed to stomp all patches on top of -tip and shall be
-> trying it out on my aging opteron-1216.
+> Am i missing something here?
 
-Hmm, that box isn't reporting X86_FEATURE_IBS, a quick trip to Wikipedia
-tells me this is a K8 (Santa Ana), not Fam 10h. Means I don't actually
-have any hardware to test this on :-(
+Workers are now shared, so all the workqueues share the same set of
+workers.  Work item execution can be tracked with tracepoints but
+unfortunately there currently is no way to measure cpu consumption of
+each work item.
 
-I'll have to throw it to Ingo then, IIRC he's got an Istanbul part.
+Thanks.
+
+-- 
+tejun
