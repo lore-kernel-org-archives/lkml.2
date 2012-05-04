@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760167Ab2EDWGp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 18:06:45 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14213 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756625Ab2EDWGo convert rfc822-to-8bit (ORCPT
+	id S1760298Ab2EDWIQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 18:08:16 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:34134 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756582Ab2EDWIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 18:06:44 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 04 May 2012 15:06:21 -0700
-From: Diwakar Tundlam <dtundlam@nvidia.com>
-To: "'Ingo Molnar'" <mingo@kernel.org>,
-        "'Peter Zijlstra'" <a.p.zijlstra@chello.nl>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Christoph Lameter'" <cl@gentwo.org>,
-        "'Michael Neuling'" <mikey@neuling.org>,
-        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        "'David Rientjes'" <rientjes@google.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>
-Date: Fri, 4 May 2012 15:06:21 -0700
-Subject: RE: [PATCH] sched: Enable arch-specific asym packing option in
- sched domain
-Thread-Topic: [PATCH] sched: Enable arch-specific asym packing option in
- sched domain
-Thread-Index: Ac0qNHe4gwlID3qFSgKSSSyMfRIpDAACtMQA
-Message-ID: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF101@HQMAIL04.nvidia.com>
-References: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF0FF@HQMAIL04.nvidia.com>
-In-Reply-To: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF0FF@HQMAIL04.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 4 May 2012 18:08:14 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18TTy8ipJVQbX8o/SdUMB72
+Date: Fri, 4 May 2012 15:08:10 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-omap@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] pinctrl: Add generic pinctrl-simple driver that
+ supports omap2+ padconf
+Message-ID: <20120504220809.GW5613@atomide.com>
+References: <20120502172401.GG3739@atomide.com>
+ <20120503065131.GA3738@game.jcrosoft.org>
+ <20120503152708.GC5140@atomide.com>
+ <4FA30805.5050804@wwwdotorg.org>
+ <20120504044305.GD7788@game.jcrosoft.org>
+ <20120504150342.GI5140@atomide.com>
+ <20120504153251.GE7788@game.jcrosoft.org>
+ <20120504163420.GA5613@atomide.com>
+ <4FA42631.6060304@wwwdotorg.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA42631.6060304@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add arch specific (weak) routine to set (or not set) the ASYM_PACKING
-sched domain flag. This change itself does nothing, but allows archs
-that require asym-packing option to set it by implementing the arch
-specific routine to turn it on.
+* Stephen Warren <swarren@wwwdotorg.org> [120504 11:59]:
+> On 05/04/2012 10:34 AM, Tony Lindgren wrote:
+> > * Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> [120504 08:58]:
+> >> On 08:03 Fri 04 May     , Tony Lindgren wrote:
+> >>>>
+> >>>> so I was thinking to do like on gpio
+> >>>>
+> >>>> uart {
+> >>>> 	pin = < &pioA 12 {pararms} >
+> >>>>
+> >>>> }
+> >>>
+> >>> Hmm I assume the "12" above the gpio number?
+> >> no pin number in the bank because it could not be gpio
+> > 
+> > Yes OK, but pin number 12 in the gpio bank, not in the mux register.
+> > Got it.
+> 
+> I'd prefer to avoid any references to GPIOs here; not all muxable pins
+> are GPIOs and not all GPIOs are muxable pins. Lets keep the two concepts
+> independent.
 
-The weak symbol is already defined in sched/core.c but was mis-spelled
-in the header file. Fixed spelling error in the weak symbol definition.
+And it seems that &pioA 12 is not always enough information for the pinctrl
+driver to request a GPIO. So it's best to specify it separately.
 
-Signed-off-by: Diwakar Tundlam <dtundlam@nvidia.com>
+Regards,
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index c569719..cf793f0 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -903,7 +903,7 @@ static inline int sd_balance_for_package_power(void)
- 	return SD_PREFER_SIBLING;
- }
- 
--extern int __weak arch_sd_sibiling_asym_packing(void);
-+extern int __weak arch_sd_sibling_asym_packing(void);
- 
- /*
-  * Optimise SD flags for power savings:
-diff --git a/include/linux/topology.h b/include/linux/topology.h
-index b480403..eb09cd4 100644
---- a/include/linux/topology.h
-+++ b/include/linux/topology.h
-@@ -168,6 +168,7 @@ int arch_update_cpu_topology(void);
- 				| 0*SD_SHARE_CPUPOWER			\
- 				| 0*SD_SHARE_PKG_RESOURCES		\
- 				| 0*SD_SERIALIZE			\
-+				| arch_sd_sibling_asym_packing()	\
- 				| sd_balance_for_package_power()	\
- 				| sd_power_saving_flags()		\
- 				,					\
+Tony
