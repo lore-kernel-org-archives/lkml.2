@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759696Ab2EDUoD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:44:03 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759683Ab2EDUn6 (ORCPT
+	id S932140Ab2EDUny (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:43:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759629Ab2EDUnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:43:58 -0400
-Message-Id: <20120504204224.616378928@linuxfoundation.org>
+	Fri, 4 May 2012 16:43:52 -0400
+Message-Id: <20120504204224.435612427@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:27 -0700
+Date: Fri, 04 May 2012 13:42:25 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 03/75] NFSv4: Ensure that we check lock exclusive/shared type against open modes
+        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>, Jan Kara <jack@suse.cz>
+Subject: [ 01/75] nfs: Enclose hostname in brackets when needed in
+ nfs_do_root_mount
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,42 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 55725513b5ef9d462aa3e18527658a0362aaae83 upstream.
+commit 98a2139f4f4d7b5fcc3a54c7fddbe88612abed20 upstream.
 
-Since we may be simulating flock() locks using NFS byte range locks,
-we can't rely on the VFS having checked the file open mode for us.
+When hostname contains colon (e.g. when it is an IPv6 address) it needs
+to be enclosed in brackets to make parsing of NFS device string possible.
+Fix nfs_do_root_mount() to enclose hostname properly when needed. NFS code
+actually does not need this as it does not parse the string passed by
+nfs_do_root_mount() but the device string is exposed to userspace in
+/proc/mounts.
 
+CC: Josh Boyer <jwboyer@redhat.com>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ fs/nfs/super.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4608,6 +4608,20 @@ nfs4_proc_lock(struct file *filp, int cm
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -2707,11 +2707,15 @@ static struct vfsmount *nfs_do_root_moun
+ 	char *root_devname;
+ 	size_t len;
  
- 	if (state == NULL)
- 		return -ENOLCK;
-+	/*
-+	 * Don't rely on the VFS having checked the file open mode,
-+	 * since it won't do this for flock() locks.
-+	 */
-+	switch (request->fl_type & (F_RDLCK|F_WRLCK|F_UNLCK)) {
-+	case F_RDLCK:
-+		if (!(filp->f_mode & FMODE_READ))
-+			return -EBADF;
-+		break;
-+	case F_WRLCK:
-+		if (!(filp->f_mode & FMODE_WRITE))
-+			return -EBADF;
-+	}
-+
- 	do {
- 		status = nfs4_proc_setlk(state, cmd, request);
- 		if ((status != -EAGAIN) || IS_SETLK(cmd))
+-	len = strlen(hostname) + 3;
++	len = strlen(hostname) + 5;
+ 	root_devname = kmalloc(len, GFP_KERNEL);
+ 	if (root_devname == NULL)
+ 		return ERR_PTR(-ENOMEM);
+-	snprintf(root_devname, len, "%s:/", hostname);
++	/* Does hostname needs to be enclosed in brackets? */
++	if (strchr(hostname, ':'))
++		snprintf(root_devname, len, "[%s]:/", hostname);
++	else
++		snprintf(root_devname, len, "%s:/", hostname);
+ 	root_mnt = vfs_kern_mount(fs_type, flags, root_devname, data);
+ 	kfree(root_devname);
+ 	return root_mnt;
 
 
