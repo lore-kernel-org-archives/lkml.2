@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759708Ab2EDV3b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:29:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33790 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756436Ab2EDV33 (ORCPT
+	id S932141Ab2EDVc2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:32:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33858 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759631Ab2EDVc0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 17:29:29 -0400
-Date: Fri, 4 May 2012 14:29:26 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: linux-kernel@vger.kernel.org, cl@gentwo.org, eric.dumazet@gmail.com,
-        tglx@linutronix.de, avi@redhat.com, davem@davemloft.net,
-        kaber@trash.net, a.p.zijlstra@chello.nl, ying.huang@intel.com,
-        konrad.wilk@oracle.com, hpa@zytor.com, jeremy@goop.org
-Subject: Re: [PATH v2 0/5] Code clean up for percpu_xxx serial functions
-Message-Id: <20120504142926.a930ba90.akpm@linux-foundation.org>
-In-Reply-To: <1326470018-22342-1-git-send-email-alex.shi@intel.com>
-References: <1326470018-22342-1-git-send-email-alex.shi@intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Fri, 4 May 2012 17:32:26 -0400
+Message-ID: <1336167121.6509.80.camel@twins>
+Subject: Re: [PATCH v2 0/7] CPU hotplug, cpusets: Fix issues with cpusets
+ handling upon CPU hotplug
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mingo@kernel.org,
+        pjt@google.com, paul@paulmenage.org, akpm@linux-foundation.org,
+        rjw@sisk.pl, nacc@us.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com, rob@landley.net,
+        tj@kernel.org, mschmidt@redhat.com, berrange@redhat.com,
+        nikunj@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Fri, 04 May 2012 23:32:01 +0200
+In-Reply-To: <20120504212758.GC3054@linux.vnet.ibm.com>
+References: <20120504191535.4603.83236.stgit@srivatsabhat>
+	 <1336159496.6509.51.camel@twins> <4FA434E9.6000305@linux.vnet.ibm.com>
+	 <1336162456.6509.63.camel@twins> <1336163281.6509.69.camel@twins>
+	 <20120504204908.GC18177@linux.vnet.ibm.com>
+	 <1336165294.6509.76.camel@twins> <20120504212758.GC3054@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jan 2012 23:53:33 +0800
-Alex Shi <alex.shi@intel.com> wrote:
+On Fri, 2012-05-04 at 14:27 -0700, Nishanth Aravamudan wrote:
+> (I'm operating under the
+> assumption that the person setting up the cpuset configuration may not
+> be the same person that does the CPU hotplug operation). 
 
-> I am sorry for spelling mistaken on konrad's email address, so resend
-> for correct this. Please reply this resend email. 
-> 
-> ---------------
-> Thanks for TJ's suggestion, I split the serial patch smaller for
-> potential bisection convenience.
-> 
-> Compare to v1 patch, this v2 patches has separate function replace
-> patches and final dead code clean up patch. 
-> 
-> The net, xen and x86 part code are independent. 
-> 
-> After each part was accepted in kernel, the final(5th) clean up code
-> do the real clean up in next merge window. I will refresh the patch
-> at that time. 
-> 
-> Any further comments are appreciated!
-> 
-
-I'm still sitting on these patches.  The review was a bit inconclusive
-and confusing and everyone will have forgotten all about everything.  I
-think I'll drop them and ask for a resend, please.
-
-Be sure to update the changelogs so that they address everything which
-was discussed last time - so we don't end up covering the same ground. 
-Please also Cc everyone who was involved in the discussion last time.
-
-
+They're using the same account though: root, so they'd better sync up
+anyway :-)
