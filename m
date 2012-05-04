@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759993Ab2EDUtw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:49:52 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932945Ab2EDUtr (ORCPT
+	id S1760039Ab2EDUuM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:50:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760029Ab2EDUuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:49:47 -0400
-Message-Id: <20120504204247.957402972@linuxfoundation.org>
+	Fri, 4 May 2012 16:50:05 -0400
+Message-Id: <20120504204248.471295804@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:20 -0700
+Date: Fri, 04 May 2012 13:43:26 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>
-Subject: [ 36/47] efi: Validate UEFI boot variables
+        alan@lxorguk.ukuu.org.uk, Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 42/47] ipw2200: Fix race condition in the command completion acknowledge
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,229 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
 
-commit fec6c20b570bcf541e581fc97f2e0cbdb9725b98 upstream.
+commit dd447319895d0c0af423e483d9b63f84f3f8869a upstream.
 
-A common flaw in UEFI systems is a refusal to POST triggered by a malformed
-boot variable. Once in this state, machines may only be restored by
-reflashing their firmware with an external hardware device. While this is
-obviously a firmware bug, the serious nature of the outcome suggests that
-operating systems should filter their variable writes in order to prevent
-a malicious user from rendering the machine unusable.
+Driver incorrectly validates command completion: instead of waiting
+for a command to be acknowledged it continues execution.  Most of the
+time driver gets acknowledge of the command completion in a tasklet
+before it executes the next one. But sometimes it sends the next
+command before it gets acknowledge for the previous one. In such a
+case one of the following error messages appear in the log:
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Failed to send SYSTEM_CONFIG: Already sending a command.
+Failed to send ASSOCIATE: Already sending a command.
+Failed to send TX_POWER: Already sending a command.
+
+After that you need to reload the driver to get it working again.
+
+This bug occurs during roaming (reported by Sam Varshavchik)
+https://bugzilla.redhat.com/show_bug.cgi?id=738508
+and machine booting (reported by Tom Gundersen and Mads Kiilerich)
+https://bugs.archlinux.org/task/28097
+https://bugzilla.redhat.com/show_bug.cgi?id=802106
+
+This patch doesn't fix the delay issue during firmware load.
+But at least device now works as usual after boot.
+
+Signed-off-by: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/efivars.c |  182 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 182 insertions(+)
+ drivers/net/wireless/ipw2x00/ipw2200.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -166,6 +166,176 @@ utf16_strsize(efi_char16_t *data, unsign
- 	return utf16_strnlen(data, maxlength/sizeof(efi_char16_t)) * sizeof(efi_char16_t);
- }
- 
-+static bool
-+validate_device_path(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	struct efi_generic_dev_path *node;
-+	int offset = 0;
-+
-+	node = (struct efi_generic_dev_path *)buffer;
-+
-+	while (offset < len) {
-+		offset += node->length;
-+
-+		if (offset > len)
-+			return false;
-+
-+		if ((node->type == EFI_DEV_END_PATH ||
-+		     node->type == EFI_DEV_END_PATH2) &&
-+		    node->sub_type == EFI_DEV_END_ENTIRE)
-+			return true;
-+
-+		node = (struct efi_generic_dev_path *)(buffer + offset);
-+	}
-+
-+	/*
-+	 * If we're here then either node->length pointed past the end
-+	 * of the buffer or we reached the end of the buffer without
-+	 * finding a device path end node.
-+	 */
-+	return false;
-+}
-+
-+static bool
-+validate_boot_order(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	/* An array of 16-bit integers */
-+	if ((len % 2) != 0)
-+		return false;
-+
-+	return true;
-+}
-+
-+static bool
-+validate_load_option(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	u16 filepathlength;
-+	int i, desclength = 0;
-+
-+	/* Either "Boot" or "Driver" followed by four digits of hex */
-+	for (i = match; i < match+4; i++) {
-+		if (hex_to_bin(var->VariableName[i] & 0xff) < 0)
-+			return true;
-+	}
-+
-+	/* A valid entry must be at least 6 bytes */
-+	if (len < 6)
-+		return false;
-+
-+	filepathlength = buffer[4] | buffer[5] << 8;
-+
-+	/*
-+	 * There's no stored length for the description, so it has to be
-+	 * found by hand
-+	 */
-+	desclength = utf16_strsize((efi_char16_t *)(buffer + 6), len) + 2;
-+
-+	/* Each boot entry must have a descriptor */
-+	if (!desclength)
-+		return false;
-+
-+	/*
-+	 * If the sum of the length of the description, the claimed filepath
-+	 * length and the original header are greater than the length of the
-+	 * variable, it's malformed
-+	 */
-+	if ((desclength + filepathlength + 6) > len)
-+		return false;
-+
-+	/*
-+	 * And, finally, check the filepath
-+	 */
-+	return validate_device_path(var, match, buffer + desclength + 6,
-+				    filepathlength);
-+}
-+
-+static bool
-+validate_uint16(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	/* A single 16-bit integer */
-+	if (len != 2)
-+		return false;
-+
-+	return true;
-+}
-+
-+static bool
-+validate_ascii_string(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	int i;
-+
-+	for (i = 0; i < len; i++) {
-+		if (buffer[i] > 127)
-+			return false;
-+
-+		if (buffer[i] == 0)
-+			return true;
-+	}
-+
-+	return false;
-+}
-+
-+struct variable_validate {
-+	char *name;
-+	bool (*validate)(struct efi_variable *var, int match, u8 *data,
-+			 int len);
-+};
-+
-+static const struct variable_validate variable_validate[] = {
-+	{ "BootNext", validate_uint16 },
-+	{ "BootOrder", validate_boot_order },
-+	{ "DriverOrder", validate_boot_order },
-+	{ "Boot*", validate_load_option },
-+	{ "Driver*", validate_load_option },
-+	{ "ConIn", validate_device_path },
-+	{ "ConInDev", validate_device_path },
-+	{ "ConOut", validate_device_path },
-+	{ "ConOutDev", validate_device_path },
-+	{ "ErrOut", validate_device_path },
-+	{ "ErrOutDev", validate_device_path },
-+	{ "Timeout", validate_uint16 },
-+	{ "Lang", validate_ascii_string },
-+	{ "PlatformLang", validate_ascii_string },
-+	{ "", NULL },
-+};
-+
-+static bool
-+validate_var(struct efi_variable *var, u8 *data, int len)
-+{
-+	int i;
-+	u16 *unicode_name = var->VariableName;
-+
-+	for (i = 0; variable_validate[i].validate != NULL; i++) {
-+		const char *name = variable_validate[i].name;
-+		int match;
-+
-+		for (match = 0; ; match++) {
-+			char c = name[match];
-+			u16 u = unicode_name[match];
-+
-+			/* All special variables are plain ascii */
-+			if (u > 127)
-+				return true;
-+
-+			/* Wildcard in the matching name means we've matched */
-+			if (c == '*')
-+				return variable_validate[i].validate(var,
-+							     match, data, len);
-+
-+			/* Case sensitive match */
-+			if (c != u)
-+				break;
-+
-+			/* Reached the end of the string while matching */
-+			if (!c)
-+				return variable_validate[i].validate(var,
-+							     match, data, len);
-+		}
-+	}
-+
-+	return true;
-+}
-+
- static efi_status_t
- get_var_data(struct efivars *efivars, struct efi_variable *var)
+--- a/drivers/net/wireless/ipw2x00/ipw2200.c
++++ b/drivers/net/wireless/ipw2x00/ipw2200.c
+@@ -2182,6 +2182,7 @@ static int __ipw_send_cmd(struct ipw_pri
  {
-@@ -289,6 +459,12 @@ efivar_store_raw(struct efivar_entry *en
- 		return -EINVAL;
+ 	int rc = 0;
+ 	unsigned long flags;
++	unsigned long now, end;
+ 
+ 	spin_lock_irqsave(&priv->lock, flags);
+ 	if (priv->status & STATUS_HCMD_ACTIVE) {
+@@ -2223,10 +2224,20 @@ static int __ipw_send_cmd(struct ipw_pri
  	}
+ 	spin_unlock_irqrestore(&priv->lock, flags);
  
-+	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
-+	    validate_var(new_var, new_var->Data, new_var->DataSize) == false) {
-+		printk(KERN_ERR "efivars: Malformed variable content\n");
-+		return -EINVAL;
++	now = jiffies;
++	end = now + HOST_COMPLETE_TIMEOUT;
++again:
+ 	rc = wait_event_interruptible_timeout(priv->wait_command_queue,
+ 					      !(priv->
+ 						status & STATUS_HCMD_ACTIVE),
+-					      HOST_COMPLETE_TIMEOUT);
++					      end - now);
++	if (rc < 0) {
++		now = jiffies;
++		if (time_before(now, end))
++			goto again;
++		rc = 0;
 +	}
 +
- 	spin_lock(&efivars->lock);
- 	status = efivars->ops->set_variable(new_var->VariableName,
- 					    &new_var->VendorGuid,
-@@ -414,6 +590,12 @@ static ssize_t efivar_create(struct file
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EACCES;
- 
-+	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
-+	    validate_var(new_var, new_var->Data, new_var->DataSize) == false) {
-+		printk(KERN_ERR "efivars: Malformed variable content\n");
-+		return -EINVAL;
-+	}
-+
- 	spin_lock(&efivars->lock);
- 
- 	/*
+ 	if (rc == 0) {
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 		if (priv->status & STATUS_HCMD_ACTIVE) {
 
 
