@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760047Ab2EDUx2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:53:28 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
+	id S1760106Ab2EDUxw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:53:52 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:38140 "EHLO
 	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759765Ab2EDUtu (ORCPT
+	with ESMTP id S1759974Ab2EDUtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:49:50 -0400
-Message-Id: <20120504204247.289020574@linuxfoundation.org>
+	Fri, 4 May 2012 16:49:40 -0400
+Message-Id: <20120504204247.793292677@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:12 -0700
+Date: Fri, 04 May 2012 13:43:18 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michael Tokarev <mjt@tls.msk.ru>,
-        David Miller <davem@davemloft.net>, Ian Kent <raven@themaw.net>,
-        Thomas Meyer <thomas@m3y3r.de>
-Subject: [ 28/47] pipes: add a "packetized pipe" mode for writing
+        alan@lxorguk.ukuu.org.uk, Mike Waychison <mikew@google.com>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [ 34/47] efivars: String functions
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,139 +25,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Mike Waychison <mikew@google.com>
 
-commit 9883035ae7edef3ec62ad215611cb8e17d6a1a5d upstream.
+commit a2940908391f3cee72e38769b30e829b22742b5b upstream.
 
-The actual internal pipe implementation is already really about
-individual packets (called "pipe buffers"), and this simply exposes that
-as a special packetized mode.
+Fix the string functions in the efivars driver to be called utf16_*
+instead of utf8_* as the encoding is utf16, not utf8.
 
-When we are in the packetized mode (marked by O_DIRECT as suggested by
-Alan Cox), a write() on a pipe will not merge the new data with previous
-writes, so each write will get a pipe buffer of its own.  The pipe
-buffer is then marked with the PIPE_BUF_FLAG_PACKET flag, which in turn
-will tell the reader side to break the read at that boundary (and throw
-away any partial packet contents that do not fit in the read buffer).
+As well, rename utf16_strlen to utf16_strnlen as it takes a maxlength
+argument and the name should be consistent with the standard C function
+names.  utf16_strlen is still provided for convenience in a subsequent
+patch.
 
-End result: as long as you do writes less than PIPE_BUF in size (so that
-the pipe doesn't have to split them up), you can now treat the pipe as a
-packet interface, where each read() system call will read one packet at
-a time.  You can just use a sufficiently big read buffer (PIPE_BUF is
-sufficient, since bigger than that doesn't guarantee atomicity anyway),
-and the return value of the read() will naturally give you the size of
-the packet.
-
-NOTE! We do not support zero-sized packets, and zero-sized reads and
-writes to a pipe continue to be no-ops.  Also note that big packets will
-currently be split at write time, but that the size at which that
-happens is not really specified (except that it's bigger than PIPE_BUF).
-Currently that limit is the system page size, but we might want to
-explicitly support bigger packets some day.
-
-The main user for this is going to be the autofs packet interface,
-allowing us to stop having to care so deeply about exact packet sizes
-(which have had bugs with 32/64-bit compatibility modes).  But user
-space can create packetized pipes with "pipe2(fd, O_DIRECT)", which will
-fail with an EINVAL on kernels that do not support this interface.
-
-Tested-by: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: David Miller <davem@davemloft.net>
-Cc: Ian Kent <raven@themaw.net>
-Cc: Thomas Meyer <thomas@m3y3r.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mike Waychison <mikew@google.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/pipe.c                 |   31 +++++++++++++++++++++++++++++--
- include/linux/pipe_fs_i.h |    1 +
- 2 files changed, 30 insertions(+), 2 deletions(-)
+ drivers/firmware/efivars.c |   26 ++++++++++++++++----------
+ 1 file changed, 16 insertions(+), 10 deletions(-)
 
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -345,6 +345,16 @@ static const struct pipe_buf_operations
- 	.get = generic_pipe_buf_get,
- };
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -141,23 +141,29 @@ efivar_create_sysfs_entry(struct efivars
  
-+static const struct pipe_buf_operations packet_pipe_buf_ops = {
-+	.can_merge = 0,
-+	.map = generic_pipe_buf_map,
-+	.unmap = generic_pipe_buf_unmap,
-+	.confirm = generic_pipe_buf_confirm,
-+	.release = anon_pipe_buf_release,
-+	.steal = generic_pipe_buf_steal,
-+	.get = generic_pipe_buf_get,
-+};
-+
- static ssize_t
- pipe_read(struct kiocb *iocb, const struct iovec *_iov,
- 	   unsigned long nr_segs, loff_t pos)
-@@ -406,6 +416,13 @@ redo:
- 			ret += chars;
- 			buf->offset += chars;
- 			buf->len -= chars;
-+
-+			/* Was it a packet buffer? Clean up and exit */
-+			if (buf->flags & PIPE_BUF_FLAG_PACKET) {
-+				total_len = chars;
-+				buf->len = 0;
-+			}
-+
- 			if (!buf->len) {
- 				buf->ops = NULL;
- 				ops->release(pipe, buf);
-@@ -458,6 +475,11 @@ redo:
- 	return ret;
+ /* Return the number of unicode characters in data */
+ static unsigned long
+-utf8_strlen(efi_char16_t *data, unsigned long maxlength)
++utf16_strnlen(efi_char16_t *s, size_t maxlength)
+ {
+ 	unsigned long length = 0;
+ 
+-	while (*data++ != 0 && length < maxlength)
++	while (*s++ != 0 && length < maxlength)
+ 		length++;
+ 	return length;
  }
  
-+static inline int is_packetized(struct file *file)
++static unsigned long
++utf16_strlen(efi_char16_t *s)
 +{
-+	return (file->f_flags & O_DIRECT) != 0;
++	return utf16_strnlen(s, ~0UL);
 +}
 +
- static ssize_t
- pipe_write(struct kiocb *iocb, const struct iovec *_iov,
- 	    unsigned long nr_segs, loff_t ppos)
-@@ -592,6 +614,11 @@ redo2:
- 			buf->ops = &anon_pipe_buf_ops;
- 			buf->offset = 0;
- 			buf->len = chars;
-+			buf->flags = 0;
-+			if (is_packetized(filp)) {
-+				buf->ops = &packet_pipe_buf_ops;
-+				buf->flags = PIPE_BUF_FLAG_PACKET;
-+			}
- 			pipe->nrbufs = ++bufs;
- 			pipe->tmp_page = NULL;
+ /*
+  * Return the number of bytes is the length of this string
+  * Note: this is NOT the same as the number of unicode characters
+  */
+ static inline unsigned long
+-utf8_strsize(efi_char16_t *data, unsigned long maxlength)
++utf16_strsize(efi_char16_t *data, unsigned long maxlength)
+ {
+-	return utf8_strlen(data, maxlength/sizeof(efi_char16_t)) * sizeof(efi_char16_t);
++	return utf16_strnlen(data, maxlength/sizeof(efi_char16_t)) * sizeof(efi_char16_t);
+ }
  
-@@ -1012,7 +1039,7 @@ struct file *create_write_pipe(int flags
- 		goto err_dentry;
- 	f->f_mapping = inode->i_mapping;
+ static efi_status_t
+@@ -414,8 +420,8 @@ static ssize_t efivar_create(struct file
+ 	 * Does this variable already exist?
+ 	 */
+ 	list_for_each_entry_safe(search_efivar, n, &efivars->list, list) {
+-		strsize1 = utf8_strsize(search_efivar->var.VariableName, 1024);
+-		strsize2 = utf8_strsize(new_var->VariableName, 1024);
++		strsize1 = utf16_strsize(search_efivar->var.VariableName, 1024);
++		strsize2 = utf16_strsize(new_var->VariableName, 1024);
+ 		if (strsize1 == strsize2 &&
+ 			!memcmp(&(search_efivar->var.VariableName),
+ 				new_var->VariableName, strsize1) &&
+@@ -447,8 +453,8 @@ static ssize_t efivar_create(struct file
  
--	f->f_flags = O_WRONLY | (flags & O_NONBLOCK);
-+	f->f_flags = O_WRONLY | (flags & (O_NONBLOCK | O_DIRECT));
- 	f->f_version = 0;
- 
- 	return f;
-@@ -1056,7 +1083,7 @@ int do_pipe_flags(int *fd, int flags)
- 	int error;
- 	int fdw, fdr;
- 
--	if (flags & ~(O_CLOEXEC | O_NONBLOCK))
-+	if (flags & ~(O_CLOEXEC | O_NONBLOCK | O_DIRECT))
- 		return -EINVAL;
- 
- 	fw = create_write_pipe(flags);
---- a/include/linux/pipe_fs_i.h
-+++ b/include/linux/pipe_fs_i.h
-@@ -8,6 +8,7 @@
- #define PIPE_BUF_FLAG_LRU	0x01	/* page is on the LRU */
- #define PIPE_BUF_FLAG_ATOMIC	0x02	/* was atomically mapped */
- #define PIPE_BUF_FLAG_GIFT	0x04	/* page is a gift */
-+#define PIPE_BUF_FLAG_PACKET	0x08	/* read() as a packet */
- 
- /**
-  *	struct pipe_buffer - a linux kernel pipe buffer
+ 	/* Create the entry in sysfs.  Locking is not required here */
+ 	status = efivar_create_sysfs_entry(efivars,
+-					   utf8_strsize(new_var->VariableName,
+-							1024),
++					   utf16_strsize(new_var->VariableName,
++							 1024),
+ 					   new_var->VariableName,
+ 					   &new_var->VendorGuid);
+ 	if (status) {
+@@ -477,8 +483,8 @@ static ssize_t efivar_delete(struct file
+ 	 * Does this variable already exist?
+ 	 */
+ 	list_for_each_entry_safe(search_efivar, n, &efivars->list, list) {
+-		strsize1 = utf8_strsize(search_efivar->var.VariableName, 1024);
+-		strsize2 = utf8_strsize(del_var->VariableName, 1024);
++		strsize1 = utf16_strsize(search_efivar->var.VariableName, 1024);
++		strsize2 = utf16_strsize(del_var->VariableName, 1024);
+ 		if (strsize1 == strsize2 &&
+ 			!memcmp(&(search_efivar->var.VariableName),
+ 				del_var->VariableName, strsize1) &&
 
 
