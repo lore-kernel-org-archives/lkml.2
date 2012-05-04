@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760039Ab2EDUuM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:50:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760029Ab2EDUuF (ORCPT
+	id S1760069Ab2EDUu0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:50:26 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760035Ab2EDUuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:50:05 -0400
-Message-Id: <20120504204248.471295804@linuxfoundation.org>
+	Fri, 4 May 2012 16:50:11 -0400
+Message-Id: <20120504204248.655035430@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:26 -0700
+Date: Fri, 04 May 2012 13:43:28 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, Dave Airlie <airlied@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 42/47] ipw2200: Fix race condition in the command completion acknowledge
+Subject: [ 44/47] rtlwifi: Fix oops on unload
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,71 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit dd447319895d0c0af423e483d9b63f84f3f8869a upstream.
+commit 44eb65cfd8da4b9c231238998729e858e963a980 upstream.
 
-Driver incorrectly validates command completion: instead of waiting
-for a command to be acknowledged it continues execution.  Most of the
-time driver gets acknowledge of the command completion in a tasklet
-before it executes the next one. But sometimes it sends the next
-command before it gets acknowledge for the previous one. In such a
-case one of the following error messages appear in the log:
+Under some circumstances, a PCI-based driver reports the following OOPs:
 
-Failed to send SYSTEM_CONFIG: Already sending a command.
-Failed to send ASSOCIATE: Already sending a command.
-Failed to send TX_POWER: Already sending a command.
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] Oops: 0000 [#1] SMP
+--snip--
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] Pid: 19627, comm: rmmod
+Not tainted 3.2.9-2.fc16.x86_64 #1 LENOVO 05962RU/05962RU
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] RIP:
+0010:[<ffffffffa0418d39>]  [<ffffffffa0418d39>]
+rtl92ce_get_desc+0x19/0xd0 [rtl8192ce]
+--snip--
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] Process rmmod (pid:
+19627, threadinfo ffff880050262000, task ffff8801156d5cc0)
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] Stack:
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011]  0000000000000002
+ffff8801176c2540 ffff880050263ca8 ffffffffa03348e7
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011]  0000000000000282
+0000000180150014 ffff880050263fd8 ffff8801176c2810
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011]  ffff880050263bc8
+ffffffff810550e2 00000000000002c0 ffff8801176c0d40
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] Call Trace:
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011]  [<ffffffffa03348e7>]
+_rtl_pci_rx_interrupt+0x187/0x650 [rtlwifi]
+--snip--
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] Code: ff 09 d0 89 07 48
+83 c4 08 5b 5d c3 66 0f 1f 44 00 00 55 48 89 e5 53 48 83 ec 08 66 66
+66 66 90 40 84 f6 89 d3 74 13 84 d2 75 57 <8b> 07 48 83 c4 08 5b 5d c1
+e8 1f c3 0f 1f 00 84 d2 74 ed 80 fa
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] RIP
+[<ffffffffa0418d39>] rtl92ce_get_desc+0x19/0xd0 [rtl8192ce]
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011]  RSP <ffff880050263b58>
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] CR2: 00000000000006e0
+Mar 19 08:14:35 kvothe kernel: [ 6584.646491] ---[ end trace
+8636c766dcfbe0e6 ]---
 
-After that you need to reload the driver to get it working again.
+This oops is due to interrupts not being disabled in this particular path.
 
-This bug occurs during roaming (reported by Sam Varshavchik)
-https://bugzilla.redhat.com/show_bug.cgi?id=738508
-and machine booting (reported by Tom Gundersen and Mads Kiilerich)
-https://bugs.archlinux.org/task/28097
-https://bugzilla.redhat.com/show_bug.cgi?id=802106
-
-This patch doesn't fix the delay issue during firmware load.
-But at least device now works as usual after boot.
-
-Signed-off-by: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+Reported-by: Dave Airlie <airlied@gmail.com>
+Tested-by: Dave Airlie <airlied@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ipw2x00/ipw2200.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/pci.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/ipw2x00/ipw2200.c
-+++ b/drivers/net/wireless/ipw2x00/ipw2200.c
-@@ -2182,6 +2182,7 @@ static int __ipw_send_cmd(struct ipw_pri
- {
- 	int rc = 0;
- 	unsigned long flags;
-+	unsigned long now, end;
- 
- 	spin_lock_irqsave(&priv->lock, flags);
- 	if (priv->status & STATUS_HCMD_ACTIVE) {
-@@ -2223,10 +2224,20 @@ static int __ipw_send_cmd(struct ipw_pri
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -1988,6 +1988,7 @@ void rtl_pci_disconnect(struct pci_dev *
+ 		rtl_deinit_deferred_work(hw);
+ 		rtlpriv->intf_ops->adapter_stop(hw);
  	}
- 	spin_unlock_irqrestore(&priv->lock, flags);
++	rtlpriv->cfg->ops->disable_interrupt(hw);
  
-+	now = jiffies;
-+	end = now + HOST_COMPLETE_TIMEOUT;
-+again:
- 	rc = wait_event_interruptible_timeout(priv->wait_command_queue,
- 					      !(priv->
- 						status & STATUS_HCMD_ACTIVE),
--					      HOST_COMPLETE_TIMEOUT);
-+					      end - now);
-+	if (rc < 0) {
-+		now = jiffies;
-+		if (time_before(now, end))
-+			goto again;
-+		rc = 0;
-+	}
-+
- 	if (rc == 0) {
- 		spin_lock_irqsave(&priv->lock, flags);
- 		if (priv->status & STATUS_HCMD_ACTIVE) {
+ 	/*deinit rfkill */
+ 	rtl_deinit_rfkill(hw);
 
 
