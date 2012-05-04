@@ -1,88 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759200Ab2EDQfa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 12:35:30 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63659 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759191Ab2EDQf0 convert rfc822-to-8bit (ORCPT
+	id S1754175Ab2EDQji (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 12:39:38 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:48324 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab2EDQjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 12:35:26 -0400
+	Fri, 4 May 2012 12:39:37 -0400
+Message-ID: <4FA40642.5040203@gmail.com>
+Date: Fri, 04 May 2012 11:39:30 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120504130332.GC12199@alberich.amd.com>
-References: <20120427143410.GB27535@alberich.amd.com> <20120427143621.GC27535@alberich.amd.com>
- <CAErSpo7gkkqZgR0TZ5Xx162pLN9ZaYVhMmyHn+H8Lqr1CBSXXQ@mail.gmail.com> <20120504130332.GC12199@alberich.amd.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 4 May 2012 10:35:05 -0600
-Message-ID: <CAErSpo5_ZB=ggNDGM5N8Rt1TtW8DQQm1k2s9FBwFHjh7nFA4hw@mail.gmail.com>
-Subject: Re: [PATCH 1/2][RESEND] x86/pci/amd: Restore early_fill_mp_bus_to_node
-To: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Yinghai Lu <yinghai@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
+        linaro-dev@lists.linaro.org, Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>, shawn.guo@linaro.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: Making ARM multiplatform kernels DT-only?
+References: <201205031350.35476.arnd@arndb.de> <20120503140428.GB897@n2100.arm.linux.org.uk> <201205041220.24747.arnd@arndb.de>
+In-Reply-To: <201205041220.24747.arnd@arndb.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 4, 2012 at 7:03 AM, Andreas Herrmann
-<andreas.herrmann3@amd.com> wrote:
-> On Wed, May 02, 2012 at 11:33:17AM -0600, Bjorn Helgaas wrote:
->> On Fri, Apr 27, 2012 at 8:36 AM, Andreas Herrmann
->> <andreas.herrmann3@amd.com> wrote:
->> >
->> > Once upon a time this function was overloaded with quirky stuff to fix
->> > resource detection on systems w/ _CRS defects (seems that some Sun and
->> > HP systems were affected).
->> >
->> > See commit 30a18d6c3f1e774de656ebd8ff219d53e2ba4029
->> > (x86: multi pci root bus with different io resource range, on 64-bit)
->> >
->> > Restore the old function and thus decouple it from the quirk that is
->> > CPU family specific (e.g. it won't work on AMD family 15h CPUs). BTW,
->> > I assume that the _CRS stuff is working on current systems.
->> >
->> > This is required to properly initilize the numa_node information of
->> > existing PCI busses and associated devices.
+On 05/04/2012 07:20 AM, Arnd Bergmann wrote:
+> On Thursday 03 May 2012, Russell King - ARM Linux wrote:
+>> I'm basing my comments off mach-zynq.
+> 
+> It's a different question because mach-zynq is already DT-only, but we
+> can also discuss this for a bit.
+> 
+>> How about we take the following steps towards it?
 >>
->> I applied some of Yinghai's patches that also touch this area.  Can
->> you refresh these so they apply on top of my "next" branch
->> (git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git next)?
->
-> Arrgh, will adapt my patch and resend it (asap).
->
->> Can you also be more specific about what these patches fix?
->
->> My understanding is that amd_bus.c (1) sets NUMA info with
->> set_mp_bus_to_node() and (2) figures out MMIO and I/O port apertures,
->> which are only used when blind probing and when ignoring _CRS.
+>> 1. create arch/arm/include/mach/ which contains standardized headers
+>>    for DT based implementations.  This must include all headers included
+>>    by asm/ or linux/ includes.  This will also be the only mach/ header
+>>    directory included for code outside of arch/arm/mach-*.  This also
+>>    acts as the 'default' set of mach/* includes for stuff like timex.h
+>>    and the empty hardware.h
 >>
->> It seems like the main change in this patch is that we skip (2)
->> completely when family >= 0x11, and I don't understand what that could
->> fix.
->
-> The patch restores a very old function that was used to detect the
-> nearest node for a PCI bus, so yes it's used to do (1). IMHO this
-> function was totally screwed up with Yinghai's code to do (2). It
-> seems that Sun has (had?) some systems where (2) was req'd. I don't
-> care about this part. But I'd like to do (1) on all AMD CPU NUMA
-> systems.
+>> 2. DT based mach-* directories do not have an include directory; their
+>>    include files must be located in the main include/ heirarchy if shared
+>>    with other parts of the kernel, otherwise they must be in the mach-*
+>>    directory.
+> 
+> My idea for the header files was slightly different, reorganizing only
+> the headers that actually conflict between the platforms renaming the
+> ones that conflict by name but not by content.
+> 
+> I know you are aware of my experiment with just renaming the header files
+> from mach/*.h to mach-*/*.h, and that has helped me a lot in understanding
+> the specific problems. I don't care about the specific names of the headers
+> but it has helped so far in identifying which drivers are already relying
+> on a specific platform's version of a header and which ones multiplex
+> between different platforms (e.g. sa1100/pxa/mmp or s3c*/s5p*/exynos)
+> and need more work. 
+> 
+> I also wouldn't change anything for the current configurations where
+> you only have one mach-* directory at a time (or the samsung speciality).
+> 
+> My plan is to have multiplatform kernels in parallel with what we have now,
+> so we can avoid breaking working machines but also play with multiplatform
+> configurations at the same time for a subset of the platforms and with
+> certain restrictions (not all board files, not all drivers, no generic
+> early printk, ...).
+> 
 
-Thanks for the explanation.  But I'm afraid I'm still confused.
+Many of the headers are simply platform_data structs which may still be
+needed on DT platforms, but could be moved elsewhere.
 
-First, it sounds like you're trying to change the way we do part (1),
-i.e., the set_mp_bus_to_node() calls, but I think the effect of your
-patch is to stop doing part (2) in some cases.
+>> 3. Allow build multiple mach-* directories (which we already do... see
+>>    the samsung stuff.)
+> 
+> Incidentally, the samsung headers are what are currently causing the most
+> headaches regarding the header files, because they use a lot of files
+> with soc-specific definitions for the same symbols, which means significant
+> reorganization of the code using to to turn that into run-time selectable
+> values.
+> 
+>> We still have irqs.h being SoC dependent, and we still haven't taken
+>> debug-macros.S far enough along to get rid of that.
+> 
+> I believe the irqs.h conflict is only for the NR_IRQS constant, all other
+> defines in there should only be used inside of the mach-* directory,
+> or not at all for fully DT-based platforms.
 
-Second, I am pretty sure that the current early_fill_mp_bus_info()
-(before your patch) does the exact same set_mp_bus_to_node() calls as
-your early_fill_mp_bus_to_node() does.
+A DT-enabled platform does not need irqs.h or NR_IRQS. SPARSE_IRQ should
+be selected for DT. However, some DT enabled platforms don't have all
+irq chips converted to domains and may still need to set the mach .nr_irqs.
 
-Finally, on all systems with ACPI, the set_mp_bus_to_node() call in
-pci_acpi_scan_root() should be doing what you need.  In fact, that
-call happens later, so it should be overwriting the information filled
-in by amd_bus.c.  If there's something wrong in this ACPI path, the
-most likely cause is a BIOS defect, such as  a missing _PXM method on
-the PNP0A03/0A08 host bridge device.
+> 
+>> Then there's also the problem of uncompress.h.  The last piece of the
+>> puzzle is the common clock stuff.
 
-Bjorn
+The smp/hotplug/localtimer related functions are still global. Marc Z
+has posted patches for this, but I haven't seen recent activity. This
+and clocks were the 2 main issues I saw trying to build 2 platforms
+together. highbank and picoxcell could be built together since only
+highbank has clocks and smp.
+
+gpio.h is still required, but empty for most platforms.
+
+Rob
+
+> Initially, I think we can live without debug-macros.S and uncompress.h
+> and change the code using those to just not output anything when
+> MULTIPLATFORM is enabled: you'd have to disable MULTIPLATFORM in order
+> to debug the early boot process and hope that any bugs are not
+> specific to multiplatform configurations. In the long run, we probably
+> want to have a better solution, but it's not on my hotlist.
+> 
+> The common clock support OTOH is definitely a requirement as soon as
+> we want to actually run multiplatform kernels rather than just building
+> them.
+>  
+>> So, I think we're still a way off it yet - maybe six months or so.
+> 
+> True, but in order to work on the points you raised and a few others,
+> I would like to know where we're heading because it does impact
+> some decisions like whether we need to make all initcalls in non-DT
+> board files aware of potentially being run on other platforms.
+> 
+> 	Arnd
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
