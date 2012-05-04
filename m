@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab2EDHp2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 03:45:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65009 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535Ab2EDHp1 (ORCPT
+	id S1753685Ab2EDHvm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 03:51:42 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:56540 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679Ab2EDHvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 03:45:27 -0400
-Date: Fri, 4 May 2012 00:38:10 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 3/3] vmevent: Implement special low-memory attribute
-Message-ID: <20120504073810.GA25175@lizard>
-References: <20120501132409.GA22894@lizard>
- <20120501132620.GC24226@lizard>
- <4FA35A85.4070804@kernel.org>
+	Fri, 4 May 2012 03:51:41 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Mike Galbraith <efault@gmx.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>
+References: <1335604790.5995.22.camel@marge.simpson.net>
+	<20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org>
+	<20120429165846.GA19054@redhat.com>
+	<1335754867.17899.4.camel@marge.simpson.net>
+	<m1zk9rmyh4.fsf@fess.ebiederm.org>
+	<20120501134214.f6b44f4a.akpm@linux-foundation.org>
+	<1336014721.7370.32.camel@marge.simpson.net>
+	<1336057018.8119.46.camel@marge.simpson.net>
+	<1336105676.7356.42.camel@marge.simpson.net>
+Date: Fri, 04 May 2012 00:55:44 -0700
+In-Reply-To: <1336105676.7356.42.camel@marge.simpson.net> (Mike Galbraith's
+	message of "Fri, 04 May 2012 06:27:56 +0200")
+Message-ID: <m1aa1oidmn.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4FA35A85.4070804@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19KwRSHqNOgb9AomPdCFFNo95wEFoaXT8M=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Mike Galbraith <efault@gmx.de>
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH]  Re: [RFC PATCH] namespaces: fix leak on fork() failure
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 04, 2012 at 01:26:45PM +0900, Minchan Kim wrote:
-[...]
-> > be useful for different use cases.
-> 
-> Why should we do it in kernel side?
+Mike Galbraith <efault@gmx.de> writes:
 
-Because currently you can't do this in userland, see below. Today
-this would be effectively the same as constantly reading /proc/vmstat,
-which is surely not friendly performance/context switches/battery
-wise.
+> Namespaces have something in common with cgroups.  synchronize_rcu()
+> makes them somewhat less than wonderful for dynamic use.
 
-> If vmevent will have VMEVENT_ATTR_[FILE|MOCK|DIRTY|WRITEBACK|SHMEM|ANON|SWAP]_PAGES
-> and so on which is needed by calculation, we can calculate it in userspace without
-> forking /proc/vmstat to see it. So I think there is no problem to do it in userspace.
+Well unlike cgroups namespaces were not designed for heavy dynamic use.
+Although it appears that vsftp puts them to that kind of use so some
+of the design decisions are with revisiting.
 
-There are two problems.
+> default flags = SIGCHLD
+>
+> -namespace:  flag |= CLONE_NEWPID 
+> -all:  flags |= CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWUSER
+>
+> marge:/usr/local/tmp/starvation # ./hackbench
+> Running with 10*40 (== 400) tasks.
+> Time: 2.636
+> marge:/usr/local/tmp/starvation # ./hackbench -namespace
+> Running with 10*40 (== 400) tasks.
+> Time: 11.624
+> marge:/usr/local/tmp/starvation # ./hackbench -namespace -all
+> Running with 10*40 (== 400) tasks.
+> Time: 51.474
 
-1. Originally, the idea behind vmevent was that we should not expose all
-   these mm details in vmevent, because it ties ABI with Linux internal
-   memory representation;
+CLONE_NEWUSER?  I presume you have applied my latest user namespace
+patches?  Otherwise you are running completely half baked code.
 
-2. If you have say a boolean '(A + B + C + ...) > X' attribute (which is
-   exactly what blended attributes are), you can't just set up independent
-   thresholds on A, B, C, ... and have the same effect.
+hackbench?  Which kernel are you running.  Hackbench in some kernels is
+really good at triggering cache ping-pong effects with pids, and creds.
+So I'm not certain what to say there.  In the latest kernels things
+should be better with unix domain sockets as long as you don't actually
+ask to pass your creds but hackbench is still a pretty ridiculous
+benchmark.  Oversharing is always going to be bad for performance.
 
-   (What we can do, though, is... introduce arithmetic operators in
-   vmevent. :-D But then, at the end, we'll probably implement in-kernel
-   forth-like stack machine, with vmevent_config array serving as a
-   sequence of op-codes. ;-)
+> You can create trash quickly, but you have to haul it away.
 
-If we'll give up on "1." (Pekka, ping), then we need to solve "2."
-in a sane way: we'll have to add a 'NR_FILE_PAGES - NR_SHMEM -
-<todo-locked-file-pages>' attribute, and give it a name.
+Well synchronize_rcu is much better in that respect than call_rcu, which
+let's the trash build up but is never carried away.
 
-RECLAIMABLE_CACHE_PAGES maybe?
+The core design assumption with namespaces is that they will be used
+much more than they will be created/destroyed, and as long as there are
+progress guarantees in place I don't have a problem with that.   At the
+same time if there are easy things we can do to make things go faster
+I am in favor of that notion.
 
-Thanks!
+Still especially in the case of hackbench I think it is worth asking the
+question how much of the slow down is due to cache ping-pong due to
+oversharing.
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Eric
