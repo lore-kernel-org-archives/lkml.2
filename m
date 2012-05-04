@@ -1,98 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756959Ab2EDMrz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 08:47:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60578 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753834Ab2EDMry (ORCPT
+	id S1758133Ab2EDMyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 08:54:15 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64736 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758038Ab2EDMyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 08:47:54 -0400
-Date: Fri, 4 May 2012 13:47:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 2/3] MFD: twl6040: Allocate IRQ numbers dynamically
-Message-ID: <20120504124750.GL14230@opensource.wolfsonmicro.com>
-References: <20120503145248.GJ3955@opensource.wolfsonmicro.com>
- <4FA2A08C.5000403@ti.com>
- <20120503152643.GM3955@opensource.wolfsonmicro.com>
- <4FA3958A.4080206@ti.com>
- <20120504090856.GA14230@opensource.wolfsonmicro.com>
- <4FA3B182.5060001@ti.com>
- <20120504112204.GE14230@opensource.wolfsonmicro.com>
- <4FA3C3B9.3030009@ti.com>
- <20120504121730.GG14230@opensource.wolfsonmicro.com>
- <4FA3CCAF.3020902@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EEx6GiKZGZ1wKUra"
-Content-Disposition: inline
-In-Reply-To: <4FA3CCAF.3020902@ti.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 4 May 2012 08:54:12 -0400
+From: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 5/5] HID: hid-multitouch: support T and C for win8 devices
+Date: Fri,  4 May 2012 14:53:50 +0200
+Message-Id: <1336136030-18503-6-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1336136030-18503-1-git-send-email-benjamin.tissoires@gmail.com>
+References: <1336136030-18503-1-git-send-email-benjamin.tissoires@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 
---EEx6GiKZGZ1wKUra
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Win8 input specification clarifies the X and Y sent by devices.
+It distincts the position where the user wants to Touch (T) from
+the center of the ellipsoide (C). This patch enable supports for this
+distinction in hid-multitouch.
 
-On Fri, May 04, 2012 at 03:33:51PM +0300, Peter Ujfalusi wrote:
-> On 05/04/2012 03:17 PM, Mark Brown wrote:
+We recognize Win8 certified devices from their vendor field 0xff0000c5
+where Microsoft put a signed blob in the report to check if the device
+passed the certification.
 
-> > The latter, and also just any driver that delivers an interrupt via a
-> > GPIO on OMAP - if the GPIO IRQ numbers are all dynamically allocated
-> > then it gets hard to register an off-chip device and tell it which
-> > interrupt to request.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+---
+ drivers/hid/hid-multitouch.c |   77 +++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 72 insertions(+), 5 deletions(-)
 
-> For GPIO IRQ there's the gpio_to_irq() call which returns the mapped IRQ
-> number for the given GPIO.
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 3ee22ec..48c8576 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -51,9 +51,10 @@ MODULE_LICENSE("GPL");
+ #define MT_QUIRK_VALID_IS_INRANGE	(1 << 5)
+ #define MT_QUIRK_VALID_IS_CONFIDENCE	(1 << 6)
+ #define MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE	(1 << 8)
++#define MT_QUIRK_WIN_8_CERTIFIED	(1 << 9)
+ 
+ struct mt_slot {
+-	__s32 x, y, p, w, h;
++	__s32 x, y, cx, cy, p, w, h;
+ 	__s32 contactid;	/* the device ContactID assigned to this slot */
+ 	bool touch_state;	/* is the touch valid? */
+ 	bool seen_in_this_frame;/* has this slot been updated */
+@@ -71,7 +72,7 @@ struct mt_class {
+ };
+ 
+ struct mt_fields {
+-	unsigned usages[HID_MAX_FIELDS];
++	struct hid_usage *usages[HID_MAX_FIELDS];
+ 	unsigned int length;
+ };
+ 
+@@ -272,9 +273,14 @@ static void mt_feature_mapping(struct hid_device *hdev,
+ 			td->maxcontacts = td->mtclass.maxcontacts;
+ 
+ 		break;
++	case 0xff0000c5:
++		if (field->report_count == 256 && field->report_size == 8)
++			td->mtclass.quirks |= MT_QUIRK_WIN_8_CERTIFIED;
++		break;
+ 	}
+ }
+ 
++
+ static void set_abs(struct input_dev *input, unsigned int code,
+ 		struct hid_field *field, int snratio)
+ {
+@@ -292,7 +298,7 @@ static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
+ 	if (f->length >= HID_MAX_FIELDS)
+ 		return;
+ 
+-	f->usages[f->length++] = usage->hid;
++	f->usages[f->length++] = usage;
+ }
+ 
+ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+@@ -343,6 +349,9 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 				cls->sn_move);
+ 			/* touchscreen emulation */
+ 			set_abs(hi->input, ABS_X, field, cls->sn_move);
++			if (cls->quirks & MT_QUIRK_WIN_8_CERTIFIED)
++				set_abs(hi->input, ABS_MT_CENTER_X, field,
++					cls->sn_move);
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+@@ -353,6 +362,9 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 				cls->sn_move);
+ 			/* touchscreen emulation */
+ 			set_abs(hi->input, ABS_Y, field, cls->sn_move);
++			if (cls->quirks & MT_QUIRK_WIN_8_CERTIFIED)
++				set_abs(hi->input, ABS_MT_CENTER_Y, field,
++					cls->sn_move);
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+@@ -515,6 +527,12 @@ static void mt_emit_event(struct mt_device *td, struct input_dev *input)
+ 
+ 			input_event(input, EV_ABS, ABS_MT_POSITION_X, s->x);
+ 			input_event(input, EV_ABS, ABS_MT_POSITION_Y, s->y);
++			if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED) {
++				input_event(input, EV_ABS, ABS_MT_CENTER_X,
++					s->cx);
++				input_event(input, EV_ABS, ABS_MT_CENTER_Y,
++					s->cy);
++			}
+ 			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
+ 			input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
+ 			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
+@@ -561,10 +579,14 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
+ 			td->curdata.p = value;
+ 			break;
+ 		case HID_GD_X:
+-			td->curdata.x = value;
++			if (usage->code == ABS_MT_POSITION_X)
++				td->curdata.x = value;
++			td->curdata.cx = value;
+ 			break;
+ 		case HID_GD_Y:
+-			td->curdata.y = value;
++			if (usage->code == ABS_MT_POSITION_Y)
++				td->curdata.y = value;
++			td->curdata.cy = value;
+ 			break;
+ 		case HID_DG_WIDTH:
+ 			td->curdata.w = value;
+@@ -666,6 +688,47 @@ static void mt_post_parse_default_settings(struct mt_device *td)
+ 	td->mtclass.quirks = quirks;
+ }
+ 
++static void mt_post_parse_win8(struct mt_device *td)
++{
++	struct mt_fields *f = td->fields;
++	int field_count_per_touch = f->length / td->touches_by_report;
++	int i;
++
++	int position_x_index = -1;
++	int position_y_index = -1;
++	int center_x_index = -1;
++	int center_y_index = -1;
++
++	for (i = 0; i < field_count_per_touch; i++) {
++		switch (f->usages[i]->hid) {
++		case HID_GD_X:
++			if (position_x_index < 0)
++				position_x_index = i;
++			else
++				center_x_index = i;
++			break;
++		case HID_GD_Y:
++			if (position_y_index < 0)
++				position_y_index = i;
++			else
++				center_y_index = i;
++			break;
++		}
++	}
++
++	if (center_x_index < 0 || center_y_index < 0)
++		/* center X and center y are not provided */
++		return;
++
++	for (i = 0; i < td->touches_by_report; i++) {
++		int cur_touch_index = i * field_count_per_touch;
++		struct hid_usage **usages = &f->usages[cur_touch_index];
++
++		usages[center_x_index]->code = ABS_MT_CENTER_X;
++		usages[center_y_index]->code = ABS_MT_CENTER_Y;
++	}
++}
++
+ static void mt_post_parse(struct mt_device *td)
+ {
+ 	struct mt_fields *f = td->fields;
+@@ -673,6 +736,10 @@ static void mt_post_parse(struct mt_device *td)
+ 	if (td->touches_by_report > 0) {
+ 		int field_count_per_touch = f->length / td->touches_by_report;
+ 		td->last_slot_field = f->usages[field_count_per_touch - 1]->hid;
++
++		if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED)
++			mt_post_parse_win8(td);
++
+ 	}
+ }
+ 
+-- 
+1.7.7.6
 
-This doesn't really work for board files, though - you can only call
-gpio_to_irq() at runtime so if you're statically registering the devices
-on the board you'd need to make the structures non-const, manage to find
-the GPIO controller at runtime then do the lookup, update the struct and
-finally register the device.
-
-> If there is "irq expander" type of chip I assume it would have similar
-> way to get the IRQ number based on either GPIO number or some other
-> enumeration value.
-
-No, there's no generic interface for this.
-
-> The twl6040 does not have such a feature. The interrupts are generated
-> internally and it has one IRQ line towards the host. We have nested
-> interrupts for the childs (plug detect is handled by ASoC codec, Vibra
-> overcurrent is handled by the vibra driver, etc).
-
-OK, that's fine then - you should put this in the changelog to make it
-clear that there are no external users who could be affected.
-
---EEx6GiKZGZ1wKUra
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPo8/wAAoJEBus8iNuMP3dYVQP/iPByH/b+LWhDF+13brspMAl
-uHVI6lVlGUH7yN3zxQp/yiehW8CI7MHKIi0d6OFh2iQ46ktKYi4aJ61ZZEC/buDb
-GDzKtqy6repFQlq1DZnkftUYgIh9KK7k3/kV47sMJMvusLOm/ctEgikCB39zrWE+
-RQkDxIWO5AegXnNpOrzaOa59s9S/3pNsuVmuG3X9mFuIrOTdjFouHrVabWVRPL7g
-XG2ca9AfhOMnQ33QiiwGVtRgEqIUcp0x903OBWKOo7ZaOZv0m9TsRotSNGK2IyST
-C32UvFWLoyupLnS5/YJ8Rf6SBFDAd//WRdo7Em9e75kIi+5Uq/eDb3PIlXEDBRlJ
-CjakCS+r6svePTfREP+DVLUlYffj3PjGuNIhqhIF3M+3fmk2qT+XxqeCn+jyUs64
-oqjnZ8auIwXIdIjC6Dnrh71i/xd5UKJ22xSXH034R1SnfYbDKaFifsbsxG8V7oFw
-tsIFLRWgWYuHB6lHlQIUUzOIdm3mGu2bhceEE7F4eMBZSIN7ZplKWKAjGAdnH8l7
-CMAZtnM3IJrpP+Et6kmIuA/qgkjFAjedjgrbLB5syGdLXv5TfHRuwcHGAjT2LnOe
-JuV7VhvrGImoYR9KcPFaY+VzIjN/8af4BLxWIgf+MxE3RJIUZtzUCpzFuwLbkfVA
-6ouWWmBt+zPZyWHwIn53
-=7pJn
------END PGP SIGNATURE-----
-
---EEx6GiKZGZ1wKUra--
