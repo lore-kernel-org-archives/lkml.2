@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab2EDUqY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:46:24 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932439Ab2EDUqS (ORCPT
+	id S932466Ab2EDUqa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:46:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759706Ab2EDUqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:46:18 -0400
-Message-Id: <20120504204228.302668175@linuxfoundation.org>
+	Fri, 4 May 2012 16:46:25 -0400
+Message-Id: <20120504204228.477486913@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:10 -0700
+Date: Fri, 04 May 2012 13:43:12 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>
-Subject: [ 46/75] efi: Validate UEFI boot variables
+        alan@lxorguk.ukuu.org.uk, Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 48/75] tools/include: Add byteshift headers for endian access
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,229 +25,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit fec6c20b570bcf541e581fc97f2e0cbdb9725b98 upstream.
+commit a07f7672d7cf0ff0d6e548a9feb6e0bd016d9c6c upstream.
 
-A common flaw in UEFI systems is a refusal to POST triggered by a malformed
-boot variable. Once in this state, machines may only be restored by
-reflashing their firmware with an external hardware device. While this is
-obviously a firmware bug, the serious nature of the outcome suggests that
-operating systems should filter their variable writes in order to prevent
-a malicious user from rendering the machine unusable.
+There are various hostprogs in the kernel that are rolling their own
+implementations of {get,put}_unaligned_le*(). Copy the byteshift
+headers from include/linux/unaligned so that they can all use a single
+implementation.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This requires changing some of the data types to the userspace
+exported ones (u32 -> __u32, etc).
+
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Link: http://lkml.kernel.org/r/1330436245-24875-2-git-send-email-matt@console-pimps.org
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/efivars.c |  182 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 182 insertions(+)
+ tools/include/tools/be_byteshift.h |   70 +++++++++++++++++++++++++++++++++++++
+ tools/include/tools/le_byteshift.h |   70 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 140 insertions(+)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -191,6 +191,176 @@ utf16_strncmp(const efi_char16_t *a, con
- 	}
- }
- 
-+static bool
-+validate_device_path(struct efi_variable *var, int match, u8 *buffer, int len)
+--- /dev/null
++++ b/tools/include/tools/be_byteshift.h
+@@ -0,0 +1,70 @@
++#ifndef _TOOLS_BE_BYTESHIFT_H
++#define _TOOLS_BE_BYTESHIFT_H
++
++#include <linux/types.h>
++
++static inline __u16 __get_unaligned_be16(const __u8 *p)
 +{
-+	struct efi_generic_dev_path *node;
-+	int offset = 0;
-+
-+	node = (struct efi_generic_dev_path *)buffer;
-+
-+	while (offset < len) {
-+		offset += node->length;
-+
-+		if (offset > len)
-+			return false;
-+
-+		if ((node->type == EFI_DEV_END_PATH ||
-+		     node->type == EFI_DEV_END_PATH2) &&
-+		    node->sub_type == EFI_DEV_END_ENTIRE)
-+			return true;
-+
-+		node = (struct efi_generic_dev_path *)(buffer + offset);
-+	}
-+
-+	/*
-+	 * If we're here then either node->length pointed past the end
-+	 * of the buffer or we reached the end of the buffer without
-+	 * finding a device path end node.
-+	 */
-+	return false;
++	return p[0] << 8 | p[1];
 +}
 +
-+static bool
-+validate_boot_order(struct efi_variable *var, int match, u8 *buffer, int len)
++static inline __u32 __get_unaligned_be32(const __u8 *p)
 +{
-+	/* An array of 16-bit integers */
-+	if ((len % 2) != 0)
-+		return false;
-+
-+	return true;
++	return p[0] << 24 | p[1] << 16 | p[2] << 8 | p[3];
 +}
 +
-+static bool
-+validate_load_option(struct efi_variable *var, int match, u8 *buffer, int len)
++static inline __u64 __get_unaligned_be64(const __u8 *p)
 +{
-+	u16 filepathlength;
-+	int i, desclength = 0;
-+
-+	/* Either "Boot" or "Driver" followed by four digits of hex */
-+	for (i = match; i < match+4; i++) {
-+		if (hex_to_bin(var->VariableName[i] & 0xff) < 0)
-+			return true;
-+	}
-+
-+	/* A valid entry must be at least 6 bytes */
-+	if (len < 6)
-+		return false;
-+
-+	filepathlength = buffer[4] | buffer[5] << 8;
-+
-+	/*
-+	 * There's no stored length for the description, so it has to be
-+	 * found by hand
-+	 */
-+	desclength = utf16_strsize((efi_char16_t *)(buffer + 6), len) + 2;
-+
-+	/* Each boot entry must have a descriptor */
-+	if (!desclength)
-+		return false;
-+
-+	/*
-+	 * If the sum of the length of the description, the claimed filepath
-+	 * length and the original header are greater than the length of the
-+	 * variable, it's malformed
-+	 */
-+	if ((desclength + filepathlength + 6) > len)
-+		return false;
-+
-+	/*
-+	 * And, finally, check the filepath
-+	 */
-+	return validate_device_path(var, match, buffer + desclength + 6,
-+				    filepathlength);
++	return (__u64)__get_unaligned_be32(p) << 32 |
++	       __get_unaligned_be32(p + 4);
 +}
 +
-+static bool
-+validate_uint16(struct efi_variable *var, int match, u8 *buffer, int len)
++static inline void __put_unaligned_be16(__u16 val, __u8 *p)
 +{
-+	/* A single 16-bit integer */
-+	if (len != 2)
-+		return false;
-+
-+	return true;
++	*p++ = val >> 8;
++	*p++ = val;
 +}
 +
-+static bool
-+validate_ascii_string(struct efi_variable *var, int match, u8 *buffer, int len)
++static inline void __put_unaligned_be32(__u32 val, __u8 *p)
 +{
-+	int i;
-+
-+	for (i = 0; i < len; i++) {
-+		if (buffer[i] > 127)
-+			return false;
-+
-+		if (buffer[i] == 0)
-+			return true;
-+	}
-+
-+	return false;
++	__put_unaligned_be16(val >> 16, p);
++	__put_unaligned_be16(val, p + 2);
 +}
 +
-+struct variable_validate {
-+	char *name;
-+	bool (*validate)(struct efi_variable *var, int match, u8 *data,
-+			 int len);
-+};
-+
-+static const struct variable_validate variable_validate[] = {
-+	{ "BootNext", validate_uint16 },
-+	{ "BootOrder", validate_boot_order },
-+	{ "DriverOrder", validate_boot_order },
-+	{ "Boot*", validate_load_option },
-+	{ "Driver*", validate_load_option },
-+	{ "ConIn", validate_device_path },
-+	{ "ConInDev", validate_device_path },
-+	{ "ConOut", validate_device_path },
-+	{ "ConOutDev", validate_device_path },
-+	{ "ErrOut", validate_device_path },
-+	{ "ErrOutDev", validate_device_path },
-+	{ "Timeout", validate_uint16 },
-+	{ "Lang", validate_ascii_string },
-+	{ "PlatformLang", validate_ascii_string },
-+	{ "", NULL },
-+};
-+
-+static bool
-+validate_var(struct efi_variable *var, u8 *data, int len)
++static inline void __put_unaligned_be64(__u64 val, __u8 *p)
 +{
-+	int i;
-+	u16 *unicode_name = var->VariableName;
-+
-+	for (i = 0; variable_validate[i].validate != NULL; i++) {
-+		const char *name = variable_validate[i].name;
-+		int match;
-+
-+		for (match = 0; ; match++) {
-+			char c = name[match];
-+			u16 u = unicode_name[match];
-+
-+			/* All special variables are plain ascii */
-+			if (u > 127)
-+				return true;
-+
-+			/* Wildcard in the matching name means we've matched */
-+			if (c == '*')
-+				return variable_validate[i].validate(var,
-+							     match, data, len);
-+
-+			/* Case sensitive match */
-+			if (c != u)
-+				break;
-+
-+			/* Reached the end of the string while matching */
-+			if (!c)
-+				return variable_validate[i].validate(var,
-+							     match, data, len);
-+		}
-+	}
-+
-+	return true;
++	__put_unaligned_be32(val >> 32, p);
++	__put_unaligned_be32(val, p + 4);
 +}
 +
- static efi_status_t
- get_var_data_locked(struct efivars *efivars, struct efi_variable *var)
- {
-@@ -324,6 +494,12 @@ efivar_store_raw(struct efivar_entry *en
- 		return -EINVAL;
- 	}
- 
-+	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
-+	    validate_var(new_var, new_var->Data, new_var->DataSize) == false) {
-+		printk(KERN_ERR "efivars: Malformed variable content\n");
-+		return -EINVAL;
-+	}
++static inline __u16 get_unaligned_be16(const void *p)
++{
++	return __get_unaligned_be16((const __u8 *)p);
++}
 +
- 	spin_lock(&efivars->lock);
- 	status = efivars->ops->set_variable(new_var->VariableName,
- 					    &new_var->VendorGuid,
-@@ -626,6 +802,12 @@ static ssize_t efivar_create(struct file
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EACCES;
- 
-+	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
-+	    validate_var(new_var, new_var->Data, new_var->DataSize) == false) {
-+		printk(KERN_ERR "efivars: Malformed variable content\n");
-+		return -EINVAL;
-+	}
++static inline __u32 get_unaligned_be32(const void *p)
++{
++	return __get_unaligned_be32((const __u8 *)p);
++}
 +
- 	spin_lock(&efivars->lock);
- 
- 	/*
++static inline __u64 get_unaligned_be64(const void *p)
++{
++	return __get_unaligned_be64((const __u8 *)p);
++}
++
++static inline void put_unaligned_be16(__u16 val, void *p)
++{
++	__put_unaligned_be16(val, p);
++}
++
++static inline void put_unaligned_be32(__u32 val, void *p)
++{
++	__put_unaligned_be32(val, p);
++}
++
++static inline void put_unaligned_be64(__u64 val, void *p)
++{
++	__put_unaligned_be64(val, p);
++}
++
++#endif /* _TOOLS_BE_BYTESHIFT_H */
+--- /dev/null
++++ b/tools/include/tools/le_byteshift.h
+@@ -0,0 +1,70 @@
++#ifndef _TOOLS_LE_BYTESHIFT_H
++#define _TOOLS_LE_BYTESHIFT_H
++
++#include <linux/types.h>
++
++static inline __u16 __get_unaligned_le16(const __u8 *p)
++{
++	return p[0] | p[1] << 8;
++}
++
++static inline __u32 __get_unaligned_le32(const __u8 *p)
++{
++	return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
++}
++
++static inline __u64 __get_unaligned_le64(const __u8 *p)
++{
++	return (__u64)__get_unaligned_le32(p + 4) << 32 |
++	       __get_unaligned_le32(p);
++}
++
++static inline void __put_unaligned_le16(__u16 val, __u8 *p)
++{
++	*p++ = val;
++	*p++ = val >> 8;
++}
++
++static inline void __put_unaligned_le32(__u32 val, __u8 *p)
++{
++	__put_unaligned_le16(val >> 16, p + 2);
++	__put_unaligned_le16(val, p);
++}
++
++static inline void __put_unaligned_le64(__u64 val, __u8 *p)
++{
++	__put_unaligned_le32(val >> 32, p + 4);
++	__put_unaligned_le32(val, p);
++}
++
++static inline __u16 get_unaligned_le16(const void *p)
++{
++	return __get_unaligned_le16((const __u8 *)p);
++}
++
++static inline __u32 get_unaligned_le32(const void *p)
++{
++	return __get_unaligned_le32((const __u8 *)p);
++}
++
++static inline __u64 get_unaligned_le64(const void *p)
++{
++	return __get_unaligned_le64((const __u8 *)p);
++}
++
++static inline void put_unaligned_le16(__u16 val, void *p)
++{
++	__put_unaligned_le16(val, p);
++}
++
++static inline void put_unaligned_le32(__u32 val, void *p)
++{
++	__put_unaligned_le32(val, p);
++}
++
++static inline void put_unaligned_le64(__u64 val, void *p)
++{
++	__put_unaligned_le64(val, p);
++}
++
++#endif /* _TOOLS_LE_BYTESHIFT_H */
 
 
