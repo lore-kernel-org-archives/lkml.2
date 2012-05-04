@@ -1,115 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758421Ab2EDOKV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 10:10:21 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:39810 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758332Ab2EDOKT (ORCPT
+	id S1758385Ab2EDONY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 10:13:24 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51837 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab2EDONX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 10:10:19 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/4] xen/apic: Return the APIC ID (and version) for CPU 0.
-Date: Fri,  4 May 2012 10:04:25 -0400
-Message-Id: <1336140267-7399-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-In-Reply-To: <1336140267-7399-1-git-send-email-konrad.wilk@oracle.com>
-References: <1336140267-7399-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 4 May 2012 10:13:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120504135217.GB1049@phenom.dumpdata.com>
+References: <CAEe-dwgCR55urie0c1MdBWTS6-E=3faXj68=WMcb6NvQCQX0rg@mail.gmail.com>
+	<20120504135217.GB1049@phenom.dumpdata.com>
+Date: Fri, 4 May 2012 11:13:22 -0300
+X-Google-Sender-Auth: M3xDy_XOIk0x_acKEv6w1531eZ0
+Message-ID: <CAEe-dwj4JP-U0tc3wpmHvzv=aQU5zy3cG_E9FrriPw_sdfg2bg@mail.gmail.com>
+Subject: Re: [RFC][PATCH] ACPI: Ignore invalid _PSS entries, but use valid ones
+From: Marco Aurelio da Costa <costa@gamic.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86_64 on AMD machines where the first APIC_ID is not zero, we get:
+Hi, Konrad.
 
-ACPI: LAPIC (acpi_id[0x01] lapic_id[0x10] enabled)
-BIOS bug: APIC version is 0 for CPU 1/0x10, fixing up to 0x10
-BIOS bug: APIC version mismatch, boot CPU: 0, CPU 1: version 10
+On Fri, May 4, 2012 at 10:52 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Fri, May 04, 2012 at 10:46:01AM -0300, Marco Aurelio da Costa wrote:
+>> From: Marco Aurelio da Costa <costa@gamic.com>
+>> Signed-off-by: Marco Aurelio da Costa <costa@gamic.com>
+>>
+>> The EliteBook 8560W has non-initialized entries in its _PSS ACPI
+>> table. Instead of bailing out when the first non-initialized entry is
+>> found, ignore it and use only  the valid entries. Only bail out if there
+>> is no valid entry at all.
+>
+> Is that safe? Meaning re-use the other CPU's _PSS states? Perhaps the
+> warning at the end should say: "Trying to compensate by using the
+> other CPU's PSS state).
 
-which means that when the ACPI processor driver loads and
-tries to parse the _Pxx states it fails to do as, as it
-ends up calling acpi_get_cpuid which does this:
+This case in question was created by HP removing the overclock options
+and leaving the entries in a invalid/empty situation. In this specific
+case, it is safe.
+I am not changing the table in any way, I just ignore the
+non-initialized entries. The code only use listed states. If they are
+CPU bound, the code doesn't assume anything.
 
-for_each_possible_cpu(i) {
-        if (cpu_physical_id(i) == apic_id)
-                return i;
-}
+>
+>>
+>> ---
+>> --- linux-3.3.3/drivers/acpi/processor_perflib.c.orig   2012-04-24
+>> 22:18:23.288041268 +0200
+>> +++ linux-3.3.3/drivers/acpi/processor_perflib.c        2012-04-24
+>> 22:19:25.912042603 +0200
+>> @@ -311,6 +311,7 @@ static int acpi_processor_get_performanc
+>>        struct acpi_buffer state = { 0, NULL };
+>>        union acpi_object *pss = NULL;
+>>        int i;
+>> +       int last_invalid = -1;
+>>
+>>
+>>        status = acpi_evaluate_object(pr->handle, "_PSS", NULL, &buffer);
+>> @@ -374,12 +375,30 @@ static int acpi_processor_get_performanc
+>>                        printk(KERN_ERR FW_BUG PREFIX
+>>                               "Invalid BIOS _PSS frequency: 0x%llx MHz\n",
+>>                               px->core_frequency);
+>> -                       result = -EFAULT;
+>> -                       kfree(pr->performance->states);
+>> -                       goto end;
+>> +                       if (-1 == last_invalid)
+>
+> Swap it around or just do it this way:
 
-And the bootup CPU, has not been found so it fails and returns -1
-for the first CPU - which then subsequently in the loop that
-"acpi_processor_get_info" does results in returning an error, which
-means that "acpi_processor_add" failing and per_cpu(processor)
-is never set (and is NULL).
+Ok.
 
-That means that when xen-acpi-processor tries to load (much much
-later on) and parse the P-states it gets -ENODEV from
-acpi_processor_register_performance() (which tries to read
-the per_cpu(processor)) and fails to parse the data.
+>
+> if (last_invalid < 0)
+>
+>> +                               last_invalid = i;
+>> +               } else {
+>> +                       if (last_invalid != -1) {
+>
+> if (last_invalid >= 0)
+>
+>> +                               /*
+>> +                                * Copy this valid entry over last_invalid entry
+>> +                                */
+>> +                               memcpy(&(pr->performance->states[last_invalid]),
+>> +                                      px, sizeof(struct acpi_processor_px));
+>> +                               ++last_invalid;
+>> +                       }
+>>                }
+>>        }
+>>
+>> +       if (0 == last_invalid) {
+>
+> So if _PSS that is missing is at CPU2, this own't print it.
 
-Reported-by-and-Tested-by:  Stefan Bader <stefan.bader@canonical.com>
-Suggested-by:  Boris Ostrovsky <boris.ostrovsky@amd.com>
-[v2: Bit-shift APIC ID by 24 bits]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/enlighten.c |   35 ++++++++++++++++++++++++++++++++++-
- 1 files changed, 34 insertions(+), 1 deletions(-)
+I don't get what do you mean by CPU. last_invalid is just the last
+invalid _PSS entry item. Nothing to do with the CPU.
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index a8f8844..4f437de 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -809,9 +809,40 @@ static void xen_io_delay(void)
- }
- 
- #ifdef CONFIG_X86_LOCAL_APIC
-+static unsigned long xen_set_apic_id(unsigned int x)
-+{
-+	WARN_ON(1);
-+	return x;
-+}
-+static unsigned int xen_get_apic_id(unsigned long x)
-+{
-+	return ((x)>>24) & 0xFFu;
-+}
- static u32 xen_apic_read(u32 reg)
- {
--	return 0;
-+	struct xen_platform_op op = {
-+		.cmd = XENPF_get_cpuinfo,
-+		.interface_version = XENPF_INTERFACE_VERSION,
-+		.u.pcpu_info.xen_cpuid = 0,
-+	};
-+	int ret = 0;
-+
-+	/* Shouldn't need this as APIC is turned off for PV, and we only
-+	 * get called on the bootup processor. But just in case. */
-+	if (!xen_initial_domain() || smp_processor_id())
-+		return 0;
-+
-+	if (reg == APIC_LVR)
-+		return 0x10;
-+
-+	if (reg != APIC_ID)
-+		return 0;
-+
-+	ret = HYPERVISOR_dom0_op(&op);
-+	if (ret)
-+		return 0;
-+
-+	return op.u.pcpu_info.apic_id << 24;
- }
- 
- static void xen_apic_write(u32 reg, u32 val)
-@@ -849,6 +880,8 @@ static void set_xen_basic_apic_ops(void)
- 	apic->icr_write = xen_apic_icr_write;
- 	apic->wait_icr_idle = xen_apic_wait_icr_idle;
- 	apic->safe_wait_icr_idle = xen_safe_apic_wait_icr_idle;
-+	apic->set_apic_id = xen_set_apic_id;
-+	apic->get_apic_id = xen_get_apic_id;
- }
- 
- #endif
+>
+> I think you want 'if (last_invalid >= 0)'
+
+No, it is correct. If the last invalid found item is the item 0, than
+it means that no valid item was found.
+
+>
+>> +               printk(KERN_ERR FW_BUG PREFIX
+>> +                      "No valid BIOS _PSS frequency found\n");
+>
+> And you should mention which CPU has it busted - as there are
+> some that are working.
+
+No CPU here, just the _PSS item.
+
+>
+>
+>> +               result = -EFAULT;
+>> +               kfree(pr->performance->states);
+>> +       }
+>> +
+>> +       if (last_invalid > 0)
+>
+> Don't you want 'last_invalid >= 0' ?
+
+No. It is correct. If the last invalid item is greater than 0, then
+there was at least 1 valid _PSS entry. And the count of valid entries
+is the same as the last_invalid variable.
+
+>
+>> +               pr->performance->state_count = last_invalid;
+>> +
+>>       end:
+>>        kfree(buffer.pointer);
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+I will send the corrected patch next.
+
+
 -- 
-1.7.7.5
-
+Marco Costa
+Customer Support
+--
+GAMIC mbH
+Roermonder Strasse, 151
+52072 Aachen
+Germany
