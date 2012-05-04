@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab2EDGcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 02:32:13 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:38919 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751808Ab2EDGcL (ORCPT
+	id S1752381Ab2EDGeN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 02:34:13 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14300 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab2EDGeM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 02:32:11 -0400
-Message-ID: <4FA377E1.9060008@ti.com>
-Date: Fri, 04 May 2012 12:02:01 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Fri, 4 May 2012 02:34:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 03 May 2012 23:34:02 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 4 May 2012 08:33:58 +0200
+Subject: Re: [PATCHv3 3/4] iommu/tegra: smmu: Refrain from accessing to AHB
+Thread-Topic: [PATCHv3 3/4] iommu/tegra: smmu: Refrain from accessing to AHB
+Thread-Index: Ac0pv+N9/bQtE66UT6euhdUzTU4+3g==
+Message-ID: <20120504.093358.2098007825524274078.hdoyu@nvidia.com>
+References: <1336061147-10245-1-git-send-email-hdoyu@nvidia.com><1336061147-10245-3-git-send-email-hdoyu@nvidia.com><4FA2C4E9.2080509@wwwdotorg.org>
+In-Reply-To: <4FA2C4E9.2080509@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 0/7] Add TI EMIF SDRAM controller driver
-References: <1335529449-28046-1-git-send-email-santosh.shilimkar@ti.com> <CAP=VYLrCTOb9Qtz_HU5976cew_FR=qN6=x=_nD48ZprTcCjoUg@mail.gmail.com> <20120504000312.GB32225@kroah.com>
-In-Reply-To: <20120504000312.GB32225@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 04 May 2012 05:33 AM, Greg KH wrote:
-> On Thu, May 03, 2012 at 06:38:23PM -0400, Paul Gortmaker wrote:
->> On Fri, Apr 27, 2012 at 8:24 AM, Santosh Shilimkar
->> <santosh.shilimkar@ti.com> wrote:
->>> Add a driver for the EMIF SDRAM controller used in Texas Instrument SoCs
->>
->> Hi Santosh,
->>
->> Can you send Greg a patch that adds proper dependencies to the Kconfig?
->> I was going to simply add an ARM dependency, but perhaps you want to
->> restrict it further to a subset of OMAP platforms?
->>
-Thanks Paul for reporting the issue.
+From: Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCHv3 3/4] iommu/tegra: smmu: Refrain from accessing to AHB
+Date: Thu, 3 May 2012 19:48:25 +0200
+Message-ID: <4FA2C4E9.2080509@wwwdotorg.org>
 
->> At the moment it is causing build failures in other architectures.
->>
->> http://kisskb.ellerman.id.au/kisskb/buildresult/6243036/
+> On 05/03/2012 10:05 AM, Hiroshi DOYU wrote:
+> > Use "tegra_ahb_enable_smmu()" to inform AHB that SMMU is
+> > ready, instead of directly aceessing AHB registers.
 > 
-> I think there's a config option for readl/writel, but yes, ARM would
-> probably be fine as well.
+> You need to make the Kconfig option for the SMMU either depend on or
+> select the TEGRA_AHB option. If you don't, then if someone disables the
+> AHB driver, the SMMU driver may still build, yet fail to link since the
+> AHB API it calls doesn't exist.
 > 
-Just send a patch [1] to Greg. EMIF driver build is restricted to
-ARCH_OMAP2PLUS for now and can be extended later if any other
-non OMAP architecture start using it.
+> > diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
+> 
+> > @@ -398,10 +388,8 @@ static void smmu_setup_regs(struct smmu_device *smmu)
+> >  
+> >  	smmu_flush_regs(smmu, 1);
+> >  
+> > -	val = ahb_read(smmu, AHB_XBAR_CTRL);
+> > -	val |= AHB_XBAR_CTRL_SMMU_INIT_DONE_DONE <<
+> > -		AHB_XBAR_CTRL_SMMU_INIT_DONE_SHIFT;
+> > -	ahb_write(smmu, val, AHB_XBAR_CTRL);
+> > +	err = tegra_ahb_enable_smmu(smmu->ahb);
+> > +	return err;
+> 
+> You can just "return tegra_ahb_..." here.
+> 
+> > @@ -911,14 +899,16 @@ static int tegra_smmu_probe(struct platform_device *pdev)
+> 
+> > +	smmu->ahb = of_parse_phandle(pdev->dev.of_node, "ahb", 0);
+> 
+> Hmm, "ahb" should probably be "nvidia,ahb".
 
-Regards
-Santosh
+Does this mean the following in dts?
 
-[1] https://lkml.org/lkml/2012/5/4/22
+	ahb: ahb@6000c004 {
+		compatible = "nvidia,tegra30-ahb";
+		reg = <0x6000c004 0x14c>; /* AHB Arbitration + Gizmo Controller */
+	};
+
+	smmu: smmu@7000f000 {
+		nvidia,ahb = &ahb;
+	};      ^^^^^^^^^^
