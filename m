@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759638Ab2EDUje (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:39:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:63199 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759621Ab2EDUjb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:39:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Wolfgang Denk <wd@denx.de>
-Subject: Re: Handling of modular boards
-Date: Fri, 4 May 2012 20:39:25 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@ardb.de>,
+	id S1755663Ab2EDUme (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:42:34 -0400
+Received: from frodo.hserus.net ([204.74.68.40]:60051 "EHLO frodo.hserus.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754231Ab2EDUmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 16:42:33 -0400
+Date: Fri, 4 May 2012 17:42:07 -0300
+From: Christian Robottom Reis <kiko@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, linaro-dev@lists.linaro.org,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
         Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Igor Grinberg <grinberg@compulab.co.il>,
-        linux-embedded@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-References: <20120504185850.GO14230@opensource.wolfsonmicro.com> <201205041934.08830.arnd@arndb.de> <20120504203357.6B79B206451@gemini.denx.de>
-In-Reply-To: <20120504203357.6B79B206451@gemini.denx.de>
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Making ARM multiplatform kernels DT-only?
+Message-ID: <20120504204207.GA11715@async.com.br>
+References: <201205031350.35476.arnd@arndb.de>
+ <CAK2p4sJj7FRVSStVkqmn16sUv8S3vHmUYCU_VzTWAWzqV5yVsg@mail.gmail.com>
+ <20120504142057.GQ27023@stoneboat.aleph1.co.uk>
+ <20120504143518.GF26481@n2100.arm.linux.org.uk>
+ <CACRpkdZ3m=PXg35==3wo2xHPL7TRn1W0AX_CeMKjPd1U+pTAGQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205042039.25794.arnd@arndb.de>
-X-Provags-ID: V02:K0:xb5VPUlMzQ3cmERFBgzNcNyZhIA3obkzS1Nrgz8+68z
- eC56nfIr11auKdFLekmRNIIrZ/3Bv42vjD5RX7S6saqIJKMbuP
- N++QzwQ8EiUYBJBf1MCOZsLNot01oSOkYmyfeBEoy6rJTmxazW
- /sogeeJ8Ze5S14COkPNpDjaODZO0rWWl3Fv2o1y/FWzrIyNl4K
- iotK0FwGkd+mBWJlBVGAoFSqo0vkGxUmrOLTy9m/jJjib24YGF
- KtfMYkI6+l3o4SVV1p90TcjcDbPGK9BkY33OKYYKZw8hxN4Axh
- d45hCRe10b1Uif3M7PmZsDWaSCrAtZoeM/UHZX2ytRfTUOx/q1
- XX5BxSfdHQwEpx2WvBow=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZ3m=PXg35==3wo2xHPL7TRn1W0AX_CeMKjPd1U+pTAGQ@mail.gmail.com>
+Organization: http://www.linaro.org/
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 04 May 2012, Wolfgang Denk wrote:
-> In message <201205041934.08830.arnd@arndb.de> you wrote:
-> >
-> > One idea that I've heard before is to put device tree fragments into the
-> > kernel and dynamically add them to the device tree that was passed by the
-> > boot loader whenever we detect the presence of a specific device.
-> > This obviously means it works only for boards using DT for booting, but
-> > it allows us to use some infrastructure that we already have.
-> > 
-> > Another idea was to put all the possible extensions into the device tree
-> > for a given board and disable them by default, putting it into the
-> > responsibility of the boot loader to enable the one that is actually
-> > being used. This has serious scalibility problems when there are many
-> > possible extensions and also relies more on the boot loader than I would
-> > like.
+On Fri, May 04, 2012 at 10:03:40PM +0200, Linus Walleij wrote:
+> On Fri, May 4, 2012 at 4:35 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
 > 
-> On the other hand, some of the issues we're trying to solve here
-> for the kernel are also present in the boot loader, so this needs to
-> do this anyway - whether by inserting new or modifying (enabling or
-> disabling) existing properties in the DT is not really relevant here.
+> > Well, my understanding is that there's DT patches around for Versatile.
+> 
+> Is there? There is some in-tree stuff, but haven't seen any other
+> sign of patches.
+> 
+> Having looked a bit at that I get the impression that this DT code has
+> been developed (by Grant I guess) in QEMU only as a proof of concept,
+> and never really tested on a real Versatile hardware unit.
+> 
+> These:
+> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7390/1
+> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7391/1
+> 
+> make it clear that noone ever tested an MMC card on a Versatile
+> booted on real hardware using DT. And I strongly suspect there
+> are more instances like that, it seems AACI, GPIO and I2C and
+> I guess whatever you cannot test on QEMU is just unsupported.
 
-I haven't seen a case where the add-on board is actually required
-for booting. What examples are you thinking of?
+Isn't there work by Pawel that adds support for more of the Versatile
+platform? My quick searching finds at least:
 
-	Arnd
+    http://comments.gmane.org/gmane.linux.drivers.i2c/10143
+    http://comments.gmane.org/gmane.linux.ports.arm.kernel/143523
+
+I think the latter is merged already, but I may be wrong.
+-- 
+Christian Robottom Reis, Engineering VP
+Brazil (GMT-3) | [+55] 16 9112 6430 | [+1] 612 216 4935
+Linaro.org: Open Source Software for ARM SoCs
