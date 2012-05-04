@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759118Ab2EDQ7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 12:59:52 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:38317 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab2EDQ7v (ORCPT
+	id S1759208Ab2EDREV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 13:04:21 -0400
+Received: from 11.mo4.mail-out.ovh.net ([46.105.34.195]:32831 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752478Ab2EDREU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 12:59:51 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18BE7qmN8HC8Ma91jujM6+0
-Date: Fri, 4 May 2012 09:59:49 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.4-rc4] ARM: OMAP1: Amstrad Delta: Fix wrong IRQ base
- in FIQ handler
-Message-ID: <20120504165948.GC5613@atomide.com>
-References: <1335806769-23711-1-git-send-email-jkrzyszt@tis.icnet.pl>
+	Fri, 4 May 2012 13:04:20 -0400
+Date: Fri, 4 May 2012 18:40:45 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>, linaro-dev@lists.linaro.org,
+        Jason Cooper <jason@lakedaemon.net>, Nicolas Pitre <nico@fluxnic.net>,
+        Tony Lindgren <tony@atomide.com>, Magnus Damm <magnus.damm@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>, shawn.guo@linaro.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Marc Zyngier <marc.zyngier@arm.com>
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: Making ARM multiplatform kernels DT-only?
+Message-ID: <20120504164045.GH7788@game.jcrosoft.org>
+References: <201205031350.35476.arnd@arndb.de>
+ <20120503140428.GB897@n2100.arm.linux.org.uk>
+ <201205041220.24747.arnd@arndb.de>
+ <4FA40642.5040203@gmail.com>
+ <20120504165603.GK897@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1335806769-23711-1-git-send-email-jkrzyszt@tis.icnet.pl>
+In-Reply-To: <20120504165603.GK897@n2100.arm.linux.org.uk>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 838795432560274355
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtdehucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtdehucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [120430 10:30]:
-> Commit 384ebe1c2849160d040df3e68634ec506f13d9ff, "gpio/omap: Add DT
-> support to GPIO driver", introduced dynamic IRQ numbering of OMAP GPIO
-> interrupts, breaking all IH_GPIO_BASE based IRQ number calculations.
-> This issue was corrected in the OMAP GPIO driver and the related header
-> file with commit 25db711df3258d125dc1209800317e5c0ef3c870, "gpio/omap:
-> Fix IRQ handling for SPARSE_IRQ".
+On 17:56 Fri 04 May     , Russell King - ARM Linux wrote:
+> On Fri, May 04, 2012 at 11:39:30AM -0500, Rob Herring wrote:
+> > Many of the headers are simply platform_data structs which may still be
+> > needed on DT platforms, but could be moved elsewhere.
 > 
-> However, the Amstrad Delta FIQ handler, which replaces the gpio-omap
-> driver in serving GPIO interrupts on this board, still uses that
-> outdated method. Fix it.
-
-Thanks applying into fixes.
- 
-> Created and tested against linux-3.4-rc4.
-
-I've dropped this last line as that's pretty obvious from the commit alone.
-You can put extra comments like that could between some "---" lines:
----
-This is based on -rc4...
----
-So they get ignored when the patch gets applied. What is important,
-is what it was tested on, so saying "Tested on ams delta" would be
-more meaningful, although I guess that too is pretty obvious in this
-case :)
-
-Regards,
-
-Tony
-
-
- 
-> Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-> ---
->  arch/arm/mach-omap1/ams-delta-fiq.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Those should be in include/linux/platform.
 > 
-> diff --git a/arch/arm/mach-omap1/ams-delta-fiq.c b/arch/arm/mach-omap1/ams-delta-fiq.c
-> index fcce7ff..cfd98b1 100644
-> --- a/arch/arm/mach-omap1/ams-delta-fiq.c
-> +++ b/arch/arm/mach-omap1/ams-delta-fiq.c
-> @@ -48,7 +48,7 @@ static irqreturn_t deferred_fiq(int irq, void *dev_id)
->  	struct irq_chip *irq_chip = NULL;
->  	int gpio, irq_num, fiq_count;
->  
-> -	irq_desc = irq_to_desc(IH_GPIO_BASE);
-> +	irq_desc = irq_to_desc(gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK));
->  	if (irq_desc)
->  		irq_chip = irq_desc->irq_data.chip;
->  
-> -- 
-> 1.7.3.4
+> > >> Then there's also the problem of uncompress.h.  The last piece of the
+> > >> puzzle is the common clock stuff.
+> > 
+> > The smp/hotplug/localtimer related functions are still global. Marc Z
+> > has posted patches for this, but I haven't seen recent activity. This
+> > and clocks were the 2 main issues I saw trying to build 2 platforms
+> > together. highbank and picoxcell could be built together since only
+> > highbank has clocks and smp.
+> > 
+> > gpio.h is still required, but empty for most platforms.
 > 
+> Those empty gpio.h files are definitely a candidate for going into
+> arch/arm/include/mach/gpio.h, and then all those 12-byte mach/gpio.h can
+> be deleted (13 files).
+> 
+> We've not had any progress on the gpio.h issue since I did the last round
+> of cleanup; the next stage was to persuade SoC maintainers to get rid of
+> their optimized versions which aren't compatible with multi-platform
+> kernels.
+> 
+> I don't know if folk are expecting me to push that forwards or whether
+> there's someone else working on that aspect of it...
+> 
+> So this issue really does need to be progressed too.
+on at91 as we clean it for DT we will be able to drop it soon too
+
+Best Regards
+J.
