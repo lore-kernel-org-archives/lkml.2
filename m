@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932882Ab2EDVAP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:00:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932827Ab2EDUso (ORCPT
+	id S932908Ab2EDVAg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:00:36 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932815Ab2EDUsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:48:44 -0400
-Message-Id: <20120504204246.263656015@linuxfoundation.org>
+	Fri, 4 May 2012 16:48:37 -0400
+Message-Id: <20120504204246.091942865@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:00 -0700
+Date: Fri, 04 May 2012 13:42:58 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Peter Chen <B29397@freescale.com>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 16/47] EHCI: fix criterion for resuming the root hub
+        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 14/47] drm/i915: fix integer overflow in i915_gem_do_execbuffer()
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit dc75ce9d929aabeb0843a6b1a4ab320e58ba1597 upstream.
+commit 44afb3a04391a74309d16180d1e4f8386fdfa745 upstream.
 
-This patch (as1542) changes the criterion ehci-hcd uses to tell when
-it needs to resume the controller's root hub.  A resume is needed when
-a port status change is detected, obviously, but only if the root hub
-is currently suspended.
+On 32-bit systems, a large args->num_cliprects from userspace via ioctl
+may overflow the allocation size, leading to out-of-bounds access.
 
-Right now the driver tests whether the root hub is running, and that
-is not the correct test.  In particular, if the controller has died
-then the root hub should not be restarted.  In addition, some buggy
-hardware occasionally requires the root hub to be running and
-sending out SOF packets even while it is nominally supposed to be
-suspended.
+This vulnerability was introduced in commit 432e58ed ("drm/i915: Avoid
+allocation for execbuffer object list").
 
-In the end, the test needs to be changed.  Rather than checking whether
-the root hub is currently running, the driver will now check whether
-the root hub is currently suspended.  This will yield the correct
-behavior in all cases.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Peter Chen <B29397@freescale.com>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
----
- drivers/usb/host/ehci-hcd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -865,7 +865,7 @@ static irqreturn_t ehci_irq (struct usb_
- 		pcd_status = status;
+---
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -1046,6 +1046,11 @@ i915_gem_do_execbuffer(struct drm_device
+ 			return -EINVAL;
+ 		}
  
- 		/* resume root hub? */
--		if (!(cmd & CMD_RUN))
-+		if (hcd->state == HC_STATE_SUSPENDED)
- 			usb_hcd_resume_root_hub(hcd);
- 
- 		/* get per-port change detect bits */
++		if (args->num_cliprects > UINT_MAX / sizeof(*cliprects)) {
++			DRM_DEBUG("execbuf with %u cliprects\n",
++				  args->num_cliprects);
++			return -EINVAL;
++		}
+ 		cliprects = kmalloc(args->num_cliprects * sizeof(*cliprects),
+ 				    GFP_KERNEL);
+ 		if (cliprects == NULL) {
 
 
