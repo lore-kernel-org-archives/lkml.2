@@ -1,152 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701Ab2EDFM2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 01:12:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41191 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751182Ab2EDFM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 01:12:26 -0400
-Date: Fri, 4 May 2012 15:12:21 +1000
-From: NeilBrown <neilb@suse.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 2/3] IRQ: allow check_wakeup_irqs to notice
- level-triggered interrupts.
-Message-ID: <20120504151221.6998d4e5@notabene.brown>
-In-Reply-To: <alpine.LFD.2.02.1204251402360.2542@ionos>
-References: <20120425025637.7832.14013.stgit@notabene.brown>
-	<20120425030524.7832.85239.stgit@notabene.brown>
-	<alpine.LFD.2.02.1204251018530.2542@ionos>
-	<20120425193916.0db1b4b1@notabene.brown>
-	<alpine.LFD.2.02.1204251402360.2542@ionos>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/M_Mnyl1jqY=ZXVnt32A/Lrt"; protocol="application/pgp-signature"
+	id S1751908Ab2EDFUC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 01:20:02 -0400
+Received: from 11.mo4.mail-out.ovh.net ([46.105.34.195]:60899 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751179Ab2EDFUA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 01:20:00 -0400
+X-Greylist: delayed 54300 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 May 2012 01:20:00 EDT
+Date: Fri, 4 May 2012 06:43:05 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Tony Lindgren <tony@atomide.com>, Linus Walleij <linus.walleij@linaro.org>,
+        linux-omap@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH] pinctrl: Add generic pinctrl-simple driver that
+ supports omap2+ padconf
+Message-ID: <20120504044305.GD7788@game.jcrosoft.org>
+References: <20120502172401.GG3739@atomide.com>
+ <20120503065131.GA3738@game.jcrosoft.org>
+ <20120503152708.GC5140@atomide.com>
+ <4FA30805.5050804@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA30805.5050804@wwwdotorg.org>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 7163538158801431373
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtdefucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtdefucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/M_Mnyl1jqY=ZXVnt32A/Lrt
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 16:34 Thu 03 May     , Stephen Warren wrote:
+> On 05/03/2012 09:27 AM, Tony Lindgren wrote:
+> > Hi,
+> > 
+> > * Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> [120503 00:16]:
+> >>
+> >> 	I really like it
+> >>
+> >> 	I was working on something simillar
+> >>
+> >> 	but can we split the group management so we can use it on other
+> >> 	bindings
+> > 
+> > Hmm I'm not sure I follow on the group management splitting, can you specify
+> > what you have in mind here?
+> > 
+> > If you mean moving more things into pinctrl fwk, then yeah I'd assume that
+> > will happen eventually and drivers like this will end up becoming more minimal.
+> 
+> Jean-Christophe, forgive me if I'm putting words in your mouth, but I
+> assume the following is what you mean:
+> 
+> There are two pieces of data required by the pinctrl subsystem:
+> 
+> a) The set of pins, functions, and groups that exist.
+> 
+> b) The specific function to select for each pin/group on a given board.
+> 
+> Item (a) can be represented in the pinctrl driver (e.g. as in the Tegra
+> driver), or can be represented in device tree in order to avoid large
+> tables in the driver.
+> 
+> Item (b) has to be represented in device tree, since the whole point is
+> that it's board-specific.
+> 
+> For all DT bindings I've seen that choose to represent (a) in the DT
+> rather than in the driver, the DT represents (b) directly, and (a) is
+> implicitly extracted/created based on (a).
+> 
+> When I was first thinking about DT bindings for pinctrl, I had hoped
+> that even if (a) was represented in DT, the DT nodes/properties for (a)
+> and (b) would be entirely separate, so that the binding for (b) could be
+> completely common across all SoCs, even though the binding for (a) would
+> perhaps be different across SoCs (if it existed at all).
+> 
+> So, perhaps Jean-Christophe is talking about splitting up (a) and (b) in
+> device tree?
+> 
+> Or perhaps Jean-Christophe only refers to the code that creates the
+> group and function definitions from (b), and not the actual DT binding
+> itself?
+yes you are right Stephen
+I was thinking of both but the second could be a first step
 
-On Wed, 25 Apr 2012 14:54:54 +0200 (CEST) Thomas Gleixner
-<tglx@linutronix.de> wrote:
+today we tend all to represent the group of pin in DT
 
-> Why not simply managing the pending bit for level irqs ?
->=20
+for TI, IM, MXC, at91, ST and others
 
-Hi Thomas,
- thanks again for the patch.  I finally made time to test it and it works as
-expected.  I've included it below with a change-log entry and tested-by:
-in case that helps.
+the way to represend the groups are exactly the same
 
-Thanks,
-NeilBrown
+a group is a node with a set on pin
 
+uart {
+ pincfg......
+}
 
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 25 Apr 2012 12:54:54 +0200
-Subject: [PATCH] IRQ: allow check_wakeup_irqs to notice level-triggered int=
-errupts.
+and the group is uart
 
-Level triggered interrupts do not cause IRQS_PENDING to be set when
-they fire-while-disabled as the 'pending' state is always present in
-the level - they automatically refire where re-enabled.
+so we do need to have a common way to handle it in c
 
-However the IRQS_PENDING flag is also used to abort a suspend cycle -
-if any 'is_wakeup_set' interrupt is PENDING, check_wakeup_irqs() will
-cause suspend to abort. Without IRQS_PENDING, suspend won't abort.
+the code propose by Tony is really what I'm working on to acheive this
 
-Consequently, level-triggered interrupts that fire during the 'noirq'
-phase of suspend do not currently abort suspend.
+In my mind in the driver we do not have to care how to list
+register/unregister the group. We just need to be able to do this
 
-So set IRQS_PENDING even for level triggered interrupts, and make sure
-to clear the flag in check_irq_resend.
+pinctrl_register_group(...)
 
-Also: in check_wakeup_irqs, ignore 'is_wakeup' interrupts that were
-already disabled before suspend_device_irqs() disabled them further.
+or 
 
-Tested-by: NeilBrown <neilb@suse.de>
+pinctrl_unregistewr_group(...)
 
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 6080f6b..741f836 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -379,8 +379,10 @@ handle_level_irq(unsigned int irq, struct irq_desc *de=
-sc)
- 	 * If its disabled or no action available
- 	 * keep it masked and get out of here
- 	 */
--	if (unlikely(!desc->action || irqd_irq_disabled(&desc->irq_data)))
-+	if (unlikely(!desc->action || irqd_irq_disabled(&desc->irq_data))) {
-+		desc->istate |=3D IRQS_PENDING;
- 		goto out_unlock;
-+	}
-=20
- 	handle_irq_event(desc);
-=20
-diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-index 15e53b1..b858ce3 100644
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -103,7 +103,8 @@ int check_wakeup_irqs(void)
- 	int irq;
-=20
- 	for_each_irq_desc(irq, desc) {
--		if (irqd_is_wakeup_set(&desc->irq_data)) {
-+		if (desc->depth =3D=3D 1 &&
-+		    irqd_is_wakeup_set(&desc->irq_data)) {
- 			if (desc->istate & IRQS_PENDING)
- 				return -EBUSY;
- 			continue;
-diff --git a/kernel/irq/resend.c b/kernel/irq/resend.c
-index 14dd576..6454db7 100644
---- a/kernel/irq/resend.c
-+++ b/kernel/irq/resend.c
-@@ -58,10 +58,13 @@ void check_irq_resend(struct irq_desc *desc, unsigned i=
-nt irq)
- 	/*
- 	 * We do not resend level type interrupts. Level type
- 	 * interrupts are resent by hardware when they are still
--	 * active.
-+	 * active. Clear the pending bit so suspend/resume does not
-+	 * get confused.
- 	 */
--	if (irq_settings_is_level(desc))
-+	if (irq_settings_is_level(desc)) {
-+		desc->istate &=3D ~IRQS_PENDING;
- 		return;
-+	}
- 	if (desc->istate & IRQS_REPLAY)
- 		return;
- 	if (desc->istate & IRQS_PENDING) {
+On at91 we have this type of controller
 
---Sig_/M_Mnyl1jqY=ZXVnt32A/Lrt
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+one pin can have multiple function and each function can be on different pin
+and we need to program and represent each of them one by one
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+And each pin have different parameter
 
-iQIVAwUBT6NlNTnsnt1WYoG5AQKhfw//a54qUJOTLtno4QY2fcBxkWmTVCr4c6KV
-v0E3A6m9Xu1ZNExN5Tn6xYDU13eDKrlPm9+k+o/YxajppPnDUrfzKST0QnBSLn5w
-cjLtPl6eDK31akteANJ+UgmZ0lfCXOAEeqNUXAMKZ/yjuzaaMKlLWtsJjANI/zaK
-Y9ux2qbH7auNtFMLLWx8m1q45kvDH89OlzYeZPn0pg1PgITzHrsrDzHZE4GMcocd
-ZB8vEu9fuZhrLEUtgWfWXXTrys1e0CJ+m939TKXpCeRjGbYDyv0vG/D7zGCf9GQr
-0XfRZgWhAINAkVq7tldhKaNCFZxUyg7ppwu61qDPpKIBkcIQfPAXcZmBtc0dQAhn
-+GmUMkphQyhdk+4sj4hD5rUr38FzfbCAgqk59nhO/nZU/E3N1Mnh6XyQaRc3LRId
-vZYVbwcmPIptvbyUWuSE75S+jF8YKhDH1o/gCdLVLYb37DAsHU4aFL+bvpgKGmpF
-EsEWP89/uK8+vbVDHXOsP7ahQeY4+z+1Rs8Gzp6Y9I3XSxU4Gs9GeBm77XW3NCzY
-3SvjRp4kn2psqz8FFfCjWMYYxmZ4lcogldsF/4e/OnB0gP7spvSPcedVfok94Yek
-vgZQnitxqjJoXBoh7E0W9Z4wz+8enS9hMXTeh/V8qhaqQOnXx6vDl9aRTsw4OBR6
-DKGsdt+j2hg=
-=5Na3
------END PGP SIGNATURE-----
+so I was thinking to do like on gpio
 
---Sig_/M_Mnyl1jqY=ZXVnt32A/Lrt--
+uart {
+	pin = < &pioA 12 {pararms} >
+
+}
+
+and use macro as basicaly we are just this
+
+and this can be applied to tegra too as you will just refer the pin in this hw
+pin block
+
+Best Regards,
+J.
