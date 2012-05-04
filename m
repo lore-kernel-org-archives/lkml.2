@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760185Ab2EDVMk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:12:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932377Ab2EDUpz (ORCPT
+	id S932371Ab2EDUpx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:45:53 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932354Ab2EDUpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:45:55 -0400
-Message-Id: <20120504204227.729592036@linuxfoundation.org>
+	Fri, 4 May 2012 16:45:46 -0400
+Message-Id: <20120504204227.471045745@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:03 -0700
+Date: Fri, 04 May 2012 13:43:00 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 39/75] ARM: 7396/1: errata: only handle ARM erratum #326103 on affected cores
+        alan@lxorguk.ukuu.org.uk, Horia Geanta <horia.geanta@freescale.com>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 36/75] crypto: talitos - properly lock access to global talitos registers
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,84 +26,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Horia Geanta <horia.geanta@freescale.com>
 
-commit f0c4b8d653f5ee091fb8d4d02ed7eaad397491bb upstream.
+commit 511d63cb19329235bc9298b64010ec494b5e1408 upstream.
 
-Erratum #326103 ("FSR write bit incorrect on a SWP to read-only memory")
-only affects the ARM 1136 core prior to r1p0. The workaround
-disassembles the faulting instruction to determine whether it was a read
-or write access on all v6 cores.
+Access to global talitos registers must be protected for the case when
+affinities are configured such that primary and secondary talitos irqs
+run on different cpus.
 
-An issue has been reported on the ARM 11MPCore whereby loading the
-faulting instruction may happen in parallel with that page being
-unmapped, resulting in a deadlock due to the lack of TLB broadcasting
-in hardware:
-
-http://lists.infradead.org/pipermail/linux-arm-kernel/2012-March/091561.html
-
-This patch limits the workaround so that it is only used on affected
-cores, which are known to be UP only. Other v6 cores can rely on the
-FSR to indicate the access type correctly.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Horia Geanta <horia.geanta@freescale.com>
+Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/Kconfig        |    9 +++++++++
- arch/arm/mm/abort-ev6.S |   17 +++++++++++------
- 2 files changed, 20 insertions(+), 6 deletions(-)
+ drivers/crypto/talitos.c |   20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1163,6 +1163,15 @@ if !MMU
- source "arch/arm/Kconfig-nommu"
- endif
+--- a/drivers/crypto/talitos.c
++++ b/drivers/crypto/talitos.c
+@@ -124,6 +124,9 @@ struct talitos_private {
+ 	void __iomem *reg;
+ 	int irq[2];
  
-+config ARM_ERRATA_326103
-+	bool "ARM errata: FSR write bit incorrect on a SWP to read-only memory"
-+	depends on CPU_V6
-+	help
-+	  Executing a SWP instruction to read-only memory does not set bit 11
-+	  of the FSR on the ARM 1136 prior to r1p0. This causes the kernel to
-+	  treat the access as a read, preventing a COW from occurring and
-+	  causing the faulting task to livelock.
++	/* SEC global registers lock  */
++	spinlock_t reg_lock ____cacheline_aligned;
 +
- config ARM_ERRATA_411920
- 	bool "ARM errata: Invalidation of the Instruction Cache operation can fail"
- 	depends on CPU_V6 || CPU_V6K
---- a/arch/arm/mm/abort-ev6.S
-+++ b/arch/arm/mm/abort-ev6.S
-@@ -26,18 +26,23 @@ ENTRY(v6_early_abort)
- 	mrc	p15, 0, r1, c5, c0, 0		@ get FSR
- 	mrc	p15, 0, r0, c6, c0, 0		@ get FAR
- /*
-- * Faulty SWP instruction on 1136 doesn't set bit 11 in DFSR (erratum 326103).
-- * The test below covers all the write situations, including Java bytecodes
-+ * Faulty SWP instruction on 1136 doesn't set bit 11 in DFSR.
-  */
--	bic	r1, r1, #1 << 11		@ clear bit 11 of FSR
-+#ifdef CONFIG_ARM_ERRATA_326103
-+	ldr	ip, =0x4107b36
-+	mrc	p15, 0, r3, c0, c0, 0		@ get processor id
-+	teq	ip, r3, lsr #4			@ r0 ARM1136?
-+	bne	do_DataAbort
- 	tst	r5, #PSR_J_BIT			@ Java?
-+	tsteq	r5, #PSR_T_BIT			@ Thumb?
- 	bne	do_DataAbort
--	do_thumb_abort fsr=r1, pc=r4, psr=r5, tmp=r3
--	ldreq	r3, [r4]			@ read aborted ARM instruction
-+	bic	r1, r1, #1 << 11		@ clear bit 11 of FSR
-+	ldr	r3, [r4]			@ read aborted ARM instruction
- #ifdef CONFIG_CPU_ENDIAN_BE8
--	reveq	r3, r3
-+	rev	r3, r3
- #endif
- 	do_ldrd_abort tmp=ip, insn=r3
- 	tst	r3, #1 << 20			@ L = 0 -> write
- 	orreq	r1, r1, #1 << 11		@ yes.
-+#endif
- 	b	do_DataAbort
+ 	/* SEC version geometry (from device tree node) */
+ 	unsigned int num_channels;
+ 	unsigned int chfifo_len;
+@@ -412,6 +415,7 @@ static void talitos_done_##name(unsigned
+ {									\
+ 	struct device *dev = (struct device *)data;			\
+ 	struct talitos_private *priv = dev_get_drvdata(dev);		\
++	unsigned long flags;						\
+ 									\
+ 	if (ch_done_mask & 1)						\
+ 		flush_channel(dev, 0, 0, 0);				\
+@@ -427,8 +431,10 @@ static void talitos_done_##name(unsigned
+ out:									\
+ 	/* At this point, all completed channels have been processed */	\
+ 	/* Unmask done interrupts for channels completed later on. */	\
++	spin_lock_irqsave(&priv->reg_lock, flags);			\
+ 	setbits32(priv->reg + TALITOS_IMR, ch_done_mask);		\
+ 	setbits32(priv->reg + TALITOS_IMR_LO, TALITOS_IMR_LO_INIT);	\
++	spin_unlock_irqrestore(&priv->reg_lock, flags);			\
+ }
+ DEF_TALITOS_DONE(4ch, TALITOS_ISR_4CHDONE)
+ DEF_TALITOS_DONE(ch0_2, TALITOS_ISR_CH_0_2_DONE)
+@@ -619,22 +625,28 @@ static irqreturn_t talitos_interrupt_##n
+ 	struct device *dev = data;					       \
+ 	struct talitos_private *priv = dev_get_drvdata(dev);		       \
+ 	u32 isr, isr_lo;						       \
++	unsigned long flags;						       \
+ 									       \
++	spin_lock_irqsave(&priv->reg_lock, flags);			       \
+ 	isr = in_be32(priv->reg + TALITOS_ISR);				       \
+ 	isr_lo = in_be32(priv->reg + TALITOS_ISR_LO);			       \
+ 	/* Acknowledge interrupt */					       \
+ 	out_be32(priv->reg + TALITOS_ICR, isr & (ch_done_mask | ch_err_mask)); \
+ 	out_be32(priv->reg + TALITOS_ICR_LO, isr_lo);			       \
+ 									       \
+-	if (unlikely((isr & ~TALITOS_ISR_4CHDONE) & ch_err_mask || isr_lo))    \
+-		talitos_error(dev, isr, isr_lo);			       \
+-	else								       \
++	if (unlikely(isr & ch_err_mask || isr_lo)) {			       \
++		spin_unlock_irqrestore(&priv->reg_lock, flags);		       \
++		talitos_error(dev, isr & ch_err_mask, isr_lo);		       \
++	}								       \
++	else {								       \
+ 		if (likely(isr & ch_done_mask)) {			       \
+ 			/* mask further done interrupts. */		       \
+ 			clrbits32(priv->reg + TALITOS_IMR, ch_done_mask);      \
+ 			/* done_task will unmask done interrupts at exit */    \
+ 			tasklet_schedule(&priv->done_task[tlet]);	       \
+ 		}							       \
++		spin_unlock_irqrestore(&priv->reg_lock, flags);		       \
++	}								       \
+ 									       \
+ 	return (isr & (ch_done_mask | ch_err_mask) || isr_lo) ? IRQ_HANDLED :  \
+ 								IRQ_NONE;      \
+@@ -2718,6 +2730,8 @@ static int talitos_probe(struct platform
+ 
+ 	priv->ofdev = ofdev;
+ 
++	spin_lock_init(&priv->reg_lock);
++
+ 	err = talitos_probe_irq(ofdev);
+ 	if (err)
+ 		goto err_out;
 
 
