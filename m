@@ -1,147 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908Ab2EDFUC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 01:20:02 -0400
-Received: from 11.mo4.mail-out.ovh.net ([46.105.34.195]:60899 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751179Ab2EDFUA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 01:20:00 -0400
-X-Greylist: delayed 54300 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 May 2012 01:20:00 EDT
-Date: Fri, 4 May 2012 06:43:05 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Tony Lindgren <tony@atomide.com>, Linus Walleij <linus.walleij@linaro.org>,
-        linux-omap@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: [PATCH] pinctrl: Add generic pinctrl-simple driver that
- supports omap2+ padconf
-Message-ID: <20120504044305.GD7788@game.jcrosoft.org>
-References: <20120502172401.GG3739@atomide.com>
- <20120503065131.GA3738@game.jcrosoft.org>
- <20120503152708.GC5140@atomide.com>
- <4FA30805.5050804@wwwdotorg.org>
+	id S1751552Ab2EDFXY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 01:23:24 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:57040 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751301Ab2EDFXU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 01:23:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA30805.5050804@wwwdotorg.org>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 7163538158801431373
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtdefucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtdefucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+In-Reply-To: <20120423015247.GA1119@localhost.amd.com>
+References: <1335143029.4927.45.camel@minggr>
+	<20120423015247.GA1119@localhost.amd.com>
+Date: Fri, 4 May 2012 13:23:19 +0800
+X-Google-Sender-Auth: yq0FynMc87kMXUbE7HpVPGQYmfc
+Message-ID: <CAF1ivSb+FWm6LUUA65em7mZSKiG0GSHEUe3VQgZ-TEuTjqoLcQ@mail.gmail.com>
+Subject: Re: [PATCH v3] ACPI: D3 states cleanup
+From: Lin Ming <ming.m.lin@intel.com>
+To: Aaron Lu <aaron.lu@amd.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, lenb <lenb@kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:34 Thu 03 May     , Stephen Warren wrote:
-> On 05/03/2012 09:27 AM, Tony Lindgren wrote:
-> > Hi,
-> > 
-> > * Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> [120503 00:16]:
-> >>
-> >> 	I really like it
-> >>
-> >> 	I was working on something simillar
-> >>
-> >> 	but can we split the group management so we can use it on other
-> >> 	bindings
-> > 
-> > Hmm I'm not sure I follow on the group management splitting, can you specify
-> > what you have in mind here?
-> > 
-> > If you mean moving more things into pinctrl fwk, then yeah I'd assume that
-> > will happen eventually and drivers like this will end up becoming more minimal.
-> 
-> Jean-Christophe, forgive me if I'm putting words in your mouth, but I
-> assume the following is what you mean:
-> 
-> There are two pieces of data required by the pinctrl subsystem:
-> 
-> a) The set of pins, functions, and groups that exist.
-> 
-> b) The specific function to select for each pin/group on a given board.
-> 
-> Item (a) can be represented in the pinctrl driver (e.g. as in the Tegra
-> driver), or can be represented in device tree in order to avoid large
-> tables in the driver.
-> 
-> Item (b) has to be represented in device tree, since the whole point is
-> that it's board-specific.
-> 
-> For all DT bindings I've seen that choose to represent (a) in the DT
-> rather than in the driver, the DT represents (b) directly, and (a) is
-> implicitly extracted/created based on (a).
-> 
-> When I was first thinking about DT bindings for pinctrl, I had hoped
-> that even if (a) was represented in DT, the DT nodes/properties for (a)
-> and (b) would be entirely separate, so that the binding for (b) could be
-> completely common across all SoCs, even though the binding for (a) would
-> perhaps be different across SoCs (if it existed at all).
-> 
-> So, perhaps Jean-Christophe is talking about splitting up (a) and (b) in
-> device tree?
-> 
-> Or perhaps Jean-Christophe only refers to the code that creates the
-> group and function definitions from (b), and not the actual DT binding
-> itself?
-yes you are right Stephen
-I was thinking of both but the second could be a first step
+On Mon, Apr 23, 2012 at 9:52 AM, Aaron Lu <aaron.lu@amd.com> wrote:
+> On Mon, Apr 23, 2012 at 09:03:49AM +0800, Lin Ming wrote:
+>> There are two ACPI D3 states defined now:
+>> ACPI_STATE_D3 and ACPI_STATE_D3_COLD.
+>>
+>> But the uses of these states are not clear/correct in some code.
+>> For example, some code refer ACPI_STATE_D3 as D3hot and others refer
+>> it as D3cold.
+>>
+>> This patch introduces ACPI_STATE_D3_HOT to refer to ACPI D3hot state.
+>> D3hot is only valid if _PR3 present.
+>> And changes ACPI_STATE_D3 to refer to ACPI D3cold state only.
+>> Also redefines ACPI_STATE_D3_COLD the same as ACPI_STATE_D3.
+>>
+>
+> Reviewed-by: Aaron Lu <aaron.lu@amd.com>
+>
+> Thanks,
+> Aaron
+>
+>> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-today we tend all to represent the group of pin in DT
+Len,
 
-for TI, IM, MXC, at91, ST and others
+Will you apply this patch?
 
-the way to represend the groups are exactly the same
+Thanks,
+Lin Ming
 
-a group is a node with a set on pin
-
-uart {
- pincfg......
-}
-
-and the group is uart
-
-so we do need to have a common way to handle it in c
-
-the code propose by Tony is really what I'm working on to acheive this
-
-In my mind in the driver we do not have to care how to list
-register/unregister the group. We just need to be able to do this
-
-pinctrl_register_group(...)
-
-or 
-
-pinctrl_unregistewr_group(...)
-
-On at91 we have this type of controller
-
-one pin can have multiple function and each function can be on different pin
-and we need to program and represent each of them one by one
-
-And each pin have different parameter
-
-so I was thinking to do like on gpio
-
-uart {
-	pin = < &pioA 12 {pararms} >
-
-}
-
-and use macro as basicaly we are just this
-
-and this can be applied to tegra too as you will just refer the pin in this hw
-pin block
-
-Best Regards,
-J.
+>> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+>> ---
+>>
+>> v3: D3hot is only valid if _PR3 present
+>>
+>>  drivers/acpi/power.c   |    2 +-
+>>  drivers/acpi/scan.c    |   17 +++++++----------
+>>  drivers/pci/pci-acpi.c |    4 ++--
+>>  include/acpi/actypes.h |    7 ++++---
+>>  4 files changed, 14 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+>> index 7049a7d..330bb4d 100644
+>> --- a/drivers/acpi/power.c
+>> +++ b/drivers/acpi/power.c
+>> @@ -631,7 +631,7 @@ int acpi_power_get_inferred_state(struct acpi_device *device, int *state)
+>>        * We know a device's inferred power state when all the resources
+>>        * required for a given D-state are 'on'.
+>>        */
+>> -     for (i = ACPI_STATE_D0; i < ACPI_STATE_D3; i++) {
+>> +     for (i = ACPI_STATE_D0; i < ACPI_STATE_D3_HOT; i++) {
+>>               list = &device->power.states[i].resources;
+>>               if (list->count < 1)
+>>                       continue;
+>> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+>> index 767e2dc..7417267 100644
+>> --- a/drivers/acpi/scan.c
+>> +++ b/drivers/acpi/scan.c
+>> @@ -869,7 +869,7 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+>>       /*
+>>        * Enumerate supported power management states
+>>        */
+>> -     for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3; i++) {
+>> +     for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3_HOT; i++) {
+>>               struct acpi_device_power_state *ps = &device->power.states[i];
+>>               char object_name[5] = { '_', 'P', 'R', '0' + i, '\0' };
+>>
+>> @@ -884,21 +884,18 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+>>                               acpi_bus_add_power_resource(ps->resources.handles[j]);
+>>               }
+>>
+>> -             /* The exist of _PR3 indicates D3Cold support */
+>> -             if (i == ACPI_STATE_D3) {
+>> -                     status = acpi_get_handle(device->handle, object_name, &handle);
+>> -                     if (ACPI_SUCCESS(status))
+>> -                             device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
+>> -             }
+>> -
+>>               /* Evaluate "_PSx" to see if we can do explicit sets */
+>>               object_name[2] = 'S';
+>>               status = acpi_get_handle(device->handle, object_name, &handle);
+>>               if (ACPI_SUCCESS(status))
+>>                       ps->flags.explicit_set = 1;
+>>
+>> -             /* State is valid if we have some power control */
+>> -             if (ps->resources.count || ps->flags.explicit_set)
+>> +             /*
+>> +              * State is valid if there are means to put the device into it.
+>> +              * D3hot is only valid if _PR3 present.
+>> +              */
+>> +             if (ps->resources.count ||
+>> +                 (ps->flags.explicit_set && i < ACPI_STATE_D3_HOT))
+>>                       ps->flags.valid = 1;
+>>
+>>               ps->power = -1; /* Unknown - driver assigned */
+>> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+>> index 0f150f2..1929c0c 100644
+>> --- a/drivers/pci/pci-acpi.c
+>> +++ b/drivers/pci/pci-acpi.c
+>> @@ -200,7 +200,7 @@ static pci_power_t acpi_pci_choose_state(struct pci_dev *pdev)
+>>               return PCI_D1;
+>>       case ACPI_STATE_D2:
+>>               return PCI_D2;
+>> -     case ACPI_STATE_D3:
+>> +     case ACPI_STATE_D3_HOT:
+>>               return PCI_D3hot;
+>>       case ACPI_STATE_D3_COLD:
+>>               return PCI_D3cold;
+>> @@ -223,7 +223,7 @@ static int acpi_pci_set_power_state(struct pci_dev *dev, pci_power_t state)
+>>               [PCI_D0] = ACPI_STATE_D0,
+>>               [PCI_D1] = ACPI_STATE_D1,
+>>               [PCI_D2] = ACPI_STATE_D2,
+>> -             [PCI_D3hot] = ACPI_STATE_D3,
+>> +             [PCI_D3hot] = ACPI_STATE_D3_HOT,
+>>               [PCI_D3cold] = ACPI_STATE_D3
+>>       };
+>>       int error = -EINVAL;
+>> diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
+>> index eba6604..e8bcc47 100644
+>> --- a/include/acpi/actypes.h
+>> +++ b/include/acpi/actypes.h
+>> @@ -499,9 +499,10 @@ typedef u64 acpi_integer;
+>>  #define ACPI_STATE_D0                   (u8) 0
+>>  #define ACPI_STATE_D1                   (u8) 1
+>>  #define ACPI_STATE_D2                   (u8) 2
+>> -#define ACPI_STATE_D3                   (u8) 3
+>> -#define ACPI_STATE_D3_COLD              (u8) 4
+>> -#define ACPI_D_STATES_MAX               ACPI_STATE_D3_COLD
+>> +#define ACPI_STATE_D3_HOT               (u8) 3
+>> +#define ACPI_STATE_D3                   (u8) 4
+>> +#define ACPI_STATE_D3_COLD              ACPI_STATE_D3
+>> +#define ACPI_D_STATES_MAX               ACPI_STATE_D3
+>>  #define ACPI_D_STATE_COUNT              5
+>>
+>>  #define ACPI_STATE_C0                   (u8) 0
+>> --
+>> 1.7.2.5
+>>
+>>
+>>
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
