@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab2EDVEy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:04:54 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:42060 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644Ab2EDVEv (ORCPT
+	id S932703Ab2EDVF3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:05:29 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932605Ab2EDUrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 17:04:51 -0400
-Message-ID: <1336165487.5496.6.camel@ayu>
-Subject: Re: [git patches] libata fixes
-From: Calvin Walton <calvin.walton@kepstin.ca>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Jeff Garzik <jeff@garzik.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 04 May 2012 17:04:47 -0400
-In-Reply-To: <4FA2CF02.7090708@mvista.com>
-References: <20120503182735.GA24318@havoc.gtf.org>
-	 <4FA2CF02.7090708@mvista.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 4 May 2012 16:47:37 -0400
+Message-Id: <20120504204230.339849276@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 04 May 2012 13:43:34 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Grazvydas Ignotas <notasas@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 70/75] wl1251: fix crash on remove due to premature kfree
+In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-03 at 22:31 +0400, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 05/03/2012 10:27 PM, Jeff Garzik wrote:
-> 
-> > Please pull 5f098a3ea72e73ad3733c3280fd5ee04816dc999 from
-> > git://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev.git tag/upstream-linus
-> 
-> 
-> > to receive the following updates:
-> 
-> >   Documentation/devicetree/bindings/ata/ahci-platform.txt |   16 +++++++++++++++
-> >   Documentation/devicetree/bindings/ata/calxeda-sata.txt  |   17 ----------------
-> 
->     Originally it was a file rename -- did that get preserved?
-> 
-> WBR, Sergei
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-Git actually doesn't do any internal tracking of renames, so there is
-nothing to be preserved. It detects renames on the fly on the client
-when displaying history. (This can be enabled/disabled in the git
-config, or using command line options.)
+------------------
 
-The issue here is apparently just that Jeff forgot to enable rename
-detection when generating the diffstat (using e.g. the -M option).
+From: Grazvydas Ignotas <notasas@gmail.com>
 
--- 
-Calvin Walton <calvin.walton@kepstin.ca>
+commit 328c32f0f85467af5a6c4c3289e168d9ad2555af upstream.
+
+Currently SDIO glue frees it's own structure before calling
+wl1251_free_hw(), which in turn calls ieee80211_unregister_hw().
+The later call may result in a need to communicate with the chip
+to stop it (as it happens now if the interface is still up before
+rmmod), which means calls are made back to the glue, resulting in
+freed memory access.
+
+Fix this by freeing glue data last.
+
+Signed-off-by: Grazvydas Ignotas <notasas@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/wl1251/sdio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/wl1251/sdio.c
++++ b/drivers/net/wireless/wl1251/sdio.c
+@@ -315,8 +315,8 @@ static void __devexit wl1251_sdio_remove
+ 
+ 	if (wl->irq)
+ 		free_irq(wl->irq, wl);
+-	kfree(wl_sdio);
+ 	wl1251_free_hw(wl);
++	kfree(wl_sdio);
+ 
+ 	sdio_claim_host(func);
+ 	sdio_release_irq(func);
+
 
