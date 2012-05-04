@@ -1,46 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285Ab2EDGQa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 02:16:30 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39900 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab2EDGQ3 (ORCPT
+	id S1752615Ab2EDGRq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 02:17:46 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13010 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab2EDGRo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 02:16:29 -0400
+	Fri, 4 May 2012 02:17:44 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 03 May 2012 23:17:40 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "balbi@ti.com" <balbi@ti.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Date: Fri, 4 May 2012 08:17:36 +0200
+Subject: Re: [PATCHv3 1/4] ARM: tegra: Add Tegra AHB driver
+Thread-Topic: [PATCHv3 1/4] ARM: tegra: Add Tegra AHB driver
+Thread-Index: Ac0pvZp0XmqkYoGARXudf2BjCEqz/w==
+Message-ID: <20120504.091736.839941449020176796.hdoyu@nvidia.com>
+References: <1336061147-10245-1-git-send-email-hdoyu@nvidia.com><4FA2C34F.5060406@wwwdotorg.org>
+In-Reply-To: <4FA2C34F.5060406@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <DEAA41EB-6F96-4C87-BD87-94F9C25A07AF@jonmasters.org>
-References: <20120410234527.GA1401@p4.domain>
-	<DEAA41EB-6F96-4C87-BD87-94F9C25A07AF@jonmasters.org>
-Date: Fri, 4 May 2012 14:16:27 +0800
-Message-ID: <CAJRGBZxOo1Z=Ce6Qf9k1rXTonic5T+jbX4K_v5yxEe5cU0hVZg@mail.gmail.com>
-Subject: Re: [RFC PATCH] a simple hardware detector for lattency as well as throughput
-From: Luming Yu <luming.yu@gmail.com>
-To: Jon Masters <jonathan@jonmasters.org>
-Cc: linux-kernel@vger.kernel.org, jcm@jonmasters.org
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 3, 2012 at 11:27 AM, Jon Masters <jonathan@jonmasters.org> wrote:
-> On Apr 10, 2012, at 7:45 PM, Luming Yu wrote:
->
->> The rfc patch reuses some code and idea from jcm's hwlat_detector but
->> target for a broader problem that sometime we need to run a simple few minutes
->> hardware test to understand if there is any hardware latency as well as
->> throughput problem exposed on bare metal or left behind by BIOS or
->> interfered by SMI.
->
-> Hey thanks. This is totally something I hoped would eventually go upstream,
-> but I never got around to cleaning it up enough for mass consumption beyond
-> the use case we had in mind (beating certain folks over the head when they
-> have "value add" in BIOS code that causes huge SMIs, and the like, for RT).
->
-> Did anyone ever get back to you on this one? I never saw any followup. I
-> will be happy to do some testing and help you get this mainlined.
+From: Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCHv3 1/4] ARM: tegra: Add Tegra AHB driver
+Date: Thu, 3 May 2012 19:41:35 +0200
+Message-ID: <4FA2C34F.5060406@wwwdotorg.org>
 
-So far you are the only one. :-)
-If you can find a maintainer for it, and find a way into mainline,
-We probably can make it become a popular tool for hardware enabling.
+> On 05/03/2012 10:05 AM, Hiroshi DOYU wrote:
+> > Tegra AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
+> > High-performance Bus (AHB) architecture.
+> > 
+> > The AHB Arbiter controls AHB bus master arbitration. This effectively
+> > forms a second level of arbitration for access to the memory
+> > controller through the AHB Slave Memory device. The AHB pre-fetch
+> > logic can be configured to enhance performance for devices doing
+> > sequential access. Each AHB master is assigned to either the high or
+> > low priority bin. Both Tegra20/30 have this AHB bus.
+> > 
+> > Some of configuration param could be passed from DT too.
+> 
+> > diff --git a/drivers/amba/tegra-ahb.c b/drivers/amba/tegra-ahb.c
+> > +static u32 tegra_ahb_gizmo[] = {
+> 
+> const?
 
-/l
+Yes.
+
+> > +static int __init tegra_ahb_module_init(void)
+> > +{
+> > +	return platform_driver_register(&tegra_ahb_driver);
+> > +}
+> > +postcore_initcall(tegra_ahb_module_init);
+> 
+> Can this be a module_init() instead of postcore_initcall()?
+
+Since this driver configures prefetch size from AHB client devices,
+it's better to make this driver available before other AHB client
+drivers get ready. So "postcore_initcall()" seems to make sense if
+there's no other better initcall.
+
+> > +
+> > +static void __exit tegra_ahb_module_exit(void)
+> > +{
+> > +	platform_driver_unregister(&tegra_ahb_driver);
+> > +}
+> > +module_exit(tegra_ahb_module_exit);
+> 
+> If so, all of the previous two quoted chunks can be replaced with just:
+> 
+> module_platform_driver(tegra_ahb_module_init);
