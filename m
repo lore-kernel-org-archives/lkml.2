@@ -1,182 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759288Ab2EDRMm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 13:12:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23578 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753191Ab2EDRMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 13:12:40 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/4] perf, tool: Handle endianity swap on sample_id_all header data
-Date: Fri,  4 May 2012 19:11:32 +0200
-Message-Id: <1336151493-8328-4-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1336151493-8328-1-git-send-email-jolsa@redhat.com>
-References: <1336151493-8328-1-git-send-email-jolsa@redhat.com>
+	id S1759221Ab2EDRPI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 13:15:08 -0400
+Received: from 3.mo4.mail-out.ovh.net ([46.105.57.129]:46145 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750807Ab2EDRPG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 13:15:06 -0400
+Date: Fri, 4 May 2012 18:51:28 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>, linaro-dev@lists.linaro.org,
+        Jason Cooper <jason@lakedaemon.net>, Nicolas Pitre <nico@fluxnic.net>,
+        Tony Lindgren <tony@atomide.com>, Magnus Damm <magnus.damm@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>, shawn.guo@linaro.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Marc Zyngier <marc.zyngier@arm.com>
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: Making ARM multiplatform kernels DT-only?
+Message-ID: <20120504165128.GI7788@game.jcrosoft.org>
+References: <201205031350.35476.arnd@arndb.de>
+ <20120503140428.GB897@n2100.arm.linux.org.uk>
+ <201205041220.24747.arnd@arndb.de>
+ <4FA40642.5040203@gmail.com>
+ <20120504165603.GK897@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120504165603.GK897@n2100.arm.linux.org.uk>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 1019783841601268659
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtdehucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtdehucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding endianity swapping for event header attached via sample_id_all.
+On 17:56 Fri 04 May     , Russell King - ARM Linux wrote:
+> On Fri, May 04, 2012 at 11:39:30AM -0500, Rob Herring wrote:
+> > Many of the headers are simply platform_data structs which may still be
+> > needed on DT platforms, but could be moved elsewhere.
+> 
+> Those should be in include/linux/platform.
+> 
+> > >> Then there's also the problem of uncompress.h.  The last piece of the
+> > >> puzzle is the common clock stuff.
+> > 
+> > The smp/hotplug/localtimer related functions are still global. Marc Z
+> > has posted patches for this, but I haven't seen recent activity. This
+> > and clocks were the 2 main issues I saw trying to build 2 platforms
+> > together. highbank and picoxcell could be built together since only
+> > highbank has clocks and smp.
+> > 
+> > gpio.h is still required, but empty for most platforms.
+> 
+> Those empty gpio.h files are definitely a candidate for going into
+> arch/arm/include/mach/gpio.h, and then all those 12-byte mach/gpio.h can
+> be deleted (13 files).
+> 
+> We've not had any progress on the gpio.h issue since I did the last round
+> of cleanup; the next stage was to persuade SoC maintainers to get rid of
+> their optimized versions which aren't compatible with multi-platform
+> kernels.
+> 
+> I don't know if folk are expecting me to push that forwards or whether
+> there's someone else working on that aspect of it...
+> 
+> So this issue really does need to be progressed too.
+same with CLOCK_TICK_RATE
 
-Currently we dont do that and it's causing wrong data to be read when
-running report on architecture with different endianity than the record.
+at91 (expect at91x40) and imx we drop it but nearly on the other platform
+did not
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/util/session.c |   67 +++++++++++++++++++++++++++++++++++++--------
- 1 files changed, 55 insertions(+), 12 deletions(-)
-
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 07fda7c..2df5e0c 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -441,37 +441,65 @@ void mem_bswap_64(void *src, int byte_size)
- 	}
- }
- 
--static void perf_event__all64_swap(union perf_event *event)
-+static void swap_sample_id_all(union perf_event *event, void *data)
-+{
-+	void *end = (void *) event + event->header.size;
-+	int size = end - data;
-+
-+	BUG_ON(size % sizeof(u64));
-+	mem_bswap_64(data, size);
-+}
-+
-+static void perf_event__all64_swap(union perf_event *event,
-+				   bool sample_id_all __used)
- {
- 	struct perf_event_header *hdr = &event->header;
- 	mem_bswap_64(hdr + 1, event->header.size - sizeof(*hdr));
- }
- 
--static void perf_event__comm_swap(union perf_event *event)
-+static void perf_event__comm_swap(union perf_event *event, bool sample_id_all)
- {
- 	event->comm.pid = bswap_32(event->comm.pid);
- 	event->comm.tid = bswap_32(event->comm.tid);
-+
-+	if (sample_id_all) {
-+		void *data = &event->comm.comm;
-+
-+		data += ALIGN(strlen(data), sizeof(u64));
-+		swap_sample_id_all(event, data);
-+	}
- }
- 
--static void perf_event__mmap_swap(union perf_event *event)
-+static void perf_event__mmap_swap(union perf_event *event,
-+				  bool sample_id_all)
- {
- 	event->mmap.pid	  = bswap_32(event->mmap.pid);
- 	event->mmap.tid	  = bswap_32(event->mmap.tid);
- 	event->mmap.start = bswap_64(event->mmap.start);
- 	event->mmap.len	  = bswap_64(event->mmap.len);
- 	event->mmap.pgoff = bswap_64(event->mmap.pgoff);
-+
-+	if (sample_id_all) {
-+		void *data = &event->mmap.filename;
-+
-+		data += ALIGN(strlen(data), sizeof(u64));
-+		swap_sample_id_all(event, data);
-+	}
- }
- 
--static void perf_event__task_swap(union perf_event *event)
-+static void perf_event__task_swap(union perf_event *event, bool sample_id_all)
- {
- 	event->fork.pid	 = bswap_32(event->fork.pid);
- 	event->fork.tid	 = bswap_32(event->fork.tid);
- 	event->fork.ppid = bswap_32(event->fork.ppid);
- 	event->fork.ptid = bswap_32(event->fork.ptid);
- 	event->fork.time = bswap_64(event->fork.time);
-+
-+	if (sample_id_all)
-+		swap_sample_id_all(event, &event->fork + 1);
- }
- 
--static void perf_event__read_swap(union perf_event *event)
-+static void perf_event__read_swap(union perf_event *event, bool sample_id_all)
- {
- 	event->read.pid		 = bswap_32(event->read.pid);
- 	event->read.tid		 = bswap_32(event->read.tid);
-@@ -479,6 +507,9 @@ static void perf_event__read_swap(union perf_event *event)
- 	event->read.time_enabled = bswap_64(event->read.time_enabled);
- 	event->read.time_running = bswap_64(event->read.time_running);
- 	event->read.id		 = bswap_64(event->read.id);
-+
-+	if (sample_id_all)
-+		swap_sample_id_all(event, &event->read + 1);
- }
- 
- static u8 revbyte(u8 b)
-@@ -530,7 +561,8 @@ void perf_event__attr_swap(struct perf_event_attr *attr)
- 	swap_bitfield((u8 *) (&attr->read_format + 1), sizeof(u64));
- }
- 
--static void perf_event__hdr_attr_swap(union perf_event *event)
-+static void perf_event__hdr_attr_swap(union perf_event *event,
-+				      bool sample_id_all __used)
- {
- 	size_t size;
- 
-@@ -541,18 +573,21 @@ static void perf_event__hdr_attr_swap(union perf_event *event)
- 	mem_bswap_64(event->attr.id, size);
- }
- 
--static void perf_event__event_type_swap(union perf_event *event)
-+static void perf_event__event_type_swap(union perf_event *event,
-+					bool sample_id_all __used)
- {
- 	event->event_type.event_type.event_id =
- 		bswap_64(event->event_type.event_type.event_id);
- }
- 
--static void perf_event__tracing_data_swap(union perf_event *event)
-+static void perf_event__tracing_data_swap(union perf_event *event,
-+					  bool sample_id_all __used)
- {
- 	event->tracing_data.size = bswap_32(event->tracing_data.size);
- }
- 
--typedef void (*perf_event__swap_op)(union perf_event *event);
-+typedef void (*perf_event__swap_op)(union perf_event *event,
-+				    bool sample_id_all);
- 
- static perf_event__swap_op perf_event__swap_ops[] = {
- 	[PERF_RECORD_MMAP]		  = perf_event__mmap_swap,
-@@ -986,6 +1021,15 @@ static int perf_session__process_user_event(struct perf_session *session, union
- 	}
- }
- 
-+static void event_swap(union perf_event *event, bool sample_id_all)
-+{
-+	perf_event__swap_op swap;
-+
-+	swap = perf_event__swap_ops[event->header.type];
-+	if (swap)
-+		swap(event, sample_id_all);
-+}
-+
- static int perf_session__process_event(struct perf_session *session,
- 				       union perf_event *event,
- 				       struct perf_tool *tool,
-@@ -994,9 +1038,8 @@ static int perf_session__process_event(struct perf_session *session,
- 	struct perf_sample sample;
- 	int ret;
- 
--	if (session->header.needs_swap &&
--	    perf_event__swap_ops[event->header.type])
--		perf_event__swap_ops[event->header.type](event);
-+	if (session->header.needs_swap)
-+		event_swap(event, session->sample_id_all);
- 
- 	if (event->header.type >= PERF_RECORD_HEADER_MAX)
- 		return -EINVAL;
--- 
-1.7.7.6
-
+Best Regards,
+J.
