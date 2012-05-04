@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932843Ab2EDVBo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:01:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932773Ab2EDUsW (ORCPT
+	id S932976Ab2EDVCC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:02:02 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33335 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932592Ab2EDVB6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:48:22 -0400
-Message-Id: <20120504204245.644906500@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:53 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>
-Subject: [ 09/47] dmaengine: at_hdmac: remove clear-on-read in atc_dostart()
-In-Reply-To: <20120504204307.GA13761@kroah.com>
+	Fri, 4 May 2012 17:01:58 -0400
+Message-ID: <1336165294.6509.76.camel@twins>
+Subject: Re: [PATCH v2 0/7] CPU hotplug, cpusets: Fix issues with cpusets
+ handling upon CPU hotplug
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mingo@kernel.org,
+        pjt@google.com, paul@paulmenage.org, akpm@linux-foundation.org,
+        rjw@sisk.pl, nacc@us.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com, rob@landley.net,
+        tj@kernel.org, mschmidt@redhat.com, berrange@redhat.com,
+        nikunj@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Fri, 04 May 2012 23:01:34 +0200
+In-Reply-To: <20120504204908.GC18177@linux.vnet.ibm.com>
+References: <20120504191535.4603.83236.stgit@srivatsabhat>
+	 <1336159496.6509.51.camel@twins> <4FA434E9.6000305@linux.vnet.ibm.com>
+	 <1336162456.6509.63.camel@twins> <1336163281.6509.69.camel@twins>
+	 <20120504204908.GC18177@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 2012-05-04 at 13:49 -0700, Nishanth Aravamudan wrote:
+> I think it's ok for hotplug to be destructive. But I guess I'm not
+> entirely sure why cpusets can't retain user-inputted
+> configuration/policy information even while destroying things currently?
+> And re-instating that policy if possible in the future? 
 
-------------------
-
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-commit ed8b0d67f33518a16c6b2450fe5ebebf180c2d04 upstream.
-
-This loop on EBCISR register was designed to clear IRQ sources before enabling
-a DMA channel. This register is clear-on-read so a race condition can appear if
-another channel is already active and has just finished its transfer.
-Removing this read on EBCISR is fixing the issue as there is no case where an IRQ
-could be pending: we already make sure that this register is drained at probe()
-time and during resume.
-
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/dma/at_hdmac.c |    4 ----
- 1 file changed, 4 deletions(-)
-
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -237,10 +237,6 @@ static void atc_dostart(struct at_dma_ch
- 
- 	vdbg_dump_regs(atchan);
- 
--	/* clear any pending interrupt */
--	while (dma_readl(atdma, EBCISR))
--		cpu_relax();
--
- 	channel_writel(atchan, SADDR, 0);
- 	channel_writel(atchan, DADDR, 0);
- 	channel_writel(atchan, CTRLA, 0);
+Two issues here:
+ - if you retain it for cpuset but not others that's confusing (too);
+ - we never retain anything, if you unload a module you loose all state
+that was associated with it too. What makes this special?
 
 
