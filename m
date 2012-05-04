@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab2EEFfa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 01:35:30 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:52472 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab2EEFf2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 01:35:28 -0400
-Message-ID: <4FA4BC1D.80101@kernel.org>
-Date: Sat, 05 May 2012 01:35:25 -0400
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] ACPI patch for Linux-3.4-rc5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752081Ab2EEFnE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 01:43:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23025 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751949Ab2EEFnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 May 2012 01:43:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="137249408"
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: [PATCH] max17042_battery: Fix power supply and irq registration ordering
+Date: Sat,  5 May 2012 03:08:37 +0530
+Message-Id: <1336167517-29092-1-git-send-email-ramakrishna.pallala@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+IRQ registration should happen only after power supply object usable.
+This patch fixes the ordering of power supply and irq registration
+calls.
 
-Please pull this ACPI patch.
-It fixes a D3 issue new in 3.4-rc1.
+Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+---
+ drivers/power/max17042_battery.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-thanks!
-Len Brown, Intel Open Source Technology Center
+diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
+index 915767d..3c16724 100644
+--- a/drivers/power/max17042_battery.c
++++ b/drivers/power/max17042_battery.c
+@@ -691,6 +691,12 @@ static int __devinit max17042_probe(struct i2c_client *client,
+ 		max17042_write_reg(client, MAX17042_LearnCFG, 0x0007);
+ 	}
+ 
++	ret = power_supply_register(&client->dev, &chip->battery);
++	if (ret) {
++		dev_err(&client->dev, "failed: power supply register\n");
++		return ret;
++	}
++
+ 	if (client->irq) {
+ 		ret = request_threaded_irq(client->irq, NULL,
+ 						max17042_thread_handler,
+@@ -707,7 +713,6 @@ static int __devinit max17042_probe(struct i2c_client *client,
+ 	}
+ 
+ 	reg = max17042_read_reg(chip->client, MAX17042_STATUS);
+-
+ 	if (reg & STATUS_POR_BIT) {
+ 		INIT_WORK(&chip->work, max17042_init_worker);
+ 		schedule_work(&chip->work);
+@@ -715,10 +720,7 @@ static int __devinit max17042_probe(struct i2c_client *client,
+ 		chip->init_complete = 1;
+ 	}
+ 
+-	ret = power_supply_register(&client->dev, &chip->battery);
+-	if (ret)
+-		dev_err(&client->dev, "failed: power supply register\n");
+-	return ret;
++	return 0;
+ }
+ 
+ static int __devexit max17042_remove(struct i2c_client *client)
+-- 
+1.7.0.4
 
-The following changes since commit ec612fcf43e09f5e05d37baf4d3f138b3fcc2f3d:
-
-  Merge branch 'd3' into release (2012-03-30 16:21:26 -0400)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git release
-
-for you to fetch changes up to 1cc0c998fdf2cb665d625fb565a0d6db5c81c639:
-
-  ACPI: Fix D3hot v D3cold confusion (2012-05-05 01:19:52 -0400)
-
-----------------------------------------------------------------
-Lin Ming (1):
-      ACPI: Fix D3hot v D3cold confusion
-
- drivers/acpi/power.c   |  2 +-
- drivers/acpi/scan.c    | 17 +++++++----------
- drivers/pci/pci-acpi.c |  4 ++--
- include/acpi/actypes.h |  7 ++++---
- 4 files changed, 14 insertions(+), 16 deletions(-)
