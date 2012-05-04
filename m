@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759198Ab2EDQvq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 12:51:46 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34943 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab2EDQvp (ORCPT
+	id S1759223Ab2EDQvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 12:51:52 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:37249 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab2EDQvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 12:51:45 -0400
-Message-ID: <4FA4091E.60508@wwwdotorg.org>
-Date: Fri, 04 May 2012 10:51:42 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Fri, 4 May 2012 12:51:50 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/07+ZKuZhksKylUDV1rsEx
+Date: Fri, 4 May 2012 09:51:46 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Oleg Matcovschi <oleg.matcovschi@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: Re: [PATCH] omap: dma: Clear status registers on enable/disable
+ irq.
+Message-ID: <20120504165146.GB5613@atomide.com>
+References: <1334954578-10478-1-git-send-email-oleg.matcovschi@ti.com>
 MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3 3/4] iommu/tegra: smmu: Refrain from accessing to AHB
-References: <1336061147-10245-1-git-send-email-hdoyu@nvidia.com><1336061147-10245-3-git-send-email-hdoyu@nvidia.com><4FA2C4E9.2080509@wwwdotorg.org> <20120504.093358.2098007825524274078.hdoyu@nvidia.com>
-In-Reply-To: <20120504.093358.2098007825524274078.hdoyu@nvidia.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334954578-10478-1-git-send-email-oleg.matcovschi@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2012 12:33 AM, Hiroshi Doyu wrote:
-> Stephen Warren wrote at Thu, 3 May 2012 19:48:25 +0200:
->> On 05/03/2012 10:05 AM, Hiroshi DOYU wrote:
->>> Use "tegra_ahb_enable_smmu()" to inform AHB that SMMU is
->>> ready, instead of directly aceessing AHB registers.
-...
->>> @@ -911,14 +899,16 @@ static int tegra_smmu_probe(struct platform_device *pdev)
->>
->>> +	smmu->ahb = of_parse_phandle(pdev->dev.of_node, "ahb", 0);
->>
->> Hmm, "ahb" should probably be "nvidia,ahb".
-> 
-> Does this mean the following in dts?
-> 
-> 	ahb: ahb@6000c004 {
-> 		compatible = "nvidia,tegra30-ahb";
-> 		reg = <0x6000c004 0x14c>; /* AHB Arbitration + Gizmo Controller */
-> 	};
-> 
-> 	smmu: smmu@7000f000 {
-> 		nvidia,ahb = &ahb;
-> 	};      ^^^^^^^^^^
-> 
+Hi,
 
-Yes.
+* Oleg Matcovschi <oleg.matcovschi@ti.com> [120420 13:49]:
+> Use omap_disable_channel_irq() function instead of directly accessing CICR.
+> The omap_disable_chanel_irq() function clears pending interrupts
+> and disables interrupt on channel.
+> Functions omap2_enable_irq_lch()/omap2_disable_irq_lch() clear interrupt
+> status register.
+
+This seems like a nice fix to me. As it affects all omaps, I'd like to
+see some tested-by from Janusz/Jarkko/Peter. Can you guys give it a try
+with some audio tests?
+
+Also one comment below.
+ 
+> @@ -575,10 +573,15 @@ static inline void omap_enable_channel_irq(int lch)
+>  	p->dma_write(dma_chan[lch].enabled_irqs, CICR, lch);
+>  }
+>  
+> -static void omap_disable_channel_irq(int lch)
+> +static inline void omap_disable_channel_irq(int lch)
+>  {
+> -	if (cpu_class_is_omap2())
+> -		p->dma_write(0, CICR, lch);
+> +	/* disable channel interrupts */
+> +	p->dma_write(0, CICR, lch);
+> +	/* Clear CSR */
+> +	if (cpu_class_is_omap1())
+> +		p->dma_read(CSR, lch);
+> +	else if (cpu_class_is_omap2())
+> +		p->dma_write(OMAP2_DMA_CSR_CLEAR_MASK, CSR, lch);
+>  }
+
+You can leave out the else if cpu_class_is_omap2 and replace it
+with just else above.
+
+Regards,
+
+Tony 
