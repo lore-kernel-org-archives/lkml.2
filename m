@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501Ab2EDUqm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:46:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932478Ab2EDUqe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932482Ab2EDUqe (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 4 May 2012 16:46:34 -0400
-Message-Id: <20120504204228.732924419@linuxfoundation.org>
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932469Ab2EDUqb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 16:46:31 -0400
+Message-Id: <20120504204228.639743899@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:15 -0700
+Date: Fri, 04 May 2012 13:43:14 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@zytor.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
         Matt Fleming <matt.fleming@intel.com>
-Subject: [ 51/75] x86, efi: Fix endian issues and unaligned accesses
+Subject: [ 50/75] x86, boot: Restrict CFLAGS for hostprogs
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,123 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-commit 92f42c50f227ad228f815a8f4eec872524dae3a5 upstream.
+commit d40f833630a1299fd377408dc8d8fac370d621b0 upstream.
 
-We may need to convert the endianness of the data we read from/write
-to 'buf', so let's use {get,put}_unaligned_le32() to do that. Failure
-to do so can result in accessing invalid memory, leading to a
-segfault.  Stephen Rothwell noticed this bug while cross-building an
-x86_64 allmodconfig kernel on PowerPC.
+Currently tools/build has access to all the kernel headers in
+$(srctree). This is unnecessary and could potentially allow
+tools/build to erroneously include kernel headers when it should only
+be including userspace-exported headers.
 
-We need to read from and write to 'buf' a byte at a time otherwise
-it's possible we'll perform an unaligned access, which can lead to bus
-errors when cross-building an x86 kernel on risc architectures.
+Unfortunately, mkcpustr still needs access to some of the asm kernel
+headers, so explicitly special case that hostprog.
 
 Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>
-Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Link: http://lkml.kernel.org/r/1330436245-24875-6-git-send-email-matt@console-pimps.org
+Link: http://lkml.kernel.org/r/1330436245-24875-5-git-send-email-matt@console-pimps.org
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/boot/tools/build.c |   31 +++++++++++++++----------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+ arch/x86/boot/Makefile |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/x86/boot/tools/build.c
-+++ b/arch/x86/boot/tools/build.c
-@@ -34,6 +34,7 @@
- #include <fcntl.h>
- #include <sys/mman.h>
- #include <asm/boot.h>
-+#include <tools/le_byteshift.h>
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -37,8 +37,9 @@ setup-y		+= video-bios.o
+ targets		+= $(setup-y)
+ hostprogs-y	:= mkcpustr tools/build
  
- typedef unsigned char  u8;
- typedef unsigned short u16;
-@@ -41,6 +42,7 @@ typedef unsigned long  u32;
+-HOST_EXTRACFLAGS += $(LINUXINCLUDE)
+-
++HOSTCFLAGS_mkcpustr.o := -I$(srctree)/arch/$(SRCARCH)/include
++HOST_EXTRACFLAGS += -I$(objtree)/include -I$(srctree)/tools/include \
++                   -include $(srctree)/include/linux/kconfig.h
+ $(obj)/cpu.o: $(obj)/cpustr.h
  
- #define DEFAULT_MAJOR_ROOT 0
- #define DEFAULT_MINOR_ROOT 0
-+#define DEFAULT_ROOT_DEV (DEFAULT_MAJOR_ROOT << 8 | DEFAULT_MINOR_ROOT)
- 
- /* Minimal number of setup sectors */
- #define SETUP_SECT_MIN 5
-@@ -159,7 +161,7 @@ int main(int argc, char ** argv)
- 		die("read-error on `setup'");
- 	if (c < 1024)
- 		die("The setup must be at least 1024 bytes");
--	if (buf[510] != 0x55 || buf[511] != 0xaa)
-+	if (get_unaligned_le16(&buf[510]) != 0xAA55)
- 		die("Boot block hasn't got boot flag (0xAA55)");
- 	fclose(file);
- 
-@@ -171,8 +173,7 @@ int main(int argc, char ** argv)
- 	memset(buf+c, 0, i-c);
- 
- 	/* Set the default root device */
--	buf[508] = DEFAULT_MINOR_ROOT;
--	buf[509] = DEFAULT_MAJOR_ROOT;
-+	put_unaligned_le16(DEFAULT_ROOT_DEV, &buf[508]);
- 
- 	fprintf(stderr, "Setup is %d bytes (padded to %d bytes).\n", c, i);
- 
-@@ -192,44 +193,42 @@ int main(int argc, char ** argv)
- 
- 	/* Patch the setup code with the appropriate size parameters */
- 	buf[0x1f1] = setup_sectors-1;
--	buf[0x1f4] = sys_size;
--	buf[0x1f5] = sys_size >> 8;
--	buf[0x1f6] = sys_size >> 16;
--	buf[0x1f7] = sys_size >> 24;
-+	put_unaligned_le32(sys_size, &buf[0x1f4]);
- 
- #ifdef CONFIG_EFI_STUB
- 	file_sz = sz + i + ((sys_size * 16) - sz);
- 
--	pe_header = *(unsigned int *)&buf[0x3c];
-+	pe_header = get_unaligned_le32(&buf[0x3c]);
- 
- 	/* Size of code */
--	*(unsigned int *)&buf[pe_header + 0x1c] = file_sz;
-+	put_unaligned_le32(file_sz, &buf[pe_header + 0x1c]);
- 
- 	/* Size of image */
--	*(unsigned int *)&buf[pe_header + 0x50] = file_sz;
-+	put_unaligned_le32(file_sz, &buf[pe_header + 0x50]);
- 
- #ifdef CONFIG_X86_32
- 	/* Address of entry point */
--	*(unsigned int *)&buf[pe_header + 0x28] = i;
-+	put_unaligned_le32(i, &buf[pe_header + 0x28]);
- 
- 	/* .text size */
--	*(unsigned int *)&buf[pe_header + 0xb0] = file_sz;
-+	put_unaligned_le32(file_sz, &buf[pe_header + 0xb0]);
- 
- 	/* .text size of initialised data */
--	*(unsigned int *)&buf[pe_header + 0xb8] = file_sz;
-+	put_unaligned_le32(file_sz, &buf[pe_header + 0xb8]);
- #else
- 	/*
- 	 * Address of entry point. startup_32 is at the beginning and
- 	 * the 64-bit entry point (startup_64) is always 512 bytes
- 	 * after.
- 	 */
--	*(unsigned int *)&buf[pe_header + 0x28] = i + 512;
-+	put_unaligned_le32(i + 512, &buf[pe_header + 0x28]);
- 
- 	/* .text size */
--	*(unsigned int *)&buf[pe_header + 0xc0] = file_sz;
-+	put_unaligned_le32(file_sz, &buf[pe_header + 0xc0]);
- 
- 	/* .text size of initialised data */
--	*(unsigned int *)&buf[pe_header + 0xc8] = file_sz;
-+	put_unaligned_le32(file_sz, &buf[pe_header + 0xc8]);
-+
- #endif /* CONFIG_X86_32 */
- #endif /* CONFIG_EFI_STUB */
- 
+ quiet_cmd_cpustr = CPUSTR  $@
 
 
