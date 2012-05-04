@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758210Ab2EDNOW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 09:14:22 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:62498 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755515Ab2EDNOU (ORCPT
+	id S1757978Ab2EDNY4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 09:24:56 -0400
+Received: from ironport-out.teksavvy.com ([206.248.143.162]:46664 "EHLO
+	ironport-out.teksavvy.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834Ab2EDNYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 09:14:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [PATCH 02/02] mach-shmobile: KZM9D board prototype support
-Date: Fri, 4 May 2012 13:14:08 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, horms@verge.net.au,
-        linux@arm.linux.org.uk, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rjw@sisk.pl, lethal@linux-sh.org,
-        olof@lixom.net
-References: <20120503144645.6390.62303.sendpatchset@w520> <20120503144703.6390.20689.sendpatchset@w520>
-In-Reply-To: <20120503144703.6390.20689.sendpatchset@w520>
+	Fri, 4 May 2012 09:24:55 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuEBACxOgk8Y9geI/2dsb2JhbAANNoVzsCSGLAEBAQEDI1UBEAsOCgICBRYLAgIJAwIBAgFFBg0BBwEBtCSKGIEvjhOBGASpJQ
+X-IronPort-AV: E=Sophos;i="4.75,391,1330923600"; 
+   d="scan'208";a="178324133"
+Message-ID: <4FA3D8A6.8030206@teksavvy.com>
+Date: Fri, 04 May 2012 09:24:54 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
+References: <1335953452-10460-1-git-send-email-jack@suse.cz> <4FA1092E.9090603@redhat.com> <20120502115447.7dcc3a54@pyramind.ukuu.org.uk> <4FA11454.2010103@redhat.com> <20120502121208.3c19a9bc@pyramind.ukuu.org.uk> <4FA11963.3040007@redhat.com> <4FA18D33.3060607@teksavvy.com> <4FA23809.2090905@redhat.com> <4FA27CDB.2080103@teksavvy.com> <4FA27E7C.6070802@redhat.com> <4FA2C205.3030801@teksavvy.com> <4FA3799A.6010908@redhat.com> <4FA3D442.9050801@teksavvy.com> <4FA3D585.6000503@teksavvy.com>
+In-Reply-To: <4FA3D585.6000503@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205041314.08701.arnd@arndb.de>
-X-Provags-ID: V02:K0:dSYkvzztwznCPr8wdfmFIuiRRHPdHLId/S2jtIyMZdP
- ZVPPaGZ1Jmg4HmHWUaip1y7cVPonfr5THHxUMr1IEIhEqAk9aK
- f77HYB6RK6qfi16qnon7aVLZojEeXHQrYOaYOriE7xWkRBPxSW
- Cnzi9oweqhTGohOc+MOM/Il+Jk5oSUPYy0J8rT4/WTeMtf+ZIg
- xZGp+qZtabR/SBH/qeupWci/Rl/5AiukJctWdGzVrHGWanoyWp
- tZpTFuGRrDxqKw+lV/zjIXYxZ0z3NYFNRS4rKINcd7OWYmgTvJ
- 3cOCIKnpC4ZCBrmVTEfSbZf5PI9LnKT2G5eOn8b7inm98Vf/1V
- NiJRDwwJJpk67U9v7gf0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 May 2012, Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
+On 12-05-04 09:11 AM, Mark Lord wrote:
+> On 12-05-04 09:06 AM, Mark Lord wrote:
+..
+>> kernel: [  989.525093] hdparm: sending ioctl 330 to a partition!
+>>
+>> The in <linux/hdreg.h> say this about 330:
+>> ...
+>> /* 0x330 is reserved - used to be HDIO_GETGEO_BIG */
+>> ...
+>>
+>> So it's HDIO_GETGEO_BIG, which doesn't exist in newer kernels.
+>> I wonder when that got removed?  Minor userspace breakage there.
 > 
-> Add experimental KZM9D board support that makes
-> use of the Emma Mobile EV2 SoC code.
-> 
-> Nothing except serial ports and timer are supported
-> at this point. On-board ethernet support can be
-> added after proper GPIO bindings are implemented.
-> Without GPIO we cannot make use of external IRQs.
-> 
-> Not-yet-signed-off-by: Magnus Damm <damm@opensource.se>
+> Looks like it got removed about 10 years ago,
+> either in 2.5.xx or early 2.6.xx, so that's all fine now.
+> hdparm still issues it for backward compatibility with
+> kernels that lack more modern methods.  Currently we don't
+> try to inspect the kernel version at run-time, because
+> version numbers are not as reliable as simply issuing
+> the ioctl().
 
-Given that this doesn't do anything, I see no reason to leave this
-machine based on ATAG rather than DT probing:
 
-+MACHINE_START(KZM9D, "kzm9d")
-+       .map_io         = emev2_map_io,
-+       .init_early     = emev2_add_early_devices,
-+       .nr_irqs        = NR_IRQS_LEGACY,
-+       .init_irq       = emev2_init_irq,
-+       .handle_irq     = gic_handle_irq,
-+       .init_machine   = emev2_add_standard_devices,
-+       .timer          = &shmobile_timer,
-+MACHINE_END
+I will update hdparm regardless (version 9.40, not out yet)
+to try and avoid HDIO_GETGEO_BIG when possible.  It will still
+use it under some circumstances (like when sysfs isn't mounted,
+which should catch 2.4.xx kernels and older), but mostly not.
 
-Just make this DT_MACHINE_START and add a minimal .dts file for
-it that has the right compatible value. That will already enable
-people to add devices in their .dts files without touching
-the platform code.
+Cheers
 
-It would also be really easy to just add DT support for the three
-devices you actually support (GIC, STI, uart), because two of
-them already have bindings and the third one is a new driver.
-When we discussed this new soc earlier, you said that using DT
-based booting would be extra work, but given the set of devices
-that you are putting into this, I don't think that argument holds
-any more.
 
-	Arnd
