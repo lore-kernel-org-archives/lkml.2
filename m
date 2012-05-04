@@ -1,92 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab2EDKJt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 06:09:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8281 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab2EDKJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 06:09:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="140041063"
-Message-ID: <1336126390.4275.12.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v2 4/4] fat: switch to fsinfo_inode
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>
-Date: Fri, 04 May 2012 13:13:10 +0300
-In-Reply-To: <87y5pyfoe0.fsf@devron.myhome.or.jp>
-References: <1334326795-2446-1-git-send-email-dedekind1@gmail.com>
-	 <1334326795-2446-5-git-send-email-dedekind1@gmail.com>
-	 <87fwc6hazv.fsf@devron.myhome.or.jp> <1334399379.2263.8.camel@koala>
-	 <87bomuha77.fsf@devron.myhome.or.jp> <1334401307.2263.24.camel@koala>
-	 <873986h6qa.fsf@devron.myhome.or.jp> <1334406974.2263.38.camel@koala>
-	 <87y5pyfoe0.fsf@devron.myhome.or.jp>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-sTIFxmwXqJ7wE+CwARi9"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1754838Ab2EDKLi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 06:11:38 -0400
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:52228 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754043Ab2EDKLg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 06:11:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC13E9B1AA2@DBDE01.ent.ti.com>
+References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
+	<1335462041-4949-5-git-send-email-j-keerthy@ti.com>
+	<331ABD5ECB02734CA317220B2BBEABC13E9B1AA2@DBDE01.ent.ti.com>
+Date: Fri, 4 May 2012 15:41:34 +0530
+Message-ID: <CAJ6a13ZSWSa_RpGB9NxtfyChUba9NGivGogpsfyk7oT9pNayjg@mail.gmail.com>
+Subject: Re: [PATCH V3 04/10] ARM: OMAP3: hwmod: rename the smartreflex entries
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: "AnilKumar, Chimata" <anilkumar@ti.com>
+Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Hilman, Kevin" <khilman@ti.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "Pihet-XID, Jean" <j-pihet@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi AnilKumar,
 
---=-sTIFxmwXqJ7wE+CwARi9
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Thanks for reviewing.
 
-Hi,
+On Fri, May 4, 2012 at 2:00 PM, AnilKumar, Chimata <anilkumar@ti.com> wrote:
+> On Thu, Apr 26, 2012 at 23:10:35, J, KEERTHY wrote:
+>> From: Jean Pihet <j-pihet@ti.com>
+>>
+>> Change the name field value to better reflect the smartreflex
+>> integration in the system.
+>>
+>> Signed-off-by: Jean Pihet <j-pihet@ti.com>
+>> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+>> ---
+>>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |    8 ++++----
+>>  arch/arm/mach-omap2/smartreflex.c          |    2 +-
+>>  2 files changed, 5 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>> index 144d118..15907b0 100644
+>> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>> @@ -1324,7 +1324,7 @@ static struct omap_hwmod_irq_info omap3_smartreflex_mpu_irqs[] = {
+>>  };
+>>
+>>  static struct omap_hwmod omap34xx_sr1_hwmod = {
+>> -     .name           = "sr1",
+>> +     .name           = "smartreflex_mpu_iva",
+>>       .class          = &omap34xx_smartreflex_hwmod_class,
+>>       .main_clk       = "sr1_fck",
+>>       .prcm           = {
+>> @@ -1342,7 +1342,7 @@ static struct omap_hwmod omap34xx_sr1_hwmod = {
+>>  };
+>>
+>>  static struct omap_hwmod omap36xx_sr1_hwmod = {
+>> -     .name           = "sr1",
+>> +     .name           = "smartreflex_mpu_iva",
+>>       .class          = &omap36xx_smartreflex_hwmod_class,
+>>       .main_clk       = "sr1_fck",
+>>       .prcm           = {
+>> @@ -1369,7 +1369,7 @@ static struct omap_hwmod_irq_info omap3_smartreflex_core_irqs[] = {
+>>  };
+>>
+>>  static struct omap_hwmod omap34xx_sr2_hwmod = {
+>> -     .name           = "sr2",
+>> +     .name           = "smartreflex_core",
+>>       .class          = &omap34xx_smartreflex_hwmod_class,
+>>       .main_clk       = "sr2_fck",
+>>       .prcm           = {
+>> @@ -1387,7 +1387,7 @@ static struct omap_hwmod omap34xx_sr2_hwmod = {
+>>  };
+>>
+>>  static struct omap_hwmod omap36xx_sr2_hwmod = {
+>> -     .name           = "sr2",
+>> +     .name           = "smartreflex_core",
+>>       .class          = &omap36xx_smartreflex_hwmod_class,
+>>       .main_clk       = "sr2_fck",
+>>       .prcm           = {
+>> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
+>> index 2edd1e2..d859277 100644
+>> --- a/arch/arm/mach-omap2/smartreflex.c
+>> +++ b/arch/arm/mach-omap2/smartreflex.c
+>> @@ -183,7 +183,7 @@ static void sr_set_regfields(struct omap_sr *sr)
+>>               sr->err_weight = OMAP3430_SR_ERRWEIGHT;
+>>               sr->err_maxlimit = OMAP3430_SR_ERRMAXLIMIT;
+>>               sr->accum_data = OMAP3430_SR_ACCUMDATA;
+>> -             if (!(strcmp(sr->name, "sr1"))) {
+>> +             if (!(strcmp(sr->name, "smartreflex_mpu_iva"))) {
+>
+> What if voltage rail is different for mpu and iva? I have seen some devices
+> supports SmartReflex have different voltage rails for mpu and iva.
+>
 
-I was having a leave, but now came back to this stuff.
+I get the point. OMAP3 iva and mpu have a common rail. OMAP4 onwards
+even we have different rails for mpu and iva. I will enhance the checks here.
 
-On Sat, 2012-04-14 at 22:12 +0900, OGAWA Hirofumi wrote:
-> If fsinfo is inode, the order can be
->=20
-> 1) flush inodes
->     1a) flush fsinfo inode
->     1b) flush normal inodes
-> 2) last iput(normal inodes)
->       truncate()
->            dirty fsinfo inode
+> Regards
+> AnilKumar
 
-3) a bit later fsinfo inode is flushed again.
 
-Sorry, I do not still see where is the issue.
 
-Also, how is it different form the current situation where
-you have absolutely the same.
-
-I really still do not see the issue.=20
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-sTIFxmwXqJ7wE+CwARi9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPo6u2AAoJECmIfjd9wqK0feEQAJp4bxhOb0gV2swzpSE8lndC
-qip7NIMoklsUKdQsBJe3FKF2D81XHNaTpoPNpmWyG6IaeoiXePeYvE1EwierWmv4
-NDbH4VCsAorvz9HtHOrhTs8mgdOp3oqa4AT4FQMcLuGODSgrWX+mtMhUtON53vIP
-rK5fGG2IdcWVr0iaXxUbdfl6SNOM6bocipXLA3HsDMBgMfK9V/2xkyOB05qNNxce
-q/jvWGv5m0z+xSftyBDaDlVOH5GRf8MeusFtAdoq182l05YEXSbbWszhfs34wQkz
-BERyeVVTfXoAoZ8JUi2uvN1fGyfVtwBiLeWQW94LYFerBjSdHnPxBsHFb8kGAKeJ
-WcGrJqx57XslSYtta4Pubm8nDPMxT9eNyph646NIxNYbh1CS88xYIwgFKZjmrcki
-6EA7560vtlVP5ItmZkgWB27OuK6piyy4Iy3vddIGRvgT7zKsmTYq2GWud+TRM2zn
-bS34NVOGGreOzpokUO22Be8guC1VGZJ74MwmCI9DMJGqvxmZP6j7QvrLHQPre8IW
-gn/GyLZvP8z6GkFB8B/bajd3lS3pI248/bOYmjBbT4q47PCMfr+5jkE+IiOBrXOS
-EMQPzS8z+jzk9iG3hS7ziw++TjCiPsndjRC6nm8rZ8GAuC4me0AMG9+LCiF4EwuJ
-EyNRtcneIDH9afT25OzH
-=seXG
------END PGP SIGNATURE-----
-
---=-sTIFxmwXqJ7wE+CwARi9--
-
+-- 
+Regards and Thanks,
+Keerthy
