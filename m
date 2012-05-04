@@ -1,37 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758533Ab2EDOKZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 10:10:25 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18089 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758339Ab2EDOKT (ORCPT
+	id S1758572Ab2EDOK3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 10:10:29 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:39912 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab2EDOK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 10:10:19 -0400
+	Fri, 4 May 2012 10:10:27 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] patches for v3.5-rc6.
-Date: Fri,  4 May 2012 10:04:23 -0400
-Message-Id: <1336140267-7399-1-git-send-email-konrad.wilk@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>, stable@kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 4/4] xen/pci: don't use PCI BIOS service for configuration space accesses
+Date: Fri,  4 May 2012 10:04:27 -0400
+Message-Id: <1336140267-7399-5-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
+In-Reply-To: <1336140267-7399-1-git-send-email-konrad.wilk@oracle.com>
+References: <1336140267-7399-1-git-send-email-konrad.wilk@oracle.com>
 X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Was thinking to push these patches to Linus for v3.5-rc6.
+From: David Vrabel <david.vrabel@citrix.com>
 
- arch/x86/xen/enlighten.c    |   40 ++++++++++++++++++++++++++++++++++++++--
- arch/x86/xen/mmu.c          |    7 ++++++-
- drivers/video/xen-fbfront.c |   25 +++++++++++++++----------
- 3 files changed, 59 insertions(+), 13 deletions(-)
+The accessing PCI configuration space with the PCI BIOS32 service does
+not work in PV guests.
 
-David Vrabel (1):
-      xen/pci: don't use PCI BIOS service for configuration space accesses
+On systems without MMCONFIG or where the BIOS hasn't marked the
+MMCONFIG region as reserved in the e820 map, the BIOS service is
+probed (even though direct access is preferred) and this hangs.
 
-Julia Lawall (1):
-      drivers/video/xen-fbfront.c: add missing cleanup code
+CC: stable@kernel.org
+Acked-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/enlighten.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-Konrad Rzeszutek Wilk (2):
-      xen/apic: Return the APIC ID (and version) for CPU 0.
-      xen/pte: Fix crashes when trying to see non-existent PGD/PMD/PUD/PTEs
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 4f437de..fbf9a75 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -63,6 +63,7 @@
+ #include <asm/stackprotector.h>
+ #include <asm/hypervisor.h>
+ #include <asm/mwait.h>
++#include <asm/pci_x86.h>
+ 
+ #ifdef CONFIG_ACPI
+ #include <linux/acpi.h>
+@@ -1398,7 +1399,9 @@ asmlinkage void __init xen_start_kernel(void)
+ 		/* Make sure ACS will be enabled */
+ 		pci_request_acs();
+ 	}
+-		
++
++	/* PCI BIOS service won't work from a PV guest. */
++	pci_probe &= ~PCI_PROBE_BIOS;
+ 
+ 	xen_raw_console_write("about to get started...\n");
+ 
+-- 
+1.7.7.5
 
