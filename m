@@ -1,82 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759509Ab2EDTip (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 15:38:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41726 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051Ab2EDTio convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 15:38:44 -0400
+	id S1754359Ab2EDTjK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 15:39:10 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:53787 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759536Ab2EDTjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 15:39:07 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Huang Ying <ying.huang@intel.com>
+Subject: Re: [RFC v2 3/5] PCIe, Add runtime PM support to PCIe port
+Date: Fri, 4 May 2012 21:43:54 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Bjorn Helgaas <bhelgaas@google.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Zheng Yan <zheng.z.yan@intel.com>
+References: <1336119221-21146-1-git-send-email-ying.huang@intel.com> <1336119221-21146-4-git-send-email-ying.huang@intel.com>
+In-Reply-To: <1336119221-21146-4-git-send-email-ying.huang@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWuePNRWV=ncJkF57aQZ0ZT91xxZ0sZMexq8HgN9NcAfA@mail.gmail.com>
-References: <20120419163800.GB13977@schottelius.org>
-	<CAMVeQ8r_3vuAxzbLyKoecOHOOGijUDkLfw+MK7o-WoWbuOGSrg@mail.gmail.com>
-	<20120502163629.GE928@schottelius.org>
-	<20120502202509.GA26798@kroah.com>
-	<20120503065003.GB13386@schottelius.org>
-	<CAMVeQ8qYu4bShd_+pwRv8bShhusJMDa-jjoqu7EujS4jt7RSNA@mail.gmail.com>
-	<20120503153547.GD20334@kroah.com>
-	<CAMVeQ8q3PMMGmFSgrnqbW2HVdfmN+LgatX3TSfv5_2Ebuuj=QQ@mail.gmail.com>
-	<20120503233858.GA13453@kroah.com>
-	<4FA358ED.1080705@gmail.com>
-	<20120504184851.GB11223@kroah.com>
-	<CAE9FiQWuePNRWV=ncJkF57aQZ0ZT91xxZ0sZMexq8HgN9NcAfA@mail.gmail.com>
-Date: Fri, 4 May 2012 12:38:43 -0700
-X-Google-Sender-Auth: 1eKLLonYHH1iul9XaocfztUq_B8
-Message-ID: <CAE9FiQWcyRfLKB+YivOfa-GydbhoaMx06n6a4VMDWoTOMkj7ig@mail.gmail.com>
-Subject: Re: Linux Support for Thunderbolt using Apple Monitor
-From: Yinghai Lu <yinghai@kernel.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Francois Rigaut <frigaut@gmail.com>, linux-pci@vger.kernel.org,
-        Nico Schottelius <nico-linux-20120419@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205042143.54364.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 4, 2012 at 12:37 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, May 4, 2012 at 11:48 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> Ok, it looks like these are the devices that we are missing while
->> "hotplugging":
->> 37:00.0 PCI bridge: Intel Corporation Device 1513
->> 38:00.0 PCI bridge: Intel Corporation Device 1513
->> 38:01.0 PCI bridge: Intel Corporation Device 1513
->> 38:02.0 PCI bridge: Intel Corporation Device 1513
->> 38:03.0 PCI bridge: Intel Corporation Device 1513
->> 38:04.0 PCI bridge: Intel Corporation Device 1513
->> 38:05.0 PCI bridge: Intel Corporation Device 1513
->> 39:00.0 PCI bridge: Pericom Semiconductor Device 400c (rev 02)
->> 3a:03.0 PCI bridge: Pericom Semiconductor Device 400c (rev 02)
->> 3b:00.0 USB controller: Pericom Semiconductor Device 400e (rev 01)
->> 3b:00.1 USB controller: Pericom Semiconductor Device 400e (rev 01)
->> 3b:00.2 USB controller: Pericom Semiconductor Device 400f (rev 01)
->> 3c:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM57761 Gigabit Ethernet PCIe (rev 10)
->> 3d:00.0 FireWire (IEEE 1394): nee Agere Systems nee Lucent
->> Microelectronics FW643 PCI Express 1394b Controller (PHY/Link) (rev 08)
->>
->> Which is good, I was worried that there was a video controller out there
->> on the end of the thunderbolt link.
->>
->> So, the problem really is two here:
->>  - your video card doesn't detect the new display
->>  - your pci devices do not show up
->>
->> The first one probably needs to be reported to the Intel video driver
->> people, they can help you out the best.
->>
->> The second one means that something is up with the pci hotplug
->> controller.  I've cced the linux-pci list, the people there should be
->> able to help out better than I, as I no longer have any PCI hotplug
->> hardware to work with anymore.
->>
->
-> those devices are under 04:04.0, but that does not have slot cap
-> enabled by BIOS. So pciehp is going to to help.
+On Friday, May 04, 2012, Huang Ying wrote:
+> From: Zheng Yan <zheng.z.yan@intel.com>
+> 
+> This patch adds runtime PM support to PCIe port.  This is needed by
+> PCIe D3cold support, where PCIe device in slot may be powered on/off
+> by PCIe port.
+> 
+> Because runtime suspend is broken for some chipset, a white list is
+> used to enable runtime PM support for only chipset known to work.
+> 
+> Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> ---
+>  drivers/pci/pci.c              |    9 +++++++++
+>  drivers/pci/pcie/portdrv_pci.c |   40 ++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 49 insertions(+)
+> 
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -1476,6 +1476,15 @@ bool pci_check_pme_status(struct pci_dev
+>   */
+>  static int pci_pme_wakeup(struct pci_dev *dev, void *pme_poll_reset)
+>  {
+> +	struct pci_dev *bridge = dev->bus->self;
+> +
+> +	/*
+> +	 * If bridge is in low power state, the configuration space of
+> +	 * subordinate devices may be not accessible
 
-should be: pciehp is not going to help.
+Please also say in the comment _when_ this is possible.  That's far from
+obvious, because the runtime PM framework generally ensures that parents are
+resumed before the children, so the comment should describe the particular
+scenario leading to this situation.
 
-so acpiphp are involved?
+> +	 */
+> +	if (bridge && bridge->current_state != PCI_D0)
+> +		return 0;
+> +
+>  	if (pme_poll_reset && dev->pme_poll)
+>  		dev->pme_poll = false;
+>  
+> --- a/drivers/pci/pcie/portdrv_pci.c
+> +++ b/drivers/pci/pcie/portdrv_pci.c
+> @@ -11,6 +11,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/errno.h>
+>  #include <linux/pm.h>
+> +#include <linux/pm_runtime.h>
+>  #include <linux/init.h>
+>  #include <linux/pcieport_if.h>
+>  #include <linux/aer.h>
+> @@ -99,6 +100,27 @@ static int pcie_port_resume_noirq(struct
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_PM_RUNTIME
+> +static int pcie_port_runtime_suspend(struct device *dev)
+> +{
+> +	struct pci_dev *pdev = to_pci_dev(dev);
+> +
 
-Yinghai
+A comment explaining why this is needed here would be welcome.
+
+> +	pci_save_state(pdev);
+> +	return 0;
+> +}
+> +
+> +static int pcie_port_runtime_resume(struct device *dev)
+> +{
+> +	struct pci_dev *pdev = to_pci_dev(dev);
+> +
+> +	pci_restore_state(pdev);
+> +	return 0;
+> +}
+> +#else
+> +#define pcie_port_runtime_suspend	NULL
+> +#define pcie_port_runtime_resume	NULL
+> +#endif
+> +
+>  static const struct dev_pm_ops pcie_portdrv_pm_ops = {
+>  	.suspend	= pcie_port_device_suspend,
+>  	.resume		= pcie_port_device_resume,
+> @@ -107,6 +129,8 @@ static const struct dev_pm_ops pcie_port
+>  	.poweroff	= pcie_port_device_suspend,
+>  	.restore	= pcie_port_device_resume,
+>  	.resume_noirq	= pcie_port_resume_noirq,
+> +	.runtime_suspend = pcie_port_runtime_suspend,
+> +	.runtime_resume = pcie_port_runtime_resume,
+>  };
+>  
+>  #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
+> @@ -117,6 +141,18 @@ static const struct dev_pm_ops pcie_port
+>  #endif /* !PM */
+>  
+>  /*
+> + * PCIe port runtime suspend is broken for some chipset, so use a
+> + * white list to disable runtime PM for these chipset.
+> + */
+> +static const struct pci_device_id port_runtime_pm_pci_ids[] = {
+> +	{ PCI_VDEVICE(INTEL, 0x1e10), },
+> +	{ PCI_VDEVICE(INTEL, 0x1e16), },
+> +	{ PCI_VDEVICE(INTEL, 0x1e18), },
+> +	{ PCI_VDEVICE(INTEL, 0x1e1c), },
+> +	{ /* end: all zeroes */ }
+> +};
+> +
+> +/*
+>   * pcie_portdrv_probe - Probe PCI-Express port devices
+>   * @dev: PCI-Express port device being probed
+>   *
+> @@ -144,12 +180,16 @@ static int __devinit pcie_portdrv_probe(
+>  		return status;
+>  
+>  	pci_save_state(dev);
+> +	if (pci_match_id(port_runtime_pm_pci_ids, dev))
+> +		pm_runtime_put_noidle(&dev->dev);
+>  
+>  	return 0;
+>  }
+>  
+>  static void pcie_portdrv_remove(struct pci_dev *dev)
+>  {
+> +	if (pci_match_id(port_runtime_pm_pci_ids, dev))
+> +		pm_runtime_get_noresume(&dev->dev);
+>  	pcie_port_device_remove(dev);
+>  	pci_disable_device(dev);
+>  }
+
+Thanks,
+Rafael
