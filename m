@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759952Ab2EDUt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:49:26 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
+	id S1759975Ab2EDUzR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:55:17 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
 	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759842Ab2EDUtT (ORCPT
+	with ESMTP id S1759945Ab2EDUtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:49:19 -0400
-Message-Id: <20120504204247.209170133@linuxfoundation.org>
+	Fri, 4 May 2012 16:49:25 -0400
+Message-Id: <20120504204247.367861358@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:11 -0700
+Date: Fri, 04 May 2012 13:43:13 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Fernandez Gonzalo <gfernandez@copreci.es>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: [ 27/47] usb gadget: uvc: uvc_request_data::length field must be signed
+        alan@lxorguk.ukuu.org.uk, Michael Tokarev <mjt@tls.msk.ru>,
+        David Miller <davem@davemloft.net>, Ian Kent <raven@themaw.net>,
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: [ 29/47] autofs: make the autofsv5 packet file descriptor use a packetized pipe
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +26,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 6f6543f53f9ce136e01d7114bf6f0818ca54fb41 upstream.
+commit 64f371bc3107e69efce563a3d0f0e6880de0d537 upstream.
 
-The field is used to pass the UVC request data length, but can also be
-used to signal an error when setting it to a negative value. Switch from
-unsigned int to __s32.
+The autofs packet size has had a very unfortunate size problem on x86:
+because the alignment of 'u64' differs in 32-bit and 64-bit modes, and
+because the packet data was not 8-byte aligned, the size of the autofsv5
+packet structure differed between 32-bit and 64-bit modes despite
+looking otherwise identical (300 vs 304 bytes respectively).
 
-Reported-by: Fernandez Gonzalo <gfernandez@copreci.es>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+We first fixed that up by making the 64-bit compat mode know about this
+problem in commit a32744d4abae ("autofs: work around unhappy compat
+problem on x86-64"), and that made a 32-bit 'systemd' work happily on a
+64-bit kernel because everything then worked the same way as on a 32-bit
+kernel.
+
+But it turned out that 'automount' had actually known and worked around
+this problem in user space, so fixing the kernel to do the proper 32-bit
+compatibility handling actually *broke* 32-bit automount on a 64-bit
+kernel, because it knew that the packet sizes were wrong and expected
+those incorrect sizes.
+
+As a result, we ended up reverting that compatibility mode fix, and
+thus breaking systemd again, in commit fcbf94b9dedd.
+
+With both automount and systemd doing a single read() system call, and
+verifying that they get *exactly* the size they expect but using
+different sizes, it seemed that fixing one of them inevitably seemed to
+break the other.  At one point, a patch I seriously considered applying
+from Michael Tokarev did a "strcmp()" to see if it was automount that
+was doing the operation.  Ugly, ugly.
+
+However, a prettier solution exists now thanks to the packetized pipe
+mode.  By marking the communication pipe as being packetized (by simply
+setting the O_DIRECT flag), we can always just write the bigger packet
+size, and if user-space does a smaller read, it will just get that
+partial end result and the extra alignment padding will simply be thrown
+away.
+
+This makes both automount and systemd happy, since they now get the size
+they asked for, and the kernel side of autofs simply no longer needs to
+care - it could pad out the packet arbitrarily.
+
+Of course, if there is some *other* user of autofs (please, please,
+please tell me it ain't so - and we haven't heard of any) that tries to
+read the packets with multiple writes, that other user will now be
+broken - the whole point of the packetized mode is that one system call
+gets exactly one packet, and you cannot read a packet in pieces.
+
+Tested-by: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: David Miller <davem@davemloft.net>
+Cc: Ian Kent <raven@themaw.net>
+Cc: Thomas Meyer <thomas@m3y3r.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/uvc.h      |    2 +-
- drivers/usb/gadget/uvc_v4l2.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/autofs4/autofs_i.h  |   11 +++++++++++
+ fs/autofs4/dev-ioctl.c |    2 +-
+ fs/autofs4/inode.c     |    2 +-
+ 3 files changed, 13 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/gadget/uvc.h
-+++ b/drivers/usb/gadget/uvc.h
-@@ -29,7 +29,7 @@
+--- a/fs/autofs4/autofs_i.h
++++ b/fs/autofs4/autofs_i.h
+@@ -278,6 +278,17 @@ int autofs4_fill_super(struct super_bloc
+ struct autofs_info *autofs4_new_ino(struct autofs_sb_info *);
+ void autofs4_clean_ino(struct autofs_info *);
  
- struct uvc_request_data
- {
--	unsigned int length;
-+	__s32 length;
- 	__u8 data[60];
- };
++static inline int autofs_prepare_pipe(struct file *pipe)
++{
++	if (!pipe->f_op || !pipe->f_op->write)
++		return -EINVAL;
++	if (!S_ISFIFO(pipe->f_dentry->d_inode->i_mode))
++		return -EINVAL;
++	/* We want a packet pipe */
++	pipe->f_flags |= O_DIRECT;
++	return 0;
++}
++
+ /* Queue management functions */
  
---- a/drivers/usb/gadget/uvc_v4l2.c
-+++ b/drivers/usb/gadget/uvc_v4l2.c
-@@ -41,7 +41,7 @@ uvc_send_response(struct uvc_device *uvc
- 	if (data->length < 0)
- 		return usb_ep_set_halt(cdev->gadget->ep0);
- 
--	req->length = min(uvc->event_length, data->length);
-+	req->length = min_t(unsigned int, uvc->event_length, data->length);
- 	req->zero = data->length < uvc->event_length;
- 	req->dma = DMA_ADDR_INVALID;
- 
+ int autofs4_wait(struct autofs_sb_info *,struct dentry *, enum autofs_notify);
+--- a/fs/autofs4/dev-ioctl.c
++++ b/fs/autofs4/dev-ioctl.c
+@@ -376,7 +376,7 @@ static int autofs_dev_ioctl_setpipefd(st
+ 			err = -EBADF;
+ 			goto out;
+ 		}
+-		if (!pipe->f_op || !pipe->f_op->write) {
++		if (autofs_prepare_pipe(pipe) < 0) {
+ 			err = -EPIPE;
+ 			fput(pipe);
+ 			goto out;
+--- a/fs/autofs4/inode.c
++++ b/fs/autofs4/inode.c
+@@ -292,7 +292,7 @@ int autofs4_fill_super(struct super_bloc
+ 		printk("autofs: could not open pipe file descriptor\n");
+ 		goto fail_dput;
+ 	}
+-	if (!pipe->f_op || !pipe->f_op->write)
++	if (autofs_prepare_pipe(pipe) < 0)
+ 		goto fail_fput;
+ 	sbi->pipe = pipe;
+ 	sbi->pipefd = pipefd;
 
 
