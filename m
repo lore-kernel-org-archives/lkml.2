@@ -1,63 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab2EDMcw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 08:32:52 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43692 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755416Ab2EDMcv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 08:32:51 -0400
-Date: Fri, 4 May 2012 13:32:49 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFT 3/3] regulator: rc5t583: Use
- regulator_get_voltage_sel_regmap()
-Message-ID: <20120504123248.GJ14230@opensource.wolfsonmicro.com>
-References: <1335232352.6470.1.camel@phoenix>
- <1335232603.6470.5.camel@phoenix>
+	id S1757733Ab2EDMdF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 08:33:05 -0400
+Received: from mga03.intel.com ([143.182.124.21]:28421 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757116Ab2EDMdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 08:33:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="96383921"
+Message-ID: <4FA3CC71.50404@intel.com>
+Date: Fri, 04 May 2012 20:32:49 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IJFRpmOek+ZRSQoz"
-Content-Disposition: inline
-In-Reply-To: <1335232603.6470.5.camel@phoenix>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu,
+        andi@firstfloor.org, eranian@google.com, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 9/9] perf tool: Add pmu event alias support
+References: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com> <1335924440-11242-10-git-send-email-zheng.z.yan@intel.com> <20120503105655.GB1671@m.brq.redhat.com> <1336044261.22523.11.camel@twins> <20120503200518.GC1671@m.brq.redhat.com>
+In-Reply-To: <20120503200518.GC1671@m.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/04/2012 04:05 AM, Jiri Olsa wrote:
+> On Thu, May 03, 2012 at 01:24:21PM +0200, Peter Zijlstra wrote:
+>> On Thu, 2012-05-03 at 12:56 +0200, Jiri Olsa wrote:
+>>> - in sysfs you would have directory with aliases (now called 'events')
+>>> - each alias is sysfs dir, with file attrs:
+>>>         file name = term name, file value = term value
+>>>   eg.:
+>>>         events/
+>>>                 CAS_COUNT_RD/
+>>>                         # files:
+>>>                         config  - value 1
+>>>                         config1 - value 2
+>>>                         mask    - value ... 
+>>
+>> I'd prefer the thing Yan proposed (if the sysfs folks let us),
+>>
+>> $foo/events/QHL_REQUEST_REMOTE_READS
+>>
+>> with contents: "event=0x20,umask=0x4"
+>>
+>>> this way it's also possible to add extra terms to existing alias
+>>> in command line if needed... might be handy
+>>>
+>> That should always be possible, if you modify the parser to take things
+>> like:
+>>
+>>   event=0x20,umask=0x4,event=0x21
+>>
+>> and have latter values override earlier values, so it collapses into:
+>>
+>>   umask=0x4,event=0x21
+>>
+>> you can simply take whatever comes out of the event file and stick extra
+>> bits at the end.
+> 
+> I discussed this with Peter on irc, so I'll try to sum it up
+> 
+> we have following options so far:
+> 
+>    with event alias 'al' with definition 'config=1,config1=1,config2=2'
+> 
+> 1) inside parse_events_add_pmu function
+>    once alias term is detected as part of event definition 'pmu/al/mod' we
+>    construct new event 'pmu/config=1,config1=1,config2=2/mod' and rerun the
+>    event parser on that
+> 
+> 2) inside parse_events_add_pmu function 
+>    once alias term is detected as part of event definition 'pmu/al/mod' we
+>    replace that term with list of terms for that alias definition and run
+>    perf_pmu__config with this new term list
+> 
+> 3) during bison/flex processing
+>    have option 2) embeded inside flex/bison rules. Once alias term
+>    is detected, insert the aliased terms directly to the list of terms,
+>    not replacing expos as in option 2.
+> 
+> 
+> - option 1 is currently implemented 
+> - options 2 and 3 requires the aliased config is loaded/parsed from pmu
+>   sysfs tree in form of terms list
+> - option 3 is a little fuzzy for me now on how to integrate this with
+>   flex/bison
+> 
+> My interest here is to go with option 2 or 3 if possible - preferrably 2 ;),
+> because I think it's better/cleaner to deal with terms in one place once they
+> are parsed - in parse_events_add_pmu function.
+> 
+> I think there's no need to re run the whole parser (option 1) when we
+> have the whole thing ready by adding just extra terms.
+> 
+> thoughts?
+> 
 
---IJFRpmOek+ZRSQoz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I agree with you, option 2 is cleaner than option 1. I will try implementing it
 
-On Tue, Apr 24, 2012 at 09:56:43AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Thank you
+Yan, Zheng 
 
-Applied, thanks.
 
---IJFRpmOek+ZRSQoz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPo8wEAAoJEBus8iNuMP3dIVEP/ArNOnZwqgMexywzxnmcors/
-oeTyqIKaTUW8c5ujm3rWJMxq3mbOhQMqxOQVzGq5odZzFqJ1LN6TSYSdZeBFY/pb
-zCtwdawvFmzV5ZPkipZQADYhNvmyT43YwL3dI11OgASDc4UOHfEX196Ymnarnc1i
-2xkimsxDR09gf2Vq9ga6cWfUqq57P7JgM0fz3HGl2eTEP12GPf9HiOtaMR666Ggv
-0WpCwl92UqXR843Wf6lz3bXCAZaZe+PjXtf8LLCDtVzZw3blSeZH273v2iTc3BeO
-B8lMJnlmDckBZoJfapOr51NFon0GO+CuqoaMHO0adIOKuNIpI4YxPWRcgFx+JlLq
-20ocaqINKfrtPnDGD+AK2BbPKHgoFFDSudVHT7dsvBOmTTbpe19wsQ7GKuqflwgi
-UsgTodCw7Pn9pkKtRxzGcUAfZpyVWFmeGWwf4CN5B3hm38eqVNBKFa9xgoHdCtoy
-/Xh+6Id78v561WhpkqPSzSQQnxXjP9IbNwcAImpgV2iRjOKIBzjr+gw8jUcSKA8v
-CswsIMlkfGQvhOJ75PJAlRIcxMNwn2xmhsihoTTA0/QvLLJ8AFdoDFh0IfSUI5d5
-IAvErXiwSyf+KyMDhPWZ19vOimIKcg/zrm6iOV1MMCxHpNHde5k4Zg5XbCnkP4BG
-nogB+HxA3DDkb5GUEc3x
-=RmDt
------END PGP SIGNATURE-----
-
---IJFRpmOek+ZRSQoz--
