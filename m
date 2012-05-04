@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759454Ab2EDTUM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 15:20:12 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:51380 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab2EDTUK (ORCPT
+	id S1759477Ab2EDTUx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 15:20:53 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:48164 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759417Ab2EDTUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 15:20:10 -0400
+	Fri, 4 May 2012 15:20:51 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 4/7] CPU hotplug,
- cpusets: Workout hotplug handling for cpusets
+Subject: [PATCH v2 5/7] Docs, cpusets: Update the cpuset documentation
 To: a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
         paul@paulmenage.org, akpm@linux-foundation.org
 Cc: rjw@sisk.pl, nacc@us.ibm.com, paulmck@linux.vnet.ibm.com,
@@ -18,196 +17,95 @@ Cc: rjw@sisk.pl, nacc@us.ibm.com, paulmck@linux.vnet.ibm.com,
         nikunj@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
         linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-pm@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Date: Sat, 05 May 2012 00:49:23 +0530
-Message-ID: <20120504191900.4603.42981.stgit@srivatsabhat>
+Date: Sat, 05 May 2012 00:49:58 +0530
+Message-ID: <20120504191938.4603.62771.stgit@srivatsabhat>
 In-Reply-To: <20120504191535.4603.83236.stgit@srivatsabhat>
 References: <20120504191535.4603.83236.stgit@srivatsabhat>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12050419-2000-0000-0000-0000075AD37D
+x-cbid: 12050419-2674-0000-0000-00000448037C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have 2 per-cpuset masks, namely user_cpus_allowed and
-cpus_allowed, implement the CPU Hotplug handling for cpusets.
-
-The cpuset update upon hotplug simplifies to:
-
-For any CPU hotplug event (online/offline), traverse the cpuset hierarchy
-top-down, doing:
-
-1. cpus_allowed mask = (user_cpus_allowed mask) & (cpu_active_mask)
-2. If the resulting cpus_allowed mask is empty,
-   cpus_allowed mask = parent cpuset's cpus_allowed mask
-   (Because of the top-down traversal, and the guarantee that the root cpuset
-    will always have online cpus, it is enough to copy the parent's
-    cpus_allowed mask.)
-3. No need to move tasks from one cpuset to another, during any CPU Hotplug
-   operation.
-
-This ensures that we are as close to the user's preference as possible,
-within the constraints imposed by CPU hotplug.
+Add documentation for the newly introduced cpuset.actual_cpus file and
+describe the new semantics for updating cpusets upon CPU hotplug.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Cc: stable@vger.kernel.org
 ---
 
- kernel/cpuset.c |   78 +++++++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 58 insertions(+), 20 deletions(-)
+ Documentation/cgroups/cpusets.txt |   43 +++++++++++++++++++++++++------------
+ 1 files changed, 29 insertions(+), 14 deletions(-)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 4bafbc4..c501a90 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -167,6 +167,7 @@ typedef enum {
+diff --git a/Documentation/cgroups/cpusets.txt b/Documentation/cgroups/cpusets.txt
+index cefd3d8..374b9d2 100644
+--- a/Documentation/cgroups/cpusets.txt
++++ b/Documentation/cgroups/cpusets.txt
+@@ -168,7 +168,12 @@ Each cpuset is represented by a directory in the cgroup file system
+ containing (on top of the standard cgroup files) the following
+ files describing that cpuset:
  
- /* the type of hotplug event */
- enum hotplug_event {
-+	CPUSET_CPU_ONLINE,
- 	CPUSET_CPU_OFFLINE,
- 	CPUSET_MEM_OFFLINE,
- };
-@@ -2056,11 +2057,10 @@ static void move_member_tasks_to_cpuset(struct cpuset *from, struct cpuset *to)
- }
+- - cpuset.cpus: list of CPUs in that cpuset
++ - cpuset.cpus: list of CPUs in that cpuset, as set by the user;
++		the kernel will not alter this upon CPU hotplug;
++		this file has read/write permissions
++ - cpuset.actual_cpus: list of CPUs actually available for the tasks in the
++                       cpuset; the kernel can change this in the event of
++		       CPU hotplug; this file is read-only
+  - cpuset.mems: list of Memory Nodes in that cpuset
+  - cpuset.memory_migrate flag: if set, move pages to cpusets nodes
+  - cpuset.cpu_exclusive flag: is cpu placement exclusive?
+@@ -640,16 +645,25 @@ prior 'cpuset.mems' setting, will not be moved.
  
- /*
-- * If CPU and/or memory hotplug handlers, below, unplug any CPUs
-- * or memory nodes, we need to walk over the cpuset hierarchy,
-- * removing that CPU or node from all cpusets.  If this removes the
-- * last CPU or node from a cpuset, then move the tasks in the empty
-- * cpuset to its next-highest non-empty parent.
-+ * If memory hotplug handlers, below, unplug any memory nodes, we need
-+ * to walk over the cpuset hierarchy, removing that node from all cpusets.
-+ * If this removes the last node from a cpuset, then move the tasks in
-+ * the empty cpuset to its next-highest non-empty parent.
-  *
-  * Called with cgroup_mutex held
-  * callback_mutex must not be held, as cpuset_attach() will take it.
-@@ -2079,11 +2079,10 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
- 
- 	/*
- 	 * Find its next-highest non-empty parent, (top cpuset
--	 * has online cpus, so can't be empty).
-+	 * has online cpus and memory node, so can't be empty).
- 	 */
- 	parent = cs->parent;
--	while (cpumask_empty(parent->cpus_allowed) ||
--			nodes_empty(parent->mems_allowed))
-+	while (nodes_empty(parent->mems_allowed))
- 		parent = parent->parent;
- 
- 	move_member_tasks_to_cpuset(cs, parent);
-@@ -2107,8 +2106,12 @@ static struct cpuset *traverse_cpusets(struct list_head *queue)
- 
- 
- /*
-- * Walk the specified cpuset subtree and look for empty cpusets.
-- * The tasks of such cpuset must be moved to a parent cpuset.
-+ * Walk the specified cpuset subtree upon a hotplug operation (CPU/Memory
-+ * online/offline) and update the cpusets accordingly.
-+ *
-+ * For CPU Hotplug, update the cpus_allowed mask of the cpuset such that
-+ * it has online cpus for the tasks in the cpuset to run on, without
-+ * deviating much from the user set preference for the cpuset.
-  *
-  * Called with cgroup_mutex held.  We take callback_mutex to modify
-  * cpus_allowed and mems_allowed.
-@@ -2119,7 +2122,8 @@ static struct cpuset *traverse_cpusets(struct list_head *queue)
-  *
-  * For now, since we lack memory hot unplug, we'll never see a cpuset
-  * that has tasks along with an empty 'mems'.  But if we did see such
-- * a cpuset, we'd handle it just like we do if its 'cpus' was empty.
-+ * a cpuset, we would move the tasks of such cpuset to a non-empty parent
-+ * cpuset.
-  */
- static void
- scan_cpusets_upon_hotplug(struct cpuset *root, enum hotplug_event event)
-@@ -2131,6 +2135,30 @@ scan_cpusets_upon_hotplug(struct cpuset *root, enum hotplug_event event)
- 	list_add_tail((struct list_head *)&root->stack_list, &queue);
- 
- 	switch (event) {
-+	case CPUSET_CPU_ONLINE:
-+		while (!list_empty(&queue)) {
-+			cp = traverse_cpusets(&queue);
+ There is an exception to the above.  If hotplug functionality is used
+ to remove all the CPUs that are currently assigned to a cpuset,
+-then all the tasks in that cpuset will be moved to the nearest ancestor
+-with non-empty cpus.  But the moving of some (or all) tasks might fail if
+-cpuset is bound with another cgroup subsystem which has some restrictions
+-on task attaching.  In this failing case, those tasks will stay
+-in the original cpuset, and the kernel will automatically update
+-their cpus_allowed to allow all online CPUs.  When memory hotplug
+-functionality for removing Memory Nodes is available, a similar exception
+-is expected to apply there as well.  In general, the kernel prefers to
+-violate cpuset placement, over starving a task that has had all
+-its allowed CPUs or Memory Nodes taken offline.
++then the cpuset hierarchy is traversed, searching for the nearest
++ancestor whose cpu mask has atleast one online cpu. Then the tasks in
++the empty cpuset will be run on the cpus specified in that ancestor's cpu mask.
++Note that during CPU hotplug operations, the tasks in a cpuset will not
++be moved from one cpuset to another; only the the cpu mask of that cpuset
++will be updated to ensure that there is atleast one online cpu, by trying
++to closely resemble the cpu mask of the nearest non-empty ancestor containing
++online cpus.
 +
-+			/*
-+			 * Continue past cpusets which don't need to be
-+			 * updated.
-+			 */
-+			if (cpumask_equal(cp->user_cpus_allowed,
-+							cp->cpus_allowed))
-+				continue;
-+
-+			/*
-+			 * Restore new CPU to this cpuset if it was
-+			 * originally present in this cpuset.
-+			 */
-+			mutex_lock(&callback_mutex);
-+			cpumask_and(cp->cpus_allowed,
-+				cp->user_cpus_allowed, cpu_active_mask);
-+			mutex_unlock(&callback_mutex);
-+
-+			update_tasks_cpumask(cp, NULL);
-+		}
-+		break;
- 	case CPUSET_CPU_OFFLINE:
- 		while (!list_empty(&queue)) {
- 			cp = traverse_cpusets(&queue);
-@@ -2141,15 +2169,22 @@ scan_cpusets_upon_hotplug(struct cpuset *root, enum hotplug_event event)
++When memory hotplug functionality for removing Memory Nodes is available,
++if all the memory nodes currently assigned to a cpuset are removed via
++hotplug, then all the tasks in that cpuset will be moved to the nearest
++ancestor with non-empty memory nodes. But the moving of some (or all)
++tasks might fail if cpuset is bound with another cgroup subsystem which
++has some restrictions on task attaching.  In this failing case, those
++tasks will stay in the original cpuset, and the kernel will automatically
++update their mems_allowed to allow all online nodes.
++In general, the kernel prefers to violate cpuset placement, over starving
++a task that has had all its allowed CPUs or Memory Nodes taken offline.
  
- 			/* Remove offline cpus from this cpuset. */
- 			mutex_lock(&callback_mutex);
--			cpumask_and(cp->cpus_allowed, cp->cpus_allowed,
--							cpu_active_mask);
-+			cpumask_and(cp->cpus_allowed,
-+				cp->user_cpus_allowed, cpu_active_mask);
- 			mutex_unlock(&callback_mutex);
+ There is a second exception to the above.  GFP_ATOMIC requests are
+ kernel internal allocations that must be satisfied, immediately.
+@@ -730,9 +744,10 @@ cgroup.event_control   cpuset.memory_spread_page
+ cgroup.procs           cpuset.memory_spread_slab
+ cpuset.cpu_exclusive   cpuset.mems
+ cpuset.cpus            cpuset.sched_load_balance
+-cpuset.mem_exclusive   cpuset.sched_relax_domain_level
+-cpuset.mem_hardwall    notify_on_release
+-cpuset.memory_migrate  tasks
++cpuset.actual_cpus     cpuset.sched_relax_domain_level
++cpuset.mem_exclusive   notify_on_release
++cpuset.mem_hardwall    tasks
++cpuset.memory_migrate
  
--			/* Move tasks from the empty cpuset to a parent */
-+			/*
-+			 * If cpuset is empty, copy parent cpuset's
-+			 * cpus_allowed mask. Because our traversal is
-+			 * top-down, and because the root cpuset will always
-+			 * have online cpus, it is sufficient to copy the
-+			 * parent cpuset's mask here.
-+			 */
- 			if (cpumask_empty(cp->cpus_allowed))
--				remove_tasks_in_empty_cpuset(cp);
--			else
--				update_tasks_cpumask(cp, NULL);
-+				cpumask_copy(cp->cpus_allowed,
-+						cp->parent->cpus_allowed);
-+
-+			update_tasks_cpumask(cp, NULL);
- 		}
- 		break;
- 
-@@ -2185,8 +2220,9 @@ scan_cpusets_upon_hotplug(struct cpuset *root, enum hotplug_event event)
-  * (of no affect) on systems that are actively using CPU hotplug
-  * but making no active use of cpusets.
-  *
-- * This routine ensures that top_cpuset.cpus_allowed tracks
-- * cpu_active_mask on each CPU hotplug (cpuhp) event.
-+ * This routine ensures that top_cpuset.user_cpus_allowed and
-+ * top_cpuset.cpus_allowed tracks cpu_active_mask on each CPU hotplug
-+ * (cpuhp) event.
-  *
-  * Called within get_online_cpus().  Needs to call cgroup_lock()
-  * before calling generate_sched_domains().
-@@ -2202,9 +2238,11 @@ void cpuset_update_active_cpus(bool cpu_online)
- 
- 	cgroup_lock();
- 	mutex_lock(&callback_mutex);
-+	cpumask_copy(top_cpuset.user_cpus_allowed, cpu_active_mask);
- 	cpumask_copy(top_cpuset.cpus_allowed, cpu_active_mask);
- 	mutex_unlock(&callback_mutex);
--	scan_cpusets_upon_hotplug(&top_cpuset, CPUSET_CPU_OFFLINE);
-+	scan_cpusets_upon_hotplug(&top_cpuset,
-+			cpu_online ? CPUSET_CPU_ONLINE : CPUSET_CPU_OFFLINE);
- 	ndoms = generate_sched_domains(&doms, &attr);
- 	cgroup_unlock();
- 
+ Reading them will give you information about the state of this cpuset:
+ the CPUs and Memory Nodes it can use, the processes that are using
 
