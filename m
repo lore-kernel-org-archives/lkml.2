@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760239Ab2EDVOn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:14:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932267Ab2EDUpY (ORCPT
+	id S932257Ab2EDUpU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:45:20 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932191Ab2EDUpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:45:24 -0400
-Message-Id: <20120504204226.438889916@linuxfoundation.org>
+	Fri, 4 May 2012 16:45:12 -0400
+Message-Id: <20120504204226.532718404@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:48 -0700
+Date: Fri, 04 May 2012 13:42:49 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
         Chris Wilson <chris@chris-wilson.co.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 24/75] drm/i915: fix integer overflow in i915_gem_execbuffer2()
+Subject: [ 25/75] drm/i915: fix integer overflow in i915_gem_do_execbuffer()
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,13 +28,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xi Wang <xi.wang@gmail.com>
 
-commit ed8cd3b2cd61004cab85380c52b1817aca1ca49b upstream.
+commit 44afb3a04391a74309d16180d1e4f8386fdfa745 upstream.
 
-On 32-bit systems, a large args->buffer_count from userspace via ioctl
+On 32-bit systems, a large args->num_cliprects from userspace via ioctl
 may overflow the allocation size, leading to out-of-bounds access.
 
-This vulnerability was introduced in commit 8408c282 ("drm/i915:
-First try a normal large kmalloc for the temporary exec buffers").
+This vulnerability was introduced in commit 432e58ed ("drm/i915: Avoid
+allocation for execbuffer object list").
 
 Signed-off-by: Xi Wang <xi.wang@gmail.com>
 Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
@@ -42,20 +42,22 @@ Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
 --- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
 +++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -1353,7 +1353,8 @@ i915_gem_execbuffer2(struct drm_device *
- 	struct drm_i915_gem_exec_object2 *exec2_list = NULL;
- 	int ret;
+@@ -1082,6 +1082,11 @@ i915_gem_do_execbuffer(struct drm_device
+ 			return -EINVAL;
+ 		}
  
--	if (args->buffer_count < 1) {
-+	if (args->buffer_count < 1 ||
-+	    args->buffer_count > UINT_MAX / sizeof(*exec2_list)) {
- 		DRM_ERROR("execbuf2 with %d buffers\n", args->buffer_count);
- 		return -EINVAL;
- 	}
++		if (args->num_cliprects > UINT_MAX / sizeof(*cliprects)) {
++			DRM_DEBUG("execbuf with %u cliprects\n",
++				  args->num_cliprects);
++			return -EINVAL;
++		}
+ 		cliprects = kmalloc(args->num_cliprects * sizeof(*cliprects),
+ 				    GFP_KERNEL);
+ 		if (cliprects == NULL) {
 
 
