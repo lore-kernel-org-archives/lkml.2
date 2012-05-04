@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642Ab2EDUrd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:47:33 -0400
+	id S932661Ab2EDUrk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:47:40 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:34670 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932605Ab2EDUrV (ORCPT
+	with ESMTP id S932644Ab2EDUre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:47:21 -0400
-Message-Id: <20120504204229.240075699@linuxfoundation.org>
+	Fri, 4 May 2012 16:47:34 -0400
+Message-Id: <20120504204230.261769848@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:21 -0700
+Date: Fri, 04 May 2012 13:43:33 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oleg Nesterov <oleg@redhat.com>
-Subject: [ 57/75] exit_signal: simplify the "we have changed execution domain" logic
+        alan@lxorguk.ukuu.org.uk, Dave Airlie <airlied@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 69/75] rtlwifi: Fix oops on unload
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,70 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit e636825346b36a07ccfc8e30946d52855e21f681 upstream.
+commit 44eb65cfd8da4b9c231238998729e858e963a980 upstream.
 
-exit_notify() checks "tsk->self_exec_id != tsk->parent_exec_id"
-to handle the "we have changed execution domain" case.
+Under some circumstances, a PCI-based driver reports the following OOPs:
 
-We can change do_thread() to always set ->exit_signal = SIGCHLD
-and remove this check to simplify the code.
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] Oops: 0000 [#1] SMP
+--snip--
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] Pid: 19627, comm: rmmod
+Not tainted 3.2.9-2.fc16.x86_64 #1 LENOVO 05962RU/05962RU
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] RIP:
+0010:[<ffffffffa0418d39>]  [<ffffffffa0418d39>]
+rtl92ce_get_desc+0x19/0xd0 [rtl8192ce]
+--snip--
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] Process rmmod (pid:
+19627, threadinfo ffff880050262000, task ffff8801156d5cc0)
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] Stack:
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011]  0000000000000002
+ffff8801176c2540 ffff880050263ca8 ffffffffa03348e7
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011]  0000000000000282
+0000000180150014 ffff880050263fd8 ffff8801176c2810
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011]  ffff880050263bc8
+ffffffff810550e2 00000000000002c0 ffff8801176c0d40
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] Call Trace:
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011]  [<ffffffffa03348e7>]
+_rtl_pci_rx_interrupt+0x187/0x650 [rtlwifi]
+--snip--
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] Code: ff 09 d0 89 07 48
+83 c4 08 5b 5d c3 66 0f 1f 44 00 00 55 48 89 e5 53 48 83 ec 08 66 66
+66 66 90 40 84 f6 89 d3 74 13 84 d2 75 57 <8b> 07 48 83 c4 08 5b 5d c1
+e8 1f c3 0f 1f 00 84 d2 74 ed 80 fa
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] RIP
+[<ffffffffa0418d39>] rtl92ce_get_desc+0x19/0xd0 [rtl8192ce]
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011]  RSP <ffff880050263b58>
+Mar 19 08:14:35 kvothe kernel: [ 6584.626011] CR2: 00000000000006e0
+Mar 19 08:14:35 kvothe kernel: [ 6584.646491] ---[ end trace
+8636c766dcfbe0e6 ]---
 
-We could change setup_new_exec() instead, this looks more logical
-because it increments ->self_exec_id. But note that de_thread()
-already resets ->exit_signal if it changes the leader, let's keep
-both changes close to each other.
+This oops is due to interrupts not being disabled in this particular path.
 
-Note that we change ->exit_signal lockless, this changes the rules.
-Thereafter ->exit_signal is not stable under tasklist but this is
-fine, the only possible change is OLDSIG -> SIGCHLD. This can race
-with eligible_child() but the race is harmless. We can race with
-reparent_leader() which changes our ->exit_signal in parallel, but
-it does the same change to SIGCHLD.
-
-The noticeable user-visible change is that the execing task is not
-"visible" to do_wait()->eligible_child(__WCLONE) right after exec.
-To me this looks more logical, and this is consistent with mt case.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Dave Airlie <airlied@gmail.com>
+Tested-by: Dave Airlie <airlied@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/exec.c     |    3 +++
- kernel/exit.c |    7 +------
- 2 files changed, 4 insertions(+), 6 deletions(-)
+ drivers/net/wireless/rtlwifi/pci.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -975,6 +975,9 @@ static int de_thread(struct task_struct
- 	sig->notify_count = 0;
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -1955,6 +1955,7 @@ void rtl_pci_disconnect(struct pci_dev *
+ 		rtl_deinit_deferred_work(hw);
+ 		rtlpriv->intf_ops->adapter_stop(hw);
+ 	}
++	rtlpriv->cfg->ops->disable_interrupt(hw);
  
- no_thread_group:
-+	/* we have changed execution domain */
-+	tsk->exit_signal = SIGCHLD;
-+
- 	if (current->mm)
- 		setmax_mm_hiwater_rss(&sig->maxrss, current->mm);
- 
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -827,14 +827,9 @@ static void exit_notify(struct task_stru
- 	 * If the parent exec id doesn't match the exec id we saved
- 	 * when we started then we know the parent has changed security
- 	 * domain.
--	 *
--	 * If our self_exec id doesn't match our parent_exec_id then
--	 * we have changed execution domain as these two values started
--	 * the same after a fork.
- 	 */
- 	if (thread_group_leader(tsk) && tsk->exit_signal != SIGCHLD &&
--	    (tsk->parent_exec_id != tsk->real_parent->self_exec_id ||
--	     tsk->self_exec_id != tsk->parent_exec_id))
-+	    tsk->parent_exec_id != tsk->real_parent->self_exec_id)
- 		tsk->exit_signal = SIGCHLD;
- 
- 	if (unlikely(tsk->ptrace)) {
+ 	/*deinit rfkill */
+ 	rtl_deinit_rfkill(hw);
 
 
