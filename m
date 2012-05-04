@@ -1,263 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760502Ab2EDWlm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 18:41:42 -0400
-Received: from smtp-vbr14.xs4all.nl ([194.109.24.34]:4563 "EHLO
-	smtp-vbr14.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757910Ab2EDWlk (ORCPT
+	id S1760514Ab2EDWny (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 18:43:54 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45646 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760481Ab2EDWnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 18:41:40 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: manjunatha_halli@ti.com
-Subject: Re: [PATCH V4 4/5] Media: Update docs for V4L2 FM new features
-Date: Sat, 5 May 2012 00:41:34 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4.0-rc3-tschai; KDE/4.7.4; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Manjunatha Halli <x0130808@ti.com>
-References: <1336164542-11014-1-git-send-email-manjunatha_halli@ti.com> <1336164542-11014-5-git-send-email-manjunatha_halli@ti.com>
-In-Reply-To: <1336164542-11014-5-git-send-email-manjunatha_halli@ti.com>
+	Fri, 4 May 2012 18:43:53 -0400
+Date: Fri, 4 May 2012 23:43:18 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Wookey <wookey@wookware.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        linaro-dev@lists.linaro.org, Jason Cooper <jason@lakedaemon.net>,
+        Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
+        Tony Lindgren <tony@atomide.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Making ARM multiplatform kernels DT-only?
+Message-ID: <20120504224318.GL897@n2100.arm.linux.org.uk>
+References: <201205031350.35476.arnd@arndb.de> <CAK2p4sJj7FRVSStVkqmn16sUv8S3vHmUYCU_VzTWAWzqV5yVsg@mail.gmail.com> <20120504142057.GQ27023@stoneboat.aleph1.co.uk> <20120504143518.GF26481@n2100.arm.linux.org.uk> <CACRpkdZ3m=PXg35==3wo2xHPL7TRn1W0AX_CeMKjPd1U+pTAGQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205050041.34232.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZ3m=PXg35==3wo2xHPL7TRn1W0AX_CeMKjPd1U+pTAGQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Almost perfect :-)
-
-Just a few things below and one I noticed in the first patch where you set
-the maximum length of the various string controls to 0xffff. I wouldn't do
-that: the control framework will actually allocate 2 * (maximum + 1) bytes of
-memory for each string control. It wastes a lot of memory and nobody is ever
-going to pass in a program name that long.
-
-On Fri May 4 2012 22:49:01 manjunatha_halli@ti.com wrote:
-> From: Manjunatha Halli <x0130808@ti.com>
+On Fri, May 04, 2012 at 10:03:40PM +0200, Linus Walleij wrote:
+> On Fri, May 4, 2012 at 4:35 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
 > 
-> The list of new features -
-> 	1) New control class for FM RX
-> 	2) New FM RX CID's - De-Emphasis filter mode and RDS AF switch
-> 	3) New FM TX CID - RDS Alternate frequency set.
+> > Well, my understanding is that there's DT patches around for Versatile.
 > 
-> Signed-off-by: Manjunatha Halli <x0130808@ti.com>
-> ---
->  Documentation/DocBook/media/v4l/compat.xml         |    3 +
->  Documentation/DocBook/media/v4l/controls.xml       |   77 ++++++++++++++++++++
->  Documentation/DocBook/media/v4l/dev-rds.xml        |    5 +-
->  .../DocBook/media/v4l/vidioc-g-ext-ctrls.xml       |    7 ++
->  .../DocBook/media/v4l/vidioc-s-hw-freq-seek.xml    |   35 +++++++++-
->  5 files changed, 124 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/DocBook/media/v4l/compat.xml b/Documentation/DocBook/media/v4l/compat.xml
-> index bce97c5..df1f345 100644
-> --- a/Documentation/DocBook/media/v4l/compat.xml
-> +++ b/Documentation/DocBook/media/v4l/compat.xml
-> @@ -2311,6 +2311,9 @@ more information.</para>
->  	  <para>Added FM Modulator (FM TX) Extended Control Class: <constant>V4L2_CTRL_CLASS_FM_TX</constant> and their Control IDs.</para>
->  	</listitem>
->  	<listitem>
-> +	<para>Added FM Receiver (FM RX) Extended Control Class: <constant>V4L2_CTRL_CLASS_FM_RX</constant> and their Control IDs.</para>
-> +	</listitem>
-> +	<listitem>
->  	  <para>Added Remote Controller chapter, describing the default Remote Controller mapping for media devices.</para>
->  	</listitem>
->        </orderedlist>
-> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-> index b84f25e..b831dd7 100644
-> --- a/Documentation/DocBook/media/v4l/controls.xml
-> +++ b/Documentation/DocBook/media/v4l/controls.xml
-> @@ -3018,6 +3018,12 @@ to find receivers which can scroll strings sized as 32 x N or 64 x N characters.
->  with steps of 32 or 64 characters. The result is it must always contain a string with size multiple of 32 or 64. </entry>
->  	  </row>
->  	  <row>
-> +	  <entry spanname="id"><constant>V4L2_CID_RDS_TX_AF_FREQ</constant>&nbsp;</entry>
-> +	  <entry>integer</entry>
-> +	  </row>
-> +	  <row><entry spanname="descr">Sets the RDS Alternate Frequency value which allows a receiver to re-tune to a different frequency providing the same station when the first signal becomes too weak (e.g., when moving out of range). </entry>
-> +	  </row>
-> +	  <row>
->  	    <entry spanname="id"><constant>V4L2_CID_AUDIO_LIMITER_ENABLED</constant>&nbsp;</entry>
->  	    <entry>boolean</entry>
->  	  </row>
-> @@ -3146,6 +3152,77 @@ manually or automatically if set to zero. Unit, range and step are driver-specif
->  <xref linkend="en50067" /> document, from CENELEC.</para>
->      </section>
->  
-> +    <section id="fm-rx-controls">
-> +      <title>FM Receiver Control Reference</title>
-> +
-> +      <para>The FM Receiver (FM_RX) class includes controls for common features of
-> +FM Reception capable devices.</para>
-> +
-> +      <table pgwide="1" frame="none" id="fm-rx-control-id">
-> +      <title>FM_RX Control IDs</title>
-> +
-> +      <tgroup cols="4">
-> +        <colspec colname="c1" colwidth="1*" />
-> +        <colspec colname="c2" colwidth="6*" />
-> +        <colspec colname="c3" colwidth="2*" />
-> +        <colspec colname="c4" colwidth="6*" />
-> +        <spanspec namest="c1" nameend="c2" spanname="id" />
-> +        <spanspec namest="c2" nameend="c4" spanname="descr" />
-> +        <thead>
-> +          <row>
-> +            <entry spanname="id" align="left">ID</entry>
-> +            <entry align="left">Type</entry>
-> +          </row><row rowsep="1"><entry spanname="descr" align="left">Description</entry>
-> +          </row>
-> +        </thead>
-> +        <tbody valign="top">
-> +          <row><entry></entry></row>
-> +          <row>
-> +            <entry spanname="id"><constant>V4L2_CID_FM_RX_CLASS</constant>&nbsp;</entry>
-> +            <entry>class</entry>
-> +          </row><row><entry spanname="descr">The FM_RX class
-> +descriptor. Calling &VIDIOC-QUERYCTRL; for this control will return a
-> +description of this control class.</entry>
-> +          </row>
-> +          <row>
-> +            <entry spanname="id"><constant>V4L2_CID_RDS_AF_SWITCH</constant>&nbsp;</entry>
-> +            <entry>boolean</entry>
-> +          </row>
-> +          <row><entry spanname="descr">Enable or Disable the RDS Alternate frequency feature. When enabled the driver will decode the RDS AF field and tries to switch to this AF frequency once the current frequency RSSI level goes below the threshold. If the frequency is switched, then &VIDIOC-G-FREQUENCY; will return the new frequency.</entry>
+> Is there? There is some in-tree stuff, but haven't seen any other
+> sign of patches.
+>[...]
+> make it clear that noone ever tested an MMC card on a Versatile
+> booted on real hardware using DT. And I strongly suspect there
+> are more instances like that, it seems AACI, GPIO and I2C and
+> I guess whatever you cannot test on QEMU is just unsupported.
 
-You will need to explain 'RSSI' here. It's not an abbreviation everyone will know.
+Given that we've converted stuff like MMCI to use DT, it _should_ be
+the case that we can just add the appropriate DT description to the
+existing Versatile DT - we might need to create some new GPIO devices
+for things like SYSMCI and get rid of the status function, or we
+could just use the auxdata stuff in the mean time.
 
-> +          </row>
-> +          <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_TUNE_DEEMPHASIS</constant>&nbsp;</entry>
-> +	    <entry>integer</entry>
-> +	  </row>
-> +	  <row id="v4l2-deemphasis"><entry spanname="descr">Configures the de-emphasis value for reception.
-> +A pre-emphasis filter is applied to the broadcast to accentuate the high audio frequencies.
-> +Depending on the region, a time constant of either 50 or 75 useconds is used. The enum&nbsp;v4l2_preemphasis
-> +defines possible values for pre-emphasis. Here they are:</entry>
-> +	</row><row>
-> +	<entrytbl spanname="descr" cols="2">
-> +		  <tbody valign="top">
-> +		    <row>
-> +		      <entry><constant>V4L2_PREEMPHASIS_DISABLED</constant>&nbsp;</entry>
-> +		      <entry>No de-emphasis is applied.</entry>
-> +		    </row>
-> +		    <row>
-> +		      <entry><constant>V4L2_PREEMPHASIS_50_uS</constant>&nbsp;</entry>
-> +		      <entry>A de-emphasis of 50 uS is used.</entry>
-> +		    </row>
-> +		    <row>
-> +		      <entry><constant>V4L2_PREEMPHASIS_75_uS</constant>&nbsp;</entry>
-> +		      <entry>A de-emphasis of 75 uS is used.</entry>
-> +		    </row>
-> +		  </tbody>
-> +		</entrytbl>
-> +
-> +	  </row>
-> +          <row><entry></entry></row>
-> +        </tbody>
-> +      </tgroup>
-> +      </table>
-> +
-> +      </section>
->      <section id="flash-controls">
->        <title>Flash Control Reference</title>
->  
-> diff --git a/Documentation/DocBook/media/v4l/dev-rds.xml b/Documentation/DocBook/media/v4l/dev-rds.xml
-> index 38883a4..8188161 100644
-> --- a/Documentation/DocBook/media/v4l/dev-rds.xml
-> +++ b/Documentation/DocBook/media/v4l/dev-rds.xml
-> @@ -55,8 +55,9 @@ If the driver only passes RDS blocks without interpreting the data
->  the <constant>V4L2_TUNER_CAP_RDS_BLOCK_IO</constant> flag has to be set. If the
->  tuner is capable of handling RDS entities like program identification codes and radio
->  text, the flag <constant>V4L2_TUNER_CAP_RDS_CONTROLS</constant> should be set,
-> -see <link linkend="writing-rds-data">Writing RDS data</link> and
-> -<link linkend="fm-tx-controls">FM Transmitter Control Reference</link>.</para>
-> +see <link linkend="writing-rds-data">Writing RDS data</link>,
-> +<link linkend="fm-tx-controls">FM Transmitter Control Reference</link>
-> +<link linkend="fm-rx-controls">FM Receiver Control Reference</link>.</para>
->    </section>
->  
->    <section  id="reading-rds-data">
-> diff --git a/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml b/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
-> index b17a7aa..2a8b44e 100644
-> --- a/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
-> +++ b/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
-> @@ -258,6 +258,13 @@ These controls are described in <xref
->  These controls are described in <xref
->  		linkend="fm-tx-controls" />.</entry>
->  	  </row>
-> +          <row>
-> +            <entry><constant>V4L2_CTRL_CLASS_FM_RX</constant></entry>
-> +             <entry>0x9c0000</entry>
-> +             <entry>The class containing FM Receiver (FM RX) controls.
-> +These controls are described in <xref
-> +                 linkend="fm-rx-controls" />.</entry>
-> +           </row>
->  	  <row>
->  	    <entry><constant>V4L2_CTRL_CLASS_FLASH</constant></entry>
->  	    <entry>0x9c0000</entry>
-> diff --git a/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml b/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml
-> index 18b1a82..14df36b 100644
-> --- a/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml
-> +++ b/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml
-> @@ -95,7 +95,12 @@ field and the &v4l2-tuner; <structfield>index</structfield> field.</entry>
->  	  </row>
->  	  <row>
->  	    <entry>__u32</entry>
-> -	    <entry><structfield>reserved</structfield>[7]</entry>
-> +	    <entry><structfield>band</structfield></entry>
-> +	    <entry>Configure the FM chip to a specific band before starting seek operation. Please refer table 'Radio Band Types'.</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entry>__u32</entry>
-> +	    <entry><structfield>reserved</structfield>[6]</entry>
->  	    <entry>Reserved for future extensions. Applications
->  	    must set the array to zero.</entry>
->  	  </row>
-> @@ -103,6 +108,34 @@ field and the &v4l2-tuner; <structfield>index</structfield> field.</entry>
->        </tgroup>
->      </table>
->    </refsect1>
-> +    <table pgwide="1" frame="none" id="Radio band Types">
-> +      <title>Radio Band Types</title>
-> +      <tgroup cols="2">
-> +	&cs-str;
-> +	<tbody valign="top">
-> +		    <row>
-> +		      <entry><constant>FM_BAND_TYPE_ALL</constant>&nbsp;</entry>
-> +		      <entry>All Bands from 65.8 MHz till 108 Mhz or 162.55 MHz if weather band.</entry>
-> +		    </row>
+Either way, we've solved these problems on other platforms, and the
+shared code has already been fixed or is being fixed for stuff like
+Versatile Express.
 
-Hmm, I have to thing about that name. And about other related issues as well:
-what to do if a band isn't supported? How does an application know which bands are
-in fact supported?
+Lets also not forget that the VIC code has already been converted to
+DT.
 
-It's too late and I'll have to think about this tomorrow.
-
-Regards,
-
-	Hans
-
-> +		    <row>
-> +		      <entry><constant>FM_BAND_TYPE_EUROPE_US</constant>&nbsp;</entry>
-> +		      <entry>Europe or US band(87.5 Mhz - 108 MHz).</entry>
-> +		    </row>
-> +		    <row>
-> +		      <entry><constant>FM_BAND_TYPE_JAPAN</constant>&nbsp;</entry>
-> +		      <entry>Japan band(76 MHz - 90 MHz).</entry>
-> +		    </row>
-> +		    <row>
-> +		      <entry><constant>FM_BAND_TYPE_RUSSIAN</constant>&nbsp;</entry>
-> +		      <entry>OIRT or Russian band(65.8 MHz - 74 MHz).</entry>
-> +		    </row>
-> +		    <row>
-> +		      <entry><constant>FM_BAND_TYPE_WEATHER</constant>&nbsp;</entry>
-> +		      <entry>Weather band(162.4 MHz - 162.55 MHz).</entry>
-> +		    </row>
-> +	</tbody>
-> +      </tgroup>
-> +    </table>
->  
->    <refsect1>
->      &return-value;
-> 
+So I don't think there's a big problem here - I think most of the
+pieces of the jigsaw are in place through converting other platforms.
