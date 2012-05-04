@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337Ab2EDUpl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:45:41 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:45099 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932296Ab2EDUpd (ORCPT
+	id S1760203Ab2EDVNj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:13:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932325Ab2EDUpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:45:33 -0400
-Message-Id: <20120504204226.964535874@linuxfoundation.org>
+	Fri, 4 May 2012 16:45:40 -0400
+Message-Id: <20120504204227.291450069@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:54 -0700
+Date: Fri, 04 May 2012 13:42:58 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrey Rahmatullin <wrar@wrar.name>,
-        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>
-Subject: [ 30/75] USB: EHCI: fix crash during suspend on ASUS computers
+        alan@lxorguk.ukuu.org.uk, Michael Tokarev <mjt@tls.msk.ru>,
+        David Miller <davem@davemloft.net>, Ian Kent <raven@themaw.net>,
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: [ 34/75] pipes: add a "packetized pipe" mode for writing
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,88 +26,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 151b61284776be2d6f02d48c23c3625678960b97 upstream.
+commit 9883035ae7edef3ec62ad215611cb8e17d6a1a5d upstream.
 
-This patch (as1545) fixes a problem affecting several ASUS computers:
-The machine crashes or corrupts memory when going into suspend if the
-ehci-hcd driver is bound to any controllers.  Users have been forced
-to unbind or unload ehci-hcd before putting their systems to sleep.
+The actual internal pipe implementation is already really about
+individual packets (called "pipe buffers"), and this simply exposes that
+as a special packetized mode.
 
-After extensive testing, it was determined that the machines don't
-like going into suspend when any EHCI controllers are in the PCI D3
-power state.  Presumably this is a firmware bug, but there's nothing
-we can do about it except to avoid putting the controllers in D3
-during system sleep.
+When we are in the packetized mode (marked by O_DIRECT as suggested by
+Alan Cox), a write() on a pipe will not merge the new data with previous
+writes, so each write will get a pipe buffer of its own.  The pipe
+buffer is then marked with the PIPE_BUF_FLAG_PACKET flag, which in turn
+will tell the reader side to break the read at that boundary (and throw
+away any partial packet contents that do not fit in the read buffer).
 
-The patch adds a new flag to indicate whether the problem is present,
-and avoids changing the controller's power state if the flag is set.
-Runtime suspend is unaffected; this matters only for system suspend.
-However as a side effect, the controller will not respond to remote
-wakeup requests while the system is asleep.  Hence USB wakeup is not
-functional -- but of course, this is already true in the current state
-of affairs.
+End result: as long as you do writes less than PIPE_BUF in size (so that
+the pipe doesn't have to split them up), you can now treat the pipe as a
+packet interface, where each read() system call will read one packet at
+a time.  You can just use a sufficiently big read buffer (PIPE_BUF is
+sufficient, since bigger than that doesn't guarantee atomicity anyway),
+and the return value of the read() will naturally give you the size of
+the packet.
 
-This fixes Bugzilla #42728.
+NOTE! We do not support zero-sized packets, and zero-sized reads and
+writes to a pipe continue to be no-ops.  Also note that big packets will
+currently be split at write time, but that the size at which that
+happens is not really specified (except that it's bigger than PIPE_BUF).
+Currently that limit is the system page size, but we might want to
+explicitly support bigger packets some day.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Steven Rostedt <rostedt@goodmis.org>
-Tested-by: Andrey Rahmatullin <wrar@wrar.name>
-Tested-by: Oleksij Rempel (fishor) <bug-track@fisher-privat.net>
+The main user for this is going to be the autofs packet interface,
+allowing us to stop having to care so deeply about exact packet sizes
+(which have had bugs with 32/64-bit compatibility modes).  But user
+space can create packetized pipes with "pipe2(fd, O_DIRECT)", which will
+fail with an EINVAL on kernels that do not support this interface.
+
+Tested-by: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: David Miller <davem@davemloft.net>
+Cc: Ian Kent <raven@themaw.net>
+Cc: Thomas Meyer <thomas@m3y3r.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hcd-pci.c  |    9 +++++++++
- drivers/usb/host/ehci-pci.c |    8 ++++++++
- include/linux/usb/hcd.h     |    2 ++
- 3 files changed, 19 insertions(+)
+ fs/pipe.c                 |   31 +++++++++++++++++++++++++++++--
+ include/linux/pipe_fs_i.h |    1 +
+ 2 files changed, 30 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -491,6 +491,15 @@ static int hcd_pci_suspend_noirq(struct
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -345,6 +345,16 @@ static const struct pipe_buf_operations
+ 	.get = generic_pipe_buf_get,
+ };
  
- 	pci_save_state(pci_dev);
- 
-+	/*
-+	 * Some systems crash if an EHCI controller is in D3 during
-+	 * a sleep transition.  We have to leave such controllers in D0.
-+	 */
-+	if (hcd->broken_pci_sleep) {
-+		dev_dbg(dev, "Staying in PCI D0\n");
-+		return retval;
-+	}
++static const struct pipe_buf_operations packet_pipe_buf_ops = {
++	.can_merge = 0,
++	.map = generic_pipe_buf_map,
++	.unmap = generic_pipe_buf_unmap,
++	.confirm = generic_pipe_buf_confirm,
++	.release = anon_pipe_buf_release,
++	.steal = generic_pipe_buf_steal,
++	.get = generic_pipe_buf_get,
++};
 +
- 	/* If the root hub is dead rather than suspended, disallow remote
- 	 * wakeup.  usb_hc_died() should ensure that both hosts are marked as
- 	 * dying, so we only need to check the primary roothub.
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -144,6 +144,14 @@ static int ehci_pci_setup(struct usb_hcd
- 			hcd->has_tt = 1;
- 			tdi_reset(ehci);
- 		}
-+		if (pdev->subsystem_vendor == PCI_VENDOR_ID_ASUSTEK) {
-+			/* EHCI #1 or #2 on 6 Series/C200 Series chipset */
-+			if (pdev->device == 0x1c26 || pdev->device == 0x1c2d) {
-+				ehci_info(ehci, "broken D3 during system sleep on ASUS\n");
-+				hcd->broken_pci_sleep = 1;
-+				device_set_wakeup_capable(&pdev->dev, false);
+ static ssize_t
+ pipe_read(struct kiocb *iocb, const struct iovec *_iov,
+ 	   unsigned long nr_segs, loff_t pos)
+@@ -406,6 +416,13 @@ redo:
+ 			ret += chars;
+ 			buf->offset += chars;
+ 			buf->len -= chars;
++
++			/* Was it a packet buffer? Clean up and exit */
++			if (buf->flags & PIPE_BUF_FLAG_PACKET) {
++				total_len = chars;
++				buf->len = 0;
 +			}
-+		}
- 		break;
- 	case PCI_VENDOR_ID_TDI:
- 		if (pdev->device == PCI_DEVICE_ID_TDI_EHCI) {
---- a/include/linux/usb/hcd.h
-+++ b/include/linux/usb/hcd.h
-@@ -126,6 +126,8 @@ struct usb_hcd {
- 	unsigned		wireless:1;	/* Wireless USB HCD */
- 	unsigned		authorized_default:1;
- 	unsigned		has_tt:1;	/* Integrated TT in root hub */
-+	unsigned		broken_pci_sleep:1;	/* Don't put the
-+			controller in PCI-D3 for system sleep */
++
+ 			if (!buf->len) {
+ 				buf->ops = NULL;
+ 				ops->release(pipe, buf);
+@@ -458,6 +475,11 @@ redo:
+ 	return ret;
+ }
  
- 	int			irq;		/* irq allocated */
- 	void __iomem		*regs;		/* device memory/io */
++static inline int is_packetized(struct file *file)
++{
++	return (file->f_flags & O_DIRECT) != 0;
++}
++
+ static ssize_t
+ pipe_write(struct kiocb *iocb, const struct iovec *_iov,
+ 	    unsigned long nr_segs, loff_t ppos)
+@@ -592,6 +614,11 @@ redo2:
+ 			buf->ops = &anon_pipe_buf_ops;
+ 			buf->offset = 0;
+ 			buf->len = chars;
++			buf->flags = 0;
++			if (is_packetized(filp)) {
++				buf->ops = &packet_pipe_buf_ops;
++				buf->flags = PIPE_BUF_FLAG_PACKET;
++			}
+ 			pipe->nrbufs = ++bufs;
+ 			pipe->tmp_page = NULL;
+ 
+@@ -1012,7 +1039,7 @@ struct file *create_write_pipe(int flags
+ 		goto err_dentry;
+ 	f->f_mapping = inode->i_mapping;
+ 
+-	f->f_flags = O_WRONLY | (flags & O_NONBLOCK);
++	f->f_flags = O_WRONLY | (flags & (O_NONBLOCK | O_DIRECT));
+ 	f->f_version = 0;
+ 
+ 	return f;
+@@ -1056,7 +1083,7 @@ int do_pipe_flags(int *fd, int flags)
+ 	int error;
+ 	int fdw, fdr;
+ 
+-	if (flags & ~(O_CLOEXEC | O_NONBLOCK))
++	if (flags & ~(O_CLOEXEC | O_NONBLOCK | O_DIRECT))
+ 		return -EINVAL;
+ 
+ 	fw = create_write_pipe(flags);
+--- a/include/linux/pipe_fs_i.h
++++ b/include/linux/pipe_fs_i.h
+@@ -8,6 +8,7 @@
+ #define PIPE_BUF_FLAG_LRU	0x01	/* page is on the LRU */
+ #define PIPE_BUF_FLAG_ATOMIC	0x02	/* was atomically mapped */
+ #define PIPE_BUF_FLAG_GIFT	0x04	/* page is a gift */
++#define PIPE_BUF_FLAG_PACKET	0x08	/* read() as a packet */
+ 
+ /**
+  *	struct pipe_buffer - a linux kernel pipe buffer
 
 
