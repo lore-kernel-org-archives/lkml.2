@@ -1,74 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750871Ab2EDEUL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 00:20:11 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40360 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab2EDEUK (ORCPT
+	id S1751049Ab2EDE0w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 00:26:52 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59724 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759Ab2EDE0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 00:20:10 -0400
-Message-ID: <4FA358ED.1080705@gmail.com>
-Date: Fri, 04 May 2012 14:19:57 +1000
-From: Francois Rigaut <frigaut@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 4 May 2012 00:26:51 -0400
+X-AuditID: 9c930197-b7badae000000cfd-bf-4fa35a881fa9
+Message-ID: <4FA35A85.4070804@kernel.org>
+Date: Fri, 04 May 2012 13:26:45 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Nico Schottelius <nico-linux-20120419@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Linux Support for Thunderbolt using Apple Monitor
-References: <20120419163800.GB13977@schottelius.org> <CAMVeQ8r_3vuAxzbLyKoecOHOOGijUDkLfw+MK7o-WoWbuOGSrg@mail.gmail.com> <20120502163629.GE928@schottelius.org> <20120502202509.GA26798@kroah.com> <20120503065003.GB13386@schottelius.org> <CAMVeQ8qYu4bShd_+pwRv8bShhusJMDa-jjoqu7EujS4jt7RSNA@mail.gmail.com> <20120503153547.GD20334@kroah.com> <CAMVeQ8q3PMMGmFSgrnqbW2HVdfmN+LgatX3TSfv5_2Ebuuj=QQ@mail.gmail.com> <20120503233858.GA13453@kroah.com>
-In-Reply-To: <20120503233858.GA13453@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: Pekka Enberg <penberg@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 3/3] vmevent: Implement special low-memory attribute
+References: <20120501132409.GA22894@lizard> <20120501132620.GC24226@lizard>
+In-Reply-To: <20120501132620.GC24226@lizard>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg, Nico,
+On 05/01/2012 10:26 PM, Anton Vorontsov wrote:
 
-Thanks Greg for giving us some attention. I went ahead and collected a 
-number of information that could be useful to track down our hotplug issue.
+> This is specially "blended" attribute, the event triggers when kernel
+> decides that we're close to the low memory threshold. Userspace should
+> not expect very precise meaning of low memory situation, mostly, it's
+> just a guess on the kernel's side.
+> 
+> Well, this is the same as userland should not know or care how exactly
+> kernel manages the memory, or assume that memory management behaviour
+> is a part of the "ABI". So, all the 'low memory' is just guessing, but
+> we're trying to do our best. It might be that we will end up with two
+> or three variations of 'low memory' thresholds, and all of them would
 
-1) Coldplug: Booting with the thunderbolt display attached. This works. 
-Several devices (additional to what I get without the display attached) 
-are listed. Here is the relevant info:
 
-http://maumae.net/thunderbolt/coldplug_efi/log  -> kernel.log
-http://maumae.net/thunderbolt/coldplug_efi/lspci -> lspci and lspci -vv
-http://maumae.net/thunderbolt/coldplug_efi/lsmod
-http://maumae.net/thunderbolt/coldplug_efi/config_excerpt.txt
-full config @ http://maumae.net/thunderbolt/config.gz
-http://maumae.net/thunderbolt/coldplug_efi/disconnect -> message when 
-disconnecting (pciehp loaded just before)
+First of all, your calculation for available pages is very simple and 
+it's very specific of recent mobile phone.
+But recent systems have various devices.
+For example,
 
-note that an attempt to reconnect leads to the same issue as described 
-before, i.e. nothing happens.
+SSD : very fast server SSD which has lots of internal ram so that write is very fast.
+thumb usb : very slow whihc has small ram 
 
-2) Booting with the display/device not plugged, just for reference:
+1) We can consider anon pages and dirty pages as available pages.
 
-http://maumae.net/thunderbolt/notplugged_efi/log
-http://maumae.net/thunderbolt/notplugged_efi/lsmod
-http://maumae.net/thunderbolt/notplugged_efi/misc
-http://maumae.net/thunderbolt/notplugged_efi/lspci
+       	SSD 	thumb usb	
+rootfs 	 0
+swap	 0
 
-3) Again, I have tried to load pciehp and acpiphp with both EFI boot and 
-BIOS emulation boot:
-- pciehp loads ok but as I said earlier, no message whatsoever in 
-everything.log when I try to connect the thunderbolt display
-- acpiphp: I was wrong yesterday. In fact, trying to load acpiphp gives 
-me a message:
-[root@poliahu thunderbolt]# modprobe acpiphp
-ERROR: could not insert 'acpiphp': No such device
+2) We can consider anon pages as available pages but dirty page doesn't
 
-Not sure what to make of it. I have tried to also load acpiphp after a 
-coldplug boot; same error message.
+       	SSD 	thumb usb	
+rootfs		   O 	 
+swap	 0
 
-I've read somewhere that this error message may mean that the h/w 
-doesn't support hotplugging. However, I think the coldplug lspci -vv 
-above tells us the h/w does support pcie hotplug: all the pci bridges 
-appear to have D3hot+ capability (and it certainly does, as this works 
-under osx on the same machine).
+3) We can consider dirty pages as available pages but anon doesn't
 
-Any suggestion are welcome! Thanks.
-Francois
+       	SSD 	thumb usb	
+rootfs 	 O
+swap	 	   O
 
+4) We can't consider dirty pages and anon pages as available pages
+
+       	SSD 	thumb usb	
+rootfs 	 	   0
+swap	 	   0
+
+5) If we use zram as swap?
+6) Another idea. If we use both zram and swap device(eMMC), then when zram is full,
+   we writes zram pages into swap device with align cluster size?
+
+I mean we can select various option to define low memory state.
+
+> be useful for different use cases.
+
+
+Why should we do it in kernel side?
+If vmevent will have VMEVENT_ATTR_[FILE|MOCK|DIRTY|WRITEBACK|SHMEM|ANON|SWAP]_PAGES
+and so on which is needed by calculation, we can calculate it in userspace without
+forking /proc/vmstat to see it. So I think there is no problem to do it in userspace.
+
+And even though we can solve above problem, it is possible to show up another new "blended" attribute
+in future and it will suffer same problem, again. So IMHO, let's leave vmevent as it is which is 
+very raw attribute and let's do blended attribute in user space.
+
+> 
+> For this implementation, we assume that there's a low memory situation
+> for the N pages threshold when we have neither N pages of completely
+> free pages, nor we have N reclaimable pages in the cache. This
+> effectively means, that if userland expects to allocate N pages, it
+> would consume all the free pages, and any further allocations (above
+> N) would start draining caches.
+> 
+> In the worst case, prior to hitting the threshold, we might have only
+> N pages in cache, and nearly no memory as free pages.
+> 
+> The same 'low memory' meaning is used in the current Android Low
+> Memory Killer driver.
+> 
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> ---
+>  include/linux/vmevent.h              |    7 ++++++
+>  mm/vmevent.c                         |   40 ++++++++++++++++++++++++++++++++++
+>  tools/testing/vmevent/vmevent-test.c |   12 +++++++++-
+>  3 files changed, 58 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/vmevent.h b/include/linux/vmevent.h
+> index aae0d24..9bfa244 100644
+> --- a/include/linux/vmevent.h
+> +++ b/include/linux/vmevent.h
+> @@ -10,6 +10,13 @@ enum {
+>  	VMEVENT_ATTR_NR_AVAIL_PAGES	= 1UL,
+>  	VMEVENT_ATTR_NR_FREE_PAGES	= 2UL,
+>  	VMEVENT_ATTR_NR_SWAP_PAGES	= 3UL,
+> +	/*
+> +	 * This is specially blended attribute, the event triggers
+> +	 * when kernel decides that we're close to the low memory threshold.
+> +	 * Don't expect very precise meaning of low memory situation, mostly,
+> +	 * it's just a guess on the kernel's side.
+> +	 */
+> +	VMEVENT_ATTR_LOWMEM_PAGES	= 4UL,
+>  
+>  	VMEVENT_ATTR_MAX		/* non-ABI */
+>  };
+> diff --git a/mm/vmevent.c b/mm/vmevent.c
+> index b312236..d278a25 100644
+> --- a/mm/vmevent.c
+> +++ b/mm/vmevent.c
+> @@ -68,10 +68,50 @@ static u64 vmevent_attr_avail_pages(struct vmevent_watch *watch,
+>  	return totalram_pages;
+>  }
+>  
+> +/*
+> + * Here's some implementation details for the "low memory" meaning.
+> + *
+> + * (The explanation is not in the header file as userland should not
+> + * know these details, nor it should assume that the meaning will
+> + * always be the same. As well as it should not know how exactly kernel
+> + * manages the memory, or assume that memory management behaviour is a
+> + * part of the "ABI". So, all the 'low memory' is just guessing, but
+> + * we're trying to do our best.)
+> + *
+> + * For this implementation, we assume that there's a low memory situation
+> + * for the N pages threshold when we have neither N pages of completely
+> + * free pages, nor we have N reclaimable pages in the cache. This
+> + * effectively means, that if userland expects to allocate N pages, it
+> + * would consume all the free pages, and any further allocations (above
+> + * N) would start draining caches.
+> + *
+> + * In the worst case, prior hitting the threshold, we might have only
+> + * N pages in cache, and nearly no memory as free pages.
+> + */
+> +static u64 vmevent_attr_lowmem_pages(struct vmevent_watch *watch,
+> +				     struct vmevent_attr *attr)
+> +{
+> +	int free = global_page_state(NR_FREE_PAGES);
+> +	int file = global_page_state(NR_FILE_PAGES) -
+> +		   global_page_state(NR_SHMEM); /* TODO: account locked pages */
+> +	int val = attr->value;
+> +
+> +	/*
+> +	 * For convenience we return 0 or attr value (instead of 0/1), it
+> +	 * makes it easier for vmevent_match() to cope with blended
+> +	 * attributes, plus userland might use the value to find out which
+> +	 * threshold triggered.
+> +	 */
+> +	if (free < val && file < val)
+> +		return val;
+> +	return 0;
+> +}
+> +
+>  static vmevent_attr_sample_fn attr_samplers[] = {
+>  	[VMEVENT_ATTR_NR_AVAIL_PAGES]   = vmevent_attr_avail_pages,
+>  	[VMEVENT_ATTR_NR_FREE_PAGES]    = vmevent_attr_free_pages,
+>  	[VMEVENT_ATTR_NR_SWAP_PAGES]    = vmevent_attr_swap_pages,
+> +	[VMEVENT_ATTR_LOWMEM_PAGES]     = vmevent_attr_lowmem_pages,
+>  };
+>  
+>  static u64 vmevent_sample_attr(struct vmevent_watch *watch, struct vmevent_attr *attr)
+> diff --git a/tools/testing/vmevent/vmevent-test.c b/tools/testing/vmevent/vmevent-test.c
+> index fd9a174..c61aed7 100644
+> --- a/tools/testing/vmevent/vmevent-test.c
+> +++ b/tools/testing/vmevent/vmevent-test.c
+> @@ -33,7 +33,7 @@ int main(int argc, char *argv[])
+>  
+>  	config = (struct vmevent_config) {
+>  		.sample_period_ns	= 1000000000L,
+> -		.counter		= 6,
+> +		.counter		= 7,
+>  		.attrs			= {
+>  			{
+>  				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
+> @@ -59,6 +59,13 @@ int main(int argc, char *argv[])
+>  				.type	= VMEVENT_ATTR_NR_SWAP_PAGES,
+>  			},
+>  			{
+> +				.type	= VMEVENT_ATTR_LOWMEM_PAGES,
+> +				.state	= VMEVENT_ATTR_STATE_VALUE_LT |
+> +					  VMEVENT_ATTR_STATE_VALUE_EQ |
+> +					  VMEVENT_ATTR_STATE_ONE_SHOT,
+> +				.value	= phys_pages / 2,
+> +			},
+> +			{
+>  				.type	= 0xffff, /* invalid */
+>  			},
+>  		},
+> @@ -108,6 +115,9 @@ int main(int argc, char *argv[])
+>  			case VMEVENT_ATTR_NR_SWAP_PAGES:
+>  				printf("  VMEVENT_ATTR_NR_SWAP_PAGES: %Lu\n", attr->value);
+>  				break;
+> +			case VMEVENT_ATTR_LOWMEM_PAGES:
+> +				printf("  VMEVENT_ATTR_LOWMEM_PAGES: %Lu\n", attr->value);
+> +				break;
+>  			default:
+>  				printf("  Unknown attribute: %Lu\n", attr->value);
+>  			}
+
+
+
+-- 
+Kind regards,
+Minchan Kim
