@@ -1,120 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777Ab2EDUsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:48:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57129 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932759Ab2EDUsP (ORCPT
+	id S932805Ab2EDUse (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:48:34 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:57344 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932788Ab2EDUsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:48:15 -0400
-Message-Id: <20120504204245.463144806@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:51 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 07/47] xen/smp: Fix crash when booting with ACPI hotplug CPUs.
-In-Reply-To: <20120504204307.GA13761@kroah.com>
+	Fri, 4 May 2012 16:48:30 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 3/3] tty_lock: Localise the lock
+Date: Fri, 4 May 2012 20:48:21 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+References: <20120503212151.568.91854.stgit@bob.linux.org.uk> <20120503212219.568.15653.stgit@bob.linux.org.uk>
+In-Reply-To: <20120503212219.568.15653.stgit@bob.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205042048.21771.arnd@arndb.de>
+X-Provags-ID: V02:K0:oXUH9b6p6XC+Tgq4egKbnDXU86niZG5WmtsKdpbdxir
+ 2/cb/ikm+enR0CTIgAocIB9eXiGNnP36aYGC2Zabb2L/mWsFwn
+ Iv6/ZxYWLYYi8oTsfluRyTXUogo0FrNJc6Exd6znz7WoBoOZPq
+ Fg/CiczA2a7PzbbKIi6Tir8Q90vl4jaHcBRF2fI0+VSiZnwBgw
+ OlkvZShvEHFXsL8C3kK8ZBHFBVhiynFg4ne74NOG03ONTOjX2O
+ R0yKsYN/reapQfbEAME0SvLuHpsPUYVx8dNENtX09MEsOAaBuD
+ KjVPvcxYZpWRyiZh+ctT/kXLS9xbmfWR+PwXKJe5Qe/ovIXfZD
+ AvrCBW71fOyw+AHSuTAQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Thursday 03 May 2012, Alan Cox wrote:
+> 
+> From: Alan Cox <alan@linux.intel.com>
+> 
+> In each remaining case the tty_lock is associated with a specific tty. This
+> means we can now lock on a per tty basis. We do need tty_lock_pair() for
+> the pty case. Uglier but still a step in the right direction.
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
 
-------------------
-
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-commit cf405ae612b0f7e2358db7ff594c0e94846137aa upstream.
-
-When we boot on a machine that can hotplug CPUs and we
-are using 'dom0_max_vcpus=X' on the Xen hypervisor line
-to clip the amount of CPUs available to the initial domain,
-we get this:
-
-(XEN) Command line: com1=115200,8n1 dom0_mem=8G noreboot dom0_max_vcpus=8 sync_console mce_verbosity=verbose console=com1,vga loglvl=all guest_loglvl=all
-.. snip..
-DMI: Intel Corporation S2600CP/S2600CP, BIOS SE5C600.86B.99.99.x032.072520111118 07/25/2011
-.. snip.
-SMP: Allowing 64 CPUs, 32 hotplug CPUs
-installing Xen timer for CPU 7
-cpu 7 spinlock event irq 361
-NMI watchdog: disabled (cpu7): hardware events not enabled
-Brought up 8 CPUs
-.. snip..
-	[acpi processor finds the CPUs are not initialized and starts calling
-	arch_register_cpu, which creates /sys/devices/system/cpu/cpu8/online]
-CPU 8 got hotplugged
-CPU 9 got hotplugged
-CPU 10 got hotplugged
-.. snip..
-initcall 1_acpi_battery_init_async+0x0/0x1b returned 0 after 406 usecs
-calling  erst_init+0x0/0x2bb @ 1
-
-	[and the scheduler sticks newly started tasks on the new CPUs, but
-	said CPUs cannot be initialized b/c the hypervisor has limited the
-	amount of vCPUS to 8 - as per the dom0_max_vcpus=8 flag.
-	The spinlock tries to kick the other CPU, but the structure for that
-	is not initialized and we crash.]
-BUG: unable to handle kernel paging request at fffffffffffffed8
-IP: [<ffffffff81035289>] xen_spin_lock+0x29/0x60
-PGD 180d067 PUD 180e067 PMD 0
-Oops: 0002 [#1] SMP
-CPU 7
-Modules linked in:
-
-Pid: 1, comm: swapper/0 Not tainted 3.4.0-rc2upstream-00001-gf5154e8 #1 Intel Corporation S2600CP/S2600CP
-RIP: e030:[<ffffffff81035289>]  [<ffffffff81035289>] xen_spin_lock+0x29/0x60
-RSP: e02b:ffff8801fb9b3a70  EFLAGS: 00010282
-
-With this patch, we cap the amount of vCPUS that the initial domain
-can run, to exactly what dom0_max_vcpus=X has specified.
-
-In the future, if there is a hypercall that will allow a running
-domain to expand past its initial set of vCPUS, this patch should
-be re-evaluated.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/xen/smp.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -172,6 +172,7 @@ static void __init xen_fill_possible_map
- static void __init xen_filter_cpu_maps(void)
- {
- 	int i, rc;
-+	unsigned int subtract = 0;
- 
- 	if (!xen_initial_domain())
- 		return;
-@@ -186,8 +187,22 @@ static void __init xen_filter_cpu_maps(v
- 		} else {
- 			set_cpu_possible(i, false);
- 			set_cpu_present(i, false);
-+			subtract++;
- 		}
- 	}
-+#ifdef CONFIG_HOTPLUG_CPU
-+	/* This is akin to using 'nr_cpus' on the Linux command line.
-+	 * Which is OK as when we use 'dom0_max_vcpus=X' we can only
-+	 * have up to X, while nr_cpu_ids is greater than X. This
-+	 * normally is not a problem, except when CPU hotplugging
-+	 * is involved and then there might be more than X CPUs
-+	 * in the guest - which will not work as there is no
-+	 * hypercall to expand the max number of VCPUs an already
-+	 * running guest has. So cap it up to X. */
-+	if (subtract)
-+		nr_cpu_ids = nr_cpu_ids - subtract;
-+#endif
-+
- }
- 
- static void __init xen_smp_prepare_boot_cpu(void)
-
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
