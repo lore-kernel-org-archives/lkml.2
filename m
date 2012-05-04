@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760058Ab2EDVJZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:09:25 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60693 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754390Ab2EDVJW (ORCPT
+	id S1760078Ab2EDVJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 17:09:47 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932485Ab2EDUqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 17:09:22 -0400
-Message-ID: <4FA4457F.1010900@wwwdotorg.org>
-Date: Fri, 04 May 2012 15:09:19 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, Wolfgang Denk <wd@denx.de>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-embedded@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Igor Grinberg <grinberg@compulab.co.il>,
-        Olof Johansson <olof@lixom.net>, Lee Jones <lee.jones@linaro.org>
-Subject: Re: Handling of modular boards
-References: <20120504185850.GO14230@opensource.wolfsonmicro.com> <201205042039.25794.arnd@arndb.de> <20120504205441.D293120645E@gemini.denx.de> <201205042103.34285.arnd@arndb.de>
-In-Reply-To: <201205042103.34285.arnd@arndb.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 4 May 2012 16:46:38 -0400
+Message-Id: <20120504204228.816066888@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 04 May 2012 13:43:16 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 52/75] x86, boot: Correct CFLAGS for hostprogs
+In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2012 03:03 PM, Arnd Bergmann wrote:
-> On Friday 04 May 2012, Wolfgang Denk wrote:
->> There are systems (and I bet it will be a growing number) where U-Boot
->> itself uses the DT for configuration.  Also, there are functions that
->> are needed both by the boot loader and the kernel - for example to
->> dislay a splash screen the boot loader needs to initialize the
->> display, so it must be able to detect which type of LCD is attached
->> (resolution, color-depth, orientation) - the device tree comes in very
->> handy here.  Why should Linux re-do all such things?
-> 
-> Sure, there are a lot of things that the boot loader can use from the
-> device tree, but I'm not sure if the LCD panel connection fits into
-> the same category as the devices that Mark was thinking of.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-A board I have sitting on my desk right now has separate boards for (and
-multiple options for each of):
+------------------
 
-* Motherboard
-* CPU+DRAM
-* PMU/PMIC
-* Display (LCD)
-... and many more.
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-Interaction with the PMU/PMIC is required for at least some of the boot
-media options.
+commit 446e1c86d51d0823e003a43a2b85c430efce2733 upstream.
 
-Interaction with the display (LCD) while not technically required to
-simply boot the kernel is required by desired use-cases, in order to
-display a splash screen ASAP during early boot.
+This is a partial revert of commit:
+    d40f833 "Restrict CFLAGS for hostprogs"
 
-Oh, and the motherboard has a gazillion different HW mux options, which
-affect, amongst many other things, which SD/eMMC/SDIO ports are usable
-on the motherboard, and which are routed to various daughter boards. I'm
-not actually 100% sure if the switches controlling those mux settings
-are readable from SW. I certainly hope so...
+The endian-manipulation macros in tools/include need <linux/types.h>,
+but the hostprogs in arch/x86/boot need several headers from the
+kernel build tree, which means we have to add the kernel headers to
+the include path.  This picks up <linux/types.h> from the kernel tree,
+which gives a warning.
+
+Since this use of <linux/types.h> is intentional, add
+-D__EXPORTED_HEADERS__ to the command line to silence the warning.
+
+A better way to fix this would be to always install the exported
+kernel headers into $(objtree)/usr/include as a standard part of the
+kernel build, but that is a lot more involved.
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Matt Fleming <matt.fleming@intel.com>
+Link: http://lkml.kernel.org/r/1330436245-24875-5-git-send-email-matt@console-pimps.org
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/boot/Makefile |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -37,9 +37,9 @@ setup-y		+= video-bios.o
+ targets		+= $(setup-y)
+ hostprogs-y	:= mkcpustr tools/build
+ 
+-HOSTCFLAGS_mkcpustr.o := -I$(srctree)/arch/$(SRCARCH)/include
+-HOST_EXTRACFLAGS += -I$(objtree)/include -I$(srctree)/tools/include \
+-                   -include $(srctree)/include/linux/kconfig.h
++HOST_EXTRACFLAGS += -I$(srctree)/tools/include $(LINUXINCLUDE) \
++	            -D__EXPORTED_HEADERS__
++
+ $(obj)/cpu.o: $(obj)/cpustr.h
+ 
+ quiet_cmd_cpustr = CPUSTR  $@
+
+
