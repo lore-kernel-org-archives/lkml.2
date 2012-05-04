@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab2EDGeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 02:34:13 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14300 "EHLO
+	id S1752224Ab2EDGgt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 02:36:49 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14506 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab2EDGeM convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750815Ab2EDGgs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 02:34:12 -0400
+	Fri, 4 May 2012 02:36:48 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 03 May 2012 23:34:02 -0700
+	by hqnvupgp05.nvidia.com on Thu, 03 May 2012 23:36:40 -0700
 From: Hiroshi Doyu <hdoyu@nvidia.com>
 To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
 CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
@@ -17,13 +17,13 @@ CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
         "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 4 May 2012 08:33:58 +0200
+Date: Fri, 4 May 2012 08:36:37 +0200
 Subject: Re: [PATCHv3 3/4] iommu/tegra: smmu: Refrain from accessing to AHB
 Thread-Topic: [PATCHv3 3/4] iommu/tegra: smmu: Refrain from accessing to AHB
-Thread-Index: Ac0pv+N9/bQtE66UT6euhdUzTU4+3g==
-Message-ID: <20120504.093358.2098007825524274078.hdoyu@nvidia.com>
-References: <1336061147-10245-1-git-send-email-hdoyu@nvidia.com><1336061147-10245-3-git-send-email-hdoyu@nvidia.com><4FA2C4E9.2080509@wwwdotorg.org>
-In-Reply-To: <4FA2C4E9.2080509@wwwdotorg.org>
+Thread-Index: Ac0pwEHg1PDusHwCTVSKJXtTOp320Q==
+Message-ID: <20120504.093637.894939287045949033.hdoyu@nvidia.com>
+References: <1336061147-10245-3-git-send-email-hdoyu@nvidia.com><4FA2C4E9.2080509@wwwdotorg.org><4FA2C746.5080000@wwwdotorg.org>
+In-Reply-To: <4FA2C746.5080000@wwwdotorg.org>
 Accept-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
@@ -38,46 +38,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@wwwdotorg.org>
 Subject: Re: [PATCHv3 3/4] iommu/tegra: smmu: Refrain from accessing to AHB
-Date: Thu, 3 May 2012 19:48:25 +0200
-Message-ID: <4FA2C4E9.2080509@wwwdotorg.org>
+Date: Thu, 3 May 2012 19:58:30 +0200
+Message-ID: <4FA2C746.5080000@wwwdotorg.org>
 
-> On 05/03/2012 10:05 AM, Hiroshi DOYU wrote:
-> > Use "tegra_ahb_enable_smmu()" to inform AHB that SMMU is
-> > ready, instead of directly aceessing AHB registers.
+> On 05/03/2012 11:48 AM, Stephen Warren wrote:
+> > On 05/03/2012 10:05 AM, Hiroshi DOYU wrote:
+> >> Use "tegra_ahb_enable_smmu()" to inform AHB that SMMU is
+> >> ready, instead of directly aceessing AHB registers.
 > 
-> You need to make the Kconfig option for the SMMU either depend on or
-> select the TEGRA_AHB option. If you don't, then if someone disables the
-> AHB driver, the SMMU driver may still build, yet fail to link since the
-> AHB API it calls doesn't exist.
+> Oh, that should be "accessing".
 > 
-> > diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
+> >> @@ -911,14 +899,16 @@ static int tegra_smmu_probe(struct platform_device *pdev)
+> > 
+> >> +	smmu->ahb = of_parse_phandle(pdev->dev.of_node, "ahb", 0);
+> > 
+> > Hmm, "ahb" should probably be "nvidia,ahb".
+> > 
+> > I see that neither this patch nor the next patch include binding
+> > documentation that describe this property. Can you please add documentation.
 > 
-> > @@ -398,10 +388,8 @@ static void smmu_setup_regs(struct smmu_device *smmu)
-> >  
-> >  	smmu_flush_regs(smmu, 1);
-> >  
-> > -	val = ahb_read(smmu, AHB_XBAR_CTRL);
-> > -	val |= AHB_XBAR_CTRL_SMMU_INIT_DONE_DONE <<
-> > -		AHB_XBAR_CTRL_SMMU_INIT_DONE_SHIFT;
-> > -	ahb_write(smmu, val, AHB_XBAR_CTRL);
-> > +	err = tegra_ahb_enable_smmu(smmu->ahb);
-> > +	return err;
+> Oh, the next patch is just adding the entry to the .dtsi file for the
+> AHB, so no surprise it doesn't add a binding document for the SMMU!
 > 
-> You can just "return tegra_ahb_..." here.
+> I see that with this patch, the driver still expects the DMA window to
+> be represented as a reg property (IORESOURCE_MEM), so if we add a
+> binding document to this patch it won't be very consistent either:-( And
+> then, there's the issue of whether the SMMU should be it's own device or
+> a child of some MC device, since there's non-SMMU functionality in these
+> registers too. This makes all the SMMU rework need a little more thought.
 > 
-> > @@ -911,14 +899,16 @@ static int tegra_smmu_probe(struct platform_device *pdev)
-> 
-> > +	smmu->ahb = of_parse_phandle(pdev->dev.of_node, "ahb", 0);
-> 
-> Hmm, "ahb" should probably be "nvidia,ahb".
+> So, I propose dropping this patch from this series, since this series is
+> all about adding the AHB driver. We should move this patch to a series
+> relating to the SMMU driver.
 
-Does this mean the following in dts?
-
-	ahb: ahb@6000c004 {
-		compatible = "nvidia,tegra30-ahb";
-		reg = <0x6000c004 0x14c>; /* AHB Arbitration + Gizmo Controller */
-	};
-
-	smmu: smmu@7000f000 {
-		nvidia,ahb = &ahb;
-	};      ^^^^^^^^^^
+Ok, I'll post the first 3 patches.
