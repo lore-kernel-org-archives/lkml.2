@@ -1,154 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932957Ab2EDU6f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:58:35 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55727 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932875Ab2EDUtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:49:06 -0400
-From: <manjunatha_halli@ti.com>
-To: <linux-media@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Manjunatha Halli <x0130808@ti.com>
-Subject: [PATCH V4 2/5] New control class and features for FM RX
-Date: Fri, 4 May 2012 15:48:59 -0500
-Message-ID: <1336164542-11014-3-git-send-email-manjunatha_halli@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1336164542-11014-1-git-send-email-manjunatha_halli@ti.com>
-References: <1336164542-11014-1-git-send-email-manjunatha_halli@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932912Ab2EDU6y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:58:54 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932710Ab2EDUtE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 16:49:04 -0400
+Message-Id: <20120504204246.784170518@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 04 May 2012 13:43:06 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 22/47] nfsd: fix error values returned by nfsd4_lockt() when nfsd_open() fails
+In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manjunatha Halli <x0130808@ti.com>
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-This patch creates new ctrl class for FM RX and adds new CID's for
-below FM features,
-      1) De-Emphasis filter mode
-      2) RDS Alternate Frequency switch
+------------------
 
-Also this patch adds a field for band selection in struct v4l2_hw_freq_seek
 
-Signed-off-by: Manjunatha Halli <x0130808@ti.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
+
+commit 04da6e9d63427b2d0fd04766712200c250b3278f upstream.
+
+nfsd_open() already returns an NFS error value; only vfs_test_lock()
+result needs to be fed through nfserrno().  Broken by commit 55ef12
+(nfsd: Ensure nfsv4 calls the underlying filesystem on LOCKT)
+three years ago...
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/media/video/v4l2-ctrls.c |   17 ++++++++++++++---
- include/linux/videodev2.h        |   19 ++++++++++++++++++-
- 2 files changed, 32 insertions(+), 4 deletions(-)
+ fs/nfsd/nfs4state.c |   23 +++++++++--------------
+ 1 file changed, 9 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/media/video/v4l2-ctrls.c b/drivers/media/video/v4l2-ctrls.c
-index 18015c0..9d7608e 100644
---- a/drivers/media/video/v4l2-ctrls.c
-+++ b/drivers/media/video/v4l2-ctrls.c
-@@ -243,8 +243,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
- 		"Vivid",
- 		NULL
- 	};
--	static const char * const tune_preemphasis[] = {
--		"No Preemphasis",
-+	static const char * const tune_emphasis[] = {
-+		"None",
- 		"50 Microseconds",
- 		"75 Microseconds",
- 		NULL,
-@@ -413,7 +413,9 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
- 	case V4L2_CID_COLORFX:
- 		return colorfx;
- 	case V4L2_CID_TUNE_PREEMPHASIS:
--		return tune_preemphasis;
-+		return tune_emphasis;
-+	case V4L2_CID_TUNE_DEEMPHASIS:
-+		return tune_emphasis;
- 	case V4L2_CID_FLASH_LED_MODE:
- 		return flash_led_mode;
- 	case V4L2_CID_FLASH_STROBE_SOURCE:
-@@ -644,6 +646,12 @@ const char *v4l2_ctrl_get_name(u32 id)
- 	case V4L2_CID_JPEG_COMPRESSION_QUALITY:	return "Compression Quality";
- 	case V4L2_CID_JPEG_ACTIVE_MARKER:	return "Active Markers";
- 
-+	/* FM Radio Receiver control */
-+	/* Keep the order of the 'case's the same as in videodev2.h! */
-+	case V4L2_CID_FM_RX_CLASS:		return "FM Radio Receiver Controls";
-+	case V4L2_CID_RDS_AF_SWITCH:		return "RDS Alternate Frequency Switch";
-+	case V4L2_CID_TUNE_DEEMPHASIS:		return "De-Emphasis";
-+
- 	default:
- 		return NULL;
- 	}
-@@ -688,6 +696,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_MPEG_VIDEO_H264_8X8_TRANSFORM:
- 	case V4L2_CID_MPEG_VIDEO_H264_VUI_SAR_ENABLE:
- 	case V4L2_CID_MPEG_VIDEO_MPEG4_QPEL:
-+	case V4L2_CID_RDS_AF_SWITCH:
- 		*type = V4L2_CTRL_TYPE_BOOLEAN;
- 		*min = 0;
- 		*max = *step = 1;
-@@ -733,6 +742,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_MPEG_VIDEO_MPEG4_LEVEL:
- 	case V4L2_CID_MPEG_VIDEO_MPEG4_PROFILE:
- 	case V4L2_CID_JPEG_CHROMA_SUBSAMPLING:
-+	case V4L2_CID_TUNE_DEEMPHASIS:
- 		*type = V4L2_CTRL_TYPE_MENU;
- 		break;
- 	case V4L2_CID_RDS_TX_PS_NAME:
-@@ -745,6 +755,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_FM_TX_CLASS:
- 	case V4L2_CID_FLASH_CLASS:
- 	case V4L2_CID_JPEG_CLASS:
-+	case V4L2_CID_FM_RX_CLASS:
- 		*type = V4L2_CTRL_TYPE_CTRL_CLASS;
- 		/* You can neither read not write these */
- 		*flags |= V4L2_CTRL_FLAG_READ_ONLY | V4L2_CTRL_FLAG_WRITE_ONLY;
-diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-index c9c9a46..534a3f1 100644
---- a/include/linux/videodev2.h
-+++ b/include/linux/videodev2.h
-@@ -1137,6 +1137,7 @@ struct v4l2_ext_controls {
- #define V4L2_CTRL_CLASS_FM_TX 0x009b0000	/* FM Modulator control class */
- #define V4L2_CTRL_CLASS_FLASH 0x009c0000	/* Camera flash controls */
- #define V4L2_CTRL_CLASS_JPEG 0x009d0000		/* JPEG-compression controls */
-+#define V4L2_CTRL_CLASS_FM_RX 0x009e0000	/* FM Receiver control class */
- 
- #define V4L2_CTRL_ID_MASK      	  (0x0fffffff)
- #define V4L2_CTRL_ID2CLASS(id)    ((id) & 0x0fff0000UL)
-@@ -1782,6 +1783,13 @@ enum v4l2_jpeg_chroma_subsampling {
- #define	V4L2_JPEG_ACTIVE_MARKER_DQT		(1 << 17)
- #define	V4L2_JPEG_ACTIVE_MARKER_DHT		(1 << 18)
- 
-+/* FM Receiver class control IDs */
-+#define V4L2_CID_FM_RX_CLASS_BASE		(V4L2_CTRL_CLASS_FM_RX | 0x900)
-+#define V4L2_CID_FM_RX_CLASS			(V4L2_CTRL_CLASS_FM_RX | 1)
-+
-+#define V4L2_CID_RDS_AF_SWITCH			(V4L2_CID_FM_RX_CLASS_BASE + 1)
-+#define V4L2_CID_TUNE_DEEMPHASIS		(V4L2_CID_FM_RX_CLASS_BASE + 2)
-+
- /*
-  *	T U N I N G
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3956,16 +3956,14 @@ out:
+  * vfs_test_lock.  (Arguably perhaps test_lock should be done with an
+  * inode operation.)
   */
-@@ -1843,13 +1851,22 @@ struct v4l2_frequency {
- 	__u32		      reserved[8];
- };
+-static int nfsd_test_lock(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file_lock *lock)
++static __be32 nfsd_test_lock(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file_lock *lock)
+ {
+ 	struct file *file;
+-	int err;
+-
+-	err = nfsd_open(rqstp, fhp, S_IFREG, NFSD_MAY_READ, &file);
+-	if (err)
+-		return err;
+-	err = vfs_test_lock(file, lock);
+-	nfsd_close(file);
++	__be32 err = nfsd_open(rqstp, fhp, S_IFREG, NFSD_MAY_READ, &file);
++	if (!err) {
++		err = nfserrno(vfs_test_lock(file, lock));
++		nfsd_close(file);
++	}
+ 	return err;
+ }
  
-+
-+#define FM_BAND_TYPE_ALL	0	/* All Bands 65.8 MHz till 108 Mhz
-+					   or 162.55 MHz if weather band */
-+#define FM_BAND_TYPE_EUROPE_US	1	/* 87.5 Mhz - 108 MHz*/
-+#define FM_BAND_TYPE_JAPAN	2	/* 76 MHz - 90 MHz*/
-+#define FM_BAND_TYPE_RUSSIAN	3	/* 65.8 MHz - 74 MHz*/
-+#define FM_BAND_TYPE_WEATHER	4	/* 162.4 MHz - 162.55 MHz*/
-+
- struct v4l2_hw_freq_seek {
- 	__u32		      tuner;
- 	enum v4l2_tuner_type  type;
- 	__u32		      seek_upward;
- 	__u32		      wrap_around;
- 	__u32		      spacing;
--	__u32		      reserved[7];
-+	__u32		      band;
-+	__u32		      reserved[6];
- };
+@@ -3978,7 +3976,6 @@ nfsd4_lockt(struct svc_rqst *rqstp, stru
+ {
+ 	struct inode *inode;
+ 	struct file_lock file_lock;
+-	int error;
+ 	__be32 status;
  
- /*
--- 
-1.7.4.1
+ 	if (locks_in_grace())
+@@ -4030,12 +4027,10 @@ nfsd4_lockt(struct svc_rqst *rqstp, stru
+ 
+ 	nfs4_transform_lock_offset(&file_lock);
+ 
+-	status = nfs_ok;
+-	error = nfsd_test_lock(rqstp, &cstate->current_fh, &file_lock);
+-	if (error) {
+-		status = nfserrno(error);
++	status = nfsd_test_lock(rqstp, &cstate->current_fh, &file_lock);
++	if (status)
+ 		goto out;
+-	}
++
+ 	if (file_lock.fl_type != F_UNLCK) {
+ 		status = nfserr_denied;
+ 		nfs4_set_lock_denied(&file_lock, &lockt->lt_denied);
+
 
