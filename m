@@ -1,129 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab2EDJM0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 05:12:26 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47658 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752674Ab2EDJMZ convert rfc822-to-8bit (ORCPT
+	id S1754117Ab2EDJU7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 05:20:59 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:37699 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753712Ab2EDJU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 05:12:25 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: "J, KEERTHY" <j-keerthy@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Hilman, Kevin" <khilman@ti.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>
-CC: "Pihet-XID, Jean" <j-pihet@ti.com>
-Subject: RE: [PATCH V3 05/10] ARM: OMAP2+: SmartReflex: introduce a busy
- loop condition test macro
-Thread-Topic: [PATCH V3 05/10] ARM: OMAP2+: SmartReflex: introduce a busy
- loop condition test macro
-Thread-Index: AQHNI9QqacStCvxp2EqO7BVNbqIaSpa5YatQ
-Date: Fri, 4 May 2012 09:12:13 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9B1B40@DBDE01.ent.ti.com>
-References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
- <1335462041-4949-6-git-send-email-j-keerthy@ti.com>
-In-Reply-To: <1335462041-4949-6-git-send-email-j-keerthy@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.132.210]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 4 May 2012 05:20:57 -0400
 MIME-Version: 1.0
+In-Reply-To: <20120502012029.GA24097@elliptictech.com>
+References: <20120424010345.GA30674@elliptictech.com>
+	<20120425013537.GA11959@elliptictech.com>
+	<1335322574.1821.8.camel@nisroch>
+	<1335504021.5311.0.camel@nisroch>
+	<20120428003928.GA16805@elliptictech.com>
+	<CADnq5_N8Cf4ONL5TNA-Wmif7cty070TRrTOnUpqdiGhWbVbj=w@mail.gmail.com>
+	<20120428153350.GA19561@elliptictech.com>
+	<20120429223744.GA19382@core.coreip.homeip.net>
+	<CAGZ4FETGyatywWqx3vLo-=jSJsrSat2+r35Njg5NNJ4NnyUy=w@mail.gmail.com>
+	<20120501132352.GA28696@elliptictech.com>
+	<20120502012029.GA24097@elliptictech.com>
+Date: Fri, 4 May 2012 10:20:56 +0100
+Message-ID: <CAPM=9tynyGoV6ppRZe+y5WGUbQRSPc+ih9RL2HZQu951AoZiog@mail.gmail.com>
+Subject: Re: Linux 3.4-rc4
+From: Dave Airlie <airlied@gmail.com>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: Maarten Maathuis <madman2003@gmail.com>,
+        Martin Peres <martin.peres@labri.fr>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Ben Skeggs <bskeggs@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: multipart/mixed; boundary=20cf302d4c3617f6ca04bf3270d8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 26, 2012 at 23:10:36, J, KEERTHY wrote:
-> From: Jean Pihet <j-pihet@ti.com>
-> 
-> Now that omap_test_timeout is only accessible from mach-omap2/,
-> introduce a similar function for SR.
-> 
-> This change makes the SmartReflex implementation ready for the move
-> to drivers/.
-> 
-> Signed-off-by: Jean Pihet <j-pihet@ti.com>
-> Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> ---
->  arch/arm/mach-omap2/smartreflex.c |   12 ++++++------
->  include/linux/power/smartreflex.h |   23 ++++++++++++++++++++++-
->  2 files changed, 28 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
-> index d859277..acef08d 100644
-> --- a/arch/arm/mach-omap2/smartreflex.c
-> +++ b/arch/arm/mach-omap2/smartreflex.c
-> @@ -289,9 +289,9 @@ static void sr_v1_disable(struct omap_sr *sr)
->  	 * Wait for SR to be disabled.
->  	 * wait until ERRCONFIG.MCUDISACKINTST = 1. Typical latency is 1us.
->  	 */
-> -	omap_test_timeout((sr_read_reg(sr, ERRCONFIG_V1) &
-> -			ERRCONFIG_MCUDISACKINTST), SR_DISABLE_TIMEOUT,
-> -			timeout);
-> +	sr_test_cond_timeout((sr_read_reg(sr, ERRCONFIG_V1) &
-> +			     ERRCONFIG_MCUDISACKINTST), SR_DISABLE_TIMEOUT,
-> +			     timeout);
->  
->  	if (timeout >= SR_DISABLE_TIMEOUT)
->  		dev_warn(&sr->pdev->dev, "%s: Smartreflex disable timedout\n",
-> @@ -334,9 +334,9 @@ static void sr_v2_disable(struct omap_sr *sr)
->  	 * Wait for SR to be disabled.
->  	 * wait until IRQSTATUS.MCUDISACKINTST = 1. Typical latency is 1us.
->  	 */
-> -	omap_test_timeout((sr_read_reg(sr, IRQSTATUS) &
-> -			IRQSTATUS_MCUDISABLEACKINT), SR_DISABLE_TIMEOUT,
-> -			timeout);
-> +	sr_test_cond_timeout((sr_read_reg(sr, IRQSTATUS) &
-> +			     IRQSTATUS_MCUDISABLEACKINT), SR_DISABLE_TIMEOUT,
-> +			     timeout);
->  
->  	if (timeout >= SR_DISABLE_TIMEOUT)
->  		dev_warn(&sr->pdev->dev, "%s: Smartreflex disable timedout\n",
-> diff --git a/include/linux/power/smartreflex.h b/include/linux/power/smartreflex.h
-> index 884eaee..78b795e 100644
-> --- a/include/linux/power/smartreflex.h
-> +++ b/include/linux/power/smartreflex.h
-> @@ -22,7 +22,7 @@
->  
->  #include <linux/types.h>
->  #include <linux/platform_device.h>
-> -
-> +#include <linux/delay.h>
->  #include <plat/voltage.h>
->  
->  /*
-> @@ -168,6 +168,27 @@ struct omap_sr {
->  };
->  
->  /**
-> + * test_cond_timeout - busy-loop, testing a condition
-> + * @cond: condition to test until it evaluates to true
-> + * @timeout: maximum number of microseconds in the timeout
-> + * @index: loop index (integer)
-> + *
-> + * Loop waiting for @cond to become true or until at least @timeout
-> + * microseconds have passed.  To use, define some integer @index in the
-> + * calling code.  After running, if @index == @timeout, then the loop has
-> + * timed out.
-> + *
-> + * Copied from omap_test_timeout */
-> +#define sr_test_cond_timeout(cond, timeout, index)		\
-> +({								\
-> +	for (index = 0; index < timeout; index++) {		\
-> +		if (cond)					\
-> +			break;					\
-> +		udelay(1);					\
-> +	}							\
-> +})
+--20cf302d4c3617f6ca04bf3270d8
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I think we can use time_after()/time_before() APIs for timeout and cpu_relax() for
-tight loops instead of udelay().
+>>
+>> FWIW, for me EDID failure on new kernels is 100% reproducible, and there
+>> are no such checksum errors in the log. =A0It's just missing.
+>>
+>> > Just a crazy thought, but didn't we change some timings related to
+>> > EDID retrieval? To make it faster.
+>>
+>> OK, this time bisecting started off relatively smoothly (doing the same
+>> "backwards" bisect on the branch-o-reverts as last time), but then my
+>> disk died halfway through...
+> [...]
+>
+> OK, system is back online and I finished the bisection. =A0The commit tha=
+t
+> broke it for me is the following, and reverting it on top of 3.3.4 + the
+> "make VGA work at all" patch fixes this particular issue for me.
+>
+Can you test with the attached patch? its a revert mostly of Ben's patch, a=
+nd
+he says with the i2c core change stuff is working for him again.
 
-Regards
-AnilKumar
+Dave.
+
+--20cf302d4c3617f6ca04bf3270d8
+Content-Type: application/octet-stream; 
+	name="0001-drm-nouveau-i2c-resume-use-of-i2c-algo-bit-rather-th.patch"
+Content-Disposition: attachment; 
+	filename="0001-drm-nouveau-i2c-resume-use-of-i2c-algo-bit-rather-th.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h1t14t6m0
+
+RnJvbSAyODFhMDJlY2UyMjQ1MjU0ZjQxNTE3MjMwNmE4NTc3ZGNhOTZlZGEzIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBCZW4gU2tlZ2dzIDxic2tlZ2dzQHJlZGhhdC5jb20+CkRhdGU6
+IEZyaSwgNCBNYXkgMjAxMiAxNDozODo0OSArMTAwMApTdWJqZWN0OiBbUEFUQ0hdIGRybS9ub3V2
+ZWF1L2kyYzogcmVzdW1lIHVzZSBvZiBpMmMtYWxnby1iaXQsIHJhdGhlciB0aGFuCiBjdXN0b20g
+c3RhY2sKClByZXZpb3VzIGlzc3VlcyB3aXRoIGkyYy1hbGdvLWJpdCBoYXZlIG5vdyBiZWVuIHJl
+c29sdmVkLgoKU2lnbmVkLW9mZi1ieTogQmVuIFNrZWdncyA8YnNrZWdnc0ByZWRoYXQuY29tPgpT
+aWduZWQtb2ZmLWJ5OiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgotLS0KIGRyaXZl
+cnMvZ3B1L2RybS9ub3V2ZWF1L25vdXZlYXVfaTJjLmMgfCAgMTk5ICsrKystLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLQogZHJpdmVycy9ncHUvZHJtL25vdXZlYXUvbm91dmVhdV9pMmMuaCB8
+ICAgIDEgKwogMiBmaWxlcyBjaGFuZ2VkLCAyMiBpbnNlcnRpb25zKCspLCAxNzggZGVsZXRpb25z
+KC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9ncHUvZHJtL25vdXZlYXUvbm91dmVhdV9pMmMuYyBi
+L2RyaXZlcnMvZ3B1L2RybS9ub3V2ZWF1L25vdXZlYXVfaTJjLmMKaW5kZXggZTJiZTk1YS4uNzdl
+NTY0NiAxMDA2NDQKLS0tIGEvZHJpdmVycy9ncHUvZHJtL25vdXZlYXUvbm91dmVhdV9pMmMuYwor
+KysgYi9kcml2ZXJzL2dwdS9kcm0vbm91dmVhdS9ub3V2ZWF1X2kyYy5jCkBAIC0yOSwxMCArMjks
+NiBAQAogI2luY2x1ZGUgIm5vdXZlYXVfaTJjLmgiCiAjaW5jbHVkZSAibm91dmVhdV9ody5oIgog
+Ci0jZGVmaW5lIFRfVElNRU9VVCAgMjIwMDAwMAotI2RlZmluZSBUX1JJU0VGQUxMIDEwMDAKLSNk
+ZWZpbmUgVF9IT0xEICAgICA1MDAwCi0KIHN0YXRpYyB2b2lkCiBpMmNfZHJpdmVfc2NsKHZvaWQg
+KmRhdGEsIGludCBzdGF0ZSkKIHsKQEAgLTExMywxNzUgKzEwOSw2IEBAIGkyY19zZW5zZV9zZGEo
+dm9pZCAqZGF0YSkKIAlyZXR1cm4gMDsKIH0KIAotc3RhdGljIHZvaWQKLWkyY19kZWxheShzdHJ1
+Y3Qgbm91dmVhdV9pMmNfY2hhbiAqcG9ydCwgdTMyIG5zZWMpCi17Ci0JdWRlbGF5KChuc2VjICsg
+NTAwKSAvIDEwMDApOwotfQotCi1zdGF0aWMgYm9vbAotaTJjX3JhaXNlX3NjbChzdHJ1Y3Qgbm91
+dmVhdV9pMmNfY2hhbiAqcG9ydCkKLXsKLQl1MzIgdGltZW91dCA9IFRfVElNRU9VVCAvIFRfUklT
+RUZBTEw7Ci0KLQlpMmNfZHJpdmVfc2NsKHBvcnQsIDEpOwotCWRvIHsKLQkJaTJjX2RlbGF5KHBv
+cnQsIFRfUklTRUZBTEwpOwotCX0gd2hpbGUgKCFpMmNfc2Vuc2Vfc2NsKHBvcnQpICYmIC0tdGlt
+ZW91dCk7Ci0KLQlyZXR1cm4gdGltZW91dCAhPSAwOwotfQotCi1zdGF0aWMgaW50Ci1pMmNfc3Rh
+cnQoc3RydWN0IG5vdXZlYXVfaTJjX2NoYW4gKnBvcnQpCi17Ci0JaW50IHJldCA9IDA7Ci0KLQlw
+b3J0LT5zdGF0ZSAgPSBpMmNfc2Vuc2Vfc2NsKHBvcnQpOwotCXBvcnQtPnN0YXRlIHw9IGkyY19z
+ZW5zZV9zZGEocG9ydCkgPDwgMTsKLQlpZiAocG9ydC0+c3RhdGUgIT0gMykgewotCQlpMmNfZHJp
+dmVfc2NsKHBvcnQsIDApOwotCQlpMmNfZHJpdmVfc2RhKHBvcnQsIDEpOwotCQlpZiAoIWkyY19y
+YWlzZV9zY2wocG9ydCkpCi0JCQlyZXQgPSAtRUJVU1k7Ci0JfQotCi0JaTJjX2RyaXZlX3NkYShw
+b3J0LCAwKTsKLQlpMmNfZGVsYXkocG9ydCwgVF9IT0xEKTsKLQlpMmNfZHJpdmVfc2NsKHBvcnQs
+IDApOwotCWkyY19kZWxheShwb3J0LCBUX0hPTEQpOwotCXJldHVybiByZXQ7Ci19Ci0KLXN0YXRp
+YyB2b2lkCi1pMmNfc3RvcChzdHJ1Y3Qgbm91dmVhdV9pMmNfY2hhbiAqcG9ydCkKLXsKLQlpMmNf
+ZHJpdmVfc2NsKHBvcnQsIDApOwotCWkyY19kcml2ZV9zZGEocG9ydCwgMCk7Ci0JaTJjX2RlbGF5
+KHBvcnQsIFRfUklTRUZBTEwpOwotCi0JaTJjX2RyaXZlX3NjbChwb3J0LCAxKTsKLQlpMmNfZGVs
+YXkocG9ydCwgVF9IT0xEKTsKLQlpMmNfZHJpdmVfc2RhKHBvcnQsIDEpOwotCWkyY19kZWxheShw
+b3J0LCBUX0hPTEQpOwotfQotCi1zdGF0aWMgaW50Ci1pMmNfYml0dyhzdHJ1Y3Qgbm91dmVhdV9p
+MmNfY2hhbiAqcG9ydCwgaW50IHNkYSkKLXsKLQlpMmNfZHJpdmVfc2RhKHBvcnQsIHNkYSk7Ci0J
+aTJjX2RlbGF5KHBvcnQsIFRfUklTRUZBTEwpOwotCi0JaWYgKCFpMmNfcmFpc2Vfc2NsKHBvcnQp
+KQotCQlyZXR1cm4gLUVUSU1FRE9VVDsKLQlpMmNfZGVsYXkocG9ydCwgVF9IT0xEKTsKLQotCWky
+Y19kcml2ZV9zY2wocG9ydCwgMCk7Ci0JaTJjX2RlbGF5KHBvcnQsIFRfSE9MRCk7Ci0JcmV0dXJu
+IDA7Ci19Ci0KLXN0YXRpYyBpbnQKLWkyY19iaXRyKHN0cnVjdCBub3V2ZWF1X2kyY19jaGFuICpw
+b3J0KQotewotCWludCBzZGE7Ci0KLQlpMmNfZHJpdmVfc2RhKHBvcnQsIDEpOwotCWkyY19kZWxh
+eShwb3J0LCBUX1JJU0VGQUxMKTsKLQotCWlmICghaTJjX3JhaXNlX3NjbChwb3J0KSkKLQkJcmV0
+dXJuIC1FVElNRURPVVQ7Ci0JaTJjX2RlbGF5KHBvcnQsIFRfSE9MRCk7Ci0KLQlzZGEgPSBpMmNf
+c2Vuc2Vfc2RhKHBvcnQpOwotCi0JaTJjX2RyaXZlX3NjbChwb3J0LCAwKTsKLQlpMmNfZGVsYXko
+cG9ydCwgVF9IT0xEKTsKLQlyZXR1cm4gc2RhOwotfQotCi1zdGF0aWMgaW50Ci1pMmNfZ2V0X2J5
+dGUoc3RydWN0IG5vdXZlYXVfaTJjX2NoYW4gKnBvcnQsIHU4ICpieXRlLCBib29sIGxhc3QpCi17
+Ci0JaW50IGksIGJpdDsKLQotCSpieXRlID0gMDsKLQlmb3IgKGkgPSA3OyBpID49IDA7IGktLSkg
+ewotCQliaXQgPSBpMmNfYml0cihwb3J0KTsKLQkJaWYgKGJpdCA8IDApCi0JCQlyZXR1cm4gYml0
+OwotCQkqYnl0ZSB8PSBiaXQgPDwgaTsKLQl9Ci0KLQlyZXR1cm4gaTJjX2JpdHcocG9ydCwgbGFz
+dCA/IDEgOiAwKTsKLX0KLQotc3RhdGljIGludAotaTJjX3B1dF9ieXRlKHN0cnVjdCBub3V2ZWF1
+X2kyY19jaGFuICpwb3J0LCB1OCBieXRlKQotewotCWludCBpLCByZXQ7Ci0JZm9yIChpID0gNzsg
+aSA+PSAwOyBpLS0pIHsKLQkJcmV0ID0gaTJjX2JpdHcocG9ydCwgISEoYnl0ZSAmICgxIDw8IGkp
+KSk7Ci0JCWlmIChyZXQgPCAwKQotCQkJcmV0dXJuIHJldDsKLQl9Ci0KLQlyZXQgPSBpMmNfYml0
+cihwb3J0KTsKLQlpZiAocmV0ID09IDEpIC8qIG5hY2sgKi8KLQkJcmV0ID0gLUVJTzsKLQlyZXR1
+cm4gcmV0OwotfQotCi1zdGF0aWMgaW50Ci1pMmNfYWRkcihzdHJ1Y3Qgbm91dmVhdV9pMmNfY2hh
+biAqcG9ydCwgc3RydWN0IGkyY19tc2cgKm1zZykKLXsKLQl1MzIgYWRkciA9IG1zZy0+YWRkciA8
+PCAxOwotCWlmIChtc2ctPmZsYWdzICYgSTJDX01fUkQpCi0JCWFkZHIgfD0gMTsKLQlyZXR1cm4g
+aTJjX3B1dF9ieXRlKHBvcnQsIGFkZHIpOwotfQotCi1zdGF0aWMgaW50Ci1pMmNfYml0X3hmZXIo
+c3RydWN0IGkyY19hZGFwdGVyICphZGFwLCBzdHJ1Y3QgaTJjX21zZyAqbXNncywgaW50IG51bSkK
+LXsKLQlzdHJ1Y3Qgbm91dmVhdV9pMmNfY2hhbiAqcG9ydCA9IChzdHJ1Y3Qgbm91dmVhdV9pMmNf
+Y2hhbiAqKWFkYXA7Ci0Jc3RydWN0IGkyY19tc2cgKm1zZyA9IG1zZ3M7Ci0JaW50IHJldCA9IDAs
+IG1jbnQgPSBudW07Ci0KLQl3aGlsZSAoIXJldCAmJiBtY250LS0pIHsKLQkJdTggcmVtYWluaW5n
+ID0gbXNnLT5sZW47Ci0JCXU4ICpwdHIgPSBtc2ctPmJ1ZjsKLQotCQlyZXQgPSBpMmNfc3RhcnQo
+cG9ydCk7Ci0JCWlmIChyZXQgPT0gMCkKLQkJCXJldCA9IGkyY19hZGRyKHBvcnQsIG1zZyk7Ci0K
+LQkJaWYgKG1zZy0+ZmxhZ3MgJiBJMkNfTV9SRCkgewotCQkJd2hpbGUgKCFyZXQgJiYgcmVtYWlu
+aW5nLS0pCi0JCQkJcmV0ID0gaTJjX2dldF9ieXRlKHBvcnQsIHB0cisrLCAhcmVtYWluaW5nKTsK
+LQkJfSBlbHNlIHsKLQkJCXdoaWxlICghcmV0ICYmIHJlbWFpbmluZy0tKQotCQkJCXJldCA9IGky
+Y19wdXRfYnl0ZShwb3J0LCAqcHRyKyspOwotCQl9Ci0KLQkJbXNnKys7Ci0JfQotCi0JaTJjX3N0
+b3AocG9ydCk7Ci0JcmV0dXJuIChyZXQgPCAwKSA/IHJldCA6IG51bTsKLX0KLQotc3RhdGljIHUz
+MgotaTJjX2JpdF9mdW5jKHN0cnVjdCBpMmNfYWRhcHRlciAqYWRhcCkKLXsKLQlyZXR1cm4gSTJD
+X0ZVTkNfSTJDIHwgSTJDX0ZVTkNfU01CVVNfRU1VTDsKLX0KLQotY29uc3Qgc3RydWN0IGkyY19h
+bGdvcml0aG0gbm91dmVhdV9pMmNfYml0X2FsZ28gPSB7Ci0JLm1hc3Rlcl94ZmVyID0gaTJjX2Jp
+dF94ZmVyLAotCS5mdW5jdGlvbmFsaXR5ID0gaTJjX2JpdF9mdW5jCi19OwotCiBzdGF0aWMgY29u
+c3QgdWludDMyX3QgbnY1MF9pMmNfcG9ydFtdID0gewogCTB4MDBlMTM4LCAweDAwZTE1MCwgMHgw
+MGUxNjgsIDB4MDBlMTgwLAogCTB4MDBlMjU0LCAweDAwZTI3NCwgMHgwMGU3NjQsIDB4MDBlNzgw
+LApAQCAtMzg0LDEyICsyMTEsMTAgQEAgbm91dmVhdV9pMmNfaW5pdChzdHJ1Y3QgZHJtX2Rldmlj
+ZSAqZGV2KQogCQljYXNlIDA6IC8qIE5WMDQ6TlY1MCAqLwogCQkJcG9ydC0+ZHJpdmUgPSBlbnRy
+eVswXTsKIAkJCXBvcnQtPnNlbnNlID0gZW50cnlbMV07Ci0JCQlwb3J0LT5hZGFwdGVyLmFsZ28g
+PSAmbm91dmVhdV9pMmNfYml0X2FsZ287CiAJCQlicmVhazsKIAkJY2FzZSA0OiAvKiBOVjRFICov
+CiAJCQlwb3J0LT5kcml2ZSA9IDB4NjAwODAwICsgZW50cnlbMV07CiAJCQlwb3J0LT5zZW5zZSA9
+IHBvcnQtPmRyaXZlOwotCQkJcG9ydC0+YWRhcHRlci5hbGdvID0gJm5vdXZlYXVfaTJjX2JpdF9h
+bGdvOwogCQkJYnJlYWs7CiAJCWNhc2UgNTogLyogTlY1MC0gKi8KIAkJCXBvcnQtPmRyaXZlID0g
+ZW50cnlbMF0gJiAweDBmOwpAQCAtNDAyLDcgKzIyNyw2IEBAIG5vdXZlYXVfaTJjX2luaXQoc3Ry
+dWN0IGRybV9kZXZpY2UgKmRldikKIAkJCQlwb3J0LT5kcml2ZSA9IDB4MDBkMDE0ICsgKHBvcnQt
+PmRyaXZlICogMHgyMCk7CiAJCQkJcG9ydC0+c2Vuc2UgPSBwb3J0LT5kcml2ZTsKIAkJCX0KLQkJ
+CXBvcnQtPmFkYXB0ZXIuYWxnbyA9ICZub3V2ZWF1X2kyY19iaXRfYWxnbzsKIAkJCWJyZWFrOwog
+CQljYXNlIDY6IC8qIE5WNTAtIERQIEFVWCAqLwogCQkJcG9ydC0+ZHJpdmUgPSBlbnRyeVswXTsK
+QEAgLTQxMyw3ICsyMzcsNyBAQCBub3V2ZWF1X2kyY19pbml0KHN0cnVjdCBkcm1fZGV2aWNlICpk
+ZXYpCiAJCQlicmVhazsKIAkJfQogCi0JCWlmICghcG9ydC0+YWRhcHRlci5hbGdvKSB7CisJCWlm
+ICghcG9ydC0+YWRhcHRlci5hbGdvICYmICFwb3J0LT5kcml2ZSkgewogCQkJTlZfRVJST1IoZGV2
+LCAiSTJDJWQ6IHR5cGUgJWQgaW5kZXggJXgvJXggdW5rbm93blxuIiwKIAkJCQkgaSwgcG9ydC0+
+dHlwZSwgcG9ydC0+ZHJpdmUsIHBvcnQtPnNlbnNlKTsKIAkJCWtmcmVlKHBvcnQpOwpAQCAtNDI5
+LDcgKzI1MywyNiBAQCBub3V2ZWF1X2kyY19pbml0KHN0cnVjdCBkcm1fZGV2aWNlICpkZXYpCiAJ
+CXBvcnQtPmRjYiA9IFJPTTMyKGVudHJ5WzBdKTsKIAkJaTJjX3NldF9hZGFwZGF0YSgmcG9ydC0+
+YWRhcHRlciwgaTJjKTsKIAotCQlyZXQgPSBpMmNfYWRkX2FkYXB0ZXIoJnBvcnQtPmFkYXB0ZXIp
+OworCQlpZiAocG9ydC0+YWRhcHRlci5hbGdvICE9ICZub3V2ZWF1X2RwX2kyY19hbGdvKSB7CisJ
+CQlwb3J0LT5hZGFwdGVyLmFsZ29fZGF0YSA9ICZwb3J0LT5iaXQ7CisJCQlwb3J0LT5iaXQudWRl
+bGF5ID0gMTA7CisJCQlwb3J0LT5iaXQudGltZW91dCA9IHVzZWNzX3RvX2ppZmZpZXMoMjIwMCk7
+CisJCQlwb3J0LT5iaXQuZGF0YSA9IHBvcnQ7CisJCQlwb3J0LT5iaXQuc2V0c2RhID0gaTJjX2Ry
+aXZlX3NkYTsKKwkJCXBvcnQtPmJpdC5zZXRzY2wgPSBpMmNfZHJpdmVfc2NsOworCQkJcG9ydC0+
+Yml0LmdldHNkYSA9IGkyY19zZW5zZV9zZGE7CisJCQlwb3J0LT5iaXQuZ2V0c2NsID0gaTJjX3Nl
+bnNlX3NjbDsKKworCQkJaTJjX2RyaXZlX3NjbChwb3J0LCAwKTsKKwkJCWkyY19kcml2ZV9zZGEo
+cG9ydCwgMSk7CisJCQlpMmNfZHJpdmVfc2NsKHBvcnQsIDEpOworCisJCQlyZXQgPSBpMmNfYml0
+X2FkZF9idXMoJnBvcnQtPmFkYXB0ZXIpOworCQl9IGVsc2UgeworCQkJcG9ydC0+YWRhcHRlci5h
+bGdvID0gJm5vdXZlYXVfZHBfaTJjX2FsZ287CisJCQlyZXQgPSBpMmNfYWRkX2FkYXB0ZXIoJnBv
+cnQtPmFkYXB0ZXIpOworCQl9CisKIAkJaWYgKHJldCkgewogCQkJTlZfRVJST1IoZGV2LCAiSTJD
+JWQ6IGZhaWxlZCByZWdpc3RlcjogJWRcbiIsIGksIHJldCk7CiAJCQlrZnJlZShwb3J0KTsKZGlm
+ZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9ub3V2ZWF1L25vdXZlYXVfaTJjLmggYi9kcml2ZXJz
+L2dwdS9kcm0vbm91dmVhdS9ub3V2ZWF1X2kyYy5oCmluZGV4IDRkMmU0ZTkuLjFkMDgzODkgMTAw
+NjQ0Ci0tLSBhL2RyaXZlcnMvZ3B1L2RybS9ub3V2ZWF1L25vdXZlYXVfaTJjLmgKKysrIGIvZHJp
+dmVycy9ncHUvZHJtL25vdXZlYXUvbm91dmVhdV9pMmMuaApAQCAtMzQsNiArMzQsNyBAQAogc3Ry
+dWN0IG5vdXZlYXVfaTJjX2NoYW4gewogCXN0cnVjdCBpMmNfYWRhcHRlciBhZGFwdGVyOwogCXN0
+cnVjdCBkcm1fZGV2aWNlICpkZXY7CisJc3RydWN0IGkyY19hbGdvX2JpdF9kYXRhIGJpdDsKIAlz
+dHJ1Y3QgbGlzdF9oZWFkIGhlYWQ7CiAJdTggIGluZGV4OwogCXU4ICB0eXBlOwotLSAKMS43Ljcu
+NgoK
+--20cf302d4c3617f6ca04bf3270d8--
