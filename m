@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750833Ab2EDEGv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 00:06:51 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52781 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab2EDEGu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 00:06:50 -0400
-X-AuditID: 9c93016f-b7c79ae0000006b3-af-4fa355d74159
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/13] perf evlist: Fix creation of cpu map
-References: <1335417327-11796-1-git-send-email-namhyung.kim@lge.com>
-	<1335417327-11796-8-git-send-email-namhyung.kim@lge.com>
-	<4F996433.7040003@gmail.com> <1335474778.1497.14.camel@leonhard>
-	<4F99BCAF.1080309@gmail.com> <87397qhvvx.fsf@sejong.aot.lge.com>
-	<20120502184033.GD5745@infradead.org>
-Date: Fri, 04 May 2012 13:05:48 +0900
-In-Reply-To: <20120502184033.GD5745@infradead.org> (Arnaldo Carvalho de Melo's
-	message of "Wed, 2 May 2012 15:40:33 -0300")
-Message-ID: <87fwbga8v7.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	id S1750902Ab2EDEI4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 00:08:56 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:40241 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750738Ab2EDEIz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 00:08:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20120503170101.GF2592@linux.vnet.ibm.com>
+References: <CA+1xoqd_z8Zavzraq1oXVRpwkJRoac57tojBYf7x=Kzs+cbJ_w@mail.gmail.com>
+ <20120503154140.GA2592@linux.vnet.ibm.com> <CA+1xoqepggR4YRzDXFz=Hk9EeXACMRyeXorQm7rE3r5MQyY6Fw@mail.gmail.com>
+ <20120503170101.GF2592@linux.vnet.ibm.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Fri, 4 May 2012 06:08:34 +0200
+Message-ID: <CA+1xoqcXMVG0J4r8XhtzcxxDqLuyR30x5a3o8BsrBqDakDdHgg@mail.gmail.com>
+Subject: Re: rcu: BUG on exit_group
+To: paulmck@linux.vnet.ibm.com
+Cc: "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, yinghan@google.com,
+        kosaki.motohiro@jp.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, 2 May 2012 15:40:33 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Apr 27, 2012 at 09:16:18AM +0900, Namhyung Kim escreveu:
->> So as long as you set perf_event_paranoid to -1 or run perf test as
->> root, you cannot see the failure.
+On Thu, May 3, 2012 at 7:01 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Thu, May 03, 2012 at 05:55:14PM +0200, Sasha Levin wrote:
+>> On Thu, May 3, 2012 at 5:41 PM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> > On Thu, May 03, 2012 at 10:57:19AM +0200, Sasha Levin wrote:
+>> >> Hi Paul,
+>> >>
+>> >> I've hit a BUG similar to the schedule_tail() one when. It happened
+>> >> when I've started fuzzing exit_group() syscalls, and all of the traces
+>> >> are starting with exit_group() (there's a flood of them).
+>> >>
+>> >> I've verified that it indeed BUGs due to the rcu preempt count.
+>> >
+>> > Hello, Sasha,
+>> >
+>> > Which version of -next are you using?  I did some surgery on this
+>> > yesterday based on some bugs Hugh Dickins tracked down, so if you
+>> > are using something older, please move to the current -next.
+>>
+>> I'm using -next from today (3.4.0-rc5-next-20120503-sasha-00002-g09f55ae-dirty).
 >
-> Ok, as root try 'perf top', here I get, with this patch:
->
-> [root@sandy ~]# perf top --stdio
-> Warning:
-> The sys_perf_event_open() syscall returned with 22 (Invalid argument).
-> /bin/dmesg may provide additional information.
-> No CONFIG_PERF_EVENTS=y kernel support configured?
-> [root@sandy ~]#
->
-> Skipping this one, will look again later.
->
-> - Arnaldo
+> Hmmm...  Looking at this more closely, it looks like there really is
+> an attempt to acquire a mutex within an RCU read-side critical section,
+> which is illegal.  Could you please bisect this?
 
-Sorry. It is because perf top depends on an undefined behaviour that
-if neither target nor command line argument was specified it'd open
-events for all online cpus. In contrast, perf record and perf stat will
-show the help message in this case.
+Right, the issue is as you described, taking a mutex inside rcu_read_lock().
 
-This patch makes it clear that we have to prepare a sane target
-configuration before opening a perf event fd. So I think we should fix
-perf top to set top.target.system_wide to true by default.
+The offending commit is (I've cc'ed all parties from it):
 
-Thanks,
-Namhyung
+commit adf79cc03092ee4aec70da10e91b05fb8116ac7b
+Author: Ying Han <yinghan@google.com>
+Date:   Thu May 3 15:44:01 2012 +1000
+
+    memcg: add mlock statistic in memory.stat
+
+With the issue there being is that in munlock_vma_page(), it now does
+a mem_cgroup_begin_update_page_stat() which takes the rcu_read_lock(),
+so when the older code that was there previously will try taking a
+mutex you'll get a BUG.
+
+Thanks.
