@@ -1,100 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab2EDVPV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 17:15:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:33149 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932237Ab2EDVPR (ORCPT
+	id S932232Ab2EDUpR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:45:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44823 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759936Ab2EDUpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 17:15:17 -0400
-From: Andy Whitcroft <apw@canonical.com>
-To: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Mike Sterling <Mike.Sterling@microsoft.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 2/2] ata_piix: defer disks to the Hyper-V drivers by default
-Date: Fri,  4 May 2012 22:15:11 +0100
-Message-Id: <1336166111-20483-3-git-send-email-apw@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1336166111-20483-1-git-send-email-apw@canonical.com>
-References: <4F903529.40800@mvista.com>
- <1336166111-20483-1-git-send-email-apw@canonical.com>
+	Fri, 4 May 2012 16:45:09 -0400
+Message-Id: <20120504204225.747234274@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 04 May 2012 13:42:40 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, "he, bo" <bo.he@intel.com>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 16/75] sched: Fix OOPS when build_sched_domains() percpu allocation fails
+In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we are hosted on a Microsoft Hyper-V hypervisor the guest disks
-are exposed both via the Hyper-V paravirtualised drivers and via an
-emulated SATA disk drive.  In this case we want to use the paravirtualised
-drivers if we can as they are much more efficient.  Note that the Hyper-V
-paravirtualised drivers only expose the virtual hard disk devices, the
-CDROM/DVD devices must still be enumerated.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-Mark the host controller ATA_HOST_IGNORE_ATA to prevent enumeration of
-disk devices.
+------------------
 
-BugLink: http://bugs.launchpad.net/bugs/929545
-BugLink: http://bugs.launchpad.net/bugs/942316
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
+From: "he, bo" <bo.he@intel.com>
+
+commit fb2cf2c660971bea0ad86a9a5c19ad39eab61344 upstream.
+
+Under extreme memory used up situations, percpu allocation
+might fail. We hit it when system goes to suspend-to-ram,
+causing a kworker panic:
+
+ EIP: [<c124411a>] build_sched_domains+0x23a/0xad0
+ Kernel panic - not syncing: Fatal exception
+ Pid: 3026, comm: kworker/u:3
+ 3.0.8-137473-gf42fbef #1
+
+ Call Trace:
+  [<c18cc4f2>] panic+0x66/0x16c
+  [...]
+  [<c1244c37>] partition_sched_domains+0x287/0x4b0
+  [<c12a77be>] cpuset_update_active_cpus+0x1fe/0x210
+  [<c123712d>] cpuset_cpu_inactive+0x1d/0x30
+  [...]
+
+With this fix applied build_sched_domains() will return -ENOMEM and
+the suspend attempt fails.
+
+Signed-off-by: he, bo <bo.he@intel.com>
+Reviewed-by: Zhang, Yanmin <yanmin.zhang@intel.com>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1335355161.5892.17.camel@hebo
+[ So, we fail to deallocate a CPU because we cannot allocate RAM :-/
+  I don't like that kind of sad behavior but nevertheless it should
+  not crash under high memory load. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/ata/ata_piix.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+ kernel/sched/core.c |   22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index 68013f9..8fea06b 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -1552,6 +1552,39 @@ static bool piix_broken_system_poweroff(struct pci_dev *pdev)
- 	return false;
- }
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6334,16 +6334,26 @@ static void __sdt_free(const struct cpum
+ 		struct sd_data *sdd = &tl->data;
  
-+static int prefer_ms_hyperv = 1;
-+module_param(prefer_ms_hyperv, int, 0);
+ 		for_each_cpu(j, cpu_map) {
+-			struct sched_domain *sd = *per_cpu_ptr(sdd->sd, j);
+-			if (sd && (sd->flags & SD_OVERLAP))
+-				free_sched_groups(sd->groups, 0);
+-			kfree(*per_cpu_ptr(sdd->sd, j));
+-			kfree(*per_cpu_ptr(sdd->sg, j));
+-			kfree(*per_cpu_ptr(sdd->sgp, j));
++			struct sched_domain *sd;
 +
-+static void piix_ignore_devices_quirk(struct ata_host *host)
-+{
-+#if IS_ENABLED(CONFIG_HYPERV_STORAGE)
-+	static const struct dmi_system_id ignore_hyperv[] = {
-+		{
-+			/* On Hyper-V hypervisors the disks are exposed on
-+			 * both the emulated SATA controller and on the
-+			 * paravirtualised drivers.  The CD/DVD devices
-+			 * are only exposed on the emulated controller.
-+			 * Request we ignore ATA devices on this host.
-+			 */
-+			.ident = "Hyper-V Virtual Machine",
-+			.matches = {
-+				DMI_MATCH(DMI_SYS_VENDOR,
-+						"Microsoft Corporation"),
-+				DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
-+			},
-+		},
-+		{ }	/* terminate list */
-+	};
-+	const struct dmi_system_id *dmi = dmi_first_match(ignore_hyperv);
++			if (sdd->sd) {
++				sd = *per_cpu_ptr(sdd->sd, j);
++				if (sd && (sd->flags & SD_OVERLAP))
++					free_sched_groups(sd->groups, 0);
++				kfree(*per_cpu_ptr(sdd->sd, j));
++			}
 +
-+	if (dmi && prefer_ms_hyperv) {
-+		host->flags |= ATA_HOST_IGNORE_ATA;
-+		dev_info(host->dev, "%s detected, ATA device ignore set\n",
-+			dmi->ident);
-+	}
-+#endif
-+}
-+
- /**
-  *	piix_init_one - Register PIIX ATA PCI device with kernel services
-  *	@pdev: PCI device to register
-@@ -1667,6 +1700,9 @@ static int __devinit piix_init_one(struct pci_dev *pdev,
++			if (sdd->sg)
++				kfree(*per_cpu_ptr(sdd->sg, j));
++			if (sdd->sgp)
++				kfree(*per_cpu_ptr(sdd->sgp, j));
+ 		}
+ 		free_percpu(sdd->sd);
++		sdd->sd = NULL;
+ 		free_percpu(sdd->sg);
++		sdd->sg = NULL;
+ 		free_percpu(sdd->sgp);
++		sdd->sgp = NULL;
  	}
- 	host->flags |= ATA_HOST_PARALLEL_SCAN;
- 
-+	/* Allow hosts to specify device types to ignore when scanning. */
-+	piix_ignore_devices_quirk(host);
-+
- 	pci_set_master(pdev);
- 	return ata_pci_sff_activate_host(host, ata_bmdma_interrupt, sht);
  }
--- 
-1.7.9.5
+ 
+
 
