@@ -1,44 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760633Ab2EDXYQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 19:24:16 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:57294 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756783Ab2EDXYP (ORCPT
+	id S1760661Ab2EDXZm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 19:25:42 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17892 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756783Ab2EDXZl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 19:24:15 -0400
-X-Sasl-enc: WeGIHiWPBstBupF04k77qomKkdw35bvLYbZDYQvda5TP 1336173854
-Date: Fri, 4 May 2012 16:24:13 -0700
-From: GregKH <greg@kroah.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] w1: w1_ds2408.c: quite sparse noise about using plaing
- integer as NULL pointer
-Message-ID: <20120504232413.GA9815@kroah.com>
-References: <201205021702.07694.hartleys@visionengravers.com>
- <20120503180202.GC13988@ioremap.net>
+	Fri, 4 May 2012 19:25:41 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 04 May 2012 16:25:16 -0700
+From: Diwakar Tundlam <dtundlam@nvidia.com>
+To: "'Michael Neuling'" <mikey@neuling.org>
+CC: "'Peter Zijlstra'" <a.p.zijlstra@chello.nl>,
+        "'Ingo Molnar'" <mingo@kernel.org>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Christoph Lameter'" <cl@gentwo.org>,
+        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
+        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
+        "'David Rientjes'" <rientjes@google.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Date: Fri, 4 May 2012 16:25:16 -0700
+Subject: RE: [PATCH] sched: Enable arch-specific asym packing option in
+ sched domain
+Thread-Topic: [PATCH] sched: Enable arch-specific asym packing option in
+ sched domain
+Thread-Index: Ac0qTIR81dajrD3zSfyfaTGtipVnygAACJrQ
+Message-ID: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF104@HQMAIL04.nvidia.com>
+References: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF0FF@HQMAIL04.nvidia.com>
+ <1DD7BFEDD3147247B1355BEFEFE46652379C3DF101@HQMAIL04.nvidia.com>
+ <1336169422.16236.1.camel@twins>
+ <1DD7BFEDD3147247B1355BEFEFE46652379C3DF102@HQMAIL04.nvidia.com>
+ <1336170586.16236.11.camel@twins>
+ <1DD7BFEDD3147247B1355BEFEFE46652379C3DF103@HQMAIL04.nvidia.com>
+ <19500.1336173634@neuling.org>
+In-Reply-To: <19500.1336173634@neuling.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120503180202.GC13988@ioremap.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 10:02:02PM +0400, Evgeniy Polyakov wrote:
-> On Wed, May 02, 2012 at 05:02:07PM -0700, H Hartley Sweeten (hartleys@visionengravers.com) wrote:
-> > NULL not 0 should be used with pointers. Just remove the offending
-> > lines since they will default to NULL anyway.
-> > 
-> > Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> > Cc: Evgeniy Polyakov <zbr@ioremap.net>
+>> Arrh, so it's not a performance issue but power savings.. that would this asymmetric packing a lot more appropriate to use.
+
+Yes, it is for power saving..
+
+Could you suggest a way t use this flag without affecting Power7, then?
+I was thinking to define a different weak arch_sd_package_asym_packing() in SD_CPU_INIT.
+And the flag is set only for arch/arm/mach-tegra/tegra3.
+
+Thanks,
+--Diwakar.
+
+-----Original Message-----
+From: Michael Neuling [mailto:mikey@neuling.org] 
+Sent: Friday, May 04, 2012 4:21 PM
+To: Diwakar Tundlam
+Cc: 'Peter Zijlstra'; 'Ingo Molnar'; 'Andrew Morton'; 'Christoph Lameter'; 'Stephen Rothwell'; 'Benjamin Herrenschmidt'; 'David Rientjes'; 'linux-kernel@vger.kernel.org'; Peter De Schrijver
+Subject: Re: [PATCH] sched: Enable arch-specific asym packing option in sched domain
+
+> Thanks for clarifying the Power7. I see the point - package vs cpu's within a package.
 > 
-> Looks good, thank you
-> Greg, please pull it into your tree or should it be forwarded to
-> janitor list?
+> Yes, this is for Nvidia's ARM Quad-core Tegra CPU. It is a single 
+> package, organized flatly.  To save power, we want cores to be loaded 
+> up in order from cpu0, 1, etc.  The ASYM_PACKING flag seems to do 
+> exactly what we need if set in the domain flag.
 
-I'll take it, thanks.
+Arrh, so it's not a performance issue but power savings.. that would this asymmetric packing a lot more appropriate to use.
 
-greg k-h
+Mikey
+
+> 
+> Thanks,
+> --Diwakar.
+> 
+> -----Original Message-----
+> From: Peter Zijlstra [mailto:a.p.zijlstra@chello.nl]
+> Sent: Friday, May 04, 2012 3:30 PM
+> To: Diwakar Tundlam
+> Cc: 'Ingo Molnar'; 'Andrew Morton'; 'Christoph Lameter'; 'Michael 
+> Neuling'; 'Stephen Rothwell'; 'Benjamin Herrenschmidt'; 'David 
+> Rientjes'; 'linux-kernel@vger.kernel.org'; Peter De Schrijver
+> Subject: RE: [PATCH] sched: Enable arch-specific asym packing option 
+> in sched domain
+> 
+> On Fri, 2012-05-04 at 15:18 -0700, Diwakar Tundlam wrote:
+> > 
+> > arch_sd_sibling_asym_packing() is already present under ifdef CONFIG_SMT.
+> > I didn't touch that. I only added it to SD_CPU_INIT for all cpu's.
+> > I assumed Power7 shouldn't use SD_CPU_INIT.
+> 
+> All archs use SD_CPU_INIT, its the default topology level for a package/socket. So now you've made Power7 prefer lower numbered sockets over higher numbered sockets.. not fatal, but not really nice either.
+> 
+> [ power7 is the only one that implements arch_sd_sibling_asym_packing 
+> ]
+> 
+> > Maybe I should define a separate weak symbol, say arch_sd_bias_to_lower_num_cpu()?
+> > Then Power7 can define arch_sd_sibling_asym_packing() to be '1' and 
+> > it will not break all-cpu init.
+> 
+> A slightly saner name would be:
+> 
+>   arch_sd_package_asym_packing()
+> 
+> FWIW, I suspect you're wanting to use this for some ARM chip (nvidia 
+> doesn't do much else -- aside from this graphics stuff) so that if 
+> there's hardly anything it runs on cpu0. Now, last time I checked, 
+> these ARM things had only 1 package, so I still don't see the point 
+> :-)
+> 
+> I suspect you want to modify SD_MC_INIT() with something like:
+> 
+>   arch_sd_mc_asym_packing()
+> 
+> Or is this the big-little thing and you're representing them as separate packages?
+> 
+> See how a little extra information avoids me having to endlessly second guess wtf you're actually wanting to do?
+> 
