@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758890Ab2EDPWy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 11:22:54 -0400
+	id S1758926Ab2EDPXK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 11:23:10 -0400
 Received: from mga14.intel.com ([143.182.124.37]:15107 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758843Ab2EDPWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 11:22:51 -0400
+	id S1758821Ab2EDPWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 11:22:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="138930589"
+   d="scan'208";a="138930599"
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
         Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH v3 3/4] fat: mark superblock as dirty less often
-Date: Fri,  4 May 2012 18:23:37 +0300
-Message-Id: <1336145018-23319-4-git-send-email-dedekind1@gmail.com>
+Subject: [PATCH v3 4/4] fat: switch to fsinfo_inode
+Date: Fri,  4 May 2012 18:23:38 +0300
+Message-Id: <1336145018-23319-5-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1336145018-23319-1-git-send-email-dedekind1@gmail.com>
 References: <1336145018-23319-1-git-send-email-dedekind1@gmail.com>
@@ -27,73 +27,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-This patch is a preparation for further changes. It touches few functions
-in fatent.c and prevents them from marking the superblock as dirty
-unnecessarily often. Namely, instead of marking it as dirty in the internal
-tight loops - do it only once at the end of the functions. And instead of
-marking it as dirty while holding the FAT table lock, do it outside the lock.
+Currently FAT file-system maps the VFS "superblock" abstraction to the FSINFO
+block. The FSINFO block contains non-essential data about the amount of free
+clusters and the next free cluster. FAT file-system can always find out this
+information by scanning the FAT table, but having it in the FSINFO block may
+speed things up sometimes. So FAT file-system relies on the VFS superblock
+write-out services to make sure the FSINFO block is written out to the media
+from time to time.
 
-The reason for this patch is that marking the superblock as dirty will soon
-become a little bit heavier operation, so it is cleaner to do this only when it
-is necessary.
+The whole "superblock write-out" VFS infrastructure is served by the
+'sync_supers()' kernel thread, which wakes up every 5 (by default) seconds and
+writes out all dirty superblock using the '->write_super()' call-back. But the
+problem with this thread is that it wastes power by waking up the system every
+5 seconds no matter what. So we want to kill it completely and thus, we need to
+make file-systems to stop using the '->write_super' VFS service, and then
+remove it together with the kernel thread.
+
+This patch switches the FAT FSINFO block management from
+'->write_super()'/'->s_dirt' to 'fsinfo_inode'/'->write_inode'. Now, instead of
+setting the 's_dirt' flag, we just mark the special 'fsinfo_inode' inode as
+dirty and let VFS invoke the '->write_inode' call-back when needed, where we
+write-out the FSINFO block.
+
+This patch also makes sure we do not mark the 'fsinfo_inode' inode as dirty if
+we are not FAT32 (FAT16 and FAT12 do not have the FSINFO block) or if we are in
+R/O mode.
+
+As a bonus, we can also remove the '->sync_fs()' and '->write_super()' FAT
+call-back function because they become unneeded.
 
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 ---
- fs/fat/fatent.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ fs/fat/fatent.c |    7 ++++++-
+ fs/fat/inode.c  |   42 ++++++++++++------------------------------
+ 2 files changed, 18 insertions(+), 31 deletions(-)
 
 diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
-index e49d274..8181548 100644
+index 8181548..31f08ab 100644
 --- a/fs/fat/fatent.c
 +++ b/fs/fat/fatent.c
-@@ -503,7 +503,6 @@ int fat_alloc_clusters(struct inode *inode, int *cluster, int nr_cluster)
- 				sbi->prev_free = entry;
- 				if (sbi->free_clusters != -1)
- 					sbi->free_clusters--;
--				mark_fsinfo_dirty(sb);
+@@ -310,7 +310,12 @@ void fat_ent_access_init(struct super_block *sb)
  
- 				cluster[idx_clus] = entry;
- 				idx_clus++;
-@@ -525,11 +524,11 @@ int fat_alloc_clusters(struct inode *inode, int *cluster, int nr_cluster)
- 	/* Couldn't allocate the free entries */
- 	sbi->free_clusters = 0;
- 	sbi->free_clus_valid = 1;
--	mark_fsinfo_dirty(sb);
- 	err = -ENOSPC;
- 
- out:
- 	unlock_fat(sbi);
-+	mark_fsinfo_dirty(sb);
- 	fatent_brelse(&fatent);
- 	if (!err) {
- 		if (inode_needs_sync(inode))
-@@ -554,7 +553,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
- 	struct fat_entry fatent;
- 	struct buffer_head *bhs[MAX_BUF_PER_PAGE];
- 	int i, err, nr_bhs;
--	int first_cl = cluster;
-+	int first_cl = cluster, dirty_fsinfo = 0;
- 
- 	nr_bhs = 0;
- 	fatent_init(&fatent);
-@@ -592,7 +591,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
- 		ops->ent_put(&fatent, FAT_ENT_FREE);
- 		if (sbi->free_clusters != -1) {
- 			sbi->free_clusters++;
--			mark_fsinfo_dirty(sb);
-+			dirty_fsinfo = 1;
- 		}
- 
- 		if (nr_bhs + fatent.nr_bhs > MAX_BUF_PER_PAGE) {
-@@ -622,6 +621,8 @@ error:
- 	for (i = 0; i < nr_bhs; i++)
- 		brelse(bhs[i]);
- 	unlock_fat(sbi);
-+	if (dirty_fsinfo)
-+		mark_fsinfo_dirty(sb);
- 
- 	return err;
+ static void mark_fsinfo_dirty(struct super_block *sb)
+ {
+-	sb->s_dirt = 1;
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
++
++	if (sb->s_flags & MS_RDONLY || sbi->fat_bits != 32)
++		return;
++
++	__mark_inode_dirty(sbi->fsinfo_inode, I_DIRTY_SYNC);
  }
+ 
+ static inline int fat_ent_update_ptr(struct super_block *sb,
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 91e9a8a..9a87ec4 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -459,37 +459,10 @@ static void fat_evict_inode(struct inode *inode)
+ 	fat_detach(inode);
+ }
+ 
+-static void fat_write_super(struct super_block *sb)
+-{
+-	lock_super(sb);
+-	sb->s_dirt = 0;
+-
+-	if (!(sb->s_flags & MS_RDONLY))
+-		fat_clusters_flush(sb);
+-	unlock_super(sb);
+-}
+-
+-static int fat_sync_fs(struct super_block *sb, int wait)
+-{
+-	int err = 0;
+-
+-	if (sb->s_dirt) {
+-		lock_super(sb);
+-		sb->s_dirt = 0;
+-		err = fat_clusters_flush(sb);
+-		unlock_super(sb);
+-	}
+-
+-	return err;
+-}
+-
+ static void fat_put_super(struct super_block *sb)
+ {
+ 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+ 
+-	if (sb->s_dirt)
+-		fat_write_super(sb);
+-
+ 	iput(sbi->fsinfo_inode);
+ 	iput(sbi->fat_inode);
+ 
+@@ -662,7 +635,18 @@ retry:
+ 
+ static int fat_write_inode(struct inode *inode, struct writeback_control *wbc)
+ {
+-	return __fat_write_inode(inode, wbc->sync_mode == WB_SYNC_ALL);
++	int err;
++
++	if (inode->i_ino == MSDOS_FSINFO_INO) {
++		struct super_block *sb = inode->i_sb;
++
++		lock_super(sb);
++		err = fat_clusters_flush(sb);
++		unlock_super(sb);
++	} else
++		err = __fat_write_inode(inode, wbc->sync_mode == WB_SYNC_ALL);
++
++	return err;
+ }
+ 
+ int fat_sync_inode(struct inode *inode)
+@@ -679,8 +663,6 @@ static const struct super_operations fat_sops = {
+ 	.write_inode	= fat_write_inode,
+ 	.evict_inode	= fat_evict_inode,
+ 	.put_super	= fat_put_super,
+-	.write_super	= fat_write_super,
+-	.sync_fs	= fat_sync_fs,
+ 	.statfs		= fat_statfs,
+ 	.remount_fs	= fat_remount,
+ 
 -- 
 1.7.7.6
 
