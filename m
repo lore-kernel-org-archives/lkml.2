@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760129Ab2EDU4G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:56:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57129 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932889Ab2EDUtJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:49:09 -0400
-Message-Id: <20120504204246.952140729@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:43:08 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 24/47] USB: cdc-wdm: fix race leading leading to memory corruption
-In-Reply-To: <20120504204307.GA13761@kroah.com>
+	id S1759967Ab2EDU4E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:56:04 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:54072 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760006Ab2EDUzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 16:55:48 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [RFC v2 2/5] PM, Add sysfs file power_off to control device power off policy
+Date: Fri, 4 May 2012 23:00:33 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Huang Ying <ying.huang@intel.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Zheng Yan <zheng.z.yan@intel.com>, Lan Tianyu <tianyu.lan@intel.com>
+References: <1336119221-21146-1-git-send-email-ying.huang@intel.com> <1336119221-21146-3-git-send-email-ying.huang@intel.com> <CAErSpo7yRWCWKrd93AJ3b1VZW-_gWeJgru4cfHN7cp3wFmW96w@mail.gmail.com>
+In-Reply-To: <CAErSpo7yRWCWKrd93AJ3b1VZW-_gWeJgru4cfHN7cp3wFmW96w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205042300.33976.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Friday, May 04, 2012, Bjorn Helgaas wrote:
+> On Fri, May 4, 2012 at 2:13 AM, Huang Ying <ying.huang@intel.com> wrote:
+> > From: Lan Tianyu <tianyu.lan@intel.com>
+> >
+> > Some devices can be powered off to save more power via some platform
+> > mechanism, e.g., ACPI.  But that may not work as expected for some
+> > device or platform.  So, this patch adds a sysfs file named power_off
+> > under <device>/power directory to provide a mechanism for user to control
+> > whether to allow the device to be power off.
+> >
+> > power_off => "enabled" means allowing the device to be powered off if
+> > possible.
+> >
+> > power_off => "disabled" means the device must be power on anytime.
+> >
+> > Also add flag power_off_user to struct dev_pm_info to record users'
+> > choice. The bus layer can use this field to determine whether to
+> > power off the device.
+> 
+> My first thought was that writing to "power_off" would actually turn
+> the power off, which isn't true.  Maybe something like
+> "poweroff_allowed" would work.
+> 
+> I think there's only one use of this new field, in
+> pci_pm_runtime_suspend().  Maybe you could pull out that hunk from
+> patch 5, combine it with this one, and move it to after patch 5?
 
-------------------
+Well, please see my comment.
 
-From: Oliver Neukum <oliver@neukum.org>
+First, it doesn't make sense to export a sysfs file to control a feature that
+the given device doesn't have.
 
-commit 5c22837adca7c30b66121cf18ad3e160134268d4 upstream.
+Second, if such a file is exported _at_ _this_ _level_, the sysfs setting
+should affect every situation in which power may be removed from devices, not
+just the PCIe D3cold damned thing.
 
-This patch fixes a race whereby a pointer to a buffer
-would be overwritten while the buffer was in use leading
-to a double free and a memory leak. This causes crashes.
-This bug was introduced in 2.6.34
+If this is going to be PCIe-specific, the flag should go into struct pci_dev,
+and the sysfs file accordingly.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Tested-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/class/cdc-wdm.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -108,8 +108,9 @@ static void wdm_out_callback(struct urb
- 	spin_lock(&desc->iuspin);
- 	desc->werr = urb->status;
- 	spin_unlock(&desc->iuspin);
--	clear_bit(WDM_IN_USE, &desc->flags);
- 	kfree(desc->outbuf);
-+	desc->outbuf = NULL;
-+	clear_bit(WDM_IN_USE, &desc->flags);
- 	wake_up(&desc->wait);
- }
- 
-@@ -312,7 +313,7 @@ static ssize_t wdm_write
- 	if (we < 0)
- 		return -EIO;
- 
--	desc->outbuf = buf = kmalloc(count, GFP_KERNEL);
-+	buf = kmalloc(count, GFP_KERNEL);
- 	if (!buf) {
- 		rv = -ENOMEM;
- 		goto outnl;
-@@ -376,10 +377,12 @@ static ssize_t wdm_write
- 	req->wIndex = desc->inum;
- 	req->wLength = cpu_to_le16(count);
- 	set_bit(WDM_IN_USE, &desc->flags);
-+	desc->outbuf = buf;
- 
- 	rv = usb_submit_urb(desc->command, GFP_KERNEL);
- 	if (rv < 0) {
- 		kfree(buf);
-+		desc->outbuf = NULL;
- 		clear_bit(WDM_IN_USE, &desc->flags);
- 		dev_err(&desc->intf->dev, "Tx URB error: %d\n", rv);
- 	} else {
-
-
+Thanks,
+Rafael
