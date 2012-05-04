@@ -1,74 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759064Ab2EDAYg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 May 2012 20:24:36 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45736 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755964Ab2EDAYe convert rfc822-to-8bit (ORCPT
+	id S1759105Ab2EDAZs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 May 2012 20:25:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41873 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755964Ab2EDAZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 May 2012 20:24:34 -0400
+	Thu, 3 May 2012 20:25:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <m2mx60m99c.fsf@firstfloor.org>
-References: <4F96A881.7050507@gmail.com> <m2mx60m99c.fsf@firstfloor.org>
-From: Hui Zhu <teawater@gmail.com>
-Date: Fri, 4 May 2012 08:23:53 +0800
-Message-ID: <CANFwon3pEkt7Mz1CedGQOw2UpqxUfsSN5Xfiz5FU+FSAbnFpug@mail.gmail.com>
-Subject: Re: KGTP (Linux Kernel debugger and tracer) 20120424 release(doc update)[1/3]code
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org
+Date: Thu, 3 May 2012 17:25:46 -0700
+Message-ID: <CAOsG7tqPgAJcLBx4hTE9-0bnCPymzCU4dhOHMjAPd+w9fqijVg@mail.gmail.com>
+Subject: [PATCH] Prevent process migration during vfp_init()
+From: Hyungwoo Yang <hwoo.yang@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 25, 2012 at 17:49, Andi Kleen <andi@firstfloor.org> wrote:
-> Hui Zhu <teawater@gmail.com> writes:
+Hello,
 
-Hi Andi,
+I think I've found a bug but actually I'm not sure whether it only
+happens to me due to our changes in kernel.
 
-Thanks for your mail.
+I really need your opinion.
 
->
-> Could you please split it down further. a 9kLOC patch is pretty daunting.
->
-> From a quick glance over some focus on simplication would be good: no
-> own allocators (kernel has enough), no own types (that would remove
-> asm), remove optional facilities like the private ring buffer. Some
-> obsolete code like using semaphores vs mutexes. The variable list looks
-> overcomplicated, just use an array? Generally too many macros I would
-> say, try using inlines or removing them.
->
-> Do you have any rarely used optional features that could be left out a
-> version 1? If yes do that.  I'm sure with some effort the 9kLOC could be
-> much less. A patch half the size would be much easier to merge.
->
+In vfp_init() in "arch/arm/vfp/vfpmodule.c", if there is process
+migration between vfp_enable() and smp_call_function() then kernel
+crashes.
 
-Your comments is very helpful for me.  I spent more time on add more
-function to KGTP, make it more faster and make module support more
-older kernel in before.  But the review patch is not very clear.  I
-will post a new patch for review that just keep the base function of
-KGTP to make it more easy to review.  Please keep help me with it.
+===== original code =====
 
-> There are some things that checkpatch will likely warn about.
->
-> It would be good if you could describe the use case a bit better:
-> this is for the kernel only or also user applications?
+       if (cpu_arch >= CPU_ARCH_ARMv6)
+               vfp_enable(NULL); <== if migration happens just after
+vfp_enable(NULL), kernel crashes.
+                 :
+                 :
+       vfpsid = fmrx(FPSID); <== if migration happens, read tries to
+access disbled VFP unit.
+                 :
+                 :
+      if (VFP_arch)
+               printk("not present\n");
+       else if (vfpsid & FPSID_NODOUBLE) {
+               printk("no double precision support\n");
+       } else {
+               hotcpu_notifier(vfp_hotplug, 0);
 
-Most of function is for the Linux kernel.  You can get them from the
-doc in http://code.google.com/p/kgtp/wiki/HOWTO
-And I am trying to make KGTP can do some thing for user application
-too.  http://code.google.com/p/kgtp/wiki/hotcode this is an example to
-use KGTP analyze user application performance bottleneck.
-I am just adding the function that can access to the memory of an user
-application memory directly without interrupt it.  And another plan is
-use KGTP get backtrace of user application without interrupt it.
+               smp_call_function(vfp_enable, NULL, 1); <== if migration happens,
+smp_call_function will not work as it is expected.
+=======================
 
-Thanks,
-Hui
+Do you have any opinion?
 
->
-> -Andi
->
-> --
-> ak@linux.intel.com -- Speaking for myself only
+
+There're a few ways of preventing migration (like set affinity or
+disable premption) but the following is one of the way.
+=======================
+
+>From 6d48d0aaac03e845646b445ad02ef3c228dcfdb9 Mon Sep 17 00:00:00 2001
+From: Hyungwoo Yang <hyungwooy@nvidia.com>
+Date: Thu, 3 May 2012 16:49:13 -0700
+Subject: [PATCH] ARM: vfp: Prevent process migration during vfp_init()
+
+System crashes if there is process migration during vfp_init() call.
+
+During vfp_init(), if a process which called vfp_enable() is migrated just
+after the call, then the process executing the rest of code will access
+a VFP unit which is not ENABLED and also smp_call_function() will not work
+as it is expected.
+
+This patch prevents accessing VFP unit disabled by preventing migration
+and also replaces smp_call_function() with on_each_cpu() to make sure that
+no VFP remains disabled.
+
+Signed-off-by: Hyungwoo Yang <hyungwooy@nvidia.com>
+---
+ arch/arm/vfp/vfpmodule.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/vfp/vfpmodule.c b/arch/arm/vfp/vfpmodule.c
+index bc683b8..fefa4cb 100644
+--- a/arch/arm/vfp/vfpmodule.c
++++ b/arch/arm/vfp/vfpmodule.c
+@@ -655,7 +655,9 @@ static int __init vfp_init(void)
+ {
+ 	unsigned int vfpsid;
+ 	unsigned int cpu_arch = cpu_architecture();
+-
++#ifdef CONFIG_SMP
++	preempt_disable();
++#endif
+ 	if (cpu_arch >= CPU_ARCH_ARMv6)
+ 		vfp_enable(NULL);
+
+@@ -669,6 +671,9 @@ static int __init vfp_init(void)
+ 	vfpsid = fmrx(FPSID);
+ 	barrier();
+ 	vfp_vector = vfp_null_entry;
++#ifdef CONFIG_SMP
++	preempt_enable();
++#endif
+
+ 	printk(KERN_INFO "VFP support v0.3: ");
+ 	if (VFP_arch)
+@@ -678,7 +683,7 @@ static int __init vfp_init(void)
+ 	} else {
+ 		hotcpu_notifier(vfp_hotplug, 0);
+
+-		smp_call_function(vfp_enable, NULL, 1);
++		on_each_cpu(vfp_enable, NULL, 1);
+
+ 		VFP_arch = (vfpsid & FPSID_ARCH_MASK) >> FPSID_ARCH_BIT;  /*
+Extract the architecture version */
+ 		printk("implementor %02x architecture %d part %02x variant %x rev %x\n",
+-- 
+1.7.0.4
