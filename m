@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822Ab2EDUsi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:48:38 -0400
+	id S932853Ab2EDUsw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:48:52 -0400
 Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
 	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932808Ab2EDUse (ORCPT
+	with ESMTP id S932781Ab2EDUsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:48:34 -0400
-Message-Id: <20120504204246.005795756@linuxfoundation.org>
+	Fri, 4 May 2012 16:48:47 -0400
+Message-Id: <20120504204246.353506275@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:57 -0700
+Date: Fri, 04 May 2012 13:43:01 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Arend van Spriel <arend@broadcom.com>
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 13/47] drm/i915: fix integer overflow in i915_gem_execbuffer2()
+        alan@lxorguk.ukuu.org.uk,
+        Francesco Saverio Schiavarelli <fschiava@libero.it>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Brett Rudley <brudley@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 17/47] brcm80211: smac: resume transmit fifo upon receiving frames
 In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Arend van Spriel <arend@broadcom.com>
 
-commit ed8cd3b2cd61004cab85380c52b1817aca1ca49b upstream.
+commit badc4f07622f0f7093a201638f45e85765f1b5e4 upstream.
 
-On 32-bit systems, a large args->buffer_count from userspace via ioctl
-may overflow the allocation size, leading to out-of-bounds access.
+There have been reports about not being able to use access-points
+on channel 12 and 13 or having connectivity issues when these channels
+were part of the selected regulatory domain. Upon switching to these
+channels the brcmsmac driver suspends the transmit dma fifos. This
+patch resumes them upon handing over the first received beacon to
+mac80211.
 
-This vulnerability was introduced in commit 8408c282 ("drm/i915:
-First try a normal large kmalloc for the temporary exec buffers").
+This patch is to be applied to the stable tree for kernel versions
+3.2 and 3.3.
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Tested-by: Francesco Saverio Schiavarelli <fschiava@libero.it>
+Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
+Reviewed-by: Brett Rudley <brudley@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/staging/brcm80211/brcmsmac/wlc_bmac.c |    3 +--
+ drivers/staging/brcm80211/brcmsmac/wlc_bmac.h |    1 +
+ drivers/staging/brcm80211/brcmsmac/wlc_main.c |    8 ++++++++
+ 3 files changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -1296,7 +1296,8 @@ i915_gem_execbuffer2(struct drm_device *
- 	struct drm_i915_gem_exec_object2 *exec2_list = NULL;
- 	int ret;
+--- a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
++++ b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.c
+@@ -143,7 +143,6 @@ static bool wlc_bmac_validate_chip_acces
+ static char *wlc_get_macaddr(struct wlc_hw_info *wlc_hw);
+ static void wlc_mhfdef(struct wlc_info *wlc, u16 *mhfs, u16 mhf2_init);
+ static void wlc_mctrl_write(struct wlc_hw_info *wlc_hw);
+-static void wlc_bmac_mute(struct wlc_hw_info *wlc_hw, bool want, mbool flags);
+ static void wlc_ucode_mute_override_set(struct wlc_hw_info *wlc_hw);
+ static void wlc_ucode_mute_override_clear(struct wlc_hw_info *wlc_hw);
+ static u32 wlc_wlintrsoff(struct wlc_info *wlc);
+@@ -2725,7 +2724,7 @@ void wlc_intrsrestore(struct wlc_info *w
+ 	W_REG(&wlc_hw->regs->macintmask, wlc->macintmask);
+ }
  
--	if (args->buffer_count < 1) {
-+	if (args->buffer_count < 1 ||
-+	    args->buffer_count > UINT_MAX / sizeof(*exec2_list)) {
- 		DRM_ERROR("execbuf2 with %d buffers\n", args->buffer_count);
- 		return -EINVAL;
- 	}
+-static void wlc_bmac_mute(struct wlc_hw_info *wlc_hw, bool on, mbool flags)
++void wlc_bmac_mute(struct wlc_hw_info *wlc_hw, bool on, mbool flags)
+ {
+ 	u8 null_ether_addr[ETH_ALEN] = {0, 0, 0, 0, 0, 0};
+ 
+--- a/drivers/staging/brcm80211/brcmsmac/wlc_bmac.h
++++ b/drivers/staging/brcm80211/brcmsmac/wlc_bmac.h
+@@ -103,6 +103,7 @@ extern void wlc_bmac_macphyclk_set(struc
+ extern void wlc_bmac_phy_reset(struct wlc_hw_info *wlc_hw);
+ extern void wlc_bmac_corereset(struct wlc_hw_info *wlc_hw, u32 flags);
+ extern void wlc_bmac_reset(struct wlc_hw_info *wlc_hw);
++extern void wlc_bmac_mute(struct wlc_hw_info *wlc_hw, bool want, mbool flags);
+ extern void wlc_bmac_init(struct wlc_hw_info *wlc_hw, chanspec_t chanspec,
+ 			  bool mute);
+ extern int wlc_bmac_up_prep(struct wlc_hw_info *wlc_hw);
+--- a/drivers/staging/brcm80211/brcmsmac/wlc_main.c
++++ b/drivers/staging/brcm80211/brcmsmac/wlc_main.c
+@@ -6145,6 +6145,7 @@ wlc_recvctl(struct wlc_info *wlc, d11rxh
+ {
+ 	int len_mpdu;
+ 	struct ieee80211_rx_status rx_status;
++	struct ieee80211_hdr *hdr;
+ 
+ 	memset(&rx_status, 0, sizeof(rx_status));
+ 	prep_mac80211_status(wlc, rxh, p, &rx_status);
+@@ -6154,6 +6155,13 @@ wlc_recvctl(struct wlc_info *wlc, d11rxh
+ 	skb_pull(p, D11_PHY_HDR_LEN);
+ 	__skb_trim(p, len_mpdu);
+ 
++	/* unmute transmit */
++	if (wlc->hw->suspended_fifos) {
++		hdr = (struct ieee80211_hdr *)p->data;
++		if (ieee80211_is_beacon(hdr->frame_control))
++			wlc_bmac_mute(wlc->hw, false, 0);
++	}
++
+ 	memcpy(IEEE80211_SKB_RXCB(p), &rx_status, sizeof(rx_status));
+ 	ieee80211_rx_irqsafe(wlc->pub->ieee_hw, p);
+ 	return;
 
 
