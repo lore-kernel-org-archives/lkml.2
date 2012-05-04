@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759881Ab2EDUot (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:44:49 -0400
+	id S1759898Ab2EDUo5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:44:57 -0400
 Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
 	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759863Ab2EDUoq (ORCPT
+	with ESMTP id S1759863Ab2EDUox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:44:46 -0400
-Message-Id: <20120504204225.920114960@linuxfoundation.org>
+	Fri, 4 May 2012 16:44:53 -0400
+Message-Id: <20120504204226.003541401@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 04 May 2012 13:42:42 -0700
+Date: Fri, 04 May 2012 13:42:43 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [ 18/75] hwmon: fam15h_power: fix bogus values with current BIOSes
+        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 19/75] hwmon: (fam15h_power) Fix pci_device_id array
 In-Reply-To: <20120504204258.GA12552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,90 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Przywara <andre.przywara@amd.com>
+From: Guenter Roeck <guenter.roeck@ericsson.com>
 
-commit 00250ec90963b7ef6678438888f3244985ecde14 upstream.
+commit c3e40a9972428d6e2d8e287ed0233a57a218c30f upstream.
 
-Newer BKDG[1] versions recommend a different initialization value for
-the running average range register in the northbridge. This improves
-the power reading by avoiding counter saturations resulting in bogus
-values for anything below about 80% of TDP power consumption.
-Updated BIOSes will have this new value set up from the beginning,
-but meanwhile we correct this value ourselves.
-This needs to be done on all northbridges, even on those where the
-driver itself does not register at.
+pci_match_id() takes an *array* of IDs which must be properly zero-
+terminated.
 
-This fixes the driver on all current machines to provide proper
-values for idle load.
-
-[1]
-http://support.amd.com/us/Processor_TechDocs/42301_15h_Mod_00h-0Fh_BKDG.pdf
-Chapter 3.8: D18F5xE0 Processor TDP Running Average (p. 452)
-
-Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-[guenter.roeck@ericsson.com: Removed unnecessary return statement]
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/fam15h_power.c |   39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+ drivers/hwmon/fam15h_power.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
 --- a/drivers/hwmon/fam15h_power.c
 +++ b/drivers/hwmon/fam15h_power.c
-@@ -122,6 +122,38 @@ static bool __devinit fam15h_power_is_in
- 	return true;
- }
- 
-+/*
-+ * Newer BKDG versions have an updated recommendation on how to properly
-+ * initialize the running average range (was: 0xE, now: 0x9). This avoids
-+ * counter saturations resulting in bogus power readings.
-+ * We correct this value ourselves to cope with older BIOSes.
-+ */
-+static void __devinit tweak_runavg_range(struct pci_dev *pdev)
-+{
-+	u32 val;
-+	const struct pci_device_id affected_device = {
-+		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
+@@ -128,17 +128,20 @@ static bool __devinit fam15h_power_is_in
+  * counter saturations resulting in bogus power readings.
+  * We correct this value ourselves to cope with older BIOSes.
+  */
++static DEFINE_PCI_DEVICE_TABLE(affected_device) = {
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
++	{ 0 }
++};
 +
-+	/*
-+	 * let this quirk apply only to the current version of the
-+	 * northbridge, since future versions may change the behavior
-+	 */
-+	if (!pci_match_id(&affected_device, pdev))
-+		return;
-+
-+	pci_bus_read_config_dword(pdev->bus,
-+		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
-+		REG_TDP_RUNNING_AVERAGE, &val);
-+	if ((val & 0xf) != 0xe)
-+		return;
-+
-+	val &= ~0xf;
-+	val |=  0x9;
-+	pci_bus_write_config_dword(pdev->bus,
-+		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
-+		REG_TDP_RUNNING_AVERAGE, val);
-+}
-+
- static void __devinit fam15h_power_init_data(struct pci_dev *f4,
- 					     struct fam15h_power_data *data)
+ static void __devinit tweak_runavg_range(struct pci_dev *pdev)
  {
-@@ -155,6 +187,13 @@ static int __devinit fam15h_power_probe(
- 	struct device *dev;
- 	int err;
+ 	u32 val;
+-	const struct pci_device_id affected_device = {
+-		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
  
-+	/*
-+	 * though we ignore every other northbridge, we still have to
-+	 * do the tweaking on _each_ node in MCM processors as the counters
-+	 * are working hand-in-hand
-+	 */
-+	tweak_runavg_range(pdev);
-+
- 	if (!fam15h_power_is_internal_node0(pdev)) {
- 		err = -ENODEV;
- 		goto exit;
+ 	/*
+ 	 * let this quirk apply only to the current version of the
+ 	 * northbridge, since future versions may change the behavior
+ 	 */
+-	if (!pci_match_id(&affected_device, pdev))
++	if (!pci_match_id(affected_device, pdev))
+ 		return;
+ 
+ 	pci_bus_read_config_dword(pdev->bus,
 
 
