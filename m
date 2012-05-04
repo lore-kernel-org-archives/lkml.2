@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759325Ab2EDS3R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 14:29:17 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:54241 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752952Ab2EDS3P (ORCPT
+	id S1759374Ab2EDSdB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 14:33:01 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:56278 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759363Ab2EDSc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 14:29:15 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: inux-next: Tree for Apr 27 (uml + mm/memcontrol.c)
-In-Reply-To: <alpine.DEB.2.00.1205031454400.1631@chino.kir.corp.google.com>
-References: <20120427161146.95422142968526faaff615d4@canb.auug.org.au> <4F9ABF9C.2070707@xenotime.net> <alpine.DEB.2.00.1204271141040.28516@chino.kir.corp.google.com> <20120427132343.fbb443b9.akpm@linux-foundation.org> <alpine.DEB.2.00.1204271420350.4631@chino.kir.corp.google.com> <20120427143646.8209627e.akpm@linux-foundation.org> <87fwbnag6u.fsf@skywalker.in.ibm.com> <alpine.DEB.2.00.1205030208120.21476@chino.kir.corp.google.com> <CABEgKgqWo=b=o7PwOLc=QqCWXQxUaYvMX99GP9cR_Y-RoTEW3g@mail.gmail.com> <alpine.DEB.2.00.1205031343300.1631@chino.kir.corp.google.com> <alpine.DEB.2.00.1205031454400.1631@chino.kir.corp.google.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 04 May 2012 23:59:02 +0530
-Message-ID: <877gwryf4h.fsf@skywalker.in.ibm.com>
+	Fri, 4 May 2012 14:32:59 -0400
+Date: Fri, 4 May 2012 11:32:54 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] perf: turn off compiler warnings for flex and bison
+ generated files
+Message-ID: <20120504183254.GA11154@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-x-cbid: 12050418-8878-0000-0000-00000248F40C
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Rientjes <rientjes@google.com> writes:
+We don't know what types of warnings different versions of flex and bison
+combined with different versions of gcc is going to generate, so just punt and
+don't warn about anything.
 
->> Is this a claim that memory-intensive workloads will have the exact same 
->> performance with and without memcg enabled?
+This fixes the build of perf for me on an openSUSE 12.1 system.
 
-> I've just run specjbb2005 three times on my system both with and without 
-> cgroup_disable=memory on the command line and it is consistently 1% faster 
-> without memcg.  If I add XX:+UseLargePages to the command line to use 
-> hugepages it's even larger.  So why must I incur this performance 
-> degradation if I simply want to control who may mmap hugepages out of the 
-> global pool?
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Even if we end up having a seperate controller for hugetlb, we would need
-some bits of memcg, like tracking page cgroup, moving page cgroup on
-page offline. We will also be duplicating some amount of framework for
-supporting cgroup removal etc, because all those code deal with struct
-page (actually compound page )
+---
+Note, I don't really like this, but how else are we going to ensure that we
+catch all warnings?  Pick them off one by one?  Better ideas are
+accepted, but something needs to be done soon, you don't want this
+broken for 3.4.
 
--aneesh
+ tools/perf/Makefile |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 9bf3fc7..92271d3 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -774,10 +774,10 @@ $(OUTPUT)perf.o perf.spec \
+ # over the general rule for .o
+ 
+ $(OUTPUT)util/%-flex.o: $(OUTPUT)util/%-flex.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -w $<
+ 
+ $(OUTPUT)util/%-bison.o: $(OUTPUT)util/%-bison.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -w $<
+ 
+ $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
