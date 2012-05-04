@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932805Ab2EDUse (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 16:48:34 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:57344 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932788Ab2EDUsa (ORCPT
+	id S932822Ab2EDUsi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 16:48:38 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:61380 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932808Ab2EDUse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 16:48:30 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 3/3] tty_lock: Localise the lock
-Date: Fri, 4 May 2012 20:48:21 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-References: <20120503212151.568.91854.stgit@bob.linux.org.uk> <20120503212219.568.15653.stgit@bob.linux.org.uk>
-In-Reply-To: <20120503212219.568.15653.stgit@bob.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205042048.21771.arnd@arndb.de>
-X-Provags-ID: V02:K0:oXUH9b6p6XC+Tgq4egKbnDXU86niZG5WmtsKdpbdxir
- 2/cb/ikm+enR0CTIgAocIB9eXiGNnP36aYGC2Zabb2L/mWsFwn
- Iv6/ZxYWLYYi8oTsfluRyTXUogo0FrNJc6Exd6znz7WoBoOZPq
- Fg/CiczA2a7PzbbKIi6Tir8Q90vl4jaHcBRF2fI0+VSiZnwBgw
- OlkvZShvEHFXsL8C3kK8ZBHFBVhiynFg4ne74NOG03ONTOjX2O
- R0yKsYN/reapQfbEAME0SvLuHpsPUYVx8dNENtX09MEsOAaBuD
- KjVPvcxYZpWRyiZh+ctT/kXLS9xbmfWR+PwXKJe5Qe/ovIXfZD
- AvrCBW71fOyw+AHSuTAQ=
+	Fri, 4 May 2012 16:48:34 -0400
+Message-Id: <20120504204246.005795756@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 04 May 2012 13:42:57 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 13/47] drm/i915: fix integer overflow in i915_gem_execbuffer2()
+In-Reply-To: <20120504204307.GA13761@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 May 2012, Alan Cox wrote:
-> 
-> From: Alan Cox <alan@linux.intel.com>
-> 
-> In each remaining case the tty_lock is associated with a specific tty. This
-> means we can now lock on a per tty basis. We do need tty_lock_pair() for
-> the pty case. Uglier but still a step in the right direction.
-> 
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+------------------
+
+From: Xi Wang <xi.wang@gmail.com>
+
+commit ed8cd3b2cd61004cab85380c52b1817aca1ca49b upstream.
+
+On 32-bit systems, a large args->buffer_count from userspace via ioctl
+may overflow the allocation size, leading to out-of-bounds access.
+
+This vulnerability was introduced in commit 8408c282 ("drm/i915:
+First try a normal large kmalloc for the temporary exec buffers").
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -1296,7 +1296,8 @@ i915_gem_execbuffer2(struct drm_device *
+ 	struct drm_i915_gem_exec_object2 *exec2_list = NULL;
+ 	int ret;
+ 
+-	if (args->buffer_count < 1) {
++	if (args->buffer_count < 1 ||
++	    args->buffer_count > UINT_MAX / sizeof(*exec2_list)) {
+ 		DRM_ERROR("execbuf2 with %d buffers\n", args->buffer_count);
+ 		return -EINVAL;
+ 	}
+
+
