@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759176Ab2EDQfG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 12:35:06 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62440 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab2EDQfF convert rfc822-to-8bit (ORCPT
+	id S1759200Ab2EDQfa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 12:35:30 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63659 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759191Ab2EDQf0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 12:35:05 -0400
+	Fri, 4 May 2012 12:35:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <1336124366.2046.20.camel@t41.thuisdomein>
-References: <CADDKRnDR=baZtQfyQLxYGB2zVDMGi2C_V2ffNkSUhipJB-+t=A@mail.gmail.com>
-	<1335995781.30754.27.camel@x61.thuisdomein>
-	<CADDKRnA7XMczevE2JRsMR508mdz+Rgs+QvV4QCMqnts8t+1y3A@mail.gmail.com>
-	<1336124366.2046.20.camel@t41.thuisdomein>
-Date: Fri, 4 May 2012 18:35:02 +0200
-Message-ID: <CADDKRnCz1wfcUKdPCFzMya3kr3f-gRuQoopiYa1fZ55VtAjxXw@mail.gmail.com>
-Subject: Re: [v3.4-rc5]: drm references experimental
-From: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20120504130332.GC12199@alberich.amd.com>
+References: <20120427143410.GB27535@alberich.amd.com> <20120427143621.GC27535@alberich.amd.com>
+ <CAErSpo7gkkqZgR0TZ5Xx162pLN9ZaYVhMmyHn+H8Lqr1CBSXXQ@mail.gmail.com> <20120504130332.GC12199@alberich.amd.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 4 May 2012 10:35:05 -0600
+Message-ID: <CAErSpo5_ZB=ggNDGM5N8Rt1TtW8DQQm1k2s9FBwFHjh7nFA4hw@mail.gmail.com>
+Subject: Re: [PATCH 1/2][RESEND] x86/pci/amd: Restore early_fill_mp_bus_to_node
+To: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Yinghai Lu <yinghai@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, thanks again Paul, for your answeres.
-Jörg
+On Fri, May 4, 2012 at 7:03 AM, Andreas Herrmann
+<andreas.herrmann3@amd.com> wrote:
+> On Wed, May 02, 2012 at 11:33:17AM -0600, Bjorn Helgaas wrote:
+>> On Fri, Apr 27, 2012 at 8:36 AM, Andreas Herrmann
+>> <andreas.herrmann3@amd.com> wrote:
+>> >
+>> > Once upon a time this function was overloaded with quirky stuff to fix
+>> > resource detection on systems w/ _CRS defects (seems that some Sun and
+>> > HP systems were affected).
+>> >
+>> > See commit 30a18d6c3f1e774de656ebd8ff219d53e2ba4029
+>> > (x86: multi pci root bus with different io resource range, on 64-bit)
+>> >
+>> > Restore the old function and thus decouple it from the quirk that is
+>> > CPU family specific (e.g. it won't work on AMD family 15h CPUs). BTW,
+>> > I assume that the _CRS stuff is working on current systems.
+>> >
+>> > This is required to properly initilize the numa_node information of
+>> > existing PCI busses and associated devices.
+>>
+>> I applied some of Yinghai's patches that also touch this area.  Can
+>> you refresh these so they apply on top of my "next" branch
+>> (git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git next)?
+>
+> Arrgh, will adapt my patch and resend it (asap).
+>
+>> Can you also be more specific about what these patches fix?
+>
+>> My understanding is that amd_bus.c (1) sets NUMA info with
+>> set_mp_bus_to_node() and (2) figures out MMIO and I/O port apertures,
+>> which are only used when blind probing and when ignoring _CRS.
+>>
+>> It seems like the main change in this patch is that we skip (2)
+>> completely when family >= 0x11, and I don't understand what that could
+>> fix.
+>
+> The patch restores a very old function that was used to detect the
+> nearest node for a PCI bus, so yes it's used to do (1). IMHO this
+> function was totally screwed up with Yinghai's code to do (2). It
+> seems that Sun has (had?) some systems where (2) was req'd. I don't
+> care about this part. But I'd like to do (1) on all AMD CPU NUMA
+> systems.
 
-2012/5/4 Paul Bolle <pebolle@tiscali.nl>:
-> On Thu, 2012-05-03 at 14:02 +0200, Jörg Otte wrote:
->> this means especially the following is not possible or does not occure:
->>
->> NON-EXP:
->> driver "A" uses library function "B"
->>
->> EXP:
->> unchanged driver "A" now uses EXPERIMENTAL function "B-EXP"
->
-> There's a number of things I can think of for "EXPERIMENTAL function".
-> What exactly do you mean here?
->
->> The question is whether this is guaranteed.
->
-> If you were thinking about usage of CONFIG_EXPERIMENTAL in code or in
-> Makefiles: no, I don't think there's a guarantee that this won't be
-> done. But it should be clear that EXPERIMENTAL is intended as, say, a
-> tag for config options. So it's likely that usage of EXPERIMENTAL
-> outside that scope will be prevented.
->
->
-> Paul Bolle
->
+Thanks for the explanation.  But I'm afraid I'm still confused.
+
+First, it sounds like you're trying to change the way we do part (1),
+i.e., the set_mp_bus_to_node() calls, but I think the effect of your
+patch is to stop doing part (2) in some cases.
+
+Second, I am pretty sure that the current early_fill_mp_bus_info()
+(before your patch) does the exact same set_mp_bus_to_node() calls as
+your early_fill_mp_bus_to_node() does.
+
+Finally, on all systems with ACPI, the set_mp_bus_to_node() call in
+pci_acpi_scan_root() should be doing what you need.  In fact, that
+call happens later, so it should be overwriting the information filled
+in by amd_bus.c.  If there's something wrong in this ACPI path, the
+most likely cause is a BIOS defect, such as  a missing _PXM method on
+the PNP0A03/0A08 host bridge device.
+
+Bjorn
