@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760568Ab2EDWwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 18:52:01 -0400
-Received: from ozlabs.org ([203.10.76.45]:56551 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760555Ab2EDWv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 18:51:59 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Diwakar Tundlam <dtundlam@nvidia.com>
-cc: "'Peter Zijlstra'" <a.p.zijlstra@chello.nl>,
-        "'Ingo Molnar'" <mingo@kernel.org>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Christoph Lameter'" <cl@gentwo.org>,
-        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        "'David Rientjes'" <rientjes@google.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Subject: Re: [PATCH] sched: Enable arch-specific asym packing option in sched domain
-In-reply-to: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF102@HQMAIL04.nvidia.com>
-References: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF0FF@HQMAIL04.nvidia.com> <1DD7BFEDD3147247B1355BEFEFE46652379C3DF101@HQMAIL04.nvidia.com> <1336169422.16236.1.camel@twins> <1DD7BFEDD3147247B1355BEFEFE46652379C3DF102@HQMAIL04.nvidia.com>
-Comments: In-reply-to Diwakar Tundlam <dtundlam@nvidia.com>
-   message dated "Fri, 04 May 2012 15:18:04 -0700."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
-Date: Sat, 05 May 2012 08:51:58 +1000
-Message-ID: <5722.1336171918@neuling.org>
+	id S1760545Ab2EDWx6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 18:53:58 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59637 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755999Ab2EDWx5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 18:53:57 -0400
+Date: Fri, 4 May 2012 23:56:30 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: drivers: Probable misuses of ||
+Message-ID: <20120504235630.6b79d938@pyramind.ukuu.org.uk>
+In-Reply-To: <1336168477.11505.6.camel@joe2Laptop>
+References: <1333580415.23520.29.camel@joe2Laptop>
+	<1336168477.11505.6.camel@joe2Laptop>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> We need this for Tegra's slight asymmetry with core0.
+On Fri, 04 May 2012 14:54:37 -0700
+Joe Perches <joe@perches.com> wrote:
 
-This would seem to be to be a different problem.  I don't think the
-packing mechanism is what you want.
+> On Wed, 2012-04-04 at 16:00 -0700, Joe Perches wrote:
+> > Likely these should be && not ||
+> > 
+> > drivers/scsi/FlashPoint.c:				if(bit_cnt != 0 || bit_cnt != 8)
+> 
+> It's been a month.
+> 
+> Do you maintainers not care about these obvious defects?
 
-Shouldn't you be increasing the CPU power of this core, so that all
-tasks get a fair go on this core?  Otherwise you're breaking the
-fundamental concept of a completely fair scheduler.
+You are assuming the code in question has maintainers. FlashPoint hasn't
+really had a maintainer since Leonard died. Also given it's been like
+that for approaching twenty years and works there is a real danger in
+changing it unless the patch is tested carefully - if you can find anyone
+with the hardware.
 
-Using this packing mechanism you won't get this.  Any task that lands on
-core 0 will get an unfair amount of computation power, compared to tasks
-that landed on core 1.
+It's not unknown for code to work *because* it is wrong.
 
-Mikey
+Alan
