@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab2EDOKz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 10:10:55 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18201 "EHLO
+	id S1758462Ab2EDOKX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 10:10:23 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:18085 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758339Ab2EDOK2 (ORCPT
+	with ESMTP id S1758338Ab2EDOKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 10:10:28 -0400
+	Fri, 4 May 2012 10:10:19 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/4] drivers/video/xen-fbfront.c: add missing cleanup code
-Date: Fri,  4 May 2012 10:04:24 -0400
-Message-Id: <1336140267-7399-2-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3/4] xen/pte: Fix crashes when trying to see non-existent PGD/PMD/PUD/PTEs
+Date: Fri,  4 May 2012 10:04:26 -0400
+Message-Id: <1336140267-7399-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
 In-Reply-To: <1336140267-7399-1-git-send-email-konrad.wilk@oracle.com>
 References: <1336140267-7399-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+If I try to do "cat /sys/kernel/debug/kernel_page_tables"
+I end up with:
 
-The operations in the subsequent error-handling code appear to be also
-useful here.
+BUG: unable to handle kernel paging request at ffffc7fffffff000
+IP: [<ffffffff8106aa51>] ptdump_show+0x221/0x480
+PGD 0
+Oops: 0000 [#1] SMP
+CPU 0
+.. snip..
+RAX: 0000000000000000 RBX: ffffc00000000fff RCX: 0000000000000000
+RDX: 0000800000000000 RSI: 0000000000000000 RDI: ffffc7fffffff000
 
-Acked-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-[v1: Collapse some of the error handling functions]
+which is due to the fact we are trying to access a PFN that is not
+accessible to us. The reason (at least in this case) was that
+PGD[256] is set to __HYPERVISOR_VIRT_START which setup (by the
+hypervisor) to point to a read-only linear map of the MFN->PFN array.
+During our parsing we would get the MFN (a valid one), try to look
+it up in the MFN->PFN tree and find it invalid and return ~0 as PFN.
+Then pte_mfn_to_pfn would happilly feed that in, attach the flags
+and return it back to the caller. In this case the ptdump_show
+bitshifts it and we get this invalid value.
+
+Instead of doing all of that, we detect the ~0 case and just return
+!_PAGE_PRESENT.
+
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/video/xen-fbfront.c |   25 +++++++++++++++----------
- 1 files changed, 15 insertions(+), 10 deletions(-)
+ arch/x86/xen/mmu.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
-index cb4529c..aa42160 100644
---- a/drivers/video/xen-fbfront.c
-+++ b/drivers/video/xen-fbfront.c
-@@ -458,26 +458,31 @@ static int __devinit xenfb_probe(struct xenbus_device *dev,
- 	xenfb_init_shared_page(info, fb_info);
- 
- 	ret = xenfb_connect_backend(dev, info);
--	if (ret < 0)
--		goto error;
-+	if (ret < 0) {
-+		xenbus_dev_fatal(dev, ret, "xenfb_connect_backend");
-+		goto error_fb;
-+	}
- 
- 	ret = register_framebuffer(fb_info);
- 	if (ret) {
--		fb_deferred_io_cleanup(fb_info);
--		fb_dealloc_cmap(&fb_info->cmap);
--		framebuffer_release(fb_info);
- 		xenbus_dev_fatal(dev, ret, "register_framebuffer");
--		goto error;
-+		goto error_fb;
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index b8e2794..69f5857 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -353,8 +353,13 @@ static pteval_t pte_mfn_to_pfn(pteval_t val)
+ {
+ 	if (val & _PAGE_PRESENT) {
+ 		unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
++		unsigned long pfn = mfn_to_pfn(mfn);
++
+ 		pteval_t flags = val & PTE_FLAGS_MASK;
+-		val = ((pteval_t)mfn_to_pfn(mfn) << PAGE_SHIFT) | flags;
++		if (unlikely(pfn == ~0))
++			val = flags & ~_PAGE_PRESENT;
++		else
++			val = ((pteval_t)pfn << PAGE_SHIFT) | flags;
  	}
- 	info->fb_info = fb_info;
  
- 	xenfb_make_preferred_console();
- 	return 0;
- 
-- error_nomem:
--	ret = -ENOMEM;
--	xenbus_dev_fatal(dev, ret, "allocating device memory");
-- error:
-+error_fb:
-+	fb_deferred_io_cleanup(fb_info);
-+	fb_dealloc_cmap(&fb_info->cmap);
-+	framebuffer_release(fb_info);
-+error_nomem:
-+	if (!ret) {
-+		ret = -ENOMEM;
-+		xenbus_dev_fatal(dev, ret, "allocating device memory");
-+	}
-+error:
- 	xenfb_remove(dev);
- 	return ret;
- }
+ 	return val;
 -- 
 1.7.7.5
 
