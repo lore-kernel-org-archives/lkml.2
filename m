@@ -1,33 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758504Ab2EDOfV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 10:35:21 -0400
-Received: from v091303.home.net.pl ([79.96.159.117]:56253 "HELO
-	v091303.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757363Ab2EDOfU convert rfc822-to-8bit (ORCPT
+	id S932081Ab2EDOgF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 10:36:05 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34288 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758332Ab2EDOgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 10:35:20 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 May 2012 10:35:20 EDT
-Message-Id: <nMaieCjfACW6mGnjmtnQhhv7gIbUjLU5zBlC0A1Odtta@seocreativity.pl>
-Mime-Version: 1.0
-From: SEOcreativity <kontakt@seocreativity.pl>
-To: linux-kernel@vger.kernel.org
-Subject: =?windows-1250?Q?Tanie_pozycjonowanie_stron-p=B3atno=9C=E6_tylko_za_efekt?=
-Date: Fri, 4 May 2012 16:28:33 +0200
-X-Bounce-Tracking-Info: <CQkJbGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZwlUYW5pZSBwb3p5Y2pvbm93YW5pZSBzdHJvbi1wxYJhdG5vxZvEhyB0eWxrbyB6YSBlZmVrdAk0MglzcGFtaW5nCTM2MjAzCWJvdW5jZQlubwlubw==>
-Content-type: text/plain; charset=windows-1250; format=flowed
-Content-transfer-encoding: 8BIT
+	Fri, 4 May 2012 10:36:03 -0400
+Date: Fri, 4 May 2012 15:35:18 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Wookey <wookey@wookware.org>
+Cc: Deepak Saxena <dsaxena@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Kukjin Kim <kgene.kim@samsung.com>, linaro-dev@lists.linaro.org,
+        Jason Cooper <jason@lakedaemon.net>, Nicolas Pitre <nico@fluxnic.net>,
+        Tony Lindgren <tony@atomide.com>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Making ARM multiplatform kernels DT-only?
+Message-ID: <20120504143518.GF26481@n2100.arm.linux.org.uk>
+References: <201205031350.35476.arnd@arndb.de> <CAK2p4sJj7FRVSStVkqmn16sUv8S3vHmUYCU_VzTWAWzqV5yVsg@mail.gmail.com> <20120504142057.GQ27023@stoneboat.aleph1.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120504142057.GQ27023@stoneboat.aleph1.co.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Szanowni Klienci,
+On Fri, May 04, 2012 at 03:20:57PM +0100, Wookey wrote:
+> Debian tries very hard not to support anything in the kernel that
+> upstream don't support in the kernel because otherwise it's way too
+> much work. The current list of supplied arm kernels is:
+> 
+> iop32x (ThecusN2100, intel SS4000, GLAN tank)
+> ixp4xx (Linksys NSLU2)
+> kirkwood (*plugs, QNAP NAS, OPenRD)
+> orion5x (QNAP NAS, HP mv2120)
+> versatile
+> mx5
+> omap
+> 
+> because that's a good compromise between coverage and 'building 20-odd
+> images'. I have no idea how much of that lot is going to get DTified,
+> but I'm guessing the older stuff won't be?
 
-W zwi¹zku z wymogami ustawy z dnia 18 lipca 2002 roku o œwiadczeniu us³ug droga elektroniczna (Dz. U. Nr 144 z 9 wrzeœnia 2002 r., poz. 1204), chcia³bym uzyskaæ Pana/Pani zgodê na przes³anie informacji dotycz¹cej oferty firmy SEOcreativity - tanie pozycjonowanie stron WWW. Zosta³a ona przygotowana z myœl¹ o Pañstwa potrzebach promocyjno-reklamowych. Jeœli wyra¿a Pan/Pani zgodê na przes³anie informacji o ofercie SEOcreativity - uprzejmie proszê o e-mail zwrotny zawieraj¹cy adres Pañstwa strony WWW oraz s³owa kluczowe, na które chcieliby Pañstwo promowaæ swoja stronê.
+Well, my understanding is that there's DT patches around for Versatile.
+OMAP and MX5 are both heading for DT.  I'm less certain about the Orion
+and Kirkwood stuff, but as they're only about 4 years old, I would hope
+that there was some active movement for these.
 
-http://www.seocreativity.pl
+The iop32x and ixp4xx stuff hasn't seen much in the way of maintenance
+so its highly likely that these won't be converted to DT unless someone
+with the hardware decides to step up and do it.
 
-DARMOWY audyt strony
-P³atnoœæ tylko ZA EFEKT!
-Zespó³ SEOcreativity
-
+So, that means your list should reduce down to five kernels, or three if
+the Orion/Kirkwood stuff gets converted to DT.
