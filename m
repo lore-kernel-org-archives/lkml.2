@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab2EEP2K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 11:28:10 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:43388 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756516Ab2EEP2I (ORCPT
+	id S1756766Ab2EEP31 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 11:29:27 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54354 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756071Ab2EEP3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 11:28:08 -0400
-Date: Sat, 5 May 2012 11:28:08 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Bolle <pebolle@tiscali.nl>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: also announce bcdDevice
-In-Reply-To: <4FA54292.5000102@fold.natur.cuni.cz>
-Message-ID: <Pine.LNX.4.44L0.1205051125220.3737-100000@netrider.rowland.org>
+	Sat, 5 May 2012 11:29:25 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAKgNAkjybL_hmVfONUHtCbBe_VxQHNHOrmWQErGWDUqHiczkFg@mail.gmail.com>
+References: <CAHGf_=qdE3yNw=htuRssfav2pECO1Q0+gWMRTuNROd_3tVrd6Q@mail.gmail.com>
+ <CAHGf_=ojhwPUWJR0r+jVgjNd5h_sRrppzJntSpHzxyv+OuBueg@mail.gmail.com>
+ <x49ehr4lyw1.fsf@segfault.boston.devel.redhat.com> <CAHGf_=rzcfo3OnwT-YsW2iZLchHs3eBKncobvbhTm7B5PE=L-w@mail.gmail.com>
+ <x491un3nc7a.fsf@segfault.boston.devel.redhat.com> <CAPa8GCCgLUt1EDAy7-O-mo0qir6Bf5Pi3Va1EsQ3ZW5UU=+37g@mail.gmail.com>
+ <20120502081705.GB16976@quack.suse.cz> <CAPa8GCCnvvaj0Do7sdrdfsvbcAf0zBe3ssXn45gMfDKCcvJWxA@mail.gmail.com>
+ <20120502091837.GC16976@quack.suse.cz> <CAHGf_=qfuRZzb91ELEcArNaNHsfO4BBMPO8a-QRBzFNaT2ev_w@mail.gmail.com>
+ <20120502192325.GA18339@quack.suse.cz> <CAHGf_=oOx1qPFEboQeuaeMKtveM2==BSDG=xdfRHz+gFx1GAfw@mail.gmail.com>
+ <CAKgNAkjybL_hmVfONUHtCbBe_VxQHNHOrmWQErGWDUqHiczkFg@mail.gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Sat, 5 May 2012 11:29:03 -0400
+Message-ID: <CAHGf_=p4py5m1Pe1xon=9FcEEyf6AxW+Pc9Yy9gCvNtbXM_40A@mail.gmail.com>
+Subject: Re: [PATCH] Describe race of direct read and fork for unaligned buffers
+To: mtk.manpages@gmail.com
+Cc: Nick Piggin <npiggin@gmail.com>, Jan Kara <jack@suse.cz>,
+        Jeff Moyer <jmoyer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-man@vger.kernel.org, linux-mm@kvack.org, mgorman@suse.de,
+        Andrea Arcangeli <aarcange@redhat.com>, Woodman <lwoodman@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 May 2012, Martin Mokrejs wrote:
+> So, am I correct to assume that right text to add to the page is as below?
+>
+> Nick, can you clarify what you mean by "quiesced"?
 
-> Greg Kroah-Hartman wrote:
-> > On Sat, May 05, 2012 at 02:14:43PM +0200, Martin Mokrejs wrote:
-> >> Paul Bolle wrote:
-> >>> Currently announce_device() does print the idVendor and idProduct values
-> >>> but does not print the bcdDevice value. USB devices are accurately
-> >>> identified by all three values. See, for instance, the USB storage
-> >>> quirks which will only apply for a certain (range of) bcdDevice
-> >>> value(s). So it seems useful to also print bcdDevice when announcing USB
-> >>> devices.
-> >>
-> >> Could it also report negotiated speed? full-speed, high-speed, super-speed?
-> > 
-> > All of this, including the bcdDevice, can be found in sysfs.  So I don't
-> > want to take this patch, otherwise we would be just adding more and more
-> > to the kernel log.
-> > 
-> > If you programatically want to find this out, use libudev or listen to
-> > the dbus messages for new devices, don't watch the kernel log messages.
-> 
-> Hmm, but when you go through your syslog/dmesg lines especially in case of
-> USB devices which you swap in and out quite often, it is too late to lookup
-> some file elsewhere which relates to *current* device. The information
-> is lost already if you changed device meanwhile. You just realize USB disk
-> disconnected but you have not way find out except from the log files what
-> speed did it use. In case of USB3 devices capable of lower speeds it is
-> quite important. Some just claim USB3 capabilities (on the package box)
-> but in real, always end up at high-speed only.
-> 
-> For me testing several USB disks, USB to SATA bridges, host controllers,
-> kernel command-lines ... it is way to much work. Having the USB debug
-> enabled, especially XHCI_HCD_DEBUG gives on the other had too much output
-> for daily use but as this is all stuff prone to fail somewhere and at some
-> point I keep it enabled.
-> 
-> I don't think it clutters syslog nor that it adds significant extra size
-> to the output. It would save people from enabling debug just because of this.
-> And no, average linux user never never lookup sysfs nor use libudev, really.
-> Still, the link speed is of interest to everybody fiddling with the stuff
-> and wondering why the damn thing is so slow or why did it disconnect. It gives
-> an answer or at least a hint.
+finished?
 
-But the kernel _already_ logs a message listing new USB devices along 
-with their speed.  In fact, it does this even if the ANNOUNCE config 
-option isn't set.
+>
+> [[
+> O_DIRECT IOs should never be run concurrently with fork(2) system call,
+> when the memory buffer is anonymous memory, or comes from mmap(2)
+> with MAP_PRIVATE.
+>
+> Any such IOs, whether submitted with asynchronous IO interface or from
+> another thread in the process, should be quiesced before fork(2) is called.
+> Failure to do so can result in data corruption and undefined behavior in
+> parent and child processes.
+>
+> This restriction does not apply when the memory buffer for the O_DIRECT
+> IOs comes from mmap(2) with MAP_SHARED or from shmat(2).
+> Nor does this restriction apply when the memory buffer has been advised
+> as MADV_DONTFORK with madvise(2), ensuring that it will not be available
+> to the child after fork(2).
+> ]]
 
-Alan Stern
+I don't have good English and I can't make editorial check. But at least,
+I don't find any technical incorrect explanation here.
 
+ Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
