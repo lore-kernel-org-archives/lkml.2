@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab2EEF7K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 01:59:10 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:62781 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046Ab2EEF7I convert rfc822-to-8bit (ORCPT
+	id S1752659Ab2EEGIf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 02:08:35 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59703 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab2EEGIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 01:59:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo4EGWndS0c_6SZrCz_O=3WmfZoRoRrU=9AN5TG3QfxHbg@mail.gmail.com>
-References: <1336119221-21146-1-git-send-email-ying.huang@intel.com>
-	<1336119221-21146-2-git-send-email-ying.huang@intel.com>
-	<CAErSpo4EGWndS0c_6SZrCz_O=3WmfZoRoRrU=9AN5TG3QfxHbg@mail.gmail.com>
-Date: Sat, 5 May 2012 13:59:07 +0800
-Message-ID: <CAC=cRTPfkw5tQHLbACyJey1MKV=fTZiV_NqKKicgksXEF5QRpQ@mail.gmail.com>
-Subject: Re: [RFC v2 1/5] PM, Runtime, Add power_must_be_on flag
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Huang Ying <ying.huang@intel.com>, ming.m.lin@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Zheng Yan <zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 5 May 2012 02:08:31 -0400
+Date: Sat, 5 May 2012 16:08:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        jbaron@redhat.com
+Subject: Re: [PATCH 3/3] dynamic_debug: remove unneeded includes
+Message-Id: <20120505160817.4cfa6a5c3cd2547e13e1d70b@canb.auug.org.au>
+In-Reply-To: <CAJfuBxzy224rg9No5L281gkp369ZfTjqADpeoxysvL5oNDk-Ng@mail.gmail.com>
+References: <1336067860-19953-1-git-send-email-jim.cromie@gmail.com>
+	<1336067860-19953-3-git-send-email-jim.cromie@gmail.com>
+	<20120505143629.57126695eba8787d1033ac7b@canb.auug.org.au>
+	<CAJfuBxzy224rg9No5L281gkp369ZfTjqADpeoxysvL5oNDk-Ng@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__5_May_2012_16_08_17_+1000_ZFmh/teuUFDEmQmJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 5, 2012 at 3:50 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, May 4, 2012 at 2:13 AM, Huang Ying <ying.huang@intel.com> wrote:
->> --- a/include/linux/pm.h
->> +++ b/include/linux/pm.h
->> @@ -536,6 +536,7 @@ struct dev_pm_info {
->>        unsigned int            irq_safe:1;
->>        unsigned int            use_autosuspend:1;
->>        unsigned int            timer_autosuspends:1;
->> +       unsigned int            power_must_be_on:1;
->>        enum rpm_request        request;
->>        enum rpm_status         runtime_status;
->>        int                     runtime_error;
+--Signature=_Sat__5_May_2012_16_08_17_+1000_ZFmh/teuUFDEmQmJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Jim,
+
+On Fri, 4 May 2012 23:52:24 -0600 Jim Cromie <jim.cromie@gmail.com> wrote:
 >
-> It's a little weird to just add the field, with no users.  Would it
-> make sense to pull out the bits of patch 5 that use this and combine
-> them into a single smaller patch?
+> compiled on Core, and boot tested on i586
+> also recently compiled on x86_64
 
-This patch is needed by some other subsystem too, such as ZPODD
-support in following patchset:
+Yeah, the problem being that we have 27 architectures. a large number of
+platforms and en enormous number of CONFIG variables and all of these
+things can affect whet gets implicitly included.
 
-https://lkml.org/lkml/2012/3/28/23
+> I guess I better make lib/dynamic_debug.i
+> inspect the file, and possibly revert parts of this patch.
 
-The original plan is to merge this into linux-pm.git firstly, then
-merge various usage of this flag into various subsystem git tree.
-That will make cross-tree merging a little easier.  Is it possible?
+I am not sure that would help much (see above).  Also note Rule 1 from
+Documentation/SubmitChecklist :-)
 
-> But see related comments there; it
-> might be safer to have a function that computes this whenever you need
-> it instead of caching the value.
+> BTW, how were you carrying that merge conflict resolution ?
+> git rerere ?
 
-This flag may be used (or calculated if implemented as a function)
-when device is in suspended state.  Reason is as follow from the
-changelog of this patch.
+Yep.
 
-"
-In general, whether to put a device into power off state should be
-decided by the driver of the device, but for some buses, whether to
-put a device into power off state may be done by the parent of the
-device.  For example, a PCIe end point device may be put into power
-off state by the PCIe port connected to it.
-"
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-If all devices can calculate "power_must_be_on" when it is in
-suspended state, then this will be a design choice.
+--Signature=_Sat__5_May_2012_16_08_17_+1000_ZFmh/teuUFDEmQmJ
+Content-Type: application/pgp-signature
 
-Hi, Rafael,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-What do you think about the idea to replace .power_must_be_on with a
-function (maybe add a new callback in pm_ops)?
+iQIcBAEBCAAGBQJPpMPRAAoJEECxmPOUX5FE9sQQAJ32CYAWSrgZK89mwwzPiePD
+P7/y9laGHfE9xquvJpXHfz8jtvvIZeM7865Mn1CMCh+eNknbhZuy/Jj3r8xHjw1L
+ZtnA04SHq8nmAIoj3r61AlRAUw3fxrbiytnyyoDkS6rOGHbRSvDhEgQEgQKne7CA
+45BUIjfPsCbC1Zy+vGrzIImFZLLO1a9bfyF4Ez55UeXjo8TN8gMdXYyX8vbfTvbJ
+ih1BTwVs6JBP3tUnQD6x3vInNE4Eure/HiS6Vyrwfqv+DytMDia4sNeKyOEQcJY0
+IZ/ehV3PpkMF9sgF8fhNcRVXt4iufSZG5EkO5949eLeNzNaMthS6jlHbyQRt4wU9
+ThokBQwhnRYbpECRrsq4BK9LSnzHZqtmRdqYzIXP4FB2iCkNHyKp63kaZZVcMB+S
+7bte7lsOFZze+Mwi+DBawRW5C0obsQUd+phLnU3iQPoR91m3ldQIz2yhgIhZk6CT
+2YsHtCv3DFnjVKAm9HWW1lPaDR0vKy+jQrSPmu46NCA4nRdRSMgUEgfP7q4yL88a
+RAtjsZ7ruQtwkPFqby9RrbxSLQ0PiVF36EYgJL3hSaY/z18xcmiUilf4akxsJyTq
+ml+OOTClbG1QquN3MCYjUUnc+MAC24gfswNKpk6gVrQk0uAYU/N0brUcreV+4oSG
+qTX8mUkKyCJZQRwB3L6X
+=oE/v
+-----END PGP SIGNATURE-----
 
-Best Regards,
-Huang Ying
+--Signature=_Sat__5_May_2012_16_08_17_+1000_ZFmh/teuUFDEmQmJ--
