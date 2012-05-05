@@ -1,63 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412Ab2EEGg0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 02:36:26 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:53250 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751133Ab2EEGgY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 02:36:24 -0400
+	id S1752687Ab2EEGqT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 02:46:19 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:59392 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab2EEGqR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 May 2012 02:46:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7yRWCWKrd93AJ3b1VZW-_gWeJgru4cfHN7cp3wFmW96w@mail.gmail.com>
+In-Reply-To: <201205042143.54364.rjw@sisk.pl>
 References: <1336119221-21146-1-git-send-email-ying.huang@intel.com>
-	<1336119221-21146-3-git-send-email-ying.huang@intel.com>
-	<CAErSpo7yRWCWKrd93AJ3b1VZW-_gWeJgru4cfHN7cp3wFmW96w@mail.gmail.com>
-Date: Sat, 5 May 2012 14:36:23 +0800
-Message-ID: <CAC=cRTNedUZgefQjyQ1L-nY8O2=UcgmEkjVwdL9JCCMgVJqwKg@mail.gmail.com>
-Subject: Re: [RFC v2 2/5] PM, Add sysfs file power_off to control device power
- off policy
+	<1336119221-21146-4-git-send-email-ying.huang@intel.com>
+	<201205042143.54364.rjw@sisk.pl>
+Date: Sat, 5 May 2012 14:46:16 +0800
+Message-ID: <CAC=cRTMoSCoWYvVqhBb5_SD=+bJuQ86-eifDqZxtGYRW_Ok9eg@mail.gmail.com>
+Subject: Re: [RFC v2 3/5] PCIe, Add runtime PM support to PCIe port
 From: huang ying <huang.ying.caritas@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Huang Ying <ying.huang@intel.com>, ming.m.lin@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Zheng Yan <zheng.z.yan@intel.com>,
-        Lan Tianyu <tianyu.lan@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Zheng Yan <zheng.z.yan@intel.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 5, 2012 at 3:50 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, May 4, 2012 at 2:13 AM, Huang Ying <ying.huang@intel.com> wrote:
->> From: Lan Tianyu <tianyu.lan@intel.com>
+On Sat, May 5, 2012 at 3:43 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, May 04, 2012, Huang Ying wrote:
+>> From: Zheng Yan <zheng.z.yan@intel.com>
 >>
->> Some devices can be powered off to save more power via some platform
->> mechanism, e.g., ACPI.  But that may not work as expected for some
->> device or platform.  So, this patch adds a sysfs file named power_off
->> under <device>/power directory to provide a mechanism for user to control
->> whether to allow the device to be power off.
+>> This patch adds runtime PM support to PCIe port.  This is needed by
+>> PCIe D3cold support, where PCIe device in slot may be powered on/off
+>> by PCIe port.
 >>
->> power_off => "enabled" means allowing the device to be powered off if
->> possible.
+>> Because runtime suspend is broken for some chipset, a white list is
+>> used to enable runtime PM support for only chipset known to work.
 >>
->> power_off => "disabled" means the device must be power on anytime.
+>> Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+>> Signed-off-by: Huang Ying <ying.huang@intel.com>
+>> ---
+>>  drivers/pci/pci.c              |    9 +++++++++
+>>  drivers/pci/pcie/portdrv_pci.c |   40 ++++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 49 insertions(+)
 >>
->> Also add flag power_off_user to struct dev_pm_info to record users'
->> choice. The bus layer can use this field to determine whether to
->> power off the device.
+>> --- a/drivers/pci/pci.c
+>> +++ b/drivers/pci/pci.c
+>> @@ -1476,6 +1476,15 @@ bool pci_check_pme_status(struct pci_dev
+>>   */
+>>  static int pci_pme_wakeup(struct pci_dev *dev, void *pme_poll_reset)
+>>  {
+>> +     struct pci_dev *bridge = dev->bus->self;
+>> +
+>> +     /*
+>> +      * If bridge is in low power state, the configuration space of
+>> +      * subordinate devices may be not accessible
 >
-> My first thought was that writing to "power_off" would actually turn
-> the power off, which isn't true.  Maybe something like
-> "poweroff_allowed" would work.
+> Please also say in the comment _when_ this is possible.  That's far from
+> obvious, because the runtime PM framework generally ensures that parents are
+> resumed before the children, so the comment should describe the particular
+> scenario leading to this situation.
 
-Yes. "power_off" is not a good name.  "poweroff_allowed" is much better.
+OK.  I will add something like below into comments.
 
-> I think there's only one use of this new field, in
-> pci_pm_runtime_suspend().  Maybe you could pull out that hunk from
-> patch 5, combine it with this one, and move it to after patch 5?
+This is possible when doing PME poll.
 
-This will be used by various places, such as ZPODD support, power domain, etc.
+>> +      */
+>> +     if (bridge && bridge->current_state != PCI_D0)
+>> +             return 0;
+>> +
+>>       if (pme_poll_reset && dev->pme_poll)
+>>               dev->pme_poll = false;
+>>
+>> --- a/drivers/pci/pcie/portdrv_pci.c
+>> +++ b/drivers/pci/pcie/portdrv_pci.c
+>> @@ -11,6 +11,7 @@
+>>  #include <linux/kernel.h>
+>>  #include <linux/errno.h>
+>>  #include <linux/pm.h>
+>> +#include <linux/pm_runtime.h>
+>>  #include <linux/init.h>
+>>  #include <linux/pcieport_if.h>
+>>  #include <linux/aer.h>
+>> @@ -99,6 +100,27 @@ static int pcie_port_resume_noirq(struct
+>>       return 0;
+>>  }
+>>
+>> +#ifdef CONFIG_PM_RUNTIME
+>> +static int pcie_port_runtime_suspend(struct device *dev)
+>> +{
+>> +     struct pci_dev *pdev = to_pci_dev(dev);
+>> +
+>
+> A comment explaining why this is needed here would be welcome.
+
+Sorry, do not catch your idea exactly.  What is needed?  Why do we
+need to add PCIe port runtime suspend support?
 
 Best Regards,
 Huang Ying
