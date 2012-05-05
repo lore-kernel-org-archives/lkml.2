@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab2EEMAv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 08:00:51 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:46049 "EHLO
+	id S1755364Ab2EEMBF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 08:01:05 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:58343 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755174Ab2EEMAs (ORCPT
+	with ESMTP id S1755174Ab2EEMBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 08:00:48 -0400
+	Sat, 5 May 2012 08:01:03 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: dmitry.torokhov@gmail.com, axel.lin@gmail.com, riyer@nvidia.com,
         michael.hennerich@analog.com, grant.likely@secretlab.ca,
@@ -16,9 +16,11 @@ To: dmitry.torokhov@gmail.com, axel.lin@gmail.com, riyer@nvidia.com,
         rob.herring@calxeda.com
 Cc: Roland Stigge <stigge@antcom.de>
 Subject: [PATCH RESEND v3 1/2] input: keyboard: Add keys driver for the LPC32xx SoC
-Date: Sat,  5 May 2012 14:00:19 +0200
-Message-Id: <1336219221-27791-1-git-send-email-stigge@antcom.de>
+Date: Sat,  5 May 2012 14:00:20 +0200
+Message-Id: <1336219221-27791-2-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1336219221-27791-1-git-send-email-stigge@antcom.de>
+References: <1336219221-27791-1-git-send-email-stigge@antcom.de>
 X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
