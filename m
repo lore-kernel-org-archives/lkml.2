@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758913Ab2EEC6o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 22:58:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1421 "EHLO mx1.redhat.com"
+	id S1759058Ab2EEDFT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 23:05:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61819 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751665Ab2EEC6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 22:58:43 -0400
-Date: Fri, 4 May 2012 22:58:32 -0400 (EDT)
+	id S1758882Ab2EEDFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 23:05:16 -0400
+Date: Fri, 4 May 2012 23:04:40 -0400 (EDT)
 From: Mikulas Patocka <mpatocka@redhat.com>
 X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Linus Torvalds <torvalds@linux-foundation.org>,
+To: Jiri Slaby <jslaby@suse.cz>, Guy Martin <gmsof@tuxicoman.be>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         "James E.J. Bottomley" <jejb@parisc-linux.org>,
         Helge Deller <deller@gmx.de>
 cc: linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix compile failure on PA-RISC
-Message-ID: <Pine.LNX.4.64.1205042250130.18896@file.rdu.redhat.com>
+Subject: [PATCH] Revert 5dd5bc40f3b6e0ccdaad948dbadc94ad0906cb25
+In-Reply-To: <Pine.LNX.4.64.1205042250130.18896@file.rdu.redhat.com>
+Message-ID: <Pine.LNX.4.64.1205042259000.18896@file.rdu.redhat.com>
+References: <Pine.LNX.4.64.1205042250130.18896@file.rdu.redhat.com>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,190 +26,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi
 
-This patch fixes compile failure on PA-RISC.
+This patch reverts commit 5dd5bc40f3b6e0ccdaad948dbadc94ad0906cb25.
 
-BTW. if the PA-RISC port is uncompilable for all 3.4-rc versions (and 
-contains two other bugs that prevent it from booting) ... does it mean 
-that I'm the only one who is using PA-RISC with recent kernel?
+The commit 5dd5bc40f3b6e0ccdaad948dbadc94ad0906cb25 causes system lockup 
+when pdc is used as a boot console.
+
+The kernel boots, but it locks up when transferring control to userspace 
+--- the message "INIT: version 2.86 booting" is not printed and the 
+computer halts. With the patch reverted, the system starts normally on 
+pdc.
 
 Mikulas
 
 ---
 
-Fix compile failure on PA-RISC
-
-This patch fixes compile error on PA-RISC.
-
-The problem is this:
-linux/bitops.h includes asm/bitops.h. Through a chain of dependencies
-asm/bitops.h includes asm/page.h and asm/page.h needs function fls and
-others defined in asm/bitops.h and linux/bitops.h --- and these
-functions are not yet defined because the files linux/bitops.h and
-asm/bitops.h hasn't been fully processed.
-
-I moved cpu_relax from asm/processor.h to asm/barrier.h (and I changed
-asm/processor.h to include asm/barrier.h so that current users can
-assume that asm/processor.h defines cpu_relax). I changed asm/spinlock.h
-to include asm/barrier.h and NOT include asm/processor.h. This breaks
-the circular chain of dependencies and makes the kernel compile.
-
-
-  CHK     include/linux/version.h
-  UPD     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  UPD     include/generated/utsrelease.h
-  CC      scripts/mod/empty.o
-  MKELF   scripts/mod/elfconfig.h
-  HOSTCC  scripts/mod/file2alias.o
-  CC      kernel/bounds.s
-  GEN     include/generated/bounds.h
-  CC      arch/parisc/kernel/asm-offsets.s
-In file included from include/asm-generic/getorder.h:7:0,
-                 from /usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/page.h:162,
-                 from /usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/pdc.h:346,
-                 from /usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/hardware.h:5,
-                 from /usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/processor.h:15,
-                 from /usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h:4,
-                 from /usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/atomic.h:20,
-                 from include/linux/atomic.h:4,
-                 from /usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h:11,
-                 from include/linux/bitops.h:22,
-                 from include/linux/kernel.h:19,
-                 from include/linux/sched.h:55,
-                 from arch/parisc/kernel/asm-offsets.c:31:
-include/linux/log2.h: In function '__ilog2_u32':
-include/linux/log2.h:34:2: error: implicit declaration of function 'fls' [-Werror=implicit-function-declaration]
-include/linux/log2.h: In function '__ilog2_u64':
-include/linux/log2.h:42:2: error: implicit declaration of function 'fls64' [-Werror=implicit-function-declaration]
-include/linux/log2.h: In function '__roundup_pow_of_two':
-include/linux/log2.h:63:2: error: implicit declaration of function 'fls_long' [-Werror=implicit-function-declaration]
-In file included from /usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/atomic.h:20:0,
-                 from include/linux/atomic.h:4,
-                 from /usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h:11,
-                 from include/linux/bitops.h:22,
-                 from include/linux/kernel.h:19,
-                 from include/linux/sched.h:55,
-                 from arch/parisc/kernel/asm-offsets.c:31:
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h: In function 'arch_spin_is_locked':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h:9:2: error: implicit declaration of function '__ldcw_align' [-Werror=implicit-function-declaration]
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h:9:29: warning: initialization makes pointer from integer without a cast [enabled by default]
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h: In function 'arch_spin_lock_flags':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h:22:2: error: implicit declaration of function 'mb' [-Werror=implicit-function-declaration]
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h:23:4: warning: assignment makes pointer from integer without a cast [enabled by default]
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h:24:2: error: implicit declaration of function '__ldcw' [-Werror=implicit-function-declaration]
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h: In function 'arch_spin_unlock':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h:39:4: warning: assignment makes pointer from integer without a cast [enabled by default]
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h: In function 'arch_spin_trylock':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h:50:4: warning: assignment makes pointer from integer without a cast [enabled by default]
-In file included from include/linux/atomic.h:4:0,
-                 from /usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h:11,
-                 from include/linux/bitops.h:22,
-                 from include/linux/kernel.h:19,
-                 from include/linux/sched.h:55,
-                 from arch/parisc/kernel/asm-offsets.c:31:
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/atomic.h: At top level:
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/atomic.h:30:56: error: expected '=', ',', ';', 'asm' or '__attribute__' before '__lock_aligned'
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/atomic.h: In function '__atomic_add_return':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/atomic.h:66:2: error: '__atomic_hash' undeclared (first use in this function)
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/atomic.h:66:2: note: each undeclared identifier is reported only once for each function it appears in
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/atomic.h: In function 'atomic_set':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/atomic.h:77:2: error: '__atomic_hash' undeclared (first use in this function)
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/atomic.h: In function '__atomic64_add_return':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/atomic.h:160:2: error: '__atomic_hash' undeclared (first use in this function)
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/atomic.h: In function 'atomic64_set':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/atomic.h:172:2: error: '__atomic_hash' undeclared (first use in this function)
-In file included from include/linux/bitops.h:22:0,
-                 from include/linux/kernel.h:19,
-                 from include/linux/sched.h:55,
-                 from arch/parisc/kernel/asm-offsets.c:31:
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h: In function 'set_bit':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h:37:2: error: '__atomic_hash' undeclared (first use in this function)
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h: In function 'clear_bit':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h:48:2: error: '__atomic_hash' undeclared (first use in this function)
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h: In function 'change_bit':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h:59:2: error: '__atomic_hash' undeclared (first use in this function)
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h: In function 'test_and_set_bit':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h:72:2: error: '__atomic_hash' undeclared (first use in this function)
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h: In function 'test_and_clear_bit':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h:90:2: error: '__atomic_hash' undeclared (first use in this function)
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h: In function 'test_and_change_bit':
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h:107:2: error: '__atomic_hash' undeclared (first use in this function)
-In file included from include/linux/bitops.h:22:0,
-                 from include/linux/kernel.h:19,
-                 from include/linux/sched.h:55,
-                 from arch/parisc/kernel/asm-offsets.c:31:
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h: At top level:
-/usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h:186:23: error: static declaration of 'fls' follows non-static declaration
-include/linux/log2.h:34:9: note: previous implicit declaration of 'fls' was here
-In file included from /usr/src/linux-3.4-rc5-fast/arch/parisc/include/asm/bitops.h:214:0,
-                 from include/linux/bitops.h:22,
-                 from include/linux/kernel.h:19,
-                 from include/linux/sched.h:55,
-                 from arch/parisc/kernel/asm-offsets.c:31:
-include/asm-generic/bitops/fls64.h:26:28: error: static declaration of 'fls64' follows non-static declaration
-include/linux/log2.h:42:9: note: previous implicit declaration of 'fls64' was here
-In file included from include/linux/kernel.h:19:0,
-                 from include/linux/sched.h:55,
-                 from arch/parisc/kernel/asm-offsets.c:31:
-include/linux/bitops.h:160:24: error: conflicting types for 'fls_long'
-include/linux/log2.h:63:16: note: previous implicit declaration of 'fls_long' was here
-cc1: some warnings being treated as errors
-make[1]: *** [arch/parisc/kernel/asm-offsets.s] Error 1
-make: *** [prepare0] Error 2
-make: *** Waiting for unfinished jobs....
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-
----
- arch/parisc/include/asm/barrier.h   |    2 ++
- arch/parisc/include/asm/processor.h |    3 +--
- arch/parisc/include/asm/spinlock.h  |    3 ++-
- 3 files changed, 5 insertions(+), 3 deletions(-)
-
-Index: linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h
-===================================================================
---- linux-3.4-rc5-fast.orig/arch/parisc/include/asm/spinlock.h	2012-05-03 23:52:36.000000000 +0200
-+++ linux-3.4-rc5-fast/arch/parisc/include/asm/spinlock.h	2012-05-03 23:58:09.000000000 +0200
-@@ -1,8 +1,9 @@
- #ifndef __ASM_SPINLOCK_H
- #define __ASM_SPINLOCK_H
+diff --git a/arch/parisc/kernel/pdc_cons.c b/arch/parisc/kernel/pdc_cons.c
+index 4f00459..d14e20f 100644
+--- a/arch/parisc/kernel/pdc_cons.c
++++ b/arch/parisc/kernel/pdc_cons.c
+@@ -92,11 +92,10 @@ static int pdc_console_setup(struct console *co, char *options)
  
--#include <asm/processor.h>
-+#include <asm/barrier.h>
- #include <asm/spinlock_types.h>
-+#include <asm/ldcw.h>
+ static void pdc_console_poll(unsigned long unused);
+ static DEFINE_TIMER(pdc_console_timer, pdc_console_poll, 0, 0);
+-static struct tty_port tty_port;
  
- static inline int arch_spin_is_locked(arch_spinlock_t *x)
+ static int pdc_console_tty_open(struct tty_struct *tty, struct file *filp)
  {
-Index: linux-3.4-rc5-fast/arch/parisc/include/asm/barrier.h
-===================================================================
---- linux-3.4-rc5-fast.orig/arch/parisc/include/asm/barrier.h	2012-05-03 23:52:36.000000000 +0200
-+++ linux-3.4-rc5-fast/arch/parisc/include/asm/barrier.h	2012-05-04 23:49:47.000000000 +0200
-@@ -32,4 +32,6 @@
- 
- #define set_mb(var, value)		do { var = value; mb(); } while (0)
- 
-+#define cpu_relax()     __asm__ __volatile__("":::"memory")
+-	tty_port_tty_set(&tty_port, tty);
 +
- #endif /* __PARISC_BARRIER_H */
-Index: linux-3.4-rc5-fast/arch/parisc/include/asm/processor.h
-===================================================================
---- linux-3.4-rc5-fast.orig/arch/parisc/include/asm/processor.h	2012-05-03 23:52:36.000000000 +0200
-+++ linux-3.4-rc5-fast/arch/parisc/include/asm/processor.h	2012-05-03 23:58:09.000000000 +0200
-@@ -17,6 +17,7 @@
- #include <asm/ptrace.h>
- #include <asm/types.h>
- #include <asm/percpu.h>
-+#include <asm/barrier.h>
+ 	mod_timer(&pdc_console_timer, jiffies + PDC_CONS_POLL_DELAY);
  
- #endif /* __ASSEMBLY__ */
+ 	return 0;
+@@ -104,10 +103,8 @@ static int pdc_console_tty_open(struct tty_struct *tty, struct file *filp)
  
-@@ -338,8 +339,6 @@ extern unsigned long get_wchan(struct ta
- #define KSTK_EIP(tsk)	((tsk)->thread.regs.iaoq[0])
- #define KSTK_ESP(tsk)	((tsk)->thread.regs.gr[30])
+ static void pdc_console_tty_close(struct tty_struct *tty, struct file *filp)
+ {
+-	if (!tty->count) {
++	if (!tty->count)
+ 		del_timer_sync(&pdc_console_timer);
+-		tty_port_tty_set(&tty_port, NULL);
+-	}
+ }
  
--#define cpu_relax()	barrier()
+ static int pdc_console_tty_write(struct tty_struct *tty, const unsigned char *buf, int count)
+@@ -126,6 +123,8 @@ static int pdc_console_tty_chars_in_buffer(struct tty_struct *tty)
+ 	return 0; /* no buffer */
+ }
+ 
++static struct tty_driver *pdc_console_tty_driver;
++
+ static const struct tty_operations pdc_console_tty_ops = {
+ 	.open = pdc_console_tty_open,
+ 	.close = pdc_console_tty_close,
+@@ -136,8 +135,10 @@ static const struct tty_operations pdc_console_tty_ops = {
+ 
+ static void pdc_console_poll(unsigned long unused)
+ {
++
+ 	int data, count = 0;
+-	struct tty_struct *tty = tty_port_tty_get(&tty_port);
++
++	struct tty_struct *tty = pdc_console_tty_driver->ttys[0];
+ 
+ 	if (!tty)
+ 		return;
+@@ -153,14 +154,10 @@ static void pdc_console_poll(unsigned long unused)
+ 	if (count)
+ 		tty_flip_buffer_push(tty);
+ 
+-	tty_kref_put(tty);
 -
- /* Used as a macro to identify the combined VIPT/PIPT cached
-  * CPUs which require a guarantee of coherency (no inequivalent
-  * aliases with different data, whether clean or not) to operate */
+ 	if (pdc_cons.flags & CON_ENABLED)
+ 		mod_timer(&pdc_console_timer, jiffies + PDC_CONS_POLL_DELAY);
+ }
+ 
+-static struct tty_driver *pdc_console_tty_driver;
+-
+ static int __init pdc_console_tty_driver_init(void)
+ {
+ 	int err;
+@@ -185,8 +182,6 @@ static int __init pdc_console_tty_driver_init(void)
+ 	printk(KERN_INFO "The PDC console driver is still registered, removing CON_BOOT flag\n");
+ 	pdc_cons.flags &= ~CON_BOOT;
+ 
+-	tty_port_init(&tty_port);
+-
+ 	pdc_console_tty_driver = alloc_tty_driver(1);
+ 
+ 	if (!pdc_console_tty_driver)
+
