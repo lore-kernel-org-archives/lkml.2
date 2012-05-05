@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab2EEPhn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 11:37:43 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:32018 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756141Ab2EEPhm (ORCPT
+	id S1756978Ab2EEPjt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 11:39:49 -0400
+Received: from mx.scalarmail.ca ([98.158.95.75]:1520 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754034Ab2EEPjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 11:37:42 -0400
-Message-ID: <1336232259.3038.8.camel@lorien2>
-Subject: [PATCH] x86: kernel/microcode_core.c simple_strtoul cleanup
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
-        tigran@aivazian.fsnet.co.uk
-Cc: shuahkhan@gmail.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sat, 05 May 2012 09:37:39 -0600
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 5 May 2012 11:39:48 -0400
+Date: Sat, 5 May 2012 11:39:44 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Maarten Maathuis <madman2003@gmail.com>,
+        Martin Peres <martin.peres@labri.fr>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Ben Skeggs <bskeggs@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Linux 3.4-rc4
+Message-ID: <20120505153944.GA17057@elliptictech.com>
+References: <1335322574.1821.8.camel@nisroch>
+ <1335504021.5311.0.camel@nisroch>
+ <20120428003928.GA16805@elliptictech.com>
+ <CADnq5_N8Cf4ONL5TNA-Wmif7cty070TRrTOnUpqdiGhWbVbj=w@mail.gmail.com>
+ <20120428153350.GA19561@elliptictech.com>
+ <20120429223744.GA19382@core.coreip.homeip.net>
+ <CAGZ4FETGyatywWqx3vLo-=jSJsrSat2+r35Njg5NNJ4NnyUy=w@mail.gmail.com>
+ <20120501132352.GA28696@elliptictech.com>
+ <20120502012029.GA24097@elliptictech.com>
+ <CAPM=9tynyGoV6ppRZe+y5WGUbQRSPc+ih9RL2HZQu951AoZiog@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPM=9tynyGoV6ppRZe+y5WGUbQRSPc+ih9RL2HZQu951AoZiog@mail.gmail.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change reload_for_cpu() in kernel/microcode_core.c to call kstrtoul()
-instead of calling obsoleted simple_strtoul().
+On 2012-05-04 10:20 +0100, Dave Airlie wrote:
+> >>
+> >> FWIW, for me EDID failure on new kernels is 100% reproducible, and there
+> >> are no such checksum errors in the log.  It's just missing.
+> >>
+> >> > Just a crazy thought, but didn't we change some timings related to
+> >> > EDID retrieval? To make it faster.
+> >>
+> >> OK, this time bisecting started off relatively smoothly (doing the same
+> >> "backwards" bisect on the branch-o-reverts as last time), but then my
+> >> disk died halfway through...
+> > [...]
+> >
+> > OK, system is back online and I finished the bisection.  The commit that
+> > broke it for me is the following, and reverting it on top of 3.3.4 + the
+> > "make VGA work at all" patch fixes this particular issue for me.
+> >
+> Can you test with the attached patch? its a revert mostly of Ben's patch, and
+> he says with the i2c core change stuff is working for him again.
 
->From 8df8b8f87a8e462faa7b4c2b4682b23df5afa4bd Mon Sep 17 00:00:00 2001
-From: Shuah Khan <shuahkhan@gmail.com>
-Date: Fri, 4 May 2012 14:12:11 -0600
-Subject: [PATCH] x86: kernel/microcode_core.c simple_strtoul cleanup
+Yup, this one seems to work on top of Linus' master.
 
-
-Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
----
- arch/x86/kernel/microcode_core.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index c9bda6d..fbdfc69 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -299,12 +299,11 @@ static ssize_t reload_store(struct device *dev,
- {
- 	unsigned long val;
- 	int cpu = dev->id;
--	int ret = 0;
--	char *end;
-+	ssize_t ret = 0;
- 
--	val = simple_strtoul(buf, &end, 0);
--	if (end == buf)
--		return -EINVAL;
-+	ret = kstrtoul(buf, 0, &val);
-+	if (ret)
-+		return ret;
- 
- 	if (val == 1) {
- 		get_online_cpus();
+Thanks,
 -- 
-1.7.9.5
-
-
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
 
