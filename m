@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab2EETBV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 15:01:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54520 "EHLO
+	id S1754889Ab2EETCR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 15:02:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54554 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab2EETBU (ORCPT
+	with ESMTP id S1753102Ab2EETCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 15:01:20 -0400
-Date: Sat, 5 May 2012 12:01:09 -0700
+	Sat, 5 May 2012 15:02:15 -0400
+Date: Sat, 5 May 2012 12:01:59 -0700
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-fe285f523bc13185da6d4c740655b2c27c75cf13@git.kernel.org>
+Message-ID: <tip-cf5e6def83fabdf10a05dc5a5981eda1672cb79c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dhowells@redhat.com, tglx@linutronix.de
+        jonas@southpole.se, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dhowells@redhat.com, tglx@linutronix.de
-In-Reply-To: <20120503085035.011270394@linutronix.de>
-References: <20120503085035.011270394@linutronix.de>
+        tglx@linutronix.de, jonas@southpole.se
+In-Reply-To: <20120503085035.083343435@linutronix.de>
+References: <20120503085035.083343435@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] mn10300: Use generic init_task
-Git-Commit-ID: fe285f523bc13185da6d4c740655b2c27c75cf13
+Subject: [tip:smp/hotplug] openrisc: Use generic init_task
+Git-Commit-ID: cf5e6def83fabdf10a05dc5a5981eda1672cb79c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,100 +27,102 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 05 May 2012 12:01:15 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 05 May 2012 12:02:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fe285f523bc13185da6d4c740655b2c27c75cf13
-Gitweb:     http://git.kernel.org/tip/fe285f523bc13185da6d4c740655b2c27c75cf13
+Commit-ID:  cf5e6def83fabdf10a05dc5a5981eda1672cb79c
+Gitweb:     http://git.kernel.org/tip/cf5e6def83fabdf10a05dc5a5981eda1672cb79c
 Author:     Thomas Gleixner <tglx@linutronix.de>
 AuthorDate: Thu, 3 May 2012 09:02:56 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Sat, 5 May 2012 13:00:24 +0200
 
-mn10300: Use generic init_task
+openrisc: Use generic init_task
 
 Same code. Use the generic version. The special Makefile treatment is
 pointless anyway as init_task.o contains only data which is handled by
 the linker script. So no point on being treated like head text.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: David Howells <dhowells@redhat.com>
-Link: http://lkml.kernel.org/r/20120503085035.011270394@linutronix.de
+Cc: Jonas Bonn <jonas@southpole.se>
+Link: http://lkml.kernel.org/r/20120503085035.083343435@linutronix.de
 ---
- arch/mn10300/Kconfig            |    1 +
- arch/mn10300/Makefile           |    2 +-
- arch/mn10300/kernel/Makefile    |    2 +-
- arch/mn10300/kernel/init_task.c |   39 ---------------------------------------
- 4 files changed, 3 insertions(+), 41 deletions(-)
+ arch/openrisc/Kconfig            |    1 +
+ arch/openrisc/Makefile           |    2 +-
+ arch/openrisc/kernel/Makefile    |    2 +-
+ arch/openrisc/kernel/init_task.c |   42 --------------------------------------
+ 4 files changed, 3 insertions(+), 44 deletions(-)
 
-diff --git a/arch/mn10300/Kconfig b/arch/mn10300/Kconfig
-index 3aa3de0..d28b6eb 100644
---- a/arch/mn10300/Kconfig
-+++ b/arch/mn10300/Kconfig
-@@ -6,6 +6,7 @@ config MN10300
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_ARCH_KGDB
- 	select HAVE_NMI_WATCHDOG if MN10300_WD_TIMER
+diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
+index a478719..6d92193 100644
+--- a/arch/openrisc/Kconfig
++++ b/arch/openrisc/Kconfig
+@@ -17,6 +17,7 @@ config OPENRISC
+ 	select GENERIC_IOMAP
+ 	select GENERIC_CPU_DEVICES
+ 	select GENERIC_ATOMIC64
 +	select HAVE_GENERIC_INIT_TASK
  
- config AM33_2
- 	def_bool n
-diff --git a/arch/mn10300/Makefile b/arch/mn10300/Makefile
-index 7120282..33188b6 100644
---- a/arch/mn10300/Makefile
-+++ b/arch/mn10300/Makefile
-@@ -51,7 +51,7 @@ UNIT		:= asb2364
+ config MMU
+ 	def_bool y
+diff --git a/arch/openrisc/Makefile b/arch/openrisc/Makefile
+index 158ae4c..966886c 100644
+--- a/arch/openrisc/Makefile
++++ b/arch/openrisc/Makefile
+@@ -38,7 +38,7 @@ else
+ 	KBUILD_CFLAGS += $(call cc-option,-msoft-div)
  endif
  
+-head-y 		:= arch/openrisc/kernel/head.o arch/openrisc/kernel/init_task.o
++head-y 		:= arch/openrisc/kernel/head.o
  
--head-y		:= arch/mn10300/kernel/head.o arch/mn10300/kernel/init_task.o
-+head-y		:= arch/mn10300/kernel/head.o
- 
- core-y		+= arch/mn10300/kernel/ arch/mn10300/mm/
- 
-diff --git a/arch/mn10300/kernel/Makefile b/arch/mn10300/kernel/Makefile
-index 47ed30f..d067491 100644
---- a/arch/mn10300/kernel/Makefile
-+++ b/arch/mn10300/kernel/Makefile
-@@ -1,7 +1,7 @@
+ core-y		+= arch/openrisc/lib/ \
+ 		   arch/openrisc/kernel/ \
+diff --git a/arch/openrisc/kernel/Makefile b/arch/openrisc/kernel/Makefile
+index 9a4c270..e1ee0fa 100644
+--- a/arch/openrisc/kernel/Makefile
++++ b/arch/openrisc/kernel/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the linux kernel.
  #
- # Makefile for the MN10300-specific core kernel code
- #
--extra-y := head.o init_task.o vmlinux.lds
-+extra-y := head.o vmlinux.lds
  
- fpu-obj-y := fpu-nofpu.o fpu-nofpu-low.o
- fpu-obj-$(CONFIG_FPU) := fpu.o fpu-low.o
-diff --git a/arch/mn10300/kernel/init_task.c b/arch/mn10300/kernel/init_task.c
+-extra-y	:= head.o vmlinux.lds init_task.o
++extra-y	:= head.o vmlinux.lds
+ 
+ obj-y	:= setup.o idle.o or32_ksyms.o process.o dma.o \
+ 	   traps.o time.o irq.o entry.o ptrace.o signal.o sys_or32.o \
+diff --git a/arch/openrisc/kernel/init_task.c b/arch/openrisc/kernel/init_task.c
 deleted file mode 100644
-index a481b04..0000000
---- a/arch/mn10300/kernel/init_task.c
+index ca53408..0000000
+--- a/arch/openrisc/kernel/init_task.c
 +++ /dev/null
-@@ -1,39 +0,0 @@
--/* MN10300 Initial task definitions
+@@ -1,42 +0,0 @@
+-/*
+- * OpenRISC init_task.c
 - *
-- * Copyright (C) 2007 Matsushita Electric Industrial Co., Ltd.
-- * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
+- * Linux architectural port borrowing liberally from similar works of
+- * others.  All original copyrights apply as per the original source
+- * declaration.
 - *
-- * This program is free software; you can redistribute it and/or
-- * modify it under the terms of the GNU General Public Licence
-- * as published by the Free Software Foundation; either version
-- * 2 of the Licence, or (at your option) any later version.
+- * Modifications for the OpenRISC architecture:
+- * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
+- * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
+- *
+- *      This program is free software; you can redistribute it and/or
+- *      modify it under the terms of the GNU General Public License
+- *      as published by the Free Software Foundation; either version
+- *      2 of the License, or (at your option) any later version.
 - */
--#include <linux/mm.h>
--#include <linux/module.h>
--#include <linux/sched.h>
--#include <linux/init.h>
+-
 -#include <linux/init_task.h>
--#include <linux/fs.h>
 -#include <linux/mqueue.h>
--#include <asm/uaccess.h>
--#include <asm/pgtable.h>
+-#include <linux/export.h>
 -
 -static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 -static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
+-
 -/*
 - * Initial thread structure.
 - *
@@ -128,8 +130,9 @@ index a481b04..0000000
 - * way process stacks are handled. This is done by having a special
 - * "init_task" linker map entry..
 - */
--union thread_union init_thread_union __init_task_data =
--	{ INIT_THREAD_INFO(init_task) };
+-union thread_union init_thread_union __init_task_data = {
+-	INIT_THREAD_INFO(init_task)
+-};
 -
 -/*
 - * Initial task structure.
