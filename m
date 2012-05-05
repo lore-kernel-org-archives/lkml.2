@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab2EEA3G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 20:29:06 -0400
+	id S932281Ab2EEA3Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 20:29:24 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:49406 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758581Ab2EEA3E (ORCPT
+	with ESMTP id S1757427Ab2EEA3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 20:29:04 -0400
-Message-ID: <4FA47443.9040505@gmail.com>
-Date: Sat, 05 May 2012 10:28:51 +1000
-From: Francois Rigaut <frigaut@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 4 May 2012 20:29:20 -0400
+Date: Fri, 4 May 2012 17:29:17 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Timo Warns <warns@pre-sense.de>,
+        WANG Cong <amwang@redhat.com>,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Miklos Szeredi <mszeredi@suse.cz>, Sage Weil <sage@newdream.net>,
+        Eugene Teo <eteo@redhat.com>, Roman Zippel <zippel@linux-m68k.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Dave Anderson <anderson@redhat.com>, stable <stable@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] hfsplus: Fix potential buffer overflows
+Message-ID: <20120505002917.GA28388@kroah.com>
+References: <20120504190939.GA12976@kroah.com>
+ <CA+55aFxuqi5e_zNFUddmtOXfA5hBFfL4weEYG9NdRx9UKhP6ZQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: linux-pci@vger.kernel.org,
-        Nico Schottelius <nico-linux-20120419@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Linux Support for Thunderbolt using Apple Monitor
-References: <20120419163800.GB13977@schottelius.org> <CAMVeQ8r_3vuAxzbLyKoecOHOOGijUDkLfw+MK7o-WoWbuOGSrg@mail.gmail.com> <20120502163629.GE928@schottelius.org> <20120502202509.GA26798@kroah.com> <20120503065003.GB13386@schottelius.org> <CAMVeQ8qYu4bShd_+pwRv8bShhusJMDa-jjoqu7EujS4jt7RSNA@mail.gmail.com> <20120503153547.GD20334@kroah.com> <CAMVeQ8q3PMMGmFSgrnqbW2HVdfmN+LgatX3TSfv5_2Ebuuj=QQ@mail.gmail.com> <20120503233858.GA13453@kroah.com> <4FA358ED.1080705@gmail.com> <20120504184851.GB11223@kroah.com>
-In-Reply-To: <20120504184851.GB11223@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxuqi5e_zNFUddmtOXfA5hBFfL4weEYG9NdRx9UKhP6ZQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 04, 2012 at 04:53:47PM -0700, Linus Torvalds wrote:
+> On Fri, May 4, 2012 at 12:09 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> >
+> > Reported-by: Timo Warns <warns@pre-sense.de>
+> > Cc: WANG Cong <amwang@redhat.com>
+> 
+> Tssk. You got an ack at least from Cong.
 
+Oops, you are right, sorry.
 
-On 05/05/12 04:48, Greg KH wrote:
-> Oh, what exact machine is this? Maybe I can ask around and see if I 
-> can dig up one myself, and hey, I always need an excuse to get a new 
-> display :) thanks, greg k-h 
-The machine is a macbook air 13" mid 2011, with a thunderbolt port 
-(physically identical to a mini display port). I hear Linus is using a 
-MBA 11", so I don't feel alone here running linux on this thing.
-The display is a 27" Apple thunderbolt display. It's a gorgeous display 
-with deep colors and lots of dynamics, and not (much) more expensive 
-than other 27" display. But it doesn't hot plug (in linux, yet) and the 
-only input is through the thunderbolt cable so no luck in using 
-alternatives like HDMI (neither VGA, but VGA doesn't support the display 
-resolution 2560x1440 anyway).
+> > Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> > Cc: Cong Wang <amwang@redhat.com>
+> 
+> .. who you have listed twice with just a cc.
 
-Good luck,
-Francois
+Ugh, my fault, sorry.
 
+greg k-h
