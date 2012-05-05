@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab2EES5M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 14:57:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54406 "EHLO
+	id S1753975Ab2EES6g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 14:58:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54420 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab2EES5K (ORCPT
+	with ESMTP id S1751910Ab2EES6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 14:57:10 -0400
-Date: Sat, 5 May 2012 11:56:59 -0700
+	Sat, 5 May 2012 14:58:35 -0400
+Date: Sat, 5 May 2012 11:57:50 -0700
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-e336e05bca1909faf6d7c033702a71bdb5c79d18@git.kernel.org>
+Message-ID: <tip-7433c5cf4f69e0b9e648bfb59d65ffe39220e86c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, rkuo@codeaurora.org
+        takata@linux-m32r.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, rkuo@codeaurora.org
-In-Reply-To: <20120503085034.692078846@linutronix.de>
-References: <20120503085034.692078846@linutronix.de>
+        tglx@linutronix.de, takata@linux-m32r.org
+In-Reply-To: <20120503085034.756332161@linutronix.de>
+References: <20120503085034.756332161@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] hexagon: Use generic idle_task
-Git-Commit-ID: e336e05bca1909faf6d7c033702a71bdb5c79d18
+Subject: [tip:smp/hotplug] m32r: Use generic init_task
+Git-Commit-ID: 7433c5cf4f69e0b9e648bfb59d65ffe39220e86c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,122 +27,102 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 05 May 2012 11:57:05 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 05 May 2012 11:57:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e336e05bca1909faf6d7c033702a71bdb5c79d18
-Gitweb:     http://git.kernel.org/tip/e336e05bca1909faf6d7c033702a71bdb5c79d18
+Commit-ID:  7433c5cf4f69e0b9e648bfb59d65ffe39220e86c
+Gitweb:     http://git.kernel.org/tip/7433c5cf4f69e0b9e648bfb59d65ffe39220e86c
 Author:     Thomas Gleixner <tglx@linutronix.de>
 AuthorDate: Thu, 3 May 2012 09:02:54 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Sat, 5 May 2012 13:00:23 +0200
 
-hexagon: Use generic idle_task
+m32r: Use generic init_task
 
 Same code. Use the generic version. The special Makefile treatment is
 pointless anyway as init_task.o contains only data which is handled by
 the linker script. So no point on being treated like head text.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20120503085034.692078846@linutronix.de
-Acked-and-tested-by: Richard Kuo <rkuo@codeaurora.org>
+Cc: Hirokazu Takata <takata@linux-m32r.org>
+Link: http://lkml.kernel.org/r/20120503085034.756332161@linutronix.de
 ---
- arch/hexagon/Kconfig            |    1 +
- arch/hexagon/Makefile           |    3 +-
- arch/hexagon/kernel/Makefile    |    2 +-
- arch/hexagon/kernel/init_task.c |   54 ---------------------------------------
- 4 files changed, 3 insertions(+), 57 deletions(-)
+ arch/m32r/Kconfig            |    1 +
+ arch/m32r/Makefile           |    2 +-
+ arch/m32r/kernel/Makefile    |    2 +-
+ arch/m32r/kernel/init_task.c |   34 ----------------------------------
+ 4 files changed, 3 insertions(+), 36 deletions(-)
 
-diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
-index d2e4a33..6ee5488 100644
---- a/arch/hexagon/Kconfig
-+++ b/arch/hexagon/Kconfig
-@@ -28,6 +28,7 @@ config HEXAGON
- 	select NO_IOPORT
- 	select GENERIC_IOMAP
- 	select GENERIC_SMP_IDLE_THREAD
+diff --git a/arch/m32r/Kconfig b/arch/m32r/Kconfig
+index ef80a65..8b8bd7f 100644
+--- a/arch/m32r/Kconfig
++++ b/arch/m32r/Kconfig
+@@ -11,6 +11,7 @@ config M32R
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_IRQ_SHOW
+ 	select GENERIC_ATOMIC64
 +	select HAVE_GENERIC_INIT_TASK
- 	# mostly generic routines, with some accelerated ones
- 	---help---
- 	  Qualcomm Hexagon is a processor architecture designed for high
-diff --git a/arch/hexagon/Makefile b/arch/hexagon/Makefile
-index 0c4de87..e27d030 100644
---- a/arch/hexagon/Makefile
-+++ b/arch/hexagon/Makefile
-@@ -45,8 +45,7 @@ KBUILD_AFLAGS += -DTHREADINFO_REG=$(TIR_NAME)
- LIBGCC := $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
- libs-y += $(LIBGCC)
  
--head-y := arch/hexagon/kernel/head.o \
--	arch/hexagon/kernel/init_task.o
-+head-y := arch/hexagon/kernel/head.o
+ config SBUS
+ 	bool
+diff --git a/arch/m32r/Makefile b/arch/m32r/Makefile
+index 8ff5ba0..def8dd0 100644
+--- a/arch/m32r/Makefile
++++ b/arch/m32r/Makefile
+@@ -31,7 +31,7 @@ KBUILD_AFLAGS += $(aflags-y)
  
- core-y += arch/hexagon/kernel/ \
- 	arch/hexagon/mm/ \
-diff --git a/arch/hexagon/kernel/Makefile b/arch/hexagon/kernel/Makefile
-index 3689f37..536aec0 100644
---- a/arch/hexagon/kernel/Makefile
-+++ b/arch/hexagon/kernel/Makefile
-@@ -1,4 +1,4 @@
--extra-y := head.o vmlinux.lds init_task.o
-+extra-y := head.o vmlinux.lds
+ CHECKFLAGS	+= -D__m32r__ -D__BIG_ENDIAN__=1
  
- obj-$(CONFIG_SMP) += smp.o topology.o
+-head-y	:= arch/m32r/kernel/head.o arch/m32r/kernel/init_task.o
++head-y	:= arch/m32r/kernel/head.o
  
-diff --git a/arch/hexagon/kernel/init_task.c b/arch/hexagon/kernel/init_task.c
+ LIBGCC	:= $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
+ 
+diff --git a/arch/m32r/kernel/Makefile b/arch/m32r/kernel/Makefile
+index b1a4b60..0c09dad 100644
+--- a/arch/m32r/kernel/Makefile
++++ b/arch/m32r/kernel/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the Linux/M32R kernel.
+ #
+ 
+-extra-y	:= head.o init_task.o vmlinux.lds
++extra-y	:= head.o vmlinux.lds
+ 
+ obj-y	:= process.o entry.o traps.o align.o irq.o setup.o time.o \
+ 	m32r_ksyms.o sys_m32r.o signal.o ptrace.o
+diff --git a/arch/m32r/kernel/init_task.c b/arch/m32r/kernel/init_task.c
 deleted file mode 100644
-index 73283d3..0000000
---- a/arch/hexagon/kernel/init_task.c
+index 6c42d5f..0000000
+--- a/arch/m32r/kernel/init_task.c
 +++ /dev/null
-@@ -1,54 +0,0 @@
--/*
-- * Init task definition
-- *
-- * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-- * 02110-1301, USA.
-- */
+@@ -1,34 +0,0 @@
+-/* orig : i386 init_task.c */
 -
 -#include <linux/mm.h>
 -#include <linux/module.h>
 -#include <linux/sched.h>
+-#include <linux/init.h>
 -#include <linux/init_task.h>
 -#include <linux/fs.h>
 -#include <linux/mqueue.h>
--#include <asm/thread_info.h>
+-
 -#include <asm/uaccess.h>
 -#include <asm/pgtable.h>
 -
 -static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 -static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
--
 -/*
 - * Initial thread structure.
 - *
 - * We need to make sure that this is 8192-byte aligned due to the
-- * way process stacks are handled. This is done by making sure
-- * the linker maps this in the .text segment right after head.S,
-- * and making head.S ensure the proper alignment.
+- * way process stacks are handled. This is done by having a special
+- * "init_task" linker map entry..
 - */
--union thread_union init_thread_union
--	__attribute__((__section__(".data.init_task"),
--		__aligned__(THREAD_SIZE))) = {
--			INIT_THREAD_INFO(init_task)
--		};
+-union thread_union init_thread_union __init_task_data =
+-	{ INIT_THREAD_INFO(init_task) };
 -
 -/*
 - * Initial task structure.
@@ -150,4 +130,6 @@ index 73283d3..0000000
 - * All other task structs will be allocated on slabs in fork.c
 - */
 -struct task_struct init_task = INIT_TASK(init_task);
+-
 -EXPORT_SYMBOL(init_task);
+-
