@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756206Ab2EEPY6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 11:24:58 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:59013 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755951Ab2EEPY4 (ORCPT
+	id S1756328Ab2EEP16 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 11:27:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33551 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755951Ab2EEP14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 11:24:56 -0400
-Date: Sat, 5 May 2012 11:24:55 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        <mingo@kernel.org>, <pjt@google.com>, <paul@paulmenage.org>,
-        <akpm@linux-foundation.org>, <rjw@sisk.pl>, <nacc@us.ibm.com>,
-        <paulmck@linux.vnet.ibm.com>, <tglx@linutronix.de>,
-        <seto.hidetoshi@jp.fujitsu.com>, <rob@landley.net>, <tj@kernel.org>,
-        <mschmidt@redhat.com>, <berrange@redhat.com>,
-        <nikunj@linux.vnet.ibm.com>, <vatsa@linux.vnet.ibm.com>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH v2 0/7] CPU hotplug, cpusets: Fix issues with cpusets
- handling upon CPU hotplug
-In-Reply-To: <1336167852.6509.90.camel@twins>
-Message-ID: <Pine.LNX.4.44L0.1205051108470.3737-100000@netrider.rowland.org>
+	Sat, 5 May 2012 11:27:56 -0400
+Message-ID: <4FA546F1.1020008@gmail.com>
+Date: Sat, 05 May 2012 23:27:45 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Francois Rigaut <frigaut@gmail.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org,
+        Nico Schottelius <nico-linux-20120419@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Linux Support for Thunderbolt using Apple Monitor
+References: <20120419163800.GB13977@schottelius.org> <CAMVeQ8r_3vuAxzbLyKoecOHOOGijUDkLfw+MK7o-WoWbuOGSrg@mail.gmail.com> <20120502163629.GE928@schottelius.org> <20120502202509.GA26798@kroah.com> <20120503065003.GB13386@schottelius.org> <CAMVeQ8qYu4bShd_+pwRv8bShhusJMDa-jjoqu7EujS4jt7RSNA@mail.gmail.com> <20120503153547.GD20334@kroah.com> <CAMVeQ8q3PMMGmFSgrnqbW2HVdfmN+LgatX3TSfv5_2Ebuuj=QQ@mail.gmail.com> <20120503233858.GA13453@kroah.com> <4FA358ED.1080705@gmail.com> <20120504184851.GB11223@kroah.com> <CAE9FiQWuePNRWV=ncJkF57aQZ0ZT91xxZ0sZMexq8HgN9NcAfA@mail.gmail.com> <CAE9FiQWcyRfLKB+YivOfa-GydbhoaMx06n6a4VMDWoTOMkj7ig@mail.gmail.com> <4FA4AA3E.1070903@gmail.com> <4FA4E259.9070903@gmail.com> <4FA4E93F.3050800@gmail.com>
+In-Reply-To: <4FA4E93F.3050800@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 May 2012, Peter Zijlstra wrote:
+There's another mysterious _DSM function under \_SB.PCI0.P0P2.UPSB.
+Seems it's related to Thunderbolt technology.
 
-> That said, the whole suspend/resume 'problem' does seem worth fixing and
-> is a very special case where we absolutely know we're going to get back
-> in the state we are in and userspace isn't actually running. So ideally
-> we'd go with the bhat's patch that skips the sched_domain rebuilds
-> entirely +- some bug-fixes ;-).
+                    Method (_DSM, 4, NotSerialized)
+                    {
+                        If (LEqual (Arg0, Buffer (0x10)
+                                {
+                                    /* 0000 */    0xC6, 0xB7, 0xB5, 0xA0, 0x18, 0x13, 0x1C, 0x44,
+                                    /* 0008 */    0xB0, 0xC9, 0xFE, 0x69, 0x5E, 0xAF, 0x94, 0x9B
+                                }))
+                        {
+                            Store (Package (0x02)
+                                {
+                                    "PCI-Thunderbolt",
+                                    0x01
+                                }, Local0)
+                            DTGP (Arg0, Arg1, Arg2, Arg3, RefOf (Local0))
+                            Return (Local0)
+                        }
 
-Just as an interesting side comment...
+                        Return (0x80000002)
+                    }
 
-The USB subsystem faced this same problem years ago.  The question was:  
-When a USB device (especially a mass-storage device) is unplugged and
-then reconnected, is the new device instance the same as the old one?  
-Linus stepped in and firmly assured us that it was not.  That's very
-much like the situation you're describing: If CPU 4 is hot-unplugged
-and then a new CPU appears in slot 4, is it the same CPU as before (and 
-does it therefore belong to the same cpusets as before)?
 
-But this led to problems during suspend, because not all systems could
-maintain bus connectivity while the system was asleep, and almost none
-can during hibernation.  As a result, mounted filesystems would become
-unavailable after resume even though the USB storage device had been
-plugged in the whole time.  To the kernel, it appeared that the device 
-had been unplugged during suspend and then replugged during resume.
-
-We ended up adopting a special-purpose solution just to handle that
-case.  It's described in Documentation/usb/persist.txt if you want the
-full details.  In brief, when the system resumes it checks to see if a
-device appears to be present at the same port where a device used to
-be.  If it is, and if its descriptors match the values remembered for
-the former device, then we accept the new device as being the same as
-the old one, even though the hardware indicates that the connection was
-not maintained during the system sleep.
-
->From my point of view, this suggests that CPU hot-unplug is not quite
-the right tool to use during suspend.  The CPU doesn't actually go
-away; it merely becomes unusable for a while.  In other words, this
-approach applies an incorrect abstraction.  What's really needed is
-something a little different: a way to avoid running any tasks on that
-CPU while not removing it from the system.  If this means some tasks
-can no longer run on any CPUs, so be it -- this happens only during
-suspend, after all.  Then during resume, when the CPU is brought back 
-up, tasks are allowed to run on it again.
-
-Alan Stern
+On 05/05/2012 04:47 PM, Francois Rigaut wrote:
+> http://maumae.net/thunderbolt/acpidump.bin
+> Thanks.
+> Francois
+> 
+> 
+> On 05/05/12 18:18, Jiang Liu wrote:
+>> This log message below implies that your BIOS doesn't provide the ACPI interfaces
+>> needed by acpiphp driver. Maybe an ACPI dump file may help to identify the issue.
+>> You may generate acpidump file by:
+>> acpidump>  acpidump.bin
+>>
+>>> May  5 14:09:55 localhost kernel: [28329.702720] acpiphp_glue: Total 0 slots
+>> On 05/05/2012 12:19 PM, Francois Rigaut wrote:
+>>> May  5 14:09:55 localhost kernel: [28329.702720] acpiphp_glue: Total 0 slots
 
