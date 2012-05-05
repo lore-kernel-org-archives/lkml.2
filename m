@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757708Ab2EERYi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 13:24:38 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:1785 "EHLO relay.sw.ru"
+	id S1757988Ab2EERYp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 13:24:45 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:5217 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757834Ab2EERYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 13:24:34 -0400
-Subject: [PATCH RFC 09/13] NFSd: make nfsd4_manager allocated per network
-	namespace context.
+	id S1757610Ab2EERYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 May 2012 13:24:42 -0400
+Subject: [PATCH RFC 10/13] SUNRPC: service request network namespace helper
+	introduced
 To: bfields@fieldses.org, Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Sat, 05 May 2012 21:22:37 +0400
-Message-ID: <20120505172236.11559.97256.stgit@localhost.localdomain>
+Date: Sat, 05 May 2012 21:22:44 +0400
+Message-ID: <20120505172244.11559.70873.stgit@localhost.localdomain>
 In-Reply-To: <20120505170722.11559.74503.stgit@localhost.localdomain>
 References: <20120505170722.11559.74503.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -23,121 +23,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a cleanup patch - makes code looks simplier.
+It replaces widely used rqstp->rq_xprt->xpt_net by introduced SVC_NET(rqstp).
+
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfsd/netns.h     |    2 ++
- fs/nfsd/nfs4state.c |   32 +++++++++++++++++++-------------
- 2 files changed, 21 insertions(+), 13 deletions(-)
+ fs/lockd/host.c            |    2 +-
+ fs/nfs/callback_xdr.c      |    4 ++--
+ fs/nfsd/export.c           |    4 ++--
+ fs/nfsd/nfs4idmap.c        |    4 ++--
+ include/linux/sunrpc/svc.h |    2 ++
+ 5 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
-index 3936563..e99767d 100644
---- a/fs/nfsd/netns.h
-+++ b/fs/nfsd/netns.h
-@@ -34,6 +34,8 @@ struct nfsd_net {
+diff --git a/fs/lockd/host.c b/fs/lockd/host.c
+index 0084ab8..f9b22e5 100644
+--- a/fs/lockd/host.c
++++ b/fs/lockd/host.c
+@@ -331,7 +331,7 @@ struct nlm_host *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
+ 	struct nsm_handle *nsm = NULL;
+ 	struct sockaddr *src_sap = svc_daddr(rqstp);
+ 	size_t src_len = rqstp->rq_daddrlen;
+-	struct net *net = rqstp->rq_xprt->xpt_net;
++	struct net *net = SVC_NET(rqstp);
+ 	struct nlm_lookup_host_info ni = {
+ 		.server		= 1,
+ 		.sap		= svc_addr(rqstp),
+diff --git a/fs/nfs/callback_xdr.c b/fs/nfs/callback_xdr.c
+index 95bfc24..0ecb2e5 100644
+--- a/fs/nfs/callback_xdr.c
++++ b/fs/nfs/callback_xdr.c
+@@ -863,7 +863,7 @@ static __be32 nfs4_callback_compound(struct svc_rqst *rqstp, void *argp, void *r
+ 		.drc_status = 0,
+ 		.clp = NULL,
+ 		.slotid = NFS4_NO_SLOT,
+-		.net = rqstp->rq_xprt->xpt_net,
++		.net = SVC_NET(rqstp),
+ 	};
+ 	unsigned int nops = 0;
  
- 	struct cache_detail *idtoname_cache;
- 	struct cache_detail *nametoid_cache;
-+
-+	struct lock_manager nfsd4_manager;
+@@ -879,7 +879,7 @@ static __be32 nfs4_callback_compound(struct svc_rqst *rqstp, void *argp, void *r
+ 		return rpc_garbage_args;
+ 
+ 	if (hdr_arg.minorversion == 0) {
+-		cps.clp = nfs4_find_client_ident(rqstp->rq_xprt->xpt_net, hdr_arg.cb_ident);
++		cps.clp = nfs4_find_client_ident(SVC_NET(rqstp), hdr_arg.cb_ident);
+ 		if (!cps.clp || !check_gss_callback_principal(cps.clp, rqstp))
+ 			return rpc_drop_reply;
+ 	}
+diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
+index ec16364..e0e1353 100644
+--- a/fs/nfsd/export.c
++++ b/fs/nfsd/export.c
+@@ -929,7 +929,7 @@ struct svc_export *
+ rqst_exp_get_by_name(struct svc_rqst *rqstp, struct path *path)
+ {
+ 	struct svc_export *gssexp, *exp = ERR_PTR(-ENOENT);
+-	struct nfsd_net *nn = net_generic(rqstp->rq_xprt->xpt_net, nfsd_net_id);
++	struct nfsd_net *nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
+ 	struct cache_detail *cd = nn->svc_export_cache;
+ 
+ 	if (rqstp->rq_client == NULL)
+@@ -960,7 +960,7 @@ struct svc_export *
+ rqst_exp_find(struct svc_rqst *rqstp, int fsid_type, u32 *fsidv)
+ {
+ 	struct svc_export *gssexp, *exp = ERR_PTR(-ENOENT);
+-	struct nfsd_net *nn = net_generic(rqstp->rq_xprt->xpt_net, nfsd_net_id);
++	struct nfsd_net *nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
+ 	struct cache_detail *cd = nn->svc_export_cache;
+ 
+ 	if (rqstp->rq_client == NULL)
+diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
+index 286a7f8..1c696c5 100644
+--- a/fs/nfsd/nfs4idmap.c
++++ b/fs/nfsd/nfs4idmap.c
+@@ -546,7 +546,7 @@ idmap_name_to_id(struct svc_rqst *rqstp, int type, const char *name, u32 namelen
+ 		.type = type,
+ 	};
+ 	int ret;
+-	struct nfsd_net *nn = net_generic(rqstp->rq_xprt->xpt_net, nfsd_net_id);
++	struct nfsd_net *nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
+ 
+ 	if (namelen + 1 > sizeof(key.name))
+ 		return nfserr_badowner;
+@@ -571,7 +571,7 @@ idmap_id_to_name(struct svc_rqst *rqstp, int type, uid_t id, char *name)
+ 		.type = type,
+ 	};
+ 	int ret;
+-	struct nfsd_net *nn = net_generic(rqstp->rq_xprt->xpt_net, nfsd_net_id);
++	struct nfsd_net *nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
+ 
+ 	strlcpy(key.authname, rqst_authname(rqstp), sizeof(key.authname));
+ 	ret = idmap_lookup(rqstp, idtoname_lookup, &key, nn->idtoname_cache, &item);
+diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+index 2b43e02..1ad3cd1 100644
+--- a/include/linux/sunrpc/svc.h
++++ b/include/linux/sunrpc/svc.h
+@@ -279,6 +279,8 @@ struct svc_rqst {
+ 	struct task_struct	*rq_task;	/* service thread */
  };
  
- extern int nfsd_net_id;
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index c33f052..c6c1be9 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -44,6 +44,8 @@
- #include "vfs.h"
- #include "current_stateid.h"
- 
-+#include "netns.h"
++#define SVC_NET(svc_rqst)	(svc_rqst->rq_xprt->xpt_net)
 +
- #define NFSDDBG_FACILITY                NFSDDBG_PROC
- 
- /* Globals */
-@@ -3184,22 +3186,21 @@ out:
- 	return status;
- }
- 
--static struct lock_manager nfsd4_manager = {
--};
--
- static bool grace_ended;
- 
- static void
--nfsd4_end_grace(void)
-+nfsd4_end_grace(struct net *net)
- {
-+	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
-+
- 	/* do nothing if grace period already ended */
- 	if (grace_ended)
- 		return;
- 
- 	dprintk("NFSD: end of grace period\n");
- 	grace_ended = true;
--	nfsd4_record_grace_done(&init_net, boot_time);
--	locks_end_grace(&nfsd4_manager);
-+	nfsd4_record_grace_done(net, boot_time);
-+	locks_end_grace(&nn->nfsd4_manager);
- 	/*
- 	 * Now that every NFSv4 client has had the chance to recover and
- 	 * to see the (possibly new, possibly shorter) lease time, we
-@@ -3222,7 +3223,7 @@ nfs4_laundromat(void)
- 	nfs4_lock_state();
- 
- 	dprintk("NFSD: laundromat service - starting\n");
--	nfsd4_end_grace();
-+	nfsd4_end_grace(&init_net);
- 	INIT_LIST_HEAD(&reaplist);
- 	spin_lock(&client_lock);
- 	list_for_each_safe(pos, next, &client_lru) {
-@@ -4743,6 +4744,8 @@ set_max_delegations(void)
- int
- nfs4_state_start(void)
- {
-+	struct net *net = &init_net;
-+	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
- 	int ret;
- 
- 	/*
-@@ -4752,10 +4755,10 @@ nfs4_state_start(void)
- 	 * to that instead and then do most of the rest of this on a per-net
- 	 * basis.
- 	 */
--	get_net(&init_net);
--	nfsd4_client_tracking_init(&init_net);
-+	get_net(net);
-+	nfsd4_client_tracking_init(net);
- 	boot_time = get_seconds();
--	locks_start_grace(&nfsd4_manager);
-+	locks_start_grace(&nn->nfsd4_manager);
- 	grace_ended = false;
- 	printk(KERN_INFO "NFSD: starting %ld-second grace period\n",
- 	       nfsd4_grace);
-@@ -4778,8 +4781,8 @@ nfs4_state_start(void)
- out_free_laundry:
- 	destroy_workqueue(laundry_wq);
- out_recovery:
--	nfsd4_client_tracking_exit(&init_net);
--	put_net(&init_net);
-+	nfsd4_client_tracking_exit(net);
-+	put_net(net);
- 	return ret;
- }
- 
-@@ -4820,9 +4823,12 @@ __nfs4_state_shutdown(void)
- void
- nfs4_state_shutdown(void)
- {
-+	struct net *net = &init_net;
-+	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
-+
- 	cancel_delayed_work_sync(&laundromat_work);
- 	destroy_workqueue(laundry_wq);
--	locks_end_grace(&nfsd4_manager);
-+	locks_end_grace(&nn->nfsd4_manager);
- 	nfs4_lock_state();
- 	__nfs4_state_shutdown();
- 	nfs4_unlock_state();
+ /*
+  * Rigorous type checking on sockaddr type conversions
+  */
 
