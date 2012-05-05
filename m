@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632Ab2EERYI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 13:24:08 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:10896 "EHLO relay.sw.ru"
+	id S1757726Ab2EERYQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 13:24:16 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:7404 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757214Ab2EERYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 13:24:06 -0400
-Subject: [PATCH RFC 05/13] Lockd: host complaining function introduced
+	id S1757706Ab2EERYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 May 2012 13:24:12 -0400
+Subject: [PATCH RFC 06/13] Lockd: add more debug to host shutdown functions
 To: bfields@fieldses.org, Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Sat, 05 May 2012 21:22:08 +0400
-Message-ID: <20120505172208.11559.61956.stgit@localhost.localdomain>
+Date: Sat, 05 May 2012 21:22:15 +0400
+Message-ID: <20120505172215.11559.11430.stgit@localhost.localdomain>
 In-Reply-To: <20120505170722.11559.74503.stgit@localhost.localdomain>
 References: <20120505170722.11559.74503.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -22,94 +22,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a small cleanup.
-
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/lockd/host.c |   57 +++++++++++++++++++++++++++++--------------------------
- 1 files changed, 30 insertions(+), 27 deletions(-)
+ fs/lockd/host.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/fs/lockd/host.c b/fs/lockd/host.c
-index 6c56090..8cbf53d 100644
+index 8cbf53d..0084ab8 100644
 --- a/fs/lockd/host.c
 +++ b/fs/lockd/host.c
-@@ -572,6 +572,35 @@ void nlm_host_rebooted(const struct nlm_reboot *info)
- 	nsm_release(nsm);
- }
+@@ -608,11 +608,10 @@ nlm_shutdown_hosts_net(struct net *net)
+ 	struct hlist_node *pos;
+ 	struct nlm_host	*host;
  
-+static void nlm_complain_hosts(struct net *net)
-+{
-+	struct hlist_head *chain;
-+	struct hlist_node *pos;
-+	struct nlm_host	*host;
-+
-+	if (net) {
-+		struct lockd_net *ln = net_generic(net, lockd_net_id);
-+
-+		if (ln->nrhosts == 0)
-+			return;
-+		printk(KERN_WARNING "lockd: couldn't shutdown host module for net %p!\n", net);
-+		dprintk("lockd: %lu hosts left in net %p:\n", ln->nrhosts, net);
-+	} else {
-+		if (nrhosts == 0)
-+			return;
-+		printk(KERN_WARNING "lockd: couldn't shutdown host module!\n");
-+		dprintk("lockd: %lu hosts left:\n", nrhosts);
-+	}
-+
-+	for_each_host(host, pos, chain, nlm_server_hosts) {
-+		if (net && host->net != net)
-+			continue;
-+		dprintk("       %s (cnt %d use %d exp %ld net %p)\n",
-+			host->h_name, atomic_read(&host->h_count),
-+			host->h_inuse, host->h_expires, host->net);
-+	}
-+}
-+
- void
- nlm_shutdown_hosts_net(struct net *net)
- {
-@@ -598,18 +627,7 @@ nlm_shutdown_hosts_net(struct net *net)
- 	nlm_gc_hosts(net);
- 	mutex_unlock(&nlm_host_mutex);
+-	dprintk("lockd: shutting down host module\n");
+ 	mutex_lock(&nlm_host_mutex);
  
--	/* complain if any hosts are left */
--	if (net) {
--		struct lockd_net *ln = net_generic(net, lockd_net_id);
--
--		printk(KERN_WARNING "lockd: couldn't shutdown host module for net %p!\n", net);
--		dprintk("lockd: %lu hosts left in net %p:\n", ln->nrhosts, net);
--		for_each_host(host, pos, chain, nlm_server_hosts) {
--			dprintk("       %s (cnt %d use %d exp %ld net %p)\n",
--				host->h_name, atomic_read(&host->h_count),
--				host->h_inuse, host->h_expires, host->net);
--		}
--	}
-+	nlm_complain_hosts(net);
- }
- 
- /*
-@@ -619,22 +637,7 @@ nlm_shutdown_hosts_net(struct net *net)
+ 	/* First, make all hosts eligible for gc */
+-	dprintk("lockd: nuking all hosts...\n");
++	dprintk("lockd: nuking all hosts in net %p...\n", net);
+ 	for_each_host(host, pos, chain, nlm_server_hosts) {
+ 		if (net && host->net != net)
+ 			continue;
+@@ -637,6 +636,7 @@ nlm_shutdown_hosts_net(struct net *net)
  void
  nlm_shutdown_hosts(void)
  {
--	struct hlist_head *chain;
--	struct hlist_node *pos;
--	struct nlm_host	*host;
--
++	dprintk("lockd: shutting down host module\n");
  	nlm_shutdown_hosts_net(NULL);
--
--	/* complain if any hosts are left */
--	if (nrhosts != 0) {
--		printk(KERN_WARNING "lockd: couldn't shutdown host module!\n");
--		dprintk("lockd: %lu hosts left:\n", nrhosts);
--		for_each_host(host, pos, chain, nlm_server_hosts) {
--			dprintk("       %s (cnt %d use %d exp %ld net %p)\n",
--				host->h_name, atomic_read(&host->h_count),
--				host->h_inuse, host->h_expires, host->net);
--		}
--	}
  }
  
- /*
 
