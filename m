@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab2EES4X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 14:56:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54395 "EHLO
+	id S1753600Ab2EES5M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 14:57:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54406 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab2EES4V (ORCPT
+	with ESMTP id S1751207Ab2EES5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 14:56:21 -0400
-Date: Sat, 5 May 2012 11:56:09 -0700
+	Sat, 5 May 2012 14:57:10 -0400
+Date: Sat, 5 May 2012 11:56:59 -0700
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-a3b3aa3d9d5d482ac68477c69fc08cadbc43e074@git.kernel.org>
+Message-ID: <tip-e336e05bca1909faf6d7c033702a71bdb5c79d18@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, ysato@users.sourceforge.jp
+        tglx@linutronix.de, rkuo@codeaurora.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, ysato@users.sourceforge.jp
-In-Reply-To: <20120503085034.623666760@linutronix.de>
-References: <20120503085034.623666760@linutronix.de>
+        tglx@linutronix.de, rkuo@codeaurora.org
+In-Reply-To: <20120503085034.692078846@linutronix.de>
+References: <20120503085034.692078846@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] h8300-use-generic-init_task
-Git-Commit-ID: a3b3aa3d9d5d482ac68477c69fc08cadbc43e074
+Subject: [tip:smp/hotplug] hexagon: Use generic idle_task
+Git-Commit-ID: e336e05bca1909faf6d7c033702a71bdb5c79d18
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,95 +27,127 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 05 May 2012 11:56:15 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 05 May 2012 11:57:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a3b3aa3d9d5d482ac68477c69fc08cadbc43e074
-Gitweb:     http://git.kernel.org/tip/a3b3aa3d9d5d482ac68477c69fc08cadbc43e074
+Commit-ID:  e336e05bca1909faf6d7c033702a71bdb5c79d18
+Gitweb:     http://git.kernel.org/tip/e336e05bca1909faf6d7c033702a71bdb5c79d18
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Thu, 3 May 2012 09:02:53 +0000
+AuthorDate: Thu, 3 May 2012 09:02:54 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Sat, 5 May 2012 13:00:23 +0200
 
-h8300-use-generic-init_task
+hexagon: Use generic idle_task
 
-Same code. Use the generic version.
+Same code. Use the generic version. The special Makefile treatment is
+pointless anyway as init_task.o contains only data which is handled by
+the linker script. So no point on being treated like head text.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
-Link: http://lkml.kernel.org/r/20120503085034.623666760@linutronix.de
+Link: http://lkml.kernel.org/r/20120503085034.692078846@linutronix.de
+Acked-and-tested-by: Richard Kuo <rkuo@codeaurora.org>
 ---
- arch/h8300/Kconfig            |    1 +
- arch/h8300/kernel/Makefile    |    2 +-
- arch/h8300/kernel/init_task.c |   36 ------------------------------------
- 3 files changed, 2 insertions(+), 37 deletions(-)
+ arch/hexagon/Kconfig            |    1 +
+ arch/hexagon/Makefile           |    3 +-
+ arch/hexagon/kernel/Makefile    |    2 +-
+ arch/hexagon/kernel/init_task.c |   54 ---------------------------------------
+ 4 files changed, 3 insertions(+), 57 deletions(-)
 
-diff --git a/arch/h8300/Kconfig b/arch/h8300/Kconfig
-index 56e890d..5fac425 100644
---- a/arch/h8300/Kconfig
-+++ b/arch/h8300/Kconfig
-@@ -5,6 +5,7 @@ config H8300
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_SHOW
- 	select GENERIC_CPU_DEVICES
+diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
+index d2e4a33..6ee5488 100644
+--- a/arch/hexagon/Kconfig
++++ b/arch/hexagon/Kconfig
+@@ -28,6 +28,7 @@ config HEXAGON
+ 	select NO_IOPORT
+ 	select GENERIC_IOMAP
+ 	select GENERIC_SMP_IDLE_THREAD
 +	select HAVE_GENERIC_INIT_TASK
+ 	# mostly generic routines, with some accelerated ones
+ 	---help---
+ 	  Qualcomm Hexagon is a processor architecture designed for high
+diff --git a/arch/hexagon/Makefile b/arch/hexagon/Makefile
+index 0c4de87..e27d030 100644
+--- a/arch/hexagon/Makefile
++++ b/arch/hexagon/Makefile
+@@ -45,8 +45,7 @@ KBUILD_AFLAGS += -DTHREADINFO_REG=$(TIR_NAME)
+ LIBGCC := $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
+ libs-y += $(LIBGCC)
  
- config SYMBOL_PREFIX
- 	string
-diff --git a/arch/h8300/kernel/Makefile b/arch/h8300/kernel/Makefile
-index 8d4d2a5..1cc57f8 100644
---- a/arch/h8300/kernel/Makefile
-+++ b/arch/h8300/kernel/Makefile
-@@ -6,7 +6,7 @@ extra-y := vmlinux.lds
+-head-y := arch/hexagon/kernel/head.o \
+-	arch/hexagon/kernel/init_task.o
++head-y := arch/hexagon/kernel/head.o
  
- obj-y := process.o traps.o ptrace.o irq.o \
- 	 sys_h8300.o time.o signal.o \
--         setup.o gpio.o init_task.o syscalls.o \
-+         setup.o gpio.o syscalls.o \
- 	 entry.o timer/
+ core-y += arch/hexagon/kernel/ \
+ 	arch/hexagon/mm/ \
+diff --git a/arch/hexagon/kernel/Makefile b/arch/hexagon/kernel/Makefile
+index 3689f37..536aec0 100644
+--- a/arch/hexagon/kernel/Makefile
++++ b/arch/hexagon/kernel/Makefile
+@@ -1,4 +1,4 @@
+-extra-y := head.o vmlinux.lds init_task.o
++extra-y := head.o vmlinux.lds
  
- obj-$(CONFIG_MODULES) += module.o h8300_ksyms.o 
-diff --git a/arch/h8300/kernel/init_task.c b/arch/h8300/kernel/init_task.c
+ obj-$(CONFIG_SMP) += smp.o topology.o
+ 
+diff --git a/arch/hexagon/kernel/init_task.c b/arch/hexagon/kernel/init_task.c
 deleted file mode 100644
-index 54c1062..0000000
---- a/arch/h8300/kernel/init_task.c
+index 73283d3..0000000
+--- a/arch/hexagon/kernel/init_task.c
 +++ /dev/null
-@@ -1,36 +0,0 @@
+@@ -1,54 +0,0 @@
 -/*
-- *  linux/arch/h8300/kernel/init_task.c
+- * Init task definition
+- *
+- * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 and
+- * only version 2 as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+- * 02110-1301, USA.
 - */
+-
 -#include <linux/mm.h>
 -#include <linux/module.h>
 -#include <linux/sched.h>
--#include <linux/init.h>
 -#include <linux/init_task.h>
 -#include <linux/fs.h>
 -#include <linux/mqueue.h>
--
+-#include <asm/thread_info.h>
 -#include <asm/uaccess.h>
 -#include <asm/pgtable.h>
 -
 -static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 -static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
--/*
-- * Initial task structure.
-- *
-- * All other task structs will be allocated on slabs in fork.c
-- */
--__asm__(".align 4");
--struct task_struct init_task = INIT_TASK(init_task);
--
--EXPORT_SYMBOL(init_task);
 -
 -/*
 - * Initial thread structure.
 - *
 - * We need to make sure that this is 8192-byte aligned due to the
-- * way process stacks are handled. This is done by having a special
-- * "init_task" linker map entry..
+- * way process stacks are handled. This is done by making sure
+- * the linker maps this in the .text segment right after head.S,
+- * and making head.S ensure the proper alignment.
 - */
--union thread_union init_thread_union __init_task_data =
--	{ INIT_THREAD_INFO(init_task) };
+-union thread_union init_thread_union
+-	__attribute__((__section__(".data.init_task"),
+-		__aligned__(THREAD_SIZE))) = {
+-			INIT_THREAD_INFO(init_task)
+-		};
 -
+-/*
+- * Initial task structure.
+- *
+- * All other task structs will be allocated on slabs in fork.c
+- */
+-struct task_struct init_task = INIT_TASK(init_task);
+-EXPORT_SYMBOL(init_task);
