@@ -1,103 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757774Ab2EERY3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 13:24:29 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:48666 "EHLO relay.sw.ru"
+	id S1757451Ab2EERbj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 13:31:39 -0400
+Received: from mga11.intel.com ([192.55.52.93]:30879 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757567Ab2EERYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 13:24:25 -0400
-Subject: [PATCH RFC 07/13] LockD: manage grace period per network namespace
-To: bfields@fieldses.org, Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Sat, 05 May 2012 21:22:22 +0400
-Message-ID: <20120505172222.11559.12808.stgit@localhost.localdomain>
-In-Reply-To: <20120505170722.11559.74503.stgit@localhost.localdomain>
-References: <20120505170722.11559.74503.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1757099Ab2EERbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 May 2012 13:31:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="162383837"
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: [PATCH] smb347_charger: cleaned battery power supply attributes
+Date: Sat,  5 May 2012 21:33:54 +0530
+Message-Id: <1336233834-21550-1-git-send-email-ramakrishna.pallala@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/lockd/netns.h |    2 ++
- fs/lockd/svc.c   |   17 +++++++++++------
- 2 files changed, 13 insertions(+), 6 deletions(-)
+CURRENT_NOW and VOLTAGE_NOW should be instantaneous readings
+from power supply(ex: battery).
 
-diff --git a/fs/lockd/netns.h b/fs/lockd/netns.h
-index 44c8f0b..94653ae 100644
---- a/fs/lockd/netns.h
-+++ b/fs/lockd/netns.h
-@@ -7,6 +7,8 @@ struct lockd_net {
- 	unsigned int nlmsvc_users;
- 	unsigned long next_gc;
- 	unsigned long nrhosts;
-+
-+	struct delayed_work grace_period_end;
+smb347 charger driver reports charge voltage for VOLTAGE_NOW
+and charge current for CURRENT_NOW attributes which are not
+instantaneous readings.
+
+This patch removes the battery VOLTAGE_NOW and CURRENT_NOW
+properties from the driver and also removes hw_to_current()
+which is not required anymore.
+
+Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+---
+ drivers/power/smb347-charger.c |   49 ----------------------------------------
+ 1 files changed, 0 insertions(+), 49 deletions(-)
+
+diff --git a/drivers/power/smb347-charger.c b/drivers/power/smb347-charger.c
+index cf31b31..09d19d2 100644
+--- a/drivers/power/smb347-charger.c
++++ b/drivers/power/smb347-charger.c
+@@ -195,14 +195,6 @@ static const unsigned int ccc_tbl[] = {
+ 	1200000,
  };
  
- extern int lockd_net_id;
-diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-index 80938fd..70c4177 100644
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -95,21 +95,22 @@ static void grace_ender(struct work_struct *not_used)
- 	locks_end_grace(&lockd_manager);
- }
- 
--static DECLARE_DELAYED_WORK(grace_period_end, grace_ender);
+-/* Convert register value to current using lookup table */
+-static int hw_to_current(const unsigned int *tbl, size_t size, unsigned int val)
+-{
+-	if (val >= size)
+-		return -EINVAL;
+-	return tbl[val];
+-}
 -
- static void set_grace_period(void)
+ /* Convert current to register value using lookup table */
+ static int current_to_hw(const unsigned int *tbl, size_t size, unsigned int val)
  {
- 	unsigned long grace_period = get_lockd_grace_period();
-+	struct lockd_net *ln = net_generic(&init_net, lockd_net_id);
+@@ -891,7 +883,6 @@ static int smb347_battery_get_property(struct power_supply *psy,
+ 	struct smb347_charger *smb =
+ 			container_of(psy, struct smb347_charger, battery);
+ 	const struct smb347_charger_platform_data *pdata = smb->pdata;
+-	unsigned int v;
+ 	int ret;
  
- 	locks_start_grace(&lockd_manager);
--	cancel_delayed_work_sync(&grace_period_end);
--	schedule_delayed_work(&grace_period_end, grace_period);
-+	cancel_delayed_work_sync(&ln->grace_period_end);
-+	schedule_delayed_work(&ln->grace_period_end, grace_period);
- }
+ 	ret = smb347_update_ps_status(smb);
+@@ -943,44 +934,6 @@ static int smb347_battery_get_property(struct power_supply *psy,
+ 		val->intval = pdata->battery_info.voltage_max_design;
+ 		break;
  
- static void restart_grace(void)
- {
- 	if (nlmsvc_ops) {
--		cancel_delayed_work_sync(&grace_period_end);
-+		struct lockd_net *ln = net_generic(&init_net, lockd_net_id);
-+
-+		cancel_delayed_work_sync(&ln->grace_period_end);
- 		locks_end_grace(&lockd_manager);
- 		nlmsvc_invalidate_all();
- 		set_grace_period();
-@@ -124,6 +125,7 @@ lockd(void *vrqstp)
- {
- 	int		err = 0, preverr = 0;
- 	struct svc_rqst *rqstp = vrqstp;
-+	struct lockd_net *ln = net_generic(&init_net, lockd_net_id);
- 
- 	/* try_to_freeze() is called from svc_recv() */
- 	set_freezable();
-@@ -184,7 +186,7 @@ lockd(void *vrqstp)
- 		svc_process(rqstp);
- 	}
- 	flush_signals(current);
--	cancel_delayed_work_sync(&grace_period_end);
-+	cancel_delayed_work_sync(&ln->grace_period_end);
- 	locks_end_grace(&lockd_manager);
- 	if (nlmsvc_ops)
- 		nlmsvc_invalidate_all();
-@@ -589,6 +591,9 @@ module_param(nlm_max_connections, uint, 0644);
- 
- static int lockd_init_net(struct net *net)
- {
-+	struct lockd_net *ln = net_generic(net, lockd_net_id);
-+
-+	INIT_DELAYED_WORK(&ln->grace_period_end, grace_ender);
- 	return 0;
- }
- 
+-	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+-		if (!smb347_is_ps_online(smb))
+-			return -ENODATA;
+-		ret = regmap_read(smb->regmap, STAT_A, &v);
+-		if (ret < 0)
+-			return ret;
+-
+-		v &= STAT_A_FLOAT_VOLTAGE_MASK;
+-		if (v > 0x3d)
+-			v = 0x3d;
+-
+-		val->intval = 3500000 + v * 20000;
+-		break;
+-
+-	case POWER_SUPPLY_PROP_CURRENT_NOW:
+-		if (!smb347_is_ps_online(smb))
+-			return -ENODATA;
+-
+-		ret = regmap_read(smb->regmap, STAT_B, &v);
+-		if (ret < 0)
+-			return ret;
+-
+-		/*
+-		 * The current value is composition of FCC and PCC values
+-		 * and we can detect which table to use from bit 5.
+-		 */
+-		if (v & 0x20) {
+-			val->intval = hw_to_current(fcc_tbl,
+-						    ARRAY_SIZE(fcc_tbl),
+-						    v & 7);
+-		} else {
+-			v >>= 3;
+-			val->intval = hw_to_current(pcc_tbl,
+-						    ARRAY_SIZE(pcc_tbl),
+-						    v & 7);
+-		}
+-		break;
+-
+ 	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+ 		val->intval = pdata->battery_info.charge_full_design;
+ 		break;
+@@ -1002,8 +955,6 @@ static enum power_supply_property smb347_battery_properties[] = {
+ 	POWER_SUPPLY_PROP_TECHNOLOGY,
+ 	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
+ 	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
+-	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+-	POWER_SUPPLY_PROP_CURRENT_NOW,
+ 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+ 	POWER_SUPPLY_PROP_MODEL_NAME,
+ };
+-- 
+1.7.0.4
 
