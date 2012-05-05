@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab2EEPVQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 11:21:16 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:64105 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755951Ab2EEPVP (ORCPT
+	id S1756074Ab2EEPXR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 11:23:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39420 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755937Ab2EEPXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 11:21:15 -0400
-Message-ID: <4FA54569.2040209@tilera.com>
-Date: Sat, 5 May 2012 11:21:13 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 17/18] tile: Use common threadinfo allocator
-References: <20120505150007.543515803@linutronix.de> <20120505150142.311126440@linutronix.de>
-In-Reply-To: <20120505150142.311126440@linutronix.de>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Sat, 5 May 2012 11:23:16 -0400
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH] perf top: Fix a race in callchain handling
+Date: Sun,  6 May 2012 00:23:08 +0900
+Message-Id: <1336231388-12347-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/5/2012 11:05 AM, Thomas Gleixner wrote:
-> Use the core allocator and deal with the extra cleanup in
-> arch_release_thread_info().
->
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> ---
->  arch/tile/include/asm/thread_info.h |    6 ++----
->  arch/tile/kernel/process.c          |   23 ++---------------------
->  2 files changed, 4 insertions(+), 25 deletions(-)
+When perf top collects callchain info, main thread and display
+thread share the callchain cursor so that bugs can happen. For
+example, if two threads race on callchain_cursor_advance() for
+the last cursor node, one of them can dereference a NULL pointer.
 
-We have some changes we haven't yet merged upstream that this will likely
-conflict with.
+Because the display thread only uses the cursor when collapsing
+a hist entry, use its own cursor for that.
 
-You may note that we have APIs like homecache_alloc_pages() that take a
-core or other magic value to indicate what the "home" cache should be on
-our architecture.  This enables significant performance optimizations when
-you can co-locate the home cache with where most of the core references are
-coming from.
+Reported-by: Sunjin Yang <fan4326@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ tools/perf/util/hist.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-The additional changes we haven't yet merged are in the area of managing
-the home cache dynamically.  Rather than just setting the home cache at
-allocation time, we allow it to be modified dynamically: for example, as
-the process migrates, we migrate the kernel and user stack pages.  This is
-tricky since there are lots of coherence issues to manage, and the changes
-we have include a variety of changes in the core mm code to handle
-transitioning the home cache, proper locking, unmapping, hooks in the buddy
-allocator, blocking other cores while a page is transitioning, etc etc.
-
-But, the relevance to this change is that as part of that code, we use the
-homecache_alloc_page() method to set the home cache of a kernel stack page
-to be the core that is running the thread (and then migrate the home cache
-dynamically after that).  Using the new proposed core allocator will mean
-we lose that hook.  We don't need a free hook (when we're using the dynamic
-mode we are already hooked into the allocator itself), but we do need a way
-to know when we're allocating a kernel stack page as opposed to any other
-kind of a page.
-
-The simplest approach is of course just to allow
-__HAVE_ARCH_THREAD_INFO_ALLOCATOR to continue to be meaningful and use it
-for tile, but maybe there's some halfway point.  For example, that symbol
-could refer only to the allocate function, and not also imply an
-arch-specific free function.  Or, we could have a new much more focused
-override that was just "a function to use instead of alloc_pages_node",
-e.g. provide a weak alloc_threadinfo_pages_node() that just was generically
-just a call to alloc_pages_node, which architectures could override.
-
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 9f6d630d5316..795b49a803f9 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -378,7 +378,7 @@ void hist_entry__free(struct hist_entry *he)
+  * collapse the histogram
+  */
+ 
+-static bool hists__collapse_insert_entry(struct hists *hists,
++static bool hists__collapse_insert_entry(struct hists *hists __used,
+ 					 struct rb_root *root,
+ 					 struct hist_entry *he)
+ {
+@@ -386,6 +386,7 @@ static bool hists__collapse_insert_entry(struct hists *hists,
+ 	struct rb_node *parent = NULL;
+ 	struct hist_entry *iter;
+ 	int64_t cmp;
++	static struct callchain_cursor cursor;
+ 
+ 	while (*p != NULL) {
+ 		parent = *p;
+@@ -397,8 +398,8 @@ static bool hists__collapse_insert_entry(struct hists *hists,
+ 			iter->period += he->period;
+ 			iter->nr_events += he->nr_events;
+ 			if (symbol_conf.use_callchain) {
+-				callchain_cursor_reset(&hists->callchain_cursor);
+-				callchain_merge(&hists->callchain_cursor, iter->callchain,
++				callchain_cursor_reset(&cursor);
++				callchain_merge(&cursor, iter->callchain,
+ 						he->callchain);
+ 			}
+ 			hist_entry__free(he);
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.7.9.2
 
