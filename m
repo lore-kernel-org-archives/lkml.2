@@ -1,93 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab2EEQsr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 12:48:47 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:36337 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757170Ab2EEQsq (ORCPT
+	id S1757233Ab2EEQuB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 12:50:01 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38125 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756301Ab2EEQuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 12:48:46 -0400
-Date: Sat, 5 May 2012 18:48:19 +0200
-From: Nico Schottelius <nico-linux-20120419@schottelius.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Francois Rigaut <frigaut@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, linux-pci@vger.kernel.org,
-        Nico Schottelius <nico-linux-20120419@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Linux Support for Thunderbolt using Apple Monitor
-Message-ID: <20120505164819.GA21599@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20120419@schottelius.org>,
-	Jiang Liu <liuj97@gmail.com>, Francois Rigaut <frigaut@gmail.com>,
-	Yinghai Lu <yinghai@kernel.org>,
-	Greg KH <gregkh@linuxfoundation.org>, linux-pci@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>
-References: <CAMVeQ8qYu4bShd_+pwRv8bShhusJMDa-jjoqu7EujS4jt7RSNA@mail.gmail.com>
- <20120503153547.GD20334@kroah.com>
- <CAMVeQ8q3PMMGmFSgrnqbW2HVdfmN+LgatX3TSfv5_2Ebuuj=QQ@mail.gmail.com>
- <20120503233858.GA13453@kroah.com>
- <4FA358ED.1080705@gmail.com>
- <20120504184851.GB11223@kroah.com>
- <CAE9FiQWuePNRWV=ncJkF57aQZ0ZT91xxZ0sZMexq8HgN9NcAfA@mail.gmail.com>
- <CAE9FiQWcyRfLKB+YivOfa-GydbhoaMx06n6a4VMDWoTOMkj7ig@mail.gmail.com>
- <4FA4AA3E.1070903@gmail.com>
- <4FA544B1.3070705@gmail.com>
+	Sat, 5 May 2012 12:50:00 -0400
+Date: Sat, 5 May 2012 17:49:33 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Colin Cross <ccross@android.com>
+Cc: linux-arm-kernel@lists.infradead.org, Will Deacon <will.deacon@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: SMP: prevent use of the console when using
+	idmap_pgd
+Message-ID: <20120505164933.GQ897@n2100.arm.linux.org.uk>
+References: <1336180444-26563-1-git-send-email-ccross@android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FA544B1.3070705@gmail.com>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: brief (Linux 3.3.4-2-ARCH x86_64)
+In-Reply-To: <1336180444-26563-1-git-send-email-ccross@android.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Jiang,
-
-Jiang Liu [Sat, May 05, 2012 at 11:18:09PM +0800]:
-> 	It seems that the PCI topology related to the Thunderbird is:
-
-Thanks for digging into this, I've the feeling we could somehow get
-this running in the end...
-
-> [...] 
-> According to the acpidump sent out by you, I guess the relationship among PCIe and ACPI is as below:
->         Device (PCI0)	// PCIe host bridge
->         {
->             Name (_HID, EisaId ("PNP0A08"))
->             Device (P0P2)	//00:01.0
->             {
->                 Name (_ADR, 0x00010000)
->                 Device (UPSB)	//03:00.0
->                 {
->                     Name (_ADR, 0x00)
->                     Device (DSB2)	//04:04.0
->                     {
->                         Name (_ADR, 0x00040000)
->                         Method (_RMV, 0, NotSerialized)
->                         {
->                             Return (OSDW ()) // OSDW-> OS is Darwin
->                         }
->                         Device (UPS2)	//37:00.0
->                         {
->                             Name (_ADR, 0x00)
-> 			}
-> 		    }
-> 		}
-> 	    }
-> 	}
+On Fri, May 04, 2012 at 06:14:02PM -0700, Colin Cross wrote:
+> Commit 4e8ee7de227e3ab9a72040b448ad728c5428a042 (ARM: SMP: use
+> idmap_pgd for mapping MMU enable during secondary booting)
+> switched secondary boot to use idmap_pgd, which is initialized
+> during early_initcall, instead of a page table initialized during
+> __cpu_up.  This causes idmap_pgd to contain the static mappings
+> but be missing all dynamic mappings.
 > 
-> But _RMV method only returns 1 on iOS or Max OS X. That means ACPI based hotplug is disabled
-> on Linux for your system. And as Yinghai has pointed out, all the PCIe downstream ports on 
-> the system don't support PCIe hotplug. So need BIOS or hardware changes to support Thunderbolt
-> cable hotplug on your system.
+> If a console is registered that creates a dynamic mapping, the
+> printk in secondary_start_kernel will trigger a data abort on
+> the missing mapping before the exception handlers have been
+> initialized, leading to a hang.  Initial boot is not affected
+> because no consoles have been registered, and resume is usually
+> not affected because the offending console is suspended.
+> Onlining a cpu with hotplug triggers the problem.
+> 
+> A workaround is to the printk in secondary_start_kernel until
+> after the page tables have been switched back to init_mm.
 
-I'm not deep into how acpi works, but wondering: Can't we replace that part,
-change the tree or emulate a different OSDW() method similar to LD_PRELOAD?
-
-Cheers,
-
-Nico
-
--- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+I think this is fine.  Please put it in the patch system, thanks.
