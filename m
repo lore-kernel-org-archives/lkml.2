@@ -1,69 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab2EESVr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 14:21:47 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60660 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757463Ab2EESVq (ORCPT
+	id S1757812Ab2EESXC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 14:23:02 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41802 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757620Ab2EESXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 14:21:46 -0400
-Date: Sat, 5 May 2012 22:20:51 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, khlebnikov@openvz.org,
-        xemul@parallels.com, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: c/r: broken locking when executing map_files
-Message-ID: <20120505182051.GA16029@albatros>
-References: <1335979380.10666.6.camel@lappy>
- <20120502172756.GD2301@moon>
- <20120503173125.GF19347@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120503173125.GF19347@moon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 5 May 2012 14:23:00 -0400
+Subject: Re: [PATCH] perf top: Fix a race in callchain handling
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <1336231388-12347-1-git-send-email-namhyung@gmail.com>
+References: <1336231388-12347-1-git-send-email-namhyung@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 05 May 2012 20:22:47 +0200
+Message-ID: <1336242167.2463.138.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cyrill,
+On Sun, 2012-05-06 at 00:23 +0900, Namhyung Kim wrote:
+> +       static struct callchain_cursor cursor;
 
-On Thu, May 03, 2012 at 21:31 +0400, Cyrill Gorcunov wrote:
-> On Wed, May 02, 2012 at 09:27:56PM +0400, Cyrill Gorcunov wrote:
-> > > 
-> > > My theory is that files under map_files shouldn't be executable,
-> > > but since I'm not sure what the usermode code for c/r does exactly,
-> > > I should probably confirm that first. If it's indeed the case, you
-> > > can probably skip the rest of this mail.
-> > 
-> > Thanks Sasha, I'll take a look!
-> 
-> Sasha, the patch below should fix the lock problem (still I would
-> prefer to obtain confirm on patch from Vasiliy, CC'ed).
-...
-> ---
->  fs/proc/base.c |    8 +++-----
->  1 file changed, 3 insertions(+), 5 deletions(-)
-> 
-> Index: linux-2.6.git/fs/proc/base.c
-> ===================================================================
-> --- linux-2.6.git.orig/fs/proc/base.c
-> +++ linux-2.6.git/fs/proc/base.c
-> @@ -2226,16 +2226,16 @@ static struct dentry *proc_map_files_loo
->  		goto out;
->  
->  	result = ERR_PTR(-EACCES);
-> -	if (lock_trace(task))
-> +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+This just begs to become another concurrency problem. If anybody manages
+to call multiple hists__collapse_insert_entry() concurrently you're
+again up some creek without no paddle.
 
-Probably it will be better to change mutex_lock_killable() to
-mutex_lock_killable_nested() inside of lock_trace() instead of this change?
-It would keep the race-free check.
+Adding global state is never a good option when dealing with
+concurrency.
 
-Thanks,
-
--- 
-Vasily Kulikov
-http://www.openwall.com - bringing security into open computing environments
