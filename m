@@ -1,462 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760730Ab2EEACo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 20:02:44 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:61052 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758193Ab2EEACn (ORCPT
+	id S1760746Ab2EEADQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 20:03:16 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45107 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758280Ab2EEADN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 20:02:43 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-13.tower-209.messagelabs.com!1336176162!4828411!1
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor dt282x driver to remove forward declarations
-Date: Fri, 4 May 2012 17:02:38 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Fri, 4 May 2012 20:03:13 -0400
+Date: Sat, 5 May 2012 01:03:09 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@ardb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        linux-embedded@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Handling of modular boards
+Message-ID: <20120505000308.GX14230@opensource.wolfsonmicro.com>
+References: <20120504185850.GO14230@opensource.wolfsonmicro.com>
+ <20120504225514.GM897@n2100.arm.linux.org.uk>
+ <20120504234056.GV14230@opensource.wolfsonmicro.com>
+ <20120504235225.GN897@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YHHegWJYV76VGRm9"
 Content-Disposition: inline
-Message-ID: <201205041702.38679.hartleys@visionengravers.com>
+In-Reply-To: <20120504235225.GN897@n2100.arm.linux.org.uk>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the struct comedi_driver and variables to the end of the
-source. This is more typical of how other drivers are written and
-removes the need for the forward declarations.
 
-Convert the driver to use the module_comedi_driver() macro which
-makes the code smaller and a bit simpler.
+--YHHegWJYV76VGRm9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Sat, May 05, 2012 at 12:52:25AM +0100, Russell King - ARM Linux wrote:
 
----
+> How about this - we have struct platform_device_info, which is used to
+> create platform devices.  We can use this as an array to describe what
+> platform devices to create in the sub-driver, including what the resources
+> should be etc.
 
-diff --git a/drivers/staging/comedi/drivers/dt282x.c b/drivers/staging/comedi/drivers/dt282x.c
-index 210b3f0..461a056 100644
---- a/drivers/staging/comedi/drivers/dt282x.c
-+++ b/drivers/staging/comedi/drivers/dt282x.c
-@@ -221,135 +221,6 @@ struct dt282x_board {
- 	int dabits;
- };
- 
--static const struct dt282x_board boardtypes[] = {
--	{.name = "dt2821",
--	 .adbits = 12,
--	 .adchan_se = 16,
--	 .adchan_di = 8,
--	 .ai_speed = 20000,
--	 .ispgl = 0,
--	 .dachan = 2,
--	 .dabits = 12,
--	 },
--	{.name = "dt2821-f",
--	 .adbits = 12,
--	 .adchan_se = 16,
--	 .adchan_di = 8,
--	 .ai_speed = 6500,
--	 .ispgl = 0,
--	 .dachan = 2,
--	 .dabits = 12,
--	 },
--	{.name = "dt2821-g",
--	 .adbits = 12,
--	 .adchan_se = 16,
--	 .adchan_di = 8,
--	 .ai_speed = 4000,
--	 .ispgl = 0,
--	 .dachan = 2,
--	 .dabits = 12,
--	 },
--	{.name = "dt2823",
--	 .adbits = 16,
--	 .adchan_se = 0,
--	 .adchan_di = 4,
--	 .ai_speed = 10000,
--	 .ispgl = 0,
--	 .dachan = 2,
--	 .dabits = 16,
--	 },
--	{.name = "dt2824-pgh",
--	 .adbits = 12,
--	 .adchan_se = 16,
--	 .adchan_di = 8,
--	 .ai_speed = 20000,
--	 .ispgl = 0,
--	 .dachan = 0,
--	 .dabits = 0,
--	 },
--	{.name = "dt2824-pgl",
--	 .adbits = 12,
--	 .adchan_se = 16,
--	 .adchan_di = 8,
--	 .ai_speed = 20000,
--	 .ispgl = 1,
--	 .dachan = 0,
--	 .dabits = 0,
--	 },
--	{.name = "dt2825",
--	 .adbits = 12,
--	 .adchan_se = 16,
--	 .adchan_di = 8,
--	 .ai_speed = 20000,
--	 .ispgl = 1,
--	 .dachan = 2,
--	 .dabits = 12,
--	 },
--	{.name = "dt2827",
--	 .adbits = 16,
--	 .adchan_se = 0,
--	 .adchan_di = 4,
--	 .ai_speed = 10000,
--	 .ispgl = 0,
--	 .dachan = 2,
--	 .dabits = 12,
--	 },
--	{.name = "dt2828",
--	 .adbits = 12,
--	 .adchan_se = 4,
--	 .adchan_di = 0,
--	 .ai_speed = 10000,
--	 .ispgl = 0,
--	 .dachan = 2,
--	 .dabits = 12,
--	 },
--	{.name = "dt2829",
--	 .adbits = 16,
--	 .adchan_se = 8,
--	 .adchan_di = 0,
--	 .ai_speed = 33250,
--	 .ispgl = 0,
--	 .dachan = 2,
--	 .dabits = 16,
--	 },
--	{.name = "dt21-ez",
--	 .adbits = 12,
--	 .adchan_se = 16,
--	 .adchan_di = 8,
--	 .ai_speed = 10000,
--	 .ispgl = 0,
--	 .dachan = 2,
--	 .dabits = 12,
--	 },
--	{.name = "dt23-ez",
--	 .adbits = 16,
--	 .adchan_se = 16,
--	 .adchan_di = 8,
--	 .ai_speed = 10000,
--	 .ispgl = 0,
--	 .dachan = 0,
--	 .dabits = 0,
--	 },
--	{.name = "dt24-ez",
--	 .adbits = 12,
--	 .adchan_se = 16,
--	 .adchan_di = 8,
--	 .ai_speed = 10000,
--	 .ispgl = 0,
--	 .dachan = 0,
--	 .dabits = 0,
--	 },
--	{.name = "dt24-ez-pgl",
--	 .adbits = 12,
--	 .adchan_se = 16,
--	 .adchan_di = 8,
--	 .ai_speed = 10000,
--	 .ispgl = 1,
--	 .dachan = 0,
--	 .dabits = 0,
--	 },
--};
--
- #define this_board ((const struct dt282x_board *)dev->board_ptr)
- 
- struct dt282x_private {
-@@ -410,33 +281,6 @@ struct dt282x_private {
- 			b					\
- 	} while (0)
- 
--static int dt282x_attach(struct comedi_device *dev,
--			 struct comedi_devconfig *it);
--static int dt282x_detach(struct comedi_device *dev);
--static struct comedi_driver driver_dt282x = {
--	.driver_name = "dt282x",
--	.module = THIS_MODULE,
--	.attach = dt282x_attach,
--	.detach = dt282x_detach,
--	.board_name = &boardtypes[0].name,
--	.num_names = ARRAY_SIZE(boardtypes),
--	.offset = sizeof(struct dt282x_board),
--};
--
--static int __init driver_dt282x_init_module(void)
--{
--	return comedi_driver_register(&driver_dt282x);
--}
--
--static void __exit driver_dt282x_cleanup_module(void)
--{
--	comedi_driver_unregister(&driver_dt282x);
--}
--
--module_init(driver_dt282x_init_module);
--module_exit(driver_dt282x_cleanup_module);
--
--static void free_resources(struct comedi_device *dev);
- static int prep_ai_dma(struct comedi_device *dev, int chan, int size);
- static int prep_ao_dma(struct comedi_device *dev, int chan, int size);
- static int dt282x_ai_cancel(struct comedi_device *dev,
-@@ -1270,6 +1114,52 @@ enum {  /* i/o base, irq, dma channels */
- 	opt_ai_range, opt_ao0_range, opt_ao1_range,	/* range */
- };
- 
-+static int dt282x_grab_dma(struct comedi_device *dev, int dma1, int dma2)
-+{
-+	int ret;
-+
-+	devpriv->usedma = 0;
-+
-+	if (!dma1 && !dma2) {
-+		printk(KERN_ERR " (no dma)");
-+		return 0;
-+	}
-+
-+	if (dma1 == dma2 || dma1 < 5 || dma2 < 5 || dma1 > 7 || dma2 > 7)
-+		return -EINVAL;
-+
-+	if (dma2 < dma1) {
-+		int i;
-+		i = dma1;
-+		dma1 = dma2;
-+		dma2 = i;
-+	}
-+
-+	ret = request_dma(dma1, "dt282x A");
-+	if (ret)
-+		return -EBUSY;
-+	devpriv->dma[0].chan = dma1;
-+
-+	ret = request_dma(dma2, "dt282x B");
-+	if (ret)
-+		return -EBUSY;
-+	devpriv->dma[1].chan = dma2;
-+
-+	devpriv->dma_maxsize = PAGE_SIZE;
-+	devpriv->dma[0].buf = (void *)__get_free_page(GFP_KERNEL | GFP_DMA);
-+	devpriv->dma[1].buf = (void *)__get_free_page(GFP_KERNEL | GFP_DMA);
-+	if (!devpriv->dma[0].buf || !devpriv->dma[1].buf) {
-+		printk(KERN_ERR " can't get DMA memory");
-+		return -ENOMEM;
-+	}
-+
-+	printk(KERN_INFO " (dma=%d,%d)", dma1, dma2);
-+
-+	devpriv->usedma = 1;
-+
-+	return 0;
-+}
-+
- /*
-    options:
-    0	i/o base
-@@ -1468,51 +1358,146 @@ static int dt282x_detach(struct comedi_device *dev)
- 	return 0;
- }
- 
--static int dt282x_grab_dma(struct comedi_device *dev, int dma1, int dma2)
--{
--	int ret;
--
--	devpriv->usedma = 0;
--
--	if (!dma1 && !dma2) {
--		printk(KERN_ERR " (no dma)");
--		return 0;
--	}
--
--	if (dma1 == dma2 || dma1 < 5 || dma2 < 5 || dma1 > 7 || dma2 > 7)
--		return -EINVAL;
--
--	if (dma2 < dma1) {
--		int i;
--		i = dma1;
--		dma1 = dma2;
--		dma2 = i;
--	}
--
--	ret = request_dma(dma1, "dt282x A");
--	if (ret)
--		return -EBUSY;
--	devpriv->dma[0].chan = dma1;
--
--	ret = request_dma(dma2, "dt282x B");
--	if (ret)
--		return -EBUSY;
--	devpriv->dma[1].chan = dma2;
--
--	devpriv->dma_maxsize = PAGE_SIZE;
--	devpriv->dma[0].buf = (void *)__get_free_page(GFP_KERNEL | GFP_DMA);
--	devpriv->dma[1].buf = (void *)__get_free_page(GFP_KERNEL | GFP_DMA);
--	if (!devpriv->dma[0].buf || !devpriv->dma[1].buf) {
--		printk(KERN_ERR " can't get DMA memory");
--		return -ENOMEM;
--	}
--
--	printk(KERN_INFO " (dma=%d,%d)", dma1, dma2);
--
--	devpriv->usedma = 1;
-+static const struct dt282x_board boardtypes[] = {
-+	{
-+		.name		= "dt2821",
-+		.adbits		= 12,
-+		.adchan_se	= 16,
-+		.adchan_di	= 8,
-+		.ai_speed	= 20000,
-+		.ispgl		= 0,
-+		.dachan		= 2,
-+		.dabits		= 12,
-+	}, {
-+		.name		= "dt2821-f",
-+		.adbits		= 12,
-+		.adchan_se	= 16,
-+		.adchan_di	= 8,
-+		.ai_speed	= 6500,
-+		.ispgl		= 0,
-+		.dachan		= 2,
-+		.dabits		= 12,
-+	}, {
-+		.name		= "dt2821-g",
-+		.adbits		= 12,
-+		.adchan_se	= 16,
-+		.adchan_di	= 8,
-+		.ai_speed	= 4000,
-+		.ispgl		= 0,
-+		.dachan		= 2,
-+		.dabits		= 12,
-+	}, {
-+		.name		= "dt2823",
-+		.adbits		= 16,
-+		.adchan_se	= 0,
-+		.adchan_di	= 4,
-+		.ai_speed	= 10000,
-+		.ispgl		= 0,
-+		.dachan		= 2,
-+		.dabits		= 16,
-+	}, {
-+		.name		= "dt2824-pgh",
-+		.adbits		= 12,
-+		.adchan_se	= 16,
-+		.adchan_di	= 8,
-+		.ai_speed	= 20000,
-+		.ispgl		= 0,
-+		.dachan		= 0,
-+		.dabits		= 0,
-+	}, {
-+		.name		= "dt2824-pgl",
-+		.adbits		= 12,
-+		.adchan_se	= 16,
-+		.adchan_di	= 8,
-+		.ai_speed	= 20000,
-+		.ispgl		= 1,
-+		.dachan		= 0,
-+		.dabits		= 0,
-+	}, {
-+		.name		= "dt2825",
-+		.adbits		= 12,
-+		.adchan_se	= 16,
-+		.adchan_di	= 8,
-+		.ai_speed	= 20000,
-+		.ispgl		= 1,
-+		.dachan		= 2,
-+		.dabits		= 12,
-+	}, {
-+		.name		= "dt2827",
-+		.adbits		= 16,
-+		.adchan_se	= 0,
-+		.adchan_di	= 4,
-+		.ai_speed	= 10000,
-+		.ispgl		= 0,
-+		.dachan		= 2,
-+		.dabits		= 12,
-+	}, {
-+		.name		= "dt2828",
-+		.adbits		= 12,
-+		.adchan_se	= 4,
-+		.adchan_di	= 0,
-+		.ai_speed	= 10000,
-+		.ispgl		= 0,
-+		.dachan		= 2,
-+		.dabits		= 12,
-+	}, {
-+		.name		= "dt2829",
-+		.adbits		= 16,
-+		.adchan_se	= 8,
-+		.adchan_di	= 0,
-+		.ai_speed	= 33250,
-+		.ispgl		= 0,
-+		.dachan		= 2,
-+		.dabits		= 16,
-+	}, {
-+		.name		= "dt21-ez",
-+		.adbits		= 12,
-+		.adchan_se	= 16,
-+		.adchan_di	= 8,
-+		.ai_speed	= 10000,
-+		.ispgl		= 0,
-+		.dachan		= 2,
-+		.dabits		= 12,
-+	}, {
-+		.name		= "dt23-ez",
-+		.adbits		= 16,
-+		.adchan_se	= 16,
-+		.adchan_di	= 8,
-+		.ai_speed	= 10000,
-+		.ispgl		= 0,
-+		.dachan		= 0,
-+		.dabits		= 0,
-+	}, {
-+		.name		= "dt24-ez",
-+		.adbits		= 12,
-+		.adchan_se	= 16,
-+		.adchan_di	= 8,
-+		.ai_speed	= 10000,
-+		.ispgl		= 0,
-+		.dachan		= 0,
-+		.dabits		= 0,
-+	}, {
-+		.name		= "dt24-ez-pgl",
-+		.adbits		= 12,
-+		.adchan_se	= 16,
-+		.adchan_di	= 8,
-+		.ai_speed	= 10000,
-+		.ispgl		= 1,
-+		.dachan		= 0,
-+		.dabits		= 0,
-+	},
-+};
- 
--	return 0;
--}
-+static struct comedi_driver dt282x_driver = {
-+	.driver_name	= "dt282x",
-+	.module		= THIS_MODULE,
-+	.attach		= dt282x_attach,
-+	.detach		= dt282x_detach,
-+	.board_name	= &boardtypes[0].name,
-+	.num_names	= ARRAY_SIZE(boardtypes),
-+	.offset		= sizeof(struct dt282x_board),
-+};
-+module_comedi_driver(dt282x_driver);
- 
- MODULE_AUTHOR("Comedi http://www.comedi.org");
- MODULE_DESCRIPTION("Comedi low-level driver");
+We (well, I at least) need to handle devices on other buses like I2C and
+SPI too but yes, that's the sort of thing I was looking for.
+
+> However, there's a problem with this - what if you need to do some board
+> level init before hand?  That needs to be handled somehow before these
+> devices are instantiated.  That could be done via a callback through
+> platform data.
+
+> But... this all seems wrong, because rather than having a driver which
+> knows about the details of the board, we now have all the details of the
+> board in question back in platform code which originally declared the
+> board device.  That's wrong, because a daughter board may be shared
+> between different platforms, and we don't want multiple copies of that
+> data all around the place.
+
+> I don't think there's an easy or generic solution to this.
+
+I think that's OK - if there's any init stuff that needs to be done on a
+prior to identification of the board then presumably it's a generic
+thing for the motherboard which will apply to any plugin module on that
+board and can be done as part of the normal board init.  If the init
+needs to be done after identification of the board then probably it
+applies to any motherboard the board might be plugged in to so we can
+just define callbacks for the plugin module that can be part of the
+plugin module description.
+
+Cases that depend on a specific combination will doubtless exist and do
+have the problems you describe but are probably less frequent but I
+think we can go a long way on the first two.
+
+--YHHegWJYV76VGRm9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPpG40AAoJEBus8iNuMP3ds7EP/0SaZ91v2MredasgbcnS5zuX
+CbdV2e5crct//Lt9Y3YmbJZivr/yrT8Eryh2ubsIIHvyKQPX5QZ5yJx6U8JLJgal
+rV19uaZ1TjtzTa7xG6EXzKfVE9hQfqz0sa+3vXsJws3xixWMDEMN2JJNo6jTIA76
+lu9NndWxY7+sdqwJSmfkQeQeyRH2GyIP0PbniL0O/4oY6kPH1is+bv+GlneR1LJm
+LYFDO+It6tn3OERPx/ZFiXHJIi6CVEA2HWYizXPrPGtYAJfyKQGsDn3/bsS0ocTV
+BGSx1GCxWYmKo9ywkMNuFrT97u2WgNppzSgmx7OxU8bwYGrlYFGbz5j3Db5uqeP3
+iV1oKDTf3xHQIceWQM387MmkatymbgzZFXWWH++uLJKU5N/fKI1toCpbYMx2a0Uh
+IfclrJkYDXzT7EvnNRzlqBD/G0LVJt2awWVoW9Ix8JAzb9LbAjAmJsTiIRI6GlFJ
+6KDgPnAxtlicFSNYinv72Z3bvRFVYhlLj43l/Y27nZI7tsZEtgPuhs5FOWMpbwAw
+/lNdT3dHcbQmIjz1VY1EnnZ0WrLVw6KdDT4Ih1JvciN4sPvOkSmgbgPf/2VsWi1V
+xoBSPGWVIsmGy5lS7gx2kuVyZh9zIt2xGhx6eEFvIrarVsEBYMCdSEy5a7NQKBHZ
+l0YaeIQ9WFFjklyTR4PT
+=AZJd
+-----END PGP SIGNATURE-----
+
+--YHHegWJYV76VGRm9--
