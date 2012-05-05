@@ -1,181 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211Ab2EELdn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 07:33:43 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:37038 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755014Ab2EELdl (ORCPT
+	id S1755222Ab2EELjH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 07:39:07 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:58004 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754643Ab2EELjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 07:33:41 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Mike Galbraith <efault@gmx.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Louis Rilling <louis.rilling@kerlabs.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-References: <1335604790.5995.22.camel@marge.simpson.net>
-	<20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org>
-	<20120429165846.GA19054@redhat.com>
-	<1335754867.17899.4.camel@marge.simpson.net>
-	<m1zk9rmyh4.fsf@fess.ebiederm.org>
-	<20120501134214.f6b44f4a.akpm@linux-foundation.org>
-	<1336014721.7370.32.camel@marge.simpson.net>
-	<1336057018.8119.46.camel@marge.simpson.net>
-	<1336105676.7356.42.camel@marge.simpson.net>
-	<m1aa1oidmn.fsf@fess.ebiederm.org>
-	<1336124716.25479.36.camel@marge.simpson.net>
-	<m1vckcdoey.fsf@fess.ebiederm.org>
-	<1336142995.25479.49.camel@marge.simpson.net>
-	<m1zk9oc61j.fsf@fess.ebiederm.org>
-	<1336150643.7502.4.camel@marge.simpson.net>
-	<m1fwbfd71h.fsf@fess.ebiederm.org>
-	<1336197362.7346.9.camel@marge.simpson.net>
-	<1336198093.7346.11.camel@marge.simpson.net>
-	<1336201977.7346.22.camel@marge.simpson.net>
-Date: Sat, 05 May 2012 04:37:51 -0700
-In-Reply-To: <1336201977.7346.22.camel@marge.simpson.net> (Mike Galbraith's
-	message of "Sat, 05 May 2012 09:12:57 +0200")
-Message-ID: <m1obq2kgds.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1//UGNYdX8lR5/zYACV+PWL53/iSfpX1Y0=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: linux-foundation.org]
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ****;Mike Galbraith <efault@gmx.de>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH]  Re: [RFC PATCH] namespaces: fix leak on fork() failure
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Sat, 5 May 2012 07:39:04 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: rob@landley.net, devicetree-discuss@lists.ozlabs.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND] Documentation: devicetree: Fix value format description
+Date: Sat,  5 May 2012 13:38:06 +0200
+Message-Id: <1336217886-27224-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Galbraith <efault@gmx.de> writes:
+Numeric values in dts files can be specified in decimal and hex (the latter
+prefixed 0x). The current documentation is updated with this patch to prevent
+confusion about what is meant with values without "0x" (previously hex, now
+dec).
 
-> On Sat, 2012-05-05 at 08:08 +0200, Mike Galbraith wrote:
->
->> egrep 'synchronize|rcu_barrier' /trace 
->> 
->>           vsftpd-7981  [003] ....   577.164997: synchronize_sched <-switch_task_namespaces
->>           vsftpd-7981  [003] ....   577.164998: _cond_resched <-synchronize_sched
->>           vsftpd-7981  [003] ....   577.164998: wait_rcu_gp <-synchronize_sched
->>           vsftpd-7982  [003] ....   577.166583: synchronize_sched <-switch_task_namespaces
->>           vsftpd-7982  [003] ....   577.166583: _cond_resched <-synchronize_sched
->
->> vsftpd-7977  [003] ....   577.171519: rcu_barrier_sched <-rcu_barrier
->>           vsftpd-7977  [003] ....   577.171519: _rcu_barrier.isra.31 <-rcu_barrier_sched
->>           vsftpd-7977  [003] ....   577.171519: mutex_lock <-_rcu_barrier.isra.31
->>           vsftpd-7977  [003] ....   577.171520: __init_waitqueue_head <-_rcu_barrier.isra.31
->>           vsftpd-7977  [003] ....   577.171520: on_each_cpu <-_rcu_barrier.isra.31
->>           vsftpd-7977  [003] d...   577.171532: rcu_barrier_func <-on_each_cpu
->>           vsftpd-7977  [003] d...   577.171532: call_rcu_sched <-rcu_barrier_func
->>           vsftpd-7977  [003] ....   577.171533: wait_for_completion <-_rcu_barrier.isra.31
->>      ksoftirqd/3-16    [003] ..s.   577.171691: rcu_barrier_callback <-__rcu_process_callbacks
->>           vsftpd-7977  [003] ....   577.176443: mutex_unlock <-_rcu_barrier.isra.31
-> ...
->
-> Ok, so CLONE_NEWPID | SIGCHLD + waitpid is a bad idea given extreme
-> unmount synchronization, but why does it take four softirqs?  Seems this
-> could have gone a lot faster. 
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-It is just taking one 4millisecond or 1 jiffy at 250hz which seems
-correct operation for rcu_barrier.
+---
+Applies to v3.4-rc5
 
-To recap for anyone watching.  We have:
+ Documentation/devicetree/booting-without-of.txt |   55 ++++++++++++------------
+ 1 file changed, 28 insertions(+), 27 deletions(-)
 
-sys_wait4
-   do_wait
-     ...
-        release_task
-           proc_flush_task
-              pid_ns_release_proc
-                 kern_unmount
-                    mntput
-                      mntput_no_expire
-                         mntfree
-                            deactivate_super
-                               deactivate_locked_super
-                                  rcu_barrier
-
-So each instance of sys_wait4 winds up taking 4ms sad.  But that
-does explain what it takes so long to reap the zombies we are
-synchronous.
-
-The ipc namespace is also going to suffer from this deactivate_super
-delay but more likely in exit_namespaces() so the delay should not
-be synchronized across a bunch of processes.  Aka the wait should
-be done before the parent is notified.
-
-I had a nefarious plan to combine the proc mount reference count with
-the pid namespace reference count (to break the loop).  I will see if I
-can reawaken that.  If that plan comes to fruition the final put_pid on
-the pid namespace should happen in a call_rcu after release_task so
-wait4 should not be bottlenecked.
-
-I am still mystified why adding the rest of the namespaces adds so much
-of a slowdown.  Those task existing should have been parallized before
-do_wait..
-
-The rcu_barrier is new as of 2.6.38-rc5 with commit d863b50ab on Feb 10 2011:
-
-commit d863b50ab01333659314c2034890cb76d9fdc3c7
-Author: Boaz Harrosh <bharrosh@panasas.com>
-Date:   Thu Feb 10 15:01:20 2011 -0800
-
-    vfs: call rcu_barrier after ->kill_sb()
-    
-    In commit fa0d7e3de6d6 ("fs: icache RCU free inodes"), we use rcu free
-    inode instead of freeing the inode directly.  It causes a crash when we
-    rmmod immediately after we umount the volume[1].
-    
-    So we need to call rcu_barrier after we kill_sb so that the inode is
-    freed before we do rmmod.  The idea is inspired by Aneesh Kumar.
-    rcu_barrier will wait for all callbacks to end before preceding.  The
-    original patch was done by Tao Ma, but synchronize_rcu() is not enough
-    here.
-    
-    1. http://marc.info/?l=linux-fsdevel&m=129680863330185&w=2
-    
-    Tested-by: Tao Ma <boyu.mt@taobao.com>
-    Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-    Cc: Nick Piggin <npiggin@kernel.dk>
-    Cc: Al Viro <viro@zeniv.linux.org.uk>
-    Cc: Chris Mason <chris.mason@oracle.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-diff --git a/fs/super.c b/fs/super.c
-index 74e149e..7e9dd4c 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -177,6 +177,11 @@ void deactivate_locked_super(struct super_block *s)
-        struct file_system_type *fs = s->s_type;
-        if (atomic_dec_and_test(&s->s_active)) {
-                fs->kill_sb(s);
-+               /*
-+                * We need to call rcu_barrier so all the delayed rcu free
-+                * inodes are flushed before we release the fs module.
-+                */
-+               rcu_barrier();
-                put_filesystem(fs);
-                put_super(s);
-        } else {
-
-
+--- linux-2.6.orig/Documentation/devicetree/booting-without-of.txt
++++ linux-2.6/Documentation/devicetree/booting-without-of.txt
+@@ -551,12 +551,13 @@ Here is an example of a simple device-tr
+ designates a node followed by the node unit name. Properties are
+ presented with their name followed by their content. "content"
+ represents an ASCII string (zero terminated) value, while <content>
+-represents a 32-bit hexadecimal value. The various nodes in this
+-example will be discussed in a later chapter. At this point, it is
+-only meant to give you a idea of what a device-tree looks like. I have
+-purposefully kept the "name" and "linux,phandle" properties which
+-aren't necessary in order to give you a better idea of what the tree
+-looks like in practice.
++represents a 32-bit value, specified in decimal or hexadecimal (the
++latter prefixed 0x). The various nodes in this example will be
++discussed in a later chapter. At this point, it is only meant to give
++you a idea of what a device-tree looks like. I have purposefully kept
++the "name" and "linux,phandle" properties which aren't necessary in
++order to give you a better idea of what the tree looks like in
++practice.
+ 
+   / o device-tree
+       |- name = "device-tree"
+@@ -576,14 +577,14 @@ looks like in practice.
+       |   |- name = "PowerPC,970"
+       |   |- device_type = "cpu"
+       |   |- reg = <0>
+-      |   |- clock-frequency = <5f5e1000>
++      |   |- clock-frequency = <0x5f5e1000>
+       |   |- 64-bit
+       |   |- linux,phandle = <2>
+       |
+       o memory@0
+       | |- name = "memory"
+       | |- device_type = "memory"
+-      | |- reg = <00000000 00000000 00000000 20000000>
++      | |- reg = <0x00000000 0x00000000 0x00000000 0x20000000>
+       | |- linux,phandle = <3>
+       |
+       o chosen
+@@ -1010,8 +1011,8 @@ compatibility.
+ 		#size-cells = <1>;
+ 		#interrupt-cells = <2>;
+ 		device_type = "soc";
+-		ranges = <00000000 e0000000 00100000>
+-		reg = <e0000000 00003000>;
++		ranges = <0x00000000 0xe0000000 0x00100000>
++		reg = <0xe0000000 0x00003000>;
+ 		bus-frequency = <0>;
+ 	}
+ 
+@@ -1085,16 +1086,16 @@ supported currently at the toplevel.
+                                  * terminated string
+ 				 */
+ 
+-  property2 = <1234abcd>;	/* define a property containing a
++  property2 = <0x1234abcd>;	/* define a property containing a
+                                  * numerical 32-bit value (hexadecimal)
+ 				 */
+ 
+-  property3 = <12345678 12345678 deadbeef>;
++  property3 = <0x12345678 0x12345678 0xdeadbeef>;
+                                 /* define a property containing 3
+                                  * numerical 32-bit values (cells) in
+                                  * hexadecimal
+ 				 */
+-  property4 = [0a 0b 0c 0d de ea ad be ef];
++  property4 = [0x0a 0x0b 0x0c 0x0d 0xde 0xea 0xad 0xbe 0xef];
+                                 /* define a property whose content is
+                                  * an arbitrary array of bytes
+                                  */
+@@ -1350,10 +1351,10 @@ Appendix A - Sample SOC node for MPC8540
+ 			model = "TSEC";
+ 			compatible = "gianfar", "simple-bus";
+ 			reg = <0x24000 0x1000>;
+-			local-mac-address = [ 00 E0 0C 00 73 00 ];
+-			interrupts = <29 2 30 2 34 2>;
++			local-mac-address = [ 0x00 0xE0 0x0C 0x00 0x73 0x00 ];
++			interrupts = <0x29 2 0x30 2 0x34 2>;
+ 			phy-handle = <&phy0>;
+-			sleep = <&pmc 00000080>;
++			sleep = <&pmc 0x00000080>;
+ 			ranges;
+ 
+ 			mdio@24520 {
+@@ -1385,10 +1386,10 @@ Appendix A - Sample SOC node for MPC8540
+ 			model = "TSEC";
+ 			compatible = "gianfar";
+ 			reg = <0x25000 0x1000>;
+-			local-mac-address = [ 00 E0 0C 00 73 01 ];
+-			interrupts = <13 2 14 2 18 2>;
++			local-mac-address = [ 0x00 0xE0 0x0C 0x00 0x73 0x01 ];
++			interrupts = <0x13 2 0x14 2 0x18 2>;
+ 			phy-handle = <&phy1>;
+-			sleep = <&pmc 00000040>;
++			sleep = <&pmc 0x00000040>;
+ 		};
+ 
+ 		ethernet@26000 {
+@@ -1396,17 +1397,17 @@ Appendix A - Sample SOC node for MPC8540
+ 			model = "FEC";
+ 			compatible = "gianfar";
+ 			reg = <0x26000 0x1000>;
+-			local-mac-address = [ 00 E0 0C 00 73 02 ];
+-			interrupts = <41 2>;
++			local-mac-address = [ 0x00 0xE0 0x0C 0x00 0x73 0x02 ];
++			interrupts = <0x41 2>;
+ 			phy-handle = <&phy3>;
+-			sleep = <&pmc 00000020>;
++			sleep = <&pmc 0x00000020>;
+ 		};
+ 
+ 		serial@4500 {
+ 			#address-cells = <1>;
+ 			#size-cells = <1>;
+ 			compatible = "fsl,mpc8540-duart", "simple-bus";
+-			sleep = <&pmc 00000002>;
++			sleep = <&pmc 0x00000002>;
+ 			ranges;
+ 
+ 			serial@4500 {
+@@ -1414,7 +1415,7 @@ Appendix A - Sample SOC node for MPC8540
+ 				compatible = "ns16550";
+ 				reg = <0x4500 0x100>;
+ 				clock-frequency = <0>;
+-				interrupts = <42 2>;
++				interrupts = <0x42 2>;
+ 			};
+ 
+ 			serial@4600 {
+@@ -1422,7 +1423,7 @@ Appendix A - Sample SOC node for MPC8540
+ 				compatible = "ns16550";
+ 				reg = <0x4600 0x100>;
+ 				clock-frequency = <0>;
+-				interrupts = <42 2>;
++				interrupts = <0x42 2>;
+ 			};
+ 		};
+ 
+@@ -1436,11 +1437,11 @@ Appendix A - Sample SOC node for MPC8540
+ 		};
+ 
+ 		i2c@3000 {
+-			interrupts = <43 2>;
++			interrupts = <0x43 2>;
+ 			reg = <0x3000 0x100>;
+ 			compatible  = "fsl-i2c";
+ 			dfsrr;
+-			sleep = <&pmc 00000004>;
++			sleep = <&pmc 0x00000004>;
+ 		};
+ 
+ 		pmc: power@e0070 {
