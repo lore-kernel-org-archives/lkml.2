@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328Ab2EEP16 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 11:27:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33551 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755951Ab2EEP14 (ORCPT
+	id S1756915Ab2EEP2K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 11:28:10 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:43388 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756516Ab2EEP2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 11:27:56 -0400
-Message-ID: <4FA546F1.1020008@gmail.com>
-Date: Sat, 05 May 2012 23:27:45 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Sat, 5 May 2012 11:28:08 -0400
+Date: Sat, 5 May 2012 11:28:08 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Bolle <pebolle@tiscali.nl>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: also announce bcdDevice
+In-Reply-To: <4FA54292.5000102@fold.natur.cuni.cz>
+Message-ID: <Pine.LNX.4.44L0.1205051125220.3737-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Francois Rigaut <frigaut@gmail.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org,
-        Nico Schottelius <nico-linux-20120419@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Linux Support for Thunderbolt using Apple Monitor
-References: <20120419163800.GB13977@schottelius.org> <CAMVeQ8r_3vuAxzbLyKoecOHOOGijUDkLfw+MK7o-WoWbuOGSrg@mail.gmail.com> <20120502163629.GE928@schottelius.org> <20120502202509.GA26798@kroah.com> <20120503065003.GB13386@schottelius.org> <CAMVeQ8qYu4bShd_+pwRv8bShhusJMDa-jjoqu7EujS4jt7RSNA@mail.gmail.com> <20120503153547.GD20334@kroah.com> <CAMVeQ8q3PMMGmFSgrnqbW2HVdfmN+LgatX3TSfv5_2Ebuuj=QQ@mail.gmail.com> <20120503233858.GA13453@kroah.com> <4FA358ED.1080705@gmail.com> <20120504184851.GB11223@kroah.com> <CAE9FiQWuePNRWV=ncJkF57aQZ0ZT91xxZ0sZMexq8HgN9NcAfA@mail.gmail.com> <CAE9FiQWcyRfLKB+YivOfa-GydbhoaMx06n6a4VMDWoTOMkj7ig@mail.gmail.com> <4FA4AA3E.1070903@gmail.com> <4FA4E259.9070903@gmail.com> <4FA4E93F.3050800@gmail.com>
-In-Reply-To: <4FA4E93F.3050800@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's another mysterious _DSM function under \_SB.PCI0.P0P2.UPSB.
-Seems it's related to Thunderbolt technology.
+On Sat, 5 May 2012, Martin Mokrejs wrote:
 
-                    Method (_DSM, 4, NotSerialized)
-                    {
-                        If (LEqual (Arg0, Buffer (0x10)
-                                {
-                                    /* 0000 */    0xC6, 0xB7, 0xB5, 0xA0, 0x18, 0x13, 0x1C, 0x44,
-                                    /* 0008 */    0xB0, 0xC9, 0xFE, 0x69, 0x5E, 0xAF, 0x94, 0x9B
-                                }))
-                        {
-                            Store (Package (0x02)
-                                {
-                                    "PCI-Thunderbolt",
-                                    0x01
-                                }, Local0)
-                            DTGP (Arg0, Arg1, Arg2, Arg3, RefOf (Local0))
-                            Return (Local0)
-                        }
-
-                        Return (0x80000002)
-                    }
-
-
-On 05/05/2012 04:47 PM, Francois Rigaut wrote:
-> http://maumae.net/thunderbolt/acpidump.bin
-> Thanks.
-> Francois
+> Greg Kroah-Hartman wrote:
+> > On Sat, May 05, 2012 at 02:14:43PM +0200, Martin Mokrejs wrote:
+> >> Paul Bolle wrote:
+> >>> Currently announce_device() does print the idVendor and idProduct values
+> >>> but does not print the bcdDevice value. USB devices are accurately
+> >>> identified by all three values. See, for instance, the USB storage
+> >>> quirks which will only apply for a certain (range of) bcdDevice
+> >>> value(s). So it seems useful to also print bcdDevice when announcing USB
+> >>> devices.
+> >>
+> >> Could it also report negotiated speed? full-speed, high-speed, super-speed?
+> > 
+> > All of this, including the bcdDevice, can be found in sysfs.  So I don't
+> > want to take this patch, otherwise we would be just adding more and more
+> > to the kernel log.
+> > 
+> > If you programatically want to find this out, use libudev or listen to
+> > the dbus messages for new devices, don't watch the kernel log messages.
 > 
+> Hmm, but when you go through your syslog/dmesg lines especially in case of
+> USB devices which you swap in and out quite often, it is too late to lookup
+> some file elsewhere which relates to *current* device. The information
+> is lost already if you changed device meanwhile. You just realize USB disk
+> disconnected but you have not way find out except from the log files what
+> speed did it use. In case of USB3 devices capable of lower speeds it is
+> quite important. Some just claim USB3 capabilities (on the package box)
+> but in real, always end up at high-speed only.
 > 
-> On 05/05/12 18:18, Jiang Liu wrote:
->> This log message below implies that your BIOS doesn't provide the ACPI interfaces
->> needed by acpiphp driver. Maybe an ACPI dump file may help to identify the issue.
->> You may generate acpidump file by:
->> acpidump>  acpidump.bin
->>
->>> May  5 14:09:55 localhost kernel: [28329.702720] acpiphp_glue: Total 0 slots
->> On 05/05/2012 12:19 PM, Francois Rigaut wrote:
->>> May  5 14:09:55 localhost kernel: [28329.702720] acpiphp_glue: Total 0 slots
+> For me testing several USB disks, USB to SATA bridges, host controllers,
+> kernel command-lines ... it is way to much work. Having the USB debug
+> enabled, especially XHCI_HCD_DEBUG gives on the other had too much output
+> for daily use but as this is all stuff prone to fail somewhere and at some
+> point I keep it enabled.
+> 
+> I don't think it clutters syslog nor that it adds significant extra size
+> to the output. It would save people from enabling debug just because of this.
+> And no, average linux user never never lookup sysfs nor use libudev, really.
+> Still, the link speed is of interest to everybody fiddling with the stuff
+> and wondering why the damn thing is so slow or why did it disconnect. It gives
+> an answer or at least a hint.
+
+But the kernel _already_ logs a message listing new USB devices along 
+with their speed.  In fact, it does this even if the ANNOUNCE config 
+option isn't set.
+
+Alan Stern
 
