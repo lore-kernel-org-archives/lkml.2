@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756206Ab2EEUIH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 16:08:07 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61333 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab2EEUID (ORCPT
+	id S1756312Ab2EEUKN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 16:10:13 -0400
+Received: from blu0-omc3-s5.blu0.hotmail.com ([65.55.116.80]:10610 "EHLO
+	blu0-omc3-s5.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751106Ab2EEUKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 16:08:03 -0400
-Message-ID: <4FA5889E.2030008@gmail.com>
-Date: Sat, 05 May 2012 13:07:58 -0700
-From: Chase Douglas <chasedouglas@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        chatty@enac.fr, benjamin.tissoires@gmail.com, peter.hutterer@who-t.net,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Input: MT - Include win8 support
-References: <1336230499-1450-1-git-send-email-rydberg@euromail.se>
-In-Reply-To: <1336230499-1450-1-git-send-email-rydberg@euromail.se>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 5 May 2012 16:10:10 -0400
+X-Originating-IP: [64.229.84.125]
+X-Originating-Email: [dave.anglin@bell.net]
+Message-ID: <BLU0-SMTP81AFFA5151451BADCB23B3972D0@phx.gbl>
+From: John David Anglin <dave.anglin@bell.net>
+To: Mikulas Patocka <mpatocka@redhat.com>
+In-Reply-To: <Pine.LNX.4.64.1205051445360.2623@file.rdu.redhat.com>
+Subject: Re: [PATCH] Fix compile failure on PA-RISC
+References: <Pine.LNX.4.64.1205042250130.18896@file.rdu.redhat.com> <1798237.g4OIBKAx4s@donald.sf-tec.de> <Pine.LNX.4.64.1205051445360.2623@file.rdu.redhat.com>
+Content-Type: text/plain; charset="US-ASCII"; format=flowed; delsp=yes
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0 (Apple Message framework v936)
+Date: Sat, 5 May 2012 16:09:52 -0400
+CC: Rolf Eike Beer <eike-kernel@sf-tec.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+X-Mailer: Apple Mail (2.936)
+X-OriginalArrivalTime: 05 May 2012 20:10:09.0133 (UTC) FILETIME=[1208B1D0:01CD2AFB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2012 08:08 AM, Henrik Rydberg wrote:
-> The newly released HID protocol for win8 input devices is capable of
-> transmitting the same information found in the Apple HID and Linux MT
-> protocols. In addition, it includes an extension useful for touch
-> alignment. This patch completes the MT protocol with the
-> ABS_MT_APPROACH_X/Y events, and documents how to map win8 devices.
-> 
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
-> Hi all,
-> 
-> In response to the win8 HID protocol and Benjamin's work on this, here
-> is a first draft of the needed extension to the MT protocol. I am
-> cc:ing the usual suspects, as this will affect userland. Comments and
-> criticism expected. :-)
-> 
-> Cheers,
-> Henrik
-> 
->  Documentation/input/multi-touch-protocol.txt |   35 +++++++++++++++++++++++++-
->  include/linux/input.h                        |    4 ++-
->  2 files changed, 37 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/input/multi-touch-protocol.txt b/Documentation/input/multi-touch-protocol.txt
-> index 543101c..504ca6d 100644
-> --- a/Documentation/input/multi-touch-protocol.txt
-> +++ b/Documentation/input/multi-touch-protocol.txt
+On 5-May-12, at 2:55 PM, Mikulas Patocka wrote:
 
-[snip]
+> I acknowledge that your patches work. So send them directly to  
+> Linus. I
+> think there is not much maintenance being done on PA-RISC.
 
-> @@ -252,6 +254,9 @@ can distinguish between the two axis, but not (uniquely) any values in
->  between. In such cases, the range of ABS_MT_ORIENTATION should be [0, 1]
->  [4].
->  
-> +For devices capable of 360 degree orientation, the reported orientation
-> +should be twice the given range.
+James wrote back in March "I haven't yet actually tried git head on  
+parisc
+(and I won't be able to until I actually get my machines back  
+[currently being
+shipped across the atlantic]) but if there's a problem it will show up  
+quickly:
+parisc actually uses cpu hotplug to boot its secondary cpus."
 
-I don't understand what this means. Can you elaborate?
+Helge resigned due to lack of time.
 
--- Chase
+This is my understanding as to why there is a maintenance gap.
+
+For what I have been doing, I only use stable kernels.  I'm currently
+running 3.3.4.
+
+Dave
+--
+John David Anglin	dave.anglin@bell.net
+
+
+
