@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab2EEPJu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 11:09:50 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33122 "EHLO
+	id S1756452Ab2EEPJt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 11:09:49 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33125 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931Ab2EEPFm (ORCPT
+	with ESMTP id S1755805Ab2EEPFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 5 May 2012 11:05:42 -0400
-Message-Id: <20120505150141.428211694@linutronix.de>
+Message-Id: <20120505150141.491002124@linutronix.de>
 User-Agent: quilt/0.48-1
 Date: Sat, 05 May 2012 15:05:41 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [patch 03/18] fork: Move thread info gfp flags to header
+Subject: [patch 04/18] fork: Provide kmemcache based thread_info allocator
 References: <20120505150007.543515803@linutronix.de>
 Content-Disposition: inline;
- filename=fork-move-thread-info-gfp-flags-to-header.patch
+ filename=fork-provide-kmemcache-based-thread-info-allocator.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -23,53 +23,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These flags can be useful for extra allocations outside of the core
-code.
-
-Add __GFP_NOTRACE to them, so the archs which have kmemcheck do
-not have to provide extra allocators just for that reason.
+Several architectures have their own kmemcache based thread allocator
+because THREAD_SIZE is smaller than PAGE_SIZE. Add it to the core code
+conditionally on THREAD_SIZE < PAGE_SIZE so the private copies can go.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/thread_info.h |    6 ++++++
- kernel/fork.c               |    8 ++------
- 2 files changed, 8 insertions(+), 6 deletions(-)
+ kernel/fork.c |   27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
-Index: tip/include/linux/thread_info.h
-===================================================================
---- tip.orig/include/linux/thread_info.h
-+++ tip/include/linux/thread_info.h
-@@ -54,6 +54,12 @@ extern long do_no_restart_syscall(struct
- 
- #ifdef __KERNEL__
- 
-+#ifdef CONFIG_DEBUG_STACK_USAGE
-+# define THREADINFO_GFP		(GFP_KERNEL | __GFP_NOTRACE | __GFP_ZERO)
-+#else
-+# define THREADINFO_GFP		(GFP_KERNEL | __GFP_NOTRACE)
-+#endif
-+
- /*
-  * flag set/clear/test wrappers
-  * - pass TIF_xxxx constants to these functions
 Index: tip/kernel/fork.c
 ===================================================================
 --- tip.orig/kernel/fork.c
 +++ tip/kernel/fork.c
-@@ -135,12 +135,8 @@ void __weak arch_release_thread_info(str
+@@ -132,6 +132,11 @@ static inline void free_task_struct(stru
+ 
+ void __weak arch_release_thread_info(struct thread_info *ti) { }
+ 
++/*
++ * Allocate pages if THREAD_SIZE is >= PAGE_SIZE, otherwise use a
++ * kmemcache based allocator.
++ */
++# if THREAD_SIZE >= PAGE_SIZE
  static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
  						  int node)
  {
--#ifdef CONFIG_DEBUG_STACK_USAGE
--	gfp_t mask = GFP_KERNEL | __GFP_ZERO;
--#else
--	gfp_t mask = GFP_KERNEL;
--#endif
--	struct page *page = alloc_pages_node(node, mask, THREAD_SIZE_ORDER);
-+	struct page *page = alloc_pages_node(node, THREADINFO_GFP,
-+					     THREAD_SIZE_ORDER);
- 
- 	return page ? page_address(page) : NULL;
+@@ -146,6 +151,28 @@ static inline void free_thread_info(stru
+ 	arch_release_thread_info(ti);
+ 	free_pages((unsigned long)ti, THREAD_SIZE_ORDER);
  }
++# else
++static struct kmem_cache *thread_info_cache;
++
++static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
++						  int node)
++{
++	return kmem_cache_alloc_node(thread_info_cache, THREADINFO_GFP, node);
++}
++
++static void free_thread_info(struct thread_info *ti)
++{
++	arch_release_thread_info(ti);
++	kmem_cache_free(thread_info_cache, ti);
++}
++
++void thread_info_cache_init(void)
++{
++	thread_info_cache = kmem_cache_create("thread_info", THREAD_SIZE,
++					      THREAD_SIZE, 0, NULL);
++	BUG_ON(thread_info_cache == NULL);
++}
++# endif
+ #endif
+ 
+ /* SLAB cache for signal_struct structures (tsk->signal) */
 
 
