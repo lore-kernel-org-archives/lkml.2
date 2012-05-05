@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab2EEPXR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 11:23:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39420 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755937Ab2EEPXQ (ORCPT
+	id S1756206Ab2EEPY6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 11:24:58 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:59013 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755951Ab2EEPY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 11:23:16 -0400
-From: Namhyung Kim <namhyung@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] perf top: Fix a race in callchain handling
-Date: Sun,  6 May 2012 00:23:08 +0900
-Message-Id: <1336231388-12347-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.9.2
+	Sat, 5 May 2012 11:24:56 -0400
+Date: Sat, 5 May 2012 11:24:55 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        <mingo@kernel.org>, <pjt@google.com>, <paul@paulmenage.org>,
+        <akpm@linux-foundation.org>, <rjw@sisk.pl>, <nacc@us.ibm.com>,
+        <paulmck@linux.vnet.ibm.com>, <tglx@linutronix.de>,
+        <seto.hidetoshi@jp.fujitsu.com>, <rob@landley.net>, <tj@kernel.org>,
+        <mschmidt@redhat.com>, <berrange@redhat.com>,
+        <nikunj@linux.vnet.ibm.com>, <vatsa@linux.vnet.ibm.com>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH v2 0/7] CPU hotplug, cpusets: Fix issues with cpusets
+ handling upon CPU hotplug
+In-Reply-To: <1336167852.6509.90.camel@twins>
+Message-ID: <Pine.LNX.4.44L0.1205051108470.3737-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When perf top collects callchain info, main thread and display
-thread share the callchain cursor so that bugs can happen. For
-example, if two threads race on callchain_cursor_advance() for
-the last cursor node, one of them can dereference a NULL pointer.
+On Fri, 4 May 2012, Peter Zijlstra wrote:
 
-Because the display thread only uses the cursor when collapsing
-a hist entry, use its own cursor for that.
+> That said, the whole suspend/resume 'problem' does seem worth fixing and
+> is a very special case where we absolutely know we're going to get back
+> in the state we are in and userspace isn't actually running. So ideally
+> we'd go with the bhat's patch that skips the sched_domain rebuilds
+> entirely +- some bug-fixes ;-).
 
-Reported-by: Sunjin Yang <fan4326@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- tools/perf/util/hist.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+Just as an interesting side comment...
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 9f6d630d5316..795b49a803f9 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -378,7 +378,7 @@ void hist_entry__free(struct hist_entry *he)
-  * collapse the histogram
-  */
- 
--static bool hists__collapse_insert_entry(struct hists *hists,
-+static bool hists__collapse_insert_entry(struct hists *hists __used,
- 					 struct rb_root *root,
- 					 struct hist_entry *he)
- {
-@@ -386,6 +386,7 @@ static bool hists__collapse_insert_entry(struct hists *hists,
- 	struct rb_node *parent = NULL;
- 	struct hist_entry *iter;
- 	int64_t cmp;
-+	static struct callchain_cursor cursor;
- 
- 	while (*p != NULL) {
- 		parent = *p;
-@@ -397,8 +398,8 @@ static bool hists__collapse_insert_entry(struct hists *hists,
- 			iter->period += he->period;
- 			iter->nr_events += he->nr_events;
- 			if (symbol_conf.use_callchain) {
--				callchain_cursor_reset(&hists->callchain_cursor);
--				callchain_merge(&hists->callchain_cursor, iter->callchain,
-+				callchain_cursor_reset(&cursor);
-+				callchain_merge(&cursor, iter->callchain,
- 						he->callchain);
- 			}
- 			hist_entry__free(he);
--- 
-1.7.9.2
+The USB subsystem faced this same problem years ago.  The question was:  
+When a USB device (especially a mass-storage device) is unplugged and
+then reconnected, is the new device instance the same as the old one?  
+Linus stepped in and firmly assured us that it was not.  That's very
+much like the situation you're describing: If CPU 4 is hot-unplugged
+and then a new CPU appears in slot 4, is it the same CPU as before (and 
+does it therefore belong to the same cpusets as before)?
+
+But this led to problems during suspend, because not all systems could
+maintain bus connectivity while the system was asleep, and almost none
+can during hibernation.  As a result, mounted filesystems would become
+unavailable after resume even though the USB storage device had been
+plugged in the whole time.  To the kernel, it appeared that the device 
+had been unplugged during suspend and then replugged during resume.
+
+We ended up adopting a special-purpose solution just to handle that
+case.  It's described in Documentation/usb/persist.txt if you want the
+full details.  In brief, when the system resumes it checks to see if a
+device appears to be present at the same port where a device used to
+be.  If it is, and if its descriptors match the values remembered for
+the former device, then we accept the new device as being the same as
+the old one, even though the hardware indicates that the connection was
+not maintained during the system sleep.
+
+>From my point of view, this suggests that CPU hot-unplug is not quite
+the right tool to use during suspend.  The CPU doesn't actually go
+away; it merely becomes unusable for a while.  In other words, this
+approach applies an incorrect abstraction.  What's really needed is
+something a little different: a way to avoid running any tasks on that
+CPU while not removing it from the system.  If this means some tasks
+can no longer run on any CPUs, so be it -- this happens only during
+suspend, after all.  Then during resume, when the CPU is brought back 
+up, tasks are allowed to run on it again.
+
+Alan Stern
 
