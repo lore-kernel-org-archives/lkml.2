@@ -1,40 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab2EESwB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 14:52:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54311 "EHLO
+	id S1753600Ab2EESwL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 14:52:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54317 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab2EESv7 (ORCPT
+	with ESMTP id S1753137Ab2EESwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 14:51:59 -0400
-Date: Sat, 5 May 2012 11:49:24 -0700
+	Sat, 5 May 2012 14:52:09 -0400
+Date: Sat, 5 May 2012 11:51:58 -0700
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-a4a2eb490e38aaff61eafcb8cde6725ad1be22ab@git.kernel.org>
-Cc: mingo@kernel.org, jesper.nilsson@axis.com, schwidefsky@de.ibm.com,
-        cmetcalf@tilera.com, chris@zankel.net, hskinnemoen@gmail.com,
-        linux@arm.linux.org.uk, ralf@linux-mips.org, monstr@monstr.eu,
-        vapier@gentoo.org, heiko.carstens@de.ibm.com, gxt@mprc.pku.edu.cn,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        richard@nod.at, lethal@linux-sh.org, msalter@redhat.com,
-        davem@davemloft.net, liqin.chen@sunplusct.com, dhowells@redhat.com,
-        benh@kernel.crashing.org, geert@linux-m68k.org, mattst88@gmail.com,
-        jejb@parisc-linux.org, takata@linux-m32r.org, jonas@southpole.se,
-        ysato@users.sourceforge.jp, rkuo@codeaurora.org
-Reply-To: mingo@kernel.org, jesper.nilsson@axis.com, schwidefsky@de.ibm.com,
-        cmetcalf@tilera.com, chris@zankel.net, hskinnemoen@gmail.com,
-        monstr@monstr.eu, linux@arm.linux.org.uk, ralf@linux-mips.org,
-        heiko.carstens@de.ibm.com, vapier@gentoo.org, tglx@linutronix.de,
-        gxt@mprc.pku.edu.cn, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        richard@nod.at, lethal@linux-sh.org, msalter@redhat.com,
-        davem@davemloft.net, liqin.chen@sunplusct.com, geert@linux-m68k.org,
-        benh@kernel.crashing.org, dhowells@redhat.com, jejb@parisc-linux.org,
-        mattst88@gmail.com, jonas@southpole.se, takata@linux-m32r.org,
-        ysato@users.sourceforge.jp, rkuo@codeaurora.org
-In-Reply-To: <20120503085034.092585287@linutronix.de>
-References: <20120503085034.092585287@linutronix.de>
+Message-ID: <tip-29b2501bd8bb55822dcdd0b1ad82fe44d44eaa73@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        hskinnemoen@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        hskinnemoen@gmail.com, tglx@linutronix.de
+In-Reply-To: <20120503085034.281527118@linutronix.de>
+References: <20120503085034.281527118@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] init_task: Create generic init_task instance
-Git-Commit-ID: a4a2eb490e38aaff61eafcb8cde6725ad1be22ab
+Subject: [tip:smp/hotplug] avr32: Use generic init_task
+Git-Commit-ID: 29b2501bd8bb55822dcdd0b1ad82fe44d44eaa73
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -43,131 +27,90 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 05 May 2012 11:49:34 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 05 May 2012 11:52:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a4a2eb490e38aaff61eafcb8cde6725ad1be22ab
-Gitweb:     http://git.kernel.org/tip/a4a2eb490e38aaff61eafcb8cde6725ad1be22ab
+Commit-ID:  29b2501bd8bb55822dcdd0b1ad82fe44d44eaa73
+Gitweb:     http://git.kernel.org/tip/29b2501bd8bb55822dcdd0b1ad82fe44d44eaa73
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Thu, 3 May 2012 09:02:48 +0000
+AuthorDate: Thu, 3 May 2012 09:02:51 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sat, 5 May 2012 13:00:21 +0200
+CommitDate: Sat, 5 May 2012 13:00:22 +0200
 
-init_task: Create generic init_task instance
+avr32: Use generic init_task
 
-All archs define init_task in the same way (except ia64, but there is
-no particular reason why ia64 cannot use the common version). Create a
-generic instance so all archs can be converted over.
-
-The config switch is temporary and will be removed when all archs are
-converted over.
+Same code. Use the generic version.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Chris Zankel <chris@zankel.net>
-Cc: David Howells <dhowells@redhat.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: James E.J. Bottomley <jejb@parisc-linux.org>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Jonas Bonn <jonas@southpole.se>
-Cc: Mark Salter <msalter@redhat.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Matt Turner <mattst88@gmail.com>
-Cc: Michal Simek <monstr@monstr.eu>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Richard Kuo <rkuo@codeaurora.org>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
-Link: http://lkml.kernel.org/r/20120503085034.092585287@linutronix.de
+Link: http://lkml.kernel.org/r/20120503085034.281527118@linutronix.de
 ---
- arch/Kconfig                            |    3 +++
- init/Makefile                           |    1 +
- {arch/alpha/kernel => init}/init_task.c |   17 ++++++++++++-----
- kernel/sched/Makefile                   |    2 --
- 4 files changed, 16 insertions(+), 7 deletions(-)
+ arch/avr32/Kconfig            |    1 +
+ arch/avr32/kernel/Makefile    |    2 +-
+ arch/avr32/kernel/init_task.c |   31 -------------------------------
+ 3 files changed, 2 insertions(+), 32 deletions(-)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 4f0d0f7..2dd8fdd 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -148,6 +148,9 @@ config USE_GENERIC_SMP_HELPERS
- config GENERIC_SMP_IDLE_THREAD
-        bool
- 
-+config HAVE_GENERIC_INIT_TASK
-+       bool
-+
- config HAVE_REGS_AND_STACK_ACCESS_API
- 	bool
+diff --git a/arch/avr32/Kconfig b/arch/avr32/Kconfig
+index 3dea7231..f4289ca 100644
+--- a/arch/avr32/Kconfig
++++ b/arch/avr32/Kconfig
+@@ -12,6 +12,7 @@ config AVR32
+ 	select HARDIRQS_SW_RESEND
+ 	select GENERIC_IRQ_SHOW
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
++	select HAVE_GENERIC_INIT_TASK
  	help
-diff --git a/init/Makefile b/init/Makefile
-index 0bf677a..c55eac9 100644
---- a/init/Makefile
-+++ b/init/Makefile
-@@ -9,6 +9,7 @@ else
- obj-$(CONFIG_BLK_DEV_INITRD)   += initramfs.o
- endif
- obj-$(CONFIG_GENERIC_CALIBRATE_DELAY) += calibrate.o
-+obj-$(CONFIG_HAVE_GENERIC_INIT_TASK) += init_task.o
- 
- mounts-y			:= do_mounts.o
- mounts-$(CONFIG_BLK_DEV_RAM)	+= do_mounts_rd.o
-diff --git a/arch/alpha/kernel/init_task.c b/init/init_task.c
-similarity index 73%
-copy from arch/alpha/kernel/init_task.c
-copy to init/init_task.c
-index 6f80ca4..8b2f399 100644
---- a/arch/alpha/kernel/init_task.c
-+++ b/init/init_task.c
-@@ -1,17 +1,24 @@
--#include <linux/mm.h>
+ 	  AVR32 is a high-performance 32-bit RISC microprocessor core,
+ 	  designed for cost-sensitive embedded applications, with particular
+diff --git a/arch/avr32/kernel/Makefile b/arch/avr32/kernel/Makefile
+index 18229d0..9e2c465 100644
+--- a/arch/avr32/kernel/Makefile
++++ b/arch/avr32/kernel/Makefile
+@@ -8,7 +8,7 @@ obj-$(CONFIG_SUBARCH_AVR32B)	+= entry-avr32b.o
+ obj-y				+= syscall_table.o syscall-stubs.o irq.o
+ obj-y				+= setup.o traps.o ocd.o ptrace.o
+ obj-y				+= signal.o sys_avr32.o process.o time.o
+-obj-y				+= init_task.o switch_to.o cpu.o
++obj-y				+= switch_to.o cpu.o
+ obj-$(CONFIG_MODULES)		+= module.o avr32_ksyms.o
+ obj-$(CONFIG_KPROBES)		+= kprobes.o
+ obj-$(CONFIG_STACKTRACE)	+= stacktrace.o
+diff --git a/arch/avr32/kernel/init_task.c b/arch/avr32/kernel/init_task.c
+deleted file mode 100644
+index 6b2343e..0000000
+--- a/arch/avr32/kernel/init_task.c
++++ /dev/null
+@@ -1,31 +0,0 @@
+-/*
+- * Copyright (C) 2004-2006 Atmel Corporation
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
 -#include <linux/module.h>
-+#include <linux/init_task.h>
-+#include <linux/export.h>
-+#include <linux/mqueue.h>
- #include <linux/sched.h>
- #include <linux/init.h>
+-#include <linux/fs.h>
+-#include <linux/sched.h>
 -#include <linux/init_task.h>
- #include <linux/fs.h>
 -#include <linux/mqueue.h>
--#include <asm/uaccess.h>
-+#include <linux/mm.h>
- 
-+#include <asm/pgtable.h>
-+#include <asm/uaccess.h>
- 
- static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
- static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
-+
-+/* Initial task structure */
- struct task_struct init_task = INIT_TASK(init_task);
- EXPORT_SYMBOL(init_task);
- 
-+/*
-+ * Initial thread structure. Alignment of this is handled by a special
-+ * linker map entry.
-+ */
- union thread_union init_thread_union __init_task_data =
- 	{ INIT_THREAD_INFO(init_task) };
-diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
-index 9a7dd35..173ea52 100644
---- a/kernel/sched/Makefile
-+++ b/kernel/sched/Makefile
-@@ -16,5 +16,3 @@ obj-$(CONFIG_SMP) += cpupri.o
- obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
- obj-$(CONFIG_SCHEDSTATS) += stats.o
- obj-$(CONFIG_SCHED_DEBUG) += debug.o
 -
+-#include <asm/pgtable.h>
 -
+-static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
+-static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
+-/*
+- * Initial thread structure. Must be aligned on an 8192-byte boundary.
+- */
+-union thread_union init_thread_union __init_task_data =
+-	{ INIT_THREAD_INFO(init_task) };
+-
+-/*
+- * Initial task structure.
+- *
+- * All other task structs will be allocated on slabs in fork.c
+- */
+-struct task_struct init_task = INIT_TASK(init_task);
+-
+-EXPORT_SYMBOL(init_task);
