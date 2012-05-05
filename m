@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab2EEN2H (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 09:28:07 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59315 "EHLO
+	id S1755759Ab2EEN1m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 09:27:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:64552 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab2EEN1p (ORCPT
+	with ESMTP id S1754335Ab2EEN1l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 09:27:45 -0400
+	Sat, 5 May 2012 09:27:41 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 00/02] mach-shmobile: Emma Mobile EV2 - first shot
-Date: Sat, 5 May 2012 07:22:45 +0000
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: Making ARM multiplatform kernels DT-only?
+Date: Sat, 5 May 2012 13:17:40 +0000
 User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        horms@verge.net.au, linux@arm.linux.org.uk, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lethal@linux-sh.org, olof@lixom.net
-References: <20120503144645.6390.62303.sendpatchset@w520> <201205041957.14205.arnd@arndb.de> <201205042316.55593.rjw@sisk.pl>
-In-Reply-To: <201205042316.55593.rjw@sisk.pl>
+Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
+        linaro-dev@lists.linaro.org, Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>, Olof Johansson <olof@lixom.net>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>, shawn.guo@linaro.org,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
+References: <201205031350.35476.arnd@arndb.de> <201205041624.17850.arnd@arndb.de> <20120505080936.GP4141@pengutronix.de>
+In-Reply-To: <20120505080936.GP4141@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205050722.45500.arnd@arndb.de>
-X-Provags-ID: V02:K0:ujnVfyVjo4RZxYThF1OQA7vLL/1T/zPyKjtnYN8652Y
- 4d2rkrLO8cNtk3n3oQtVTxJ0+fgs1jl2ikshMW0r/5eiB1V+3s
- zWqxa8B6ToVoumwjky3TmQwE0BZyrERxER2SnMighWsRQZ52Ee
- ARfKqoahuLJcedLWS2+lnGytGAnHXFH79ViMmeHK4RITwe5mnt
- tPigj1nT8Fl73i8Punhu8wabldr6oepmWFazjL60TLEK6ZtJR+
- zPnRdQlw4SUcAz+ZP+EUHkGP4qX9jKK+VQPba9esJxbkMv5cZz
- XQhqJ6/CVHwBdCYukSoXzoMGUFsbolmviemZsbbr9XYh8kVfTK
- nq60tlVhsiSKJtVGA7vI=
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201205051317.40357.arnd@arndb.de>
+X-Provags-ID: V02:K0:JJeUroR2+FAV8yqUb+UV2ecNibHoIGw50YTK0k+xGLq
+ B2H/6/Nsx9QVGluSbok08EeyxzWGocDuP3QJkabYyhqDmsfcW+
+ IB+stYgZTKktdrJstvnxk+4IgqQ0H2UMbiwX1tZwi8vWhAi81h
+ v39M+cfZU2mdScYOfguLSWTd2HBUVLkkWgnGCXPT622SKOUI+n
+ BqOkD2bFuDwF6D0zci2xaI5UsJoKeV0brY7ZZTAnvzBPAS03ch
+ sT9g1P8ZSPkhah0JS5Mhn5yQjN4l2+f4JUsBpHqVqfwF1gCoqC
+ qD3A8ul3qr/795cupX8KKaX66+P/k+FMczb4n9YI9xHQhjKOJk
+ wVxXkewe7zT9hODVn4sY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 04 May 2012, Rafael J. Wysocki wrote:
-> I'm not sure if I understand your point correctly, so please let me clarify.
+On Saturday 05 May 2012, Sascha Hauer wrote:
+> They should not if they are not interested in these boards, but why
+> shouldn't I be able to enable these 25 boards plus a few atmel or pxa
+> boards?
 > 
-> Do you think it's better to have a separate mach-emma directory for the
-> new hardware because technically it is a different platform and the fact
-> that it was developed by the same manufacturer as the mach-shmobile hardware
-> is less important?
+> When there are technical reasons to limit a multiplatform Kernel to DT
+> only, then fine, lets do it that way. If there are no technical reasons
+> and this limitation shall only be used to put some political pressure on
+> platform board maintainers, then I am against it. Look around, people
+> actually are porting their boards over to device tree, I don't think
+> that such pressure is necessary.
 
-Yes, that was my point. Compare this to how we have omap and davinci for TI,
-orion and pxa for Marvell, or mxs and imx for Freescale. These are all
-for the most part independent developments that happened to end up being
-owned by the same company.
+It's definitely not a hard technical reason, just me trying to find
+ways to simplify the problem space an any possible way. Basically all
+code that can get built into the kernel has the ability to break other
+stuff and causes bloat, see the recent discussion about putting
+late_initcall into the machine_desc.
 
-We try to group code based on technical similarities, not on who makes them.
-If you are able to share code between multiple completely independent socs
-you work on, the result shouldn't be to put them into a directory you "own",
-but to generalize the common parts so they can be shared with everyone else,
-too.
+> Only my two cents, it's not that important to me since I want to port my
+> (relevant) boards over to DT anyway, so I won't argue about this.
+
+Ok, thanks for your input!
+
+>From the statements made so far, I can see no clear policy that we can
+apply to everyone. My take on this is that for any work I spend on
+multiplatform kernel, I concentrate on the DT-based board files and
+get them to work together first, but leave it up to the individual
+subarch maintainers whether they want to add other board files into
+the mix.
 
 	Arnd
