@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab2EERYa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 13:24:30 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:15120 "EHLO relay.sw.ru"
+	id S1757708Ab2EERYi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 13:24:38 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:1785 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757708Ab2EERY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 13:24:27 -0400
-Subject: [PATCH RFC 08/13] LockD: make lockd manager allocated per network
-	namespace
+	id S1757834Ab2EERYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 May 2012 13:24:34 -0400
+Subject: [PATCH RFC 09/13] NFSd: make nfsd4_manager allocated per network
+	namespace context.
 To: bfields@fieldses.org, Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Sat, 05 May 2012 21:22:29 +0400
-Message-ID: <20120505172229.11559.63825.stgit@localhost.localdomain>
+Date: Sat, 05 May 2012 21:22:37 +0400
+Message-ID: <20120505172236.11559.97256.stgit@localhost.localdomain>
 In-Reply-To: <20120505170722.11559.74503.stgit@localhost.localdomain>
 References: <20120505170722.11559.74503.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -25,79 +25,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/lockd/netns.h |    2 ++
- fs/lockd/svc.c   |   18 ++++++++++--------
- 2 files changed, 12 insertions(+), 8 deletions(-)
+ fs/nfsd/netns.h     |    2 ++
+ fs/nfsd/nfs4state.c |   32 +++++++++++++++++++-------------
+ 2 files changed, 21 insertions(+), 13 deletions(-)
 
-diff --git a/fs/lockd/netns.h b/fs/lockd/netns.h
-index 94653ae..e78650c 100644
---- a/fs/lockd/netns.h
-+++ b/fs/lockd/netns.h
-@@ -1,6 +1,7 @@
- #ifndef __LOCKD_NETNS_H__
- #define __LOCKD_NETNS_H__
+diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
+index 3936563..e99767d 100644
+--- a/fs/nfsd/netns.h
++++ b/fs/nfsd/netns.h
+@@ -34,6 +34,8 @@ struct nfsd_net {
  
-+#include <linux/fs.h>
- #include <net/netns/generic.h>
- 
- struct lockd_net {
-@@ -9,6 +10,7 @@ struct lockd_net {
- 	unsigned long nrhosts;
- 
- 	struct delayed_work grace_period_end;
-+	struct lock_manager lockd_manager;
+ 	struct cache_detail *idtoname_cache;
+ 	struct cache_detail *nametoid_cache;
++
++	struct lock_manager nfsd4_manager;
  };
  
- extern int lockd_net_id;
-diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-index 70c4177..a9c436b 100644
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -87,12 +87,14 @@ static unsigned long get_lockd_grace_period(void)
- 		return nlm_timeout * 5 * HZ;
+ extern int nfsd_net_id;
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index c33f052..c6c1be9 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -44,6 +44,8 @@
+ #include "vfs.h"
+ #include "current_stateid.h"
+ 
++#include "netns.h"
++
+ #define NFSDDBG_FACILITY                NFSDDBG_PROC
+ 
+ /* Globals */
+@@ -3184,22 +3186,21 @@ out:
+ 	return status;
  }
  
--static struct lock_manager lockd_manager = {
+-static struct lock_manager nfsd4_manager = {
 -};
 -
--static void grace_ender(struct work_struct *not_used)
-+static void grace_ender(struct work_struct *grace)
+ static bool grace_ended;
+ 
+ static void
+-nfsd4_end_grace(void)
++nfsd4_end_grace(struct net *net)
  {
--	locks_end_grace(&lockd_manager);
-+	struct delayed_work *dwork = container_of(grace, struct delayed_work,
-+						  work);
-+	struct lockd_net *ln = container_of(dwork, struct lockd_net,
-+					    grace_period_end);
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
 +
-+	locks_end_grace(&ln->lockd_manager);
+ 	/* do nothing if grace period already ended */
+ 	if (grace_ended)
+ 		return;
+ 
+ 	dprintk("NFSD: end of grace period\n");
+ 	grace_ended = true;
+-	nfsd4_record_grace_done(&init_net, boot_time);
+-	locks_end_grace(&nfsd4_manager);
++	nfsd4_record_grace_done(net, boot_time);
++	locks_end_grace(&nn->nfsd4_manager);
+ 	/*
+ 	 * Now that every NFSv4 client has had the chance to recover and
+ 	 * to see the (possibly new, possibly shorter) lease time, we
+@@ -3222,7 +3223,7 @@ nfs4_laundromat(void)
+ 	nfs4_lock_state();
+ 
+ 	dprintk("NFSD: laundromat service - starting\n");
+-	nfsd4_end_grace();
++	nfsd4_end_grace(&init_net);
+ 	INIT_LIST_HEAD(&reaplist);
+ 	spin_lock(&client_lock);
+ 	list_for_each_safe(pos, next, &client_lru) {
+@@ -4743,6 +4744,8 @@ set_max_delegations(void)
+ int
+ nfs4_state_start(void)
+ {
++	struct net *net = &init_net;
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+ 	int ret;
+ 
+ 	/*
+@@ -4752,10 +4755,10 @@ nfs4_state_start(void)
+ 	 * to that instead and then do most of the rest of this on a per-net
+ 	 * basis.
+ 	 */
+-	get_net(&init_net);
+-	nfsd4_client_tracking_init(&init_net);
++	get_net(net);
++	nfsd4_client_tracking_init(net);
+ 	boot_time = get_seconds();
+-	locks_start_grace(&nfsd4_manager);
++	locks_start_grace(&nn->nfsd4_manager);
+ 	grace_ended = false;
+ 	printk(KERN_INFO "NFSD: starting %ld-second grace period\n",
+ 	       nfsd4_grace);
+@@ -4778,8 +4781,8 @@ nfs4_state_start(void)
+ out_free_laundry:
+ 	destroy_workqueue(laundry_wq);
+ out_recovery:
+-	nfsd4_client_tracking_exit(&init_net);
+-	put_net(&init_net);
++	nfsd4_client_tracking_exit(net);
++	put_net(net);
+ 	return ret;
  }
  
- static void set_grace_period(void)
-@@ -100,7 +102,7 @@ static void set_grace_period(void)
- 	unsigned long grace_period = get_lockd_grace_period();
- 	struct lockd_net *ln = net_generic(&init_net, lockd_net_id);
- 
--	locks_start_grace(&lockd_manager);
-+	locks_start_grace(&ln->lockd_manager);
- 	cancel_delayed_work_sync(&ln->grace_period_end);
- 	schedule_delayed_work(&ln->grace_period_end, grace_period);
- }
-@@ -111,7 +113,7 @@ static void restart_grace(void)
- 		struct lockd_net *ln = net_generic(&init_net, lockd_net_id);
- 
- 		cancel_delayed_work_sync(&ln->grace_period_end);
--		locks_end_grace(&lockd_manager);
-+		locks_end_grace(&ln->lockd_manager);
- 		nlmsvc_invalidate_all();
- 		set_grace_period();
- 	}
-@@ -187,7 +189,7 @@ lockd(void *vrqstp)
- 	}
- 	flush_signals(current);
- 	cancel_delayed_work_sync(&ln->grace_period_end);
--	locks_end_grace(&lockd_manager);
-+	locks_end_grace(&ln->lockd_manager);
- 	if (nlmsvc_ops)
- 		nlmsvc_invalidate_all();
- 	nlm_shutdown_hosts();
+@@ -4820,9 +4823,12 @@ __nfs4_state_shutdown(void)
+ void
+ nfs4_state_shutdown(void)
+ {
++	struct net *net = &init_net;
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
++
+ 	cancel_delayed_work_sync(&laundromat_work);
+ 	destroy_workqueue(laundry_wq);
+-	locks_end_grace(&nfsd4_manager);
++	locks_end_grace(&nn->nfsd4_manager);
+ 	nfs4_lock_state();
+ 	__nfs4_state_shutdown();
+ 	nfs4_unlock_state();
 
