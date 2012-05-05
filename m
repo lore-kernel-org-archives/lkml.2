@@ -1,100 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760746Ab2EEADQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 20:03:16 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45107 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758280Ab2EEADN (ORCPT
+	id S932224Ab2EEAJR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 20:09:17 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:2713 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757082Ab2EEAJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 20:03:13 -0400
-Date: Sat, 5 May 2012 01:03:09 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@ardb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Igor Grinberg <grinberg@compulab.co.il>,
-        linux-embedded@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Handling of modular boards
-Message-ID: <20120505000308.GX14230@opensource.wolfsonmicro.com>
-References: <20120504185850.GO14230@opensource.wolfsonmicro.com>
- <20120504225514.GM897@n2100.arm.linux.org.uk>
- <20120504234056.GV14230@opensource.wolfsonmicro.com>
- <20120504235225.GN897@n2100.arm.linux.org.uk>
+	Fri, 4 May 2012 20:09:16 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-12.tower-160.messagelabs.com!1336176546!5579962!1
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: refactor dt2814 driver and use module_comedi_driver
+Date: Fri, 4 May 2012 17:09:02 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YHHegWJYV76VGRm9"
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20120504235225.GN897@n2100.arm.linux.org.uk>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <201205041709.03003.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Move the struct comedi_driver to the end of the source and refactor
+the code to remove the forward declarations.
 
---YHHegWJYV76VGRm9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Convert the driver to use the module_comedi_driver() macro which
+makes the code smaller and a bit simpler.
 
-On Sat, May 05, 2012 at 12:52:25AM +0100, Russell King - ARM Linux wrote:
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
 
-> How about this - we have struct platform_device_info, which is used to
-> create platform devices.  We can use this as an array to describe what
-> platform devices to create in the sub-driver, including what the resources
-> should be etc.
-
-We (well, I at least) need to handle devices on other buses like I2C and
-SPI too but yes, that's the sort of thing I was looking for.
-
-> However, there's a problem with this - what if you need to do some board
-> level init before hand?  That needs to be handled somehow before these
-> devices are instantiated.  That could be done via a callback through
-> platform data.
-
-> But... this all seems wrong, because rather than having a driver which
-> knows about the details of the board, we now have all the details of the
-> board in question back in platform code which originally declared the
-> board device.  That's wrong, because a daughter board may be shared
-> between different platforms, and we don't want multiple copies of that
-> data all around the place.
-
-> I don't think there's an easy or generic solution to this.
-
-I think that's OK - if there's any init stuff that needs to be done on a
-prior to identification of the board then presumably it's a generic
-thing for the motherboard which will apply to any plugin module on that
-board and can be done as part of the normal board init.  If the init
-needs to be done after identification of the board then probably it
-applies to any motherboard the board might be plugged in to so we can
-just define callbacks for the plugin module that can be part of the
-plugin module description.
-
-Cases that depend on a specific combination will doubtless exist and do
-have the problems you describe but are probably less frequent but I
-think we can go a long way on the first two.
-
---YHHegWJYV76VGRm9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPpG40AAoJEBus8iNuMP3ds7EP/0SaZ91v2MredasgbcnS5zuX
-CbdV2e5crct//Lt9Y3YmbJZivr/yrT8Eryh2ubsIIHvyKQPX5QZ5yJx6U8JLJgal
-rV19uaZ1TjtzTa7xG6EXzKfVE9hQfqz0sa+3vXsJws3xixWMDEMN2JJNo6jTIA76
-lu9NndWxY7+sdqwJSmfkQeQeyRH2GyIP0PbniL0O/4oY6kPH1is+bv+GlneR1LJm
-LYFDO+It6tn3OERPx/ZFiXHJIi6CVEA2HWYizXPrPGtYAJfyKQGsDn3/bsS0ocTV
-BGSx1GCxWYmKo9ywkMNuFrT97u2WgNppzSgmx7OxU8bwYGrlYFGbz5j3Db5uqeP3
-iV1oKDTf3xHQIceWQM387MmkatymbgzZFXWWH++uLJKU5N/fKI1toCpbYMx2a0Uh
-IfclrJkYDXzT7EvnNRzlqBD/G0LVJt2awWVoW9Ix8JAzb9LbAjAmJsTiIRI6GlFJ
-6KDgPnAxtlicFSNYinv72Z3bvRFVYhlLj43l/Y27nZI7tsZEtgPuhs5FOWMpbwAw
-/lNdT3dHcbQmIjz1VY1EnnZ0WrLVw6KdDT4Ih1JvciN4sPvOkSmgbgPf/2VsWi1V
-xoBSPGWVIsmGy5lS7gx2kuVyZh9zIt2xGhx6eEFvIrarVsEBYMCdSEy5a7NQKBHZ
-l0YaeIQ9WFFjklyTR4PT
-=AZJd
------END PGP SIGNATURE-----
-
---YHHegWJYV76VGRm9--
+diff --git a/drivers/staging/comedi/drivers/dt2814.c b/drivers/staging/comedi/drivers/dt2814.c
+index 1c6248c..a935e9c 100644
+--- a/drivers/staging/comedi/drivers/dt2814.c
++++ b/drivers/staging/comedi/drivers/dt2814.c
+@@ -60,31 +60,6 @@ addition, the clock does not seem to be very accurate.
+ #define DT2814_ENB 0x10
+ #define DT2814_CHANMASK 0x0f
+ 
+-static int dt2814_attach(struct comedi_device *dev,
+-			 struct comedi_devconfig *it);
+-static int dt2814_detach(struct comedi_device *dev);
+-static struct comedi_driver driver_dt2814 = {
+-	.driver_name = "dt2814",
+-	.module = THIS_MODULE,
+-	.attach = dt2814_attach,
+-	.detach = dt2814_detach,
+-};
+-
+-static int __init driver_dt2814_init_module(void)
+-{
+-	return comedi_driver_register(&driver_dt2814);
+-}
+-
+-static void __exit driver_dt2814_cleanup_module(void)
+-{
+-	comedi_driver_unregister(&driver_dt2814);
+-}
+-
+-module_init(driver_dt2814_init_module);
+-module_exit(driver_dt2814_cleanup_module);
+-
+-static irqreturn_t dt2814_interrupt(int irq, void *dev);
+-
+ struct dt2814_private {
+ 
+ 	int ntrig;
+@@ -260,6 +235,45 @@ static int dt2814_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ 
+ }
+ 
++static irqreturn_t dt2814_interrupt(int irq, void *d)
++{
++	int lo, hi;
++	struct comedi_device *dev = d;
++	struct comedi_subdevice *s;
++	int data;
++
++	if (!dev->attached) {
++		comedi_error(dev, "spurious interrupt");
++		return IRQ_HANDLED;
++	}
++
++	s = dev->subdevices + 0;
++
++	hi = inb(dev->iobase + DT2814_DATA);
++	lo = inb(dev->iobase + DT2814_DATA);
++
++	data = (hi << 4) | (lo >> 4);
++
++	if (!(--devpriv->ntrig)) {
++		int i;
++
++		outb(0, dev->iobase + DT2814_CSR);
++		/* note: turning off timed mode triggers another
++		   sample. */
++
++		for (i = 0; i < DT2814_TIMEOUT; i++) {
++			if (inb(dev->iobase + DT2814_CSR) & DT2814_FINISH)
++				break;
++		}
++		inb(dev->iobase + DT2814_DATA);
++		inb(dev->iobase + DT2814_DATA);
++
++		s->async->events |= COMEDI_CB_EOA;
++	}
++	comedi_event(dev, s);
++	return IRQ_HANDLED;
++}
++
+ static int dt2814_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ {
+ 	int i, irq;
+@@ -360,44 +374,13 @@ static int dt2814_detach(struct comedi_device *dev)
+ 	return 0;
+ }
+ 
+-static irqreturn_t dt2814_interrupt(int irq, void *d)
+-{
+-	int lo, hi;
+-	struct comedi_device *dev = d;
+-	struct comedi_subdevice *s;
+-	int data;
+-
+-	if (!dev->attached) {
+-		comedi_error(dev, "spurious interrupt");
+-		return IRQ_HANDLED;
+-	}
+-
+-	s = dev->subdevices + 0;
+-
+-	hi = inb(dev->iobase + DT2814_DATA);
+-	lo = inb(dev->iobase + DT2814_DATA);
+-
+-	data = (hi << 4) | (lo >> 4);
+-
+-	if (!(--devpriv->ntrig)) {
+-		int i;
+-
+-		outb(0, dev->iobase + DT2814_CSR);
+-		/* note: turning off timed mode triggers another
+-		   sample. */
+-
+-		for (i = 0; i < DT2814_TIMEOUT; i++) {
+-			if (inb(dev->iobase + DT2814_CSR) & DT2814_FINISH)
+-				break;
+-		}
+-		inb(dev->iobase + DT2814_DATA);
+-		inb(dev->iobase + DT2814_DATA);
+-
+-		s->async->events |= COMEDI_CB_EOA;
+-	}
+-	comedi_event(dev, s);
+-	return IRQ_HANDLED;
+-}
++static struct comedi_driver dt2814_driver = {
++	.driver_name	= "dt2814",
++	.module		= THIS_MODULE,
++	.attach		= dt2814_attach,
++	.detach		= dt2814_detach,
++};
++module_comedi_driver(dt2814_driver);
+ 
+ MODULE_AUTHOR("Comedi http://www.comedi.org");
+ MODULE_DESCRIPTION("Comedi low-level driver");
