@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab2EEKyN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 06:54:13 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:34737 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468Ab2EEKyM (ORCPT
+	id S1754802Ab2EEKyu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 06:54:50 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60905 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754636Ab2EEKyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 06:54:12 -0400
-Date: Sat, 5 May 2012 03:52:49 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Grazvydas Ignotas <notasas@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 0/6] twl4030: Various fixes for charing-from-USB
-Message-ID: <20120505105249.GA20875@lizard>
-References: <20120425072931.20124.56635.stgit@notabene.brown>
- <CANOLnOOQDxu-P=yTN6159XJANq-_FSCtZ4rBt69NSCPjLz1Rjw@mail.gmail.com>
- <20120430093002.472dfdde@notabene.brown>
- <20120505104910.GA19590@lizard>
+	Sat, 5 May 2012 06:54:49 -0400
+Date: Sat, 5 May 2012 12:54:46 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Howells <dhowells@redhat.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [patch V2 03/31] task_allocator: Use config switches instead of
+ magic defines
+In-Reply-To: <13401.1336152505@redhat.com>
+Message-ID: <alpine.LFD.2.02.1205051254140.6271@ionos>
+References: <20120503085034.032327158@linutronix.de> <20120503083859.991965503@linutronix.de> <13401.1336152505@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120505104910.GA19590@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 05, 2012 at 03:49:10AM -0700, Anton Vorontsov wrote:
-> On Mon, Apr 30, 2012 at 09:30:02AM +1000, NeilBrown wrote:
-> > > > Following are a collection of patches that I've need using for a while
-> > > > to make sure the charge-from-usb on my GTA04 works.
-> > > > Hopefully I've included the right people in the recipient list :-)
-> > > 
-> > > You missed the power supply maintainers - ./scripts/get_maintainer.pl
-> > > is usually good at finding the right people, although their
-> > > MAINTAINERS entry could be better I guess..
-> > > 
-> > > 
-> > 
-> > I guess you mean:
-> > 
-> > POWER SUPPLY CLASS/SUBSYSTEM and DRIVERS
-> > M:	Anton Vorontsov <cbou@mail.ru>
-> > M:	David Woodhouse <dwmw2@infradead.org>
-> > T:	git git://git.infradead.org/battery-2.6.git
-> > S:	Maintained
-> > F:	include/linux/power_supply.h
-> > F:	drivers/power/power_supply*
-> > 
-> > 
-> > get_maintainer.pl didn't find them.  The F: line seems to say they aren't
-> > interested in individual drivers...
-> 
-> This is a 'bug', of course. :-) Thanks for the report.
-> 
-> This is what I've just applied:
-> 
-> - - - -
-> MAINTAINERS: Fix 'F' entry for the power supply class
-> 
-> For some reason the maintainers file only specifies power
-> supply core files.
-> 
-> We're surely interested in individual drivers as well, so fix
-> the entry.
-> 
-> Reported-by: NeilBrown <neilb@suse.de>
+On Fri, 4 May 2012, David Howells wrote:
 
-Oh, Grazvydas Ignotas noticed this too. I added
-Reported-by: Grazvydas Ignotas <notasas@gmail.com> as well.
-Just to be precise. ;-)
+> Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> > +config ARCH_TASK_STRUCT_ALLOCATOR
+> > +	bool
+> > +
+> > +config ARCH_THREAD_INFO_ALLOCATOR
+> > +	bool
+> 
+> With comments saying what they mean...
 
-Thanks folks,
+Right. I dropped that patch anyway as it's incomplete. Next series
+will have it proper.
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Thanks,
+
+	tglx
