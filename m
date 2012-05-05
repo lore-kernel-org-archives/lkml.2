@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759667Ab2EEDmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 23:42:14 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57026 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab2EEDmM (ORCPT
+	id S1759717Ab2EEDqn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 23:46:43 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62410 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758995Ab2EEDqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 23:42:12 -0400
-Date: Sat, 5 May 2012 11:42:05 +0800
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org
-Subject: [PATCH] Correct the comment of allocate_resource()
-Message-ID: <20120505034205.GA4447@richard>
-Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
+	Fri, 4 May 2012 23:46:42 -0400
+Date: Fri, 4 May 2012 20:45:18 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] power_supply: Add voltage_ocv property and use it for
+ max17042 driver
+Message-ID: <20120505034517.GB3285@lizard>
+References: <1334055080-19521-1-git-send-email-ramakrishna.pallala@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <1334055080-19521-1-git-send-email-ramakrishna.pallala@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12050417-5490-0000-0000-000001488795
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 10, 2012 at 04:21:20PM +0530, Ramakrishna Pallala wrote:
+> This adds a new sysfs file called 'voltage_ocv' which gives the
+> Open Circuit Voltage of the battery.
+> 
+> This property can be used for platform shutdown policies and
+> can be useful for initial capacity estimations.
+> 
+> Note: This patch is generated against linux-next branch.
+> 
+> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+> ---
+>  Documentation/power/power_supply_class.txt |    2 ++
+>  drivers/power/max17042_battery.c           |    8 ++++++++
+>  drivers/power/power_supply_sysfs.c         |    1 +
+>  include/linux/power_supply.h               |    2 ++
+>  4 files changed, 13 insertions(+), 0 deletions(-)
 
-In the comment of allocate_resource(), the explanation of parameter max
-and min is not correct.
+This looks great, applied.
 
-Actually, this two parameter is used to specify the range of the resource
-will be allocated, not the min/max size will be allocated.
-
-Signed-Off-By: Wei Yang <weiyang@linux.vnet.ibm.com>
-
----
- kernel/resource.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 7e8ea66..e1d2b8e 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -515,8 +515,8 @@ out:
-  * @root: root resource descriptor
-  * @new: resource descriptor desired by caller
-  * @size: requested resource region size
-- * @min: minimum size to allocate
-- * @max: maximum size to allocate
-+ * @min: minimum boundary to allocate
-+ * @max: maximum boundary to allocate
-  * @align: alignment requested, in bytes
-  * @alignf: alignment function, optional, called if not NULL
-  * @alignf_data: arbitrary data to pass to the @alignf function
--- 
-1.7.4.1
-
+Thank you!
 
 -- 
-Richard Yang
-Help you, Help me
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
