@@ -1,97 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab2EEJ61 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 05:58:27 -0400
-Received: from nm25-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.156]:25669 "HELO
-	nm25-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752170Ab2EEJ60 (ORCPT
+	id S1753042Ab2EEKDS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 06:03:18 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62350 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170Ab2EEKDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 05:58:26 -0400
-X-Yahoo-Newman-Id: 382639.75457.bm@omp1007.access.mail.mud.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: oPDDZaQVM1mqe4yQTtJF4WsvRCFTichrLG9eNl5Mgv7rSz2
- CVeKe7WwMg6sdgpMuo9LWOYQlxRCEjphkmliry2phthBvXjvVTY0P8hZ3N8g
- xDix_kutpHycdmSU2HOJUL_M1cFgqg8TZpctb.PpcN46C3NuLe1lKvFWS4cx
- GS57ltPxADWr4BPDk.OTwDcInxGsilPYCfTtX3Ue_H2XPWdlOg4se9g7ExV1
- 4bRGI0CWXdi7Tcy0110i.LCSnkNVDvsmH4b6GqeBwID6MES1G3SMl_Qqr6SP
- oHTqogAjEyIRIkPQNFk_Ziqqc6kDI6qWXgYQMY81JUHvnVAIo0dtYvYPxaZ4
- 59oG7x2RUq5BD1lE8FkNX6PkBscDlbXLBUKnSj6TAxR4wJFHYkCyg_gah_NI
- UZ.s5tg--
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <4FA4F842.2080601@att.net>
-Date: Sat, 05 May 2012 04:52:02 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: daniel.santos@pobox.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+	Sat, 5 May 2012 06:03:16 -0400
+Date: Sat, 5 May 2012 12:02:59 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/1] ntp: advertise correct TAI offset during leap
+ second
+Message-ID: <20120505100259.GA8294@netboy.at.omicron.at>
+References: <cover.1335442155.git.richardcochran@gmail.com>
+ <7af92d6eabef55ddce07007ea515eda2e1474c52.1335442155.git.richardcochran@gmail.com>
+ <4F9B1C55.50004@linaro.org>
+ <20120428061718.GA2258@netboy.at.omicron.at>
+ <4F9EEC86.8010201@linaro.org>
+ <20120501061605.GC2243@netboy.at.omicron.at>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] mm/slab.c: Fix build breakage when compiling -O0
-X-Enigmail-Version: 1.3.5
-Content-Type: multipart/mixed;
- boundary="------------060607080109090801050700"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120501061605.GC2243@netboy.at.omicron.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060607080109090801050700
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+On Tue, May 01, 2012 at 08:16:05AM +0200, Richard Cochran wrote:
+> On Mon, Apr 30, 2012 at 12:48:22PM -0700, John Stultz wrote:
+> > On 04/27/2012 11:17 PM, Richard Cochran wrote:
+> > >
+> > >Wait a minute. If user space manages this variable, then shouldn't the
+> > >kernel leave it alone?
+> > 
+> > Right. That's why I'm asking. I actually haven't spent much time
+> > looking at how the tai value provided via adjtimex is handled, and I
+> > want to make sure its ok if we modify it from the kernel.
+> 
+> We *are* already modifying it in kernel, but at the wrong time.
+> 
+> I don't know either what ntpd does, but I will find out.
+> 
+> [ But if ntpd just uses adjtimex() to use the kernel as storage for
+>   variables, then that is really stupid. ]
 
+I took a look at ntp-4.2.6p5, and ntpd unconditionally sets the TAI
+offset using MOD_TAI when it thinks the offset has changed.
 
+But I think it won't hurt if the kernel changes the offset
+automatically, since ntpd will just try and set the same value again.
 
---------------060607080109090801050700
-Content-Type: text/x-patch;
- name="0001-mm-slab.c-Fix-build-breakage-when-compiling-O0.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-mm-slab.c-Fix-build-breakage-when-compiling-O0.patch"
-
->From 64aa1504fe4838b9a9fe6dca151e23330e41b543 Mon Sep 17 00:00:00 2001
-From: Daniel Santos <daniel.santos@pobox.com>
-Date: Fri, 4 May 2012 19:36:24 -0500
-Subject: mm/slab.c: Fix build breakage when compiling -O0
-
-BUILD_BUG_ON is more robust, detecting when we're not optimizing and,
-thus, when __builtin_constant_p will always return zero and produce a
-false-positive.  Further, this distinguishes between the errors of size
-not being a compile-time constant and size just not being an accepted
-value.
----
- mm/slab.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index e901a36..1a618b2 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -308,10 +308,9 @@ static void cache_reap(struct work_struct *unused);
-  */
- static __always_inline int index_of(const size_t size)
- {
--	extern void __bad_size(void);
-+	int i = 0;
- 
--	if (__builtin_constant_p(size)) {
--		int i = 0;
-+	BUILD_BUG_ON(!__builtin_constant_p(size));
- 
- #define CACHE(x) \
- 	if (size <=x) \
-@@ -320,9 +319,8 @@ static __always_inline int index_of(const size_t size)
- 		i++;
- #include <linux/kmalloc_sizes.h>
- #undef CACHE
--		__bad_size();
--	} else
--		__bad_size();
-+
-+	BUILD_BUG(); /* bad size */
- 	return 0;
- }
- 
--- 
-1.7.3.4
-
-
---------------060607080109090801050700--
+Thanks,
+Richard
