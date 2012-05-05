@@ -1,101 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab2EELXM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 07:23:12 -0400
-Received: from smtp-vbr13.xs4all.nl ([194.109.24.33]:3481 "EHLO
-	smtp-vbr13.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554Ab2EELXK convert rfc822-to-8bit (ORCPT
+	id S1755077Ab2EEL2g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 07:28:36 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64186 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754636Ab2EEL2f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 07:23:10 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Sakari Ailus <sakari.ailus@iki.fi>
-Subject: Re: [PATCH 1/1] v4l2: use __u32 rather than enums in ioctl() structs
-Date: Sat, 5 May 2012 13:22:32 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4.0-rc3-tschai; KDE/4.7.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        mchehab@redhat.com, remi@remlab.net
-References: <1336213545-8549-1-git-send-email-sakari.ailus@iki.fi> <201205051255.01321.hverkuil@xs4all.nl> <20120505111410.GH852@valkosipuli.localdomain>
-In-Reply-To: <20120505111410.GH852@valkosipuli.localdomain>
+	Sat, 5 May 2012 07:28:35 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <CAHGf_=oOx1qPFEboQeuaeMKtveM2==BSDG=xdfRHz+gFx1GAfw@mail.gmail.com>
+References: <CAHGf_=qdE3yNw=htuRssfav2pECO1Q0+gWMRTuNROd_3tVrd6Q@mail.gmail.com>
+ <CAHGf_=ojhwPUWJR0r+jVgjNd5h_sRrppzJntSpHzxyv+OuBueg@mail.gmail.com>
+ <x49ehr4lyw1.fsf@segfault.boston.devel.redhat.com> <CAHGf_=rzcfo3OnwT-YsW2iZLchHs3eBKncobvbhTm7B5PE=L-w@mail.gmail.com>
+ <x491un3nc7a.fsf@segfault.boston.devel.redhat.com> <CAPa8GCCgLUt1EDAy7-O-mo0qir6Bf5Pi3Va1EsQ3ZW5UU=+37g@mail.gmail.com>
+ <20120502081705.GB16976@quack.suse.cz> <CAPa8GCCnvvaj0Do7sdrdfsvbcAf0zBe3ssXn45gMfDKCcvJWxA@mail.gmail.com>
+ <20120502091837.GC16976@quack.suse.cz> <CAHGf_=qfuRZzb91ELEcArNaNHsfO4BBMPO8a-QRBzFNaT2ev_w@mail.gmail.com>
+ <20120502192325.GA18339@quack.suse.cz> <CAHGf_=oOx1qPFEboQeuaeMKtveM2==BSDG=xdfRHz+gFx1GAfw@mail.gmail.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Sat, 5 May 2012 23:28:13 +1200
+Message-ID: <CAKgNAkjybL_hmVfONUHtCbBe_VxQHNHOrmWQErGWDUqHiczkFg@mail.gmail.com>
+Subject: Re: [PATCH] Describe race of direct read and fork for unaligned buffers
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Nick Piggin <npiggin@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-man@vger.kernel.org,
+        linux-mm@kvack.org, mgorman@suse.de,
+        Andrea Arcangeli <aarcange@redhat.com>, Woodman <lwoodman@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201205051322.32640.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat May 5 2012 13:14:10 Sakari Ailus wrote:
-> Hi Hans,
-> 
-> On Sat, May 05, 2012 at 12:55:01PM +0200, Hans Verkuil wrote:
-> > On Sat May 5 2012 12:25:45 Sakari Ailus wrote:
-> > > From: Rémi Denis-Courmont <remi@remlab.net>
-> > > 
-> > > V4L2 uses the enum type in IOCTL arguments in IOCTLs that were defined until
-> > > the use of enum was considered less than ideal. Recently Rémi Denis-Courmont
-> > > brought up the issue by proposing a patch to convert the enums to unsigned:
-> > > 
-> > > <URL:http://www.spinics.net/lists/linux-media/msg46167.html>
-> > > 
-> > > This sparked a long discussion where another solution to the issue was
-> > > proposed: two sets of IOCTL structures, one with __u32 and the other with
-> > > enums, and conversion code between the two:
-> > > 
-> > > <URL:http://www.spinics.net/lists/linux-media/msg47168.html>
-> > > 
-> > > Both approaches implement a complete solution that resolves the problem. The
-> > > first one is simple but requires assuming enums and __u32 are the same in
-> > > size (so we won't break the ABI) while the second one is more complex and
-> > > less clean but does not require making that assumption.
-> > > 
-> > > The issue boils down to whether enums are fundamentally different from __u32
-> > > or not, and can the former be substituted by the latter. During the
-> > > discussion it was concluded that the __u32 has the same size as enums on all
-> > > archs Linux is supported: it has not been shown that replacing those enums
-> > > in IOCTL arguments would break neither source or binary compatibility. If no
-> > > such reason is found, just replacing the enums with __u32s is the way to go.
-> > > 
-> > > This is what this patch does. This patch is slightly different from Remi's
-> > > first RFC (link above): it uses __u32 instead of unsigned and also changes
-> > > the arguments of VIDIOC_G_PRIORITY and VIDIOC_S_PRIORITY.
-> > > 
-> > > Signed-off-by: Rémi Denis-Courmont <remi@remlab.net>
-> > > Signed-off-by: Sakari Ailus <sakari.ailus@iki.fi>
-> > > ---
-> > >  include/linux/videodev2.h |   46 ++++++++++++++++++++++----------------------
-> > >  1 files changed, 23 insertions(+), 23 deletions(-)
-> > > 
-> > > diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-> > > index 5a09ac3..585e4b4 100644
-> > > --- a/include/linux/videodev2.h
-> > > +++ b/include/linux/videodev2.h
-> > > @@ -292,10 +292,10 @@ struct v4l2_pix_format {
-> > >  	__u32         		width;
-> > >  	__u32			height;
-> > >  	__u32			pixelformat;
-> > > -	enum v4l2_field  	field;
-> > > +	__u32			field;
-> > 
-> > One suggestion: add a comment like this:
-> > 
-> > 	__u32			field; /* refer to enum v4l2_field */
-> > 
-> > This keeps the link between the u32 and the enum values.
-> > 
-> > Note that the DocBook documentation also has to be updated.
+On Thu, May 3, 2012 at 7:25 AM, KOSAKI Motohiro
+<kosaki.motohiro@gmail.com> wrote:
+> On Wed, May 2, 2012 at 3:23 PM, Jan Kara <jack@suse.cz> wrote:
+>> On Wed 02-05-12 15:14:33, KOSAKI Motohiro wrote:
+>>> Hello,
+>>>
+>>> >> I see what you mean.
+>>> >>
+>>> >> I'm not sure, though. For most apps it's bad practice I think. If you get into
+>>> >> realm of sophisticated, performance critical IO/storage managers, it would
+>>> >> not surprise me if such concurrent buffer modifications could be allowed.
+>>> >> We allow exactly such a thing in our pagecache layer. Although probably
+>>> >> those would be using shared mmaps for their buffer cache.
+>>> >>
+>>> >> I think it is safest to make a default policy of asking for IOs against private
+>>> >> cow-able mappings to be quiesced before fork, so there are no surprises
+>>> >> or reliance on COW details in the mm. Do you think?
+>>> >    Yes, I agree that (and MADV_DONTFORK) is probably the best thing to have
+>>> > in documentation. Otherwise it's a bit too hairy...
+>>>
+>>> I neglected this issue for years because Linus asked who need this and
+>>> I couldn't
+>>> find real world usecase.
+>>>
+>>> Ah, no, not exactly correct. Fujitsu proprietary database had such
+>>> usecase. But they quickly fixed it. Then I couldn't find alternative usecase.
+>>  One of our customers hit this bug recently which is why I started to look
+>> at this. But they also modified their application not to hit the problem.
+>>
+>>> I'm not sure why you say "hairy". Do you mean you have any use case of this?
+>>  I meant that if we should describe conditions like "if you have page
+>> aligned buffer and you don't write to it while the IO is running, the
+>> problem also won't occur", then it's already too detailed and might
+>> easily change in future kernels...
 
-And v4l2-compat-ioctl32 as well! :-) That too has enums in the compat structs.
+So, am I correct to assume that right text to add to the page is as below?
 
-Regards,
+Nick, can you clarify what you mean by "quiesced"?
 
-	Hans
+[[
+O_DIRECT IOs should never be run concurrently with fork(2) system call,
+when the memory buffer is anonymous memory, or comes from mmap(2)
+with MAP_PRIVATE.
 
-> > 
-> > Looks good to me otherwise.
-> 
-> Thanks for the comments. I'll make the above changes.
-> 
-> Cheers,
-> 
-> 
+Any such IOs, whether submitted with asynchronous IO interface or from
+another thread in the process, should be quiesced before fork(2) is called.
+Failure to do so can result in data corruption and undefined behavior in
+parent and child processes.
+
+This restriction does not apply when the memory buffer for the O_DIRECT
+IOs comes from mmap(2) with MAP_SHARED or from shmat(2).
+Nor does this restriction apply when the memory buffer has been advised
+as MADV_DONTFORK with madvise(2), ensuring that it will not be available
+to the child after fork(2).
+]]
+
+Thanks,
+
+Michael
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
