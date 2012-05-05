@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab2EETFb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 15:05:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54647 "EHLO
+	id S1755012Ab2EETGW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 15:06:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54660 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754889Ab2EETF2 (ORCPT
+	with ESMTP id S1753270Ab2EETGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 15:05:28 -0400
-Date: Sat, 5 May 2012 12:05:17 -0700
+	Sat, 5 May 2012 15:06:21 -0400
+Date: Sat, 5 May 2012 12:06:07 -0700
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-842d7b1ccaefb6668cad193dcc894959ad756f3f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, liqin.chen@sunplusct.com, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, liqin.chen@sunplusct.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <20120503085035.332320547@linutronix.de>
-References: <20120503085035.332320547@linutronix.de>
+Message-ID: <tip-41fe22f6553d1384fbef20b195b8c61ed6e768a1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        lethal@linux-sh.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, lethal@linux-sh.org
+In-Reply-To: <20120503085035.398257169@linutronix.de>
+References: <20120503085035.398257169@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] score: Use generic init_task
-Git-Commit-ID: 842d7b1ccaefb6668cad193dcc894959ad756f3f
+Subject: [tip:smp/hotplug] sh: Use generic init_task
+Git-Commit-ID: 41fe22f6553d1384fbef20b195b8c61ed6e768a1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,96 +27,95 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 05 May 2012 12:05:23 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 05 May 2012 12:06:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  842d7b1ccaefb6668cad193dcc894959ad756f3f
-Gitweb:     http://git.kernel.org/tip/842d7b1ccaefb6668cad193dcc894959ad756f3f
+Commit-ID:  41fe22f6553d1384fbef20b195b8c61ed6e768a1
+Gitweb:     http://git.kernel.org/tip/41fe22f6553d1384fbef20b195b8c61ed6e768a1
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Thu, 3 May 2012 09:02:58 +0000
+AuthorDate: Thu, 3 May 2012 09:02:59 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Sat, 5 May 2012 13:00:25 +0200
 
-score: Use generic init_task
+sh: Use generic init_task
 
-Same code. Use the generic version.
+Same code. Use the generic version. The special Makefile treatment is
+pointless anyway as init_task.o contains only data which is handled by
+the linker script. So no point on being treated like head text.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Link: http://lkml.kernel.org/r/20120503085035.332320547@linutronix.de
+Acked-by: Paul Mundt <lethal@linux-sh.org>
+Link: http://lkml.kernel.org/r/20120503085035.398257169@linutronix.de
 
 ---
- arch/score/Kconfig            |    1 +
- arch/score/kernel/Makefile    |    2 +-
- arch/score/kernel/init_task.c |   46 -----------------------------------------
- 3 files changed, 2 insertions(+), 47 deletions(-)
+ arch/sh/Kconfig            |    1 +
+ arch/sh/Makefile           |    2 +-
+ arch/sh/kernel/Makefile    |    2 +-
+ arch/sh/kernel/init_task.c |   30 ------------------------------
+ 4 files changed, 3 insertions(+), 32 deletions(-)
 
-diff --git a/arch/score/Kconfig b/arch/score/Kconfig
-index 4b28577..c760bcc 100644
---- a/arch/score/Kconfig
-+++ b/arch/score/Kconfig
-@@ -9,6 +9,7 @@ config SCORE
-        select HAVE_MEMBLOCK_NODE_MAP
-        select ARCH_DISCARD_MEMBLOCK
-        select GENERIC_CPU_DEVICES
-+       select HAVE_GENERIC_INIT_TASK
+diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
+index 244cfd0..a0cd70b 100644
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@ -29,6 +29,7 @@ config SUPERH
+ 	select GENERIC_ATOMIC64
+ 	select GENERIC_IRQ_SHOW
+ 	select GENERIC_SMP_IDLE_THREAD
++	select HAVE_GENERIC_INIT_TASK
+ 	help
+ 	  The SuperH is a RISC processor targeted for use in embedded systems
+ 	  and consumer electronics; it was also used in the Sega Dreamcast
+diff --git a/arch/sh/Makefile b/arch/sh/Makefile
+index 3fc0f41..e14a676 100644
+--- a/arch/sh/Makefile
++++ b/arch/sh/Makefile
+@@ -124,7 +124,7 @@ endif
  
- choice
- 	prompt "System type"
-diff --git a/arch/score/kernel/Makefile b/arch/score/kernel/Makefile
-index f218673..fb1802b 100644
---- a/arch/score/kernel/Makefile
-+++ b/arch/score/kernel/Makefile
-@@ -4,7 +4,7 @@
+ export ld-bfd BITS
  
- extra-y	:= head.o vmlinux.lds
+-head-y	:= arch/sh/kernel/init_task.o arch/sh/kernel/head_$(BITS).o
++head-y	:= arch/sh/kernel/head_$(BITS).o
  
--obj-y += entry.o init_task.o irq.o process.o ptrace.o \
-+obj-y += entry.o irq.o process.o ptrace.o \
- 	setup.o signal.o sys_score.o time.o traps.o \
- 	sys_call_table.o
+ core-y				+= arch/sh/kernel/ arch/sh/mm/ arch/sh/boards/
+ core-$(CONFIG_SH_FPU_EMU)	+= arch/sh/math-emu/
+diff --git a/arch/sh/kernel/Makefile b/arch/sh/kernel/Makefile
+index 77f7ae1..88571ff 100644
+--- a/arch/sh/kernel/Makefile
++++ b/arch/sh/kernel/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the Linux/SuperH kernel.
+ #
  
-diff --git a/arch/score/kernel/init_task.c b/arch/score/kernel/init_task.c
+-extra-y	:= head_$(BITS).o init_task.o vmlinux.lds
++extra-y	:= head_$(BITS).o vmlinux.lds
+ 
+ ifdef CONFIG_FUNCTION_TRACER
+ # Do not profile debug and lowlevel utilities
+diff --git a/arch/sh/kernel/init_task.c b/arch/sh/kernel/init_task.c
 deleted file mode 100644
-index baa03ee..0000000
---- a/arch/score/kernel/init_task.c
+index 11f2ea5..0000000
+--- a/arch/sh/kernel/init_task.c
 +++ /dev/null
-@@ -1,46 +0,0 @@
--/*
-- * arch/score/kernel/init_task.c
-- *
-- * Score Processor version.
-- *
-- * Copyright (C) 2009 Sunplus Core Technology Co., Ltd.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, see the file COPYING, or write
-- * to the Free Software Foundation, Inc.,
-- * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-- */
--
+@@ -1,30 +0,0 @@
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/sched.h>
 -#include <linux/init_task.h>
 -#include <linux/mqueue.h>
+-#include <linux/fs.h>
+-#include <asm/uaccess.h>
+-#include <asm/pgtable.h>
 -
 -static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 -static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
--
+-struct pt_regs fake_swapper_regs;
 -/*
 - * Initial thread structure.
 - *
-- * We need to make sure that this is THREAD_SIZE aligned due to the
+- * We need to make sure that this is 8192-byte aligned due to the
 - * way process stacks are handled. This is done by having a special
 - * "init_task" linker map entry..
 - */
@@ -129,4 +128,5 @@ index baa03ee..0000000
 - * All other task structs will be allocated on slabs in fork.c
 - */
 -struct task_struct init_task = INIT_TASK(init_task);
+-
 -EXPORT_SYMBOL(init_task);
