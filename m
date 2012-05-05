@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab2EEIUA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 04:20:00 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:31451 "EHLO
+	id S1754234Ab2EEIT6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 04:19:58 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:29981 "EHLO
 	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521Ab2EEISt (ORCPT
+	with ESMTP id S1753669Ab2EEISu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 04:18:49 -0400
+	Sat, 5 May 2012 04:18:50 -0400
 From: Sam Ravnborg <sam@ravnborg.org>
 To: Michal Marek <mmarek@suse.cz>
 Cc: linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>
-Subject: [PATCH 4/8] kbuild: document KBUILD_LDS, KBUILD_VMLINUX_{INIT,MAIN} and LDFLAGS_vmlinux
-Date: Sat,  5 May 2012 10:18:42 +0200
-Message-Id: <1336205926-13946-4-git-send-email-sam@ravnborg.org>
+        lkml <linux-kernel@vger.kernel.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: [PATCH 8/8] kbuild: remove useless warning
+Date: Sat,  5 May 2012 10:18:46 +0200
+Message-Id: <1336205926-13946-8-git-send-email-sam@ravnborg.org>
 X-Mailer: git-send-email 1.6.0.6
 In-Reply-To: <20120505080640.GA13773@merkur.ravnborg.org>
 References: <20120505080640.GA13773@merkur.ravnborg.org>
@@ -21,47 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Newly exported variables - used by link-vmlinux.sh
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
+This patch removes annoying warning:
+
+Makefile:708: "WARNING: Appending $KCFLAGS (-Wno-sign-compare) from command line to kernel $CFLAGS"
+
+which is printed every time I use KCFLAFS. The commit which introduced the
+warning:
+
+69ee0b3 kbuild: do not pick up CFLAGS from the environment
+
+tells about the problems when people have CFLAGS in their environment,
+then switches to KCFLAFS which should be enough to solve the issue, but
+it anyway introduces a warning. I think it is too much and I find this
+warning very annoying - why should we warn users when they use the
+build system properly?
+
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
 ---
- Documentation/kbuild/kbuild.txt |   19 +++++++++++++++++++
- 1 files changed, 19 insertions(+), 0 deletions(-)
+ scripts/Kbuild.arch |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/kbuild/kbuild.txt b/Documentation/kbuild/kbuild.txt
-index 68e32bb..1053642 100644
---- a/Documentation/kbuild/kbuild.txt
-+++ b/Documentation/kbuild/kbuild.txt
-@@ -50,6 +50,10 @@ LDFLAGS_MODULE
- --------------------------------------------------
- Additional options used for $(LD) when linking modules.
+diff --git a/scripts/Kbuild.arch b/scripts/Kbuild.arch
+index 6ff27c6..7841825 100644
+--- a/scripts/Kbuild.arch
++++ b/scripts/Kbuild.arch
+@@ -127,20 +127,13 @@ KBUILD_CFLAGS += $(warning)
+ endif
  
-+LDFLAGS_vmlinux
-+--------------------------------------------------
-+Additional options passed to final link of vmlinux.
-+
- KBUILD_VERBOSE
- --------------------------------------------------
- Set the kbuild verbosity. Can be assigned same values as "V=...".
-@@ -214,3 +218,18 @@ KBUILD_BUILD_USER, KBUILD_BUILD_HOST
- These two variables allow to override the user@host string displayed during
- boot and in /proc/version. The default value is the output of the commands
- whoami and host, respectively.
-+
-+KBUILD_LDS
-+--------------------------------------------------
-+The linker script with full path. Assigned by the top-level Makefile.
-+
-+KBUILD_VMLINUX_INIT
-+--------------------------------------------------
-+All objects files for the init (first) part of vmlinux.
-+Files specified with KBUILD_VMLINUX_INIT are linked first.
-+
-+KBUILD_VMLINUX_MAIN
-+--------------------------------------------------
-+All objects files for the main part of vmlinux.
-+KBUILD_VMLINUX_INIT and KBUILD_VMLINUX_MAIN together specify
-+all the object files used to link vmlinux.
+ # Add user supplied CPPFLAGS, AFLAGS and CFLAGS as the last assignments
+-# But warn user when we do so
+-warn-assign = \
+-$(warning "WARNING: Appending $$K$(1) ($(K$(1))) from $(origin K$(1)) to kernel $$$(1)")
+-
+ ifneq ($(KCPPFLAGS),)
+-        $(call warn-assign,CPPFLAGS)
+         KBUILD_CPPFLAGS += $(KCPPFLAGS)
+ endif
+ ifneq ($(KAFLAGS),)
+-        $(call warn-assign,AFLAGS)
+         KBUILD_AFLAGS += $(KAFLAGS)
+ endif
+ ifneq ($(KCFLAGS),)
+-        $(call warn-assign,CFLAGS)
+         KBUILD_CFLAGS += $(KCFLAGS)
+ endif
+ 
 -- 
 1.6.0.6
 
