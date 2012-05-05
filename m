@@ -1,25 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072Ab2EEUdm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 16:33:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42600 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab2EEUdl (ORCPT
+	id S1756336Ab2EEUfh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 16:35:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50640 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab2EEUfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 16:33:41 -0400
-Subject: Re: 5fbd036b552f633abb394a319f7c62a5c86a9cd7 breaks PA-RISC boot
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.64.1205042305250.18896@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1205042305250.18896@file.rdu.redhat.com>
+	Sat, 5 May 2012 16:35:36 -0400
+Subject: RE: [PATCH] sched: Enable arch-specific asym packing option in
+ sched domain
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Diwakar Tundlam <dtundlam@nvidia.com>
+Cc: "'Ingo Molnar'" <mingo@kernel.org>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Christoph Lameter'" <cl@gentwo.org>,
+        "'Michael Neuling'" <mikey@neuling.org>,
+        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
+        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
+        "'David Rientjes'" <rientjes@google.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+In-Reply-To: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF103@HQMAIL04.nvidia.com>
+References: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF0FF@HQMAIL04.nvidia.com>
+	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF101@HQMAIL04.nvidia.com>
+	 <1336169422.16236.1.camel@twins>
+	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF102@HQMAIL04.nvidia.com>
+	 <1336170586.16236.11.camel@twins>
+	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF103@HQMAIL04.nvidia.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 May 2012 22:33:26 +0200
-Message-ID: <1336250006.2463.139.camel@laptop>
+Date: Sat, 05 May 2012 22:35:17 +0200
+Message-ID: <1336250117.2463.140.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -27,15 +37,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-04 at 23:26 -0400, Mikulas Patocka wrote:
-> Your patch 5fbd036b552f633abb394a319f7c62a5c86a9cd7 breaks PA-RISC boot. I 
-> have a dual-core PA-8800. With the patch applied, the kernel crashes with 
-> these messages. The timer structures are apparently corrupted, as the 
-> timer sees a negative amount of delayed cycles: 
+On Fri, 2012-05-04 at 16:18 -0700, Diwakar Tundlam wrote:
+> 
+> Yes, this is for Nvidia's ARM Quad-core Tegra CPU. It is a single package, organized flatly.
 
-You'll find:
-
-  http://marc.info/?l=linux-parisc&m=133241790810604&w=2
-
-will probably fix the issue.
+Then you don't want to poke at SD_CPU_INIT since thats across packages.
 
