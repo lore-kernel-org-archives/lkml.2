@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354Ab2EETuM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 15:50:12 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53840 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756023Ab2EETuK (ORCPT
+	id S1756206Ab2EEUIH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 16:08:07 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61333 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031Ab2EEUID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 15:50:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 00/02] mach-shmobile: Emma Mobile EV2 - first shot
-Date: Sat, 5 May 2012 19:50:01 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        horms@verge.net.au, linux@arm.linux.org.uk, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lethal@linux-sh.org, olof@lixom.net
-References: <20120503144645.6390.62303.sendpatchset@w520> <201205051921.13209.arnd@arndb.de> <201205052130.21081.rjw@sisk.pl>
-In-Reply-To: <201205052130.21081.rjw@sisk.pl>
+	Sat, 5 May 2012 16:08:03 -0400
+Message-ID: <4FA5889E.2030008@gmail.com>
+Date: Sat, 05 May 2012 13:07:58 -0700
+From: Chase Douglas <chasedouglas@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        chatty@enac.fr, benjamin.tissoires@gmail.com, peter.hutterer@who-t.net,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Input: MT - Include win8 support
+References: <1336230499-1450-1-git-send-email-rydberg@euromail.se>
+In-Reply-To: <1336230499-1450-1-git-send-email-rydberg@euromail.se>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205051950.01887.arnd@arndb.de>
-X-Provags-ID: V02:K0:4FSce1Sc36oCqNkshBOIi+V4oyZsL0X3tYZPMeH71x7
- VpFt0ZGwbl3mmE38BBXrLdEtXWHoHADPDciv+NxXD1ZVAzHWCT
- rHvRK4Asl/R+LIZnTdbxWG8sdM1WSSKqsDdADH1YiDKCNgSwd3
- pW7xEV2eoK6i35FxRn1YA6qh6+pF2rfJvIN8Aot7m8vTileKxH
- H1vp6nwKAdKWf+XbmrhDy+jSVAp10UchurF2brL7LScPLQ/tKv
- EhTC4hbczabePEx8d0Xh18IcuEN3/EEdgNT4MzSpUuO5SMDy7Z
- VNJKsvcse5G/M1bbH+kDWYMUMmKlnZJUK5KApxFivu0ZSIW/GO
- /IhqPBMq7L2jgS9Jk4Rc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 05 May 2012, Rafael J. Wysocki wrote:
-> > All the chips in there so far share a common ancestry and they all use a
-> > significant subset of the same drivers shared with arch/sh: i2c-sh_mobile,
-> > sh-dma-engine, sh_cmt, sh-sci, sh_tmu, intc, pfc and sh_clk. AFAICT, this one
-> > uses none of those and apparently was developed by NEC before the merger with
-> > Renesas.
+On 05/05/2012 08:08 AM, Henrik Rydberg wrote:
+> The newly released HID protocol for win8 input devices is capable of
+> transmitting the same information found in the Apple HID and Linux MT
+> protocols. In addition, it includes an extension useful for touch
+> alignment. This patch completes the MT protocol with the
+> ABS_MT_APPROACH_X/Y events, and documents how to map win8 devices.
 > 
-> I see.  So your opinion is that it may have more in common with the other
-> ARM-based platforms?
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+> Hi all,
+> 
+> In response to the win8 HID protocol and Benjamin's work on this, here
+> is a first draft of the needed extension to the MT protocol. I am
+> cc:ing the usual suspects, as this will affect userland. Comments and
+> criticism expected. :-)
+> 
+> Cheers,
+> Henrik
+> 
+>  Documentation/input/multi-touch-protocol.txt |   35 +++++++++++++++++++++++++-
+>  include/linux/input.h                        |    4 ++-
+>  2 files changed, 37 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/input/multi-touch-protocol.txt b/Documentation/input/multi-touch-protocol.txt
+> index 543101c..504ca6d 100644
+> --- a/Documentation/input/multi-touch-protocol.txt
+> +++ b/Documentation/input/multi-touch-protocol.txt
 
-Not with any one in particular, although there are a lot of similarities between
-recent Cortex-A9 based designs. I just think it would be more logical to put the
-files into a new mach-emma directory in the same way that every other family has
-its own directory.
+[snip]
 
-As I said, I don't mind if you share infrastructure with mach-shmobile, like
-using the same mach/*.h header files, but if you end up sharing actual code,
-it would be nicer to put it into some location where it can also be shared by
-other platforms.
+> @@ -252,6 +254,9 @@ can distinguish between the two axis, but not (uniquely) any values in
+>  between. In such cases, the range of ABS_MT_ORIENTATION should be [0, 1]
+>  [4].
+>  
+> +For devices capable of 360 degree orientation, the reported orientation
+> +should be twice the given range.
 
-	Arnd
+I don't understand what this means. Can you elaborate?
+
+-- Chase
