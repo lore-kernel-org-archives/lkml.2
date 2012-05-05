@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab2EEMxV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 08:53:21 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:52078 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755310Ab2EEMxR (ORCPT
+	id S1755588Ab2EEMxh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 08:53:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65002 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755238Ab2EEMxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 08:53:17 -0400
-Date: Sat, 5 May 2012 05:51:53 -0700
+	Sat, 5 May 2012 08:53:35 -0400
+Date: Sat, 5 May 2012 05:52:11 -0700
 From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-Cc: Mika Westerberg <mika.westerberg@iki.fi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] smb347_charger: Cleanup power supply registration
- code in probe
-Message-ID: <20120505125153.GA31018@lizard>
-References: <1334809818-5958-1-git-send-email-ramakrishna.pallala@intel.com>
- <20120419190820.GB877@mwesterb-mobl.lan>
- <D854C92F57B1B347B57E531E78D05EAD10EC08@BGSMSX102.gar.corp.intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com,
+        bruce.e.robertson@intel.com,
+        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Subject: Re: [PATCH 4/4] power-supply: smb347-charger: convert to regmap API
+Message-ID: <20120505125211.GA31577@lizard>
+References: <1334566121-8243-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1334566121-8243-4-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD10EC08@BGSMSX102.gar.corp.intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1334566121-8243-4-git-send-email-mika.westerberg@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 03:48:35AM +0000, Pallala, Ramakrishna wrote:
-> > Subject: Re: [PATCH v2] smb347_charger: Cleanup power supply registration code in probe
-> > 
-> > On Thu, Apr 19, 2012 at 10:00:18AM +0530, Ramakrishna Pallala wrote:
-> > > This patch checks if the usb or mains charging is enabled by the
-> > > platform before registering with the power supply class.
-> > 
-> > I still don't like the idea of having the power-supplies registered conditionally. Now
-> > you need to check in every place whether the corresponding power-supply is registered or
-> > not which makes the code uglier and more prone to errors.
-
-Yes, I understand. There's a bit more code in the kernel,
-true. But it saves tons of code in userland and makes things
-more reliable for the latter.
-
-> These are the reasons behind this patch submission:
-> 1. if we don't support USB/AC charging don't enable it, saves
-> 	kernel resources and don't give user wrong idea about charging capabilities.
-> 2. if a platform driver or any other chip can do USB/AC charging they will register with PS and
-> 	user/userspace will not get confused b/w two sysfs interfaces.
+On Mon, Apr 16, 2012 at 11:48:41AM +0300, Mika Westerberg wrote:
+> The smb347-charger driver does a lot of read-modify-write to the device
+> registers. Instead of open-coding everything we can take advantage of regmap
+> API which provides nice functions to do this kind of things.
 > 
-> I will leave the decision the Anton.
+> In addition there is no need for custom debugfs file for dumping registers as
+> this is already provided by the regmap API.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+[...]
+>  static int smb347_set_temp_limits(struct smb347_charger *smb)
+> @@ -491,22 +468,13 @@ static int smb347_set_temp_limits(struct smb347_charger *smb)
+>  		val = clamp_val(val, 100, 130) - 100;
+>  		val /= 10;
+>  
+> -		ret = smb347_read(smb, CFG_OTG);
+> -		if (ret < 0)
+> -			return ret;
+> -
+> -		ret &= ~CFG_OTG_TEMP_THRESHOLD_MASK;
+> -		ret |= val << CFG_OTG_TEMP_THRESHOLD_SHIFT;
+> -
+> -		ret = smb347_write(smb, CFG_OTG, ret);
+> +		ret = regmap_update_bits(smb->regmap, CFG_OTG,
+> +					 CFG_OTG_TEMP_THRESHOLD_MASK,
+> +					 val << CFG_OTG_TEMP_THRESHOLD_SHIFT);
+>  		if (ret < 0)
+>  			return ret;
+>  	}
+>  
+> -	ret = smb347_read(smb, CFG_TEMP_LIMIT);
+> -	if (ret < 0)
+> -		return ret;
+> -
 
-Well, as I always said, it was somewhat a mistake to introduce
-'present' property. It was supposed to be something like 'battery
-cells present, if hot-swappable' property.
+FYI, removing these hunks causes the following warning:
 
-If the device itself doesn't have a feature (i.e. no USB
-socket), you should not register it, otherwise userland
-will have to bother detecting actual information (because
-the kernel literally lies to the userland if it registers
-absent hw features).
+  CC      drivers/power/smb347-charger.o
+  drivers/power/smb347-charger.c: In function ‘smb347_set_temp_limits’:
+  drivers/power/smb347-charger.c:462:6: warning: ‘ret’ may be used uninitialized in this function [-Wuninitialized]
 
-So, I'm all for this patch -- it is now applied.
+I fixed this by the following change:
 
-Thank you!
+diff --git a/drivers/power/smb347-charger.c b/drivers/power/smb347-charger.c
+index 1f27d21..cf31b31 100644
+--- a/drivers/power/smb347-charger.c
++++ b/drivers/power/smb347-charger.c
+@@ -459,7 +459,8 @@ static int smb347_set_voltage_limits(struct smb347_charger *smb)
+ static int smb347_set_temp_limits(struct smb347_charger *smb)
+ {
+ 	bool enable_therm_monitor = false;
+-	int ret, val;
++	int ret = 0;
++	int val;
+ 
+ 	if (smb->pdata->chip_temp_threshold) {
+ 		val = smb->pdata->chip_temp_threshold;
+
+Please check if that's all OK.
+
+Thanks!
 
 -- 
 Anton Vorontsov
