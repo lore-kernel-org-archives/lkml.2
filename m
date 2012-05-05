@@ -1,74 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab2EEPJP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 11:09:15 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:33453 "HELO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756199Ab2EEPJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756312Ab2EEPJM (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 5 May 2012 11:09:12 -0400
-Message-ID: <4FA54292.5000102@fold.natur.cuni.cz>
-Date: Sat, 05 May 2012 17:09:06 +0200
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120319 Firefox/11.0 SeaMonkey/2.8
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Paul Bolle <pebolle@tiscali.nl>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: also announce bcdDevice
-References: <1336218719.8450.19.camel@x61.thuisdomein> <4FA519B3.9030901@fold.natur.cuni.cz> <20120505145224.GA27469@kroah.com>
-In-Reply-To: <20120505145224.GA27469@kroah.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Received: from www.linutronix.de ([62.245.132.108]:33141 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756035Ab2EEPFo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 May 2012 11:05:44 -0400
+Message-Id: <20120505150141.559556763@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Sat, 05 May 2012 15:05:42 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: x86@kernel.org
+Subject: [patch 05/18] x86: Use common threadinfo allocator
+References: <20120505150007.543515803@linutronix.de>
+Content-Disposition: inline; filename=x86-use-common-threadinfo-allocator.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman wrote:
-> On Sat, May 05, 2012 at 02:14:43PM +0200, Martin Mokrejs wrote:
->> Paul Bolle wrote:
->>> Currently announce_device() does print the idVendor and idProduct values
->>> but does not print the bcdDevice value. USB devices are accurately
->>> identified by all three values. See, for instance, the USB storage
->>> quirks which will only apply for a certain (range of) bcdDevice
->>> value(s). So it seems useful to also print bcdDevice when announcing USB
->>> devices.
->>
->> Could it also report negotiated speed? full-speed, high-speed, super-speed?
-> 
-> All of this, including the bcdDevice, can be found in sysfs.  So I don't
-> want to take this patch, otherwise we would be just adding more and more
-> to the kernel log.
-> 
-> If you programatically want to find this out, use libudev or listen to
-> the dbus messages for new devices, don't watch the kernel log messages.
+The only difference is the free_thread_info function, which frees
+xstate.
 
-Hmm, but when you go through your syslog/dmesg lines especially in case of
-USB devices which you swap in and out quite often, it is too late to lookup
-some file elsewhere which relates to *current* device. The information
-is lost already if you changed device meanwhile. You just realize USB disk
-disconnected but you have not way find out except from the log files what
-speed did it use. In case of USB3 devices capable of lower speeds it is
-quite important. Some just claim USB3 capabilities (on the package box)
-but in real, always end up at high-speed only.
+Use the new arch_release_task_struct() function instead and switch
+over to the core allocator.
 
-For me testing several USB disks, USB to SATA bridges, host controllers,
-kernel command-lines ... it is way to much work. Having the USB debug
-enabled, especially XHCI_HCD_DEBUG gives on the other had too much output
-for daily use but as this is all stuff prone to fail somewhere and at some
-point I keep it enabled.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: x86@kernel.org
+---
+ arch/x86/include/asm/boot.h          |    2 +-
+ arch/x86/include/asm/page_32_types.h |    4 ++--
+ arch/x86/include/asm/page_64_types.h |    4 ++--
+ arch/x86/include/asm/thread_info.h   |   20 +-------------------
+ arch/x86/kernel/irq_32.c             |    8 ++++----
+ arch/x86/kernel/process.c            |    5 ++---
+ 6 files changed, 12 insertions(+), 31 deletions(-)
 
-I don't think it clutters syslog nor that it adds significant extra size
-to the output. It would save people from enabling debug just because of this.
-And no, average linux user never never lookup sysfs nor use libudev, really.
-Still, the link speed is of interest to everybody fiddling with the stuff
-and wondering why the damn thing is so slow or why did it disconnect. It gives
-an answer or at least a hint.
+Index: tip/arch/x86/include/asm/boot.h
+===================================================================
+--- tip.orig/arch/x86/include/asm/boot.h
++++ tip/arch/x86/include/asm/boot.h
+@@ -19,7 +19,7 @@
+ #ifdef CONFIG_X86_64
+ #define MIN_KERNEL_ALIGN_LG2	PMD_SHIFT
+ #else
+-#define MIN_KERNEL_ALIGN_LG2	(PAGE_SHIFT + THREAD_ORDER)
++#define MIN_KERNEL_ALIGN_LG2	(PAGE_SHIFT + THREAD_SIZE_ORDER)
+ #endif
+ #define MIN_KERNEL_ALIGN	(_AC(1, UL) << MIN_KERNEL_ALIGN_LG2)
+ 
+Index: tip/arch/x86/include/asm/page_32_types.h
+===================================================================
+--- tip.orig/arch/x86/include/asm/page_32_types.h
++++ tip/arch/x86/include/asm/page_32_types.h
+@@ -15,8 +15,8 @@
+  */
+ #define __PAGE_OFFSET		_AC(CONFIG_PAGE_OFFSET, UL)
+ 
+-#define THREAD_ORDER	1
+-#define THREAD_SIZE 	(PAGE_SIZE << THREAD_ORDER)
++#define THREAD_SIZE_ORDER	1
++#define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
+ 
+ #define STACKFAULT_STACK 0
+ #define DOUBLEFAULT_STACK 1
+Index: tip/arch/x86/include/asm/page_64_types.h
+===================================================================
+--- tip.orig/arch/x86/include/asm/page_64_types.h
++++ tip/arch/x86/include/asm/page_64_types.h
+@@ -1,8 +1,8 @@
+ #ifndef _ASM_X86_PAGE_64_DEFS_H
+ #define _ASM_X86_PAGE_64_DEFS_H
+ 
+-#define THREAD_ORDER	1
+-#define THREAD_SIZE  (PAGE_SIZE << THREAD_ORDER)
++#define THREAD_SIZE_ORDER	1
++#define THREAD_SIZE  (PAGE_SIZE << THREAD_SIZE_ORDER)
+ #define CURRENT_MASK (~(THREAD_SIZE - 1))
+ 
+ #define EXCEPTION_STACK_ORDER 0
+Index: tip/arch/x86/include/asm/thread_info.h
+===================================================================
+--- tip.orig/arch/x86/include/asm/thread_info.h
++++ tip/arch/x86/include/asm/thread_info.h
+@@ -155,24 +155,6 @@ struct thread_info {
+ 
+ #define PREEMPT_ACTIVE		0x10000000
+ 
+-/* thread information allocation */
+-#ifdef CONFIG_DEBUG_STACK_USAGE
+-#define THREAD_FLAGS (GFP_KERNEL | __GFP_NOTRACK | __GFP_ZERO)
+-#else
+-#define THREAD_FLAGS (GFP_KERNEL | __GFP_NOTRACK)
+-#endif
+-
+-#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR
+-
+-#define alloc_thread_info_node(tsk, node)				\
+-({									\
+-	struct page *page = alloc_pages_node(node, THREAD_FLAGS,	\
+-					     THREAD_ORDER);		\
+-	struct thread_info *ret = page ? page_address(page) : NULL;	\
+-									\
+-	ret;								\
+-})
+-
+ #ifdef CONFIG_X86_32
+ 
+ #define STACK_WARN	(THREAD_SIZE/8)
+@@ -282,7 +264,7 @@ static inline bool is_ia32_task(void)
+ 
+ #ifndef __ASSEMBLY__
+ extern void arch_task_cache_init(void);
+-extern void free_thread_info(struct thread_info *ti);
+ extern int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src);
++extern void arch_release_task_struct(struct task_struct *tsk);
+ #endif
+ #endif /* _ASM_X86_THREAD_INFO_H */
+Index: tip/arch/x86/kernel/irq_32.c
+===================================================================
+--- tip.orig/arch/x86/kernel/irq_32.c
++++ tip/arch/x86/kernel/irq_32.c
+@@ -127,8 +127,8 @@ void __cpuinit irq_ctx_init(int cpu)
+ 		return;
+ 
+ 	irqctx = page_address(alloc_pages_node(cpu_to_node(cpu),
+-					       THREAD_FLAGS,
+-					       THREAD_ORDER));
++					       THREADINFO_GFP,
++					       THREAD_SIZE_ORDER));
+ 	memset(&irqctx->tinfo, 0, sizeof(struct thread_info));
+ 	irqctx->tinfo.cpu		= cpu;
+ 	irqctx->tinfo.preempt_count	= HARDIRQ_OFFSET;
+@@ -137,8 +137,8 @@ void __cpuinit irq_ctx_init(int cpu)
+ 	per_cpu(hardirq_ctx, cpu) = irqctx;
+ 
+ 	irqctx = page_address(alloc_pages_node(cpu_to_node(cpu),
+-					       THREAD_FLAGS,
+-					       THREAD_ORDER));
++					       THREADINFO_GFP,
++					       THREAD_SIZE_ORDER));
+ 	memset(&irqctx->tinfo, 0, sizeof(struct thread_info));
+ 	irqctx->tinfo.cpu		= cpu;
+ 	irqctx->tinfo.addr_limit	= MAKE_MM_SEG(0);
+Index: tip/arch/x86/kernel/process.c
+===================================================================
+--- tip.orig/arch/x86/kernel/process.c
++++ tip/arch/x86/kernel/process.c
+@@ -76,10 +76,9 @@ void free_thread_xstate(struct task_stru
+ 	fpu_free(&tsk->thread.fpu);
+ }
+ 
+-void free_thread_info(struct thread_info *ti)
++void arch_release_task_struct(struct task_struct *tsk)
+ {
+-	free_thread_xstate(ti->task);
+-	free_pages((unsigned long)ti, THREAD_ORDER);
++	free_thread_xstate(tsk);
+ }
+ 
+ void arch_task_cache_init(void)
 
-And if it is not enough to identify a device based on idVendor and idProduct
-but one needs also bcdDevice, why not to print it?
 
-
-Thanks,
-Martin
