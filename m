@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676Ab2EEOqR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 10:46:17 -0400
-Received: from ironport-out.teksavvy.com ([206.248.143.162]:63186 "EHLO
-	ironport-out.teksavvy.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab2EEOqQ (ORCPT
+	id S1755813Ab2EEOw2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 10:52:28 -0400
+Received: from mail-pz0-f45.google.com ([209.85.210.45]:57757 "EHLO
+	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755717Ab2EEOw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 10:46:16 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBACxOgk8Y9geI/2dsb2JhbAANNoVztlABAQEBAyNVARALGAICBRYLAgIJAwIBAgFFBg0BBQIBAbQkihiBL44TgRgEqSU
-X-IronPort-AV: E=Sophos;i="4.75,391,1330923600"; 
-   d="scan'208";a="178468559"
-Message-ID: <4FA53D36.8090609@teksavvy.com>
-Date: Sat, 05 May 2012 10:46:14 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Sat, 5 May 2012 10:52:26 -0400
+Date: Sat, 5 May 2012 07:52:24 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: Paul Bolle <pebolle@tiscali.nl>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: also announce bcdDevice
+Message-ID: <20120505145224.GA27469@kroah.com>
+References: <1336218719.8450.19.camel@x61.thuisdomein>
+ <4FA519B3.9030901@fold.natur.cuni.cz>
 MIME-Version: 1.0
-To: Chris Jones <chrisjones@spin.net.au>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Hard drive detection
-References: <20120504185604.3addfd2e@ubuntu> <4FA3D60F.9090601@teksavvy.com> <20120505093000.1d9789dd@ubuntu> <4FA4959F.2000905@teksavvy.com> <20120505140005.19247cd0@ubuntu>
-In-Reply-To: <20120505140005.19247cd0@ubuntu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA519B3.9030901@fold.natur.cuni.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-05-05 12:00 AM, Chris Jones wrote:
-> On Fri, 04 May 2012 22:51:11 -0400
-> Mark Lord <kernel@teksavvy.com> wrote:
+On Sat, May 05, 2012 at 02:14:43PM +0200, Martin Mokrejs wrote:
+> Paul Bolle wrote:
+> > Currently announce_device() does print the idVendor and idProduct values
+> > but does not print the bcdDevice value. USB devices are accurately
+> > identified by all three values. See, for instance, the USB storage
+> > quirks which will only apply for a certain (range of) bcdDevice
+> > value(s). So it seems useful to also print bcdDevice when announcing USB
+> > devices.
 > 
->> On 12-05-04 07:30 PM, Chris Jones wrote:
->> ..
->>> Thanks Mark. That's exactly what I was looking for. And are both
->>> PATA and SATA internal drives both located in drivers/ata?
->> ..
->>
->> Yes.
->> But historically, PATA drives were handled by the original IDE drivers
->> that I worked on in the mid-1990s.  That code is in linux/drivers/ide,
->> but we're trying hard to phase it out.  The code in linux/drivers/ata
->> (aka. "libata") handles nearly all of the same PATA stuff and more.
->>
-> 
-> Yeah I remember reading something a while back about all the
-> IDE/PATA support being migrated to the SATA sets and phasing out the
-> legacy IDE stuff.
-> 
-> So technically, the old IDE sets could be removed with no negative
-> effect on a modern system? Correct?
+> Could it also report negotiated speed? full-speed, high-speed, super-speed?
 
-That's how I do it here.  So, yes.
+All of this, including the bcdDevice, can be found in sysfs.  So I don't
+want to take this patch, otherwise we would be just adding more and more
+to the kernel log.
 
+If you programatically want to find this out, use libudev or listen to
+the dbus messages for new devices, don't watch the kernel log messages.
+
+thanks,
+
+greg k-h
