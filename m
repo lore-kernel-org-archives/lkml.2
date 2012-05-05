@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab2EERXy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 13:23:54 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:35012 "EHLO relay.sw.ru"
+	id S1757632Ab2EERYI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 13:24:08 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:10896 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757214Ab2EERXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 13:23:52 -0400
-Subject: [PATCH RFC 03/13] LockD: manage garbage collection timeout per
-	networks namespace
+	id S1757214Ab2EERYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 May 2012 13:24:06 -0400
+Subject: [PATCH RFC 05/13] Lockd: host complaining function introduced
 To: bfields@fieldses.org, Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Sat, 05 May 2012 21:21:54 +0400
-Message-ID: <20120505172154.11559.40761.stgit@localhost.localdomain>
+Date: Sat, 05 May 2012 21:22:08 +0400
+Message-ID: <20120505172208.11559.61956.stgit@localhost.localdomain>
 In-Reply-To: <20120505170722.11559.74503.stgit@localhost.localdomain>
 References: <20120505170722.11559.74503.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -23,76 +22,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves next_gc to per-net data.
-
-Note: passed network can be NULL (when Lockd kthread is exiting of Lockd
-module is removing).
+Just a small cleanup.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/lockd/host.c  |   12 +++++++++---
- fs/lockd/netns.h |    1 +
- 2 files changed, 10 insertions(+), 3 deletions(-)
+ fs/lockd/host.c |   57 +++++++++++++++++++++++++++++--------------------------
+ 1 files changed, 30 insertions(+), 27 deletions(-)
 
 diff --git a/fs/lockd/host.c b/fs/lockd/host.c
-index 991274a..3636734 100644
+index 6c56090..8cbf53d 100644
 --- a/fs/lockd/host.c
 +++ b/fs/lockd/host.c
-@@ -21,6 +21,8 @@
+@@ -572,6 +572,35 @@ void nlm_host_rebooted(const struct nlm_reboot *info)
+ 	nsm_release(nsm);
+ }
  
- #include <net/ipv6.h>
- 
-+#include "netns.h"
++static void nlm_complain_hosts(struct net *net)
++{
++	struct hlist_head *chain;
++	struct hlist_node *pos;
++	struct nlm_host	*host;
 +
- #define NLMDBG_FACILITY		NLMDBG_HOSTCACHE
- #define NLM_HOST_NRHASH		32
- #define NLM_HOST_REBIND		(60 * HZ)
-@@ -41,7 +43,6 @@ static struct hlist_head	nlm_client_hosts[NLM_HOST_NRHASH];
- 		hlist_for_each_entry_safe((host), (pos), (next), \
- 						(chain), h_hash)
- 
--static unsigned long		next_gc;
- static unsigned long		nrhosts;
- static DEFINE_MUTEX(nlm_host_mutex);
- 
-@@ -337,6 +338,7 @@ struct nlm_host *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
- 		.hostname_len	= hostname_len,
- 		.net		= net,
- 	};
-+	struct lockd_net *ln = net_generic(net, lockd_net_id);
- 
- 	dprintk("lockd: %s(host='%*s', vers=%u, proto=%s)\n", __func__,
- 			(int)hostname_len, hostname, rqstp->rq_vers,
-@@ -344,7 +346,7 @@ struct nlm_host *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
- 
- 	mutex_lock(&nlm_host_mutex);
- 
--	if (time_after_eq(jiffies, next_gc))
-+	if (time_after_eq(jiffies, ln->next_gc))
- 		nlm_gc_hosts(net);
- 
- 	chain = &nlm_server_hosts[nlm_hash_address(ni.sap)];
-@@ -653,5 +655,9 @@ nlm_gc_hosts(struct net *net)
- 		nlm_destroy_host_locked(host);
- 	}
- 
--	next_gc = jiffies + NLM_HOST_COLLECT;
 +	if (net) {
 +		struct lockd_net *ln = net_generic(net, lockd_net_id);
 +
-+		ln->next_gc = jiffies + NLM_HOST_COLLECT;
++		if (ln->nrhosts == 0)
++			return;
++		printk(KERN_WARNING "lockd: couldn't shutdown host module for net %p!\n", net);
++		dprintk("lockd: %lu hosts left in net %p:\n", ln->nrhosts, net);
++	} else {
++		if (nrhosts == 0)
++			return;
++		printk(KERN_WARNING "lockd: couldn't shutdown host module!\n");
++		dprintk("lockd: %lu hosts left:\n", nrhosts);
 +	}
++
++	for_each_host(host, pos, chain, nlm_server_hosts) {
++		if (net && host->net != net)
++			continue;
++		dprintk("       %s (cnt %d use %d exp %ld net %p)\n",
++			host->h_name, atomic_read(&host->h_count),
++			host->h_inuse, host->h_expires, host->net);
++	}
++}
++
+ void
+ nlm_shutdown_hosts_net(struct net *net)
+ {
+@@ -598,18 +627,7 @@ nlm_shutdown_hosts_net(struct net *net)
+ 	nlm_gc_hosts(net);
+ 	mutex_unlock(&nlm_host_mutex);
+ 
+-	/* complain if any hosts are left */
+-	if (net) {
+-		struct lockd_net *ln = net_generic(net, lockd_net_id);
+-
+-		printk(KERN_WARNING "lockd: couldn't shutdown host module for net %p!\n", net);
+-		dprintk("lockd: %lu hosts left in net %p:\n", ln->nrhosts, net);
+-		for_each_host(host, pos, chain, nlm_server_hosts) {
+-			dprintk("       %s (cnt %d use %d exp %ld net %p)\n",
+-				host->h_name, atomic_read(&host->h_count),
+-				host->h_inuse, host->h_expires, host->net);
+-		}
+-	}
++	nlm_complain_hosts(net);
  }
-diff --git a/fs/lockd/netns.h b/fs/lockd/netns.h
-index ce227e0..97c6c77 100644
---- a/fs/lockd/netns.h
-+++ b/fs/lockd/netns.h
-@@ -5,6 +5,7 @@
  
- struct lockd_net {
- 	unsigned int nlmsvc_users;
-+	unsigned long next_gc;
- };
+ /*
+@@ -619,22 +637,7 @@ nlm_shutdown_hosts_net(struct net *net)
+ void
+ nlm_shutdown_hosts(void)
+ {
+-	struct hlist_head *chain;
+-	struct hlist_node *pos;
+-	struct nlm_host	*host;
+-
+ 	nlm_shutdown_hosts_net(NULL);
+-
+-	/* complain if any hosts are left */
+-	if (nrhosts != 0) {
+-		printk(KERN_WARNING "lockd: couldn't shutdown host module!\n");
+-		dprintk("lockd: %lu hosts left:\n", nrhosts);
+-		for_each_host(host, pos, chain, nlm_server_hosts) {
+-			dprintk("       %s (cnt %d use %d exp %ld net %p)\n",
+-				host->h_name, atomic_read(&host->h_count),
+-				host->h_inuse, host->h_expires, host->net);
+-		}
+-	}
+ }
  
- extern int lockd_net_id;
+ /*
 
