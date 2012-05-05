@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab2EEPF4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 11:05:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50396 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756208Ab2EEPFt (ORCPT
+	id S1756624Ab2EEPFy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 11:05:54 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33176 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756228Ab2EEPFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 5 May 2012 11:05:49 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: torvalds@linux-foundation.org
-Cc: chuck.lever@oracle.com, linux@razik.name, Trond.Myklebust@netapp.com,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH] init: don't try mounting device as nfs root unless type fully matches
-Date: Sat,  5 May 2012 17:06:35 +0200
-Message-Id: <1336230395-5215-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.5
+Message-Id: <20120505150142.252861878@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Sat, 05 May 2012 15:05:47 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Subject: [patch 16/18] sparc: Use common threadinfo allocator
+References: <20120505150007.543515803@linutronix.de>
+Content-Disposition: inline;
+ filename=sparc-use-common-threadinfo-allocator.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we'll try mounting any device who's major device number is
-UNNAMED_MAJOR as NFS root. This would happen for non-NFS devices as well (such
-as 9p devices) but it wouldn't cause any issues since mounting the device
-as NFS would fail quickly and the code proceeded to doing the proper mount:
+Exaclty the same as the core code.
 
-       [  101.522716] VFS: Unable to mount root fs via NFS, trying floppy.
-       [  101.534499] VFS: Mounted root (9p filesystem) on device 0:18.
-
-Commit 6829a048 ("NFS: Retry mounting NFSROOT") has introduced retries when
-mounting NFS root, which means that now we don't immediately fail and instead
-it takes an additional 90+ seconds until we stop retrying, which has revealed
-the issue this patch fixes.
-
-This meant that it would take an additional 90 seconds to boot when we're not
-using a device type which gets detected in order before NFS.
-
-This patch modifies the NFS type check to require device type to be
-'Root_NFS' instead of requiring the device to have an UNNAMED_MAJOR major.
-This makes boot process cleaner since we now won't go through the NFS mounting
-code at all when the device isn't an NFS root ("/dev/nfs").
-
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
- init/do_mounts.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/sparc/include/asm/thread_info_64.h |   25 ++-----------------------
+ 1 file changed, 2 insertions(+), 23 deletions(-)
 
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 8dfa0de..d3f0aee 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -482,7 +482,7 @@ void __init change_floppy(char *fmt, ...)
- void __init mount_root(void)
- {
- #ifdef CONFIG_ROOT_NFS
--	if (MAJOR(ROOT_DEV) == UNNAMED_MAJOR) {
-+	if (ROOT_DEV == Root_NFS) {
- 		if (mount_nfs_root())
- 			return;
+Index: tip/arch/sparc/include/asm/thread_info_64.h
+===================================================================
+--- tip.orig/arch/sparc/include/asm/thread_info_64.h
++++ tip/arch/sparc/include/asm/thread_info_64.h
+@@ -138,32 +138,11 @@ register struct thread_info *current_thr
  
--- 
-1.7.8.5
+ /* thread information allocation */
+ #if PAGE_SHIFT == 13
+-#define __THREAD_INFO_ORDER	1
++#define THREAD_SIZE_ORDER	1
+ #else /* PAGE_SHIFT == 13 */
+-#define __THREAD_INFO_ORDER	0
++#define THREAD_SIZE_ORDER	0
+ #endif /* PAGE_SHIFT == 13 */
+ 
+-#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR
+-
+-#ifdef CONFIG_DEBUG_STACK_USAGE
+-#define THREAD_FLAGS (GFP_KERNEL | __GFP_ZERO)
+-#else
+-#define THREAD_FLAGS (GFP_KERNEL)
+-#endif
+-
+-#define alloc_thread_info_node(tsk, node)				\
+-({									\
+-	struct page *page = alloc_pages_node(node, THREAD_FLAGS,	\
+-					     __THREAD_INFO_ORDER);	\
+-	struct thread_info *ret;					\
+-									\
+-	ret = page ? page_address(page) : NULL;				\
+-	ret;								\
+-})
+-
+-#define free_thread_info(ti) \
+-	free_pages((unsigned long)(ti),__THREAD_INFO_ORDER)
+-
+ #define __thread_flag_byte_ptr(ti)	\
+ 	((unsigned char *)(&((ti)->flags)))
+ #define __cur_thread_flag_byte_ptr	__thread_flag_byte_ptr(current_thread_info())
+
 
