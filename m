@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268Ab2EEPFt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 11:05:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33133 "EHLO
+	id S1756634Ab2EEPG5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 11:06:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33170 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755847Ab2EEPFo (ORCPT
+	with ESMTP id S1756170Ab2EEPFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 11:05:44 -0400
-Message-Id: <20120505150141.681236240@linutronix.de>
+	Sat, 5 May 2012 11:05:48 -0400
+Message-Id: <20120505150142.189348931@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Sat, 05 May 2012 15:05:43 -0000
+Date: Sat, 05 May 2012 15:05:46 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Subject: [patch 07/18] cris: Use common threadinfo allocator
+Cc: Paul Mundt <lethal@linux-sh.org>
+Subject: [patch 15/18] sh: Use common threadinfo allocator
 References: <20120505150007.543515803@linutronix.de>
-Content-Disposition: inline;
- filename=cris-use-common-threadinfo-allocator.patch
+Content-Disposition: inline; filename=sh-use-common-threadinfo-allocator.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -24,55 +23,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no functional difference. __get_free_pages() ends up calling
-alloc_pages_node().
+The core now has a threadinfo allocator which uses a kmemcache when
+THREAD_SIZE < PAGE_SIZE.
 
-This also allocates only one page which matches THREAD_SIZE instead of
-an extra page for nothing.
+Deal with the xstate cleanup in the new arch_release_task_struct()
+function.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
 ---
- arch/cris/include/asm/processor.h   |    5 ++---
- arch/cris/include/asm/thread_info.h |    6 ------
- 2 files changed, 2 insertions(+), 9 deletions(-)
+ arch/sh/include/asm/thread_info.h |   10 --------
+ arch/sh/kernel/process.c          |   46 +-------------------------------------
+ 2 files changed, 3 insertions(+), 53 deletions(-)
 
-Index: tip/arch/cris/include/asm/processor.h
+Index: tip/arch/sh/include/asm/thread_info.h
 ===================================================================
---- tip.orig/arch/cris/include/asm/processor.h
-+++ tip/arch/cris/include/asm/processor.h
-@@ -25,13 +25,12 @@ struct task_struct;
-  */
- #define TASK_UNMAPPED_BASE      (PAGE_ALIGN(TASK_SIZE / 3))
+--- tip.orig/arch/sh/include/asm/thread_info.h
++++ tip/arch/sh/include/asm/thread_info.h
+@@ -88,21 +88,13 @@ static inline struct thread_info *curren
+ 	return ti;
+ }
  
--/* THREAD_SIZE is the size of the task_struct/kernel_stack combo.
-+/* THREAD_SIZE is the size of the thread_info/kernel_stack combo.
-  * normally, the stack is found by doing something like p + THREAD_SIZE
-  * in CRIS, a page is 8192 bytes, which seems like a sane size
-  */
+-/* thread information allocation */
+-#if THREAD_SHIFT >= PAGE_SHIFT
 -
- #define THREAD_SIZE       PAGE_SIZE
--#define KERNEL_STACK_SIZE PAGE_SIZE
-+#define THREAD_SIZE_ORDER (0)
+ #define THREAD_SIZE_ORDER	(THREAD_SHIFT - PAGE_SHIFT)
  
- /*
-  * At user->kernel entry, the pt_regs struct is stacked on the top of the kernel-stack.
-Index: tip/arch/cris/include/asm/thread_info.h
-===================================================================
---- tip.orig/arch/cris/include/asm/thread_info.h
-+++ tip/arch/cris/include/asm/thread_info.h
-@@ -65,12 +65,6 @@ struct thread_info {
- 
- #define init_thread_info	(init_thread_union.thread_info)
+-#endif
+-
+-extern struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node);
+-extern void free_thread_info(struct thread_info *ti);
+ extern void arch_task_cache_init(void);
+ extern int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src);
++extern void arch_release_task_struct(struct task_struct *tsk);
+ extern void init_thread_xstate(void);
  
 -#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR
--/* thread information allocation */
--#define alloc_thread_info_node(tsk, node)	\
--	((struct thread_info *) __get_free_pages(GFP_KERNEL, 1))
--#define free_thread_info(ti) free_pages((unsigned long) (ti), 1)
 -
- #endif /* !__ASSEMBLY__ */
+ #endif /* __ASSEMBLY__ */
  
  /*
+Index: tip/arch/sh/kernel/process.c
+===================================================================
+--- tip.orig/arch/sh/kernel/process.c
++++ tip/arch/sh/kernel/process.c
+@@ -29,52 +29,10 @@ void free_thread_xstate(struct task_stru
+ 	}
+ }
+ 
+-#if THREAD_SHIFT < PAGE_SHIFT
+-static struct kmem_cache *thread_info_cache;
+-
+-struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node)
+-{
+-	struct thread_info *ti;
+-#ifdef CONFIG_DEBUG_STACK_USAGE
+-	gfp_t mask = GFP_KERNEL | __GFP_ZERO;
+-#else
+-	gfp_t mask = GFP_KERNEL;
+-#endif
+-
+-	ti = kmem_cache_alloc_node(thread_info_cache, mask, node);
+-	return ti;
+-}
+-
+-void free_thread_info(struct thread_info *ti)
+-{
+-	free_thread_xstate(ti->task);
+-	kmem_cache_free(thread_info_cache, ti);
+-}
+-
+-void thread_info_cache_init(void)
+-{
+-	thread_info_cache = kmem_cache_create("thread_info", THREAD_SIZE,
+-					      THREAD_SIZE, SLAB_PANIC, NULL);
+-}
+-#else
+-struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node)
+-{
+-#ifdef CONFIG_DEBUG_STACK_USAGE
+-	gfp_t mask = GFP_KERNEL | __GFP_ZERO;
+-#else
+-	gfp_t mask = GFP_KERNEL;
+-#endif
+-	struct page *page = alloc_pages_node(node, mask, THREAD_SIZE_ORDER);
+-
+-	return page ? page_address(page) : NULL;
+-}
+-
+-void free_thread_info(struct thread_info *ti)
++void arch_release_task_struct(struct task_struct *tsk)
+ {
+-	free_thread_xstate(ti->task);
+-	free_pages((unsigned long)ti, THREAD_SIZE_ORDER);
++	free_thread_xstate(tsk);
+ }
+-#endif /* THREAD_SHIFT < PAGE_SHIFT */
+ 
+ void arch_task_cache_init(void)
+ {
 
 
