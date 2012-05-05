@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab2EEMCE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 08:02:04 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:34607 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755250Ab2EEMCB (ORCPT
+	id S1755413Ab2EEMHa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 08:07:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38656 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755340Ab2EEMH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 08:02:01 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: dmitry.torokhov@gmail.com, axel.lin@gmail.com, riyer@nvidia.com,
-        michael.hennerich@analog.com, grant.likely@secretlab.ca,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, devicetree-discuss@lists.ozlabs.org,
-        rob.herring@calxeda.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RESEND v3 2/2] ARM: LPC32xx: Make platform use key driver
-Date: Sat,  5 May 2012 14:01:42 +0200
-Message-Id: <1336219302-27836-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.9
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Sat, 5 May 2012 08:07:29 -0400
+Date: Sat, 5 May 2012 05:06:06 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Arun MURTHY <arun.murthy@stericsson.com>
+Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Karl KOMIEROWSKI <karl.komierowski@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 1/3] power/ab8500_charger: harden platform data check
+Message-ID: <20120505120605.GB20875@lizard>
+References: <1334304949-18301-1-git-send-email-linus.walleij@stericsson.com>
+ <F45880696056844FA6A73F415B568C695929A08445@EXDCVYMBSTM006.EQ1STM.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <F45880696056844FA6A73F415B568C695929A08445@EXDCVYMBSTM006.EQ1STM.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch connects the lpc32xx-key driver to the LPC32xx platform (via
-lpc32xx.dtsi), and more specifically to the reference board via its dts file.
-The clock.c file needs to be changed to match the automatic device name to its
-clock.
+On Fri, Apr 13, 2012 at 10:42:59AM +0200, Arun MURTHY wrote:
+> > From: Linus Walleij <linus.walleij@linaro.org>
+> > 
+> > If no platform data at all is supplied the driver crashes,
+> > extend the checks to be more careful so we can compile in the
+> > driver and boot also without platform data present.
+> > 
+> > Cc: Arun Murthy <arun.murthy@stericsson.com>
+> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> > ---
+> 
+> Acked-by: Arun Murthy <arun.murthy@stericsson.com>
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+Thanks guys, all three patches now applied!
 
----
-Applies to v3.4-rc5 + LPC32xx DT patches
-
-Please pick this patch for the arm-soc subsystem.
-
-Changes since v2:
-* DT: Use "keypad,num-rows", "keypad,num-columns" and "linux,keymap" properties
-
- arch/arm/boot/dts/lpc32xx.dtsi |    2 ++
- arch/arm/boot/dts/phy3250.dts  |    9 +++++++++
- arch/arm/mach-lpc32xx/clock.c  |    2 +-
- 3 files changed, 12 insertions(+), 1 deletion(-)
-
---- linux-2.6.orig/arch/arm/boot/dts/lpc32xx.dtsi
-+++ linux-2.6/arch/arm/boot/dts/lpc32xx.dtsi
-@@ -285,6 +285,8 @@
- 			key@40050000 {
- 				compatible = "nxp,lpc3220-key";
- 				reg = <0x40050000 0x1000>;
-+				interrupts = <54 0>;
-+				status = "disable";
- 			};
- 
- 		};
---- linux-2.6.orig/arch/arm/boot/dts/phy3250.dts
-+++ linux-2.6/arch/arm/boot/dts/phy3250.dts
-@@ -135,6 +135,15 @@
- 			tsc@40048000 {
- 				status = "okay";
- 			};
-+
-+			key@40050000 {
-+				status = "okay";
-+				keypad,num-rows = <1>;
-+				keypad,num-columns = <1>;
-+				nxp,debounce-delay-ms = <3>;
-+				nxp,scan-delay-ms = <34>;
-+				linux,keymap = <0x00000002>;
-+			};
- 		};
- 	};
- 
---- linux-2.6.orig/arch/arm/mach-lpc32xx/clock.c
-+++ linux-2.6/arch/arm/mach-lpc32xx/clock.c
-@@ -1131,7 +1131,7 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_INIT("31020300.i2c", NULL, &clk_i2c2),
- 	CLKDEV_INIT("dev:ssp0", NULL, &clk_ssp0),
- 	CLKDEV_INIT("dev:ssp1", NULL, &clk_ssp1),
--	CLKDEV_INIT("lpc32xx_keys.0", NULL, &clk_kscan),
-+	CLKDEV_INIT("40050000.key", NULL, &clk_kscan),
- 	CLKDEV_INIT("lpc32xx-nand.0", "nand_ck", &clk_nand),
- 	CLKDEV_INIT("200b0000.flash", "nand_ck_mlc", &clk_nand_mlc),
- 	CLKDEV_INIT("40048000.adc", NULL, &clk_adc),
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
