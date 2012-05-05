@@ -1,114 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab2EEAcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 20:32:13 -0400
-Received: from mail-pz0-f45.google.com ([209.85.210.45]:36224 "EHLO
-	mail-pz0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758411Ab2EEAcM (ORCPT
+	id S1760772Ab2EEAfw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 20:35:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41709 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757723Ab2EEAfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 20:32:12 -0400
-Date: Fri, 4 May 2012 17:32:08 -0700
+	Fri, 4 May 2012 20:35:51 -0400
+Date: Fri, 4 May 2012 17:35:47 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Preston Fick <pffick@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        preston.fick@silabs.com,
-        "linux-arm-kernel@lists.arm.linux.org.uk" 
-	<linux-arm-kernel@lists.arm.linux.org.uk>
-Subject: Re: [PATCH] usb: cp210x: Added support for GPIO (CP2103/4/5)
-Message-ID: <20120505003208.GA30718@kroah.com>
-References: <1335817637-2862-1-git-send-email-preston.fick@silabs.com>
- <20120503213456.77c55c51@pyramind.ukuu.org.uk>
+To: Francois Rigaut <frigaut@gmail.com>
+Cc: linux-pci@vger.kernel.org,
+        Nico Schottelius <nico-linux-20120419@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Linux Support for Thunderbolt using Apple Monitor
+Message-ID: <20120505003547.GA14166@kroah.com>
+References: <20120502163629.GE928@schottelius.org>
+ <20120502202509.GA26798@kroah.com>
+ <20120503065003.GB13386@schottelius.org>
+ <CAMVeQ8qYu4bShd_+pwRv8bShhusJMDa-jjoqu7EujS4jt7RSNA@mail.gmail.com>
+ <20120503153547.GD20334@kroah.com>
+ <CAMVeQ8q3PMMGmFSgrnqbW2HVdfmN+LgatX3TSfv5_2Ebuuj=QQ@mail.gmail.com>
+ <20120503233858.GA13453@kroah.com>
+ <4FA358ED.1080705@gmail.com>
+ <20120504184851.GB11223@kroah.com>
+ <4FA47443.9040505@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120503213456.77c55c51@pyramind.ukuu.org.uk>
+In-Reply-To: <4FA47443.9040505@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 09:34:56PM +0100, Alan Cox wrote:
+On Sat, May 05, 2012 at 10:28:51AM +1000, Francois Rigaut wrote:
 > 
-> Ok this is my suggestion based on GregKH comments and a couple of others
-> plus some other driver and ldisc stuff that is pending
 > 
-> - register the gpio lines with the gpio layer dynamically
-> - put them in the right place in the device tree (I'll let Greg advise on
->   the best way to do that bit), plus make them visible via the ioctls for
->   convenience and as they will be needed anyway in kernel
+> On 05/05/12 04:48, Greg KH wrote:
+> >Oh, what exact machine is this? Maybe I can ask around and see if
+> >I can dig up one myself, and hey, I always need an excuse to get a
+> >new display :) thanks, greg k-h
+> The machine is a macbook air 13" mid 2011, with a thunderbolt port
+> (physically identical to a mini display port). I hear Linus is using
+> a MBA 11", so I don't feel alone here running linux on this thing.
+> The display is a 27" Apple thunderbolt display. It's a gorgeous
+> display with deep colors and lots of dynamics, and not (much) more
+> expensive than other 27" display. But it doesn't hot plug (in linux,
+> yet) and the only input is through the thunderbolt cable so no luck
+> in using alternatives like HDMI (neither VGA, but VGA doesn't
+> support the display resolution 2560x1440 anyway).
 
-Hang them off of the USB-serial device?
+Has anyone tried a Thunderbolt hard drive yet?  Not that I think that
+would work better, just curious.
 
-> That provides the user space API
-> 
-> After that I'll add the hooks to the core tty layer code which allow an
-> ldisc to adjust the gpio lines.
-> 
-> For that we'll need
-> 
-> struct tty_gpio {
-> 	u32 base;
-> 	u16 num;
-> 	u16 reserved;
-> #define NR_TTY_GPIOMAP 8
-> 	u16 map[NR_TTY_GPIOMAP];
-> 	u32 reserved2[4];
-> };
-> 
-> and
-> 
-> tty->gpiomap
-> 
-> which will be NULL for most users.
-> 
-> 
-> Plus
-> 
-> struct tty_gpio d;
-> ioctl(tty, TIOCGPIO, &d)
-> 
-> and
-> 
-> ioctl(tty, TIOCSGPIO, &d)
-> 
-> where the only bits that can be updated will be the map.
-> 
-> 
-> 
-> So the normal use case from user space would be
-> 
-> struct tty_gpio d;
-> int fd = open("/dev/ttyUSB0", O_RDWR);
-> ioctl(tty, TIOCSGPIO, &d);
-> 
-> stuff using the gpio driver interfaces
-> 
-> close(fd);
-> 
-> 
-> And setting up for a kernel ldisc something like
-> 
-> 
-> /* Set a GPIO to LDISC signal mapping for ISO7816 */
-> ioctl(tty, TIOCGPIO, &d);
-> d.map[TTY_GPIO_ISO7816_RESET] = d.base;
-> d.map]TTY_GPIO_ISO7816_VCC] = d.base + 1;
-> ioctl(tty, TIOCSGPIO, &d);
-> 
-> /* Switch to the ldisc */
-> ld = N_ISO7816;
-> ioctl(tty, TCSETD, &ld);
-> 
-> 
-> and we can then abstract all the wiring details away to keep the ldisc
-> portable.
-> 
-> 
-> Thoughts ?
-
-Will the new ldisc mess with the tty stuff to prevent "normal" serial
-data and line settings from being handled properly?  If not, that all
-looks very good to me, thanks for working this out.
+Thanks for the device type, I'll see if I can track one down...
 
 greg k-h
