@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab2EEFP7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 01:15:59 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:45715 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab2EEFP5 convert rfc822-to-8bit (ORCPT
+	id S1751895Ab2EEFYj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 01:24:39 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:63052 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab2EEFYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 01:15:57 -0400
+	Sat, 5 May 2012 01:24:37 -0400
+Message-ID: <4FA4B992.2010808@kernel.org>
+Date: Sat, 05 May 2012 01:24:34 -0400
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-In-Reply-To: <201205042137.16425.rjw@sisk.pl>
-References: <1336119221-21146-1-git-send-email-ying.huang@intel.com>
-	<1336119221-21146-2-git-send-email-ying.huang@intel.com>
-	<201205042137.16425.rjw@sisk.pl>
-Date: Sat, 5 May 2012 13:15:56 +0800
-Message-ID: <CAC=cRTOpbbHCSXN3=JKZkpy753G0-Vgbu0DkbV-v_coVMM7Qzw@mail.gmail.com>
-Subject: Re: [RFC v2 1/5] PM, Runtime, Add power_must_be_on flag
-From: huang ying <huang.ying.caritas@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Zheng Yan <zheng.z.yan@intel.com>
+To: Lin Ming <ming.m.lin@intel.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi <linux-acpi@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, aaron.lu@amd.com
+Subject: Re: [PATCH v3] ACPI: D3 states cleanup
+References: <1335143029.4927.45.camel@minggr>
+In-Reply-To: <1335143029.4927.45.camel@minggr>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 5, 2012 at 3:37 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Friday, May 04, 2012, Huang Ying wrote:
->> The extreme way to save device power in runtime is to turn off power
->> of device.  For example, D3cold for PCIe bus and ZPODD (Zero Power
->> Optical Disk Drive) for SATA bus will do that.
->>
->> But sometimes power off is not expected, some possible reason is as
->> follow
->>
->> - power off device usually incurs longer resume latency, if it exceeds
->>   power QoS requirement, power off should be disabled.
->>
->> - For some buses, device in power off state can not support remote
->>   wakeup.  If remote wakeup is desired, power off should be disabled.
->>
->> In general, whether to put a device into power off state should be
->> decided by the driver of the device, but for some buses, whether to
->> put a device into power off state may be done by the parent of the
->> device.  For example, a PCIe end point device may be put into power
->> off state by the PCIe port connected to it.
->>
->> So a flag is introduced for the children devices to tell the parent
->> device, whether it should be put into power off state.
->>
->> This flag is also used for device driver to tell bus layer whether it
->> is OK to be powered off.
->>
->> Signed-off-by: Huang Ying <ying.huang@intel.com>
->
-> I would be almost fine with this patch, if [2/5] were not present.
->
-> However, if you introduce a flag like this, you need to put checks
-> against it into all places where power may be removed from devices,
-> like the generic PM domains framework (but not only there).
+Applied using updated check-in comment below.
 
-Yes.  At least this flag will be needed by other buses, like ZPODD
-support from Lin Ming:
+thanks,
+-Len Brown, Intel Open Source Technology Center
 
-https://lkml.org/lkml/2012/3/28/23
+From: Lin Ming <ming.m.lin@intel.com>
+Subject: [PATCH] ACPI: Fix D3hot v D3cold confusion
 
-So my original plan is to introduce this flag firstly, then to add
-checking for this flag in various places need it.  Do you suggest to
-put PCIe D3cold support, ZPODD support, power domain related checking
-into one patchset.
+Before this patch, ACPI_STATE_D3 incorrectly referenced D3hot
+in some places, but D3cold in other places.
 
-Best Regards,
-Huang Ying
+After this patch, ACPI_STATE_D3 always means ACPI_STATE_D3_COLD;
+and all references to D3hot use ACPI_STATE_D3_HOT.
+
+ACPI's _PR3 method is used to enter both D3hot and D3cold states.
+What distinguishes D3hot from D3cold is the presence _PR3
+(Power Resources for D3hot)  If these resources are all ON,
+then the state is D3hot.  If _PR3 is not present,
+or all _PR0 resources for the devices are OFF,
+then the state is D3cold.
+
+This patch applies after Linux-3.4-rc1.
+A future syntax cleanup may remove ACPI_STATE_D3
+to emphasize that it always means ACPI_STATE_D3_COLD.
+
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Reviewed-by: Aaron Lu <aaron.lu@amd.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+ drivers/acpi/power.c   |  2 +-
+ drivers/acpi/scan.c    | 17 +++++++----------
+ drivers/pci/pci-acpi.c |  4 ++--
+ include/acpi/actypes.h |  7 ++++---
+ 4 files changed, 14 insertions(+), 16 deletions(-)
+
