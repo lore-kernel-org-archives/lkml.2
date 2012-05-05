@@ -1,178 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758723Ab2EEB5k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 May 2012 21:57:40 -0400
-Received: from mga03.intel.com ([143.182.124.21]:52554 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754369Ab2EEB5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 May 2012 21:57:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="139132515"
-Message-ID: <4FA4890F.6040506@linux.intel.com>
-Date: Sat, 05 May 2012 09:57:35 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1755012Ab2EEC0H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 May 2012 22:26:07 -0400
+Received: from 15.mo4.mail-out.ovh.net ([91.121.62.11]:47467 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750926Ab2EEC0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 May 2012 22:26:06 -0400
+Date: Sat, 5 May 2012 04:04:14 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Tony Lindgren <tony@atomide.com>, Linus Walleij <linus.walleij@linaro.org>,
+        linux-omap@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH] pinctrl: Add generic pinctrl-simple driver that
+ supports omap2+ padconf
+Message-ID: <20120505020414.GJ7788@game.jcrosoft.org>
+References: <20120502172401.GG3739@atomide.com>
+ <20120503065131.GA3738@game.jcrosoft.org>
+ <20120503152708.GC5140@atomide.com>
+ <4FA30805.5050804@wwwdotorg.org>
+ <20120504044305.GD7788@game.jcrosoft.org>
+ <20120504150342.GI5140@atomide.com>
+ <20120504153251.GE7788@game.jcrosoft.org>
+ <20120504163420.GA5613@atomide.com>
+ <4FA42631.6060304@wwwdotorg.org>
 MIME-Version: 1.0
-To: Chen Gong <gong.chen@linux.intel.com>
-CC: mchehab@redhat.com, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] edac: avoid mce decoding crash after edac driver unloaded
-References: <1336180836-9108-1-git-send-email-gong.chen@linux.intel.com>
-In-Reply-To: <1336180836-9108-1-git-send-email-gong.chen@linux.intel.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA42631.6060304@wwwdotorg.org>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 10356308819837692749
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtdehucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeghedrtdehucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ÓÚ 2012/5/5 9:20, Chen Gong Ð´µÀ:
-> Some edac drivers register themselves as mce decoders via
-> notifier_chain. But in current notifier_chain implementation logic,
-> it doesn't accept same notifier registered twice. If so, it will be
-> wrong when removing the element from the list. For example, on one
-> SandyBridge platform, remove module sb_edac and then trigger one
-> error, it will hit oops because it has no mce decoder registered
-> but related notifier_chain still points to an invalid callback
-> function. Here is an example:
->
-> Call Trace:
->  [<ffffffff8150ef6a>] atomic_notifier_call_chain+0x1a/0x20
->  [<ffffffff8102b936>] mce_log+0x46/0x180
->  [<ffffffff8102eaea>] apei_mce_report_mem_error+0x4a/0x60
->  [<ffffffff812e19d2>] ghes_do_proc+0x192/0x210
->  [<ffffffff812e2066>] ghes_proc+0x46/0x70
->  [<ffffffff812e20d8>] ghes_notify_sci+0x48/0x80
->  [<ffffffff8150ef05>] notifier_call_chain+0x55/0x80
->  [<ffffffff81076f1a>] __blocking_notifier_call_chain+0x5a/0x80
->  [<ffffffff812aea11>] ? acpi_os_wait_events_complete+0x23/0x23
->  [<ffffffff81076f56>] blocking_notifier_call_chain+0x16/0x20
->  [<ffffffff812ddc4d>] acpi_hed_notify+0x19/0x1b
->  [<ffffffff812b16bd>] acpi_device_notify+0x19/0x1b
->  [<ffffffff812beb38>] acpi_ev_notify_dispatch+0x67/0x7f
->  [<ffffffff812aea3a>] acpi_os_execute_deferred+0x29/0x36
->  [<ffffffff81069dc2>] process_one_work+0x132/0x450
->  [<ffffffff8106bbcb>] worker_thread+0x17b/0x3c0
->  [<ffffffff8106ba50>] ? manage_workers+0x120/0x120
->  [<ffffffff81070aee>] kthread+0x9e/0xb0
->  [<ffffffff81514724>] kernel_thread_helper+0x4/0x10
->  [<ffffffff81070a50>] ? kthread_freezable_should_stop+0x70/0x70
->  [<ffffffff81514720>] ? gs_change+0x13/0x13
-> Code: f3 49 89 d4 45 85 ed 4d 89 c6 48 8b 0f 74 48 48 85 c9 75 17 eb 41
-> 0f 1f 80 00 00 00 00 41 83 ed 01 4c 89 f9 74 22 4d 85 ff 74 1d <4c> 8b
-> 79 08 4c 89 e2 48 89 de 48 89 cf ff 11 4d 85 f6 74 04 41
-> RIP  [<ffffffff8150eef6>] notifier_call_chain+0x46/0x80
->  RSP <ffff88042868fb20>
-> CR2: ffffffffa01af838
-> ---[ end trace 0100930068e73e6f ]---
-> BUG: unable to handle kernel paging request at fffffffffffffff8
-> IP: [<ffffffff810705b0>] kthread_data+0x10/0x20
-> PGD 1a0d067 PUD 1a0e067 PMD 0
-> Oops: 0000 [#2] SMP
->
-> Only i7core_edac and sb_edac have such issues because they have more
-> than one memory controller which means they have to register mce
-> decoder many times.
->
-> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
-> ---
->  drivers/edac/i7core_edac.c |   12 ++++++++++--
->  drivers/edac/sb_edac.c     |   12 ++++++++++--
->  2 files changed, 20 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-> index 85226cc..1852a52 100644
-> --- a/drivers/edac/i7core_edac.c
-> +++ b/drivers/edac/i7core_edac.c
-> @@ -2216,6 +2216,7 @@ static void i7core_unregister_mci(struct i7core_dev *i7core_dev)
->  {
->  	struct mem_ctl_info *mci = i7core_dev->mci;
->  	struct i7core_pvt *pvt;
-> +	static int once;
->  
->  	if (unlikely(!mci || !mci->pvt_info)) {
->  		debugf0("MC: " __FILE__ ": %s(): dev = %p\n",
-> @@ -2234,7 +2235,10 @@ static void i7core_unregister_mci(struct i7core_dev *i7core_dev)
->  	if (pvt->enable_scrub)
->  		disable_sdram_scrub_setting(mci);
->  
-> -	mce_unregister_decode_chain(&i7_mce_dec);
-> +	if (!once) {
-> +		mce_unregister_decode_chain(&i7_mce_dec);
-> +		once = 1;
-> +	}
->  
->  	/* Disable EDAC polling */
->  	i7core_pci_ctl_release(pvt);
-> @@ -2253,6 +2257,7 @@ static int i7core_register_mci(struct i7core_dev *i7core_dev)
->  	struct mem_ctl_info *mci;
->  	struct i7core_pvt *pvt;
->  	int rc, channels, csrows;
-> +	static int once;
->  
->  	/* Check the number of active and not disabled channels */
->  	rc = i7core_get_active_channels(i7core_dev->socket, &channels, &csrows);
-> @@ -2336,7 +2341,10 @@ static int i7core_register_mci(struct i7core_dev *i7core_dev)
->  	/* DCLK for scrub rate setting */
->  	pvt->dclk_freq = get_dclk_freq();
->  
-> -	mce_register_decode_chain(&i7_mce_dec);
-> +	if (!once) {
-> +		mce_register_decode_chain(&i7_mce_dec);
-> +		once = 1;
-> +	}
->  
->  	return 0;
->  
-> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-> index a203536..20fabc8 100644
-> --- a/drivers/edac/sb_edac.c
-> +++ b/drivers/edac/sb_edac.c
-> @@ -1655,6 +1655,7 @@ static void sbridge_unregister_mci(struct sbridge_dev *sbridge_dev)
->  {
->  	struct mem_ctl_info *mci = sbridge_dev->mci;
->  	struct sbridge_pvt *pvt;
-> +	static int once;
->  
->  	if (unlikely(!mci || !mci->pvt_info)) {
->  		debugf0("MC: " __FILE__ ": %s(): dev = %p\n",
-> @@ -1669,7 +1670,10 @@ static void sbridge_unregister_mci(struct sbridge_dev *sbridge_dev)
->  	debugf0("MC: " __FILE__ ": %s(): mci = %p, dev = %p\n",
->  		__func__, mci, &sbridge_dev->pdev[0]->dev);
->  
-> -	mce_unregister_decode_chain(&sbridge_mce_dec);
-> +	if (!once) {
-> +		mce_unregister_decode_chain(&sbridge_mce_dec);
-> +		once = 1;
-> +	}
->  
->  	/* Remove MC sysfs nodes */
->  	edac_mc_del_mc(mci->dev);
-> @@ -1685,6 +1689,7 @@ static int sbridge_register_mci(struct sbridge_dev *sbridge_dev)
->  	struct mem_ctl_info *mci;
->  	struct sbridge_pvt *pvt;
->  	int rc, channels, csrows;
-> +	static int once;
->  
->  	/* Check the number of active and not disabled channels */
->  	rc = sbridge_get_active_channels(sbridge_dev->bus, &channels, &csrows);
-> @@ -1738,7 +1743,10 @@ static int sbridge_register_mci(struct sbridge_dev *sbridge_dev)
->  		goto fail0;
->  	}
->  
-> -	mce_register_decode_chain(&sbridge_mce_dec);
-> +	if (!once) {
-> +		mce_register_decode_chain(&sbridge_mce_dec);
-> +		once = 1;
-> +	}
->  	return 0;
->  
->  fail0:
-IMO, function notifier_chain_register is very tricky. It implies once
-the same nb is added,
-new added nb->next and old one's existing in the chain are changed at
-the same time. It is
-very dangerous because the whole linked list are corrupted. If we still
-keep current logic
-to make it simple and beautiful, I hope we should add some comments on
-the function at least.
+On 12:55 Fri 04 May     , Stephen Warren wrote:
+> On 05/04/2012 10:34 AM, Tony Lindgren wrote:
+> > * Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> [120504 08:58]:
+> >> On 08:03 Fri 04 May     , Tony Lindgren wrote:
+> >>>>
+> >>>> so I was thinking to do like on gpio
+> >>>>
+> >>>> uart {
+> >>>> 	pin = < &pioA 12 {pararms} >
+> >>>>
+> >>>> }
+> >>>
+> >>> Hmm I assume the "12" above the gpio number?
+> >> no pin number in the bank because it could not be gpio
+> > 
+> > Yes OK, but pin number 12 in the gpio bank, not in the mux register.
+> > Got it.
+> 
+> I'd prefer to avoid any references to GPIOs here; not all muxable pins
+> are GPIOs and not all GPIOs are muxable pins. Lets keep the two concepts
+> independent.
+my idea was to have a phandle pinctrl specific to represent the bank
+and use it in the same way as done on gpio
+> 
+> >> 	pioD: gpio@fffff800 {
+> >> 		compatible = "atmel,at91rm9200-gpio";
+> >> 		reg = <0xfffff800 0x100>;
+> >> 		interrupts = <5 4>;
+> >> 		#gpio-cells = <2>;
+> >> 		gpio-controller;
+> >> 		interrupt-controller;
+> >> 	};
+> >>
+> >> 	pioE: gpio@fffffa00 {
+> >> 		compatible = "atmel,at91rm9200-gpio";
+> >> 		reg = <0xfffffa00 0x100>;
+> >> 		interrupts = <5 4>;
+> >> 		#gpio-cells = <2>;
+> >> 		gpio-controller;
+> >> 		interrupt-controller;
+> >> 	};
+> >>
+> >> 	dbgu {
+> >> 		pins = < &pioB 12 0 0
+> >> 			 &pioB 13 0 2 >;
+> >> 	/* with macro */
+> >> 		pins = < &pioB 12 MUX_A NO_PULL_UP
+> >> 			 &pioB 13 MUX_A PULL_UP >;
+> >> 	};
+> > 
+> > I could change to use this too no problem. The only concern I have is
+> > that is "&pioB 12" immutable for all gpio controllers?
+> 
+> You mean is the number of cells used to specify a GPIO the same
+> everywhere? No. It's defined by #gpio-cells in the GPIO controller node.
+> 
+> But again, the GPIO binding shouldn't be related to the pinctrl binding
+> directly.
+> 
+> > Grepping the *.dts* files, at least exynos is using the following
+> > for gpios:
+> > 
+> > gpios = <&gpx2 0 0 0 2>;
+> > 
+> > If we can conclude that phandle to the gpio controller instance and
+> > the register offset is always enough here, then I'm OK changing to
+> > that format. It would actually save some parsing in most cases.
+> >  
+> >> 	/* and also the notion of linked group
+> >> 	 * as on uart of network you have often the same subset of pin use.
+> >> 	 *
+> >> 	 * As example on uart rxd/txd is use for the group without rts/cts
+> >> 	 * and the one with it
+> >> 	 * on ethernet the RMII pin are use also on MII
+> >> 	 */
+> >>
+> >> 	uart0_rxd_txd {
+> >> 		pins = < &pioB 19 MUX_A PULL_UP		/* rxd */
+> >> 			 &pioB 18 MUX_A NO_PULL_UP >;	/* txd */
+> >> 	};
+> 
+> I don't really see how that DT format represents pins, functions, and
+> nodes directly, and separately from which of those a board chooses to
+> use. I think this binding and the one Tony originally proposed are
+> eseentially semantically identical.
+> 
+> Going back to my idea of separating SoC and board configurations, if we
+> did that, I'd expect to see something more like:
+> 
+> soc.dtsi or board.dts:
+> 
+> This is the data that the pin controller driver needs to export to
+> pinctrl core. This can be completely enumerated in the soc.dtsi, or
+> perhaps for uncommonly used pins/groups/functions, only included in the
+> board.dts that actually uses it to cut down on soc.dtsi's size:
+> 
+> This data is not needed for SoCs whose pinctrl drivers include it in
+> their driver file instead of DT.
+I agree on at91 I propose exactly this but get the following comment tat we
+are going to have too much node.
+
+so the idea I propoose with the pins array is to avoid this issue
+
+my first bindings on at91
+
+functions {
+};
+
+1) we describe one functin per pin
+
+functions {
+	rxd_pb12 {
+		atmel,pin-id = <&pioB 12>;
+		atmel,mux = <0>;
+	};
+
+	txd_pb13 {
+		atmel,pin-id = <&piaB 13>;
+		atmel,pull = <2>;
+		atmel,mux = <0>;
+	};
+
+	txd0_pb19 {
+		atmel,pin-id = <&pioB 19>;
+		atmel,pull = <2>;
+		atmel,mux = <0>;
+	};
+
+	rxd0_pb18 {
+		atmel,pin-id = <&pioB 18>;
+		atmel,mux = <0>;
+	};
+
+	rts0_pb17 {
+		atmel,pin-id = <&pioB 17>;
+		atmel,mux = <1>;
+	};
+
+	cts0_pb15 {
+		atmel,pin-id = <&pioB 15>;
+		atmel,mux = <1>;
+	};
+};
+
+groups {
+	dbgu {
+		pinctrl,functions = <
+			&rxd_pb12 &txd_pb13 >;
+	};
+
+	uart0_rxd_txd {
+		pinctrl,functions = <
+			&rxd0_pb18 &txd0_pb19 >;
+	};
+
+	uart0_rts_cts {
+		pinctrl,functions = <
+			&rxd0_pb18 &txd0_pb19
+			&rts0_pb17 &cts0_pb15 >;
+	};
+};
+
+Best Regards,
+J.
