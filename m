@@ -1,38 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757812Ab2EESXC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 14:23:02 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41802 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757620Ab2EESXA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 14:23:00 -0400
-Subject: Re: [PATCH] perf top: Fix a race in callchain handling
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <1336231388-12347-1-git-send-email-namhyung@gmail.com>
-References: <1336231388-12347-1-git-send-email-namhyung@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 May 2012 20:22:47 +0200
-Message-ID: <1336242167.2463.138.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1751526Ab2EESpA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 14:45:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11019 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751002Ab2EESo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 May 2012 14:44:59 -0400
+Date: Sat, 5 May 2012 14:44:18 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Jiri Slaby <jslaby@suse.cz>
+cc: Guy Martin <gmsof@tuxicoman.be>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Revert 5dd5bc40f3b6e0ccdaad948dbadc94ad0906cb25
+In-Reply-To: <4FA4D93A.6090103@suse.cz>
+Message-ID: <Pine.LNX.4.64.1205051443520.2623@file.rdu.redhat.com>
+References: <Pine.LNX.4.64.1205042250130.18896@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1205042259000.18896@file.rdu.redhat.com> <4FA4D93A.6090103@suse.cz>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-05-06 at 00:23 +0900, Namhyung Kim wrote:
-> +       static struct callchain_cursor cursor;
 
-This just begs to become another concurrency problem. If anybody manages
-to call multiple hists__collapse_insert_entry() concurrently you're
-again up some creek without no paddle.
 
-Adding global state is never a good option when dealing with
-concurrency.
+On Sat, 5 May 2012, Jiri Slaby wrote:
 
+> On 05/05/2012 05:04 AM, Mikulas Patocka wrote:
+> > Hi
+> > 
+> > This patch reverts commit 5dd5bc40f3b6e0ccdaad948dbadc94ad0906cb25.
+> > 
+> > The commit 5dd5bc40f3b6e0ccdaad948dbadc94ad0906cb25 causes system lockup 
+> > when pdc is used as a boot console.
+> > 
+> > The kernel boots, but it locks up when transferring control to userspace 
+> > --- the message "INIT: version 2.86 booting" is not printed and the 
+> > computer halts. With the patch reverted, the system starts normally on 
+> > pdc.
+> ...
+> > --- a/arch/parisc/kernel/pdc_cons.c
+> > +++ b/arch/parisc/kernel/pdc_cons.c
+> ...
+> > @@ -104,10 +103,8 @@ static int pdc_console_tty_open(struct tty_struct *tty, struct file *filp)
+> >  
+> >  static void pdc_console_tty_close(struct tty_struct *tty, struct file *filp)
+> >  {
+> > -	if (!tty->count) {
+> > +	if (!tty->count)
+> 
+> Heh, I cannot find a bug in the patch proper. However this test is and
+> always was bogus. Does changing "!tty->count" to "tty->count == 1" help?
+
+Yes, it fixes it.
+
+Mikulas
+
+> >  		del_timer_sync(&pdc_console_timer);
+> > -		tty_port_tty_set(&tty_port, NULL);
+> > -	}
+> >  }
+> >  
+> >  static int pdc_console_tty_write(struct tty_struct *tty, const unsigned char *buf, int count)
+> 
+> regards,
+> -- 
+> js
+> suse labs
+> 
+> 
