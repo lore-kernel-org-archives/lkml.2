@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654Ab2EEEyK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 00:54:10 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58914 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633Ab2EEEyF (ORCPT
+	id S1751592Ab2EEFP7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 01:15:59 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:45715 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355Ab2EEFP5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 00:54:05 -0400
-Date: Sat, 5 May 2012 14:54:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Pierre Carrier <pierre@spotify.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rob Landley <rob@landley.net>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] procfs: expose umask in stat and status
-Message-Id: <20120505145403.e73ce6633d2930ecde461bcf@canb.auug.org.au>
-In-Reply-To: <1336186227-1941-1-git-send-email-pierre@spotify.com>
-References: <1336186227-1941-1-git-send-email-pierre@spotify.com>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__5_May_2012_14_54_03_+1000_OMi/byFnVYFRCK6M"
+	Sat, 5 May 2012 01:15:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <201205042137.16425.rjw@sisk.pl>
+References: <1336119221-21146-1-git-send-email-ying.huang@intel.com>
+	<1336119221-21146-2-git-send-email-ying.huang@intel.com>
+	<201205042137.16425.rjw@sisk.pl>
+Date: Sat, 5 May 2012 13:15:56 +0800
+Message-ID: <CAC=cRTOpbbHCSXN3=JKZkpy753G0-Vgbu0DkbV-v_coVMM7Qzw@mail.gmail.com>
+Subject: Re: [RFC v2 1/5] PM, Runtime, Add power_must_be_on flag
+From: huang ying <huang.ying.caritas@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Zheng Yan <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__5_May_2012_14_54_03_+1000_OMi/byFnVYFRCK6M
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Sat,  5 May 2012 04:50:27 +0200 Pierre Carrier <pierre@spotify.com> wrot=
-e:
+On Sat, May 5, 2012 at 3:37 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, May 04, 2012, Huang Ying wrote:
+>> The extreme way to save device power in runtime is to turn off power
+>> of device.  For example, D3cold for PCIe bus and ZPODD (Zero Power
+>> Optical Disk Drive) for SATA bus will do that.
+>>
+>> But sometimes power off is not expected, some possible reason is as
+>> follow
+>>
+>> - power off device usually incurs longer resume latency, if it exceeds
+>>   power QoS requirement, power off should be disabled.
+>>
+>> - For some buses, device in power off state can not support remote
+>>   wakeup.  If remote wakeup is desired, power off should be disabled.
+>>
+>> In general, whether to put a device into power off state should be
+>> decided by the driver of the device, but for some buses, whether to
+>> put a device into power off state may be done by the parent of the
+>> device.  For example, a PCIe end point device may be put into power
+>> off state by the PCIe port connected to it.
+>>
+>> So a flag is introduced for the children devices to tell the parent
+>> device, whether it should be put into power off state.
+>>
+>> This flag is also used for device driver to tell bus layer whether it
+>> is OK to be powered off.
+>>
+>> Signed-off-by: Huang Ying <ying.huang@intel.com>
 >
-> A new stat field uses decimal, contains umask or -ENOENT if !task->fs.
-> A new status line is displayed if task->fs, and uses octal.
+> I would be almost fine with this patch, if [2/5] were not present.
+>
+> However, if you introduce a flag like this, you need to put checks
+> against it into all places where power may be removed from devices,
+> like the generic PM domains framework (but not only there).
 
-It would be good to tell us why we need this, of course.
+Yes.  At least this flag will be needed by other buses, like ZPODD
+support from Lin Ming:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+https://lkml.org/lkml/2012/3/28/23
 
---Signature=_Sat__5_May_2012_14_54_03_+1000_OMi/byFnVYFRCK6M
-Content-Type: application/pgp-signature
+So my original plan is to introduce this flag firstly, then to add
+checking for this flag in various places need it.  Do you suggest to
+put PCIe D3cold support, ZPODD support, power domain related checking
+into one patchset.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPpLJrAAoJEECxmPOUX5FElW4P/3M2xOkz3DehkJK5ws2h+yq3
-QJ05Vq1vs2HJAuEECDGYHTSDv7Ck8Y4WCvGTMGSbGyIBeZt/GA09UXMGOTUEYNXC
-m974x5pIs/TsvXZbg5tzqV9dubssvuawA9edcNxmvCpCJxGp9hu278P71jJWpDPA
-ewX+4ARdgaEIVcoAIC2ycOR32pRb/PQCbTJyDGto4lRS23UU5S7zxEedaQRkcWQS
-iRyr9RddtWalTUpTdnt0waN5ERaCaO/VaTD1iBJcK6Rzr/atGkAi7FzBY7jzk7Mi
-u0v+yWKZHg1nH3ePlj9RJ2ZZeAKkqCB7MvaHCC918hee/sbSHHdcynPJIiKypXbG
-YSHu4tSW8bWDcpXW+jqeU4C3z/5IXfLFTrqbO7tPLjtyLIg3QeFS8rWjy7aL4XV3
-h/YDSGlTeQqmNIet5zv+BBAUoXeAOU794KZmVmENQaHk7U2ncJ+r0zMwDocqZMRO
-dixBMBVMRVmVvWByuByQLl9PVtZXIe3GQlULEhPtNwOu71vV+KmoAyNHVtTpGRhH
-XjHBg+ahU2auy8rsXNBDIiWjzgbbsy9+ByqES9B7mSRmlet1hyC2nd83BwY+RVcT
-l8RuwvCu39TyYylOPwI5g6rNiBEyFekBkifzlGYTEOnIBu2jilc+QHRZ+F56Dy9m
-WYycFbu7Bh1r7sX2gBhF
-=sxgb
------END PGP SIGNATURE-----
-
---Signature=_Sat__5_May_2012_14_54_03_+1000_OMi/byFnVYFRCK6M--
+Best Regards,
+Huang Ying
