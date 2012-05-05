@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab2EEPFm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 11:05:42 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33113 "EHLO
+	id S1756173Ab2EEPKg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 11:10:36 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33119 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755805Ab2EEPFl (ORCPT
+	with ESMTP id S1755898Ab2EEPFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 11:05:41 -0400
-Message-Id: <20120505150007.543515803@linutronix.de>
+	Sat, 5 May 2012 11:05:42 -0400
+Message-Id: <20120505150141.366461660@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Sat, 05 May 2012 15:05:40 -0000
+Date: Sat, 05 May 2012 15:05:41 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [patch 00/18] fork: Move most archs to generic threadinfo/taskstruct
- allocators
+Subject: [patch 02/18] fork: Provide weak
+ arch_release_[task_struct|thread_info] functions
+References: <20120505150007.543515803@linutronix.de>
+Content-Disposition: inline;
+ filename=fork-provide-arch-release-task-struct.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -21,49 +24,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a lot of duplicate implementations of the threadinfo and task
-struct allocator around in arch/*. This series consolidates them.
+These functions allow us to move most of the duplicated thread_info
+allocators to the core code.
 
-Applies on top of 
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git smp/hotplug
-
-Thanks,
-
-	tglx
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/Kconfig                            |    8 +++
- arch/c6x/include/asm/thread_info.h      |   17 -------
- arch/cris/include/asm/processor.h       |    5 --
- arch/cris/include/asm/thread_info.h     |    6 --
- arch/frv/include/asm/thread_info.h      |   13 ------
- arch/hexagon/include/asm/thread_info.h  |    8 ---
- arch/hexagon/kernel/process.c           |   37 -----------------
- arch/ia64/Kconfig                       |    2 
- arch/ia64/include/asm/thread_info.h     |    3 -
- arch/m32r/include/asm/thread_info.h     |   17 -------
- arch/mips/include/asm/thread_info.h     |   12 -----
- arch/mn10300/include/asm/thread_info.h  |   17 +------
- arch/mn10300/kernel/kgdb.c              |    3 -
- arch/powerpc/include/asm/thread_info.h  |   13 ------
- arch/powerpc/kernel/process.c           |   31 --------------
- arch/score/include/asm/thread_info.h    |   10 +---
- arch/sh/include/asm/thread_info.h       |   11 -----
- arch/sh/kernel/process.c                |   46 ---------------------
- arch/sparc/Kconfig                      |    1 
- arch/sparc/include/asm/thread_info_32.h |    2 
- arch/sparc/include/asm/thread_info_64.h |   25 -----------
- arch/tile/include/asm/thread_info.h     |    6 --
- arch/tile/kernel/process.c              |   23 ----------
- arch/x86/include/asm/boot.h             |    2 
- arch/x86/include/asm/page_32_types.h    |    4 -
- arch/x86/include/asm/page_64_types.h    |    4 -
- arch/x86/include/asm/thread_info.h      |   21 ---------
- arch/x86/kernel/irq_32.c                |    8 +--
- arch/x86/kernel/process.c               |    5 --
- include/linux/thread_info.h             |    6 ++
- kernel/fork.c                           |   69 ++++++++++++++++++++++----------
- 31 files changed, 100 insertions(+), 335 deletions(-)
+ kernel/fork.c |   21 +++++++++++++++++----
+ 1 file changed, 17 insertions(+), 4 deletions(-)
 
+Index: tip/kernel/fork.c
+===================================================================
+--- tip.orig/kernel/fork.c
++++ tip/kernel/fork.c
+@@ -112,14 +112,26 @@ int nr_processes(void)
+ }
+ 
+ #ifndef __HAVE_ARCH_TASK_STRUCT_ALLOCATOR
+-# define alloc_task_struct_node(node)		\
+-		kmem_cache_alloc_node(task_struct_cachep, GFP_KERNEL, node)
+-# define free_task_struct(tsk)			\
+-		kmem_cache_free(task_struct_cachep, (tsk))
+ static struct kmem_cache *task_struct_cachep;
++
++static inline struct task_struct *alloc_task_struct_node(int node)
++{
++	return kmem_cache_alloc_node(task_struct_cachep, GFP_KERNEL, node);
++}
++
++void __weak arch_release_task_struct(struct task_struct *tsk) { }
++
++static inline void free_task_struct(struct task_struct *tsk)
++{
++	arch_release_task_struct(tsk);
++	kmem_cache_free(task_struct_cachep, tsk);
++}
+ #endif
+ 
+ #ifndef __HAVE_ARCH_THREAD_INFO_ALLOCATOR
++
++void __weak arch_release_thread_info(struct thread_info *ti) { }
++
+ static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
+ 						  int node)
+ {
+@@ -135,6 +147,7 @@ static struct thread_info *alloc_thread_
+ 
+ static inline void free_thread_info(struct thread_info *ti)
+ {
++	arch_release_thread_info(ti);
+ 	free_pages((unsigned long)ti, THREAD_SIZE_ORDER);
+ }
+ #endif
 
 
