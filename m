@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab2EEPIh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 11:08:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33151 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756067Ab2EEPFq (ORCPT
+	id S1756665Ab2EEPJP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 11:09:15 -0400
+Received: from fold.natur.cuni.cz ([195.113.57.32]:33453 "HELO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756199Ab2EEPJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 11:05:46 -0400
-Message-Id: <20120505150141.936950979@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Sat, 05 May 2012 15:05:44 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Subject: [patch 11/18] mips: Use common threadinfo allocator
-References: <20120505150007.543515803@linutronix.de>
-Content-Disposition: inline;
- filename=mips-use-common-threadinfo-allocator.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sat, 5 May 2012 11:09:12 -0400
+Message-ID: <4FA54292.5000102@fold.natur.cuni.cz>
+Date: Sat, 05 May 2012 17:09:06 +0200
+From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120319 Firefox/11.0 SeaMonkey/2.8
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Paul Bolle <pebolle@tiscali.nl>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: also announce bcdDevice
+References: <1336218719.8450.19.camel@x61.thuisdomein> <4FA519B3.9030901@fold.natur.cuni.cz> <20120505145224.GA27469@kroah.com>
+In-Reply-To: <20120505145224.GA27469@kroah.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No point in using kmalloc for allocating 0, 1 resp. 2 pages for
-threadinfo.
+Greg Kroah-Hartman wrote:
+> On Sat, May 05, 2012 at 02:14:43PM +0200, Martin Mokrejs wrote:
+>> Paul Bolle wrote:
+>>> Currently announce_device() does print the idVendor and idProduct values
+>>> but does not print the bcdDevice value. USB devices are accurately
+>>> identified by all three values. See, for instance, the USB storage
+>>> quirks which will only apply for a certain (range of) bcdDevice
+>>> value(s). So it seems useful to also print bcdDevice when announcing USB
+>>> devices.
+>>
+>> Could it also report negotiated speed? full-speed, high-speed, super-speed?
+> 
+> All of this, including the bcdDevice, can be found in sysfs.  So I don't
+> want to take this patch, otherwise we would be just adding more and more
+> to the kernel log.
+> 
+> If you programatically want to find this out, use libudev or listen to
+> the dbus messages for new devices, don't watch the kernel log messages.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>
----
- arch/mips/include/asm/thread_info.h |   12 ------------
- 1 file changed, 12 deletions(-)
+Hmm, but when you go through your syslog/dmesg lines especially in case of
+USB devices which you swap in and out quite often, it is too late to lookup
+some file elsewhere which relates to *current* device. The information
+is lost already if you changed device meanwhile. You just realize USB disk
+disconnected but you have not way find out except from the log files what
+speed did it use. In case of USB3 devices capable of lower speeds it is
+quite important. Some just claim USB3 capabilities (on the package box)
+but in real, always end up at high-speed only.
 
-Index: tip/arch/mips/include/asm/thread_info.h
-===================================================================
---- tip.orig/arch/mips/include/asm/thread_info.h
-+++ tip/arch/mips/include/asm/thread_info.h
-@@ -85,18 +85,6 @@ register struct thread_info *__current_t
- 
- #define STACK_WARN	(THREAD_SIZE / 8)
- 
--#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR
--
--#ifdef CONFIG_DEBUG_STACK_USAGE
--#define alloc_thread_info_node(tsk, node) \
--		kzalloc_node(THREAD_SIZE, GFP_KERNEL, node)
--#else
--#define alloc_thread_info_node(tsk, node) \
--		kmalloc_node(THREAD_SIZE, GFP_KERNEL, node)
--#endif
--
--#define free_thread_info(info) kfree(info)
--
- #endif /* !__ASSEMBLY__ */
- 
- #define PREEMPT_ACTIVE		0x10000000
+For me testing several USB disks, USB to SATA bridges, host controllers,
+kernel command-lines ... it is way to much work. Having the USB debug
+enabled, especially XHCI_HCD_DEBUG gives on the other had too much output
+for daily use but as this is all stuff prone to fail somewhere and at some
+point I keep it enabled.
+
+I don't think it clutters syslog nor that it adds significant extra size
+to the output. It would save people from enabling debug just because of this.
+And no, average linux user never never lookup sysfs nor use libudev, really.
+Still, the link speed is of interest to everybody fiddling with the stuff
+and wondering why the damn thing is so slow or why did it disconnect. It gives
+an answer or at least a hint.
+
+And if it is not enough to identify a device based on idVendor and idProduct
+but one needs also bcdDevice, why not to print it?
 
 
+Thanks,
+Martin
