@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab2EFQUE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 12:20:04 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58743 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753950Ab2EFQUC (ORCPT
+	id S1753971Ab2EFQZO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 12:25:14 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49251 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753829Ab2EFQZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 12:20:02 -0400
-Date: Sun, 6 May 2012 17:20:00 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] broken TASK_SIZE for ia32_aout
-Message-ID: <20120506162000.GT6871@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 6 May 2012 12:25:13 -0400
+From: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] gpio: langwell: Prevent possible NULL pointer dereference in the demux handler.
+Date: Sun,  6 May 2012 17:25:08 +0100
+Message-Id: <1336321508-20981-1-git-send-email-krzysztof.wilczynski@linux.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setting TIF_IA32 in load_aout_binary() used to be enough; these days
-TASK_SIZE is controlled by TIF_ADDR32 and that one doesn't get set
-there.  Switch to use of set_personality_ia32()...
+This is to address a possible NULL pointer dereference on a platform that might
+use this driver but its underlying IRQ chip does not provide an irq_eoi callback.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+A commit 0766d20 added an conditional to the code, but then it was later
+super-seeded by commit 20e2aa9 which introduced number of helper functions
+for accessing various members of the irq_desc struct, but removed said
+conditional from the code.
+
+This change will re-introduce conditional guarding against possible NULL
+pointer dereference caused by missing EIO handler.
+
+Signed-off-by: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
 ---
-diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
-index 4824fb4..07b3a68 100644
---- a/arch/x86/ia32/ia32_aout.c
-+++ b/arch/x86/ia32/ia32_aout.c
-@@ -294,8 +294,7 @@ static int load_aout_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ drivers/gpio/gpio-langwell.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
+index 00692e8..5749738 100644
+--- a/drivers/gpio/gpio-langwell.c
++++ b/drivers/gpio/gpio-langwell.c
+@@ -260,7 +260,8 @@ static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
+ 		}
+ 	}
  
- 	/* OK, This is the point of no return */
- 	set_personality(PER_LINUX);
--	set_thread_flag(TIF_IA32);
--	current->mm->context.ia32_compat = 1;
-+	set_personality_ia32(false);
+-	chip->irq_eoi(data);
++	if (data)
++		chip->irq_eoi(data);
+ }
  
- 	setup_new_exec(bprm);
- 
+ #ifdef CONFIG_PM
+-- 
+1.7.2.5
+
