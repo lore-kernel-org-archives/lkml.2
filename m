@@ -1,35 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab2EFRE4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 13:04:56 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:41621 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062Ab2EFREy (ORCPT
+	id S1754159Ab2EFRL0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 13:11:26 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:31121 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754010Ab2EFRLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 13:04:54 -0400
-Date: Sun, 06 May 2012 13:03:46 -0400 (EDT)
-Message-Id: <20120506.130346.375380984480812477.davem@davemloft.net>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [patch 16/18] sparc: Use common threadinfo allocator
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120505150142.252861878@linutronix.de>
-References: <20120505150007.543515803@linutronix.de>
-	<20120505150142.252861878@linutronix.de>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sun, 6 May 2012 13:11:09 -0400
+Message-ID: <1336324264.2897.9.camel@lorien2>
+Subject: [PATCH RESEND] x86: kernel/microcode_core.c simple_strtoul cleanup
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Borislav Petkov <bp@alien8.de>, mingo@redhat.com, hpa@zytor.com,
+        tglx@linutronix.de, tigran@aivazian.fsnet.co.uk
+Cc: shuahkhan@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 06 May 2012 11:11:04 -0600
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 06 May 2012 10:03:47 -0700 (PDT)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Sat, 05 May 2012 15:05:47 -0000
+Change reload_for_cpu() in kernel/microcode_core.c to call kstrtoul()
+instead of calling obsoleted simple_strtoul().
 
-> Exaclty the same as the core code.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
+---
+ arch/x86/kernel/microcode_core.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-Acked-by: David S. Miller <davem@davemloft.net>
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index c9bda6d..fbdfc69 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -299,12 +299,11 @@ static ssize_t reload_store(struct device *dev,
+ {
+ 	unsigned long val;
+ 	int cpu = dev->id;
+-	int ret = 0;
+-	char *end;
++	ssize_t ret = 0;
+ 
+-	val = simple_strtoul(buf, &end, 0);
+-	if (end == buf)
+-		return -EINVAL;
++	ret = kstrtoul(buf, 0, &val);
++	if (ret)
++		return ret;
+ 
+ 	if (val == 1) {
+ 		get_online_cpus();
+-- 
+1.7.9.5
+
+
+
