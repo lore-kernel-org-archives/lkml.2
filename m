@@ -1,37 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab2EFBAl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 May 2012 21:00:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57018 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752593Ab2EFBAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 May 2012 21:00:39 -0400
-Message-ID: <4FA5CD15.10503@zytor.com>
-Date: Sat, 05 May 2012 18:00:05 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1752750Ab2EFCAu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 May 2012 22:00:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63130 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752698Ab2EFCAt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 May 2012 22:00:49 -0400
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: "Ted Ts'o" <tytso@mit.edu>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, linux-man@vger.kernel.org,
-        viro@zeniv.linux.org.uk, Richard Weinberger <richard@nod.at>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] open(2): document O_PATH
-References: <1335669917-23970-1-git-send-email-vapier@gentoo.org> <CAKgNAkgykZJV59WJXW9c9gVwXhn=WNYKxo_W1GM7ocHEEFqEXg@mail.gmail.com> <877gwxacti.fsf@skywalker.in.ibm.com> <20120430114410.GB28308@thunk.org>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu) <87fwbhhdp2.fsf@skywalker.in.ibm.com>
-In-Reply-To: <87fwbhhdp2.fsf@skywalker.in.ibm.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CABexPfHsNB1-v34vG3tW3VCLw=mWeBFoY+7Ko2174q9wK7Wh-Q@mail.gmail.com>
+References: <CABexPfEdd0k9UGTJL9Ae5B=e_dDZMsTGg-LNYrOjLKzHBxuPwg@mail.gmail.com>
+	<4F788731.8020708@xenotime.net>
+	<CABexPfHsNB1-v34vG3tW3VCLw=mWeBFoY+7Ko2174q9wK7Wh-Q@mail.gmail.com>
+Date: Sat, 5 May 2012 23:00:48 -0300
+Message-ID: <CAChaegmgw_8KsmOAt=WpHN6KTa9qkgh-EmHC-PGqCQxGRQ2U6w@mail.gmail.com>
+Subject: Re: How can I turn off/disable -O2/-Os optimization?
+From: Renato Westphal <renatowestphal@gmail.com>
+To: Zhihua Che <zhihua.che@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2012 01:27 AM, Aneesh Kumar K.V wrote:
-> 
-> fstat won't work, but fstatat with an empty path name would work.
+2012/4/2 Zhihua Che <zhihua.che@gmail.com>:
+> 在 2012年4月2日 上午12:49，Randy Dunlap <rdunlap@xenotime.net> 写道：
+>> On 04/01/2012 09:31 AM, Zhihua Che wrote:
+>>
+>>> Hi, everyone
+>>>
+>>>     I'm debugging linux kernel using kgdb/qemu， but I find that the
+>>> execution order didn't math the program order usually.  I guess it was
+>>> because the compiling optimization. So I decided to remove -O options
+>>> in Makefiles.
+>>>     First I removed -Ox in variables HOSTCFLAGS/HOSTCXXFLAGS in
+>>> <src_root_dir>/Makefile around line 248 and -Ox in variable
+>>> KBUILD_CFLAGS in <src_root_dir>/arch/x86/boot/Makefile around line 55.
+>>> But it didn't work, the step execution still didn't follow the program
+>>> order. Then I found I missed -Ox in KBUILD_CFLAGS in
+>>> <src_root_dir>/Makefile around line 562, so I removed them, but this
+>>> time, the compiling failed, complaining
+>>>     rcupdate.h:917:2: error: size of unnamed array is negative
+>>>    And finally, after grep, I find there are a load of -O2 option are
+>>> assigned in a load of Makefiles. So, How could I disable -O
+>>> optimization for debugging?
+>>>
+>>>    Thanks for any tips
+>>> --
+>>
+>>
+>> You could try the new CONFIG_READABLE_ASM patch:
+>>  http://marc.info/?l=linux-kernel&m=133296079716268&w=2
+>>
+>>
+>> --
+>> ~Randy
+>
+> Hi,
+>    I tried your patch, and it seemed not to work:-(. It still didn't
+> follow the program order
 
-Why the h... make *such* a distinction?
 
-	-hpa
+Hi Zhihua Che,
 
+Have you found a solution for this? I'm facing the same problem with KGDB..
+
+-- 
+Renato Westphal
