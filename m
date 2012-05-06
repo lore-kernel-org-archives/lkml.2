@@ -1,58 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654Ab2EFNiR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 09:38:17 -0400
-Received: from alternativer.internetendpunkt.de ([88.198.24.89]:58088 "EHLO
-	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751647Ab2EFNiQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 09:38:16 -0400
-X-Greylist: delayed 552 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 May 2012 09:38:15 EDT
-Date: Sun, 6 May 2012 15:28:27 +0200
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-To: Renato Westphal <renatowestphal@gmail.com>
-Cc: Zhihua Che <zhihua.che@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: How can I turn off/disable -O2/-Os optimization?
-Message-ID: <20120506132827.GB3824@nuttenaction>
-References: <CABexPfEdd0k9UGTJL9Ae5B=e_dDZMsTGg-LNYrOjLKzHBxuPwg@mail.gmail.com>
- <4F788731.8020708@xenotime.net>
- <CABexPfHsNB1-v34vG3tW3VCLw=mWeBFoY+7Ko2174q9wK7Wh-Q@mail.gmail.com>
- <CAChaegmgw_8KsmOAt=WpHN6KTa9qkgh-EmHC-PGqCQxGRQ2U6w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAChaegmgw_8KsmOAt=WpHN6KTa9qkgh-EmHC-PGqCQxGRQ2U6w@mail.gmail.com>
-X-Key-Id: 98350C22
-X-Key-Fingerprint: 490F 557B 6C48 6D7E 5706 2EA2 4A22 8D45 9835 0C22
-X-GPG-Key: gpg --recv-keys --keyserver wwwkeys.eu.pgp.net 98350C22
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753160Ab2EFOOh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 10:14:37 -0400
+Received: from mga11.intel.com ([192.55.52.93]:64652 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753016Ab2EFOOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 10:14:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="162593351"
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: [PATCH] power_supply: Add charge_current and charge_voltage properties and use it in smb347
+Date: Sun,  6 May 2012 18:16:44 +0530
+Message-Id: <1336308404-25129-1-git-send-email-ramakrishna.pallala@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Renato Westphal | 2012-05-05 23:00:48 [-0300]:
+Constant Charge Current(CC) is charging parameter which limit the
+maximum current which can be pumped into the battery during charge cycle.
 
->>> You could try the new CONFIG_READABLE_ASM patch:
->>>  http://marc.info/?l=linux-kernel&m=133296079716268&w=2
+Constant Charge Voltage(CV) is also charging parameter which limit the
+maximum voltage that battery can reach during charge cycle.
 
-Maybe remove "-Os" on a global basis is not wanted nor required. Maybe a per
-directory, per file or per function basis may superior!
+It is very common practice that at low or high temperatures we
+do not charge the batteries upto it's fullest charge voltage
+to avoid battery and user safety issues.
 
-make DISABLE_OPTIMIZATION=net/sched/sch_api.c
+These sysfs properties will be useful for debug and to implement
+certain user space policies like "Charging limited due to OverTemp".
 
-But still all core constructs defined in top level header files must be
-compatible for directory/file basis to be build with no optimization at all.
+This patch also makes use of these two properties in smb347 charger driver.
 
-One way to un-optmize fine-granular is GCC's optmize pragma [1].
+Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+---
+ Documentation/power/power_supply_class.txt |    4 +
+ drivers/power/power_supply_sysfs.c         |    2 +
+ drivers/power/smb347-charger.c             |  123 ++++++++++++++++++++++++++--
+ include/linux/power_supply.h               |    4 +
+ 4 files changed, 127 insertions(+), 6 deletions(-)
 
-Hagen
+diff --git a/Documentation/power/power_supply_class.txt b/Documentation/power/power_supply_class.txt
+index 211831d..c0f62ae 100644
+--- a/Documentation/power/power_supply_class.txt
++++ b/Documentation/power/power_supply_class.txt
+@@ -112,6 +112,10 @@ CHARGE_COUNTER - the current charge counter (in ÂµAh).  This could easily
+ be negative; there is no empty or full value.  It is only useful for
+ relative, time-based measurements.
+ 
++CONSTANT_CHARGE_CURRENT - constant charge current programmed by charger.
++
++CONSTANT_CHARGE_VOLTAGE - constant charge voltage programmed by charger.
++
+ ENERGY_FULL, ENERGY_EMPTY - same as above but for energy.
+ 
+ CAPACITY - capacity in percents.
+diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+index 4150747..58846d9 100644
+--- a/drivers/power/power_supply_sysfs.c
++++ b/drivers/power/power_supply_sysfs.c
+@@ -159,6 +159,8 @@ static struct device_attribute power_supply_attrs[] = {
+ 	POWER_SUPPLY_ATTR(charge_now),
+ 	POWER_SUPPLY_ATTR(charge_avg),
+ 	POWER_SUPPLY_ATTR(charge_counter),
++	POWER_SUPPLY_ATTR(constant_charge_current),
++	POWER_SUPPLY_ATTR(constant_charge_voltage),
+ 	POWER_SUPPLY_ATTR(energy_full_design),
+ 	POWER_SUPPLY_ATTR(energy_empty_design),
+ 	POWER_SUPPLY_ATTR(energy_full),
+diff --git a/drivers/power/smb347-charger.c b/drivers/power/smb347-charger.c
+index 09d19d2..79d22b9 100644
+--- a/drivers/power/smb347-charger.c
++++ b/drivers/power/smb347-charger.c
+@@ -195,6 +195,14 @@ static const unsigned int ccc_tbl[] = {
+ 	1200000,
+ };
+ 
++/* Convert register value to current using lookup table */
++static int hw_to_current(const unsigned int *tbl, size_t size, unsigned int val)
++{
++	if (val >= size)
++		return -EINVAL;
++	return tbl[val];
++}
++
+ /* Convert current to register value using lookup table */
+ static int current_to_hw(const unsigned int *tbl, size_t size, unsigned int val)
+ {
+@@ -840,22 +848,101 @@ fail:
+ 	return ret;
+ }
+ 
++/*
++ * Returns the constant charge current programmed
++ * into the charger in uA.
++ */
++static int get_const_charge_current(struct smb347_charger *smb)
++{
++	int ret, intval;
++	unsigned int v;
++
++	if (!smb347_is_ps_online(smb))
++		return -ENODATA;
++
++	ret = regmap_read(smb->regmap, STAT_B, &v);
++	if (ret < 0)
++		return ret;
++
++	/*
++	 * The current value is composition of FCC and PCC values
++	 * and we can detect which table to use from bit 5.
++	 */
++	if (v & 0x20) {
++		intval = hw_to_current(fcc_tbl, ARRAY_SIZE(fcc_tbl), v & 7);
++	} else {
++		v >>= 3;
++		intval = hw_to_current(pcc_tbl, ARRAY_SIZE(pcc_tbl), v & 7);
++	}
++
++	return intval;
++}
++
++/*
++ * Returns the constant charge voltage programmed
++ * into the charger in uV.
++ */
++static int get_const_charge_voltage(struct smb347_charger *smb)
++{
++	int ret, intval;
++	unsigned int v;
++
++	if (!smb347_is_ps_online(smb))
++		return -ENODATA;
++
++	ret = regmap_read(smb->regmap, STAT_A, &v);
++	if (ret < 0)
++		return ret;
++
++	v &= STAT_A_FLOAT_VOLTAGE_MASK;
++	if (v > 0x3d)
++		v = 0x3d;
++
++	intval = 3500000 + v * 20000;
++
++	return intval;
++}
++
+ static int smb347_mains_get_property(struct power_supply *psy,
+ 				     enum power_supply_property prop,
+ 				     union power_supply_propval *val)
+ {
+ 	struct smb347_charger *smb =
+ 		container_of(psy, struct smb347_charger, mains);
++	int ret;
+ 
+-	if (prop == POWER_SUPPLY_PROP_ONLINE) {
++	switch (prop) {
++	case POWER_SUPPLY_PROP_ONLINE:
+ 		val->intval = smb->mains_online;
+-		return 0;
++		break;
++
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
++		ret = get_const_charge_voltage(smb);
++		if (ret < 0)
++			return ret;
++		else
++			val->intval = ret;
++		break;
++
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
++		ret = get_const_charge_current(smb);
++		if (ret < 0)
++			return ret;
++		else
++			val->intval = ret;
++		break;
++
++	default:
++		return -EINVAL;
+ 	}
+-	return -EINVAL;
++
++	return 0;
+ }
+ 
+ static enum power_supply_property smb347_mains_properties[] = {
+ 	POWER_SUPPLY_PROP_ONLINE,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
+ };
+ 
+ static int smb347_usb_get_property(struct power_supply *psy,
+@@ -864,16 +951,40 @@ static int smb347_usb_get_property(struct power_supply *psy,
+ {
+ 	struct smb347_charger *smb =
+ 		container_of(psy, struct smb347_charger, usb);
++	int ret;
+ 
+-	if (prop == POWER_SUPPLY_PROP_ONLINE) {
++	switch (prop) {
++	case POWER_SUPPLY_PROP_ONLINE:
+ 		val->intval = smb->usb_online;
+-		return 0;
++		break;
++
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
++		ret = get_const_charge_voltage(smb);
++		if (ret < 0)
++			return ret;
++		else
++			val->intval = ret;
++		break;
++
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
++		ret = get_const_charge_current(smb);
++		if (ret < 0)
++			return ret;
++		else
++			val->intval = ret;
++		break;
++
++	default:
++		return -EINVAL;
+ 	}
+-	return -EINVAL;
++
++	return 0;
+ }
+ 
+ static enum power_supply_property smb347_usb_properties[] = {
+ 	POWER_SUPPLY_PROP_ONLINE,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
+ };
+ 
+ static int smb347_battery_get_property(struct power_supply *psy,
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index 3b912be..a6471bc 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -109,6 +109,8 @@ enum power_supply_property {
+ 	POWER_SUPPLY_PROP_CHARGE_NOW,
+ 	POWER_SUPPLY_PROP_CHARGE_AVG,
+ 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
+ 	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
+ 	POWER_SUPPLY_PROP_ENERGY_EMPTY_DESIGN,
+ 	POWER_SUPPLY_PROP_ENERGY_FULL,
+@@ -236,6 +238,7 @@ static inline bool power_supply_is_amp_property(enum power_supply_property psp)
+ 	case POWER_SUPPLY_PROP_CHARGE_NOW:
+ 	case POWER_SUPPLY_PROP_CHARGE_AVG:
+ 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
+ 	case POWER_SUPPLY_PROP_CURRENT_MAX:
+ 	case POWER_SUPPLY_PROP_CURRENT_NOW:
+ 	case POWER_SUPPLY_PROP_CURRENT_AVG:
+@@ -263,6 +266,7 @@ static inline bool power_supply_is_watt_property(enum power_supply_property psp)
+ 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+ 	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
+ 	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
+ 	case POWER_SUPPLY_PROP_POWER_NOW:
+ 		return 1;
+ 	default:
+-- 
+1.7.0.4
 
-PS: such a functionality may be convenient for perf probe too! (to hook into
-probepoints which are currently optimized out)
-
-
-[1] http://gcc.gnu.org/onlinedocs/gcc/Function-Specific-Option-Pragmas.html
