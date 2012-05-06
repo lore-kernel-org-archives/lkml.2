@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796Ab2EFGkm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 02:40:42 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:26276 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab2EFGkl (ORCPT
+	id S1751647Ab2EFGpG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 02:45:06 -0400
+Received: from 220-130-141-4.HINET-IP.hinet.net ([220.130.141.4]:59374 "EHLO
+	mail.conser.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab2EFGpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 02:40:41 -0400
-Date: Sun, 6 May 2012 09:42:18 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Johannes Thumshirn <morbidrsa@googlemail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, stefanha@gmail.com,
-        andor.daam@googlemail.com, grabner@icg.tugraz.at, jj@chaosbits.net,
-        thomas@m3y3r.de
-Subject: Re: [PATCH 5/8] drivers/staging/line6/driver.h: Changed
- printk(KERN_ERR, .. to pr_err Changed printk(KERN_ERR, ...) call to pr_err()
- call in MISSING_CASE macro
-Message-ID: <20120506064218.GK22134@mwanda>
-References: <1336228312-5379-1-git-send-email-morbidrsa@googlemail.com>
- <1336228312-5379-6-git-send-email-morbidrsa@googlemail.com>
+	Sun, 6 May 2012 02:45:04 -0400
+X-Greylist: delayed 12280 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 May 2012 02:45:04 EDT
+From: "Sherrita Eversole" <sherita_evrsole@yahoo.com.hk>
+Reply-To: sherita_eversole@yahoo.com.hk
+Subject: One good turn 
+Date: Sun, 6 May 2012 11:20:19 +0800
+Message-Id: <20120506031814.M82724@yahoo.com.hk>
+X-Mailer: Open WebMail 2.51 20050228
+X-OriginatingIP: 197.255.167.82 (grace)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336228312-5379-6-git-send-email-morbidrsa@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain;
+	charset=iso-8859-1
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MISSING_CASE is a horrible macro.  Just replace all the code which
-uses MISSING_CASE.  Or better yet, delete all the uses.  (I haven't
-looked through them).
 
-regards,
-dan carpenter
+
+Hi,I am Sherrita,
+
+I'm diagnosed with esophageal cancer, because it went unnoticed I have had to
+undergo a laryngectomy.I have decided to donate my money
+to you.I am also donating my body after i am gone for research.I want this last
+act of mine to be an offering to GOD and humanity.
+send a note back with this ref. HPGHD back so i know you got this.
+
+I know I don't know you. God bless you abundantly,
+
+Sherrita Eversole.
+Email: sherita_eversole@yahoo.com.hk
 
