@@ -1,42 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab2EFKIL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 06:08:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753094Ab2EFKIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 06:08:09 -0400
-Message-ID: <4FA64D85.1000609@redhat.com>
-Date: Sun, 06 May 2012 13:08:05 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1753203Ab2EFKL4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 06:11:56 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36915 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001Ab2EFKLz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 06:11:55 -0400
+Date: Sun, 6 May 2012 11:11:41 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Colin Cross <ccross@android.com>
+Cc: Marc Zyngier <marc.zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: SMP: prevent use of the console when using
+	idmap_pgd
+Message-ID: <20120506101141.GI26481@n2100.arm.linux.org.uk>
+References: <1336180444-26563-1-git-send-email-ccross@android.com> <20120505164933.GQ897@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: X86: Add mmx movq emulation
-References: <1336132029-13523-1-git-send-email-joerg.roedel@amd.com>
-In-Reply-To: <1336132029-13523-1-git-send-email-joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120505164933.GQ897@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2012 02:47 PM, Joerg Roedel wrote:
-> Add support to the MMX versions of the movq instructions to
-> the instruction emulator. Also handle possible exceptions
-> they may cause.
+On Sat, May 05, 2012 at 05:49:33PM +0100, Russell King - ARM Linux wrote:
+> I think this is fine.  Please put it in the patch system, thanks.
 
-This is already in (cbe2c9d30, e59717550e).  Are you looking at master
-instead of next?
-
-Since you've just thought of the issues involved, I'd appreciate a
-review of the commits above, both wrt correctness and maintainability.
-
-In fact I already see one difference - my patches do reg &= 7, while
-your patches generate #UD for %mm8-%mm15.
-
--- 
-error compiling committee.c: too many arguments to function
-
+It looks like this bug affects v3.2 kernels as well - should it be marked
+for the attention of the stable kernel team?
