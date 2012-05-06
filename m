@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab2EFICt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 04:02:49 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:2073 "EHLO MMS3.broadcom.com"
+	id S1752521Ab2EFIPT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 04:15:19 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:56343 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752214Ab2EFICq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 04:02:46 -0400
-X-Server-Uuid: B730DE51-FC43-4C83-941F-F1F78A914BDD
-From: "Yaniv Rosner" <yaniv.rosner@broadcom.com>
-To: "Ben Hutchings" <bhutchings@solarflare.com>,
-        "smhodgson@solarflare.com" <smhodgson@solarflare.com>
-cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "bruce.w.allan@intel.com" <bruce.w.allan@intel.com>,
-        "decot@google.com" <decot@google.com>,
-        "alexander.h.duyck@intel.com" <alexander.h.duyck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David Miller" <davem@davemloft.net>
-Subject: RE: [PATCH net-next 1/3] Add capability to retrieve plug-in
- module EEPROM
-Thread-Topic: [PATCH net-next 1/3] Add capability to retrieve plug-in
- module EEPROM
-Thread-Index: AQHNHkKpZ3lH+KvewUu+a/OBune6XpapaPYAgAFTvICAEcDOIA==
-Date: Sun, 6 May 2012 08:02:15 +0000
-Message-ID: <A6AA2EF896BED345B0F23520D832A4B106AD8E@SJEXCHMB05.corp.ad.broadcom.com>
-References: <4F9031BF.10106@solarflare.com>
- <20120423.172848.1733968863825393980.davem@davemloft.net>
- <1335289485.17274.46.camel@bwh-desktop.uk.solarflarecom.com>
-In-Reply-To: <1335289485.17274.46.camel@bwh-desktop.uk.solarflarecom.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.185.6.78]
+	id S1752148Ab2EFIPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 04:15:17 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [patch 05/29] blackfin: Use generic init_task
+Date: Sun, 6 May 2012 04:16:26 -0400
+User-Agent: KMail/1.13.7 (Linux/3.3.4; KDE/4.6.5; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org
+References: <20120430194725.763322463@linutronix.de> <20120430194845.850346878@linutronix.de>
+In-Reply-To: <20120430194845.850346878@linutronix.de>
 MIME-Version: 1.0
-X-WSS-ID: 63B8EFA73E028888240-01-01
-Content-Type: text/plain;
- charset=utf-8
+Content-Type: multipart/signed;
+  boundary="nextPart3417189.oGjxHQfq1C";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205060416.28085.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q4682ut8012882
 
-> On Mon, 2012-04-23 at 17:28 -0400, David Miller wrote:
-> > You can't just submit three seperate patches each with the same exact
-> > Subject line.
-> >
-> > Otherwise someone scanning the commit headers can't figure out what
-> > is different in each of these changes.
-> >
-> > There also is no signoff from Ben for patches #2 or #3, did he review
-> > them?  If so, why didn't he ACK or sign off on it?  If not, why not?
-> 
-> Sorry, I've been busy with another project.  I'll reply to Stuart's
-> patches faster next round.
-> 
-> Ben.
+--nextPart3417189.oGjxHQfq1C
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 
-Hi Stuart,
-It's been 3 weeks since you sent the initial patch series which were not
-accepted. Please reply if you're going to resubmit fixed patches soon,
-otherwise I'll take over, and complete this task from where you left it.
+On Monday 30 April 2012 16:15:54 Thomas Gleixner wrote:
+> Same code. Use the generic version. The special Makefile treatment is
+> pointless anyway as init_task.o contains only data which is handled by
+> the linker script. So no point on being treated like head text.
 
-Thanks much,
-Yaniv
+thanks !
 
-> 
-> --
-> Ben Hutchings, Staff Engineer, Solarflare
-> Not speaking for my employer; that's the marketing department's job.
-> They asked us to note that Solarflare product names are trademarked.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+-mike
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--nextPart3417189.oGjxHQfq1C
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJPpjNcAAoJEEFjO5/oN/WBfUIP/0au5BWIuaXvwuaVK01tmZGt
+lnJLTIdl9OOlQ2+Ij/f8YQHOe82dZCp8fWiw8ytWQhUt4A1aEhghIu41lrA+MC2j
+V8sSo1AjcjGbv5KHuDgMt+pLSuIeZSTMKe4qZEkQDfWYDiUN/lMdwvEsu7fhum75
+iJgPHWz87YuYDFFvHh7PXLbz2wQ4zkroSdNGcTel7PegT0t3MLiqSCeyB/ojRiXc
+OA6APCgwI8/1sEdz6whfMZJUkMEnuyRILqhdgeYUF8SXhCwMcP6w+475y60fmZFz
+YfSKkud4k2hdjifmhgm8EK+U0h0CL5f+HyR2QD9mcVSUyhdOQeZOiq7Cfu5C5T2R
+3ZkZ56RZLRr4RwB2B/g+rprC9XSbsvku9kSmmEPhSahOs8e9NJWgH7ikUTw9WDwF
+xEw7zvI3l/atCfX3JnFVEPtFDhtch3yR8HGpyM9QBsIH7Me+TJTVyMZOEliJp5kz
+c3BGU2LONw7Z7y9FTTcbLvwkqH00lhI7t0HpvBeDJ1WjKf5xq3KDLpEJUCohKNOs
+k86ri5yLVcmZvlk2PfVGCpJHPJNii2pVEx7CGWtW4EjiW18BRHRyFecP4IIlYuBG
+kWjoYCIn5sLtlj3+gfU041S8QQlaQZzudAAN8AOLxKV0frMLBH6TtDGXIarBni69
+2Ci44C95h8ukO5Mf/y9v
+=zfPU
+-----END PGP SIGNATURE-----
+
+--nextPart3417189.oGjxHQfq1C--
