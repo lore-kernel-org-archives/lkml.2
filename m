@@ -1,187 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab2EFOwx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 10:52:53 -0400
-Received: from nm18.bullet.mail.sg3.yahoo.com ([106.10.148.69]:32351 "HELO
-	nm18.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751320Ab2EFOww (ORCPT
+	id S1753708Ab2EFPFi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 11:05:38 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51006 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672Ab2EFPFf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 10:52:52 -0400
-X-Greylist: delayed 337 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 May 2012 10:52:52 EDT
-X-Yahoo-Newman-Id: 401364.92220.bm@smtp158.mail.sg3.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: .6CIVOsVM1nrz4hVrdPGlZHA.pPT6xcmvg8A54K3fBbuKob
- GE8nhhkvJlYT7hT2FHmTDQZr2NuX8mmSAFNGmZVCXR3OBnWWQP9Nb2cT9RQk
- RVkbtV4xx4VKnex7KkUXZk2kOrBiEMm5Fd9gZdBlQW4Q1e.dciklpFVI7PZk
- twRR_WWuoFLQNs2_0b1bbDKULz45SbNnmDUcQpGgUIQibAzIY5EV1U.ar9VL
- W_Hoc_LKDEa12iZcPoqpJbzkPW1ReHXnn_GdehOr5pOCy36u2cFK1J48g06f
- rMdqHQvmr2LUMHgUHIwK3A6P4nk1ovMTfg1nyDSZ19NR9siHdBwU47SbRB4z
- KM2Zox1xc_EMcOIkpV0K4eg7S7d14E5A-
-X-Yahoo-SMTP: 02rzDzGswBBHndT0KJci8fHWBUoMLdeWx6TQ
-From: =?GB2312?B?18nRr7eixrG0+r+qMTM5Mjg0NzI0MjHVxQ==?= 
-	<larajbbenjamni@yahoo.com>
-To: "lilongwe-chat" <lilongwe-chat@googlegroups.com>
-Subject: afjnsw@02356801.com
-Message-ID: <201205062246596874689@yahoo.com>
-Date: Sun, 6 May 2012 22:46:59 +0800
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	Sun, 6 May 2012 11:05:35 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="----=hlp825_9342_383357838.378657"
-X-Priority: 1
+From: girish verma <girish.gcet@gmail.com>
+Date: Sun, 6 May 2012 20:35:13 +0530
+Message-ID: <CAMC5Lb4bMfqnWuvzcisGNV-uM08vHJMLt8X+mYmOp0P6RzqtrA@mail.gmail.com>
+Subject: [patch] xhci: testing sizeof xhci_doorbell_array 2 time
+To: kernel-janitors@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Testing BUILD_BUG_ON xhci_doorbell_array structure 2 time, redundant statement
 
-------=hlp825_9342_383357838.378657
-Content-Type: text/plain;
-	charset="GB2312"
-Content-Transfer-Encoding: base64
+Signed-off-by: Girish Verma <girish.gcet@gmail.com>
 
-lilongwe-chat@googlegroups.com
-=C4=E3--=BA=C3=A3=A1
-253.241.109.128
+ ---
+ drivers/usb/host/xhci.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-
-------=hlp825_9342_383357838.378657
-Content-Type: image/gif;
-	name="Hlpo8241.gif"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="Hlpo8241.gif"
-
-GIF87aN=01>=00w=00=00,=00=00=00=00N=01>=00=87=00=00=00=00=003=00=00f=
-=00=0
-0=99=00=00=CC=00=00=FF=003=00=0033=003f=003=99=003=CC=003=FF=00f=
-=00=00f3=
-00ff=00f=99=00f=CC=00f=FF=00=99=00=00=993=00=99f=00=99=99=00=
-=99=CC=00=99=
-FF=00=CC=00=00=CC3=00=CCf=00=CC=99=00=CC=CC=00=CC=FF=00=
-=FF=00=00=FF3=00=F
-Ff=00=FF=99=00=FF=CC=00=FF=FF3=00=003=0033=00f3=00=
-=993=00=CC3=00=FF33=003
-3333f33=9933=CC33=FF3f=003f33ff3f=993f=CC3f=FF3=
-=99=003=9933=99f3=99=993=9
-9=CC3=99=FF3=CC=003=CC33=CCf3=CC=993=CC=CC3=
-=CC=FF3=FF=003=FF33=FFf3=FF=99
-3=FF=CC3=FF=FFf=00=00f=003f=00ff=00=99f=
-=00=CCf=00=FFf3=00f33f3ff3=99f3=CC
-f3=FFff=00ff3fffff=99ff=CCff=FFf=99=
-=00f=993f=99ff=99=99f=99=CCf=99=FFf=CC
-=00f=CC3f=CCff=CC=99f=CC=CCf=CC=
-=FFf=FF=00f=FF3f=FFff=FF=99f=FF=CCf=FF=FF=
-99=00=00=99=003=99=00f=99=00=
-=99=99=00=CC=99=00=FF=993=00=9933=993f=993=99
-=993=CC=993=FF=99f=00=99f=
-3=99ff=99f=99=99f=CC=99f=FF=99=99=00=99=993=99=9
-9f=99=99=99=99=99=CC=
-=99=99=FF=99=CC=00=99=CC3=99=CCf=99=CC=99=99=CC=CC=99
-=CC=FF=99=FF=00=
-=99=FF3=99=FFf=99=FF=99=99=FF=CC=99=FF=FF=CC=00=00=CC=003=
-CC=00f=CC=00=
-=99=CC=00=CC=CC=00=FF=CC3=00=CC33=CC3f=CC3=99=CC3=CC=CC3=FF=C
-Cf=00=CCf=
-3=CCff=CCf=99=CCf=CC=CCf=FF=CC=99=00=CC=993=CC=99f=CC=99=99=CC=9
-9=CC=
-=CC=99=FF=CC=CC=00=CC=CC3=CC=CCf=CC=CC=99=CC=CC=CC=CC=CC=FF=CC=FF=00=
-
-=CC=FF3=CC=FFf=CC=FF=99=CC=FF=CC=CC=FF=FF=FF=00=00=FF=003=FF=00f=FF=00=
-=
-99=FF=00=CC=FF=00=FF=FF3=00=FF33=FF3f=FF3=99=FF3=CC=FF3=FF=FFf=00=FFf=
-3=FF
-ff=FFf=99=FFf=CC=FFf=FF=FF=99=00=FF=993=FF=99f=FF=99=99=FF=99=CC=
-=FF=99=FF
-=FF=CC=00=FF=CC3=FF=CCf=FF=CC=99=FF=CC=CC=FF=CC=FF=FF=FF=00=
-=FF=FF3=FF=FFf
-=FF=FF=99=FF=FF=CC=FF=FF=FF=00=00=00=00=00=00=00=00=00=
-=00=00=00=00=00=00=
-00=00=00=00=00=00=00=00=00=00=00=00=00=00=00=00=00=
-=00=00=00=00=00=00=00=0
-0=00=00=00=00=00=00=00=00=00=00=00=00=00=00=00=
-=00=00=00=00=00=00=00=00=00
-=00=00=00=00=00=00=00=00=00=00=00=00=00=00=
-=00=00=00=00=00=00=00=00=00=00=
-00=00=00=00=00=00=00=00=00=00=00=00=00=
-=00=00=00=00=00=00=00=00=00=00=00=0
-0=00=00=00=00=00=00=00=08=FF=00=F7=
-=08=1CH=B0=A0=C1=83=08=13*\=C8=B0=A1=C3
-=87=10#J=9CH=B1=A2=C5=8B=183j=
-=DC=C8=B1=A3=C7=8F C=8A=1CI=B2=A4=C9=93(S=AA
-\=C9=B2=A5=CB=970c=CA=9CI=
-=B3=A6=CD=9B8s=EA=DC=C9=B3=A7=CF=9F@=83
-=1DJ=B4
-=A8=D1=A3H=93*]=CA=B4=A9=D3=A7P=A3J=9DJ=B5=AA=D5=ABX=B3j=DD=CA=
-=B5=AB=D7=A
-F`=C3=8A=1DK=B6=AC=D9=B3h=D3=AA]=CB=B6=AD=DB=B7p=E3=CA=9DK=
-=B7=AE=DD=BBx=F
-3=EA=DD=CB=B7=AF=DF=BF=80=03=0B=1EL=B8=B0=E1=C3=88=13+^=
-=CC=B8=B1=E3=C7=90
-#K=9EL=B9=B2=E5=CB=983?=BD=B2=82=05`=16+=AEhny=05=00=
-=00=D1=7FK=9F=1E=ADR5
-=EA=96PJ@y=CD=D4=B5=E1+Pf=EF=E1=0C=C0=8A@(=A6}G=
-=BCR=C2=B4=F1=E3=A6K=08_h=
-9B!g(=02W=98~M[=A2=F1=15=17=AD=00=C0=AE=BA=
-=C4@+=B2W6=FF=07=8C=1B=B9=15=ED
-=00=BC=EF=91=0E=C0s=C2=D8,r=AF=98=CD=02=
-=B9}=D3=D0=99Og=88~{t=D3=9E=A9=B6=
-9AB=FD=DDg`p=FC=19=07=1Dp=FB=F5=B7\B=
-=EC=1Dh_h=FA
-=C8=17=83=F7=F9=C6=A0h=
-D2a=07=E1}=A1=89=E6=1A=83=BE=9D=E7=DC~=08=95=87=
-=1Cj=EC=CDv\u=06E=B8]n=18=
-02@=E3=8D=0F=1A=A4"~=FFM'=A0=85=08=C9(=A1y'=
-=02=A9=97=15+$	`AV=E8f=A2B=11b
-=08E}C=A6=A7=D0x=05=D5=A8 A-2=A8[C?=0E=
-=E9=E1A=05n=D9#=00=BB=3D=C9_	=14=EE
-q=DD=994=C2=98"=8A{5	=85=8CwJ8f=96=
-=A6a=E7=A5=90=C7=E5=E9=DF=9CF=12T=1Cr=D
-8=81=87(=8E=0EI=99[=A0=82=16*=
-=D0=A1=C8q=A9 =0B=94*=07=D1=9B=EB=197=11=96w
-QY=E5}rJi\=93=F8=E1G%=A6<=
-=1E=04*=93=13j=FF)=A1=9C=04=859=E4{=19R=AA=E7=A6
-
-=D6H=D1=ABt]=C7=A9=97=041=B8g=B1=A4=CA=9A=A1=ABt&t=05=87}=02j`~=0B=19=
-=8
-7=1A=A7=E8=1D=CB=E7=A8=D7}=89=90=A8=DCN[$=ADt=15=08=1Dz=EE=FD=D6'B=
-=A6=FA(
-]=8E=02i=D7fA=EFB=C4^=88=03=1D=DAbD=D2=DE=97.=94=C8=C9=16=A1=B6=
-=EC=86+fC=
-F2=D69=A1=AD=81=16l=E3=1E=1B=EE6$=BC=02=01=1B=E4=BA=03	x(=B9=
-	5y-=C6=C0Q|P
-=84=04=15=E8=D0q+X!=A2=99=186=A9+=C1:6k=97=B2=ED=81K=E4A=
-=CA=8A=86d=9F7=E6
-=A6=B2=B32=7F8=A8=BA=DBa=0C=E6=156=EB=C9=F1=99=05=1D'=
-2=93=F0
-=88=1A=86=B
-5=CE=07f=D0s=F1=86=A8j=E7=F5=D9*=AE=F6]Q=A6=98=D5YL=AF=D1=
-=02=AE=FAPr=01=B
-3P=1F=B5H?=BC=10=C9=C8=1A-=11=D5DKZ=E1=D2n=D5=FF=B8=F3=
-=D0=10=A7
-8=CE<=B2
-7=F6=C11=EBm=E9=D0=11=A2G=EDBTj=CD=C2=CA>.=D9=10=DD=197,=91=80=
-cb=C8wAf=C7
-e=E6=BE=03Y=EB=A9B=C4v9=F9=B3=9D=0E=8D.=D0=8A=F7=E8a=E3=0C=
-=AA=07=FA=CF=F1
-=9A~_	=D0b=1D=E3=E9u[=FE=D0=8F=D4z=0EQ=E8w=91N=DC=BA=87=
-=C2=9D=DBk=CA=E6=C
-7=9E=D6=82~=1E=FA=BD5zV=E0|=F2Y[1=A7=BBi=D9=F8C=98/~=
-=E0=E3=99=A3=1C=FC=E7
-=DF=C7=8EW=8B=7F[=19=B8=81=AF=1D=AE=E1=BA-=8E?nB=
-=06=8E=89=F8=FCr=AB=DA=A8
-R62=E0=D5jH=FF=D2=9A=FA=08"=AA=E1=F9n/=D2J=17=
-=C3=02=F8=1B
-=89M4=C4rS=9F=
-C2=C47=8B=A1l;=B4=99 =82rg=1A=D4UIN=E5;`=FF@g=1F=F4=B5=
-=0EMWs_^=BA$=9B=B2=
-E9jp)J=12=A0=F2=C3=1Bo]	kfB=C8=E1T=D0=C7=BA=04=D1=
-=EF[v3=88=AC`=A6(=17N*91
-d=DF]=D0=F3=B4=8A=C5=86=80=11=D9=9EE8=F3=AF=81=
-=C4=A6=8A=19=DB=19=16+=A2@
-
-
-=EAHM=04=EA=90=14
-B=C5=86=80f=8D=AC=A9X=11=E3H=C7:=DA=F1=8Ex=CC=A3=1E=F7=C
-8=C7>&% =00;
-
-------=hlp825_9342_383357838.378657--
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 36641a7..cfcf733 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -4090,7 +4090,6 @@ static int __init xhci_hcd_init(void)
+ 	BUILD_BUG_ON(sizeof(struct xhci_intr_reg) != 8*32/8);
+ 	/* xhci_run_regs has eight fields and embeds 128 xhci_intr_regs */
+ 	BUILD_BUG_ON(sizeof(struct xhci_run_regs) != (8+8*128)*32/8);
+-	BUILD_BUG_ON(sizeof(struct xhci_doorbell_array) != 256*32/8);
+ 	return 0;
+ unreg_pci:
+ 	xhci_unregister_pci();
+--
