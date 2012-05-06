@@ -1,68 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab2EFSsg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 14:48:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35409 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754079Ab2EFSsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 14:48:35 -0400
-References: <20120506162000.GT6871@ZenIV.linux.org.uk> <CA+55aFzj3Ocjpnw3WdmKjp3oELwmXt=Zs2=fZuYy0TUyF4nXiA@mail.gmail.com> <20120506175451.GU6871@ZenIV.linux.org.uk> <4FA6BBD9.3040308@zytor.com> <20120506184641.GW6871@ZenIV.linux.org.uk>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120506184641.GW6871@ZenIV.linux.org.uk>
+	id S1754316Ab2EFS4v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 14:56:51 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:52616 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754224Ab2EFS4t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 14:56:49 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApZ/AGTIpk9V5qg+PGdsb2JhbABEijSnFASBHhkBAQEBNzSCDAEBBAEnExwjBQsIA0YUJQoaE4gJCbliE4srhH5jBJV9hgaNKIFUGQ
+X-IronPort-AV: E=Sophos;i="4.75,539,1330902000"; 
+   d="scan'208";a="327722180"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sun, 6 May 2012 21:01:46 +0200
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] HID: hid-multitouch: fix wrong protocol detection
+Message-ID: <20120506190146.GA12571@polaris.bitmath.org>
+References: <1336136030-18503-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1336136030-18503-2-git-send-email-benjamin.tissoires@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] broken TASK_SIZE for ia32_aout
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 06 May 2012 11:48:15 -0700
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
-Message-ID: <b73ca203-c9d8-4ca3-b680-d00499f284cd@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336136030-18503-2-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I would argue Sparc is not correct here but I am not a Sparc expert.
+Hi Benjamin,
 
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> The previous implementation introduced a randomness in the splitting
+> of the different touches reported by the device. This version is more
+> robust as we don't rely on hi->input->absbit, but on our own structure.
+> 
+> This also prepares hid-multitouch to better support Win8 devices.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+> ---
+>  drivers/hid/hid-multitouch.c |   58 +++++++++++++++++++++++++++++++++--------
+>  1 files changed, 46 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 84bb32e..c6ffb05 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -70,9 +70,16 @@ struct mt_class {
+>  	bool is_indirect;	/* true for touchpads */
+>  };
+>  
+> +struct mt_fields {
+> +	unsigned usages[HID_MAX_FIELDS];
+> +	unsigned int length;
+> +};
+> +
+>  struct mt_device {
+>  	struct mt_slot curdata;	/* placeholder of incoming data */
+>  	struct mt_class mtclass;	/* our mt device class */
+> +	struct mt_fields *fields;	/* temporary placeholder for storing the
+> +					   multitouch fields */
 
->On Sun, May 06, 2012 at 10:58:49AM -0700, H. Peter Anvin wrote:
->
->> > What kind of semantics do we want?  "Thread property" one, set when
->we
->> > set personality on execve(), or "syscall property", like e.g. x86
->TIF_IRET
->> > and TS_COMPAT?
->> 
->> It depends on the ABI properties of the platform.  The x86 compat ABI
->is
->> that any task can issue a compat ABI request and get a compat ABI
->> response (a 64-bit task can call int $0x80 for an ia32 syscall
->> invocation, or use syscall with either an x86-64 or and x32 system
->call
->> number.)  So is_compat_task() returns the current system call mode of
->> the task, because that is what downstream users need.  One of the
->> biggest users is the input subsystem, which earns the black mark for
->> worst possible ABI design, and that definitely depends on the system
->> call type being invoked.
->
->Umm...  Let me restate that question: is there ever a case when it
->would
->_not_ be a syscall property?  I.e. when both 64bit and 32bit syscalls
->are
->possible for a given process *and* callers of is_compat_task() care
->about
->the kind of process and not the kind of syscall?
->
->Is e.g. sparc behaviour ("what kind of process it is, regardless of
->whether
->we are issuing a 32bit or a 64bit syscall") correct?
->
->Sure, on a platform where the possible kind of syscall is a function of
->process' personality, a thread property can be a used to tell which
->kind of syscall we are in.
+Why not skip the pointer here?
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+>  	unsigned last_field_index;	/* last field index of the report */
+>  	unsigned last_slot_field;	/* the last field of a slot */
+>  	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
+> @@ -275,11 +282,15 @@ static void set_abs(struct input_dev *input, unsigned int code,
+>  	input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
+>  }
+>  
+> -static void set_last_slot_field(struct hid_usage *usage, struct mt_device *td,
+> +static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
+>  		struct hid_input *hi)
+
+How about adding the last_field_index here also, using a function like
+
+static void mt_store_field(struct mt_device *td, struct hid_input *hi,
+       	    		struct hid_field *field, struct hid_usage *usage)
+
+>  {
+> -	if (!test_bit(usage->hid, hi->input->absbit))
+> -		td->last_slot_field = usage->hid;
+> +	struct mt_fields *f = td->fields;
+
+And inserting td->last_field_index = field->index here.
+
+> +
+> +	if (f->length >= HID_MAX_FIELDS)
+> +		return;
+> +
+> +	f->usages[f->length++] = usage->hid;
+>  }
+>  
+>  static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+> @@ -330,7 +341,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  				cls->sn_move);
+>  			/* touchscreen emulation */
+>  			set_abs(hi->input, ABS_X, field, cls->sn_move);
+> -			set_last_slot_field(usage, td, hi);
+> +			mt_store_field(usage, td, hi);
+>  			td->last_field_index = field->index;
+>  			return 1;
+>  		case HID_GD_Y:
+> @@ -340,7 +351,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  				cls->sn_move);
+>  			/* touchscreen emulation */
+>  			set_abs(hi->input, ABS_Y, field, cls->sn_move);
+> -			set_last_slot_field(usage, td, hi);
+> +			mt_store_field(usage, td, hi);
+>  			td->last_field_index = field->index;
+>  			return 1;
+>  		}
+> @@ -349,24 +360,24 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  	case HID_UP_DIGITIZER:
+>  		switch (usage->hid) {
+>  		case HID_DG_INRANGE:
+> -			set_last_slot_field(usage, td, hi);
+> +			mt_store_field(usage, td, hi);
+>  			td->last_field_index = field->index;
+>  			return 1;
+>  		case HID_DG_CONFIDENCE:
+> -			set_last_slot_field(usage, td, hi);
+> +			mt_store_field(usage, td, hi);
+>  			td->last_field_index = field->index;
+>  			return 1;
+>  		case HID_DG_TIPSWITCH:
+>  			hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
+>  			input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
+> -			set_last_slot_field(usage, td, hi);
+> +			mt_store_field(usage, td, hi);
+>  			td->last_field_index = field->index;
+>  			return 1;
+>  		case HID_DG_CONTACTID:
+>  			if (!td->maxcontacts)
+>  				td->maxcontacts = MT_DEFAULT_MAXCONTACT;
+>  			input_mt_init_slots(hi->input, td->maxcontacts);
+> -			td->last_slot_field = usage->hid;
+> +			mt_store_field(usage, td, hi);
+>  			td->last_field_index = field->index;
+>  			td->touches_by_report++;
+>  			return 1;
+> @@ -375,7 +386,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  					EV_ABS, ABS_MT_TOUCH_MAJOR);
+>  			set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
+>  				cls->sn_width);
+> -			set_last_slot_field(usage, td, hi);
+> +			mt_store_field(usage, td, hi);
+>  			td->last_field_index = field->index;
+>  			return 1;
+>  		case HID_DG_HEIGHT:
+> @@ -385,7 +396,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  				cls->sn_height);
+>  			input_set_abs_params(hi->input,
+>  					ABS_MT_ORIENTATION, 0, 1, 0, 0);
+> -			set_last_slot_field(usage, td, hi);
+> +			mt_store_field(usage, td, hi);
+>  			td->last_field_index = field->index;
+>  			return 1;
+>  		case HID_DG_TIPPRESSURE:
+> @@ -396,7 +407,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  			/* touchscreen emulation */
+>  			set_abs(hi->input, ABS_PRESSURE, field,
+>  				cls->sn_pressure);
+> -			set_last_slot_field(usage, td, hi);
+> +			mt_store_field(usage, td, hi);
+>  			td->last_field_index = field->index;
+>  			return 1;
+>  		case HID_DG_CONTACTCOUNT:
+> @@ -650,6 +661,16 @@ static void mt_post_parse_default_settings(struct mt_device *td)
+>  	td->mtclass.quirks = quirks;
+>  }
+>  
+> +static void mt_post_parse(struct mt_device *td)
+> +{
+> +	struct mt_fields *f = td->fields;
+> +
+> +	if (td->touches_by_report > 0) {
+> +		int field_count_per_touch = f->length / td->touches_by_report;
+> +		td->last_slot_field = f->usages[field_count_per_touch - 1]->hid;
+> +	}
+> +}
+> +
+>  static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  {
+>  	int ret, i;
+> @@ -680,6 +701,13 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  	td->maxcontact_report_id = -1;
+>  	hid_set_drvdata(hdev, td);
+>  
+> +	td->fields = kzalloc(sizeof(struct mt_fields), GFP_KERNEL);
+> +	if (!td->fields) {
+> +		dev_err(&hdev->dev, "cannot allocate multitouch fields data\n");
+> +		ret = -ENOMEM;
+> +		goto fail;
+> +	}
+> +
+
+This can be skipped.
+
+>  	ret = hid_parse(hdev);
+>  	if (ret != 0)
+>  		goto fail;
+> @@ -688,6 +716,8 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  	if (ret)
+>  		goto fail;
+>  
+> +	mt_post_parse(td);
+> +
+>  	if (id->vendor == HID_ANY_ID && id->product == HID_ANY_ID)
+>  		mt_post_parse_default_settings(td);
+>  
+> @@ -705,9 +735,13 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  	mt_set_maxcontacts(hdev);
+>  	mt_set_input_mode(hdev);
+>  
+> +	kfree(td->fields);
+> +	td->fields = NULL;
+> +
+
+Ditto.
+
+>  	return 0;
+>  
+>  fail:
+> +	kfree(td->fields);
+
+Ditto.
+
+>  	kfree(td);
+>  	return ret;
+>  }
+> -- 
+> 1.7.7.6
+> 
+
+Thanks,
+Henrik
