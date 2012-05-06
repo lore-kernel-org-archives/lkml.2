@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754326Ab2EFS60 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 14:58:26 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:41257 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754178Ab2EFS6Z (ORCPT
+	id S1754397Ab2EFTAR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 15:00:17 -0400
+Received: from smtp-vbr10.xs4all.nl ([194.109.24.30]:3621 "EHLO
+	smtp-vbr10.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754221Ab2EFTAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 14:58:25 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApZ/AJ7Jpk9V5qg+PGdsb2JhbABEijSnFASBHhkBAQEBNzSCDAEBBAEnExwjBQsIA0YUJQoaE4gJCbljE4srhH5jBJV9hgaDVYlT
-X-IronPort-AV: E=Sophos;i="4.75,539,1330902000"; 
-   d="scan'208";a="327722513"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Sun, 6 May 2012 21:03:23 +0200
-To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] HID: hid-multitouch: get maxcontacts also from
- logical_max value
-Message-ID: <20120506190322.GB12571@polaris.bitmath.org>
-References: <1336136030-18503-1-git-send-email-benjamin.tissoires@gmail.com>
- <1336136030-18503-3-git-send-email-benjamin.tissoires@gmail.com>
+	Sun, 6 May 2012 15:00:15 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: manjunatha_halli@ti.com
+Subject: Re: [PATCH V4 4/5] Media: Update docs for V4L2 FM new features
+Date: Sun, 6 May 2012 21:00:09 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4.0-rc3-tschai; KDE/4.7.4; x86_64; ; )
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Manjunatha Halli <x0130808@ti.com>
+References: <1336164542-11014-1-git-send-email-manjunatha_halli@ti.com> <1336164542-11014-5-git-send-email-manjunatha_halli@ti.com> <201205050041.34232.hverkuil@xs4all.nl>
+In-Reply-To: <201205050041.34232.hverkuil@xs4all.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336136030-18503-3-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205062100.09979.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat May 5 2012 00:41:34 Hans Verkuil wrote:
+> > +    <table pgwide="1" frame="none" id="Radio band Types">
+> > +      <title>Radio Band Types</title>
+> > +      <tgroup cols="2">
+> > +	&cs-str;
+> > +	<tbody valign="top">
+> > +		    <row>
+> > +		      <entry><constant>FM_BAND_TYPE_ALL</constant>&nbsp;</entry>
+> > +		      <entry>All Bands from 65.8 MHz till 108 Mhz or 162.55 MHz if weather band.</entry>
+> > +		    </row>
+> 
+> Hmm, I have to thing about that name. And about other related issues as well:
+> what to do if a band isn't supported? How does an application know which bands are
+> in fact supported?
+> 
+> It's too late and I'll have to think about this tomorrow.
 
-> Win8 devices are required to present the feature "Maximum Contact Number".
-> If the current value is 0, then, the driver can get the actual supported
-> contact count by seeing the logical_max.
+OK, I've thought about this a bit more. First of all we need a way to detect
+which bands are supported. I propose to add capability flags to struct v4l2_tuner,
+one for each band. There are more than enough capability flags available, so we can
+start from bit 16 and add 4 capability flags for the four bands.
 
-And for win7, it is zero?
+Since applications can now detect which bands are available, it is OK for the SEEK
+ioctl to return -EINVAL if the band isn't present. Please update the SEEK ioctl
+documentation accordingly.
+
+With respect to the name FM_BAND_TYPE_ALL: I propose to rename that to _TYPE_DEFAULT.
+The description should be something like:
+
+"This is the default band, which should be the widest frequency range supported by
+the hardware."
+
+I think that is a better name since that is what drivers to at the moment. I don't
+think you can guarantee an 'All bands' setting as that is often limited by the hardware.
+
+What do you think?
+
+Regards,
+
+	Hans
 
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-> ---
->  drivers/hid/hid-multitouch.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> Regards,
 > 
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index c6ffb05..e205d1e 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -265,6 +265,8 @@ static void mt_feature_mapping(struct hid_device *hdev,
->  	case HID_DG_CONTACTMAX:
->  		td->maxcontact_report_id = field->report->id;
->  		td->maxcontacts = field->value[0];
-> +		if (!td->maxcontacts)
-> +			td->maxcontacts = field->logical_maximum;
->  		if (td->mtclass.maxcontacts)
->  			/* check if the maxcontacts is given by the class */
->  			td->maxcontacts = td->mtclass.maxcontacts;
-> -- 
-> 1.7.7.6
+> 	Hans
 > 
-
-Thanks,
-Henrik
+> > +		    <row>
+> > +		      <entry><constant>FM_BAND_TYPE_EUROPE_US</constant>&nbsp;</entry>
+> > +		      <entry>Europe or US band(87.5 Mhz - 108 MHz).</entry>
+> > +		    </row>
+> > +		    <row>
+> > +		      <entry><constant>FM_BAND_TYPE_JAPAN</constant>&nbsp;</entry>
+> > +		      <entry>Japan band(76 MHz - 90 MHz).</entry>
+> > +		    </row>
+> > +		    <row>
+> > +		      <entry><constant>FM_BAND_TYPE_RUSSIAN</constant>&nbsp;</entry>
+> > +		      <entry>OIRT or Russian band(65.8 MHz - 74 MHz).</entry>
+> > +		    </row>
+> > +		    <row>
+> > +		      <entry><constant>FM_BAND_TYPE_WEATHER</constant>&nbsp;</entry>
+> > +		      <entry>Weather band(162.4 MHz - 162.55 MHz).</entry>
+> > +		    </row>
+> > +	</tbody>
+> > +      </tgroup>
+> > +    </table>
+> >  
+> >    <refsect1>
+> >      &return-value;
+> > 
+> 
