@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294Ab2EFH5W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 03:57:22 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43950 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751929Ab2EFH5V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 03:57:21 -0400
-Message-ID: <1336291033.7955.0.camel@dabdike.home>
-Subject: Re: [PATCH] Fix compile failure on PA-RISC
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Helge Deller <deller@gmx.de>
-Cc: John David Anglin <dave.anglin@bell.net>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 06 May 2012 08:57:13 +0100
-In-Reply-To: <4FA59A75.8080402@gmx.de>
-References: <Pine.LNX.4.64.1205042250130.18896@file.rdu.redhat.com>
-	 <1798237.g4OIBKAx4s@donald.sf-tec.de>
-	 <Pine.LNX.4.64.1205051445360.2623@file.rdu.redhat.com>
-	 <BLU0-SMTP81AFFA5151451BADCB23B3972D0@phx.gbl> <4FA59A75.8080402@gmx.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+	id S1752407Ab2EFICO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 04:02:14 -0400
+Received: from antcom.de ([188.40.178.216]:44735 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752152Ab2EFICL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 04:02:11 -0400
+Message-ID: <4FA62FFE.6090301@antcom.de>
+Date: Sun, 06 May 2012 10:02:06 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+MIME-Version: 1.0
+To: Rob Landley <rob@landley.net>
+CC: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rdunlap@xenotime.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        w.sang@pengutronix.de, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RESEND] Documentation: devicetree: Fix value format description
+References: <1336217886-27224-1-git-send-email-stigge@antcom.de> <4FA57504.2070308@landley.net>
+In-Reply-To: <4FA57504.2070308@landley.net>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-05-05 at 23:24 +0200, Helge Deller wrote:
-> On 05/05/2012 10:09 PM, John David Anglin wrote:
-> > On 5-May-12, at 2:55 PM, Mikulas Patocka wrote:
-> > 
-> >> I acknowledge that your patches work. So send them directly to Linus. I
-> >> think there is not much maintenance being done on PA-RISC.
-> > 
-> > James wrote back in March "I haven't yet actually tried git head on parisc
-> > (and I won't be able to until I actually get my machines back [currently being
-> > shipped across the atlantic]) but if there's a problem it will show up quickly:
-> > parisc actually uses cpu hotplug to boot its secondary cpus."
+Hi,
+
+On 05/05/12 20:44, Rob Landley wrote:
+> On 05/05/2012 06:38 AM, Roland Stigge wrote:
+>> Numeric values in dts files can be specified in decimal and hex (the latter
+>> prefixed 0x). The current documentation is updated with this patch to prevent
+>> confusion about what is meant with values without "0x" (previously hex, now
+>> dec).
 > 
-> > Helge resigned due to lack of time.
-> 
-> I'm still alive and was still reading the mailing list.
-> And I'm planning to test some newer kernels very soon again :-)
-> So, many thanks from my side to everyone who sent patches in the past
-> (incl. Mikulas, Rolf and others).
+> This updates the documentation to consistently say 0x in front of hex
+> values, but doesn't change the device tree _parser_. What did the parser
+> previously do with this input?
 
-If you could, it would help.  I still have no access to PA systems
-(should have mine by next week), but I'm on holiday this week anyway.
+I can add the following para to the patch description if you ack:
 
-James
+===========================================================================
+Background:
 
+Since 2011's update to scripts/dtc/dtc-lexer.l, we only support the
+/dts-v1/ format which mandates "0x" for hex values. Practically,
+literals (<V1>[0-9]+|0[xX][0-9a-fA-F]+ -> DT_LITERAL) are handled via
+strtoull() with base==0 ("auto"), while we previously also had a
+DT_LEGACYLITERAL (<INITIAL>[0-9a-fA-F]+), forcing base==16. Not anymore.
+===========================================================================
 
+Thanks in advance,
+
+Roland
