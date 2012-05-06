@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab2EFPFi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 11:05:38 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51006 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672Ab2EFPFf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 11:05:35 -0400
+	id S1753837Ab2EFPI4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 11:08:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:32298 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751672Ab2EFPIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 11:08:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="149853857"
+Date: Sun, 6 May 2012 23:11:56 +0800
+From: Xudong Hao <xudong.hao@linux.intel.com>
+To: bhelgaas@google.com
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, xiantao.zhang@intel.com, xudong.hao@intel.com
+Subject: [PATCH] PCI: save/restore max Latency Value for device LTR
+Message-ID: <20120506151156.GA13805@hp-xd.sh.intel.com>
 MIME-Version: 1.0
-From: girish verma <girish.gcet@gmail.com>
-Date: Sun, 6 May 2012 20:35:13 +0530
-Message-ID: <CAMC5Lb4bMfqnWuvzcisGNV-uM08vHJMLt8X+mYmOp0P6RzqtrA@mail.gmail.com>
-Subject: [patch] xhci: testing sizeof xhci_doorbell_array 2 time
-To: kernel-janitors@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Testing BUILD_BUG_ON xhci_doorbell_array structure 2 time, redundant statement
+LTR: Save Max snoop/no-snoop Latency Value in pci_save_pcie_state, and restore them in pci_restore_pcie_state.
 
-Signed-off-by: Girish Verma <girish.gcet@gmail.com>
+Signed-off-by: Xudong Hao <xudong.hao@intel.com>
 
- ---
- drivers/usb/host/xhci.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+---
+ drivers/pci/pci.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 36641a7..cfcf733 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -4090,7 +4090,6 @@ static int __init xhci_hcd_init(void)
- 	BUILD_BUG_ON(sizeof(struct xhci_intr_reg) != 8*32/8);
- 	/* xhci_run_regs has eight fields and embeds 128 xhci_intr_regs */
- 	BUILD_BUG_ON(sizeof(struct xhci_run_regs) != (8+8*128)*32/8);
--	BUILD_BUG_ON(sizeof(struct xhci_doorbell_array) != 256*32/8);
- 	return 0;
- unreg_pci:
- 	xhci_unregister_pci();
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 111569c..c8573c3 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -875,6 +875,12 @@ static int pci_save_pcie_state(struct pci_dev *dev)
+        pci_read_config_word(dev, pos + PCI_EXP_LNKCTL2, &cap[i++]);
+    if (pcie_cap_has_sltctl2(dev->pcie_type, flags))
+        pci_read_config_word(dev, pos + PCI_EXP_SLTCTL2, &cap[i++]);
++   if (pci_ltr_supported(dev)) {
++       pci_read_config_word(dev, pos + PCI_LTR_MAX_SNOOP_LAT,
++                           &cap[i++]);
++       pci_read_config_word(dev, pos + PCI_LTR_MAX_NOSNOOP_LAT,
++                           &cap[i++]);
++   }
+
+    return 0;
+ }
+@@ -908,6 +914,12 @@ static void pci_restore_pcie_state(struct pci_dev *dev)
+        pci_write_config_word(dev, pos + PCI_EXP_LNKCTL2, cap[i++]);
+    if (pcie_cap_has_sltctl2(dev->pcie_type, flags))
+        pci_write_config_word(dev, pos + PCI_EXP_SLTCTL2, cap[i++]);
++   if (pci_ltr_supported(dev)) {
++       pci_write_config_word(dev, pos + PCI_LTR_MAX_SNOOP_LAT,
++                           cap[i++]);
++       pci_write_config_word(dev, pos + PCI_LTR_MAX_NOSNOOP_LAT,
++                           cap[i++]);
++   }
+ }
+
+
 --
+1.6.0.rc1
+
