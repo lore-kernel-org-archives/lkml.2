@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab2EFLLR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 07:11:17 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:21361 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299Ab2EFLLQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 07:11:16 -0400
-Date: Sun, 6 May 2012 14:12:51 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Johannes Thumshirn <morbidrsa@googlemail.com>
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, andor.daam@googlemail.com,
-        grabner@icg.tugraz.at, jj@chaosbits.net, stefanha@gmail.com,
-        thomas@m3y3r.de
-Subject: Re: [PATCH 1/8] drivers/staging/line6/control.c: Change
- strict_strtoul to kstrtoul
-Message-ID: <20120506111251.GM22134@mwanda>
-References: <1336228312-5379-1-git-send-email-morbidrsa@googlemail.com>
- <1336228312-5379-2-git-send-email-morbidrsa@googlemail.com>
- <20120506063450.GH22134@mwanda>
- <1336292842.7144.2.camel@blackbook>
+	id S1753353Ab2EFLM5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 07:12:57 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58300 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753301Ab2EFLM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 07:12:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="137513467"
+Date: Sun, 6 May 2012 14:14:12 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Cc: linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>
+Subject: Re: [PATCH] smb347_charger: cleaned battery power supply attributes
+Message-ID: <20120506111412.GG31494@intel.com>
+References: <1336233834-21550-1-git-send-email-ramakrishna.pallala@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1336292842.7144.2.camel@blackbook>
+In-Reply-To: <1336233834-21550-1-git-send-email-ramakrishna.pallala@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 06, 2012 at 10:27:22AM +0200, Johannes Thumshirn wrote:
-> On Sun, 2012-05-06 at 09:34 +0300, Dan Carpenter wrote:
-> > On Sat, May 05, 2012 at 04:31:45PM +0200, Johannes Thumshirn wrote:
-> > > Changed strict_strtoul() call to kstrtoul to make checkpatch.pl happy
-> > > 
-> > 
-> > This would probably be better as kstrtou8(). You'd have to change
-> > the type of value, and the function parameters which take value as
-> > well.  Also you would have to change the name of pod_set_param_int()
-> > because it says "int".
-> > 
-> > 
-> > regards,
-> > dan carpenter
-> > 
+On Sat, May 05, 2012 at 09:33:54PM +0530, Ramakrishna Pallala wrote:
+> CURRENT_NOW and VOLTAGE_NOW should be instantaneous readings
+> from power supply(ex: battery).
 > 
-> Ok I'll look over these patches again, but I've got another question
-> regarding these, should I re-diff against the current linux-next or
-> against these patches?
+> smb347 charger driver reports charge voltage for VOLTAGE_NOW
+> and charge current for CURRENT_NOW attributes which are not
+> instantaneous readings.
 > 
+> This patch removes the battery VOLTAGE_NOW and CURRENT_NOW
+> properties from the driver and also removes hw_to_current()
+> which is not required anymore.
+> 
+> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
 
-Current linux-next, please.  Unless you recieved an email that Greg
-merged them, then they will be included in linux-next and both
-answers are equivalent.
+I agree. As the chip only reports voltage and current what is configured
+(and not the actual values) these attributes are pretty much useless and I
+should've never introduced them in the first place. A separate Fuel Gauge
+or similar is right place to get the actual values.
 
-regards,
-dan carpenter
+As long as Anton is ok with this, you can add my
 
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
