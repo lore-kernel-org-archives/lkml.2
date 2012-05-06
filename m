@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab2EFTVP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 15:21:15 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:40774 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754129Ab2EFTVO convert rfc822-to-8bit (ORCPT
+	id S1754289Ab2EFT6p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 15:58:45 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34351 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754062Ab2EFT6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 15:21:14 -0400
+	Sun, 6 May 2012 15:58:44 -0400
+Date: Sun, 6 May 2012 20:58:40 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] broken TASK_SIZE for ia32_aout
+Message-ID: <20120506195840.GX6871@ZenIV.linux.org.uk>
+References: <20120506162000.GT6871@ZenIV.linux.org.uk>
+ <CA+55aFzj3Ocjpnw3WdmKjp3oELwmXt=Zs2=fZuYy0TUyF4nXiA@mail.gmail.com>
+ <20120506175451.GU6871@ZenIV.linux.org.uk>
+ <4FA6BBD9.3040308@zytor.com>
+ <20120506184641.GW6871@ZenIV.linux.org.uk>
+ <b73ca203-c9d8-4ca3-b680-d00499f284cd@email.android.com>
 MIME-Version: 1.0
-In-Reply-To: <20120506101141.GI26481@n2100.arm.linux.org.uk>
-References: <1336180444-26563-1-git-send-email-ccross@android.com>
-	<20120505164933.GQ897@n2100.arm.linux.org.uk>
-	<20120506101141.GI26481@n2100.arm.linux.org.uk>
-Date: Sun, 6 May 2012 12:21:13 -0700
-X-Google-Sender-Auth: MgU1XFHHqnaH9Mp5TQaqDZ84Hp0
-Message-ID: <CAMbhsRTpOhBvaucV0CWNHTMbWLW4iKMrF16kL5BoTFnudtxs9g@mail.gmail.com>
-Subject: Re: [PATCH] ARM: SMP: prevent use of the console when using idmap_pgd
-From: Colin Cross <ccross@android.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Marc Zyngier <marc.zyngier@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <b73ca203-c9d8-4ca3-b680-d00499f284cd@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 6, 2012 at 3:11 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sat, May 05, 2012 at 05:49:33PM +0100, Russell King - ARM Linux wrote:
->> I think this is fine.  Please put it in the patch system, thanks.
->
-> It looks like this bug affects v3.2 kernels as well - should it be marked
-> for the attention of the stable kernel team?
+On Sun, May 06, 2012 at 11:48:15AM -0700, H. Peter Anvin wrote:
+> Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> >Umm...  Let me restate that question: is there ever a case when it
+> >would
+> >_not_ be a syscall property?  I.e. when both 64bit and 32bit syscalls
+> >are
+> >possible for a given process *and* callers of is_compat_task() care
+> >about
+> >the kind of process and not the kind of syscall?
+> >
+> >Is e.g. sparc behaviour ("what kind of process it is, regardless of
+> >whether
+> >we are issuing a 32bit or a 64bit syscall") correct?
+> >
+> >Sure, on a platform where the possible kind of syscall is a function of
+> >process' personality, a thread property can be a used to tell which
+> >kind of syscall we are in.
 
-I think it was introduced in v3.3, it should probably go to stable.
+> I would argue Sparc is not correct here but I am not a Sparc expert.
+
+Dave?
