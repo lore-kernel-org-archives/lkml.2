@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab2EFQZO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 12:25:14 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49251 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829Ab2EFQZN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 12:25:13 -0400
-From: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] gpio: langwell: Prevent possible NULL pointer dereference in the demux handler.
-Date: Sun,  6 May 2012 17:25:08 +0100
-Message-Id: <1336321508-20981-1-git-send-email-krzysztof.wilczynski@linux.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1753990Ab2EFQfD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 12:35:03 -0400
+Received: from bitmer.com ([213.157.87.50]:59269 "EHLO bitmer.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753857Ab2EFQfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 12:35:02 -0400
+X-Greylist: delayed 2601 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 May 2012 12:35:02 EDT
+Message-ID: <4FA69DB8.7060000@bitmer.com>
+Date: Sun, 06 May 2012 18:50:16 +0300
+From: Jarkko Nikula <jarkko.nikula@bitmer.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+MIME-Version: 1.0
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+CC: Tony Lindgren <tony@atomide.com>, Oleg Matcovschi <oleg.matcovschi@ti.com>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: Re: [PATCH] omap: dma: Clear status registers on enable/disable irq.
+References: <1334954578-10478-1-git-send-email-oleg.matcovschi@ti.com> <20120504165146.GB5613@atomide.com> <1633215.yCrxk1mQVq@acer>
+In-Reply-To: <1633215.yCrxk1mQVq@acer>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to address a possible NULL pointer dereference on a platform that might
-use this driver but its underlying IRQ chip does not provide an irq_eoi callback.
+On 05/04/2012 10:39 PM, Janusz Krzysztofik wrote:
+>> This seems like a nice fix to me. As it affects all omaps, I'd like to
+>> see some tested-by from Janusz/Jarkko/Peter. Can you guys give it a 
+> try
+>> with some audio tests?
+> 
+> OK, I can do, but perhaps not before next Saturday, when I'm back home, 
+> able to actually listen to the audio, not only watch the IRQ counters 
+> rising up ;-).
+> 
+Ok from omap3
 
-A commit 0766d20 added an conditional to the code, but then it was later
-super-seeded by commit 20e2aa9 which introduced number of helper functions
-for accessing various members of the irq_desc struct, but removed said
-conditional from the code.
-
-This change will re-introduce conditional guarding against possible NULL
-pointer dereference caused by missing EIO handler.
-
-Signed-off-by: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
----
- drivers/gpio/gpio-langwell.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
-index 00692e8..5749738 100644
---- a/drivers/gpio/gpio-langwell.c
-+++ b/drivers/gpio/gpio-langwell.c
-@@ -260,7 +260,8 @@ static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
- 		}
- 	}
- 
--	chip->irq_eoi(data);
-+	if (data)
-+		chip->irq_eoi(data);
- }
- 
- #ifdef CONFIG_PM
--- 
-1.7.2.5
-
+Tested-by: Jarkko Nikula <jarkko.nikula@bitmer.com>
