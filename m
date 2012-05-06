@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab2EFHZv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 03:25:51 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:58222 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472Ab2EFHZu (ORCPT
+	id S1752294Ab2EFH5W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 03:57:22 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43950 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751929Ab2EFH5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 03:25:50 -0400
-Message-ID: <4FA62777.4030402@linaro.org>
-Date: Sun, 06 May 2012 08:25:43 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: Karl Komierowski <karl.komierowski@stericsson.com>,
-        Arun Murthy <arun.murthy@stericsson.com>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 1/3] power/ab8500_charger: harden platform data check
-References: <1334304949-18301-1-git-send-email-linus.walleij@stericsson.com> <CACRpkdaM=OecD=M_J9X9shYKQkWO03mhb2BFxCWOeocr8_m=DQ@mail.gmail.com> <4F9C1CF5.3050706@linaro.org> <20120505120835.GA26976@lizard> <CAF2Aj3hy3KOsH3aiZ0UpuERSwOoqFdYQ4su-hEVcU-qp8r5d9A@mail.gmail.com> <20120505215542.GA16010@lizard>
-In-Reply-To: <20120505215542.GA16010@lizard>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sun, 6 May 2012 03:57:21 -0400
+Message-ID: <1336291033.7955.0.camel@dabdike.home>
+Subject: Re: [PATCH] Fix compile failure on PA-RISC
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Helge Deller <deller@gmx.de>
+Cc: John David Anglin <dave.anglin@bell.net>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Rolf Eike Beer <eike-kernel@sf-tec.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 06 May 2012 08:57:13 +0100
+In-Reply-To: <4FA59A75.8080402@gmx.de>
+References: <Pine.LNX.4.64.1205042250130.18896@file.rdu.redhat.com>
+	 <1798237.g4OIBKAx4s@donald.sf-tec.de>
+	 <Pine.LNX.4.64.1205051445360.2623@file.rdu.redhat.com>
+	 <BLU0-SMTP81AFFA5151451BADCB23B3972D0@phx.gbl> <4FA59A75.8080402@gmx.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/12 22:55, Anton Vorontsov wrote:
-> On Sat, May 05, 2012 at 05:55:09PM +0100, Lee Jones wrote:
->> Do you have a public tree/branch that I can look at so I may see the entire
->> file please?
->
-> Yep, here is the gitweb:
-> 	http://git.infradead.org/battery-2.6.git
-> or
-> 	git clone git://git.infradead.org/battery-2.6.git
+On Sat, 2012-05-05 at 23:24 +0200, Helge Deller wrote:
+> On 05/05/2012 10:09 PM, John David Anglin wrote:
+> > On 5-May-12, at 2:55 PM, Mikulas Patocka wrote:
+> > 
+> >> I acknowledge that your patches work. So send them directly to Linus. I
+> >> think there is not much maintenance being done on PA-RISC.
+> > 
+> > James wrote back in March "I haven't yet actually tried git head on parisc
+> > (and I won't be able to until I actually get my machines back [currently being
+> > shipped across the atlantic]) but if there's a problem it will show up quickly:
+> > parisc actually uses cpu hotplug to boot its secondary cpus."
+> 
+> > Helge resigned due to lack of time.
+> 
+> I'm still alive and was still reading the mailing list.
+> And I'm planning to test some newer kernels very soon again :-)
+> So, many thanks from my side to everyone who sent patches in the past
+> (incl. Mikulas, Rolf and others).
 
-Patches look good.
+If you could, it would help.  I still have no access to PA systems
+(should have mine by next week), but I'm on holiday this week anyway.
 
-Better as 3 separate commits in case of any potential revert, but for 
-the code:
+James
 
-   Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Kind regards,
-Lee
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
