@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab2EFRSU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 13:18:20 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:59425 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754056Ab2EFRSS (ORCPT
+	id S1754207Ab2EFRXY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 13:23:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34638 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754056Ab2EFRXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 13:18:18 -0400
-Message-ID: <1336324765.3638.4.camel@lappy>
-Subject: kvm: KVM internal error. Suberror: 1
-From: Sasha Levin <levinsasha928@gmail.com>
-To: avi@redhat.com, mtosatti@redhat.com
-Cc: Dave Jones <davej@redhat.com>, kvm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 06 May 2012 19:19:25 +0200
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 6 May 2012 13:23:22 -0400
+Date: Sun, 6 May 2012 10:23:04 -0700
+From: tip-bot for Al Viro <viro@ZenIV.linux.org.uk>
+Message-ID: <tip-2be8e9ec677d6dfd4268b80e1ccd7d21777b86e3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        viro@ZenIV.linux.org.uk, tglx@linutronix.de, viro@ZenIV.linux.org.uk
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        viro@ZenIV.linux.org.uk, tglx@linutronix.de, viro@ZenIV.linux.org.uk
+In-Reply-To: <20120506162000.GT6871@ZenIV.linux.org.uk>
+References: <20120506162000.GT6871@ZenIV.linux.org.uk>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, compat: Correct broken TASK_SIZE for ia32 a.
+ out binaries
+Git-Commit-ID: 2be8e9ec677d6dfd4268b80e1ccd7d21777b86e3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 06 May 2012 10:23:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Commit-ID:  2be8e9ec677d6dfd4268b80e1ccd7d21777b86e3
+Gitweb:     http://git.kernel.org/tip/2be8e9ec677d6dfd4268b80e1ccd7d21777b86e3
+Author:     Al Viro <viro@ZenIV.linux.org.uk>
+AuthorDate: Sun, 6 May 2012 17:20:00 +0100
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Sun, 6 May 2012 09:53:15 -0700
 
-During some fuzzing with trinity in a KVM guest running on qemu, I got the following error:
+x86, compat: Correct broken TASK_SIZE for ia32 a.out binaries
 
-KVM internal error. Suberror: 1
-emulation failure
-RAX=0000000000000000 RBX=ffff8800284108e0 RCX=0000000000000001 RDX=ffffffff84482008
-RSI=1030000000000000 RDI=8180000000000000 RBP=ffff880028723d38 RSP=ffff880028723ce8
-R8 =0000000000000206 R9 =fffffffff7e80206 R10=0000000000000000 R11=0000000000000000
-R12=ffff880028410000 R13=ffffffff846ba1c0 R14=ffffffff84a74970 R15=0000000000009530
-RIP=ffffffff8111c862 RFL=00010046 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
-ES =0000 0000000000000000 ffffffff 00000000
-CS =0010 0000000000000000 ffffffff 00a09b00 DPL=0 CS64 [-RA]
-SS =0018 0000000000000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-DS =0000 0000000000000000 ffffffff 00000000
-FS =0000 00007f955873b700 ffffffff 00000000
-GS =0000 ffff880035a00000 ffffffff 00000000
-LDT=0000 0000000000000000 ffffffff 00000000
-TR =0040 ffff880035bd2480 00002087 00008b00 DPL=0 TSS64-busy
-GDT=     ffff880035a04000 0000007f
-IDT=     ffffffff8436a000 00000fff
-CR0=8005003b CR2=00007f5cfdad0518 CR3=000000001a154000 CR4=000407e0
-DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
-DR6=00000000ffff0ff0 DR7=0000000000000400
-EFER=0000000000000d01
-Code=66 90 e8 7b 97 ff ff b8 01 00 00 00 eb 1c 0f 1f 40 00 31 c0 <83> 3d 97 9f c7 02 00 0f 95 c0 eb 0a 66 90 31 c0 66 0f 1f 44 00 00 48 8b 5d d8 4c 8b 65 e0
-KVM internal error. Suberror: 1
-emulation failure
-RAX=ffff88000d5f8000 RBX=ffff88000d600010 RCX=0000000000000001 RDX=0000000000000000
-RSI=0000000000000001 RDI=ffff88000d5f8000 RBP=ffff88000d601ec8 RSP=ffff88000d601ec8
-R8 =0000000000000001 R9 =0000000000000000 R10=0000000000000000 R11=0000000000000000
-R12=ffffffff83fed960 R13=0000000000000000 R14=0000000000000000 R15=0000000000000000
-RIP=ffffffff8107d696 RFL=00000286 [--S--P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
-ES =0000 0000000000000000 ffffffff 00000000
-CS =0010 0000000000000000 ffffffff 00a09b00 DPL=0 CS64 [-RA]
-SS =0018 0000000000000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-DS =0000 0000000000000000 ffffffff 00000000
-FS =0000 0000000000000000 ffffffff 00000000
-GS =0000 ffff880029800000 ffffffff 00000000
-LDT=0000 0000000000000000 ffffffff 00000000
-TR =0040 ffff8800299d2480 00002087 00008b00 DPL=0 TSS64-busy
-GDT=     ffff880029804000 0000007f
-IDT=     ffffffff8436a000 00000fff
-CR0=8005003b CR2=00007fcfa03f9e9c CR3=0000000003a1c000 CR4=000407e0
-DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
-DR6=00000000ffff0ff0 DR7=0000000000000400
-EFER=0000000000000d01
-Code=89 e5 fb c9 c3 66 0f 1f 84 00 00 00 00 00 55 48 89 e5 fb f4 <c9> c3 0f 1f 84 00 00 00 00 00 55 48 89 e5 f4 c9 c3 66 0f 1f 84 00 00 00 00 00 55 8b 07 48
-KVM internal error. Suberror: 1
-emulation failure
-RAX=ffff88000d5db000 RBX=ffff88000d5ce010 RCX=0000000000000001 RDX=0000000000000000
-RSI=0000000000000001 RDI=ffff88000d5db000 RBP=ffff88000d5cfec8 RSP=ffff88000d5cfec8
-R8 =0000000000000001 R9 =0000000000000000 R10=0000000000000000 R11=0000000000000000
-R12=ffffffff83fed960 R13=0000000000000000 R14=0000000000000000 R15=0000000000000000
-RIP=ffffffff8107d696 RFL=00000286 [--S--P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
-ES =0000 0000000000000000 ffffffff 00000000
-CS =0010 0000000000000000 ffffffff 00a09b00 DPL=0 CS64 [-RA]
-SS =0018 0000000000000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-DS =0000 0000000000000000 ffffffff 00000000
-FS =0000 0000000000000000 ffffffff 00000000
-GS =0000 ffff88001b800000 ffffffff 00000000
-LDT=0000 0000000000000000 ffffffff 00000000
-TR =0040 ffff88001b9d2480 00002087 00008b00 DPL=0 TSS64-busy
-GDT=     ffff88001b804000 0000007f
-IDT=     ffffffff8436a000 00000fff
-CR0=8005003b CR2=00007fcfa076b518 CR3=000000001a148000 CR4=000407e0
-DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
-DR6=00000000ffff0ff0 DR7=0000000000000400
-EFER=0000000000000d01
-Code=89 e5 fb c9 c3 66 0f 1f 84 00 00 00 00 00 55 48 89 e5 fb f4 <c9> c3 0f 1f 84 00 00 00 00 00 55 48 89 e5 f4 c9 c3 66 0f 1f 84 00 00 00 00 00 55 8b 07 48
+Setting TIF_IA32 in load_aout_binary() used to be enough; these days
+TASK_SIZE is controlled by TIF_ADDR32 and that one doesn't get set
+there.  Switch to use of set_personality_ia32()...
 
-The assembly doesn't quite make sense, and the fact that I got 3 of these in a row, makes me believe that it isn't an actual emulation error, but something else.
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Link: http://lkml.kernel.org/r/20120506162000.GT6871@ZenIV.linux.org.uk
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/ia32/ia32_aout.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
+index d511d95..4c979cf 100644
+--- a/arch/x86/ia32/ia32_aout.c
++++ b/arch/x86/ia32/ia32_aout.c
+@@ -296,8 +296,7 @@ static int load_aout_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ 
+ 	/* OK, This is the point of no return */
+ 	set_personality(PER_LINUX);
+-	set_thread_flag(TIF_IA32);
+-	current->mm->context.ia32_compat = 1;
++	set_personality_ia32(false);
+ 
+ 	setup_new_exec(bprm);
+ 
