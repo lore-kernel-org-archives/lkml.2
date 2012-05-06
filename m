@@ -1,33 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab2EFRBX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 13:01:23 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:41236 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960Ab2EFRA4 (ORCPT
+	id S1754131Ab2EFRE4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 13:04:56 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41621 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754062Ab2EFREy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 13:00:56 -0400
-Message-ID: <1336323652.2897.2.camel@lorien2>
-Subject: Re: [PATCH] x86: kernel/microcode_core.c simple_strtoul cleanup
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Borislav Petkov <bp@alien8.de>
-Cc: shuahkhan@gmail.com, mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
-        tigran@aivazian.fsnet.co.uk,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 06 May 2012 11:00:52 -0600
-In-Reply-To: <20120506100314.GB27678@liondog.tnic>
-References: <1336232259.3038.8.camel@lorien2>
-	 <20120506100314.GB27678@liondog.tnic>
-Content-Type: text/plain
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Sun, 6 May 2012 13:04:54 -0400
+Date: Sun, 06 May 2012 13:03:46 -0400 (EDT)
+Message-Id: <20120506.130346.375380984480812477.davem@davemloft.net>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [patch 16/18] sparc: Use common threadinfo allocator
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120505150142.252861878@linutronix.de>
+References: <20120505150007.543515803@linutronix.de>
+	<20120505150142.252861878@linutronix.de>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 06 May 2012 10:03:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry - will resend the patch tagged RESEND.
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Sat, 05 May 2012 15:05:47 -0000
 
--- Shuah
+> Exaclty the same as the core code.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
+Acked-by: David S. Miller <davem@davemloft.net>
