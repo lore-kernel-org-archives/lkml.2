@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407Ab2EFICO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 04:02:14 -0400
-Received: from antcom.de ([188.40.178.216]:44735 "EHLO chuck.antcom.de"
+	id S1752678Ab2EFICt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 04:02:49 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:2073 "EHLO MMS3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752152Ab2EFICL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 04:02:11 -0400
-Message-ID: <4FA62FFE.6090301@antcom.de>
-Date: Sun, 06 May 2012 10:02:06 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+	id S1752214Ab2EFICq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 04:02:46 -0400
+X-Server-Uuid: B730DE51-FC43-4C83-941F-F1F78A914BDD
+From: "Yaniv Rosner" <yaniv.rosner@broadcom.com>
+To: "Ben Hutchings" <bhutchings@solarflare.com>,
+        "smhodgson@solarflare.com" <smhodgson@solarflare.com>
+cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "bruce.w.allan@intel.com" <bruce.w.allan@intel.com>,
+        "decot@google.com" <decot@google.com>,
+        "alexander.h.duyck@intel.com" <alexander.h.duyck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David Miller" <davem@davemloft.net>
+Subject: RE: [PATCH net-next 1/3] Add capability to retrieve plug-in
+ module EEPROM
+Thread-Topic: [PATCH net-next 1/3] Add capability to retrieve plug-in
+ module EEPROM
+Thread-Index: AQHNHkKpZ3lH+KvewUu+a/OBune6XpapaPYAgAFTvICAEcDOIA==
+Date: Sun, 6 May 2012 08:02:15 +0000
+Message-ID: <A6AA2EF896BED345B0F23520D832A4B106AD8E@SJEXCHMB05.corp.ad.broadcom.com>
+References: <4F9031BF.10106@solarflare.com>
+ <20120423.172848.1733968863825393980.davem@davemloft.net>
+ <1335289485.17274.46.camel@bwh-desktop.uk.solarflarecom.com>
+In-Reply-To: <1335289485.17274.46.camel@bwh-desktop.uk.solarflarecom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.185.6.78]
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, rdunlap@xenotime.net,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        w.sang@pengutronix.de, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RESEND] Documentation: devicetree: Fix value format description
-References: <1336217886-27224-1-git-send-email-stigge@antcom.de> <4FA57504.2070308@landley.net>
-In-Reply-To: <4FA57504.2070308@landley.net>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-WSS-ID: 63B8EFA73E028888240-01-01
+Content-Type: text/plain;
+ charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4682ut8012882
 
-Hi,
-
-On 05/05/12 20:44, Rob Landley wrote:
-> On 05/05/2012 06:38 AM, Roland Stigge wrote:
->> Numeric values in dts files can be specified in decimal and hex (the latter
->> prefixed 0x). The current documentation is updated with this patch to prevent
->> confusion about what is meant with values without "0x" (previously hex, now
->> dec).
+> On Mon, 2012-04-23 at 17:28 -0400, David Miller wrote:
+> > You can't just submit three seperate patches each with the same exact
+> > Subject line.
+> >
+> > Otherwise someone scanning the commit headers can't figure out what
+> > is different in each of these changes.
+> >
+> > There also is no signoff from Ben for patches #2 or #3, did he review
+> > them?  If so, why didn't he ACK or sign off on it?  If not, why not?
 > 
-> This updates the documentation to consistently say 0x in front of hex
-> values, but doesn't change the device tree _parser_. What did the parser
-> previously do with this input?
+> Sorry, I've been busy with another project.  I'll reply to Stuart's
+> patches faster next round.
+> 
+> Ben.
 
-I can add the following para to the patch description if you ack:
+Hi Stuart,
+It's been 3 weeks since you sent the initial patch series which were not
+accepted. Please reply if you're going to resubmit fixed patches soon,
+otherwise I'll take over, and complete this task from where you left it.
 
-===========================================================================
-Background:
+Thanks much,
+Yaniv
 
-Since 2011's update to scripts/dtc/dtc-lexer.l, we only support the
-/dts-v1/ format which mandates "0x" for hex values. Practically,
-literals (<V1>[0-9]+|0[xX][0-9a-fA-F]+ -> DT_LITERAL) are handled via
-strtoull() with base==0 ("auto"), while we previously also had a
-DT_LEGACYLITERAL (<INITIAL>[0-9a-fA-F]+), forcing base==16. Not anymore.
-===========================================================================
+> 
+> --
+> Ben Hutchings, Staff Engineer, Solarflare
+> Not speaking for my employer; that's the marketing department's job.
+> They asked us to note that Solarflare product names are trademarked.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks in advance,
-
-Roland
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
