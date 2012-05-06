@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab2EFScT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 14:32:19 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:59781 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754005Ab2EFScS (ORCPT
+	id S1754182Ab2EFSqq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 14:46:46 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35645 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079Ab2EFSqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 14:32:18 -0400
-Date: Sun, 6 May 2012 15:32:12 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] perf top: Fix a race in callchain handling
-Message-ID: <20120506183212.GB2485@infradead.org>
-References: <1336231388-12347-1-git-send-email-namhyung@gmail.com>
- <1336242167.2463.138.camel@laptop>
- <20120505235319.GB2150@infradead.org>
- <1336271107.1534.12.camel@leonhard>
+	Sun, 6 May 2012 14:46:45 -0400
+Date: Sun, 6 May 2012 19:46:42 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH] broken TASK_SIZE for ia32_aout
+Message-ID: <20120506184641.GW6871@ZenIV.linux.org.uk>
+References: <20120506162000.GT6871@ZenIV.linux.org.uk>
+ <CA+55aFzj3Ocjpnw3WdmKjp3oELwmXt=Zs2=fZuYy0TUyF4nXiA@mail.gmail.com>
+ <20120506175451.GU6871@ZenIV.linux.org.uk>
+ <4FA6BBD9.3040308@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1336271107.1534.12.camel@leonhard>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <4FA6BBD9.3040308@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, May 06, 2012 at 11:25:07AM +0900, Namhyung Kim escreveu:
-> 2012-05-05 (토), 20:53 -0300, Arnaldo Carvalho de Melo:
-> > I'm looking how to get that fixed with Peter concerns addressed.
-> > 
+On Sun, May 06, 2012 at 10:58:49AM -0700, H. Peter Anvin wrote:
+
+> > What kind of semantics do we want?  "Thread property" one, set when we
+> > set personality on execve(), or "syscall property", like e.g. x86 TIF_IRET
+> > and TS_COMPAT?
 > 
-> I guess it's gonna be a non-trivial job. As far as I can see, the hists
-> code can handle up to two concurrent threads regardless of the callchain
-> cursor problem. And also guess that other areas of libperf also doesn't
-> support the true concurrency, right?
+> It depends on the ABI properties of the platform.  The x86 compat ABI is
+> that any task can issue a compat ABI request and get a compat ABI
+> response (a 64-bit task can call int $0x80 for an ia32 syscall
+> invocation, or use syscall with either an x86-64 or and x32 system call
+> number.)  So is_compat_task() returns the current system call mode of
+> the task, because that is what downstream users need.  One of the
+> biggest users is the input subsystem, which earns the black mark for
+> worst possible ABI design, and that definitely depends on the system
+> call type being invoked.
 
-Right, but making it even less concurrent is something we should avoid
-8-)
+Umm...  Let me restate that question: is there ever a case when it would
+_not_ be a syscall property?  I.e. when both 64bit and 32bit syscalls are
+possible for a given process *and* callers of is_compat_task() care about
+the kind of process and not the kind of syscall?
 
-How about this one instead? At least we would be able to, concurrently,
-process multiple, unrelated hists:
+Is e.g. sparc behaviour ("what kind of process it is, regardless of whether
+we are issuing a 32bit or a 64bit syscall") correct?
 
-
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 9f6d630..c5cde92 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -397,8 +397,8 @@ static bool hists__collapse_insert_entry(struct hists *hists,
- 			iter->period += he->period;
- 			iter->nr_events += he->nr_events;
- 			if (symbol_conf.use_callchain) {
--				callchain_cursor_reset(&hists->callchain_cursor);
--				callchain_merge(&hists->callchain_cursor, iter->callchain,
-+				callchain_cursor_reset(&hists->callchain_collapse_cursor);
-+				callchain_merge(&hists->callchain_collapse_cursor, iter->callchain,
- 						he->callchain);
- 			}
- 			hist_entry__free(he);
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index cfc64e2..e04c80b 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -69,6 +69,7 @@ struct hists {
- 	u16			col_len[HISTC_NR_COLS];
- 	/* Best would be to reuse the session callchain cursor */
- 	struct callchain_cursor	callchain_cursor;
-+	struct callchain_cursor	callchain_collapse_cursor;
- };
- 
- struct hist_entry *__hists__add_entry(struct hists *self,
+Sure, on a platform where the possible kind of syscall is a function of
+process' personality, a thread property can be a used to tell which
+kind of syscall we are in.
