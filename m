@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab2EFJKz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 05:10:55 -0400
+	id S1753127Ab2EFJLA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 05:11:00 -0400
 Received: from mga11.intel.com ([192.55.52.93]:6808 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752844Ab2EFJKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 05:10:51 -0400
+	id S1752922Ab2EFJKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 05:10:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="149797009"
-Date: Sun, 6 May 2012 14:01:07 +0800
+   d="scan'208";a="149797012"
+Date: Sun, 6 May 2012 14:04:06 +0800
 From: Fengguang Wu <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jeff Moyer <jmoyer@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>,
         Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
         Chris Mason <chris.mason@oracle.com>, Shaohua Li <shli@fusionio.com>,
-        "Yan, Zheng Z" <zheng.z.yan@intel.com>
-Subject: Re: [RESEND][PATCH v2] block: remove plugging at buffered write time
-Message-ID: <20120506060107.GA11474@localhost>
-References: <20120408010600.GA31377@localhost>
- <x494nst7z3v.fsf@segfault.boston.devel.redhat.com>
- <20120411161344.309f12ef.akpm@linux-foundation.org>
- <20120412013224.GA5859@localhost>
- <20120412022040.GA6800@localhost>
- <20120412142634.GA16559@quack.suse.cz>
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: [PATCH] block: move down direct IO plugging
+Message-ID: <20120506060406.GB11650@localhost>
+References: <20120506060308.GA11650@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120412142634.GA16559@quack.suse.cz>
+In-Reply-To: <20120506060308.GA11650@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 12, 2012 at 04:26:34PM +0200, Jan Kara wrote:
->   Hi Fengguang,
-> 
-> On Thu 12-04-12 10:20:40, Wu Fengguang wrote:
-> > > > > > Note that plugging for O_SYNC writes is also removed. The user may pass
-> > > > > > arbitrary @size arguments, which may be much larger than the preferable
-> > > > > > I/O size, or may cross extent/device boundaries. Let the lower layers
-> > > > > > handle the plugging. Otherwise the plugging code here will turn the
-> > > > > > low level plugging into no-ops.
-> > > > > 
-> > > > > I assume you have some numbers to back this up, right?  Care to share
-> > > > > those?
-> > > > 
-> > > > Yes please.
-> > > > 
-> > > > We've broken this stuff a few times recently - we should review and
-> > > > test carefully.
-> > > 
-> > > Yes sure. Last time I posted the patch, I did some tests and found no
-> > > performance changes. Now for 3.3, the tests started days ago have not
-> > > finished now (partly because it is stalled for quite long time due to
-> > > unknown reason). The now-available numbers for bs=4k dd's look fine.
-> > > The pending tests are for bs=1M dd's and some random fio workloads.
-> > > 
-> > 
-> > The changes are basically small enough to be considered noises.
-> > But anyway here are some interpretations:
-> > 
-> > - application visible data write performance (write_bw) is almost the same
-> > - it slightly reduces the real IOs that hit disk (io_wkB_s, io_rkB_s)
-> > - disk utilization slightly increased
-> > - CPU time is slightly reduced
-> > 
->   Well, two of the throughput numbers stand out (in both directions
-> actually) although they seem to be more extreme configurations so maybe it
-> is a noise. But maybe it would deserve further check:
-> 
-> > $ ./compare-io bay/*/*-{3.3.0,3.3.0-plug+}
-> >                    3.3.0               3.3.0-plug+
-> > ------------------------  ------------------------
-> ...
-> >                     2.60        +7.1%         2.78  bay/thresh=1M/btrfs-10dd-1-3.3.0
-> >                     3.72       -12.5%         3.25  bay/thresh=1M/btrfs-1dd-1-3.3.0
+Move unplugging for direct I/O from around ->direct_IO() down to
+do_blockdev_direct_IO(). This implicitly adds plugging for direct
+writes.
 
-For that btrfs performance bug, Yan Zheng helped me track down the
-root cause to be the hack in btree_writepages(), as we are discussing
-solutions to this in the other emails.
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Li Shaohua <shli@fusionio.com>
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/direct-io.c |    5 +++++
+ mm/filemap.c   |    4 ----
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
->   I looked at other iostat numbers as well, but seeing quite some changes
-> in both directions I'd say that those iostat numbers are too noisy to draw
-> serious conclusion from them.
-
-So let's proceed with the plugging change? I'll repost the split
-plugging patches.
-
-Thanks,
-Fengguang
+--- linux-next.orig/mm/filemap.c	2012-05-03 19:32:58.051123379 +0800
++++ linux-next/mm/filemap.c	2012-05-03 19:33:27.235124073 +0800
+@@ -1413,12 +1413,8 @@ generic_file_aio_read(struct kiocb *iocb
+ 			retval = filemap_write_and_wait_range(mapping, pos,
+ 					pos + iov_length(iov, nr_segs) - 1);
+ 			if (!retval) {
+-				struct blk_plug plug;
+-
+-				blk_start_plug(&plug);
+ 				retval = mapping->a_ops->direct_IO(READ, iocb,
+ 							iov, pos, nr_segs);
+-				blk_finish_plug(&plug);
+ 			}
+ 			if (retval > 0) {
+ 				*ppos = pos + retval;
+--- linux-next.orig/fs/direct-io.c	2012-05-03 19:32:57.000000000 +0800
++++ linux-next/fs/direct-io.c	2012-05-03 19:33:27.235124073 +0800
+@@ -1106,6 +1106,7 @@ do_blockdev_direct_IO(int rw, struct kio
+ 	unsigned long user_addr;
+ 	size_t bytes;
+ 	struct buffer_head map_bh = { 0, };
++	struct blk_plug plug;
+ 
+ 	if (rw & WRITE)
+ 		rw = WRITE_ODIRECT;
+@@ -1221,6 +1222,8 @@ do_blockdev_direct_IO(int rw, struct kio
+ 				PAGE_SIZE - user_addr / PAGE_SIZE);
+ 	}
+ 
++	blk_start_plug(&plug);
++
+ 	for (seg = 0; seg < nr_segs; seg++) {
+ 		user_addr = (unsigned long)iov[seg].iov_base;
+ 		sdio.size += bytes = iov[seg].iov_len;
+@@ -1279,6 +1282,8 @@ do_blockdev_direct_IO(int rw, struct kio
+ 	if (sdio.bio)
+ 		dio_bio_submit(dio, &sdio);
+ 
++	blk_finish_plug(&plug);
++
+ 	/*
+ 	 * It is possible that, we return short IO due to end of file.
+ 	 * In that case, we need to release all the pages we got hold on.
