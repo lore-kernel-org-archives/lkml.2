@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab2EFIWR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 04:22:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19465 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752223Ab2EFIV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 04:21:56 -0400
-Message-ID: <4FA634A0.8020504@redhat.com>
-Date: Sun, 06 May 2012 11:21:52 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: X86: Remove stale values from ctxt->memop before
- emulation
-References: <1336148056-15662-1-git-send-email-joerg.roedel@amd.com>
-In-Reply-To: <1336148056-15662-1-git-send-email-joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752654Ab2EFI13 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 04:27:29 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55809 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246Ab2EFI10 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 04:27:26 -0400
+Message-ID: <1336292842.7144.2.camel@blackbook>
+Subject: Re: [PATCH 1/8] drivers/staging/line6/control.c: Change
+ strict_strtoul to kstrtoul
+From: Johannes Thumshirn <morbidrsa@googlemail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, stefanha@gmail.com,
+        andor.daam@googlemail.com, grabner@icg.tugraz.at, jj@chaosbits.net,
+        thomas@m3y3r.de
+Date: Sun, 06 May 2012 10:27:22 +0200
+In-Reply-To: <20120506063450.GH22134@mwanda>
+References: <1336228312-5379-1-git-send-email-morbidrsa@googlemail.com>
+	 <1336228312-5379-2-git-send-email-morbidrsa@googlemail.com>
+	 <20120506063450.GH22134@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2012 07:14 PM, Joerg Roedel wrote:
-> When instruction decoding begins there could be stale values
-> in the ctxt->memop structure. This causes problems when an
-> instruction is emulated with more op-bytes then the guest
-> wants (like the bsr instruction which is always emulated
-> with 4 or 8 op-bytes).
->
-> The stale value in this structure causes the unit-test for
-> the bsrw instruction to fail. Initialize the memop.val with
-> 0 to prevent such bugs (an alternative fix could be to
-> always emulate instructions with the number of op-bytes
-> requested by the guest).
->
->
-> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-> index d4bf50c..1b516ec 100644
-> --- a/arch/x86/kvm/emulate.c
-> +++ b/arch/x86/kvm/emulate.c
-> @@ -3937,6 +3937,7 @@ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len)
->  	struct opcode opcode;
->  
->  	ctxt->memop.type = OP_NONE;
-> +	ctxt->memop.val  = 0;
->  	ctxt->memopp = NULL;
->  	ctxt->_eip = ctxt->eip;
->  	ctxt->fetch.start = ctxt->_eip;
+On Sun, 2012-05-06 at 09:34 +0300, Dan Carpenter wrote:
+> On Sat, May 05, 2012 at 04:31:45PM +0200, Johannes Thumshirn wrote:
+> > Changed strict_strtoul() call to kstrtoul to make checkpatch.pl happy
+> > 
+> 
+> This would probably be better as kstrtou8(). You'd have to change
+> the type of value, and the function parameters which take value as
+> well.  Also you would have to change the name of pod_set_param_int()
+> because it says "int".
+> 
+> 
+> regards,
+> dan carpenter
+> 
 
-This only works for long sized values - it doesn't initialize val64 on
-i386, for example.  So I think it's better to change bsr (and family) to
-use emualte_2op_SrcV_nobyte() instead (which has the added benefit of
-using the same values as the processor for the "undefined" bits).
+Ok I'll look over these patches again, but I've got another question
+regarding these, should I re-diff against the current linux-next or
+against these patches?
 
--- 
-error compiling committee.c: too many arguments to function
+regards,
+Johannes Thumshirn
 
