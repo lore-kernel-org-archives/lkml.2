@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467Ab2EFUWf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 16:22:35 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35872 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab2EFUWd (ORCPT
+	id S1754480Ab2EFUcy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 16:32:54 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:42517 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943Ab2EFUcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 16:22:33 -0400
-Date: Mon, 7 May 2012 00:21:32 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, khlebnikov@openvz.org,
-        xemul@parallels.com, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: c/r: broken locking when executing map_files
-Message-ID: <20120506202132.GA6570@albatros>
-References: <1335979380.10666.6.camel@lappy>
- <20120502172756.GD2301@moon>
- <20120503173125.GF19347@moon>
- <20120505182051.GA16029@albatros>
- <20120505185306.GB28746@moon>
- <20120505193201.GA2500@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120505193201.GA2500@moon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 6 May 2012 16:32:53 -0400
+Date: Sun, 06 May 2012 16:32:43 -0400 (EDT)
+Message-Id: <20120506.163243.1653904376439925642.davem@davemloft.net>
+To: hpa@zytor.com
+Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, ralf@linux-mips.org
+Subject: Re: [PATCH] broken TASK_SIZE for ia32_aout
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <b73ca203-c9d8-4ca3-b680-d00499f284cd@email.android.com>
+References: <4FA6BBD9.3040308@zytor.com>
+	<20120506184641.GW6871@ZenIV.linux.org.uk>
+	<b73ca203-c9d8-4ca3-b680-d00499f284cd@email.android.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 06 May 2012 13:32:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 05, 2012 at 23:32 +0400, Cyrill Gorcunov wrote:
-> On Sat, May 05, 2012 at 10:53:06PM +0400, Cyrill Gorcunov wrote:
-> > On Sat, May 05, 2012 at 10:20:51PM +0400, Vasiliy Kulikov wrote:
-> > > > -	if (lock_trace(task))
-> > > > +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
-> > > 
-> > > Probably it will be better to change mutex_lock_killable() to
-> > > mutex_lock_killable_nested() inside of lock_trace() instead of this change?
-> > > It would keep the race-free check.
-> > 
-> > Yup, if I'm not missing something SINGLE_DEPTH_NESTING should do the trick
-> > for us. I'll test and report.
-> 
-> Hmm, this doesn't work well, the mutex remanins killable so when one does
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 06 May 2012 11:48:15 -0700
 
-Does it show circular locking?  It shouldn't block if it uses
-mutex_lock+mutex_lock_nested.
+> I would argue Sparc is not correct here but I am not a Sparc expert.
 
->  | [root@neptune ~]# /proc/self/map_files/400000-419000
-> 
-> it sleeps forever until killed, which is not good I think. Vasiliy, could
-> you remind me what exactly is problem if we use unlocked ptrace_may_access
-> here?
+I can easily make sparc take on the x86 behavior if things like the
+input layer really need it.
 
-There is a race between ptrace_may_access() and dname_to_vma_addr().
-The target task may do exec() between these calls and
-dname_to_vma_addr() will be called against a privileged task.  This may
-lead to a leak of task maps.
-
--- 
-Vasily Kulikov
-http://www.openwall.com - bringing security into open computing environments
+However, isn't the input layer case a case where compat==native
+on anything other than x86 because it's a u64 alignment issue?
