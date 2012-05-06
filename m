@@ -1,45 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab2EFRhl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 13:37:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34710 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754221Ab2EFRhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 13:37:40 -0400
-Message-ID: <4FA6B6DB.5050904@zytor.com>
-Date: Sun, 06 May 2012 10:37:31 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1754291Ab2EFRiW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 13:38:22 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:42589 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754172Ab2EFRiU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 13:38:20 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnlyAM+2pk9V5qg+PGdsb2JhbABEsUgEgR4ZAQEBATc0ggwBAQQBOhwREgULCANGFCUKGogcCQe5WBOLK4R+YwSVfYEShHSDVYlT
+X-IronPort-AV: E=Sophos;i="4.75,539,1330902000"; 
+   d="scan'208";a="327701388"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sun, 6 May 2012 19:43:16 +0200
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Chase Douglas <chasedouglas@gmail.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] input: Introduce MT_CENTER_X and MT_CENTER_Y
+Message-ID: <20120506174316.GA8465@polaris.bitmath.org>
+References: <1336136030-18503-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1336136030-18503-5-git-send-email-benjamin.tissoires@gmail.com>
+ <20120504134831.GA8263@polaris.bitmath.org>
+ <CAN+gG=EfOjm5AX+g22ksFTZhw-rdjT5vWmh0mu6RQZ8oXPCRqw@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] broken TASK_SIZE for ia32_aout
-References: <20120506162000.GT6871@ZenIV.linux.org.uk> <CA+55aFzj3Ocjpnw3WdmKjp3oELwmXt=Zs2=fZuYy0TUyF4nXiA@mail.gmail.com>
-In-Reply-To: <CA+55aFzj3Ocjpnw3WdmKjp3oELwmXt=Zs2=fZuYy0TUyF4nXiA@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=EfOjm5AX+g22ksFTZhw-rdjT5vWmh0mu6RQZ8oXPCRqw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2012 10:16 AM, Linus Torvalds wrote:
-> On Sun, May 6, 2012 at 9:20 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> Setting TIF_IA32 in load_aout_binary() used to be enough; these days
->> TASK_SIZE is controlled by TIF_ADDR32 and that one doesn't get set
->> there.  Switch to use of set_personality_ia32()...
+Hi Benjamin,
+
+> > I would like a bit of elaboration here, since I am not convinced the
+> > mapping should be directly translated to the MT protocol.
+> >
+> > Clearly, the basic idea to be able to model an assymmetric tool is
+> > good. Without an angle description, however, there seems to be a
+> > mismatch in the degrees of freedom. In win8, one can place the hot
+> > spot in a corner of the rectangle, but one cannot make the rectangle
+> > into an ellipse in that direction.
 > 
-> Applied. Just out of curiosity, how did you notice? Just looking at
-> TIF_IA32 usage, or do you actually have some old app?
+> That's not the interpretation I made of the spec.
+> http://msdn.microsoft.com/library/windows/hardware/br259100
+
+Yep, we are referring to the same file.
+
+> Win8 is a total respin of the multitouch protocol (though backward
+> compatible). It asks for a lot more reliability and performances for
+> the devices.
+> From what I understood, the T point (the touch) can be an arbitrary
+> point within the ellipse. Furthermore, the ellipse can be oriented in
+> an arbitrary rotation (like linux) because they introduced the hid
+> field Azimuth (0x3f) that is the "Counter-clockwise rotation of the
+> cursor around the Z axis".
+
+The document is a bit unclear on what object azimuth is referring to,
+and whether it correlates with the C-T vector, but essentially, there
+is a lot more details, I agree.
+
+> To sum up, there are two kind of information:
+> - The touch point (where the user wants to touch)
+> - The elliptic shape of the touch (width, height, center, azimuth, pressure)
+
+Width and height still refer to the bounding box, that much is clear
+from the document. The shape modelled by azimuth is not quite that
+clear.
+
+> I think these two information are interesting as most of the time, the
+> center of the ellipse is _not_ the point where the user wants to
+> touch. The best thing to test that is to see how many time you miss
+> the pixel you want to touch in the current implementation.
+
+No argument here; separating the touch and shape points is a great
+improvement. It also gives directional information in a simpler manner
+than via the shape angle.
+
+> I also wanted to publish these 2 last patches to raise the discussion,
+> and to show that the fix of the randomness in the splitting of the
+> touches within the reports was compatible with new kinds of devices.
 > 
+> We should focus for now (3.5) on the first 3 patches, and let aside
+> the 2 last for the next version, when everyone agrees.
 
-OK, I just queued it up in my tree for a push to you... do you want me
-to drop it back out and send the balance?
+Yes, it may well be that the userland discussion carries over into
+3.6, and we can certainly treat the hid enablement separately.
 
-	-hpa
+More to come on the shape modelling in the other thread.
 
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Thanks,
+Henrik
