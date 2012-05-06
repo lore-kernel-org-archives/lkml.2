@@ -1,168 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751221Ab2EFFeE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 01:34:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38094 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab2EFFeD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 01:34:03 -0400
-From: joseph daniel <josephdanielwalter@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sylwester Nawrocki <snjw23@gmail.com>,
-        Piotr Chmura <chmooreck@poczta.onet.pl>,
-        Devin Heitmueller <dheitmueller@kernellabs.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: joseph daniel <josephdanielwalter@gmail.com>
-Subject: [PATCH] staging/media/as102: removed else statements
-Date: Sun,  6 May 2012 11:33:51 +0600
-Message-Id: <1336282431-8861-1-git-send-email-josephdanielwalter@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751320Ab2EFFyi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 01:54:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14557 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042Ab2EFFyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 01:54:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="139400075"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: RE: [PATCH] smb347_charger: cleaned battery power supply attributes
+Thread-Topic: [PATCH] smb347_charger: cleaned battery power supply attributes
+Thread-Index: AQHNKzgojlCWEqRdiE+k9tu4wx9FAJa8Oabg
+Date: Sun, 6 May 2012 05:54:31 +0000
+Message-ID: <D854C92F57B1B347B57E531E78D05EAD140252@BGSMSX102.gar.corp.intel.com>
+References: <1336233834-21550-1-git-send-email-ramakrishna.pallala@intel.com>
+ <20120506032554.GG29576@lizard>
+In-Reply-To: <20120506032554.GG29576@lizard>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q465sunY012589
 
-The else statement is actually not required, as we can assign AS10X_CMD_ERROR
-to the error variable directly.
+Hi Anton,
 
-Signed-off-by: joseph daniel <josephdanielwalter@gmail.com>
----
- drivers/staging/media/as102/as10x_cmd.c |   28 +++++++---------------------
- 1 file changed, 7 insertions(+), 21 deletions(-)
+> On Sat, May 05, 2012 at 09:33:54PM +0530, Ramakrishna Pallala wrote:
+> > CURRENT_NOW and VOLTAGE_NOW should be instantaneous readings from
+> > power supply(ex: battery).
+> >
+> > smb347 charger driver reports charge voltage for VOLTAGE_NOW and
+> > charge current for CURRENT_NOW attributes which are not instantaneous
+> > readings.
+> 
+> Em. While charging, I guess charge current == instantaneous battery current? Should we
+> then report it in such cases? And while discharging and not charging, assuming that HW
+> can't report the real battery current flow, we can return some fancy errno code, like
+> ENODATA?
 
-diff --git a/drivers/staging/media/as102/as10x_cmd.c b/drivers/staging/media/as102/as10x_cmd.c
-index 262bb94..a73df10 100644
---- a/drivers/staging/media/as102/as10x_cmd.c
-+++ b/drivers/staging/media/as102/as10x_cmd.c
-@@ -31,7 +31,7 @@
-  */
- int as10x_cmd_turn_on(struct as10x_bus_adapter_t *adap)
- {
--	int error;
-+	int error = AS10X_CMD_ERROR;
- 	struct as10x_cmd_t *pcmd, *prsp;
- 
- 	ENTER();
-@@ -54,8 +54,6 @@ int as10x_cmd_turn_on(struct as10x_bus_adapter_t *adap)
- 					    (uint8_t *) prsp,
- 					    sizeof(prsp->body.turn_on.rsp) +
- 					    HEADER_SIZE);
--	} else {
--		error = AS10X_CMD_ERROR;
- 	}
- 
- 	if (error < 0)
-@@ -77,7 +75,7 @@ out:
-  */
- int as10x_cmd_turn_off(struct as10x_bus_adapter_t *adap)
- {
--	int error;
-+	int error = AS10X_CMD_ERROR;
- 	struct as10x_cmd_t *pcmd, *prsp;
- 
- 	ENTER();
-@@ -99,8 +97,6 @@ int as10x_cmd_turn_off(struct as10x_bus_adapter_t *adap)
- 			sizeof(pcmd->body.turn_off.req) + HEADER_SIZE,
- 			(uint8_t *) prsp,
- 			sizeof(prsp->body.turn_off.rsp) + HEADER_SIZE);
--	} else {
--		error = AS10X_CMD_ERROR;
- 	}
- 
- 	if (error < 0)
-@@ -124,7 +120,7 @@ out:
- int as10x_cmd_set_tune(struct as10x_bus_adapter_t *adap,
- 		       struct as10x_tune_args *ptune)
- {
--	int error;
-+	int error = AS10X_CMD_ERROR;
- 	struct as10x_cmd_t *preq, *prsp;
- 
- 	ENTER();
-@@ -159,8 +155,6 @@ int as10x_cmd_set_tune(struct as10x_bus_adapter_t *adap,
- 					    (uint8_t *) prsp,
- 					    sizeof(prsp->body.set_tune.rsp)
- 					    + HEADER_SIZE);
--	} else {
--		error = AS10X_CMD_ERROR;
- 	}
- 
- 	if (error < 0)
-@@ -184,7 +178,7 @@ out:
- int as10x_cmd_get_tune_status(struct as10x_bus_adapter_t *adap,
- 			      struct as10x_tune_status *pstatus)
- {
--	int error;
-+	int error = AS10X_CMD_ERROR;
- 	struct as10x_cmd_t  *preq, *prsp;
- 
- 	ENTER();
-@@ -208,8 +202,6 @@ int as10x_cmd_get_tune_status(struct as10x_bus_adapter_t *adap,
- 			sizeof(preq->body.get_tune_status.req) + HEADER_SIZE,
- 			(uint8_t *) prsp,
- 			sizeof(prsp->body.get_tune_status.rsp) + HEADER_SIZE);
--	} else {
--		error = AS10X_CMD_ERROR;
- 	}
- 
- 	if (error < 0)
-@@ -241,7 +233,7 @@ out:
-  */
- int as10x_cmd_get_tps(struct as10x_bus_adapter_t *adap, struct as10x_tps *ptps)
- {
--	int error;
-+	int error = AS10X_CMD_ERROR;
- 	struct as10x_cmd_t *pcmd, *prsp;
- 
- 	ENTER();
-@@ -266,8 +258,6 @@ int as10x_cmd_get_tps(struct as10x_bus_adapter_t *adap, struct as10x_tps *ptps)
- 					    (uint8_t *) prsp,
- 					    sizeof(prsp->body.get_tps.rsp) +
- 					    HEADER_SIZE);
--	} else {
--		error = AS10X_CMD_ERROR;
- 	}
- 
- 	if (error < 0)
-@@ -305,7 +295,7 @@ out:
- int as10x_cmd_get_demod_stats(struct as10x_bus_adapter_t *adap,
- 			      struct as10x_demod_stats *pdemod_stats)
- {
--	int error;
-+	int error = AS10X_CMD_ERROR;
- 	struct as10x_cmd_t *pcmd, *prsp;
- 
- 	ENTER();
-@@ -330,8 +320,6 @@ int as10x_cmd_get_demod_stats(struct as10x_bus_adapter_t *adap,
- 				(uint8_t *) prsp,
- 				sizeof(prsp->body.get_demod_stats.rsp)
- 				+ HEADER_SIZE);
--	} else {
--		error = AS10X_CMD_ERROR;
- 	}
- 
- 	if (error < 0)
-@@ -370,7 +358,7 @@ out:
- int as10x_cmd_get_impulse_resp(struct as10x_bus_adapter_t *adap,
- 			       uint8_t *is_ready)
- {
--	int error;
-+	int error = AS10X_CMD_ERROR;
- 	struct as10x_cmd_t *pcmd, *prsp;
- 
- 	ENTER();
-@@ -395,8 +383,6 @@ int as10x_cmd_get_impulse_resp(struct as10x_bus_adapter_t *adap,
- 					(uint8_t *) prsp,
- 					sizeof(prsp->body.get_impulse_rsp.rsp)
- 					+ HEADER_SIZE);
--	} else {
--		error = AS10X_CMD_ERROR;
- 	}
- 
- 	if (error < 0)
--- 
-1.7.9.5
+Battery current depends on the following things during charging:
+1. is the battery in constant current(CC) charge mode or in constant voltage(CV) charge mode?
+during CC mode battery current will be close to charge current(with no load) but it will get
+reduced gradually as the battery charging approaches CV mode. same for battery voltage.
+in CC mode battery voltage will be less than charge voltage and as we approach CV mode 
+battery voltage be close to charge voltage setting.
 
+2. instantaneous battery current & voltage also depends on the load current.
+
+we should read battery current & voltage from either PMIC/ADC channels or from fuel gauge chip.
+
+Thanks,
+Ram
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
