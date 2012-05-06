@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab2EFRXY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 13:23:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34638 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754056Ab2EFRXW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 13:23:22 -0400
-Date: Sun, 6 May 2012 10:23:04 -0700
-From: tip-bot for Al Viro <viro@ZenIV.linux.org.uk>
-Message-ID: <tip-2be8e9ec677d6dfd4268b80e1ccd7d21777b86e3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        viro@ZenIV.linux.org.uk, tglx@linutronix.de, viro@ZenIV.linux.org.uk
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        viro@ZenIV.linux.org.uk, tglx@linutronix.de, viro@ZenIV.linux.org.uk
-In-Reply-To: <20120506162000.GT6871@ZenIV.linux.org.uk>
-References: <20120506162000.GT6871@ZenIV.linux.org.uk>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, compat: Correct broken TASK_SIZE for ia32 a.
- out binaries
-Git-Commit-ID: 2be8e9ec677d6dfd4268b80e1ccd7d21777b86e3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1754262Ab2EFRhl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 13:37:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34710 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754221Ab2EFRhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 13:37:40 -0400
+Message-ID: <4FA6B6DB.5050904@zytor.com>
+Date: Sun, 06 May 2012 10:37:31 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] broken TASK_SIZE for ia32_aout
+References: <20120506162000.GT6871@ZenIV.linux.org.uk> <CA+55aFzj3Ocjpnw3WdmKjp3oELwmXt=Zs2=fZuYy0TUyF4nXiA@mail.gmail.com>
+In-Reply-To: <CA+55aFzj3Ocjpnw3WdmKjp3oELwmXt=Zs2=fZuYy0TUyF4nXiA@mail.gmail.com>
+X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 06 May 2012 10:23:10 -0700 (PDT)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2be8e9ec677d6dfd4268b80e1ccd7d21777b86e3
-Gitweb:     http://git.kernel.org/tip/2be8e9ec677d6dfd4268b80e1ccd7d21777b86e3
-Author:     Al Viro <viro@ZenIV.linux.org.uk>
-AuthorDate: Sun, 6 May 2012 17:20:00 +0100
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Sun, 6 May 2012 09:53:15 -0700
+On 05/06/2012 10:16 AM, Linus Torvalds wrote:
+> On Sun, May 6, 2012 at 9:20 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> Setting TIF_IA32 in load_aout_binary() used to be enough; these days
+>> TASK_SIZE is controlled by TIF_ADDR32 and that one doesn't get set
+>> there.  Switch to use of set_personality_ia32()...
+> 
+> Applied. Just out of curiosity, how did you notice? Just looking at
+> TIF_IA32 usage, or do you actually have some old app?
+> 
 
-x86, compat: Correct broken TASK_SIZE for ia32 a.out binaries
+OK, I just queued it up in my tree for a push to you... do you want me
+to drop it back out and send the balance?
 
-Setting TIF_IA32 in load_aout_binary() used to be enough; these days
-TASK_SIZE is controlled by TIF_ADDR32 and that one doesn't get set
-there.  Switch to use of set_personality_ia32()...
+	-hpa
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Link: http://lkml.kernel.org/r/20120506162000.GT6871@ZenIV.linux.org.uk
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/ia32/ia32_aout.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
-index d511d95..4c979cf 100644
---- a/arch/x86/ia32/ia32_aout.c
-+++ b/arch/x86/ia32/ia32_aout.c
-@@ -296,8 +296,7 @@ static int load_aout_binary(struct linux_binprm *bprm, struct pt_regs *regs)
- 
- 	/* OK, This is the point of no return */
- 	set_personality(PER_LINUX);
--	set_thread_flag(TIF_IA32);
--	current->mm->context.ia32_compat = 1;
-+	set_personality_ia32(false);
- 
- 	setup_new_exec(bprm);
- 
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
