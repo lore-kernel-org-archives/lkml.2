@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab2EFIPT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 04:15:19 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:56343 "EHLO smtp.gentoo.org"
+	id S1752646Ab2EFIWR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 04:22:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19465 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752148Ab2EFIPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 04:15:17 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [patch 05/29] blackfin: Use generic init_task
-Date: Sun, 6 May 2012 04:16:26 -0400
-User-Agent: KMail/1.13.7 (Linux/3.3.4; KDE/4.6.5; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org
-References: <20120430194725.763322463@linutronix.de> <20120430194845.850346878@linutronix.de>
-In-Reply-To: <20120430194845.850346878@linutronix.de>
+	id S1752223Ab2EFIV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 04:21:56 -0400
+Message-ID: <4FA634A0.8020504@redhat.com>
+Date: Sun, 06 May 2012 11:21:52 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3417189.oGjxHQfq1C";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: X86: Remove stale values from ctxt->memop before
+ emulation
+References: <1336148056-15662-1-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1336148056-15662-1-git-send-email-joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205060416.28085.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3417189.oGjxHQfq1C
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+On 05/04/2012 07:14 PM, Joerg Roedel wrote:
+> When instruction decoding begins there could be stale values
+> in the ctxt->memop structure. This causes problems when an
+> instruction is emulated with more op-bytes then the guest
+> wants (like the bsr instruction which is always emulated
+> with 4 or 8 op-bytes).
+>
+> The stale value in this structure causes the unit-test for
+> the bsrw instruction to fail. Initialize the memop.val with
+> 0 to prevent such bugs (an alternative fix could be to
+> always emulate instructions with the number of op-bytes
+> requested by the guest).
+>
+>
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index d4bf50c..1b516ec 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -3937,6 +3937,7 @@ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len)
+>  	struct opcode opcode;
+>  
+>  	ctxt->memop.type = OP_NONE;
+> +	ctxt->memop.val  = 0;
+>  	ctxt->memopp = NULL;
+>  	ctxt->_eip = ctxt->eip;
+>  	ctxt->fetch.start = ctxt->_eip;
 
-On Monday 30 April 2012 16:15:54 Thomas Gleixner wrote:
-> Same code. Use the generic version. The special Makefile treatment is
-> pointless anyway as init_task.o contains only data which is handled by
-> the linker script. So no point on being treated like head text.
+This only works for long sized values - it doesn't initialize val64 on
+i386, for example.  So I think it's better to change bsr (and family) to
+use emualte_2op_SrcV_nobyte() instead (which has the added benefit of
+using the same values as the processor for the "undefined" bits).
 
-thanks !
+-- 
+error compiling committee.c: too many arguments to function
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
-
---nextPart3417189.oGjxHQfq1C
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJPpjNcAAoJEEFjO5/oN/WBfUIP/0au5BWIuaXvwuaVK01tmZGt
-lnJLTIdl9OOlQ2+Ij/f8YQHOe82dZCp8fWiw8ytWQhUt4A1aEhghIu41lrA+MC2j
-V8sSo1AjcjGbv5KHuDgMt+pLSuIeZSTMKe4qZEkQDfWYDiUN/lMdwvEsu7fhum75
-iJgPHWz87YuYDFFvHh7PXLbz2wQ4zkroSdNGcTel7PegT0t3MLiqSCeyB/ojRiXc
-OA6APCgwI8/1sEdz6whfMZJUkMEnuyRILqhdgeYUF8SXhCwMcP6w+475y60fmZFz
-YfSKkud4k2hdjifmhgm8EK+U0h0CL5f+HyR2QD9mcVSUyhdOQeZOiq7Cfu5C5T2R
-3ZkZ56RZLRr4RwB2B/g+rprC9XSbsvku9kSmmEPhSahOs8e9NJWgH7ikUTw9WDwF
-xEw7zvI3l/atCfX3JnFVEPtFDhtch3yR8HGpyM9QBsIH7Me+TJTVyMZOEliJp5kz
-c3BGU2LONw7Z7y9FTTcbLvwkqH00lhI7t0HpvBeDJ1WjKf5xq3KDLpEJUCohKNOs
-k86ri5yLVcmZvlk2PfVGCpJHPJNii2pVEx7CGWtW4EjiW18BRHRyFecP4IIlYuBG
-kWjoYCIn5sLtlj3+gfU041S8QQlaQZzudAAN8AOLxKV0frMLBH6TtDGXIarBni69
-2Ci44C95h8ukO5Mf/y9v
-=zfPU
------END PGP SIGNATURE-----
-
---nextPart3417189.oGjxHQfq1C--
