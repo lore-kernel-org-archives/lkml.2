@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab2EGOWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 10:22:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40018 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756179Ab2EGOWu (ORCPT
+	id S1756393Ab2EGOYm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 10:24:42 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:40526 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab2EGOYl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 10:22:50 -0400
-Date: Mon, 7 May 2012 15:22:46 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V1 4/4] regulator: tps62360: Provide settling time for
- voltage change
-Message-ID: <20120507142245.GF17002@opensource.wolfsonmicro.com>
-References: <1336376139-1048-1-git-send-email-ldewangan@nvidia.com>
- <1336376139-1048-5-git-send-email-ldewangan@nvidia.com>
- <20120507112321.GI4415@opensource.wolfsonmicro.com>
- <4FA7C31C.7000309@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hUH5gZbnpyIv7Mn4"
-Content-Disposition: inline
-In-Reply-To: <4FA7C31C.7000309@nvidia.com>
-X-Cookie: Be different: conform.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 7 May 2012 10:24:41 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsQJAOXZp09bdWOb/2dsb2JhbABEhXKkdSKIEIEHggwBAQUjBFIQCxgCAiYCAlcGiCWoOpI3gS+OWIEYBKZAgms
+X-IronPort-AV: E=Sophos;i="4.75,544,1330902000"; 
+   d="scan'208";a="511826000"
+Message-ID: <1336400676.12407.10.camel@fourier.local.igalia.com>
+Subject: Re: [PATCH v2 1/3] Staging: IndustryPack bus for the Linux Kernel
+From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Mon, 07 May 2012 16:24:36 +0200
+In-Reply-To: <1336379095.2852.17.camel@fourier.local.igalia.com>
+References: <1336375569-21692-1-git-send-email-siglesias@igalia.com>
+	 <20120507080458.GN22134@mwanda>
+	 <1336379095.2852.17.camel@fourier.local.igalia.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 8BIT
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-05-07 at 10:24 +0200, Samuel Iglesias Gonsálvez wrote:
+> On Mon, 2012-05-07 at 11:04 +0300, Dan Carpenter wrote:
+> > 
+> > [snip]
+> > 
+> > > +int ipack_device_find_drv(struct device_driver *driver, void *param)
+> > > +{
+> > > +	int ret;
+> > > +	struct ipack_device *dev = (struct ipack_device *)param;
+> > > +
+> > > +	ret = ipack_bus_match(&dev->dev, driver);
+> > > +	if (ret)
+> > > +		return !ipack_bus_probe(&dev->dev);
+> > 
+> > Wouldn't probe() return zero or a negative error code?
+> 
+> Yes. However, in case of the function called by bus_for_each_drv(), it
+> should return zero if you want to continue or nonzero value to stop the
+> iteration.
+> 
+> I considered that if the probe fails, we can try with the next driver in
+> the list. So, the returned value of probe() is negated.
 
---hUH5gZbnpyIv7Mn4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Checking the device_register() function, it actually does the same I am
+trying to do here: call the bus' match() function with each driver
+registered on the bus searching which one can manage the device, and
+then call the probe().
 
-On Mon, May 07, 2012 at 06:12:04PM +0530, Laxman Dewangan wrote:
+So I can delete this function safely and bus_for_each_drv() in
+ipack_device_register().
 
-> Yaah, I should put the stylistic change at end..
-> I will send next patch for enabling cache and settling time.
-> Will keep discussion on stylistic changes and so will remove that
-> from this series.
+Thanks,
 
-TBH I'd probably apply the style change if the regmap bit were using
-static inlines, though I'm not a big fan and wouldn't be happy with it
-in any consumer side code that I actively work on.
+Sam
 
---hUH5gZbnpyIv7Mn4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPp9qpAAoJEBus8iNuMP3dRDUP/2giMDulo5vA9TzzrZJ+zYdV
-DPH+m+L0NpyIzKM9slxiBhOZnHmQnehdOUUzmIMiW/W/8mImRK8UypZXd/Q8NZCt
-+H58ouTMjn6SFYvoIAr5xUrh5smkJJ39KjcqfXq3Ae663GhavGTKLpVvNLhA/ixA
-JH0xJ8b2Fp7ZNMvSUNDcy4yj/7dtfOcelfFdHnqwE6PVf7WjYSCIF1dQw0ongrfz
-Ig/mWhjO10bXR84F6HYCHexBIzt63BitX44rUEf7anXq/ODZqfN8TwvdMBLzr0If
-HAIIuU7ZxKQ7Ej15bxZTfUEJ7IVyyn3NLZaIoLX2ltocaYaDvOoIV+e/vc13m2tT
-HdHsQlpao9lIlCHXZqLh9VBadjoxJX5u0svaIpXfXxCvUyZyuUTUGPDc7/OHFu+r
-kaK9a2+8wuVdP8P8Yzcm1eC+FzMD/7lf5S6LVsbOI9DBeAP5MsRUl4VjsJzpHoAz
-461aC+nQRrHf7mIhgbhhO+Je+8olDoL4YgkXfu1cEGwqW/i1w1Abk+R+Zvk2ogIz
-m2v5itv23mwEWGjgpL8zPjre3Q24oc0zuNSZ8pzMXy28LGYK4oGsFIiDcZiIFcYW
-qudrJzYIHkDkzmsUqBFQxM5s4wSuebaqtYsOlcZVsZv97biIuuwtOLWU6TIUhwWn
-E45CkVyUMc0/K631HiJM
-=hsu4
------END PGP SIGNATURE-----
-
---hUH5gZbnpyIv7Mn4--
