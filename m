@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab2EGUal (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 16:30:41 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:51068 "EHLO
+	id S932322Ab2EGUam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 16:30:42 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:51085 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932255Ab2EGUaf (ORCPT
+	with ESMTP id S932262Ab2EGUag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 16:30:35 -0400
+	Mon, 7 May 2012 16:30:36 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -17,80 +17,54 @@ Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 13/21] x86/PCI: add busn_res into resources list for ACPI path
-Date: Mon,  7 May 2012 13:29:58 -0700
-Message-Id: <1336422606-4244-14-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
+Subject: [PATCH 15/21] ia64/PCI: register busn_res for root buses
+Date: Mon,  7 May 2012 13:30:00 -0700
+Message-Id: <1336422606-4244-16-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
 References: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Add the host bridge bus number aperture from _CRS to the resource list.
-Like the MMIO and I/O port apertures, this will be used when assigning
+Like the MMIO and I/O port apertures, this is used when assigning
 resources to hot-added devices or in the case of conflicts.
 
-Always insert that even pci_use_crs is not used.
-
-[bhelgaas: rewrite changelog]
-Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
+[bhelgaas: write changelog]
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
 ---
- arch/x86/pci/acpi.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ arch/ia64/pci/pci.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 350fe63..2bb885a 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -12,7 +12,6 @@ struct pci_root_info {
- 	char name[16];
- 	unsigned int res_num;
- 	struct resource *res;
--	int busnum;
- 	struct pci_sysdata sd;
- };
+diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+index 3ca9bed..d173a88 100644
+--- a/arch/ia64/pci/pci.c
++++ b/arch/ia64/pci/pci.c
+@@ -351,6 +351,8 @@ pci_acpi_scan_root(struct acpi_pci_root *root)
+ #endif
  
-@@ -347,7 +346,9 @@ probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
- {
- 	size_t size;
+ 	INIT_LIST_HEAD(&info.resources);
++	/* insert busn resource at first */
++	pci_add_resource(&info.resources, &root->secondary);
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, count_window,
+ 			&windows);
+ 	if (windows) {
+@@ -384,7 +386,7 @@ pci_acpi_scan_root(struct acpi_pci_root *root)
+ 		return NULL;
+ 	}
  
-+	sprintf(info->name, "PCI Bus %04x:%02x", domain, busnum);
- 	info->bridge = device;
-+
- 	info->res_num = 0;
- 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, count_resource,
- 				info);
-@@ -360,8 +361,6 @@ probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
- 	if (!info->res)
- 		return;
+-	pbus->busn_res.end = pci_scan_child_bus(pbus);
++	pci_scan_child_bus(pbus);
+ 	return pbus;
  
--	sprintf(info->name, "PCI Bus %04x:%02x", domain, busnum);
--
- 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
- 				info);
- }
-@@ -426,6 +425,8 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 	} else {
- 		probe_pci_root_info(info, device, busnum, domain);
- 
-+		/* insert busn res at first */
-+		pci_add_resource(&resources,  &root->secondary);
- 		/*
- 		 * _CRS with no apertures is normal, so only fall back to
- 		 * defaults or native bridge info if we're ignoring _CRS.
-@@ -440,7 +441,7 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 		bus = pci_create_root_bus(NULL, busnum, &pci_root_ops, sd,
- 					  &resources);
- 		if (bus) {
--			bus->busn_res.end = pci_scan_child_bus(bus);
-+			pci_scan_child_bus(bus);
- 			pci_set_host_bridge_release(
- 				to_pci_host_bridge(bus->bridge),
- 				release_pci_root_info, info);
+ out3:
 -- 
 1.7.7
 
