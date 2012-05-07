@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab2EGWK6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 18:10:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43066 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755097Ab2EGWKz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 18:10:55 -0400
-Message-ID: <1336428636.5773.6.camel@smoke>
-Subject: Re: [RFC][PATCH 00/41] Nohz cpusets v3 (adaptive tickless kernel)
-From: Geoff Levand <geoff@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>, Kevin Hilman <khilman@ti.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 07 May 2012 15:10:36 -0700
-In-Reply-To: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757068Ab2EGWNg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 18:13:36 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65004 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756640Ab2EGWNe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 18:13:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FA8195E.2010706@am.sony.com>
+References: <4FA4673C.7010209@am.sony.com>
+	<20120504233707.GA24213@kroah.com>
+	<4FA8195E.2010706@am.sony.com>
+Date: Mon, 7 May 2012 15:13:33 -0700
+Message-ID: <CANqkERCQixuCe9vfeDncHikED-bVwZ3APr=mo6WfQBcGf4rz_g@mail.gmail.com>
+Subject: Re: [PATCH] staging: android: logger: Allocate logs dynamically at boot
+From: Brian Swetland <swetland@google.com>
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On Mon, May 7, 2012 at 11:50 AM, Tim Bird <tim.bird@am.sony.com> wrote:
+> On 05/04/2012 04:37 PM, Greg KH wrote:
+>> On Fri, May 04, 2012 at 04:33:16PM -0700, Tim Bird wrote:
+>>> +#define MAX_LOGS    5
+>>> +struct logger_log *logs_array[MAX_LOGS];
+>>
+>> You are going to make this a list and not a static array in the
+>> future, right?
+>
+> Would that be better?  The for-loop is IMHO simpler than a
+> list walk for finding matches.  I anticipate that the size of
+> this array should never (famous last words) be bigger than about
+> 20 entries, even in the dynamic-allocation-per-application
+> case.  And that's a ways off in implementation.
+>
+> I'll be happy to switch to a linked list once it looks like we're
+> going to have more than 5 entries.  Or I can switch to a linked
+> list now if you think it's better form to code for the longer-term
+> anticipated features.
+>
+> Not a big deal to me either way.
 
-On Tue, 2012-05-01 at 01:54 +0200, Frederic Weisbecker wrote:
-> A summary of what this is about can be found here:
->  https://lkml.org/lkml/2011/8/15/245
-> 
-> Changes since v2:
-> ...
+I'd also favor a list approach. It won't break unexpectedly when
+somebody inevitably adds that 6th log or whatever, and the list
+traversal cost only occurs during open(), which is not a frequent
+operation -- most users keep the log driver open for the process
+lifespan (both readers and writers).
 
-I rebased my ARM patches to Frederick's v3:
-
-  http://git.kernel.org/?p=linux/kernel/git/geoff/nohz.git
-
--Geoff
-
+Brian
