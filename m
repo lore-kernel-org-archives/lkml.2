@@ -1,74 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757771Ab2EGWs3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 18:48:29 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36271 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756814Ab2EGWs1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 18:48:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <87bom0hf0f.fsf@rustcorp.com.au>
-References: <1333903588-32608-1-git-send-email-mcgrof@frijolero.org> <87bom0hf0f.fsf@rustcorp.com.au>
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Mon, 7 May 2012 15:48:07 -0700
-X-Google-Sender-Auth: 0Yv8w-SW9ofUkxh0MpanJwp1wjA
-Message-ID: <CAB=NE6WLP8KWESmDi5Rfg8KPn36qwWzeEzz+0mOH5yP7i8w8eg@mail.gmail.com>
-Subject: Re: [PATCH v2] module: Clarify usage of MODULE_LICENSE()
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, Tso Ted <tytso@mit.edu>,
-        Keith Packard <keithp@keithp.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arend Van Spriel <arend@broadcom.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932070Ab2EGWzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 18:55:22 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55992 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757101Ab2EGWzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 18:55:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="163135526"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andi Kleen <ak@linux.intel.com>, penberg@kernel.org, cl@linux.com
+Subject: [PATCH] slab/mempolicy: always use local policy from interrupt context v3
+Date: Mon,  7 May 2012 15:55:15 -0700
+Message-Id: <1336431315-29736-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 6, 2012 at 8:00 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> On Sun,  8 Apr 2012 09:46:28 -0700, "Luis R. Rodriguez" <mcgrof@frijolero.org> wrote:
->> From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
->>
->> While the kernel is GPLv2 individual the MODULE_LICENSE() has allowed for
->> these tag to be used:
->>
->>   * Dual BSD/GPL
->>   * Dual MIT/GPL
->>   * Dual MPL/GPL
->>
->> This is done for historical reasons, namely questioning the compatibilty
->> between the GPL and some old BSD licenses. Some developers and maintainers
->> tend to use assume the macro is also used to help clarify if the module
->> source code could be shared with the BSD family, but that is not the
->> case.
->
-> Incorrect.  When the author clarifies their license it *does* help.  If
-> a tag and license text were to disagree, it would muddy the waters.
+From: Andi Kleen <ak@linux.intel.com>
 
-Heh, OK.. sure...
+slab_node() could access current->mempolicy from interrupt context.
+However there's a race condition during exit where the mempolicy
+is first freed and then the pointer zeroed.
 
->> The MODULE_LICENSE() declares the module's license at run time and even for
->> the dual tags the run time license that applies is the GPL.
->
-> You're probably correct, but it's very hard to care.
+Using this from interrupts seems bogus anyways. The interrupt
+will interrupt a random process and therefore get a random
+mempolicy. Many times, this will be idle's, which noone can change.
 
-Its good that we seem to care to not care, given that I have avoided
-addressing this for eons, but we seem to at least care enough to not
-want proprietary derivatives for Linux.
+Just disable this here and always use local for slab
+from interrupts. I also cleaned up the callers of slab_node a bit
+which always passed the same argument.
 
->> If sharing share between Linux and permissive licensed Operating Systems such
->> as the BSDs is desired developers should review the license on the top of
->> each file being considered to be shared.
->
-> Of course.  But having both is nice and clear.
+I believe the original mempolicy code did that in fact,
+so it's likely a regression.
 
-Alrighty.
+v2: send version with correct logic
+v3: simplify. fix typo.
+Reported-by: Arun Sharma <asharma@fb.com>
+Cc: penberg@kernel.org
+Cc: cl@linux.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/linux/mempolicy.h |    2 +-
+ mm/mempolicy.c            |    6 ++++--
+ mm/slab.c                 |    4 ++--
+ mm/slub.c                 |    2 +-
+ 4 files changed, 8 insertions(+), 6 deletions(-)
 
-  Luis
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index 7c727a9..7106786 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -215,7 +215,7 @@ extern struct zonelist *huge_zonelist(struct vm_area_struct *vma,
+ extern bool init_nodemask_of_mempolicy(nodemask_t *mask);
+ extern bool mempolicy_nodemask_intersects(struct task_struct *tsk,
+ 				const nodemask_t *mask);
+-extern unsigned slab_node(struct mempolicy *policy);
++extern unsigned slab_node(void);
+ 
+ extern enum zone_type policy_zone;
+ 
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index cfb6c86..e05e007 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1586,9 +1586,11 @@ static unsigned interleave_nodes(struct mempolicy *policy)
+  * task can change it's policy.  The system default policy requires no
+  * such protection.
+  */
+-unsigned slab_node(struct mempolicy *policy)
++unsigned slab_node(void)
+ {
+-	if (!policy || policy->flags & MPOL_F_LOCAL)
++	struct mempolicy *policy = current->mempolicy;
++
++	if (!in_interrupt() || !policy || policy->flags & MPOL_F_LOCAL)
+ 		return numa_node_id();
+ 
+ 	switch (policy->mode) {
+diff --git a/mm/slab.c b/mm/slab.c
+index e901a36..af3b405 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3336,7 +3336,7 @@ static void *alternate_node_alloc(struct kmem_cache *cachep, gfp_t flags)
+ 	if (cpuset_do_slab_mem_spread() && (cachep->flags & SLAB_MEM_SPREAD))
+ 		nid_alloc = cpuset_slab_spread_node();
+ 	else if (current->mempolicy)
+-		nid_alloc = slab_node(current->mempolicy);
++		nid_alloc = slab_node();
+ 	if (nid_alloc != nid_here)
+ 		return ____cache_alloc_node(cachep, flags, nid_alloc);
+ 	return NULL;
+@@ -3368,7 +3368,7 @@ static void *fallback_alloc(struct kmem_cache *cache, gfp_t flags)
+ 
+ retry_cpuset:
+ 	cpuset_mems_cookie = get_mems_allowed();
+-	zonelist = node_zonelist(slab_node(current->mempolicy), flags);
++	zonelist = node_zonelist(slab_node(), flags);
+ 
+ retry:
+ 	/*
+diff --git a/mm/slub.c b/mm/slub.c
+index ffe13fd..ef936f3 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1614,7 +1614,7 @@ static struct page *get_any_partial(struct kmem_cache *s, gfp_t flags,
+ 
+ 	do {
+ 		cpuset_mems_cookie = get_mems_allowed();
+-		zonelist = node_zonelist(slab_node(current->mempolicy), flags);
++		zonelist = node_zonelist(slab_node(), flags);
+ 		for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+ 			struct kmem_cache_node *n;
+ 
+-- 
+1.7.7.6
+
