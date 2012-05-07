@@ -1,203 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939Ab2EGUJZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 16:09:25 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:57835 "EHLO ogre.sisk.pl"
+	id S1757935Ab2EGUKP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 16:10:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57859 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757611Ab2EGUJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 16:09:23 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bojan Smojver <bojan@rexursive.com>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both: draft
-Date: Mon, 7 May 2012 22:14:13 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org
-References: <1336379825.2097.5.camel@shrek.rexursive.com>
-In-Reply-To: <1336379825.2097.5.camel@shrek.rexursive.com>
+	id S1757565Ab2EGUKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 16:10:13 -0400
+Message-ID: <4FA82C11.2030805@redhat.com>
+Date: Mon, 07 May 2012 16:09:53 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Richard Davies <richard.davies@elastichosts.com>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        "jweiner@redhat.com" <jweiner@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "shaohua.li@intel.com" <shaohua.li@intel.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [RFC][PATCH] avoid swapping out with swappiness==0
+References: <65795E11DBF1E645A09CEC7EAEE94B9CB951A45F@USINDEVS02.corp.hds.com> <20120424082019.GA18395@alpha.arachsys.com> <65795E11DBF1E645A09CEC7EAEE94B9C014649EC4D@USINDEVS02.corp.hds.com> <20120426142643.GA18863@alpha.arachsys.com> <CAHGf_=pcmFrWjfW3eQi_AiemQEm_e=gBZ24s+Hiythmd=J9EUQ@mail.gmail.com>
+In-Reply-To: <CAHGf_=pcmFrWjfW3eQi_AiemQEm_e=gBZ24s+Hiythmd=J9EUQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205072214.13912.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/26/2012 11:41 AM, KOSAKI Motohiro wrote:
+> On Thu, Apr 26, 2012 at 10:26 AM, Richard Davies
+> <richard.davies@elastichosts.com>  wrote:
+>> Satoru Moriya wrote:
+>>>> I have run into problems with heavy swapping with swappiness==0 and
+>>>> was pointed to this thread (
+>>>> http://marc.info/?l=linux-mm&m=133522782307215 )
+>>>
+>>> Did you test this patch with your workload?
+>>
+>> I haven't yet tested this patch. It takes a long time since these are
+>> production machines, and the bug itself takes several weeks of production
+>> use to really show up.
+>>
+>> Rik van Riel has pointed out a lot of VM tweaks that he put into 3.4:
+>> http://marc.info/?l=linux-mm&m=133536506926326
+>>
+>> My intention is to reboot half of our machines into plain 3.4 once it is
+>> out, and half onto 3.4 + your patch.
+>>
+>> Then we can compare behaviour.
+>>
+>> Will your patch apply cleanly on 3.4?
+>
+> Note. This patch doesn't solve your issue. This patch mean,
+> when occuring very few swap io, it change to 0. But you said
+> you are seeing eager swap io. As Dave already pointed out, your
+> machine have buffer head issue.
+>
+> So, this thread is pointless.
 
-On Monday, May 07, 2012, Bojan Smojver wrote:
-> Hi Rafael,
-> 
-> Was just playing with it and this is what I came up with. This is just a
-> rough draft (I didn't even think of memory leaks and such here, to be
-> honest). Let me know what you think.
+Running KVM guests directly off block devices results in a lot
+of buffer cache.
 
-Looks reasonable at first sight.
+I suspect that this patch will in fact fix Richard's issue.
 
-Thanks,
-Rafael
+The patch is small, fairly simple and looks like it will fix
+people's problems.  It also makes swappiness=0 behave the way
+most people seem to imagine it would work.
 
+If it works for a few people (test results), I believe we
+might as well merge it.
 
-> ------------------------------
-> diff --git a/Documentation/power/swsusp.txt b/Documentation/power/swsusp.txt
-> index ac190cf..92341b8 100644
-> --- a/Documentation/power/swsusp.txt
-> +++ b/Documentation/power/swsusp.txt
-> @@ -33,6 +33,11 @@ echo shutdown > /sys/power/disk; echo disk > /sys/power/state
->  
->  echo platform > /sys/power/disk; echo disk > /sys/power/state
->  
-> +. If you would like to write hibernation image to swap and then suspend
-> +to RAM (provided your platform supports it), you can try
-> +
-> +echo suspend > /sys/power/disk; echo disk > /sys/power/state
-> +
->  . If you have SATA disks, you'll need recent kernels with SATA suspend
->  support. For suspend and resume to work, make sure your disk drivers
->  are built into kernel -- not modules. [There's way to make
-> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-> index e09dfbf..3b5726f 100644
-> --- a/kernel/power/hibernate.c
-> +++ b/kernel/power/hibernate.c
-> @@ -5,6 +5,7 @@
->   * Copyright (c) 2003 Open Source Development Lab
->   * Copyright (c) 2004 Pavel Machek <pavel@ucw.cz>
->   * Copyright (c) 2009 Rafael J. Wysocki, Novell Inc.
-> + * Copyright (C) 2012 Bojan Smojver <bojan@rexursive.com>
->   *
->   * This file is released under the GPLv2.
->   */
-> @@ -44,6 +45,9 @@ enum {
->  	HIBERNATION_PLATFORM,
->  	HIBERNATION_SHUTDOWN,
->  	HIBERNATION_REBOOT,
-> +#ifdef CONFIG_SUSPEND
-> +	HIBERNATION_SUSPEND,
-> +#endif
->  	/* keep last */
->  	__HIBERNATION_AFTER_LAST
->  };
-> @@ -572,6 +576,10 @@ int hibernation_platform_enter(void)
->   */
->  static void power_down(void)
->  {
-> +#ifdef CONFIG_SUSPEND
-> +	int error;
-> +#endif
-> +
->  	switch (hibernation_mode) {
->  	case HIBERNATION_REBOOT:
->  		kernel_restart(NULL);
-> @@ -581,6 +589,25 @@ static void power_down(void)
->  	case HIBERNATION_SHUTDOWN:
->  		kernel_power_off();
->  		break;
-> +#ifdef CONFIG_SUSPEND
-> +	case HIBERNATION_SUSPEND:
-> +		error = suspend_devices_and_enter(PM_SUSPEND_MEM);
-> +		if (error) {
-> +			if (hibernation_ops)
-> +				hibernation_mode = HIBERNATION_PLATFORM;
-> +			else
-> +				hibernation_mode = HIBERNATION_SHUTDOWN;
-> +			power_down();
-> +		}
-> +		/*
-> +		 * Restore swap signature.
-> +		 */
-> +		error = swsusp_unmark();
-> +		if (error)
-> +			printk(KERN_ERR "PM: Swap will be unusable! "
-> +			                "Try swapon -a.\n");
-> +		return;
-> +#endif
->  	}
->  	kernel_halt();
->  	/*
-> @@ -814,6 +841,9 @@ static const char * const hibernation_modes[] = {
->  	[HIBERNATION_PLATFORM]	= "platform",
->  	[HIBERNATION_SHUTDOWN]	= "shutdown",
->  	[HIBERNATION_REBOOT]	= "reboot",
-> +#ifdef CONFIG_SUSPEND
-> +	[HIBERNATION_SUSPEND]	= "suspend",
-> +#endif
->  };
->  
->  /*
-> @@ -854,6 +884,9 @@ static ssize_t disk_show(struct kobject *kobj, struct kobj_attribute *attr,
->  		switch (i) {
->  		case HIBERNATION_SHUTDOWN:
->  		case HIBERNATION_REBOOT:
-> +#ifdef CONFIG_SUSPEND
-> +		case HIBERNATION_SUSPEND:
-> +#endif
->  			break;
->  		case HIBERNATION_PLATFORM:
->  			if (hibernation_ops)
-> @@ -894,6 +927,9 @@ static ssize_t disk_store(struct kobject *kobj, struct kobj_attribute *attr,
->  		switch (mode) {
->  		case HIBERNATION_SHUTDOWN:
->  		case HIBERNATION_REBOOT:
-> +#ifdef CONFIG_SUSPEND
-> +		case HIBERNATION_SUSPEND:
-> +#endif
->  			hibernation_mode = mode;
->  			break;
->  		case HIBERNATION_PLATFORM:
-> diff --git a/kernel/power/power.h b/kernel/power/power.h
-> index 98f3622..07b4a68 100644
-> --- a/kernel/power/power.h
-> +++ b/kernel/power/power.h
-> @@ -156,6 +156,9 @@ extern void swsusp_free(void);
->  extern int swsusp_read(unsigned int *flags_p);
->  extern int swsusp_write(unsigned int flags);
->  extern void swsusp_close(fmode_t);
-> +#ifdef CONFIG_SUSPEND
-> +extern int swsusp_unmark(void);
-> +#endif
->  
->  /* kernel/power/block_io.c */
->  extern struct block_device *hib_resume_bdev;
-> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-> index eef311a..1027da8 100644
-> --- a/kernel/power/swap.c
-> +++ b/kernel/power/swap.c
-> @@ -1456,6 +1456,34 @@ void swsusp_close(fmode_t mode)
->  	blkdev_put(hib_resume_bdev, mode);
->  }
->  
-> +/**
-> + *      swsusp_unmark - Unmark swsusp signature in the resume device
-> + */
-> +
-> +#ifdef CONFIG_SUSPEND
-> +int swsusp_unmark(void)
-> +{
-> +	int error;
-> +
-> +	hib_bio_read_page(swsusp_resume_block, swsusp_header, NULL);
-> +	if (!memcmp(HIBERNATE_SIG,swsusp_header->sig, 10)) {
-> +		memcpy(swsusp_header->sig,swsusp_header->orig_sig, 10);
-> +		error = hib_bio_write_page(swsusp_resume_block,
-> +					swsusp_header, NULL);
-> +	} else {
-> +		printk(KERN_ERR "PM: Cannot find swsusp signature!\n");
-> +		error = -ENODEV;
-> +	}
-> +
-> +	/*
-> +	 * We just returned from suspend, we don't need the image any more.
-> +	 */
-> +	free_all_swap_pages(root_swap);
-> +
-> +	return error;
-> +}
-> +#endif
-> +
->  static int swsusp_header_init(void)
->  {
->  	swsusp_header = (struct swsusp_header*) __get_free_page(GFP_KERNEL);
-> ------------------------------
-> 
-> 
+Yes, for cgroups we may need additional logic, but we can
+sort that out as we go along.
 
+-- 
+All rights reversed
