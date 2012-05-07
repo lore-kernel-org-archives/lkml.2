@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab2EGOMZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 10:12:25 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:34806 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756867Ab2EGOMW (ORCPT
+	id S1757123Ab2EGOPu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 10:15:50 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45519 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756892Ab2EGOMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 10:12:22 -0400
+	Mon, 7 May 2012 10:12:25 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, miklos@szeredi.hu, hch@infradead.org,
         michael.brantley@deshaw.com
-Subject: [PATCH v1 RESEND 03/12] vfs: fix readlinkat to retry on ESTALE
-Date: Mon,  7 May 2012 10:12:02 -0400
-Message-Id: <1336399931-20234-4-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v1 RESEND 05/12] vfs: fix mknodat to retry on ESTALE errors
+Date: Mon,  7 May 2012 10:12:04 -0400
+Message-Id: <1336399931-20234-6-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1336399931-20234-1-git-send-email-jlayton@redhat.com>
 References: <1336399931-20234-1-git-send-email-jlayton@redhat.com>
@@ -24,44 +24,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/stat.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
+ fs/namei.c |   62 ++++++++++++++++++++++++++++++-----------------------------
+ 1 files changed, 32 insertions(+), 30 deletions(-)
 
-diff --git a/fs/stat.c b/fs/stat.c
-index f3eef0d..f7904aa 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -299,14 +299,21 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+diff --git a/fs/namei.c b/fs/namei.c
+index 43e568b..471c038 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2581,44 +2581,46 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
+ 	struct dentry *dentry;
  	struct path path;
  	int error;
- 	int empty = 0;
 +	unsigned int try = 0;
-+	unsigned int lookup_flags = LOOKUP_EMPTY;
  
- 	if (bufsiz <= 0)
- 		return -EINVAL;
+ 	if (S_ISDIR(mode))
+ 		return -EPERM;
  
--	error = user_path_at_empty(dfd, pathname, LOOKUP_EMPTY, &path, &empty);
--	if (!error) {
--		struct inode *inode = path.dentry->d_inode;
+-	dentry = user_path_create(dfd, filename, &path, false, false);
+-	if (IS_ERR(dentry))
+-		return PTR_ERR(dentry);
 +	do {
-+		struct inode *inode;
-+
-+		error = user_path_at_empty(dfd, pathname, lookup_flags, &path,
-+					   &empty);
-+		if (error)
-+			break;
++		dentry = user_path_create(dfd, filename, &path, false, try);
++		if (IS_ERR(dentry))
++			return PTR_ERR(dentry);
  
-+		inode = path.dentry->d_inode;
- 		error = empty ? -ENOENT : -EINVAL;
- 		if (inode->i_op->readlink) {
- 			error = security_inode_readlink(path.dentry);
-@@ -317,7 +324,8 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
- 			}
- 		}
- 		path_put(&path);
+-	if (!IS_POSIXACL(path.dentry->d_inode))
+-		mode &= ~current_umask();
+-	error = may_mknod(mode);
+-	if (error)
+-		goto out_dput;
+-	error = mnt_want_write(path.mnt);
+-	if (error)
+-		goto out_dput;
+-	error = security_path_mknod(&path, dentry, mode, dev);
+-	if (error)
+-		goto out_drop_write;
+-	switch (mode & S_IFMT) {
+-		case 0: case S_IFREG:
+-			error = vfs_create(path.dentry->d_inode,dentry,mode,NULL);
+-			break;
+-		case S_IFCHR: case S_IFBLK:
+-			error = vfs_mknod(path.dentry->d_inode,dentry,mode,
+-					new_decode_dev(dev));
+-			break;
+-		case S_IFIFO: case S_IFSOCK:
+-			error = vfs_mknod(path.dentry->d_inode,dentry,mode,0);
++		if (!IS_POSIXACL(path.dentry->d_inode))
++			mode &= ~current_umask();
++		error = may_mknod(mode);
++		if (error)
++			goto out_dput;
++		error = mnt_want_write(path.mnt);
++		if (error)
++			goto out_dput;
++		error = security_path_mknod(&path, dentry, mode, dev);
++		if (error)
++			goto out_drop_write;
++		switch (mode & S_IFMT) {
++			case 0: case S_IFREG:
++				error = vfs_create(path.dentry->d_inode, dentry, mode, NULL);
++				break;
++			case S_IFCHR: case S_IFBLK:
++				error = vfs_mknod(path.dentry->d_inode, dentry, mode,
++						new_decode_dev(dev));
++				break;
++			case S_IFIFO: case S_IFSOCK:
++				error = vfs_mknod(path.dentry->d_inode, dentry, mode, 0);
+ 			break;
 -	}
-+		lookup_flags |= LOOKUP_REVAL;
++		}
+ out_drop_write:
+-	mnt_drop_write(path.mnt);
++		mnt_drop_write(path.mnt);
+ out_dput:
+-	dput(dentry);
+-	mutex_unlock(&path.dentry->d_inode->i_mutex);
+-	path_put(&path);
+-
++		dput(dentry);
++		mutex_unlock(&path.dentry->d_inode->i_mutex);
++		path_put(&path);
 +	} while (retry_estale(error, try++));
  	return error;
  }
