@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486Ab2EGUyw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 16:54:52 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:51252 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189Ab2EGUyu (ORCPT
+	id S932494Ab2EGUzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 16:55:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42145 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932189Ab2EGUzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 16:54:50 -0400
-Date: Mon, 7 May 2012 13:53:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 03/18] fork: Move thread info gfp flags to header
-Message-ID: <20120507205321.GC21152@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120505150007.543515803@linutronix.de>
- <20120505150141.428211694@linutronix.de>
- <20120507043401.GA5406@linux.vnet.ibm.com>
- <alpine.LFD.2.02.1205072112400.6271@ionos>
+	Mon, 7 May 2012 16:55:20 -0400
+Date: Mon, 7 May 2012 22:55:18 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sam Ravnborg <sam@ravnborg.org>
+cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 01/18] fork: Remove the weak insanity
+In-Reply-To: <20120505155824.GA14468@merkur.ravnborg.org>
+Message-ID: <alpine.LFD.2.02.1205072243500.6271@ionos>
+References: <20120505150007.543515803@linutronix.de> <20120505150141.306358267@linutronix.de> <20120505155824.GA14468@merkur.ravnborg.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1205072112400.6271@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12050720-3270-0000-0000-0000062520E5
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 09:14:04PM +0200, Thomas Gleixner wrote:
-> On Sun, 6 May 2012, Paul E. McKenney wrote:
+On Sat, 5 May 2012, Sam Ravnborg wrote:
+
+> On Sat, May 05, 2012 at 03:05:40PM -0000, Thomas Gleixner wrote:
+> > We error out when compiling with gcc4.1.[01] as it miscompiles
+> > __weak. The workaround with magic defines is not longer
+> > necessary. Make it __weak again.
 > 
-> > On Sat, May 05, 2012 at 03:05:41PM -0000, Thomas Gleixner wrote:
-> > > These flags can be useful for extra allocations outside of the core
-> > > code.
-> > > 
-> > > Add __GFP_NOTRACE to them, so the archs which have kmemcheck do
-> > > not have to provide extra allocators just for that reason.
-> > 
-> > This breaks powerpc builds due to __GFP_NOTRACE not being defined.
-> > I restarted the test after removing the __GFP_NOTRACE as a testing-only
-> > hack, and will let you know how it goes.  Also looking into why this
-> > builds on 32-bit x86 but not on powerpc.
+> The cleanup is much appreciated!
 > 
-> Hrmpf. Seems the idiot I am fatfingered __GFP_NOTRACK to __GFP_NOTRACE
-> and then only tested with the DEBUG stuff disabled......
+> But the magic defines is IMO much better than the CONFIG_ based approach
+> that this patch-set introduces in the last patch.
+> 
+> If you do:
+> 
+>     $git grep arch_task_cache_init
+> 
+> Then if you see:
+> 
+>     #define arch_task_cache_init arch_task_cache_init
+> 
+> Then you know alrady that this arch will provide a local implementation
+> of arch_task_cache_init().
+> No need to grep for an ARCH_XXX symbol that you need to look up
+> somewhere else.
 
-That sounds like something I would do...  ;-)
+I'm not following that argument.
 
-I will rerun with __GFP_NOTRACK.
+Removing that magic define thing does not change anything. The change
+is:
 
-							Thanx, Paul
+-#define arch_task_cache_init arch_task_cache_init
+-#define arch_task_cache_init arch_task_cache_init
+-/*
+- * macro override instead of weak attribute alias, to workaround
+- * gcc 4.1.0 and 4.1.1 bugs with weak attribute and empty functions.
+- */
+-#ifndef arch_task_cache_init
+-#define arch_task_cache_init()
+-#endif
++void __init __weak arch_task_cache_init(void) { }
 
+So $git grep arch_task_cache_init still tells you who is overriding
+arch_task_cache_init () which is:
+
+arch/sh/include/asm/thread_info.h:extern void arch_task_cache_init(void);
+arch/sh/kernel/process.c:void arch_task_cache_init(void)
+arch/x86/include/asm/thread_info.h:extern void arch_task_cache_init(void);
+arch/x86/kernel/process.c:void arch_task_cache_init(void)
+
+What's your problem ?
+
+Now for the last patch in the series:
+
+It merily moves 
+
+#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR 
+
+to a Kconfig based
+
+   select ARCH_THREAD_INFO_ALLOCATOR
+
+I'm not seeing any difference except that something which is actually
+a config switch is moved to the place where it belongs.
+
+Thanks,
+
+	tglx
