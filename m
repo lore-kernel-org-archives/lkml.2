@@ -1,136 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757009Ab2EGP7o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 11:59:44 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52229 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756757Ab2EGP7m (ORCPT
+	id S1756931Ab2EGQCe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 12:02:34 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:34527 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756571Ab2EGQCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 11:59:42 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Maciej Sosnowski <maciej.sosnowski@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Keping Chen <chenkeping@huawei.com>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [RESEND,PATCH] DCA, x86: fix invalid memory access in DCA core
-Date: Mon,  7 May 2012 23:58:08 +0800
-Message-Id: <1336406288-9479-1-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 7 May 2012 12:02:32 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: rBpav8wVM1nb4wF_t0TQDnLjPRLfoyUc4dzyn5K.0L5MKvN
+ CkJBQSG8LsCkNag9O502uAxhoLUIRll7921tETePMYEf8iMfZJGLUBGDhr95
+ Y1L3RfQ0bvQSRyyxeZ9z.lSB.Z1zeqqQ0OnMqz9iFlflyoWDrfdFPV9Jn40r
+ HmFRym83zdf2EIDmOqLY7SPlsaogwZpRO_xelEJcAcHKJxR3qhD0Xd1I3NL5
+ y30SPpFSeT50w05TIvqSpM33ixAqub_Chw9pVirDC.PBp_eWH6s0uZPHJ97o
+ 4tO1QPsB7fsKZ.fYVT4S0koxWJc3Rmg9KVVb1_BI2wbMMJNHrp9ZVB15MG.e
+ K7xWxTgVqm4zRVhtTqqdmoGbGv15rHGHRJLtWtmsSBh5AW9fI49YXSO5orJC
+ f
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 7 May 2012 11:02:26 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 08/41] nohz: Try not to give the timekeeping duty to an
+ adaptive tickless cpu
+In-Reply-To: <1335830115-14335-9-git-send-email-fweisbec@gmail.com>
+Message-ID: <alpine.DEB.2.00.1205071055370.1060@router.home>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com> <1335830115-14335-9-git-send-email-fweisbec@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+On Tue, 1 May 2012, Frederic Weisbecker wrote:
 
-When unregister_dca_providers() is called, it will remove all registered
-providers from the dca_providrers list by calling list_del(&dca->node).
-list_del(node) poisons node->next and node->prev as 0xDEADBEEF and 0xBEEFDEAD.
-Later when unregister_dca_provider() is called to remove a DCA provier,
-it calls list_del(&dca->node) to remove the dca from the list again,
-but dca->node has already been poisoned, then causes invalid memory access.
+> Try to give the timekeeing duty to a CPU that doesn't belong
+> to any nohz cpuset when possible, so that we increase the chance
+> for these nohz cpusets to run their CPUs out of periodic tick
+> mode.
+>
+> [TODO: We need to find a way to ensure there is always one non-nohz
+> running CPU maintaining the timekeeping duty if every non-idle CPUs are
+> adaptive tickless]
 
-The solution here is to use list_del_init(&dca->node) instead of
-list_del(&dca->node) in function unregister_dca_providers(), so it won't
-cause invalid memory access in unregister_dca_provider() later.
-
----
-
-This issue is triggered when hot-removing IOHs on Intel platforms, which
-will remove all IOAT devices built in the IOHs.
-
-ioatdma 0000:80:16.7: Removing dma and dca services
-ioatdma 0000:80:16.7: PCI INT D disabled
-ioatdma 0000:80:16.6: Removing dma and dca services
-ioatdma 0000:80:16.7: Removing dma and dca services
-ioatdma 0000:80:16.7: PCI INT D disabled
-ioatdma 0000:80:16.6: Removing dma and dca services
-ioatdma 0000:80:16.6: PCI INT C disabled
-ioatdma 0000:00:16.0: Removing dma and dca services
-------------[ cut here ]------------
-WARNING: at lib/list_debug.c:47 __list_del_entry+0x63/0xd0()
-Hardware name: System x3850 X5 -[7143O3G]-
-list_del corruption, ffff880463540bc0->next is LIST_POISON1 (dead000000100100)
-Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 vfat fat vhost_net macvtap macvlan tun kvm_intel kvm uinput microcode pcspkr serio_raw pmcraid sg be2net cdc_ether usbnet mii i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma i7core_edac edac_core igb dca e1000e bnx2 ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif qla2xxx pata_acpi ata_generic ata_piix bfa scsi_transport_fc scsi_tgt megaraid_sas dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
-Pid: 10049, comm: bash.sh Not tainted 3.2.0IOAT+ #5
-Call Trace:
- [<ffffffff8106426f>] warn_slowpath_common+0x7f/0xc0
- [<ffffffff81064366>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff8108c675>] ? __blocking_notifier_call_chain+0x65/0x80
- [<ffffffff81256073>] __list_del_entry+0x63/0xd0
- [<ffffffff812560f1>] list_del+0x11/0x40
- [<ffffffffa001b2e2>] unregister_dca_provider+0x42/0xe0 [dca]
- [<ffffffffa021f87d>] ioat_remove+0x43/0x67 [ioatdma]
- [<ffffffff8126b1a2>] pci_device_remove+0x52/0x120
- [<ffffffff8132b2dc>] __device_release_driver+0x7c/0xe0
- [<ffffffff8132b42d>] device_release_driver+0x2d/0x40
- [<ffffffff8132a871>] driver_unbind+0xa1/0xc0
- [<ffffffff81329cbc>] drv_attr_store+0x2c/0x30
- [<ffffffff811d72ef>] sysfs_write_file+0xef/0x170
- [<ffffffff81167338>] vfs_write+0xc8/0x190
- [<ffffffff81167501>] sys_write+0x51/0x90
- [<ffffffff814fa382>] system_call_fastpath+0x16/0x1b
----[ end trace b81b51e7c494ec0d ]---
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-IP: [<ffffffffa001b360>] unregister_dca_provider+0xc0/0xe0 [dca]
-PGD 1465b48067 PUD 1465035067 PMD 0
-Oops: 0000 [#1] SMP
-CPU 57
-Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 vfat fat vhost_net macvtap macvlan tun kvm_intel kvm uinput microcode pcspkr serio_raw pmcraid sg be2net cdc_ether usbnet mii i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma i7core_edac edac_core igb dca e1000e bnx2 ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif qla2xxx pata_acpi ata_generic ata_piix bfa scsi_transport_fc scsi_tgt megaraid_sas dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
-
-Pid: 10049, comm: bash.sh Tainted: G        W    3.2.0IOAT+ #5 IBM System x3850 X5 -[7143O3G]-/Node 1, Processor Card
-RIP: 0010:[<ffffffffa001b360>]  [<ffffffffa001b360>] unregister_dca_provider+0xc0/0xe0 [dca]
-RSP: 0018:ffff880c4eafbdb8  EFLAGS: 00010046
-RAX: 0000000000000010 RBX: ffff880463540bc0 RCX: 0000000000002288
-RDX: ffff881465a51800 RSI: 0000000000000046 RDI: 0000000000000009
-RBP: ffff880c4eafbdd8 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000010 R11: 000000000000000b R12: 0000000000000000
-R13: 0000000000000257 R14: ffff881465abe000 R15: ffff881464199840
-FS:  00007f91d8314700(0000) GS:ffff88147fd20000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000010 CR3: 0000001457b07000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process bash.sh (pid: 10049, threadinfo ffff880c4eafa000, task ffff880c4e3b8af0)
-Stack:
- 0000000000000206 ffff88046133a218 ffff881465abe090 ffffffffa0222560
- ffff880c4eafbdf8 ffffffffa021f87d ffff881465abe090 ffff881465abe208
- ffff880c4eafbe28 ffffffff8126b1a2 ffff881465abe090 ffffffffa02225c0
-Call Trace:
- [<ffffffffa021f87d>] ioat_remove+0x43/0x67 [ioatdma]
- [<ffffffff8126b1a2>] pci_device_remove+0x52/0x120
- [<ffffffff8132b2dc>] __device_release_driver+0x7c/0xe0
- [<ffffffff8132b42d>] device_release_driver+0x2d/0x40
- [<ffffffff8132a871>] driver_unbind+0xa1/0xc0
- [<ffffffff81329cbc>] drv_attr_store+0x2c/0x30
- [<ffffffff811d72ef>] sysfs_write_file+0xef/0x170
- [<ffffffff81167338>] vfs_write+0xc8/0x190
- [<ffffffff81167501>] sys_write+0x51/0x90
- [<ffffffff814fa382>] system_call_fastpath+0x16/0x1b
-Code: c7 20 c0 01 a0 e8 51 6c 4d e1 48 89 df e8 c9 05 00 00 48 83 c4 08 5b 41 5c 41 5d c9 c3 66 0f 1f 44 00 00 45 31 e4 49 8d 44 24 10 <49> 39 44 24 10 75 c9 4c 89 e7 e8 71 ad 23 e1 4c 89 e7 e8 19 7b
-RIP  [<ffffffffa001b360>] unregister_dca_provider+0xc0/0xe0 [dca]
- RSP <ffff880c4eafbdb8>
-CR2: 0000000000000010
----[ end trace b81b51e7c494ec0e ]---
-
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
----
- drivers/dca/dca-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/dca/dca-core.c b/drivers/dca/dca-core.c
-index bc6f5fa..075c4bd 100644
---- a/drivers/dca/dca-core.c
-+++ b/drivers/dca/dca-core.c
-@@ -121,7 +121,7 @@ static void unregister_dca_providers(void)
- 
- 	list_for_each_entry_safe(dca, _dca, &unregistered_providers, node) {
- 		dca_sysfs_remove_provider(dca);
--		list_del(&dca->node);
-+		list_del_init(&dca->node);
- 	}
- }
- 
--- 
-1.7.9.5
-
+I sure wish this would also be pinnable to a specific cpu.
