@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab2EGI4c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:56:32 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38833 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755896Ab2EGI4a (ORCPT
+	id S1755934Ab2EGI51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:57:27 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:65452 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755580Ab2EGI5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:56:30 -0400
-Date: Mon, 7 May 2012 10:56:25 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, chuck.lever@oracle.com, linux@razik.name,
-        Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu
-Subject: Re: [PATCH] init: don't try mounting device as nfs root unless type
- fully matches
-Message-ID: <20120507085625.GA473@gmail.com>
-References: <1336230395-5215-1-git-send-email-levinsasha928@gmail.com>
- <20120507085419.GN16608@gmail.com>
+	Mon, 7 May 2012 04:57:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Hiroshi DOYU <hdoyu@nvidia.com>
+Subject: Re: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
+Date: Mon, 7 May 2012 08:04:28 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: swarren@wwwdotorg.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Ohad Ben-Cohen" <ohad@wizery.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1336373032-16881-1-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1336373032-16881-1-git-send-email-hdoyu@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120507085419.GN16608@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205070804.29154.arnd@arndb.de>
+X-Provags-ID: V02:K0:2rQCiU6Qew1iLalOpcYGEEG4JYRcE6KcK0pZz1b+wq6
+ 4Us/a+Zjb4rElUzmanW6wT4WjnJ6z6J6fb3ZzxT0VcMTb6xhhQ
+ aSr0rl/wAzyTr+ImIAXABGMJYjI63BAAZ/eTcCkB9GrPpPaubv
+ sRA0rgctJRwVjaWVsMF+RdGmTOhYmxr7apt6rQd17eeC16k3jP
+ gPf0kW1kESZhMEa8MPtZo0XzV6KWcFlaf9deGo9D8pcYz5SJ6t
+ /RoCnLrg15mFDGtNMXWgdMW6DA4ooLqX5wXlm7mMYI2P09dCkX
+ OtQSXmoKNGJv3IaDUsEGcyNdgQDCvzToqTFqwmllJpyzDk/L+Z
+ 7nsbFIFA3VUAAERrfoH8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@kernel.org> wrote:
-
+On Monday 07 May 2012, Hiroshi DOYU wrote:
+> Tegra AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
+> High-performance Bus (AHB) architecture.
 > 
-> * Sasha Levin <levinsasha928@gmail.com> wrote:
+> The AHB Arbiter controls AHB bus master arbitration. This effectively
+> forms a second level of arbitration for access to the memory
+> controller through the AHB Slave Memory device. The AHB pre-fetch
+> logic can be configured to enhance performance for devices doing
+> sequential access. Each AHB master is assigned to either the high or
+> low priority bin. Both Tegra20/30 have this AHB bus.
 > 
-> > Currently, we'll try mounting any device who's major device number is
-> > UNNAMED_MAJOR as NFS root. This would happen for non-NFS devices as well (such
-> > as 9p devices) but it wouldn't cause any issues since mounting the device
-> > as NFS would fail quickly and the code proceeded to doing the proper mount:
-> > 
-> >        [  101.522716] VFS: Unable to mount root fs via NFS, trying floppy.
-> >        [  101.534499] VFS: Mounted root (9p filesystem) on device 0:18.
-> > 
-> > Commit 6829a048 ("NFS: Retry mounting NFSROOT") has introduced retries when
-> > mounting NFS root, which means that now we don't immediately fail and instead
-> > it takes an additional 90+ seconds until we stop retrying, which has revealed
-> > the issue this patch fixes.
+> Some of configuration params could be passed from DT too if needed.
 > 
-> Just wondering, which tree is commit 6829a048 included in? It 
-> does not appear to be mainline AFAICS.
+> Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
 
-appears to be:
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-43717c7daebf NFS: Retry mounting NFSROOT
+for the driver, but please fix the issue pointed out by Russell.
 
-The commit ID you cited is apparently one that got exposed to 
-linux-next but got rebased subsequently, before it went 
-upstream, or so.
+	Arnd
 
-Thanks,
-
-	Ingo
