@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab2EGIBR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:01:17 -0400
+	id S1755569Ab2EGIBa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:01:30 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:62888 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab2EGIBQ (ORCPT
+	with ESMTP id S1753021Ab2EGIB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:01:16 -0400
-MIME-Version: 1.0
-Date: Mon, 7 May 2012 04:01:14 -0400
-Message-ID: <CAMgWh9sgAfoqtTh79F43dLKz21_eW-M9o3NYLt+NtSjXg9M3nQ@mail.gmail.com>
-Subject: A thought following the stupid debate on stable versions
-From: David Feuer <david.feuer@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 7 May 2012 04:01:29 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: gregkh@linuxfoundation.org, dan.magenheimer@oracle.com,
+        sjenning@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH] ramster: depend on CONFIG_NET for sock_* functions
+Date: Mon,  7 May 2012 10:02:32 +0200
+Message-Id: <1336377752-23985-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe Contreras was being very silly in criticizing a development
-cycle that works well, but I just realized that what he and others
-would likely actually want (which may already exist) is a list of
-kernel versions with two properties:
+Building ramster without CONFIG_NET would cause linkage issue due to missing
+sock_*() functions in cluster/tcp.c
 
-1. They don't have showstopper-class bugs affecting one or more
-popular architectures, and
-2. Their more important bugs are fairly well characterized.
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ drivers/staging/ramster/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-For each kernel on this list there would be (is?) a fairly exhaustive
-list of important bugs (for some value of important, but not including
-performance regressions unless they are very severe) that have come to
-light since the kernel was released.  These kernels would be (are?)
-the ones most likely to end up being used by distros, and also by
-users who roll their own but want to avoid problems.  I have no idea
-whether such a list already exists, and I have no idea what it would
-take to create/maintain such a list if there isn't one currently.
+diff --git a/drivers/staging/ramster/Kconfig b/drivers/staging/ramster/Kconfig
+index 4af1f8d..8e334cb 100644
+--- a/drivers/staging/ramster/Kconfig
++++ b/drivers/staging/ramster/Kconfig
+@@ -1,6 +1,6 @@
+ config RAMSTER
+ 	bool "Cross-machine RAM capacity sharing, aka peer-to-peer tmem"
+-	depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM
++	depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM && CONFIG_NET
+ 	select LZO_COMPRESS
+ 	select LZO_DECOMPRESS
+ 	default n
+-- 
+1.7.8.5
 
-David Feuer
