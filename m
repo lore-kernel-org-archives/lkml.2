@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab2EGRV5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 13:21:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37140 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932072Ab2EGRV4 (ORCPT
+	id S932135Ab2EGRZg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 13:25:36 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58166 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932072Ab2EGRZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 13:21:56 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Anton Vorontsov <cbou@mail.ru>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] power_supply: pda_power: Complain if regulator operations fail
-Date: Mon,  7 May 2012 18:21:53 +0100
-Message-Id: <1336411313-13558-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	Mon, 7 May 2012 13:25:33 -0400
+Date: Mon, 7 May 2012 19:25:27 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Attilio Rao <attilio.rao@citrix.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
+Message-ID: <20120507172527.GA5357@gmail.com>
+References: <4FA7BABA.4040700@redhat.com>
+ <4FA7CC05.50808@linux.vnet.ibm.com>
+ <4FA7CCA2.4030408@redhat.com>
+ <4FA7D06B.60005@linux.vnet.ibm.com>
+ <20120507134611.GB5533@linux.vnet.ibm.com>
+ <4FA7D2E5.1020607@redhat.com>
+ <4FA7D3F7.9080005@linux.vnet.ibm.com>
+ <4FA7D50D.1020209@redhat.com>
+ <4FA7E06E.20304@linux.vnet.ibm.com>
+ <4FA7E1C8.7010509@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA7E1C8.7010509@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than silently ignoring errors from the regulator enable and disable
-add a WARN_ON() - it's probably pretty important if we're not getting
-power, though it should be vanishingly unlikely in production.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/power/pda_power.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+* Avi Kivity <avi@redhat.com> wrote:
 
-diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
-index 214468f..ed54a35 100644
---- a/drivers/power/pda_power.c
-+++ b/drivers/power/pda_power.c
-@@ -134,13 +134,13 @@ static void update_charger(void)
- 			regulator_set_current_limit(ac_draw, max_uA, max_uA);
- 			if (!regulator_enabled) {
- 				dev_dbg(dev, "charger on (AC)\n");
--				regulator_enable(ac_draw);
-+				WARN_ON(regulator_enable(ac_draw));
- 				regulator_enabled = 1;
- 			}
- 		} else {
- 			if (regulator_enabled) {
- 				dev_dbg(dev, "charger off\n");
--				regulator_disable(ac_draw);
-+				WARN_ON(regulator_disable(ac_draw));
- 				regulator_enabled = 0;
- 			}
- 		}
--- 
-1.7.10
+> > PS: Nikunj had experimented that pv-flush tlb + 
+> > paravirt-spinlock is a win on PLE where only one of them 
+> > alone could not prove the benefit.
+> 
+> I'd like to see those numbers, then.
+> 
+> Ingo, please hold on the kvm-specific patches, meanwhile.
 
+I'll hold off on the whole thing - frankly, we don't want this 
+kind of Xen-only complexity. If KVM can make use of PLE then Xen 
+ought to be able to do it as well.
+
+If both Xen and KVM makes good use of it then that's a different 
+matter.
+
+Thanks,
+
+	Ingo
