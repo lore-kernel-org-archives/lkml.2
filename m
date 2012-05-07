@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab2EGSgT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 14:36:19 -0400
+	id S1757515Ab2EGSg3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 14:36:29 -0400
 Received: from mail-pz0-f51.google.com ([209.85.210.51]:55003 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755165Ab2EGSgQ (ORCPT
+	with ESMTP id S1755165Ab2EGSg1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 14:36:16 -0400
-Date: Mon, 7 May 2012 11:36:11 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>, "ohad@wizery.com" <ohad@wizery.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
-Message-ID: <20120507183611.GA725@kroah.com>
-References: <201205070859.29174.arnd@arndb.de>
- <20120507.122333.2024326166703361049.hdoyu@nvidia.com>
- <201205071024.48958.arnd@arndb.de>
- <20120507.143647.508182574757518311.hdoyu@nvidia.com>
+	Mon, 7 May 2012 14:36:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120507.143647.508182574757518311.hdoyu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120507175039.GA6423@phenom.dumpdata.com>
+References: <20120507135238.GC361@phenom.dumpdata.com>
+	<CAF1ivSZNH3R-U=d=yBW4m9PO8TQSbSP=dHR3okdsO7EkOm2RMQ@mail.gmail.com>
+	<20120507175039.GA6423@phenom.dumpdata.com>
+Date: Mon, 7 May 2012 20:36:26 +0200
+X-Google-Sender-Auth: 1tnnmSeMsuQaB2k7qJP8A3kfV8k
+Message-ID: <CAMuHMdWJAkS2_DuLdfZQA6ZQGAycrr5w5egfaeaQsMJsTVEWRQ@mail.gmail.com>
+Subject: Re: Regression introduced by 6f381fa344911d5a234b13574433cf23036f9467
+ [[SCSI] scsi_lib: use correct DMA device in __scsi_alloc_queue]
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, JBottomley@parallels.com,
+        joerg@alea.gnuu.de, linux-kernel@vger.kernel.org,
+        scsi <linux-scsi@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 01:36:47PM +0200, Hiroshi Doyu wrote:
-> From: Arnd Bergmann <arnd@arndb.de>
-> Subject: Re: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
-> Date: Mon, 7 May 2012 12:24:48 +0200
-> Message-ID: <201205071024.48958.arnd@arndb.de>
-> 
-> > On Monday 07 May 2012, Hiroshi Doyu wrote:
-> > > Tegra doesn't enable ARM_AMBA and Tegra doesn't use the following
-> > > "drivers/amba/bus.c" right now. I needed to make this directory
-> > > available to ones without ARM_AMBA enabled.
-> > 
-> > Ah, right. I looked at arch/arm/Kconfig earlier to see if
-> > tegra enabled ARM_AMBA but was accidentally looking
-> > at ARCH_INtegraTOR when grepping for TEGRA ;-)
-> > 
-> > Your proposed solution sounds good then.
-> 
-> Thank you for reviewing patches & ACK. Attached the update one here,
-> instead of sending a while series again.
-> 
-> >From 16cc2b0fab00c33cd24bb5c43c45a4cda646ad42 Mon Sep 17 00:00:00 2001
-> From: Hiroshi DOYU <hdoyu@nvidia.com>
-> Date: Wed, 18 Apr 2012 11:41:56 +0300
-> Subject: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
-> 
-> Tegra AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
-> High-performance Bus (AHB) architecture.
-> 
-> The AHB Arbiter controls AHB bus master arbitration. This effectively
-> forms a second level of arbitration for access to the memory
-> controller through the AHB Slave Memory device. The AHB pre-fetch
-> logic can be configured to enhance performance for devices doing
-> sequential access. Each AHB master is assigned to either the high or
-> low priority bin. Both Tegra20/30 have this AHB bus.
-> 
-> Some of configuration params could be passed from DT too if needed.
-> 
-> Change-Id: I184e0e1ce033e76881353a4bb99234e2850e99c2
+On Mon, May 7, 2012 at 7:50 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+>> > reverting above mentioned git commit fixes the issue.
+>>
+>> Does Jame's below patch help?
+>>
+>> http://www.spinics.net/lists/linux-scsi/msg59106.html
+>
+> Yes.  please add Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> on the latter part of that patch:
 
-What nonsense is this?  Please never put that in a patch you want
-accepted upstream, as it makes no sense and we just have to edit it out
-by hand, making us grumpy...
+Same issue here with Atari NCR5380 SCSI on ARAnyM.
+After the fix below, v3.4-rc6 boots, so
 
-greg k-h
+Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+BTW, any git tree that has the original patch, so I don't have to commit the
+HTML-mangled version from spinics to the m68k tree?
+
+> diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
+> index 351dc0b..a3a056a 100644
+> --- a/drivers/scsi/hosts.c
+> +++ b/drivers/scsi/hosts.c
+> @@ -218,6 +218,9 @@ int scsi_add_host_with_dma(struct Scsi_Host *shost, struct device *dev,
+>
+>        if (!shost->shost_gendev.parent)
+>                shost->shost_gendev.parent = dev ? dev : &platform_bus;
+> +       if (!dma_dev)
+> +               dma_dev = shost->shost_gendev.parent;
+> +
+>        shost->dma_dev = dma_dev;
+>
+>        error = device_add(&shost->shost_gendev);
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
