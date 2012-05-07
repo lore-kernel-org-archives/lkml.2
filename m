@@ -1,34 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab2EGL32 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 07:29:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43504 "EHLO mx1.redhat.com"
+	id S1756281Ab2EGL3d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 07:29:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11184 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755434Ab2EGL31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 07:29:27 -0400
+	id S1756233Ab2EGL3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 07:29:30 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
 Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/5] perf, tool: Handle different endians properly during symbol load
-Date: Mon,  7 May 2012 13:29:05 +0200
-Message-Id: <1336390149-2970-2-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 2/5] perf, tool: Carry perf_event_attr bitfield throught different endians
+Date: Mon,  7 May 2012 13:29:06 +0200
+Message-Id: <1336390149-2970-3-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1336390149-2970-1-git-send-email-jolsa@redhat.com>
 References: <1336390149-2970-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we dont care about the file object's endianness. It's possible
-we read buildid file object from different architecture than we are
-currentlly running on. So we need to care about properly reading such
-object's data - handle different endianness properly.
+When the perf data file is read cross architectures, the perf_event__attr_swap
+function takes care about endianness of all the struct fields except the
+bitfield flags.
 
-Adding:
-	needs_swap DSO field
-	dso__swap_init function to initialize DSO's needs_swap
-	DSO__READ to read the data with proper swaps
+The bitfield flags need to be transformed as well, since the bitfield
+binary storage differs for both endians.
+
+ABI says:
+  Bit-fields are allocated from right to left (least to most significant)
+  on little-endian implementations and from left to right (most to least
+  significant) on big-endian implementations.
+
+The above seems to be byte specific, so we need to reverse each
+byte of the bitfield. 'Internet' also says this might be implementation
+specific and we probably need proper fix and carry perf_event_attr
+bitfield flags in separate data file FEAT_ section. Thought this seems
+to work for now.
 
 Note, running following to test perf endianity handling:
   - origin system:
@@ -36,147 +44,73 @@ Note, running following to test perf endianity handling:
     # perf report > report.origin
     # perf archive perf.data
 
-  - copy the perf.data, report.origin and perf.data.tar.bz2
-    to a target system and run:
-    # tar xjvf perf.data.tar.bz2 -C ~/.debug
-    # perf report > report.target
-    # diff -u report.origin report.target
+ - copy the perf.data, report.origin and perf.data.tar.bz2
+   to a target system and run:
+   # tar xjvf perf.data.tar.bz2 -C ~/.debug
+   # perf report > report.target
+   # diff -u report.origin report.target
 
-  - the diff should produce no output
-    (besides some white space stuff and possibly different
-     date/TZ output)
+ - the diff should produce no output
+   (besides some white space stuff and possibly different
+    date/TZ output)
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/symbol.c |   33 ++++++++++++++++++++++++++++++++-
- tools/perf/util/symbol.h |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 62 insertions(+), 1 deletions(-)
+ tools/perf/util/session.c |   34 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index ab9867b..a63f15e 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -323,6 +323,7 @@ struct dso *dso__new(const char *name)
- 		dso->sorted_by_name = 0;
- 		dso->has_build_id = 0;
- 		dso->kernel = DSO_TYPE_USER;
-+		dso->needs_swap = DSO_SWAP__UNSET;
- 		INIT_LIST_HEAD(&dso->node);
- 	}
- 
-@@ -1156,6 +1157,33 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
- 	return -1;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 1efd3be..07fda7c 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -481,6 +481,38 @@ static void perf_event__read_swap(union perf_event *event)
+ 	event->read.id		 = bswap_64(event->read.id);
  }
  
-+static int dso__swap_init(struct dso *dso, unsigned char eidata)
++static u8 revbyte(u8 b)
 +{
-+	static unsigned int const endian = 1;
-+
-+	dso->needs_swap = DSO_SWAP__NO;
-+
-+	switch (eidata) {
-+	case ELFDATA2LSB:
-+		/* We are big endian, DSO is little endian. */
-+		if (*(unsigned char const *)&endian != 1)
-+			dso->needs_swap = DSO_SWAP__YES;
-+		break;
-+
-+	case ELFDATA2MSB:
-+		/* We are little endian, DSO is big endian. */
-+		if (*(unsigned char const *)&endian != 0)
-+			dso->needs_swap = DSO_SWAP__YES;
-+		break;
-+
-+	default:
-+		pr_err("unrecognized DSO data encoding %d\n", eidata);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
++	int rev = (b >> 4) | ((b & 0xf) << 4);
++	rev = ((rev & 0xcc) >> 2) | ((rev & 0x33) << 2);
++	rev = ((rev & 0xaa) >> 1) | ((rev & 0x55) << 1);
++	return (u8) rev;
 +}
 +
- static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 			 int fd, symbol_filter_t filter, int kmodule,
- 			 int want_symtab)
-@@ -1187,6 +1215,9 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 		goto out_elf_end;
- 	}
- 
-+	if (dso__swap_init(dso, ehdr.e_ident[EI_DATA]))
-+		goto out_elf_end;
++/*
++ * XXX this is hack in attempt to carry flags bitfield
++ * throught endian village. ABI says:
++ *
++ * Bit-fields are allocated from right to left (least to most significant)
++ * on little-endian implementations and from left to right (most to least
++ * significant) on big-endian implementations.
++ *
++ * The above seems to be byte specific, so we need to reverse each
++ * byte of the bitfield. 'Internet' also says this might be implementation
++ * specific and we probably need proper fix and carry perf_event_attr
++ * bitfield flags in separate data file FEAT_ section. Thought this seems
++ * to work for now.
++ */
++static void swap_bitfield(u8 *p, unsigned len)
++{
++	unsigned i;
 +
- 	/* Always reject images with a mismatched build-id: */
- 	if (dso->has_build_id) {
- 		u8 build_id[BUILD_ID_SIZE];
-@@ -1272,7 +1303,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 		if (opdsec && sym.st_shndx == opdidx) {
- 			u32 offset = sym.st_value - opdshdr.sh_addr;
- 			u64 *opd = opddata->d_buf + offset;
--			sym.st_value = *opd;
-+			sym.st_value = DSO__READ(dso, u64, *opd);
- 			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
- 		}
- 
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 1f00388..40a3254 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -9,6 +9,7 @@
- #include <linux/list.h>
- #include <linux/rbtree.h>
- #include <stdio.h>
-+#include <byteswap.h>
- 
- #ifdef HAVE_CPLUS_DEMANGLE
- extern char *cplus_demangle(const char *, int);
-@@ -160,11 +161,18 @@ enum dso_kernel_type {
- 	DSO_TYPE_GUEST_KERNEL
- };
- 
-+enum dso_swap_type {
-+	DSO_SWAP__UNSET,
-+	DSO_SWAP__NO,
-+	DSO_SWAP__YES,
-+};
++	for (i = 0; i < len; i++) {
++		*p = revbyte(*p);
++		p++;
++	}
++}
 +
- struct dso {
- 	struct list_head node;
- 	struct rb_root	 symbols[MAP__NR_TYPES];
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
- 	enum dso_kernel_type	kernel;
-+	enum dso_swap_type	needs_swap;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
- 	u8		 hit:1;
-@@ -182,6 +190,28 @@ struct dso {
- 	char		 name[0];
- };
- 
-+#define DSO__READ(dso, type, val)			\
-+({							\
-+	type ____r = val;				\
-+	BUG_ON(dso->needs_swap == DSO_SWAP__UNSET);	\
-+	if (dso->needs_swap == DSO_SWAP__YES) {		\
-+		switch (sizeof(____r)) {		\
-+		case 2:					\
-+			____r = bswap_16(val);		\
-+			break;				\
-+		case 4:					\
-+			____r = bswap_32(val);		\
-+			break;				\
-+		case 8:					\
-+			____r = bswap_64(val);		\
-+			break;				\
-+		default:				\
-+			BUG_ON(1);			\
-+		}					\
-+	}						\
-+	____r;						\
-+})
+ /* exported for swapping attributes in file header */
+ void perf_event__attr_swap(struct perf_event_attr *attr)
+ {
+@@ -494,6 +526,8 @@ void perf_event__attr_swap(struct perf_event_attr *attr)
+ 	attr->bp_type		= bswap_32(attr->bp_type);
+ 	attr->bp_addr		= bswap_64(attr->bp_addr);
+ 	attr->bp_len		= bswap_64(attr->bp_len);
 +
- struct dso *dso__new(const char *name);
- void dso__delete(struct dso *dso);
++	swap_bitfield((u8 *) (&attr->read_format + 1), sizeof(u64));
+ }
  
+ static void perf_event__hdr_attr_swap(union perf_event *event)
 -- 
 1.7.7.6
 
