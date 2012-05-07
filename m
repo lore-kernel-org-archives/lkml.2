@@ -1,56 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab2EGNBi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 09:01:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15642 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751973Ab2EGNBh (ORCPT
+	id S1756237Ab2EGNCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 09:02:22 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:33637 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754153Ab2EGNCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 09:01:37 -0400
-X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_s2ZMIMYyfwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=D7wu3iO68CKWo3LFmncA:9 a=p6BcPCEM-pko-u6xm9MA:7 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1336395695.14207.125.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 00/15] tools: Unify perf and trace-cmd trace event
- format parsing v3
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
-        Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>,
-        David Ahern <dsahern@gmail.com>
-Date: Mon, 07 May 2012 09:01:35 -0400
-In-Reply-To: <20120507081424.GE16608@gmail.com>
-References: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
-	 <20120507081424.GE16608@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Mon, 7 May 2012 09:02:20 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Michel JAOUEN <michel.jaouen@stericsson.com>,
+        Maxime Coquelin <maxime.coquelin@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 5/6 v2] mfd/ab8500: support of hierachical interrupt
+Date: Mon, 7 May 2012 15:02:03 +0200
+Message-ID: <1336395723-32138-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.9.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-07 at 10:14 +0200, Ingo Molnar wrote:
+From: Michel JAOUEN <michel.jaouen@stericsson.com>
 
-> It gives me:
-> 
-> /home/mingo/tip/tools/lib/traceevent/parse-filter.c: In function ‘create_arg_item’:
-> /home/mingo/tip/tools/lib/traceevent/parse-filter.c:343:9: warning: comparison between ‘enum filter_arg_type’ and ‘enum event_type’ [-Wenum-compare]
-> /home/mingo/tip/tools/lib/traceevent/parse-filter.c:339:2: warning: case value ‘8’ not in enumerated type ‘enum filter_arg_type’ [-Wswitch]
+Hierarchical interrupt is supported since ab8500 V2.
+However, it is not implemented in the ab8500-core driver.
+With the current implementation, when an ab9540 interrupt
+occurs, 17 Latch registers are read through i2c. With
+hierarchical interrupt implementation, there are only 4 i2c
+accesses.
 
-Note, older gcc did not error with these (as I'm still on F13 I have an
-older gcc). Otherwise I would have fixed them a long time ago. And
--Werror would have not helped.
+Signed-off-by: Maxime Coquelin <maxime.coquelin@stericsson.com>
+Reviewed-by: Michel Jaouen <michel.jaouen@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v1->v2: unnest the interrupt handler function at
+                  Sam's request. This should apply fine on top
+		  of the already applied stuff for AB8500 MFD.
+---
+ drivers/mfd/ab8500-core.c |  108 +++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 105 insertions(+), 3 deletions(-)
 
-
--- Steve
-
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index c79d354..2625eee 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -91,6 +91,15 @@
+ #define AB8500_IT_MASK23_REG		0x56
+ #define AB8500_IT_MASK24_REG		0x57
+ 
++/*
++ * latch hierarchy registers
++ */
++#define AB8500_IT_LATCHHIER1_REG	0x60
++#define AB8500_IT_LATCHHIER2_REG	0x61
++#define AB8500_IT_LATCHHIER3_REG	0x62
++
++#define AB8500_IT_LATCHHIER_NUM		3
++
+ #define AB8500_REV_REG			0x80
+ #define AB8500_IC_NAME_REG		0x82
+ #define AB8500_SWITCH_OFF_STATUS	0x00
+@@ -340,6 +349,90 @@ static struct irq_chip ab8500_irq_chip = {
+ 	.irq_unmask		= ab8500_irq_unmask,
+ };
+ 
++static int ab8500_handle_hierarchical_line(struct ab8500 *ab8500,
++					int latch_offset, u8 latch_val)
++{
++	int int_bit = __ffs(latch_val);
++	int line, i;
++
++	do {
++		int_bit = __ffs(latch_val);
++
++		for (i = 0; i < ab8500->mask_size; i++)
++			if (ab8500->irq_reg_offset[i] == latch_offset)
++				break;
++
++		if (i >= ab8500->mask_size) {
++			dev_err(ab8500->dev, "Register offset 0x%2x not declared\n",
++					latch_offset);
++			return -ENXIO;
++		}
++
++		line = (i << 3) + int_bit;
++		latch_val &= ~(1 << int_bit);
++
++		handle_nested_irq(ab8500->irq_base + line);
++	} while (latch_val);
++
++	return 0;
++}
++
++static int ab8500_handle_hierarchical_latch(struct ab8500 *ab8500,
++					int hier_offset, u8 hier_val)
++{
++	int latch_bit, status;
++	u8 latch_offset, latch_val;
++
++	do {
++		latch_bit = __ffs(hier_val);
++		latch_offset = (hier_offset << 3) + latch_bit;
++
++		/* Fix inconsistent ITFromLatch25 bit mapping... */
++		if (unlikely(latch_offset == 17))
++			latch_offset = 24;
++
++		status = get_register_interruptible(ab8500,
++				AB8500_INTERRUPT,
++				AB8500_IT_LATCH1_REG + latch_offset,
++				&latch_val);
++		if (status < 0 || latch_val == 0)
++			goto discard;
++
++		status = ab8500_handle_hierarchical_line(ab8500,
++				latch_offset, latch_val);
++		if (status < 0)
++			return status;
++discard:
++		hier_val &= ~(1 << latch_bit);
++	} while (hier_val);
++
++	return 0;
++}
++
++static irqreturn_t ab8500_hierarchical_irq(int irq, void *dev)
++{
++	struct ab8500 *ab8500 = dev;
++	u8 i;
++
++	dev_vdbg(ab8500->dev, "interrupt\n");
++
++	/*  Hierarchical interrupt version */
++	for (i = 0; i < AB8500_IT_LATCHHIER_NUM; i++) {
++		int status;
++		u8 hier_val;
++
++		status = get_register_interruptible(ab8500, AB8500_INTERRUPT,
++			AB8500_IT_LATCHHIER1_REG + i, &hier_val);
++		if (status < 0 || hier_val == 0)
++			continue;
++
++		status = ab8500_handle_hierarchical_latch(ab8500, i, hier_val);
++		if (status < 0)
++			break;
++	}
++	return IRQ_HANDLED;
++}
++
+ static irqreturn_t ab8500_irq(int irq, void *dev)
+ {
+ 	struct ab8500 *ab8500 = dev;
+@@ -1203,9 +1296,18 @@ int __devinit ab8500_init(struct ab8500 *ab8500, enum ab8500_version version)
+ 		if (ret)
+ 			goto out_freeoldmask;
+ 
+-		ret = request_threaded_irq(ab8500->irq, NULL, ab8500_irq,
+-					   IRQF_ONESHOT | IRQF_NO_SUSPEND,
+-					   "ab8500", ab8500);
++		/*  Activate this feature only in ab9540 */
++		/*  till tests are done on ab8500 1p2 or later*/
++		if (is_ab9540(ab8500))
++			ret = request_threaded_irq(ab8500->irq, NULL,
++					ab8500_hierarchical_irq,
++					IRQF_ONESHOT | IRQF_NO_SUSPEND,
++					"ab8500", ab8500);
++		else
++			ret = request_threaded_irq(ab8500->irq, NULL,
++					ab8500_irq,
++					IRQF_ONESHOT | IRQF_NO_SUSPEND,
++					"ab8500", ab8500);
+ 		if (ret)
+ 			goto out_removeirq;
+ 	}
+-- 
+1.7.9.2
 
