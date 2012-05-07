@@ -1,85 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab2EGJta (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 05:49:30 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49895 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755668Ab2EGJt3 (ORCPT
+	id S1756073Ab2EGKGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 06:06:01 -0400
+Received: from 2481.rev.megiteam.pl ([91.227.36.129]:32799 "EHLO
+	vk1001.megiteam.com.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755544Ab2EGKGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 05:49:29 -0400
-Date: Mon, 7 May 2012 10:49:26 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 2/3] MFD: twl6040: Allocate IRQ numbers dynamically
-Message-ID: <20120507094925.GE4415@opensource.wolfsonmicro.com>
-References: <20120503152643.GM3955@opensource.wolfsonmicro.com>
- <4FA3958A.4080206@ti.com>
- <20120504090856.GA14230@opensource.wolfsonmicro.com>
- <4FA3B182.5060001@ti.com>
- <20120504112204.GE14230@opensource.wolfsonmicro.com>
- <4FA3C3B9.3030009@ti.com>
- <20120504121730.GG14230@opensource.wolfsonmicro.com>
- <4FA3CCAF.3020902@ti.com>
- <20120504124750.GL14230@opensource.wolfsonmicro.com>
- <4FA77093.9060306@ti.com>
+	Mon, 7 May 2012 06:06:00 -0400
+Message-ID: <4FA79E81.4050306@localdomain.pl>
+Date: Mon, 07 May 2012 12:05:53 +0200
+From: Grzegorz Nosek <root@localdomain.pl>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EXKGNeO8l0xGFBjy"
-Content-Disposition: inline
-In-Reply-To: <4FA77093.9060306@ti.com>
-X-Cookie: Be different: conform.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: Proper locking for find_task_by_pid_ns?
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---EXKGNeO8l0xGFBjy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+TL;DR: my question is whether this:
 
-On Mon, May 07, 2012 at 09:49:55AM +0300, Peter Ujfalusi wrote:
-> On 05/04/2012 03:47 PM, Mark Brown wrote:
+read_lock(&tasklist_lock);
+rcu_read_lock();
+p = find_task_by_pid_ns(pid, &init_pid_ns);
+rcu_read_unlock();
+read_unlock(&tasklist_lock);
 
-> >> If there is "irq expander" type of chip I assume it would have similar
-> >> way to get the IRQ number based on either GPIO number or some other
-> >> enumeration value.
+is a valid sequence, or is it deadlockable. My Google-fu says _either_ rcu_read_lock or tasklist_lock is required to traverse the task list[1] but I'm not sure about both at the same time.
 
-> > No, there's no generic interface for this.
+The whole story:
 
-> This dynamic range allocation for IRQ, GPIO will work nicely with DT at
-> the end. In legacy way we will need to have workarounds. Or just forget
-> about booting without DT.
+I encountered a machine crash with the following output on the console (that's all I got):
 
-Device tree is only available for a small minority of architectures.
-Just as you shouldn't assume that people only ever use the reference
-boards you work on so you should also not assume that people are using
-ARM (and ARM systems that support DT at at that).
+http://imgur.com/DzksH
 
---EXKGNeO8l0xGFBjy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The kernel is 3.2.15 plus Linux-VServer (patch-3.2.11-vs2.3.2.8 [2])
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I'm guessing (I admit, I didn't disassemble copy_process) the write lock in question is tasklist_lock (the only clearly visible write_lock_irq() call in this function). So to my untrained eye that would look like some process stuck with tasklist_lock held.
 
-iQIcBAEBAgAGBQJPp5qZAAoJEBus8iNuMP3dZ90P/2FIQriBYoVERd80IGc+ukbt
-SLPRTIDHiVPG+i5dwyMBVxAjs7qEr58x3Mb/RKCzEvllM8Tym8m19+VjfeHWOcxO
-z0VdiVcUn3tfI34U2hgj20Za3wQyOsoPF6fkhb3ffI37fCLOzR6SMF3G4mZXiArS
-GY4mwNupY1ftm4o0sdCx5sk+G89qtMr7E5A+WBc1EwPkSCU+bG3ag1NEhBNBAdUi
-7E3nP/l6Bg/oZYnzbppIxCsFwF/xS4s8QIYl/BcVkOL3W7gi1A2mZJy8G+6Op5ls
-726hYTNb00awifsR6wsRAfCjoGkxv31QMbyRxnrb9yRHIASz+TBiwQcEl0tzEtUa
-haqoDpzZX3065lz2SjBrzo4vQwMMqOdFzWvMoSW99MNGGhivMXk86EN4YA2dB3za
-dEFUuV6Gpte9g/xjW5zVBxbqIoSLglsL+xFboEq7Y2rUefOo0mj6lj4Y+bB3wCVi
-wDYOtYy/05blK18IDfRBBF9uQTMAjFZtun5wLaP6jG4Zp1GGJjCeXeFBInMtPcKk
-zH4cxKZUzEMxMdWXO1sHJeaEc5dEVxtavrEfuxY6Fq8MHkZDW0xarJ897yHkBDJI
-bsEGAxR/uDw63kCdNni1wmqWyf1J4BMWLpiByfj4KZj8oNk8B1yXXubzVHwbNHnp
-VPx5AjMhXx4vxDZYRZmy
-=9T+a
------END PGP SIGNATURE-----
+The crash happened while shutting down a vserver, which basically looks like this:
 
---EXKGNeO8l0xGFBjy--
+long vs_reboot(unsigned int cmd, void __user *arg)
+{
+       struct vx_info *vxi = current_vx_info();
+       long ret = 0;
+
+       vxdprintk(VXD_CBIT(misc, 5),
+               "vs_reboot(%p[#%d],%u)",
+               vxi, vxi ? vxi->vx_id : 0, cmd);
+
+       ret = vs_reboot_helper(vxi, cmd, arg);
+       if (ret)
+               return ret;
+
+       vxi->reboot_cmd = cmd;
+       if (vx_info_flags(vxi, VXF_REBOOT_KILL, 0)) {
+               switch (cmd) {
+               case LINUX_REBOOT_CMD_RESTART:
+               case LINUX_REBOOT_CMD_HALT:
+               case LINUX_REBOOT_CMD_POWER_OFF:
+                       vx_info_kill(vxi, 0, SIGKILL);
+                       vx_info_kill(vxi, 1, SIGKILL);
+               default:
+                       break;
+               }
+       }
+       return 0;
+}
+
+/* ... */
+
+int vx_info_kill(struct vx_info *vxi, int pid, int sig)
+{
+       int retval, count = 0;
+       struct task_struct *p;
+       struct siginfo *sip = SEND_SIG_PRIV;
+
+       retval = -ESRCH;
+       vxdprintk(VXD_CBIT(misc, 4),
+               "vx_info_kill(%p[#%d],%d,%d)*",
+               vxi, vxi->vx_id, pid, sig);
+       read_lock(&tasklist_lock);
+       switch (pid) {
+       case  0:
+       case -1:
+               for_each_process(p) {
+                       int err = 0;
+
+                       if (vx_task_xid(p) != vxi->vx_id || p->pid <= 1 ||
+                               (pid && vxi->vx_initpid == p->pid))
+                               continue;
+
+                       err = group_send_sig_info(sig, sip, p);
+                       ++count;
+                       if (err != -EPERM)
+                               retval = err;
+               }
+               break;
+       case 1:
+               if (vxi->vx_initpid) {
+                       pid = vxi->vx_initpid;
+                       /* for now, only SIGINT to private init ... */
+                       if (!vx_info_flags(vxi, VXF_STATE_ADMIN, 0) &&
+                               /* ... as long as there are tasks left */
+                               (atomic_read(&vxi->vx_tasks) > 1))
+                               sig = SIGINT;
+               }
+               /* fallthrough */
+       default:
+               rcu_read_lock();
+               p = find_task_by_real_pid(pid);
+               rcu_read_unlock();
+               if (p) {
+                       if (vx_task_xid(p) == vxi->vx_id)
+                               retval = group_send_sig_info(sig, sip, p);
+               }
+               break;
+       }
+       read_unlock(&tasklist_lock);
+       vxdprintk(VXD_CBIT(misc, 4),
+               "vx_info_kill(%p[#%d],%d,%d,%ld) = %d",
+               vxi, vxi->vx_id, pid, sig, (long)sip, retval);
+       return retval;
+}
+
+vx_info_kill() is the only place that touches tasklist_lock that does not exist in mainline kernel. find_task_by_real_pid is just find_task_by_pid_ns(pid, &init_pid_ns).
+
+The crash only happened once so far and AFAIK is not easily reproducible. Both the host and the guest were basically completely idle at that time.
+
+So, am I on the right track or should I look elsewhere?
+
+Best regards,
+ Grzegorz Nosek
+
+1. http://www.mail-archive.com/linuxppc-dev@lists.ozlabs.org/msg57795.html
+2. http://vserver.13thfloor.at/Experimental/patch-3.2.11-vs2.3.2.8.diff
