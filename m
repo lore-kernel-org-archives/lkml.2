@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab2EGIZX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:25:23 -0400
-Received: from mga01.intel.com ([192.55.52.88]:40452 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755447Ab2EGIZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:25:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="162820082"
-Date: Mon, 7 May 2012 11:26:37 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Anton Vorontsov <avorontsov@ru.mvista.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (battery
- tree related)
-Message-ID: <20120507082637.GH31494@intel.com>
-References: <20120507171458.5ce17d20c40856e9440b3e5f@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120507171458.5ce17d20c40856e9440b3e5f@canb.auug.org.au>
-Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755669Ab2EGIZe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:25:34 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:57047 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755638Ab2EGIZc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 04:25:32 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArgLAIWFp09bdWOb/2dsb2JhbABEhXKkbyKHbYEHggwBAQUjBFIQCxgCAiYCAlcGiCWndZIFgS+OWIEYBKZAgms
+X-IronPort-AV: E=Sophos;i="4.75,543,1330902000"; 
+   d="scan'208";a="987295407"
+Message-ID: <1336379095.2852.17.camel@fourier.local.igalia.com>
+Subject: Re: [PATCH v2 1/3] Staging: IndustryPack bus for the Linux Kernel
+From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Mon, 07 May 2012 10:24:55 +0200
+In-Reply-To: <20120507080458.GN22134@mwanda>
+References: <1336375569-21692-1-git-send-email-siglesias@igalia.com>
+	 <20120507080458.GN22134@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 05:14:58PM +1000, Stephen Rothwell wrote:
+On Mon, 2012-05-07 at 11:04 +0300, Dan Carpenter wrote:
 > 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
+> [snip]
 > 
-> drivers/power/smb347-charger.c: In function 'smb347_probe':
-> drivers/power/smb347-charger.c:1039:2: error: implicit declaration of function 'IS_ERR' [-Werror=implicit-function-declaration]
-> drivers/power/smb347-charger.c:1040:3: error: implicit declaration of function 'PTR_ERR' [-Werror=implicit-function-declaration]
+> > +int ipack_device_find_drv(struct device_driver *driver, void *param)
+> > +{
+> > +	int ret;
+> > +	struct ipack_device *dev = (struct ipack_device *)param;
+> > +
+> > +	ret = ipack_bus_match(&dev->dev, driver);
+> > +	if (ret)
+> > +		return !ipack_bus_probe(&dev->dev);
 > 
-> Caused by commit 34298d40e585 ("smb347-charger: Convert to regmap API").
+> Wouldn't probe() return zero or a negative error code?
 
-I'm unable to reproduce this on x86 build. I guess <linux/err.h> gets
-included implicitly there.
+Yes. However, in case of the function called by bus_for_each_drv(), it
+should return zero if you want to continue or nonzero value to stop the
+iteration.
 
-Patch below should fix this. Anton, care to pick this one as well (or fold
-it into the 34298d40e585 ("smb347-charger: Convert to regmap API") commit)?
+I considered that if the probe fails, we can try with the next driver in
+the list. So, the returned value of probe() is negated.
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] smb347-charger: include missing <linux/err.h>
+I will fix the other things and send it again with other suggestions. 
 
-Without the include we get build errors like:
+Thanks,
 
-drivers/power/smb347-charger.c: In function 'smb347_probe':
-drivers/power/smb347-charger.c:1039:2: error: implicit declaration of function 'IS_ERR' [-Werror=implicit-function-declaration]
-drivers/power/smb347-charger.c:1040:3: error: implicit declaration of function 'PTR_ERR' [-Werror=implicit-function-declaration]
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/power/smb347-charger.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/power/smb347-charger.c b/drivers/power/smb347-charger.c
-index 09d19d2..f8eedd8 100644
---- a/drivers/power/smb347-charger.c
-+++ b/drivers/power/smb347-charger.c
-@@ -11,6 +11,7 @@
-  * published by the Free Software Foundation.
-  */
- 
-+#include <linux/err.h>
- #include <linux/gpio.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
--- 
-1.7.9.1
+Sam
 
