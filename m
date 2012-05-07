@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab2EGR4t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 13:56:49 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:31087 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab2EGR4s (ORCPT
+	id S1753495Ab2EGR5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 13:57:49 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:43871 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab2EGR5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 13:56:48 -0400
-Date: Mon, 7 May 2012 13:50:39 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: JBottomley@parallels.com, joerg@alea.gnuu.de, linux-kernel@vger.kernel.org
-Subject: Re: Regression introduced by
- 6f381fa344911d5a234b13574433cf23036f9467 [[SCSI] scsi_lib: use correct DMA
- device in __scsi_alloc_queue]
-Message-ID: <20120507175039.GA6423@phenom.dumpdata.com>
-References: <20120507135238.GC361@phenom.dumpdata.com>
- <CAF1ivSZNH3R-U=d=yBW4m9PO8TQSbSP=dHR3okdsO7EkOm2RMQ@mail.gmail.com>
+	Mon, 7 May 2012 13:57:47 -0400
+Date: Mon, 7 May 2012 10:57:43 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next oops in __lock_acquire for process_one_work
+Message-ID: <20120507175743.GC19417@google.com>
+References: <alpine.LSU.2.00.1205070951170.1544@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAF1ivSZNH3R-U=d=yBW4m9PO8TQSbSP=dHR3okdsO7EkOm2RMQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <alpine.LSU.2.00.1205070951170.1544@eggly.anvils>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > reverting above mentioned git commit fixes the issue.
+(cc'ing Peter and Ingo and quoting whole body)
+
+On Mon, May 07, 2012 at 10:19:09AM -0700, Hugh Dickins wrote:
+> Running MM load on recent linux-nexts (e.g. 3.4.0-rc5-next-20120504),
+> with CONFIG_PROVE_LOCKING=y, I've been hitting an oops in __lock_acquire
+> called from lock_acquire called from process_one_work: serving mm/swap.c's
+> lru_add_drain_all - schedule_on_each_cpu(lru_add_drain_per_cpu).
 > 
-> Does Jame's below patch help?
+> In each case the oopsing address has been ffffffff00000198, and the
+> oopsing instruction is the "atomic_inc((atomic_t *)&class->ops)" in
+> __lock_acquire: so class is ffffffff00000000.
 > 
-> http://www.spinics.net/lists/linux-scsi/msg59106.html
+> I notice Stephen's commit 0976dfc1d0cd80a4e9dfaf87bd8744612bde475a
+> workqueue: Catch more locking problems with flush_work()
+> in linux-next but not 3.4-rc, adding
+> 	lock_map_acquire(&work->lockdep_map);
+> 	lock_map_release(&work->lockdep_map);
+> to flush_work.
+> 
+> I believe that occasionally races with your
+> 	struct lockdep_map lockdep_map = work->lockdep_map;
+> in process_one_work, putting an entry into the class_cache
+> just as you're copying it, so you end up with half a pointer.
+> yes, the structure copy is using "rep movsl" not "rep movsq".
+> 
+> I've reverted Stephen's commit from my testing, and indeed it's
+> now run that MM load much longer than I've seen since this bug
+> first appeared.  Though I suspect that strictly it's your
+> unlocked copying of the lockdep_map that's to blame.  Probably
+> easily fixed by someone who understands lockdep - not me!
 
-Yes.  please add Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-on the latter part of that patch:
+The offending commit is 0976dfc1d0cd80a4e9dfaf87bd8744612bde475a
+"workqueue: Catch more locking problems with flush_work()".  It sounds
+fancy but all it does is adding the following to flush_work().
 
+	lock_map_acquire(&work->lockdep_map);
+	lock_map_release(&work->lockdep_map);
 
-diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
-index 351dc0b..a3a056a 100644
---- a/drivers/scsi/hosts.c
-+++ b/drivers/scsi/hosts.c
-@@ -218,6 +218,9 @@ int scsi_add_host_with_dma(struct Scsi_Host *shost, struct device *dev,
- 
- 	if (!shost->shost_gendev.parent)
- 		shost->shost_gendev.parent = dev ? dev : &platform_bus;
-+	if (!dma_dev)
-+		dma_dev = shost->shost_gendev.parent;
-+
- 	shost->dma_dev = dma_dev;
- 
- 	error = device_add(&shost->shost_gendev);
+Which seems correct to me and more importantly not different from what
+wait_on_work() does, so if this is broken, flush_work_sync() and
+cancel_work_sync() are broken too - probably masked by lower usage
+frequency.
+
+It seems the problem stems from how process_one_work() "caches"
+lockdep_map.  This part predates cmwq changes but it seems necessary
+because the work item may be freed during execution but lockdep_map
+should be released after execution is complete.  Peter, do you
+remember how this lockdep_map copying is added?  Is (or was) this
+correct?  If it's broken, how do we fix it?  Add a lockdep_map copy
+API which does some magic lockdep locking dancing?
+
+Thanks.
+
+-- 
+tejun
