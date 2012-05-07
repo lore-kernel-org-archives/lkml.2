@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab2EGIG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:06:56 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59596 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab2EGIGw convert rfc822-to-8bit (ORCPT
+	id S1755584Ab2EGIKJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:10:09 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:1143 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753021Ab2EGIKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:06:52 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20120507134513.bffe9dbda0fac21e472215b5@canb.auug.org.au>
-References: <20120507134513.bffe9dbda0fac21e472215b5@canb.auug.org.au>
-Date: Mon, 7 May 2012 10:06:52 +0200
-Message-ID: <CAKMK7uFVURzdH-NKBaE7CHgbK8QfGtwcQ_12-9T_oVU4PnxK9g@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the drm tree with Linus' tree
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Dave Airlie <airlied@linux.ie>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 7 May 2012 04:10:07 -0400
+Message-ID: <1336378205.1933.3.camel@x61.thuisdomein>
+Subject: Re: [PATCH] ramster: depend on CONFIG_NET for sock_* functions
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: gregkh@linuxfoundation.org, dan.magenheimer@oracle.com,
+        sjenning@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Date: Mon, 07 May 2012 10:10:05 +0200
+In-Reply-To: <1336377752-23985-1-git-send-email-levinsasha928@gmail.com>
+References: <1336377752-23985-1-git-send-email-levinsasha928@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 07 May 2012 08:10:05.0420 (UTC) FILETIME=[CF70C2C0:01CD2C28]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 7, 2012 at 5:45 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Today's linux-next merge of the drm tree got a conflict in
-> drivers/gpu/drm/i915/intel_display.c between commit 074b5e1a99fb
-> ("drm/i915: Do not read non-existent DPLL registers on PCH hardware")
-> from Linus' tree and I have no idea which commits from the drm tree.
+On Mon, 2012-05-07 at 10:02 +0200, Sasha Levin wrote:
+> Building ramster without CONFIG_NET would cause linkage issue due to missing
 
-The merge should be pretty simple, the problem is that git gets
-completely confused.The offending commits in drm-next are
-14415745b2..1fa611065 which simply moves a few functions from
-intel_display.c to intel_pm.c. The offending commit in -fixes doesn't
-touch these functions at all.
+I'd say s/CONFIG_NET/NET/ 
 
-The problem seems to be that git diff gets completely confused:
+> sock_*() functions in cluster/tcp.c
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  drivers/staging/ramster/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/ramster/Kconfig b/drivers/staging/ramster/Kconfig
+> index 4af1f8d..8e334cb 100644
+> --- a/drivers/staging/ramster/Kconfig
+> +++ b/drivers/staging/ramster/Kconfig
+> @@ -1,6 +1,6 @@
+>  config RAMSTER
+>  	bool "Cross-machine RAM capacity sharing, aka peer-to-peer tmem"
+> -	depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM
+> +	depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM && CONFIG_NET
 
-$ git diff 14415745b2..1fa611065
-is a nice mess in intel_display.c, and the diff leaks into totally
-unrelated functions, whereas
-$git diff --minimal  14415745b2..1fa611065
-seems to be exactly what we want.
+s/CONFIG_NET/NET/ again, I'd say. How was this tested?
 
-Unfortunately I haven't found any way to teach similar smarts to the
-merge diff and merge conflict generation - with the minimal diff there
-really shouldn't be any conflict with this patch
+>  	select LZO_COMPRESS
+>  	select LZO_DECOMPRESS
+>  	default n
 
-> I fixed it up (I think), but, again, the merge diff is way to log to
-> post ...
->
-> Again, Dave, can you cherry-pick or merge the commits that affect the drm
-> tree from Linus' tree, please?  Surely those fixes are needed in the drm
-> tree as well - or if they are not, then let me know and I will just use
-> the drm tree's version of this file.
 
-I'll sort this out with Dave. The problem though is that because git
-is so confused, almost every intel_display.c patch in -fixes conflicts
-with -next. And every time we change something in -next, the confused
-diff moves around a bit, making also git rerere pretty useless. So
-we'd need a backmarge of -fixes into -next an awful lot of times,
-which is why I've held off doing the merge for as long as possible.
+Paul Bolle
 
-Does any of the git gurus have a good idea for how to get myself out
-of this corner?
-
-Another thing: Can you please add the new drm/i915 -next tree to
-linux-next? With the new drm/i915 -next process we have about 2-3
-weeks of lead time between the intel tree and Dave's tree for internal
-QA and testing, so that we can sort out these issues earlier:
-
-git://people.freedesktop.org/~danvet/drm-intel drm-intel-next-queued
-
-[Note the -queued, -next is frozen every 2 weeks so that QA has a
-known base for the manual testing cycle.]
-
-Cheers, Daniel
--- 
-Daniel Vetter
-daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
