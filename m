@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab2EGI1G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:27:06 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56905 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755484Ab2EGI1E (ORCPT
+	id S1755736Ab2EGI1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:27:34 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46344 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755636Ab2EGI1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:27:04 -0400
-Date: Mon, 7 May 2012 10:26:58 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Anthony Liguori <anthony@codemonkey.ws>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davej@redhat.com
-Subject: Re: [PATCH] kvm: fix cpuid eax
-Message-ID: <20120507082658.GH16608@gmail.com>
-References: <20120430143902.GA10181@redhat.com>
- <4F9EF7FA.3060007@codemonkey.ws>
- <4F9FDCC4.3030302@redhat.com>
- <4F9FDD75.4030608@redhat.com>
+	Mon, 7 May 2012 04:27:32 -0400
+X-AuditID: 9c930179-b7c19ae000000486-48-4fa7876febc8
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/7] perf ui/gtk: Use struct perf_error_ops
+References: <1335761711-31403-1-git-send-email-namhyung.kim@lge.com>
+	<1335761711-31403-8-git-send-email-namhyung.kim@lge.com>
+	<alpine.LFD.2.02.1204300923010.2090@tux.localdomain>
+	<87ipghsjsk.fsf@sejong.aot.lge.com> <20120507081051.GD16608@gmail.com>
+Date: Mon, 07 May 2012 17:26:06 +0900
+In-Reply-To: <20120507081051.GD16608@gmail.com> (Ingo Molnar's message of
+	"Mon, 7 May 2012 10:10:51 +0200")
+Message-ID: <87zk9kqtwh.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F9FDD75.4030608@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Avi Kivity <avi@redhat.com> wrote:
+On Mon, 7 May 2012 10:10:51 +0200, Ingo Molnar wrote:
+> * Namhyung Kim <namhyung.kim@lge.com> wrote:
+>
+>> Hi,
+>> 
+>> On Mon, 30 Apr 2012 09:31:28 +0300 (EEST), Pekka Enberg wrote:
+>> > On Mon, 30 Apr 2012, Namhyung Kim wrote:
+>> >> Define and use perf_gtk_eops to provide a GTK2 message
+>> >> dialog for error reporting. To do that, we need global
+>> >> main_window variable for tracking UI state.
+>> >> 
+>> > I think this is an usability glitch waiting to happen - especially so if 
+>> > you use it for warnings. There's no reason to require the user to react to 
+>> > warning messages in the GUI because there's absolutely nothing they can do 
+>> > about them.
+>> >
+>> > I guess we could do something like the "ui helpline" thing used by the 
+>> > newt front-end if we really wanted to.
+>> >
+>> > 			Pekka
+>> 
+>> I did quick grep on ui__warning and found that most of its 
+>> users are trying to show the messages before exiting. I think 
+>> some (at least) of them can be converted to ui__error(). And 
+>> as existing implementation (TUI) already requires user input 
+>> for this, I thought it's ok.
+>> 
+>> But I agreed with you that ui__warning should not be used for 
+>> showing non-critical messages and converted to helpline-style 
+>> ones.
+>
+> If they are in essence ui__error() already then please convert 
+> them to ui__error() instead of perpetuating the mistake - don't 
+> force annoying pop-ups for warnings that may or may not be 
+> fatal. Spurious pop-ups are sad and people hate them.
+>
 
-> On 05/01/2012 03:53 PM, Avi Kivity wrote:
-> > On 04/30/2012 11:37 PM, Anthony Liguori wrote:
-> > > On 04/30/2012 09:39 AM, Michael S. Tsirkin wrote:
-> > >> cpuid eax should return the max leaf so that
-> > >> guests can find out the valid range.
-> > >> This matches Xen et al.
-> > >
-> > > What KVM does here predates Xen and Hyper-V.
-> > >
-> > > This is an ABI breaker.
-> >
-> > First, I don't think we ever documented eax, so nothing can rely on it.
-> >
-> 
-> Actually, we did document it.
-> 
-> However, I think it's safe to change.  The documentation in 
-> this case should say "reserved, returns zero in this 
-> implementation", rather than 0.
-
-Just a side note: whether and how it got documented is 
-immaterial, what matters is whether any application binary that 
-is already out there breaks. (The 'B' in ABI.)
-
-Whether it was fully documented or it was entirly undocumented, 
-the code obfuscated, encrypted and all this information got 
-locked away in a safe at a military base protected by nuclear 
-missiles is immaterial: if someone accidentally stumbled upon it 
-and an app learned to rely on the ABI detail then tough luck.
-
-Fortunately, this does not appear to have happened, so as a 
-result it's *not* an Application Binary Interface (it's only a 
-Binary Interface) and can thus be changed for the better.
+Ok, will do that in another patch (series). So you mean ui__warning
+should not be a pop-up dialog, right?
 
 Thanks,
-
-	Ingo
+Namhyung
