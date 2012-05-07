@@ -1,89 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab2EGIgL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:36:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59011 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755543Ab2EGIgJ (ORCPT
+	id S1755848Ab2EGIhM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:37:12 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:59648 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755564Ab2EGIhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:36:09 -0400
-Date: Mon, 7 May 2012 09:36:03 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jarod Wilson <jarod@redhat.com>
-Subject: Re: drivers: Probable misuses of ||
-Message-ID: <20120507083602.GA4415@opensource.wolfsonmicro.com>
-References: <1333580415.23520.29.camel@joe2Laptop>
- <1336168477.11505.6.camel@joe2Laptop>
- <20120504220241.GA6279@sirena.org.uk>
- <1336169378.11505.10.camel@joe2Laptop>
- <20120504221333.GU14230@opensource.wolfsonmicro.com>
- <20120505160042.GA26922@ericsson.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="opJtzjQTFsWo+cga"
-Content-Disposition: inline
-In-Reply-To: <20120505160042.GA26922@ericsson.com>
-X-Cookie: Be different: conform.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 7 May 2012 04:37:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArgLAFCJp09bdWOb/2dsb2JhbABEhXKkbyKHbYEHggwBAQUjBEASEAsYAgImAgJXBoglp3eSBoEvjliBGASXD48xgms
+X-IronPort-AV: E=Sophos;i="4.75,543,1330902000"; 
+   d="scan'208";a="910457577"
+Message-ID: <1336379814.2852.22.camel@fourier.local.igalia.com>
+Subject: Re: [PATCH v2 2/3] Staging: ipack: added support for the TEWS
+ TPCI-200 carrier board
+From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+To: Manohar Vanga <manohar.vanga@cern.ch>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Mon, 07 May 2012 10:36:54 +0200
+In-Reply-To: <20120507082007.GA30608@becoht-mvanga>
+References: <1336375569-21692-1-git-send-email-siglesias@igalia.com>
+	 <1336375569-21692-2-git-send-email-siglesias@igalia.com>
+	 <20120507082007.GA30608@becoht-mvanga>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-05-07 at 10:20 +0200, Manohar Vanga wrote:
+> Hey Samuel,
+> 
+> Just a couple of quick comments on this patch :)
+> 
+> > +TPCI-200
+> > +--------
+> > +
+> > +* It receives the name of the mezzanine plugged in each slot by
+SYSFS.
+> > +  No autodetection supported yet, because the mezzanine driver
+could not be
+> > +  loaded at the time that the tpci200 driver loads.
+> > +
+> > +* It has a linked list with the tpci200 devices it is managing. Get
+rid of it
+> > +  and use driver_for_each_device() instead.
+> > +
+> >  Ipack
+> >  -----
+> >  
+> > @@ -20,4 +30,3 @@ Ipack
+> >    remove_device() to notify the carrier driver, or the opposite
+with the call to
+> >    the ipack_driver_ops' remove() function could be improved.
+> >  
+> > -
+> 
+> Is this whitespace change required?
+> 
+> 
+It is not. I will rearrange the previous patch to avoid this
+uncomfortable change.
 
---opJtzjQTFsWo+cga
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> +#include <linux/module.h>
+> > +#include "tpci200.h"
+> > +
+> > +#define MODULE_NAME "tpci200"
+> 
+> Here you can just use the KBUILD_MODNAME variable
+> 
+> > +#define PFX MODULE_NAME ": "
+> 
+> You can also add this before all your includes:
+> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> 
+> 
+Thanks a lot. I didn't know about it.
 
-On Sat, May 05, 2012 at 09:00:42AM -0700, Guenter Roeck wrote:
-> On Fri, May 04, 2012 at 06:13:33PM -0400, Mark Brown wrote:
+> +static int tpci200_install(struct tpci200_board *tpci200)
+> > +{
+> > +	int res = 0;
+> > +
+> > +	tpci200->slots = kzalloc(TPCI200_NB_SLOT * sizeof(struct
+tpci200_slot), GFP_KERNEL);
+> 
+> Did you run checkpatch.pl on the patches? Are you ignoring the >80
+char
+> recommendation? In that case ignore this :)
+> 
 
-> > Right, but you need to look at the code and explain why this is a
-> > problem.  For example, the case I've left quoted above reads to me like
-> > the intention is "If the chip isn't one I know doesn't like this then
-> > let's do it" which is a perfectly sensible thing to write.
+Yes, I ran it. I ignore the warning to facilitate the reading of the
+sentences. However, I will re-check all the warnings to minimize the
+number of them.
 
-> I can not really follow your logic here; it is difficult for me to imagine a situation
-> where anything along the line of
-> 	if (val != 1 || val != 2)
-> would provide value other than creating confusion. Maybe you can explain that a bit further.
+> > +static struct pci_device_id tpci200_idtable[2]; /* last must be
+zero */
+> > +
+> > +static struct pci_driver tpci200_pci_drv = {
+> > +	.name = "tpci200",
+> > +	.id_table = tpci200_idtable,
+> > +	.probe = tpci200_pciprobe,
+> > +	.remove = __devexit_p(tpci200_pci_remove),
+> > +};
+> > +
+> > +static int __init tpci200_drvr_init_module(void)
+> > +{
+> > +	tpci200_idtable[0].vendor = TPCI200_VENDOR_ID;
+> > +	tpci200_idtable[0].device = TPCI200_DEVICE_ID;
+> > +	tpci200_idtable[0].subvendor = TPCI200_SUBVENDOR_ID;
+> > +	tpci200_idtable[0].subdevice = TPCI200_SUBDEVICE_ID;
+> > +	return pci_register_driver(&tpci200_pci_drv);
+> > +}
+> 
+> Can't tpci200_idtable be statically declared instead of inside the
+init function?
+> 
+> 
+Yes, it can. I will fix it.
 
-Yeah, I hadn't actually read the code closely enough but it's not my
-main point anyway - the main point was that the reports were very easy
-to ignore because they're just a paste in of the error message with no
-analysis they were very likely to just get ignored unless someone has a
-particular interest in the code (which is essentially what I did - I
-glanced at the report but only very briefly).
+> +static void __exit tpci200_drvr_exit_module(void)
+> > +{
+> > +	struct tpci200_board *tpci200;
+> > +	struct list_head *element, *next;
+> > +
+> > +	list_for_each_safe(element, next, &tpci200_list) {
+> > +		tpci200 = list_entry(element, struct tpci200_board, list);
+> > +		__tpci200_pci_remove(tpci200);
+> > +	}
+> 
+> You can use list_for_each_entry_safe instead of list_for_each_safe +
+list_entry.
+> I think you've used this everywhere so this would apply to the whole
+patch :)
+> 
+> 
+Thanks for the tips,
 
-Compare this with the reports from people like Julia Lawall, for example
-- they tend to be very clear.  Even simply adding "...as with || they
-will always be true" would've helped.
+Sam
 
---opJtzjQTFsWo+cga
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPp4ksAAoJEBus8iNuMP3dQf8P/RZUiTOxOPN1uNCKHAaJ7pJU
-167Lw/y8LCKCKyoapWKHpJpS0uZj+5GEdM5CMXY0S7t0sekU66uO8pa2hex23etW
-9wsyi4AqgQJ/AMeMf+SFgxONFvuU+gTtjpdMZ9E/HiD+OGZZ0SjTNIR5fzEH8oM/
-d5yuffTtVs7ZH30PBgh4i7zvzLFT/mayaOeZa7rFygF5NzCxxtGA2a6IRXcXV2E3
-39CaeHvhzedvGo8kVhoh9flKFs/Qx72OWNdNv2DU4rUHIY16MEIj/Q01FOGR9dQq
-YrPi6r8FOChEzawXqeHxt9RXJ42rPPhy4K+X4lrLoLHdQZ1ksUNy/H9rRW+SVuMO
-693FQSKwbmJNDKyz18ZiOb9Wk3qZzHIYKDlaKoZ5nBGe57Go9FqEaMgbn/+r8DTD
-Rz9MMMtiG9u/vwkb2ZLbR1qjCviQUIzeQfOgeFipUaQJd8Krje97pwmfXOyi8Vrs
-3CTej8oCFbwRj7liEZ4FApQe6g1teeqfUBkKS6VcsEj5N6eOC1aLBw9goAQ/Db2W
-Vjdkznn7K3ccM5AapdndD89Mu7IW5qwQuN5MLUkjKjWjw5mG70sSa0WWdMN2fhcX
-L6nvNV4oC3CRczktr6EmS63utOH2lahMtdiScahYzmb3Jzvysf9gShUWUdv8HTnR
-6t60JJ04y5J8UETD2bZG
-=rXs7
------END PGP SIGNATURE-----
-
---opJtzjQTFsWo+cga--
