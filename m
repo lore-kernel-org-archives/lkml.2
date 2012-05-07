@@ -1,44 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932503Ab2EGVEZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 17:04:25 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:48590 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757762Ab2EGVEX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 17:04:23 -0400
-Message-ID: <4FA838D2.9000908@suse.cz>
-Date: Mon, 07 May 2012 23:04:18 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120428 Thunderbird/14.0a2
+	id S932520Ab2EGVKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 17:10:40 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:58010 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932467Ab2EGVKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 17:10:38 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: huang ying <huang.ying.caritas@gmail.com>
+Subject: Re: [RFC v2 4/5] ACPI, PM, Specify lowest allowed state for device sleep state
+Date: Mon, 7 May 2012 23:15:26 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Zheng Yan <zheng.z.yan@intel.com>
+References: <1336119221-21146-1-git-send-email-ying.huang@intel.com> <201205042210.28048.rjw@sisk.pl> <CAC=cRTO53x_CiXc_wHyGG53QV4YByk1=t70eZ1VefVgZ3q75Vw@mail.gmail.com>
+In-Reply-To: <CAC=cRTO53x_CiXc_wHyGG53QV4YByk1=t70eZ1VefVgZ3q75Vw@mail.gmail.com>
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH 3/3] tty_lock: Localise the lock
-References: <20120503212151.568.91854.stgit@bob.linux.org.uk> <20120503212219.568.15653.stgit@bob.linux.org.uk> <CA+1xoqezLCQh_fqJ1iNAs25X7Fm24W=-0J8zTZuVVJQnWTtSLg@mail.gmail.com> <20120507171126.5beddc27@pyramind.ukuu.org.uk> <1336408208.3638.15.camel@lappy> <20120507174240.4209c5cb@pyramind.ukuu.org.uk> <CA+1xoqez0PaX2KBHHN-etztwbFoU1cKx3NwMXX+PO4SguA3bRg@mail.gmail.com>
-In-Reply-To: <CA+1xoqez0PaX2KBHHN-etztwbFoU1cKx3NwMXX+PO4SguA3bRg@mail.gmail.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201205072315.27081.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2012 07:00 PM, Sasha Levin wrote:
->> So whatever your trace is showing, that's not the bug. Something more
->> complicated would appear to be afoot.
+On Saturday, May 05, 2012, huang ying wrote:
+> On Sat, May 5, 2012 at 4:10 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Friday, May 04, 2012, Huang Ying wrote:
+> >> Lower device sleep state can save more power, but has more exit
+> >> latency too.  Sometimes, to satisfy some power QoS and other
+> >> requirement, we need to constrain the lowest device sleep state.
+> >>
+> >> In this patch, a parameter to specify lowest allowed state for
+> >> acpi_pm_device_sleep_state is added.  So that the caller can enforce
+> >> the constraint via the parameter.
+> >>
+> >> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> >> ---
+> >>  drivers/acpi/sleep.c       |   18 +++++++++++++++---
+> >>  drivers/pci/pci-acpi.c     |    3 ++-
+> >>  drivers/pnp/pnpacpi/core.c |    4 ++--
+> >>  include/acpi/acpi_bus.h    |    6 +++---
+> >>  4 files changed, 22 insertions(+), 9 deletions(-)
+> >>
+> >> --- a/drivers/acpi/sleep.c
+> >> +++ b/drivers/acpi/sleep.c
+> >> @@ -677,6 +677,7 @@ int acpi_suspend(u32 acpi_state)
+> >>   *   @dev: device to examine; its driver model wakeup flags control
+> >>   *           whether it should be able to wake up the system
+> >>   *   @d_min_p: used to store the upper limit of allowed states range
+> >> + *   @d_max_in: specify the lowest allowed states
+> >>   *   Return value: preferred power state of the device on success, -ENODEV on
+> >>   *           failure (ie. if there's no 'struct acpi_device' for @dev)
+> >>   *
+> >> @@ -693,7 +694,7 @@ int acpi_suspend(u32 acpi_state)
+> >>   *   via @wake.
+> >>   */
+> >>
+> >> -int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
+> >> +int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p, int d_max_in)
+> >>  {
+> >>       acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
+> >>       struct acpi_device *adev;
+> >> @@ -704,11 +705,14 @@ int acpi_pm_device_sleep_state(struct de
+> >>               printk(KERN_DEBUG "ACPI handle has no context!\n");
+> >>               return -ENODEV;
+> >>       }
+> >> +     d_max_in = clamp_t(int, d_max_in, ACPI_STATE_D0, ACPI_STATE_D3);
+> >
+> > Shouldn't that be clamp_val(), rather?
 > 
-> Oddly enough, tty != tty->link, but the lockdep warning triggers.
+> Yes.  clamp_val() is sufficient here.
 > 
-> Any idea why it might happen?
+> >>       acpi_method[2] = '0' + acpi_target_sleep_state;
+> >>       /*
+> >> -      * If the sleep state is S0, we will return D3, but if the device has
+> >> -      * _S0W, we will use the value from _S0W
+> >> +      * If the sleep state is S0, the lowest limit from ACPI is D3,
+> >> +      * but if the device has _S0W, we will use the value from _S0W
+> >> +      * as the lowest limit from ACPI.  Finally, we will constrain
+> >> +      * the lowest limit with the specified one.
+> >>        */
+> >>       d_min = ACPI_STATE_D0;
+> >>       d_max = ACPI_STATE_D3;
+> >> @@ -754,6 +758,14 @@ int acpi_pm_device_sleep_state(struct de
+> >>
+> >>       if (d_min_p)
+> >>               *d_min_p = d_min;
+> >> +     /* constrain d_max with specified lowest limit (max number) */
+> >> +     if (d_max > d_max_in) {
+> >> +             d_max = d_max_in;
+> >> +             for (;d_max > d_min; d_max--) {
+> >
+> > Well, why didn't you do
+> >
+> > +               for (d_max = d_max_in; d_max > d_min; d_max--)
+> 
+> Because I think it is possible that d_max < d_max_in.
 
-I think so, both locks are the same lockdep class. So lockdep thinks it
-is the same lock. However this is a false positive. I guess we need
-mutex_lock_nested...
+I mean:
 
-regards,
--- 
-js
-suse labs
++     if (d_max > d_max_in) {
++               for (d_max = d_max_in; d_max > d_min; d_max--) {
 
+The assignment followed by the for () loop without the start instruction looks
+odd.
+
+> >> +                     if (adev->power.states[d_max].flags.valid)
+> >> +                             break;
+> >> +             }
+> >> +     }
+> >
+> > And what if d_min > d_max_in ?
+> 
+> I think that means something bad happens.  Maybe we can do something as follow
+> 
+> if (d_min > d_max_in) {
+>         pr_warning("acpi_pm_device_sleep_state: the specified lowest
+> state is higher than the highest state from ACPI!");
+>         d_max_in = d_min;
+
+Well, what about returning -EINVAL in that case?
+
+> }
+> if (d_max > d_max_in) {
+> ...
+> }
+> 
+> >>       return d_max;
+> >>  }
+> >>  #endif /* CONFIG_PM */
+> >> --- a/drivers/pci/pci-acpi.c
+> >> +++ b/drivers/pci/pci-acpi.c
+> >> @@ -189,7 +189,8 @@ static pci_power_t acpi_pci_choose_state
+> >>  {
+> >>       int acpi_state;
+> >>
+> >> -     acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL);
+> >> +     acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL,
+> >> +                                             ACPI_STATE_D3);
+> >>       if (acpi_state < 0)
+> >>               return PCI_POWER_ERROR;
+> >>
+> >> --- a/drivers/pnp/pnpacpi/core.c
+> >> +++ b/drivers/pnp/pnpacpi/core.c
+> >> @@ -170,8 +170,8 @@ static int pnpacpi_suspend(struct pnp_de
+> >>       }
+> >>
+> >>       if (acpi_bus_power_manageable(handle)) {
+> >> -             int power_state = acpi_pm_device_sleep_state(&dev->dev, NULL);
+> >> -
+> >> +             int power_state = acpi_pm_device_sleep_state(&dev->dev, NULL,
+> >> +                                                          ACPI_STATE_D3);
+> >>               if (power_state < 0)
+> >>                       power_state = (state.event == PM_EVENT_ON) ?
+> >>                                       ACPI_STATE_D0 : ACPI_STATE_D3;
+> >> --- a/include/acpi/acpi_bus.h
+> >> +++ b/include/acpi/acpi_bus.h
+> >> @@ -383,13 +383,13 @@ int acpi_enable_wakeup_device_power(stru
+> >>  int acpi_disable_wakeup_device_power(struct acpi_device *dev);
+> >>
+> >>  #ifdef CONFIG_PM
+> >> -int acpi_pm_device_sleep_state(struct device *, int *);
+> >> +int acpi_pm_device_sleep_state(struct device *, int *, int);
+> >>  #else
+> >> -static inline int acpi_pm_device_sleep_state(struct device *d, int *p)
+> >> +static inline int acpi_pm_device_sleep_state(struct device *d, int *p, int m)
+> >>  {
+> >>       if (p)
+> >>               *p = ACPI_STATE_D0;
+> >> -     return ACPI_STATE_D3;
+> >> +     return m == ACPI_STATE_D3 ? m : ACPI_STATE_D0;
+> >
+> > Shouldn't m be returned (so long as it is between D0 and D3 inclusive)?  IOW:
+> >
+> > +       return (m >= ACPI_STATE_D0 && m <= ACPI_STATE_D3) ? m : ACPI_STATE_D0;
+> 
+> My original idea is that only D0 and D3 is guaranteed to be valid for
+> the device.  If that need not to be considered here, you one is
+> better.
+
+No, it need not.
+
+Thanks,
+Rafael
