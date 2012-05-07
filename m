@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab2EGB1l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 21:27:41 -0400
-Received: from tundra.namei.org ([65.99.196.166]:48090 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755101Ab2EGB1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 21:27:39 -0400
-Date: Mon, 7 May 2012 11:26:29 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>, zohar@us.ibm.com,
-        David Howells <dhowells@redhat.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] lib/mpi: Fixed erroneous check on return value of
- mpi_resize()
-In-Reply-To: <201205051230.GCC69709.OQFLSOVtMHJFFO@I-love.SAKURA.ne.jp>
-Message-ID: <alpine.LRH.2.02.1205071125510.31172@tundra.namei.org>
-References: <1336182667-9784-1-git-send-email-root@hackmaster.in> <201205051230.GCC69709.OQFLSOVtMHJFFO@I-love.SAKURA.ne.jp>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1755256Ab2EGBds (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 21:33:48 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52888 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755115Ab2EGBdr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 May 2012 21:33:47 -0400
+X-AuditID: 9c930197-b7badae000000cfd-2f-4fa726789ab1
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] perf top: Fix a race in callchain handling
+References: <1336231388-12347-1-git-send-email-namhyung@gmail.com>
+	<1336242167.2463.138.camel@laptop>
+	<20120505235319.GB2150@infradead.org>
+	<1336271107.1534.12.camel@leonhard>
+	<20120506183212.GB2485@infradead.org>
+Date: Mon, 07 May 2012 10:32:22 +0900
+In-Reply-To: <20120506183212.GB2485@infradead.org> (Arnaldo Carvalho de Melo's
+	message of "Sun, 6 May 2012 15:32:12 -0300")
+Message-ID: <878vh4srmh.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 May 2012, Tetsuo Handa wrote:
+Hi,
 
-> Adarsh J wrote:
-> > mpi_resize() returns -ENOMEM on error and 0 on success.
-> 
-> Good catch.
-> 
-> But it seems to me that mpi_fromstr() has no in-tree users.
-> Also, mpi_fromstr() in RHEL 5.8/6.2 has no users.
-> We forgot to exclude when adding MPI support?
+On Sun, 6 May 2012 15:32:12 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Sun, May 06, 2012 at 11:25:07AM +0900, Namhyung Kim escreveu:
+>> 2012-05-05 (토), 20:53 -0300, Arnaldo Carvalho de Melo:
+>> > I'm looking how to get that fixed with Peter concerns addressed.
+>> > 
+>> 
+>> I guess it's gonna be a non-trivial job. As far as I can see, the hists
+>> code can handle up to two concurrent threads regardless of the callchain
+>> cursor problem. And also guess that other areas of libperf also doesn't
+>> support the true concurrency, right?
+>
+> Right, but making it even less concurrent is something we should avoid
+> 8-)
+>
+> How about this one instead? At least we would be able to, concurrently,
+> process multiple, unrelated hists:
+>
 
-If that's the case, then it should be removed.
+I thought about it before, but it still cannot protect it from accessing
+a hists by multiple concurrent threads. IOW if two threads call the
+function to a same hists at the same time, ->callchain_collapse_cursor
+would still get the race problem - so crashed.
 
-(Removed root@ from cc:)
+I guess callchain_cursor should be thread-local, eventually. No need to
+make it hist-local IMHO.
 
-> 
-> > 
-> > Signed-off-by: Adarsh J <root@hackmaster.in>
-> > ---
-> >  lib/mpi/mpicoder.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/lib/mpi/mpicoder.c b/lib/mpi/mpicoder.c
-> > index f26b41f..9949b69 100644
-> > --- a/lib/mpi/mpicoder.c
-> > +++ b/lib/mpi/mpicoder.c
-> > @@ -98,7 +98,7 @@ int mpi_fromstr(MPI val, const char *str)
-> >  	nbytes = (nbits + 7) / 8;
-> >  	nlimbs = (nbytes + BYTES_PER_MPI_LIMB - 1) / BYTES_PER_MPI_LIMB;
-> >  	if (val->alloced < nlimbs)
-> > -		if (!mpi_resize(val, nlimbs))
-> > +		if (mpi_resize(val, nlimbs) < 0)
-> >  			return -ENOMEM;
-> >  	i = BYTES_PER_MPI_LIMB - nbytes % BYTES_PER_MPI_LIMB;
-> >  	i %= BYTES_PER_MPI_LIMB;
-> > -- 
-> > 1.7.9.5
-> 
+Thanks,
+Namhyung
 
--- 
-James Morris
-<jmorris@namei.org>
+
+>
+> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> index 9f6d630..c5cde92 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -397,8 +397,8 @@ static bool hists__collapse_insert_entry(struct hists *hists,
+>  			iter->period += he->period;
+>  			iter->nr_events += he->nr_events;
+>  			if (symbol_conf.use_callchain) {
+> -				callchain_cursor_reset(&hists->callchain_cursor);
+> -				callchain_merge(&hists->callchain_cursor, iter->callchain,
+> +				callchain_cursor_reset(&hists->callchain_collapse_cursor);
+> +				callchain_merge(&hists->callchain_collapse_cursor, iter->callchain,
+>  						he->callchain);
+>  			}
+>  			hist_entry__free(he);
+> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+> index cfc64e2..e04c80b 100644
+> --- a/tools/perf/util/hist.h
+> +++ b/tools/perf/util/hist.h
+> @@ -69,6 +69,7 @@ struct hists {
+>  	u16			col_len[HISTC_NR_COLS];
+>  	/* Best would be to reuse the session callchain cursor */
+>  	struct callchain_cursor	callchain_cursor;
+> +	struct callchain_cursor	callchain_collapse_cursor;
+>  };
+>  
+>  struct hist_entry *__hists__add_entry(struct hists *self,
