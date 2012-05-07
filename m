@@ -1,131 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527Ab2EGSt5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 14:49:57 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:16917
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750909Ab2EGSt4 (ORCPT
+	id S1757551Ab2EGSwL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 14:52:11 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:34367 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab2EGSwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 14:49:56 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zzbb2dI9371IfecI1432N98dKzz1202hzzz2fh668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4FA8195E.2010706@am.sony.com>
-Date: Mon, 7 May 2012 11:50:06 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 7 May 2012 14:52:09 -0400
+Date: Mon, 7 May 2012 11:50:17 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: linux-next ppc64: RCU mods cause __might_sleep BUGs
+Message-ID: <20120507185017.GA21152@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120501142208.GA2441@linux.vnet.ibm.com>
+ <alpine.LSU.2.00.1205011410360.28232@eggly.anvils>
+ <20120501232516.GR2441@linux.vnet.ibm.com>
+ <alpine.LSU.2.00.1205021324430.24246@eggly.anvils>
+ <1335993615.4088.1.camel@pasglop>
+ <20120502215406.GL2450@linux.vnet.ibm.com>
+ <CANsGZ6bw4JwMRgUriooDvFB=g-HkpyL8XJa9s47RPfOEPCMcpw@mail.gmail.com>
+ <20120503001433.GO2450@linux.vnet.ibm.com>
+ <alpine.LSU.2.00.1205021721350.24869@eggly.anvils>
+ <alpine.LSU.2.00.1205070858450.1416@eggly.anvils>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Brian Swetland <swetland@google.com>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: android: logger: Allocate logs dynamically at
- boot
-References: <4FA4673C.7010209@am.sony.com> <20120504233707.GA24213@kroah.com>
-In-Reply-To: <20120504233707.GA24213@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1205070858450.1416@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12050718-7408-0000-0000-000004D49B37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2012 04:37 PM, Greg KH wrote:
-> On Fri, May 04, 2012 at 04:33:16PM -0700, Tim Bird wrote:
->> +#define MAX_LOGS	5
->> +struct logger_log *logs_array[MAX_LOGS];
+On Mon, May 07, 2012 at 09:21:54AM -0700, Hugh Dickins wrote:
+> On Wed, 2 May 2012, Hugh Dickins wrote:
+> > On Wed, 2 May 2012, Paul E. McKenney wrote:
+> > > 
+> > > In any case, I must confess that I feel quite silly about my series
+> > > of patches.  I have reverted them aside from a couple that did useful
+> > > optimizations, and they should show up in -next shortly.
+> > 
+> > A wee bit sad, but thank you - it was an experiment worth trying,
+> > and perhaps there will be reason to come back to it future.
 > 
-> You are going to make this a list and not a static array in the
-> future, right?
-
-Would that be better?  The for-loop is IMHO simpler than a
-list walk for finding matches.  I anticipate that the size of
-this array should never (famous last words) be bigger than about
-20 entries, even in the dynamic-allocation-per-application
-case.  And that's a ways off in implementation.
-
-I'll be happy to switch to a linked list once it looks like we're
-going to have more than 5 entries.  Or I can switch to a linked
-list now if you think it's better form to code for the longer-term
-anticipated features.
-
-Not a big deal to me either way.
-
+> The revert indeed showed up in next-20120504: thanks, no problem now.
 > 
->> -static int __init init_log(struct logger_log *log)
->> +static int __init add_log(struct logger_log *log)
->>  {
->> -	int ret;
->> +	int i;
->>
->> +	for (i = 0; i < MAX_LOGS; i++) {
->> +		if (logs_array[i] == 0) {
->> +			logs_array[i] = log;
->> +			return 0;
->> +		}
->> +	}
->> +	return -1;
->> +}
+> But although it's just history, and not worth anyone's time to
+> investigate, I shouldn't let this thread die without an epilogue.
 > 
-> I see you didn't run your patch through sparse :(
+> Although the patch I posted (this_cpu_inc in __rcu_read_lock,
+> preempt_disable and enable in __rcu_read_unlock) ran well until
+> I killed the test after 70 hours, it did not _entirely_ eliminate
+> the sleeping function BUG messages.
+> 
+> In 70 hours I got six isolated messages like the below (but from
+> different __might_sleep callsites) - where before I'd have flurries
+> of hundreds(?) and freeze within the hour.
+> 
+> And the "rcu_nesting" debug line I'd added to the message was different:
+> where before it was showing ffffffff on some tasks and 1 on others i.e.
+> increment or decrement had been applied to the wrong task, these messages
+> now all showed 0s throughout i.e. by the time the message was printed,
+> there was no longer any justification for the message.
+> 
+> As if a memory barrier were missing somewhere, perhaps.
 
-Indeed - shame on me. :-(
+These fields should be updated only by the corresponding CPU, so
+if memory barriers are needed, it seems to me that the cross-CPU
+access is the bug, not the lack of a memory barrier.
 
-> Care to fix up the sparse warnings and resend?
-OK - this patch has 2 sparse issues, and there were
-2 already in the code.  Do you want me to send the
-other 2 sparse fixes as an independent patch, or could
-I cheat and throw them in this one?
+Ah...  Is preemption disabled across the access to RCU's nesting level
+when printing out the message?  If not, a preeemption at that point
+could result in the value printed being inaccurate.
 
-Below is what the fixes look like. (BTW - these are
-formatted for human review but not for mainline submission.)
+							Thanx, Paul
 
-Thanks for your help.
- -- Tim
-
-diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
-index fa5fd71..9f4ed84 100644
---- a/drivers/staging/android/logger.c
-+++ b/drivers/staging/android/logger.c
-@@ -61,7 +61,7 @@ struct logger_reader {
- };
-
- /* logger_offset - returns index 'n' into the log via (optimized) modulus */
--size_t logger_offset(struct logger_log *log, size_t n)
-+static size_t logger_offset(struct logger_log *log, size_t n)
- {
-        return n & (log->size-1);
- }
-@@ -349,7 +349,7 @@ static ssize_t do_write_log_from_user(struct logger_log *log,
-  * writev(), and aio_write(). Writes are our fast path, and we try to optimize
-  * them above all else.
-  */
--ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
-+static ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
-                         unsigned long nr_segs, loff_t ppos)
- {
-        struct logger_log *log = file_get_log(iocb->ki_filp);
-@@ -566,7 +566,7 @@ static const struct file_operations logger_fops = {
- };
-
- #define MAX_LOGS       5
--struct logger_log *logs_array[MAX_LOGS];
-+static struct logger_log *logs_array[MAX_LOGS];
-
- static struct logger_log *get_log_from_minor(int minor)
- {
-@@ -584,7 +584,7 @@ static int __init add_log(struct logger_log *log)
-        int i;
-
-        for (i = 0; i < MAX_LOGS; i++) {
--               if (logs_array[i] == 0) {
-+               if (logs_array[i] == NULL) {
-                        logs_array[i] = log;
-                        return 0;
-                }
-
-=============================
-Tim Bird
-Architecture Group Chair, CE Workgroup of the Linux Foundation
-Senior Staff Engineer, Sony Network Entertainment
-=============================
+> BUG: sleeping function called from invalid context at arch/powerpc/mm/fault.c:305
+> cpu=2 preempt_count=0 preempt_offset=0 rcu_nesting=0 nesting_save=0
+> in_atomic(): 0, irqs_disabled(): 0, pid: 12266, name: cc1
+> Call Trace:
+> [c000000003affac0] [c00000000000f36c] .show_stack+0x6c/0x16c (unreliable)
+> [c000000003affb70] [c000000000078788] .__might_sleep+0x150/0x170
+> [c000000003affc00] [c0000000000255f4] .do_page_fault+0x288/0x664
+> [c000000003affe30] [c000000000005868] handle_page_fault+0x10/0x30
+> 
+> Hugh
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
