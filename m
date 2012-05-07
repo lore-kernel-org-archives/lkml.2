@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab2EGJEj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 05:04:39 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:60163 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755564Ab2EGJEh (ORCPT
+	id S1756079Ab2EGJFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 05:05:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60728 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755959Ab2EGJDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 05:04:37 -0400
-Date: Mon, 7 May 2012 19:04:27 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andreas Westin <andreas.westin@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: linux-next: manual merge of the crypto tree with Linus' tree
-Message-ID: <20120507090427.GA26654@gondor.apana.org.au>
-References: <20120507121137.bdfc96ed31649040506d9c75@canb.auug.org.au>
- <201205070809.21709.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201205070809.21709.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 7 May 2012 05:03:37 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 6/7] mfd: wm8994: Read CUST_ID from the device
+Date: Mon,  7 May 2012 10:03:22 +0100
+Message-Id: <1336381403-7840-6-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1336381403-7840-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1336381403-7840-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 08:09:21AM +0000, Arnd Bergmann wrote:
-> On Monday 07 May 2012, Stephen Rothwell wrote:
-> > + static void __init u8500_cryp1_hash1_init(void)
-> > + {
-> > +       db8500_add_cryp1(&u8500_cryp1_platform_data);
-> > +       db8500_add_hash1(&u8500_hash1_platform_data);
-> > + }
-> 
-> This is actually not correct any more because of the
-> other changes: each device addition should also pass the parent
-> pointer so the device is created in the right position.
-> 
-> Stephen, your fix is ok for linux-next and I expect everything
-> to still work, but we should not merge it into v3.5 this way.
-> 
-> Thanks for the fixup.
+Read CUST_ID from the device and log it for diagnostics.
 
-OK, I'll drop the last patch
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm8994-core.c            |    7 ++++---
+ include/linux/mfd/wm8994/core.h      |    1 +
+ include/linux/mfd/wm8994/registers.h |    3 +++
+ 3 files changed, 8 insertions(+), 3 deletions(-)
 
-	mach-ux500: crypto - core support for CRYP/HASH module
-
-from my tree.
-
-Cheers,
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 9d7ca1e..60e61754 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -500,7 +500,8 @@ static __devinit int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 			ret);
+ 		goto err_enable;
+ 	}
+-	wm8994->revision = ret;
++	wm8994->revision = ret & WM8994_CHIP_REV_MASK;
++	wm8994->cust_id = (ret & WM8994_CUST_ID_MASK) >> WM8994_CUST_ID_SHIFT;
+ 
+ 	switch (wm8994->type) {
+ 	case WM8994:
+@@ -553,8 +554,8 @@ static __devinit int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 		break;
+ 	}
+ 
+-	dev_info(wm8994->dev, "%s revision %c\n", devname,
+-		 'A' + wm8994->revision);
++	dev_info(wm8994->dev, "%s revision %c CUST_ID %02x\n", devname,
++		 'A' + wm8994->revision, wm8994->cust_id);
+ 
+ 	switch (wm8994->type) {
+ 	case WM1811:
+diff --git a/include/linux/mfd/wm8994/core.h b/include/linux/mfd/wm8994/core.h
+index 9eff2a3..d41bc7b 100644
+--- a/include/linux/mfd/wm8994/core.h
++++ b/include/linux/mfd/wm8994/core.h
+@@ -57,6 +57,7 @@ struct wm8994 {
+ 
+ 	enum wm8994_type type;
+ 	int revision;
++	int cust_id;
+ 
+ 	struct device *dev;
+ 	struct regmap *regmap;
+diff --git a/include/linux/mfd/wm8994/registers.h b/include/linux/mfd/wm8994/registers.h
+index 86e6a03..0535489 100644
+--- a/include/linux/mfd/wm8994/registers.h
++++ b/include/linux/mfd/wm8994/registers.h
+@@ -2212,6 +2212,9 @@
+ /*
+  * R256 (0x100) - Chip Revision
+  */
++#define WM8994_CUST_ID_MASK                     0xFF00  /* CUST_ID - [15:8] */
++#define WM8994_CUST_ID_SHIFT                         8  /* CUST_ID - [15:8] */
++#define WM8994_CUST_ID_WIDTH                         8  /* CUST_ID - [15:8] */
+ #define WM8994_CHIP_REV_MASK                    0x000F  /* CHIP_REV - [3:0] */
+ #define WM8994_CHIP_REV_SHIFT                        0  /* CHIP_REV - [3:0] */
+ #define WM8994_CHIP_REV_WIDTH                        4  /* CHIP_REV - [3:0] */
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.10
+
