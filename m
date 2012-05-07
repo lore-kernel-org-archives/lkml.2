@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab2EGQwb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 12:52:31 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:22962 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756911Ab2EGQwa (ORCPT
+	id S1757433Ab2EGQyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 12:54:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16206 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757259Ab2EGQx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 12:52:30 -0400
-Date: Mon, 7 May 2012 12:46:39 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] (xen) stable/for-linus-3.4-rc6-tag
-Message-ID: <20120507164639.GA3155@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 7 May 2012 12:53:59 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=2PfWfQ4LHIYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=meVymXHHAAAA:8 a=Vw2N8DggyjALpdZny7cA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1336409637.14207.153.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH][GIT PULL] ftrace/x86: Use asm/kprobes.h instead of
+ linux/kprobes.h
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date: Mon, 07 May 2012 12:53:57 -0400
+In-Reply-To: <1336139384.14207.114.camel@gandalf.stny.rr.com>
+References: <1336139384.14207.114.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Bah, I forgot to update the subject (fixed)
 
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Anyway, Ingo, can you pull this.
 
-Hey Linus,
+Thanks!
 
-Please pull this last (I hope) pull for this release from me:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-lin=
-us-3.4-rc6-tag
-
-which has a sm=F6rg=E5sbord of fixes - fix to Kconfig to make it fit within
-80 line characters, two bootup fixes, cleanup code in a driver, and a crash
-when trying to `cat /sys/kernel/debug/kernel_page_tables`. This
-release we have been focused on fixing bugs - and it feels good
-to have the outstanding bug list shrink. Please pull!
+-- Steve
 
 
- arch/x86/xen/enlighten.c    |   42 +++++++++++++++++++++++++++++++++++++++=
----
- arch/x86/xen/mmu.c          |    7 ++++++-
- drivers/video/xen-fbfront.c |   27 ++++++++++++++++-----------
- drivers/xen/Kconfig         |   22 ++++++++++++----------
- 4 files changed, 73 insertions(+), 25 deletions(-)
+On Fri, 2012-05-04 at 09:49 -0400, Steven Rostedt wrote:
+> Ingo,
+> 
+> This is based on top of tip/perf/core-3, and fixes the compile error
+> that you saw with CONFIG_KPROBES disabled.
+> 
+> Please pull the latest tip/perf/core-4 tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> tip/perf/core-4
+> 
+> Head SHA1: 59a094c994a138049b41a44bc29cff9407d51c5b
+> 
+> 
+> Steven Rostedt (1):
+>       ftrace/x86: Use asm/kprobes.h instead of linux/kprobes.h
+> 
+> ----
+>  arch/x86/kernel/ftrace.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> ---------------------------
+> commit 59a094c994a138049b41a44bc29cff9407d51c5b
+> Author: Steven Rostedt <srostedt@redhat.com>
+> Date:   Fri May 4 09:26:16 2012 -0400
+> 
+>     ftrace/x86: Use asm/kprobes.h instead of linux/kprobes.h
+>     
+>     If CONFIG_KPROBES is not set, then linux/kprobes.h will not include
+>     asm/kprobes.h needed by x86/ftrace.c for the BREAKPOINT macro.
+>     
+>     The x86/ftrace.c file should just include asm/kprobes.h as it does not
+>     need the rest of kprobes.
+>     
+>     Reported-by: Ingo Molnar <mingo@elte.hu>
+>     Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>     Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+> index cf2d03e..4243e8b 100644
+> --- a/arch/x86/kernel/ftrace.c
+> +++ b/arch/x86/kernel/ftrace.c
+> @@ -20,11 +20,11 @@
+>  #include <linux/init.h>
+>  #include <linux/list.h>
+>  #include <linux/module.h>
+> -#include <linux/kprobes.h>
+>  
+>  #include <trace/syscall.h>
+>  
+>  #include <asm/cacheflush.h>
+> +#include <asm/kprobes.h>
+>  #include <asm/ftrace.h>
+>  #include <asm/nops.h>
+>  
+> 
 
-Andrew Morton (1):
-      xen/Kconfig: fix Kconfig layout
 
-David Vrabel (1):
-      xen/pci: don't use PCI BIOS service for configuration space accesses
-
-Julia Lawall (1):
-      drivers/video/xen-fbfront.c: add missing cleanup code
-
-Konrad Rzeszutek Wilk (2):
-      xen/apic: Return the APIC ID (and version) for CPU 0.
-      xen/pte: Fix crashes when trying to see non-existent PGD/PMD/PUD/PTEs
-
-
---wac7ysb48OaltWcw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPp/xgAAoJEFjIrFwIi8fJsl0H/jvmBwuNwlJyfcBLLitSSKUv
-I1qMYO0B925YYFQV7bL8SfSM918cPwO2NsqOu/QMw5Dw3IUgtu5eCT8adxRtzdsG
-nSklt5bIuI3cJbxwkTyriD9OwnG+dHHnvncuC85U6hTvS24ECCOlDDN/7Va4waNF
-Gx+AHGTBfoZOvNcp0/zvZ5OsKKQujxyZoSha/IYWim61SJJLgFMZ4c2ROE9bvVkJ
-bmnw3e8lBbF6RaoEIu8wvlPCLs2iGKLHleqNndb1ksJomK2uLCXVYXydk1UDQZw8
-atFK19RGuusv/Z+cr/BjR6chy+dmmkK1jPC3fIaCZdweFeNP07xDo+ZOFUnjKKw=
-=eL90
------END PGP SIGNATURE-----
-
---wac7ysb48OaltWcw--
