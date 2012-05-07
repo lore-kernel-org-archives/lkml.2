@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757286Ab2EGSW5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 14:22:57 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:49947 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755386Ab2EGSW4 (ORCPT
+	id S1757356Ab2EGS0l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 14:26:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33992 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756334Ab2EGS0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 14:22:56 -0400
-Date: Mon, 07 May 2012 14:21:43 -0400 (EDT)
-Message-Id: <20120507.142143.172247040163546224.davem@davemloft.net>
-To: tj@kernel.org
-Cc: hannes@cmpxchg.org, akpm@linux-foundation.org, shangw@linux.vnet.ibm.com,
-        yinghai@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 10/10] mm: remove sparsemem allocation details from the
- bootmem allocator
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120507181941.GF19417@google.com>
-References: <1336390672-14421-1-git-send-email-hannes@cmpxchg.org>
-	<1336390672-14421-11-git-send-email-hannes@cmpxchg.org>
-	<20120507181941.GF19417@google.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 07 May 2012 11:21:46 -0700 (PDT)
+	Mon, 7 May 2012 14:26:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <1336408965.2385.25.camel@dcbw.foobar.com>
+References: <20120427094637.GV3157@wantstofly.org>
+	<CA+icZUXNZ=exTnR=OgD_9bpt_0s-KnR+v-K6u+XzQr4HBoTQHQ@mail.gmail.com>
+	<20120427095842.GW3157@wantstofly.org>
+	<CA+icZUWuynSaPE4pdxzoP783pw7r=5x27ewXN_pkR5VS=0kKUg@mail.gmail.com>
+	<20120427101732.GX3157@wantstofly.org>
+	<CA+icZUUnJPeDmL9xXfvj62an40bXwwaOnrJmxmLN_cBt9PyCZA@mail.gmail.com>
+	<CA+icZUV76wSBj88EpzmWbO=u2dP23yi5P98nN2KZehBUni9mEg@mail.gmail.com>
+	<20120427185809.GZ3157@wantstofly.org>
+	<CA+icZUWQmCRdjucb4+Nf24_zbJ4fzzp7zjqhKjXE6U01rppDfA@mail.gmail.com>
+	<CA+icZUXSaEMA=KbQP9UQcU6ZMBh8QD2sv-O=6r_Ly8is==gvSA@mail.gmail.com>
+	<20120501125102.GN3157@wantstofly.org>
+	<1336406944.2385.24.camel@dcbw.foobar.com>
+	<1336408965.2385.25.camel@dcbw.foobar.com>
+Date: Mon, 7 May 2012 11:26:39 -0700
+X-Google-Sender-Auth: NYdi8QYGDB3nmlMWRtpFq9cR3Do
+Message-ID: <CAJ-Vmok92fR_JfqD2BrnP7A0c8Vs5K7T-77nzt7B+sPPgk6KNw@mail.gmail.com>
+Subject: Re: [PATCH] mwl8k: Add 0x2a02 PCI device-id (Marvell 88W8361)
+From: Adrian Chadd <adrian@freebsd.org>
+To: Dan Williams <dcbw@redhat.com>
+Cc: Lennert Buytenhek <buytenh@wantstofly.org>, sedat.dilek@gmail.com,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lautriv <admin@coldplug.net>,
+        Jim Cromie <jim.cromie@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
-Date: Mon, 7 May 2012 11:19:41 -0700
+Hi,
 
-> On Mon, May 07, 2012 at 01:37:52PM +0200, Johannes Weiner wrote:
->> alloc_bootmem_section() derives allocation area constraints from the
->> specified sparsemem section.  This is a bit specific for a generic
->> memory allocator like bootmem, though, so move it over to sparsemem.
->> 
->> As __alloc_bootmem_node_nopanic() already retries failed allocations
->> with relaxed area constraints, the fallback code in sparsemem.c can be
->> removed and the code becomes a bit more compact overall.
->> 
->> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> 
-> For 03-10
-> 
->  Acked-by: Tejun Heo <tj@kernel.org>
-> 
-> Thanks for doing this.  While at it, maybe we can clear up the naming
-> mess there?  I don't hate __s too much but the bootmem allocator
-> brings it to a whole new level.  :(
+Let me see if the topdog firmware that FreeBSD ships with supports hostap mode.
 
-+1  And you can add my Ack to this series too, thanks Johannes:
+I'm having aggregation issues but I think that's driver side, not firmware side.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+
+
+Adrian
