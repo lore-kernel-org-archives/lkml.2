@@ -1,141 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073Ab2EGKGB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 06:06:01 -0400
-Received: from 2481.rev.megiteam.pl ([91.227.36.129]:32799 "EHLO
-	vk1001.megiteam.com.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755544Ab2EGKGA (ORCPT
+	id S1756103Ab2EGKGi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 06:06:38 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:32923 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755997Ab2EGKGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 06:06:00 -0400
-Message-ID: <4FA79E81.4050306@localdomain.pl>
-Date: Mon, 07 May 2012 12:05:53 +0200
-From: Grzegorz Nosek <root@localdomain.pl>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	Mon, 7 May 2012 06:06:36 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Proper locking for find_task_by_pid_ns?
+Date: Mon, 7 May 2012 03:06:36 -0700
+Message-ID: <CAHo-OoxRj-sP1Tcy3oJ7DE3BOGSTnsWHZ5Q3hdmnK8A5jfjFcQ@mail.gmail.com>
+Subject: setuid and RLIMIT_NPROC and 3.1+
+From: =?UTF-8?Q?Maciej_=C5=BBenczykowski?= <zenczykowski@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: James Morris <jmorris@namei.org>, neilb@suse.de,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit 72fa59970f8698023045ab0713d66f3f4f96945c
+Author: Vasiliy Kulikov <segoon@openwall.com>
+Date:   Mon Aug 8 19:02:04 2011 +0400
 
-TL;DR: my question is whether this:
+    move RLIMIT_NPROC check from set_user() to do_execve_common()
 
-read_lock(&tasklist_lock);
-rcu_read_lock();
-p = find_task_by_pid_ns(pid, &init_pid_ns);
-rcu_read_unlock();
-read_unlock(&tasklist_lock);
+intentionally 'breaks' error return codes from setuid and friends in
+the presence of RLIMIT_NPROC.
 
-is a valid sequence, or is it deadlockable. My Google-fu says _either_ rcu_read_lock or tasklist_lock is required to traverse the task list[1] but I'm not sure about both at the same time.
+3.0.30:
+setresuid(0, 0, 0)                      = 0
+setrlimit(RLIMIT_NPROC, {rlim_cur=1, rlim_max=1}) = 0
+clone(Process 20070 attached
+child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD,
+child_tidptr=0x1344b30) = 20070  [fork() succeeds only because we're
+root]
+[pid 20069] setuid(65534)               = 0
+[pid 20070] setuid(65534)      = -1 EAGAIN (Resource temporarily unavailable)
 
-The whole story:
+3.1:
+setresuid(0, 0, 0)                      = 0
+setrlimit(RLIMIT_NPROC, {rlim_cur=1, rlim_max=1}) = 0
+clone(Process 13507 attached
+child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD,
+child_tidptr=0x135cb30) = 13507 [fork() succeeds only because we're
+root]
+[pid 13506] setuid(65534)      = 0
+[pid 13507] setuid(65534)      = 0
 
-I encountered a machine crash with the following output on the console (that's all I got):
+Having read the commit in question I get what it is trying to prevent,
+but perhaps the setuid call should still be returning an error code
+[E2BIG? EBUSY? EOVERFLOW? ENAVAIL?] for those programs that do bother
+to check, even though it would 'succeed' in changing uid?
 
-http://imgur.com/DzksH
+(In my case there is no exec following the setuid...)
 
-The kernel is 3.2.15 plus Linux-VServer (patch-3.2.11-vs2.3.2.8 [2])
-
-I'm guessing (I admit, I didn't disassemble copy_process) the write lock in question is tasklist_lock (the only clearly visible write_lock_irq() call in this function). So to my untrained eye that would look like some process stuck with tasklist_lock held.
-
-The crash happened while shutting down a vserver, which basically looks like this:
-
-long vs_reboot(unsigned int cmd, void __user *arg)
-{
-       struct vx_info *vxi = current_vx_info();
-       long ret = 0;
-
-       vxdprintk(VXD_CBIT(misc, 5),
-               "vs_reboot(%p[#%d],%u)",
-               vxi, vxi ? vxi->vx_id : 0, cmd);
-
-       ret = vs_reboot_helper(vxi, cmd, arg);
-       if (ret)
-               return ret;
-
-       vxi->reboot_cmd = cmd;
-       if (vx_info_flags(vxi, VXF_REBOOT_KILL, 0)) {
-               switch (cmd) {
-               case LINUX_REBOOT_CMD_RESTART:
-               case LINUX_REBOOT_CMD_HALT:
-               case LINUX_REBOOT_CMD_POWER_OFF:
-                       vx_info_kill(vxi, 0, SIGKILL);
-                       vx_info_kill(vxi, 1, SIGKILL);
-               default:
-                       break;
-               }
-       }
-       return 0;
-}
-
-/* ... */
-
-int vx_info_kill(struct vx_info *vxi, int pid, int sig)
-{
-       int retval, count = 0;
-       struct task_struct *p;
-       struct siginfo *sip = SEND_SIG_PRIV;
-
-       retval = -ESRCH;
-       vxdprintk(VXD_CBIT(misc, 4),
-               "vx_info_kill(%p[#%d],%d,%d)*",
-               vxi, vxi->vx_id, pid, sig);
-       read_lock(&tasklist_lock);
-       switch (pid) {
-       case  0:
-       case -1:
-               for_each_process(p) {
-                       int err = 0;
-
-                       if (vx_task_xid(p) != vxi->vx_id || p->pid <= 1 ||
-                               (pid && vxi->vx_initpid == p->pid))
-                               continue;
-
-                       err = group_send_sig_info(sig, sip, p);
-                       ++count;
-                       if (err != -EPERM)
-                               retval = err;
-               }
-               break;
-       case 1:
-               if (vxi->vx_initpid) {
-                       pid = vxi->vx_initpid;
-                       /* for now, only SIGINT to private init ... */
-                       if (!vx_info_flags(vxi, VXF_STATE_ADMIN, 0) &&
-                               /* ... as long as there are tasks left */
-                               (atomic_read(&vxi->vx_tasks) > 1))
-                               sig = SIGINT;
-               }
-               /* fallthrough */
-       default:
-               rcu_read_lock();
-               p = find_task_by_real_pid(pid);
-               rcu_read_unlock();
-               if (p) {
-                       if (vx_task_xid(p) == vxi->vx_id)
-                               retval = group_send_sig_info(sig, sip, p);
-               }
-               break;
-       }
-       read_unlock(&tasklist_lock);
-       vxdprintk(VXD_CBIT(misc, 4),
-               "vx_info_kill(%p[#%d],%d,%d,%ld) = %d",
-               vxi, vxi->vx_id, pid, sig, (long)sip, retval);
-       return retval;
-}
-
-vx_info_kill() is the only place that touches tasklist_lock that does not exist in mainline kernel. find_task_by_real_pid is just find_task_by_pid_ns(pid, &init_pid_ns).
-
-The crash only happened once so far and AFAIK is not easily reproducible. Both the host and the guest were basically completely idle at that time.
-
-So, am I on the right track or should I look elsewhere?
-
-Best regards,
- Grzegorz Nosek
-
-1. http://www.mail-archive.com/linuxppc-dev@lists.ozlabs.org/msg57795.html
-2. http://vserver.13thfloor.at/Experimental/patch-3.2.11-vs2.3.2.8.diff
+- Maciej
