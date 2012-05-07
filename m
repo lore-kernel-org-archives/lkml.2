@@ -1,127 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757910Ab2EGXOF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 19:14:05 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:37991 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757495Ab2EGXOD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 19:14:03 -0400
-From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: keithp@keithp.com, torvalds@linux-foundation.org, seanpaul@chromium.org,
-        olofj@chromium.org, dri-devel@lists.freedesktop.org,
-        =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
-Subject: [PATCH] mm: Work around Intel SNB GTT bug with some physical pages.
-Date: Mon,  7 May 2012 16:13:41 -0700
-Message-Id: <1336432421-17972-1-git-send-email-marcheu@chromium.org>
-X-Mailer: git-send-email 1.7.5.3.367.ga9930
+	id S1757933Ab2EGXPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 19:15:46 -0400
+Received: from claw.goop.org ([74.207.240.146]:53134 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753964Ab2EGXPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 19:15:44 -0400
+Message-ID: <4FA8579C.3000205@goop.org>
+Date: Mon, 07 May 2012 16:15:40 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Avi Kivity <avi@redhat.com>
+CC: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Attilio Rao <attilio.rao@citrix.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
+References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com> <20120507082928.GI16608@gmail.com> <4FA7888F.80505@redhat.com> <4FA7AAD8.6050003@linux.vnet.ibm.com> <4FA7BABA.4040700@redhat.com> <4FA7CC05.50808@linux.vnet.ibm.com> <4FA7CCA2.4030408@redhat.com> <4FA7D06B.60005@linux.vnet.ibm.com> <20120507134611.GB5533@linux.vnet.ibm.com> <4FA7D2E5.1020607@redhat.com>
+In-Reply-To: <4FA7D2E5.1020607@redhat.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While investing some Sandy Bridge rendering corruption, I found out
-that all physical memory pages below 1MiB were returning garbage when
-read through the GTT. This has been causing graphics corruption (when
-it's used for textures, render targets and pixmaps) and GPU hangups
-(when it's used for GPU batch buffers).
+On 05/07/2012 06:49 AM, Avi Kivity wrote:
+> On 05/07/2012 04:46 PM, Srivatsa Vaddagiri wrote:
+>> * Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> [2012-05-07 19:08:51]:
+>>
+>>> I 'll get hold of a PLE mc  and come up with the numbers soon. but I
+>>> 'll expect the improvement around 1-3% as it was in last version.
+>> Deferring preemption (when vcpu is holding lock) may give us better than 1-3% 
+>> results on PLE hardware. Something worth trying IMHO.
+> Is the improvement so low, because PLE is interfering with the patch, or
+> because PLE already does a good job?
 
-I talked with some people at Intel and they confirmed my findings,
-and said that a couple of other random pages were also affected.
+How does PLE help with ticket scheduling on unlock?  I thought it would
+just help with the actual spin loops.
 
-We could fix this problem by adding an e820 region preventing the
-memory below 1 MiB to be used, but that prevents at least my machine
-from booting. One could think that we should be able to fix it in
-i915, but since the allocation is done by the backing shmem this is
-not possible.
-
-In the end, I came up with the ugly workaround of just leaking the
-offending pages in shmem.c. I do realize it's truly ugly, but I'm
-looking for a fix to the existing code, and am wondering if people on
-this list have a better idea, short of rewriting i915_gem.c to
-allocate its own pages directly.
-
-Signed-off-by: Stéphane Marchesin <marcheu@chromium.org>
-
-Change-Id: I957e125fb280e0b0d6b05a83cc4068df2f05aa0a
----
- mm/shmem.c |   39 +++++++++++++++++++++++++++++++++++++--
- 1 files changed, 37 insertions(+), 2 deletions(-)
-
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 6c253f7..dcbb58b 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -768,6 +768,31 @@ redirty:
- 	return 0;
- }
- 
-+/*
-+ * Some intel GPUs can't use those pages in the GTT, which results in
-+ * graphics corruption. Sadly, it's impossible to prevent usage of those
-+ * pages in the intel allocator.
-+ *
-+ * Instead, we test for those areas here and leak the corresponding pages.
-+ *
-+ * Some day, when the intel GPU memory is not backed by shmem any more,
-+ * we'll be able to come up with a solution which is contained in i915.
-+ */
-+static bool i915_usable_page(struct page *page)
-+{
-+	dma_addr_t addr = page_to_phys(page);
-+
-+	if (unlikely((addr < 1 * 1024 * 1024) ||
-+		(addr == 0x20050000) ||
-+		(addr == 0x20110000) ||
-+		(addr == 0x20130000) ||
-+		(addr == 0x20138000) ||
-+		(addr == 0x40004000)))
-+		return false;
-+
-+	return true;
-+}
-+
- #ifdef CONFIG_NUMA
- #ifdef CONFIG_TMPFS
- static void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
-@@ -816,6 +841,7 @@ static struct page *shmem_alloc_page(gfp_t gfp,
- 			struct shmem_inode_info *info, pgoff_t index)
- {
- 	struct vm_area_struct pvma;
-+	struct page *page;
- 
- 	/* Create a pseudo vma that just contains the policy */
- 	pvma.vm_start = 0;
-@@ -826,7 +852,11 @@ static struct page *shmem_alloc_page(gfp_t gfp,
- 	/*
- 	 * alloc_page_vma() will drop the shared policy reference
- 	 */
--	return alloc_page_vma(gfp, &pvma, 0);
-+	do {
-+		page = alloc_page_vma(gfp, &pvma, 0);
-+	} while (!i915_usable_page(page));
-+
-+	return page;
- }
- #else /* !CONFIG_NUMA */
- #ifdef CONFIG_TMPFS
-@@ -844,7 +874,12 @@ static inline struct page *shmem_swapin(swp_entry_t swap, gfp_t gfp,
- static inline struct page *shmem_alloc_page(gfp_t gfp,
- 			struct shmem_inode_info *info, pgoff_t index)
- {
--	return alloc_page(gfp);
-+	struct page *page;
-+	do {
-+		page = alloc_page(gfp);
-+	} while (!i915_usable_page(page));
-+
-+	return page;
- }
- #endif /* CONFIG_NUMA */
- 
--- 
-1.7.5.3.367.ga9930
-
+    J
