@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757819Ab2EGTcI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 15:32:08 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:44058 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752760Ab2EGTcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 15:32:06 -0400
-Date: Mon, 7 May 2012 14:32:03 -0500
-From: Russ Anderson <rja@sgi.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Yinghai Lu <yinghai@kernel.org>, David Miller <davem@davemloft.net>
-Cc: Russ Anderson <rja@sgi.com>
-Subject: [patch] mm: nobootmem: fix sign extend problem in __free_pages_memory()
-Message-ID: <20120507193202.GA11518@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1757790Ab2EGTeE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 15:34:04 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38747 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018Ab2EGTeD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 15:34:03 -0400
+Message-ID: <4FA823A7.9000801@gmail.com>
+Date: Mon, 07 May 2012 15:33:59 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        kosaki.motohiro@gmail.com
+Subject: Re: [PATCH v1 5/6] mm: make vmstat_update periodic run conditional
+References: <1336056962-10465-1-git-send-email-gilad@benyossef.com> <1336056962-10465-6-git-send-email-gilad@benyossef.com> <alpine.DEB.2.00.1205071024550.1060@router.home>
+In-Reply-To: <alpine.DEB.2.00.1205071024550.1060@router.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Systems with 8 TBytes of memory or greater can hit a problem 
-where only the the first 8 TB of memory shows up.  This is
-due to "int i" being smaller than "unsigned long start_aligned",
-causing the high bits to be dropped.
+>> @@ -1204,8 +1265,14 @@ static int __init setup_vmstat(void)
+>>
+>>   	register_cpu_notifier(&vmstat_notifier);
+>>
+>> +	INIT_DELAYED_WORK_DEFERRABLE(&vmstat_monitor_work,
+>> +				vmstat_update_monitor);
+>> +	queue_delayed_work(system_unbound_wq,
+>> +				&vmstat_monitor_work,
+>> +				round_jiffies_relative(HZ));
+>> +
+>>   	for_each_online_cpu(cpu)
+>> -		start_cpu_timer(cpu);
+>> +		setup_cpu_timer(cpu);
+>>   #endif
+>>   #ifdef CONFIG_PROC_FS
+>>   	proc_create("buddyinfo", S_IRUGO, NULL,&fragmentation_file_operations);
+>
+> So the monitoring thread just bounces around the system? Hope that the
+> scheduler does the right thing to keep it on processors that do some other
+> work.
 
-The fix is to change i to unsigned long to match start_aligned
-and end_aligned.
+Good point. Usually, all cpus have update items and monitor worker only makes
+new noise. I think this feature is only useful some hpc case.  So I wonder if
+this vmstat improvemnt can integrate Frederic's Nohz cpusets activity. I.e.
+vmstat-update integrate timer house keeping and automatically stop when stopping
+hz house keeping.
 
-Thanks to Jack Steiner (steiner@sgi.com) for assistance tracking
-this down.
-
-Signed-off-by: Russ Anderson <rja@sgi.com>
-
----
- mm/nobootmem.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-Index: linux/mm/nobootmem.c
-===================================================================
---- linux.orig/mm/nobootmem.c	2012-05-05 08:39:39.470845187 -0500
-+++ linux/mm/nobootmem.c	2012-05-05 08:39:42.714784530 -0500
-@@ -82,8 +82,7 @@ void __init free_bootmem_late(unsigned l
- 
- static void __init __free_pages_memory(unsigned long start, unsigned long end)
- {
--	int i;
--	unsigned long start_aligned, end_aligned;
-+	unsigned long i, start_aligned, end_aligned;
- 	int order = ilog2(BITS_PER_LONG);
- 
- 	start_aligned = (start + (BITS_PER_LONG - 1)) & ~(BITS_PER_LONG - 1);
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
