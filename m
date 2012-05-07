@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab2EGFLe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 01:11:34 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64230 "EHLO
+	id S1753403Ab2EGFLb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 01:11:31 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49169 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab2EGFKc (ORCPT
+	with ESMTP id S1751870Ab2EGFKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 01:10:32 -0400
-X-AuditID: 9c930197-b7badae000000cfd-d8-4fa759442978
+	Mon, 7 May 2012 01:10:34 -0400
+X-AuditID: 9c930197-b7badae000000cfd-f2-4fa759461922
 From: Namhyung Kim <namhyung.kim@lge.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 4/7] perf target: Introduce perf_target__parse_uid()
-Date: Mon,  7 May 2012 14:09:01 +0900
-Message-Id: <1336367344-28071-5-git-send-email-namhyung.kim@lge.com>
+Subject: [PATCH 7/7] perf stat: Use perf_evlist__create_maps
+Date: Mon,  7 May 2012 14:09:04 +0900
+Message-Id: <1336367344-28071-8-git-send-email-namhyung.kim@lge.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1336367344-28071-1-git-send-email-namhyung.kim@lge.com>
 References: <1336367344-28071-1-git-send-email-namhyung.kim@lge.com>
@@ -24,178 +24,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add and use the modern perf_target__parse_uid() and get rid of
-the old parse_target_uid().
+Use same function with perf record and top to share the code
+checks combinations of different switches.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 Reviewed-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 ---
- tools/perf/builtin-record.c |    4 +---
- tools/perf/builtin-top.c    |    3 +--
- tools/perf/util/target.c    |   35 +++++++++++++++++++++++++++++++++++
- tools/perf/util/target.h    |    5 +++++
- tools/perf/util/usage.c     |   31 -------------------------------
- tools/perf/util/util.h      |    3 ---
- 6 files changed, 42 insertions(+), 39 deletions(-)
+ tools/perf/builtin-stat.c |   22 ++++++++--------------
+ 1 file changed, 8 insertions(+), 14 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index d16590942cec..d26a279796d9 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -886,9 +886,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index d9ff24637eeb..e720ba7b801e 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -175,7 +175,9 @@ static struct perf_event_attr very_very_detailed_attrs[] = {
  
- 	perf_target__validate(&rec->opts.target);
+ static struct perf_evlist	*evsel_list;
  
--	rec->opts.target.uid = parse_target_uid(rec->opts.target.uid_str);
--	if (rec->opts.target.uid_str != NULL &&
--	    rec->opts.target.uid == UINT_MAX - 1)
-+	if (perf_target__parse_uid(&rec->opts.target) < 0)
- 		goto out_free_fd;
+-static struct perf_target	target;
++static struct perf_target	target = {
++	.uid	= UINT_MAX,
++};
  
- 	if (perf_evlist__create_maps(evsel_list, &rec->opts.target) < 0)
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 3ffb2b697968..59883c8c5817 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1257,8 +1257,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ static int			run_idx				=  0;
+ static int			run_count			=  1;
+@@ -1205,20 +1207,12 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
  
- 	perf_target__validate(&top.target);
+ 	perf_target__validate(&target);
  
--	top.target.uid = parse_target_uid(top.target.uid_str);
--	if (top.target.uid_str != NULL && top.target.uid == UINT_MAX - 1)
-+	if (perf_target__parse_uid(&top.target) < 0)
- 		goto out_delete_evlist;
- 
- 	if (perf_evlist__create_maps(top.evlist, &top.target) < 0)
-diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
-index 5c59dcfc8f8d..02a6bedb69a3 100644
---- a/tools/perf/util/target.c
-+++ b/tools/perf/util/target.c
-@@ -9,6 +9,8 @@
- #include "target.h"
- #include "debug.h"
- 
-+#include <pwd.h>
-+
- 
- enum perf_target_errno perf_target__validate(struct perf_target *target)
- {
-@@ -54,3 +56,36 @@ enum perf_target_errno perf_target__validate(struct perf_target *target)
- 
- 	return ret;
- }
-+
-+enum perf_target_errno perf_target__parse_uid(struct perf_target *target)
-+{
-+	struct passwd pwd, *result;
-+	char buf[1024];
-+	const char *str = target->uid_str;
-+
-+	target->uid = UINT_MAX;
-+	if (str == NULL)
-+		return PERF_ERRNO_TARGET__SUCCESS;
-+
-+	/* Try user name first */
-+	getpwnam_r(str, &pwd, buf, sizeof(buf), &result);
-+
-+	if (result == NULL) {
-+		/*
-+		 * The user name not found. Maybe it's a UID number.
-+		 */
-+		char *endptr;
-+		int uid = strtol(str, &endptr, 10);
-+
-+		if (*endptr != '\0')
-+			return PERF_ERRNO_TARGET__INVALID_UID;
-+
-+		getpwuid_r(uid, &pwd, buf, sizeof(buf), &result);
-+
-+		if (result == NULL)
-+			return PERF_ERRNO_TARGET__USER_NOT_FOUND;
-+	}
-+
-+	target->uid = result->pw_uid;
-+	return PERF_ERRNO_TARGET__SUCCESS;
-+}
-diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
-index eb0d2101154a..d4aabdaba42a 100644
---- a/tools/perf/util/target.h
-+++ b/tools/perf/util/target.h
-@@ -33,9 +33,14 @@ enum perf_target_errno {
- 	PERF_ERRNO_TARGET__PID_OVERRIDE_SYSTEM,
- 	PERF_ERRNO_TARGET__UID_OVERRIDE_SYSTEM,
- 
-+	/* for perf_target__parse_uid() */
-+	PERF_ERRNO_TARGET__INVALID_UID,
-+	PERF_ERRNO_TARGET__USER_NOT_FOUND,
-+
- 	__PERF_ERRNO_TARGET__END,
- };
- 
- enum perf_target_errno perf_target__validate(struct perf_target *target);
-+enum perf_target_errno perf_target__parse_uid(struct perf_target *target);
- 
- #endif /* _PERF_TARGET_H */
-diff --git a/tools/perf/util/usage.c b/tools/perf/util/usage.c
-index e851abc22ccc..4007aca8e0ca 100644
---- a/tools/perf/util/usage.c
-+++ b/tools/perf/util/usage.c
-@@ -82,34 +82,3 @@ void warning(const char *warn, ...)
- 	warn_routine(warn, params);
- 	va_end(params);
- }
--
--uid_t parse_target_uid(const char *str)
--{
--	struct passwd pwd, *result;
--	char buf[1024];
--
--	if (str == NULL)
--		return UINT_MAX;
--
--	getpwnam_r(str, &pwd, buf, sizeof(buf), &result);
--
--	if (result == NULL) {
--		char *endptr;
--		int uid = strtol(str, &endptr, 10);
--
--		if (*endptr != '\0') {
--			ui__error("Invalid user %s\n", str);
--			return UINT_MAX - 1;
--		}
--
--		getpwuid_r(uid, &pwd, buf, sizeof(buf), &result);
--
--		if (result == NULL) {
--			ui__error("Problems obtaining information for user %s\n",
--				  str);
--			return UINT_MAX - 1;
--		}
+-	evsel_list->threads = thread_map__new_str(target.pid,
+-						  target.tid, UINT_MAX);
+-	if (evsel_list->threads == NULL) {
+-		pr_err("Problems finding threads of monitor\n");
+-		usage_with_options(stat_usage, options);
 -	}
 -
--	return result->pw_uid;
--}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 52be74c359d3..27a11a78ad39 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -74,7 +74,6 @@
- #include <netinet/tcp.h>
- #include <arpa/inet.h>
- #include <netdb.h>
--#include <pwd.h>
- #include <inttypes.h>
- #include "../../../include/linux/magic.h"
- #include "types.h"
-@@ -249,8 +248,6 @@ struct perf_event_attr;
+-	if (target.system_wide)
+-		evsel_list->cpus = cpu_map__new(target.cpu_list);
+-	else
+-		evsel_list->cpus = cpu_map__dummy_new();
++	if (perf_evlist__create_maps(evsel_list, &target) < 0) {
++		if (!perf_target__no_task(&target))
++			pr_err("Problems finding threads of monitor\n");
++		if (!perf_target__no_cpu(&target))
++			perror("failed to parse CPUs map");
  
- void event_attr_init(struct perf_event_attr *attr);
- 
--uid_t parse_target_uid(const char *str);
--
- #define _STR(x) #x
- #define STR(x) _STR(x)
- 
+-	if (evsel_list->cpus == NULL) {
+-		perror("failed to parse CPUs map");
+ 		usage_with_options(stat_usage, options);
+ 		return -1;
+ 	}
 -- 
 1.7.10.1
 
