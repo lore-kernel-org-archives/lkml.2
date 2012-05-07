@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab2EGIrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:47:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41291 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755544Ab2EGIrD (ORCPT
+	id S1755847Ab2EGIsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:48:12 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62238 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755564Ab2EGIsK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:47:03 -0400
-Date: Mon, 7 May 2012 01:46:41 -0700
-From: tip-bot for Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Message-ID: <tip-09c0211c0bb0e40231e6ee9a35041d467ed72f16@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
-        gregkh@linuxfoundation.org, tglx@linutronix.de
-Reply-To: gregkh@linuxfoundation.org, mingo@kernel.org, hpa@zytor.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, tglx@linutronix.de
-In-Reply-To: <20120504183254.GA11154@kroah.com>
-References: <20120504183254.GA11154@kroah.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf:
-  Turn off compiler warnings for flex and bison generated files
-Git-Commit-ID: 09c0211c0bb0e40231e6ee9a35041d467ed72f16
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 7 May 2012 04:48:10 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 07 May 2012 01:46:47 -0700 (PDT)
+In-Reply-To: <1336380219.1933.16.camel@x61.thuisdomein>
+References: <1336377752-23985-1-git-send-email-levinsasha928@gmail.com>
+ <1336378205.1933.3.camel@x61.thuisdomein> <CA+1xoqcWvJbGgaWt-5XvANH5zZiMXpZVZEQv4cWTr1XHdPu-7Q@mail.gmail.com>
+ <1336380219.1933.16.camel@x61.thuisdomein>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 7 May 2012 10:47:49 +0200
+Message-ID: <CA+1xoqdYGp=VqVr51kjKcWBm2mSezq+eDuxDjCX0wRA_KEPJdA@mail.gmail.com>
+Subject: Re: [PATCH] ramster: depend on CONFIG_NET for sock_* functions
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: gregkh@linuxfoundation.org, dan.magenheimer@oracle.com,
+        sjenning@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  09c0211c0bb0e40231e6ee9a35041d467ed72f16
-Gitweb:     http://git.kernel.org/tip/09c0211c0bb0e40231e6ee9a35041d467ed72f16
-Author:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-AuthorDate: Fri, 4 May 2012 11:32:54 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 7 May 2012 10:03:01 +0200
+On Mon, May 7, 2012 at 10:43 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Mon, 2012-05-07 at 10:29 +0200, Sasha Levin wrote:
+>> On Mon, May 7, 2012 at 10:10 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+>> > On Mon, 2012-05-07 at 10:02 +0200, Sasha Levin wrote:
+>> >> --- a/drivers/staging/ramster/Kconfig
+>> >> +++ b/drivers/staging/ramster/Kconfig
+>> >> @@ -1,6 +1,6 @@
+>> >>  config RAMSTER
+>> >>       bool "Cross-machine RAM capacity sharing, aka peer-to-peer tmem"
+>> >> -     depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM
+>> >> +     depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM && CONFIG_NET
+>> >
+>> > s/CONFIG_NET/NET/ again, I'd say. How was this tested?
+>>
+>> Hm... ran the build again with the patch and noticed it stopped
+>> complaining, but apparently it wasn't enough.
+>
+> Well, my guess is that the errors you ran into weren't displayed because
+> a dependency on an undefined Kconfig symbol (like CONFIG_NET is) will
+> always fail. Ie, your patch made "RAM capacity sharing" simply disappear
+> from the build.
 
-perf: Turn off compiler warnings for flex and bison generated files
+Yup, which is not what I meant to do :)
 
-We don't know what types of warnings different versions of flex
-and bison combined with different versions of gcc is going to
-generate, so just punt and don't warn about anything.
-
-This fixes the build of perf for me on an openSUSE 12.1 system.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Link: http://lkml.kernel.org/r/20120504183254.GA11154@kroah.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 9bf3fc7..92271d3 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -774,10 +774,10 @@ $(OUTPUT)perf.o perf.spec \
- # over the general rule for .o
- 
- $(OUTPUT)util/%-flex.o: $(OUTPUT)util/%-flex.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -w $<
- 
- $(OUTPUT)util/%-bison.o: $(OUTPUT)util/%-bison.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -w $<
- 
- $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
+Sorry about that.
