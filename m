@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab2EGFLb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 01:11:31 -0400
+	id S1753132Ab2EGFL3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 01:11:29 -0400
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49169 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab2EGFKe (ORCPT
+	with ESMTP id S1751839Ab2EGFKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 01:10:34 -0400
-X-AuditID: 9c930197-b7badae000000cfd-f2-4fa759461922
+	Mon, 7 May 2012 01:10:33 -0400
+X-AuditID: 9c930197-b7badae000000cfd-dd-4fa759444ab0
 From: Namhyung Kim <namhyung.kim@lge.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 7/7] perf stat: Use perf_evlist__create_maps
-Date: Mon,  7 May 2012 14:09:04 +0900
-Message-Id: <1336367344-28071-8-git-send-email-namhyung.kim@lge.com>
+Subject: [PATCH 5/7] perf tools: Introduce perf_target__strerror()
+Date: Mon,  7 May 2012 14:09:02 +0900
+Message-Id: <1336367344-28071-6-git-send-email-namhyung.kim@lge.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1336367344-28071-1-git-send-email-namhyung.kim@lge.com>
 References: <1336367344-28071-1-git-send-email-namhyung.kim@lge.com>
@@ -24,56 +24,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use same function with perf record and top to share the code
-checks combinations of different switches.
+The perf_target__strerror() sets @buf to a string that
+describes the (perf_target-specific) error condition
+that is passed via @errnum.
 
+This is similar to strerror_r() and does same thing if
+@errnum has a standard errno value.
+
+Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Reviewed-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 ---
- tools/perf/builtin-stat.c |   22 ++++++++--------------
- 1 file changed, 8 insertions(+), 14 deletions(-)
+ tools/perf/builtin-record.c |   18 +++++++++++++--
+ tools/perf/builtin-top.c    |   19 +++++++++++++---
+ tools/perf/util/debug.c     |    1 +
+ tools/perf/util/target.c    |   51 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/target.h    |    3 +++
+ 5 files changed, 87 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index d9ff24637eeb..e720ba7b801e 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -175,7 +175,9 @@ static struct perf_event_attr very_very_detailed_attrs[] = {
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index d26a279796d9..211d28f01eff 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -831,6 +831,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 	struct perf_evsel *pos;
+ 	struct perf_evlist *evsel_list;
+ 	struct perf_record *rec = &record;
++	char errbuf[BUFSIZ];
  
- static struct perf_evlist	*evsel_list;
+ 	perf_header__set_cmdline(argc, argv);
  
--static struct perf_target	target;
-+static struct perf_target	target = {
-+	.uid	= UINT_MAX,
-+};
- 
- static int			run_idx				=  0;
- static int			run_count			=  1;
-@@ -1205,20 +1207,12 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 
- 	perf_target__validate(&target);
- 
--	evsel_list->threads = thread_map__new_str(target.pid,
--						  target.tid, UINT_MAX);
--	if (evsel_list->threads == NULL) {
--		pr_err("Problems finding threads of monitor\n");
--		usage_with_options(stat_usage, options);
--	}
--
--	if (target.system_wide)
--		evsel_list->cpus = cpu_map__new(target.cpu_list);
--	else
--		evsel_list->cpus = cpu_map__dummy_new();
-+	if (perf_evlist__create_maps(evsel_list, &target) < 0) {
-+		if (!perf_target__no_task(&target))
-+			pr_err("Problems finding threads of monitor\n");
-+		if (!perf_target__no_cpu(&target))
-+			perror("failed to parse CPUs map");
- 
--	if (evsel_list->cpus == NULL) {
--		perror("failed to parse CPUs map");
- 		usage_with_options(stat_usage, options);
- 		return -1;
+@@ -884,11 +885,24 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 		goto out_symbol_exit;
  	}
+ 
+-	perf_target__validate(&rec->opts.target);
++	err = perf_target__validate(&rec->opts.target);
++	if (err != PERF_ERRNO_TARGET__SUCCESS) {
++		perf_target__strerror(&rec->opts.target, err, errbuf, BUFSIZ);
++		ui__warning("%s", errbuf);
++	}
++
++	err = perf_target__parse_uid(&rec->opts.target);
++	if (err != PERF_ERRNO_TARGET__SUCCESS) {
++		int saved_errno = errno;
+ 
+-	if (perf_target__parse_uid(&rec->opts.target) < 0)
++		perf_target__strerror(&rec->opts.target, err, errbuf, BUFSIZ);
++		ui__warning("%s", errbuf);
++
++		err = -saved_errno;
+ 		goto out_free_fd;
++	}
+ 
++	err = -ENOMEM;
+ 	if (perf_evlist__create_maps(evsel_list, &rec->opts.target) < 0)
+ 		usage_with_options(record_usage, record_options);
+ 
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 59883c8c5817..a2518fc0626a 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1150,7 +1150,8 @@ static const char * const top_usage[] = {
+ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ {
+ 	struct perf_evsel *pos;
+-	int status = -ENOMEM;
++	int status;
++	char errbuf[BUFSIZ];
+ 	struct perf_top top = {
+ 		.target		     = {
+ 			.system_wide = true,
+@@ -1255,10 +1256,22 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 
+ 	setup_browser(false);
+ 
+-	perf_target__validate(&top.target);
++	status = perf_target__validate(&top.target);
++	if (status != PERF_ERRNO_TARGET__SUCCESS) {
++		perf_target__strerror(&top.target, status, errbuf, BUFSIZ);
++		ui__warning("%s", errbuf);
++	}
++
++	status = perf_target__parse_uid(&top.target);
++	if (status != PERF_ERRNO_TARGET__SUCCESS) {
++		int saved_errno = errno;
+ 
+-	if (perf_target__parse_uid(&top.target) < 0)
++		perf_target__strerror(&top.target, status, errbuf, BUFSIZ);
++		ui__warning("%s", errbuf);
++
++		status = -saved_errno;
+ 		goto out_delete_evlist;
++	}
+ 
+ 	if (perf_evlist__create_maps(top.evlist, &top.target) < 0)
+ 		usage_with_options(top_usage, options);
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index 26817daa2961..efb1fce259a4 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -11,6 +11,7 @@
+ #include "event.h"
+ #include "debug.h"
+ #include "util.h"
++#include "target.h"
+ 
+ int verbose;
+ bool dump_trace = false, quiet = false;
+diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
+index 02a6bedb69a3..1064d5b148ad 100644
+--- a/tools/perf/util/target.c
++++ b/tools/perf/util/target.c
+@@ -10,6 +10,7 @@
+ #include "debug.h"
+ 
+ #include <pwd.h>
++#include <string.h>
+ 
+ 
+ enum perf_target_errno perf_target__validate(struct perf_target *target)
+@@ -89,3 +90,53 @@ enum perf_target_errno perf_target__parse_uid(struct perf_target *target)
+ 	target->uid = result->pw_uid;
+ 	return PERF_ERRNO_TARGET__SUCCESS;
+ }
++
++/*
++ * This must have a same ordering as the enum perf_target_errno.
++ */
++static const char *perf_target__error_str[] = {
++	"PID/TID switch overriding CPU",
++	"PID/TID switch overriding UID",
++	"UID switch overriding CPU",
++	"PID/TID switch overriding SYSTEM",
++	"UID switch overriding SYSTEM",
++	"Invalid User: %s",
++	"Problems obtaining information for user %s",
++};
++
++int perf_target__strerror(struct perf_target *target, int errnum,
++			  char *buf, size_t buflen)
++{
++	int idx;
++	const char *msg;
++
++	if (errnum >= 0) {
++		strerror_r(errnum, buf, buflen);
++		return 0;
++	}
++
++	if (errnum <  __PERF_ERRNO_TARGET__START ||
++	    errnum >= __PERF_ERRNO_TARGET__END)
++		return -1;
++
++	idx = errnum - __PERF_ERRNO_TARGET__START;
++	msg = perf_target__error_str[idx];
++
++	switch (errnum) {
++	case PERF_ERRNO_TARGET__PID_OVERRIDE_CPU
++	 ... PERF_ERRNO_TARGET__UID_OVERRIDE_SYSTEM:
++		snprintf(buf, buflen, "%s", msg);
++		break;
++
++	case PERF_ERRNO_TARGET__INVALID_UID:
++	case PERF_ERRNO_TARGET__USER_NOT_FOUND:
++		snprintf(buf, buflen, msg, target->uid_str);
++		break;
++
++	default:
++		/* cannot reach here */
++		break;
++	}
++
++	return 0;
++}
+diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
+index d4aabdaba42a..6fcd01c440a9 100644
+--- a/tools/perf/util/target.h
++++ b/tools/perf/util/target.h
+@@ -43,4 +43,7 @@ enum perf_target_errno {
+ enum perf_target_errno perf_target__validate(struct perf_target *target);
+ enum perf_target_errno perf_target__parse_uid(struct perf_target *target);
+ 
++int perf_target__strerror(struct perf_target *target, int errnum, char *buf,
++			  size_t buflen);
++
+ #endif /* _PERF_TARGET_H */
 -- 
 1.7.10.1
 
