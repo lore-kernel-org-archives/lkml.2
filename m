@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab2EGG4I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 02:56:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48454 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753105Ab2EGG4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 02:56:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="140846991"
-Message-ID: <1336373967.2492.17.camel@sauron>
-Subject: Re: [PATCH 8/8] kbuild: remove useless warning
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Date: Mon, 07 May 2012 09:59:27 +0300
-In-Reply-To: <1336205926-13946-8-git-send-email-sam@ravnborg.org>
-References: <20120505080640.GA13773@merkur.ravnborg.org>
-	 <1336205926-13946-8-git-send-email-sam@ravnborg.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-ZA0IPySya51Tl6QXELJu"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1754972Ab2EGHCl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 03:02:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53015 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab2EGHCk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 03:02:40 -0400
+Date: Mon, 7 May 2012 00:02:34 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Misael Lopez Cruz <misael.lopez@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] Input: tl6040-vibra: Device Tree support
+Message-ID: <20120507070233.GB22074@core.coreip.homeip.net>
+References: <1336133113-12224-1-git-send-email-peter.ujfalusi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336133113-12224-1-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Peter,
 
---=-ZA0IPySya51Tl6QXELJu
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri, May 04, 2012 at 03:05:13PM +0300, Peter Ujfalusi wrote:
+> +	if (pdata) {
+> +		info->vibldrv_res = pdata->vibldrv_res;
+> +		info->vibrdrv_res = pdata->vibrdrv_res;
+> +		info->viblmotor_res = pdata->viblmotor_res;
+> +		info->vibrmotor_res = pdata->vibrmotor_res;
+> +		vddvibl_uV = pdata->vddvibl_uV;
+> +		vddvibr_uV = pdata->vddvibr_uV;
+> +	} else {
+> +		of_property_read_u32(node, "vibldrv_res", &info->vibldrv_res);
+> +		of_property_read_u32(node, "vibrdrv_res", &info->vibrdrv_res);
+> +		of_property_read_u32(node, "viblmotor_res",
+> +				     &info->viblmotor_res);
+> +		of_property_read_u32(node, "vibrmotor_res",
+> +				     &info->vibrmotor_res);
 
-On Sat, 2012-05-05 at 10:18 +0200, Sam Ravnborg wrote:
-> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
->=20
-> This patch removes annoying warning:
->=20
-> Makefile:708: "WARNING: Appending $KCFLAGS (-Wno-sign-compare) from comma=
-nd line to kernel $CFLAGS"
->=20
-> which is printed every time I use KCFLAFS. The commit which introduced th=
-e
-> warning:
->=20
-> 69ee0b3 kbuild: do not pick up CFLAGS from the environment
->=20
-> tells about the problems when people have CFLAGS in their environment,
-> then switches to KCFLAFS which should be enough to solve the issue, but
-> it anyway introduces a warning. I think it is too much and I find this
-> warning very annoying - why should we warn users when they use the
-> build system properly?
->=20
-> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Since these 4 appear to be mandatory properties don't we need to
+validate they are actually present in DT?
 
-Sam, thanks for taking care of this.
+Thanks.
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-ZA0IPySya51Tl6QXELJu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPp3LPAAoJECmIfjd9wqK0H6gQALBXdZm5RX6hUads4gbCUmx2
-6wyQ3RLhIdRBgy9AkW1lM2/gopzzi+5lcv0sG+qXaAVJW0trwN0w4syIu5BBvH0r
-R1w+AJUqjH8bnhPceINlfhy7sXhVGABVb++9ElffwT2Sfn9M4AgCXi/TJr8RQBBp
-Tv4oEdGsV7BrsuFIKiYvMSmLReIj5VCnecjhy0BE2oRlPmd5MUOkBc05gs6WYjM2
-MM7oaZmqCOh1NI5eY8Ecv7ksG4XES4hEiOGCJSkTiH5b4jGyhgRl4CrNdu/37Ehx
-/8F/wucT1iMbLZnuTdPKN4itxBO2VlZUsN1yFLzIihwrQOqbEgqDBWZRIq7mG5Il
-Zw8cOpeCva2I1zpO4wUWw3t8BzVp4QZUinITxbK7jDlMlS0EQMhq4uzSfR8bE4lQ
-LaAifdIT+qnH6yBOF5lEciecrmfuFpW3SrHVA2LlnJHSAyza1BPfBmgDZMYzPvj1
-Rdad4SJGm8eU8nNAq5nqFcFojEnySQ6+jXkAfJ1DH3hhMx39nFihNs/csN8YBfAG
-FH0Ro4u66KK6jW4kU+k4sh3CJmaoIjLA7GQRlxL+/o1T05vR8D0nhdFsMRhwjWiL
-SA/q+X8yaXdkG6ngGatMRyLOSLaEaYHksM36LE2zRopuo1oz4gFOE9YtGKVAsSZJ
-QFUe8LO/TCcI07Z6S58n
-=VH2p
------END PGP SIGNATURE-----
-
---=-ZA0IPySya51Tl6QXELJu--
-
+-- 
+Dmitry
