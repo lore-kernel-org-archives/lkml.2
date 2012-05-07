@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab2EGOYm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 10:24:42 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:40526 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab2EGOYl convert rfc822-to-8bit (ORCPT
+	id S1756758Ab2EGOY5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 10:24:57 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40042 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756138Ab2EGOY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 10:24:41 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsQJAOXZp09bdWOb/2dsb2JhbABEhXKkdSKIEIEHggwBAQUjBFIQCxgCAiYCAlcGiCWoOpI3gS+OWIEYBKZAgms
-X-IronPort-AV: E=Sophos;i="4.75,544,1330902000"; 
-   d="scan'208";a="511826000"
-Message-ID: <1336400676.12407.10.camel@fourier.local.igalia.com>
-Subject: Re: [PATCH v2 1/3] Staging: IndustryPack bus for the Linux Kernel
-From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Mon, 07 May 2012 16:24:36 +0200
-In-Reply-To: <1336379095.2852.17.camel@fourier.local.igalia.com>
-References: <1336375569-21692-1-git-send-email-siglesias@igalia.com>
-	 <20120507080458.GN22134@mwanda>
-	 <1336379095.2852.17.camel@fourier.local.igalia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0
+	Mon, 7 May 2012 10:24:56 -0400
+Date: Mon, 7 May 2012 15:24:54 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lrg@ti.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] regulator: tps62360: enable register cache
+Message-ID: <20120507142453.GG17002@opensource.wolfsonmicro.com>
+References: <1336394306-2211-1-git-send-email-ldewangan@nvidia.com>
+ <1336394306-2211-2-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="B8ONY/mu/bqBak9m"
+Content-Disposition: inline
+In-Reply-To: <1336394306-2211-2-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-07 at 10:24 +0200, Samuel Iglesias Gonsálvez wrote:
-> On Mon, 2012-05-07 at 11:04 +0300, Dan Carpenter wrote:
-> > 
-> > [snip]
-> > 
-> > > +int ipack_device_find_drv(struct device_driver *driver, void *param)
-> > > +{
-> > > +	int ret;
-> > > +	struct ipack_device *dev = (struct ipack_device *)param;
-> > > +
-> > > +	ret = ipack_bus_match(&dev->dev, driver);
-> > > +	if (ret)
-> > > +		return !ipack_bus_probe(&dev->dev);
-> > 
-> > Wouldn't probe() return zero or a negative error code?
-> 
-> Yes. However, in case of the function called by bus_for_each_drv(), it
-> should return zero if you want to continue or nonzero value to stop the
-> iteration.
-> 
-> I considered that if the probe fails, we can try with the next driver in
-> the list. So, the returned value of probe() is negated.
 
-Checking the device_register() function, it actually does the same I am
-trying to do here: call the bus' match() function with each driver
-registered on the bus searching which one can manage the device, and
-then call the probe().
+--B8ONY/mu/bqBak9m
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So I can delete this function safely and bus_for_each_drv() in
-ipack_device_register().
+On Mon, May 07, 2012 at 06:08:25PM +0530, Laxman Dewangan wrote:
+> Enable cache of device register using regmap cache RBTREE.
 
-Thanks,
+Applied both, thanks.
 
-Sam
+> Just resending as part of this series.
 
+You did fix the thing with the defaults.
+
+--B8ONY/mu/bqBak9m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPp9spAAoJEBus8iNuMP3dcjMP+QH9K0WYGdWVkqu1rjDtgabj
+nYDaIbG9jC6LpxMCz3sbmQ1hVmcLvdrLT743X4x7ERnqBUIQq2CSdD/BkO5E9Xzr
+iLG3EDX6OJtw/Yi3vJf7E2kPeXIZP0TsAO0xhzFNMr/xwHbb+HhsQQdW3UJn9/y6
+1mU39uJKmCTntMNZja4MjlA9jmli3UTF7OTGKhjHAk/m1sxTix7irDx6N25Xxr+y
+/IEx2UX75VON0xDQ/ATHhxxr5sci1VaTQfhHk0W5nTnBwxXuwVhsYB7PnCP2YFhL
+RdSlZVHIWiXF9ZIA0iaA0NLXPSdqCw2SZ1vggicT2q5Mk8PhSSscJmFAdwbB3hPG
+I3OQACIAm1k754/0hifKUD0cMpyJNCCJFqyIYvPPBqIFeJ7SbB6ZPsVO/frKpmcZ
+5/UOHPb+ijDbbeNlrohArya3zHyRdjsmVIUqpTwoUCUCVrNoCBVpmrwzZgQ4+G2B
+MPa9qaBg+WjV4SHvvw23ITJXDnXfUq2/gnbZHwIA6pfO3EEv0LpTNtZqVazHhEZb
+mGSyIehawou7gi2dm2aSX/8WhlqaHyhDBEzEVn+e9psDYnFtVQ2UEhOn8VprUCjQ
+EOd45asHQ3Yj3QdAaJ8FStS0mnqJE0z+a8Obj70obr1Qz4GqeDrivas0q6nHEXMd
+8FX2yFXZ1g1NWT9ZbboM
+=GOUF
+-----END PGP SIGNATURE-----
+
+--B8ONY/mu/bqBak9m--
