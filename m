@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005Ab2EGAkI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 20:40:08 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25355 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754945Ab2EGAkH (ORCPT
+	id S1755120Ab2EGBLu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 21:11:50 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:49022 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755053Ab2EGBLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 20:40:07 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=4xDcOe4IjvRdPVVETi+CqA==:17 a=TtU46XPs5IkA:10 a=TRgVYD6ZyiEA:10 a=tXViLo4WAB4A:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=yQdBAQUQAAAA:8 a=E5Wc86MttsPD8GMs53sA:9 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=4xDcOe4IjvRdPVVETi+CqA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 75.81.36.228
-Date: Sun, 06 May 2012 19:40:03 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-To: viro@zeniv.linux.org.uk, torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] IA32 Emulation: Fix build problem after commit ce7e5d2d1
-Message-ID: <4fa719e3.9iRhEn6/mKpQXtGf%Larry.Finger@lwfinger.net>
-User-Agent: Heirloom mailx 12.5 7/5/10
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 6 May 2012 21:11:49 -0400
+X-AuditID: cbfee61b-b7c60ae000000c58-fa-4fa721537e27
+Message-id: <4FA72155.8020301@samsung.com>
+Date: Mon, 07 May 2012 10:11:49 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [RESEND PATCH v2 0/2] power_supply: update Charger-Manager
+References: <4F7E3945.6000800@samsung.com> <4F9684BC.2000004@samsung.com>
+ <20120506025623.GA8437@lizard>
+In-reply-to: <20120506025623.GA8437@lizard>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit ce7e5d2d19bc ("x86: fix broken TASK_SIZE for ia32_aout") breaks kernel
-builds when "CONFIG_IA32_AOUT=m" with
+Hi Anton,
 
-ERROR: "set_personality_ia32" [arch/x86/ia32/ia32_aout.ko] undefined!
-make[1]: *** [__modpost] Error 1
+Firstly, thank for your reply and applied.
 
-The entry point needs to be exported.
+On 05/06/2012 11:56 AM, Anton Vorontsov wrote:
+> On Tue, Apr 24, 2012 at 07:47:24PM +0900, Chanwoo Choi wrote:
+> [...]
+>>  Documentation/power/charger-manager.txt |   41 +++-
+>>  drivers/power/charger-manager.c         |  391
+>> +++++++++++++++++++++++++++++++
+>>  include/linux/power/charger-manager.h   |   49 ++++-
+>>  3 files changed, 471 insertions(+), 10 deletions(-)
+> 
+> Applied, thanks!
+> 
+> Note that the patches were word-wrap damaged, I had to fix them by
+> hand. The file 'linux/Documentation/email-clients.txt' contains some
+> useful tips for setting up commonly used mail clients. You might
+> also try using 'git send-email'.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
----
+I'm so sorry. I will not do a same mistake.
 
-Index: linux-2.6/arch/x86/kernel/process_64.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/process_64.c
-+++ linux-2.6/arch/x86/kernel/process_64.c
-@@ -423,6 +423,7 @@ void set_personality_ia32(bool x32)
- 		current_thread_info()->status |= TS_COMPAT;
- 	}
- }
-+EXPORT_SYMBOL_GPL(set_personality_ia32);
- 
- unsigned long get_wchan(struct task_struct *p)
- {
+> 
+> While looking through the CM code, I noticed that cm uevents
+> are not friendly wrt several chargers (the code has static variables
+> in the uevent_notify() func).
+> 
+I will modify obscure code about your comment in the next patch.
+
+> Also, what's the rationale behind implementing own uevent handling,
+> and not using power_supply uevents (see power_supply_sysfs.c
+> and power_supply_changed() thing)? Also, you don't seem to
+> report variables in the uevent, but just messages. That's unusual.
+> 
+OK, I will implement uevent feature in charger-manager by using
+power_supply uevents
+instead of own uevent handling and post new patchset.
+
+Best Regards,
+Chanwoo Choi
+
