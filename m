@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958Ab2EGOMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 10:12:31 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38192 "EHLO
+	id S1757088Ab2EGONJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 10:13:09 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51638 "EHLO
 	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756863Ab2EGOM2 (ORCPT
+	with ESMTP id S1756972Ab2EGOMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 10:12:28 -0400
+	Mon, 7 May 2012 10:12:33 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, miklos@szeredi.hu, hch@infradead.org,
         michael.brantley@deshaw.com
-Subject: [PATCH v1 RESEND 07/12] vfs: add a "reval" flag to args for user_path_parent
-Date: Mon,  7 May 2012 10:12:06 -0400
-Message-Id: <1336399931-20234-8-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v1 RESEND 11/12] vfs: fix linkat to retry on ESTALE errors
+Date: Mon,  7 May 2012 10:12:10 -0400
+Message-Id: <1336399931-20234-12-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1336399931-20234-1-git-send-email-jlayton@redhat.com>
 References: <1336399931-20234-1-git-send-email-jlayton@redhat.com>
@@ -22,71 +22,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All of the current callers set this to "false" for now, but we'll fix
-them later to set it to true when they retry on an ESTALE error.
-
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
+ fs/namei.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index 3238a82..c8254de 100644
+index b5d28fe..a40dcbb 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -1908,15 +1908,19 @@ int user_path_at(int dfd, const char __user *name, unsigned flags,
+@@ -3054,6 +3054,7 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
+ 	struct path old_path, new_path;
+ 	int how = 0;
+ 	int error;
++	unsigned int try = 0;
+ 
+ 	if ((flags & ~(AT_SYMLINK_FOLLOW | AT_EMPTY_PATH)) != 0)
+ 		return -EINVAL;
+@@ -3071,11 +3072,12 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
+ 	if (flags & AT_SYMLINK_FOLLOW)
+ 		how |= LOOKUP_FOLLOW;
+ 
++retry:
+ 	error = user_path_at(olddfd, oldname, how, &old_path);
+ 	if (error)
+ 		return error;
+ 
+-	new_dentry = user_path_create(newdfd, newname, &new_path, false, false);
++	new_dentry = user_path_create(newdfd, newname, &new_path, false, try);
+ 	error = PTR_ERR(new_dentry);
+ 	if (IS_ERR(new_dentry))
+ 		goto out;
+@@ -3098,7 +3100,10 @@ out_dput:
+ 	path_put(&new_path);
+ out:
+ 	path_put(&old_path);
+-
++	if (retry_estale(error, try++)) {
++		how |= LOOKUP_REVAL;
++		goto retry;
++	}
+ 	return error;
  }
- 
- static int user_path_parent(int dfd, const char __user *path,
--			struct nameidata *nd, char **name)
-+			struct nameidata *nd, char **name, bool reval)
- {
- 	char *s = getname(path);
- 	int error;
-+	unsigned int lookup_flags = LOOKUP_PARENT;
- 
- 	if (IS_ERR(s))
- 		return PTR_ERR(s);
- 
--	error = do_path_lookup(dfd, s, LOOKUP_PARENT, nd);
-+	if (reval)
-+		lookup_flags |= LOOKUP_REVAL;
-+
-+	error = do_path_lookup(dfd, s, lookup_flags, nd);
- 	if (error)
- 		putname(s);
- 	else
-@@ -2759,7 +2763,7 @@ static long do_rmdir(int dfd, const char __user *pathname)
- 	struct dentry *dentry;
- 	struct nameidata nd;
- 
--	error = user_path_parent(dfd, pathname, &nd, &name);
-+	error = user_path_parent(dfd, pathname, &nd, &name, false);
- 	if (error)
- 		return error;
- 
-@@ -2856,7 +2860,7 @@ static long do_unlinkat(int dfd, const char __user *pathname)
- 	struct nameidata nd;
- 	struct inode *inode = NULL;
- 
--	error = user_path_parent(dfd, pathname, &nd, &name);
-+	error = user_path_parent(dfd, pathname, &nd, &name, false);
- 	if (error)
- 		return error;
- 
-@@ -3255,11 +3259,11 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
- 	char *to;
- 	int error;
- 
--	error = user_path_parent(olddfd, oldname, &oldnd, &from);
-+	error = user_path_parent(olddfd, oldname, &oldnd, &from, false);
- 	if (error)
- 		goto exit;
- 
--	error = user_path_parent(newdfd, newname, &newnd, &to);
-+	error = user_path_parent(newdfd, newname, &newnd, &to, false);
- 	if (error)
- 		goto exit1;
  
 -- 
 1.7.7.6
