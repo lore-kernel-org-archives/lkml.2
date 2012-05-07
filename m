@@ -1,256 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757298Ab2EGPwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 11:52:41 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40055 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756677Ab2EGPwj (ORCPT
+	id S1756965Ab2EGPwH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 11:52:07 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:53909 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756284Ab2EGPwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 11:52:39 -0400
-Date: Mon, 7 May 2012 17:52:26 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: Re: [EDAC ABI v13 01/25] edac: Initialize the dimm label with the
- known information
-Message-ID: <20120507155226.GE11462@aftab.osrc.amd.com>
-References: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
- <1334608729-30803-2-git-send-email-mchehab@redhat.com>
+	Mon, 7 May 2012 11:52:05 -0400
+X-Sasl-enc: c0p45aH+O+FQUL7gNXdTmaDjeZwe39aaJAxD4HPPHN61 1336405923
+Date: Mon, 7 May 2012 08:52:02 -0700
+From: Greg KH <greg@kroah.com>
+To: Chen Gong <gong.chen@linux.intel.com>
+Cc: mchehab@redhat.com, bp@amd64.org, tony.luck@intel.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH V3] edac: avoid mce decoding crash after edac driver
+ unloaded
+Message-ID: <20120507155202.GA3934@kroah.com>
+References: <1336374233-11482-1-git-send-email-gong.chen@linux.intel.com>
+ <1336395950-12430-1-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1334608729-30803-2-git-send-email-mchehab@redhat.com>
+In-Reply-To: <1336395950-12430-1-git-send-email-gong.chen@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding latest version here:
-
-> From 50e9a89aad7045909780d635d73ab2893f8c1f90 Mon Sep 17 00:00:00 2001
-> From: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Date: Thu, 9 Feb 2012 11:05:20 -0300
-> Subject: [PATCH] edac: Initialize the dimm label with the known information
+On Mon, May 07, 2012 at 09:05:50PM +0800, Chen Gong wrote:
+> Some edac drivers register themselves as mce decoders via
+> notifier_chain. But in current notifier_chain implementation logic,
+> it doesn't accept same notifier registered twice. If so, it will be
+> wrong when adding/removing the element from the list. For example,
+> on one SandyBridge platform, remove module sb_edac and then trigger
+> one error, it will hit oops because it has no mce decoder registered
+> but related notifier_chain still points to an invalid callback
+> function. Here is an example:
 > 
-> While userspace doesn't fill the dimm labels, add there the dimm location,
-> as described by the used memory model. This could eventually match what
-> is described at the dmidecode, making easier for people to identify the
-
-	       in		 making it easier
-
-> memory.
-
-	 stick in error.
-
-> For example, on an Intel motherboard, the memory is described as:
+> Call Trace:
+>  [<ffffffff8150ef6a>] atomic_notifier_call_chain+0x1a/0x20
+>  [<ffffffff8102b936>] mce_log+0x46/0x180
+>  [<ffffffff8102eaea>] apei_mce_report_mem_error+0x4a/0x60
+>  [<ffffffff812e19d2>] ghes_do_proc+0x192/0x210
+>  [<ffffffff812e2066>] ghes_proc+0x46/0x70
+>  [<ffffffff812e20d8>] ghes_notify_sci+0x48/0x80
+>  [<ffffffff8150ef05>] notifier_call_chain+0x55/0x80
+>  [<ffffffff81076f1a>] __blocking_notifier_call_chain+0x5a/0x80
+>  [<ffffffff812aea11>] ? acpi_os_wait_events_complete+0x23/0x23
+>  [<ffffffff81076f56>] blocking_notifier_call_chain+0x16/0x20
+>  [<ffffffff812ddc4d>] acpi_hed_notify+0x19/0x1b
+>  [<ffffffff812b16bd>] acpi_device_notify+0x19/0x1b
+>  [<ffffffff812beb38>] acpi_ev_notify_dispatch+0x67/0x7f
+>  [<ffffffff812aea3a>] acpi_os_execute_deferred+0x29/0x36
+>  [<ffffffff81069dc2>] process_one_work+0x132/0x450
+>  [<ffffffff8106bbcb>] worker_thread+0x17b/0x3c0
+>  [<ffffffff8106ba50>] ? manage_workers+0x120/0x120
+>  [<ffffffff81070aee>] kthread+0x9e/0xb0
+>  [<ffffffff81514724>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff81070a50>] ? kthread_freezable_should_stop+0x70/0x70
+>  [<ffffffff81514720>] ? gs_change+0x13/0x13
+> Code: f3 49 89 d4 45 85 ed 4d 89 c6 48 8b 0f 74 48 48 85 c9 75 17 eb 41
+> 0f 1f 80 00 00 00 00 41 83 ed 01 4c 89 f9 74 22 4d 85 ff 74 1d <4c> 8b
+> 79 08 4c 89 e2 48 89 de 48 89 cf ff 11 4d 85 f6 74 04 41
+> RIP  [<ffffffff8150eef6>] notifier_call_chain+0x46/0x80
+>  RSP <ffff88042868fb20>
+> CR2: ffffffffa01af838
+> ---[ end trace 0100930068e73e6f ]---
+> BUG: unable to handle kernel paging request at fffffffffffffff8
+> IP: [<ffffffff810705b0>] kthread_data+0x10/0x20
+> PGD 1a0d067 PUD 1a0e067 PMD 0
+> Oops: 0000 [#2] SMP
 > 
-> Memory Device
-> 	Array Handle: 0x0029
-> 	Error Information Handle: Not Provided
-> 	Total Width: 64 bits
-> 	Data Width: 64 bits
-> 	Size: 2048 MB
-> 	Form Factor: DIMM
-> 	Set: 1
-> 	Locator: A1_DIMM0
-> 	Bank Locator: A1_Node0_Channel0_Dimm0
-> 	Type: <OUT OF SPEC>
-> 	Type Detail: Synchronous
-> 	Speed: 800 MHz
-> 	Manufacturer: A1_Manufacturer0
-> 	Serial Number: A1_SerNum0
-> 	Asset Tag: A1_AssetTagNum0
-> 	Part Number: A1_PartNum0
+> Only i7core_edac and sb_edac have such issues because they have more
+> than one memory controller which means they have to register mce
+> decoder many times.
 > 
-> After this patch, the memory label will be filled with:
-> 	/sys/devices/system/edac/mc/mc0/dimm0/dimm_label:mc#0channel#0slot#0
-
-This is only with the Intel-MCs, right, I still have the csrows here:
-
-tree /sys/devices/system/edac/mc/
-/sys/devices/system/edac/mc/
-|-- mc0
-|   |-- ce_count
-|   |-- ce_noinfo_count
-|   |-- csrow0
-|   |   |-- ce_count
-|   |   |-- ch0_ce_count
-|   |   |-- ch0_dimm_label
-|   |   |-- ch1_ce_count
-|   |   |-- ch1_dimm_label
-|   |   |-- dev_type
-|   |   |-- edac_mode
-|   |   |-- mem_type
-|   |   |-- size_mb
-|   |   `-- ue_count
-|   |-- csrow1
-|   |   |-- ce_count
-|   |   |-- ch0_ce_count
-|   |   |-- ch0_dimm_label
-|   |   |-- ch1_ce_count
-|   |   |-- ch1_dimm_label
-|   |   |-- dev_type
-|   |   |-- edac_mode
-|   |   |-- mem_type
-|   |   |-- size_mb
-|   |   `-- ue_count
-|   |-- csrow2
-|   |   |-- ce_count
-|   |   |-- ch0_ce_count
-|   |   |-- ch0_dimm_label
-|   |   |-- ch1_ce_count
-|   |   |-- ch1_dimm_label
-|   |   |-- dev_type
-|   |   |-- edac_mode
-|   |   |-- mem_type
-|   |   |-- size_mb
-|   |   `-- ue_count
- …
-
-
-> With somewhat matches what it is at the Bank Locator DMI information.
-
-I wouldn't say that - DMI is notoriously unreliable, let's look at some
-boxes:
-
-1st box:
-
-Handle 0x0038, DMI type 17, 28 bytes
-Memory Device
-        Array Handle: 0x0036
-        Error Information Handle: Not Provided
-        Total Width: 72 bits
-        Data Width: 64 bits
-        Size: 2048 MB
-        Form Factor: DIMM
-        Set: None
-        Locator: DIMM0
-
-2nd box:
-
-Memory Device
-        Array Handle: 0x0014
-        Error Information Handle: Not Provided
-        Total Width: 64 bits
-        Data Width: 4096 bits
-        Size: 9 MB
-        Form Factor: <OUT OF SPEC>
-        Set: 73
-        Locator: P0_DIMM_A1
-        Bank Locator: CHANNEL A
-
-3rd box:
-
-Handle 0x0033, DMI type 17, 28 bytes
-Memory Device
-        Array Handle: 0x0031
-        Error Information Handle: Not Provided
-        Total Width: 64 bits
-        Data Width: 64 bits
-        Size: 4096 MB
-        Form Factor: SODIMM
-        Set: 2
-        Locator: J401
-        Bank Locator: Channel B
-
-and so on.
-
-IOW, DMI fields are almost random permutations of [a-zA-Z0-9].
-
-> So, it is easier to associate the dimm labels, of course assuming that
-> the DMI has the Bank Locator filled, and the BIOS doesn't have any bugs.
+> v3->v2:
+>   remove dead code in i7core_edac, suggested by Mauro
 > 
-> Yet, even without it, several motherboards are provided with enough
-> info to map from channel/slot (or branch/channel/slot) into the DIMM
-> label. So, letting the EDAC core fill it, by default is a good thing.
+> v2->v1:
+>   move register/unregister to the init/exit part
 > 
-> It should noticed that, as the label filling happens at the
-> edac_mc_alloc(), drivers can override it to better describe the memories
-> (and some actually do it).
-
-But I guess having the info is still fine, simply remove the DMI
-references in the commit message pls.
-
-> Cc: Aristeu Rozanski <arozansk@redhat.com>
-> Cc: Doug Thompson <norsk5@yahoo.com>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
 > ---
->  drivers/edac/edac_mc.c       |   25 +++++++++++++++++++------
->  drivers/edac/edac_mc_sysfs.c |    8 ++++----
->  include/linux/edac.h         |    2 +-
->  3 files changed, 24 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-> index 4c44cd298c0b..77263b33b7f0 100644
-> --- a/drivers/edac/edac_mc.c
-> +++ b/drivers/edac/edac_mc.c
-> @@ -210,10 +210,10 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
->  	struct dimm_info *dimm;
->  	u32 *ce_per_layer[EDAC_MAX_LAYERS], *ue_per_layer[EDAC_MAX_LAYERS];
->  	unsigned pos[EDAC_MAX_LAYERS];
-> -	void *pvt, *ptr = NULL;
->  	unsigned size, tot_dimms = 1, count = 1;
->  	unsigned tot_csrows = 1, tot_channels = 1, tot_errcount = 0;
-> -	int i, j, err, row, chn;
-> +	void *pvt, *p, *ptr = NULL;
-> +	int i, j, err, row, chn, n, len;
->  	bool per_rank = false;
->  
->  	BUG_ON(n_layers > EDAC_MAX_LAYERS || n_layers == 0);
-> @@ -325,9 +325,22 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
->  			i, per_rank ? "rank" : "dimm", (dimm - mci->dimms),
->  			pos[0], pos[1], pos[2], row, chn);
->  
-> -		/* Copy DIMM location */
-> -		for (j = 0; j < n_layers; j++)
-> +		/*
-> +		 * Copy DIMM location and initialize the memory location
+>  drivers/edac/i7core_edac.c |   15 ++++-----------
+>  drivers/edac/sb_edac.c     |    8 ++++----
+>  2 files changed, 8 insertions(+), 15 deletions(-)
 
-					 initialize it.
 
-or do you mean two different locations?
+<formletter>
 
-> +		 */
-> +		len = sizeof(dimm->label);
-> +		p = dimm->label;
-> +		n = snprintf(p, len, "mc#%u", mc_num);
-> +		p += n;
-> +		len -= n;
-> +		for (j = 0; j < n_layers; j++) {
-> +			n = snprintf(p, len, "%s#%u",
-> +				     edac_layer_name[layers[j].type],
-> +				     pos[j]);
-> +			p += n;
-> +			len -= n;
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
 
-Err, you're not checking how much len is left here, i.e.
-EDAC_MC_LABEL_LEN. Or even better, each time before you do snprintf.
-
->  			dimm->location[j] = pos[j];
-> +		}
->  
->  		/* Link it to the csrows old API data */
->  		chan->dimm = dimm;
-> @@ -837,7 +850,7 @@ static void edac_inc_ce_error(struct mem_ctl_info *mci,
->  {
->  	int i, index = 0;
->  
-> -	mci->ce_count++;
-> +	mci->ce_mc++;
-
-Oh, renaming them back, ok.
-
-<rest snipped>
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+</formletter>
