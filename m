@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab2EGLiW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 07:38:22 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:50919 "EHLO zene.cmpxchg.org"
+	id S1756596Ab2EGLiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 07:38:21 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50911 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756444Ab2EGLiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 07:38:17 -0400
+	id S1756501Ab2EGLiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 07:38:15 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Gavin Shan <shangw@linux.vnet.ibm.com>, David Miller <davem@davemloft.net>,
         Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch 08/10] mm: nobootmem: unify allocation policy of (non-)panicking node allocations
-Date: Mon,  7 May 2012 13:37:50 +0200
-Message-Id: <1336390672-14421-9-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 06/10] mm: bootmem: unify allocation policy of (non-)panicking node allocations
+Date: Mon,  7 May 2012 13:37:48 +0200
+Message-Id: <1336390672-14421-7-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1336390672-14421-1-git-send-email-hannes@cmpxchg.org>
 References: <1336390672-14421-1-git-send-email-hannes@cmpxchg.org>
@@ -31,41 +31,26 @@ behave the same way apart from how to deal with allocation failure.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/nobootmem.c |  106 +++++++++++++++++++++++++++++---------------------------
- 1 file changed, 54 insertions(+), 52 deletions(-)
+ mm/bootmem.c |   44 ++++++++++++++++++++++++--------------------
+ 1 file changed, 24 insertions(+), 20 deletions(-)
 
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index b078ff8..77069bb 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -275,6 +275,57 @@ void * __init __alloc_bootmem(unsigned long size, unsigned long align,
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index b5babdf..d9185c3 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -698,7 +698,7 @@ void * __init __alloc_bootmem(unsigned long size, unsigned long align,
  	return ___alloc_bootmem(size, align, goal, limit);
  }
  
-+static void * __init ___alloc_bootmem_node_nopanic(pg_data_t *pgdat,
-+						   unsigned long size,
-+						   unsigned long align,
-+						   unsigned long goal,
-+						   unsigned long limit)
-+{
-+	void *ptr;
-+
-+again:
-+	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
-+					goal, limit);
-+	if (ptr)
-+		return ptr;
-+
-+	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
-+					goal, limit);
-+	if (ptr)
-+		return ptr;
-+
-+	if (goal) {
-+		goal = 0;
-+		goto again;
-+	}
-+
+-static void * __init ___alloc_bootmem_node(bootmem_data_t *bdata,
++static void * __init ___alloc_bootmem_node_nopanic(bootmem_data_t *bdata,
+ 				unsigned long size, unsigned long align,
+ 				unsigned long goal, unsigned long limit)
+ {
+@@ -722,6 +722,29 @@ again:
+ 		goto again;
+ 	}
+ 
 +	return NULL;
 +}
 +
@@ -75,60 +60,24 @@ index b078ff8..77069bb 100644
 +	if (WARN_ON_ONCE(slab_is_available()))
 +		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
 +
-+	return ___alloc_bootmem_node_nopanic(pgdat, size, align, goal, 0);
++	return ___alloc_bootmem_node_nopanic(pgdat->bdata, size,
++					     align, goal, 0);
 +}
 +
-+void * __init ___alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
++void * __init ___alloc_bootmem_node(bootmem_data_t *bdata, unsigned long size,
 +				    unsigned long align, unsigned long goal,
 +				    unsigned long limit)
 +{
 +	void *ptr;
 +
-+	ptr = ___alloc_bootmem_node_nopanic(pgdat, size, align, goal, limit);
++	ptr = ___alloc_bootmem_node_nopanic(bdata, size, align, goal, 0);
 +	if (ptr)
 +		return ptr;
 +
-+	printk(KERN_ALERT "bootmem alloc of %lu bytes failed!\n", size);
-+	panic("Out of memory");
-+	return NULL;
-+}
-+
- /**
-  * __alloc_bootmem_node - allocate boot memory from a specific node
-  * @pgdat: node to allocate from
-@@ -293,30 +344,10 @@ void * __init __alloc_bootmem(unsigned long size, unsigned long align,
- void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
- 				   unsigned long align, unsigned long goal)
- {
--	void *ptr;
--
- 	if (WARN_ON_ONCE(slab_is_available()))
- 		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
- 
--again:
--	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
--					 goal, -1ULL);
--	if (ptr)
--		return ptr;
--
--	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
--					goal, -1ULL);
--	if (ptr)
--		return ptr;
--
--	if (goal) {
--		goal = 0;
--		goto again;
--	}
--
--	printk(KERN_ALERT "bootmem alloc of %lu bytes failed!\n", size);
--	panic("Out of memory");
--	return NULL;
-+	return ___alloc_bootmem_node(pgdat, size, align, goal, 0);
- }
- 
- void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
-@@ -347,22 +378,6 @@ void * __init alloc_bootmem_section(unsigned long size,
+ 	printk(KERN_ALERT "bootmem alloc of %lu bytes failed!\n", size);
+ 	panic("Out of memory");
+ 	return NULL;
+@@ -802,25 +825,6 @@ void * __init alloc_bootmem_section(unsigned long size,
  }
  #endif
  
@@ -140,8 +89,11 @@ index b078ff8..77069bb 100644
 -	if (WARN_ON_ONCE(slab_is_available()))
 -		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
 -
--	ptr =  __alloc_memory_core_early(pgdat->node_id, size, align,
--						 goal, -1ULL);
+-	ptr = alloc_arch_preferred_bootmem(pgdat->bdata, size, align, goal, 0);
+-	if (ptr)
+-		return ptr;
+-
+-	ptr = alloc_bootmem_bdata(pgdat->bdata, size, align, goal, 0);
 -	if (ptr)
 -		return ptr;
 -
@@ -151,31 +103,6 @@ index b078ff8..77069bb 100644
  #ifndef ARCH_LOW_ADDRESS_LIMIT
  #define ARCH_LOW_ADDRESS_LIMIT	0xffffffffUL
  #endif
-@@ -404,22 +419,9 @@ void * __init __alloc_bootmem_low(unsigned long size, unsigned long align,
- void * __init __alloc_bootmem_low_node(pg_data_t *pgdat, unsigned long size,
- 				       unsigned long align, unsigned long goal)
- {
--	void *ptr;
--
- 	if (WARN_ON_ONCE(slab_is_available()))
- 		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
- 
--	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
--				goal, ARCH_LOW_ADDRESS_LIMIT);
--	if (ptr)
--		return ptr;
--
--	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
--					goal, ARCH_LOW_ADDRESS_LIMIT);
--	if (ptr)
--		return ptr;
--
--	printk(KERN_ALERT "bootmem alloc of %lu bytes failed!\n", size);
--	panic("Out of memory");
--	return NULL;
-+	return ___alloc_bootmem_node(pgdat, size, align, goal,
-+				     ARCH_LOW_ADDRESS_LIMIT);
- }
 -- 
 1.7.10
 
