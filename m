@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633Ab2EGVzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 17:55:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51043 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641Ab2EGVzW (ORCPT
+	id S1755693Ab2EGV6c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 17:58:32 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:47785 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab2EGV6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 17:55:22 -0400
-Date: Mon, 7 May 2012 14:55:18 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Lockdep false positive in sysfs
-Message-ID: <20120507215518.GN19417@google.com>
-References: <20120507194658.GH19417@google.com>
- <Pine.LNX.4.44L0.1205071740420.23176-100000@netrider.rowland.org>
+	Mon, 7 May 2012 17:58:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6704"; a="188426987"
+Date: Mon, 7 May 2012 14:58:28 -0700
+From: David Brown <davidb@codeaurora.org>
+To: arm@kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] msm-core changes for v3.5.
+Message-ID: <20120507215828.GA21748@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1205071740420.23176-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 05:51:52PM -0400, Alan Stern wrote:
-> I guess in the end it's a question of balance.  Which has more 
-> overhead, adding a few function calls here and there, or adding a new 
-> flags field to every struct attribute?
+These are some minor fixes, and Daniel's fixup of the sapphire target
+support.
 
-Yes, and there are different types of overheads.  I'm happy to trade
-some runtime memory overhead under debugging mode for lower code
-complexity.  Lock proving is pretty expensive anyway.  I don't think
-there's much point in trying to optimize some bytes from struct
-attributes.
+The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
 
-Thanks.
+  Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git msm-core
+
+for you to fetch changes up to 2935b1facdfb77d5f03d9036cc0da8c889f59a02:
+
+  ARM: msm: fix compilation flags for MSM_SCM (part 2) (2012-05-01 16:44:11 -0700)
+
+----------------------------------------------------------------
+Daniel Walker (1):
+      arm: msm: fix up very basic HTC Sapphire support
+
+Danny Kukawka (1):
+      arch/arm/mach-msm: linux/gpio.h included twice
+
+Stephen Boyd (2):
+      ARM: msm: Drop useless teq from DEBUG_LL support
+      ARM: msm: fix compilation flags for MSM_SCM (part 2)
+
+ arch/arm/mach-msm/Kconfig                    |   10 +-
+ arch/arm/mach-msm/Makefile                   |    1 +
+ arch/arm/mach-msm/board-msm7x30.c            |    1 -
+ arch/arm/mach-msm/board-qsd8x50.c            |    1 -
+ arch/arm/mach-msm/board-sapphire.c           |   18 +--
+ arch/arm/mach-msm/board-sapphire.h           |  224 ++++++++++++++++++++++++++
+ arch/arm/mach-msm/include/mach/debug-macro.S |    3 +-
+ arch/arm/mach-msm/scm.c                      |    3 +
+ 8 files changed, 239 insertions(+), 22 deletions(-)
+ create mode 100644 arch/arm/mach-msm/board-sapphire.h
 
 -- 
-tejun
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
