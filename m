@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757096Ab2EGOQr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 10:16:47 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:65048 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756776Ab2EGOMU (ORCPT
+	id S1757073Ab2EGORt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 10:17:49 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38983 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756194Ab2EGORs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 10:12:20 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, miklos@szeredi.hu, hch@infradead.org,
-        michael.brantley@deshaw.com
-Subject: [PATCH v1 RESEND 01/12] vfs: add a retry_estale helper function to handle retries on ESTALE
-Date: Mon,  7 May 2012 10:12:00 -0400
-Message-Id: <1336399931-20234-2-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1336399931-20234-1-git-send-email-jlayton@redhat.com>
-References: <1336399931-20234-1-git-send-email-jlayton@redhat.com>
+	Mon, 7 May 2012 10:17:48 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@ti.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: Use newly added devres_release() rather than open coding
+Date: Mon,  7 May 2012 15:17:44 +0100
+Message-Id: <1336400264-15529-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is expected to be called from path-based syscalls to help
-them decide whether to try the lookup and call again in the event that
-they got an -ESTALE return back on an earier try.
+devres_release() will call the destructor for the resource as well as
+freeing the devres data.
 
-Currently, we only retry the call once on an ESTALE error, but in the
-event that we decide that that's not enough in the future, we should be
-able to change the logic in this helper without too much effort.
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- include/linux/fs.h |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
+ drivers/regulator/core.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 8de6755..3c0bcda 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2026,6 +2026,27 @@ extern struct file * dentry_open(struct dentry *, struct vfsmount *, int,
- extern int filp_close(struct file *, fl_owner_t id);
- extern char * getname(const char __user *);
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 62a46b2..b2e6043 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1459,12 +1459,9 @@ void devm_regulator_put(struct regulator *regulator)
+ {
+ 	int rc;
  
-+/**
-+ * retry_estale - determine whether the caller should retry an operation
-+ *
-+ * @error: the error we'll be returning
-+ * @try: number of retries already performed
-+ *
-+ * Check to see if the error code was -ESTALE, and then determine whether
-+ * to retry the call based on the number of retries so far. Currently, we only
-+ * retry the call once.
-+ *
-+ * Returns true if the caller should try again.
-+ */
-+static inline bool
-+retry_estale(const long error, const unsigned int try)
-+{
-+	if (likely(error != -ESTALE))
-+		return false;
-+
-+	return !try;
-+}
-+
- /* fs/ioctl.c */
+-	rc = devres_destroy(regulator->dev, devm_regulator_release,
++	rc = devres_release(regulator->dev, devm_regulator_release,
+ 			    devm_regulator_match, regulator);
+-	if (rc == 0)
+-		regulator_put(regulator);
+-	else
+-		WARN_ON(rc);
++	WARN_ON(rc);
+ }
+ EXPORT_SYMBOL_GPL(devm_regulator_put);
  
- extern int ioctl_preallocate(struct file *filp, void __user *argp);
 -- 
-1.7.7.6
+1.7.10
 
