@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab2EGLSN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 07:18:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:51389 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753330Ab2EGLSM convert rfc822-to-8bit (ORCPT
+	id S1756239Ab2EGLXZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 07:23:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52576 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755567Ab2EGLXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 07:18:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="139763651"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: "Yu, Fenghua" <fenghua.yu@intel.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Andi Kleen <ak@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH, v3] hwmon: coretemp: use list instead of fixed size
- array for temp data
-Thread-Topic: [PATCH, v3] hwmon: coretemp: use list instead of fixed size
- array for temp data
-Thread-Index: AQHNLDzUnmQOFAJAQkaoequKj7BmNpa+J5TQ//+noQCAAF4nwA==
-Date: Mon, 7 May 2012 11:17:57 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB591184EF@BGSMSX102.gar.corp.intel.com>
-References: <1336386848-31041-1-git-send-email-kirill.shutemov@linux.intel.com>
- <4D68720C2E767A4AA6A8796D42C8EB591184C1@BGSMSX102.gar.corp.intel.com>
- <20120507110959.GA7339@otc-wbsnb-06>
-In-Reply-To: <20120507110959.GA7339@otc-wbsnb-06>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 7 May 2012 07:23:25 -0400
+Date: Mon, 7 May 2012 12:23:22 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: gregkh@linuxfoundation.org, lrg@ti.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V1 4/4] regulator: tps62360: Provide settling time for
+ voltage change
+Message-ID: <20120507112321.GI4415@opensource.wolfsonmicro.com>
+References: <1336376139-1048-1-git-send-email-ldewangan@nvidia.com>
+ <1336376139-1048-5-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0NB0lE7sNnW8+0qW"
+Content-Disposition: inline
+In-Reply-To: <1336376139-1048-5-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-[snip.]
+--0NB0lE7sNnW8+0qW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > > diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-> > > index b9d5123..fa082d5 100644
-> > > --- a/drivers/hwmon/coretemp.c
-> > > +++ b/drivers/hwmon/coretemp.c
-> > > @@ -36,6 +36,8 @@
-> > >  #include <linux/cpu.h>
-> > >  #include <linux/pci.h>
-> > >  #include <linux/smp.h>
-> > > +#include <linux/list.h>
-> > > +#include <linux/kref.h>
-> >
-> > I think we don't need to include kref.h now :-)
-> 
-> Right. :(
-> Guenter, should I resend the patch or you can fix this on apply?
-> 
-> >
-> > BTW, at some places, looks like we are using 'tdata' obtained from
-> get_temp_data,
-> > without checking for NULL values. Other than that, looks Ok for me.
-> 
-> Do you mean sysfs show methods? It should never be NULL there. If it's
-> NULL, we have bug (race?) somewhere.
-> 
+On Mon, May 07, 2012 at 01:05:39PM +0530, Laxman Dewangan wrote:
+> Settling time is require when there is voltage output change.
+> Implement set_voltage_time_sel() callback which returns delay time
+> for voltage change to settle down to new value.
 
-Yes agree with you. That's fine then.
+This is fine but depends on your previous stylistic change so won't
+apply.  In general you should always try to order things so that there
+are fewer dependencies at the start of the series - there's no actual
+dependency between this and the stylistic changes you've made.
 
-> > Acked-by: Durgadoss R <durgadoss.r@intel.com>
-> 
-> Thanks.
+--0NB0lE7sNnW8+0qW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-You are welcome :-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Thanks,
-Durga
+iQIcBAEBAgAGBQJPp7B4AAoJEBus8iNuMP3drzQP/0SsmaWMiElaj5oczEOIzVWk
+Y8NGvipE2CW5SX/XBwfp7ztx0zCzsduSDKba25d7d56b+h5AljvgzEj+cMximYmp
+dCMIZ88Yg4gth9VJW5FFojBgdd8YVH43ZvbefMS0bjcCytZWu2bNq2OWHQzdFueb
+8E4sz68tr0vbDkT8EHBo0OQ4NHaE6Yic32jMFpqdxuClVBDG3+Ms1hgfjFSqD7h1
+vdLMBWQ/ZSP+ghMC2enBuyc7FHAFmn96CBFv39vw4XSIVsrtAW5rYXeMa59HCXP3
+EWVF1eBkoYGX+vkIYY08ooXWc9Jur7rq+AlNwHKfHrBYeNOhK4PGGGSCS++0vGJT
+EeQ5yA0nMnNwNteZW4CwvAExLfkDFc46X+h5NuRpzp2Rs3txRR9ZECbqrrMkXBPD
+wr8E2I8WeJhUJrRRr54Pfa0FdVl5VoDgiNr0uYNiqwwSUcAmc9xDg2NFDg/X8ZXj
+glnJkbtJ1Mx0UwV81fGxd9AEH7Y/w90rHHQ0HAgz3iRKGjd6CYLAizZjO2l/pcCh
+AHW09zR3UQ1PdcA2rHir7rdCHO4PuAdr37LDq3QuiLbVupuLaRyo94auCceVqfej
+lha+PHKRoP/IyllTJUTiHKRC3VfKdzm2NuQrQG976Zr61gqcNFfEvHb0FBwscFlf
++8b+p/AiI9oVbslW91y7
+=Tcyv
+-----END PGP SIGNATURE-----
+
+--0NB0lE7sNnW8+0qW--
