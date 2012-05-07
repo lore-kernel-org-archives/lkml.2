@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356Ab2EGUay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 16:30:54 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:18665 "EHLO
+	id S932371Ab2EGUbR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 16:31:17 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:18755 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932312Ab2EGUav (ORCPT
+	with ESMTP id S932209Ab2EGUbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 16:30:51 -0400
+	Mon, 7 May 2012 16:31:14 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -18,15 +18,14 @@ Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
-        linux-parisc@vger.kernel.org
-Subject: [PATCH 18/21] parisc/PCI: register busn_res for root buses
-Date: Mon,  7 May 2012 13:30:03 -0700
-Message-Id: <1336422606-4244-19-git-send-email-yinghai@kernel.org>
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 17/21] powerpc/PCI: register busn_res for root buses
+Date: Mon,  7 May 2012 13:30:02 -0700
+Message-Id: <1336422606-4244-18-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
 References: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,102 +34,86 @@ Add the host bridge bus number aperture to the resource list.
 Like the MMIO and I/O port apertures, this is used when assigning
 resources to hot-added devices or in the case of conflicts.
 
-[bhelgaas: set flags directly, at LBA bus_num init, write changelog]
+[bhelgaas: write changelog]
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-CC: Kyle McMartin <kyle@mcmartin.ca>
-CC: Helge Deller <deller@gmx.de>
-CC: linux-parisc@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
 ---
- drivers/parisc/dino.c    |   10 ++++++++--
- drivers/parisc/lba_pci.c |    8 ++++++--
- 2 files changed, 14 insertions(+), 4 deletions(-)
+ arch/powerpc/include/asm/pci-bridge.h |    1 +
+ arch/powerpc/kernel/pci-common.c      |   17 +++++++++++------
+ arch/powerpc/kernel/pci_of_scan.c     |    2 +-
+ 3 files changed, 13 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/parisc/dino.c b/drivers/parisc/dino.c
-index 70517b0..ffddc4f 100644
---- a/drivers/parisc/dino.c
-+++ b/drivers/parisc/dino.c
-@@ -898,6 +898,7 @@ static int __init dino_probe(struct parisc_device *dev)
- 	LIST_HEAD(resources);
- 	struct pci_bus *bus;
- 	unsigned long hpa = dev->hpa.start;
-+	int max;
+diff --git a/arch/powerpc/include/asm/pci-bridge.h b/arch/powerpc/include/asm/pci-bridge.h
+index ac39e6a..8cccbee 100644
+--- a/arch/powerpc/include/asm/pci-bridge.h
++++ b/arch/powerpc/include/asm/pci-bridge.h
+@@ -30,6 +30,7 @@ struct pci_controller {
+ 	int first_busno;
+ 	int last_busno;
+ 	int self_busno;
++	struct resource busn;
  
- 	name = "Dino";
- 	if (is_card_dino(&dev->id)) {
-@@ -983,6 +984,10 @@ static int __init dino_probe(struct parisc_device *dev)
- 	if (dino_dev->hba.gmmio_space.flags)
- 		pci_add_resource(&resources, &dino_dev->hba.gmmio_space);
+ 	void __iomem *io_base_virt;
+ #ifdef CONFIG_PPC64
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index 3532b53..7320f36 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -1637,6 +1637,11 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
+ 	/* Wire up PHB bus resources */
+ 	pcibios_setup_phb_resources(hose, &resources);
  
-+	dino_dev->hba.bus_num.start = dino_current_bus;
-+	dino_dev->hba.bus_num.end = 255;
-+	dino_dev->hba.bus_num.flags = IORESOURCE_BUS;
-+	pci_add_resource(&resources, &dino_dev->hba.bus_num);
- 	/*
- 	** It's not used to avoid chicken/egg problems
- 	** with configuration accessor functions.
-@@ -998,12 +1003,13 @@ static int __init dino_probe(struct parisc_device *dev)
- 		return 0;
- 	}
- 
--	bus->busn_res.end = pci_scan_child_bus(bus);
-+	max = pci_scan_child_bus(bus);
-+	pci_bus_update_busn_res_end(bus, max);
- 
- 	/* This code *depends* on scanning being single threaded
- 	 * if it isn't, this global bus number count will fail
- 	 */
--	dino_current_bus = bus->busn_res.end + 1;
-+	dino_current_bus = max + 1;
- 	pci_bus_assign_resources(bus);
- 	pci_bus_add_devices(bus);
- 	return 0;
-diff --git a/drivers/parisc/lba_pci.c b/drivers/parisc/lba_pci.c
-index cd8f9ce..4f9cf24 100644
---- a/drivers/parisc/lba_pci.c
-+++ b/drivers/parisc/lba_pci.c
-@@ -989,6 +989,7 @@ lba_pat_resources(struct parisc_device *pa_dev, struct lba_device *lba_dev)
- 		case PAT_PBNUM:
- 			lba_dev->hba.bus_num.start = p->start;
- 			lba_dev->hba.bus_num.end   = p->end;
-+			lba_dev->hba.bus_num.flags = IORESOURCE_BUS;
- 			break;
- 
- 		case PAT_LMMIO:
-@@ -1366,6 +1367,7 @@ lba_driver_probe(struct parisc_device *dev)
- 	void *tmp_obj;
- 	char *version;
- 	void __iomem *addr = ioremap_nocache(dev->hpa.start, 4096);
-+	int max;
- 
- 	/* Read HW Rev First */
- 	func_class = READ_REG32(addr + LBA_FCLASS);
-@@ -1502,6 +1504,8 @@ lba_driver_probe(struct parisc_device *dev)
- 	if (lba_dev->hba.gmmio_space.flags)
- 		pci_add_resource(&resources, &lba_dev->hba.gmmio_space);
- 
-+	pci_add_resource(&resources, &lba_dev->hba.bus_num);
++	hose->busn.start = hose->first_busno;
++	hose->busn.end	 = hose->last_busno;
++	hose->busn.flags = IORESOURCE_BUS;
++	pci_add_resource(&resources, &hose->busn);
 +
- 	dev->dev.platform_data = lba_dev;
- 	lba_bus = lba_dev->hba.hba_bus =
- 		pci_create_root_bus(&dev->dev, lba_dev->hba.bus_num.start,
-@@ -1511,7 +1515,7 @@ lba_driver_probe(struct parisc_device *dev)
- 		return 0;
+ 	/* Create an empty bus for the toplevel */
+ 	bus = pci_create_root_bus(hose->parent, hose->first_busno,
+ 				  hose->ops, hose, &resources);
+@@ -1646,7 +1651,6 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
+ 		pci_free_resource_list(&resources);
+ 		return;
+ 	}
+-	bus->busn_res.start = hose->first_busno;
+ 	hose->bus = bus;
+ 
+ 	/* Get probe mode and perform scan */
+@@ -1654,13 +1658,14 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
+ 	if (node && ppc_md.pci_probe_mode)
+ 		mode = ppc_md.pci_probe_mode(bus);
+ 	pr_debug("    probe mode: %d\n", mode);
+-	if (mode == PCI_PROBE_DEVTREE) {
+-		bus->busn_res.end = hose->last_busno;
++	if (mode == PCI_PROBE_DEVTREE)
+ 		of_scan_bus(node, bus);
+-	}
+ 
+-	if (mode == PCI_PROBE_NORMAL)
+-		hose->last_busno = bus->busn_res.end = pci_scan_child_bus(bus);
++	if (mode == PCI_PROBE_NORMAL) {
++		pci_bus_update_busn_res_end(bus, 255);
++		hose->last_busno = pci_scan_child_bus(bus);
++		pci_bus_update_busn_res_end(bus, hose->last_busno);
++	}
+ 
+ 	/* Platform gets a chance to do some global fixups before
+ 	 * we proceed to resource allocation
+diff --git a/arch/powerpc/kernel/pci_of_scan.c b/arch/powerpc/kernel/pci_of_scan.c
+index a36281a..ae5ea5e 100644
+--- a/arch/powerpc/kernel/pci_of_scan.c
++++ b/arch/powerpc/kernel/pci_of_scan.c
+@@ -240,7 +240,7 @@ void __devinit of_scan_pci_bridge(struct pci_dev *dev)
  	}
  
--	lba_bus->busn_res.end = pci_scan_child_bus(lba_bus);
-+	max = pci_scan_child_bus(lba_bus);
+ 	bus->primary = dev->bus->number;
+-	bus->busn_res.end = busrange[1];
++	pci_bus_insert_busn_res(bus, busrange[0], busrange[1]);
+ 	bus->bridge_ctl = 0;
  
- 	/* This is in lieu of calling pci_assign_unassigned_resources() */
- 	if (is_pdc_pat()) {
-@@ -1541,7 +1545,7 @@ lba_driver_probe(struct parisc_device *dev)
- 		lba_dev->flags |= LBA_FLAG_SKIP_PROBE;
- 	}
- 
--	lba_next_bus = lba_res->busn_res.end + 1;
-+	lba_next_bus = max + 1;
- 	pci_bus_add_devices(lba_bus);
- 
- 	/* Whew! Finally done! Tell services we got this one covered. */
+ 	/* parse ranges property */
 -- 
 1.7.7
 
