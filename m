@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757217Ab2EGP1U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 11:27:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58844 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755531Ab2EGP1S (ORCPT
+	id S1756684Ab2EGP3X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 11:29:23 -0400
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:31295 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754001Ab2EGP3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 11:27:18 -0400
-Message-ID: <4FA7E996.9010302@gmail.com>
-Date: Mon, 07 May 2012 23:26:14 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 7 May 2012 11:29:22 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: HJL8OZcVM1ks1cFKCl40kw3_tDOdLuOnhrH0Wa6shu8itSE
+ LdcKlWI9vClYULuZZYChAKbJKhUSFPrfkVB90Hm6nBjIB2rudQ_9XNdTRTdb
+ _33X3qIog8ZGRHTtY8.wGYCSApG8NCjotM5FCfSeh9jxbfrRscdYYiUMo_y.
+ KkTPCIffs2wIdTgsAKXvlkwiPOevZ2uqtZv41Fqf8uAsngmZ0IjmZ7_JgjJz
+ DE5gq3H3_g1cchDDEshv6bNtOpn4D8b7wfG9gOAu4hnJo54gdzUk8qQMJG09
+ AiOYQTxBy5EHveyIG0V7jvMmuh2eppymLpoJsCTCcAVKPCuaxlx4MKgM2Vjx
+ gis5u6dRtfP.2fDL_IFy_c_lsA8gXqKAACp5HlgJJU9IxLitMnU8k.j7hg9o
+ d
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 7 May 2012 10:29:16 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
+Subject: Re: [PATCH v1 5/6] mm: make vmstat_update periodic run conditional
+In-Reply-To: <1336056962-10465-6-git-send-email-gilad@benyossef.com>
+Message-ID: <alpine.DEB.2.00.1205071024550.1060@router.home>
+References: <1336056962-10465-1-git-send-email-gilad@benyossef.com> <1336056962-10465-6-git-send-email-gilad@benyossef.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>, mingo@kernel.org,
-        pjt@google.com, paul@paulmenage.org, akpm@linux-foundation.org,
-        rjw@sisk.pl, nacc@us.ibm.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com, rob@landley.net,
-        tj@kernel.org, mschmidt@redhat.com, berrange@redhat.com,
-        nikunj@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-pm@vger.kernel.org, stern@rowland.harvard.edu
-Subject: Re: [PATCH v2 0/7] CPU hotplug, cpusets: Fix issues with cpusets
- handling upon CPU hotplug
-References: <20120504191535.4603.83236.stgit@srivatsabhat> <1336159496.6509.51.camel@twins> <4FA434E9.6000305@linux.vnet.ibm.com> <1336162456.6509.63.camel@twins> <20120504204627.GB18177@linux.vnet.ibm.com> <4FA56047.9090405@linux.vnet.ibm.com>
-In-Reply-To: <4FA56047.9090405@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2012 01:15 AM, Srivatsa S. Bhat wrote:
->> I, personally, think we should just kill of tasks in cpuset-constrained
->> environments that are nonsensical (no memory, no cpus, etc.). 
-> 
-> 
-> Even I think just killing the tasks or maybe even preventing such destructive
-> hotplug (last cpu in a cpuset going offline) would have been way more
-> easier to handle and also logical.. and userspace would have been more
-> cautious while dealing with cpusets, from the beginning....
-On one another OS, there's a "force" flag for cpu_down(). If cpu_down() is
-called with the "force" flag as false, the request will be rejected if 
-any cpuset becomes empty; otherwise it will try to assign other CPUs to
-the empty cpusets.
+On Thu, 3 May 2012, Gilad Ben-Yossef wrote:
 
-So the administrator could choose different behaviors.
+> vmstat_update runs every second from the work queue to update statistics
+> and drain per cpu pages back into the global page allocator.
+
+Looks good.
+
+- vmstat_off_cpus is a bit strange. Could we have a cpumask that has a bit
+set if vmstat is active? Rename to "vmstat_cpus"?
+
+- Start out with vmstat_cpus cleared? Cpus only need vmstat if they do
+something and if a cpu is idle on boot then it will not need vmstat
+enabled until the cpu does something useful.
+
+> @@ -1204,8 +1265,14 @@ static int __init setup_vmstat(void)
+>
+>  	register_cpu_notifier(&vmstat_notifier);
+>
+> +	INIT_DELAYED_WORK_DEFERRABLE(&vmstat_monitor_work,
+> +				vmstat_update_monitor);
+> +	queue_delayed_work(system_unbound_wq,
+> +				&vmstat_monitor_work,
+> +				round_jiffies_relative(HZ));
+> +
+>  	for_each_online_cpu(cpu)
+> -		start_cpu_timer(cpu);
+> +		setup_cpu_timer(cpu);
+>  #endif
+>  #ifdef CONFIG_PROC_FS
+>  	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
+
+So the monitoring thread just bounces around the system? Hope that the
+scheduler does the right thing to keep it on processors that do some other
+work.
 
