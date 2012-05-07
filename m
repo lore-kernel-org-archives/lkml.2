@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab2EGLXZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 07:23:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52576 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755567Ab2EGLXZ (ORCPT
+	id S1756202Ab2EGL1E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 07:27:04 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:57888 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755576Ab2EGL1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 07:23:25 -0400
-Date: Mon, 7 May 2012 12:23:22 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: gregkh@linuxfoundation.org, lrg@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V1 4/4] regulator: tps62360: Provide settling time for
- voltage change
-Message-ID: <20120507112321.GI4415@opensource.wolfsonmicro.com>
-References: <1336376139-1048-1-git-send-email-ldewangan@nvidia.com>
- <1336376139-1048-5-git-send-email-ldewangan@nvidia.com>
+	Mon, 7 May 2012 07:27:02 -0400
+Message-ID: <4FA7B184.7080806@ammonit.com>
+Date: Mon, 07 May 2012 13:27:00 +0200
+From: =?ISO-8859-15?Q?Steffen_K=FChn?= <sk@ammonit.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20110307 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0NB0lE7sNnW8+0qW"
-Content-Disposition: inline
-In-Reply-To: <1336376139-1048-5-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Be different: conform.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: nicolas.ferre@atmel.com
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] solve deadlock problem in atmel-mci (kernel 3.2)
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 May 2012 11:27:00.0633 (UTC) FILETIME=[51DB3090:01CD2C44]
+X-Provags-ID: V02:K0:z4c8F81hXhizFBCXlkwkh78FFZve+XyLbDdO3/Le5vu
+ sCSgAYUQzsXBWdTRDZao+Ui754IqXeXz70t3k9c3zA050YBLaX
+ ZwNJgzpwFWr/d1D3xPJTxxPaIpinztTx/C92y6Cq12kTug3szY
+ EwfgjE6zMHB4TCvRPaF8IG2ml0Cy0+gp+JaU1ZeFOU7HI+Aw8b
+ zf9L/gmxYc8frkY8lo0GXKpvZQpmMFMscYJx2iFLjaogleRC8O
+ MkNK4qHiTWWaBtHIyHnanNEwQQAFK4120+KU1/BozMIsByZYZI
+ sF0jOx16dUhOGN4M9iQmowt+amSvcFChZVK85+dgzhxl+RfXjP
+ +TpA3bTDB252A85un9Es=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Nicolas,
 
---0NB0lE7sNnW8+0qW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+the appended patch solves a deadlock problem which appears when a SD
+card is removing and a process is reading from the card at the same
+time. The problem occurs not always but only when there are
+error-messages like 'end_request: I/O error, dev mmcblk0, sector XXX'
+(probably a timing thing).
 
-On Mon, May 07, 2012 at 01:05:39PM +0530, Laxman Dewangan wrote:
-> Settling time is require when there is voltage output change.
-> Implement set_voltage_time_sel() callback which returns delay time
-> for voltage change to settle down to new value.
+When the error occurs, the autodetection for SD card insertion does not
+work anymore and unloading of the driver with 'rmmod' is no longer possible.
 
-This is fine but depends on your previous stylistic change so won't
-apply.  In general you should always try to order things so that there
-are fewer dependencies at the start of the series - there's no actual
-dependency between this and the stylistic changes you've made.
+The patch seems to work very well with our hardware. But I have to say,
+that I have not understand the mechanisms in the driver entirely. Please
+check, if the patch make sense.
 
---0NB0lE7sNnW8+0qW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Best regards,
+Steffen
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPp7B4AAoJEBus8iNuMP3drzQP/0SsmaWMiElaj5oczEOIzVWk
-Y8NGvipE2CW5SX/XBwfp7ztx0zCzsduSDKba25d7d56b+h5AljvgzEj+cMximYmp
-dCMIZ88Yg4gth9VJW5FFojBgdd8YVH43ZvbefMS0bjcCytZWu2bNq2OWHQzdFueb
-8E4sz68tr0vbDkT8EHBo0OQ4NHaE6Yic32jMFpqdxuClVBDG3+Ms1hgfjFSqD7h1
-vdLMBWQ/ZSP+ghMC2enBuyc7FHAFmn96CBFv39vw4XSIVsrtAW5rYXeMa59HCXP3
-EWVF1eBkoYGX+vkIYY08ooXWc9Jur7rq+AlNwHKfHrBYeNOhK4PGGGSCS++0vGJT
-EeQ5yA0nMnNwNteZW4CwvAExLfkDFc46X+h5NuRpzp2Rs3txRR9ZECbqrrMkXBPD
-wr8E2I8WeJhUJrRRr54Pfa0FdVl5VoDgiNr0uYNiqwwSUcAmc9xDg2NFDg/X8ZXj
-glnJkbtJ1Mx0UwV81fGxd9AEH7Y/w90rHHQ0HAgz3iRKGjd6CYLAizZjO2l/pcCh
-AHW09zR3UQ1PdcA2rHir7rdCHO4PuAdr37LDq3QuiLbVupuLaRyo94auCceVqfej
-lha+PHKRoP/IyllTJUTiHKRC3VfKdzm2NuQrQG976Zr61gqcNFfEvHb0FBwscFlf
-+8b+p/AiI9oVbslW91y7
-=Tcyv
------END PGP SIGNATURE-----
 
---0NB0lE7sNnW8+0qW--
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index 94c377d..407648f 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -1480,8 +1480,10 @@ static void atmci_tasklet_func(unsigned long priv)
+ 			}
+
+ 			if (!atmci_test_and_clear_pending(host,
+-						EVENT_XFER_COMPLETE))
++						EVENT_XFER_COMPLETE)) {
++				host->stop_transfer(host);
+ 				break;
++			}
+
+ 			atmci_set_completed(host, EVENT_XFER_COMPLETE);
+ 			prev_state = state = STATE_DATA_BUSY;
