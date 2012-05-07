@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab2EGHPd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 03:15:33 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:60776 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755092Ab2EGHPb (ORCPT
+	id S1755393Ab2EGHZB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 03:25:01 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46524 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754721Ab2EGHZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 03:15:31 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>,
-        Sasha Levin <levinsasha928@gmail.com>, davem@davemloft.net,
-        ericvh@gmail.com, jvrao@linux.vnet.ibm.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davej@redhat.com,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH] 9p: disconnect channel when PCI device is removed
-In-Reply-To: <87397chebf.fsf@rustcorp.com.au>
-References: <1334353716-19483-1-git-send-email-levinsasha928@gmail.com> <87397chebf.fsf@rustcorp.com.au>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 07 May 2012 12:44:03 +0530
-Message-ID: <87pqagzcn8.fsf@skywalker.in.ibm.com>
+	Mon, 7 May 2012 03:25:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12050622-3568-0000-0000-000001B001EF
+In-Reply-To: <1336370582-30959-2-git-send-email-namhyung.kim@lge.com>
+References: <1336370582-30959-1-git-send-email-namhyung.kim@lge.com>
+	<1336370582-30959-2-git-send-email-namhyung.kim@lge.com>
+Date: Mon, 7 May 2012 10:17:41 +0300
+X-Google-Sender-Auth: nQSFHoW1pIUkUnY6NrCSiWRAW4k
+Message-ID: <CAOJsxLEo32u8iYvQ+qeBX2YSKq=ftHs2jMdsKcCWWKO07XPGHg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] perf ui/gtk: Use struct perf_error_ops
+From: Pekka Enberg <penberg@kernel.org>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@rustcorp.com.au> writes:
-
-> On Fri, 13 Apr 2012 17:48:36 -0400, Sasha Levin <levinsasha928@gmail.com> wrote:
->> When a virtio_9p pci device is being removed, we should close down any
->> active channels and free up resources, we're not supposed to BUG() if there's
->> still an open channel since it's a valid case when removing the PCI device.
->> 
->> Otherwise, removing the PCI device with an open channel would cause the
->> following BUG():
+On Mon, May 7, 2012 at 9:03 AM, Namhyung Kim <namhyung.kim@lge.com> wrote:
+> Define and use perf_gtk_eops to provide a GTK2 message
+> dialog for error reporting. To do that, we need global
+> main_window variable for tracking UI state.
 >
-> (Damn changed notmuch.el bindings!  Previous reply went only to Sasha).
->
-> Applied thanks,
-> Rusty.
+> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 
-I am not sure whether the patch is sufficient, p9_virtio_remove does a
-kfree(chan) and since we are not doing anything at the file system
-level, we would still allow new 9p client request. That means
-p9_virtio_request would be dereferencing a freed memory.
-
--aneesh
-
+I still don't like the dialog-based approach because it requires the
+*user* to respond. Just add a label to the GTK window and show the
+latest message there. If you want to make it even prettier, make the
+label clickable and open up a popup that shows all the warnings and
+errors in a separate window...
