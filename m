@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab2EGKtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 06:49:21 -0400
-Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:56571 "EHLO
-	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751757Ab2EGKtT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 06:49:19 -0400
-Message-ID: <4FA7A8B9.4040208@ti.com>
-Date: Mon, 07 May 2012 13:49:29 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120503 Thunderbird/12.0.1
+	id S1755501Ab2EGKtt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 06:49:49 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58240 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753330Ab2EGKtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 06:49:47 -0400
+Date: Mon, 7 May 2012 12:49:43 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
+        tigran@aivazian.fsnet.co.uk,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] x86: kernel/microcode_core.c simple_strtoul
+ cleanup
+Message-ID: <20120507104943.GA3896@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Shuah Khan <shuahkhan@gmail.com>, mingo@redhat.com, hpa@zytor.com,
+	tglx@linutronix.de, tigran@aivazian.fsnet.co.uk,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1336324264.2897.9.camel@lorien2>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] Input: tl6040-vibra: Device Tree support
-References: <1336133113-12224-1-git-send-email-peter.ujfalusi@ti.com> <20120507070233.GB22074@core.coreip.homeip.net>
-In-Reply-To: <20120507070233.GB22074@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1336324264.2897.9.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
-
-On 05/07/2012 10:02 AM, Dmitry Torokhov wrote:
-> Hi Peter,
+On Sun, May 06, 2012 at 11:11:04AM -0600, Shuah Khan wrote:
+> Change reload_for_cpu() in kernel/microcode_core.c to call kstrtoul()
+> instead of calling obsoleted simple_strtoul().
 > 
-> On Fri, May 04, 2012 at 03:05:13PM +0300, Peter Ujfalusi wrote:
->> +	if (pdata) {
->> +		info->vibldrv_res = pdata->vibldrv_res;
->> +		info->vibrdrv_res = pdata->vibrdrv_res;
->> +		info->viblmotor_res = pdata->viblmotor_res;
->> +		info->vibrmotor_res = pdata->vibrmotor_res;
->> +		vddvibl_uV = pdata->vddvibl_uV;
->> +		vddvibr_uV = pdata->vddvibr_uV;
->> +	} else {
->> +		of_property_read_u32(node, "vibldrv_res", &info->vibldrv_res);
->> +		of_property_read_u32(node, "vibrdrv_res", &info->vibrdrv_res);
->> +		of_property_read_u32(node, "viblmotor_res",
->> +				     &info->viblmotor_res);
->> +		of_property_read_u32(node, "vibrmotor_res",
->> +				     &info->vibrmotor_res);
+> Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
+
+Ok, much better, thanks.
+
+@Ingo: I'll pick this one up unless you want to do that :-).
+
+> ---
+>  arch/x86/kernel/microcode_core.c |    9 ++++-----
+>  1 file changed, 4 insertions(+), 5 deletions(-)
 > 
-> Since these 4 appear to be mandatory properties don't we need to
-> validate they are actually present in DT?
-
-If the property does not exist in the DT blob the variable will not be
-updated - it will remain 0.
-I have kept the validity check for the resistance values. This will
-catch the case when something is missing from the DT blob.
-
-I just did not wanted to complicate the code with additional checks
-since the end result would be the same.
+> diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+> index c9bda6d..fbdfc69 100644
+> --- a/arch/x86/kernel/microcode_core.c
+> +++ b/arch/x86/kernel/microcode_core.c
+> @@ -299,12 +299,11 @@ static ssize_t reload_store(struct device *dev,
+>  {
+>  	unsigned long val;
+>  	int cpu = dev->id;
+> -	int ret = 0;
+> -	char *end;
+> +	ssize_t ret = 0;
+>  
+> -	val = simple_strtoul(buf, &end, 0);
+> -	if (end == buf)
+> -		return -EINVAL;
+> +	ret = kstrtoul(buf, 0, &val);
+> +	if (ret)
+> +		return ret;
+>  
+>  	if (val == 1) {
+>  		get_online_cpus();
+> -- 
+> 1.7.9.5
 
 -- 
-Péter
+Regards/Gruss,
+Boris.
