@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab2EGOY5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 10:24:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40042 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756138Ab2EGOY4 (ORCPT
+	id S1756734Ab2EGO2A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 10:28:00 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54856 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756590Ab2EGO15 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 10:24:56 -0400
-Date: Mon, 7 May 2012 15:24:54 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lrg@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] regulator: tps62360: enable register cache
-Message-ID: <20120507142453.GG17002@opensource.wolfsonmicro.com>
-References: <1336394306-2211-1-git-send-email-ldewangan@nvidia.com>
- <1336394306-2211-2-git-send-email-ldewangan@nvidia.com>
+	Mon, 7 May 2012 10:27:57 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Nick Piggin <npiggin@gmail.com>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH 04/16] vfs: do_last(): use inode variable
+References: <1335357857-16416-1-git-send-email-miklos@szeredi.hu>
+	<1335357857-16416-5-git-send-email-miklos@szeredi.hu>
+	<CAPa8GCBjDjEtJsqxVrf7T3+VxGrGFMgNcjQv=5tSb4bZLOAB9Q@mail.gmail.com>
+Date: Mon, 07 May 2012 16:28:21 +0200
+In-Reply-To: <CAPa8GCBjDjEtJsqxVrf7T3+VxGrGFMgNcjQv=5tSb4bZLOAB9Q@mail.gmail.com>
+	(Nick Piggin's message of "Tue, 1 May 2012 14:06:13 +1000")
+Message-ID: <87fwbcuku2.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B8ONY/mu/bqBak9m"
-Content-Disposition: inline
-In-Reply-To: <1336394306-2211-2-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Be different: conform.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Nick Piggin <npiggin@gmail.com> writes:
 
---B8ONY/mu/bqBak9m
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On 25 April 2012 22:44, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>> From: Miklos Szeredi <mszeredi@suse.cz>
+>>
+>> Use helper variable instead of path->dentry->d_inode before complete_walk().
+>> This will allow this code to be used in RCU mode.
+>
+> What do you mean, allow it to be used?
 
-On Mon, May 07, 2012 at 06:08:25PM +0530, Laxman Dewangan wrote:
-> Enable cache of device register using regmap cache RBTREE.
+I mean allow the code to be shared between RCU and non-RCU mode.  See
+10/16.
 
-Applied both, thanks.
+>
+>>
+>> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+>> ---
+>>  fs/namei.c |    7 ++++---
+>>  1 files changed, 4 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/fs/namei.c b/fs/namei.c
+>> index 46d4bf6..f21ddb3 100644
+>> --- a/fs/namei.c
+>> +++ b/fs/namei.c
+>> @@ -2360,15 +2360,16 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+>>        if (error)
+>>                nd->flags |= LOOKUP_JUMPED;
+>>
+>> +       inode = path->dentry->d_inode ;
+>>        error = -ENOENT;
+>> -       if (!path->dentry->d_inode)
+>> +       if (!inode)
+>>                goto exit_dput;
+>>
+>> -       if (path->dentry->d_inode->i_op->follow_link)
+>> +       if (inode->i_op->follow_link)
+>>                return NULL;
+>>
+>>        path_to_nameidata(path, nd);
+>> -       nd->inode = path->dentry->d_inode;
+>> +       nd->inode = inode;
+>>        /* Why this, you ask?  _Now_ we might have grown LOOKUP_JUMPED... */
+>>        error = complete_walk(nd);
+>>        if (error)
+>
+> In rcu-walk mode, dentry->d_inode should not be accessed at all,
+> outside of the core lookup code that (should) have the correct
+> barriers and sequence locks.
+>
+> That logic should not escape into here, so I'm just not sure what
+> you're doing here.
 
-> Just resending as part of this series.
+Right, dentry->d_inode is *not* going to be dereferenced in RCU mode.
+In RCU mode it will jump to the place just after the "inode =
+path->dentry->d_inode;" line.  See patch 10/16.
 
-You did fix the thing with the defaults.
-
---B8ONY/mu/bqBak9m
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPp9spAAoJEBus8iNuMP3dcjMP+QH9K0WYGdWVkqu1rjDtgabj
-nYDaIbG9jC6LpxMCz3sbmQ1hVmcLvdrLT743X4x7ERnqBUIQq2CSdD/BkO5E9Xzr
-iLG3EDX6OJtw/Yi3vJf7E2kPeXIZP0TsAO0xhzFNMr/xwHbb+HhsQQdW3UJn9/y6
-1mU39uJKmCTntMNZja4MjlA9jmli3UTF7OTGKhjHAk/m1sxTix7irDx6N25Xxr+y
-/IEx2UX75VON0xDQ/ATHhxxr5sci1VaTQfhHk0W5nTnBwxXuwVhsYB7PnCP2YFhL
-RdSlZVHIWiXF9ZIA0iaA0NLXPSdqCw2SZ1vggicT2q5Mk8PhSSscJmFAdwbB3hPG
-I3OQACIAm1k754/0hifKUD0cMpyJNCCJFqyIYvPPBqIFeJ7SbB6ZPsVO/frKpmcZ
-5/UOHPb+ijDbbeNlrohArya3zHyRdjsmVIUqpTwoUCUCVrNoCBVpmrwzZgQ4+G2B
-MPa9qaBg+WjV4SHvvw23ITJXDnXfUq2/gnbZHwIA6pfO3EEv0LpTNtZqVazHhEZb
-mGSyIehawou7gi2dm2aSX/8WhlqaHyhDBEzEVn+e9psDYnFtVQ2UEhOn8VprUCjQ
-EOd45asHQ3Yj3QdAaJ8FStS0mnqJE0z+a8Obj70obr1Qz4GqeDrivas0q6nHEXMd
-8FX2yFXZ1g1NWT9ZbboM
-=GOUF
------END PGP SIGNATURE-----
-
---B8ONY/mu/bqBak9m--
+Thanks,
+Miklos
