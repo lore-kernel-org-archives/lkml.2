@@ -1,93 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab2EGMkb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 08:40:31 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:45883 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756382Ab2EGMk3 (ORCPT
+	id S1756646Ab2EGMnJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 08:43:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57241 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755639Ab2EGMnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 08:40:29 -0400
-Message-ID: <4FA7C2BC.2090400@vflare.org>
-Date: Mon, 07 May 2012 08:40:28 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cl@linux-foundation.org
-Subject: Re: [PATCH 4/4] zsmalloc: zsmalloc: align cache line size
-References: <1336027242-372-1-git-send-email-minchan@kernel.org> <1336027242-372-4-git-send-email-minchan@kernel.org> <4FA28EFD.5070002@vflare.org> <4FA33E89.6080206@kernel.org> <alpine.LFD.2.02.1205071038090.2851@tux.localdomain>
-In-Reply-To: <alpine.LFD.2.02.1205071038090.2851@tux.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 7 May 2012 08:43:08 -0400
+Subject: Re: [BUG] perf stat: useless output for raw events with new event
+ parser
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, mingo@elte.hu,
+        David Ahern <dsahern@gmail.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+In-Reply-To: <20120426173657.GC18810@erda.amd.com>
+References: <CABPqkBQJU2vYLbr-=qjkpG=sB8n-8aXJ3QkWcASzy5h4rtFAig@mail.gmail.com>
+	 <1335178132.28150.117.camel@twins>
+	 <CABPqkBQ2w3RLRwq3fsaJQ_L=_=H+5kounBeuxUv_fk1ksimTOQ@mail.gmail.com>
+	 <1335436031.13683.6.camel@twins> <20120426131220.GB5046@erda.amd.com>
+	 <1335450273.13683.76.camel@twins> <20120426144514.GB18810@erda.amd.com>
+	 <1335454772.13683.101.camel@twins>  <20120426173657.GC18810@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 May 2012 14:42:45 +0200
+Message-ID: <1336394565.27020.32.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/7/12 3:41 AM, Pekka Enberg wrote:
-> On Fri, 4 May 2012, Minchan Kim wrote:
->>>> It's a overkill to align pool size with PAGE_SIZE to avoid
->>>> false-sharing. This patch aligns it with just cache line size.
->>>>
->>>> Signed-off-by: Minchan Kim<minchan@kernel.org>
->>>> ---
->>>>    drivers/staging/zsmalloc/zsmalloc-main.c |    6 +++---
->>>>    1 file changed, 3 insertions(+), 3 deletions(-)
->>>>
->>>> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c
->>>> b/drivers/staging/zsmalloc/zsmalloc-main.c
->>>> index 51074fa..3991b03 100644
->>>> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
->>>> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
->>>> @@ -489,14 +489,14 @@ fail:
->>>>
->>>>    struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
->>>>    {
->>>> -    int i, error, ovhd_size;
->>>> +    int i, error;
->>>>        struct zs_pool *pool;
->>>>
->>>>        if (!name)
->>>>            return NULL;
->>>>
->>>> -    ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
->>>> -    pool = kzalloc(ovhd_size, GFP_KERNEL);
->>>> +    pool = kzalloc(ALIGN(sizeof(*pool), cache_line_size()),
->>>> +                GFP_KERNEL);
->>>
->>> a basic question:
->>>   Is rounding off allocation size to cache_line_size enough to ensure
->>> that the object is cache-line-aligned? Isn't it possible that even
->>> though the object size is multiple of cache-line, it may still not be
->>> properly aligned and end up sharing cache line with some other
->>> read-mostly object?
->>
->> AFAIK, SLAB allocates object aligned cache-size so I think that problem cannot happen.
->> But needs double check.
->> Cced Pekka.
->
-> The kmalloc(size) function only gives you the following guarantees:
->
->    (1) The allocated object is _at least_ 'size' bytes.
->
->    (2) The returned pointer is aligned to ARCH_KMALLOC_MINALIGN.
->
-> Anything beyond that is implementation detail and probably will break if
-> you switch between SLAB/SLUB/SLOB.
->
-> 			Pekka
+On Thu, 2012-04-26 at 19:36 +0200, Robert Richter wrote:
+> On 26.04.12 17:39:32, Peter Zijlstra wrote:
+> > On Thu, 2012-04-26 at 16:45 +0200, Robert Richter wrote:
+> > > It is totally ok to have parser support for this. I simply do not see
+> > > why we need to put the encoding into sysfs. We somehow know on which
+> > > hardware we run and the parser should already know how to setup the
+> > > syscall. So parsing the above finally ends in calling of something
+> > > like:
+> > > 
+> > >  setup_event_for_some_pmu(event, 0x4e2, 0xf8);
+> > > 
+> > > We don't need any description of bit masks in sysfs for this. 
+> > 
+> > Its the kernel side decoding perf_event_attr, so it seems sensible to
+> > also describe this encoding from the kernel.
+> 
+> For perfctr we have:
+> 
+>  /sys/bus/event_source/devices/cpu/format/inv: config:23
+>  /sys/bus/event_source/devices/cpu/format/edge: config:18
+>  /sys/bus/event_source/devices/cpu/format/cmask: config:24-31
+>  /sys/bus/event_source/devices/cpu/format/event: config:0-7,32-35
+>  /sys/bus/event_source/devices/cpu/format/umask: config:8-15
+> 
+> The kernel does not en- or decode anything in the config value. It is
+> directly passed to the pmu with some validation of the values.
 
-So, we can probably leave it as is (PAGE_SIZE aligned) or use 
-kmem_cache_create(...,SLAB_HWCACHE_ALIGN,...) for allocating 'struct 
-zs_pool's.
+For AMD and most Intel, yes. But there's no requirement for this to be
+so. IIRC, Intel P4 doesn't.
 
-zcache can potentially create a lot of pools, so the latter will save 
-some memory.
+Furthermore, extra data required for some events doesn't have a well
+defined place in the one ::config and we use config1,2, but how do we
+tell what goes where?
 
-Thanks,
-Nitin
+> Everything else is in userland since it composes the syscall.
+
+Dependent on what you want to achieve, but with the format/ and event/
+stuff you can get a whole way without userspace ever having to know what
+particular hardware its running on. 
+
+Ideally we'd get all the way to where the user itself doesn't care, once
+the user starts caring he/she will have to open up the BKDG/SDM/other
+volume of arch magic. At which point they'd better be well qualified to
+deal with all that brings.
+
+> The kernel must now contain code like this:
+> 
+>  PMU_FORMAT_ATTR(event,  "config:0-7,32-35");
+>  PMU_FORMAT_ATTR(umask,  "config:8-15"   );
+>  PMU_FORMAT_ATTR(edge,   "config:18"     );
+>  PMU_FORMAT_ATTR(inv,    "config:23"     );
+>  PMU_FORMAT_ATTR(cmask,  "config:24-31"  );
+> 
+> Which is unrelated to anything else, duplicates the effort to maintain
+> bit masks and thus is more error-prone. Besides this there is no need
+> for it because the values are fix and do not change.
+
+If it doesn't change there's no maintenance overhead is there?
+
+>  We simply know
+> the format of the config value already, so the format entries are of
+> no use.
+
+And yet 'event' isn't the same for Intel and AMD, this means I'd have to
+add all kinds of cpu detection code into the parser. By having the
+kernel provide this information the parser doesn't have to care about
+it.
+
+> One could argue that feeding a generic pmu setup with the format
+> configuration reduces the need to modify userland, we have same code
+> for various archs. But if I have the choice I rather update my perf
+> tool chain than rebooting the kernel to update perf.
+
+You'll have to reboot at some point anyway, you can always frob
+perf_event_attr::config* by hand without the aid of this sysfs stuff,
+but when the kernel cannot handle the data or otherwise doesn't know how
+to talk to the hardware you'll have to go reboot.
+
+I really don't see the problem with reboots and wish people would stop
+using that silly argument.
+
+> > Currently we mostly match the hardware encoding, but there's no strict
+> > requirement to do so, we can already see some of that with the extra_reg
+> > stuff, perf_event_attr::config1 can mean different things depending on
+> > the event.
+> 
+> Of course the config values of the syscall could be translated into a
+> different hardware configuration. But its layout is always spec'ed
+> somewhere and needs no description in sysfs.
+
+You mean there's a spec (kernel source excluded) that says that the
+offcore response msr goes in perf_event_attr::config1 ?
+
+> > Keeping all this information in two places just seems like asking for it
+> > to get out of sync.
+> 
+> All this could reside in userland at one place too.
+
+Userland would first have to figure out what physical hardware it was
+running on to determine if it has an offcore response msr, then it would
+have to 'know' this value is supposed to go in perf_event_attr::config1.
+
+By hard-coding this in userspace the kernel is then never allowed to
+change it and you'd have to duplicate this knowledge everywhere you'd
+want to use the syscall. You could 'optimize' this by using a library to
+reduce the userland copies to 1, but the fact is that both kernel and
+userland need to 'know' this independently.
+
+Yet by having it in sysfs the kernel can tell userspace than it has an
+offcore_rsp field and if we get a value for it it goes wherever it says.
+Userspace doesn't need to know anything other than to look up stuff in
+sysfs and there's only 1 copy of the knowledge needed -- in the kernel.
+
+So if I try to set offcore_rsp on an AMD machine it'll error since they
+don't provide that field.
+
+Same with the event field, without having to have cpu checks, perf can
+deal with 'cpu/event=0x4e3/'. On Intel it can tell us this won't go
+since the event field isn't wide enough, on AMD it knows to stick that 4
+in bits 32-35 of perf_event_attr::config.
+
+>  Also, the syscall
+> definition is sufficient as interface description and both sides must
+> handle any differences of kernel or userland implementations.
+
+You've just posted a patch ([PATCH 4/7] perf/x86-ibs: Add support for
+IBS pseudo events) that's the very counter example.
+
+
