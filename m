@@ -1,170 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756353Ab2EGNcT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 09:32:19 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39349 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756162Ab2EGNcR (ORCPT
+	id S1756336Ab2EGNhG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 09:37:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25418 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756105Ab2EGNhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 09:32:17 -0400
-Date: Mon, 7 May 2012 15:32:04 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        Tim Small <tim@buttersideup.com>,
-        Ranganathan Desikan <ravi@jetztechnologies.com>,
-        "Arvind R." <arvino55@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Egor Martovetsky <egor@pasemi.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Michal Marek <mmarek@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Niklas =?iso-8859-1?Q?S=F6derlund?= 
-	<niklas.soderlund@ericsson.com>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>,
-        Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH EDACv16 1/2] edac: Change internal representation to work
- with layers, second version
-Message-ID: <20120507133204.GC11462@aftab.osrc.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 7 May 2012 09:37:03 -0400
+X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_s2ZMIMYyfwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=8ZS6Btx8uB3dEi3HNmUA:9 a=A6z-zd2m3Z-kgKKLxpcA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1336397821.14207.136.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 00/15] tools: Unify perf and trace-cmd trace event
+ format parsing v3
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
+        Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>,
+        David Ahern <dsahern@gmail.com>
+Date: Mon, 07 May 2012 09:37:01 -0400
+In-Reply-To: <20120507081424.GE16608@gmail.com>
+References: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
+	 <20120507081424.GE16608@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-breaking thread because it grew too big.
+On Mon, 2012-05-07 at 10:14 +0200, Ingo Molnar wrote:
 
-On Fri, May 04, 2012 at 07:48:42AM -0300, Mauro Carvalho Chehab wrote:
+> So can we please make a libevent.so, built sanely within 
+> tools/perf/lib/ or such and distributed together with perf so 
+> that the two can never get out of sync?
 
-[ … ]
+If you do this, you need to find a way to turn off -Wswitch-enum as that
+seems to (at least on my gcc) ignore defaults.
 
-> +	memset(&pos, 0, sizeof(pos));
-> +	row = 0;
-> +	chn = 0;
-> +	debugf4("%s: initializing %d %s\n", __func__, tot_dimms,
-> +		per_rank ? "ranks" : "dimms");
-> +	for (i = 0; i < tot_dimms; i++) {
-> +		chan = &csi[row].channels[chn];
-> +		dimm = EDAC_DIMM_PTR(layer, mci->dimms, n_layers,
-> +			       pos[0], pos[1], pos[2]);
-> +		dimm->mci = mci;
-> +
-> +		debugf2("%s: %d: %s%zd (%d:%d:%d): row %d, chan %d\n", __func__,
-> +			i, per_rank ? "rank" : "dimm", (dimm - mci->dimms),
-> +			pos[0], pos[1], pos[2], row, chn);
-> +
-> +		/* Copy DIMM location */
-> +		for (j = 0; j < n_layers; j++)
-> +			dimm->location[j] = pos[j];
-> +
-> +		/* Link it to the csrows old API data */
-> +		chan->dimm = dimm;
-> +		dimm->csrow = row;
-> +		dimm->cschannel = chn;
-> +
-> +		/* Increment csrow location */
-> +		for (j = n_layers - 1; j >= 0; j--)
-> +			if (layers[j].is_virt_csrow)
-> +				break;
+Thus we end up with:
 
-This looks fishy: the for-loop above iterates over layers[j] to break on
-the first ->is_virt_csrow.
+diff --git a/Makefile b/Makefile
+index 18ad079..217548b 100644
 
-> +		row++;
+diff --git a/parse-filter.c b/parse-filter.c
+index d09fbd2..0ac249c 100644
+--- a/parse-filter.c
++++ b/parse-filter.c
+@@ -367,6 +367,12 @@ create_arg_item(struct event_format *event, const
+char *token,
+ 		arg->type = FILTER_ARG_FIELD;
+ 		arg->field.field = field;
+ 		break;
++	case EVENT_ERROR:
++	case EVENT_NONE:
++	case EVENT_SPACE:
++	case EVENT_NEWLINE:
++	case EVENT_OP:
++	case EVENT_DELIM:
+ 	default:
+ 		free_arg(arg);
+ 		show_error(error_str, "expected a value but found %s",
 
-And row here gets incremented unconditionally, independent from the loop
-above. And you're not using any results from the loop: j gets reset
-below in the next loop.
 
-What's going on?
+I found that I added over 20 of these trying to keep -Wswitch-enum
+happy, before i decided to give up (there's many more than 20 places
+that need updates).
 
-> +		if (row == tot_csrows) {
-> +			row = 0;
-> +			chn++;
-> +		}
-> +
-> +		/* Increment dimm location */
-> +		for (j = n_layers - 1; j >= 0; j--) {
-> +			pos[j]++;
-> +			if (pos[j] < layers[j].size)
-> +				break;
-> +			pos[j] = 0;
->  		}
->  	}
->  
-> @@ -263,6 +373,46 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
->  	 */
->  	return mci;
->  }
-> +EXPORT_SYMBOL_GPL(new_edac_mc_alloc);
-> +
-> +/**
-> + * edac_mc_alloc: Allocate and partially fill a struct mem_ctl_info structure
-> + * @mc_num:		Memory controller number
-> + * @n_layers:		Number of layers at the MC hierarchy
-> + * layers:		Describes each layer as seen by the Memory Controller
-> + * @size_pvt:		Size of private storage needed
-> + *
-> + *
-> + * FIXME: drivers handle multi-rank memories in different ways: some
-> + * drivers map multi-ranked DIMMs as one DIMM while others
-> + * as several DIMMs.
-> + *
-> + * Everything is kmalloc'ed as one big chunk - more efficient.
-> + * It can only be used if all structures have the same lifetime - otherwise
-> + * you have to allocate and initialize your own structures.
-> + *
-> + * Use edac_mc_free() to free mc structures allocated by this function.
-> + *
-> + * Returns:
-> + *	On failure: NULL
-> + *	On success: struct mem_ctl_info pointer
-> + */
-> +
+Looking at what was done in the current code, there's lots of :
 
-[ … ]
+	case PRINT_NULL:
+	case PRINT_FIELD ... PRINT_SYMBOL:
+	case PRINT_STRING:
+	default:
 
-> +void edac_mc_handle_error(const enum hw_event_mc_err_type type,
-> +			  struct mem_ctl_info *mci,
-> +			  const unsigned long page_frame_number,
-> +			  const unsigned long offset_in_page,
-> +			  const unsigned long syndrome,
-> +			  const int layer0,
-> +			  const int layer1,
-> +			  const int layer2,
-> +			  const char *msg,
-> +			  const char *other_detail,
-> +			  const void *mcelog)
->  {
-> -	int len = EDAC_MC_LABEL_LEN * 4;
-> -	char labels[len + 1];
-> -	char *pos = labels;
-> -	int chan;
-> -	int chars;
-> -	char *label = NULL;
-> +	/* FIXME: too much for stack: move it to some pre-alocated area */
+Which looks more of a maintenance nightmare. How does this help? The
+FOO ... BAR, will hide the same errors that you are trying to prevent.
+If you were suppose to handle something between FOO and BAR, then you
+just ignored it too.
 
-I'm assuming all those new FIXMEs are going to be addressed soonish :)
+It also makes that "default" redundant.
 
-Rest looks ok,
-thanks.
+This is one of those warnings that causes more pain than it helps.
 
--- 
-Regards/Gruss,
-Boris.
+If you strongly believe that all these warnings are helpful, than we
+should push to add these warnings to the kernel too.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+-- Steve
+
+
