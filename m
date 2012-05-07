@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757294Ab2EGPzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 11:55:12 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:28792 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756791Ab2EGPzJ (ORCPT
+	id S1756921Ab2EGP7I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 11:59:08 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:59913
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756571Ab2EGP7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 11:55:09 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 4rGn.NMVM1k6itbjj4UscuDgb7.cNMUUfnT0r_WQ8bHthQm
- eg8P10M5Dv1mk4l3YG_ik1UUaU6p4E2unOeHQIBKqlK9rA5jOGQJNdeh3jWa
- a_jyruuL8KYTsjmSaIwXVy96STP.U3gRxRHZU1Z_50y1Fs5cvv0Z9uiJdtQw
- N965AdmyVJEykb_MEUOkmTYLRchq5oD_2gb_VrqORiq8IlCZBeLhPZXOgQPW
- xOzFY.qXm3rzkEIK.FCuSTM.J83EGXy2Tjnxk.zCLWrHrhqM4rDFA_Gu0cej
- yeHye4uavhOTQ0yPOY_d0.EMKQmMy2VWfRbV_A6mZdhz1wjd0U9A.tvH_Nx2
- zLPaFCS791nZAsXySOK75w_9QC5WSy8YoHwA3cVIgedfHeEeYTE14n0icZm6
- 7
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 7 May 2012 10:55:03 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
-In-Reply-To: <1335830115-14335-8-git-send-email-fweisbec@gmail.com>
-Message-ID: <alpine.DEB.2.00.1205071053070.1060@router.home>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com> <1335830115-14335-8-git-send-email-fweisbec@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 7 May 2012 11:59:06 -0400
+X-SpamScore: -12
+X-BigFish: VPS-12(zz936eK1432N98dKzz1202hzzz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M3NTQA-02-6DC-02
+X-M-MSG: 
+Date: Mon, 7 May 2012 17:58:55 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/7] perf/x86-ibs: Add support for IBS pseudo events
+Message-ID: <20120507155855.GJ18810@erda.amd.com>
+References: <1335983192-23731-1-git-send-email-robert.richter@amd.com>
+ <1335983192-23731-5-git-send-email-robert.richter@amd.com>
+ <1336395782.27020.37.camel@laptop>
+ <20120507154412.GH18810@erda.amd.com>
+ <1336405911.27020.70.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1336405911.27020.70.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 May 2012, Frederic Weisbecker wrote:
+On 07.05.12 17:51:51, Peter Zijlstra wrote:
+> On Mon, 2012-05-07 at 17:44 +0200, Robert Richter wrote:
+> > On 07.05.12 15:03:02, Peter Zijlstra wrote:
+> > > On Wed, 2012-05-02 at 20:26 +0200, Robert Richter wrote:
+> > > > +enum ibs_filter_type {
+> > > > +       IBS_NO_FILTER           = 0,
+> > > > +       IBS_MATCH_FILTER        = 1,
+> > > > +       IBS_ANY_SET_FILTER      = 2,
+> > > > +       IBS_PSEUDO_EVENT        = 0x0F,
+> > > > +};
+> > > 
+> > > I don't get how those pseudo events work, AFAIKT IBS_PSEUDO_EVENT causes
+> > > one to loose all events since it does have a filter set but fails the
+> > > filter and thus we skip the call to perf_event_overflow().
+> > 
+> > You periodically (fix clk cycles or number of micro-ops) trigger IBS
+> > samples and afterwards analyses the samples for certain filter rules
+> > (see rule description in pmu-ibs.c). 
+> 
+> But IBS_PSEUDO_EVENT will fail all filter test and you'll end up with
+> exactly 0 samples. Still somewhat confused..
 
-> Prepare the interface to implement the nohz cpuset flag.
-> This flag, once set, will tell the system to try to
-> shutdown the periodic timer tick when possible.
->
-> We use here a per cpu refcounter. As long as a CPU
-> is contained into at least one cpuset that has the
-> nohz flag set, it is part of the set of CPUs that
-> run into adaptive nohz mode.
+Ahh, got your question. This is a place holder for writing the pseudo
+event id's (0xF000 mask) directly in config[12]. But this is not yet
+implemented. And since we probably all prefer userland filtering we
+just don't need this at all.
 
-As I have said before: It would be much simpler if one could specify the
-set of nohz cpus independently of cpusets. Having a flag f.e. as a file in
+-Robert
 
-	/sys/devices/system/cpu/cpuX/nohz
-
-?
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
