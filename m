@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab2EGHjH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 03:39:07 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16665 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194Ab2EGHjF (ORCPT
+	id S1755524Ab2EGHjQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 03:39:16 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19950 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755477Ab2EGHjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 03:39:05 -0400
+	Mon, 7 May 2012 03:39:10 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 07 May 2012 00:39:04 -0700
+	by hqnvupgp07.nvidia.com on Mon, 07 May 2012 00:38:31 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org,
         lrg@ti.com, linux-kernel@vger.kernel.org
 Cc: Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V1 3/4] regulator: tps62360: use efficient function
-Date: Mon,  7 May 2012 13:05:38 +0530
-Message-Id: <1336376139-1048-4-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH V1 4/4] regulator: tps62360: Provide settling time for voltage change
+Date: Mon,  7 May 2012 13:05:39 +0530
+Message-Id: <1336376139-1048-5-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1336376139-1048-1-git-send-email-ldewangan@nvidia.com>
 References: <1336376139-1048-1-git-send-email-ldewangan@nvidia.com>
@@ -23,121 +23,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In place of using the multiple function to achieve desire
-functionality, use the function which implement that functionality,
-like:
-- regmap_update_bits for read-modify-write
-- gpio_request_one for gpio_request and intial setting output.
-
-This reduces code size effectively.
+Settling time is require when there is voltage output change.
+Implement set_voltage_time_sel() callback which returns delay time
+for voltage change to settle down to new value.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- drivers/regulator/tps62360-regulator.c |   53 +++++++++++---------------------
- 1 files changed, 18 insertions(+), 35 deletions(-)
+ drivers/regulator/tps62360-regulator.c |   46 +++++++++++++++++++++++++++----
+ 1 files changed, 40 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
-index 375f757..ad7d67a 100644
+index ad7d67a..3fd7341 100644
 --- a/drivers/regulator/tps62360-regulator.c
 +++ b/drivers/regulator/tps62360-regulator.c
-@@ -203,23 +203,15 @@ static int tps62360_init_force_pwm(struct tps62360_chip *tps,
- 	struct tps62360_regulator_platform_data *pdata,
- 	int vset_id)
- {
--	unsigned int data;
- 	int ret;
--	ret = regmap_read(tps->regmap, REG_VSET0 + vset_id, &data);
--	if (ret < 0) {
--		dev_err(tps->dev, "%s() fails in writing reg %d\n",
--			__func__, REG_VSET0 + vset_id);
--		return ret;
--	}
--	tps->curr_vset_vsel[vset_id] = data & tps->voltage_reg_mask;
-+	int reg = REG_VSET0 + vset_id;
- 	if (pdata->en_force_pwm)
--		data |= BIT(7);
-+		ret = regmap_set_bits(tps->regmap, reg, BIT(7));
- 	else
--		data &= ~BIT(7);
--	ret = regmap_write(tps->regmap, REG_VSET0 + vset_id, data);
-+		ret = regmap_clear_bits(tps->regmap, reg, BIT(7));
- 	if (ret < 0)
--		dev_err(tps->dev, "%s() fails in writing reg %d\n",
--				__func__, REG_VSET0 + vset_id);
-+		dev_err(tps->dev, "%s() register %d configuration fails\n",
-+			__func__, reg);
- 	return ret;
+@@ -71,6 +71,7 @@ struct tps62360_chip {
+ 	int lru_index[4];
+ 	int curr_vset_vsel[4];
+ 	int curr_vset_id;
++	int change_uv_per_us;
+ };
+ 
+ /*
+@@ -114,7 +115,7 @@ update_lru_index:
+ 	return found;
  }
  
-@@ -254,9 +246,9 @@ static int tps62360_init_dcdc(struct tps62360_chip *tps,
+-static int tps62360_dcdc_get_voltage(struct regulator_dev *dev)
++static int tps62360_dcdc_get_voltage_sel(struct regulator_dev *dev)
+ {
+ 	struct tps62360_chip *tps = rdev_get_drvdata(dev);
+ 	int vsel;
+@@ -128,7 +129,7 @@ static int tps62360_dcdc_get_voltage(struct regulator_dev *dev)
+ 		return ret;
  	}
+ 	vsel = (int)data & tps->voltage_reg_mask;
+-	return (tps->voltage_base + vsel * 10) * 1000;
++	return vsel;
+ }
+ 
+ static int tps62360_dcdc_set_voltage(struct regulator_dev *dev,
+@@ -193,10 +194,28 @@ static int tps62360_dcdc_list_voltage(struct regulator_dev *dev,
+ 	return (tps->voltage_base + selector * 10) * 1000;
+ }
+ 
++static int tps62360_set_voltage_time_sel(struct regulator_dev *rdev,
++		unsigned int old_selector, unsigned int new_selector)
++{
++	struct tps62360_chip *tps = rdev_get_drvdata(rdev);
++	int old_uV, new_uV;
++
++	old_uV = tps62360_dcdc_list_voltage(rdev, old_selector);
++	if (old_uV < 0)
++		return old_uV;
++
++	new_uV = tps62360_dcdc_list_voltage(rdev, new_selector);
++	if (new_uV < 0)
++		return new_uV;
++
++	return DIV_ROUND_UP(abs(old_uV - new_uV), tps->change_uv_per_us);
++}
++
+ static struct regulator_ops tps62360_dcdc_ops = {
+-	.get_voltage = tps62360_dcdc_get_voltage,
+-	.set_voltage = tps62360_dcdc_set_voltage,
+-	.list_voltage = tps62360_dcdc_list_voltage,
++	.get_voltage_sel	= tps62360_dcdc_get_voltage_sel,
++	.set_voltage		= tps62360_dcdc_set_voltage,
++	.list_voltage		= tps62360_dcdc_list_voltage,
++	.set_voltage_time_sel	= tps62360_set_voltage_time_sel,
+ };
+ 
+ static int tps62360_init_force_pwm(struct tps62360_chip *tps,
+@@ -220,6 +239,7 @@ static int tps62360_init_dcdc(struct tps62360_chip *tps,
+ {
+ 	int ret;
+ 	int i;
++	unsigned int ramp_ctrl;
+ 
+ 	/* Initailize internal pull up/down control */
+ 	if (tps->en_internal_pulldn)
+@@ -247,9 +267,23 @@ static int tps62360_init_dcdc(struct tps62360_chip *tps,
  
  	/* Reset output discharge path to reduce power consumption */
--	ret = regmap_update_bits(tps->regmap, REG_RAMPCTRL, BIT(2), 0);
-+	ret = regmap_clear_bits(tps->regmap, REG_RAMPCTRL, BIT(2));
- 	if (ret < 0)
--		dev_err(tps->dev, "%s() fails in updating reg %d\n",
-+		dev_err(tps->dev, "%s() fails in clearing bits of reg %d\n",
+ 	ret = regmap_clear_bits(tps->regmap, REG_RAMPCTRL, BIT(2));
+-	if (ret < 0)
++	if (ret < 0) {
+ 		dev_err(tps->dev, "%s() fails in clearing bits of reg %d\n",
  			__func__, REG_RAMPCTRL);
++		return ret;
++	}
++
++	/* Get ramp value from ramp control register */
++	ret = regmap_read(tps->regmap, REG_RAMPCTRL, &ramp_ctrl);
++	if (ret < 0) {
++		dev_err(tps->dev, "%s() fails in reading reg %d\n",
++			__func__, REG_RAMPCTRL);
++		return ret;
++	}
++	ramp_ctrl = (ramp_ctrl >> 4) & 0x7;
++
++	/* ramp mV/us = 32/(2^ramp_ctrl) */
++	tps->change_uv_per_us = DIV_ROUND_UP(32000, BIT(ramp_ctrl));
  	return ret;
- }
-@@ -337,37 +329,28 @@ static int __devinit tps62360_probe(struct i2c_client *client,
- 	tps->valid_gpios = false;
- 
- 	if (gpio_is_valid(tps->vsel0_gpio) && gpio_is_valid(tps->vsel1_gpio)) {
--		ret = gpio_request(tps->vsel0_gpio, "tps62360-vsel0");
-+		int gpio_flags;
-+		gpio_flags = (pdata->vsel0_def_state) ?
-+				GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
-+		ret = gpio_request_one(tps->vsel0_gpio,
-+				gpio_flags, "tps62360-vsel0");
- 		if (ret) {
- 			dev_err(&client->dev,
- 				"Err: Could not obtain vsel0 GPIO %d: %d\n",
- 						tps->vsel0_gpio, ret);
- 			goto err_gpio0;
- 		}
--		ret = gpio_direction_output(tps->vsel0_gpio,
--					pdata->vsel0_def_state);
--		if (ret) {
--			dev_err(&client->dev, "Err: Could not set direction of"
--				"vsel0 GPIO %d: %d\n", tps->vsel0_gpio, ret);
--			gpio_free(tps->vsel0_gpio);
--			goto err_gpio0;
--		}
- 
--		ret = gpio_request(tps->vsel1_gpio, "tps62360-vsel1");
-+		gpio_flags = (pdata->vsel1_def_state) ?
-+				GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
-+		ret = gpio_request_one(tps->vsel1_gpio,
-+				gpio_flags, "tps62360-vsel1");
- 		if (ret) {
- 			dev_err(&client->dev,
- 				"Err: Could not obtain vsel1 GPIO %d: %d\n",
- 						tps->vsel1_gpio, ret);
- 			goto err_gpio1;
- 		}
--		ret = gpio_direction_output(tps->vsel1_gpio,
--					pdata->vsel1_def_state);
--		if (ret) {
--			dev_err(&client->dev, "Err: Could not set direction of"
--				"vsel1 GPIO %d: %d\n", tps->vsel1_gpio, ret);
--			gpio_free(tps->vsel1_gpio);
--			goto err_gpio1;
--		}
- 		tps->valid_gpios = true;
- 
- 		/*
-@@ -442,9 +425,9 @@ static void tps62360_shutdown(struct i2c_client *client)
- 		return;
- 
- 	/* Configure the output discharge path */
--	st = regmap_update_bits(tps->regmap, REG_RAMPCTRL, BIT(2), BIT(2));
-+	st = regmap_set_bits(tps->regmap, REG_RAMPCTRL, BIT(2));
- 	if (st < 0)
--		dev_err(tps->dev, "%s() fails in updating reg %d\n",
-+		dev_err(tps->dev, "%s() fails in setting reg %d\n",
- 			__func__, REG_RAMPCTRL);
  }
  
 -- 
