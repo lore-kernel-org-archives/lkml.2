@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757645Ab2EGTFH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 15:05:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51476 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757622Ab2EGTFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 15:05:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="141079380"
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: torvalds@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
-        oleg@redhat.com
-Cc: suresh@aristanetworks.com, linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH 2/2] x86, xsave: remove thread_has_fpu() bug check in __sanitize_i387_state()
-Date: Mon,  7 May 2012 12:07:21 -0700
-Message-Id: <1336417641-29771-2-git-send-email-suresh.b.siddha@intel.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1336417641-29771-1-git-send-email-suresh.b.siddha@intel.com>
-References: <y>
- <1336417641-29771-1-git-send-email-suresh.b.siddha@intel.com>
+	id S1757635Ab2EGTHV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 15:07:21 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:57779 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757592Ab2EGTHT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 15:07:19 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19JEZfZo0tC1pmVQiOUuA5E
+Date: Mon, 7 May 2012 12:07:17 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: mathieu.poirier@linaro.org
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de
+Subject: Re: [PATCH 0/9] omap randconfig fixes for v3.3
+Message-ID: <20120507190716.GI5088@atomide.com>
+References: <1332522836-29517-1-git-send-email-mathieu.poirier@linaro.org>
+ <20120329172802.GX9859@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120329172802.GX9859@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Code paths like fork(), exit() and signal handling flush the fpu
-state explicitly to the structures in memory.
+* Tony Lindgren <tony@atomide.com> [120329 10:31]:
+> Mathieu,
+> 
+> * mathieu.poirier@linaro.org <mathieu.poirier@linaro.org> [120323 10:16]:
+> > From: "Arnd Bergmann" <arnd@arndb.de>
+> > 
+> > The following is a set of patches that have been sent
+> > out during the 3.1 cycle that were not acked or merged.
+> > 
+> > Sending again for completeness.  
+> > 
+> > Tony, please pull if there are no objections:
+> > 
+> > The following changes since commit c16fa4f2ad19908a47c63d8fa436a1178438c7e7:
+> 
+> Can you please drop the already fixed ones and post
+> a new pull request?
+> 
+> It seems that these should merge fine to current mainline
+> if based on v3.3. If not, then maybe use the linux-omap fixes
+> branch as the base that I've just pushed at commit 2533c2cf.
 
-BUG_ON() in __sanitize_i387_state() is checking that the fpu state
-is not live any more. But for preempt kernels, task can be scheduled
-out and in at any place and the preload_fpu logic during context switch
-can make the fpu registers live again.
+Ping, any news on updating the pull request for the remaining
+comments?
 
-Similarly during core dump, thread dumping the core can schedule out
-and in for page-allocations etc in non-preempt case.
-
-So remove the paranoid check, even though it caught a bug in the
-multi-threaded core dump case (fixed in the previous patch).
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/kernel/xsave.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index e62728e..bd18149 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -48,8 +48,6 @@ void __sanitize_i387_state(struct task_struct *tsk)
- 	if (!fx)
- 		return;
- 
--	BUG_ON(__thread_has_fpu(tsk));
--
- 	xstate_bv = tsk->thread.fpu.state->xsave.xsave_hdr.xstate_bv;
- 
- 	/*
--- 
-1.7.6.5
-
+Tony
