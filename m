@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab2EGRRQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 13:17:16 -0400
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:37561 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757467Ab2EGRRO (ORCPT
+	id S932116Ab2EGRRc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 13:17:32 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:37595 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932099Ab2EGRRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 13:17:14 -0400
-Message-ID: <4FA8037C.8010304@linux.vnet.ibm.com>
-Date: Mon, 07 May 2012 14:16:44 -0300
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 7 May 2012 13:17:31 -0400
+Date: Mon, 7 May 2012 10:17:25 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
+Subject: Re: [PATCH v1 3/6] workqueue: introduce schedule_on_each_cpu_cond
+Message-ID: <20120507171725.GB19417@google.com>
+References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
+ <1336056962-10465-4-git-send-email-gilad@benyossef.com>
+ <20120503153941.GA5528@google.com>
+ <CAOtvUMcJurhAKB5pbq91WCsSM7cELNOdUbANzx4gF0Cf8x4cTg@mail.gmail.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: jmorris@namei.org, pebolle@tiscali.nl, linux-kernel@vger.kernel.org,
-        tpmdd@selhorst.net
-Subject: Re: [PULL] TPM: MAINTAINERS contacts update and error report fix
-References: <20120503171054.GA6165@localhost.br.ibm.com> <1336076080.13866.49.camel@joe2Laptop>
-In-Reply-To: <1336076080.13866.49.camel@joe2Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12050717-2362-0000-0000-0000071808C0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOtvUMcJurhAKB5pbq91WCsSM7cELNOdUbANzx4gF0Cf8x4cTg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/12 17:14, Joe Perches wrote:
-> On Thu, 2012-05-03 at 14:10 -0300, Rajiv Andrade wrote:
->> The first as the subject implies is just a contacts update, and the second
->> makes the driver avoid to mistakenly report the disabled and deactivated TPM
->> states as an error.
-> trivia:
->
->> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-> []
->> @@ -845,7 +845,16 @@ int tpm_do_selftest(struct tpm_chip *chip)
->>   		return rc;
->>
->>   	do {
->> -		rc = __tpm_pcr_read(chip, 0, digest);
->> +		/* Attempt to read a PCR value */
->> +		cmd.header.in = pcrread_header;
->> +		cmd.params.pcrread_in.pcr_idx = cpu_to_be32(0);
->> +		rc = tpm_transmit(chip, (u8 *)&cmd, READ_PCR_RESULT_SIZE);
->> +
->> +		if (rc<  TPM_HEADER_SIZE)
->> +			return -EFAULT;
->> +		else
->> +			rc = be32_to_cpu(cmd.header.out.return_code);
-> The else shouldn't be used here.
-> Indented code followed by an unindented test is not nice.
-Yep.. I missed it.
->
->> +
->>   		if (rc == TPM_ERR_DISABLED || rc == TPM_ERR_DEACTIVATED) {
->>   			dev_info(chip->dev,
->>   				 "TPM is disabled/deactivated (0x%X)\n", rc);
-> A more kernel style conformant style looks like:
->
-> 		rc = tpm_transmit(chip, (u8 *)&cmd, READ_PCR_RESULT_SIZE);
-> 		if (rc<  TPM_HEADER_SIZE)
-> 			return -EFAULT;
->
-> 		rc = be32_to_cpu(cmd.header.out.return_code);
->   		if (rc == TPM_ERR_DISABLED || rc == TPM_ERR_DEACTIVATED) {
-> 			etc...
->
->
-Thanks for pointing.
+Hello,
 
-James, please ignore, I'll send a better version of this fix.
+On Sun, May 06, 2012 at 04:15:30PM +0300, Gilad Ben-Yossef wrote:
+> A single helper function called schedule_on_each_cpu_cond() is very
+> obvious to find to someone reading the source or documentation. On
+> the other hand figuring out that the helper functions that handle
+> cpu hotplug and cpumask allocation are there for that purpose is a
+> bit more involved.
+> 
+> That was my thinking at least.
 
-Rajiv
+Yeah, having common mechanism is nice, but I just prefer iterators /
+helpers which can be embedded in the caller to interface which takes a
+callback unless the execution context is actually asynchronous to the
+caller.  We don't use nested functions / scopes in kernel which makes
+those callbacks (higher order functions, lambdas, gammas, zetas
+whatever) painful to use and follow.
 
+> The way i see it, I can either obliterate on_each_cpu_cond() and out
+> its code in place in the LRU path, or fix the callback to get an
+> extra private data parameter -
+
+Unless we can code up something pretty, I vote for just open coding it
+for now.  If we grow more usages like this, maybe we'll be able to see
+the pattern better and come up with better abstraction.
+
+Thank you.
+
+-- 
+tejun
