@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab2EGXjn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 19:39:43 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:56379 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753340Ab2EGXjl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 19:39:41 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "J\, KEERTHY" <j-keerthy@ti.com>
-Cc: "AnilKumar\, Chimata" <anilkumar@ti.com>,
-        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "rjw\@sisk.pl" <rjw@sisk.pl>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm\@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "Pihet-XID\, Jean" <j-pihet@ti.com>
-Subject: Re: [PATCH V3 04/10] ARM: OMAP3: hwmod: rename the smartreflex entries
-Organization: Texas Instruments, Inc.
-References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
-	<1335462041-4949-5-git-send-email-j-keerthy@ti.com>
-	<331ABD5ECB02734CA317220B2BBEABC13E9B1AA2@DBDE01.ent.ti.com>
-	<CAJ6a13ZSWSa_RpGB9NxtfyChUba9NGivGogpsfyk7oT9pNayjg@mail.gmail.com>
-Date: Mon, 07 May 2012 16:39:53 -0700
-In-Reply-To: <CAJ6a13ZSWSa_RpGB9NxtfyChUba9NGivGogpsfyk7oT9pNayjg@mail.gmail.com>
-	(KEERTHY J.'s message of "Fri, 4 May 2012 15:41:34 +0530")
-Message-ID: <87d36fzhkm.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1757936Ab2EGXki (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 19:40:38 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:15319
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757743Ab2EGXkB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 19:40:01 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zzbb2dI9371I1432N98dKzz1202hzz8275bhz2fh668h839h93fhd25h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4FA85D5D.2070103@am.sony.com>
+Date: Mon, 7 May 2012 16:40:13 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Brian Swetland <swetland@google.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: android: logger: Allocate logs dynamically at
+ boot
+References: <4FA4673C.7010209@am.sony.com> <20120504233707.GA24213@kroah.com>	<4FA8195E.2010706@am.sony.com> <CANqkERCQixuCe9vfeDncHikED-bVwZ3APr=mo6WfQBcGf4rz_g@mail.gmail.com>
+In-Reply-To: <CANqkERCQixuCe9vfeDncHikED-bVwZ3APr=mo6WfQBcGf4rz_g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"J, KEERTHY" <j-keerthy@ti.com> writes:
-
-> Hi AnilKumar,
->
-> Thanks for reviewing.
->
-> On Fri, May 4, 2012 at 2:00 PM, AnilKumar, Chimata <anilkumar@ti.com> wrote:
->> On Thu, Apr 26, 2012 at 23:10:35, J, KEERTHY wrote:
->>> From: Jean Pihet <j-pihet@ti.com>
+On 05/07/2012 03:13 PM, Brian Swetland wrote:
+> On Mon, May 7, 2012 at 11:50 AM, Tim Bird <tim.bird@am.sony.com> wrote:
+>> On 05/04/2012 04:37 PM, Greg KH wrote:
+>>> On Fri, May 04, 2012 at 04:33:16PM -0700, Tim Bird wrote:
+>>>> +#define MAX_LOGS    5
+>>>> +struct logger_log *logs_array[MAX_LOGS];
 >>>
->>> Change the name field value to better reflect the smartreflex
->>> integration in the system.
->>>
->>> Signed-off-by: Jean Pihet <j-pihet@ti.com>
->>> Signed-off-by: J Keerthy <j-keerthy@ti.com>
->>> ---
->>>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |    8 ++++----
->>>  arch/arm/mach-omap2/smartreflex.c          |    2 +-
->>>  2 files changed, 5 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->>> index 144d118..15907b0 100644
->>> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->>> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->>> @@ -1324,7 +1324,7 @@ static struct omap_hwmod_irq_info omap3_smartreflex_mpu_irqs[] = {
->>>  };
->>>
->>>  static struct omap_hwmod omap34xx_sr1_hwmod = {
->>> -     .name           = "sr1",
->>> +     .name           = "smartreflex_mpu_iva",
->>>       .class          = &omap34xx_smartreflex_hwmod_class,
->>>       .main_clk       = "sr1_fck",
->>>       .prcm           = {
->>> @@ -1342,7 +1342,7 @@ static struct omap_hwmod omap34xx_sr1_hwmod = {
->>>  };
->>>
->>>  static struct omap_hwmod omap36xx_sr1_hwmod = {
->>> -     .name           = "sr1",
->>> +     .name           = "smartreflex_mpu_iva",
->>>       .class          = &omap36xx_smartreflex_hwmod_class,
->>>       .main_clk       = "sr1_fck",
->>>       .prcm           = {
->>> @@ -1369,7 +1369,7 @@ static struct omap_hwmod_irq_info omap3_smartreflex_core_irqs[] = {
->>>  };
->>>
->>>  static struct omap_hwmod omap34xx_sr2_hwmod = {
->>> -     .name           = "sr2",
->>> +     .name           = "smartreflex_core",
->>>       .class          = &omap34xx_smartreflex_hwmod_class,
->>>       .main_clk       = "sr2_fck",
->>>       .prcm           = {
->>> @@ -1387,7 +1387,7 @@ static struct omap_hwmod omap34xx_sr2_hwmod = {
->>>  };
->>>
->>>  static struct omap_hwmod omap36xx_sr2_hwmod = {
->>> -     .name           = "sr2",
->>> +     .name           = "smartreflex_core",
->>>       .class          = &omap36xx_smartreflex_hwmod_class,
->>>       .main_clk       = "sr2_fck",
->>>       .prcm           = {
->>> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
->>> index 2edd1e2..d859277 100644
->>> --- a/arch/arm/mach-omap2/smartreflex.c
->>> +++ b/arch/arm/mach-omap2/smartreflex.c
->>> @@ -183,7 +183,7 @@ static void sr_set_regfields(struct omap_sr *sr)
->>>               sr->err_weight = OMAP3430_SR_ERRWEIGHT;
->>>               sr->err_maxlimit = OMAP3430_SR_ERRMAXLIMIT;
->>>               sr->accum_data = OMAP3430_SR_ACCUMDATA;
->>> -             if (!(strcmp(sr->name, "sr1"))) {
->>> +             if (!(strcmp(sr->name, "smartreflex_mpu_iva"))) {
+>>> You are going to make this a list and not a static array in the
+>>> future, right?
 >>
->> What if voltage rail is different for mpu and iva? I have seen some devices
->> supports SmartReflex have different voltage rails for mpu and iva.
+>> Would that be better?  The for-loop is IMHO simpler than a
+>> list walk for finding matches.  I anticipate that the size of
+>> this array should never (famous last words) be bigger than about
+>> 20 entries, even in the dynamic-allocation-per-application
+>> case.  And that's a ways off in implementation.
 >>
->
-> I get the point. OMAP3 iva and mpu have a common rail. OMAP4 onwards
-> even we have different rails for mpu and iva. I will enhance the checks here.
+>> I'll be happy to switch to a linked list once it looks like we're
+>> going to have more than 5 entries.  Or I can switch to a linked
+>> list now if you think it's better form to code for the longer-term
+>> anticipated features.
+>>
+>> Not a big deal to me either way.
+> 
+> I'd also favor a list approach. It won't break unexpectedly when
+> somebody inevitably adds that 6th log or whatever, and the list
+> traversal cost only occurs during open(), which is not a frequent
+> operation -- most users keep the log driver open for the process
+> lifespan (both readers and writers).
 
-Rather than enhancing the checks, this SoC specific data should probably
-just be made part of the SoC specific hwmod dev_attr.
+OK - I'll convert to a list and send an updated patch soon.
+ -- Tim
 
-Kevin
+
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
 
