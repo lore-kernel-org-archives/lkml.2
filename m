@@ -1,98 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756965Ab2EGPwH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 11:52:07 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:53909 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756284Ab2EGPwF (ORCPT
+	id S1757036Ab2EGPy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 11:54:27 -0400
+Received: from edge2.cs.stonybrook.edu ([130.245.9.211]:6341 "EHLO
+	edge2.cs.stonybrook.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756284Ab2EGPy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 11:52:05 -0400
-X-Sasl-enc: c0p45aH+O+FQUL7gNXdTmaDjeZwe39aaJAxD4HPPHN61 1336405923
-Date: Mon, 7 May 2012 08:52:02 -0700
-From: Greg KH <greg@kroah.com>
-To: Chen Gong <gong.chen@linux.intel.com>
-Cc: mchehab@redhat.com, bp@amd64.org, tony.luck@intel.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH V3] edac: avoid mce decoding crash after edac driver
- unloaded
-Message-ID: <20120507155202.GA3934@kroah.com>
-References: <1336374233-11482-1-git-send-email-gong.chen@linux.intel.com>
- <1336395950-12430-1-git-send-email-gong.chen@linux.intel.com>
+	Mon, 7 May 2012 11:54:26 -0400
+Message-ID: <4FA7F013.8020002@cs.stonybrook.edu>
+Date: Mon, 7 May 2012 11:53:55 -0400
+From: Richard Yao <ryao@cs.stonybrook.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120430 Thunderbird/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336395950-12430-1-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: I need tips on how to debug a deadlock involving swap
+X-Enigmail-Version: 1.3.5
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="------------enigFA3C53B1FE332E0F9AAD6E5D"
+X-Originating-IP: [108.46.203.161]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 09:05:50PM +0800, Chen Gong wrote:
-> Some edac drivers register themselves as mce decoders via
-> notifier_chain. But in current notifier_chain implementation logic,
-> it doesn't accept same notifier registered twice. If so, it will be
-> wrong when adding/removing the element from the list. For example,
-> on one SandyBridge platform, remove module sb_edac and then trigger
-> one error, it will hit oops because it has no mce decoder registered
-> but related notifier_chain still points to an invalid callback
-> function. Here is an example:
-> 
-> Call Trace:
->  [<ffffffff8150ef6a>] atomic_notifier_call_chain+0x1a/0x20
->  [<ffffffff8102b936>] mce_log+0x46/0x180
->  [<ffffffff8102eaea>] apei_mce_report_mem_error+0x4a/0x60
->  [<ffffffff812e19d2>] ghes_do_proc+0x192/0x210
->  [<ffffffff812e2066>] ghes_proc+0x46/0x70
->  [<ffffffff812e20d8>] ghes_notify_sci+0x48/0x80
->  [<ffffffff8150ef05>] notifier_call_chain+0x55/0x80
->  [<ffffffff81076f1a>] __blocking_notifier_call_chain+0x5a/0x80
->  [<ffffffff812aea11>] ? acpi_os_wait_events_complete+0x23/0x23
->  [<ffffffff81076f56>] blocking_notifier_call_chain+0x16/0x20
->  [<ffffffff812ddc4d>] acpi_hed_notify+0x19/0x1b
->  [<ffffffff812b16bd>] acpi_device_notify+0x19/0x1b
->  [<ffffffff812beb38>] acpi_ev_notify_dispatch+0x67/0x7f
->  [<ffffffff812aea3a>] acpi_os_execute_deferred+0x29/0x36
->  [<ffffffff81069dc2>] process_one_work+0x132/0x450
->  [<ffffffff8106bbcb>] worker_thread+0x17b/0x3c0
->  [<ffffffff8106ba50>] ? manage_workers+0x120/0x120
->  [<ffffffff81070aee>] kthread+0x9e/0xb0
->  [<ffffffff81514724>] kernel_thread_helper+0x4/0x10
->  [<ffffffff81070a50>] ? kthread_freezable_should_stop+0x70/0x70
->  [<ffffffff81514720>] ? gs_change+0x13/0x13
-> Code: f3 49 89 d4 45 85 ed 4d 89 c6 48 8b 0f 74 48 48 85 c9 75 17 eb 41
-> 0f 1f 80 00 00 00 00 41 83 ed 01 4c 89 f9 74 22 4d 85 ff 74 1d <4c> 8b
-> 79 08 4c 89 e2 48 89 de 48 89 cf ff 11 4d 85 f6 74 04 41
-> RIP  [<ffffffff8150eef6>] notifier_call_chain+0x46/0x80
->  RSP <ffff88042868fb20>
-> CR2: ffffffffa01af838
-> ---[ end trace 0100930068e73e6f ]---
-> BUG: unable to handle kernel paging request at fffffffffffffff8
-> IP: [<ffffffff810705b0>] kthread_data+0x10/0x20
-> PGD 1a0d067 PUD 1a0e067 PMD 0
-> Oops: 0000 [#2] SMP
-> 
-> Only i7core_edac and sb_edac have such issues because they have more
-> than one memory controller which means they have to register mce
-> decoder many times.
-> 
-> v3->v2:
->   remove dead code in i7core_edac, suggested by Mauro
-> 
-> v2->v1:
->   move register/unregister to the init/exit part
-> 
-> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
-> ---
->  drivers/edac/i7core_edac.c |   15 ++++-----------
->  drivers/edac/sb_edac.c     |    8 ++++----
->  2 files changed, 8 insertions(+), 15 deletions(-)
+--------------enigFA3C53B1FE332E0F9AAD6E5D
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+I have a deadlock that occurs when I swap to a virtual block device. The
+driver is out-of-tree and it processes IO requests in worker threads.
+Setting PF_MEMALLOC will prevent the deadlock, but it has the side
+effect of grabbing pages from ZONE_DMA, which is bad.
+
+I believe that direct reclaim is being triggered when swap occurs,
+causing swap operations holding locks to depend on swap operations that
+require those locks, but I am having trouble identifying how that happens=
+=2E
+
+The deadlock occurs in the IO worker threads, but the hung task timeout
+provides a backtrace for the thread that triggered the IO request, which
+is not helpful:
+
+[  218.252066] INFO: task python2.7:7027 blocked for more than 15 seconds=
+=2E
+[  218.252070] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[  218.252073] python2.7       D ffffffff814051e0     0  7027   7022
+0x00000000
+[  218.252079]  ffff8801b4c73798 0000000000000086 ffff8801b4c73758
+ffff8801b4c73758
+[  218.252085]  ffff880224b84a40 ffff8801b4c73fd8 ffff8801b4c73fd8
+ffff8801b4c73fd8
+[  218.252091]  ffff8802268aca40 ffff880224b84a40 ffff8801b4c73768
+ffff88022fc91738
+[  218.252097] Call Trace:
+[  218.252105]  [<ffffffff810b8300>] ? __lock_page+0x70/0x70
+[  218.252111]  [<ffffffff8133241a>] schedule+0x3a/0x50
+[  218.252114]  [<ffffffff813324ba>] io_schedule+0x8a/0xd0
+[  218.252118]  [<ffffffff810b8309>] sleep_on_page+0x9/0x10
+[  218.252121]  [<ffffffff81330547>] __wait_on_bit+0x57/0x80
+[  218.252131]  [<ffffffff810c097e>] ? account_page_writeback+0xe/0x10
+[  218.252134]  [<ffffffff810b84e0>] wait_on_page_bit+0x70/0x80
+[  218.252137]  [<ffffffff81052da0>] ? autoremove_wake_function+0x40/0x40=
+
+[  218.252141]  [<ffffffff810c7245>] shrink_page_list+0x465/0x8f0
+[  218.252144]  [<ffffffff810c7cf9>] shrink_inactive_list+0x379/0x470
+[  218.252147]  [<ffffffff81336c2d>] ? sub_preempt_count+0x9d/0xd0
+[  218.252150]  [<ffffffff810c8261>] shrink_mem_cgroup_zone+0x471/0x570
+[  218.252153]  [<ffffffff810c8e0b>] do_try_to_free_pages+0xfb/0x420
+[  218.252156]  [<ffffffff810c9251>] try_to_free_pages+0x71/0x80
+[  218.252159]  [<ffffffff810c04f9>] __alloc_pages_nodemask+0x469/0x7a0
+[  218.252162]  [<ffffffff810c3750>] ? __put_single_page+0x30/0x30
+[  218.252166]  [<ffffffff810fa36c>] do_huge_pmd_anonymous_page+0x14c/0x3=
+50
+[  218.252170]  [<ffffffff810d69cf>] handle_mm_fault+0x13f/0x2f0
+[  218.252172]  [<ffffffff8133662e>] do_page_fault+0x14e/0x590
+[  218.252176]  [<ffffffff81061739>] ? set_next_entity+0x39/0x80
+[  218.252179]  [<ffffffff81062a8b>] ? pick_next_task_fair+0x6b/0x150
+[  218.252181]  [<ffffffff8105dcf1>] ? get_parent_ip+0x11/0x50
+[  218.252184]  [<ffffffff81336c2d>] ? sub_preempt_count+0x9d/0xd0
+[  218.252186]  [<ffffffff81331fb8>] ? __schedule+0x2f8/0x6c0
+[  218.252189]  [<ffffffff81333a75>] page_fault+0x25/0x30
+
+Is there any way that I can ask the kernel to print stack traces of the
+worker threads on demand?
 
 
-<formletter>
+--------------enigFA3C53B1FE332E0F9AAD6E5D
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-</formletter>
+iQIcBAEBAgAGBQJPp/AeAAoJELFAT5FmjZuE04QQAIuSJcycEArn/DEiTskxA3xr
+huOyTjQ9NXGxIfFVzcgr1q2ffPjbZtLVWbQ55i5fy4SwdBdjza7fo97E8zfI4mIo
+wZ2jhdDrZTWhT9Rdx3QElA5RYXHOYIGmrfKd9pgx7QbroE9TIxEWdd5ahCg70hXZ
+a4/QQ65ix1LbAVEomgUYta3+rLUJfiV0IskUBK94XI6GPqRpO7dwrZumln/NouQ0
+9+PTNKXdotn2G1SR51M0xQajv8XLu6s8h6C3E4swSFZHGaZ81yor20WNRoKk2xrI
+OLjkzuSq9h7sWh937cSSE9EGggw+zqYx+++MC7qRLgPW5LY+q+L7fzwTEwsT7l5u
+DXVmHN/5XsjDiR8T5CIhztFbLqoAiCdWX9xmnCKWWOghW5JP2A3O/Ufgud7TvQyE
+bysTM/iuTySCJ+vIujQBuWUUKyoLjUj4jSDzRSc8/IctstIBy4jwdcnud1Zvlssb
+wnDMnaIMBVjoYAfcOZujKn5rnS8BrFt4dYhLCc0u5xZmC5XXbDY1uYHSjNliyRoP
+JtWbZP9MwN+9E6+aQfbZTI+2y+GqkRHQ6cZy72mXquZW6u880H8H24BDBCeykBjr
+OnmxOmPb3I5XgDB/NGAik+YGYDltn/gB/boU32CCWgu0L+zXYpDYfMdhIlptwDli
+8IRjgisdGpnZWHS7H0BC
+=hLY+
+-----END PGP SIGNATURE-----
+
+--------------enigFA3C53B1FE332E0F9AAD6E5D--
