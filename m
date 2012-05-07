@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab2EGB7w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 21:59:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46364 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754984Ab2EGB7v (ORCPT
+	id S1755242Ab2EGCEL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 22:04:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60718 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754931Ab2EGCEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 21:59:51 -0400
-Message-ID: <1336355988.8274.263.camel@deadeye>
-Subject: Re: [ 23/47] [PATCH] Revert "usb: Fix build error due to dma_mask
- is not at pdev_archdata at ARM"
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Peter Chen <peter.chen@freescale.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chen Peter-B29397 <B29397@freescale.com>,
-        Ramneek Mehresh <ramneek.mehresh@freescale.com>
-Date: Mon, 07 May 2012 02:59:48 +0100
-In-Reply-To: <20120504204246.865253021@linuxfoundation.org>
-References: <20120504204246.865253021@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-7GefHYFhYKAC+WECPnJx"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 6 May 2012 22:04:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120507011722.GA8122@richard>
+References: <CAE9FiQXLxEEu68tJvph3LB53nqycK+YctwDKMEF824koXVM5AA@mail.gmail.com>
+	<20120503065455.GA30042@richard>
+	<CAE9FiQUVNA_jdRfsSR9Rv47aa6JX-HKET0z3SfK19wT=Fcd9Cg@mail.gmail.com>
+	<20120504024721.GA6775@richard>
+	<CAE9FiQUz2w815gU5vY5b0BPf+1pz_pafgzqVKizJC++z27RTaQ@mail.gmail.com>
+	<20120504045205.GA21624@richard>
+	<CAE9FiQWM4OTFp5NN+KOXxNREQxNWipDjWbbPPiHHJsb6yFmuiQ@mail.gmail.com>
+	<20120506151715.GA7773@richard>
+	<CAE9FiQWsSWK-_zGe1ggaKuZu+RJ1kb1zuTEokdxqFSbE3UjNRw@mail.gmail.com>
+	<CAE9FiQXKjxLDLeh8TXU_OCNwFt+UMv3qFjcPrKcPcorA1YmkdQ@mail.gmail.com>
+	<20120507011722.GA8122@richard>
+Date: Sun, 6 May 2012 19:04:09 -0700
+X-Google-Sender-Auth: x7qrrjlgMQEag2rbOnNvpZOaCHs
+Message-ID: <CAE9FiQUpcJdAvK=wisNc_zq5c9zDtgEM=MNugDcHN9h3=ZPUcA@mail.gmail.com>
+Subject: Re: One problem in reassign pci bus number?
+From: Yinghai Lu <yinghai@kernel.org>
+To: Richard Yang <weiyang@linux.vnet.ibm.com>
+Cc: Wei Yang <weiyang.kernel@gmail.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, May 6, 2012 at 6:17 PM, Richard Yang <weiyang@linux.vnet.ibm.com> wrote:
+> so this free space will be combined with the free space got from
+> parent, form a big space to meet the requirement.
+>
+> This is the general idea about probe_resource()?
+>
+> And this is the design decision to find the free space at the end
+> of top, even at the start we have more free space?
 
---=-7GefHYFhYKAC+WECPnJx
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+no, probe_resource will get from start if space is big enough.
 
-On Fri, 2012-05-04 at 13:43 -0700, Greg KH wrote:
-> 3.0-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> This reverts commit d39514c14bd941232976b68e2750dc725b90e724 which is
-> e90fc3cb087ce5c5f81e814358222cd6d197b5db upstream as it causes oopses on
-> some ppc systems.
-[...]
+if not, it will try to extend top.
 
-Is this needed for 3.2.y as well?
-
-Ben.
-
---=20
-Ben Hutchings
-Hoare's Law of Large Problems:
-        Inside every large problem is a small problem struggling to get out=
-.
-
---=-7GefHYFhYKAC+WECPnJx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT6cslOe/yOyVhhEJAQrQyg/9FwTZX+ZKt1FMDjKqZPQb2qM0a/UsOT2i
-tGDhR6NnwD9jizFmmW4Q+gg1mRF49eHMU30Z5tnTfWbuS0DECi943f4NXhZk9VbK
-fzu8P397bwE2burqWR2XA4Unp3MXhBWF3UlGH3nJUNkgjs1TZ/IzUweIFb9sVzcv
-NZ/KvBWN1RUQERS2e63KoQPvwpORa0RMhseMk3GYrUrQKRZ1nMWUwY2WymH+i4eR
-ya8aOQ4G+M5uovkG+mzkQ+3Nj3VW/pgbft3o7q64QOlq7vtNDsnr5vFLJfX0QF+Q
-EumXw9QCEQeML6nP69Fr2NhpLzYeqKoe8m6dzf/6okDQlrT6DpA6Y3HfEXe4YjGZ
-yf5NFYdeCcBBxouKpgO/g59IHMDhjNOOgl/5jswIFlGhaT3W4Q4unIF1gTfgoixI
-hQ4allHFAkcLrKeR3VtrA14o6aluyCXGSXxd8GOnj7fyAaElDKuYsBIpGnSJ2eyV
-MXwQw60mOp6C9kxc+cVx4vpZEqVIS6csQEUExUrviFlQAOxce5HxzL1BxO3Sd3fW
-P+6HtslVZuUdLxWIaDgIB0NdKFxwwHowafRwDPLiuYdBegZTHbHLeIJF97psp5hN
-Y24jNiCeqNjRzzPQWTohpa42W3G7H8Fibq4XWZcd980xFs4tl7GbRJv86ysqzxB0
-fOHovjIeFYU=
-=PZP8
------END PGP SIGNATURE-----
-
---=-7GefHYFhYKAC+WECPnJx--
+Yinghai
