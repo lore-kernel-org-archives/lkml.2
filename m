@@ -1,85 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140Ab2EGRjy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 13:39:54 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36109 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757110Ab2EGRjw (ORCPT
+	id S1751517Ab2EGRnQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 13:43:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48899 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab2EGRnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 13:39:52 -0400
-Message-ID: <4FA808E3.1030908@gmail.com>
-Date: Mon, 07 May 2012 19:39:47 +0200
-From: Erwan Velu <erwanaliasr1@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120426 Thunderbird/10.0.4
+	Mon, 7 May 2012 13:43:14 -0400
+Message-ID: <4FA809AD.7060209@gmail.com>
+Date: Mon, 07 May 2012 11:43:09 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, tshimizu818@gmail.com
-Subject: [PATCH] pch_gbe: Adding read memory barriers
-Content-Type: multipart/mixed;
- boundary="------------070504030608060709050009"
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7] perf tools: Introduce perf_target__strerror()
+References: <1336367344-28071-1-git-send-email-namhyung.kim@lge.com> <1336367344-28071-6-git-send-email-namhyung.kim@lge.com> <20120507172946.GC2485@infradead.org>
+In-Reply-To: <20120507172946.GC2485@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070504030608060709050009
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On 5/7/12 11:29 AM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, May 07, 2012 at 02:09:02PM +0900, Namhyung Kim escreveu:
+>> The perf_target__strerror() sets @buf to a string that
+>> describes the (perf_target-specific) error condition
+>> that is passed via @errnum.
+>>
+>> This is similar to strerror_r() and does same thing if
+>> @errnum has a standard errno value.
+>
+> This has a problem: why should I be warned when I do, as root:
+>
+> # perf top -u acme
+>
+> It warns me that "UID switch overriding SYSTEM", yeah, right that is
+> what I asked, no need to tell me that :-)
+>
+> So what is missing in this case is that top starts with system_wide set,
+> not from the command line.
+>
+> I.e. if I had asked for:
+>
+> # perf top --system_wide --user acme
+>
+> Ok, the warning would make sense.
+>
+> So just special case this in the top case, I think, like the patch
+> below, ack?
+>
+> I'll fold this into this patch and add a [ committer note: ... ]
+>
+> Ack?
+>
+> - Arnaldo
+>
+> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+> index a2518fc..780791f 100644
+> --- a/tools/perf/builtin-top.c
+> +++ b/tools/perf/builtin-top.c
+> @@ -1257,7 +1257,16 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+>   	setup_browser(false);
+>
+>   	status = perf_target__validate(&top.target);
+> -	if (status != PERF_ERRNO_TARGET__SUCCESS) {
+> +	if (status != PERF_ERRNO_TARGET__SUCCESS&&
+> +	    status != PERF_ERRNO_TARGET__PID_OVERRIDE_SYSTEM&&
+> +	    status != PERF_ERRNO_TARGET__UID_OVERRIDE_SYSTEM) {
+> +		/*
+> + 		 * Top doesn't provide an explicit way to ask for system wide
+> + 		 * profiling, it is the default.
+> + 		 *
+> + 		 * So we shouldn't warn the user when he/she asks for --pid or
+> + 		 * --uid.
+> + 		 */
+>   		perf_target__strerror(&top.target, status, errbuf, BUFSIZ);
+>   		ui__warning("%s", errbuf);
+>   	}
 
-Dear Linux Kernel Developers,
+Seems like we should avoid the propagation of the errnos beyond the 
+depths of the library part. For perf-top why not default to nothing set 
+and if the user does not request one, set system wide. i.e, following 
+Patch 6 in this set do:
 
-Please find attached, a patch to solve "Received CRC" errors reported by 
-the pch_gbe driver under heavy load. It occurred on an Intel ATOM E620T 
-while running a 300mbit/sec multicast network stream leading to a ~100% 
-cpu usage.
+if (perf_target__none(&top.target)
+     top.target.system_wide = true;
 
-This patch got validated on the 3.2.16 kernel but also apply to the 3.x
-family.
-
-Getting it into stable would be perfect as it solves reliability issues.
-
-Cheers,
-Erwan Velu
-
---------------070504030608060709050009
-Content-Type: application/octet-stream;
- name="0001-pch_gbe-Adding-read-memory-barriers.patch"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="0001-pch_gbe-Adding-read-memory-barriers.patch"
-
-RnJvbSAzYjY1ODAyZTRjNWE4ODI3YTg0MDIyMDY2ZjEwZGVjNGQ2MWMxZjIyIE1vbiBTZXAg
-MTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBFcndhbiBWZWx1IDxlcndhbi52ZWx1QHpvZGlhY2Fl
-cm9zcGFjZS5jb20+CkRhdGU6IE1vbiwgNyBNYXkgMjAxMiAxNDo1MzoxNyArMDIwMApTdWJq
-ZWN0OiBbUEFUQ0ggMS8xXSBwY2hfZ2JlOiBBZGRpbmcgcmVhZCBtZW1vcnkgYmFycmllcnMK
-ClVuZGVyIGEgc3Ryb25nIGluY29taW5nIHBhY2tldCBzdHJlYW0gYW5kL29yIGhpZ2ggY3B1
-IHVzYWdlLAp0aGUgcGNoX2diZSBkcml2ZXIgcmVwb3J0cyAiUmVjZWl2ZSBDUkMgRXJyb3Ii
-IGFuZCBkaXNjYXJkcyBwYWNrZXQuCgpBZGRpbmcgcm1iKCkgY2FsbHMgYmVmb3JlIGNvbnNp
-ZGVyaW5nIHRoZSBuZXR3b3JrIGNhcmQncyBzdGF0dXMgc29sdmUKdGhpcyBpc3N1ZXMuCgpT
-aWduZWQtb2ZmLWJ5OiBFcndhbiBWZWx1IDxlcndhbi52ZWx1QHpvZGlhY2Flcm9zcGFjZS5j
-b20+Ci0tLQogLi4uL25ldC9ldGhlcm5ldC9va2ktc2VtaS9wY2hfZ2JlL3BjaF9nYmVfbWFp
-bi5jICAgfCAgICA4ICsrKysrKysrCiAxIGZpbGVzIGNoYW5nZWQsIDggaW5zZXJ0aW9ucygr
-KSwgMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL25ldC9ldGhlcm5ldC9v
-a2ktc2VtaS9wY2hfZ2JlL3BjaF9nYmVfbWFpbi5jIGIvZHJpdmVycy9uZXQvZXRoZXJuZXQv
-b2tpLXNlbWkvcGNoX2diZS9wY2hfZ2JlX21haW4uYwppbmRleCA0ODQwNmNhLi43NzQ2Y2Ez
-IDEwMDY0NAotLS0gYS9kcml2ZXJzL25ldC9ldGhlcm5ldC9va2ktc2VtaS9wY2hfZ2JlL3Bj
-aF9nYmVfbWFpbi5jCisrKyBiL2RyaXZlcnMvbmV0L2V0aGVybmV0L29raS1zZW1pL3BjaF9n
-YmUvcGNoX2diZV9tYWluLmMKQEAgLTEyMjIsNiArMTIyMiw4IEBAIHN0YXRpYyBpcnFyZXR1
-cm5fdCBwY2hfZ2JlX2ludHIoaW50IGlycSwgdm9pZCAqZGF0YSkKIAkJfQogCX0KIAorCXNt
-cF9ybWIoKTsgLyogcHJldmVudCBhbnkgb3RoZXIgcmVhZHMgYmVmb3JlKi8KKwogCS8qIFdo
-ZW4gcmVxdWVzdCBzdGF0dXMgaXMgUmVjZWl2ZSBpbnRlcnJ1cHRpb24gKi8KIAlpZiAoKGlu
-dF9zdCAmIChQQ0hfR0JFX0lOVF9SWF9ETUFfQ01QTFQgfCBQQ0hfR0JFX0lOVF9UWF9DTVBM
-VCkpIHx8CiAJICAgIChhZGFwdGVyLT5yeF9zdG9wX2ZsYWcgPT0gdHJ1ZSkpIHsKQEAgLTEz
-OTAsNiArMTM5Miw5IEBAIHBjaF9nYmVfY2xlYW5fdHgoc3RydWN0IHBjaF9nYmVfYWRhcHRl
-ciAqYWRhcHRlciwKIAogCWkgPSB0eF9yaW5nLT5uZXh0X3RvX2NsZWFuOwogCXR4X2Rlc2Mg
-PSBQQ0hfR0JFX1RYX0RFU0MoKnR4X3JpbmcsIGkpOworCisJcm1iKCk7ICAvKiBwcmV2ZW50
-IGFueSBvdGhlciByZWFkcyBiZWZvcmUqLworCiAJcHJfZGVidWcoImdiZWNfc3RhdHVzOjB4
-JTA0eCAgZG1hX3N0YXR1czoweCUwNHhcbiIsCiAJCSB0eF9kZXNjLT5nYmVjX3N0YXR1cywg
-dHhfZGVzYy0+ZG1hX3N0YXR1cyk7CiAKQEAgLTE0OTAsNiArMTQ5NSw5IEBAIHBjaF9nYmVf
-Y2xlYW5fcngoc3RydWN0IHBjaF9nYmVfYWRhcHRlciAqYWRhcHRlciwKIAl3aGlsZSAoKndv
-cmtfZG9uZSA8IHdvcmtfdG9fZG8pIHsKIAkJLyogQ2hlY2sgUnggZGVzY3JpcHRvciBzdGF0
-dXMgKi8KIAkJcnhfZGVzYyA9IFBDSF9HQkVfUlhfREVTQygqcnhfcmluZywgaSk7CisKKwkJ
-cm1iKCk7IC8qIHByZXZlbnQgYW55IG90aGVyIHJlYWRzIGJlZm9yZSovCisKIAkJaWYgKHJ4
-X2Rlc2MtPmdiZWNfc3RhdHVzID09IERTQ19JTklUMTYpCiAJCQlicmVhazsKIAkJY2xlYW5l
-ZCA9IHRydWU7Ci0tIAoxLjcuNC40Cgo=
---------------070504030608060709050009--
+David
