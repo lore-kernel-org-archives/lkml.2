@@ -1,186 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab2EGGtg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 02:49:36 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16252 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485Ab2EGGte (ORCPT
+	id S1754785Ab2EGGtr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 02:49:47 -0400
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:47940 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754612Ab2EGGtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 02:49:34 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 06 May 2012 23:48:58 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        swarren@wwwdotorg.org, olof@lixom.net, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V1 1/2] i2c: tegra: make all resource allocation through devm_*
-Date: Mon,  7 May 2012 12:16:17 +0530
-Message-Id: <1336373179-12739-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Mon, 7 May 2012 02:49:45 -0400
+Message-ID: <4FA77093.9060306@ti.com>
+Date: Mon, 07 May 2012 09:49:55 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120503 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Misael Lopez Cruz <misael.lopez@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 2/3] MFD: twl6040: Allocate IRQ numbers dynamically
+References: <20120503145248.GJ3955@opensource.wolfsonmicro.com> <4FA2A08C.5000403@ti.com> <20120503152643.GM3955@opensource.wolfsonmicro.com> <4FA3958A.4080206@ti.com> <20120504090856.GA14230@opensource.wolfsonmicro.com> <4FA3B182.5060001@ti.com> <20120504112204.GE14230@opensource.wolfsonmicro.com> <4FA3C3B9.3030009@ti.com> <20120504121730.GG14230@opensource.wolfsonmicro.com> <4FA3CCAF.3020902@ti.com> <20120504124750.GL14230@opensource.wolfsonmicro.com>
+In-Reply-To: <20120504124750.GL14230@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the devm_* for the memory region allocation, interrupt request,
-clock handler request.
-By doing this, it does not require to explicitly free it and hence
-saving some code.
+On 05/04/2012 03:47 PM, Mark Brown wrote:
+> This doesn't really work for board files, though - you can only call
+> gpio_to_irq() at runtime so if you're statically registering the devices
+> on the board you'd need to make the structures non-const, manage to find
+> the GPIO controller at runtime then do the lookup, update the struct and
+> finally register the device.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/i2c/busses/i2c-tegra.c |   64 ++++++++++-----------------------------
- 1 files changed, 17 insertions(+), 47 deletions(-)
+I've seen some board files doing this already (obviously not for the
+twl6040). Which is not the nicest thing...
 
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index 18067b3..390d379 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -106,7 +106,6 @@
-  * @adapter: core i2c layer adapter information
-  * @clk: clock reference for i2c controller
-  * @i2c_clk: clock reference for i2c bus
-- * @iomem: memory resource for registers
-  * @base: ioremapped registers cookie
-  * @cont_id: i2c controller id, used for for packet header
-  * @irq: irq number of transfer complete interrupt
-@@ -124,7 +123,6 @@ struct tegra_i2c_dev {
- 	struct i2c_adapter adapter;
- 	struct clk *clk;
- 	struct clk *i2c_clk;
--	struct resource *iomem;
- 	void __iomem *base;
- 	int cont_id;
- 	int irq;
-@@ -573,7 +571,6 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
- 	struct tegra_i2c_dev *i2c_dev;
- 	struct tegra_i2c_platform_data *pdata = pdev->dev.platform_data;
- 	struct resource *res;
--	struct resource *iomem;
- 	struct clk *clk;
- 	struct clk *i2c_clk;
- 	const unsigned int *prop;
-@@ -586,50 +583,41 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "no mem resource\n");
- 		return -EINVAL;
- 	}
--	iomem = request_mem_region(res->start, resource_size(res), pdev->name);
--	if (!iomem) {
--		dev_err(&pdev->dev, "I2C region already claimed\n");
--		return -EBUSY;
--	}
- 
--	base = ioremap(iomem->start, resource_size(iomem));
-+	base = devm_request_and_ioremap(&pdev->dev, res);
- 	if (!base) {
--		dev_err(&pdev->dev, "Cannot ioremap I2C region\n");
--		return -ENOMEM;
-+		dev_err(&pdev->dev, "Cannot request/ioremap I2C registers\n");
-+		return -EADDRNOTAVAIL;
- 	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	if (!res) {
- 		dev_err(&pdev->dev, "no irq resource\n");
--		ret = -EINVAL;
--		goto err_iounmap;
-+		return -EINVAL;
- 	}
- 	irq = res->start;
- 
--	clk = clk_get(&pdev->dev, NULL);
-+	clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(clk)) {
- 		dev_err(&pdev->dev, "missing controller clock");
--		ret = PTR_ERR(clk);
--		goto err_release_region;
-+		return PTR_ERR(clk);
- 	}
- 
--	i2c_clk = clk_get(&pdev->dev, "i2c");
-+	i2c_clk = devm_clk_get(&pdev->dev, "i2c");
- 	if (IS_ERR(i2c_clk)) {
- 		dev_err(&pdev->dev, "missing bus clock");
--		ret = PTR_ERR(i2c_clk);
--		goto err_clk_put;
-+		return PTR_ERR(i2c_clk);
- 	}
- 
--	i2c_dev = kzalloc(sizeof(struct tegra_i2c_dev), GFP_KERNEL);
-+	i2c_dev = devm_kzalloc(&pdev->dev, sizeof(*i2c_dev), GFP_KERNEL);
- 	if (!i2c_dev) {
--		ret = -ENOMEM;
--		goto err_i2c_clk_put;
-+		dev_err(&pdev->dev, "Could not allocate struct tegra_i2c_dev");
-+		return -ENOMEM;
- 	}
- 
- 	i2c_dev->base = base;
- 	i2c_dev->clk = clk;
- 	i2c_dev->i2c_clk = i2c_clk;
--	i2c_dev->iomem = iomem;
- 	i2c_dev->adapter.algo = &tegra_i2c_algo;
- 	i2c_dev->irq = irq;
- 	i2c_dev->cont_id = pdev->id;
-@@ -658,13 +646,14 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
- 	ret = tegra_i2c_init(i2c_dev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to initialize i2c controller");
--		goto err_free;
-+		return ret;
- 	}
- 
--	ret = request_irq(i2c_dev->irq, tegra_i2c_isr, 0, pdev->name, i2c_dev);
-+	ret = devm_request_irq(&pdev->dev, i2c_dev->irq,
-+			tegra_i2c_isr, 0, pdev->name, i2c_dev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to request irq %i\n", i2c_dev->irq);
--		goto err_free;
-+		return ret;
- 	}
- 
- 	clk_enable(i2c_dev->i2c_clk);
-@@ -682,38 +671,19 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
- 	ret = i2c_add_numbered_adapter(&i2c_dev->adapter);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to add I2C adapter\n");
--		goto err_free_irq;
-+		clk_disable(i2c_dev->i2c_clk);
-+		return ret;
- 	}
- 
- 	of_i2c_register_devices(&i2c_dev->adapter);
- 
- 	return 0;
--err_free_irq:
--	free_irq(i2c_dev->irq, i2c_dev);
--err_free:
--	kfree(i2c_dev);
--err_i2c_clk_put:
--	clk_put(i2c_clk);
--err_clk_put:
--	clk_put(clk);
--err_release_region:
--	release_mem_region(iomem->start, resource_size(iomem));
--err_iounmap:
--	iounmap(base);
--	return ret;
- }
- 
- static int __devexit tegra_i2c_remove(struct platform_device *pdev)
- {
- 	struct tegra_i2c_dev *i2c_dev = platform_get_drvdata(pdev);
- 	i2c_del_adapter(&i2c_dev->adapter);
--	free_irq(i2c_dev->irq, i2c_dev);
--	clk_put(i2c_dev->i2c_clk);
--	clk_put(i2c_dev->clk);
--	release_mem_region(i2c_dev->iomem->start,
--		resource_size(i2c_dev->iomem));
--	iounmap(i2c_dev->base);
--	kfree(i2c_dev);
- 	return 0;
- }
- 
--- 
-1.7.1.1
+>> If there is "irq expander" type of chip I assume it would have similar
+>> way to get the IRQ number based on either GPIO number or some other
+>> enumeration value.
+> 
+> No, there's no generic interface for this.
 
+This dynamic range allocation for IRQ, GPIO will work nicely with DT at
+the end. In legacy way we will need to have workarounds. Or just forget
+about booting without DT.
+
+>> The twl6040 does not have such a feature. The interrupts are generated
+>> internally and it has one IRQ line towards the host. We have nested
+>> interrupts for the childs (plug detect is handled by ASoC codec, Vibra
+>> overcurrent is handled by the vibra driver, etc).
+> 
+> OK, that's fine then - you should put this in the changelog to make it
+> clear that there are no external users who could be affected.
+
+I'll do that.
+
+Thank you,
+Péter
