@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab2EGMCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 08:02:30 -0400
-Received: from nm23-vm3.bullet.mail.sg3.yahoo.com ([106.10.151.66]:35545 "HELO
-	nm23-vm3.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755434Ab2EGMC3 (ORCPT
+	id S1756400Ab2EGMJD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 08:09:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56885 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755991Ab2EGMJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 08:02:29 -0400
-X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 May 2012 08:02:29 EDT
-X-Yahoo-Newman-Id: 253709.52885.bm@smtp125.mail.sg3.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: mD_.eisVM1m9IG3oWVYpU73qovRrbZzz5fuxV1dD4IO0RnM
- Bm8OgKc.mwSv5AKERa2Uk821GkU_MRigQ.ihyHCrZ33j8OrLZvETqtKNMa3l
- btW02x.4VAxMdteipMXvSMHQEPYTXzw..Kf6QvTxhZ7EPD51cuh0JRFN5Qkh
- oiX8ke9pbjTUBJQI_nwCwP428A_5HW5P790bBq1Vuf21c_rwMfG2iIUNFK9F
- JS7T250U8wyhCl.IP_FTcHwr.w.sfxRSZcclV3UViCPr1w4oex_eRT3csvNM
- 9SU3bT.vWU8UABcTWVZZz1xwGopMonISKA8i0XW3ubvh64a7h4JB8rbp5KOj
- vMUuTOQaQtNj3bUbGzmN_H4XAYY0qVk3ysHOyeACF.SDOurI3uuf9qkAIMF3
- T0t1gKfaTAJ.wIG9Nh8219qbMwapv6BXaacr26FsuoLO1Qz6HRP60wGerjGm
- MvIjkrkK5
-X-Yahoo-SMTP: PVsD4AOswBCVnp_RmWYsueeHGIk1YpKYTA--
-Message-ID: <4FA7739A.D9BDB44F@smtp.mail.yahoo.com>
-Date: Mon, 7 May 2012 07:02:58 -0500
-From: "jerryblas420@yahoo.com" <jerryblas420@yahoo.com>
-Subject: Do you need a backround check done quickly and confidentially?
-To: linux-bruxelles@lists.bxlug.be
-Content-Type: text/plain; charset=UTF-8
-X-Mailer: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.5b)
- Gecko/20030901 Thunderbird/0.2
+	Mon, 7 May 2012 08:09:01 -0400
+Subject: Re: [PATCH 4/7] perf/x86-ibs: Add support for IBS pseudo events
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1335983192-23731-5-git-send-email-robert.richter@amd.com>
+References: <1335983192-23731-1-git-send-email-robert.richter@amd.com>
+	 <1335983192-23731-5-git-send-email-robert.richter@amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 May 2012 14:08:48 +0200
+Message-ID: <1336392528.27020.8.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://ww.bit.ly/IxYVav
+On Wed, 2012-05-02 at 20:26 +0200, Robert Richter wrote:
+
+> This patch includes kernel and userland changes.
+> 
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_amd_ibs.c |   83 ++++++-
+>  tools/perf/util/pmu-ibs.c                |  433 +++++++++++++++++++++++++-----
+
+I think its best to separate this.
+
+>  2 files changed, 445 insertions(+), 71 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+> index 03743ad..1675479 100644
+> --- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+> +++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+> @@ -478,6 +478,81 @@ static struct perf_ibs perf_ibs_op = {
+>  	.get_count		= get_ibs_op_count,
+>  };
+>  
+> +enum ibs_filter_type {
+> +	IBS_NO_FILTER		= 0,
+> +	IBS_MATCH_FILTER	= 1,
+> +	IBS_ANY_SET_FILTER	= 2,
+> +	IBS_PSEUDO_EVENT	= 0x0F,
+> +};
+> +
+> +struct ibs_filter {
+> +	struct {
+> +		u16		idx		: 8;
+> +		u16		reserved	: 4;
+> +		u16		type		: 4;
+> +	};
+> +	union {
+> +		struct {
+> +			u8	mask;
+> +			u8	match;
+> +		};
+> +		u16		any;
+> +	};
+> +};
+
+> diff --git a/tools/perf/util/pmu-ibs.c b/tools/perf/util/pmu-ibs.c
+> index 07acb82..604cb8c 100644
+> --- a/tools/perf/util/pmu-ibs.c
+> +++ b/tools/perf/util/pmu-ibs.c
 
 
+> +enum ibs_filter_type {
+> +	IBS_NO_FILTER		= 0,
+> +	IBS_MATCH_FILTER	= 1,
+> +	IBS_ANY_SET_FILTER	= 2,
+> +	IBS_PSEUDO_EVENT	= 0x0F,
+> +};
+> +
+> +struct ibs_filter {
+> +	struct {
+> +		__u16		idx		: 8;
+> +		__u16		reserved	: 4;
+> +		__u16		type		: 4;
+> +	};
+> +	union {
+> +		struct {
+> +			__u8	mask;
+> +			__u8	match;
+> +		};
+> +		__u16		any;
+> +	};
+> +};
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+Having two copies of this just stinks, its only matter of time before
+one receives changes the other doesn't.
 
 
