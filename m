@@ -1,572 +1,803 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab2EGDHK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 23:07:10 -0400
+	id S1755368Ab2EGDHP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 23:07:15 -0400
 Received: from emcscan.emc.com.tw ([192.72.220.5]:35506 "EHLO
 	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755205Ab2EGDHJ (ORCPT
+	with ESMTP id S1755205Ab2EGDHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 23:07:09 -0400
+	Sun, 6 May 2012 23:07:13 -0400
 From: Tom Lin <tom_lin@emc.com.tw>
 To: tom_lin@emc.com.tw
 Cc: linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH v2 1/2] Input:Elan I2C touchpad driver for HID over I2C
-Date: Mon,  7 May 2012 11:04:07 +0800
-Message-Id: <1336359848-3779-1-git-send-email-tom_lin@emc.com.tw>
+        linux-kernel@vger.kernel.org, Aarom Huang <aaron_huang@emc.com.tw>
+Subject: [PATCH v2 2/2] Input: Elan I2C Touch Pad Programming Guide
+Date: Mon,  7 May 2012 11:04:08 +0800
+Message-Id: <1336359848-3779-2-git-send-email-tom_lin@emc.com.tw>
 X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1336359848-3779-1-git-send-email-tom_lin@emc.com.tw>
+References: <1336359848-3779-1-git-send-email-tom_lin@emc.com.tw>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds driver for Elan I2C touchpad. These protocol of HID over I2C
-was defined by Microsoft. The kernel driver would use the multi-toucpad
-protrocol format B.
+The Elan I2C touchpad is compatible with Microsoft HID over I2C protocol.
+The purpose of this programming guide is to explain hot initial and get report
+form Elan touchpad via I2C interface.
 
-Cc: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Aarom Huang <aaron_huang@emc.com.tw>
 Signed-off-by: Tom Lin(Lin Yen Yu) <tom_lin@emc.com.tw>
 ---
- drivers/input/mouse/Kconfig        |   13 +-
- drivers/input/mouse/Makefile       |    1 +
- drivers/input/mouse/elantech_i2c.c |  488 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 501 insertions(+), 1 deletion(-)
- create mode 100644 drivers/input/mouse/elantech_i2c.c
+ Documentation/input/elantech_i2c.txt |  760 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 760 insertions(+)
+ create mode 100644 Documentation/input/elantech_i2c.txt
 
-diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
-index 9b8db82..be931be 100644
---- a/drivers/input/mouse/Kconfig
-+++ b/drivers/input/mouse/Kconfig
-@@ -304,6 +304,18 @@ config MOUSE_MAPLE
- 	  To compile this driver as a module choose M here: the module will be
- 	  called maplemouse.
- 
-+config MOUSE_ELANTECH_I2C
-+	tristate "Elan I2C Touchpad support"
-+	depends on I2C
-+	help
-+	 This driver supports Elan I2C touchpad controller and follows the HID over
-+	 I2C data format.
-+
-+	 Say Y here if you want to use a Elan HID-I2C touchpad.
-+
-+	 To compile this driver as a module, choose M here: the
-+	 module will be called elantech_i2c.
-+
- config MOUSE_SYNAPTICS_I2C
- 	tristate "Synaptics I2C Touchpad support"
- 	depends on I2C
-@@ -338,5 +350,4 @@ config MOUSE_SYNAPTICS_USB
- 
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called synaptics_usb.
--
- endif
-diff --git a/drivers/input/mouse/Makefile b/drivers/input/mouse/Makefile
-index 4718eff..ba7cc88 100644
---- a/drivers/input/mouse/Makefile
-+++ b/drivers/input/mouse/Makefile
-@@ -8,6 +8,7 @@ obj-$(CONFIG_MOUSE_AMIGA)		+= amimouse.o
- obj-$(CONFIG_MOUSE_APPLETOUCH)		+= appletouch.o
- obj-$(CONFIG_MOUSE_ATARI)		+= atarimouse.o
- obj-$(CONFIG_MOUSE_BCM5974)		+= bcm5974.o
-+obj-$(CONFIG_MOUSE_ELANTECH_I2C)	+= elantech_i2c.o
- obj-$(CONFIG_MOUSE_GPIO)		+= gpio_mouse.o
- obj-$(CONFIG_MOUSE_INPORT)		+= inport.o
- obj-$(CONFIG_MOUSE_LOGIBM)		+= logibm.o
-diff --git a/drivers/input/mouse/elantech_i2c.c b/drivers/input/mouse/elantech_i2c.c
+diff --git a/Documentation/input/elantech_i2c.txt b/Documentation/input/elantech_i2c.txt
 new file mode 100644
-index 0000000..5cf2eb8
+index 0000000..3578b24
 --- /dev/null
-+++ b/drivers/input/mouse/elantech_i2c.c
-@@ -0,0 +1,488 @@
-+/*
-+ * Elantech I2C Touchpad diver
-+ *
-+ * Copyright (c) 2011-2012 Tom Lin (Lin Yen Yu) <tom_lin@emc.com.tw>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published
-+ * by the Free Software Foundation.
-+ *
-+ * Trademarks are the property of their respective owners.
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/device.h>
-+#include <linux/gpio.h>
-+#include <linux/i2c.h>
-+#include <linux/init.h>
-+#include <linux/input.h>
-+#include <linux/input/mt.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/workqueue.h>
-+
-+#define DRIVER_NAME		"elantech_i2c"
-+#define ETP_FINGER_DATA_OFFSET	4
-+#define ETP_FINGER_DATA_LEN	5
-+#define ETP_I2C_COMMAND_TRIES	3
-+#define ETP_I2C_COMMAND_DELAY	500
-+/* Length of Elan Touchpad information */
-+#define ETP_INF_LENGTH		2
-+#define ETP_MAX_FINGERS		5
-+#define ETP_PACKET_LENGTH	30
-+#define ETP_REPORT_ID		0X5d
-+#define ETP_REPORT_MAX_LENGTH	79
-+#define ETP_PRESSURE_MAX	0xff
-+#define HID_DES_LENGTH_OFFSET	1
-+
-+static bool elan_i2c_debug;
-+module_param_named(debug, elan_i2c_debug, bool, 0600);
-+MODULE_PARM_DESC(debug, "Turn Elan i2c TP  debugging mode on and off");
-+
-+enum etd_i2c_command {
-+	ETP_HID_DESCR_LENGTH_CMD,
-+	ETP_HID_DESCR_CMD,
-+	ETP_HID_WAKE_UP_CMD,
-+	ETP_HID_RESET_CMD,
-+	ETP_HID_REPORT_DESCR_CMD,
-+	ETP_TRACE_NUM_CMD,
-+	ETP_X_AXIS_MAX_CMD,
-+	ETP_Y_AXIS_MAX_CMD,
-+	ETP_DPI_VALUE_CMD,
-+	ETP_ENABLE_ABS_CMD
-+};
-+
-+static const u8 etp_hid_descriptor_cmd[] = {0x01, 0x00};
-+static const u8 etp_hid_wake_up_cmd[] = {0x05, 0x00, 0x00, 0x08};
-+static const u8 etp_hid_reset_cmd[] = {0x05, 0x00, 0x00, 0x01};
-+static const u8 etp_hid_report_descriptor_cmd[] = {0x02, 0x00};
-+static const u8 etp_trace_num_xy_cmd[] = {0x05, 0x01};
-+static const u8 etp_x_axis_max_cmd[] = {0x06, 0x01};
-+static const u8 etp_y_axis_max_cmd[] = {0x07, 0x01};
-+static const u8 etp_dpi_value_cmd[] = {0x08, 0x01};
-+static const u8 etp_enable_abs_cmd[] = {0x00, 0x03, 0x01, 0x00};
-+
-+/* The main device structure */
-+struct elantech_i2c {
-+	struct i2c_client	*client;
-+	struct input_dev	*input;
-+	struct work_struct	work;
-+	unsigned int		gpio;
-+	unsigned int		max_x;
-+	unsigned int		max_y;
-+	unsigned int		width_x;
-+	unsigned int		width_y;
-+	int			irq;
-+	u8			pre_recv[28];
-+};
-+
-+static int elantech_i2c_command(struct i2c_client *client, int  command,
-+				unsigned char *buf_recv, int data_len)
-+{
-+	const u8 *cmd = NULL;
-+	unsigned char *rec_buf = buf_recv;
-+	int ret;
-+	int tries = ETP_I2C_COMMAND_TRIES;
-+	int length = 0;
-+	struct i2c_msg msg[2];
-+	int msg_num = 0;
-+
-+	switch (command) {
-+	case ETP_HID_DESCR_LENGTH_CMD:
-+	case ETP_HID_DESCR_CMD:
-+		cmd = etp_hid_descriptor_cmd;
-+		length = sizeof(etp_hid_descriptor_cmd);
-+		msg[1].len = data_len;
-+		msg_num = 2;
-+		break;
-+	case ETP_HID_WAKE_UP_CMD:
-+		cmd = etp_hid_wake_up_cmd;
-+		length = sizeof(etp_hid_wake_up_cmd);
-+		msg_num = 1;
-+		break;
-+	case ETP_HID_RESET_CMD:
-+		cmd = etp_hid_reset_cmd;
-+		length = sizeof(etp_hid_reset_cmd);
-+		msg_num = 1;
-+		break;
-+	case ETP_HID_REPORT_DESCR_CMD:
-+		cmd = etp_hid_report_descriptor_cmd;
-+		length = sizeof(etp_hid_report_descriptor_cmd);
-+		msg[1].len = data_len;
-+		msg_num = 2;
-+		break;
-+	case ETP_TRACE_NUM_CMD:
-+		cmd = etp_trace_num_xy_cmd;
-+		length = sizeof(etp_trace_num_xy_cmd);
-+		msg[1].len = data_len;
-+		msg_num = 2;
-+		break;
-+	case ETP_X_AXIS_MAX_CMD:
-+		cmd = etp_x_axis_max_cmd;
-+		length = sizeof(etp_x_axis_max_cmd);
-+		msg[1].len = data_len;
-+		msg_num = 2;
-+		break;
-+	case ETP_Y_AXIS_MAX_CMD:
-+		cmd = etp_y_axis_max_cmd;
-+		length = sizeof(etp_y_axis_max_cmd);
-+		msg[1].len = data_len;
-+		msg_num = 2;
-+		break;
-+	case ETP_DPI_VALUE_CMD:
-+		cmd = etp_dpi_value_cmd;
-+		length = sizeof(etp_dpi_value_cmd);
-+		msg[1].len = data_len;
-+		msg_num = 2;
-+		break;
-+	case ETP_ENABLE_ABS_CMD:
-+		cmd = etp_enable_abs_cmd;
-+		length = sizeof(etp_enable_abs_cmd);
-+		msg_num = 1;
-+		break;
-+	default:
-+		dev_dbg(&client->dev, "%s command=%d unknow.\n",
-+			 __func__, command);
-+		return -1;
-+	}
-+
-+	msg[0].addr = client->addr;
-+	msg[0].flags = client->flags & I2C_M_TEN;
-+	msg[0].len = length;
-+	msg[0].buf = (char *) cmd;
-+	msg[1].addr = client->addr;
-+	msg[1].flags = client->flags & I2C_M_TEN;
-+	msg[1].flags |= I2C_M_RD;
-+	msg[1].buf = rec_buf;
-+
-+	do {
-+		ret = i2c_transfer(client->adapter, msg, msg_num);
-+		if (ret != msg_num && elan_i2c_debug)
-+			print_hex_dump_bytes("Elan I2C Touch data :",
-+				DUMP_PREFIX_NONE, rec_buf, msg[1].len);
-+		if (ret > 0)
-+			break;
-+		tries--;
-+		dev_dbg(&client->dev, "retrying elantech_i2c_command:%d (%d)\n",
-+			command, tries);
-+	} while (tries > 0);
-+
-+	return ret;
-+}
-+
-+static bool elantech_i2c_hw_init(struct i2c_client *client)
-+{
-+	int rc;
-+	uint8_t buf_recv[ETP_REPORT_MAX_LENGTH];
-+	int hid_descr_len;
-+	int hid_report_len;
-+
-+	/* Fetch the length of HID description */
-+	rc = elantech_i2c_command(client, ETP_HID_DESCR_LENGTH_CMD, buf_recv,
-+			HID_DES_LENGTH_OFFSET);
-+	if (rc != 2)
-+		return false;
-+
-+	hid_descr_len = buf_recv[0];
-+	/* Fetch the lenght of HID report description */
-+	rc = elantech_i2c_command(client, ETP_HID_DESCR_CMD, buf_recv, hid_descr_len);
-+	if (rc != 2)
-+		return false;
-+
-+	hid_report_len = buf_recv[4];
-+	rc = elantech_i2c_command(client, ETP_HID_WAKE_UP_CMD, buf_recv, 0);
-+	if (rc != 1)
-+		return false;
-+
-+	rc = elantech_i2c_command(client, ETP_HID_RESET_CMD, buf_recv, 0);
-+	if (rc != 1)
-+		return false;
-+
-+	msleep(ETP_I2C_COMMAND_DELAY);
-+	rc = i2c_master_recv(client, buf_recv, 2);
-+	if (rc != 2 || (buf_recv[0] != 0 && buf_recv[1] != 0))
-+		return false;
-+
-+	rc = elantech_i2c_command(client, ETP_HID_REPORT_DESCR_CMD, buf_recv,
-+		hid_report_len);
-+	if (rc != 2)
-+		return false;
-+
-+	return true;
-+}
-+
-+static void elantech_i2c_report_absolute(struct elantech_i2c *touch,
-+				 uint8_t *packet)
-+{
-+	uint8_t *finger_data = &packet[ETP_FINGER_DATA_OFFSET];
-+	struct input_dev *input = touch->input;
-+	bool finger_status;
-+	int i;
-+	int position_x, position_y;
-+	int mky_value, mkx_value, h_value;
-+
-+	for (i = 0 ; i < ETP_MAX_FINGERS ; i++) {
-+		finger_status = (packet[3] >> (3+i)) & 0x01;
-+		if (finger_status) {
-+			position_x = ((finger_data[0] & 0xf0) << 4) | finger_data[1];
-+			position_y = touch->max_y -
-+				(((finger_data[0] & 0x0f) << 8) | finger_data[2]);
-+			mkx_value = (finger_data[3] & 0x0f) * touch->width_x;
-+			mky_value = (finger_data[3] >> 4) * touch->width_y;
-+			h_value = finger_data[4];
-+
-+			finger_data += ETP_FINGER_DATA_LEN;
-+
-+			input_mt_slot(input, i);
-+			input_mt_report_slot_state(input, MT_TOOL_FINGER, true);
-+
-+			input_report_abs(input, ABS_MT_POSITION_X, position_x);
-+			input_report_abs(input, ABS_MT_POSITION_Y, position_y);
-+			input_report_abs(input, ABS_MT_PRESSURE, h_value);
-+			input_report_abs(input, ABS_MT_TOUCH_MAJOR, mkx_value);
-+			input_report_abs(input, ABS_MT_TOUCH_MINOR, mky_value);
-+		} else {
-+			input_mt_slot(input, i);
-+			input_mt_report_slot_state(input, MT_TOOL_FINGER, false);
-+		}
-+	}
-+	input_report_key(input, BTN_LEFT, ((packet[3] & 0x01) == 1));
-+	input_report_key(input, BTN_RIGHT, ((packet[3] & 0x02) == 2));
-+	input_report_key(input, BTN_MIDDLE, ((packet[3] & 0x04) == 4));
-+	input_mt_report_pointer_emulation(input, true);
-+	input_sync(input);
-+}
-+
-+static irqreturn_t elantech_i2c_isr(int irq, void *dev_id)
-+{
-+	struct elantech_i2c *elantech_i2c_priv = dev_id;
-+	unsigned char buf_recv[ETP_PACKET_LENGTH];
-+	int rc;
-+
-+	rc = i2c_master_recv(elantech_i2c_priv->client, buf_recv, ETP_PACKET_LENGTH);
-+	if (rc != ETP_PACKET_LENGTH)
-+		goto elantech_isr_end;
-+
-+	memcpy(elantech_i2c_priv->pre_recv, buf_recv, ETP_PACKET_LENGTH);
-+	/* Packet check */
-+	if (buf_recv[2] == ETP_REPORT_ID && buf_recv[ETP_PACKET_LENGTH - 1] == 0x00)
-+		elantech_i2c_report_absolute(elantech_i2c_priv, buf_recv);
-+
-+
-+elantech_isr_end:
-+	if (elan_i2c_debug && rc > 0)
-+		print_hex_dump_bytes("Elan I2C Touch data :",
-+			DUMP_PREFIX_NONE, buf_recv, rc);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static struct elantech_i2c *elantech_i2c_priv_create(struct i2c_client *client)
-+{
-+	struct elantech_i2c *elantech_i2c_priv;
-+	struct input_dev *dev;
-+	unsigned int gpio;
-+	const char *label = "elantech_i2c";
-+	int rc = 0;
-+	unsigned char buf_recv[2];
-+
-+	elantech_i2c_priv = kzalloc(sizeof(struct elantech_i2c), GFP_KERNEL);
-+	if (!elantech_i2c_priv)
-+		return NULL;
-+
-+	elantech_i2c_priv->client = client;
-+	elantech_i2c_priv->irq = client->irq;
-+	elantech_i2c_priv->input = input_allocate_device();
-+	if (elantech_i2c_priv->input == NULL)
-+		goto err_input_allocate_device;
-+
-+	elantech_i2c_priv->input->name = "ELANTECH_I2C";
-+	elantech_i2c_priv->input->phys = client->adapter->name;
-+	elantech_i2c_priv->input->id.bustype = BUS_I2C;
-+
-+	dev = elantech_i2c_priv->input;
-+	__set_bit(EV_KEY, dev->evbit);
-+	__set_bit(EV_ABS, dev->evbit);
-+
-+	__set_bit(BTN_LEFT, dev->keybit);
-+	__set_bit(BTN_RIGHT, dev->keybit);
-+	__set_bit(BTN_MIDDLE, dev->keybit);
-+
-+	__set_bit(BTN_TOUCH, dev->keybit);
-+	__set_bit(BTN_TOOL_FINGER, dev->keybit);
-+	__set_bit(BTN_TOOL_DOUBLETAP, dev->keybit);
-+	__set_bit(BTN_TOOL_TRIPLETAP, dev->keybit);
-+	__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
-+
-+	elantech_i2c_command(client, ETP_X_AXIS_MAX_CMD, buf_recv, ETP_INF_LENGTH);
-+	elantech_i2c_priv->max_x = (0x0f & buf_recv[1]) << 8 | buf_recv[0];
-+	elantech_i2c_command(client, ETP_Y_AXIS_MAX_CMD, buf_recv, ETP_INF_LENGTH);
-+	elantech_i2c_priv->max_y = (0x0f & buf_recv[1]) << 8 | buf_recv[0];
-+	dev_info(&client->dev, "%s max_x = %d\n", __func__, elantech_i2c_priv->max_x);
-+	dev_info(&client->dev, "%s max_y = %d\n", __func__, elantech_i2c_priv->max_y);
-+	elantech_i2c_command(client, ETP_TRACE_NUM_CMD, buf_recv, ETP_INF_LENGTH);
-+	elantech_i2c_priv->width_x = elantech_i2c_priv->max_x / (buf_recv[0] - 1);
-+	elantech_i2c_priv->width_y = elantech_i2c_priv->max_y / (buf_recv[1] - 1);
-+
-+	/* X Y Value*/
-+	input_set_abs_params(dev, ABS_X, 0, elantech_i2c_priv->max_x, 0, 0);
-+	input_set_abs_params(dev, ABS_Y, 0, elantech_i2c_priv->max_y, 0, 0);
-+	/* Palme Value */
-+	input_set_abs_params(dev, ABS_PRESSURE, 0, 255, 0, 0);
-+
-+	/* Finger Pressure value */
-+	input_set_abs_params(dev, ABS_TOOL_WIDTH, 0, ETP_PRESSURE_MAX, 0, 0);
-+
-+	/* Finger Pressure value */
-+	input_mt_init_slots(dev, ETP_MAX_FINGERS);
-+	input_set_abs_params(dev, ABS_MT_POSITION_X, 0, elantech_i2c_priv->max_x, 0, 0);
-+	input_set_abs_params(dev, ABS_MT_POSITION_Y, 0, elantech_i2c_priv->max_y, 0, 0);
-+	input_set_abs_params(dev, ABS_MT_PRESSURE, 0, ETP_PRESSURE_MAX, 0, 0);
-+	input_set_abs_params(dev, ABS_MT_TOUCH_MAJOR, 0, ETP_PRESSURE_MAX, 0, 0);
-+	input_set_abs_params(dev, ABS_MT_TOUCH_MINOR, 0, ETP_PRESSURE_MAX, 0, 0);
-+
-+	/* Enable ABS mode*/
-+	elantech_i2c_command(client, ETP_ENABLE_ABS_CMD, buf_recv, ETP_INF_LENGTH);
-+	gpio = irq_to_gpio(client->irq);
-+	rc = gpio_request(gpio, label);
-+	if (rc < 0) {
-+		dev_dbg(&client->dev, "gpio_request failed for input %d rc = %d\n", gpio, rc);
-+		goto	err_gpio_request;
-+	}
-+	rc = gpio_direction_input(gpio);
-+	if (rc < 0) {
-+		dev_dbg(&client->dev, "gpio_direction_input failed for input %d\n", gpio);
-+		goto	err_gpio_request;
-+	}
-+	elantech_i2c_priv->gpio = gpio;
-+	rc = request_threaded_irq(client->irq, NULL, elantech_i2c_isr,
-+			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-+			client->name, elantech_i2c_priv);
-+	 if (rc < 0) {
-+		dev_dbg(&client->dev, "Could not register for %s interrupt, irq = %d, rc = %d\n",
-+		label, client->irq, rc);
-+		goto	err_gpio_request_irq_fail;
-+	}
-+
-+	return elantech_i2c_priv;
-+
-+err_gpio_request_irq_fail:
-+	gpio_free(gpio);
-+err_gpio_request:
-+	input_free_device(elantech_i2c_priv->input);
-+err_input_allocate_device:
-+	kfree(elantech_i2c_priv);
-+	return NULL;
-+}
-+
-+static int elantech_i2c_probe(struct i2c_client *client,
-+			      const struct i2c_device_id *dev_id)
-+
-+{
-+	int ret = 0;
-+	struct elantech_i2c *elantech_i2c_priv;
-+	unsigned int gpio;
-+
-+	if (!elantech_i2c_hw_init(client)) {
-+		ret = -EINVAL;
-+		goto err_hw_init;
-+	}
-+	elantech_i2c_priv = elantech_i2c_priv_create(client);
-+	if (!elantech_i2c_priv) {
-+		ret = -EINVAL;
-+		goto err_hw_init;
-+	}
-+
-+	ret = input_register_device(elantech_i2c_priv->input);
-+	if (ret < 0)
-+		goto err_input_register_device;
-+
-+	i2c_set_clientdata(client, elantech_i2c_priv);
-+	device_init_wakeup(&client->dev, 1);
-+
-+	return 0;
-+
-+err_input_register_device:
-+	gpio = elantech_i2c_priv->gpio;
-+	gpio_free(gpio);
-+	free_irq(elantech_i2c_priv->irq, elantech_i2c_priv);
-+	input_free_device(elantech_i2c_priv->input);
-+	kfree(elantech_i2c_priv);
-+err_hw_init:
-+	return ret;
-+}
-+
-+static int elantech_i2c_remove(struct i2c_client *client)
-+{
-+	struct elantech_i2c *elantech_i2c_priv = i2c_get_clientdata(client);
-+
-+	if (elantech_i2c_priv) {
-+		if (elantech_i2c_priv->gpio > 0)
-+			gpio_free(elantech_i2c_priv->gpio);
-+		free_irq(elantech_i2c_priv->irq, elantech_i2c_priv);
-+		input_unregister_device(elantech_i2c_priv->input);
-+		kfree(elantech_i2c_priv);
-+	}
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int elantech_i2c_suspend(struct device *dev)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+
-+	if (device_may_wakeup(&client->dev))
-+		enable_irq_wake(client->irq);
-+
-+	return 0;
-+}
-+
-+static int elantech_i2c_resume(struct device *dev)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+
-+	if (device_may_wakeup(&client->dev))
-+		enable_irq_wake(client->irq);
-+
-+	return 0;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(elan_i2c_touchpad_pm_ops,
-+		elantech_i2c_suspend, elantech_i2c_resume);
-+
-+static const struct i2c_device_id elantech_i2c_id_table[] = {
-+	{ "elantech_i2c", 0 },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(i2c, elantech_i2c_id_table);
-+
-+static struct i2c_driver elantech_i2c_driver = {
-+	.driver = {
-+		.name	= DRIVER_NAME,
-+		.owner	= THIS_MODULE,
-+		.pm	= &elan_i2c_touchpad_pm_ops,
-+	},
-+	.probe		= elantech_i2c_probe,
-+	.remove		= __devexit_p(elantech_i2c_remove),
-+	.id_table	= elantech_i2c_id_table,
-+};
-+
-+static int __init elantech_i2c_init(void)
-+{
-+	return i2c_add_driver(&elantech_i2c_driver);
-+}
-+
-+static void __exit elantech_i2c_exit(void)
-+{
-+	i2c_del_driver(&elantech_i2c_driver);
-+}
-+
-+module_init(elantech_i2c_init);
-+module_exit(elantech_i2c_exit);
-+
-+MODULE_AUTHOR("Tom Lin (Lin Yen Yu) <tom_lin@emc.com.tw>");
-+MODULE_DESCRIPTION("Elan I2C Touch Pad driver");
-+MODULE_LICENSE("GPL");
++++ b/Documentation/input/elantech_i2c.txt
+@@ -0,0 +1,760 @@
++Elan I2C Touchpad Programming Guide
++===================================
++	Copyright (c) 2012 Elan Microelectronics corp.
++
++Contents
++~~~~~~~~
++
++1. Introduction
++   1.1 Feature
++2. Descriptors of Touchpad
++   2.1 HID Descriptor
++   2.2 Report Descriptor
++3. Description fo Command
++   3.1 List of Commands
++   3.2 HID Descriptor Retrieval
++   3.3 Report Descriptor Retrieval
++   3.4 Reading an Input Report
++   3.5 Command Register
++       3.5.1 Enable/Disable Touchpad
++       3.5.2 Reset
++   3.6 Basic Information of Touchpad
++   3.7 TP Driver Control Register
++4. Data Packet of Touchpad
++   4.1 Standard Mouse Mode
++   4.2 Absolute Mode
++
++
++
++/////////////////////////////////////////////////////////////////////////////
++1. Introduction
++   ~~~~~~~~~~~~
++
++The Elan I2C touchpad is compatible with Microsoft HID over I2C protocol
++version 0.91. The touchpad provides the standard mouse mode and the absolute
++mode. The touchpad can report maximun five finger positions, when it works in
++absolute mode.
++
++The purpose of this programming guide is to explain how to initial and get
++report from Touch-Pad via I2C interface. About the detail of HID over I2c
++protocal, please refer to "Microsoft HID over I2C Protocol Specification"
++
++1.1 Feature
++    ~~~~~~~
++* The Elan I2C touchpad is compatible with Microsoft HID over I2C protocol
++  version 0.91.
++* Support standard mouse mode and absolute mode.
++* Support maximun five positions of finger in absolute mode.
++* I2C slave device address (7 bits):0x15
++* I2C bus speed:400 kbit/sec
++
++
++
++/////////////////////////////////////////////////////////////////////////////
++2. Descriptors of Touchpad
++   ~~~~~~~~~~~~~~~~~~~~~~~
++
++The following section shows the HID and report descriptor of Elan I2C
++touchapad.
++
++* 2.1 HID Descriptor
++      ~~~~~~~~~~~~~~
++The HID Descriptor for Elan I2C Touchpad is described below.
++-------------------------------------------------------------------------------
++| Byte   | Field                | Value | Notes                               |
++-------------------------------------------------------------------------------
++| Offset |                      | (HEX) |                                     |
++-------------------------------------------------------------------------------
++| 0      | wHIDDescLength       | 001e  | Length of HID Descirptor. Fixed to  |
++|        |                      |       | 30 bytes(0x001e).                   |
++-------------------------------------------------------------------------------
++| 2      | bcdVersion           | 0100  | Compliant with version 1.00.        |
++-------------------------------------------------------------------------------
++| 4      | wReportDescLength    | 004f  | Report Descriptor is 79 Bytes       |
++|        |                      |       | (0x004f).                           |
++-------------------------------------------------------------------------------
++| 6      | wReportDescRegister  | 0002  | Identifier to read Report           |
++|        |                      |       | Descriptor.                         |
++-------------------------------------------------------------------------------
++| 8      | wInputRegister       | 0003  | Identifier to read Input Report     |
++-------------------------------------------------------------------------------
++| 10     | wMaxInputLength      | 0006  | Input Report is 4 Bytes + 2 Bytes   |
++|        |                      |       | length field.                       |
++-------------------------------------------------------------------------------
++| 12     | wOutputRegister      | 0004  | Identifier to read Output Report.   |
++-------------------------------------------------------------------------------
++| 14     | wMaxOutputLength     | 0000  | No Output Report.                   |
++-------------------------------------------------------------------------------
++| 16     | wCommandRegister     | 0005  | Identifier for Command Register.    |
++-------------------------------------------------------------------------------
++| 18     | wDataRegister        | 0006  | Identifier for Data Register.       |
++-------------------------------------------------------------------------------
++| 20     | wVendorID            | 1267  | Vendor ID 0x1267                    |
++-------------------------------------------------------------------------------
++| 22     | wProductID           | 0001  | Product ID 0001                     |
++-------------------------------------------------------------------------------
++| 24     | wVersionID           | 0000  | Version 0000                        |
++-------------------------------------------------------------------------------
++| 26     | RESERVED             | 00 00 | Reserved                            |
++|        |                      | 00 00 |                                     |
++-------------------------------------------------------------------------------
++
++
++* 2.2 Report Descriptr
++      ~~~~~~~~~~~~~~~~
++
++The Report Descriptor defines the HID reports of Elan I2C touchpad. The Report
++Descirptor includes standard 3 bytes mosue report, Vendor Usage, and Elan
++touchpad absolute mode report. The Report Descriptor for the Elan I2C Touchpad
++is described below.
++===============================================================================
++;Describe Standard 3 Byte Report Include Report ID, Vendor Usage, and ABS
++report descriptor
++
++0x05,0x01	; Usage Page(Generic Desktop),
++0x09,0x02	; Usage (Mouse),
++0xa1,0x01	; Collection (Application),
++0x85,0x01	; Report ID,
++0x09,0x01	; Usage (Pointer),
++0xa1,0x00	; Collection (Physical),
++0x05,0x09	; Usage Page(Buttons),
++0x19,0x01	; Usage Minimum (01),
++0x29,0x02	; Usage Maximum (02),
++0x15,0x00	; Logical Minimum (0),
++0x25,0x01	; Logical Maximum (1),
++0x75,0x01	; Report Size (1),
++0x95,0x02	; Report Count (2),
++0x81,0x02	; Input (Data, Variable, Absolute), ;2 button bits
++0x95,0x06	; Report Count(6),
++0x81,0x03	; Input(Cnst,Var,Abs),; 6 bit padding
++0x05,0x01	; Usage Page(Generic Desktop),
++0x09,0x30	; Usage (X),
++0x09,0x31	; Usage (Y),
++0x15,0x81	; Logical Minimum (-127),
++0x25,0x7f	; Logical Maximum (127),
++0x75,0x08	; Report Size (8),
++0x95,0x02	; Report Count (2),
++0x81,0x06	; Input(Data, Variable, Relative), ;2 position bytes (X&Y)
++0xc0		; End Collection
++0x06,0x00,0xff	; Usage_PAGE (Vendor Defined)
++0x85,0x0f	; REPORT_ID (Feature)
++0x09,0xc5	; USAGE (Vendor Usage 0xc5)
++0x15,0x00	; LOGICAL_MINIMUM (0)
++0x26,0xff,0x00	; LOGICAL_MAXIMUM (255)
++0x75,0x08	; REPORT_SIZE (8)
++0x96,0x00,0x01	; REPORT_COUNT (256)
++0xb1,0x02	; FEATURE (Data, Var, Abs)
++0x85,0x5d	; REPORT_ID (ABS)
++0x09,0x01	; USAGE (eKTF2000 Click-Pad)
++0x95,0x28	; REPORT_COUNT(28)
++0x75,0x08	; REPORT_SIZE (8)
++0x81,0x01	; INPUT (Constant, Array ,Absolute)
++0xc0		; End Collection
++===============================================================================
++
++
++
++/////////////////////////////////////////////////////////////////////////////
++3. Description of Command
++   ~~~~~~~~~~~~~~~~~~~~~~
++
++3.1 List of Commands
++    ~~~~~~~~~~~~~~~~
++-------------------------------------------------------------------------------
++| Register | Register Definition     | R/W   | Data | Note                    |
++| Address  |                         |       | Byte |                         |
++-------------------------------------------------------------------------------
++| 0x0001   | HID descriptor          | Read  | 30   |                         |
++-------------------------------------------------------------------------------
++| 0x0002   | Report descriptor       | Read  | 79   |                         |
++-------------------------------------------------------------------------------
++| 0x0003   | Input report            | Read  |      |                         |
++-------------------------------------------------------------------------------
++| 0x0004   | Output report           | Write |      | currently unsupported   |
++-------------------------------------------------------------------------------
++| 0x0005   | Command register        | Write |      |                         |
++-------------------------------------------------------------------------------
++| 0x0006   | Data register           | Read  |      | currently unsupported   |
++|          |                         | Write |      |                         |
++-------------------------------------------------------------------------------
++| Elan Extension Register                                                     |
++-------------------------------------------------------------------------------
++| 0x0100   | Version of HID over I2C | Read  | 2    |                         |
++|          | Protocol.               |       |      |                         |
++-----------------------------------------------------                         |
++| 0x0101   | Module Unique ID.       | Read  | 2    |                         |
++-----------------------------------------------------                         |
++| 0x0105   | Trace number of X and Y | Read  | 2    | Basic information of    |
++|          | axis                    |       |      | touchpad.               |
++-----------------------------------------------------                         |
++| 0x0106   | X axis maximum position | Read  | 2    |                         |
++-----------------------------------------------------                         |
++| 0x0107   | Y axis maximum position | Read  | 2    |                         |
++-----------------------------------------------------                         |
++| 0x0108   | DPI value of X and Y    | Read  | 2    |                         |
++|          | axis                    |       |      |                         |
++------------------------------------------------------------------------------|
++| 0x0300   | TP Driver Control Reg   | Read  | 2    | TP driver control       |
++|          |                         | Write |      | register                |
++-------------------------------------------------------------------------------
++
++
++3.2 HID Descriptor Retrieval (Register: 0x0001)
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++
++The HID Descriptor is stored on the touchpad firmware where it can be retrieved
++on touchpad initialization. During touchpad initialization, the Host must
++retrieve the HID Descriptor. To retrieve the HID Descriptor, the Host must read
++the HID Descriptor Register.
++
++The following is an illustration of the protocol between the Host and touchpad
++to retrieve the HID Descriptor.
++
++S Addr Wr [A] DataLow(HID Desc Addr) [A] DataHigh(HID Desc Addr) [A] Sr Addr Rd
++                          [A] [DataLow(HID Desc)] A...[DataHigh(HID Desc)] NA P
++Key to symbols
++==============
++
++S     (1 bit) : Start bit
++P     (1 bit) : Stop bit
++Sr    (1 bit) : Repeated Start bit
++Rd/Wr (1 bit) : Read/Write bit. Rd equals 1, Wr equals 0.
++A, NA (1 bit) : Accept and reverse accept bit.
++Addr  (7 bits): I2C 7 bit address. Note that this can be expanded as usual to
++                get a 10 bit I2C address.
++Comm  (8 bits): Command byte, a data byte which often selects a register on
++                the device.
++Data  (8 bits): A plain data byte. Sometimes, I write DataLow, DataHigh
++                for 16 bit data.
++Count (8 bits): A data byte containing the length of a block operation.
++
++[..]: Data sent by I2C device, as opposed to data sent by the host adapter.
++
++
++3.3 Report Descriptor Retrieval (Register:0x0002)
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++
++A single Report Descriptor is stored on the the touchpad firmware. During
++touchpad initialization, the Host gets the location and length of the report
++descriptor from wReportDescRegister and wReportDescLength in the HID Descriptor
++. To retrieve the Report Descriptor from the touchpad, the Host will read the
++register identified in wReportDescRegister for a length of wReportDescLength.
++
++The following is an illustration of the protocol between the Host and the
++touchpad to retrieve the Report Descriptor.
++
++S Addr Wr [A] DataLow(Report Desc Reg) [A] DataHigh(Report Desc Reg) [A] Sr
++         Addr Rd [A] [DataLow(Report Desc)] A .... [DataHigh(Report Desc)] NA P
++
++
++3.4 Reading an Input Report (Register:0x0003)
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++
++The Host can get touchpad reprot via read an input report. The following
++sequence of operations explains the process of retrieval of the Input Report.
++
++-------------------------------------------------------------------------------
++| Sequence  | Host Side                  | Device Side                        |
++-------------------------------------------------------------------------------
++| Step 1    |                            | Device asserts the interrupt       |
++|           |                            | indicating that it has a input     |
++|           |                            | Report to send to Host             |
++-------------------------------------------------------------------------------
++| Step 2    | Host issues a READ repuest |                                    |
++|           | I2C protocol, after it     |                                    |
++|           | receives the interrupt.    |                                    |
++-------------------------------------------------------------------------------
++| Step 3    |                            | Device returns the length (2 bytes)|
++|           |                            | and the entire Input Report.       |
++-------------------------------------------------------------------------------
++| Step 4    |                            | If the Device has no more Input    |
++|           |                            | Reports to send, it de-asserts the |
++|           |                            | interrupt line.                    |
++-------------------------------------------------------------------------------
++
++The following is an illustration of the protocol between the Host and touchpad
++to read an input reprot.
++      S Addr Rd [A] [DataLow(Length Field)] A [DataHigh(Length Field)] A
++                  [DataLow(Report Filed)] A ... [DataHigh(Report Field)] NA P
++-----                                                                       ----
++/INT|_____________________..........._______________________________________|
++
++
++
++
++3.5 Command Register (Register:0x0005)
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++
++The command register contains a 2 Byte value that will identify the command
++that is being sent by the Host to touchpad. The table below identifies the
++commands be supported by touchpad currently.
++
++----------------------------------------
++| Command | Description                |
++----------------------------------------
++| 0x0800  | Wake Up (Enable touchpad)  |
++----------------------------------------
++| 0x0801  | Sleep (Disable touchpad)   |
++----------------------------------------
++| 0x0100  | Reset                      |
++----------------------------------------
++
++
++3.5.1 Enable/Disable Touchpad
++      ~~~~~~~~~~~~~~~~~~~~~~~
++
++The Host can issue the SET_POWER command to enable or disable touchpad.
++
++The following is an illustration of the protocol between the Host and the
++Device for SET_POWER (Enable/Disable Touchpad).
++
++S Addr Wr [A] DataLow(Command Register) [A] DataHigh(Command Register) [A]
++                                   DataLow(Command) [A] DataHigh(Command) [A] P
++
++
++3.5.2 Rest
++      ~~~~
++
++The following section identifies 2 forms of RESETs:
++
++* Host Initiated Reset(HIR).
++----------------------------
++A Host shall initally issue a reset to the device at startup to initialize the
++device. After the Host sends the REST command to the Command Register, the
++touchpad will REST itself back to the initialized state. At then end of the
++reset, the touchpad will also write 2 Byte value to the Input Register with
++the sentinel value of 0x0000 (2 Bytes containing 0) and assert the interrupt
++to indicate that touchpad has been initiailied.
++
++The following is an illustration of the protocol between the HOST and the
++touchpad to issue an HIR.
++
++S Addr Wr [A] DataLow(Command Reg) [A] DataHigh(Command Reg) [A]
++		DataLow(Command) [A] DataHigh(Command) [A] P
++
++
++       S Addr Rd [A] [DataLow(Length Field)] A [DataHigh(Lenght Field)] NA P
++------                                                                     ---
++/INT |_____________________________________________________________________|
++
++
++* Device initiated Reset(DIR).
++-----------------------------
++There may be operations where the touchpad needs to reset itself without a
++a request from the Host. Some examples of the conditions that may trigger this
++are listed below:
++  * Touchpad initials itself completely after power on
++  * Electro static discharge
++  * Fault tolerance
++
++The Elan I2C touchpad will inform the Host after a DIR that the touchpad
++performed a reset and that it is operational again. The mechanism for informing
++the Host of a DIR is the same as that for a HIR. When the touchpad reinitializes
++itself completely, it will update the input register data with 0x0000 and then
++asserts the interrupt.
++
++
++
++3.6. Basic Information of Touchpad
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++
++The following section explains the command set for reading the basic
++information of touchpad. The Host can issue the Elan extension read command to
++retrieve the firmware information of touchpad via I2C interface.
++
++The following is an illustration of the protocol between the Host and Device
++for Elan extension read command.
++
++S Addr Wr [A] DataLow(Elan Ext Reg) [A] DataHigh(Elan Ext Reg [A] Sr Addr Rd [A]
++                             [DataLow(Data Field)] A [DataHigh(Data Field)] NA P
++
++The table below identifies the content of Elan touchpad touchpad basic
++information.
++-------------------------------------------------------------------------------
++| Register | Content        | Descriprions             | Note                 |
++-------------------------------------------------------------------------------
++| Address  |                |                          |                      |
++===============================================================================
++| 0x0100   |                | Vesrion of HID over I2C  | Version 0.91         |
++|          |                | Protocol.                |                      |
++-------------------------------------------------------------------------------
++|          | Low Byte       | 0x91                     |                      |
++|          --------------------------------------------------------------------
++|          | High Byte      | 0x00                     |                      |
++===============================================================================
++| 0x0101   |                | Module Unique ID         | For Driver and       |
++|          |                |                          | Customer.            |
++-------------------------------------------------------------------------------
++|          | Low Byte       | Module Unique ID         |                      |
++|          --------------------------------------------------------------------
++|          | High Byte      | Reserved                 |                      |
++===============================================================================
++| 0x0105   |                | Trace number of X and Y  |                      |
++|          |                | axis.                    |                      |
++-------------------------------------------------------------------------------
++|          | Low Byte       | Trace number of X        |                      |
++|          --------------------------------------------------------------------
++|          | High Byte      | Trace number of Y        |                      |
++===============================================================================
++| 0x0106   |                | X axis maximun position  |                      |
++-------------------------------------------------------------------------------
++|          | Low Byte       | X Abs Max Position [7:0] |                      |
++|          --------------------------------------------------------------------
++|          | High Byte      | X Abs Max Position [11:8]|                      |
++===============================================================================
++| 0x0107   |                | Y axis maximun position  |                      |
++-------------------------------------------------------------------------------
++|          | Low Byte       | Y Abs Max Position [7:0] |                      |
++|          --------------------------------------------------------------------
++|          | High Byte      | Y Abs Max Position [11:8]|                      |
++===============================================================================
++| 0x0108   |                | DPI value of X and Y     |                      |
++|          |                | axis.                    |                      |
++-------------------------------------------------------------------------------
++|          |                |                          | 0x01 : 800 DPI       |
++|          |                |                          | 0x02 : 810 DPI       |
++|          |                |                          | 0x03 : 820 DPI       |
++|          |                |                          | 0x04 : 830 DPI       |
++|          |                |                          | 0x05 : 840 DPI       |
++|          | Low Byte       | DPI value of X           | 0x06 : 850 DPI       |
++|          |                |                          | 0x07 : 860 DPI       |
++|          |                |                          | 0x08 : 870 DPI       |
++|          |                |                          | 0x09 : 880 DPI       |
++|          |                |                          | 0x0A : 890 DPI       |
++|          |                |                          | Other: Reserved      |
++|          --------------------------------------------------------------------
++|          |                |                          | 0x01 : 800 DPI       |
++|          |                |                          | 0x02 : 810 DPI       |
++|          |                |                          | 0x03 : 820 DPI       |
++|          |                |                          | 0x04 : 830 DPI       |
++|          |                |                          | 0x05 : 840 DPI       |
++|          | High Byte      | DPI value of Y           | 0x06 : 850 DPI       |
++|          |                |                          | 0x07 : 860 DPI       |
++|          |                |                          | 0x08 : 870 DPI       |
++|          |                |                          | 0x09 : 880 DPI       |
++|          |                |                          | 0x0A : 890 DPI       |
++|          |                |                          | Other: Reserved      |
++===============================================================================
++
++
++
++3.7 TP Driver Control Register
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~
++
++The Host can switch the working mode of the touchpad to standard mode or
++absolute mode via writes command to TP Driver Copyright Report. The list below
++identifies the definition of TP Driver Control Register.
++* Standard 3 bytes mouse mode: 0x0000
++* ELAN absolute mode: 0x0001
++
++The following is an illustration of the protocol between the Host and the Device
++for Elan extension write command.
++
++S Addr Wr [A] DataLow(Elan Ext Reg) [A] DataHigh(Elan Ext Reg) [A] DataLow
++                                          (Command) [A] DataHigh(Command) [A] P
++
++
++
++
++/////////////////////////////////////////////////////////////////////////////
++4. Data Packet of Touhpad
++   ~~~~~~~~~~~~~~~~~~~~~~
++
++There are two modes provided by touchpad: standard mouse mode and absolute
++mode. The Host can get touchpad data packet via read an input report. Every
++input report starts with a length field (2 bytes), followed by report ID (1
++byte), and finally followed by the report of touch pad.
++
++-----------------------------------------------------------------
++|       Length        | Report ID |          Report             |
++| (2 Unsigned Bytes)  |  (1 Byte) |    (3 or 28 Bytes)          |
++-----------------------------------------------------------------
++
++The value stored in the "Length" field is calculated as follows:
++  Value in Length field = 2 Bytes (#Bytes for the "Length field") + 1 Byte
++  (#Byte for the "Report ID" field) + n Bytes (#Bytes for the "Report" field).
++
++The following section explains the data packet of touchpad.
++
++
++
++4.1 Standard Mouse Mode
++    ~~~~~~~~~~~~~~~~~~~
++
++The description of data packet is showed as follow:
++--------------------------------------------------------------------
++|                         Report ID : 0x01                         |
++--------------------------------------------------------------------
++| Byte\Bit | Bit7 | Bit6 | Bit5 | Bit4 | Bit3 | Bit2 | Bit1 | Bit0 |
++--------------------------------------------------------------------
++| Byte 1   |  0   |  0   |  0   |  0   |  0   |  0   |  0   |  1   |
++--------------------------------------------------------------------
++| Byte 2   |  0   |  0   |  0   |  0   |  0   |  0   |  RB  |  LB  |
++--------------------------------------------------------------------
++| Byte 3   |                    X Data (X Bits 7 ~ 0)              |
++--------------------------------------------------------------------
++| Byte 4   |                    Y Data (Y Bits 7 ~ 0)              |
++--------------------------------------------------------------------
++
++--------------------------------------------------------------------
++|                        Description                               |
++--------------------------------------------------------------------
++| Byte 1   | Reprot  ID = 0x01                                     |
++--------------------------------------------------------------------
++| LB       | Left button status, 1 = button pressed                |
++--------------------------------------------------------------------
++| RB       | Right button status, 1 = button pressed               |
++--------------------------------------------------------------------
++| X Data   | X direction data:X7 = MSB                             |
++--------------------------------------------------------------------
++| Y Data   | Y direction data:Y7 = MSB                             |
++--------------------------------------------------------------------
++
++
++4.2 Absolute Mode
++    ~~~~~~~~~~~~~
++
++The description of data packet is showed as follow:
++--------------------------------------------------------------------
++|                         Report ID : 0x5d                         |
++--------------------------------------------------------------------
++| Byte\Bit | Bit7 | Bit6 | Bit5 | Bit4 | Bit3 | Bit2 | Bit1 | Bit0 |
++====================================================================
++| Byte 1   |  0   |  1   |  0   |  1   |  1   |  1   |  0   |  1   |
++--------------------------------------------------------------------
++| Byte 2   | FT5  | FT4  | FT3  | FT2  | FT1  |  MB  |  RB  |  LB  |
++====================================================================
++| Byte 3   | X1 ABS Position High (X1  | Y1 ABS Position High (Y1  |
++|          | Bits 11 ~ 8)              | Bits 11 ~ 8)              |
++--------------------------------------------------------------------
++| Byte 4   | X1 ABS Pointer Low (X1 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 5   | Y1 ABS Pointer Low (Y1 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 6   | FT1 MKY Value (Bits 3 ~ 0)| FT1 MKX Value (Bits 3 ~ 0)|
++--------------------------------------------------------------------
++| Byte 7   | FT1 H Value (Bits 7 ~ 0)                              |
++====================================================================
++| Byte 8   | X2 ABS Position High (X2  | Y2 ABS Position High (Y2  |
++|          | Bits 11 ~ 8)              | Bits 11 ~ 8)              |
++--------------------------------------------------------------------
++| Byte 9   | X2 ABS Pointer Low (X2 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 10  | Y2 ABS Pointer Low (Y2 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 11  | FT2 MKY Value (Bits 3 ~ 0)| FT2 MKX Value (Bits 3 ~ 0)|
++--------------------------------------------------------------------
++| Byte 12  | FT2 H Value (Bits 7 ~ 0)                              |
++====================================================================
++| Byte 13  | X3 ABS Position High (X3  | Y3 ABS Position High (Y3  |
++|          | Bits 11 ~ 8)              | Bits 11 ~ 8)              |
++--------------------------------------------------------------------
++| Byte 14  | X3 ABS Pointer Low (X3 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 15  | Y3 ABS Pointer Low (Y3 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 16  | FT3 MKY Value (Bits 3 ~ 0)| FT3 MKX Value (Bits 3 ~ 0)|
++--------------------------------------------------------------------
++| Byte 17  | FT3 H Value (Bits 7 ~ 0)                              |
++====================================================================
++| Byte 18  | X4 ABS Position High (X4  | Y4 ABS Position High (Y4  |
++|          | Bits 11 ~ 8)              | Bits 11 ~ 8)              |
++--------------------------------------------------------------------
++| Byte 19  | X4 ABS Pointer Low (X4 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 20  | Y4 ABS Pointer Low (Y4 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 21  | FT4 MKY Value (Bits 3 ~ 0)| FT4 MKX Value (Bits 3 ~ 0)|
++--------------------------------------------------------------------
++| Byte 22  | FT4 H Value (Bits 7 ~ 0)                              |
++====================================================================
++| Byte 23  | X5 ABS Position High (X5  | Y5 ABS Position High (Y5  |
++|          | Bits 11 ~ 8)              | Bits 11 ~ 8)              |
++--------------------------------------------------------------------
++| Byte 24  | X5 ABS Pointer Low (X5 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 25  | Y5 ABS Pointer Low (Y5 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 26  | FT5 MKY Value (Bits 3 ~ 0)| FT5 MKX Value (Bits 3 ~ 0)|
++--------------------------------------------------------------------
++| Byte 27  | FT5 H Value (Bits 7 ~ 0)                              |
++====================================================================
++| Byte 28  | Reserved                                              |
++--------------------------------------------------------------------
++
++--------------------------------------------------------------------
++|                        Description                               |
++--------------------------------------------------------------------
++| Byte 1        | Report ID = 0x5d                                 |
++--------------------------------------------------------------------
++| FTn           | Finger touch status,ex:                          |
++| (FT5 ~ FT1)   | 5'b00000 = no finger touch                       |
++|               | 5'b00001 = ID 1 finger touch                     |
++|               | 5'b00101 = ID 1 and 3 finger touch               |
++--------------------------------------------------------------------
++| LB            | Left button status, 1 = button pressed           |
++--------------------------------------------------------------------
++| RB            | Right button status, 1 = button pressed          |
++--------------------------------------------------------------------
++| MB            | Middle button status, 1 = button pressed         |
++--------------------------------------------------------------------
++| Xn (X5 ~ X1)  | FTn finger absolute data in X-axis, Xn Bits 11 ~ |
++| ABS Position  | 0.                                               |
++--------------------------------------------------------------------
++| Yn (Y5 ~ Y1)  | FTn finger absolute data in Y-axis, Yn Bits 11 ~ |
++| ABS Position  | 0.                                               |
++--------------------------------------------------------------------
++| FTn MKX Value | FTn finger width value in X-axis                 |
++--------------------------------------------------------------------
++| FTn MKY Value | FTn finger width value in Y-axis                 |
++--------------------------------------------------------------------
++| FTn H Value   | FTn finger pressure value,                       |
++--------------------------------------------------------------------
++| Byte 28       | Reserved for CRC-8 error check, currently        |
++|               | unsupported. The default value of this field is  |
++|               | 0x00.                                            |
++--------------------------------------------------------------------
++
++
++
++Finger Touchpad & Button Status Change
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++
++The touchpad provides dynamic report formant. When finger touch the touchpad,
++the five information will list in the packet. If multi fingers touch the
++touchpad, touchpad will sort the finger information by FT1 ~ FT5.
++
++For example, when finger ID1, finger ID3 and finger ID5 touch the touchpad, and
++left button pressed at the same time, the packet will be sent cyclically. The
++report packet is showed as follow:
++
++
++--------------------------------------------------------------------
++|                         Report ID : 0x5d                         |
++--------------------------------------------------------------------
++| Byte\Bit | Bit7 | Bit6 | Bit5 | Bit4 | Bit3 | Bit2 | Bit1 | Bit0 |
++====================================================================
++| Byte 1   |  0   |  1   |  0   |  1   |  1   |  1   |  0   |  1   |
++--------------------------------------------------------------------
++| Byte 2   | FT5  |  0   | FT3  |  0   | FT1  |  0   |  0   |  LB  |
++====================================================================
++| Byte 3   | X1 ABS Position High (X1  | Y1 ABS Position High (Y1  |
++|          | Bits 11 ~ 8)              | Bits 11 ~ 8)              |
++--------------------------------------------------------------------
++| Byte 4   | X1 ABS Pointer Low (X1 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 5   | Y1 ABS Pointer Low (Y1 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 6   | FT1 MKY Value (Bits 3 ~ 0)| FT1 MKX Value (Bits 3 ~ 0)|
++--------------------------------------------------------------------
++| Byte 7   | FT1 H Value (Bits 7 ~ 0)                              |
++====================================================================
++| Byte 8   | X3 ABS Position High (X3  | Y3 ABS Position High (Y3  |
++|          | Bits 11 ~ 8)              | Bits 11 ~ 8)              |
++--------------------------------------------------------------------
++| Byte 9   | X3 ABS Pointer Low (X3 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 10  | Y3 ABS Pointer Low (Y3 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 11  | FT3 MKY Value (Bits 3 ~ 0)| FT3 MKX Value (Bits 3 ~ 0)|
++--------------------------------------------------------------------
++| Byte 12  | FT3 H Value (Bits 7 ~ 0)                              |
++====================================================================
++| Byte 13  | X5 ABS Position High (X5  | Y5 ABS Position High (Y5  |
++|          | Bits 11 ~ 8)              | Bits 11 ~ 8)              |
++--------------------------------------------------------------------
++| Byte 14  | X5 ABS Pointer Low (X3 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 15  | Y5 ABS Pointer Low (Y3 Bits 7 ~ 0)                    |
++--------------------------------------------------------------------
++| Byte 16  | FT5 MKY Value (Bits 3 ~ 0)| FT5 MKX Value (Bits 3 ~ 0)|
++--------------------------------------------------------------------
++| Byte 17  | FT5 H Value (Bits 7 ~ 0)                              |
++====================================================================
++| Byte 18  |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 19  |                           0                           |
++--------------------------------------------------------------------
++| Byte 20  |                           0                           |
++--------------------------------------------------------------------
++| Byte 21  |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 22  |                           0                           |
++====================================================================
++| Byte 23  |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 24  |                           0                           |
++--------------------------------------------------------------------
++| Byte 25  |                           0                           |
++--------------------------------------------------------------------
++| Byte 26  |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 27  |                           0                           |
++====================================================================
++| Byte 28  |                           0                           |
++--------------------------------------------------------------------
++
++
++After all finger left the touchpad and button released, it will send the last
++packet to inform the host. The packet list as follow:
++--------------------------------------------------------------------
++|                         Report ID : 0x5d                         |
++--------------------------------------------------------------------
++| Byte\Bit | Bit7 | Bit6 | Bit5 | Bit4 | Bit3 | Bit2 | Bit1 | Bit0 |
++====================================================================
++| Byte 1   |  0   |  1   |  0   |  1   |  1   |  1   |  0   |  1   |
++--------------------------------------------------------------------
++| Byte 2   |  0   |  0   |  0   |  0   |  0   |  0   |  0   |  0   |
++====================================================================
++| Byte 3   |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 4   |                           0                           |
++--------------------------------------------------------------------
++| Byte 5   |                           0                           |
++--------------------------------------------------------------------
++| Byte 6   |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 7   |                           0                           |
++====================================================================
++| Byte 8   |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 9   |                           0                           |
++--------------------------------------------------------------------
++| Byte 10  |                           0                           |
++--------------------------------------------------------------------
++| Byte 11  |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 12  |                           0                           |
++====================================================================
++| Byte 13  |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 14  |                           0                           |
++--------------------------------------------------------------------
++| Byte 15  |                           0                           |
++--------------------------------------------------------------------
++| Byte 16  |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 17  |                           0                           |
++====================================================================
++| Byte 18  |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 19  |                           0                           |
++--------------------------------------------------------------------
++| Byte 20  |                           0                           |
++--------------------------------------------------------------------
++| Byte 21  |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 22  |                           0                           |
++====================================================================
++| Byte 23  |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 24  |                           0                           |
++--------------------------------------------------------------------
++| Byte 25  |                           0                           |
++--------------------------------------------------------------------
++| Byte 26  |             0             |              0            |
++--------------------------------------------------------------------
++| Byte 27  |                           0                           |
++====================================================================
++| Byte 28  |                           0                           |
++--------------------------------------------------------------------
 -- 
 1.7.9.2
 
