@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab2EGRRc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 13:17:32 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:37595 "EHLO
+	id S1757539Ab2EGRTY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 13:19:24 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:43474 "EHLO
 	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932099Ab2EGRRb (ORCPT
+	with ESMTP id S1757467Ab2EGRTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 13:17:31 -0400
-Date: Mon, 7 May 2012 10:17:25 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
-Subject: Re: [PATCH v1 3/6] workqueue: introduce schedule_on_each_cpu_cond
-Message-ID: <20120507171725.GB19417@google.com>
-References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
- <1336056962-10465-4-git-send-email-gilad@benyossef.com>
- <20120503153941.GA5528@google.com>
- <CAOtvUMcJurhAKB5pbq91WCsSM7cELNOdUbANzx4gF0Cf8x4cTg@mail.gmail.com>
+	Mon, 7 May 2012 13:19:22 -0400
+Date: Mon, 7 May 2012 10:19:09 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Tejun Heo <tj@kernel.org>
+cc: Stephen Boyd <sboyd@codeaurora.org>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: linux-next oops in __lock_acquire for process_one_work
+Message-ID: <alpine.LSU.2.00.1205070951170.1544@eggly.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOtvUMcJurhAKB5pbq91WCsSM7cELNOdUbANzx4gF0Cf8x4cTg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Tejun,
 
-On Sun, May 06, 2012 at 04:15:30PM +0300, Gilad Ben-Yossef wrote:
-> A single helper function called schedule_on_each_cpu_cond() is very
-> obvious to find to someone reading the source or documentation. On
-> the other hand figuring out that the helper functions that handle
-> cpu hotplug and cpumask allocation are there for that purpose is a
-> bit more involved.
-> 
-> That was my thinking at least.
+Running MM load on recent linux-nexts (e.g. 3.4.0-rc5-next-20120504),
+with CONFIG_PROVE_LOCKING=y, I've been hitting an oops in __lock_acquire
+called from lock_acquire called from process_one_work: serving mm/swap.c's
+lru_add_drain_all - schedule_on_each_cpu(lru_add_drain_per_cpu).
 
-Yeah, having common mechanism is nice, but I just prefer iterators /
-helpers which can be embedded in the caller to interface which takes a
-callback unless the execution context is actually asynchronous to the
-caller.  We don't use nested functions / scopes in kernel which makes
-those callbacks (higher order functions, lambdas, gammas, zetas
-whatever) painful to use and follow.
+In each case the oopsing address has been ffffffff00000198, and the
+oopsing instruction is the "atomic_inc((atomic_t *)&class->ops)" in
+__lock_acquire: so class is ffffffff00000000.
 
-> The way i see it, I can either obliterate on_each_cpu_cond() and out
-> its code in place in the LRU path, or fix the callback to get an
-> extra private data parameter -
+I notice Stephen's commit 0976dfc1d0cd80a4e9dfaf87bd8744612bde475a
+workqueue: Catch more locking problems with flush_work()
+in linux-next but not 3.4-rc, adding
+	lock_map_acquire(&work->lockdep_map);
+	lock_map_release(&work->lockdep_map);
+to flush_work.
 
-Unless we can code up something pretty, I vote for just open coding it
-for now.  If we grow more usages like this, maybe we'll be able to see
-the pattern better and come up with better abstraction.
+I believe that occasionally races with your
+	struct lockdep_map lockdep_map = work->lockdep_map;
+in process_one_work, putting an entry into the class_cache
+just as you're copying it, so you end up with half a pointer.
+yes, the structure copy is using "rep movsl" not "rep movsq".
 
-Thank you.
+I've reverted Stephen's commit from my testing, and indeed it's
+now run that MM load much longer than I've seen since this bug
+first appeared.  Though I suspect that strictly it's your
+unlocked copying of the lockdep_map that's to blame.  Probably
+easily fixed by someone who understands lockdep - not me!
 
--- 
-tejun
+Hugh
