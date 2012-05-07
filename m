@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab2EGI7u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:59:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:51286 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755779Ab2EGI7s (ORCPT
+	id S1755948Ab2EGJAo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 05:00:44 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:3639 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755779Ab2EGJAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:59:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
-Date: Mon, 7 May 2012 08:59:28 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1336373032-16881-1-git-send-email-hdoyu@nvidia.com> <20120507074228.GK26481@n2100.arm.linux.org.uk> <20120507.105254.1899925115243585929.hdoyu@nvidia.com>
-In-Reply-To: <20120507.105254.1899925115243585929.hdoyu@nvidia.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 7 May 2012 05:00:43 -0400
+Message-ID: <1336381237.1933.19.camel@x61.thuisdomein>
+Subject: [PATCH] [TRIVIAL] c2port: fix Kconfig typo "default no"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 07 May 2012 11:00:37 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205070859.29174.arnd@arndb.de>
-X-Provags-ID: V02:K0:FEX+JqKctCeChmi0Jti4w4Sl/a36KbEjs0bo+w9ZibX
- m+zf7H7FXgNVrr2oYJLQtBhhkwms9PGVMfVRcrVEJzjuas+LzJ
- 6YnVtL9+Hy3R6KuqUF6aYKwjXgqGQWbt+afj33qRiOQaNo1/VG
- iEB602HY5CZnfe7RFyFHkUhj5521lZ0vJBpomXfP35ABAxX9Iq
- Raw5+IFZHrd3jXksMJe1fCQYhN/r/Sgfmaowm/9t3IcR0Rl2Wj
- eJmu88/U62JrNNbLQ6p/DdZFDo0FOQcbhqEkuxU9vGT0wLiBva
- sRzx1VFe84Ai93lO9TiW1VDTSS9PqhwUe9vbP1QwLYuNJtMOdp
- +ApxnPF1dPtvsfKz6tsQ=
+Mime-Version: 1.0
+X-OriginalArrivalTime: 07 May 2012 09:00:37.0687 (UTC) FILETIME=[DECFFC70:01CD2C2F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 07 May 2012, Hiroshi Doyu wrote:
-> > On Mon, May 07, 2012 at 09:43:45AM +0300, Hiroshi DOYU wrote:
-> > > diff --git a/drivers/Makefile b/drivers/Makefile
-> > > index 5870322..d97e2e2 100644
-> > > --- a/drivers/Makefile
-> > > +++ b/drivers/Makefile
-> > > @@ -18,7 +18,7 @@ obj-$(CONFIG_SFI)         += sfi/
-> > >  # PnP must come after ACPI since it will eventually need to check if acpi
-> > >  # was used and do nothing if so
-> > >  obj-$(CONFIG_PNP)          += pnp/
-> > > -obj-$(CONFIG_ARM_AMBA)             += amba/
-> > > +obj-$(CONFIG_ARM)          += amba/
-> > 
-> > NAK.  This makes amba only buildable for ARM which is not the intention.
-> > Other architectures do have Primecells.
-> 
-> What about the following?
-> 
->  +obj-y         += amba/
+Strictly speaking "no" is a valid, but undefined, Kconfig symbol. But what
+obviously was meant here was "n".
 
-Looks ok to me, but which problem are you trying to solve anyway? Tegra
-always enables ARM_AMBA, so AFAICT there is no difference between this
-and the original code.
+While we're touching this Kconfig file also drop the superfluous
+dependency on C2PORT for C2PORT_DURAMAR_2150. Its Kconfig entry is
+already wrapped in "if C2PORT" and "endif".
 
-	Arnd
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+ drivers/misc/c2port/Kconfig |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/misc/c2port/Kconfig b/drivers/misc/c2port/Kconfig
+index e46af9a..33ee834 100644
+--- a/drivers/misc/c2port/Kconfig
++++ b/drivers/misc/c2port/Kconfig
+@@ -5,7 +5,7 @@
+ menuconfig C2PORT
+ 	tristate "Silicon Labs C2 port support (EXPERIMENTAL)"
+ 	depends on EXPERIMENTAL
+-	default no
++	default n
+ 	help
+ 	  This option enables support for Silicon Labs C2 port used to
+ 	  program Silicon micro controller chips (and other 8051 compatible).
+@@ -23,8 +23,8 @@ if C2PORT
+ 
+ config C2PORT_DURAMAR_2150
+ 	tristate "C2 port support for Eurotech's Duramar 2150 (EXPERIMENTAL)"
+-	depends on X86 && C2PORT
+-	default no
++	depends on X86
++	default n
+ 	help
+ 	  This option enables C2 support for the Eurotech's Duramar 2150
+ 	  on board micro controller.
+-- 
+1.7.7.6
+
+
+
