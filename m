@@ -1,100 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab2EGNhG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 09:37:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25418 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756105Ab2EGNhD (ORCPT
+	id S1756587Ab2EGNjZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 09:39:25 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:36995 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756233Ab2EGNjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 09:37:03 -0400
-X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_s2ZMIMYyfwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=8ZS6Btx8uB3dEi3HNmUA:9 a=A6z-zd2m3Z-kgKKLxpcA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1336397821.14207.136.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 00/15] tools: Unify perf and trace-cmd trace event
- format parsing v3
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+	Mon, 7 May 2012 09:39:23 -0400
+Message-ID: <4FA7D06B.60005@linux.vnet.ibm.com>
+Date: Mon, 07 May 2012 19:08:51 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Attilio Rao <attilio.rao@citrix.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
-        Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>,
-        David Ahern <dsahern@gmail.com>
-Date: Mon, 07 May 2012 09:37:01 -0400
-In-Reply-To: <20120507081424.GE16608@gmail.com>
-References: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
-	 <20120507081424.GE16608@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
+References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com> <20120507082928.GI16608@gmail.com> <4FA7888F.80505@redhat.com> <4FA7AAD8.6050003@linux.vnet.ibm.com> <4FA7BABA.4040700@redhat.com> <4FA7CC05.50808@linux.vnet.ibm.com> <4FA7CCA2.4030408@redhat.com>
+In-Reply-To: <4FA7CCA2.4030408@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+x-cbid: 12050713-5816-0000-0000-00000276C61E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-07 at 10:14 +0200, Ingo Molnar wrote:
-
-> So can we please make a libevent.so, built sanely within 
-> tools/perf/lib/ or such and distributed together with perf so 
-> that the two can never get out of sync?
-
-If you do this, you need to find a way to turn off -Wswitch-enum as that
-seems to (at least on my gcc) ignore defaults.
-
-Thus we end up with:
-
-diff --git a/Makefile b/Makefile
-index 18ad079..217548b 100644
-
-diff --git a/parse-filter.c b/parse-filter.c
-index d09fbd2..0ac249c 100644
---- a/parse-filter.c
-+++ b/parse-filter.c
-@@ -367,6 +367,12 @@ create_arg_item(struct event_format *event, const
-char *token,
- 		arg->type = FILTER_ARG_FIELD;
- 		arg->field.field = field;
- 		break;
-+	case EVENT_ERROR:
-+	case EVENT_NONE:
-+	case EVENT_SPACE:
-+	case EVENT_NEWLINE:
-+	case EVENT_OP:
-+	case EVENT_DELIM:
- 	default:
- 		free_arg(arg);
- 		show_error(error_str, "expected a value but found %s",
-
-
-I found that I added over 20 of these trying to keep -Wswitch-enum
-happy, before i decided to give up (there's many more than 20 places
-that need updates).
-
-Looking at what was done in the current code, there's lots of :
-
-	case PRINT_NULL:
-	case PRINT_FIELD ... PRINT_SYMBOL:
-	case PRINT_STRING:
-	default:
-
-Which looks more of a maintenance nightmare. How does this help? The
-FOO ... BAR, will hide the same errors that you are trying to prevent.
-If you were suppose to handle something between FOO and BAR, then you
-just ignored it too.
-
-It also makes that "default" redundant.
-
-This is one of those warnings that causes more pain than it helps.
-
-If you strongly believe that all these warnings are helpful, than we
-should push to add these warnings to the kernel too.
-
--- Steve
-
+On 05/07/2012 06:52 PM, Avi Kivity wrote:
+> On 05/07/2012 04:20 PM, Raghavendra K T wrote:
+>> On 05/07/2012 05:36 PM, Avi Kivity wrote:
+>>> On 05/07/2012 01:58 PM, Raghavendra K T wrote:
+>>>> On 05/07/2012 02:02 PM, Avi Kivity wrote:
+>>>>> On 05/07/2012 11:29 AM, Ingo Molnar wrote:
+>>>>>> This is looking pretty good and complete now - any objections
+>>>>>> from anyone to trying this out in a separate x86 topic tree?
+>>>>>
+>>>>> No objections, instead an
+>>>>>
+>>>>> Acked-by: Avi Kivity<avi@redhat.com>
+>>>>>
+>> [...]
+>>>>
+>>>> (Less is better. Below is time elapsed in sec for x86_64_defconfig
+>>>> (3+3 runs)).
+>>>>
+>>>>            BASE                    BASE+patch            %improvement
+>>>>            mean (sd)               mean (sd)
+>>>> case 1x:     66.0566 (74.0304)      61.3233 (68.8299)     7.16552
+>>>> case 2x:     1253.2 (1795.74)      131.606 (137.358)     89.4984
+>>>> case 3x:     3431.04 (5297.26)      134.964 (149.861)     96.0664
+>>>>
+>>>
+>>> You're calculating the improvement incorrectly.  In the last case, it's
+>>> not 96%, rather it's 2400% (25x).  Similarly the second case is about
+>>> 900% faster.
+>>>
+>>
+>> You are right,
+>> my %improvement was intended to be like
+>> if
+>> 1) base takes 100 sec ==>  patch takes 93 sec
+>> 2) base takes 100 sec ==>  patch takes 11 sec
+>> 3) base takes 100 sec ==>  patch takes 4 sec
+>>
+>> The above is more confusing (and incorrect!).
+>>
+>> Better is what you told which boils to 10x and 25x improvement in case
+>> 2 and case 3. And IMO, this *really* gives the feeling of magnitude of
+>> improvement with patches.
+>>
+>> I ll change script to report that way :).
+>>
+>
+> btw, this is on non-PLE hardware, right?  What are the numbers for PLE?
+>
+Sure.
+I 'll get hold of a PLE mc  and come up with the numbers soon. but I
+'ll expect the improvement around 1-3% as it was in last version.
 
