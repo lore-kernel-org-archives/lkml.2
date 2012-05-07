@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab2EGHlw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 03:41:52 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52211 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754571Ab2EGHlu (ORCPT
+	id S1755452Ab2EGHlt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 03:41:49 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52207 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754571Ab2EGHls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 03:41:50 -0400
-Date: Mon, 7 May 2012 10:41:45 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Minchan Kim <minchan@kernel.org>
-cc: Nitin Gupta <ngupta@vflare.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cl@linux-foundation.org
-Subject: Re: [PATCH 4/4] zsmalloc: zsmalloc: align cache line size
-In-Reply-To: <4FA33E89.6080206@kernel.org>
-Message-ID: <alpine.LFD.2.02.1205071038090.2851@tux.localdomain>
-References: <1336027242-372-1-git-send-email-minchan@kernel.org> <1336027242-372-4-git-send-email-minchan@kernel.org> <4FA28EFD.5070002@vflare.org> <4FA33E89.6080206@kernel.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 7 May 2012 03:41:48 -0400
+X-AuditID: 9c93016f-b7c79ae0000006b3-99-4fa77cb5b1c6
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] perf ui/gtk: Use struct perf_error_ops
+References: <1336370582-30959-1-git-send-email-namhyung.kim@lge.com>
+	<1336370582-30959-2-git-send-email-namhyung.kim@lge.com>
+	<CAOJsxLEo32u8iYvQ+qeBX2YSKq=ftHs2jMdsKcCWWKO07XPGHg@mail.gmail.com>
+Date: Mon, 07 May 2012 16:40:19 +0900
+In-Reply-To: <CAOJsxLEo32u8iYvQ+qeBX2YSKq=ftHs2jMdsKcCWWKO07XPGHg@mail.gmail.com>
+	(Pekka Enberg's message of "Mon, 7 May 2012 10:17:41 +0300")
+Message-ID: <874nrssal8.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 May 2012, Minchan Kim wrote:
-> >> It's a overkill to align pool size with PAGE_SIZE to avoid
-> >> false-sharing. This patch aligns it with just cache line size.
-> >>
-> >> Signed-off-by: Minchan Kim<minchan@kernel.org>
-> >> ---
-> >>   drivers/staging/zsmalloc/zsmalloc-main.c |    6 +++---
-> >>   1 file changed, 3 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c
-> >> b/drivers/staging/zsmalloc/zsmalloc-main.c
-> >> index 51074fa..3991b03 100644
-> >> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> >> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> >> @@ -489,14 +489,14 @@ fail:
-> >>
-> >>   struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
-> >>   {
-> >> -    int i, error, ovhd_size;
-> >> +    int i, error;
-> >>       struct zs_pool *pool;
-> >>
-> >>       if (!name)
-> >>           return NULL;
-> >>
-> >> -    ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
-> >> -    pool = kzalloc(ovhd_size, GFP_KERNEL);
-> >> +    pool = kzalloc(ALIGN(sizeof(*pool), cache_line_size()),
-> >> +                GFP_KERNEL);
-> > 
-> > a basic question:
-> >  Is rounding off allocation size to cache_line_size enough to ensure
-> > that the object is cache-line-aligned? Isn't it possible that even
-> > though the object size is multiple of cache-line, it may still not be
-> > properly aligned and end up sharing cache line with some other
-> > read-mostly object?
-> 
-> AFAIK, SLAB allocates object aligned cache-size so I think that problem cannot happen.
-> But needs double check.
-> Cced Pekka.
+Hi,
 
-The kmalloc(size) function only gives you the following guarantees:
+On Mon, 7 May 2012 10:17:41 +0300, Pekka Enberg wrote:
+> On Mon, May 7, 2012 at 9:03 AM, Namhyung Kim <namhyung.kim@lge.com> wrote:
+>> Define and use perf_gtk_eops to provide a GTK2 message
+>> dialog for error reporting. To do that, we need global
+>> main_window variable for tracking UI state.
+>>
+>> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+>
+> I still don't like the dialog-based approach because it requires the
+> *user* to respond. Just add a label to the GTK window and show the
+> latest message there. If you want to make it even prettier, make the
+> label clickable and open up a popup that shows all the warnings and
+> errors in a separate window...
 
-  (1) The allocated object is _at least_ 'size' bytes.
- 
-  (2) The returned pointer is aligned to ARCH_KMALLOC_MINALIGN.
+As I said before, most of calls to ui__warning/error are called just
+before the main window is closed or critical enough to require user's
+reponse - if not, it probably needs to use other API.
 
-Anything beyond that is implementation detail and probably will break if 
-you switch between SLAB/SLUB/SLOB.
+So I think it's OK for the current symantics of the API.
 
-			Pekka
+Thanks,
+Namhyung
