@@ -1,46 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab2EGFUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 01:20:48 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:55178 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466Ab2EGFUr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 01:20:47 -0400
-Date: Mon, 7 May 2012 14:20:40 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, linux-sh@vger.kernel.org,
-        johnstul@us.ibm.com, rjw@sisk.pl, lethal@linux-sh.org,
-        gregkh@linuxfoundation.org, olof@lixom.net, tglx@linutronix.de
-Subject: Re: [PATCH] clocksource: em_sti: Emma Mobile STI driver
-Message-ID: <20120507052028.GA26593@verge.net.au>
-References: <20120503125611.4314.52231.sendpatchset@w520>
+	id S1752036Ab2EGFV4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 01:21:56 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:53812 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751242Ab2EGFVz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 01:21:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120503125611.4314.52231.sendpatchset@w520>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC13E9B1B40@DBDE01.ent.ti.com>
+References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
+	<1335462041-4949-6-git-send-email-j-keerthy@ti.com>
+	<331ABD5ECB02734CA317220B2BBEABC13E9B1B40@DBDE01.ent.ti.com>
+Date: Mon, 7 May 2012 10:51:53 +0530
+Message-ID: <CAJ6a13aA9nutZvRkcj8GHok9cEe8A=J2bwzSXt=Sd0Hu_WPaPw@mail.gmail.com>
+Subject: Re: [PATCH V3 05/10] ARM: OMAP2+: SmartReflex: introduce a busy loop
+ condition test macro
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: "AnilKumar, Chimata" <anilkumar@ti.com>
+Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Hilman, Kevin" <khilman@ti.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "Pihet-XID, Jean" <j-pihet@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 09:56:11PM +0900, Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
-> 
-> This is V1 of the Emma Mobile STI timer driver.
-> 
-> The STI hardware is based on a single 48-bit 32kHz
-> counter that together with two individual compare
-> registers can generate interrupts. There are no
-> timer operating modes selectable which means that
-> the timer can not clear on match.
-> 
-> This driver is providing clocksource support for the
-> 48-bit counter. Clockevents are also supported using
-> the same timer in periodic or oneshot modes.
-> 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
+On Fri, May 4, 2012 at 2:42 PM, AnilKumar, Chimata <anilkumar@ti.com> wrote:
+> On Thu, Apr 26, 2012 at 23:10:36, J, KEERTHY wrote:
+>> From: Jean Pihet <j-pihet@ti.com>
+>>
+>> Now that omap_test_timeout is only accessible from mach-omap2/,
+>> introduce a similar function for SR.
+>>
+>> This change makes the SmartReflex implementation ready for the move
+>> to drivers/.
+>>
+>> Signed-off-by: Jean Pihet <j-pihet@ti.com>
+>> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+>> ---
+>>  arch/arm/mach-omap2/smartreflex.c |   12 ++++++------
+>>  include/linux/power/smartreflex.h |   23 ++++++++++++++++++++++-
+>>  2 files changed, 28 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
+>> index d859277..acef08d 100644
+>> --- a/arch/arm/mach-omap2/smartreflex.c
+>> +++ b/arch/arm/mach-omap2/smartreflex.c
+>> @@ -289,9 +289,9 @@ static void sr_v1_disable(struct omap_sr *sr)
+>>        * Wait for SR to be disabled.
+>>        * wait until ERRCONFIG.MCUDISACKINTST = 1. Typical latency is 1us.
+>>        */
+>> -     omap_test_timeout((sr_read_reg(sr, ERRCONFIG_V1) &
+>> -                     ERRCONFIG_MCUDISACKINTST), SR_DISABLE_TIMEOUT,
+>> -                     timeout);
+>> +     sr_test_cond_timeout((sr_read_reg(sr, ERRCONFIG_V1) &
+>> +                          ERRCONFIG_MCUDISACKINTST), SR_DISABLE_TIMEOUT,
+>> +                          timeout);
+>>
+>>       if (timeout >= SR_DISABLE_TIMEOUT)
+>>               dev_warn(&sr->pdev->dev, "%s: Smartreflex disable timedout\n",
+>> @@ -334,9 +334,9 @@ static void sr_v2_disable(struct omap_sr *sr)
+>>        * Wait for SR to be disabled.
+>>        * wait until IRQSTATUS.MCUDISACKINTST = 1. Typical latency is 1us.
+>>        */
+>> -     omap_test_timeout((sr_read_reg(sr, IRQSTATUS) &
+>> -                     IRQSTATUS_MCUDISABLEACKINT), SR_DISABLE_TIMEOUT,
+>> -                     timeout);
+>> +     sr_test_cond_timeout((sr_read_reg(sr, IRQSTATUS) &
+>> +                          IRQSTATUS_MCUDISABLEACKINT), SR_DISABLE_TIMEOUT,
+>> +                          timeout);
+>>
+>>       if (timeout >= SR_DISABLE_TIMEOUT)
+>>               dev_warn(&sr->pdev->dev, "%s: Smartreflex disable timedout\n",
+>> diff --git a/include/linux/power/smartreflex.h b/include/linux/power/smartreflex.h
+>> index 884eaee..78b795e 100644
+>> --- a/include/linux/power/smartreflex.h
+>> +++ b/include/linux/power/smartreflex.h
+>> @@ -22,7 +22,7 @@
+>>
+>>  #include <linux/types.h>
+>>  #include <linux/platform_device.h>
+>> -
+>> +#include <linux/delay.h>
+>>  #include <plat/voltage.h>
+>>
+>>  /*
+>> @@ -168,6 +168,27 @@ struct omap_sr {
+>>  };
+>>
+>>  /**
+>> + * test_cond_timeout - busy-loop, testing a condition
+>> + * @cond: condition to test until it evaluates to true
+>> + * @timeout: maximum number of microseconds in the timeout
+>> + * @index: loop index (integer)
+>> + *
+>> + * Loop waiting for @cond to become true or until at least @timeout
+>> + * microseconds have passed.  To use, define some integer @index in the
+>> + * calling code.  After running, if @index == @timeout, then the loop has
+>> + * timed out.
+>> + *
+>> + * Copied from omap_test_timeout */
+>> +#define sr_test_cond_timeout(cond, timeout, index)           \
+>> +({                                                           \
+>> +     for (index = 0; index < timeout; index++) {             \
+>> +             if (cond)                                       \
+>> +                     break;                                  \
+>> +             udelay(1);                                      \
+>> +     }                                                       \
+>> +})
+>
+> I think we can use time_after()/time_before() APIs for timeout and cpu_relax() for
+> tight loops instead of udelay().
 
-Tested-by: Simon Horman <horms@verge.net.au>
+cpu_relax() changes the priority everytime to low and will yield to
+another thread.
+Considering that we are checking the condition every microsecond does it make
+some saving using cpu_relax().
+
+>
+> Regards
+> AnilKumar
+
+
+
+-- 
+Regards and Thanks,
+Keerthy
