@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab2EGHnl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 03:43:41 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34547 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab2EGHnk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 03:43:40 -0400
-Date: Mon, 7 May 2012 08:42:28 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Hiroshi DOYU <hdoyu@nvidia.com>
-Cc: swarren@wwwdotorg.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Felipe Balbi <balbi@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
-Message-ID: <20120507074228.GK26481@n2100.arm.linux.org.uk>
-References: <1336373032-16881-1-git-send-email-hdoyu@nvidia.com>
+	id S1755477Ab2EGHwu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 03:52:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64388 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753021Ab2EGHwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 03:52:49 -0400
+Message-ID: <4FA77F4C.9080908@redhat.com>
+Date: Mon, 07 May 2012 10:52:44 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336373032-16881-1-git-send-email-hdoyu@nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: paulmck@linux.vnet.ibm.com
+CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>
+Subject: Re: possible circular locking dependency
+References: <20120503200259.GA3524@swordfish.minsk.epam.com> <4FA63C82.7030309@redhat.com> <20120506164209.GK2470@linux.vnet.ibm.com> <20120506203439.GB3633@swordfish> <20120507034744.GA3141@linux.vnet.ibm.com>
+In-Reply-To: <20120507034744.GA3141@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 09:43:45AM +0300, Hiroshi DOYU wrote:
-> diff --git a/drivers/Makefile b/drivers/Makefile
-> index 5870322..d97e2e2 100644
-> --- a/drivers/Makefile
-> +++ b/drivers/Makefile
-> @@ -18,7 +18,7 @@ obj-$(CONFIG_SFI)		+= sfi/
->  # PnP must come after ACPI since it will eventually need to check if acpi
->  # was used and do nothing if so
->  obj-$(CONFIG_PNP)		+= pnp/
-> -obj-$(CONFIG_ARM_AMBA)		+= amba/
-> +obj-$(CONFIG_ARM)		+= amba/
+On 05/07/2012 06:47 AM, Paul E. McKenney wrote:
+> On Sun, May 06, 2012 at 11:34:39PM +0300, Sergey Senozhatsky wrote:
+> > On (05/06/12 09:42), Paul E. McKenney wrote:
+> > > On Sun, May 06, 2012 at 11:55:30AM +0300, Avi Kivity wrote:
+> > > > On 05/03/2012 11:02 PM, Sergey Senozhatsky wrote:
+> > > > > Hello,
+> > > > > 3.4-rc5
+> > > > 
+> > > > Whoa.
+> > > > 
+> > > > Looks like inconsistent locking between cpufreq and
+> > > > synchronize_srcu_expedited().  kvm triggered this because it is one of
+> > > > the few users of synchronize_srcu_expedited(), but I don't think it is
+> > > > doing anything wrong directly.
+> > > > 
+> > > > Dave, Paul?
+> > > 
+> > > SRCU hasn't changed much in mainline for quite some time.  Holding
+> > > the hotplug mutex across a synchronize_srcu() is a bad idea, though.
+> > > 
+> > > However, there is a reworked implementation (courtesy of Lai Jiangshan)
+> > > in -rcu that does not acquire the hotplug mutex.  Could you try that out?
+> > >
+> > 
+> > Paul, should I try solely -rcu or there are several commits to pick up and apply
+> > on top of -linus tree?
+>
+> If you want the smallest possible change, take the rcu/srcu branch of -rcu.
+> If you want the works, take the rcu/next branch of -rcu.
+>
+> You can find -rcu at:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
 
-NAK.  This makes amba only buildable for ARM which is not the intention.
-Other architectures do have Primecells.
+To make the difference even smaller, merge the above branch with v3.4-rc5.
+
+-- 
+error compiling committee.c: too many arguments to function
+
