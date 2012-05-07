@@ -1,93 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372Ab2EGMQy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 08:16:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63895 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755929Ab2EGMQw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 08:16:52 -0400
-Date: Mon, 7 May 2012 05:15:27 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 3/3] vmevent: Implement special low-memory attribute
-Message-ID: <20120507121527.GA19526@lizard>
-References: <20120501132409.GA22894@lizard>
- <20120501132620.GC24226@lizard>
- <4FA35A85.4070804@kernel.org>
- <20120504073810.GA25175@lizard>
- <CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com>
- <CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com>
+	id S1756630Ab2EGMWs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 08:22:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11805 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756348Ab2EGMWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 08:22:46 -0400
+Message-ID: <4FA7BABA.4040700@redhat.com>
+Date: Mon, 07 May 2012 15:06:18 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Attilio Rao <attilio.rao@citrix.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
+References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com> <20120507082928.GI16608@gmail.com> <4FA7888F.80505@redhat.com> <4FA7AAD8.6050003@linux.vnet.ibm.com>
+In-Reply-To: <4FA7AAD8.6050003@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 04:26:00AM -0400, KOSAKI Motohiro wrote:
-> >> If we'll give up on "1." (Pekka, ping), then we need to solve "2."
-> >> in a sane way: we'll have to add a 'NR_FILE_PAGES - NR_SHMEM -
-> >> <todo-locked-file-pages>' attribute, and give it a name.
-> >
-> > Well, no, we can't give up on (1) completely. That'd mean that
-> > eventually we'd need to change the ABI and break userspace. The
-> > difference between exposing internal details and reasonable
-> > abstractions is by no means black and white.
-> >
-> > AFAICT, RECLAIMABLE_CACHE_PAGES is a reasonable thing to support. Can
-> > anyone come up with a reason why we couldn't do that in the future?
-> 
-> It can. but the problem is, that is completely useless.
+On 05/07/2012 01:58 PM, Raghavendra K T wrote:
+> On 05/07/2012 02:02 PM, Avi Kivity wrote:
+>> On 05/07/2012 11:29 AM, Ingo Molnar wrote:
+>>> This is looking pretty good and complete now - any objections
+>>> from anyone to trying this out in a separate x86 topic tree?
+>>
+>> No objections, instead an
+>>
+>> Acked-by: Avi Kivity<avi@redhat.com>
+>>
+>
+> Thank you.
+>
+> Here is a benchmark result with the patches.
+>
+> 3 guests with 8VCPU, 8GB RAM, 1 used for kernbench
+> (kernbench -f -H -M -o 20) other for cpuhog (shell script while
+> true with an instruction)
+>
+> unpinned scenario
+> 1x: no hogs
+> 2x: 8hogs in one guest
+> 3x: 8hogs each in two guest
+>
+> BASE: 3.4-rc4 vanilla with CONFIG_PARAVIRT_SPINLOCK=n
+> BASE+patch: 3.4-rc4 + debugfs + pv patches with
+> CONFIG_PARAVIRT_SPINLOCK=y
+>
+> Machine : IBM xSeries with Intel(R) Xeon(R) x5570 2.93GHz CPU (Non
+> PLE) with 8 core , 64GB RAM
+>
+> (Less is better. Below is time elapsed in sec for x86_64_defconfig
+> (3+3 runs)).
+>
+>          BASE                    BASE+patch            %improvement
+>          mean (sd)               mean (sd)
+> case 1x:     66.0566 (74.0304)      61.3233 (68.8299)     7.16552
+> case 2x:     1253.2 (1795.74)      131.606 (137.358)     89.4984
+> case 3x:     3431.04 (5297.26)      134.964 (149.861)     96.0664
+>
 
-Surely it is useful. Could be not ideal, but you can't say that
-it is completely useless.
-
-> Because of, 1) dirty pages writing-out is sometimes very slow and
-
-I don't see it as a unresolvable problem: we can exclude dirty pages,
-that's a nice idea actually.
-
-Easily reclaimable cache pages = file_pages - shmem - locked pages
-- dirty pages.
-
-The amount of dirty pages is configurable, which is also great.
-
-Even more, we may introduce two attributes:
-
-RECLAIMABLE_CACHE_PAGES and
-RECLAIMABLE_CACHE_PAGES_NOIO (which excludes dirty pages).
-
-This makes ABI detached from the mm internals and still keeps a
-defined meaning of the attributes.
-
-> 2) libc and some important library's pages are critical important
-> for running a system even though it is clean and reclaimable. In other
-> word, kernel don't have an info then can't expose it.
-
-First off, I guess LRU would try to keep important/most used pages in
-the cache, as we try to never fully drain page cache to the zero mark.
-
-Secondly, if we're really low on memory (which low memory notifications
-help to prevent) and kernel decided to throw libc's pages out of the
-cache, you'll get cache miss and kernel will have to read it back. Well,
-sometimes cache misses do happen, that's life. And if somebody really
-don't want this for the essential parts of the system, one have to
-mlock it (which eliminates your "kernel don't have an info" argument).
-
-
-Btw, if you have any better strategy on helping userspace to define
-'low memory' conditions, I'll readily try to implement it.
-
-Thanks!
+You're calculating the improvement incorrectly.  In the last case, it's
+not 96%, rather it's 2400% (25x).  Similarly the second case is about
+900% faster.
 
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+error compiling committee.c: too many arguments to function
+
