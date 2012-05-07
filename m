@@ -1,219 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475Ab2EGLtt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 07:49:49 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64837 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753662Ab2EGLtq convert rfc822-to-8bit (ORCPT
+	id S1756446Ab2EGLwP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 07:52:15 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45780 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754612Ab2EGLwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 07:49:46 -0400
+	Mon, 7 May 2012 07:52:14 -0400
+Date: Mon, 7 May 2012 12:52:07 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: da9052: fix bug in device tree iteration loop
+Message-ID: <20120507115207.GA17002@opensource.wolfsonmicro.com>
+References: <1336377443-5926-1-git-send-email-paulliu@debian.org>
 MIME-Version: 1.0
-In-Reply-To: <CAKL7Q7rZwyOXcYWK2Rhu1vO=XpiypEUWU4EP4SJOJ0Rd54DeHQ@mail.gmail.com>
-References: <CAKL7Q7rvq87TNS1T_Km8fW_5OzS+SbYazLXKxW-6ztOxo3zorg@mail.gmail.com>
-	<CAKL7Q7rZwyOXcYWK2Rhu1vO=XpiypEUWU4EP4SJOJ0Rd54DeHQ@mail.gmail.com>
-Date: Mon, 7 May 2012 13:49:46 +0200
-Message-ID: <CAKL7Q7pyvkuszm3w5L_M8r11DyHzzqLwxzKAkiDWK6UKnU0Rtg@mail.gmail.com>
-Subject: Re: [PATCH v2] Use BIOS Keyboard variable to set Numlock
-From: "Joshua C." <joshuacov@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, hpa@zytor.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="huq684BweRXVnRxX"
+Content-Disposition: inline
+In-Reply-To: <1336377443-5926-1-git-send-email-paulliu@debian.org>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/4/19 Joshua C. <joshuacov@googlemail.com>:
-> 2012/4/13 Joshua C. <joshuacov@googlemail.com>:
->> I re-worked the prosed patch and moved the code around to better fit
->> some architectural requirements. I hope it can be merged now.
->>
->> --Joshua
->>
->> -----------------------------------
->>
->> From 6f49bbce0aa65384ce8dc9cb2e7ca26a94497406 Mon Sep 17 00:00:00 2001
->> From: Joshua Cov <joshuacov@googlemail.com>
->> Date: Fri, 13 Apr 2012 22:53:37 +0200
->> Subject: [PATCH v2] Use BIOS Keyboard variable to set Numlock
->>
->> The PC BIOS does provide a NUMLOCK flag containing the desired state
->> of this LED. This patch sets the current state according to the data
->> in the bios.
->>
->> Signed-Off-By: Joshua Cov <joshuacov@googlemail.com>
->> Acked-by: H. Peter Anvin <hpa@zytor.com>
->> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
->>
->> ---
->>  arch/parisc/include/asm/kbdleds.h |   19 +++++++++++++++++++
->>  arch/x86/boot/main.c              |   18 ++++++++++++------
->>  arch/x86/include/asm/bootparam.h  |    3 ++-
->>  arch/x86/include/asm/kbdleds.h    |   17 +++++++++++++++++
->>  drivers/tty/vt/keyboard.c         |   21 +++++++--------------
->>  5 files changed, 57 insertions(+), 21 deletions(-)
->>  create mode 100644 arch/parisc/include/asm/kbdleds.h
->>  create mode 100644 arch/x86/include/asm/kbdleds.h
->>
->> diff --git a/arch/parisc/include/asm/kbdleds.h
->> b/arch/parisc/include/asm/kbdleds.h
->> new file mode 100644
->> index 0000000..2a23ca9
->> --- /dev/null
->> +++ b/arch/parisc/include/asm/kbdleds.h
->> @@ -0,0 +1,19 @@
->> +#ifndef _ASM_PARISC_KBDLEDS_H
->> +#define _ASM_PARISC_KBDLEDS_H
->> +
->> +/*
->> + * On HIL keyboards of PARISC machines there is no NumLock key and
->> + * everyone expects the keypad to be used for numbers. That's why
->> + * we can safely turn on the NUMLOCK bit.
->> + */
->> +
->> +inline int kbd_defleds(void)
->> +{
->> +#if defined(CONFIG_KEYBOARD_HIL) || defined(CONFIG_KEYBOARD_HIL_OLD)
->> +       return 1 << VC_NUMLOCK;
->> +#else
->> +       return 0;
->> +#endif
->> +}
->> +
->> +#endif /* _ASM_PARISC_KBDLEDS_H */
->> diff --git a/arch/x86/boot/main.c b/arch/x86/boot/main.c
->> index 40358c8..cf6083d 100644
->> --- a/arch/x86/boot/main.c
->> +++ b/arch/x86/boot/main.c
->> @@ -57,14 +57,20 @@ static void copy_boot_params(void)
->>  }
->>
->>  /*
->> - * Set the keyboard repeat rate to maximum.  Unclear why this
->> + * Query the keyboard lock status as given by the BIOS, and
->> + * set the keyboard repeat rate to maximum.  Unclear why the latter
->>  * is done here; this might be possible to kill off as stale code.
->>  */
->> -static void keyboard_set_repeat(void)
->> +static void keyboard_init(void)
->>  {
->> -       struct biosregs ireg;
->> +       struct biosregs ireg, oreg;
->>        initregs(&ireg);
->> -       ireg.ax = 0x0305;
->> +
->> +       ireg.ah = 0x02;         /* Get keyboard status */
->> +       intcall(0x16, &ireg, &oreg);
->> +       boot_params.kbd_status = oreg.al;
->> +
->> +       ireg.ax = 0x0305;       /* Set keyboard repeat rate */
->>        intcall(0x16, &ireg, NULL);
->>  }
->>
->> @@ -151,8 +157,8 @@ void main(void)
->>        /* Detect memory layout */
->>        detect_memory();
->>
->> -       /* Set keyboard repeat rate (why?) */
->> -       keyboard_set_repeat();
->> +       /* Set keyboard repeat rate (why?) and query the lock flags */
->> +       keyboard_init();
->>
->>        /* Query MCA information */
->>        query_mca();
->> diff --git a/arch/x86/include/asm/bootparam.h b/arch/x86/include/asm/bootparam.h
->> index 2f90c51..eb45aa6 100644
->> --- a/arch/x86/include/asm/bootparam.h
->> +++ b/arch/x86/include/asm/bootparam.h
->> @@ -112,7 +112,8 @@ struct boot_params {
->>        __u8  e820_entries;                             /* 0x1e8 */
->>        __u8  eddbuf_entries;                           /* 0x1e9 */
->>        __u8  edd_mbr_sig_buf_entries;                  /* 0x1ea */
->> -       __u8  _pad6[6];                                 /* 0x1eb */
->> +       __u8  kbd_status;                               /* 0x1eb */
->> +       __u8  _pad6[5];                                 /* 0x1ec */
->>        struct setup_header hdr;    /* setup header */  /* 0x1f1 */
->>        __u8  _pad7[0x290-0x1f1-sizeof(struct setup_header)];
->>        __u32 edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];      /* 0x290 */
->> diff --git a/arch/x86/include/asm/kbdleds.h b/arch/x86/include/asm/kbdleds.h
->> new file mode 100644
->> index 0000000..2f6fa42
->> --- /dev/null
->> +++ b/arch/x86/include/asm/kbdleds.h
->> @@ -0,0 +1,17 @@
->> +#ifndef _ASM_X86_KBDLEDS_H
->> +#define _ASM_X86_KBDLEDS_H
->> +
->> +/*
->> + * Some laptops take the 789uiojklm,. keys as number pad when NumLock is on.
->> + * This seems a good reason to start with NumLock off. That's why on X86 we
->> + * ask the bios for the correct state.
->> + */
->> +
->> +#include <asm/setup.h>
->> +
->> +inline int kbd_defleds(void)
->> +{
->> +       return boot_params.kbd_status & 0x20 ? (1 << VC_NUMLOCK) : 0;
->> +}
->> +
->> +#endif /* _ASM_X86_KBDLEDS_H */
->> diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
->> index a605549..5ea4359 100644
->> --- a/drivers/tty/vt/keyboard.c
->> +++ b/drivers/tty/vt/keyboard.c
->> @@ -52,19 +52,12 @@ extern void ctrl_alt_del(void);
->>
->>  #define KBD_DEFMODE ((1 << VC_REPEAT) | (1 << VC_META))
->>
->> -/*
->> - * Some laptops take the 789uiojklm,. keys as number pad when NumLock is on.
->> - * This seems a good reason to start with NumLock off. On HIL keyboards
->> - * of PARISC machines however there is no NumLock key and everyone
->> expects the keypad
->> - * to be used for numbers.
->> - */
->> -
->> -#if defined(CONFIG_PARISC) && (defined(CONFIG_KEYBOARD_HIL) ||
->> defined(CONFIG_KEYBOARD_HIL_OLD))
->> -#define KBD_DEFLEDS (1 << VC_NUMLOCK)
->> -#else
->> -#define KBD_DEFLEDS 0
->> +#if defined(CONFIG_X86) || defined(CONFIG_PARISC)
->> +#include <asm/kbdleds.h>
->>  #endif
->>
->> +extern __weak int kbd_defleds(void);
->> +
->>  #define KBD_DEFLOCK 0
->>
->>  void compute_shiftstate(void);
->> @@ -1433,9 +1426,9 @@ int __init kbd_init(void)
->>        int i;
->>        int error;
->>
->> -        for (i = 0; i < MAX_NR_CONSOLES; i++) {
->> -               kbd_table[i].ledflagstate = KBD_DEFLEDS;
->> -               kbd_table[i].default_ledflagstate = KBD_DEFLEDS;
->> +       for (i = 0; i < MAX_NR_CONSOLES; i++) {
->> +               kbd_table[i].ledflagstate = kbd_defleds();
->> +               kbd_table[i].default_ledflagstate = kbd_defleds();
->>                kbd_table[i].ledmode = LED_SHOW_FLAGS;
->>                kbd_table[i].lockstate = KBD_DEFLOCK;
->>                kbd_table[i].slockstate = 0;
->> --
->> 1.7.10
->
-> Is there any chance to get this into mainline? The patch was reworked
-> to include any suggestion I got from here and I think it should be
-> pushed into the kernel.
->
-> --Joshua
 
-Alan, what else should be done to this to include it in the mainline?
-It was already discussed with hpa and he gave his ok. It's a trivia to
-set the corresponding bit.
+--huq684BweRXVnRxX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
+On Mon, May 07, 2012 at 03:57:23PM +0800, Ying-Chun Liu (PaulLiu) wrote:
+> From: "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>
+>=20
+> The driver of da9052 is buggy due to the iteration loop of device tree.
+> This patch fix the loop condition to make the driver work with device tre=
+e.
 
--- joshua
+Applied, thanks.  I am wondering how this code was ever tested...
+
+--huq684BweRXVnRxX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPp7dcAAoJEBus8iNuMP3dWF0P/1XCAV8ySZgr04xyetJSlKgZ
+xvg9Wu00LtUaZcAJUyA4/T//sB0ssijGnYTWEdejssQr/h6d0bM8XbRY8u0Lg1KO
+jevC6FLzBdp6zogdwSBHXn7IoZKoyPEXKjFq/9JsWR3a0EEFFiwtp20Mkih4TjrU
+3NjXBMPqarjCClRJY/fyzzC9OKpblON7PeGnuTYy2y2UqcvkEOA7ebYfp2iJr1vb
+5KgdKhI1pVwbu9wkYQeiOQdrbv0cv+4GnQC3HczOxg75qWRHJOvSl0rRKlPrj45t
+RmRPA6wZGLd4/fi37MQGaro+xYrs7F9XzEcw5oMCMnd4QTUG6i6F5f8wgxo/0fSA
+HHkngT2x4Ud0fbpj0QsGXTRlGhwb0LjahL5QiEAV2njJkAMGp/PXHReHkFM1k6hJ
+EteFu+ANCIJal9s9/sXGa91pJ+4GdzOQkj1JQvCEpR1aD203ZGnl59/FFuL1FCb6
+b1SZ86wAiSEEtY/FoQ5ReFXj9qna9NYl18j/22mfoZ0jH7zwhCQG60+VWDIJut3j
+lDn7Lkonh21LtNKcC5CmF/Wx8DJhGqapYENOcj4nt+hqwrE5BLifa/fQokxFkZ97
+nWx7PTMPIc9HS7Q7hwfRYrbGQfDDKucBnqf1pLkZyR4/nFCsDGTAtb7mihxq07Bf
+M1eFjxC1a4m1dhvEf9T9
+=YU9B
+-----END PGP SIGNATURE-----
+
+--huq684BweRXVnRxX--
