@@ -1,79 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab2EGTRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 15:17:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54444 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753926Ab2EGTRG convert rfc822-to-8bit (ORCPT
+	id S932150Ab2EGTRP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 15:17:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41662 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932132Ab2EGTRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 15:17:06 -0400
+	Mon, 7 May 2012 15:17:12 -0400
+Date: Mon, 7 May 2012 21:17:10 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mike Galbraith <mgalbraith@suse.de>
+cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clockevents: Per cpu tick skew boot option
+In-Reply-To: <1336309127.7351.13.camel@marge.simpson.net>
+Message-ID: <alpine.LFD.2.02.1205072115000.6271@ionos>
+References: <1336309127.7351.13.camel@marge.simpson.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1336390672-14421-8-git-send-email-hannes@cmpxchg.org>
-References: <1336390672-14421-1-git-send-email-hannes@cmpxchg.org>
-	<1336390672-14421-8-git-send-email-hannes@cmpxchg.org>
-Date: Mon, 7 May 2012 12:17:04 -0700
-X-Google-Sender-Auth: zOfEiqMX2M1N018FAHsW9ND_QoM
-Message-ID: <CAE9FiQVVvppc0iuxFEoqU+Pxq0A2c=uoByDGvYEccMU2kahJbQ@mail.gmail.com>
-Subject: Re: [patch 07/10] mm: nobootmem: panic on node-specific allocation failure
-From: Yinghai Lu <yinghai@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 7, 2012 at 4:37 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> __alloc_bootmem_node and __alloc_bootmem_low_node documentation claims
-> the functions panic on allocation failure.  Do it.
->
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/nobootmem.c |   20 ++++++++++++++++----
->  1 file changed, 16 insertions(+), 4 deletions(-)
->
-> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-> index e53bb8a..b078ff8 100644
-> --- a/mm/nobootmem.c
-> +++ b/mm/nobootmem.c
-> @@ -306,11 +306,17 @@ again:
->
->        ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
->                                        goal, -1ULL);
-> -       if (!ptr && goal) {
-> +       if (ptr)
-> +               return ptr;
+On Sun, 6 May 2012, Mike Galbraith wrote:
+>  
+> +	skew_tick=	[KNL] Offset the periodic timer tick per cpu to mitigate
+> +			xtime_lock contention on larger systems.  Note: increases
+> +			power consumption, and should only be enabled if running
+> +			jitter sensitive (HPC/RT) workloads.
 > +
-> +       if (goal) {
->                goal = 0;
->                goto again;
->        }
-> -       return ptr;
-> +
-> +       printk(KERN_ALERT "bootmem alloc of %lu bytes failed!\n", size);
-> +       panic("Out of memory");
-> +       return NULL;
->  }
->
->  void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
-> @@ -408,6 +414,12 @@ void * __init __alloc_bootmem_low_node(pg_data_t *pgdat, unsigned long size,
->        if (ptr)
->                return ptr;
->
-> -       return  __alloc_memory_core_early(MAX_NUMNODES, size, align,
-> -                               goal, ARCH_LOW_ADDRESS_LIMIT);
-> +       ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
-> +                                       goal, ARCH_LOW_ADDRESS_LIMIT);
-> +       if (ptr)
-> +               return ptr;
-> +
-> +       printk(KERN_ALERT "bootmem alloc of %lu bytes failed!\n", size);
-> +       panic("Out of memory");
-> +       return NULL;
->  }
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+The "=" is wrong as skew_tick should not take parameters. It's
+disabled by default. So "skew_tick" simply enables it, right ?
+
