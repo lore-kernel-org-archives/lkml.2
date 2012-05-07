@@ -1,112 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab2EGQmo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 12:42:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37320 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756659Ab2EGQmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 12:42:42 -0400
-Message-ID: <1336408965.2385.25.camel@dcbw.foobar.com>
-Subject: Re: [PATCH] mwl8k: Add 0x2a02 PCI device-id (Marvell 88W8361)
-From: Dan Williams <dcbw@redhat.com>
-To: Lennert Buytenhek <buytenh@wantstofly.org>
-Cc: sedat.dilek@gmail.com, "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lautriv <admin@coldplug.net>,
-        Jim Cromie <jim.cromie@gmail.com>
-Date: Mon, 07 May 2012 11:42:45 -0500
-In-Reply-To: <1336406944.2385.24.camel@dcbw.foobar.com>
-References: <20120427094637.GV3157@wantstofly.org>
-	 <CA+icZUXNZ=exTnR=OgD_9bpt_0s-KnR+v-K6u+XzQr4HBoTQHQ@mail.gmail.com>
-	 <20120427095842.GW3157@wantstofly.org>
-	 <CA+icZUWuynSaPE4pdxzoP783pw7r=5x27ewXN_pkR5VS=0kKUg@mail.gmail.com>
-	 <20120427101732.GX3157@wantstofly.org>
-	 <CA+icZUUnJPeDmL9xXfvj62an40bXwwaOnrJmxmLN_cBt9PyCZA@mail.gmail.com>
-	 <CA+icZUV76wSBj88EpzmWbO=u2dP23yi5P98nN2KZehBUni9mEg@mail.gmail.com>
-	 <20120427185809.GZ3157@wantstofly.org>
-	 <CA+icZUWQmCRdjucb4+Nf24_zbJ4fzzp7zjqhKjXE6U01rppDfA@mail.gmail.com>
-	 <CA+icZUXSaEMA=KbQP9UQcU6ZMBh8QD2sv-O=6r_Ly8is==gvSA@mail.gmail.com>
-	 <20120501125102.GN3157@wantstofly.org>
-	 <1336406944.2385.24.camel@dcbw.foobar.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757402Ab2EGQok (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 12:44:40 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45102 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757249Ab2EGQoi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 12:44:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120507073547.GE10668@alberich.amd.com>
+References: <20120427143410.GB27535@alberich.amd.com> <20120427143621.GC27535@alberich.amd.com>
+ <CAErSpo7gkkqZgR0TZ5Xx162pLN9ZaYVhMmyHn+H8Lqr1CBSXXQ@mail.gmail.com>
+ <20120504130332.GC12199@alberich.amd.com> <CAErSpo5_ZB=ggNDGM5N8Rt1TtW8DQQm1k2s9FBwFHjh7nFA4hw@mail.gmail.com>
+ <20120507073547.GE10668@alberich.amd.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 7 May 2012 09:44:16 -0700
+Message-ID: <CAErSpo7-PBOsTiM37f6PFjfeJ=QrLiu1DCFesquWMctLbwirAA@mail.gmail.com>
+Subject: Re: [PATCH 1/2][RESEND] x86/pci/amd: Restore early_fill_mp_bus_to_node
+To: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-07 at 11:09 -0500, Dan Williams wrote:
-> On Tue, 2012-05-01 at 14:51 +0200, Lennert Buytenhek wrote:
-> > On Sun, Apr 29, 2012 at 12:25:21AM +0200, Sedat Dilek wrote:
-> > 
-> > > > On 1st sight, logs look fine:
-> > > >
-> > > > [21:52:52] <lautriv> [    6.050967] ieee80211 phy0: 88w8361p v4,
-> > > > 00173f3bdde3, STA firmware 2.1.4.25
-> > > >
-> > > > But WLAN connection is not that fast and stable as lautriv reports
-> > > > (several abnormalities were observed).
-> > > >
-> > > > I requested a tarball which includes:
-> > > > * dmesg (Linux-3.3.3)
-> > > > * e_n_a (/etc/network/interfaces)
-> > > > * ifconfig output
-> > > > * iwconfig output
-> > > > * iw_phy output
-> > > > * ps_axu (WPA) output
-> > > >
-> > > > lautriv will be so kind to be around on #linux-wireless/Freenode the
-> > > > next days (UTC+2: German/Swiss local-time).
-> > > > Just ping him.
-> > > >
-> > > > Hope you have fun, together!
-> > > >
-> > > > - Sedat -
-> > > 
-> > > A new tarball from lautriv with same outputs as before, but now tested
-> > > with Linux-3.4-rc4.
-> > 
-> > The output looks good enough for me to ACK adding the PCI ID.
-> > 
-> > Can the firmware being used here be submitted to the linux-firmware
-> > git tree?
-> 
-> So Marvell sent John a driver for TopDog a long time ago, which he put
-> up on kernel.org.  That driver was reworked by Louis and put up in a git
-> tree, but both were lost to the kernel.org hack.  I have git backups of
-> both git trees.  I put Louis' cleanup here:
-> 
-> http://people.redhat.com/dcbw/mrvl_cb82.tar.bz2
-> 
-> That driver (mrvl_cb82) has the following PCI IDs:
-> 
-> static const struct pci_device_id mwl_id_tbl[] __devinitdata = {
->         { PCI_VDEVICE(MARVELL, 0x2a02), 0 },
->         { PCI_VDEVICE(MARVELL, 0x2a03), 1 },
->         { PCI_VDEVICE(MARVELL, 0x2a06), 2 },
->         { PCI_VDEVICE(MARVELL, 0x2a07), 3 },
->         { PCI_VDEVICE(MARVELL, 0x2a04), 4 },
->         { PCI_VDEVICE(MARVELL, 0x2a08), 5 },
->         { PCI_VDEVICE(MARVELL, 0x2a0a), 6 },
->         { PCI_VDEVICE(MARVELL, 0x2a0b), 7 },
->         { PCI_VDEVICE(MARVELL, 0x2a0c), 8 },
->         { 0 }
-> };
-> 
-> and supposedly works for CB82 + CB85.  The firmware helper for CB82
-> looks pretty close to the mwl8k one.
-> 
-> The firmware API exposed by mrvl_cb82 looks very close to mwl8k
-> actually.  I only checked the HostCmd bits, not the structures, so I
-> would expect a few differences.  There are some commands that mwl8k
-> exposes that mrvl_cb82 does not and vice versa, but I'm not sure if the
-> drivers actually use those commands.
+On Mon, May 7, 2012 at 12:35 AM, Andreas Herrmann
+<andreas.herrmann3@amd.com> wrote:
+> On Fri, May 04, 2012 at 10:35:05AM -0600, Bjorn Helgaas wrote:
+>> On Fri, May 4, 2012 at 7:03 AM, Andreas Herrmann
+>> <andreas.herrmann3@amd.com> wrote:
+>> > On Wed, May 02, 2012 at 11:33:17AM -0600, Bjorn Helgaas wrote:
+>> >> On Fri, Apr 27, 2012 at 8:36 AM, Andreas Herrmann
+>> >> <andreas.herrmann3@amd.com> wrote:
+>> >> >
+>> >> > Once upon a time this function was overloaded with quirky stuff to fix
+>> >> > resource detection on systems w/ _CRS defects (seems that some Sun and
+>> >> > HP systems were affected).
+>> >> >
+>> >> > See commit 30a18d6c3f1e774de656ebd8ff219d53e2ba4029
+>> >> > (x86: multi pci root bus with different io resource range, on 64-bit)
+>> >> >
+>> >> > Restore the old function and thus decouple it from the quirk that is
+>> >> > CPU family specific (e.g. it won't work on AMD family 15h CPUs). BTW,
+>> >> > I assume that the _CRS stuff is working on current systems.
+>> >> >
+>> >> > This is required to properly initilize the numa_node information of
+>> >> > existing PCI busses and associated devices.
+>> >>
+>> >> I applied some of Yinghai's patches that also touch this area.  Can
+>> >> you refresh these so they apply on top of my "next" branch
+>> >> (git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git next)?
+>> >
+>> > Arrgh, will adapt my patch and resend it (asap).
+>> >
+>> >> Can you also be more specific about what these patches fix?
+>> >
+>> >> My understanding is that amd_bus.c (1) sets NUMA info with
+>> >> set_mp_bus_to_node() and (2) figures out MMIO and I/O port apertures,
+>> >> which are only used when blind probing and when ignoring _CRS.
+>> >>
+>> >> It seems like the main change in this patch is that we skip (2)
+>> >> completely when family >= 0x11, and I don't understand what that could
+>> >> fix.
+>> >
+>> > The patch restores a very old function that was used to detect the
+>> > nearest node for a PCI bus, so yes it's used to do (1). IMHO this
+>> > function was totally screwed up with Yinghai's code to do (2). It
+>> > seems that Sun has (had?) some systems where (2) was req'd. I don't
+>> > care about this part. But I'd like to do (1) on all AMD CPU NUMA
+>> > systems.
+>>
+>> Thanks for the explanation.  But I'm afraid I'm still confused.
+>>
+>> First, it sounds like you're trying to change the way we do part (1),
+>> i.e., the set_mp_bus_to_node() calls, but I think the effect of your
+>> patch is to stop doing part (2) in some cases.
+>>
+>> Second, I am pretty sure that the current early_fill_mp_bus_info()
+>> (before your patch) does the exact same set_mp_bus_to_node() calls as
+>> your early_fill_mp_bus_to_node() does.
+>
+>
+> I want to do (1) on all AMD CPUs that might be used in NUMA systems.
+>
+> What's done for (2) is very specific to certain AMD CPU families --
+> some of the register accesses are wrong/incomplete for newer AMD
+> CPUs. Furhtermore _CRS should provide the required info. I really
+> don't want to extend all the quirky stuff in (2) for future AMD CPUs.
 
-As for AP mode, the Marvell Extranet does have AP-mode drivers for the
-8361 and 8363, but the zipfiles are password-protected and I have no
-idea what license they are supposed to be under due to that.  Thus I
-cannot get the AP mode firmware for those either to submit to
-linux-firmware.
+I'm all in favor of limiting part (2) to older AMD CPUs.  I certainly
+don't want to maintain it for future CPUs.
 
-Dan
+>> Finally, on all systems with ACPI, the set_mp_bus_to_node() call in
+>> pci_acpi_scan_root() should be doing what you need.  In fact, that
+>> call happens later, so it should be overwriting the information filled
+>> in by amd_bus.c.  If there's something wrong in this ACPI path, the
+>> most likely cause is a BIOS defect, such as  a missing _PXM method on
+>> the PNP0A03/0A08 host bridge device.
+>
+> Good point. I'll check what's wrong in this ACPI path.
 
+I hope you find something, especially if it's a bug in the Linux code
+that interprets  the NUMA info.  Then we could fix that and limit both
+parts to older CPUs.
+
+Bjorn
