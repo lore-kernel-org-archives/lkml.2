@@ -1,427 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756355Ab2EGLhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 07:37:11 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1243 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756232Ab2EGLhH convert rfc822-to-8bit (ORCPT
+	id S1756433Ab2EGLh5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 07:37:57 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:54220 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756216Ab2EGLhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 07:37:07 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 07 May 2012 04:36:52 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 7 May 2012 13:36:47 +0200
-Subject: Re: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
-Thread-Topic: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
-Thread-Index: Ac0sRbC54iCZ+9cWSzaap6fA29bTHg==
-Message-ID: <20120507.143647.508182574757518311.hdoyu@nvidia.com>
-References: <201205070859.29174.arnd@arndb.de><20120507.122333.2024326166703361049.hdoyu@nvidia.com><201205071024.48958.arnd@arndb.de>
-In-Reply-To: <201205071024.48958.arnd@arndb.de>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Mon, 7 May 2012 07:37:55 -0400
+X-AuditID: b753bd60-9145cba000002c51-bd-4fa7b4110f51
+X-AuditID: b753bd60-9145cba000002c51-bd-4fa7b4110f51
+Message-ID: <4FA7B410.1000804@hitachi.com>
+Date: Mon, 07 May 2012 20:37:52 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: Re: [PATCH 6/9][RFC] kprobes: Allow probe on ftrace reserved
+ text (but move it)
+References: <20120502192418.024103772@goodmis.org>  <20120502193237.321234712@goodmis.org> <y0mhavyl3kg.fsf@fche.csb> <1336002032.14207.52.camel@gandalf.stny.rr.com>
+In-Reply-To: <1336002032.14207.52.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
-Date: Mon, 7 May 2012 12:24:48 +0200
-Message-ID: <201205071024.48958.arnd@arndb.de>
-
-> On Monday 07 May 2012, Hiroshi Doyu wrote:
-> > Tegra doesn't enable ARM_AMBA and Tegra doesn't use the following
-> > "drivers/amba/bus.c" right now. I needed to make this directory
-> > available to ones without ARM_AMBA enabled.
+(2012/05/03 8:40), Steven Rostedt wrote:
+> On Wed, 2012-05-02 at 16:40 -0400, Frank Ch. Eigler wrote:
+>> rostedt wrote:
+>>
+>>> [...]  Added KPROBE_FLAG_MOVED (as suggested by Masami) that is set
+>>> when the address is moved to get around an ftrace nop. [...]
+>>
+>> Steve, perhaps my earlier comments on this got lost during the mailing
+>> list outage.
 > 
-> Ah, right. I looked at arch/arm/Kconfig earlier to see if
-> tegra enabled ARM_AMBA but was accidentally looking
-> at ARCH_INtegraTOR when grepping for TEGRA ;-)
+> I saw it, but it didn't really specify what you wanted. Here's your
+> comment:
 > 
-> Your proposed solution sounds good then.
+> 
+>> I suspect Masami intended that this flag is later used during int3
+>> processing to subtract MCOUNT_INSN_SIZE back out from the pt_regs->ip
+>> during kprobe_handler() if this flag was set.
+> 
+> This is what I thought too, but to me it sounded like Masami could do
+> the work. I was just setting up a flag to make it possible.
+> 
+>>
+>> The gist is that a KPROBE_FLAG_MOVED being set this way accomplishes
+>> very little since nothing is looking for that flag.  Instead, you
+>> should patch {arch/*}/kernel/kprobe.c kprobe_handler() to subtract
+>> MCOUNT_INSN_SIZE back out from pt_regs->ip if KPROBE_FLAG_MOVED was
+>> set.  That way, kprobes clients need do not perceive the int3 movement.
+> 
+> I basically thought that Masami wanted me to add the flag, and then
+> others could look for this and do the adjustment. I'm not the kprobes
+> author. I was just adding a flag that Masami and others could use to do
+> such updates.
 
-Thank you for reviewing patches & ACK. Attached the update one here,
-instead of sending a while series again.
+Right, that was what I thought. Since the kp->addr is changed when
+kprobe is set, kprobes itself don't need to adjust the pt_regs->ip.
+I mean, struct kprobe itself puts a probe on the next to the mcount
+entry, even if the caller tries to put a probe on the mcount entry.
 
->From 16cc2b0fab00c33cd24bb5c43c45a4cda646ad42 Mon Sep 17 00:00:00 2001
-From: Hiroshi DOYU <hdoyu@nvidia.com>
-Date: Wed, 18 Apr 2012 11:41:56 +0300
-Subject: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
+This change may be unintended and caller will doubt that why the
+kp->addr is automatically changed. So this KPROBE_FLAG_MOVED gives
+a hint for the caller who knows the original intended probed address.
 
-Tegra AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
-High-performance Bus (AHB) architecture.
+> I'm not sure if the adjustment is fine with everyone, as it may cause
+> repercussions that I don't know about. 
 
-The AHB Arbiter controls AHB bus master arbitration. This effectively
-forms a second level of arbitration for access to the memory
-controller through the AHB Slave Memory device. The AHB pre-fetch
-logic can be configured to enhance performance for devices doing
-sequential access. Each AHB master is assigned to either the high or
-low priority bin. Both Tegra20/30 have this AHB bus.
+Yeah, that's a point. if the adjustment is transparently done, there
+is no problem. But it changes kp->addr when registering a probe.
+If adjustment is done, following code (still) doesn't work.
 
-Some of configuration params could be passed from DT too if needed.
-
-Change-Id: I184e0e1ce033e76881353a4bb99234e2850e99c2
-Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Felipe Balbi <balbi@ti.com>
 ---
- .../bindings/arm/tegra/nvidia,tegra20-ahb.txt      |   11 +
- arch/arm/mach-tegra/Kconfig                        |    8 +
- drivers/Makefile                                   |    2 +-
- drivers/amba/Makefile                              |    4 +-
- drivers/amba/tegra-ahb.c                           |  261 ++++++++++++++++++++
- 5 files changed, 283 insertions(+), 3 deletions(-)
+int func(struct kprobe *kp, strcut pt_regs *regs)
+{
+	BUG_ON(kp->addr != regs->ip);
+	/* or */
+	store_probed_address(kp->addr);	/* since regs->ip depends on x86*/
+}
 
-diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-ahb.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-ahb.txt
-new file mode 100644
-index 0000000..234406d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-ahb.txt
-@@ -0,0 +1,11 @@
-+NVIDIA Tegra AHB
-+
-+Required properties:
-+- compatible : "nvidia,tegra20-ahb" or "nvidia,tegra30-ahb"
-+- reg : Should contain 1 register ranges(address and length)
-+
-+Example:
-+	ahb: ahb@6000c004 {
-+		compatible = "nvidia,tegra20-ahb";
-+		reg = <0x6000c004 0x10c>; /* AHB Arbitration + Gizmo Controller */
-+	};
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index 204d3d4..6a113a9 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -50,6 +50,14 @@ config TEGRA_PCI
- 	depends on ARCH_TEGRA_2x_SOC
- 	select PCI
- 
-+config TEGRA_AHB
-+	bool "Enable AHB driver for NVIDIA Tegra SoCs"
-+	default y
-+	help
-+	  Adds AHB configuration functionality for NVIDIA Tegra SoCs,
-+	  which controls AHB bus master arbitration and some
-+	  perfomance parameters(priority, prefech size).
-+
- comment "Tegra board type"
- 
- config MACH_HARMONY
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 5870322..8ba23a7 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -18,7 +18,7 @@ obj-$(CONFIG_SFI)		+= sfi/
- # PnP must come after ACPI since it will eventually need to check if acpi
- # was used and do nothing if so
- obj-$(CONFIG_PNP)		+= pnp/
--obj-$(CONFIG_ARM_AMBA)		+= amba/
-+obj-y				+= amba/
- # Many drivers will want to use DMA so this has to be made available
- # really early.
- obj-$(CONFIG_DMA_ENGINE)	+= dma/
-diff --git a/drivers/amba/Makefile b/drivers/amba/Makefile
-index 40fe740..66e81c2 100644
---- a/drivers/amba/Makefile
-+++ b/drivers/amba/Makefile
-@@ -1,2 +1,2 @@
--obj-y		+= bus.o
--
-+obj-$(CONFIG_ARM_AMBA)		+= bus.o
-+obj-$(CONFIG_TEGRA_AHB)		+= tegra-ahb.o
-diff --git a/drivers/amba/tegra-ahb.c b/drivers/amba/tegra-ahb.c
-new file mode 100644
-index 0000000..106a780
---- /dev/null
-+++ b/drivers/amba/tegra-ahb.c
-@@ -0,0 +1,261 @@
-+/*
-+ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-+ * Copyright (C) 2011 Google, Inc.
-+ *
-+ * Author:
-+ *	Jay Cheng <jacheng@nvidia.com>
-+ *	James Wylder <james.wylder@motorola.com>
-+ *	Benoit Goby <benoit@android.com>
-+ *	Colin Cross <ccross@android.com>
-+ *	Hiroshi DOYU <hdoyu@nvidia.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+
-+#define DRV_NAME "tegra-ahb"
-+
-+#define AHB_ARBITRATION_DISABLE		0x00
-+#define AHB_ARBITRATION_PRIORITY_CTRL	0x04
-+#define   AHB_PRIORITY_WEIGHT(x)	(((x) & 0x7) << 29)
-+#define   PRIORITY_SELECT_USB BIT(6)
-+#define   PRIORITY_SELECT_USB2 BIT(18)
-+#define   PRIORITY_SELECT_USB3 BIT(17)
-+
-+#define AHB_GIZMO_AHB_MEM		0x0c
-+#define   ENB_FAST_REARBITRATE BIT(2)
-+#define   DONT_SPLIT_AHB_WR     BIT(7)
-+
-+#define AHB_GIZMO_APB_DMA		0x10
-+#define AHB_GIZMO_IDE			0x18
-+#define AHB_GIZMO_USB			0x1c
-+#define AHB_GIZMO_AHB_XBAR_BRIDGE	0x20
-+#define AHB_GIZMO_CPU_AHB_BRIDGE	0x24
-+#define AHB_GIZMO_COP_AHB_BRIDGE	0x28
-+#define AHB_GIZMO_XBAR_APB_CTLR		0x2c
-+#define AHB_GIZMO_VCP_AHB_BRIDGE	0x30
-+#define AHB_GIZMO_NAND			0x3c
-+#define AHB_GIZMO_SDMMC4		0x44
-+#define AHB_GIZMO_XIO			0x48
-+#define AHB_GIZMO_BSEV			0x60
-+#define AHB_GIZMO_BSEA			0x70
-+#define AHB_GIZMO_NOR			0x74
-+#define AHB_GIZMO_USB2			0x78
-+#define AHB_GIZMO_USB3			0x7c
-+#define   IMMEDIATE	BIT(18)
-+
-+#define AHB_GIZMO_SDMMC1		0x80
-+#define AHB_GIZMO_SDMMC2		0x84
-+#define AHB_GIZMO_SDMMC3		0x88
-+#define AHB_MEM_PREFETCH_CFG_X		0xd8
-+#define AHB_ARBITRATION_XBAR_CTRL	0xdc
-+#define AHB_MEM_PREFETCH_CFG3		0xe0
-+#define AHB_MEM_PREFETCH_CFG4		0xe4
-+#define AHB_MEM_PREFETCH_CFG1		0xec
-+#define AHB_MEM_PREFETCH_CFG2		0xf0
-+#define   PREFETCH_ENB	BIT(31)
-+#define   MST_ID(x)	(((x) & 0x1f) << 26)
-+#define   AHBDMA_MST_ID	MST_ID(5)
-+#define   USB_MST_ID	MST_ID(6)
-+#define   USB2_MST_ID	MST_ID(18)
-+#define   USB3_MST_ID	MST_ID(17)
-+#define   ADDR_BNDRY(x)	(((x) & 0xf) << 21)
-+#define   INACTIVITY_TIMEOUT(x)	(((x) & 0xffff) << 0)
-+
-+#define AHB_ARBITRATION_AHB_MEM_WRQUE_MST_ID	0xf8
-+
-+static const u32 tegra_ahb_gizmo[] = {
-+	AHB_ARBITRATION_DISABLE,
-+	AHB_ARBITRATION_PRIORITY_CTRL,
-+	AHB_GIZMO_AHB_MEM,
-+	AHB_GIZMO_APB_DMA,
-+	AHB_GIZMO_IDE,
-+	AHB_GIZMO_USB,
-+	AHB_GIZMO_AHB_XBAR_BRIDGE,
-+	AHB_GIZMO_CPU_AHB_BRIDGE,
-+	AHB_GIZMO_COP_AHB_BRIDGE,
-+	AHB_GIZMO_XBAR_APB_CTLR,
-+	AHB_GIZMO_VCP_AHB_BRIDGE,
-+	AHB_GIZMO_NAND,
-+	AHB_GIZMO_SDMMC4,
-+	AHB_GIZMO_XIO,
-+	AHB_GIZMO_BSEV,
-+	AHB_GIZMO_BSEA,
-+	AHB_GIZMO_NOR,
-+	AHB_GIZMO_USB2,
-+	AHB_GIZMO_USB3,
-+	AHB_GIZMO_SDMMC1,
-+	AHB_GIZMO_SDMMC2,
-+	AHB_GIZMO_SDMMC3,
-+	AHB_MEM_PREFETCH_CFG_X,
-+	AHB_ARBITRATION_XBAR_CTRL,
-+	AHB_MEM_PREFETCH_CFG3,
-+	AHB_MEM_PREFETCH_CFG4,
-+	AHB_MEM_PREFETCH_CFG1,
-+	AHB_MEM_PREFETCH_CFG2,
-+	AHB_ARBITRATION_AHB_MEM_WRQUE_MST_ID,
-+};
-+
-+struct tegra_ahb {
-+	void __iomem	*regs;
-+	struct device	*dev;
-+	u32		ctx[0];
-+};
-+
-+static inline u32 gizmo_readl(struct tegra_ahb *ahb, u32 offset)
-+{
-+	return readl(ahb->regs + offset);
-+}
-+
-+static inline void gizmo_writel(struct tegra_ahb *ahb, u32 value, u32 offset)
-+{
-+	writel(value, ahb->regs + offset);
-+}
-+
-+static int tegra_ahb_suspend(struct device *dev)
-+{
-+	int i;
-+	struct tegra_ahb *ahb = dev_get_drvdata(dev);
-+
-+	for (i = 0; i < ARRAY_SIZE(tegra_ahb_gizmo); i++)
-+		ahb->ctx[i] = gizmo_readl(ahb, tegra_ahb_gizmo[i]);
-+	return 0;
-+}
-+
-+static int tegra_ahb_resume(struct device *dev)
-+{
-+	int i;
-+	struct tegra_ahb *ahb = dev_get_drvdata(dev);
-+
-+	for (i = 0; i < ARRAY_SIZE(tegra_ahb_gizmo); i++)
-+		gizmo_writel(ahb, ahb->ctx[i], tegra_ahb_gizmo[i]);
-+	return 0;
-+}
-+
-+static UNIVERSAL_DEV_PM_OPS(tegra_ahb_pm,
-+			    tegra_ahb_suspend,
-+			    tegra_ahb_resume, NULL);
-+
-+static void tegra_ahb_gizmo_init(struct tegra_ahb *ahb)
-+{
-+	u32 val;
-+
-+	val = gizmo_readl(ahb, AHB_GIZMO_AHB_MEM);
-+	val |= ENB_FAST_REARBITRATE | IMMEDIATE | DONT_SPLIT_AHB_WR;
-+	gizmo_writel(ahb, val, AHB_GIZMO_AHB_MEM);
-+
-+	val = gizmo_readl(ahb, AHB_GIZMO_USB);
-+	val |= IMMEDIATE;
-+	gizmo_writel(ahb, val, AHB_GIZMO_USB);
-+
-+	val = gizmo_readl(ahb, AHB_GIZMO_USB2);
-+	val |= IMMEDIATE;
-+	gizmo_writel(ahb, val, AHB_GIZMO_USB2);
-+
-+	val = gizmo_readl(ahb, AHB_GIZMO_USB3);
-+	val |= IMMEDIATE;
-+	gizmo_writel(ahb, val, AHB_GIZMO_USB3);
-+
-+	val = gizmo_readl(ahb, AHB_ARBITRATION_PRIORITY_CTRL);
-+	val |= PRIORITY_SELECT_USB |
-+		PRIORITY_SELECT_USB2 |
-+		PRIORITY_SELECT_USB3 |
-+		AHB_PRIORITY_WEIGHT(7);
-+	gizmo_writel(ahb, val, AHB_ARBITRATION_PRIORITY_CTRL);
-+
-+	val = gizmo_readl(ahb, AHB_MEM_PREFETCH_CFG1);
-+	val &= ~MST_ID(~0);
-+	val |= PREFETCH_ENB |
-+		AHBDMA_MST_ID |
-+		ADDR_BNDRY(0xc) |
-+		INACTIVITY_TIMEOUT(0x1000);
-+	gizmo_writel(ahb, val, AHB_MEM_PREFETCH_CFG1);
-+
-+	val = gizmo_readl(ahb, AHB_MEM_PREFETCH_CFG2);
-+	val &= ~MST_ID(~0);
-+	val |= PREFETCH_ENB |
-+		USB_MST_ID |
-+		ADDR_BNDRY(0xc) |
-+		INACTIVITY_TIMEOUT(0x1000);
-+	gizmo_writel(ahb, val, AHB_MEM_PREFETCH_CFG2);
-+
-+	val = gizmo_readl(ahb, AHB_MEM_PREFETCH_CFG3);
-+	val &= ~MST_ID(~0);
-+	val |= PREFETCH_ENB |
-+		USB3_MST_ID |
-+		ADDR_BNDRY(0xc) |
-+		INACTIVITY_TIMEOUT(0x1000);
-+	gizmo_writel(ahb, val, AHB_MEM_PREFETCH_CFG3);
-+
-+	val = gizmo_readl(ahb, AHB_MEM_PREFETCH_CFG4);
-+	val &= ~MST_ID(~0);
-+	val |= PREFETCH_ENB |
-+		USB2_MST_ID |
-+		ADDR_BNDRY(0xc) |
-+		INACTIVITY_TIMEOUT(0x1000);
-+	gizmo_writel(ahb, val, AHB_MEM_PREFETCH_CFG4);
-+}
-+
-+static int __devinit tegra_ahb_probe(struct platform_device *pdev)
-+{
-+	struct resource *res;
-+	struct tegra_ahb *ahb;
-+	size_t bytes;
-+
-+	bytes = sizeof(*ahb) + sizeof(u32) * ARRAY_SIZE(tegra_ahb_gizmo);
-+	ahb = devm_kzalloc(&pdev->dev, bytes, GFP_KERNEL);
-+	if (!ahb)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -ENODEV;
-+	ahb->regs = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!ahb->regs)
-+		return -EBUSY;
-+
-+	ahb->dev = &pdev->dev;
-+	platform_set_drvdata(pdev, ahb);
-+	tegra_ahb_gizmo_init(ahb);
-+	return 0;
-+}
-+
-+static int __devexit tegra_ahb_remove(struct platform_device *pdev)
-+{
-+	return 0;
-+}
-+
-+static const struct of_device_id tegra_ahb_of_match[] __devinitconst = {
-+	{ .compatible = "nvidia,tegra30-ahb", },
-+	{ .compatible = "nvidia,tegra20-ahb", },
-+	{},
-+};
-+
-+static struct platform_driver tegra_ahb_driver = {
-+	.probe = tegra_ahb_probe,
-+	.remove = __devexit_p(tegra_ahb_remove),
-+	.driver = {
-+		.name = DRV_NAME,
-+		.owner = THIS_MODULE,
-+		.of_match_table = tegra_ahb_of_match,
-+		.pm = &tegra_ahb_pm,
-+	},
-+};
-+module_platform_driver(tegra_ahb_driver);
-+
-+MODULE_AUTHOR("Hiroshi DOYU <hdoyu@nvidia.com>");
-+MODULE_DESCRIPTION("Tegra AHB driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:" DRV_NAME);
+kp->handler = func;
+kp->addr = <somewhere on ftrace>
+register_kprobe(kp);
+---
+
+but if adjustment is not done, at least, kprobes behavior itself
+looks same. (but just be moved if probed on ftrace)
+
+Yeah, I know systemtap people likes regs->ip to be adjusted, but
+there may be someone who use raw kprobes.
+
+> Perhaps that could be another patch (want to write it?)
+
+Oh, so I think we need to show the new flag on debugfs for
+someone who want to know why the probe has been moved. :)
+
+
+By the way, there is another way to do that transparently which
+we add a "real_addr" member to struct kprobes and put the real
+probed address to the member (without changing kp->addr). This
+will keep API compatibility.
+
+Thank you,
+
+
 -- 
-1.7.5.4
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
