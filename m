@@ -1,110 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab2EGOxU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 10:53:20 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60892 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756467Ab2EGOxT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 10:53:19 -0400
+	id S1757075Ab2EGOzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 10:55:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1030 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756955Ab2EGOzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 10:55:09 -0400
+Message-ID: <4FA7E226.5060809@redhat.com>
+Date: Mon, 07 May 2012 17:54:30 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <201205062100.09979.hverkuil@xs4all.nl>
-References: <1336164542-11014-1-git-send-email-manjunatha_halli@ti.com>
- <1336164542-11014-5-git-send-email-manjunatha_halli@ti.com>
- <201205050041.34232.hverkuil@xs4all.nl> <201205062100.09979.hverkuil@xs4all.nl>
-From: halli manjunatha <hallimanju@gmail.com>
-Date: Mon, 7 May 2012 09:52:47 -0500
-Message-ID: <CAMT6PydcZmSj6xM0j8YgxECWPiunhkqg2Zb+hPNweUeiBt_rXQ@mail.gmail.com>
-Subject: Re: [PATCH V4 4/5] Media: Update docs for V4L2 FM new features
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Manjunatha Halli <x0130808@ti.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Attilio Rao <attilio.rao@citrix.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
+References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com> <20120507082928.GI16608@gmail.com> <4FA7888F.80505@redhat.com> <4FA7AAD8.6050003@linux.vnet.ibm.com> <4FA7BABA.4040700@redhat.com> <4FA7CC05.50808@linux.vnet.ibm.com> <4FA7CCA2.4030408@redhat.com> <4FA7D06B.60005@linux.vnet.ibm.com> <20120507134611.GB5533@linux.vnet.ibm.com> <4FA7D2E5.1020607@redhat.com> <4FA7D3F7.9080005@linux.vnet.ibm.com> <4FA7D50D.1020209@redhat.com> <4FA7E06E.20304@linux.vnet.ibm.com> <4FA7E1C8.7010509@redhat.com>
+In-Reply-To: <4FA7E1C8.7010509@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 6, 2012 at 2:00 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> On Sat May 5 2012 00:41:34 Hans Verkuil wrote:
->> > +    <table pgwide="1" frame="none" id="Radio band Types">
->> > +      <title>Radio Band Types</title>
->> > +      <tgroup cols="2">
->> > +   &cs-str;
->> > +   <tbody valign="top">
->> > +               <row>
->> > +                 <entry><constant>FM_BAND_TYPE_ALL</constant>&nbsp;</entry>
->> > +                 <entry>All Bands from 65.8 MHz till 108 Mhz or 162.55 MHz if weather band.</entry>
->> > +               </row>
->>
->> Hmm, I have to thing about that name. And about other related issues as well:
->> what to do if a band isn't supported? How does an application know which bands are
->> in fact supported?
->>
->> It's too late and I'll have to think about this tomorrow.
+On 05/07/2012 05:52 PM, Avi Kivity wrote:
+> > Having said that, it is hard for me to resist saying :
+> >  bottleneck is somewhere else on PLE m/c and IMHO answer would be
+> > combination of paravirt-spinlock + pv-flush-tb.
+> >
+> > But I need to come up with good number to argue in favour of the claim.
+> >
+> > PS: Nikunj had experimented that pv-flush tlb + paravirt-spinlock is a
+> > win on PLE where only one of them alone could not prove the benefit.
+> >
 >
-> OK, I've thought about this a bit more. First of all we need a way to detect
-> which bands are supported. I propose to add capability flags to struct v4l2_tuner,
-> one for each band. There are more than enough capability flags available, so we can
-> start from bit 16 and add 4 capability flags for the four bands.
+> I'd like to see those numbers, then.
 >
-> Since applications can now detect which bands are available, it is OK for the SEEK
-> ioctl to return -EINVAL if the band isn't present. Please update the SEEK ioctl
-> documentation accordingly.
->
-> With respect to the name FM_BAND_TYPE_ALL: I propose to rename that to _TYPE_DEFAULT.
-> The description should be something like:
->
-> "This is the default band, which should be the widest frequency range supported by
-> the hardware."
->
-> I think that is a better name since that is what drivers to at the moment. I don't
-> think you can guarantee an 'All bands' setting as that is often limited by the hardware.
->
-> What do you think?
-Looks good to me... I will submit the next version of patch set with
-all these suggestion :)
->
-> Regards,
->
->        Hans
->
->>
->> Regards,
->>
->>       Hans
->>
->> > +               <row>
->> > +                 <entry><constant>FM_BAND_TYPE_EUROPE_US</constant>&nbsp;</entry>
->> > +                 <entry>Europe or US band(87.5 Mhz - 108 MHz).</entry>
->> > +               </row>
->> > +               <row>
->> > +                 <entry><constant>FM_BAND_TYPE_JAPAN</constant>&nbsp;</entry>
->> > +                 <entry>Japan band(76 MHz - 90 MHz).</entry>
->> > +               </row>
->> > +               <row>
->> > +                 <entry><constant>FM_BAND_TYPE_RUSSIAN</constant>&nbsp;</entry>
->> > +                 <entry>OIRT or Russian band(65.8 MHz - 74 MHz).</entry>
->> > +               </row>
->> > +               <row>
->> > +                 <entry><constant>FM_BAND_TYPE_WEATHER</constant>&nbsp;</entry>
->> > +                 <entry>Weather band(162.4 MHz - 162.55 MHz).</entry>
->> > +               </row>
->> > +   </tbody>
->> > +      </tgroup>
->> > +    </table>
->> >
->> >    <refsect1>
->> >      &return-value;
->> >
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-
+Note: it's probably best to try very wide guests, where the overhead of
+iterating on all vcpus begins to show.
 
 -- 
-Regards
-Halli
+error compiling committee.c: too many arguments to function
+
