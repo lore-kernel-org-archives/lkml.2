@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936Ab2EGXki (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 19:40:38 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:15319
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757743Ab2EGXkB (ORCPT
+	id S1757657Ab2EGXpr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 19:45:47 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48508 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755225Ab2EGXpq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 19:40:01 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zzbb2dI9371I1432N98dKzz1202hzz8275bhz2fh668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4FA85D5D.2070103@am.sony.com>
-Date: Mon, 7 May 2012 16:40:13 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 7 May 2012 19:45:46 -0400
 MIME-Version: 1.0
-To: Brian Swetland <swetland@google.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: android: logger: Allocate logs dynamically at
- boot
-References: <4FA4673C.7010209@am.sony.com> <20120504233707.GA24213@kroah.com>	<4FA8195E.2010706@am.sony.com> <CANqkERCQixuCe9vfeDncHikED-bVwZ3APr=mo6WfQBcGf4rz_g@mail.gmail.com>
-In-Reply-To: <CANqkERCQixuCe9vfeDncHikED-bVwZ3APr=mo6WfQBcGf4rz_g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+In-Reply-To: <1336401445.8274.319.camel@deadeye>
+References: <20120504204230.094388730@linuxfoundation.org>
+	<1336401445.8274.319.camel@deadeye>
+Date: Mon, 7 May 2012 16:45:44 -0700
+Message-ID: <CA++WF2OhfV4Fv8Jo+o_VMyZ9mdQLMs3iOtiP0_jskUR_8gc9jg@mail.gmail.com>
+Subject: Re: [ 67/75] ipw2200: Fix race condition in the command completion acknowledge
+From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: "John W. Linville" <linville@tuxdriver.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2012 03:13 PM, Brian Swetland wrote:
-> On Mon, May 7, 2012 at 11:50 AM, Tim Bird <tim.bird@am.sony.com> wrote:
->> On 05/04/2012 04:37 PM, Greg KH wrote:
->>> On Fri, May 04, 2012 at 04:33:16PM -0700, Tim Bird wrote:
->>>> +#define MAX_LOGS    5
->>>> +struct logger_log *logs_array[MAX_LOGS];
->>>
->>> You are going to make this a list and not a static array in the
->>> future, right?
+On 7 May 2012 07:37, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Fri, 2012-05-04 at 13:43 -0700, Greg KH wrote:
+>> 3.3-stable review patch.  If anyone has any objections, please let me know.
 >>
->> Would that be better?  The for-loop is IMHO simpler than a
->> list walk for finding matches.  I anticipate that the size of
->> this array should never (famous last words) be bigger than about
->> 20 entries, even in the dynamic-allocation-per-application
->> case.  And that's a ways off in implementation.
+>> ------------------
 >>
->> I'll be happy to switch to a linked list once it looks like we're
->> going to have more than 5 entries.  Or I can switch to a linked
->> list now if you think it's better form to code for the longer-term
->> anticipated features.
+>> From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
 >>
->> Not a big deal to me either way.
-> 
-> I'd also favor a list approach. It won't break unexpectedly when
-> somebody inevitably adds that 6th log or whatever, and the list
-> traversal cost only occurs during open(), which is not a frequent
-> operation -- most users keep the log driver open for the process
-> lifespan (both readers and writers).
+>> commit dd447319895d0c0af423e483d9b63f84f3f8869a upstream.
+>>
+>> Driver incorrectly validates command completion: instead of waiting
+>> for a command to be acknowledged it continues execution.  Most of the
+>> time driver gets acknowledge of the command completion in a tasklet
+>> before it executes the next one. But sometimes it sends the next
+>> command before it gets acknowledge for the previous one. In such a
+>> case one of the following error messages appear in the log:
+> [...]
+>> +     now = jiffies;
+>> +     end = now + HOST_COMPLETE_TIMEOUT;
+>> +again:
+>>       rc = wait_event_interruptible_timeout(priv->wait_command_queue,
+>>                                             !(priv->
+>>                                               status & STATUS_HCMD_ACTIVE),
+>> -                                           HOST_COMPLETE_TIMEOUT);
+>> +                                           end - now);
+>> +     if (rc < 0) {
+>> +             now = jiffies;
+>> +             if (time_before(now, end))
+>> +                     goto again;
+>> +             rc = 0;
+>> +     }
+> [...]
+>
+> If you don't want the wait to be interrupted, use wait_event_timeout()
+> instead of this ridiculous loop!
 
-OK - I'll convert to a list and send an updated patch soon.
- -- Tim
+Usually "modprobe ipw2200" takes less than a second, and after
+switching to wait_event_timeout it will take more than 10 seconds. We
+can not decrease the waiting timeout because we want to keep it big
+enough for the worst case(when the firmware did not reply).
 
+There is a relevant discussion on lklm:
+https://lkml.org/lkml/2008/9/25/2
+https://lkml.org/lkml/2008/9/26/194
 
-=============================
-Tim Bird
-Architecture Group Chair, CE Workgroup of the Linux Foundation
-Senior Staff Engineer, Sony Network Entertainment
-=============================
+Stanislav.
 
+> Ben.
+>
+> --
+> Ben Hutchings
+> Hoare's Law of Large Problems:
+>        Inside every large problem is a small problem struggling to get out.
