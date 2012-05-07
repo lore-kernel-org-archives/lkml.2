@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab2EGGtr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 02:49:47 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:47940 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754612Ab2EGGtp (ORCPT
+	id S1755065Ab2EGGuK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 02:50:10 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16319 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab2EGGuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 02:49:45 -0400
-Message-ID: <4FA77093.9060306@ti.com>
-Date: Mon, 07 May 2012 09:49:55 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120503 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 2/3] MFD: twl6040: Allocate IRQ numbers dynamically
-References: <20120503145248.GJ3955@opensource.wolfsonmicro.com> <4FA2A08C.5000403@ti.com> <20120503152643.GM3955@opensource.wolfsonmicro.com> <4FA3958A.4080206@ti.com> <20120504090856.GA14230@opensource.wolfsonmicro.com> <4FA3B182.5060001@ti.com> <20120504112204.GE14230@opensource.wolfsonmicro.com> <4FA3C3B9.3030009@ti.com> <20120504121730.GG14230@opensource.wolfsonmicro.com> <4FA3CCAF.3020902@ti.com> <20120504124750.GL14230@opensource.wolfsonmicro.com>
-In-Reply-To: <20120504124750.GL14230@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Mon, 7 May 2012 02:50:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sun, 06 May 2012 23:49:39 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
+        swarren@wwwdotorg.org, olof@lixom.net, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V1 2/2] i2c: tegra: notify transfer-complete after clearing status.
+Date: Mon,  7 May 2012 12:16:19 +0530
+Message-Id: <1336373179-12739-3-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1336373179-12739-1-git-send-email-ldewangan@nvidia.com>
+References: <1336373179-12739-1-git-send-email-ldewangan@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2012 03:47 PM, Mark Brown wrote:
-> This doesn't really work for board files, though - you can only call
-> gpio_to_irq() at runtime so if you're statically registering the devices
-> on the board you'd need to make the structures non-const, manage to find
-> the GPIO controller at runtime then do the lookup, update the struct and
-> finally register the device.
+The notification of the transfer complete by calling complete()
+should be done after clearing all interrupt status.
+This may avoid the race condition of misconfigure the i2c controller
+in multi-core environment.
 
-I've seen some board files doing this already (obviously not for the
-twl6040). Which is not the nicest thing...
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/i2c/busses/i2c-tegra.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
 
->> If there is "irq expander" type of chip I assume it would have similar
->> way to get the IRQ number based on either GPIO number or some other
->> enumeration value.
-> 
-> No, there's no generic interface for this.
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index 390d379..16820a5 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -399,8 +399,6 @@ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
+ 			disable_irq_nosync(i2c_dev->irq);
+ 			i2c_dev->irq_disabled = 1;
+ 		}
+-
+-		complete(&i2c_dev->msg_complete);
+ 		goto err;
+ 	}
+ 
+@@ -409,7 +407,6 @@ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
+ 			i2c_dev->msg_err |= I2C_ERR_NO_ACK;
+ 		if (status & I2C_INT_ARBITRATION_LOST)
+ 			i2c_dev->msg_err |= I2C_ERR_ARBITRATION_LOST;
+-		complete(&i2c_dev->msg_complete);
+ 		goto err;
+ 	}
+ 
+@@ -427,14 +424,14 @@ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
+ 			tegra_i2c_mask_irq(i2c_dev, I2C_INT_TX_FIFO_DATA_REQ);
+ 	}
+ 
++	i2c_writel(i2c_dev, status, I2C_INT_STATUS);
++	if (i2c_dev->is_dvc)
++		dvc_writel(i2c_dev, DVC_STATUS_I2C_DONE_INTR, DVC_STATUS);
++
+ 	if (status & I2C_INT_PACKET_XFER_COMPLETE) {
+ 		BUG_ON(i2c_dev->msg_buf_remaining);
+ 		complete(&i2c_dev->msg_complete);
+ 	}
+-
+-	i2c_writel(i2c_dev, status, I2C_INT_STATUS);
+-	if (i2c_dev->is_dvc)
+-		dvc_writel(i2c_dev, DVC_STATUS_I2C_DONE_INTR, DVC_STATUS);
+ 	return IRQ_HANDLED;
+ err:
+ 	/* An error occurred, mask all interrupts */
+@@ -444,6 +441,8 @@ err:
+ 	i2c_writel(i2c_dev, status, I2C_INT_STATUS);
+ 	if (i2c_dev->is_dvc)
+ 		dvc_writel(i2c_dev, DVC_STATUS_I2C_DONE_INTR, DVC_STATUS);
++
++	complete(&i2c_dev->msg_complete);
+ 	return IRQ_HANDLED;
+ }
+ 
+-- 
+1.7.1.1
 
-This dynamic range allocation for IRQ, GPIO will work nicely with DT at
-the end. In legacy way we will need to have workarounds. Or just forget
-about booting without DT.
-
->> The twl6040 does not have such a feature. The interrupts are generated
->> internally and it has one IRQ line towards the host. We have nested
->> interrupts for the childs (plug detect is handled by ASoC codec, Vibra
->> overcurrent is handled by the vibra driver, etc).
-> 
-> OK, that's fine then - you should put this in the changelog to make it
-> clear that there are no external users who could be affected.
-
-I'll do that.
-
-Thank you,
-Péter
