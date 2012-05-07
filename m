@@ -1,82 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab2EGU2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 16:28:13 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:57856 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756667Ab2EGU2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 16:28:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: huang ying <huang.ying.caritas@gmail.com>
-Subject: Re: [RFC v2 1/5] PM, Runtime, Add power_must_be_on flag
-Date: Mon, 7 May 2012 22:33:00 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Zheng Yan <zheng.z.yan@intel.com>
-References: <1336119221-21146-1-git-send-email-ying.huang@intel.com> <201205042137.16425.rjw@sisk.pl> <CAC=cRTOpbbHCSXN3=JKZkpy753G0-Vgbu0DkbV-v_coVMM7Qzw@mail.gmail.com>
-In-Reply-To: <CAC=cRTOpbbHCSXN3=JKZkpy753G0-Vgbu0DkbV-v_coVMM7Qzw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205072233.01110.rjw@sisk.pl>
+	id S932214Ab2EGUaZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 16:30:25 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:18410 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757651Ab2EGUaW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 16:30:22 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 00/21] PCI: use busn_res to replace bus secondary/subordinate
+Date: Mon,  7 May 2012 13:29:45 -0700
+Message-Id: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, May 05, 2012, huang ying wrote:
-> On Sat, May 5, 2012 at 3:37 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Friday, May 04, 2012, Huang Ying wrote:
-> >> The extreme way to save device power in runtime is to turn off power
-> >> of device.  For example, D3cold for PCIe bus and ZPODD (Zero Power
-> >> Optical Disk Drive) for SATA bus will do that.
-> >>
-> >> But sometimes power off is not expected, some possible reason is as
-> >> follow
-> >>
-> >> - power off device usually incurs longer resume latency, if it exceeds
-> >>   power QoS requirement, power off should be disabled.
-> >>
-> >> - For some buses, device in power off state can not support remote
-> >>   wakeup.  If remote wakeup is desired, power off should be disabled.
-> >>
-> >> In general, whether to put a device into power off state should be
-> >> decided by the driver of the device, but for some buses, whether to
-> >> put a device into power off state may be done by the parent of the
-> >> device.  For example, a PCIe end point device may be put into power
-> >> off state by the PCIe port connected to it.
-> >>
-> >> So a flag is introduced for the children devices to tell the parent
-> >> device, whether it should be put into power off state.
-> >>
-> >> This flag is also used for device driver to tell bus layer whether it
-> >> is OK to be powered off.
-> >>
-> >> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> >
-> > I would be almost fine with this patch, if [2/5] were not present.
-> >
-> > However, if you introduce a flag like this, you need to put checks
-> > against it into all places where power may be removed from devices,
-> > like the generic PM domains framework (but not only there).
-> 
-> Yes.  At least this flag will be needed by other buses, like ZPODD
-> support from Lin Ming:
-> 
-> https://lkml.org/lkml/2012/3/28/23
-> 
-> So my original plan is to introduce this flag firstly, then to add
-> checking for this flag in various places need it.
+struct pci_bus will take busn_res instead. and those busn_res will be in
+domain busn_res tree.
 
-That sounds like a good plan, but then please don't export this to user
-space as long as the kernel side is complete.
+This could be base of busn_res allocation patchset.
 
-> Do you suggest to
-> put PCIe D3cold support, ZPODD support, power domain related checking
-> into one patchset.
+The patches need to apply to pci-next and
+	for-pci-hotplug cleanup
 
-This isn't necessary so long as the flag is not exported.
+could be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-busn_res
 
-Thanks,
-Rafael
+Bjorn Helgaas (1):
+  PCI: print conflicting entry in busn_res inserting
+
+Yinghai Lu (20):
+  PCI: add busn_res into struct pci_bus.
+  PCI: replace secondary/subordinate with busn_res
+  PCI: Remove secondary/subordinate in struct ci_bus
+  PCI: Add busn_res for pci domain.
+  resource: adjust_resource handle resource without parent
+  PCI: Add busn_res operation functions
+  PCI: release busn_res when removing bus
+  PCI: Insert busn_res in pci_create_root_bus()
+  PCI: checking busn_res in pci_scan_root_bus()
+  PCI: Add default busn_resource
+  PCI: Add default busn_res for pci_scan_bus()
+  x86/PCI: add busn_res into resources list for ACPI path
+  x86/PCI: put busn resource in pci_root_info for native host bridge
+    drivers
+  ia64/PCI: register busn_res for root buses
+  sparc/PCI: register busn_res for root buses
+  powerpc/PCI: register busn_res for root buses
+  parisc/PCI: register busn_res for root buses
+  tile/PCI: Use pci_scan_root_bus instead pci_scan_bus
+  PCI: Register busn_res for iov bus
+  PCI: insert busn_res for child bus
+
+ arch/alpha/kernel/pci.c                    |    2 +-
+ arch/arm/kernel/bios32.c                   |    2 +-
+ arch/ia64/pci/pci.c                        |    4 +-
+ arch/microblaze/pci/pci-common.c           |    4 +-
+ arch/mips/pci/pci.c                        |    2 +-
+ arch/powerpc/include/asm/pci-bridge.h      |    1 +
+ arch/powerpc/kernel/pci-common.c           |   17 ++-
+ arch/powerpc/kernel/pci_64.c               |    2 +-
+ arch/powerpc/kernel/pci_of_scan.c          |    2 +-
+ arch/powerpc/platforms/powernv/pci-ioda.c  |    8 +-
+ arch/powerpc/platforms/pseries/pci_dlpar.c |    2 +-
+ arch/sh/drivers/pci/pci.c                  |    2 +-
+ arch/sparc/kernel/pci.c                    |    8 +-
+ arch/sparc/kernel/pci_impl.h               |    1 +
+ arch/tile/kernel/pci.c                     |    9 +-
+ arch/x86/pci/acpi.c                        |    9 +-
+ arch/x86/pci/amd_bus.c                     |    7 +-
+ arch/x86/pci/bus_numa.c                    |   22 +++-
+ arch/x86/pci/bus_numa.h                    |    3 +-
+ arch/xtensa/kernel/pci.c                   |    2 +-
+ drivers/iommu/intel-iommu.c                |    2 +-
+ drivers/net/ethernet/broadcom/tg3.c        |    4 +-
+ drivers/parisc/dino.c                      |   16 ++-
+ drivers/parisc/iosapic.c                   |    2 +-
+ drivers/parisc/lba_pci.c                   |   26 ++--
+ drivers/pci/hotplug-pci.c                  |    4 +-
+ drivers/pci/hotplug/acpiphp_glue.c         |    8 +-
+ drivers/pci/hotplug/shpchp_sysfs.c         |    6 +-
+ drivers/pci/iov.c                          |    4 +-
+ drivers/pci/pci.c                          |    2 +-
+ drivers/pci/probe.c                        |  191 +++++++++++++++++++++++-----
+ drivers/pci/remove.c                       |    1 +
+ drivers/pci/setup-bus.c                    |   24 ++--
+ drivers/pcmcia/cardbus.c                   |    2 +-
+ drivers/pcmcia/yenta_socket.c              |   26 ++--
+ include/linux/pci.h                        |    8 +-
+ kernel/resource.c                          |   13 +-
+ 37 files changed, 313 insertions(+), 135 deletions(-)
+
+-- 
+1.7.7
+
