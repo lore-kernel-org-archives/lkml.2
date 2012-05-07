@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab2EGKZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 06:25:11 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61532 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755977Ab2EGKZI (ORCPT
+	id S1756134Ab2EGK2y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 06:28:54 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:34258
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753105Ab2EGK2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 06:25:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
-Date: Mon, 7 May 2012 10:24:48 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20120507074228.GK26481@n2100.arm.linux.org.uk> <201205070859.29174.arnd@arndb.de> <20120507.122333.2024326166703361049.hdoyu@nvidia.com>
-In-Reply-To: <20120507.122333.2024326166703361049.hdoyu@nvidia.com>
+	Mon, 7 May 2012 06:28:53 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zz98dK4015Izz1202hzz15d4R8275dhz2dh668h839h944hd25he5bh)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M3NEFS-02-216-02
+X-M-MSG: 
+Date: Mon, 7 May 2012 12:28:41 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, <kvm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: X86: Add mmx movq emulation
+Message-ID: <20120507102841.GI4687@amd.com>
+References: <1336132029-13523-1-git-send-email-joerg.roedel@amd.com>
+ <4FA64D85.1000609@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205071024.48958.arnd@arndb.de>
-X-Provags-ID: V02:K0:m/r/jNCC7r/HrvQiL8vChTA+WVlmJb4euKtuNMP1FC3
- WUJrMJi8/BsfuOqTdqo2JiM3RAvm4ZMNNOa3RwOAJ0hJQqY24r
- OtGL+qDiW3OnkcrRsXQHL1pe/AWmNkkrcwmvmG4WXtTqVBP3Rl
- 39wq8nVkH+zrFSO/un/JXbPg17omqyxwo7SA6EDijpZGKlQ+lm
- jenJ/NolwyWC6CWupCVjJRMJkeMbq9JoAbHj8LrDCUoT6Qg+qL
- isQZ6hUhzTJNnZMbcQU6kPiJFXNAfy1UL744QuqOEVdaVCl9Og
- dOzQ5UQFhDu9pYNx1iwJfgz+R61QutqCM4zI9FI/fGgE2Mq62c
- 32EsUgUvJHZr16nOhaBc=
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4FA64D85.1000609@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 07 May 2012, Hiroshi Doyu wrote:
-> Tegra doesn't enable ARM_AMBA and Tegra doesn't use the following
-> "drivers/amba/bus.c" right now. I needed to make this directory
-> available to ones without ARM_AMBA enabled.
+On Sun, May 06, 2012 at 01:08:05PM +0300, Avi Kivity wrote:
+> This is already in (cbe2c9d30, e59717550e).  Are you looking at master
+> instead of next?
 
-Ah, right. I looked at arch/arm/Kconfig earlier to see if
-tegra enabled ARM_AMBA but was accidentally looking
-at ARCH_INtegraTOR when grepping for TEGRA ;-)
+Btw. your mail about the new git-workflow states something about an
+auto-next branch. But I don't see that branch in the KVM tree (looking
+at git://git.kernel.org/pub/scm/virt/kvm/kvm.git). Is there another
+branch that contains all fixes and everything for the next merge window?
+Basically I am looking for a branch which has the new master and next
+merged.
 
-Your proposed solution sounds good then.
+Thanks,
 
-	Arnd
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
