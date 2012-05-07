@@ -1,187 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520Ab2EGVKk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 17:10:40 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:58010 "EHLO ogre.sisk.pl"
+	id S932540Ab2EGVKz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 17:10:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4254 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932467Ab2EGVKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 17:10:38 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: huang ying <huang.ying.caritas@gmail.com>
-Subject: Re: [RFC v2 4/5] ACPI, PM, Specify lowest allowed state for device sleep state
-Date: Mon, 7 May 2012 23:15:26 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Zheng Yan <zheng.z.yan@intel.com>
-References: <1336119221-21146-1-git-send-email-ying.huang@intel.com> <201205042210.28048.rjw@sisk.pl> <CAC=cRTO53x_CiXc_wHyGG53QV4YByk1=t70eZ1VefVgZ3q75Vw@mail.gmail.com>
-In-Reply-To: <CAC=cRTO53x_CiXc_wHyGG53QV4YByk1=t70eZ1VefVgZ3q75Vw@mail.gmail.com>
+	id S932467Ab2EGVKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 17:10:53 -0400
+Date: Tue, 8 May 2012 00:10:56 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 1/2] vhost: basic tracepoints
+Message-ID: <20120507211055.GA28213@redhat.com>
+References: <20120410025327.49693.93562.stgit@amd-6168-8-1.englab.nay.redhat.com>
+ <20120410025819.49693.32870.stgit@amd-6168-8-1.englab.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205072315.27081.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120410025819.49693.32870.stgit@amd-6168-8-1.englab.nay.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, May 05, 2012, huang ying wrote:
-> On Sat, May 5, 2012 at 4:10 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Friday, May 04, 2012, Huang Ying wrote:
-> >> Lower device sleep state can save more power, but has more exit
-> >> latency too.  Sometimes, to satisfy some power QoS and other
-> >> requirement, we need to constrain the lowest device sleep state.
-> >>
-> >> In this patch, a parameter to specify lowest allowed state for
-> >> acpi_pm_device_sleep_state is added.  So that the caller can enforce
-> >> the constraint via the parameter.
-> >>
-> >> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> >> ---
-> >>  drivers/acpi/sleep.c       |   18 +++++++++++++++---
-> >>  drivers/pci/pci-acpi.c     |    3 ++-
-> >>  drivers/pnp/pnpacpi/core.c |    4 ++--
-> >>  include/acpi/acpi_bus.h    |    6 +++---
-> >>  4 files changed, 22 insertions(+), 9 deletions(-)
-> >>
-> >> --- a/drivers/acpi/sleep.c
-> >> +++ b/drivers/acpi/sleep.c
-> >> @@ -677,6 +677,7 @@ int acpi_suspend(u32 acpi_state)
-> >>   *   @dev: device to examine; its driver model wakeup flags control
-> >>   *           whether it should be able to wake up the system
-> >>   *   @d_min_p: used to store the upper limit of allowed states range
-> >> + *   @d_max_in: specify the lowest allowed states
-> >>   *   Return value: preferred power state of the device on success, -ENODEV on
-> >>   *           failure (ie. if there's no 'struct acpi_device' for @dev)
-> >>   *
-> >> @@ -693,7 +694,7 @@ int acpi_suspend(u32 acpi_state)
-> >>   *   via @wake.
-> >>   */
-> >>
-> >> -int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
-> >> +int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p, int d_max_in)
-> >>  {
-> >>       acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
-> >>       struct acpi_device *adev;
-> >> @@ -704,11 +705,14 @@ int acpi_pm_device_sleep_state(struct de
-> >>               printk(KERN_DEBUG "ACPI handle has no context!\n");
-> >>               return -ENODEV;
-> >>       }
-> >> +     d_max_in = clamp_t(int, d_max_in, ACPI_STATE_D0, ACPI_STATE_D3);
-> >
-> > Shouldn't that be clamp_val(), rather?
+On Tue, Apr 10, 2012 at 10:58:19AM +0800, Jason Wang wrote:
+> To help for the performance optimizations and debugging, this patch tracepoints
+> for vhost. Pay attention that the tracepoints are only for vhost, net code are
+> not touched.
 > 
-> Yes.  clamp_val() is sufficient here.
+> Two kinds of activities were traced: virtio and vhost work.
 > 
-> >>       acpi_method[2] = '0' + acpi_target_sleep_state;
-> >>       /*
-> >> -      * If the sleep state is S0, we will return D3, but if the device has
-> >> -      * _S0W, we will use the value from _S0W
-> >> +      * If the sleep state is S0, the lowest limit from ACPI is D3,
-> >> +      * but if the device has _S0W, we will use the value from _S0W
-> >> +      * as the lowest limit from ACPI.  Finally, we will constrain
-> >> +      * the lowest limit with the specified one.
-> >>        */
-> >>       d_min = ACPI_STATE_D0;
-> >>       d_max = ACPI_STATE_D3;
-> >> @@ -754,6 +758,14 @@ int acpi_pm_device_sleep_state(struct de
-> >>
-> >>       if (d_min_p)
-> >>               *d_min_p = d_min;
-> >> +     /* constrain d_max with specified lowest limit (max number) */
-> >> +     if (d_max > d_max_in) {
-> >> +             d_max = d_max_in;
-> >> +             for (;d_max > d_min; d_max--) {
-> >
-> > Well, why didn't you do
-> >
-> > +               for (d_max = d_max_in; d_max > d_min; d_max--)
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+
+Thanks for looking into this.
+
+Some questions:
+
+Do we need to prefix traces with vhost_virtio_?
+
+How about a trace for enabling/disabling interrupts?
+Trace for a suppressed interrupt?
+I think we need a vq # not pointer.
+Also need some id for when there are many guests.
+Use the vhost thread name (includes owner pid)? It's pid? Both?
+
+Also, traces do add very small overhead when compiled but not
+enabled mainly due to increasing register pressure.
+Need to test to make sure perf is not hurt.
+Some traces are just for debugging so build them on
+debug kernel only?
+
+Further, there are many events some are rare
+some are common. I think we need some naming scheme
+so that really useful and low overhead stuff is easier
+to enable ignoring the rarely usefu;/higher overhead traces.
+
+> ---
+>  drivers/vhost/trace.h |  153 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/vhost/vhost.c |   17 +++++
+>  2 files changed, 168 insertions(+), 2 deletions(-)
+>  create mode 100644 drivers/vhost/trace.h
 > 
-> Because I think it is possible that d_max < d_max_in.
-
-I mean:
-
-+     if (d_max > d_max_in) {
-+               for (d_max = d_max_in; d_max > d_min; d_max--) {
-
-The assignment followed by the for () loop without the start instruction looks
-odd.
-
-> >> +                     if (adev->power.states[d_max].flags.valid)
-> >> +                             break;
-> >> +             }
-> >> +     }
-> >
-> > And what if d_min > d_max_in ?
-> 
-> I think that means something bad happens.  Maybe we can do something as follow
-> 
-> if (d_min > d_max_in) {
->         pr_warning("acpi_pm_device_sleep_state: the specified lowest
-> state is higher than the highest state from ACPI!");
->         d_max_in = d_min;
-
-Well, what about returning -EINVAL in that case?
-
-> }
-> if (d_max > d_max_in) {
-> ...
-> }
-> 
-> >>       return d_max;
-> >>  }
-> >>  #endif /* CONFIG_PM */
-> >> --- a/drivers/pci/pci-acpi.c
-> >> +++ b/drivers/pci/pci-acpi.c
-> >> @@ -189,7 +189,8 @@ static pci_power_t acpi_pci_choose_state
-> >>  {
-> >>       int acpi_state;
-> >>
-> >> -     acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL);
-> >> +     acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL,
-> >> +                                             ACPI_STATE_D3);
-> >>       if (acpi_state < 0)
-> >>               return PCI_POWER_ERROR;
-> >>
-> >> --- a/drivers/pnp/pnpacpi/core.c
-> >> +++ b/drivers/pnp/pnpacpi/core.c
-> >> @@ -170,8 +170,8 @@ static int pnpacpi_suspend(struct pnp_de
-> >>       }
-> >>
-> >>       if (acpi_bus_power_manageable(handle)) {
-> >> -             int power_state = acpi_pm_device_sleep_state(&dev->dev, NULL);
-> >> -
-> >> +             int power_state = acpi_pm_device_sleep_state(&dev->dev, NULL,
-> >> +                                                          ACPI_STATE_D3);
-> >>               if (power_state < 0)
-> >>                       power_state = (state.event == PM_EVENT_ON) ?
-> >>                                       ACPI_STATE_D0 : ACPI_STATE_D3;
-> >> --- a/include/acpi/acpi_bus.h
-> >> +++ b/include/acpi/acpi_bus.h
-> >> @@ -383,13 +383,13 @@ int acpi_enable_wakeup_device_power(stru
-> >>  int acpi_disable_wakeup_device_power(struct acpi_device *dev);
-> >>
-> >>  #ifdef CONFIG_PM
-> >> -int acpi_pm_device_sleep_state(struct device *, int *);
-> >> +int acpi_pm_device_sleep_state(struct device *, int *, int);
-> >>  #else
-> >> -static inline int acpi_pm_device_sleep_state(struct device *d, int *p)
-> >> +static inline int acpi_pm_device_sleep_state(struct device *d, int *p, int m)
-> >>  {
-> >>       if (p)
-> >>               *p = ACPI_STATE_D0;
-> >> -     return ACPI_STATE_D3;
-> >> +     return m == ACPI_STATE_D3 ? m : ACPI_STATE_D0;
-> >
-> > Shouldn't m be returned (so long as it is between D0 and D3 inclusive)?  IOW:
-> >
-> > +       return (m >= ACPI_STATE_D0 && m <= ACPI_STATE_D3) ? m : ACPI_STATE_D0;
-> 
-> My original idea is that only D0 and D3 is guaranteed to be valid for
-> the device.  If that need not to be considered here, you one is
-> better.
-
-No, it need not.
-
-Thanks,
-Rafael
+> diff --git a/drivers/vhost/trace.h b/drivers/vhost/trace.h
+> new file mode 100644
+> index 0000000..0423899
+> --- /dev/null
+> +++ b/drivers/vhost/trace.h
+> @@ -0,0 +1,153 @@
+> +#if !defined(_TRACE_VHOST_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_VHOST_H
+> +
+> +#include <linux/tracepoint.h>
+> +#include "vhost.h"
+> +
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM vhost
+> +
+> +/*
+> + * Tracepoint for updating used flag.
+> + */
+> +TRACE_EVENT(vhost_virtio_update_used_flags,
+> +	TP_PROTO(struct vhost_virtqueue *vq),
+> +	TP_ARGS(vq),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(struct vhost_virtqueue *, vq)
+> +		__field(u16, used_flags)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->vq = vq;
+> +		__entry->used_flags = vq->used_flags;
+> +	),
+> +
+> +	TP_printk("vhost update used flag %x to vq %p notify %s",
+> +		__entry->used_flags, __entry->vq,
+> +		(__entry->used_flags & VRING_USED_F_NO_NOTIFY) ?
+> +		"disabled" : "enabled")
+> +);
+> +
+> +/*
+> + * Tracepoint for updating avail event.
+> + */
+> +TRACE_EVENT(vhost_virtio_update_avail_event,
+> +	TP_PROTO(struct vhost_virtqueue *vq),
+> +	TP_ARGS(vq),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(struct vhost_virtqueue *, vq)
+> +		__field(u16, avail_idx)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->vq = vq;
+> +		__entry->avail_idx = vq->avail_idx;
+> +	),
+> +
+> +	TP_printk("vhost update avail idx %u(%u) for vq %p",
+> +		  __entry->avail_idx, __entry->avail_idx %
+> +		  __entry->vq->num, __entry->vq)
+> +);
+> +
+> +/*
+> + * Tracepoint for processing descriptor.
+> + */
+> +TRACE_EVENT(vhost_virtio_get_vq_desc,
+> +	TP_PROTO(struct vhost_virtqueue *vq, unsigned int index,
+> +		 unsigned out, unsigned int in),
+> +	TP_ARGS(vq, index, out, in),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(struct vhost_virtqueue *, vq)
+> +		__field(unsigned int, head)
+> +		__field(unsigned int, out)
+> +		__field(unsigned int, in)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->vq = vq;
+> +		__entry->head = index;
+> +		__entry->out = out;
+> +		__entry->in = in;
+> +	),
+> +
+> +	TP_printk("vhost get vq %p head %u out %u in %u",
+> +		  __entry->vq, __entry->head, __entry->out, __entry->in)
+> +
+> +);
+> +
+> +/*
+> + * Tracepoint for signal guest.
+> + */
+> +TRACE_EVENT(vhost_virtio_signal,
+> +	TP_PROTO(struct vhost_virtqueue *vq),
+> +	TP_ARGS(vq),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(struct vhost_virtqueue *, vq)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->vq = vq;
+> +	),
+> +
+> +	TP_printk("vhost signal vq %p",	__entry->vq)
+> +);
+> +
+> +DECLARE_EVENT_CLASS(vhost_work_template,
+> +	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
+> +	TP_ARGS(dev, work),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(struct vhost_dev *, dev)
+> +		__field(struct vhost_work *, work)
+> +		__field(void *, function)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->dev = dev;
+> +		__entry->work = work;
+> +		__entry->function = work->fn;
+> +	),
+> +
+> +	TP_printk("%pf for work %p dev %p",
+> +		__entry->function, __entry->work, __entry->dev)
+> +);
+> +
+> +DEFINE_EVENT(vhost_work_template, vhost_work_queue_wakeup,
+> +	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
+> +	TP_ARGS(dev, work));
+> +
+> +DEFINE_EVENT(vhost_work_template, vhost_work_queue_coalesce,
+> +	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
+> +	TP_ARGS(dev, work));
+> +
+> +DEFINE_EVENT(vhost_work_template, vhost_poll_start,
+> +	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
+> +	TP_ARGS(dev, work));
+> +
+> +DEFINE_EVENT(vhost_work_template, vhost_poll_stop,
+> +	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
+> +	TP_ARGS(dev, work));
+> +
+> +DEFINE_EVENT(vhost_work_template, vhost_work_execute_start,
+> +	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
+> +	TP_ARGS(dev, work));
+> +
+> +DEFINE_EVENT(vhost_work_template, vhost_work_execute_end,
+> +	TP_PROTO(struct vhost_dev *dev, struct vhost_work *work),
+> +	TP_ARGS(dev, work));
+> +
+> +#endif /* _TRACE_VHOST_H */
+> +
+> +#undef TRACE_INCLUDE_PATH
+> +#define TRACE_INCLUDE_PATH ../../drivers/vhost
+> +#undef TRACE_INCLUDE_FILE
+> +#define TRACE_INCLUDE_FILE trace
+> +
+> +/* This part must be outside protection */
+> +#include <trace/define_trace.h>
+> +
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index c14c42b..23f8d85 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -31,6 +31,8 @@
+>  #include <linux/if_arp.h>
+>  
+>  #include "vhost.h"
+> +#define CREATE_TRACE_POINTS
+> +#include "trace.h"
+>  
+>  enum {
+>  	VHOST_MEMORY_MAX_NREGIONS = 64,
+> @@ -50,6 +52,7 @@ static void vhost_poll_func(struct file *file, wait_queue_head_t *wqh,
+>  	poll = container_of(pt, struct vhost_poll, table);
+>  	poll->wqh = wqh;
+>  	add_wait_queue(wqh, &poll->wait);
+> +	trace_vhost_poll_start(NULL, &poll->work);
+>  }
+>  
+>  static int vhost_poll_wakeup(wait_queue_t *wait, unsigned mode, int sync,
+> @@ -101,6 +104,7 @@ void vhost_poll_start(struct vhost_poll *poll, struct file *file)
+>  void vhost_poll_stop(struct vhost_poll *poll)
+>  {
+>  	remove_wait_queue(poll->wqh, &poll->wait);
+> +	trace_vhost_poll_stop(NULL, &poll->work);
+>  }
+>  
+>  static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
+> @@ -147,7 +151,9 @@ static inline void vhost_work_queue(struct vhost_dev *dev,
+>  		list_add_tail(&work->node, &dev->work_list);
+>  		work->queue_seq++;
+>  		wake_up_process(dev->worker);
+> -	}
+> +		trace_vhost_work_queue_wakeup(dev, work);
+> +	} else
+> +		trace_vhost_work_queue_coalesce(dev, work);
+>  	spin_unlock_irqrestore(&dev->work_lock, flags);
+>  }
+>  
+> @@ -221,7 +227,9 @@ static int vhost_worker(void *data)
+>  
+>  		if (work) {
+>  			__set_current_state(TASK_RUNNING);
+> +			trace_vhost_work_execute_start(dev, work);
+>  			work->fn(work);
+> +			trace_vhost_work_execute_end(dev, work);
+>  		} else
+>  			schedule();
+>  
+> @@ -1011,6 +1019,7 @@ static int vhost_update_used_flags(struct vhost_virtqueue *vq)
+>  		if (vq->log_ctx)
+>  			eventfd_signal(vq->log_ctx, 1);
+>  	}
+> +	trace_vhost_virtio_update_used_flags(vq);
+>  	return 0;
+>  }
+>  
+> @@ -1030,6 +1039,7 @@ static int vhost_update_avail_event(struct vhost_virtqueue *vq, u16 avail_event)
+>  		if (vq->log_ctx)
+>  			eventfd_signal(vq->log_ctx, 1);
+>  	}
+> +	trace_vhost_virtio_update_avail_event(vq);
+>  	return 0;
+>  }
+>  
+> @@ -1319,6 +1329,7 @@ int vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
+>  	/* Assume notifications from guest are disabled at this point,
+>  	 * if they aren't we would need to update avail_event index. */
+>  	BUG_ON(!(vq->used_flags & VRING_USED_F_NO_NOTIFY));
+> +	trace_vhost_virtio_get_vq_desc(vq, head, *out_num, *in_num);
+>  	return head;
+>  }
+>  
+> @@ -1485,8 +1496,10 @@ static bool vhost_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+>  void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+>  {
+>  	/* Signal the Guest tell them we used something up. */
+> -	if (vq->call_ctx && vhost_notify(dev, vq))
+> +	if (vq->call_ctx && vhost_notify(dev, vq)) {
+>  		eventfd_signal(vq->call_ctx, 1);
+> +		trace_vhost_virtio_signal(vq);
+> +	}
+>  }
+>  
+>  /* And here's the combo meal deal.  Supersize me! */
