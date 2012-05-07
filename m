@@ -1,47 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab2EGPPp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 11:15:45 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:42967 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756287Ab2EGPPn (ORCPT
+	id S1757229Ab2EGPUi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 11:20:38 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35479 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756971Ab2EGPUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 11:15:43 -0400
-Message-ID: <4FA7E6DD.6010607@linux.vnet.ibm.com>
-Date: Mon, 07 May 2012 10:14:37 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 7 May 2012 11:20:37 -0400
+Message-ID: <4FA7E841.7020100@wwwdotorg.org>
+Date: Mon, 07 May 2012 09:20:33 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Nitin Gupta <ngupta@vflare.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 6/6] zsmalloc: make zsmalloc portable
-References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-7-git-send-email-minchan@kernel.org> <4F980AFE.60901@vflare.org> <4F982862.4050302@linux.vnet.ibm.com>
-In-Reply-To: <4F982862.4050302@linux.vnet.ibm.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH V1] regulator: fixed: dt: add property for gpio open drain
+ flag
+References: <1336386499-20408-1-git-send-email-ldewangan@nvidia.com> <4FA7E4A3.6050004@wwwdotorg.org> <4FA7E57B.30804@nvidia.com>
+In-Reply-To: <4FA7E57B.30804@nvidia.com>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12050715-3270-0000-0000-00000622A6D1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2012 11:37 AM, Seth Jennings wrote:
+On 05/07/2012 09:08 AM, Laxman Dewangan wrote:
+> On Monday 07 May 2012 08:35 PM, Stephen Warren wrote:
+>> On 05/07/2012 04:28 AM, Laxman Dewangan wrote:
+>>> Add property for the gpio flag open drain when registering
+>>> fixed regulator.
+>>> diff --git
+>>> a/Documentation/devicetree/bindings/regulator/fixed-regulator.txt ...
+>>> +- gpio-open-drain: GPIO is open drain type.
+>>> +  If this property is missing then default assumption is false.
+>> Given that there's a GPIOF_OPEN_DRAIN, isn't the GPIO specifier in the
+>> gpio property meant to encode this somehow (the format is up to the GPIO
+>> controller's binding) - the flags are returned by
+>> of_get_named_gpio_flags().
+>>
+>> (especially given you asked me off-list about updating the GPIO binding
+>> documentation with information about the flags that Tegra's binding
+>> documented for this)
+> 
+> gpio of binding does not explain that there is always gpio flag 
+> (GPIOF_*) in gpio cell argument. It is up to the chip specific gpio
+> driver how they implement the argumnets.
+> For the example of gpio-samsung have the 4 argument list and all are for
+> different purpose. And if they want to set pin as open drain, it will
+> not be possible  on their argument list as none of the cell argument
+> reflect to GPIOF_* flag.
+> For the case of tegra, there is no of_xlate() implementation and hence
+> it is by default return as GPIOF_.
+> 
+> And the client driver which is indpendent of chip specific gpio driver
+> should able to handle this.
 
-> I'll apply your patch and try it out.
+Yes, there are some issues to be resolved here.
 
-Sorry for taking so long.
+My point is that there's clear intent for of_gpio_simple_xlate() to
+return the GPIO flags from a field in the GPIO specifier in device tree,
+irrespective of whether some GPIO bindings don't allow this, or whether
+this is fully documented.
 
-I finally got around to testing this on an x86_64 VM and it works with
-the same performance as before and is much cleaner.  I like it.  Just
-need to expand the patch to all the arches.
+However, this patch introduces an alternative mechanism to specify some
+of the flags.
 
-I'm also interested to see if this works for ppc64.  I'm hoping to try
-it out today or tomorrow.
+We shouldn't have two different mechanisms to represent this
+information. How do we resolve the situation where a particular SoC's
+GPIO binding allows the flags to be specified, and this patch allows the
+open-drain flag to be specified, and the two values are different?
 
---
-Seth
+Either we should force all bindings to have some way of specifying the
+flags, or we should remove the flags from all bindings and rely on
+separate properties.
 
+IIRC, a similar thing came up with GPIO inversion, perhaps in Arnd's
+recent unified SDHCI bindings. However, I don't think we really resolved
+the issue during the discussion there.
