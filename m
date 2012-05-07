@@ -1,193 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790Ab2EGIhK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:37:10 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:38378 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564Ab2EGIhI (ORCPT
+	id S1755871Ab2EGIiI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:38:08 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64283 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab2EGIiG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:37:08 -0400
-Message-ID: <1336379825.2097.5.camel@shrek.rexursive.com>
-Subject: [PATCH]: In kernel hibernation, suspend to both: draft
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org
-Date: Mon, 07 May 2012 18:37:05 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 7 May 2012 04:38:06 -0400
+X-AuditID: 9c930179-b7c19ae000000486-ad-4fa789ea1b35
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
+        Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
+        David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 00/15] tools: Unify perf and trace-cmd trace event format parsing v3
+References: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
+	<20120507081424.GE16608@gmail.com>
+Date: Mon, 07 May 2012 17:36:42 +0900
+In-Reply-To: <20120507081424.GE16608@gmail.com> (Ingo Molnar's message of
+	"Mon, 7 May 2012 10:14:24 +0200")
+Message-ID: <87vck8qtet.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Hi,
 
-Was just playing with it and this is what I came up with. This is just a
-rough draft (I didn't even think of memory leaks and such here, to be
-honest). Let me know what you think.
+On Mon, 7 May 2012 10:14:24 +0200, Ingo Molnar wrote:
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>
+>> Hi,
+>> 
+>> This is essentially a rebase against latest tip:perf/core updates.
+>> Mostly due to conflicts against the perf Makefile updates.
+>> 
+>> I think we all agree that this library needs improvements but these
+>> should rather be done incrementally. The current perf trace event parsing
+>> is anyway much backward compared to that library.
+>> 
+>> Default target is a static library in tools/libtraceevent/libtraceevent.a
+>> 
+>> This can be pulled from:
+>> 
+>> git://github.com/fweisbec/tracing.git
+>> 	perf/parse-events-4
+>
+> It gives me:
+>
+> /home/mingo/tip/tools/lib/traceevent/parse-filter.c: In function ‘create_arg_item’:
+> /home/mingo/tip/tools/lib/traceevent/parse-filter.c:343:9: warning: comparison between ‘enum filter_arg_type’ and ‘enum event_type’ [-Wenum-compare]
+> /home/mingo/tip/tools/lib/traceevent/parse-filter.c:339:2: warning: case value ‘8’ not in enumerated type ‘enum filter_arg_type’ [-Wswitch]
+>
+> Had this been in tools/perf/ it would use -Werror already and 
+> you'd have fixed it, not requiring me to unpull these bits :-/
+>
 
-------------------------------
-diff --git a/Documentation/power/swsusp.txt b/Documentation/power/swsusp.txt
-index ac190cf..92341b8 100644
---- a/Documentation/power/swsusp.txt
-+++ b/Documentation/power/swsusp.txt
-@@ -33,6 +33,11 @@ echo shutdown > /sys/power/disk; echo disk > /sys/power/state
- 
- echo platform > /sys/power/disk; echo disk > /sys/power/state
- 
-+. If you would like to write hibernation image to swap and then suspend
-+to RAM (provided your platform supports it), you can try
-+
-+echo suspend > /sys/power/disk; echo disk > /sys/power/state
-+
- . If you have SATA disks, you'll need recent kernels with SATA suspend
- support. For suspend and resume to work, make sure your disk drivers
- are built into kernel -- not modules. [There's way to make
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index e09dfbf..3b5726f 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -5,6 +5,7 @@
-  * Copyright (c) 2003 Open Source Development Lab
-  * Copyright (c) 2004 Pavel Machek <pavel@ucw.cz>
-  * Copyright (c) 2009 Rafael J. Wysocki, Novell Inc.
-+ * Copyright (C) 2012 Bojan Smojver <bojan@rexursive.com>
-  *
-  * This file is released under the GPLv2.
-  */
-@@ -44,6 +45,9 @@ enum {
- 	HIBERNATION_PLATFORM,
- 	HIBERNATION_SHUTDOWN,
- 	HIBERNATION_REBOOT,
-+#ifdef CONFIG_SUSPEND
-+	HIBERNATION_SUSPEND,
-+#endif
- 	/* keep last */
- 	__HIBERNATION_AFTER_LAST
- };
-@@ -572,6 +576,10 @@ int hibernation_platform_enter(void)
-  */
- static void power_down(void)
- {
-+#ifdef CONFIG_SUSPEND
-+	int error;
-+#endif
-+
- 	switch (hibernation_mode) {
- 	case HIBERNATION_REBOOT:
- 		kernel_restart(NULL);
-@@ -581,6 +589,25 @@ static void power_down(void)
- 	case HIBERNATION_SHUTDOWN:
- 		kernel_power_off();
- 		break;
-+#ifdef CONFIG_SUSPEND
-+	case HIBERNATION_SUSPEND:
-+		error = suspend_devices_and_enter(PM_SUSPEND_MEM);
-+		if (error) {
-+			if (hibernation_ops)
-+				hibernation_mode = HIBERNATION_PLATFORM;
-+			else
-+				hibernation_mode = HIBERNATION_SHUTDOWN;
-+			power_down();
-+		}
-+		/*
-+		 * Restore swap signature.
-+		 */
-+		error = swsusp_unmark();
-+		if (error)
-+			printk(KERN_ERR "PM: Swap will be unusable! "
-+			                "Try swapon -a.\n");
-+		return;
-+#endif
- 	}
- 	kernel_halt();
- 	/*
-@@ -814,6 +841,9 @@ static const char * const hibernation_modes[] = {
- 	[HIBERNATION_PLATFORM]	= "platform",
- 	[HIBERNATION_SHUTDOWN]	= "shutdown",
- 	[HIBERNATION_REBOOT]	= "reboot",
-+#ifdef CONFIG_SUSPEND
-+	[HIBERNATION_SUSPEND]	= "suspend",
-+#endif
- };
- 
- /*
-@@ -854,6 +884,9 @@ static ssize_t disk_show(struct kobject *kobj, struct kobj_attribute *attr,
- 		switch (i) {
- 		case HIBERNATION_SHUTDOWN:
- 		case HIBERNATION_REBOOT:
-+#ifdef CONFIG_SUSPEND
-+		case HIBERNATION_SUSPEND:
-+#endif
- 			break;
- 		case HIBERNATION_PLATFORM:
- 			if (hibernation_ops)
-@@ -894,6 +927,9 @@ static ssize_t disk_store(struct kobject *kobj, struct kobj_attribute *attr,
- 		switch (mode) {
- 		case HIBERNATION_SHUTDOWN:
- 		case HIBERNATION_REBOOT:
-+#ifdef CONFIG_SUSPEND
-+		case HIBERNATION_SUSPEND:
-+#endif
- 			hibernation_mode = mode;
- 			break;
- 		case HIBERNATION_PLATFORM:
-diff --git a/kernel/power/power.h b/kernel/power/power.h
-index 98f3622..07b4a68 100644
---- a/kernel/power/power.h
-+++ b/kernel/power/power.h
-@@ -156,6 +156,9 @@ extern void swsusp_free(void);
- extern int swsusp_read(unsigned int *flags_p);
- extern int swsusp_write(unsigned int flags);
- extern void swsusp_close(fmode_t);
-+#ifdef CONFIG_SUSPEND
-+extern int swsusp_unmark(void);
-+#endif
- 
- /* kernel/power/block_io.c */
- extern struct block_device *hib_resume_bdev;
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index eef311a..1027da8 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -1456,6 +1456,34 @@ void swsusp_close(fmode_t mode)
- 	blkdev_put(hib_resume_bdev, mode);
- }
- 
-+/**
-+ *      swsusp_unmark - Unmark swsusp signature in the resume device
-+ */
-+
-+#ifdef CONFIG_SUSPEND
-+int swsusp_unmark(void)
-+{
-+	int error;
-+
-+	hib_bio_read_page(swsusp_resume_block, swsusp_header, NULL);
-+	if (!memcmp(HIBERNATE_SIG,swsusp_header->sig, 10)) {
-+		memcpy(swsusp_header->sig,swsusp_header->orig_sig, 10);
-+		error = hib_bio_write_page(swsusp_resume_block,
-+					swsusp_header, NULL);
-+	} else {
-+		printk(KERN_ERR "PM: Cannot find swsusp signature!\n");
-+		error = -ENODEV;
-+	}
-+
-+	/*
-+	 * We just returned from suspend, we don't need the image any more.
-+	 */
-+	free_all_swap_pages(root_swap);
-+
-+	return error;
-+}
-+#endif
-+
- static int swsusp_header_init(void)
- {
- 	swsusp_header = (struct swsusp_header*) __get_free_page(GFP_KERNEL);
-------------------------------
+I already submitted a patch for it (along with other fixes) to Steven.
 
--- 
-Bojan
+  lkml.indiana.edu/hypermail/linux/kernel/1204.2/03713.html
 
+
+Thanks,
+Namhyung
+
+
+> So can we please make a libevent.so, built sanely within 
+> tools/perf/lib/ or such and distributed together with perf so 
+> that the two can never get out of sync?
+>
+> Thanks,
+>
+> 	Ingo
