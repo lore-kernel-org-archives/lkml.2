@@ -1,47 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445Ab2EGEUV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 00:20:21 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:53642 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751038Ab2EGEUT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 00:20:19 -0400
-Date: Mon, 7 May 2012 14:20:17 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Andreas Westin <andreas.westin@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: linux-next: manual merge of the crypto tree with Linus' tree
-Message-ID: <20120507042017.GC25039@gondor.apana.org.au>
-References: <20120507123100.09a614d4f4eb1bfc14e64351@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120507123100.09a614d4f4eb1bfc14e64351@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751342Ab2EGEWO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 00:22:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55294 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750900Ab2EGEWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 00:22:13 -0400
+Message-ID: <1336364531.7272.7.camel@marge.simpson.net>
+Subject: Re: Strange behaviour after uptime of 208-209 days
+From: Mike Galbraith <mgalbraith@suse.de>
+To: Christoph Bartoschek <ponto@pontohonk.de>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 07 May 2012 06:22:11 +0200
+In-Reply-To: <iaej79-g6o.ln1@homer.bruehl.pontohonk.de>
+References: <iaej79-g6o.ln1@homer.bruehl.pontohonk.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 12:31:00PM +1000, Stephen Rothwell wrote:
-> Hi Herbert,
+On Mon, 2012-05-07 at 01:33 +0200, Christoph Bartoschek wrote: 
+> Hi,
 > 
-> Today's linux-next merge of the crypto tree got a conflict in
-> arch/arm/mach-ux500/devices-common.c between commit 3510ec672319 ("ARM:
-> ux500: remove intermediary add_platform_device* functions") from Linus'
-> tree and commit 3ba812f4d0be ("mach-ux500: crypto - core support for
-> CRYP/HASH module") from the crypto tree.
-> 
-> I can't easily resolve this, sorry.  This crypto patch needs to be
-> revised on top of v3.4-rc1.
-> 
-> I have use the crypto tree from next-20120504 for today.
+> we run kernel 2.6.37.6 from opensuse 11.4. All machines with uptimes more 
+> than 208 days show strange behaviour. The scheduler seems to avoid some 
+> cores. For example on a 12 core machine only 3 cores are used. I see the 
+> following messages in the logfiles
 
-OK I'll fix it up.  Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Ah, 208 day bugfixes went to stable, but not to 2.6.37.  Dunno if that
+kernel is still being maintained, but please file a bug with opensuse.
+
+-Mike
+
