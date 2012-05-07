@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757767Ab2EGTaT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 15:30:19 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38850 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964Ab2EGTaR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 15:30:17 -0400
-Message-ID: <4FA822C4.60809@gmail.com>
-Date: Mon, 07 May 2012 21:30:12 +0200
-From: Erwan Velu <erwanaliasr1@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120426 Thunderbird/10.0.4
-MIME-Version: 1.0
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: tshimizu818@gmail.com
-Subject: [PATCH] pch_gbe: Adding read memory barriers
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757819Ab2EGTcI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 15:32:08 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:44058 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752760Ab2EGTcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 15:32:06 -0400
+Date: Mon, 7 May 2012 14:32:03 -0500
+From: Russ Anderson <rja@sgi.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Yinghai Lu <yinghai@kernel.org>, David Miller <davem@davemloft.net>
+Cc: Russ Anderson <rja@sgi.com>
+Subject: [patch] mm: nobootmem: fix sign extend problem in __free_pages_memory()
+Message-ID: <20120507193202.GA11518@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- From bb1e271db0fa1a29df19bede69faf8004389132d Mon Sep 17 00:00:00 2001
-From: Erwan Velu <erwan.velu@zodiacaerospace.com>
-Date: Mon, 7 May 2012 19:15:29 +0000
-Subject: [PATCH 1/1] pch_gbe: Adding read memory barriers
+Systems with 8 TBytes of memory or greater can hit a problem 
+where only the the first 8 TB of memory shows up.  This is
+due to "int i" being smaller than "unsigned long start_aligned",
+causing the high bits to be dropped.
 
-Under a strong incoming packet stream and/or high cpu usage,
-the pch_gbe driver reports "Receive CRC Error" and discards packet.
+The fix is to change i to unsigned long to match start_aligned
+and end_aligned.
 
-It occurred on an Intel ATOM E620T while running a 300mbit/sec multicast
-network stream leading to a ~100% cpu usage.
+Thanks to Jack Steiner (steiner@sgi.com) for assistance tracking
+this down.
 
-Adding rmb() calls before considering the network card's status solve
-this issue.
+Signed-off-by: Russ Anderson <rja@sgi.com>
 
-Getting it into stable would be perfect as it solves reliability issues.
-
-Signed-off-by: Erwan Velu <erwan.velu@zodiacaerospace.com>
 ---
-  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |    3 +++
-  1 files changed, 3 insertions(+), 0 deletions(-)
+ mm/nobootmem.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c 
-b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-index 8035e5f..ace3654 100644
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-@@ -1413,6 +1413,7 @@ static irqreturn_t pch_gbe_intr(int irq, void *data)
-  			pch_gbe_mac_set_pause_packet(hw);
-  		}
-  	}
-+	smp_rmb(); /* prevent any other reads before*/
-
-  	/* When request status is Receive interruption */
-  	if ((int_st & (PCH_GBE_INT_RX_DMA_CMPLT | PCH_GBE_INT_TX_CMPLT)) ||
-@@ -1582,6 +1584,7 @@ pch_gbe_clean_tx(struct pch_gbe_adapter *adapter,
-
-  	i = tx_ring->next_to_clean;
-  	tx_desc = PCH_GBE_TX_DESC(*tx_ring, i);
-+	rmb();  /* prevent any other reads before*/
-  	pr_debug("gbec_status:0x%04x  dma_status:0x%04x\n",
-  		 tx_desc->gbec_status, tx_desc->dma_status);
-
-@@ -1682,6 +1685,7 @@ pch_gbe_clean_rx(struct pch_gbe_adapter *adapter,
-  	while (*work_done < work_to_do) {
-  		/* Check Rx descriptor status */
-  		rx_desc = PCH_GBE_RX_DESC(*rx_ring, i);
-+		rmb(); /* prevent any other reads before*/
-  		if (rx_desc->gbec_status == DSC_INIT16)
-  			break;
-  		cleaned = true;
+Index: linux/mm/nobootmem.c
+===================================================================
+--- linux.orig/mm/nobootmem.c	2012-05-05 08:39:39.470845187 -0500
++++ linux/mm/nobootmem.c	2012-05-05 08:39:42.714784530 -0500
+@@ -82,8 +82,7 @@ void __init free_bootmem_late(unsigned l
+ 
+ static void __init __free_pages_memory(unsigned long start, unsigned long end)
+ {
+-	int i;
+-	unsigned long start_aligned, end_aligned;
++	unsigned long i, start_aligned, end_aligned;
+ 	int order = ilog2(BITS_PER_LONG);
+ 
+ 	start_aligned = (start + (BITS_PER_LONG - 1)) & ~(BITS_PER_LONG - 1);
 -- 
-1.7.3.4
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
