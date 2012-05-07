@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab2EGFL0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 01:11:26 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49169 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab2EGFKa (ORCPT
+	id S1752107Ab2EGFUs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 01:20:48 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:55178 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466Ab2EGFUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 01:10:30 -0400
-X-AuditID: 9c930197-b7badae000000cfd-b6-4fa75942f6b0
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 1/7] perf top: Defaults to system_wide target
-Date: Mon,  7 May 2012 14:08:58 +0900
-Message-Id: <1336367344-28071-2-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1336367344-28071-1-git-send-email-namhyung.kim@lge.com>
-References: <1336367344-28071-1-git-send-email-namhyung.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 7 May 2012 01:20:47 -0400
+Date: Mon, 7 May 2012 14:20:40 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, linux-sh@vger.kernel.org,
+        johnstul@us.ibm.com, rjw@sisk.pl, lethal@linux-sh.org,
+        gregkh@linuxfoundation.org, olof@lixom.net, tglx@linutronix.de
+Subject: Re: [PATCH] clocksource: em_sti: Emma Mobile STI driver
+Message-ID: <20120507052028.GA26593@verge.net.au>
+References: <20120503125611.4314.52231.sendpatchset@w520>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120503125611.4314.52231.sendpatchset@w520>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default behaviour of perf to is monitoring events
-system-wide, so make it explicit.
+On Thu, May 03, 2012 at 09:56:11PM +0900, Magnus Damm wrote:
+> From: Magnus Damm <damm@opensource.se>
+> 
+> This is V1 of the Emma Mobile STI timer driver.
+> 
+> The STI hardware is based on a single 48-bit 32kHz
+> counter that together with two individual compare
+> registers can generate interrupts. There are no
+> timer operating modes selectable which means that
+> the timer can not clear on match.
+> 
+> This driver is providing clocksource support for the
+> 48-bit counter. Clockevents are also supported using
+> the same timer in periodic or oneshot modes.
+> 
+> Signed-off-by: Magnus Damm <damm@opensource.se>
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- tools/perf/builtin-top.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 2a0ec09b9b77..3ffb2b697968 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1152,6 +1152,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 	struct perf_evsel *pos;
- 	int status = -ENOMEM;
- 	struct perf_top top = {
-+		.target		     = {
-+			.system_wide = true,
-+		},
- 		.count_filter	     = 5,
- 		.delay_secs	     = 2,
- 		.freq		     = 1000, /* 1 KHz */
--- 
-1.7.10.1
-
+Tested-by: Simon Horman <horms@verge.net.au>
