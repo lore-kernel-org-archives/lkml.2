@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab2EGNzg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 09:55:36 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:43872 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756171Ab2EGNzd (ORCPT
+	id S1756809Ab2EGN5W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 09:57:22 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:56020 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756620Ab2EGN5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 09:55:33 -0400
-Date: Mon, 7 May 2012 19:25:24 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
+	Mon, 7 May 2012 09:57:19 -0400
+Message-ID: <4FA7D4A1.3030702@linux.vnet.ibm.com>
+Date: Mon, 07 May 2012 19:26:49 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Jeremy Fitzhardinge <jeremy@goop.org>,
@@ -30,37 +33,25 @@ Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>
 Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
-Message-ID: <20120507135524.GA30420@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com>
- <20120507082928.GI16608@gmail.com>
- <4FA7888F.80505@redhat.com>
- <4FA7AAD8.6050003@linux.vnet.ibm.com>
- <4FA7BABA.4040700@redhat.com>
- <4FA7CC05.50808@linux.vnet.ibm.com>
- <4FA7CCA2.4030408@redhat.com>
- <4FA7D06B.60005@linux.vnet.ibm.com>
- <20120507134611.GB5533@linux.vnet.ibm.com>
- <4FA7D2E5.1020607@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4FA7D2E5.1020607@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12050713-9574-0000-0000-00000287C7A1
+References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com> <20120507082928.GI16608@gmail.com> <4FA7888F.80505@redhat.com> <4FA7AAD8.6050003@linux.vnet.ibm.com> <4FA7BABA.4040700@redhat.com> <4FA7CC05.50808@linux.vnet.ibm.com> <4FA7CCA2.4030408@redhat.com> <4FA7D06B.60005@linux.vnet.ibm.com> <20120507134611.GB5533@linux.vnet.ibm.com>
+In-Reply-To: <20120507134611.GB5533@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12050713-5564-0000-0000-00000288BC0D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Avi Kivity <avi@redhat.com> [2012-05-07 16:49:25]:
+On 05/07/2012 07:16 PM, Srivatsa Vaddagiri wrote:
+> * Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>  [2012-05-07 19:08:51]:
+>
+>> I 'll get hold of a PLE mc  and come up with the numbers soon. but I
+>> 'll expect the improvement around 1-3% as it was in last version.
+>
+> Deferring preemption (when vcpu is holding lock) may give us better than 1-3%
+> results on PLE hardware. Something worth trying IMHO.
+>
 
-> > Deferring preemption (when vcpu is holding lock) may give us better than 1-3% 
-> > results on PLE hardware. Something worth trying IMHO.
-> 
-> Is the improvement so low, because PLE is interfering with the patch, or
-> because PLE already does a good job?
-
-I think its latter (PLE already doing a good job). 
-
-- vatsa
+Yes, Sure. 'll take-up this and any scalability improvement possible 
+further.
 
