@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab2EGMop (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 08:44:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16398 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756348Ab2EGMoo (ORCPT
+	id S1756010Ab2EGMpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 08:45:21 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1880 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753449Ab2EGMpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 08:44:44 -0400
-X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=GBCmzka__k8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=CvwdDWOFlzpzP6TP9lkA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1336394682.14207.119.camel@gandalf.stny.rr.com>
-Subject: Re: Re: [PATCH 6/9][RFC] kprobes: Allow probe on ftrace reserved
- text (but move it)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
-Date: Mon, 07 May 2012 08:44:42 -0400
-In-Reply-To: <4FA7B91F.7070608@hitachi.com>
-References: <20120502192418.024103772@goodmis.org>
-	  <20120502193237.321234712@goodmis.org> <y0mhavyl3kg.fsf@fche.csb>
-	 <1336002032.14207.52.camel@gandalf.stny.rr.com>
-	 <4FA7B410.1000804@hitachi.com> <4FA7B91F.7070608@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Mon, 7 May 2012 08:45:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 07 May 2012 05:45:18 -0700
+Message-ID: <4FA7C31C.7000309@nvidia.com>
+Date: Mon, 7 May 2012 18:12:04 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V1 4/4] regulator: tps62360: Provide settling time for
+ voltage change
+References: <1336376139-1048-1-git-send-email-ldewangan@nvidia.com> <1336376139-1048-5-git-send-email-ldewangan@nvidia.com> <20120507112321.GI4415@opensource.wolfsonmicro.com>
+In-Reply-To: <20120507112321.GI4415@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-07 at 20:59 +0900, Masami Hiramatsu wrote:
+On Monday 07 May 2012 04:53 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Mon, May 07, 2012 at 01:05:39PM +0530, Laxman Dewangan wrote:
+>> Settling time is require when there is voltage output change.
+>> Implement set_voltage_time_sel() callback which returns delay time
+>> for voltage change to settle down to new value.
+> This is fine but depends on your previous stylistic change so won't
+> apply.  In general you should always try to order things so that there
+> are fewer dependencies at the start of the series - there's no actual
+> dependency between this and the stylistic changes you've made.
+>
+Thanks for quick review.
 
-> BTW, Steven, is this series already put on some git repository?
-> I'd like to pull it to work on that.
-
-It's currently only on my local machines because I rebase it a lot. I
-can push it out for you to play with, but it is not in its final form
-(yet) and may be rebased once again. Thus, don't rely on it ;-)
-
--- Steve
-
-
+Yaah, I should put the stylistic change at end..
+I will send next patch for enabling cache and settling time.
+Will keep discussion on stylistic changes and so will remove that from 
+this series.
