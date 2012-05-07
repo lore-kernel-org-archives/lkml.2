@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680Ab2EGIcp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:32:45 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56364 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755544Ab2EGIcn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:32:43 -0400
-Date: Mon, 7 May 2012 10:32:38 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Kevin Winchester <kjwinchester@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 1/5] x86: Move per cpu cpu_llc_shared_map to a field
- in struct cpuinfo_x86
-Message-ID: <20120507083238.GJ16608@gmail.com>
-References: <1a0aaa16-df06-40bf-88c7-28180455e6b9@email.android.com>
- <1335742410-11569-1-git-send-email-kjwinchester@gmail.com>
- <1335742410-11569-2-git-send-email-kjwinchester@gmail.com>
- <4F9DD0A2.7010104@zytor.com>
- <CAELBVzCzqZMbmGzE-dNgXogh95SNdvYWE5tHAxy1OYa+kknsCw@mail.gmail.com>
+	id S1755769Ab2EGIdP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:33:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37148 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755447Ab2EGIdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 04:33:14 -0400
+Message-ID: <4FA7888F.80505@redhat.com>
+Date: Mon, 07 May 2012 11:32:15 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAELBVzCzqZMbmGzE-dNgXogh95SNdvYWE5tHAxy1OYa+kknsCw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Attilio Rao <attilio.rao@citrix.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
+References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com> <20120507082928.GI16608@gmail.com>
+In-Reply-To: <20120507082928.GI16608@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/07/2012 11:29 AM, Ingo Molnar wrote:
+> This is looking pretty good and complete now - any objections 
+> from anyone to trying this out in a separate x86 topic tree?
 
-* Kevin Winchester <kjwinchester@gmail.com> wrote:
+No objections, instead an
 
-> On 29 April 2012 20:37, H. Peter Anvin <hpa@zytor.com> wrote:
-> > On 04/29/2012 04:33 PM, Kevin Winchester wrote:
-> >> Commit 141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs from
-> >> 'struct cpuinfo_x86'") caused the compilation error:
-> >>
-> >> mce_amd.c:(.cpuinit.text+0x4723): undefined reference to 'cpu_llc_shared_map'
-> >>
-> >> by removing an #ifdef CONFIG_SMP around a block containing a reference
-> >> to cpu_llc_shared_map.  Rather than replace the #ifdef, move
-> >> cpu_llc_shared_map to be a new cpumask_t field llc_shared_map in
-> >> struct cpuinfo_x86 and adjust all references to cpu_llc_shared_map.
-> >>
-> >
-> > Okay...  I must not get this.
-> >
-> > Why is this better than just moving the DEFINE_PER_CPU to a place which
-> > isn't dependent on SMP?
-> >
-> 
-> To be honest, the idea was suggested by Ingo a while back, and 
-> I just volunteered to implement it.  I believe the idea was to 
-> work towards gathering all CPU-specific data for SMP and !SMP 
-> into one place.  That said, moving the DEFINE_PER_CPU 
-> elsewhere would likely still give the same benefits as my 
-> patch in terms of ifdef reduction.  I cannot really see a 
-> benefit/downside either way, really.
-> 
-> Perhaps Ingo will chime in, and you and he (and anyone else 
-> with an opinion) can figure out the best way of accomplishing 
-> this simplification, and then I can adjust my series 
-> accordingly.
+Acked-by: Avi Kivity <avi@redhat.com>
 
-Well, cpu_llc_shared_map is really a CPU attribute and as such I 
-think the logical place for it is "struct cpuinfo_x86". Peter, 
-any objections to that?
+-- 
+error compiling committee.c: too many arguments to function
 
-Thanks,
-
-	Ingo
