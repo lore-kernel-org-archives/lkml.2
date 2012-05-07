@@ -1,89 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab2EGK7x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 06:59:53 -0400
-Received: from mga03.intel.com ([143.182.124.21]:53610 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752795Ab2EGK7w convert rfc822-to-8bit (ORCPT
+	id S1756115Ab2EGLBL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 07:01:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36522 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755675Ab2EGLBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 06:59:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="139757415"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-CC: Andi Kleen <ak@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH, v3] hwmon: coretemp: use list instead of fixed size
- array for temp data
-Thread-Topic: [PATCH, v3] hwmon: coretemp: use list instead of fixed size
- array for temp data
-Thread-Index: AQHNLDzUnmQOFAJAQkaoequKj7BmNpa+J5TQ
-Date: Mon, 7 May 2012 10:59:48 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB591184C1@BGSMSX102.gar.corp.intel.com>
-References: <1336386848-31041-1-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1336386848-31041-1-git-send-email-kirill.shutemov@linux.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 7 May 2012 07:01:08 -0400
+Subject: Re: [PATCH 4/7] perf/x86-ibs: Add support for IBS pseudo events
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1335983192-23731-5-git-send-email-robert.richter@amd.com>
+References: <1335983192-23731-1-git-send-email-robert.richter@amd.com>
+	 <1335983192-23731-5-git-send-email-robert.richter@amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 May 2012 13:00:54 +0200
+Message-ID: <1336388454.27020.2.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2012-05-02 at 20:26 +0200, Robert Richter wrote:
+> +enum ibs_filter_type {
+> +       IBS_NO_FILTER           = 0,
+> +       IBS_MATCH_FILTER        = 1,
+> +       IBS_ANY_SET_FILTER      = 2,
+> +       IBS_PSEUDO_EVENT        = 0x0F,
+> +};
+> +
+> +struct ibs_filter {
+> +       struct {
+> +               u16             idx             : 8;
+> +               u16             reserved        : 4;
+> +               u16             type            : 4;
+> +       };
+> +       union {
+> +               struct {
+> +                       u8      mask;
+> +                       u8      match;
+> +               };
+> +               u16             any;
+> +       };
+> +};
+> +
+> +static bool
+> +__perf_ibs_sample_matches(struct ibs_filter *filter, void *data, int size)
+> +{
+> +       int left = size;
+> +
+> +       switch (filter->type) {
+> +       case IBS_MATCH_FILTER:
+> +               left -= sizeof(u8);
+> +               break;
+> +       case IBS_ANY_SET_FILTER:
+> +               left -= sizeof(u16);
+> +               break;
+> +       default:
+> +               return false;
+> +       }
+> +
+> +       left -= filter->idx;
+> +       if (left < 0)
+> +               return false;
+> +
+> +       switch (filter->type) {
+> +       case IBS_MATCH_FILTER:
+> +               return ((*(u8*)(data + filter->idx)) & filter->mask) == filter->match;
+> +       case IBS_ANY_SET_FILTER:
+> +               return (*(u16*)(data + filter->idx)) & filter->any;
+> +       };
+> +
+> +       return false;
+> +}
+> +
+> +static bool perf_ibs_sample_matches(struct perf_event *event,
+> +                                   struct perf_ibs_data *data)
+> +{
+> +       int i;
+> +       union {
+> +               struct ibs_filter filter[4];
+> +               u64     config[2];
+> +       } f;
+> +       struct ibs_filter *filter = f.filter;
+> +
+> +       f.config[0] = event->attr.config1;
+> +       f.config[1] = event->attr.config2;
+> +
+> +       for (i = 0; i < 4; i++, filter++) {
+> +               if (filter->type == IBS_NO_FILTER)
+> +                       break;
+> +               if (!__perf_ibs_sample_matches(filter, data->regs, data->size))
+> +                       return false;
+> +       }
+> +
+> +       return true;
+> +} 
 
+Who again wasn't decoding anything in perf_event_attr:config* ?
 
-> -----Original Message-----
-> From: Kirill A. Shutemov [mailto:kirill.shutemov@linux.intel.com]
-> Sent: Monday, May 07, 2012 4:04 PM
-> To: Yu, Fenghua; Guenter Roeck; R, Durgadoss
-> Cc: Andi Kleen; Jean Delvare; lm-sensors@lm-sensors.org; linux-
-> kernel@vger.kernel.org; Kirill A. Shutemov
-> Subject: [PATCH, v3] hwmon: coretemp: use list instead of fixed size array for
-> temp data
-> 
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> 
-> Let's rework code to allow arbitrary number of cores on a CPU, not
-> limited by hardcoded array size.
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
->  v3:
->    - drop redundant refcounting and checks;
->  v2:
->    - fix NULL pointer dereference. Thanks to R, Durgadoss;
->    - use mutex instead of spinlock for list locking.
-> ---
->  drivers/hwmon/coretemp.c |  120 ++++++++++++++++++++++++++++-----------
-> ------
->  1 files changed, 75 insertions(+), 45 deletions(-)
-> 
-> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-> index b9d5123..fa082d5 100644
-> --- a/drivers/hwmon/coretemp.c
-> +++ b/drivers/hwmon/coretemp.c
-> @@ -36,6 +36,8 @@
->  #include <linux/cpu.h>
->  #include <linux/pci.h>
->  #include <linux/smp.h>
-> +#include <linux/list.h>
-> +#include <linux/kref.h>
-
-I think we don't need to include kref.h now :-)
-
-BTW, at some places, looks like we are using 'tdata' obtained from get_temp_data,
-without checking for NULL values. Other than that, looks Ok for me.
-
-Acked-by: Durgadoss R <durgadoss.r@intel.com>
-
-Thanks,
-Durga
