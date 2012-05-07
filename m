@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757657Ab2EGXpr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 19:45:47 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48508 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755225Ab2EGXpq convert rfc822-to-8bit (ORCPT
+	id S1757872Ab2EGXrP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 19:47:15 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:33828 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757349Ab2EGXrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 19:45:46 -0400
+	Mon, 7 May 2012 19:47:13 -0400
+Message-ID: <4FA85EE5.9030102@fb.com>
+Date: Mon, 7 May 2012 16:46:45 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <1336401445.8274.319.camel@deadeye>
-References: <20120504204230.094388730@linuxfoundation.org>
-	<1336401445.8274.319.camel@deadeye>
-Date: Mon, 7 May 2012 16:45:44 -0700
-Message-ID: <CA++WF2OhfV4Fv8Jo+o_VMyZ9mdQLMs3iOtiP0_jskUR_8gc9jg@mail.gmail.com>
-Subject: Re: [ 67/75] ipw2200: Fix race condition in the command completion acknowledge
-From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: "John W. Linville" <linville@tuxdriver.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
+        <linux-perf-users@vger.kernel.org>
+Subject: Re: [PATCH 1/4] perf, x86: Allow multiple stacks
+References: <1334961696-19580-1-git-send-email-asharma@fb.com> <1334961696-19580-2-git-send-email-asharma@fb.com>
+In-Reply-To: <1334961696-19580-2-git-send-email-asharma@fb.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7580,1.0.260,0.0.0000
+ definitions=2012-05-07_05:2012-05-07,2012-05-07,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 May 2012 07:37, Ben Hutchings <ben@decadent.org.uk> wrote:
-> On Fri, 2012-05-04 at 13:43 -0700, Greg KH wrote:
->> 3.3-stable review patch.  If anyone has any objections, please let me know.
->>
->> ------------------
->>
->> From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
->>
->> commit dd447319895d0c0af423e483d9b63f84f3f8869a upstream.
->>
->> Driver incorrectly validates command completion: instead of waiting
->> for a command to be acknowledged it continues execution.  Most of the
->> time driver gets acknowledge of the command completion in a tasklet
->> before it executes the next one. But sometimes it sends the next
->> command before it gets acknowledge for the previous one. In such a
->> case one of the following error messages appear in the log:
-> [...]
->> +     now = jiffies;
->> +     end = now + HOST_COMPLETE_TIMEOUT;
->> +again:
->>       rc = wait_event_interruptible_timeout(priv->wait_command_queue,
->>                                             !(priv->
->>                                               status & STATUS_HCMD_ACTIVE),
->> -                                           HOST_COMPLETE_TIMEOUT);
->> +                                           end - now);
->> +     if (rc < 0) {
->> +             now = jiffies;
->> +             if (time_before(now, end))
->> +                     goto again;
->> +             rc = 0;
->> +     }
-> [...]
+On 4/20/12 3:41 PM, Arun Sharma wrote:
+> Without this patch, applications with two different stack
+> regions (eg: native stack vs JIT stack) get truncated
+> callchains even when RBP chaining is present. GDB shows proper
+> stack traces and the frame pointer chaining is intact.
 >
-> If you don't want the wait to be interrupted, use wait_event_timeout()
-> instead of this ridiculous loop!
-
-Usually "modprobe ipw2200" takes less than a second, and after
-switching to wait_event_timeout it will take more than 10 seconds. We
-can not decrease the waiting timeout because we want to keep it big
-enough for the worst case(when the firmware did not reply).
-
-There is a relevant discussion on lklm:
-https://lkml.org/lkml/2008/9/25/2
-https://lkml.org/lkml/2008/9/26/194
-
-Stanislav.
-
-> Ben.
+> This patch disables the (fp<  RSP) check, hoping that other checks
+> in the code save the day for us. In our limited testing, this
+> didn't seem to break anything.
 >
-> --
-> Ben Hutchings
-> Hoare's Law of Large Problems:
->        Inside every large problem is a small problem struggling to get out.
+> In the long term, we could potentially have userspace advise
+> the kernel on the range of valid stack addresses, so we don't
+> spend a lot of time unwinding from bogus addresses.
+
+Ingo/Peter: Did you get a chance to look at this patch series (Support 
+multiple stacks v3)?
+
+  -Arun
