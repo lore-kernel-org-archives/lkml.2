@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532Ab2EGR0L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 13:26:11 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11542 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757293Ab2EGR0J (ORCPT
+	id S932142Ab2EGR3y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 13:29:54 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:47397 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932099Ab2EGR3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 13:26:09 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 07 May 2012 10:25:44 -0700
-From: Diwakar Tundlam <dtundlam@nvidia.com>
-To: "'Peter Zijlstra'" <a.p.zijlstra@chello.nl>
-CC: "'Ingo Molnar'" <mingo@kernel.org>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Christoph Lameter'" <cl@gentwo.org>,
-        "'Michael Neuling'" <mikey@neuling.org>,
-        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        "'David Rientjes'" <rientjes@google.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Date: Mon, 7 May 2012 10:25:44 -0700
-Subject: RE: [PATCH] sched: Enable arch-specific asym packing option in
- sched domain
-Thread-Topic: [PATCH] sched: Enable arch-specific asym packing option in
- sched domain
-Thread-Index: Ac0q/p9y7Uj/UaDwQiK1WbQ4eKFk7QBd552g
-Message-ID: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF106@HQMAIL04.nvidia.com>
-References: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF0FF@HQMAIL04.nvidia.com>
-	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF101@HQMAIL04.nvidia.com>
-	 <1336169422.16236.1.camel@twins>
-	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF102@HQMAIL04.nvidia.com>
-	 <1336170586.16236.11.camel@twins>
-	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF103@HQMAIL04.nvidia.com>
- <1336250117.2463.140.camel@laptop>
-In-Reply-To: <1336250117.2463.140.camel@laptop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 7 May 2012 13:29:53 -0400
+Date: Mon, 7 May 2012 14:29:46 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 5/7] perf tools: Introduce perf_target__strerror()
+Message-ID: <20120507172946.GC2485@infradead.org>
+References: <1336367344-28071-1-git-send-email-namhyung.kim@lge.com>
+ <1336367344-28071-6-git-send-email-namhyung.kim@lge.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336367344-28071-6-git-send-email-namhyung.kim@lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q47HQKXg020186
 
->> >> Yes, this is for Nvidia's ARM Quad-core Tegra CPU. It is a single package, organized flatly.
->> Then you don't want to poke at SD_CPU_INIT since thats across packages.
-Yes, I see that now.
+Em Mon, May 07, 2012 at 02:09:02PM +0900, Namhyung Kim escreveu:
+> The perf_target__strerror() sets @buf to a string that
+> describes the (perf_target-specific) error condition
+> that is passed via @errnum.
+> 
+> This is similar to strerror_r() and does same thing if
+> @errnum has a standard errno value.
 
-I will rework the patch with guidance from other experts.
+This has a problem: why should I be warned when I do, as root:
 
-Thanks,
---Diwakar.
+# perf top -u acme
 
------Original Message-----
-From: Peter Zijlstra [mailto:a.p.zijlstra@chello.nl] 
-Sent: Saturday, May 05, 2012 1:35 PM
-To: Diwakar Tundlam
-Cc: 'Ingo Molnar'; 'Andrew Morton'; 'Christoph Lameter'; 'Michael Neuling'; 'Stephen Rothwell'; 'Benjamin Herrenschmidt'; 'David Rientjes'; 'linux-kernel@vger.kernel.org'; Peter De Schrijver
-Subject: RE: [PATCH] sched: Enable arch-specific asym packing option in sched domain
+It warns me that "UID switch overriding SYSTEM", yeah, right that is
+what I asked, no need to tell me that :-)
 
-On Fri, 2012-05-04 at 16:18 -0700, Diwakar Tundlam wrote:
+So what is missing in this case is that top starts with system_wide set,
+not from the command line.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I.e. if I had asked for:
+
+# perf top --system_wide --user acme
+
+Ok, the warning would make sense.
+
+So just special case this in the top case, I think, like the patch
+below, ack?
+
+I'll fold this into this patch and add a [ committer note: ... ]
+
+Ack?
+
+- Arnaldo
+
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index a2518fc..780791f 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1257,7 +1257,16 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 	setup_browser(false);
+ 
+ 	status = perf_target__validate(&top.target);
+-	if (status != PERF_ERRNO_TARGET__SUCCESS) {
++	if (status != PERF_ERRNO_TARGET__SUCCESS &&
++	    status != PERF_ERRNO_TARGET__PID_OVERRIDE_SYSTEM &&
++	    status != PERF_ERRNO_TARGET__UID_OVERRIDE_SYSTEM) {
++		/*
++ 		 * Top doesn't provide an explicit way to ask for system wide
++ 		 * profiling, it is the default.
++ 		 *
++ 		 * So we shouldn't warn the user when he/she asks for --pid or
++ 		 * --uid.
++ 		 */
+ 		perf_target__strerror(&top.target, status, errbuf, BUFSIZ);
+ 		ui__warning("%s", errbuf);
+ 	}
