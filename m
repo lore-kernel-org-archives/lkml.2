@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214Ab2EGUaZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 16:30:25 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:18410 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757651Ab2EGUaW (ORCPT
+	id S932256Ab2EGUad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 16:30:33 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:51007 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932219Ab2EGUa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 16:30:22 -0400
+	Mon, 7 May 2012 16:30:29 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -18,91 +18,40 @@ Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 00/21] PCI: use busn_res to replace bus secondary/subordinate
-Date: Mon,  7 May 2012 13:29:45 -0700
-Message-Id: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 09/21] PCI: Insert busn_res in pci_create_root_bus()
+Date: Mon,  7 May 2012 13:29:54 -0700
+Message-Id: <1336422606-4244-10-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
+References: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct pci_bus will take busn_res instead. and those busn_res will be in
-domain busn_res tree.
+That busn_res is from resources list
 
-This could be base of busn_res allocation patchset.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/probe.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-The patches need to apply to pci-next and
-	for-pci-hotplug cleanup
-
-could be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-busn_res
-
-Bjorn Helgaas (1):
-  PCI: print conflicting entry in busn_res inserting
-
-Yinghai Lu (20):
-  PCI: add busn_res into struct pci_bus.
-  PCI: replace secondary/subordinate with busn_res
-  PCI: Remove secondary/subordinate in struct ci_bus
-  PCI: Add busn_res for pci domain.
-  resource: adjust_resource handle resource without parent
-  PCI: Add busn_res operation functions
-  PCI: release busn_res when removing bus
-  PCI: Insert busn_res in pci_create_root_bus()
-  PCI: checking busn_res in pci_scan_root_bus()
-  PCI: Add default busn_resource
-  PCI: Add default busn_res for pci_scan_bus()
-  x86/PCI: add busn_res into resources list for ACPI path
-  x86/PCI: put busn resource in pci_root_info for native host bridge
-    drivers
-  ia64/PCI: register busn_res for root buses
-  sparc/PCI: register busn_res for root buses
-  powerpc/PCI: register busn_res for root buses
-  parisc/PCI: register busn_res for root buses
-  tile/PCI: Use pci_scan_root_bus instead pci_scan_bus
-  PCI: Register busn_res for iov bus
-  PCI: insert busn_res for child bus
-
- arch/alpha/kernel/pci.c                    |    2 +-
- arch/arm/kernel/bios32.c                   |    2 +-
- arch/ia64/pci/pci.c                        |    4 +-
- arch/microblaze/pci/pci-common.c           |    4 +-
- arch/mips/pci/pci.c                        |    2 +-
- arch/powerpc/include/asm/pci-bridge.h      |    1 +
- arch/powerpc/kernel/pci-common.c           |   17 ++-
- arch/powerpc/kernel/pci_64.c               |    2 +-
- arch/powerpc/kernel/pci_of_scan.c          |    2 +-
- arch/powerpc/platforms/powernv/pci-ioda.c  |    8 +-
- arch/powerpc/platforms/pseries/pci_dlpar.c |    2 +-
- arch/sh/drivers/pci/pci.c                  |    2 +-
- arch/sparc/kernel/pci.c                    |    8 +-
- arch/sparc/kernel/pci_impl.h               |    1 +
- arch/tile/kernel/pci.c                     |    9 +-
- arch/x86/pci/acpi.c                        |    9 +-
- arch/x86/pci/amd_bus.c                     |    7 +-
- arch/x86/pci/bus_numa.c                    |   22 +++-
- arch/x86/pci/bus_numa.h                    |    3 +-
- arch/xtensa/kernel/pci.c                   |    2 +-
- drivers/iommu/intel-iommu.c                |    2 +-
- drivers/net/ethernet/broadcom/tg3.c        |    4 +-
- drivers/parisc/dino.c                      |   16 ++-
- drivers/parisc/iosapic.c                   |    2 +-
- drivers/parisc/lba_pci.c                   |   26 ++--
- drivers/pci/hotplug-pci.c                  |    4 +-
- drivers/pci/hotplug/acpiphp_glue.c         |    8 +-
- drivers/pci/hotplug/shpchp_sysfs.c         |    6 +-
- drivers/pci/iov.c                          |    4 +-
- drivers/pci/pci.c                          |    2 +-
- drivers/pci/probe.c                        |  191 +++++++++++++++++++++++-----
- drivers/pci/remove.c                       |    1 +
- drivers/pci/setup-bus.c                    |   24 ++--
- drivers/pcmcia/cardbus.c                   |    2 +-
- drivers/pcmcia/yenta_socket.c              |   26 ++--
- include/linux/pci.h                        |    8 +-
- kernel/resource.c                          |   13 +-
- 37 files changed, 313 insertions(+), 135 deletions(-)
-
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 7662ab7..59011ce 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1684,7 +1684,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 		list_move_tail(&window->list, &bridge->windows);
+ 		res = window->res;
+ 		offset = window->offset;
+-		pci_bus_add_resource(b, res, 0);
++		if (res->flags & IORESOURCE_BUS)
++			pci_bus_insert_busn_res(b, bus, res->end);
++		else
++			pci_bus_add_resource(b, res, 0);
+ 		if (offset) {
+ 			if (resource_type(res) == IORESOURCE_IO)
+ 				fmt = " (bus address [%#06llx-%#06llx])";
 -- 
 1.7.7
 
