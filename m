@@ -1,1455 +1,877 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab2EGH2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 03:28:14 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:44032 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755400Ab2EGH1z (ORCPT
+	id S1754998Ab2EGHcd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 03:32:33 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48926 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab2EGHc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 03:27:55 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAAJ5p09bdWOb/2dsb2JhbABEsnCBB4INAQUaAUwSEFFXBogluW6KfwmGFwSVfoV2ikyCa4FU
-X-IronPort-AV: E=Sophos;i="4.75,543,1330902000"; 
-   d="scan'208";a="910392382"
-From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] Staging: ipack: added support for the TEWS TPCI-200 carrier board
-Date: Mon,  7 May 2012 09:26:08 +0200
-Message-Id: <1336375569-21692-2-git-send-email-siglesias@igalia.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1336375569-21692-1-git-send-email-siglesias@igalia.com>
-References: <1336375569-21692-1-git-send-email-siglesias@igalia.com>
+	Mon, 7 May 2012 03:32:29 -0400
+Date: Mon, 7 May 2012 17:32:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for May 7
+Message-Id: <20120507173220.9da3b48474dc606a0b68cf3e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__7_May_2012_17_32_20_+1000_KmgYLkC/H1BJeUfW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver for the carrier board TEWS TPCI-200, a bridge between PCIe bus and
-IndustryPack bus.
+--Signature=_Mon__7_May_2012_17_32_20_+1000_KmgYLkC/H1BJeUfW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
----
- drivers/staging/ipack/Kconfig           |    5 +
- drivers/staging/ipack/Makefile          |    1 +
- drivers/staging/ipack/TODO              |   11 +-
- drivers/staging/ipack/bridges/Kconfig   |    7 +
- drivers/staging/ipack/bridges/Makefile  |    1 +
- drivers/staging/ipack/bridges/tpci200.c | 1162 +++++++++++++++++++++++++++++++
- drivers/staging/ipack/bridges/tpci200.h |  165 +++++
- 7 files changed, 1351 insertions(+), 1 deletion(-)
- create mode 100644 drivers/staging/ipack/bridges/Kconfig
- create mode 100644 drivers/staging/ipack/bridges/Makefile
- create mode 100644 drivers/staging/ipack/bridges/tpci200.c
- create mode 100644 drivers/staging/ipack/bridges/tpci200.h
+Hi all,
 
-diff --git a/drivers/staging/ipack/Kconfig b/drivers/staging/ipack/Kconfig
-index c036b79..a3f5925 100644
---- a/drivers/staging/ipack/Kconfig
-+++ b/drivers/staging/ipack/Kconfig
-@@ -8,3 +8,8 @@ menuconfig IPACK_BUS
- 	---help---
- 	  If you say Y here you get support for the IndustryPack Framework.
- 
-+if IPACK_BUS
-+
-+source "drivers/staging/ipack/bridges/Kconfig"
-+
-+endif # IPACK
-diff --git a/drivers/staging/ipack/Makefile b/drivers/staging/ipack/Makefile
-index 56e2340..59b8762 100644
---- a/drivers/staging/ipack/Makefile
-+++ b/drivers/staging/ipack/Makefile
-@@ -2,3 +2,4 @@
- # Makefile for the IPACK bridge device drivers.
- #
- obj-$(CONFIG_IPACK_BUS)		+= ipack.o
-+obj-y				+= bridges/
-diff --git a/drivers/staging/ipack/TODO b/drivers/staging/ipack/TODO
-index 1939bf4..30716e8 100644
---- a/drivers/staging/ipack/TODO
-+++ b/drivers/staging/ipack/TODO
-@@ -12,6 +12,16 @@ operations between the two kind of boards.
- TODO
- ====
- 
-+TPCI-200
-+--------
-+
-+* It receives the name of the mezzanine plugged in each slot by SYSFS.
-+  No autodetection supported yet, because the mezzanine driver could not be
-+  loaded at the time that the tpci200 driver loads.
-+
-+* It has a linked list with the tpci200 devices it is managing. Get rid of it
-+  and use driver_for_each_device() instead.
-+
- Ipack
- -----
- 
-@@ -20,4 +30,3 @@ Ipack
-   remove_device() to notify the carrier driver, or the opposite with the call to
-   the ipack_driver_ops' remove() function could be improved.
- 
--
-diff --git a/drivers/staging/ipack/bridges/Kconfig b/drivers/staging/ipack/bridges/Kconfig
-new file mode 100644
-index 0000000..554302f
---- /dev/null
-+++ b/drivers/staging/ipack/bridges/Kconfig
-@@ -0,0 +1,7 @@
-+config BOARD_TPCI200
-+	bool "TEWS TPCI-200 support for IndustryPack bus"
-+	depends on IPACK_BUS
-+	help
-+	  This driver supports the TEWS TPCI200 device for the IndustryPack bus.
-+	default n
-+
-diff --git a/drivers/staging/ipack/bridges/Makefile b/drivers/staging/ipack/bridges/Makefile
-new file mode 100644
-index 0000000..d8b7645
---- /dev/null
-+++ b/drivers/staging/ipack/bridges/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_BOARD_TPCI200) += tpci200.o
-diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
-new file mode 100644
-index 0000000..5658aeb
---- /dev/null
-+++ b/drivers/staging/ipack/bridges/tpci200.c
-@@ -0,0 +1,1162 @@
-+/**
-+ * tpci200.c
-+ *
-+ * driver for the TEWS TPCI-200 device
-+ * Copyright (c) 2009 Nicolas Serafini, EIC2 SA
-+ * Copyright (c) 2010,2011 Samuel Iglesias Gonsalvez <siglesia@cern.ch>, CERN
-+ * Copyright (c) 2012 Samuel Iglesias Gonsalvez <siglesias@igalia.com>, Igalia
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+#include <linux/module.h>
-+#include "tpci200.h"
-+
-+#define MODULE_NAME "tpci200"
-+#define PFX MODULE_NAME ": "
-+
-+struct ipack_bus_ops tpci200_bus_ops;
-+
-+/* TPCI200 controls registers */
-+static int control_reg[] = {
-+	TPCI200_CONTROL_A_REG,
-+	TPCI200_CONTROL_B_REG,
-+	TPCI200_CONTROL_C_REG,
-+	TPCI200_CONTROL_D_REG
-+};
-+
-+/* Linked list to save the registered devices */
-+static LIST_HEAD(tpci200_list);
-+
-+static int tpci200_slot_unregister(struct ipack_device *dev);
-+
-+static struct tpci200_board *check_slot(struct ipack_device *dev)
-+{
-+	struct tpci200_board *tpci200 = NULL;
-+	struct list_head *element, *next;
-+	int found = 0;
-+
-+	if (dev == NULL) {
-+		printk(KERN_INFO PFX "Slot doesn't exist.\n");
-+		return NULL;
-+	}
-+
-+	list_for_each_safe(element, next, &tpci200_list) {
-+		tpci200 = list_entry(element, struct tpci200_board, list);
-+		if (tpci200->number == dev->bus_nr) {
-+			found = 1;
-+			break;
-+		}
-+	}
-+
-+	if (!found) {
-+		printk(KERN_ERR PFX "Carrier not found\n");
-+		return NULL;
-+	}
-+
-+	if (dev->slot >= TPCI200_NB_SLOT) {
-+		printk(KERN_INFO PFX
-+				"Slot [%s %d:%d] doesn't exist! Last tpci200 slot is %d.\n",
-+				TPCI200_SHORTNAME,
-+				dev->bus_nr, dev->slot,
-+				TPCI200_NB_SLOT-1);
-+		return NULL;
-+	}
-+
-+	BUG_ON(tpci200->slots == NULL);
-+	if (tpci200->slots[dev->slot].dev == NULL) {
-+		printk(KERN_INFO PFX "Slot [%s %d:%d] is not registered !\n",
-+				TPCI200_SHORTNAME,
-+				dev->bus_nr, dev->slot);
-+		return NULL;
-+	}
-+
-+	return tpci200;
-+}
-+
-+static unsigned char __tpci200_read8(void *address, unsigned long offset)
-+{
-+	return ioread8(address + (offset^1));
-+}
-+
-+static unsigned short __tpci200_read16(void *address, unsigned long offset)
-+{
-+	return ioread16(address + offset);
-+}
-+
-+static unsigned int __tpci200_read32(void *address, unsigned long offset)
-+{
-+
-+	return swahw32(ioread32(address + offset));
-+}
-+
-+static void __tpci200_write8(unsigned char value, void *address, unsigned long offset)
-+{
-+	iowrite8(value, address+(offset^1));
-+}
-+
-+static void __tpci200_write16(unsigned short value, void *address, unsigned long offset)
-+{
-+	iowrite16(value, address+offset);
-+}
-+
-+static void __tpci200_write32(unsigned int value, void *address, unsigned long offset)
-+{
-+	iowrite32(swahw32(value), address+offset);
-+}
-+
-+struct ipack_addr_space *get_slot_address_space(struct ipack_device *dev, int space)
-+{
-+	struct ipack_addr_space *addr;
-+
-+	switch (space) {
-+	case IPACK_IO_SPACE:
-+		addr = &dev->io_space;
-+		break;
-+	case IPACK_ID_SPACE:
-+		addr = &dev->id_space;
-+		break;
-+	case IPACK_MEM_SPACE:
-+		addr = &dev->mem_space;
-+		break;
-+	default:
-+		printk(KERN_ERR PFX "Slot [%s %d:%d] space number %d doesn't exist !\n",
-+				TPCI200_SHORTNAME,
-+				dev->bus_nr, dev->slot, space);
-+		return NULL;
-+		break;
-+	}
-+
-+	if ((addr->size == 0) || (addr->address == NULL)) {
-+		printk(KERN_ERR PFX "Error, slot space not mapped !\n");
-+		return NULL;
-+	}
-+
-+	return addr;
-+}
-+
-+/**
-+ * tpci200_read8 - Read an unsigned char value on space with offset.
-+ *
-+ * @value	Read value
-+ * @dev	Slot to read
-+ * @space	Space of the slot to read
-+ * @offset	Offset
-+ *
-+ */
-+int tpci200_read8(struct ipack_device *dev, int space, unsigned long offset, unsigned char *value)
-+{
-+	struct ipack_addr_space *addr = NULL;
-+	struct tpci200_board *tpci200 = NULL;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
-+
-+	addr = get_slot_address_space(dev, space);
-+	if (addr == NULL)
-+		return -EINVAL;
-+
-+	if (offset >= addr->size) {
-+		printk(KERN_ERR PFX "Error, slot space offset error !\n");
-+		return -EFAULT;
-+	}
-+
-+	*value = __tpci200_read8(addr->address, offset);
-+
-+	return 0;
-+}
-+
-+int tpci200_read16(struct ipack_device *dev, int space, unsigned long offset, unsigned short *value)
-+{
-+	struct ipack_addr_space *addr = NULL;
-+	struct tpci200_board *tpci200 = NULL;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
-+
-+	addr = get_slot_address_space(dev, space);
-+	if (addr == NULL)
-+		return -EINVAL;
-+
-+	if ((offset+2) >= addr->size) {
-+		printk(KERN_ERR PFX "Error, slot space offset error !\n");
-+		return -EFAULT;
-+	}
-+	*value = __tpci200_read16(addr->address, offset);
-+
-+	return 0;
-+}
-+
-+int tpci200_read32(struct ipack_device *dev, int space, unsigned long offset, unsigned int *value)
-+{
-+	struct ipack_addr_space *addr = NULL;
-+	struct tpci200_board *tpci200 = NULL;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
-+
-+	addr = get_slot_address_space(dev, space);
-+	if (addr == NULL)
-+		return -EINVAL;
-+
-+	if ((offset+4) >= addr->size) {
-+		printk(KERN_ERR PFX "Error, slot space offset error !\n");
-+		return -EFAULT;
-+	}
-+
-+	*value = __tpci200_read32(addr->address, offset);
-+
-+	return 0;
-+}
-+
-+int tpci200_write8(struct ipack_device *dev, int space, unsigned long offset, unsigned char value)
-+{
-+	struct ipack_addr_space *addr = NULL;
-+	struct tpci200_board *tpci200 = NULL;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
-+
-+	addr = get_slot_address_space(dev, space);
-+	if (addr == NULL)
-+		return -EINVAL;
-+
-+	if (offset >= addr->size) {
-+		printk(KERN_ERR PFX "Error, slot space offset error !\n");
-+		return -EFAULT;
-+	}
-+
-+	__tpci200_write8(value, addr->address, offset);
-+
-+	return 0;
-+}
-+
-+int tpci200_write16(struct ipack_device *dev, int space, unsigned long offset, unsigned short value)
-+{
-+	struct ipack_addr_space *addr = NULL;
-+	struct tpci200_board *tpci200 = NULL;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
-+
-+	addr = get_slot_address_space(dev, space);
-+	if (addr == NULL)
-+		return -EINVAL;
-+
-+	if ((offset+2) >= addr->size) {
-+		printk(KERN_ERR PFX "Error, slot space offset error !\n");
-+		return -EFAULT;
-+	}
-+
-+	__tpci200_write16(value, addr->address, offset);
-+
-+	return 0;
-+}
-+
-+int tpci200_write32(struct ipack_device *dev, int space, unsigned long offset, unsigned int value)
-+{
-+	struct ipack_addr_space *addr = NULL;
-+	struct tpci200_board *tpci200 = NULL;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
-+
-+	addr = get_slot_address_space(dev, space);
-+	if (addr == NULL)
-+		return -EINVAL;
-+
-+	if ((offset+4) >= addr->size) {
-+		printk(KERN_ERR PFX "Error, slot space offset error !\n");
-+		return -EFAULT;
-+	}
-+
-+	__tpci200_write32(value, addr->address, offset);
-+
-+	return 0;
-+}
-+
-+void tpci200_unregister(struct tpci200_board *tpci200)
-+{
-+	int i;
-+
-+	free_irq(tpci200->info->pdev->irq, (void *) tpci200);
-+
-+	pci_iounmap(tpci200->info->pdev, tpci200->info->interface_regs);
-+	pci_iounmap(tpci200->info->pdev, tpci200->info->ioidint_space);
-+	pci_iounmap(tpci200->info->pdev, tpci200->info->mem8_space);
-+
-+	pci_release_region(tpci200->info->pdev, TPCI200_IP_INTERFACE_BAR);
-+	pci_release_region(tpci200->info->pdev, TPCI200_IO_ID_INT_SPACES_BAR);
-+	pci_release_region(tpci200->info->pdev, TPCI200_MEM8_SPACE_BAR);
-+
-+	pci_disable_device(tpci200->info->pdev);
-+	pci_dev_put(tpci200->info->pdev);
-+
-+	kfree(tpci200->info);
-+
-+	for (i = 0; i < TPCI200_NB_SLOT; i++) {
-+		tpci200->slots[i].io_phys.address = NULL;
-+		tpci200->slots[i].io_phys.size = 0;
-+		tpci200->slots[i].id_phys.address = NULL;
-+		tpci200->slots[i].id_phys.size = 0;
-+		tpci200->slots[i].mem_phys.address = NULL;
-+		tpci200->slots[i].mem_phys.size = 0;
-+	}
-+}
-+
-+static irqreturn_t tpci200_interrupt(int irq, void *dev_id)
-+{
-+	struct tpci200_board *tpci200 = (struct tpci200_board *) dev_id;
-+	int i;
-+	unsigned long flags;
-+	unsigned short status_reg, reg_value;
-+	unsigned short unhandled_ints = 0;
-+	irqreturn_t ret = IRQ_NONE;
-+
-+	spin_lock_irqsave(&tpci200->info->access_lock, flags);
-+
-+	/* Read status register */
-+	status_reg = readw((unsigned short *)
-+			(tpci200->info->interface_regs + TPCI200_STATUS_REG));
-+
-+	if (status_reg & TPCI200_SLOT_INT_MASK) {
-+		unhandled_ints = status_reg & TPCI200_SLOT_INT_MASK;
-+		/* callback to the IRQ handler for the corresponding slot */
-+		for (i = 0; i < TPCI200_NB_SLOT; i++) {
-+			if ((tpci200->slots[i].irq != NULL) &&
-+					(status_reg & ((TPCI200_A_INT0 | TPCI200_A_INT1) << (2*i)))) {
-+
-+				ret = tpci200->slots[i].irq->handler(tpci200->slots[i].irq->arg);
-+
-+				/* Dummy reads */
-+				readw((unsigned short *)(tpci200->slots[i].dev->io_space.address + 0xC0));
-+				readw((unsigned short *)(tpci200->slots[i].dev->io_space.address + 0xC2));
-+
-+				unhandled_ints &= ~(((TPCI200_A_INT0 | TPCI200_A_INT1) << (2*i)));
-+			}
-+		}
-+	}
-+	/* Interrupt not handled are disabled */
-+	if (unhandled_ints) {
-+		for (i = 0; i < TPCI200_NB_SLOT; i++) {
-+			if (unhandled_ints & ((TPCI200_INT0_EN | TPCI200_INT1_EN) << (2*i))) {
-+				printk(KERN_ERR PFX
-+						"No registered ISR for slot [%s %d:%d]!. IRQ will be disabled.\n",
-+						TPCI200_SHORTNAME,
-+						tpci200->number, i);
-+				reg_value = readw((unsigned short *)(tpci200->info->interface_regs + control_reg[i]));
-+				reg_value &= ~(TPCI200_INT0_EN | TPCI200_INT1_EN);
-+				writew(reg_value, (unsigned short *)(tpci200->info->interface_regs + control_reg[i]));
-+			}
-+		}
-+	}
-+
-+	spin_unlock_irqrestore(&tpci200->info->access_lock, flags);
-+	return ret;
-+}
-+
-+#ifdef CONFIG_SYSFS
-+
-+struct ipack_device *tpci200_slot_register(const char *board_name, int size, unsigned int tpci200_number,
-+		unsigned int slot_position)
-+{
-+	int found = 0;
-+	struct ipack_device  *dev = NULL;
-+	struct tpci200_board *tpci200 = NULL;
-+	struct list_head *element, *next;
-+
-+	list_for_each_safe(element, next, &tpci200_list) {
-+		tpci200 = list_entry(element, struct tpci200_board, list);
-+		if (tpci200->number == tpci200_number) {
-+			found = 1;
-+			break;
-+		}
-+	}
-+
-+	if (!found) {
-+		printk(KERN_ERR PFX "carrier board not found for the device\n");
-+		return NULL;
-+	}
-+
-+	if (slot_position >= TPCI200_NB_SLOT) {
-+		printk(KERN_ERR PFX
-+				"Slot [%s %d:%d] doesn't exist! Last tpci200 slot is %d.\n",
-+				TPCI200_SHORTNAME,
-+				tpci200_number, slot_position,
-+				TPCI200_NB_SLOT-1);
-+		goto out;
-+	}
-+
-+	if (mutex_lock_interruptible(&tpci200->mutex))
-+		goto out;
-+
-+	if (tpci200->slots[slot_position].dev != NULL) {
-+		printk(KERN_ERR PFX "Slot [%s %d:%d] already installed !\n",
-+				TPCI200_SHORTNAME,
-+				tpci200_number, slot_position);
-+		goto out_unlock;
-+	}
-+
-+	dev = kzalloc(sizeof(struct ipack_device), GFP_KERNEL);
-+	if (dev == NULL) {
-+		printk(KERN_ERR PFX
-+				"Slot [%s %d:%d] Unable to allocate memory for new slot !\n",
-+				TPCI200_SHORTNAME,
-+				tpci200_number, slot_position);
-+		goto out_unlock;
-+	}
-+
-+	if (size > IPACK_BOARD_NAME_SIZE) {
-+		printk(KERN_WARNING PFX
-+				"Slot [%s %d:%d] name (%s) too long (%d > %d). Will be truncated!\n",
-+				TPCI200_SHORTNAME,
-+				tpci200_number, slot_position,
-+				board_name, (int)strlen(board_name), IPACK_BOARD_NAME_SIZE);
-+
-+		size = IPACK_BOARD_NAME_SIZE;
-+	}
-+
-+	strncpy(dev->board_name, board_name, size-1);
-+	dev->board_name[size-1] = '\0';
-+	dev->bus_nr = tpci200->info->drv.bus_nr;
-+	dev->slot = slot_position;
-+	/*
-+	 * Give the same IRQ number as the slot number.
-+	 * The TPCI200 has assigned his own two IRQ by PCI bus driver
-+	 */
-+	dev->irq = slot_position;
-+
-+	dev->id_space.address = NULL;
-+	dev->id_space.size = 0;
-+	dev->io_space.address = NULL;
-+	dev->io_space.size = 0;
-+	dev->mem_space.address = NULL;
-+	dev->mem_space.size = 0;
-+
-+	/* Give the operations structure */
-+	dev->ops = &tpci200_bus_ops;
-+	tpci200->slots[slot_position].dev = dev;
-+
-+	if (ipack_device_register(dev) < 0) {
-+		tpci200_slot_unregister(dev);
-+		kfree(dev);
-+	}
-+
-+out_unlock:
-+	mutex_unlock(&tpci200->mutex);
-+out:
-+	return dev;
-+}
-+
-+static ssize_t tpci200_store_board(struct device *pdev, const char *buf, size_t count, int slot)
-+{
-+	struct tpci200_board *card = dev_get_drvdata(pdev);
-+	struct ipack_device *dev = card->slots[slot].dev;
-+
-+	if (dev != NULL)
-+		return -EBUSY;
-+
-+	dev = tpci200_slot_register(buf, count, card->number, slot);
-+	if (dev == NULL)
-+		return -ENODEV;
-+
-+	return count;
-+}
-+
-+static ssize_t tpci200_show_board(struct device *pdev, char *buf, int slot)
-+{
-+	struct tpci200_board *card = dev_get_drvdata(pdev);
-+	struct ipack_device *dev = card->slots[slot].dev;
-+
-+	if (dev != NULL)
-+		return snprintf(buf, PAGE_SIZE, "%s\n", dev->board_name);
-+	else
-+		return snprintf(buf, PAGE_SIZE, "none\n");
-+}
-+
-+
-+	static ssize_t
-+tpci200_show_description(struct device *pdev, struct device_attribute *attr, char *buf)
-+{
-+	return snprintf(buf, PAGE_SIZE, "TEWS tpci200 carrier PCI for Industry-pack mezzanines.\n");
-+}
-+
-+	static ssize_t
-+tpci200_show_board_slot0(struct device *pdev, struct device_attribute *attr, char *buf)
-+{
-+	return tpci200_show_board(pdev, buf, 0);
-+}
-+
-+	static ssize_t
-+tpci200_store_board_slot0(struct device *pdev, struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	return tpci200_store_board(pdev, buf, count, 0);
-+}
-+
-+	static ssize_t
-+tpci200_show_board_slot1(struct device *pdev, struct device_attribute *attr, char *buf)
-+{
-+	return tpci200_show_board(pdev, buf, 1);
-+}
-+
-+	static ssize_t
-+tpci200_store_board_slot1(struct device *pdev, struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	return tpci200_store_board(pdev, buf, count, 1);
-+}
-+
-+	static ssize_t
-+tpci200_show_board_slot2(struct device *pdev, struct device_attribute *attr, char *buf)
-+{
-+	return tpci200_show_board(pdev, buf, 2);
-+}
-+
-+	static ssize_t
-+tpci200_store_board_slot2(struct device *pdev, struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	return tpci200_store_board(pdev, buf, count, 2);
-+}
-+
-+
-+	static ssize_t
-+tpci200_show_board_slot3(struct device *pdev, struct device_attribute *attr, char *buf)
-+{
-+	return tpci200_show_board(pdev, buf, 3);
-+}
-+
-+	static ssize_t
-+tpci200_store_board_slot3(struct device *pdev, struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	return tpci200_store_board(pdev, buf, count, 3);
-+}
-+
-+/* Declaration of the device attributes for the TPCI200 */
-+static DEVICE_ATTR(description, S_IRUGO, tpci200_show_description, NULL);
-+static DEVICE_ATTR(board_slot0, S_IRUGO | S_IWUSR, tpci200_show_board_slot0, tpci200_store_board_slot0);
-+static DEVICE_ATTR(board_slot1, S_IRUGO | S_IWUSR, tpci200_show_board_slot1, tpci200_store_board_slot1);
-+static DEVICE_ATTR(board_slot2, S_IRUGO | S_IWUSR, tpci200_show_board_slot2, tpci200_store_board_slot2);
-+static DEVICE_ATTR(board_slot3, S_IRUGO | S_IWUSR, tpci200_show_board_slot3, tpci200_store_board_slot3);
-+
-+static struct attribute *tpci200_attrs[] = {
-+	&dev_attr_description.attr,
-+	&dev_attr_board_slot0.attr,
-+	&dev_attr_board_slot1.attr,
-+	&dev_attr_board_slot2.attr,
-+	&dev_attr_board_slot3.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group tpci200_attr_group = {
-+	.attrs = tpci200_attrs,
-+};
-+
-+int tpci200_create_sysfs_files(struct tpci200_board *card)
-+{
-+	return sysfs_create_group(&card->info->pdev->dev.kobj, &tpci200_attr_group);
-+}
-+
-+void tpci200_remove_sysfs_files(struct tpci200_board *card)
-+{
-+	sysfs_remove_group(&card->info->pdev->dev.kobj, &tpci200_attr_group);
-+}
-+
-+#else
-+
-+int tpci200_create_sysfs_files(struct tpci200_board *card)
-+{
-+	return 0;
-+}
-+
-+void tpci200_remove_sysfs_files(struct tpci200_board *card)
-+{
-+}
-+
-+#endif /* CONFIG_SYSFS */
-+
-+static int tpci200_register(struct tpci200_board *tpci200)
-+{
-+	int  i;
-+	int res = 0;
-+	unsigned long ioidint_base = 0;
-+	unsigned long mem_base = 0;
-+	unsigned short slot_ctrl;
-+
-+	if (pci_enable_device(tpci200->info->pdev) < 0)
-+		return -ENODEV;
-+
-+	if (tpci200_create_sysfs_files(tpci200) < 0) {
-+		printk(KERN_ERR PFX "failed creating sysfs files\n");
-+		res = -EFAULT;
-+		goto out_disable_pci;
-+	}
-+
-+	/* Request IP interface register (Bar 2) */
-+	res = pci_request_region(tpci200->info->pdev, TPCI200_IP_INTERFACE_BAR, "Carrier IP interface registers");
-+	if (res) {
-+		printk(KERN_ERR PFX
-+				"(bn 0x%X, sn 0x%X, vid 0x%X, did 0x%X, svid 0x%X, sdid 0x%X) failed to allocate PCI resource for BAR 2 !",
-+				tpci200->info->pdev->bus->number, tpci200->info->pdev->devfn,
-+				tpci200->info->pdev->vendor, tpci200->info->pdev->device,
-+				tpci200->info->pdev->subsystem_vendor, tpci200->info->pdev->subsystem_device);
-+		goto out_remove_sysfs;
-+	}
-+
-+	/* Request IO ID INT space (Bar 3) */
-+	res = pci_request_region(tpci200->info->pdev, TPCI200_IO_ID_INT_SPACES_BAR, "Carrier IO ID INT space");
-+	if (res) {
-+		printk(KERN_ERR PFX
-+				"(bn 0x%X, sn 0x%X, vid 0x%X, did 0x%X, svid 0x%X, sdid 0x%X) failed to allocate PCI resource for BAR 3 !",
-+				tpci200->info->pdev->bus->number, tpci200->info->pdev->devfn,
-+				tpci200->info->pdev->vendor, tpci200->info->pdev->device,
-+				tpci200->info->pdev->subsystem_vendor, tpci200->info->pdev->subsystem_device);
-+		goto out_release_ip_space;
-+	}
-+
-+	/* Request MEM space (Bar 4) */
-+	res = pci_request_region(tpci200->info->pdev, TPCI200_MEM8_SPACE_BAR, "Carrier MEM space");
-+	if (res) {
-+		printk(KERN_ERR PFX
-+				"(bn 0x%X, sn 0x%X, vid 0x%X, did 0x%X, svid 0x%X, sdid 0x%X) failed to allocate PCI resource for BAR 4!",
-+				tpci200->info->pdev->bus->number, tpci200->info->pdev->devfn,
-+				tpci200->info->pdev->vendor, tpci200->info->pdev->device,
-+				tpci200->info->pdev->subsystem_vendor, tpci200->info->pdev->subsystem_device);
-+		goto out_release_ioid_int_space;
-+	}
-+
-+	/* Map internal tpci200 driver user space */
-+	tpci200->info->interface_regs = ioremap(pci_resource_start(tpci200->info->pdev, TPCI200_IP_INTERFACE_BAR), TPCI200_IFACE_SIZE);
-+	tpci200->info->ioidint_space = ioremap(pci_resource_start(tpci200->info->pdev, TPCI200_IO_ID_INT_SPACES_BAR), TPCI200_IOIDINT_SIZE);
-+	tpci200->info->mem8_space = ioremap(pci_resource_start(tpci200->info->pdev, TPCI200_MEM8_SPACE_BAR), TPCI200_MEM8_SIZE);
-+
-+	spin_lock_init(&tpci200->info->access_lock);
-+	ioidint_base = pci_resource_start(tpci200->info->pdev, TPCI200_IO_ID_INT_SPACES_BAR);
-+	mem_base = pci_resource_start(tpci200->info->pdev, TPCI200_MEM8_SPACE_BAR);
-+
-+	/* Set the default parameters of the slot
-+	 * INT0 disabled, level sensitive
-+	 * INT1 disabled, level sensitive
-+	 * error interrupt disabled
-+	 * timeout interrupt disabled
-+	 * recover time disabled
-+	 * clock rate 8 MHz
-+	 */
-+	slot_ctrl = 0;
-+
-+	/* Set all slot physical address space */
-+	for (i = 0; i < TPCI200_NB_SLOT; i++) {
-+		tpci200->slots[i].io_phys.address = (void *)ioidint_base + TPCI200_IO_SPACE_OFF + TPCI200_IO_SPACE_GAP*i;
-+		tpci200->slots[i].io_phys.size = TPCI200_IO_SPACE_SIZE;
-+		tpci200->slots[i].id_phys.address = (void *)ioidint_base + TPCI200_ID_SPACE_OFF + TPCI200_ID_SPACE_GAP*i;
-+		tpci200->slots[i].id_phys.size = TPCI200_ID_SPACE_SIZE;
-+		tpci200->slots[i].mem_phys.address = (void *)mem_base + TPCI200_MEM8_GAP*i;
-+		tpci200->slots[i].mem_phys.size = TPCI200_MEM8_SIZE;
-+
-+		writew(slot_ctrl, (unsigned short *)(tpci200->info->interface_regs + control_reg[i]));
-+	}
-+
-+	res = request_irq(tpci200->info->pdev->irq, tpci200_interrupt, IRQF_SHARED, TPCI200_SHORTNAME, (void *) tpci200);
-+	if (res) {
-+		printk(KERN_ERR PFX
-+				"(bn 0x%X, sn 0x%X, vid 0x%X, did 0x%X, svid 0x%X, sdid 0x%X) unable to register IRQ !",
-+				tpci200->info->pdev->bus->number, tpci200->info->pdev->devfn,
-+				TPCI200_VENDOR_ID, TPCI200_DEVICE_ID,
-+				TPCI200_SUBVENDOR_ID, TPCI200_SUBDEVICE_ID);
-+		tpci200_unregister(tpci200);
-+		goto out_err;
-+	}
-+
-+	return 0;
-+
-+out_release_ioid_int_space:
-+	pci_release_region(tpci200->info->pdev, TPCI200_IO_ID_INT_SPACES_BAR);
-+out_release_ip_space:
-+	pci_release_region(tpci200->info->pdev, TPCI200_IP_INTERFACE_BAR);
-+out_remove_sysfs:
-+	tpci200_remove_sysfs_files(tpci200);
-+out_disable_pci:
-+	pci_disable_device(tpci200->info->pdev);
-+out_err:
-+	return res;
-+}
-+
-+static int __tpci200_request_irq(struct tpci200_board *tpci200, struct ipack_device *dev)
-+{
-+	unsigned short slot_ctrl;
-+
-+	/* Set the default parameters of the slot
-+	 * INT0 enabled, level sensitive
-+	 * INT1 enabled, level sensitive
-+	 * error interrupt disabled
-+	 * timeout interrupt disabled
-+	 * recover time disabled
-+	 * clock rate 8 MHz
-+	 */
-+	slot_ctrl = TPCI200_INT0_EN | TPCI200_INT1_EN;
-+	writew(slot_ctrl, (unsigned short *)(tpci200->info->interface_regs + control_reg[dev->slot]));
-+
-+	return 0;
-+}
-+
-+static void __tpci200_free_irq(struct tpci200_board *tpci200, struct ipack_device *dev)
-+{
-+	unsigned short slot_ctrl;
-+
-+	/* Set the default parameters of the slot
-+	 * INT0 disabled, level sensitive
-+	 * INT1 disabled, level sensitive
-+	 * error interrupt disabled
-+	 * timeout interrupt disabled
-+	 * recover time disabled
-+	 * clock rate 8 MHz
-+	 */
-+	slot_ctrl = 0;
-+	writew(slot_ctrl, (unsigned short *)(tpci200->info->interface_regs + control_reg[dev->slot]));
-+}
-+
-+int tpci200_free_irq(struct ipack_device *dev)
-+{
-+	int res = 0;
-+	struct slot_irq *slot_irq = NULL;
-+	struct tpci200_board *tpci200 = NULL;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL) {
-+		res = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (mutex_lock_interruptible(&tpci200->mutex)) {
-+		res = -ERESTARTSYS;
-+		goto out;
-+	}
-+
-+	if (tpci200->slots[dev->slot].irq == NULL) {
-+		res = -EINVAL;
-+		goto out_unlock;
-+	}
-+
-+	__tpci200_free_irq(tpci200, dev);
-+	slot_irq = tpci200->slots[dev->slot].irq;
-+	tpci200->slots[dev->slot].irq = NULL;
-+	kfree(slot_irq);
-+
-+out_unlock:
-+	mutex_unlock(&tpci200->mutex);
-+out:
-+	return res;
-+}
-+
-+int tpci200_slot_unmap_space(struct ipack_device *dev, int space)
-+{
-+	int res = 0;
-+	struct ipack_addr_space *virt_addr_space = NULL;
-+	struct tpci200_board *tpci200 = NULL;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL) {
-+		res = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (mutex_lock_interruptible(&tpci200->mutex)) {
-+		res = -ERESTARTSYS;
-+		goto out;
-+	}
-+
-+	switch (space) {
-+	case IPACK_IO_SPACE:
-+		if (dev->io_space.address == NULL) {
-+			printk(KERN_INFO PFX "Slot [%s %d:%d] IO space not mapped !\n",
-+					TPCI200_SHORTNAME,
-+					dev->bus_nr, dev->slot);
-+			goto out_unlock;
-+		}
-+		virt_addr_space = &dev->io_space;
-+		break;
-+	case IPACK_ID_SPACE:
-+		if (dev->id_space.address == NULL) {
-+			printk(KERN_INFO PFX "Slot [%s %d:%d] ID space not mapped !\n",
-+					TPCI200_SHORTNAME,
-+					dev->bus_nr, dev->slot);
-+			goto out_unlock;
-+		}
-+		virt_addr_space = &dev->id_space;
-+		break;
-+	case IPACK_MEM_SPACE:
-+		if (dev->mem_space.address == NULL) {
-+			printk(KERN_INFO PFX "Slot [%s %d:%d] MEM space not mapped !\n",
-+					TPCI200_SHORTNAME,
-+					dev->bus_nr, dev->slot);
-+		goto out_unlock;
-+		}
-+		virt_addr_space = &dev->mem_space;
-+		break;
-+	default:
-+		printk(KERN_ERR PFX "Slot [%s %d:%d] space number %d doesn't exist !\n",
-+				TPCI200_SHORTNAME,
-+				dev->bus_nr, dev->slot, space);
-+		res = -EINVAL;
-+		goto out_unlock;
-+		break;
-+	}
-+
-+	iounmap(virt_addr_space->address);
-+
-+	virt_addr_space->address = NULL;
-+	virt_addr_space->size = 0;
-+out_unlock:
-+	mutex_unlock(&tpci200->mutex);
-+out:
-+	return res;
-+}
-+
-+int tpci200_slot_unregister(struct ipack_device *dev)
-+{
-+	struct tpci200_board *tpci200 = NULL;
-+
-+	if (dev == NULL)
-+		return -ENODEV;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
-+
-+	tpci200_free_irq(dev);
-+
-+	if (mutex_lock_interruptible(&tpci200->mutex))
-+		return -ERESTARTSYS;
-+
-+	ipack_device_unregister(dev);
-+	kfree(dev);
-+	tpci200->slots[dev->slot].dev = NULL;
-+	mutex_unlock(&tpci200->mutex);
-+
-+	return 0;
-+}
-+
-+int tpci200_slot_map_space(struct ipack_device *dev, unsigned int memory_size, int space)
-+{
-+	int res = 0;
-+	unsigned int size_to_map = 0;
-+	void *phys_address = NULL;
-+	struct ipack_addr_space *virt_addr_space = NULL;
-+	struct tpci200_board *tpci200 = NULL;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL) {
-+		res = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (mutex_lock_interruptible(&tpci200->mutex)) {
-+		res = -ERESTARTSYS;
-+		goto out;
-+	}
-+
-+	switch (space) {
-+	case IPACK_IO_SPACE:
-+		if (dev->io_space.address != NULL) {
-+			printk(KERN_ERR PFX "Slot [%s %d:%d] IO space already mapped !\n",
-+					TPCI200_SHORTNAME,
-+					tpci200->number, dev->slot);
-+			res = -EINVAL;
-+			goto out_unlock;
-+		}
-+		virt_addr_space = &dev->io_space;
-+
-+		phys_address = tpci200->slots[dev->slot].io_phys.address;
-+		size_to_map = tpci200->slots[dev->slot].io_phys.size;
-+		break;
-+	case IPACK_ID_SPACE:
-+		if (dev->id_space.address != NULL) {
-+			printk(KERN_ERR PFX "Slot [%s %d:%d] ID space already mapped !\n",
-+					TPCI200_SHORTNAME,
-+					tpci200->number, dev->slot);
-+			res = -EINVAL;
-+			goto out_unlock;
-+		}
-+		virt_addr_space = &dev->id_space;
-+
-+		phys_address = tpci200->slots[dev->slot].id_phys.address;
-+		size_to_map = tpci200->slots[dev->slot].id_phys.size;
-+		break;
-+	case IPACK_MEM_SPACE:
-+		if (dev->mem_space.address != NULL) {
-+			printk(KERN_ERR PFX "Slot [%s %d:%d] MEM space already mapped !\n",
-+					TPCI200_SHORTNAME,
-+					tpci200->number, dev->slot);
-+			res = -EINVAL;
-+			goto out_unlock;
-+		}
-+		virt_addr_space = &dev->mem_space;
-+
-+		if (memory_size > tpci200->slots[dev->slot].mem_phys.size) {
-+			printk(KERN_ERR PFX
-+					"Slot [%s %d:%d] request is 0x%X memory, only 0x%X available !\n",
-+					TPCI200_SHORTNAME,
-+					dev->bus_nr,
-+					dev->slot,
-+					memory_size,
-+					tpci200->slots[dev->slot].mem_phys.size);
-+			res = -EINVAL;
-+			goto out_unlock;
-+		}
-+
-+		phys_address = tpci200->slots[dev->slot].mem_phys.address;
-+		size_to_map = memory_size;
-+		break;
-+	default:
-+		printk(KERN_ERR PFX "Slot [%s %d:%d] space %d doesn't exist !\n",
-+				TPCI200_SHORTNAME,
-+				tpci200->number, dev->slot, space);
-+		res = -EINVAL;
-+		goto out_unlock;
-+		break;
-+	}
-+
-+	virt_addr_space->size = size_to_map;
-+	virt_addr_space->address = ioremap((unsigned long)phys_address, size_to_map);
-+
-+out_unlock:
-+	mutex_unlock(&tpci200->mutex);
-+out:
-+	return res;
-+}
-+
-+int tpci200_request_irq(struct ipack_device *dev, int vector, int (*handler)(void *), void *arg)
-+{
-+	int res = 0;
-+	struct slot_irq *slot_irq = NULL;
-+	struct tpci200_board *tpci200 = NULL;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL) {
-+		res = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (mutex_lock_interruptible(&tpci200->mutex)) {
-+		res = -ERESTARTSYS;
-+		goto out;
-+	}
-+
-+	if (tpci200->slots[dev->slot].irq != NULL) {
-+		printk(KERN_ERR PFX "Slot [%s %d:%d] IRQ already registered !\n",
-+				TPCI200_SHORTNAME,
-+				dev->bus_nr, dev->slot);
-+		res = -EINVAL;
-+		goto out_unlock;
-+	}
-+
-+	slot_irq = kzalloc(sizeof(struct slot_irq), GFP_KERNEL);
-+	if (slot_irq == NULL) {
-+		printk(KERN_ERR PFX "Slot [%s %d:%d] unable to allocate memory for IRQ !\n",
-+				TPCI200_SHORTNAME,
-+				dev->bus_nr, dev->slot);
-+		res = -ENOMEM;
-+		goto out_unlock;
-+	}
-+
-+	/*
-+	 * WARNING: Setup Interrupt Vector in the IndustryPack device
-+	 * before an IRQ request.
-+	 * Read the User Manual of your IndustryPack device to know
-+	 * where to write the vector in memory.
-+	 */
-+	slot_irq->vector = vector;
-+	slot_irq->handler = handler;
-+	slot_irq->arg = arg;
-+	if (dev->board_name) {
-+		if (strlen(dev->board_name) > IPACK_IRQ_NAME_SIZE) {
-+			printk(KERN_WARNING PFX
-+					"Slot [%s %d:%d] IRQ name too long (%d char > %d char MAX). Will be truncated!\n",
-+					TPCI200_SHORTNAME,
-+					dev->bus_nr, dev->slot,
-+					(int)strlen(dev->board_name), IPACK_IRQ_NAME_SIZE);
-+		}
-+		strncpy(slot_irq->name, dev->board_name, IPACK_IRQ_NAME_SIZE-1);
-+	} else {
-+		strcpy(slot_irq->name, "Unknown");
-+	}
-+
-+	tpci200->slots[dev->slot].irq = slot_irq;
-+	res = __tpci200_request_irq(tpci200, dev);
-+
-+out_unlock:
-+	mutex_unlock(&tpci200->mutex);
-+out:
-+	return res;
-+}
-+
-+static void tpci200_uninstall(struct tpci200_board *tpci200)
-+{
-+	int i;
-+
-+	for (i = 0; i < TPCI200_NB_SLOT; i++) {
-+		if (tpci200->slots[i].dev == NULL)
-+			continue;
-+		else
-+			tpci200->slots[i].dev->driver->ops->remove(tpci200->slots[i].dev);
-+	}
-+
-+	tpci200_unregister(tpci200);
-+
-+	if (tpci200->slots != NULL)
-+		kfree(tpci200->slots);
-+}
-+
-+struct ipack_bus_ops tpci200_bus_ops = {
-+	.map_space = tpci200_slot_map_space,
-+	.unmap_space = tpci200_slot_unmap_space,
-+	.request_irq = tpci200_request_irq,
-+	.free_irq = tpci200_free_irq,
-+	.read8 = tpci200_read8,
-+	.read16 = tpci200_read16,
-+	.read32 = tpci200_read32,
-+	.write8 = tpci200_write8,
-+	.write16 = tpci200_write16,
-+	.write32 = tpci200_write32,
-+	.remove_device = tpci200_slot_unregister,
-+};
-+
-+static int tpci200_install(struct tpci200_board *tpci200)
-+{
-+	int res = 0;
-+
-+	tpci200->slots = kzalloc(TPCI200_NB_SLOT * sizeof(struct tpci200_slot), GFP_KERNEL);
-+	if (tpci200->slots == NULL) {
-+		res = -ENOMEM;
-+		goto out_err;
-+	}
-+
-+	res = tpci200_register(tpci200);
-+	if (res)
-+		goto out_free;
-+
-+	mutex_init(&tpci200->mutex);
-+	return 0;
-+
-+out_free:
-+	kfree(tpci200->slots);
-+	tpci200->slots = NULL;
-+out_err:
-+	return res;
-+}
-+
-+static int tpci200_pciprobe(struct pci_dev *pdev, const struct pci_device_id *id)
-+{
-+	int ret;
-+	struct tpci200_board *tpci200;
-+
-+	tpci200 = kzalloc(sizeof(struct tpci200_board), GFP_KERNEL);
-+	if (!tpci200)
-+		return -ENOMEM;
-+
-+	tpci200->info = kzalloc(sizeof(struct tpci200_infos), GFP_KERNEL);
-+	if (!tpci200->info) {
-+		kfree(tpci200);
-+		return -ENOMEM;
-+	}
-+
-+	/* Save struct pci_dev pointer */
-+	tpci200->info->pdev = pdev;
-+	tpci200->info->id_table = (struct pci_device_id *)id;
-+
-+	/* register the device and initialize it */
-+	ret = tpci200_install(tpci200);
-+	if (ret) {
-+		printk(KERN_ERR PFX "Error during tpci200 install !\n");
-+		kfree(tpci200->info);
-+		kfree(tpci200);
-+		return -ENODEV;
-+	}
-+
-+	tpci200->info->drv.dev = &pdev->dev;
-+	tpci200->info->drv.slots = TPCI200_NB_SLOT;
-+
-+	/* Register the bus in the industry pack driver */
-+	ret = ipack_bus_register(&tpci200->info->drv);
-+	if (ret < 0) {
-+		printk(KERN_ERR PFX "error registering the carrier on ipack driver\n");
-+		tpci200_uninstall(tpci200);
-+		kfree(tpci200->info);
-+		kfree(tpci200);
-+		return -EFAULT;
-+	}
-+	/* save the bus number given by ipack to logging purpose */
-+	tpci200->number = tpci200->info->drv.bus_nr;
-+	dev_set_drvdata(&pdev->dev, tpci200);
-+	/* add the registered device in an internal linked list */
-+	list_add_tail(&tpci200->list, &tpci200_list);
-+	return ret;
-+}
-+
-+static void __tpci200_pci_remove(struct tpci200_board *tpci200)
-+{
-+	tpci200_uninstall(tpci200);
-+	tpci200_remove_sysfs_files(tpci200);
-+	list_del(&tpci200->list);
-+	ipack_bus_unregister(&tpci200->info->drv);
-+	kfree(tpci200);
-+}
-+
-+static void __devexit tpci200_pci_remove(struct pci_dev *dev)
-+{
-+	struct tpci200_board *tpci200;
-+	struct list_head *element, *next;
-+
-+	/* Search the registered device to uninstalled it */
-+	list_for_each_safe(element, next, &tpci200_list) {
-+		tpci200 = list_entry(element, struct tpci200_board, list);
-+		if (tpci200->info->pdev == dev) {
-+			__tpci200_pci_remove(tpci200);
-+			break;
-+		}
-+	}
-+}
-+
-+static struct pci_device_id tpci200_idtable[2]; /* last must be zero */
-+
-+static struct pci_driver tpci200_pci_drv = {
-+	.name = "tpci200",
-+	.id_table = tpci200_idtable,
-+	.probe = tpci200_pciprobe,
-+	.remove = __devexit_p(tpci200_pci_remove),
-+};
-+
-+static int __init tpci200_drvr_init_module(void)
-+{
-+	tpci200_idtable[0].vendor = TPCI200_VENDOR_ID;
-+	tpci200_idtable[0].device = TPCI200_DEVICE_ID;
-+	tpci200_idtable[0].subvendor = TPCI200_SUBVENDOR_ID;
-+	tpci200_idtable[0].subdevice = TPCI200_SUBDEVICE_ID;
-+	return pci_register_driver(&tpci200_pci_drv);
-+}
-+
-+static void __exit tpci200_drvr_exit_module(void)
-+{
-+	struct tpci200_board *tpci200;
-+	struct list_head *element, *next;
-+
-+	list_for_each_safe(element, next, &tpci200_list) {
-+		tpci200 = list_entry(element, struct tpci200_board, list);
-+		__tpci200_pci_remove(tpci200);
-+	}
-+
-+	pci_unregister_driver(&tpci200_pci_drv);
-+}
-+
-+MODULE_DESCRIPTION("TEWS TPCI-200 device driver");
-+MODULE_LICENSE("GPL");
-+module_init(tpci200_drvr_init_module);
-+module_exit(tpci200_drvr_exit_module);
-+
-diff --git a/drivers/staging/ipack/bridges/tpci200.h b/drivers/staging/ipack/bridges/tpci200.h
-new file mode 100644
-index 0000000..e452da2
---- /dev/null
-+++ b/drivers/staging/ipack/bridges/tpci200.h
-@@ -0,0 +1,165 @@
-+/**
-+ * tpci200.h
-+ *
-+ * driver for the carrier TEWS TPCI-200
-+ * Copyright (c) 2009 Nicolas Serafini, EIC2 SA
-+ * Copyright (c) 2010,2011 Samuel Iglesias Gonsalvez <siglesia@cern.ch>, CERN
-+ * Copyright (c) 2012 Samuel Iglesias Gonsalvez <siglesias@igalia.com>, Igalia
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+#ifndef _TPCI200_H_
-+#define _TPCI200_H_
-+
-+#include <linux/version.h>
-+#include <linux/limits.h>
-+#include <linux/pci.h>
-+#include <linux/spinlock.h>
-+#include <linux/interrupt.h>
-+#include <linux/swab.h>
-+#include <linux/io.h>
-+
-+#include "../ipack.h"
-+
-+#define TPCI200_SHORTNAME "TPCI200"
-+
-+#define TPCI200_NB_SLOT               0x4
-+#define TPCI200_NB_BAR                0x6
-+
-+#define TPCI200_VENDOR_ID             0x1498
-+#define TPCI200_DEVICE_ID             0x30C8
-+#define TPCI200_SUBVENDOR_ID          0x1498
-+#define TPCI200_SUBDEVICE_ID          0x300A
-+
-+#define TPCI200_IP_INTERFACE_BAR      2
-+#define TPCI200_IO_ID_INT_SPACES_BAR  3
-+#define TPCI200_MEM16_SPACE_BAR       4
-+#define TPCI200_MEM8_SPACE_BAR        5
-+
-+#define TPCI200_REVISION_REG          0x00
-+#define TPCI200_CONTROL_A_REG         0x02
-+#define TPCI200_CONTROL_B_REG         0x04
-+#define TPCI200_CONTROL_C_REG         0x06
-+#define TPCI200_CONTROL_D_REG         0x08
-+#define TPCI200_RESET_REG             0x0A
-+#define TPCI200_STATUS_REG            0x0C
-+
-+#define TPCI200_IFACE_SIZE            0x100
-+
-+#define TPCI200_IO_SPACE_OFF          0x0000
-+#define TPCI200_IO_SPACE_GAP          0x0100
-+#define TPCI200_IO_SPACE_SIZE         0x0080
-+#define TPCI200_ID_SPACE_OFF          0x0080
-+#define TPCI200_ID_SPACE_GAP          0x0100
-+#define TPCI200_ID_SPACE_SIZE         0x0040
-+#define TPCI200_INT_SPACE_OFF         0x00C0
-+#define TPCI200_INT_SPACE_GAP         0x0100
-+#define TPCI200_INT_SPACE_SIZE        0x0040
-+#define TPCI200_IOIDINT_SIZE          0x0400
-+
-+#define TPCI200_MEM8_GAP              0x00400000
-+#define TPCI200_MEM8_SIZE             0x00400000
-+#define TPCI200_MEM16_GAP             0x00800000
-+#define TPCI200_MEM16_SIZE            0x00800000
-+
-+#define TPCI200_INT0_EN               0x0040
-+#define TPCI200_INT1_EN               0x0080
-+#define TPCI200_INT0_EDGE             0x0010
-+#define TPCI200_INT1_EDGE             0x0020
-+#define TPCI200_ERR_INT_EN            0x0008
-+#define TPCI200_TIME_INT_EN           0x0004
-+#define TPCI200_RECOVER_EN            0x0002
-+#define TPCI200_CLK32                 0x0001
-+
-+#define TPCI200_A_RESET               0x0001
-+#define TPCI200_B_RESET               0x0002
-+#define TPCI200_C_RESET               0x0004
-+#define TPCI200_D_RESET               0x0008
-+
-+#define TPCI200_A_TIMEOUT             0x1000
-+#define TPCI200_B_TIMEOUT             0x2000
-+#define TPCI200_C_TIMEOUT             0x4000
-+#define TPCI200_D_TIMEOUT             0x8000
-+
-+#define TPCI200_A_ERROR               0x0100
-+#define TPCI200_B_ERROR               0x0200
-+#define TPCI200_C_ERROR               0x0400
-+#define TPCI200_D_ERROR               0x0800
-+
-+#define TPCI200_A_INT0                0x0001
-+#define TPCI200_A_INT1                0x0002
-+#define TPCI200_B_INT0                0x0004
-+#define TPCI200_B_INT1                0x0008
-+#define TPCI200_C_INT0                0x0010
-+#define TPCI200_C_INT1                0x0020
-+#define TPCI200_D_INT0                0x0040
-+#define TPCI200_D_INT1                0x0080
-+
-+#define TPCI200_SLOT_INT_MASK         0x00FF
-+
-+#define VME_IOID_SPACE  "IOID"
-+#define VME_MEM_SPACE  "MEM"
-+
-+/**
-+ * struct slot_irq - slot IRQ definition.
-+ * @vector	Vector number
-+ * @handler	Handler called when IRQ arrives
-+ * @arg		Handler argument
-+ * @name	IRQ name
-+ *
-+ */
-+struct slot_irq {
-+	int          vector;
-+	int         (*handler)(void *);
-+	void         *arg;
-+	char         name[IPACK_IRQ_NAME_SIZE];
-+};
-+
-+/**
-+ * struct tpci200_slot - data specific to the tpci200 slot.
-+ * @slot_id	Slot identification gived to external interface
-+ * @irq		Slot IRQ infos
-+ * @io_phys	IO physical base address register of the slot
-+ * @id_phys	ID physical base address register of the slot
-+ * @mem_phys	MEM physical base address register of the slot
-+ *
-+ */
-+struct tpci200_slot {
-+	struct ipack_device	*dev;
-+	struct slot_irq		*irq;
-+	struct ipack_addr_space io_phys;
-+	struct ipack_addr_space id_phys;
-+	struct ipack_addr_space mem_phys;
-+};
-+
-+/**
-+ * struct tpci200_infos - informations specific of the TPCI200 tpci200.
-+ * @pci_dev		PCI device
-+ * @interface_regs	Pointer to IP interface space (Bar 2)
-+ * @ioidint_space	Pointer to IP ID, IO and INT space (Bar 3)
-+ * @mem8_space		Pointer to MEM space (Bar 4)
-+ * @access_lock		Mutex lock for simultaneous access
-+ *
-+ */
-+struct tpci200_infos {
-+	struct pci_dev			*pdev;
-+	struct pci_device_id		*id_table;
-+	void				*interface_regs;
-+	void				*ioidint_space;
-+	void				*mem8_space;
-+	spinlock_t			access_lock;
-+	struct ipack_bus_device		drv;
-+};
-+struct tpci200_board {
-+	struct list_head	list;
-+	unsigned int		number;
-+	struct mutex		mutex;
-+	struct tpci200_slot	*slots;
-+	struct tpci200_infos	*info;
-+};
-+
-+#endif /* _TPCI200_H_ */
--- 
-1.7.10
+Changes since 20120504:
 
+New tree: renesas
+
+Linus' tree gained a build failure for which I reverted a commit.
+
+The isci tree lost its conflicts.
+
+The crypto tree gained conflicts against Linus' tree - one so complex that
+I used the version from next-20120504.
+
+The drm tree gained a conflict against Linus' tree.
+
+The kbuild tree gained a build failure for which I reverted a commit.
+
+The battery tree gained a build failure for which I reverted 2 commits.
+
+The tip tree gained a conflict against the kbuild tree.
+
+The staging tree gained a conflict against the tty tree.
+
+The akpm tree lost a couple of patches that turned up elsewhere.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 190 trees (counting Linus' and 27 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
+Gortmaker for triage and bug fixes.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master (d48b97b Linux 3.4-rc6)
+Merging fixes/master (b1a808f Merge branch 'for-next' of git://gitorious.or=
+g/kernel-hsi/kernel-hsi)
+[master fda30ee] Revert "x86: fix broken TASK_SIZE for ia32_aout"
+Merging kbuild-current/rc-fixes (e88aa7b Fix modpost failures in fedora 17)
+Merging arm-current/fixes (fde165b ARM: 7414/1: SMP: prevent use of the con=
+sole when using idmap_pgd)
+Merging ep93xx-current/ep93xx-fixes (2b3c83e dmaengine/ep93xx_dma: Implemen=
+t double buffering for M2M DMA channels)
+Merging m68k-current/for-linus (450aed7 m68k/q40: Add missing platform chec=
+k before registering platform devices)
+Merging powerpc-merge/merge (810b4de tty/serial/pmac_zilog: Fix "nobody car=
+ed" IRQ message)
+Merging sparc/master (e9a5ea1 sparc32,leon: add notify_cpu_starting())
+Merging net/master (6eddcb4 cdc_ether: Ignore bogus union descriptor for RN=
+DIS devices)
+Merging sound-current/for-linus (e9e7183 Merge branch 'fix/asoc' into for-l=
+inus)
+Merging pci-current/for-linus (314489b Merge tag 'fixes-for-linus' of git:/=
+/git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc)
+Merging wireless/master (ed90542 iwlwifi: fix skb truesize underestimation)
+Merging driver-core.current/driver-core-linus (69964ea Linux 3.4-rc5)
+Merging tty.current/tty-linus (84f904e vt: Fix deadlock on scroll-lock)
+Merging usb.current/usb-linus (04c235c USB: ehci-tegra: remove redundant gp=
+io_set_value)
+Merging staging.current/staging-linus (69964ea Linux 3.4-rc5)
+Merging char-misc.current/char-misc-linus (e816b57 Linux 3.4-rc3)
+Merging cpufreq-current/fixes (6139b65 Merge branch 'for_3.4/cpufreq' of gi=
+t://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-omap-pm into fixe=
+s)
+Merging input-current/for-linus (899c612 Input: synaptics - fix regression =
+with "image sensor" trackpads)
+Merging md-current/for-linus (b16b1b6 md/bitmap: fix calculation of 'chunks=
+' - missing shift.)
+Merging audit-current/for-linus (c158a35 audit: no leading space in audit_l=
+og_d_path prefix)
+Merging crypto-current/master (511d63c crypto: talitos - properly lock acce=
+ss to global talitos registers)
+Merging ide/master (0ab3d8b cy82c693: fix PCI device selection)
+Merging dwmw2/master (244dc4e Merge git://git.infradead.org/users/dwmw2/ran=
+dom-2.6)
+Merging sh-current/sh-fixes-for-linus (3c3c801 Merge branch 'sh/urgent' int=
+o sh-fixes-for-linus)
+Merging irqdomain-current/irqdomain/merge (15e06bf irqdomain: Fix debugfs f=
+ormatting)
+Merging devicetree-current/devicetree/merge (766644d of/irq: add empty irq_=
+of_parse_and_map() for non-dt builds)
+Merging spi-current/spi/merge (2431a81 spi/spi-bfin5xx: Fix flush of last b=
+it after each spi transfer)
+Merging gpio-current/gpio/merge (9a5c7d6 gpio/exynos: Fix compiler warning =
+in gpio-samsung.c file)
+Merging arm/for-next (e3fa215 Merge branch 'misc' into for-next)
+Merging arm-perf/for-next/perf (c16fa4f Linux 3.3)
+Merging davinci/davinci-next (fe0d422 Linux 3.0-rc6)
+Merging renesas/next (680ca9b Merge branch 'renesas-sh7372' into renesas-ne=
+xt)
+Merging samsung/next-samsung (9edb240 ARM: H1940/RX1950: Change default LED=
+ triggers)
+Merging s5p/for-next (de12e47 Merge branch 'next/board-samsung' into for-ne=
+xt)
+Merging xilinx/arm-next (b85a3ef ARM: Xilinx: Adding Xilinx board support)
+Merging blackfin/for-linus (431e69e blackfin: asm: fix blackfin.h broken)
+Merging c6x/for-linux-next (18d1470 C6X: change main arch kbuild symbol)
+Merging cris/for-next (7b91747 cris: Remove old legacy "-traditional" flag =
+from arch-v10/lib/Makefile)
+Merging hexagon/linux-next (4bd8193 various Kconfig cleanup and old platfor=
+m build code removal)
+Merging ia64/next (16f2634 [IA64] Normalize return value of chip->irq_set_a=
+ffinity() method)
+Merging m68k/for-next (c663600 m68k: Correct the Atari ALLOWINT definition)
+Merging m68knommu/for-next (a964727 m68knommu: simplify the ColdFire 5407 G=
+PIO struct setup)
+Merging microblaze/next (258f742 modpost: Fix modpost license checking of v=
+mlinux.o)
+Merging mips/mips-for-linux-next (d3e4edd Merge branches 'fixes-for-linus',=
+ 'module.h-fixes', 'next/ath79' and 'next/lantiq' into mips-for-linux-next)
+Merging openrisc/for-upstream (c88e692 asm-generic: add linux/types.h to cm=
+pxchg.h)
+Merging parisc/for-next (c60dc74 Merge branch 'fixes' into for-next)
+Merging powerpc/next (43671cc powerpc/windfarm: don't pass const strings to=
+ snprintf)
+Merging 4xx/next (dce4c92 powerpc/40x: Use {upper,lower}_32_bits for msi_ph=
+ys)
+Merging mpc5xxx/next (09f61ff powerpc: Option FB_FSL_DIU is not really opti=
+onal for mpc512x)
+Merging galak/next (fa1b42b powerpc/qe: Update the SNUM table for MPC8569 R=
+ev2.0)
+Merging s390/features (2cbcba6 [S390] Remove dead code from signal handler)
+Merging sh/sh-latest (b2212ea sh64: Kill off unused trap_no/error_code from=
+ thread_struct.)
+Merging sparc-next/master (799d40c sparc64: Do not set max_mapnr.)
+Merging tile/master (5e4ce7a arch/tile: tilegx PCI root complex support)
+Merging unicore32/unicore32 (0994695 Merge branch 'akpm' (aka "Andrew's pat=
+ch-bomb, take two"))
+Merging ceph/master (cd9d9f5 rbd: don't hold spinlock during messenger flus=
+h)
+Merging cifs/master (6f24f89 hfsplus: Fix potential buffer overflows)
+Merging configfs/linux-next (b930c26 Merge branch 'for-linus' of git://git.=
+kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
+Merging ecryptfs/next (6cfd4b4 ecryptfs: remove the second argument of k[un=
+]map_atomic())
+CONFLICT (content): Merge conflict in fs/ecryptfs/ecryptfs_kernel.h
+Merging ext3/for_next (77f0a97 jbd: Write journal superblock with WRITE_FUA=
+ after checkpointing)
+Merging ext4/dev (f1d470b ext4: add metadata checksumming to the list of su=
+pported features)
+Merging fuse/for-next (519c604 fuse: optimize fallocate on permanent failur=
+e)
+Merging gfs2/master (f9425ad GFS2: Fix sgid propagation when using ACLs)
+Merging logfs/master (cd8bfa9 logfs: initialize the number of iovecs in bio)
+Merging nfs/linux-next (7369b86 Merge branch 'bugfixes' into linux-next)
+Merging nfsd/nfsd-next (6278aae nfsd: add IPv6 addr escaping to fs_location=
+ hosts)
+Merging ocfs2/linux-next (9392557 ocfs2: avoid unaligned access to dqc_bitm=
+ap)
+Merging omfs/for-next (976d167 Linux 3.1-rc9)
+Merging squashfs/master (4b0180a Squashfs: add mount time sanity check for =
+block_size and block_log match)
+Merging v9fs/for-next (01627d9 Merge branch 'drm-fixes-intel' of git://peop=
+le.freedesktop.org/~airlied/linux)
+Merging ubifs/linux-next (1bdcc63 UBIFS: remove xattr Kconnfig option)
+Merging xfs/for-next (bc236c3 xfs: use shared ilock mode for direct IO writ=
+es by default)
+Merging vfs/for-next (9448152 sch_atm.c: get rid of poinless extern)
+Merging pci/next (df558de PCI: work around IvyBridge internal graphics FLR =
+erratum)
+Merging hid/for-next (f277f31 Merge branch 'device-groups' into for-next)
+Merging quilt/i2c (85bb1a8 i2c-dev: Add support for I2C_M_RECV_LEN)
+Merging bjdooks-i2c/next-i2c (fc84fe1 Merge branch 'for_3.3/i2c/misc' of gi=
+t://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-omap-pm into for-=
+33/i2c/omap)
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-omap.c
+Merging i2c-embedded/i2c-embedded/for-next (b5a9352 I2C: xiic: Add OF bindi=
+ng support)
+Merging quilt/jdelvare-hwmon (e3a9568 hwmon: Add MCP3021 ADC driver)
+Merging hwmon-staging/hwmon-next (d63b478 hwmon: (ad7314) Remove unused def=
+ines, and rename OFFSET to SHIFT)
+Merging v4l-dvb/master (2a43f0b Merge /home/v4l/v4l/patchwork)
+CONFLICT (content): Merge conflict in drivers/usb/gadget/uvc_queue.c
+Merging kbuild/for-next (c10373f Merge branch 'kbuild/kbuild' into kbuild/f=
+or-next)
+Merging kconfig/for-next (eae1c36 Merge branch 'kconfig/for-linus-2' into k=
+config/for-next)
+Merging libata/NEXT (5f098a3 ata: ahci_platform: Add synopsys ahci controll=
+er in DT's compatible list)
+Merging infiniband/for-next (cccf38f Merge branch 'core' into for-next)
+Merging acpi/next (2ce431f Merge branch 'd3hot-v-d3cold-fix' into build)
+Merging cpupowerutils/master (f166033 cpupower tools: add install target to=
+ the debug tools' makefiles)
+Merging ieee1394/for-next (8527f8e firewire: core: fw_device_refresh(): cle=
+an up error handling)
+Merging ubi/linux-next (a7b595c UBI: always warn if case of I/O errors)
+Merging dlm/next (1a058f5 gfs2: fix recovery during unmount)
+Merging scsi/for-next (b965030 Merge branch 'misc' into for-next)
+Merging target-updates/for-next (a39a3cc target: Only check max_sectors for=
+ passthrough backend I/O)
+Merging target-merge/for-next-merge (595f445 tcm_qla2xxx: Add >=3D 24xx ser=
+ies fabric module for target-core)
+Merging ibft/linux-next (935a9fe ibft: Fix finding IBFT ACPI table on UEFI)
+Merging isci/all (5d8f50d merge: devel rnc-devel fixes)
+Merging slave-dma/next (56cbb3d Merge branch 'fixes' into next)
+Merging dmaengine/next (a2bd114 netdma: adding alignment check for NETDMA o=
+ps)
+Merging net-next/master (ec47ea8 skb: Add inline helper for getting the skb=
+ end offset from head)
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-tran=
+s.h
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-tran=
+s-pcie-rx.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-agn-=
+rx.c
+CONFLICT (content): Merge conflict in drivers/net/ethernet/intel/e1000e/par=
+am.c
+CONFLICT (content): Merge conflict in drivers/net/ethernet/emulex/benet/be.h
+Merging wireless-next/master (0a9b378 {nl,cfg,mac}80211: Allow user to see/=
+configure HT protection mode)
+CONFLICT (content): Merge conflict in net/wireless/nl80211.c
+Merging bluetooth/master (d397968 Bluetooth: Refactor L2CAP ERTM and stream=
+ing transmit segmentation)
+Merging mtd/master (7b0e67f mtd: docg3 add protection against concurrency)
+Merging l2-mtd/master (bf93185 mtd: nand: fixup 1/0 vs. true/false)
+Merging crypto/master (3ba812f mach-ux500: crypto - core support for CRYP/H=
+ASH module)
+CONFLICT (content): Merge conflict in arch/arm/mach-ux500/devices-common.c
+CONFLICT (content): Merge conflict in arch/arm/mach-ux500/board-u5500.c
+CONFLICT (content): Merge conflict in arch/arm/mach-ux500/board-mop500.c
+$ git reset --hard
+Merging sound/for-next (93443da Merge branch 'fix/misc' into for-next)
+Merging sound-asoc/for-next (82acbc0 Merge branch 'for-3.5' into asoc-next)
+Merging cpufreq/next (a7b422c provide disable_cpufreq() function to disable=
+ the API.)
+Merging quilt/rr (2a22b63 cpumask: remove old cpu_*_map.)
+CONFLICT (content): Merge conflict in init/main.c
+CONFLICT (content): Merge conflict in drivers/virtio/virtio_balloon.c
+CONFLICT (content): Merge conflict in arch/arm/kernel/smp.c
+CONFLICT (content): Merge conflict in arch/arm/kernel/kprobes.c
+Merging input/next (2872a9b Input: evdev - properly handle read/write with =
+count 0)
+Merging input-mt/for-next (66f75a5 Linux 3.4-rc4)
+Merging cgroup/for-next (0d4dde1 res_counter: Account max_usage when callin=
+g res_counter_charge_nofail())
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+Merging block/for-next (d634e66 Merge branch 'for-3.5/core' into for-next)
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+Merging quilt/device-mapper (27fd946 Fix a memory leak inadvertently introd=
+uced during simplification of cell_release_singleton() in commit 6f94a4c45a=
+6f744383f9f695dde019998db3df55 ("dm thin: fix stacked bi_next usage").)
+Merging embedded/master (4744b43 embedded: fix vc_translate operator preced=
+ence)
+Merging firmware/master (6e03a20 firmware: speed up request_firmware(), v3)
+Merging pcmcia/master (80af9e6 pcmcia at91_cf: fix raw gpio number usage)
+Merging mmc/mmc-next (9a59701 mmc: mmci: Use correct GPIO binding for IRQ r=
+equests)
+Merging kgdb/kgdb-next (3751d3e x86,kgdb: Fix DEBUG_RODATA limitation using=
+ text_poke())
+Merging slab/for-next (b80b6c0 Merge branch 'slab/next' into for-next)
+Merging uclinux/for-next (5e442a4 Revert "proc: fix races against execve() =
+of /proc/PID/fd**")
+Merging md/for-next (39389cf MD RAID1: Further conditionalize 'fullsync')
+Merging mfd/for-next (6ef9418 mfd: Add parameter to disable ab8500 battery =
+management)
+Merging battery/master (fcc015c smb347-charger: Clean up battery attributes)
+Merging drm/drm-next (5db578e vgaarb: Provide dummy default device function=
+s)
+CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_display.c
+Merging fbdev/fbdev-next (3499b1d Merge branch 'fixes' of git://linuxtv.org=
+/pinchartl/fbdev into fbdev-next)
+Merging viafb/viafb-next (838ac78 viafb: avoid refresh and mode lookup in s=
+et_par)
+Merging omap_dss2/for-next (8b53d99 OMAPDSS: DISPC: Correct DISPC functiona=
+l clock usage)
+Merging regulator/for-next (a9ca91e Merge branch 'regulator-regmap' into re=
+gulator-next)
+Merging security/next (898bfc1 Merge tag 'v3.4-rc5' into next)
+CONFLICT (content): Merge conflict in include/linux/filter.h
+CONFLICT (content): Merge conflict in arch/x86/Kconfig
+Merging selinux/master (c737f82 SELinux: remove unused common_audit_data in=
+ flush_unauthorized_files)
+Merging lblnet/master (7e27d6e Linux 2.6.35-rc3)
+Merging watchdog/master (963306b watchdog: Add watchdog_active() routine)
+Merging dwmw2-iommu/master (c3b92c8 Linux 3.1)
+Merging iommu/next (7aff2d0 Merge branches 'iommu/fixes', 'dma-debug', 'arm=
+/omap' and 'arm/tegra' into next)
+Merging osd/linux-next (72749a2 exofs: Cap on the memcpy() size)
+Merging jc_docs/docs-next (5c050fb docs: update the development process doc=
+ument)
+Merging trivial/for-next (15ed103 edac: Fix spelling errors.)
+CONFLICT (modify/delete): sound/soc/imx/Kconfig deleted in HEAD and modifie=
+d in trivial/for-next. Version trivial/for-next of sound/soc/imx/Kconfig le=
+ft in tree.
+$ git rm -f sound/soc/imx/Kconfig
+Merging audit/for-next (dcd6c92 Linux 3.3-rc1)
+Merging pm/linux-next (d9b4fa8 PM / Sleep: User space wakeup sources garbag=
+e collector Kconfig option)
+Merging apm/for-next (f283d22 APM: fix deadlock in APM_IOC_SUSPEND ioctl)
+Merging fsnotify/for-next (1aec9c0 inotify: automatically restart syscalls)
+Merging edac/linux_next (a4b4be3 edac: rename channel_info to rank_info)
+Merging edac-amd/for-next (305f1c3 Merge branch '3.3-pci_device_id' into ed=
+ac-for-next)
+Merging devicetree/devicetree/next (0f22dd3 of: Only compile OF_DYNAMIC on =
+PowerPC pseries and iseries)
+Merging spi/spi/next (d57a428 spi/devicetree: Move devicetree support code =
+into spi directory)
+Merging tip/auto-latest (dc71c17 Merge branch 'timers/urgent')
+CONFLICT (content): Merge conflict in arch/x86/Kconfig
+CONFLICT (content): Merge conflict in Makefile
+Applying: kbuild: merge fix for sorting exceptions tables at build time
+Merging rcu/rcu/next (9e03688 Merge branches 'barrier.2012.05.04b', 'fixes.=
+2012.04.26a', 'inline.2012.05.02b' and 'srcu.2012.04.30a' into HEAD)
+Merging cputime/cputime (c3e0ef9 [S390] fix cputime overflow in uptime_proc=
+_show)
+Merging uprobes/for-next (0326f5a uprobes/core: Handle breakpoint and singl=
+estep exceptions)
+Merging kmemleak/kmemleak (4878677 kmemleak: do not leak object after tree =
+insertion error)
+Merging kvm/linux-next (e726b1b KVM: s390: implement KVM_CAP_NR/MAX_VCPUS)
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+Merging kvm-ppc/kvm-ppc-next (07dc7a4 KVM: PPC: Emulator: clean up SPR read=
+s and writes)
+Merging oprofile/for-next (c16fa4f Linux 3.3)
+Merging xen/upstream/xen (af3a3ab Merge git://git.kernel.org/pub/scm/linux/=
+kernel/git/steve/gfs2-3.0-fixes)
+Merging xen-two/linux-next (cbcc4ca Merge branch 'stable/for-linus-3.5' int=
+o linux-next)
+Merging xen-pvhvm/linux-next (b056b6a xen: suspend: remove xen_hvm_suspend)
+Merging percpu/for-next (6c41792 percpu, x86: don't use PMD_SIZE as embedde=
+d atom_size on 32bit)
+Merging workqueues/for-next (0976dfc workqueue: Catch more locking problems=
+ with flush_work())
+Merging drivers-x86/linux-next (ad229c5 toshiba_acpi: Add support for trans=
+flective LCD)
+Merging hwpoison/hwpoison (46e387b Merge branch 'hwpoison-hugepages' into h=
+wpoison)
+Merging sysctl/master (4e474a0 sysctl: protect poll() in entries that may g=
+o away)
+Merging regmap/for-next (56ef671 Merge branches 'regmap-core' and 'regmap-s=
+tride' into regmap-next)
+CONFLICT (content): Merge conflict in drivers/base/regmap/regmap.c
+Merging hsi/for-next (43139a6 HSI: hsi_char: Update ioctl-number.txt)
+Merging driver-core/driver-core-next (b5f3abf params: replace printk(KERN_<=
+LVL>...) with pr_<lvl>(...))
+Merging tty/tty-next (d29f3ef tty_lock: Localise the lock)
+Merging usb/usb-next (3aa2ae7 USB: EHCI: OMAP: Finish ehci omap phy reset c=
+ycle before adding hcd.)
+CONFLICT (content): Merge conflict in drivers/usb/host/ehci-tegra.c
+CONFLICT (modify/delete): drivers/usb/core/inode.c deleted in usb/usb-next =
+and modified in HEAD. Version HEAD of drivers/usb/core/inode.c left in tree.
+CONFLICT (content): Merge conflict in drivers/input/tablet/wacom_wac.c
+$ git rm -f drivers/usb/core/inode.c
+Merging staging/staging-next (61cd983 Staging: Comedi adv_pci1710 : Correct=
+ed over 80 column warnings)
+CONFLICT (modify/delete): drivers/staging/serial/68360serial.c deleted in s=
+taging/staging-next and modified in HEAD. Version HEAD of drivers/staging/s=
+erial/68360serial.c left in tree.
+CONFLICT (content): Merge conflict in drivers/staging/line6/driver.c
+CONFLICT (content): Merge conflict in drivers/staging/android/Makefile
+CONFLICT (content): Merge conflict in drivers/staging/android/Kconfig
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in drivers/Kconfig
+$ git rm -f drivers/staging/serial/68360serial.c
+Merging char-misc/char-misc-next (9912143 parport: remove unused dead code =
+from lowlevel drivers)
+Merging tmem/linux-next (0f1ea93 Merge branch 'stable/frontswap.v14' into l=
+inux-next)
+Merging writeback/writeback-for-next (4cd9069 fs: remove 8 bytes of padding=
+ from struct writeback_control on 64 bit builds)
+Merging arm-dt/devicetree/arm-next (ede338f dt: add documentation of ARM dt=
+ boot interface)
+Merging hwspinlock/linux-next (8b37fcf hwspinlock: add MAINTAINERS entries)
+Merging pinctrl/for-next (1772311 pinctrl: add pinctrl-mxs support)
+CONFLICT (content): Merge conflict in drivers/pinctrl/core.c
+CONFLICT (content): Merge conflict in Documentation/driver-model/devres.txt
+Merging tegra/for-next (264b11d Merge branch 'for-3.5/defconfig' into for-n=
+ext)
+Merging moduleh/for-sfr (3c5c69b blackfin: fix ifdef fustercluck in mach-bf=
+538/boards/ezkit.c)
+Merging vhost/linux-next (53ffd22 virtio-net: remove useless disable on fre=
+eze)
+CONFLICT (content): Merge conflict in drivers/net/virtio_net.c
+Merging kmap_atomic/kmap_atomic (317b6e1 feature-removal-schedule.txt: sche=
+dule the deprecated form of kmap_atomic() for removal)
+Merging modem-shm/for-next (3cff1cc caif_shm: Add CAIF driver for Shared me=
+mory for M7400)
+CONFLICT (content): Merge conflict in drivers/Kconfig
+Merging memblock/memblock-kill-early_node_map (7bd0b0f memblock: Reimplemen=
+t memblock allocation using reverse free area iterator)
+Merging remoteproc/for-next (e12bc14 remoteproc: s/big switch/lookup table/)
+Merging irqdomain/irqdomain/next (e7cc3ac dt: fix twl4030 for non-dt compil=
+e on x86)
+Merging gpio/gpio/next (f141ed6 gpio: Move DT support code into drivers/gpi=
+o)
+Merging arm-soc/for-next (6f1f0d2 Merge branch 'next/dt' into for-next)
+CONFLICT (content): Merge conflict in lib/Makefile
+CONFLICT (modify/delete): drivers/mfd/ab5500-core.c deleted in arm-soc/for-=
+next and modified in HEAD. Version HEAD of drivers/mfd/ab5500-core.c left i=
+n tree.
+CONFLICT (content): Merge conflict in arch/arm/mach-lpc32xx/common.c
+CONFLICT (modify/delete): arch/arm/mach-ixp23xx/roadrunner.c deleted in arm=
+-soc/for-next and modified in HEAD. Version HEAD of arch/arm/mach-ixp23xx/r=
+oadrunner.c left in tree.
+CONFLICT (modify/delete): arch/arm/mach-ixp23xx/pci.c deleted in arm-soc/fo=
+r-next and modified in HEAD. Version HEAD of arch/arm/mach-ixp23xx/pci.c le=
+ft in tree.
+CONFLICT (modify/delete): arch/arm/mach-ixp23xx/ixdp2351.c deleted in arm-s=
+oc/for-next and modified in HEAD. Version HEAD of arch/arm/mach-ixp23xx/ixd=
+p2351.c left in tree.
+CONFLICT (modify/delete): arch/arm/mach-ixp23xx/include/mach/platform.h del=
+eted in arm-soc/for-next and modified in HEAD. Version HEAD of arch/arm/mac=
+h-ixp23xx/include/mach/platform.h left in tree.
+CONFLICT (modify/delete): arch/arm/mach-ixp2000/pci.c deleted in arm-soc/fo=
+r-next and modified in HEAD. Version HEAD of arch/arm/mach-ixp2000/pci.c le=
+ft in tree.
+CONFLICT (modify/delete): arch/arm/mach-ixp2000/ixdp2x01.c deleted in arm-s=
+oc/for-next and modified in HEAD. Version HEAD of arch/arm/mach-ixp2000/ixd=
+p2x01.c left in tree.
+CONFLICT (modify/delete): arch/arm/mach-ixp2000/ixdp2800.c deleted in arm-s=
+oc/for-next and modified in HEAD. Version HEAD of arch/arm/mach-ixp2000/ixd=
+p2800.c left in tree.
+CONFLICT (modify/delete): arch/arm/mach-ixp2000/ixdp2400.c deleted in arm-s=
+oc/for-next and modified in HEAD. Version HEAD of arch/arm/mach-ixp2000/ixd=
+p2400.c left in tree.
+CONFLICT (modify/delete): arch/arm/mach-ixp2000/include/mach/platform.h del=
+eted in arm-soc/for-next and modified in HEAD. Version HEAD of arch/arm/mac=
+h-ixp2000/include/mach/platform.h left in tree.
+CONFLICT (modify/delete): arch/arm/mach-ixp2000/enp2611.c deleted in arm-so=
+c/for-next and modified in HEAD. Version HEAD of arch/arm/mach-ixp2000/enp2=
+611.c left in tree.
+$ git rm -f drivers/mfd/ab5500-core.c
+$ git rm -f -r arch/arm/mach-ixp2000 arch/arm/mach-ixp23xx
+Merging ep93xx/ep93xx-cleanup (a1eacd7 arm: ep93xx: use gpio_led_register_d=
+evice)
+Merging kvmtool/master (0333eec kvm tools: Update README for CONFIG_FB_VESA)
+Merging dma-mapping/dma-mapping-next (c6b1f07 ARM: integrate CMA with DMA-m=
+apping subsystem)
+CONFLICT (content): Merge conflict in arch/x86/include/asm/dma-mapping.h
+Merging dma-buf/for-next (69964ea Linux 3.4-rc5)
+Merging ktest/for-next (648a182 ktest: Allow a test to override REBOOT_ON_S=
+UCCESS)
+Merging scsi-post-merge/merge-base:master ()
+$ git checkout akpm
+Applying: pagemap.h: fix warning about possibly used before init var
+Applying: proc/pid/pagemap: correctly report non-present ptes and holes bet=
+ween vmas
+Applying: mm: fix division by 0 in percpu_pagelist_fraction()
+Applying: hugetlb: prevent BUG_ON in hugetlb_fault() -> hugetlb_cow()
+Applying: namespaces, pid_ns: fix leakage on fork() failure
+Applying: memcg: free spare array to avoid memory leak
+Applying: drivers/leds: correct __devexit annotations
+Applying: umem: fix up unplugging
+Applying: arch/x86/platform/iris/iris.c: register a platform device and a p=
+latform driver
+Applying: arch/x86/include/asm/spinlock.h: fix comment
+Applying: arch/x86/kernel/apic/io_apic.c: move io_apic_level_ack_pending() =
+inside CONFIG_GENERIC_PENDING_IRQ
+Applying: drivers/xen/Kconfig: fix Kconfig layout
+Applying: avr32: don't mask signals in the error path
+Applying: avr32: use set_current_blocked() in handle_signal/sys_rt_sigreturn
+Applying: avr32: use block_sigmask()
+Applying: m32r: use set_current_blocked() and block_sigmask()
+Applying: m68k: use set_current_blocked() and block_sigmask()
+Applying: mn10300: use set_current_blocked() and block_sigmask()
+Applying: cpuidle: remove unused hrtimer_peek_ahead_timers() call
+Applying: cpuidle: add checks to avoid NULL pointer dereference
+Applying: cris: use set_current_blocked() and block_sigmask()
+Applying: cris: select GENERIC_ATOMIC64
+Applying: x86: use this_cpu_xxx to replace percpu_xxx funcs
+Applying: x86-use-this_cpu_xxx-to-replace-percpu_xxx-funcs-fix
+Applying: x86: change percpu_read_stable() to this_cpu_read_stable()
+Applying: net: use this_cpu_xxx replace percpu_xxx funcs
+Applying: percpu: remove percpu_xxx() functions
+Applying: percpu-remove-percpu_xxx-functions-fix
+Applying: timeconst.pl: remove deprecated defined(@array)
+Applying: ia64: use set_current_blocked() and block_sigmask()
+Applying: microblaze: don't reimplement force_sigsegv()
+Applying: microblaze: no need to reset handler if SA_ONESHOT
+Applying: microblaze: fix signal masking
+Applying: microblaze: use set_current_blocked() and block_sigmask()
+Applying: score: don't mask signals if we fail to setup signal stack
+Applying: score: use set_current_blocked() and block_sigmask()
+Applying: h8300: use set_current_blocked() and block_sigmask()
+Applying: drivers/thermal/spear_thermal.c: add Device Tree probing capabili=
+ty
+Applying: unicore32: use block_sigmask()
+Applying: connector/userns: replace netlink uses of cap_raised with capable.
+Applying: blackfin: use set_current_blocked() and block_sigmask()
+Applying: ocfs2: use find_last_bit()
+Applying: ocfs2: use bitmap_weight()
+Applying: drivers/scsi/ufs: use module_pci_driver
+Applying: drivers/scsi/ufs: reverse the ufshcd_is_device_present logic
+Applying: drivers/scsi/ufs: fix evaluation of task_failed status
+Applying: drivers/scsi/ufs: fix incorrect return value about SUCCESS and FA=
+ILED
+Applying: drivers/scsi/atp870u.c: fix bad use of udelay
+Applying: vfs: increment iversion when a file is truncated
+Applying: fs: symlink restrictions on sticky directories
+Applying: fs: hardlink creation restrictions
+Applying: fsnotify: remove unused parameter from send_to_group()
+Applying: fsnotify: handle subfiles' perm events
+Applying: brlocks/lglocks: cleanups
+Applying: mm/memory_failure: let the compiler add the function name
+Applying: mm/mempolicy.c: use enum value MPOL_REBIND_ONCE in mpol_rebind_po=
+licy()
+Applying: mm/hugetlb.c: use long vars instead of int in region_count()
+Applying: mm, thp: remove unnecessary ret variable
+Applying: mm, thp: allow fallback when pte_alloc_one() fails for huge pmd
+Applying: mm: remove swap token code
+Applying: mm: vmscan: remove lumpy reclaim
+Applying: mm: vmscan: do not stall on writeback during memory compaction
+Applying: mm: vmscan: remove reclaim_mode_t
+Applying: hugetlb: rename max_hstate to hugetlb_max_hstate
+Applying: hugetlbfs: don't use ERR_PTR with VM_FAULT* values
+Applying: hugetlbfs: add an inline helper for finding hstate index
+Applying: hugetlb: use mmu_gather instead of a temporary linked list for ac=
+cumulating pages
+Applying: hugetlb-use-mmu_gather-instead-of-a-temporary-linked-list-for-acc=
+umulating-pages-fix
+Applying: hugetlb-use-mmu_gather-instead-of-a-temporary-linked-list-for-acc=
+umulating-pages-fix-fix
+Applying: hugetlb-use-mmu_gather-instead-of-a-temporary-linked-list-for-acc=
+umulating-pages-fix-2
+Applying: hugetlb: avoid taking i_mmap_mutex in unmap_single_vma() for huge=
+tlb
+Applying: hugetlb: simplify migrate_huge_page()
+Applying: memcg: add HugeTLB extension
+Applying: memcg-add-hugetlb-extension-fix
+Applying: memcg-add-hugetlb-extension-fix-fix
+Applying: hugetlb: add charge/uncharge calls for HugeTLB alloc/free
+Applying: memcg: track resource index in cftype private
+Applying: hugetlbfs: add memcg control files for hugetlbfs
+Applying: memcg: use scnprintf instead of sprintf
+Applying: hugetlbfs-add-memcg-control-files-for-hugetlbfs-use-scnprintf-ins=
+tead-of-sprintf-fix
+Applying: hugetlbfs: add a list for tracking in-use HugeTLB pages
+Applying: memcg: move HugeTLB resource count to parent cgroup on memcg remo=
+val
+Applying: memcg-move-hugetlb-resource-count-to-parent-cgroup-on-memcg-remov=
+al-fix
+Applying: memcg-move-hugetlb-resource-count-to-parent-cgroup-on-memcg-remov=
+al-fix-fix
+Applying: hugetlb: migrate memcg info from oldpage to new page during migra=
+tion
+Applying: hugetlb-migrate-memcg-info-from-oldpage-to-new-page-during-migrat=
+ion-fix
+Applying: hugetlb-use-mmu_gather-instead-of-a-temporary-linked-list-for-acc=
+umulating-pages-fix-2
+Applying: memcg: add memory controller documentation for hugetlb management
+Applying: mm: fix off-by-one bug in print_nodes_state()
+Applying: mm: use kcalloc() instead of kzalloc() to allocate array
+Applying: mm/mmap.c: find_vma(): remove unnecessary if(mm) check
+Applying: mm-mmapc-find_vma-remove-unnecessary-ifmm-check-fix
+Applying: mm/fork: fix overflow in vma length when copying mmap on clone
+Applying: mm/vmstat.c: remov debug fs entries on failure of file creation a=
+nd made extfrag_debug_root dentry local
+Applying: mm: correctly synchronize rss-counters at exit/exec
+Applying: thp, memcg: split hugepage for memcg oom on cow
+Applying: mm: do_migrate_pages() calls migrate_to_node() even if task is al=
+ready on a correct node
+Applying: mm-do_migrate_pages-calls-migrate_to_node-even-if-task-is-already=
+-on-a-correct-node-fix
+Applying: mm: do_migrate_pages(): rename arguments
+Applying: kernel: cgroup: push rcu read locking from css_is_ancestor() to c=
+allsite
+Applying: mm: memcg: count pte references from every member of the reclaime=
+d hierarchy
+Applying: mm-memcg-count-pte-references-from-every-member-of-the-reclaimed-=
+hierarchy-fix
+Applying: mm: rename is_mlocked_vma() to mlocked_vma_newpage()
+Applying: mm-rename-is_mlocked_vma-to-mlocked_vma_newpage-fix
+Applying: mm, thp: drop page_table_lock to uncharge memcg pages
+Applying: Documentation: memcg: future proof hierarchical statistics docume=
+ntation
+Applying: Cross Memory Attach: make it Kconfigurable
+Applying: bug: introduce BUILD_BUG_ON_INVALID() macro
+Applying: bug: completely remove code generated by disabled VM_BUG_ON()
+Applying: x86: print e820 physical addresses consistently with other parts =
+of kernel
+Applying: x86: print physical addresses consistently with other parts of ke=
+rnel
+Applying: swiotlb: print physical addresses consistently with other parts o=
+f kernel
+Applying: mm: print physical addresses consistently with other parts of ker=
+nel
+Applying: kbuild: install kernel-page-flags.h
+Applying: tools/vm/page-types.c: cleanups
+Applying: mm: move is_vma_temporary_stack() declaration to huge_mm.h
+Applying: memcg: fix/change behavior of shared anon at moving task
+Applying: memcg swap: mem_cgroup_move_swap_account never needs fixup
+Applying: memcg swap: use mem_cgroup_uncharge_swap()
+Applying: mm/memcg: scanning_global_lru means mem_cgroup_disabled
+Applying: mm/memcg: move reclaim_stat into lruvec
+Applying: mm: push lru index into shrink_[in]active_list()
+Applying: mm-push-lru-index-into-shrink_active_list-fix
+Applying: mm: mark mm-inline functions as __always_inline
+Applying: mm: remove lru type checks from __isolate_lru_page()
+Applying: mm/memcg: kill mem_cgroup_lru_del()
+Applying: memcg: mark more functions/variables as static
+Applying: memcg: remove unused variable
+Applying: memcg: mark stat field of mem_cgroup struct as __percpu
+Applying: memcg: remove redundant parentheses
+Applying: memcg: make threshold index in the right position
+Applying: memcg: revise the position of threshold index while unregistering=
+ event
+Applying: mm/memcg: use vm_swappiness from target memory cgroup
+Applying: memcg: add mlock statistic in memory.stat
+Applying: memcg-add-mlock-statistic-in-memorystat-fix
+Applying: mm/vmscan: store "priority" in struct scan_control
+Applying: mm: add link from struct lruvec to struct zone
+Applying: mm/vmscan: push lruvec pointer into isolate_lru_pages()
+Applying: mm/vmscan: push zone pointer into shrink_page_list()
+Applying: mm/vmscan: remove update_isolated_counts()
+Applying: mm/vmscan: push lruvec pointer into putback_inactive_pages()
+Applying: mm/vmscan: replace zone_nr_lru_pages() with get_lruvec_size()
+Applying: mm/vmscan: push lruvec pointer into inactive_list_is_low()
+Applying: mm/vmscan: push lruvec pointer into shrink_list()
+Applying: mm/vmscan: push lruvec pointer into get_scan_count()
+Applying: mm/vmscan: push lruvec pointer into should_continue_reclaim()
+Applying: mm/vmscan: kill struct mem_cgroup_zone
+Applying: security/keys/keyctl.c: suppress memory allocation failure warning
+Applying: frv: use set_current_blocked() and block_sigmask()
+Applying: um/kernel/trap.c: port OOM changes to handle_page_fault()
+Applying: sgi-xp: use lockdep_assert_held()
+Applying: drivers/scsi/aha152x.c: remove broken usage of spin_is_locked()
+Applying: XFS: fix lock ASSERT on UP
+Applying: mm/huge_memory.c: use lockdep_assert_held()
+Applying: futex: use lockdep_assert_held() for lock checking
+Applying: drivers/net/irda/sir_dev.c: remove spin_is_locked()
+Applying: drivers/net/ethernet/smsc/smsc911x.h: use lockdep_assert_held() i=
+nstead of home grown buggy construct
+Applying: spinlocks.txt: add a discussion on why spin_is_locked() is bad
+Applying: spinlockstxt-add-a-discussion-on-why-spin_is_locked-is-bad-fix
+Applying: include/linux/spinlock.h: add a kerneldoc comment to spin_is_lock=
+ed() that discourages its use
+Applying: checkpatch: check for spin_is_locked()
+Applying: CodingStyle: add kmalloc_array() to memory allocators
+Applying: parisc: use set_current_blocked() and block_sigmask()
+Applying: introduce SIZE_MAX
+Applying: sethostname/setdomainname: notify userspace when there is a chang=
+e in uts_kern_table
+Applying: NMI watchdog: fix for lockup detector breakage on resume
+Applying: nmi-watchdog-fix-for-lockup-detector-breakage-on-resume-fix
+Applying: nmi-watchdog-fix-for-lockup-detector-breakage-on-resume-fix-fix-f=
+ix
+Applying: nmi-watchdog-fix-for-lockup-detector-breakage-on-resume-fix-fix
+Applying: watchdog: fix for lockup detector breakage on resume
+Applying: task_work_add: generic process-context callbacks
+Applying: genirq: reimplement exit_irq_thread() hook via task_work_add()
+Applying: hexagon: do_notify_resume() needs tracehook_notify_resume()
+Applying: keys: change keyctl_session_to_parent() to use task_work_add()
+Applying: keys: kill the dummy key_replace_session_keyring()
+Applying: keys: kill task_struct->replacement_session_keyring
+Applying: kernel/irq/manage.c: use the pr_foo() infrastructure to prefix pr=
+intks
+Applying: vsprintf: correctly handle width when '#' flag used in %#p format.
+Applying: vsprintf-correctly-handle-width-when-flag-used-in-%p-format-check=
+patch-fixes
+Applying: vsprintf: further optimize decimal conversion
+Applying: vsprintf-further-optimize-decimal-conversion-v2
+Applying: vsprintf-further-optimize-decimal-conversion-checkpatch-fixes
+Applying: hamradio/scc: orphan driver in MAINTAINERS
+Applying: MAINTAINERS: remove Alessandro
+Applying: blacklight: remove redundant spi driver bus initialization
+Applying: lcd: add callbacks for early fb event blank support
+Applying: fbdev: add events for early fb event support
+Applying: drivers/leds/leds-lp5521.c: fix lp5521_read() error handling
+Applying: leds: driver for DA9052/53 PMIC v2
+Applying: leds-led-module-for-da9052-53-pmic-v2-fix
+Applying: leds: add LED driver for lm3556 chip
+Applying: leds-add-led-driver-for-lm3556-chip-checkpatch-fixes
+Applying: leds: lm3556: don't call kfree for the memory allocated by devm_k=
+zalloc
+Applying: leds: simple_strtoul() cleanup
+Applying: leds: Use kcalloc instead of kzalloc to allocate array
+Applying: leds: add new field to led_classdev struct to save activation sta=
+te
+Applying: leds: change existing triggers to use activated flag
+Applying: leds: change ledtrig-timer to use activated flag
+Applying: include/linux/led-lm3530.h: comment correction about the range of=
+ brightness
+Applying: drivers/leds/leds-lm3530.c: simplify als configuration on initial=
+ization
+Applying: leds: heartbeat: stop on shutdown
+Applying: leds-heartbeat-stop-on-shutdown-v5
+Applying: leds-heartbeat-stop-on-shutdown-checkpatch-fixes
+Applying: leds: add new transient trigger for one shot timer activation
+Applying: list_debug: WARN for adding something already in the list
+Applying: lib/test-kstrtox.c: mark const init data with __initconst instead=
+ of __initdata
+Applying: lib/string_helpers.c: make arrays static
+Applying: lib/bitmap.c: fix documentation for scnprintf() functions
+Applying: vsprintf: fix %ps on non symbols when using kallsyms
+Applying: spinlock_debug: print kallsyms name for lock
+Applying: radix-tree: fix preload vector size
+Applying: checkpatch: suggest pr_<level> over printk(KERN_<LEVEL>
+Applying: init: disable sparse checking of the mount.o source files
+Applying: rtc/spear: add Device Tree probing capability
+Applying: drivers/rtc/rtc-ep93xx.c: convert to use module_platform_driver()
+Applying: rtc: add ioctl to get/clear battery low voltage status
+Applying: drivers/rtc/rtc-pcf8563.c: add RTC_VL_READ/RTC_VL_CLR ioctl featu=
+re
+Applying: drivers/rtc/Kconfig: place RTC_DRV_IMXDI and RTC_MXC under "on-CP=
+U RTC drivers"
+Applying: rtc: rename CONFIG_RTC_MXC to CONFIG_RTC_DRV_MXC
+Applying: rtc-rename-config_rtc_mxc-to-config_rtc_drv_mxc-fix
+Applying: rtc: ds1307: remove superfluous initialization
+Applying: rtc: ds1307: add trickle charger support
+Applying: drivers/rtc/rtc-m41t93.c: don't let get_time() reset M41T93_FLAG_=
+OF
+Applying: HPFS: remove PRINTK() macro
+Applying: kmod: unexport call_usermodehelper_freeinfo()
+Applying: kmod: convert two call sites to call_usermodehelper_fns()
+Applying: kmod: move call_usermodehelper_fns() to .c file and unexport all =
+it's helpers
+Applying: kmod.c: fix kernel-doc warning
+Applying: kmod: avoid deadlock from recursive kmod call
+Applying: cred: remove task_is_dead() from __task_cred() validation
+Applying: stack usage: add pid to warning printk in check_stack_usage
+Applying: proc: clean up /proc/<pid>/environ handling
+Applying: proc-clean-up-proc-pid-environ-handling-checkpatch-fixes
+Applying: proc: unify ptrace_may_access() locking code
+Applying: proc: remove mm_for_maps()
+Applying: proc: use mm_access() instead of ptrace_may_access()
+Applying: proc: don't do dummy rcu_read_lock/rcu_read_unlock on error path
+Applying: proc: pass "fd" by value in /proc/*/{fd,fdinfo} code
+Applying: procfs: use more apprioriate types when dumping /proc/N/stat
+Applying: proc: report file/anon bit in /proc/pid/pagemap
+Applying: proc/smaps: carefully handle migration entries
+Applying: proc/smaps: show amount of nonlinear ptes in vma
+Applying: proc/smaps: show amount of hwpoison pages
+Applying: proc: use IS_ERR_OR_NULL()
+Applying: fork: call complete_vfork_done() after clearing child_tid and flu=
+shing rss-counters
+Applying: cpu: introduce clear_tasks_mm_cpumask() helper
+Applying: arm: use clear_tasks_mm_cpumask()
+Applying: powerpc: use clear_tasks_mm_cpumask()
+Applying: sh: use clear_tasks_mm_cpumask()
+Applying: blackfin: a couple of task->mm handling fixes
+Applying: blackfin: fix possible deadlock in decode_address()
+Applying: um: should hold tasklist_lock while traversing processes
+Applying: um: fix possible race on task->mm
+Applying: um: properly check all process' threads for a live mm
+Applying: ipc/sem.c: alternatives to preempt_disable()
+Applying: ipc/mqueue: cleanup definition names and locations
+Applying: ipc/mqueue: switch back to using non-max values on create
+Applying: ipc/mqueue: enforce hard limits
+Applying: ipc/mqueue: update maximums for the mqueue subsystem
+Applying: ipc/mqueue: using vmalloc requires including vmalloc.h
+Applying: mqueue: revert bump up DFLT_*MAX
+Applying: mqueue: don't use kmalloc with KMALLOC_MAX_SIZE
+Applying: mqueue: separate mqueue default value from maximum value
+Applying: selftests: add mq_open_tests
+Applying: ipc/mqueue: improve performance of send/recv
+Applying: ipc-mqueue-improve-performance-of-send-recv-fix
+Applying: ipc/mqueue: correct mq_attr_ok test
+Applying: ipc-mqueue-correct-mq_attr_ok-test-fix
+Applying: ipc/mqueue: strengthen checks on mqueue creation
+Applying: ipc-mqueue-strengthen-checks-on-mqueue-creation-fix
+Applying: tools/selftests: add mq_perf_tests
+Applying: tools-selftests-add-mq_perf_tests-checkpatch-fixes
+Applying: rapidio: add DMA engine support for RIO data transfers
+Applying: rapidio/tsi721: add DMA engine support
+Applying: eventfd: change int to __u64 in eventfd_signal()
+Applying: eventfd-change-int-to-__u64-in-eventfd_signal-fix
+Applying: w1: introduce a slave mutex for serializing IO
+Applying: aio/vfs: cleanup of rw_copy_check_uvector() and compat_rw_copy_ch=
+eck_uvector()
+Applying: sysctl: make kernel.ns_last_pid control dependent on CHECKPOINT_R=
+ESTORE
+Applying: fs, proc: introduce /proc/<pid>/task/<tid>/children entry
+Applying: c/r: fs, proc: Move children entry back to tid_base_stuff
+Applying: syscalls, x86: add __NR_kcmp syscall
+Applying: syscalls-x86-add-__nr_kcmp-syscall-v8 comment update
+Applying: syscalls-x86-add-__nr_kcmp-syscall-v8-comment-update-fix
+Applying: c/r: procfs: add arg_start/end, env_start/end and exit_code membe=
+rs to /proc/$pid/stat
+Applying: c/r: prctl: extend PR_SET_MM to set up more mm_struct entries
+Applying: c/r: prctl: simplify PR_SET_MM on mm::code/data assignment
+Applying: c-r-prctl-simplify-pr_set_mm-on-mm-code-data-assignment-fix
+Applying: c/r: prctl: return -EFAULT instead of -EINVAL in case if underlie=
+d VMA is not found
+Applying: c/r: prctl: add ability to set new mm_struct::exe_file
+Applying: c/r: prctl: update prctl_set_mm_exe_file() after mm->num_exe_file=
+_vmas removal
+Applying: c/r: prctl: add ability to get clear_tid_address
+Applying: c/r: prctl: drop VMA flags test on PR_SET_MM_ stack data assignme=
+nt
+Applying: ramoops: use pstore interface
+Applying: ramoops: fix printk format warnings
+Applying: kconfig: update compression algorithm info
+Applying: notify_change(): check that i_mutex is held
+Merging quilt/akpm (2b919c6 notify_change(): check that i_mutex is held)
+[master 2b0b7b9] Revert "kconfig: Add error handling to KCONFIG_ALLCONFIG"
+[master 65186ba] Revert "smb347-charger: Clean up battery attributes"
+[master 92dde9d] Revert "smb347-charger: Convert to regmap API"
+
+--Signature=_Mon__7_May_2012_17_32_20_+1000_KmgYLkC/H1BJeUfW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPp3qEAAoJEECxmPOUX5FE4zAP/2aK82w2ebo1gcl2BgLocgUw
+49xNEkIPauiCHGIcdci8HV6K2evkzrW+nyqISrkOQO0xlVA49Fm28joL28VCTAZx
+K1BuSmWs05iMXHAohNs/MktXIwt2IC0ocChTLHe00TgUi/AeV3Yj5S38OChK8usV
+KNrohbYHBMG0AIJ8dtu5+od1g3prsapjovAUNogqJd76fwzqDsv8XR31rlNy0bxd
+yRPPvSX2QcnpFEy7ykkN59vWdzGwc4Rdt+D6Inx+KszeDko5bXnbc06ss/rL/fz8
+9IBDl3vXBohAtcs5YZ+0Qt0GvoThuMnIWNELpQtKLW8SDpiNTGHZUdGdSh5u54Al
+PJ2apjsWbXoTPN3bvqMd2grVgylZpVRe6OL1GziIreGn+sh7a14nLmNdJz8gFe8Q
+cnjzcAuLYpooRXTf/IsneTJN+Bq/JIoq96WZFyxTUlddRvBS1nTRCgPIPVgmOv0k
+JP/fmQJZfORnaBIUVM45/4SF+dZofUjRJEVc0K4ulfzHPMy4mBnn4BsZjNVUtfXl
+cW5kf95DEik2+viGW6nHIXo8wSxautaJVPBCLwbPFrlEsEeyj+x5SFM74V1y4NJr
+2qaj/v7RIPKObWD78qz7F2l402/bSSfXquvCLCPqMTa3tKWlYgC186N0wDZ2MsxM
+0VVWVY//I9Q8o9J27Kuf
+=Bd19
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__7_May_2012_17_32_20_+1000_KmgYLkC/H1BJeUfW--
