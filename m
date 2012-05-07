@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826Ab2EGPse (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 11:48:34 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35530 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754541Ab2EGPsc (ORCPT
+	id S1757047Ab2EGPwJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 11:52:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47980 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756583Ab2EGPwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 11:48:32 -0400
-Date: Mon, 7 May 2012 08:48:26 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] Input: tl6040-vibra: Device Tree support
-Message-ID: <20120507154826.GB10222@core.coreip.homeip.net>
-References: <1336133113-12224-1-git-send-email-peter.ujfalusi@ti.com>
- <20120507070233.GB22074@core.coreip.homeip.net>
- <4FA7A8B9.4040208@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA7A8B9.4040208@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 7 May 2012 11:52:05 -0400
+Subject: Re: [PATCH 4/7] perf/x86-ibs: Add support for IBS pseudo events
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120507154412.GH18810@erda.amd.com>
+References: <1335983192-23731-1-git-send-email-robert.richter@amd.com>
+	 <1335983192-23731-5-git-send-email-robert.richter@amd.com>
+	 <1336395782.27020.37.camel@laptop>  <20120507154412.GH18810@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 May 2012 17:51:51 +0200
+Message-ID: <1336405911.27020.70.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 01:49:29PM +0300, Peter Ujfalusi wrote:
-> Hi Dmitry,
-> 
-> On 05/07/2012 10:02 AM, Dmitry Torokhov wrote:
-> > Hi Peter,
+On Mon, 2012-05-07 at 17:44 +0200, Robert Richter wrote:
+> On 07.05.12 15:03:02, Peter Zijlstra wrote:
+> > On Wed, 2012-05-02 at 20:26 +0200, Robert Richter wrote:
+> > > +enum ibs_filter_type {
+> > > +       IBS_NO_FILTER           = 0,
+> > > +       IBS_MATCH_FILTER        = 1,
+> > > +       IBS_ANY_SET_FILTER      = 2,
+> > > +       IBS_PSEUDO_EVENT        = 0x0F,
+> > > +};
 > > 
-> > On Fri, May 04, 2012 at 03:05:13PM +0300, Peter Ujfalusi wrote:
-> >> +	if (pdata) {
-> >> +		info->vibldrv_res = pdata->vibldrv_res;
-> >> +		info->vibrdrv_res = pdata->vibrdrv_res;
-> >> +		info->viblmotor_res = pdata->viblmotor_res;
-> >> +		info->vibrmotor_res = pdata->vibrmotor_res;
-> >> +		vddvibl_uV = pdata->vddvibl_uV;
-> >> +		vddvibr_uV = pdata->vddvibr_uV;
-> >> +	} else {
-> >> +		of_property_read_u32(node, "vibldrv_res", &info->vibldrv_res);
-> >> +		of_property_read_u32(node, "vibrdrv_res", &info->vibrdrv_res);
-> >> +		of_property_read_u32(node, "viblmotor_res",
-> >> +				     &info->viblmotor_res);
-> >> +		of_property_read_u32(node, "vibrmotor_res",
-> >> +				     &info->vibrmotor_res);
-> > 
-> > Since these 4 appear to be mandatory properties don't we need to
-> > validate they are actually present in DT?
+> > I don't get how those pseudo events work, AFAIKT IBS_PSEUDO_EVENT causes
+> > one to loose all events since it does have a filter set but fails the
+> > filter and thus we skip the call to perf_event_overflow().
 > 
-> If the property does not exist in the DT blob the variable will not be
-> updated - it will remain 0.
-> I have kept the validity check for the resistance values. This will
-> catch the case when something is missing from the DT blob.
-> 
-> I just did not wanted to complicate the code with additional checks
-> since the end result would be the same.
+> You periodically (fix clk cycles or number of micro-ops) trigger IBS
+> samples and afterwards analyses the samples for certain filter rules
+> (see rule description in pmu-ibs.c). 
 
-Ah, indeed, I missed that we still validate the values.
+But IBS_PSEUDO_EVENT will fail all filter test and you'll end up with
+exactly 0 samples. Still somewhat confused..
 
-Applied, thanks Peter.
-
--- 
-Dmitry
