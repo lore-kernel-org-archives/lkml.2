@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253Ab2EGPXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 11:23:00 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:37619 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755531Ab2EGPW6 convert rfc822-to-8bit (ORCPT
+	id S1757281Ab2EGPXO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 11:23:14 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:50597 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756076Ab2EGPW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 11:22:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHo-OoxRj-sP1Tcy3oJ7DE3BOGSTnsWHZ5Q3hdmnK8A5jfjFcQ@mail.gmail.com>
-References: <CAHo-OoxRj-sP1Tcy3oJ7DE3BOGSTnsWHZ5Q3hdmnK8A5jfjFcQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 7 May 2012 08:22:36 -0700
-X-Google-Sender-Auth: T9Rwq5vR1rITkOr7m5x-EruJqbw
-Message-ID: <CA+55aFzY+W3ECUnyvqU_Su8_2TFqYj-K7U40KZaoe61oDUGdxw@mail.gmail.com>
-Subject: Re: setuid and RLIMIT_NPROC and 3.1+
-To: =?ISO-8859-2?Q?Maciej_=AFenczykowski?= <zenczykowski@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, neilb@suse.de,
-        Vasiliy Kulikov <segoon@openwall.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 7 May 2012 11:22:59 -0400
+Message-ID: <1336404172.12030.7.camel@router7789>
+Subject: [PATCH] re: drivers: Probable misuses of || -  it913x.c
+From: Malcolm Priestley <tvboxspy@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-media@vger.kernel.org
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Date: Mon, 07 May 2012 16:22:52 +0100
+In-Reply-To: <4FA7A7D8.7000806@redhat.com>
+References: <1333580415.23520.29.camel@joe2Laptop>
+	 <4FA7A7D8.7000806@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 7, 2012 at 3:06 AM, Maciej Żenczykowski
-<zenczykowski@gmail.com> wrote:
->
-> Having read the commit in question I get what it is trying to prevent,
-> but perhaps the setuid call should still be returning an error code
-> [E2BIG? EBUSY? EOVERFLOW? ENAVAIL?] for those programs that do bother
-> to check, even though it would 'succeed' in changing uid?
->
-> (In my case there is no exec following the setuid...)
+On Mon, 2012-05-07 at 07:45 -0300, Mauro Carvalho Chehab wrote:
+> Malcolm,
+> 
+> Em 04-04-2012 20:00, Joe Perches escreveu:
+> > Likely these should be && not ||
+> > 
+> > drivers/scsi/FlashPoint.c:				if(bit_cnt != 0 || bit_cnt != 8)
+> 
+> > drivers/media/dvb/dvb-usb/it913x.c:		if (ret == 0 || ret != -EBUSY || ret != -ETIMEDOUT)
+> > drivers/media/dvb/dvb-usb/it913x.c:		if (ret == 0 || ret != -EBUSY || ret != -ETIMEDOUT)
+> 
+> Could you please take a look on the above?
 
-But that means that in your case the setuid() did actually succeed.
+Hmm... yes, thanks, also a bug.
 
-So you didn't get an error return, and the setuid() actually worked.
-Only a later exec() would cause an error, but since you didn't do an
-exec(), everything should be perfectly fine.
+Just check for -EBUSY && -ETIMEDOUT
 
-So returning an error would actually be confusing: it would make the
-caller think that the setuid() failed and that you're still running
-with the old uid. But it isn't.
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+---
+ drivers/media/dvb/dvb-usb/it913x.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-So can you explain what the problem is for your workload? As far as I
-can tell, it should all work perfectly well.
+diff --git a/drivers/media/dvb/dvb-usb/it913x.c b/drivers/media/dvb/dvb-usb/it913x.c
+index 482d249..6244fe9 100644
+--- a/drivers/media/dvb/dvb-usb/it913x.c
++++ b/drivers/media/dvb/dvb-usb/it913x.c
+@@ -81,7 +81,7 @@ static int it913x_bulk_write(struct usb_device *dev,
+ 	for (i = 0; i < IT913X_RETRY; i++) {
+ 		ret = usb_bulk_msg(dev, usb_sndbulkpipe(dev, pipe),
+ 				snd, len , &actual_l, IT913X_SND_TIMEOUT);
+-		if (ret == 0 || ret != -EBUSY || ret != -ETIMEDOUT)
++		if (ret != -EBUSY && ret != -ETIMEDOUT)
+ 			break;
+ 	}
+ 
+@@ -99,7 +99,7 @@ static int it913x_bulk_read(struct usb_device *dev,
+ 	for (i = 0; i < IT913X_RETRY; i++) {
+ 		ret = usb_bulk_msg(dev, usb_rcvbulkpipe(dev, pipe),
+ 				 rev, len , &actual_l, IT913X_RCV_TIMEOUT);
+-		if (ret == 0 || ret != -EBUSY || ret != -ETIMEDOUT)
++		if (ret != -EBUSY && ret != -ETIMEDOUT)
+ 			break;
+ 	}
+ 
+-- 
+1.7.9.5
 
-                       Linus
+
