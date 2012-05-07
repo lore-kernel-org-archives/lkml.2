@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433Ab2EGQyA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 12:54:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16206 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757259Ab2EGQx7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 12:53:59 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=2PfWfQ4LHIYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=meVymXHHAAAA:8 a=Vw2N8DggyjALpdZny7cA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1336409637.14207.153.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH][GIT PULL] ftrace/x86: Use asm/kprobes.h instead of
- linux/kprobes.h
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Mon, 07 May 2012 12:53:57 -0400
-In-Reply-To: <1336139384.14207.114.camel@gandalf.stny.rr.com>
-References: <1336139384.14207.114.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757439Ab2EGQ4A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 12:56:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19926 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757007Ab2EGQz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 12:55:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="137865880"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: David Woodhouse <dwmw2@infradead.org>,
+        MTD Maling List <linux-mtd@lists.infradead.org>
+Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/4] do not use s_dirt in JFFS2
+Date: Mon,  7 May 2012 19:56:49 +0300
+Message-Id: <1336409813-6365-1-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bah, I forgot to update the subject (fixed)
+This is the second version for the patch-set which makes JFFS2 file-system
+stop using the VFS '->write_supers()' call-back because I plan to remove it
+once all users are gone.
 
-Anyway, Ingo, can you pull this.
+Comparing to the previous version I gave up on using a special inode for JFFS2
+because it introduces unnecessary overhead: currently JFFS2 does not register
+'->write_super()' at all, and if we register it for the sake of a single fake
+inode - it will be called for all inodes, which is unnecessary. So in this
+version I am using a delayed work for scheduling write-buffer flushing.
 
-Thanks!
+v1: https://lkml.org/lkml/2012/4/11/147
 
--- Steve
+The final goal is to get rid of the 'sync_supers()' kernel thread. This kernel
+thread wakes up every 5 seconds (by default) and calls '->write_super()' for
+all mounted file-systems. And the bad thing is that this is done even if all
+the superblocks are clean. Moreover, some file-systems do not even need this
+end they do not register the '->write_super()' method at all (e.g., btrfs).
 
+So 'sync_supers()' most often just generates useless wake-ups and wastes power.
+I am trying to make all file-systems independent of '->write_super()' and plan
+to remove 'sync_supers()' and '->write_super' completely once there are no more
+users.
 
-On Fri, 2012-05-04 at 09:49 -0400, Steven Rostedt wrote:
-> Ingo,
-> 
-> This is based on top of tip/perf/core-3, and fixes the compile error
-> that you saw with CONFIG_KPROBES disabled.
-> 
-> Please pull the latest tip/perf/core-4 tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> tip/perf/core-4
-> 
-> Head SHA1: 59a094c994a138049b41a44bc29cff9407d51c5b
-> 
-> 
-> Steven Rostedt (1):
->       ftrace/x86: Use asm/kprobes.h instead of linux/kprobes.h
-> 
-> ----
->  arch/x86/kernel/ftrace.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> ---------------------------
-> commit 59a094c994a138049b41a44bc29cff9407d51c5b
-> Author: Steven Rostedt <srostedt@redhat.com>
-> Date:   Fri May 4 09:26:16 2012 -0400
-> 
->     ftrace/x86: Use asm/kprobes.h instead of linux/kprobes.h
->     
->     If CONFIG_KPROBES is not set, then linux/kprobes.h will not include
->     asm/kprobes.h needed by x86/ftrace.c for the BREAKPOINT macro.
->     
->     The x86/ftrace.c file should just include asm/kprobes.h as it does not
->     need the rest of kprobes.
->     
->     Reported-by: Ingo Molnar <mingo@elte.hu>
->     Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->     Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-> index cf2d03e..4243e8b 100644
-> --- a/arch/x86/kernel/ftrace.c
-> +++ b/arch/x86/kernel/ftrace.c
-> @@ -20,11 +20,11 @@
->  #include <linux/init.h>
->  #include <linux/list.h>
->  #include <linux/module.h>
-> -#include <linux/kprobes.h>
->  
->  #include <trace/syscall.h>
->  
->  #include <asm/cacheflush.h>
-> +#include <asm/kprobes.h>
->  #include <asm/ftrace.h>
->  #include <asm/nops.h>
->  
-> 
+The '->write_supers()' method is mostly used by baroque file-systems like hfs,
+udf, etc. Modern file-systems like btrfs and xfs do not use it. This justifies
+removing this stuff from VFS completely and make every FS self-manage own
+superblock.
 
+Note: in the past I was trying to upstream patches which optimized 'sync_super()',
+but Al Viro wanted me to kill it completely instead, which I am trying to do
+now, see http://lkml.org/lkml/2010/7/22/96
 
+ fs/jffs2/jffs2_fs_sb.h |    4 +++
+ fs/jffs2/os-linux.h    |    7 +----
+ fs/jffs2/super.c       |   21 ------------------
+ fs/jffs2/wbuf.c        |   55 +++++++++++++++++++++++++++++++++++++++++++++--
+ 4 files changed, 58 insertions(+), 29 deletions(-)
+
+Tested using fsstress on both nandsim and mtdram.
+
+======
+Overall status:
+
+1. ext4: patches submitted, waiting for reply from Ted Ts'o:
+   https://lkml.org/lkml/2012/4/2/111
+   Ted keeps silence so far WRT the fate of this patch-set.
+2. ext2: patches are in the ext2 tree maintained by Jan Kara:
+   git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_next
+3. Version 3 of FAT FS changes were sent to Andrew and Hirofumi:
+   https://lkml.org/lkml/2012/5/4/183
+4. JFFS2 patches version 3 are sent being sent now.
+
+TODO: affs, exofs, hfs, hfsplus, reiserfs, sysv, udf, ufs
+======
+
+Thanks,
+Artem.
