@@ -1,112 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab2EGICD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:02:03 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:17241 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755434Ab2EGICB (ORCPT
+	id S1755557Ab2EGIG4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:06:56 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59596 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755349Ab2EGIGw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:02:01 -0400
-Date: Mon, 7 May 2012 11:04:58 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] Staging: IndustryPack bus for the Linux Kernel
-Message-ID: <20120507080458.GN22134@mwanda>
-References: <1336375569-21692-1-git-send-email-siglesias@igalia.com>
+	Mon, 7 May 2012 04:06:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336375569-21692-1-git-send-email-siglesias@igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <20120507134513.bffe9dbda0fac21e472215b5@canb.auug.org.au>
+References: <20120507134513.bffe9dbda0fac21e472215b5@canb.auug.org.au>
+Date: Mon, 7 May 2012 10:06:52 +0200
+Message-ID: <CAKMK7uFVURzdH-NKBaE7CHgbK8QfGtwcQ_12-9T_oVU4PnxK9g@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the drm tree with Linus' tree
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Dave Airlie <airlied@linux.ie>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 09:26:07AM +0200, Samuel Iglesias Gonsalvez wrote:
-> +int ipack_bus_register(struct ipack_bus_device *bus)
-> +{
-> +	int bus_nr;
+On Mon, May 7, 2012 at 5:45 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Today's linux-next merge of the drm tree got a conflict in
+> drivers/gpu/drm/i915/intel_display.c between commit 074b5e1a99fb
+> ("drm/i915: Do not read non-existent DPLL registers on PCH hardware")
+> from Linus' tree and I have no idea which commits from the drm tree.
 
-Blank line here between declaration and code.
+The merge should be pretty simple, the problem is that git gets
+completely confused.The offending commits in drm-next are
+14415745b2..1fa611065 which simply moves a few functions from
+intel_display.c to intel_pm.c. The offending commit in -fixes doesn't
+touch these functions at all.
 
-> +	bus_nr = ipack_assign_bus_number();
-> +	if (bus_nr < 0)
-> +		return -1;
-> +	bus->bus_nr = bus_nr;
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(ipack_bus_register);
+The problem seems to be that git diff gets completely confused:
 
-[snip]
+$ git diff 14415745b2..1fa611065
+is a nice mess in intel_display.c, and the diff leaks into totally
+unrelated functions, whereas
+$git diff --minimal  14415745b2..1fa611065
+seems to be exactly what we want.
 
-> +int ipack_driver_register(struct ipack_driver *edrv)
-> +{
-> +	int ret;
-> +
-> +	edrv->driver.bus = &ipack_bus_type;
-> +	ret = driver_register(&edrv->driver);
-> +	if (ret < 0)
-> +		goto exit_driver_register;
-> +
-> +exit_driver_register:
-> +	return ret;
-> +}
+Unfortunately I haven't found any way to teach similar smarts to the
+merge diff and merge conflict generation - with the minimal diff there
+really shouldn't be any conflict with this patch
 
-Better to write it like this:
-int ipack_driver_register(struct ipack_driver *edrv)
-{
-	edrv->driver.bus = &ipack_bus_type;
-	return driver_register(&edrv->driver);
-}
+> I fixed it up (I think), but, again, the merge diff is way to log to
+> post ...
+>
+> Again, Dave, can you cherry-pick or merge the commits that affect the drm
+> tree from Linus' tree, please?  Surely those fixes are needed in the drm
+> tree as well - or if they are not, then let me know and I will just use
+> the drm tree's version of this file.
 
+I'll sort this out with Dave. The problem though is that because git
+is so confused, almost every intel_display.c patch in -fixes conflicts
+with -next. And every time we change something in -next, the confused
+diff moves around a bit, making also git rerere pretty useless. So
+we'd need a backmarge of -fixes into -next an awful lot of times,
+which is why I've held off doing the merge for as long as possible.
 
-[snip]
+Does any of the git gurus have a good idea for how to get myself out
+of this corner?
 
-> +int ipack_device_find_drv(struct device_driver *driver, void *param)
-> +{
-> +	int ret;
-> +	struct ipack_device *dev = (struct ipack_device *)param;
-> +
-> +	ret = ipack_bus_match(&dev->dev, driver);
-> +	if (ret)
-> +		return !ipack_bus_probe(&dev->dev);
+Another thing: Can you please add the new drm/i915 -next tree to
+linux-next? With the new drm/i915 -next process we have about 2-3
+weeks of lead time between the intel tree and Dave's tree for internal
+QA and testing, so that we can sort out these issues earlier:
 
-Wouldn't probe() return zero or a negative error code?
+git://people.freedesktop.org/~danvet/drm-intel drm-intel-next-queued
 
-> +
-> +	return ret;
-	return 0;
+[Note the -queued, -next is frozen every 2 weeks so that QA has a
+known base for the manual testing cycle.]
 
-> +}
-> +
-> +int ipack_device_register(struct ipack_device *dev)
-> +{
-> +	int ret;
-> +
-> +	if (!bus_for_each_drv(&ipack_bus_type, NULL, dev, ipack_device_find_drv)) {
-> +		ret = -ENODEV;
-> +		goto exit_device_register;
-
-Just return directly here.  I was expecting a reason for a goto but
-a nonsense goto is misleading.
-
-> +	}
-> +
-> +	dev->dev.bus = &ipack_bus_type;
-> +	dev->dev.release = ipack_device_release;
-> +	dev_set_name(&dev->dev, "%s.%u.%u", dev->board_name, dev->bus_nr, dev->slot);
-> +	ret = device_register(&dev->dev);
-> +	if (ret < 0) {
-> +		printk(KERN_ERR "ipack: error registering the device.\n");
-> +		dev->driver->ops->remove(dev);
-> +	}
-> +
-> +exit_device_register:
-> +	return ret;
-> +}
-
-regards,
-dan carpenter
+Cheers, Daniel
+-- 
+Daniel Vetter
+daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
