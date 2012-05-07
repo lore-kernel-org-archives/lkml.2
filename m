@@ -1,35 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab2EGFZj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 01:25:39 -0400
-Received: from ozlabs.org ([203.10.76.45]:51304 "EHLO ozlabs.org"
+	id S1753297Ab2EGF2H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 01:28:07 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22578 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923Ab2EGFYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 01:24:16 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org
-Cc: Alessio Igor Bogani <abogani@kernel.org>, Tony Lindgren <tony@atomide.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [PATCH] modpost: Stop grab_file() from leaking filedescriptors if fstat() fails
-In-Reply-To: <alpine.LNX.2.00.1204222039010.27455@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1204222039010.27455@swampdragon.chaosbits.net>
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 07 May 2012 13:20:35 +0930
-Message-ID: <87ipg8fy44.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751530Ab2EGF2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 01:28:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="137681796"
+From: Huang Ying <ying.huang@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Huang Ying <ying.huang@intel.com>
+Subject: [BUGFIX] PM, domain, Fix link checking when add subdomain
+Date: Mon,  7 May 2012 13:28:01 +0800
+Message-Id: <1336368481-15723-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 22 Apr 2012 20:40:49 +0200 (CEST), Jesper Juhl <jj@chaosbits.net> wrote:
-> In case the open() call succeeds but the subsequent fstat() call
-> fails, then we'll return without close()'ing the filedescriptor.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Current pm_genpd_add_subdomain() will allow duplicated link between
+master and slave domain.  This patch fixed it.
 
-Applied.
+Because when current pm_genpd_add_subdomain() checks whether the link
+between the master and slave generic PM domain already exists,
+slave_links instead of master_links of master domain is used.
 
-Thanks,
-Rusty.
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/base/power/domain.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/base/power/domain.c
++++ b/drivers/base/power/domain.c
+@@ -1378,7 +1378,7 @@ int pm_genpd_add_subdomain(struct generi
+ 		goto out;
+ 	}
+ 
+-	list_for_each_entry(link, &genpd->slave_links, slave_node) {
++	list_for_each_entry(link, &genpd->master_links, master_node) {
+ 		if (link->slave == subdomain && link->master == genpd) {
+ 			ret = -EINVAL;
+ 			goto out;
