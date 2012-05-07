@@ -1,45 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab2EGJdF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 05:33:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:60668 "EHLO mga03.intel.com"
+	id S1756043Ab2EGJjh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 05:39:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31725 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755898Ab2EGJdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 05:33:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="97144404"
-Date: Mon, 7 May 2012 11:33:08 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] mfd: tps65090: Fix ifdefs for suspend mode
-Message-ID: <20120507093308.GD3229@sortiz-mobl>
-References: <1336381403-7840-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1755883Ab2EGJjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 05:39:35 -0400
+Message-ID: <4FA79848.2030308@redhat.com>
+Date: Mon, 07 May 2012 05:39:20 -0400
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336381403-7840-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>,
+        Eric Sandeen <sandeen@redhat.com>, Ted.Ts'o.tytso@mit.edu,
+        Dave Chinner <david@fromorbit.com>,
+        Lukas Czerner <lczerner@redhat.com>,
+        Andreas Dilger <adilger@whamcloud.com>,
+        Szabolcs Szakacsits <szaka@tuxera.com>
+Subject: Re: [RFC][PATCH v2] ext4: add expose_stale_data flag in fallocate
+References: <1336018469-6421-1-git-send-email-wenqing.lz@taobao.com> <4FA2596C.7050509@redhat.com> <20120507034420.GA3247@gmail.com>
+In-Reply-To: <20120507034420.GA3247@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On 05/06/2012 11:44 PM, Zheng Liu wrote:
+> On Thu, May 03, 2012 at 06:09:48AM -0400, Ric Wheeler wrote:
+>> On 05/03/2012 12:14 AM, Zheng Liu wrote:
+>>> Hi all,
+>>>
+>>> Here is the v2 of FALLOC_FL_NO_HIDE_STALE in fallocate.  Now no new flag is
+>>> added into vfs in order to reduce the impacts and avoid a huge security hole.
+>>> The application cannot call fallocate with a new flag to create an unwritten
+>>> extent.  It needs to call ioctl to enable/disable this feature.  Meanwhile, in
+>>> ioctl, filesystem will check CAP_SYS_RAWIO to ensure that the user has a
+>>> privilege to switch on/off it.  Currently, I only implement it in ext4.
+>> Hi Zheng,
+>>
+>> I thought that we had pretty much decided to try and fix the ext4
+>> performance impact, not pursue this?
+> Hi Ric,
+>
+> Sorry for the delay reply.  I fully agree with you about trying to improve the
+> ext4 performance.  But maybe it is useful for someone who quite needs to
+> avoid this overhead and can afford this huge security hole.  Just leave
+> this patch in the mailing list. :-)
+>
+> Regards,
+> Zheng
 
-On Mon, May 07, 2012 at 10:03:17AM +0100, Mark Brown wrote:
-> CONFIG_PM also covers runtime only PM.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Acked-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> ---
->  drivers/mfd/tps65090.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-This one and the 6 following patches applied to my for-next branch.
+The problem is that when you put out a glaring security hole and label it a 
+"performance" patch, people will use it who don't understand.
 
-Cheers,
-Samuel.
+I strongly disagree with the patch, we need to fix the performance issue first 
+*before* looking at exposing stale data to users.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Thanks,
+
+Ric
+
+>
+>>> Even though I try to reduce its impact, this feature still brings a security
+>>> hole.  So the application must ensure that it initializes an unwritten extent
+>>> by itself before reading it, and it is used in a limited environment.
+>>>
+>>> v1 ->   v2:
+>>> * remove FALLOC_FL_NO_HIDE_STALE flag in vfs
+>>> * add 'i_expose_stale_data' in ext4 to enable/disable it
+>>>
+>>> Regards,
+>>> Zheng
+>>>
+>>>  From 530045b4a1f75df5afd40c0e20c89917f97d7d5a Mon Sep 17 00:00:00 2001
+>>> From: Zheng Liu<wenqing.lz@taobao.com>
+>>> Date: Thu, 3 May 2012 11:21:44 +0800
+>>> Subject: [RFC][PATCH v2] ext4: add expose_stale_data flag in fallocate
+>>>
+>>> We can use fallocate to preallocate sequential blocks.  But these extents are
+>>> uninitialized.  So when the application does a write, filesystem will
+>>> initialized these unwritten extents and it brings a huge overhead in some
+>>> cases.
+>>>
+>>> This patch adds a new flag in inode to indicate whether initialize an unwritten
+>>> extent or not.  This flag is enable/disable within ioctl that switch on/off this
+>>> feature.  The application must call ioctl to enable this feature before it tries
+>>> to preallocate some blocks.
+>>>
+>>> Obviously, this feature brings a huge security hole.  The application must
+>>> guarantee to initialize this file by itself before reading it at the same
+>>> offset.  So the application *MUST* use it carefully.
+>>>
+>>> CC: Ric Wheeler<rwheeler@redhat.com>
+>>> CC: Eric Sandeen<sandeen@redhat.com>
+>>> CC: Ted Ts'o tytso@mit.edu>
+>>> CC: Dave Chinner<david@fromorbit.com>
+>>> CC: Lukas Czerner<lczerner@redhat.com>
+>>> CC: Andreas Dilger<adilger@whamcloud.com>
+>>> CC: Szabolcs Szakacsits<szaka@tuxera.com>
+>>> Signed-off-by: Zheng Liu<wenqing.lz@taobao.com>
+>>> ---
+>>>   fs/ext4/ext4.h    |    5 +++++
+>>>   fs/ext4/extents.c |    6 +++++-
+>>>   fs/ext4/ioctl.c   |   43 +++++++++++++++++++++++++++++++++++++++++++
+>>>   fs/ext4/super.c   |    1 +
+>>>   4 files changed, 54 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+>>> index 0e01e90..f56caf0 100644
+>>> --- a/fs/ext4/ext4.h
+>>> +++ b/fs/ext4/ext4.h
+>>> @@ -593,6 +593,8 @@ enum {
+>>>   #define EXT4_IOC_ALLOC_DA_BLKS		_IO('f', 12)
+>>>   #define EXT4_IOC_MOVE_EXT		_IOWR('f', 15, struct move_extent)
+>>>   #define EXT4_IOC_RESIZE_FS		_IOW('f', 16, __u64)
+>>> +#define EXT4_IOC_GET_EXPOSE_STALE	_IOR('f', 17, int)
+>>> +#define EXT4_IOC_SET_EXPOSE_STALE	_IOW('f', 18, int)
+>>>
+>>>   #if defined(__KERNEL__)&&   defined(CONFIG_COMPAT)
+>>>   /*
+>>> @@ -908,6 +910,9 @@ struct ext4_inode_info {
+>>>   	 */
+>>>   	tid_t i_sync_tid;
+>>>   	tid_t i_datasync_tid;
+>>> +
+>>> +	/* expose stale data in creating a new extent */
+>>> +	int i_expose_stale_data;
+>>>   };
+>>>
+>>>   /*
+>>> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+>>> index abcdeab..14f54f1 100644
+>>> --- a/fs/ext4/extents.c
+>>> +++ b/fs/ext4/extents.c
+>>> @@ -4269,6 +4269,7 @@ static void ext4_falloc_update_inode(struct inode *inode,
+>>>   long ext4_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+>>>   {
+>>>   	struct inode *inode = file->f_path.dentry->d_inode;
+>>> +	struct ext4_inode_info *ei = EXT4_I(inode);
+>>>   	handle_t *handle;
+>>>   	loff_t new_size;
+>>>   	unsigned int max_blocks;
+>>> @@ -4312,7 +4313,10 @@ long ext4_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+>>>   		trace_ext4_fallocate_exit(inode, offset, max_blocks, ret);
+>>>   		return ret;
+>>>   	}
+>>> -	flags = EXT4_GET_BLOCKS_CREATE_UNINIT_EXT;
+>>> +	if (ei->i_expose_stale_data)
+>>> +		flags = EXT4_GET_BLOCKS_CREATE;
+>>> +	else
+>>> +		flags = EXT4_GET_BLOCKS_CREATE_UNINIT_EXT;
+>>>   	if (mode&   FALLOC_FL_KEEP_SIZE)
+>>>   		flags |= EXT4_GET_BLOCKS_KEEP_SIZE;
+>>>   	/*
+>>> diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+>>> index 6eee255..a37db8e 100644
+>>> --- a/fs/ext4/ioctl.c
+>>> +++ b/fs/ext4/ioctl.c
+>>> @@ -432,6 +432,47 @@ resizefs_out:
+>>>   		return 0;
+>>>   	}
+>>>
+>>> +	case EXT4_IOC_GET_EXPOSE_STALE: {
+>>> +		int enable;
+>>> +
+>>> +		/* security check */
+>>> +		if (!capable(CAP_SYS_RAWIO))
+>>> +			return -EPERM;
+>>> +
+>>> +		/*
+>>> +		 * currently only extent-based files support (pre)allocate with
+>>> +		 * EXPOSE_STALE_DATA flag
+>>> +		 */
+>>> +		if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
+>>> +			return -EOPNOTSUPP;
+>>> +
+>>> +		enable = ei->i_expose_stale_data;
+>>> +
+>>> +		return put_user(enable, (int __user *) arg);
+>>> +	}
+>>> +
+>>> +	case EXT4_IOC_SET_EXPOSE_STALE: {
+>>> +		int enable;
+>>> +
+>>> +		/* security check */
+>>> +		if (!capable(CAP_SYS_RAWIO))
+>>> +			return -EPERM;
+>>> +
+>>> +		/*
+>>> +		 * currently only extent-based files support (pre)allocate with
+>>> +		 * EXPOSE_STALE_DATA flag
+>>> +		 */
+>>> +		if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
+>>> +			return -EOPNOTSUPP;
+>>> +
+>>> +		if (get_user(enable, (int __user *) arg))
+>>> +			return -EFAULT;
+>>> +
+>>> +		ei->i_expose_stale_data = enable;
+>>> +
+>>> +		return 0;
+>>> +	}
+>>> +
+>>>   	default:
+>>>   		return -ENOTTY;
+>>>   	}
+>>> @@ -495,6 +536,8 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+>>>   	case EXT4_IOC_MOVE_EXT:
+>>>   	case FITRIM:
+>>>   	case EXT4_IOC_RESIZE_FS:
+>>> +	case EXT4_IOC_GET_EXPOSE_STALE:
+>>> +	case EXT4_IOC_SET_EXPOSE_STALE:
+>>>   		break;
+>>>   	default:
+>>>   		return -ENOIOCTLCMD;
+>>> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+>>> index e1fb1d5..6de2db0 100644
+>>> --- a/fs/ext4/super.c
+>>> +++ b/fs/ext4/super.c
+>>> @@ -943,6 +943,7 @@ static struct inode *ext4_alloc_inode(struct super_block *sb)
+>>>   	ei->i_datasync_tid = 0;
+>>>   	atomic_set(&ei->i_ioend_count, 0);
+>>>   	atomic_set(&ei->i_aiodio_unwritten, 0);
+>>> +	ei->i_expose_stale_data = 0;
+>>>
+>>>   	return&ei->vfs_inode;
+>>>   }
+
