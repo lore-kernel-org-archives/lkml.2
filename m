@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab2EGIsM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:48:12 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62238 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564Ab2EGIsK convert rfc822-to-8bit (ORCPT
+	id S1755792Ab2EGIy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:54:27 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:64811 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755544Ab2EGIyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:48:10 -0400
+	Mon, 7 May 2012 04:54:25 -0400
+Date: Mon, 7 May 2012 10:54:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, chuck.lever@oracle.com, linux@razik.name,
+        Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu
+Subject: Re: [PATCH] init: don't try mounting device as nfs root unless type
+ fully matches
+Message-ID: <20120507085419.GN16608@gmail.com>
+References: <1336230395-5215-1-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1336380219.1933.16.camel@x61.thuisdomein>
-References: <1336377752-23985-1-git-send-email-levinsasha928@gmail.com>
- <1336378205.1933.3.camel@x61.thuisdomein> <CA+1xoqcWvJbGgaWt-5XvANH5zZiMXpZVZEQv4cWTr1XHdPu-7Q@mail.gmail.com>
- <1336380219.1933.16.camel@x61.thuisdomein>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Mon, 7 May 2012 10:47:49 +0200
-Message-ID: <CA+1xoqdYGp=VqVr51kjKcWBm2mSezq+eDuxDjCX0wRA_KEPJdA@mail.gmail.com>
-Subject: Re: [PATCH] ramster: depend on CONFIG_NET for sock_* functions
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: gregkh@linuxfoundation.org, dan.magenheimer@oracle.com,
-        sjenning@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336230395-5215-1-git-send-email-levinsasha928@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 7, 2012 at 10:43 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> On Mon, 2012-05-07 at 10:29 +0200, Sasha Levin wrote:
->> On Mon, May 7, 2012 at 10:10 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
->> > On Mon, 2012-05-07 at 10:02 +0200, Sasha Levin wrote:
->> >> --- a/drivers/staging/ramster/Kconfig
->> >> +++ b/drivers/staging/ramster/Kconfig
->> >> @@ -1,6 +1,6 @@
->> >>  config RAMSTER
->> >>       bool "Cross-machine RAM capacity sharing, aka peer-to-peer tmem"
->> >> -     depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM
->> >> +     depends on (CLEANCACHE || FRONTSWAP) && CONFIGFS_FS=y && !ZCACHE && !XVMALLOC && !HIGHMEM && CONFIG_NET
->> >
->> > s/CONFIG_NET/NET/ again, I'd say. How was this tested?
->>
->> Hm... ran the build again with the patch and noticed it stopped
->> complaining, but apparently it wasn't enough.
->
-> Well, my guess is that the errors you ran into weren't displayed because
-> a dependency on an undefined Kconfig symbol (like CONFIG_NET is) will
-> always fail. Ie, your patch made "RAM capacity sharing" simply disappear
-> from the build.
 
-Yup, which is not what I meant to do :)
+* Sasha Levin <levinsasha928@gmail.com> wrote:
 
-Sorry about that.
+> Currently, we'll try mounting any device who's major device number is
+> UNNAMED_MAJOR as NFS root. This would happen for non-NFS devices as well (such
+> as 9p devices) but it wouldn't cause any issues since mounting the device
+> as NFS would fail quickly and the code proceeded to doing the proper mount:
+> 
+>        [  101.522716] VFS: Unable to mount root fs via NFS, trying floppy.
+>        [  101.534499] VFS: Mounted root (9p filesystem) on device 0:18.
+> 
+> Commit 6829a048 ("NFS: Retry mounting NFSROOT") has introduced retries when
+> mounting NFS root, which means that now we don't immediately fail and instead
+> it takes an additional 90+ seconds until we stop retrying, which has revealed
+> the issue this patch fixes.
+
+Just wondering, which tree is commit 6829a048 included in? It 
+does not appear to be mainline AFAICS.
+
+Thanks,
+
+	Ingo
