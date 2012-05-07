@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068Ab2EGWNg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 18:13:36 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65004 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756640Ab2EGWNe convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 18:13:34 -0400
+	id S1757383Ab2EGWRS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 18:17:18 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36461 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753955Ab2EGWRR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 18:17:17 -0400
+Date: Mon, 7 May 2012 23:17:06 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] vfs: Speed up deactivate_super for non-modular
+ filesystems
+Message-ID: <20120507221706.GI22082@ZenIV.linux.org.uk>
+References: <1336124716.25479.36.camel@marge.simpson.net>
+ <m1vckcdoey.fsf@fess.ebiederm.org>
+ <1336142995.25479.49.camel@marge.simpson.net>
+ <m1zk9oc61j.fsf@fess.ebiederm.org>
+ <1336150643.7502.4.camel@marge.simpson.net>
+ <m1fwbfd71h.fsf@fess.ebiederm.org>
+ <1336197362.7346.9.camel@marge.simpson.net>
+ <1336198093.7346.11.camel@marge.simpson.net>
+ <1336201977.7346.22.camel@marge.simpson.net>
+ <87r4uv64oj.fsf_-_@xmission.com>
 MIME-Version: 1.0
-In-Reply-To: <4FA8195E.2010706@am.sony.com>
-References: <4FA4673C.7010209@am.sony.com>
-	<20120504233707.GA24213@kroah.com>
-	<4FA8195E.2010706@am.sony.com>
-Date: Mon, 7 May 2012 15:13:33 -0700
-Message-ID: <CANqkERCQixuCe9vfeDncHikED-bVwZ3APr=mo6WfQBcGf4rz_g@mail.gmail.com>
-Subject: Re: [PATCH] staging: android: logger: Allocate logs dynamically at boot
-From: Brian Swetland <swetland@google.com>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87r4uv64oj.fsf_-_@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 7, 2012 at 11:50 AM, Tim Bird <tim.bird@am.sony.com> wrote:
-> On 05/04/2012 04:37 PM, Greg KH wrote:
->> On Fri, May 04, 2012 at 04:33:16PM -0700, Tim Bird wrote:
->>> +#define MAX_LOGS    5
->>> +struct logger_log *logs_array[MAX_LOGS];
->>
->> You are going to make this a list and not a static array in the
->> future, right?
->
-> Would that be better?  The for-loop is IMHO simpler than a
-> list walk for finding matches.  I anticipate that the size of
-> this array should never (famous last words) be bigger than about
-> 20 entries, even in the dynamic-allocation-per-application
-> case.  And that's a ways off in implementation.
->
-> I'll be happy to switch to a linked list once it looks like we're
-> going to have more than 5 entries.  Or I can switch to a linked
-> list now if you think it's better form to code for the longer-term
-> anticipated features.
->
-> Not a big deal to me either way.
+On Mon, May 07, 2012 at 02:51:08PM -0700, Eric W. Biederman wrote:
 
-I'd also favor a list approach. It won't break unexpectedly when
-somebody inevitably adds that 6th log or whatever, and the list
-traversal cost only occurs during open(), which is not a frequent
-operation -- most users keep the log driver open for the process
-lifespan (both readers and writers).
+> /proc and similar non-modular filesystems do not need a rcu_barrier
+> in deactivate_locked_super.  Being non-modular there is no danger
+> of the rcu callback running after the module is unloaded.
 
-Brian
+There's more than just a module unload there, though - actual freeing
+struct super_block also happens past that rcu_barrier()...
