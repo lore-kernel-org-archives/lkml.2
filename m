@@ -1,115 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab2EGIb7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:31:59 -0400
-Received: from cernmx32.cern.ch ([137.138.144.178]:56533 "EHLO
-	CERNMX32.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755447Ab2EGIb5 (ORCPT
+	id S1755680Ab2EGIcp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:32:45 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56364 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755544Ab2EGIcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:31:57 -0400
-X-Greylist: delayed 326 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 May 2012 04:31:57 EDT
-Date: Mon, 7 May 2012 10:20:07 +0200
-From: Manohar Vanga <manohar.vanga@cern.ch>
-To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] Staging: ipack: added support for the TEWS
- TPCI-200 carrier board
-Message-ID: <20120507082007.GA30608@becoht-mvanga>
-Mail-Followup-To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-References: <1336375569-21692-1-git-send-email-siglesias@igalia.com>
- <1336375569-21692-2-git-send-email-siglesias@igalia.com>
+	Mon, 7 May 2012 04:32:43 -0400
+Date: Mon, 7 May 2012 10:32:38 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Kevin Winchester <kjwinchester@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 1/5] x86: Move per cpu cpu_llc_shared_map to a field
+ in struct cpuinfo_x86
+Message-ID: <20120507083238.GJ16608@gmail.com>
+References: <1a0aaa16-df06-40bf-88c7-28180455e6b9@email.android.com>
+ <1335742410-11569-1-git-send-email-kjwinchester@gmail.com>
+ <1335742410-11569-2-git-send-email-kjwinchester@gmail.com>
+ <4F9DD0A2.7010104@zytor.com>
+ <CAELBVzCzqZMbmGzE-dNgXogh95SNdvYWE5tHAxy1OYa+kknsCw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1336375569-21692-2-git-send-email-siglesias@igalia.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAELBVzCzqZMbmGzE-dNgXogh95SNdvYWE5tHAxy1OYa+kknsCw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [137.138.192.18]
-Keywords: CERN SpamKiller Note: -50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Samuel,
 
-Just a couple of quick comments on this patch :)
+* Kevin Winchester <kjwinchester@gmail.com> wrote:
 
-> +TPCI-200
-> +--------
-> +
-> +* It receives the name of the mezzanine plugged in each slot by SYSFS.
-> +  No autodetection supported yet, because the mezzanine driver could not be
-> +  loaded at the time that the tpci200 driver loads.
-> +
-> +* It has a linked list with the tpci200 devices it is managing. Get rid of it
-> +  and use driver_for_each_device() instead.
-> +
->  Ipack
->  -----
->  
-> @@ -20,4 +30,3 @@ Ipack
->    remove_device() to notify the carrier driver, or the opposite with the call to
->    the ipack_driver_ops' remove() function could be improved.
->  
-> -
+> On 29 April 2012 20:37, H. Peter Anvin <hpa@zytor.com> wrote:
+> > On 04/29/2012 04:33 PM, Kevin Winchester wrote:
+> >> Commit 141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs from
+> >> 'struct cpuinfo_x86'") caused the compilation error:
+> >>
+> >> mce_amd.c:(.cpuinit.text+0x4723): undefined reference to 'cpu_llc_shared_map'
+> >>
+> >> by removing an #ifdef CONFIG_SMP around a block containing a reference
+> >> to cpu_llc_shared_map.  Rather than replace the #ifdef, move
+> >> cpu_llc_shared_map to be a new cpumask_t field llc_shared_map in
+> >> struct cpuinfo_x86 and adjust all references to cpu_llc_shared_map.
+> >>
+> >
+> > Okay...  I must not get this.
+> >
+> > Why is this better than just moving the DEFINE_PER_CPU to a place which
+> > isn't dependent on SMP?
+> >
+> 
+> To be honest, the idea was suggested by Ingo a while back, and 
+> I just volunteered to implement it.  I believe the idea was to 
+> work towards gathering all CPU-specific data for SMP and !SMP 
+> into one place.  That said, moving the DEFINE_PER_CPU 
+> elsewhere would likely still give the same benefits as my 
+> patch in terms of ifdef reduction.  I cannot really see a 
+> benefit/downside either way, really.
+> 
+> Perhaps Ingo will chime in, and you and he (and anyone else 
+> with an opinion) can figure out the best way of accomplishing 
+> this simplification, and then I can adjust my series 
+> accordingly.
 
-Is this whitespace change required?
+Well, cpu_llc_shared_map is really a CPU attribute and as such I 
+think the logical place for it is "struct cpuinfo_x86". Peter, 
+any objections to that?
 
-> +#include <linux/module.h>
-> +#include "tpci200.h"
-> +
-> +#define MODULE_NAME "tpci200"
+Thanks,
 
-Here you can just use the KBUILD_MODNAME variable
-
-> +#define PFX MODULE_NAME ": "
-
-You can also add this before all your includes:
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
-> +static int tpci200_install(struct tpci200_board *tpci200)
-> +{
-> +	int res = 0;
-> +
-> +	tpci200->slots = kzalloc(TPCI200_NB_SLOT * sizeof(struct tpci200_slot), GFP_KERNEL);
-
-Did you run checkpatch.pl on the patches? Are you ignoring the >80 char
-recommendation? In that case ignore this :)
-
-> +static struct pci_device_id tpci200_idtable[2]; /* last must be zero */
-> +
-> +static struct pci_driver tpci200_pci_drv = {
-> +	.name = "tpci200",
-> +	.id_table = tpci200_idtable,
-> +	.probe = tpci200_pciprobe,
-> +	.remove = __devexit_p(tpci200_pci_remove),
-> +};
-> +
-> +static int __init tpci200_drvr_init_module(void)
-> +{
-> +	tpci200_idtable[0].vendor = TPCI200_VENDOR_ID;
-> +	tpci200_idtable[0].device = TPCI200_DEVICE_ID;
-> +	tpci200_idtable[0].subvendor = TPCI200_SUBVENDOR_ID;
-> +	tpci200_idtable[0].subdevice = TPCI200_SUBDEVICE_ID;
-> +	return pci_register_driver(&tpci200_pci_drv);
-> +}
-
-Can't tpci200_idtable be statically declared instead of inside the init function?
-
-> +static void __exit tpci200_drvr_exit_module(void)
-> +{
-> +	struct tpci200_board *tpci200;
-> +	struct list_head *element, *next;
-> +
-> +	list_for_each_safe(element, next, &tpci200_list) {
-> +		tpci200 = list_entry(element, struct tpci200_board, list);
-> +		__tpci200_pci_remove(tpci200);
-> +	}
-
-You can use list_for_each_entry_safe instead of list_for_each_safe + list_entry.
-I think you've used this everywhere so this would apply to the whole patch :)
-
--- 
-/manohar
+	Ingo
