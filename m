@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab2EGAT6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 20:19:58 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59968 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839Ab2EGAT5 (ORCPT
+	id S1754956Ab2EGAYW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 20:24:22 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48556 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754732Ab2EGAYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 20:19:57 -0400
-Date: Mon, 7 May 2012 10:19:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Pierre Carrier <pierre@spotify.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] lib/vsprintf.c: "%#o",0 becomes '0' instead of '00'
-Message-Id: <20120507101949.e18a8f3e222b178eeb699cf6@canb.auug.org.au>
-In-Reply-To: <1336228350-31148-1-git-send-email-pierre@spotify.com>
-References: <1336228350-31148-1-git-send-email-pierre@spotify.com>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__7_May_2012_10_19_49_+1000_ff0jPo9JdsAF.+S="
+	Sun, 6 May 2012 20:24:21 -0400
+Date: Mon, 7 May 2012 01:24:19 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH] broken TASK_SIZE for ia32_aout
+Message-ID: <20120507002419.GD22082@ZenIV.linux.org.uk>
+References: <20120506162000.GT6871@ZenIV.linux.org.uk>
+ <CA+55aFzj3Ocjpnw3WdmKjp3oELwmXt=Zs2=fZuYy0TUyF4nXiA@mail.gmail.com>
+ <20120506175451.GU6871@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120506175451.GU6871@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__7_May_2012_10_19_49_+1000_ff0jPo9JdsAF.+S=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, May 06, 2012 at 06:54:51PM +0100, Al Viro wrote:
+> On Sun, May 06, 2012 at 10:16:11AM -0700, Linus Torvalds wrote:
+> > On Sun, May 6, 2012 at 9:20 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > > Setting TIF_IA32 in load_aout_binary() used to be enough; these days
+> > > TASK_SIZE is controlled by TIF_ADDR32 and that one doesn't get set
+> > > there. ?Switch to use of set_personality_ia32()...
+> > 
+> > Applied. Just out of curiosity, how did you notice? Just looking at
+> > TIF_IA32 usage, or do you actually have some old app?
+> 
+> Putting together an idiot's guide to thread flags ;-)
 
-Hi Pierre,
+BTW, in process something else got found:
+---
+TIF_IRET(i386) is used to force return to userland via iret, even
+if we'd entered the kernel via sysenter.  This, to put it mildly,
+is a fucking ugly hack.  Essentially, it acts as a silent duplicate of
+NOTIFY_RESUME.  do_notify_resume() clears it (as it clears NOTIFY_RESUME
+itself).  And i386 has glue treat it as something indistinguishable from
+NOTIFY_RESUME, never mentioning either explicitly.  _Any_ path going
+through do_notify_resume() there will leave via iret - sysret is for fast
+path only.  So setting TIF_IRET (or, for that matter, TIF_NOTIFY_RESUME)
+has an effect of forcing exit via iret.
 
-Thanks for doing this.  Comments below.
+That had been obfuscated just enough to have it copied to hexagon, m32r,
+microblaze and xtensa.  None of those ever set it.  Or have an analog of
+the x86 issues that make forcing exit via iret needed there.  Or give
+a flying fuck for all that crap anyway.  Pure and simple cargo-cult
+programming.
 
-On Sat,  5 May 2012 16:32:30 +0200 Pierre Carrier <pierre@spotify.com> wrot=
-e:
->
-> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> index abbabec..7129383 100644
-> --- a/lib/vsprintf.c
-> +++ b/lib/vsprintf.c
-> @@ -284,6 +284,7 @@ char *number(char *buf, char *end, unsigned long long=
- num,
->  	char locase;
->  	int need_pfx =3D ((spec.flags & SPECIAL) && spec.base !=3D 10);
->  	int i;
-> +	bool is_null =3D num =3D=3D 0LL;
+IMO we should kill it everywhere, starting at i386.  There we can simply
+set TIF_NOTIFY_RESUME instead.
+---
 
-"num" is a number not a pointer, so I would call it "is_zero" (or just do
-the comparisons explicitly below).
-
->  	/* locase =3D 0 or 0x20. ORing digits or letters with 'locase'
->  	 * produces same digits or (maybe lowercased) letters */
-> @@ -353,9 +354,11 @@ char *number(char *buf, char *end, unsigned long lon=
-g num,
->  	}
->  	/* "0x" / "0" prefix */
->  	if (need_pfx) {
-> -		if (buf < end)
-> -			*buf =3D '0';
-> -		++buf;
-> +		if (spec.base =3D=3D 16 || !is_null) {
-> +			if (buf < end)
-> +				*buf =3D '0';
-> +			++buf;
-> +		}
->  		if (spec.base =3D=3D 16) {
->  			if (buf < end)
->  				*buf =3D ('X' | locase);
-
-There is also another earlier section that tests "need_pfx" that reduces
-the field width.  You should fix that up as well.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__7_May_2012_10_19_49_+1000_ff0jPo9JdsAF.+S=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPpxUlAAoJEECxmPOUX5FEZKEP/iZs5dFD6W/L6C/XTvDDd6Lg
-CLa1BVhyrg9EgZQlGEHi76FqjCfO96rHP0/o+iH/i2FRHT5TuFjal1TkHlbX5KND
-L7+iapbr4+G8Lc3EGbkrfya44NBgFgkR9evw4q7KnvNe2ZvrbDIfHUqrVq67AP6y
-9k56qMmM3u4FzIBUMi2LQF77UkSSO2eEN1kLKpEzsgZU8ngjPON0wpnIiAcZRSKq
-LH7TDNRkilf1YMTIhvDRxcPkwZbmjP53z6bn5Odd8ic9DDae1wzZdh091uKrF5RL
-jsEx9Bxa0ub3Y8QYttns0crtlM+eqjS4YrQMHdLsq0ida8u0sx7HI3xCtAF1wOvK
-xdQL8zkM9EtZnUnkIOmqkjDX5ra28hv3bL1jNAwOjmrl8YYizn7XxGQFdyszVnJ9
-h/YL/6bOiY5S3BUoZOoxFv87B/AQyF1V5LvEty+0W7bujfxzPtag/Vwit450Rh6P
-5Sxil0KJMVIIp59fweUfcbv07PMcoqIUgfxRgffnsZET4RkGbpxHbjIEsxy3n4Q5
-i7PfWdnxmieDiXfJ2llTn7NFLjalD7D7+gUx0lTKC3II0uBeFBp7mBEtAzcBM6/X
-uROxhSiy8xsF7zYpYb9yLeKQiuSyAmG+kbzFIKDKYwbvO95WW6IIwwf9dpmCli4i
-IKiyxkxCRKxwVDmwTZ8o
-=bd/y
------END PGP SIGNATURE-----
-
---Signature=_Mon__7_May_2012_10_19_49_+1000_ff0jPo9JdsAF.+S=--
+Comments?  It's _not_ 3.4.0 material, obviously, but unless I'm missing
+something, killing that thing would be a a Good Thing(tm), especially
+since reconstructing the reasons it works at all really takes a non-trivial
+amount of crawling throught entry_32.S...
