@@ -1,64 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757788Ab2EGTY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 15:24:56 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6077 "EHLO mga02.intel.com"
+	id S1757791Ab2EGTZg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 15:25:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46349 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754727Ab2EGTYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 15:24:54 -0400
+	id S1752018Ab2EGTZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 15:25:35 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="141085705"
-From: "Venkataraman, Meenakshi" <meenakshi.venkataraman@intel.com>
-To: Ben Hutchings <ben@decadent.org.uk>,
-        "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: RE: [ 73/75] iwlwifi: use correct released ucode version
-Thread-Topic: [ 73/75] iwlwifi: use correct released ucode version
-Thread-Index: AQHNLF+UAK3Gku7Q8kWeCc8p19TzFpa+tRUg
-Date: Mon, 7 May 2012 19:24:50 +0000
-Message-ID: <4595B4D22AB93C4FABBA84AAD5AA37FD1531EC@ORSMSX103.amr.corp.intel.com>
-References: <20120504204230.580609792@linuxfoundation.org>
- <1336401714.8274.320.camel@deadeye>
-In-Reply-To: <1336401714.8274.320.camel@deadeye>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="150223565"
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: [PATCH v2] charger_manager: update charge profile upon temperature zone change
+Date: Mon,  7 May 2012 23:28:05 +0530
+Message-Id: <1336413485-4585-1-git-send-email-ramakrishna.pallala@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q47JP1Q6020725
 
-Hi Ben,
+Battery vendors like UER suggest to program Low Charge Voltage in case
+of high or low temperatures. So a battery can have different charge profile
+with in the battery operating temperature limits.
 
->On Fri, 2012-05-04 at 13:43 -0700, Greg KH wrote:
->> 3.3-stable review patch.  If anyone has any objections, please let me know.
->>
->> ------------------
->>
->> From: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
->>
->> commit 78cbcf2b9dbe0565820dc7721316f9c401000a68 upstream.
->>
->> Report correctly the latest released version of the iwlwifi firmware
->> for all iwlwifi-supported devices.
->[...]
->
->Isn't this also applicable to 3.2.y?
+Next, there could be events like drop or rise in VBUS voltage in that case
+we might have to adjust the charge current to stabilize VBUS voltage.
 
-[MV] Just checked -- it is indeed applicable to 3.2 stable kernels as well.  Do I need to modify the patch to get it into 3.2 as well?
+This patch allows the Charger-Manager to adjust the charging parameters
+upon events like VBUS rise or drop and allows batteries to have multiple
+charge profiles for different temperature zones.
 
-Thanks,
-Meenakshi
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+---
+ Documentation/power/charger-manager.txt |   10 ++++++++++
+ drivers/power/charger-manager.c         |    6 +++++-
+ include/linux/power/charger-manager.h   |    5 +++++
+ 3 files changed, 20 insertions(+), 1 deletions(-)
+
+diff --git a/Documentation/power/charger-manager.txt b/Documentation/power/charger-manager.txt
+index b4f7f4b..6fa2a10 100644
+--- a/Documentation/power/charger-manager.txt
++++ b/Documentation/power/charger-manager.txt
+@@ -50,6 +50,15 @@ Charger Manager supports the following:
+ 	restarts charging. This check is also performed while suspended by
+ 	setting wakeup time accordingly and using suspend_again.
+ 
++* Support for adjusting charging parameters
++	Batteries can have different charge profiles with in the battery
++	operating temperature limits. And events like drop or rise in VBUS
++	voltage require adjustment of charge current to stabilize VBUS voltage.
++
++	Charger Manager provides a function pointer "charging_zone_changed" which
++	can be implemented by platform/core drivers and Charger Manager checks
++	this function to update the charger.
++
+ * Support for uevent-notify
+ 	With the charger-related events, the device sends
+ 	notification to users with UEVENT.
+@@ -169,6 +178,7 @@ char *psy_fuel_gauge;
+ 	: Power-supply-class name of the fuel gauge.
+ 
+ int (*temperature_out_of_range)(int *mC);
++bool (*charging_zone_changed)(int mC);
+ bool measure_battery_temp;
+ 	: This callback returns 0 if the temperature is safe for charging,
+ 	a positive number if it is too hot to charge, and a negative number
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index 86935ec..9f46353 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -424,13 +424,17 @@ static void fullbatt_vchk(struct work_struct *work)
+ static bool _cm_monitor(struct charger_manager *cm)
+ {
+ 	struct charger_desc *desc = cm->desc;
++	bool update_charger = false;
+ 	int temp = desc->temperature_out_of_range(&cm->last_temp_mC);
+ 
+ 	dev_dbg(cm->dev, "monitoring (%2.2d.%3.3dC)\n",
+ 		cm->last_temp_mC / 1000, cm->last_temp_mC % 1000);
+ 
++	if (desc->charging_zone_changed)
++		update_charger = desc->charging_zone_changed(cm->last_temp_mC);
++
+ 	/* It has been stopped or charging already */
+-	if (!!temp == !!cm->emergency_stop)
++	if ((!!temp == !!cm->emergency_stop) && !update_charger)
+ 		return false;
+ 
+ 	if (temp) {
+diff --git a/include/linux/power/charger-manager.h b/include/linux/power/charger-manager.h
+index 241065c..302107d 100644
+--- a/include/linux/power/charger-manager.h
++++ b/include/linux/power/charger-manager.h
+@@ -90,6 +90,10 @@ struct charger_global_desc {
+  *	return_value > 0: overheat
+  *	return_value == 0: normal
+  *	return_value < 0: cold
++ * @charging_zone_changed:
++ *	Determine whether charge profile need an update
++ *	return_value true if charge profile update required
++ *	return_value false if charge profile update is not required
+  * @measure_battery_temp:
+  *	true: measure battery temperature
+  *	false: measure ambient temperature
+@@ -114,6 +118,7 @@ struct charger_desc {
+ 	char *psy_fuel_gauge;
+ 
+ 	int (*temperature_out_of_range)(int *mC);
++	bool (*charging_zone_changed)(int mC);
+ 	bool measure_battery_temp;
+ };
+ 
+-- 
+1.7.0.4
+
