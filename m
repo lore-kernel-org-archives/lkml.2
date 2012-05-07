@@ -1,45 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757962Ab2EGXQA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 19:16:00 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:40647 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757019Ab2EGXPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 19:15:45 -0400
+	id S1753585Ab2EGXjn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 19:39:43 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:56379 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753340Ab2EGXjl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 19:39:41 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: "J\, KEERTHY" <j-keerthy@ti.com>
+Cc: "AnilKumar\, Chimata" <anilkumar@ti.com>,
+        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "rjw\@sisk.pl" <rjw@sisk.pl>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm\@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "Pihet-XID\, Jean" <j-pihet@ti.com>
+Subject: Re: [PATCH V3 04/10] ARM: OMAP3: hwmod: rename the smartreflex entries
+Organization: Texas Instruments, Inc.
+References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
+	<1335462041-4949-5-git-send-email-j-keerthy@ti.com>
+	<331ABD5ECB02734CA317220B2BBEABC13E9B1AA2@DBDE01.ent.ti.com>
+	<CAJ6a13ZSWSa_RpGB9NxtfyChUba9NGivGogpsfyk7oT9pNayjg@mail.gmail.com>
+Date: Mon, 07 May 2012 16:39:53 -0700
+In-Reply-To: <CAJ6a13ZSWSa_RpGB9NxtfyChUba9NGivGogpsfyk7oT9pNayjg@mail.gmail.com>
+	(KEERTHY J.'s message of "Fri, 4 May 2012 15:41:34 +0530")
+Message-ID: <87d36fzhkm.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120505082916.GA14006@merkur.ravnborg.org>
-References: <20120428205651.GA7426@merkur.ravnborg.org>
-	<20120428205919.GC7442@merkur.ravnborg.org>
-	<4FA460AB.6060309@suse.cz>
-	<20120505082916.GA14006@merkur.ravnborg.org>
-Date: Mon, 7 May 2012 16:15:44 -0700
-Message-ID: <CA+8MBbKd9zAouJy5JvUnLwUHMJ65HsYgCTfBgv42nm32EnMPFA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] kbuild: link of vmlinux moved to a script
-From: Tony Luck <tony.luck@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux arch <linux-arch@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        "David S. Miller" <davem@davemloft.net>,
-        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is now in linux-next (tag next-20120507). But it looks to have
-broken the ia64 build. I see this error:
+"J, KEERTHY" <j-keerthy@ti.com> writes:
 
-  CC      init/version.o
-  LD      init/built-in.o
-  KSYM    .tmp_kallsyms1.o
-ld: .tmp_kallsyms1.o: linking constant-gp files with non-constant-gp files
-ld: failed to merge target specific data of file .tmp_kallsyms1.o
-make: *** [vmlinux] Error 1
+> Hi AnilKumar,
+>
+> Thanks for reviewing.
+>
+> On Fri, May 4, 2012 at 2:00 PM, AnilKumar, Chimata <anilkumar@ti.com> wrote:
+>> On Thu, Apr 26, 2012 at 23:10:35, J, KEERTHY wrote:
+>>> From: Jean Pihet <j-pihet@ti.com>
+>>>
+>>> Change the name field value to better reflect the smartreflex
+>>> integration in the system.
+>>>
+>>> Signed-off-by: Jean Pihet <j-pihet@ti.com>
+>>> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+>>> ---
+>>>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |    8 ++++----
+>>>  arch/arm/mach-omap2/smartreflex.c          |    2 +-
+>>>  2 files changed, 5 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>>> index 144d118..15907b0 100644
+>>> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>>> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>>> @@ -1324,7 +1324,7 @@ static struct omap_hwmod_irq_info omap3_smartreflex_mpu_irqs[] = {
+>>>  };
+>>>
+>>>  static struct omap_hwmod omap34xx_sr1_hwmod = {
+>>> -     .name           = "sr1",
+>>> +     .name           = "smartreflex_mpu_iva",
+>>>       .class          = &omap34xx_smartreflex_hwmod_class,
+>>>       .main_clk       = "sr1_fck",
+>>>       .prcm           = {
+>>> @@ -1342,7 +1342,7 @@ static struct omap_hwmod omap34xx_sr1_hwmod = {
+>>>  };
+>>>
+>>>  static struct omap_hwmod omap36xx_sr1_hwmod = {
+>>> -     .name           = "sr1",
+>>> +     .name           = "smartreflex_mpu_iva",
+>>>       .class          = &omap36xx_smartreflex_hwmod_class,
+>>>       .main_clk       = "sr1_fck",
+>>>       .prcm           = {
+>>> @@ -1369,7 +1369,7 @@ static struct omap_hwmod_irq_info omap3_smartreflex_core_irqs[] = {
+>>>  };
+>>>
+>>>  static struct omap_hwmod omap34xx_sr2_hwmod = {
+>>> -     .name           = "sr2",
+>>> +     .name           = "smartreflex_core",
+>>>       .class          = &omap34xx_smartreflex_hwmod_class,
+>>>       .main_clk       = "sr2_fck",
+>>>       .prcm           = {
+>>> @@ -1387,7 +1387,7 @@ static struct omap_hwmod omap34xx_sr2_hwmod = {
+>>>  };
+>>>
+>>>  static struct omap_hwmod omap36xx_sr2_hwmod = {
+>>> -     .name           = "sr2",
+>>> +     .name           = "smartreflex_core",
+>>>       .class          = &omap36xx_smartreflex_hwmod_class,
+>>>       .main_clk       = "sr2_fck",
+>>>       .prcm           = {
+>>> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
+>>> index 2edd1e2..d859277 100644
+>>> --- a/arch/arm/mach-omap2/smartreflex.c
+>>> +++ b/arch/arm/mach-omap2/smartreflex.c
+>>> @@ -183,7 +183,7 @@ static void sr_set_regfields(struct omap_sr *sr)
+>>>               sr->err_weight = OMAP3430_SR_ERRWEIGHT;
+>>>               sr->err_maxlimit = OMAP3430_SR_ERRMAXLIMIT;
+>>>               sr->accum_data = OMAP3430_SR_ACCUMDATA;
+>>> -             if (!(strcmp(sr->name, "sr1"))) {
+>>> +             if (!(strcmp(sr->name, "smartreflex_mpu_iva"))) {
+>>
+>> What if voltage rail is different for mpu and iva? I have seen some devices
+>> supports SmartReflex have different voltage rails for mpu and iva.
+>>
+>
+> I get the point. OMAP3 iva and mpu have a common rail. OMAP4 onwards
+> even we have different rails for mpu and iva. I will enhance the checks here.
 
-which looks like we used the wrong compile options when building
-.tmp_kallsyms1.o
+Rather than enhancing the checks, this SoC specific data should probably
+just be made part of the SoC specific hwmod dev_attr.
 
--Tony
+Kevin
+
