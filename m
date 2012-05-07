@@ -1,583 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab2EGO2T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 10:28:19 -0400
-Received: from smtp.nokia.com ([147.243.1.48]:48280 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755516Ab2EGO2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 10:28:15 -0400
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Cc: hverkuil@xs4all.nl, mchehab@redhat.com, remi@remlab.net
-Subject: [PATCH v2 1/1] v4l2: use __u32 rather than enums in ioctl() structs
-Date: Mon,  7 May 2012 17:27:49 +0300
-Message-Id: <1336400869-32421-1-git-send-email-sakari.ailus@iki.fi>
-X-Mailer: git-send-email 1.7.2.5
+	id S1756727Ab2EGOb5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 10:31:57 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39692 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756138Ab2EGOb4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 10:31:56 -0400
+Date: Mon, 7 May 2012 16:31:43 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [EDAC_ABI PATCH v13 01/26] amd64_edac: convert driver to use the
+ new edac ABI
+Message-ID: <20120507143143.GD11462@aftab.osrc.amd.com>
+References: <1334607133-30039-1-git-send-email-mchehab@redhat.com>
+ <1334607705-30320-1-git-send-email-mchehab@redhat.com>
+ <1334607705-30320-2-git-send-email-mchehab@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334607705-30320-2-git-send-email-mchehab@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rémi Denis-Courmont <remi@remlab.net>
+Pasting latest version here:
 
-V4L2 uses the enum type in IOCTL arguments in IOCTLs that were defined until
-the use of enum was considered less than ideal. Recently Rémi Denis-Courmont
-brought up the issue by proposing a patch to convert the enums to unsigned:
+> From bdd1d4a73e48676e1aaab0dc41fca81e42d5e644 Mon Sep 17 00:00:00 2001
+> From: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Date: Mon, 16 Apr 2012 15:03:50 -0300
+> Subject: [PATCH] amd64_edac: convert driver to use the new edac ABI
+> 
+> The legacy edac ABI is going to be removed. Port the driver to use
+> and benefit from the new API functionality.
+> 
+> Cc: Doug Thompson <norsk5@yahoo.com>
+> Cc: Borislav Petkov <borislav.petkov@amd.com>
+> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-<URL:http://www.spinics.net/lists/linux-media/msg46167.html>
+Btw,
 
-This sparked a long discussion where another solution to the issue was
-proposed: two sets of IOCTL structures, one with __u32 and the other with
-enums, and conversion code between the two:
+now when I inject a correctable ECC error, I get:
 
-<URL:http://www.spinics.net/lists/linux-media/msg47168.html>
+[ 2377.733708] [Hardware Error]: CPU:0     MC4_STATUS[-|CE|-|-|AddrV|CECC]: 0x945f4000b1080a13
+[ 2377.742143] [Hardware Error]:        MC4_ADDR: 0x000000005bac7388
+[ 2377.742151] [Hardware Error]: Northbridge Error (node 0): DRAM ECC error detected on the NB.
+[ 2377.742164] EDAC amd64 MC0: CE ERROR_ADDRESS= 0x5bac7388
+[ 2377.742172] EDAC DEBUG: f1x_match_to_this_node: (range 0) SystemAddr= 0x5bac7388 Limit=0x437ffffff
+[ 2377.742183] EDAC DEBUG: f1x_match_to_this_node:    Normalized DCT addr: 0x2dd63980
+[ 2377.742190] EDAC DEBUG: f1x_lookup_addr_in_dct: input addr: 0x2dd63980, DCT: 1
+[ 2377.742199] EDAC DEBUG: f1x_lookup_addr_in_dct:     CSROW=0 CSBase=0x0 CSMask=0xffffffe1fff9ffff
+[ 2377.742206] EDAC DEBUG: f1x_lookup_addr_in_dct:     (InputAddr & ~CSMask)=0x60000 (CSBase & ~CSMask)=0x0
+[ 2377.742215] EDAC DEBUG: f1x_lookup_addr_in_dct:     CSROW=1 CSBase=0x20000 CSMask=0xffffffe1fff9ffff
+[ 2377.742223] EDAC DEBUG: f1x_lookup_addr_in_dct:     (InputAddr & ~CSMask)=0x60000 (CSBase & ~CSMask)=0x20000
+[ 2377.742231] EDAC DEBUG: f1x_lookup_addr_in_dct:     CSROW=2 CSBase=0x40000 CSMask=0xffffffe1fff9ffff
+[ 2377.742239] EDAC DEBUG: f1x_lookup_addr_in_dct:     (InputAddr & ~CSMask)=0x60000 (CSBase & ~CSMask)=0x40000
+[ 2377.742247] EDAC DEBUG: f1x_lookup_addr_in_dct:     CSROW=3 CSBase=0x60000 CSMask=0xffffffe1fff9ffff
+[ 2377.742255] EDAC DEBUG: f1x_lookup_addr_in_dct:     (InputAddr & ~CSMask)=0x60000 (CSBase & ~CSMask)=0x60000
+[ 2377.742262] EDAC DEBUG: f1x_lookup_addr_in_dct:  MATCH csrow=3
+[ 2377.742279] EDAC MC0: CE amd64_edac on unknown memory (csrow 3 channel 1 page 0x5bac7 offset 0x388 grain 0 syndrome 0xb1be )
+					  ^^^^^^^^^^^^^^
 
-Both approaches implement a complete solution that resolves the problem. The
-first one is simple but requires assuming enums and __u32 are the same in
-size (so we won't break the ABI) while the second one is more complex and
-less clean but does not require making that assumption.
+which is misleading. I think that removing the line from
+edac_mc_handle_error() is better:
 
-The issue boils down to whether enums are fundamentally different from __u32
-or not, and can the former be substituted by the latter. During the
-discussion it was concluded that the __u32 has the same size as enums on all
-archs Linux is supported: it has not been shown that replacing those enums
-in IOCTL arguments would break neither source or binary compatibility. If no
-such reason is found, just replacing the enums with __u32s is the way to go.
+-		if (p == label)
+-			strcpy(label, "unknown memory");
 
-This is what this patch does. This patch is slightly different from Remi's
-first RFC (link above): it uses __u32 instead of unsigned and also changes
-the arguments of VIDIOC_G_PRIORITY and VIDIOC_S_PRIORITY.
+because this way we don't puzzle the user even more with EDAC-internal
+details of how we represent DIMMs and ranks etc.
 
-Signed-off-by: Rémi Denis-Courmont <remi@remlab.net>
-Signed-off-by: Sakari Ailus <sakari.ailus@iki.fi>
----
-Changes since v1:
+IOW, simply having:
 
-- Fixes according to comments by Hans Verkuil:
-  - Update documentation
-  - Also remove enums in compat32 code
+[ 2377.742279] EDAC MC0: CE amd64_edac (csrow:3 channel:1 page:0x5bac7 offset:0x388 grain:0 syndrome:0xb1be)
 
- Documentation/DocBook/media/v4l/io.xml             |   12 +++--
- .../DocBook/media/v4l/vidioc-create-bufs.xml       |   10 +++--
- Documentation/DocBook/media/v4l/vidioc-cropcap.xml |    4 +-
- .../DocBook/media/v4l/vidioc-enum-fmt.xml          |    4 +-
- Documentation/DocBook/media/v4l/vidioc-g-crop.xml  |    4 +-
- Documentation/DocBook/media/v4l/vidioc-g-fmt.xml   |    2 +-
- .../DocBook/media/v4l/vidioc-g-frequency.xml       |    6 +-
- Documentation/DocBook/media/v4l/vidioc-g-parm.xml  |    5 +-
- .../DocBook/media/v4l/vidioc-g-sliced-vbi-cap.xml  |    2 +-
- Documentation/DocBook/media/v4l/vidioc-g-tuner.xml |    2 +-
- .../DocBook/media/v4l/vidioc-queryctrl.xml         |    2 +-
- Documentation/DocBook/media/v4l/vidioc-reqbufs.xml |    7 ++-
- .../DocBook/media/v4l/vidioc-s-hw-freq-seek.xml    |    5 +-
- drivers/media/video/v4l2-compat-ioctl32.c          |   12 +++---
- include/linux/videodev2.h                          |   46 ++++++++++----------
- 15 files changed, 65 insertions(+), 58 deletions(-)
+is much better IMO.
 
-diff --git a/Documentation/DocBook/media/v4l/io.xml b/Documentation/DocBook/media/v4l/io.xml
-index b815929..fd6aca2 100644
---- a/Documentation/DocBook/media/v4l/io.xml
-+++ b/Documentation/DocBook/media/v4l/io.xml
-@@ -543,12 +543,13 @@ and can range from zero to the number of buffers allocated
- with the &VIDIOC-REQBUFS; ioctl (&v4l2-requestbuffers; <structfield>count</structfield>) minus one.</entry>
- 	  </row>
- 	  <row>
--	    <entry>&v4l2-buf-type;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>type</structfield></entry>
- 	    <entry></entry>
- 	    <entry>Type of the buffer, same as &v4l2-format;
- <structfield>type</structfield> or &v4l2-requestbuffers;
--<structfield>type</structfield>, set by the application.</entry>
-+<structfield>type</structfield>, set by the application. See <xref
-+linkend="v4l2-buf-type" /></entry>
- 	  </row>
- 	  <row>
- 	    <entry>__u32</entry>
-@@ -568,7 +569,7 @@ refers to an input stream, applications when an output stream.</entry>
- linkend="buffer-flags" />.</entry>
- 	  </row>
- 	  <row>
--	    <entry>&v4l2-field;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>field</structfield></entry>
- 	    <entry></entry>
- 	    <entry>Indicates the field order of the image in the
-@@ -630,11 +631,12 @@ bandwidth. These devices identify by not enumerating any video
- standards, see <xref linkend="standard" />.</para></entry>
- 	  </row>
- 	  <row>
--	    <entry>&v4l2-memory;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>memory</structfield></entry>
- 	    <entry></entry>
- 	    <entry>This field must be set by applications and/or drivers
--in accordance with the selected I/O method.</entry>
-+in accordance with the selected I/O method. See <xref linkend="v4l2-memory"
-+	    /></entry>
- 	  </row>
- 	  <row>
- 	    <entry>union</entry>
-diff --git a/Documentation/DocBook/media/v4l/vidioc-create-bufs.xml b/Documentation/DocBook/media/v4l/vidioc-create-bufs.xml
-index 73ae8a6..184cdfc 100644
---- a/Documentation/DocBook/media/v4l/vidioc-create-bufs.xml
-+++ b/Documentation/DocBook/media/v4l/vidioc-create-bufs.xml
-@@ -94,16 +94,18 @@ information.</para>
- 	    <entry>The number of buffers requested or granted.</entry>
- 	  </row>
- 	  <row>
--	    <entry>&v4l2-memory;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>memory</structfield></entry>
- 	    <entry>Applications set this field to
- <constant>V4L2_MEMORY_MMAP</constant> or
--<constant>V4L2_MEMORY_USERPTR</constant>.</entry>
-+<constant>V4L2_MEMORY_USERPTR</constant>. See <xref linkend="v4l2-memory"
-+/></entry>
- 	  </row>
- 	  <row>
--	    <entry>&v4l2-format;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>format</structfield></entry>
--	    <entry>Filled in by the application, preserved by the driver.</entry>
-+	    <entry>Filled in by the application, preserved by the driver.
-+	    See <xref linkend="v4l2-format" />.</entry>
- 	  </row>
- 	  <row>
- 	    <entry>__u32</entry>
-diff --git a/Documentation/DocBook/media/v4l/vidioc-cropcap.xml b/Documentation/DocBook/media/v4l/vidioc-cropcap.xml
-index b4f2f25..f1bac2c 100644
---- a/Documentation/DocBook/media/v4l/vidioc-cropcap.xml
-+++ b/Documentation/DocBook/media/v4l/vidioc-cropcap.xml
-@@ -65,7 +65,7 @@ output.</para>
- 	&cs-str;
- 	<tbody valign="top">
- 	  <row>
--	    <entry>&v4l2-buf-type;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>type</structfield></entry>
- 	    <entry>Type of the data stream, set by the application.
- Only these types are valid here:
-@@ -73,7 +73,7 @@ Only these types are valid here:
- <constant>V4L2_BUF_TYPE_VIDEO_OUTPUT</constant>,
- <constant>V4L2_BUF_TYPE_VIDEO_OVERLAY</constant>, and custom (driver
- defined) types with code <constant>V4L2_BUF_TYPE_PRIVATE</constant>
--and higher.</entry>
-+and higher. See <xref linkend="v4l2-buf-type" />.</entry>
- 	  </row>
- 	  <row>
- 	    <entry>struct <link linkend="v4l2-rect-crop">v4l2_rect</link></entry>
-diff --git a/Documentation/DocBook/media/v4l/vidioc-enum-fmt.xml b/Documentation/DocBook/media/v4l/vidioc-enum-fmt.xml
-index 347d142..81ebe48 100644
---- a/Documentation/DocBook/media/v4l/vidioc-enum-fmt.xml
-+++ b/Documentation/DocBook/media/v4l/vidioc-enum-fmt.xml
-@@ -71,7 +71,7 @@ the application. This is in no way related to the <structfield>
- pixelformat</structfield> field.</entry>
- 	  </row>
- 	  <row>
--	    <entry>&v4l2-buf-type;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>type</structfield></entry>
- 	    <entry>Type of the data stream, set by the application.
- Only these types are valid here:
-@@ -81,7 +81,7 @@ Only these types are valid here:
- <constant>V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE</constant>,
- <constant>V4L2_BUF_TYPE_VIDEO_OVERLAY</constant>, and custom (driver
- defined) types with code <constant>V4L2_BUF_TYPE_PRIVATE</constant>
--and higher.</entry>
-+and higher. See <xref linkend="v4l2-buf-type" />.</entry>
- 	  </row>
- 	  <row>
- 	    <entry>__u32</entry>
-diff --git a/Documentation/DocBook/media/v4l/vidioc-g-crop.xml b/Documentation/DocBook/media/v4l/vidioc-g-crop.xml
-index 01a5064..c4ff3b1 100644
---- a/Documentation/DocBook/media/v4l/vidioc-g-crop.xml
-+++ b/Documentation/DocBook/media/v4l/vidioc-g-crop.xml
-@@ -100,14 +100,14 @@ changed and <constant>VIDIOC_S_CROP</constant> returns the
- 	&cs-str;
- 	<tbody valign="top">
- 	  <row>
--	    <entry>&v4l2-buf-type;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>type</structfield></entry>
- 	    <entry>Type of the data stream, set by the application.
- Only these types are valid here: <constant>V4L2_BUF_TYPE_VIDEO_CAPTURE</constant>,
- <constant>V4L2_BUF_TYPE_VIDEO_OUTPUT</constant>,
- <constant>V4L2_BUF_TYPE_VIDEO_OVERLAY</constant>, and custom (driver
- defined) types with code <constant>V4L2_BUF_TYPE_PRIVATE</constant>
--and higher.</entry>
-+and higher. See <xref linkend="v4l2-buf-type" />.</entry>
- 	  </row>
- 	  <row>
- 	    <entry>&v4l2-rect;</entry>
-diff --git a/Documentation/DocBook/media/v4l/vidioc-g-fmt.xml b/Documentation/DocBook/media/v4l/vidioc-g-fmt.xml
-index 17fbda1..52acff1 100644
---- a/Documentation/DocBook/media/v4l/vidioc-g-fmt.xml
-+++ b/Documentation/DocBook/media/v4l/vidioc-g-fmt.xml
-@@ -116,7 +116,7 @@ this ioctl.</para>
- 	<colspec colname="c4" />
- 	<tbody valign="top">
- 	  <row>
--	    <entry>&v4l2-buf-type;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>type</structfield></entry>
- 	    <entry></entry>
- 	    <entry>Type of the data stream, see <xref
-diff --git a/Documentation/DocBook/media/v4l/vidioc-g-frequency.xml b/Documentation/DocBook/media/v4l/vidioc-g-frequency.xml
-index 66e9a52..69c178a 100644
---- a/Documentation/DocBook/media/v4l/vidioc-g-frequency.xml
-+++ b/Documentation/DocBook/media/v4l/vidioc-g-frequency.xml
-@@ -95,14 +95,14 @@ the &v4l2-output; <structfield>modulator</structfield> field and the
- &v4l2-modulator; <structfield>index</structfield> field.</entry>
- 	  </row>
- 	  <row>
--	    <entry>&v4l2-tuner-type;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>type</structfield></entry>
- 	    <entry>The tuner type. This is the same value as in the
--&v4l2-tuner; <structfield>type</structfield> field. The type must be set
-+&v4l2-tuner; <structfield>type</structfield> field. See The type must be set
- to <constant>V4L2_TUNER_RADIO</constant> for <filename>/dev/radioX</filename>
- device nodes, and to <constant>V4L2_TUNER_ANALOG_TV</constant>
- for all others. The field is not applicable to modulators, &ie; ignored
--by drivers.</entry>
-+by drivers. See <xref linkend="v4l2-tuner-type" /></entry>
- 	  </row>
- 	  <row>
- 	    <entry>__u32</entry>
-diff --git a/Documentation/DocBook/media/v4l/vidioc-g-parm.xml b/Documentation/DocBook/media/v4l/vidioc-g-parm.xml
-index 19b1d85..f83d2cd 100644
---- a/Documentation/DocBook/media/v4l/vidioc-g-parm.xml
-+++ b/Documentation/DocBook/media/v4l/vidioc-g-parm.xml
-@@ -75,11 +75,12 @@ devices.</para>
- 	&cs-ustr;
- 	<tbody valign="top">
- 	  <row>
--	    <entry>&v4l2-buf-type;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>type</structfield></entry>
- 	    <entry></entry>
- 	    <entry>The buffer (stream) type, same as &v4l2-format;
--<structfield>type</structfield>, set by the application.</entry>
-+<structfield>type</structfield>, set by the application. See <xref
-+	    linkend="v4l2-buf-type" /></entry>
- 	  </row>
- 	  <row>
- 	    <entry>union</entry>
-diff --git a/Documentation/DocBook/media/v4l/vidioc-g-sliced-vbi-cap.xml b/Documentation/DocBook/media/v4l/vidioc-g-sliced-vbi-cap.xml
-index 71741da..bd015d1 100644
---- a/Documentation/DocBook/media/v4l/vidioc-g-sliced-vbi-cap.xml
-+++ b/Documentation/DocBook/media/v4l/vidioc-g-sliced-vbi-cap.xml
-@@ -148,7 +148,7 @@ using the &VIDIOC-S-FMT; ioctl as described in <xref
- <structfield>service_lines</structfield>[1][0] to zero.</entry>
- 	  </row>
- 	  <row>
--	    <entry>&v4l2-buf-type;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>type</structfield></entry>
- 	    <entry>Type of the data stream, see <xref
- 		  linkend="v4l2-buf-type" />. Should be
-diff --git a/Documentation/DocBook/media/v4l/vidioc-g-tuner.xml b/Documentation/DocBook/media/v4l/vidioc-g-tuner.xml
-index 91ec2fb..62a1aa2 100644
---- a/Documentation/DocBook/media/v4l/vidioc-g-tuner.xml
-+++ b/Documentation/DocBook/media/v4l/vidioc-g-tuner.xml
-@@ -107,7 +107,7 @@ user.<!-- FIXME Video inputs already have a name, the purpose of this
- field is not quite clear.--></para></entry>
- 	  </row>
- 	  <row>
--	    <entry>&v4l2-tuner-type;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>type</structfield></entry>
- 	    <entry spanname="hspan">Type of the tuner, see <xref
- 		linkend="v4l2-tuner-type" />.</entry>
-diff --git a/Documentation/DocBook/media/v4l/vidioc-queryctrl.xml b/Documentation/DocBook/media/v4l/vidioc-queryctrl.xml
-index 505f020..e6645b9 100644
---- a/Documentation/DocBook/media/v4l/vidioc-queryctrl.xml
-+++ b/Documentation/DocBook/media/v4l/vidioc-queryctrl.xml
-@@ -127,7 +127,7 @@ the first control with a higher ID. Drivers which do not support this
- flag yet always return an &EINVAL;.</entry>
- 	  </row>
- 	  <row>
--	    <entry>&v4l2-ctrl-type;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>type</structfield></entry>
- 	    <entry>Type of control, see <xref
- 		linkend="v4l2-ctrl-type" />.</entry>
-diff --git a/Documentation/DocBook/media/v4l/vidioc-reqbufs.xml b/Documentation/DocBook/media/v4l/vidioc-reqbufs.xml
-index 7be4b1d..d7c9505 100644
---- a/Documentation/DocBook/media/v4l/vidioc-reqbufs.xml
-+++ b/Documentation/DocBook/media/v4l/vidioc-reqbufs.xml
-@@ -92,18 +92,19 @@ streamoff.--></para>
- 	    <entry>The number of buffers requested or granted.</entry>
- 	  </row>
- 	  <row>
--	    <entry>&v4l2-buf-type;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>type</structfield></entry>
- 	    <entry>Type of the stream or buffers, this is the same
- as the &v4l2-format; <structfield>type</structfield> field. See <xref
- 		linkend="v4l2-buf-type" /> for valid values.</entry>
- 	  </row>
- 	  <row>
--	    <entry>&v4l2-memory;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>memory</structfield></entry>
- 	    <entry>Applications set this field to
- <constant>V4L2_MEMORY_MMAP</constant> or
--<constant>V4L2_MEMORY_USERPTR</constant>.</entry>
-+<constant>V4L2_MEMORY_USERPTR</constant>. See <xref linkend="v4l2-memory"
-+/>.</entry>
- 	  </row>
- 	  <row>
- 	    <entry>__u32</entry>
-diff --git a/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml b/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml
-index 18b1a82..407dfce 100644
---- a/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml
-+++ b/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml
-@@ -73,10 +73,11 @@ same value as in the &v4l2-input; <structfield>tuner</structfield>
- field and the &v4l2-tuner; <structfield>index</structfield> field.</entry>
- 	  </row>
- 	  <row>
--	    <entry>&v4l2-tuner-type;</entry>
-+	    <entry>__u32</entry>
- 	    <entry><structfield>type</structfield></entry>
- 	    <entry>The tuner type. This is the same value as in the
--&v4l2-tuner; <structfield>type</structfield> field.</entry>
-+&v4l2-tuner; <structfield>type</structfield> field. See <xref
-+	    linkend="v4l2-tuner-type" /></entry>
- 	  </row>
- 	  <row>
- 	    <entry>__u32</entry>
-diff --git a/drivers/media/video/v4l2-compat-ioctl32.c b/drivers/media/video/v4l2-compat-ioctl32.c
-index 2829d25..25ec805 100644
---- a/drivers/media/video/v4l2-compat-ioctl32.c
-+++ b/drivers/media/video/v4l2-compat-ioctl32.c
-@@ -37,7 +37,7 @@ struct v4l2_clip32 {
- 
- struct v4l2_window32 {
- 	struct v4l2_rect        w;
--	enum v4l2_field  	field;
-+	__u32		  	field;
- 	__u32			chromakey;
- 	compat_caddr_t		clips; /* actually struct v4l2_clip32 * */
- 	__u32			clipcount;
-@@ -147,7 +147,7 @@ static inline int put_v4l2_sliced_vbi_format(struct v4l2_sliced_vbi_format *kp,
- }
- 
- struct v4l2_format32 {
--	enum v4l2_buf_type type;
-+	__u32	type;
- 	union {
- 		struct v4l2_pix_format	pix;
- 		struct v4l2_pix_format_mplane	pix_mp;
-@@ -170,7 +170,7 @@ struct v4l2_format32 {
- struct v4l2_create_buffers32 {
- 	__u32			index;
- 	__u32			count;
--	enum v4l2_memory        memory;
-+	__u32			memory;
- 	struct v4l2_format32	format;
- 	__u32			reserved[8];
- };
-@@ -311,16 +311,16 @@ struct v4l2_plane32 {
- 
- struct v4l2_buffer32 {
- 	__u32			index;
--	enum v4l2_buf_type      type;
-+	__u32			type;
- 	__u32			bytesused;
- 	__u32			flags;
--	enum v4l2_field		field;
-+	__u32			field;
- 	struct compat_timeval	timestamp;
- 	struct v4l2_timecode	timecode;
- 	__u32			sequence;
- 
- 	/* memory location */
--	enum v4l2_memory        memory;
-+	__u32			memory;
- 	union {
- 		__u32           offset;
- 		compat_long_t   userptr;
-diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-index 5a09ac3..585e4b4 100644
---- a/include/linux/videodev2.h
-+++ b/include/linux/videodev2.h
-@@ -292,10 +292,10 @@ struct v4l2_pix_format {
- 	__u32         		width;
- 	__u32			height;
- 	__u32			pixelformat;
--	enum v4l2_field  	field;
-+	__u32			field;
- 	__u32            	bytesperline;	/* for padding, zero if unused */
- 	__u32          		sizeimage;
--	enum v4l2_colorspace	colorspace;
-+	__u32			colorspace;
- 	__u32			priv;		/* private data, depends on pixelformat */
- };
- 
-@@ -432,7 +432,7 @@ struct v4l2_pix_format {
-  */
- struct v4l2_fmtdesc {
- 	__u32		    index;             /* Format number      */
--	enum v4l2_buf_type  type;              /* buffer type        */
-+	__u32		    type;              /* buffer type        */
- 	__u32               flags;
- 	__u8		    description[32];   /* Description string */
- 	__u32		    pixelformat;       /* Format fourcc      */
-@@ -573,8 +573,8 @@ struct v4l2_jpegcompression {
-  */
- struct v4l2_requestbuffers {
- 	__u32			count;
--	enum v4l2_buf_type      type;
--	enum v4l2_memory        memory;
-+	__u32			type;
-+	__u32			memory;
- 	__u32			reserved[2];
- };
- 
-@@ -636,16 +636,16 @@ struct v4l2_plane {
-  */
- struct v4l2_buffer {
- 	__u32			index;
--	enum v4l2_buf_type      type;
-+	__u32			type;
- 	__u32			bytesused;
- 	__u32			flags;
--	enum v4l2_field		field;
-+	__u32			field;
- 	struct timeval		timestamp;
- 	struct v4l2_timecode	timecode;
- 	__u32			sequence;
- 
- 	/* memory location */
--	enum v4l2_memory        memory;
-+	__u32			memory;
- 	union {
- 		__u32           offset;
- 		unsigned long   userptr;
-@@ -708,7 +708,7 @@ struct v4l2_clip {
- 
- struct v4l2_window {
- 	struct v4l2_rect        w;
--	enum v4l2_field  	field;
-+	__u32			field;
- 	__u32			chromakey;
- 	struct v4l2_clip	__user *clips;
- 	__u32			clipcount;
-@@ -745,14 +745,14 @@ struct v4l2_outputparm {
-  *	I N P U T   I M A G E   C R O P P I N G
-  */
- struct v4l2_cropcap {
--	enum v4l2_buf_type      type;
-+	__u32			type;
- 	struct v4l2_rect        bounds;
- 	struct v4l2_rect        defrect;
- 	struct v4l2_fract       pixelaspect;
- };
- 
- struct v4l2_crop {
--	enum v4l2_buf_type      type;
-+	__u32			type;
- 	struct v4l2_rect        c;
- };
- 
-@@ -1157,7 +1157,7 @@ enum v4l2_ctrl_type {
- /*  Used in the VIDIOC_QUERYCTRL ioctl for querying controls */
- struct v4l2_queryctrl {
- 	__u32		     id;
--	enum v4l2_ctrl_type  type;
-+	__u32		     type;
- 	__u8		     name[32];	/* Whatever */
- 	__s32		     minimum;	/* Note signedness */
- 	__s32		     maximum;
-@@ -1792,7 +1792,7 @@ enum v4l2_jpeg_chroma_subsampling {
- struct v4l2_tuner {
- 	__u32                   index;
- 	__u8			name[32];
--	enum v4l2_tuner_type    type;
-+	__u32			type;
- 	__u32			capability;
- 	__u32			rangelow;
- 	__u32			rangehigh;
-@@ -1842,14 +1842,14 @@ struct v4l2_modulator {
- 
- struct v4l2_frequency {
- 	__u32		      tuner;
--	enum v4l2_tuner_type  type;
-+	__u32		      type;
- 	__u32		      frequency;
- 	__u32		      reserved[8];
- };
- 
- struct v4l2_hw_freq_seek {
- 	__u32		      tuner;
--	enum v4l2_tuner_type  type;
-+	__u32		      type;
- 	__u32		      seek_upward;
- 	__u32		      wrap_around;
- 	__u32		      spacing;
-@@ -2060,7 +2060,7 @@ struct v4l2_sliced_vbi_cap {
- 				 (equals frame lines 313-336 for 625 line video
- 				  standards, 263-286 for 525 line standards) */
- 	__u16   service_lines[2][24];
--	enum v4l2_buf_type type;
-+	__u32	type;
- 	__u32   reserved[3];    /* must be 0 */
- };
- 
-@@ -2150,8 +2150,8 @@ struct v4l2_pix_format_mplane {
- 	__u32				width;
- 	__u32				height;
- 	__u32				pixelformat;
--	enum v4l2_field			field;
--	enum v4l2_colorspace		colorspace;
-+	__u32				field;
-+	__u32				colorspace;
- 
- 	struct v4l2_plane_pix_format	plane_fmt[VIDEO_MAX_PLANES];
- 	__u8				num_planes;
-@@ -2169,7 +2169,7 @@ struct v4l2_pix_format_mplane {
-  * @raw_data:	placeholder for future extensions and custom formats
-  */
- struct v4l2_format {
--	enum v4l2_buf_type type;
-+	__u32	 type;
- 	union {
- 		struct v4l2_pix_format		pix;     /* V4L2_BUF_TYPE_VIDEO_CAPTURE */
- 		struct v4l2_pix_format_mplane	pix_mp;  /* V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE */
-@@ -2183,7 +2183,7 @@ struct v4l2_format {
- /*	Stream type-dependent parameters
-  */
- struct v4l2_streamparm {
--	enum v4l2_buf_type type;
-+	__u32	 type;
- 	union {
- 		struct v4l2_captureparm	capture;
- 		struct v4l2_outputparm	output;
-@@ -2303,7 +2303,7 @@ struct v4l2_dbg_chip_ident {
- struct v4l2_create_buffers {
- 	__u32			index;
- 	__u32			count;
--	enum v4l2_memory        memory;
-+	__u32			memory;
- 	struct v4l2_format	format;
- 	__u32			reserved[8];
- };
-@@ -2360,8 +2360,8 @@ struct v4l2_create_buffers {
- #define VIDIOC_TRY_FMT      	_IOWR('V', 64, struct v4l2_format)
- #define VIDIOC_ENUMAUDIO	_IOWR('V', 65, struct v4l2_audio)
- #define VIDIOC_ENUMAUDOUT	_IOWR('V', 66, struct v4l2_audioout)
--#define VIDIOC_G_PRIORITY        _IOR('V', 67, enum v4l2_priority)
--#define VIDIOC_S_PRIORITY        _IOW('V', 68, enum v4l2_priority)
-+#define VIDIOC_G_PRIORITY	 _IOR('V', 67, __u32)
-+#define VIDIOC_S_PRIORITY	 _IOW('V', 68, __u32)
- #define VIDIOC_G_SLICED_VBI_CAP _IOWR('V', 69, struct v4l2_sliced_vbi_cap)
- #define VIDIOC_LOG_STATUS         _IO('V', 70)
- #define VIDIOC_G_EXT_CTRLS	_IOWR('V', 71, struct v4l2_ext_controls)
+Also, formatting that info with ":" makes the data even easily
+understandable and parseable.
+
+Also, you have a trailing space at the end: "... syndrome 0xb1be <---HERE)
+
+which needs to be removed.
+
+[ 2377.742288] [Hardware Error]: cache level: L3/GEN, mem/io: MEM, mem-tx: RD, part-proc: RES (no timeout)
+
+
+Other than that, I have only a minor nitpick below.
+
+
+> ---
+>  drivers/edac/amd64_edac.c |  137 ++++++++++++++++++++++++++++++---------------
+>  1 file changed, 92 insertions(+), 45 deletions(-)
+> 
+> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+> index 6d6ec6814a98..d00d75a602c1 100644
+> --- a/drivers/edac/amd64_edac.c
+> +++ b/drivers/edac/amd64_edac.c
+> @@ -1039,6 +1039,37 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
+>  	int channel, csrow;
+>  	u32 page, offset;
+>  
+> +	error_address_to_page_and_offset(sys_addr, &page, &offset);
+> +
+> +	/*
+> +	 * Find out which node the error address belongs to. This may be
+> +	 * different from the node that detected the error.
+> +	 */
+> +	src_mci = find_mc_by_sys_addr(mci, sys_addr);
+> +	if (!src_mci) {
+> +		amd64_mc_err(mci, "failed to map error addr 0x%lx to a node\n",
+> +			     (unsigned long)sys_addr);
+> +		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
+> +				     page, offset, syndrome,
+> +				     -1, -1, -1,
+> +				     EDAC_MOD_STR,
+> +				     "failed to map error addr to a node",
+> +				     NULL);
+> +		return;
+> +	}
+> +
+> +	/* Now map the sys_addr to a CSROW */
+> +	csrow = sys_addr_to_csrow(src_mci, sys_addr);
+> +	if (csrow < 0) {
+> +		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
+> +				     page, offset, syndrome,
+> +				     -1, -1, -1,
+> +				     EDAC_MOD_STR,
+> +				     "failed to map error addr to a csrow",
+> +				     NULL);
+> +		return;
+> +	}
+> +
+>  	/* CHIPKILL enabled */
+>  	if (pvt->nbcfg & NBCFG_CHIPKILL) {
+>  		channel = get_channel_from_ecc_syndrome(mci, syndrome);
+> @@ -1048,9 +1079,15 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
+>  			 * 2 DIMMs is in error. So we need to ID 'both' of them
+>  			 * as suspect.
+>  			 */
+> -			amd64_mc_warn(mci, "unknown syndrome 0x%04x - possible "
+> -					   "error reporting race\n", syndrome);
+> -			edac_mc_handle_ce_no_info(mci, EDAC_MOD_STR);
+> +			amd64_mc_warn(src_mci, "unknown syndrome 0x%04x - "
+> +				      "possible error reporting race\n",
+> +				      syndrome);
+> +			edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
+> +					     page, offset, syndrome,
+> +					     csrow, -1, -1,
+> +					     EDAC_MOD_STR,
+> +					     "unknown syndrome - possible error reporting race",
+> +					     NULL);
+>  			return;
+>  		}
+>  	} else {
+> @@ -1065,28 +1102,10 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
+>  		channel = ((sys_addr & BIT(3)) != 0);
+>  	}
+>  
+> -	/*
+> -	 * Find out which node the error address belongs to. This may be
+> -	 * different from the node that detected the error.
+> -	 */
+> -	src_mci = find_mc_by_sys_addr(mci, sys_addr);
+> -	if (!src_mci) {
+> -		amd64_mc_err(mci, "failed to map error addr 0x%lx to a node\n",
+> -			     (unsigned long)sys_addr);
+> -		edac_mc_handle_ce_no_info(mci, EDAC_MOD_STR);
+> -		return;
+> -	}
+> -
+> -	/* Now map the sys_addr to a CSROW */
+> -	csrow = sys_addr_to_csrow(src_mci, sys_addr);
+> -	if (csrow < 0) {
+> -		edac_mc_handle_ce_no_info(src_mci, EDAC_MOD_STR);
+> -	} else {
+> -		error_address_to_page_and_offset(sys_addr, &page, &offset);
+> -
+> -		edac_mc_handle_ce(src_mci, page, offset, syndrome, csrow,
+> -				  channel, EDAC_MOD_STR);
+> -	}
+> +	edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, src_mci,
+> +			     page, offset, syndrome,
+> +			     csrow, channel, -1,
+> +			     EDAC_MOD_STR, "", NULL);
+>  }
+>  
+>  static int ddr2_cs_size(unsigned i, bool dct_width)
+> @@ -1568,15 +1587,20 @@ static void f1x_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
+>  	u32 page, offset;
+>  	int nid, csrow, chan = 0;
+>  
+> +	error_address_to_page_and_offset(sys_addr, &page, &offset);
+> +
+>  	csrow = f1x_translate_sysaddr_to_cs(pvt, sys_addr, &nid, &chan);
+>  
+>  	if (csrow < 0) {
+> -		edac_mc_handle_ce_no_info(mci, EDAC_MOD_STR);
+> +		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
+> +				     page, offset, syndrome,
+> +				     -1, -1, -1,
+> +				     EDAC_MOD_STR,
+> +				     "failed to map error addr to a csrow",
+> +				     NULL);
+>  		return;
+>  	}
+>  
+> -	error_address_to_page_and_offset(sys_addr, &page, &offset);
+> -
+>  	/*
+>  	 * We need the syndromes for channel detection only when we're
+>  	 * ganged. Otherwise @chan should already contain the channel at
+> @@ -1585,16 +1609,10 @@ static void f1x_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
+>  	if (dct_ganging_enabled(pvt))
+>  		chan = get_channel_from_ecc_syndrome(mci, syndrome);
+>  
+> -	if (chan >= 0)
+> -		edac_mc_handle_ce(mci, page, offset, syndrome, csrow, chan,
+> -				  EDAC_MOD_STR);
+> -	else
+> -		/*
+> -		 * Channel unknown, report all channels on this CSROW as failed.
+> -		 */
+> -		for (chan = 0; chan < mci->csrows[csrow].nr_channels; chan++)
+> -			edac_mc_handle_ce(mci, page, offset, syndrome,
+> -					  csrow, chan, EDAC_MOD_STR);
+> +	edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
+> +				page, offset, syndrome,
+> +				csrow, chan, -1,
+> +				EDAC_MOD_STR, "", NULL);
+
+Strange alignement.
+
 -- 
-1.7.2.5
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
