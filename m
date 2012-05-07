@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693Ab2EGR6D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 13:58:03 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:49690 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753412Ab2EGR6A (ORCPT
+	id S1753503Ab2EGR7t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 13:59:49 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41374 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab2EGR7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 13:58:00 -0400
-Date: Mon, 07 May 2012 13:57:56 -0400 (EDT)
-Message-Id: <20120507.135756.771396536686434223.davem@davemloft.net>
-To: erwanaliasr1@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tshimizu818@gmail.com
-Subject: Re: [PATCH] pch_gbe: Adding read memory barriers
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4FA80B46.5070405@gmail.com>
-References: <4FA80B46.5070405@gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 07 May 2012 10:57:59 -0700 (PDT)
+	Mon, 7 May 2012 13:59:48 -0400
+Message-Id: <20120507175450.513667947@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Mon, 07 May 2012 17:59:47 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Subject: [patch 0/8] cpuidle: Fix and replace cpu_idle_wait copied code
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+cpu_idle_wait() is available in several identical copies all over
+arch/ plus a broken variant.
 
-Your patch doesn't apply to the net-next tree which is what you should
-be basing all of your networking patches on:
+This series fixes the broken one first and then replaces all the
+identical ones with a generic version.
 
-[davem@bql net-next]$ git am --signoff pch_gbe-Adding-read-memory-barriers.patch 
-Applying: pch_gbe: Adding read memory barriers
-error: patch failed: drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c:1222
-error: drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c: patch does not apply
-Patch failed at 0001 pch_gbe: Adding read memory barriers
-When you have resolved this problem run "git am --resolved".
-If you would prefer to skip this patch, instead run "git am --skip".
-To restore the original branch and stop patching run "git am --abort".
+Thanks,
 
-Stop rushing things and take your time learning the process.
+	tglx
+----
+ arch/arm/Kconfig                     |    3 ---
+ arch/arm/include/asm/processor.h     |    2 --
+ arch/arm/kernel/process.c            |   20 --------------------
+ arch/ia64/include/asm/processor.h    |    1 -
+ arch/ia64/kernel/process.c           |   20 --------------------
+ arch/powerpc/Kconfig                 |    4 ----
+ arch/powerpc/include/asm/processor.h |    1 -
+ arch/powerpc/kernel/idle.c           |   23 -----------------------
+ arch/sh/Kconfig                      |    3 ---
+ arch/sh/include/asm/processor.h      |    1 -
+ arch/sh/kernel/idle.c                |   20 --------------------
+ arch/x86/Kconfig                     |    3 ---
+ arch/x86/include/asm/processor.h     |    2 --
+ arch/x86/kernel/apm_32.c             |    2 +-
+ arch/x86/kernel/process.c            |   20 --------------------
+ drivers/cpuidle/cpuidle.c            |   13 +------------
+ include/linux/smp.h                  |    4 ++++
+ kernel/smp.c                         |   23 +++++++++++++++++++++++
+ 18 files changed, 29 insertions(+), 136 deletions(-)
 
-Otherwise you're going to make more work for maintainers and they
-end up grumpy as a result, which you don't want.
