@@ -1,91 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513Ab2EGSNm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 14:13:42 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63821 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754462Ab2EGSNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 14:13:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="163036494"
-From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Subject: [PATCH] charger_manager: update charge profile upon temperature zone change
-Date: Mon,  7 May 2012 22:16:12 +0530
-Message-Id: <1336409172-4058-1-git-send-email-ramakrishna.pallala@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756979Ab2EGSTq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 14:19:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55264 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab2EGSTp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 14:19:45 -0400
+Date: Mon, 7 May 2012 11:19:41 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>, Yinghai Lu <yinghai@kernel.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 10/10] mm: remove sparsemem allocation details from the
+ bootmem allocator
+Message-ID: <20120507181941.GF19417@google.com>
+References: <1336390672-14421-1-git-send-email-hannes@cmpxchg.org>
+ <1336390672-14421-11-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336390672-14421-11-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Battery vendors like UER suggest to program Low Charge Voltage in case
-of high or low temperatures. So a battery can have different charge profile
-with in the battery operating temperature limits.
+On Mon, May 07, 2012 at 01:37:52PM +0200, Johannes Weiner wrote:
+> alloc_bootmem_section() derives allocation area constraints from the
+> specified sparsemem section.  This is a bit specific for a generic
+> memory allocator like bootmem, though, so move it over to sparsemem.
+> 
+> As __alloc_bootmem_node_nopanic() already retries failed allocations
+> with relaxed area constraints, the fallback code in sparsemem.c can be
+> removed and the code becomes a bit more compact overall.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Next, there could be events like drop or rise in VBUS voltage in that case
-we might have to adjust the charge current to stabilize VBUS voltage.
+For 03-10
 
-This patch allows the Charger-Manager to adjust the charging parameters
-upon events like VBUS rise or drop and allows batteries to have multiple
-charge profiles for different temperature zones.
+ Acked-by: Tejun Heo <tj@kernel.org>
 
-Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
----
- drivers/power/charger-manager.c       |    6 +++++-
- include/linux/power/charger-manager.h |    5 +++++
- 2 files changed, 10 insertions(+), 1 deletions(-)
+Thanks for doing this.  While at it, maybe we can clear up the naming
+mess there?  I don't hate __s too much but the bootmem allocator
+brings it to a whole new level.  :(
 
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index 86935ec..9f46353 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -424,13 +424,17 @@ static void fullbatt_vchk(struct work_struct *work)
- static bool _cm_monitor(struct charger_manager *cm)
- {
- 	struct charger_desc *desc = cm->desc;
-+	bool update_charger = false;
- 	int temp = desc->temperature_out_of_range(&cm->last_temp_mC);
- 
- 	dev_dbg(cm->dev, "monitoring (%2.2d.%3.3dC)\n",
- 		cm->last_temp_mC / 1000, cm->last_temp_mC % 1000);
- 
-+	if (desc->charging_zone_changed)
-+		update_charger = desc->charging_zone_changed(cm->last_temp_mC);
-+
- 	/* It has been stopped or charging already */
--	if (!!temp == !!cm->emergency_stop)
-+	if ((!!temp == !!cm->emergency_stop) && !update_charger)
- 		return false;
- 
- 	if (temp) {
-diff --git a/include/linux/power/charger-manager.h b/include/linux/power/charger-manager.h
-index 241065c..302107d 100644
---- a/include/linux/power/charger-manager.h
-+++ b/include/linux/power/charger-manager.h
-@@ -90,6 +90,10 @@ struct charger_global_desc {
-  *	return_value > 0: overheat
-  *	return_value == 0: normal
-  *	return_value < 0: cold
-+ * @charging_zone_changed:
-+ *	Determine whether charge profile need an update
-+ *	return_value true if charge profile update required
-+ *	return_value false if charge profile update is not required
-  * @measure_battery_temp:
-  *	true: measure battery temperature
-  *	false: measure ambient temperature
-@@ -114,6 +118,7 @@ struct charger_desc {
- 	char *psy_fuel_gauge;
- 
- 	int (*temperature_out_of_range)(int *mC);
-+	bool (*charging_zone_changed)(int mC);
- 	bool measure_battery_temp;
- };
- 
 -- 
-1.7.0.4
-
+tejun
