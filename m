@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316Ab2EGNTu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 09:19:50 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:54965 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755410Ab2EGNTt (ORCPT
+	id S1756598Ab2EGNUi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 09:20:38 -0400
+Received: from mga06.intel.com ([134.134.136.21]:4669 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755710Ab2EGNUh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 09:19:49 -0400
-Date: Mon, 7 May 2012 15:19:43 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Ido Yariv <ido@wizery.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ravikiran Thirumalai <kiran.thirumalai@gmail.com>,
-        Shai Fultheim <shai@scalemp.com>
-Subject: Re: [PATCH v2 2/2] vsmp: Ignore IOAPIC IRQ affinity if possible
-Message-ID: <20120507131943.GI23858@gmail.com>
-References: <1333715987-26059-2-git-send-email-ido@wizery.com>
- <1334561976-13965-1-git-send-email-ido@wizery.com>
- <1334561976-13965-2-git-send-email-ido@wizery.com>
+	Mon, 7 May 2012 09:20:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334561976-13965-2-git-send-email-ido@wizery.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1336182667-9784-1-git-send-email-root@hackmaster.in>
+References: <1336182667-9784-1-git-send-email-root@hackmaster.in>
+Date: Mon, 7 May 2012 16:20:35 +0300
+Message-ID: <CALLzPKbA=x0Tu2Gat2Ppx9e=u7iy_M_x5Gczr+=hjL-PgOwNYg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] lib/mpi: Fixed erroneous check on return value of mpi_resize()
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Adarsh J <root@hackmaster.in>
+Cc: James Morris <jmorris@namei.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Mimi Zohar <zohar@us.ibm.com>, David Howells <dhowells@redhat.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, May 5, 2012 at 4:51 AM, Adarsh J <root@hackmaster.in> wrote:
+> mpi_resize() returns -ENOMEM on error and 0 on success.
+>
+> Signed-off-by: Adarsh J <root@hackmaster.in>
 
-* Ido Yariv <ido@wizery.com> wrote:
+Acked-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 
-> From: Ravikiran Thirumalai <kiran.thirumalai@gmail.com>
-> 
-> vSMP can route interrupts more optimally based on internal knowledge the
-> OS does not have. In order to support this optimization, all CPUs must
-> be able to handle all possible IOAPIC interrupts.
-> 
-> Fix this by setting the vector allocation domain for all CPUs and by
-> enabling this feature in vSMP.
-> 
-> Signed-off-by: Ravikiran Thirumalai <kiran.thirumalai@gmail.com>
-> Signed-off-by: Shai Fultheim <shai@scalemp.com>
-> [ido@wizery.com: rebased, simplified, and reworded the commit message]
-> Signed-off-by: Ido Yariv <ido@wizery.com>
+Thanks.
+
 > ---
-> Changes from v1:
-> - Updated Kiran's email address
-> 
->  arch/x86/kernel/apic/probe_64.c |   10 ++++++++++
->  arch/x86/kernel/vsmp_64.c       |   15 +++++++++++----
->  2 files changed, 21 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/apic/probe_64.c b/arch/x86/kernel/apic/probe_64.c
-> index 3fe9866..0f96703 100644
-> --- a/arch/x86/kernel/apic/probe_64.c
-> +++ b/arch/x86/kernel/apic/probe_64.c
-> @@ -29,6 +29,15 @@ static int apicid_phys_pkg_id(int initial_apic_id, int index_msb)
->  }
->  
->  /*
-> + * In vSMP, all cpus should be capable of handling interrupts, regardless of
-> + * the apic used.
-> + */
-> +static void fill_vector_allocation_domain(int cpu, struct cpumask *retmask)
-> +{
-> +	cpumask_setall(retmask);
-> +}
-> +
-> +/*
->   * Check the APIC IDs in bios_cpu_apicid and choose the APIC mode.
->   */
->  void __init default_setup_apic_routing(void)
-> @@ -51,6 +60,7 @@ void __init default_setup_apic_routing(void)
->  	if (is_vsmp_box()) {
->  		/* need to update phys_pkg_id */
->  		apic->phys_pkg_id = apicid_phys_pkg_id;
-> +		apic->vector_allocation_domain = fill_vector_allocation_domain;
->  	}
->  }
-
-This is_vsmp_box() special case should really move into its own 
-apic handler.
-
-Thanks,
-
-	Ingo
+>  lib/mpi/mpicoder.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/lib/mpi/mpicoder.c b/lib/mpi/mpicoder.c
+> index f26b41f..9949b69 100644
+> --- a/lib/mpi/mpicoder.c
+> +++ b/lib/mpi/mpicoder.c
+> @@ -98,7 +98,7 @@ int mpi_fromstr(MPI val, const char *str)
+>        nbytes = (nbits + 7) / 8;
+>        nlimbs = (nbytes + BYTES_PER_MPI_LIMB - 1) / BYTES_PER_MPI_LIMB;
+>        if (val->alloced < nlimbs)
+> -               if (!mpi_resize(val, nlimbs))
+> +               if (mpi_resize(val, nlimbs) < 0)
+>                        return -ENOMEM;
+>        i = BYTES_PER_MPI_LIMB - nbytes % BYTES_PER_MPI_LIMB;
+>        i %= BYTES_PER_MPI_LIMB;
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
