@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756598Ab2EGNUi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 09:20:38 -0400
-Received: from mga06.intel.com ([134.134.136.21]:4669 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755710Ab2EGNUh convert rfc822-to-8bit (ORCPT
+	id S1756768Ab2EGNUm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 09:20:42 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:53382 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756292Ab2EGNUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 09:20:37 -0400
+	Mon, 7 May 2012 09:20:39 -0400
+Message-ID: <4FA7CC05.50808@linux.vnet.ibm.com>
+Date: Mon, 07 May 2012 18:50:05 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <1336182667-9784-1-git-send-email-root@hackmaster.in>
-References: <1336182667-9784-1-git-send-email-root@hackmaster.in>
-Date: Mon, 7 May 2012 16:20:35 +0300
-Message-ID: <CALLzPKbA=x0Tu2Gat2Ppx9e=u7iy_M_x5Gczr+=hjL-PgOwNYg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] lib/mpi: Fixed erroneous check on return value of mpi_resize()
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Adarsh J <root@hackmaster.in>
-Cc: James Morris <jmorris@namei.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Mimi Zohar <zohar@us.ibm.com>, David Howells <dhowells@redhat.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Avi Kivity <avi@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Attilio Rao <attilio.rao@citrix.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
+References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com> <20120507082928.GI16608@gmail.com> <4FA7888F.80505@redhat.com> <4FA7AAD8.6050003@linux.vnet.ibm.com> <4FA7BABA.4040700@redhat.com>
+In-Reply-To: <4FA7BABA.4040700@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12050713-4790-0000-0000-00000287B1A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 5, 2012 at 4:51 AM, Adarsh J <root@hackmaster.in> wrote:
-> mpi_resize() returns -ENOMEM on error and 0 on success.
+On 05/07/2012 05:36 PM, Avi Kivity wrote:
+> On 05/07/2012 01:58 PM, Raghavendra K T wrote:
+>> On 05/07/2012 02:02 PM, Avi Kivity wrote:
+>>> On 05/07/2012 11:29 AM, Ingo Molnar wrote:
+>>>> This is looking pretty good and complete now - any objections
+>>>> from anyone to trying this out in a separate x86 topic tree?
+>>>
+>>> No objections, instead an
+>>>
+>>> Acked-by: Avi Kivity<avi@redhat.com>
+>>>
+[...]
+>>
+>> (Less is better. Below is time elapsed in sec for x86_64_defconfig
+>> (3+3 runs)).
+>>
+>>           BASE                    BASE+patch            %improvement
+>>           mean (sd)               mean (sd)
+>> case 1x:     66.0566 (74.0304)      61.3233 (68.8299)     7.16552
+>> case 2x:     1253.2 (1795.74)      131.606 (137.358)     89.4984
+>> case 3x:     3431.04 (5297.26)      134.964 (149.861)     96.0664
+>>
 >
-> Signed-off-by: Adarsh J <root@hackmaster.in>
-
-Acked-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-
-Thanks.
-
-> ---
->  lib/mpi/mpicoder.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> You're calculating the improvement incorrectly.  In the last case, it's
+> not 96%, rather it's 2400% (25x).  Similarly the second case is about
+> 900% faster.
 >
-> diff --git a/lib/mpi/mpicoder.c b/lib/mpi/mpicoder.c
-> index f26b41f..9949b69 100644
-> --- a/lib/mpi/mpicoder.c
-> +++ b/lib/mpi/mpicoder.c
-> @@ -98,7 +98,7 @@ int mpi_fromstr(MPI val, const char *str)
->        nbytes = (nbits + 7) / 8;
->        nlimbs = (nbytes + BYTES_PER_MPI_LIMB - 1) / BYTES_PER_MPI_LIMB;
->        if (val->alloced < nlimbs)
-> -               if (!mpi_resize(val, nlimbs))
-> +               if (mpi_resize(val, nlimbs) < 0)
->                        return -ENOMEM;
->        i = BYTES_PER_MPI_LIMB - nbytes % BYTES_PER_MPI_LIMB;
->        i %= BYTES_PER_MPI_LIMB;
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+You are right,
+my %improvement was intended to be like
+if
+1) base takes 100 sec ==> patch takes 93 sec
+2) base takes 100 sec ==> patch takes 11 sec
+3) base takes 100 sec ==> patch takes 4 sec
+
+The above is more confusing (and incorrect!).
+
+Better is what you told which boils to 10x and 25x improvement in case
+2 and case 3. And IMO, this *really* gives the feeling of magnitude of
+improvement with patches.
+
+I ll change script to report that way :).
+
