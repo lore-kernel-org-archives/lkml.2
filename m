@@ -1,111 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab2EGFLi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 01:11:38 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52866 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176Ab2EGFLL (ORCPT
+	id S1753961Ab2EGFLe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 01:11:34 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64230 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726Ab2EGFKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 01:11:11 -0400
-Date: Mon, 7 May 2012 15:10:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: linux-next: manual merge of the tip tree with the kbuild tree
-Message-Id: <20120507151054.3fa8df4599e81cc6ae87ca7a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__7_May_2012_15_10_54_+1000_P2B03Er+WGLtv0IA"
+	Mon, 7 May 2012 01:10:32 -0400
+X-AuditID: 9c930197-b7badae000000cfd-d8-4fa759442978
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 4/7] perf target: Introduce perf_target__parse_uid()
+Date: Mon,  7 May 2012 14:09:01 +0900
+Message-Id: <1336367344-28071-5-git-send-email-namhyung.kim@lge.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1336367344-28071-1-git-send-email-namhyung.kim@lge.com>
+References: <1336367344-28071-1-git-send-email-namhyung.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__7_May_2012_15_10_54_+1000_P2B03Er+WGLtv0IA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Add and use the modern perf_target__parse_uid() and get rid of
+the old parse_target_uid().
 
-Hi all,
-
-Today's linux-next merge of the tip tree got a conflict in Makefile
-between commit 1f2bfbd00e46 ("kbuild: link of vmlinux moved to a script")
-from the kbuild tree and commit 1dbdc6f177c6 ("kbuild/extable: Hook up
-sortextable into the build system") from the tip tree.
-
-I used the Makefile bits from the kbuild tree and added the following
-patch as a merge fixup.
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 7 May 2012 15:00:04 +1000
-Subject: [PATCH] kbuild: merge fix for sorting exceptions tables at build t=
-ime
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Reviewed-by: David Ahern <dsahern@gmail.com>
 ---
- scripts/link-vmlinux.sh |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ tools/perf/builtin-record.c |    4 +---
+ tools/perf/builtin-top.c    |    3 +--
+ tools/perf/util/target.c    |   35 +++++++++++++++++++++++++++++++++++
+ tools/perf/util/target.h    |    5 +++++
+ tools/perf/util/usage.c     |   31 -------------------------------
+ tools/perf/util/util.h      |    3 ---
+ 6 files changed, 42 insertions(+), 39 deletions(-)
 
-diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index 26c5b65..7d31f61 100644
---- a/scripts/link-vmlinux.sh
-+++ b/scripts/link-vmlinux.sh
-@@ -93,6 +93,11 @@ mksysmap()
- 	${CONFIG_SHELL} "${srctree}/scripts/mksysmap" ${1} ${2}
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index d16590942cec..d26a279796d9 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -886,9 +886,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 
+ 	perf_target__validate(&rec->opts.target);
+ 
+-	rec->opts.target.uid = parse_target_uid(rec->opts.target.uid_str);
+-	if (rec->opts.target.uid_str != NULL &&
+-	    rec->opts.target.uid == UINT_MAX - 1)
++	if (perf_target__parse_uid(&rec->opts.target) < 0)
+ 		goto out_free_fd;
+ 
+ 	if (perf_evlist__create_maps(evsel_list, &rec->opts.target) < 0)
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 3ffb2b697968..59883c8c5817 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1257,8 +1257,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 
+ 	perf_target__validate(&top.target);
+ 
+-	top.target.uid = parse_target_uid(top.target.uid_str);
+-	if (top.target.uid_str != NULL && top.target.uid == UINT_MAX - 1)
++	if (perf_target__parse_uid(&top.target) < 0)
+ 		goto out_delete_evlist;
+ 
+ 	if (perf_evlist__create_maps(top.evlist, &top.target) < 0)
+diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
+index 5c59dcfc8f8d..02a6bedb69a3 100644
+--- a/tools/perf/util/target.c
++++ b/tools/perf/util/target.c
+@@ -9,6 +9,8 @@
+ #include "target.h"
+ #include "debug.h"
+ 
++#include <pwd.h>
++
+ 
+ enum perf_target_errno perf_target__validate(struct perf_target *target)
+ {
+@@ -54,3 +56,36 @@ enum perf_target_errno perf_target__validate(struct perf_target *target)
+ 
+ 	return ret;
  }
-=20
-+sortextable()
++
++enum perf_target_errno perf_target__parse_uid(struct perf_target *target)
 +{
-+	${objtree}/scripts/sortextable ${1}
++	struct passwd pwd, *result;
++	char buf[1024];
++	const char *str = target->uid_str;
++
++	target->uid = UINT_MAX;
++	if (str == NULL)
++		return PERF_ERRNO_TARGET__SUCCESS;
++
++	/* Try user name first */
++	getpwnam_r(str, &pwd, buf, sizeof(buf), &result);
++
++	if (result == NULL) {
++		/*
++		 * The user name not found. Maybe it's a UID number.
++		 */
++		char *endptr;
++		int uid = strtol(str, &endptr, 10);
++
++		if (*endptr != '\0')
++			return PERF_ERRNO_TARGET__INVALID_UID;
++
++		getpwuid_r(uid, &pwd, buf, sizeof(buf), &result);
++
++		if (result == NULL)
++			return PERF_ERRNO_TARGET__USER_NOT_FOUND;
++	}
++
++	target->uid = result->pw_uid;
++	return PERF_ERRNO_TARGET__SUCCESS;
 +}
+diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
+index eb0d2101154a..d4aabdaba42a 100644
+--- a/tools/perf/util/target.h
++++ b/tools/perf/util/target.h
+@@ -33,9 +33,14 @@ enum perf_target_errno {
+ 	PERF_ERRNO_TARGET__PID_OVERRIDE_SYSTEM,
+ 	PERF_ERRNO_TARGET__UID_OVERRIDE_SYSTEM,
+ 
++	/* for perf_target__parse_uid() */
++	PERF_ERRNO_TARGET__INVALID_UID,
++	PERF_ERRNO_TARGET__USER_NOT_FOUND,
 +
- # Delete output files in case of error
- trap cleanup SIGHUP SIGINT SIGQUIT SIGTERM ERR
- cleanup()
-@@ -192,6 +197,11 @@ fi
- info LD vmlinux
- vmlinux_link "${kallsymso}" vmlinux
-=20
-+if [ -n "${CONFIG_BUILDTIME_EXTABLE_SORT}" ]; then
-+	info SORTEX vmlinux
-+	sortextable vmlinux
-+fi
-+
- info SYSMAP System.map
- mksysmap vmlinux System.map
-=20
---=20
-1.7.10.280.gaa39
+ 	__PERF_ERRNO_TARGET__END,
+ };
+ 
+ enum perf_target_errno perf_target__validate(struct perf_target *target);
++enum perf_target_errno perf_target__parse_uid(struct perf_target *target);
+ 
+ #endif /* _PERF_TARGET_H */
+diff --git a/tools/perf/util/usage.c b/tools/perf/util/usage.c
+index e851abc22ccc..4007aca8e0ca 100644
+--- a/tools/perf/util/usage.c
++++ b/tools/perf/util/usage.c
+@@ -82,34 +82,3 @@ void warning(const char *warn, ...)
+ 	warn_routine(warn, params);
+ 	va_end(params);
+ }
+-
+-uid_t parse_target_uid(const char *str)
+-{
+-	struct passwd pwd, *result;
+-	char buf[1024];
+-
+-	if (str == NULL)
+-		return UINT_MAX;
+-
+-	getpwnam_r(str, &pwd, buf, sizeof(buf), &result);
+-
+-	if (result == NULL) {
+-		char *endptr;
+-		int uid = strtol(str, &endptr, 10);
+-
+-		if (*endptr != '\0') {
+-			ui__error("Invalid user %s\n", str);
+-			return UINT_MAX - 1;
+-		}
+-
+-		getpwuid_r(uid, &pwd, buf, sizeof(buf), &result);
+-
+-		if (result == NULL) {
+-			ui__error("Problems obtaining information for user %s\n",
+-				  str);
+-			return UINT_MAX - 1;
+-		}
+-	}
+-
+-	return result->pw_uid;
+-}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 52be74c359d3..27a11a78ad39 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -74,7 +74,6 @@
+ #include <netinet/tcp.h>
+ #include <arpa/inet.h>
+ #include <netdb.h>
+-#include <pwd.h>
+ #include <inttypes.h>
+ #include "../../../include/linux/magic.h"
+ #include "types.h"
+@@ -249,8 +248,6 @@ struct perf_event_attr;
+ 
+ void event_attr_init(struct perf_event_attr *attr);
+ 
+-uid_t parse_target_uid(const char *str);
+-
+ #define _STR(x) #x
+ #define STR(x) _STR(x)
+ 
+-- 
+1.7.10.1
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__7_May_2012_15_10_54_+1000_P2B03Er+WGLtv0IA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPp1leAAoJEECxmPOUX5FEFBYQAJLS5R2yCnrM9iNOnRePdL/J
-e8u16rKzNxSSIAQJsofgupa9ptV5rZ8hyXhmk/KzZCaSyr1NQK/9bNm4XwIGxTK2
-svkdVVPXkmJ2L0LmNC0zEIA9puAKMZEVbOJAvp28q7lAIh5aTtBRflozcLfIbcoJ
-hkkmm1/GGTRB5eJ8EnIS2BOIqi8/jUSj9Ja9VhYLSTY4EBThwlK41WIzPfqBNCV9
-BCrW+3hwe21R4sSNOQpdSnV6UXjJUvZ6f3ujTHe2aDpdKWHzujCnTxF+FGHCc15y
-iuM83TcrydWiEYe6J/MROkGvHNWq1VMLy8iBMWeyYK/BXksh8cBtpkl8T8y8V3YW
-rGDB2m1K7u5QZrD6TvMUEipsG2u4PpHeOlgnePOwTFwxHIigoVTrsS+zZj2CeUq9
-eqlhgMxXvf34S0EX1UkUtIEJsNqDh16B7ROi6oe77RSUFLt3qRRZj7J0M2ZhiaWU
-/+JofH2qxYsUpdSoI3Bq13PMUjSw9Y2bi1vdc0EQlBZjGu7t9TdVlnPCSjXhvPjV
-i5cqcw7Zn7abtjizLNu3iP9Ii7dVO9ctTP9+VPuM4v9Ut/VhWEYu1jdEcC7Iq9Lq
-/k+6z2tm3MUSwYbuToQaAY/B7dQWFisNfZvNVvOC9Seok0TneDlQxi8EpWraCtnQ
-g4ajx3kY+3b0V8vUfARI
-=S4Zx
------END PGP SIGNATURE-----
-
---Signature=_Mon__7_May_2012_15_10_54_+1000_P2B03Er+WGLtv0IA--
