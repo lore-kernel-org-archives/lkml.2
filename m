@@ -1,85 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401Ab2EGUd0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 16:33:26 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42035 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932219Ab2EGUdW (ORCPT
+	id S932239Ab2EGUab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 16:30:31 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:18472 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932218Ab2EGUa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 16:33:22 -0400
-Date: Mon, 7 May 2012 22:33:20 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 17/18] tile: Use common threadinfo allocator
-In-Reply-To: <4FA82A80.3090001@tilera.com>
-Message-ID: <alpine.LFD.2.02.1205072227540.6271@ionos>
-References: <20120505150007.543515803@linutronix.de> <20120505150142.311126440@linutronix.de> <4FA54569.2040209@tilera.com> <alpine.LFD.2.02.1205072134130.6271@ionos> <4FA82A80.3090001@tilera.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 7 May 2012 16:30:28 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 06/21] PCI: Add busn_res operation functions
+Date: Mon,  7 May 2012 13:29:51 -0700
+Message-Id: <1336422606-4244-7-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
+References: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 May 2012, Chris Metcalf wrote:
-> On 5/7/2012 3:45 PM, Thomas Gleixner wrote:
-> > What's the difference between a kernel stack page for a given node and
-> > a page which is allocated on a given node ?
-> 
-> No difference except in how it is allocated (and of course how it is
-> used).  The task migration code currently knows that the kernel stack
-> should have its home cache migrated; it finds it by VA.  In the absence of
-> migration the kernel stack page is not treated differently than any other
-> page_alloc'ed page.
-> 
-> >> The simplest approach is of course just to allow
-> >> __HAVE_ARCH_THREAD_INFO_ALLOCATOR to continue to be meaningful and use it
-> >> for tile, but maybe there's some halfway point.  For example, that symbol
-> >> could refer only to the allocate function, and not also imply an
-> >> arch-specific free function.  Or, we could have a new much more focused
-> >> override that was just "a function to use instead of alloc_pages_node",
-> >> e.g. provide a weak alloc_threadinfo_pages_node() that just was generically
-> >> just a call to alloc_pages_node, which architectures could override.
-> > Again, that would give you what? 
-> 
-> The advantage is that when you initially allocate the stack page, you can
-> set its home cache appropriately to be on the local cpu, where the new task
-> is likely to run.  Otherwise, you could imagine using a suitable hook for
-> when the task starts up to migrate the page at that point, but you miss out
-> on the opportunity to have the allocator return a suitably-cached page up
-> front when the task is created.
-> 
-> > If you treat kernel stack pages different to general pages allocated
-> > on a node then why not using a special GFP flag for that purpose?
-> 
-> There are certainly different possible ways to tell the allocator to
-> allocate a page with its cache "here" vs with its cache fully-distributed
-> (and thus less local, and less good for stack or percpu pages).  We use a
-> different approach (some per-task data structures that pass homing info to
-> the allocator) but we could probably use GFP_ values instead.  But the
-> point is we need to be able to know to do so, and I think the only obvious
-> way is to override something in the threadinfo allocator.
+Will use them insert/update busn res in pci_bus struct.
 
-Wrong. The obvious way is to use the common code and add a special
-flag to it.
+-v2: use update_resource() requested by Bjorn.
+-v3: use domain_busn_res as root bus busn_res parent.
 
-There is nothing wrong to add
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/probe.c |   63 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h |    3 ++
+ 2 files changed, 66 insertions(+), 0 deletions(-)
 
-#ifndef ARCH_THREADINFO_GFP
-#define ARCH_THREADINFO_GFP (0)
-#endif
-
-and or ARCH_THREADINFO_GFP to the generic THREADINFO_GFP flags
-
-instead of insisting on a separate allocator function for something
-which has no fricking reason to be arch specific (IA64 and some weird
-sparc crap aside)
-
-Thanks,
-
-	tglx
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 674a477..bfbf064 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1714,6 +1714,69 @@ err_out:
+ 	return NULL;
+ }
+ 
++int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
++{
++	struct resource *res = &b->busn_res;
++	struct resource *parent_res;
++	int ret;
++
++	res->start = bus;
++	res->end = bus_max;
++	res->flags = IORESOURCE_BUS;
++
++	if (!pci_is_root_bus(b))
++		parent_res = &b->parent->busn_res;
++	else {
++		parent_res = get_pci_domain_busn_res(pci_domain_nr(b));
++		res->flags |= IORESOURCE_PCI_FIXED;
++	}
++
++	ret = insert_resource(parent_res, res);
++
++	dev_printk(KERN_DEBUG, &b->dev,
++			"busn_res: %pR %s inserted under %s %pR\n",
++			res, ret ? "can not be" : "is",
++			pci_is_root_bus(b) ? "domain":"", parent_res);
++
++	return ret;
++}
++
++int pci_bus_update_busn_res_end(struct pci_bus *b, int bus_max)
++{
++	struct resource *res = &b->busn_res;
++	struct resource old_res = *res;
++	resource_size_t size;
++	int ret;
++
++	if (res->start > bus_max)
++		return -EINVAL;
++
++	size = bus_max - res->start + 1;
++	ret = adjust_resource(res, res->start, size);
++	dev_printk(KERN_DEBUG, &b->dev,
++			"busn_res: %pR end %s updated to %02x\n",
++			&old_res, ret ? "can not be" : "is", bus_max);
++
++	if (!ret && !res->parent)
++		pci_bus_insert_busn_res(b, res->start, res->end);
++
++	return ret;
++}
++
++void pci_bus_release_busn_res(struct pci_bus *b)
++{
++	struct resource *res = &b->busn_res;
++	int ret;
++
++	if (!res->flags || !res->parent)
++		return;
++
++	ret = release_resource(res);
++	dev_printk(KERN_DEBUG, &b->dev,
++			"busn_res: %pR %s released\n",
++			res, ret ? "can not be" : "is");
++}
++
+ struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
+ 		struct pci_ops *ops, void *sysdata, struct list_head *resources)
+ {
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index d588ef4..b5f2cc7 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -667,6 +667,9 @@ struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
+ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 				    struct pci_ops *ops, void *sysdata,
+ 				    struct list_head *resources);
++int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
++int pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
++void pci_bus_release_busn_res(struct pci_bus *b);
+ struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
+ 					     struct pci_ops *ops, void *sysdata,
+ 					     struct list_head *resources);
+-- 
+1.7.7
 
