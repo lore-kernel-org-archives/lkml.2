@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab2EGQRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 12:17:24 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40192 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756814Ab2EGQRW (ORCPT
+	id S932065Ab2EGQSq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 12:18:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50253 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756857Ab2EGQSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 12:17:22 -0400
-Date: Mon, 7 May 2012 18:17:10 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [EDAC_ABI PATCH v13 01/26] amd64_edac: convert driver to use the
- new edac ABI
-Message-ID: <20120507161710.GF11462@aftab.osrc.amd.com>
-References: <1334607133-30039-1-git-send-email-mchehab@redhat.com>
- <1334607705-30320-1-git-send-email-mchehab@redhat.com>
- <1334607705-30320-2-git-send-email-mchehab@redhat.com>
- <20120507143143.GD11462@aftab.osrc.amd.com>
- <4FA7F468.8070101@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA7F468.8070101@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 7 May 2012 12:18:44 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: devel@driverdev.osuosl.org, linux-iio@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] staging, iio: Fix typo in iio
+Date: Tue,  8 May 2012 01:18:42 +0900
+Message-Id: <1336407522-13818-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.10.1.457.g8275905
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 01:12:24PM -0300, Mauro Carvalho Chehab wrote:
-> That happens because the EDAC core couldn't find any EDAC labels for the affected
-> memory.
-> 
-> There are two reasons for seeing a "unknown memory":
-> 	1) there's no label information. This is fixed by:
-> 	   http://git.kernel.org/?p=linux/kernel/git/mchehab/linux-edac.git;a=commit;h=b14dbb9b8220f8e07634125bf0e315f739cbf501
-> 	2) there's no info about the label e. g. something like the old 
-> 	   edac_mc_handle_ce_no_info().
-> 
-> As csrow and channel info is filled on your log, it is very likely to be
-> caused by (1) and that you didn't load the labels for this system with edac-ctl.
-> 
-> If you had a table with the labels for your motherboard at /etc/edac/labels.db
-> and run "edac-ctl --load" during your system init (that's the default on RHEL/Fedora,
-> not sure what other distros do), the message would be like:
-> 
-> EDAC MC0: CE amd64_edac on DIMM_4B (csrow 3 channel 1 page 0x5bac7 offset 0x388 grain 0 syndrome 0xb1be )
-> 
-> > IOW, simply having:
-> > 
-> > [ 2377.742279] EDAC MC0: CE amd64_edac (csrow:3 channel:1 page:0x5bac7 offset:0x388 grain:0 syndrome:0xb1be)
-> > 
-> > is much better IMO.
-> > 
-> > Also, formatting that info with ":" makes the data even easily
-> > understandable and parseable.
-> 
-> Ok. I'll write a patch to replace it at the end of the series.
+Correct spelling typo in staging/iio
 
-Why not rebase this patch? Your tree is not merged anywhere yet.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/staging/iio/TODO                      | 2 +-
+ drivers/staging/iio/gyro/adxrs450.h           | 2 +-
+ drivers/staging/iio/iio_simple_dummy_buffer.c | 4 ++--
+ drivers/staging/iio/iio_simple_dummy_events.c | 2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/staging/iio/TODO b/drivers/staging/iio/TODO
+index d1ad35e..cf3f948 100644
+--- a/drivers/staging/iio/TODO
++++ b/drivers/staging/iio/TODO
+@@ -67,7 +67,7 @@ e-mailing the normal IIO list (see below).
+ 
+ Documentation
+ 1) Lots of cleanup and expansion.
+-2) Some device require indvidual docs.
++2) Some device require individual docs.
+ 
+ Contact: Jonathan Cameron <jic23@cam.ac.uk>.
+ Mailing list: linux-iio@vger.kernel.org
+diff --git a/drivers/staging/iio/gyro/adxrs450.h b/drivers/staging/iio/gyro/adxrs450.h
+index af0c870..f8cf21f 100644
+--- a/drivers/staging/iio/gyro/adxrs450.h
++++ b/drivers/staging/iio/gyro/adxrs450.h
+@@ -49,7 +49,7 @@ enum {
+  * @us:			actual spi_device
+  * @buf_lock:		mutex to protect tx and rx
+  * @tx:			transmit buffer
+- * @rx:			recieve buffer
++ * @rx:			receive buffer
+  **/
+ struct adxrs450_state {
+ 	struct spi_device	*us;
+diff --git a/drivers/staging/iio/iio_simple_dummy_buffer.c b/drivers/staging/iio/iio_simple_dummy_buffer.c
+index bb4daf7..389c18a 100644
+--- a/drivers/staging/iio/iio_simple_dummy_buffer.c
++++ b/drivers/staging/iio/iio_simple_dummy_buffer.c
+@@ -37,7 +37,7 @@ static const s16 fakedata[] = {
+  * @irq: the interrupt number
+  * @p: private data - always a pointer to the poll func.
+  *
+- * This is the guts of buffered capture. On a trigger event occuring,
++ * This is the guts of buffered capture. On a trigger event occurring,
+  * if the pollfunc is attached then this handler is called as a threaded
+  * interrupt (and hence may sleep). It is responsible for grabbing data
+  * from the device and pushing it into the associated buffer.
+@@ -64,7 +64,7 @@ static irqreturn_t iio_simple_dummy_trigger_h(int irq, void *p)
+ 		 *   up a fast read.  The capture will consist of all of them.
+ 		 *   Hence we just call the grab data function and fill the
+ 		 *   buffer without processing.
+-		 * sofware scans: can be considered to be random access
++		 * software scans: can be considered to be random access
+ 		 *   so efficient reading is just a case of minimal bus
+ 		 *   transactions.
+ 		 * software culled hardware scans:
+diff --git a/drivers/staging/iio/iio_simple_dummy_events.c b/drivers/staging/iio/iio_simple_dummy_events.c
+index 449c7a5..368317b 100644
+--- a/drivers/staging/iio/iio_simple_dummy_events.c
++++ b/drivers/staging/iio/iio_simple_dummy_events.c
+@@ -122,7 +122,7 @@ int iio_simple_dummy_write_event_value(struct iio_dev *indio_dev,
+  * @private: pointer to device instance state.
+  *
+  * This handler is responsible for querying the device to find out what
+- * event occured and for then pushing that event towards userspace.
++ * event occurred and for then pushing that event towards userspace.
+  * Here only one event occurs so we push that directly on with locally
+  * grabbed timestamp.
+  */
 -- 
-Regards/Gruss,
-Boris.
+1.7.10.1.457.g8275905
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
