@@ -1,231 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab2EGJjh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 05:39:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31725 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755883Ab2EGJjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 05:39:35 -0400
-Message-ID: <4FA79848.2030308@redhat.com>
-Date: Mon, 07 May 2012 05:39:20 -0400
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>,
-        Eric Sandeen <sandeen@redhat.com>, Ted.Ts'o.tytso@mit.edu,
-        Dave Chinner <david@fromorbit.com>,
-        Lukas Czerner <lczerner@redhat.com>,
-        Andreas Dilger <adilger@whamcloud.com>,
-        Szabolcs Szakacsits <szaka@tuxera.com>
-Subject: Re: [RFC][PATCH v2] ext4: add expose_stale_data flag in fallocate
-References: <1336018469-6421-1-git-send-email-wenqing.lz@taobao.com> <4FA2596C.7050509@redhat.com> <20120507034420.GA3247@gmail.com>
-In-Reply-To: <20120507034420.GA3247@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756018Ab2EGJlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 05:41:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34303 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab2EGJlQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 05:41:16 -0400
+Message-ID: <1336383752.3638.13.camel@lappy>
+Subject: fb: BUGs related to deferred IO
+From: Sasha Levin <levinsasha928@gmail.com>
+To: FlorianSchandinat@gmx.de
+Cc: Dave Jones <davej@redhat.com>, linux-fbdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 07 May 2012 11:42:32 +0200
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2012 11:44 PM, Zheng Liu wrote:
-> On Thu, May 03, 2012 at 06:09:48AM -0400, Ric Wheeler wrote:
->> On 05/03/2012 12:14 AM, Zheng Liu wrote:
->>> Hi all,
->>>
->>> Here is the v2 of FALLOC_FL_NO_HIDE_STALE in fallocate.  Now no new flag is
->>> added into vfs in order to reduce the impacts and avoid a huge security hole.
->>> The application cannot call fallocate with a new flag to create an unwritten
->>> extent.  It needs to call ioctl to enable/disable this feature.  Meanwhile, in
->>> ioctl, filesystem will check CAP_SYS_RAWIO to ensure that the user has a
->>> privilege to switch on/off it.  Currently, I only implement it in ext4.
->> Hi Zheng,
->>
->> I thought that we had pretty much decided to try and fix the ext4
->> performance impact, not pursue this?
-> Hi Ric,
->
-> Sorry for the delay reply.  I fully agree with you about trying to improve the
-> ext4 performance.  But maybe it is useful for someone who quite needs to
-> avoid this overhead and can afford this huge security hole.  Just leave
-> this patch in the mailing list. :-)
->
-> Regards,
-> Zheng
+Hi all,
 
-The problem is that when you put out a glaring security hole and label it a 
-"performance" patch, people will use it who don't understand.
+During fuzzing using trinity inside a KVM guest, using latest -next kernel, I got the following BUG:
 
-I strongly disagree with the patch, we need to fix the performance issue first 
-*before* looking at exposing stale data to users.
+[  601.263570] ------------[ cut here ]------------
+[  601.270562] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8d/0xb0()
+[  601.298273] ODEBUG: assert_init not available (active state 0) object type: timer_list hint: stub_timer+0x0/0x20
+[  601.317051] Pid: 23084, comm: trinity Tainted: G        W    3.4.0-rc6-next-20120507-sasha-00001-g33621a3-dirty #114
+[  601.353655] Call Trace:
+[  601.358430]  [<ffffffff810b6ca7>] warn_slowpath_common+0x87/0xb0
+[  601.369400]  [<ffffffff810b6d71>] warn_slowpath_fmt+0x41/0x50
+[  601.376112]  [<ffffffff8189dafd>] debug_print_object+0x8d/0xb0
+[  601.382656]  [<ffffffff810c5650>] ? usleep_range+0x40/0x40
+[  601.389210]  [<ffffffff8189dcf0>] debug_object_assert_init+0xa0/0x110
+[  601.395856]  [<ffffffff810c5e26>] del_timer+0x26/0xd0
+[  601.399472]  [<ffffffff810d3c87>] __cancel_work_timer+0x27/0xa0
+[  601.403238]  [<ffffffff810d3d0d>] cancel_delayed_work_sync+0xd/0x10
+[  601.406969]  [<ffffffff819170d2>] fb_deferred_io_fsync+0x52/0x80
+[  601.410281]  [<ffffffff811e1ff8>] ? fget_light+0x118/0x3e0
+[  601.413489]  [<ffffffff8120cb48>] vfs_fsync_range+0x18/0x30
+[  601.416741]  [<ffffffff8120cb77>] vfs_fsync+0x17/0x20
+[  601.419662]  [<ffffffff8120cd74>] do_fsync+0x34/0x60
+[  601.422959]  [<ffffffff8120cdae>] sys_fdatasync+0xe/0x20
+[  601.425721]  [<ffffffff82d8b1f9>] system_call_fastpath+0x16/0x1b
+[  601.449718] ---[ end trace 44593438a59a9537 ]---
+[  601.452359] ------------[ cut here ]------------
+[  601.453315] kernel BUG at kernel/workqueue.c:564!
+[  601.453315] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  601.453315] CPU 1 
+[  601.453315] Pid: 23084, comm: trinity Tainted: G        W    3.4.0-rc6-next-20120507-sasha-00001-g33621a3-dirty #114
+[  601.453315] RIP: 0010:[<ffffffff810d1621>]  [<ffffffff810d1621>] get_work_gcwq+0x41/0x80
+[  601.453315] RSP: 0018:ffff88000ed3fe58  EFLAGS: 00010213
+[  601.453315] RAX: 0000000000000000 RBX: ffff88007f310e58 RCX: 0000000000000006
+[  601.453315] RDX: 0035b5b5b5b5b5b5 RSI: ffff88000f9088e0 RDI: ffff88007f310e58
+[  602.339668] RBP: ffff88000ed3fe58 R08: 0000000000000001 R09: 0000000000000000
+[  602.339668] R10: 0000000000000001 R11: 0000000000000000 R12: ffff88007f310e58
+[  602.339668] R13: 09286401f3b0af98 R14: 13b8db52e413d33a R15: 02be775f01f67918
+[  602.339668] FS:  00007f65d4b65700(0000) GS:ffff88001b800000(0000) knlGS:0000000000000000
+[  602.339668] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  602.339668] CR2: 0000000000f54800 CR3: 0000000016530000 CR4: 00000000000407e0
+[  602.339668] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  602.339668] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  602.339668] Process trinity (pid: 23084, threadinfo ffff88000ed3e000, task ffff88000f908000)
+[  602.339668] Stack:
+[  602.339668]  ffff88000ed3fe98 ffffffff810d23db 2222222222222222 2222222222222222
+[  602.339668]  2222222222222222 ffff88007f310e58 ffff88007f310ea8 09286401f3b0af98
+[  602.339668]  ffff88000ed3fec8 ffffffff810d3ce0 13b8db52e413d33a ffff88001aeccb98
+[  602.339668] Call Trace:
+[  602.339668]  [<ffffffff810d23db>] try_to_grab_pending+0x2b/0xe0
+[  602.339668]  [<ffffffff810d3ce0>] __cancel_work_timer+0x80/0xa0
+[  602.339668]  [<ffffffff810d3d0d>] cancel_delayed_work_sync+0xd/0x10
+[  602.339668]  [<ffffffff819170d2>] fb_deferred_io_fsync+0x52/0x80
+[  602.339668]  [<ffffffff811e1ff8>] ? fget_light+0x118/0x3e0
+[  602.339668]  [<ffffffff8120cb48>] vfs_fsync_range+0x18/0x30
+[  602.339668]  [<ffffffff8120cb77>] vfs_fsync+0x17/0x20
+[  602.339668]  [<ffffffff8120cd74>] do_fsync+0x34/0x60
+[  602.339668]  [<ffffffff8120cdae>] sys_fdatasync+0xe/0x20
+[  602.339668]  [<ffffffff82d8b1f9>] system_call_fastpath+0x16/0x1b
+[  602.339668] Code: 66 2e 0f 1f 84 00 00 00 00 00 48 89 c2 31 c0 48 c1 ea 09 81 fa 01 10 00 00 74 3f 81 fa 00 10 00 00 74 27 39 15 89 ca f1 02 77 09 <0f> 0b 0f 1f 44 00 00 eb fe 48 c7 c0 80 f4 00 00 89 d2 48 03 04 
+[  602.339668] RIP  [<ffffffff810d1621>] get_work_gcwq+0x41/0x80
+[  602.339668]  RSP <ffff88000ed3fe58>
+[  602.674604] ---[ end trace 44593438a59a9538 ]---
 
-Thanks,
+It would seem that this is the case of trying to use deferred IO on FBs that don't support it. I had a cirrus fbdev in the guest, which from what I can tell doesn't support deferred IO.
 
-Ric
-
->
->>> Even though I try to reduce its impact, this feature still brings a security
->>> hole.  So the application must ensure that it initializes an unwritten extent
->>> by itself before reading it, and it is used in a limited environment.
->>>
->>> v1 ->   v2:
->>> * remove FALLOC_FL_NO_HIDE_STALE flag in vfs
->>> * add 'i_expose_stale_data' in ext4 to enable/disable it
->>>
->>> Regards,
->>> Zheng
->>>
->>>  From 530045b4a1f75df5afd40c0e20c89917f97d7d5a Mon Sep 17 00:00:00 2001
->>> From: Zheng Liu<wenqing.lz@taobao.com>
->>> Date: Thu, 3 May 2012 11:21:44 +0800
->>> Subject: [RFC][PATCH v2] ext4: add expose_stale_data flag in fallocate
->>>
->>> We can use fallocate to preallocate sequential blocks.  But these extents are
->>> uninitialized.  So when the application does a write, filesystem will
->>> initialized these unwritten extents and it brings a huge overhead in some
->>> cases.
->>>
->>> This patch adds a new flag in inode to indicate whether initialize an unwritten
->>> extent or not.  This flag is enable/disable within ioctl that switch on/off this
->>> feature.  The application must call ioctl to enable this feature before it tries
->>> to preallocate some blocks.
->>>
->>> Obviously, this feature brings a huge security hole.  The application must
->>> guarantee to initialize this file by itself before reading it at the same
->>> offset.  So the application *MUST* use it carefully.
->>>
->>> CC: Ric Wheeler<rwheeler@redhat.com>
->>> CC: Eric Sandeen<sandeen@redhat.com>
->>> CC: Ted Ts'o tytso@mit.edu>
->>> CC: Dave Chinner<david@fromorbit.com>
->>> CC: Lukas Czerner<lczerner@redhat.com>
->>> CC: Andreas Dilger<adilger@whamcloud.com>
->>> CC: Szabolcs Szakacsits<szaka@tuxera.com>
->>> Signed-off-by: Zheng Liu<wenqing.lz@taobao.com>
->>> ---
->>>   fs/ext4/ext4.h    |    5 +++++
->>>   fs/ext4/extents.c |    6 +++++-
->>>   fs/ext4/ioctl.c   |   43 +++++++++++++++++++++++++++++++++++++++++++
->>>   fs/ext4/super.c   |    1 +
->>>   4 files changed, 54 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
->>> index 0e01e90..f56caf0 100644
->>> --- a/fs/ext4/ext4.h
->>> +++ b/fs/ext4/ext4.h
->>> @@ -593,6 +593,8 @@ enum {
->>>   #define EXT4_IOC_ALLOC_DA_BLKS		_IO('f', 12)
->>>   #define EXT4_IOC_MOVE_EXT		_IOWR('f', 15, struct move_extent)
->>>   #define EXT4_IOC_RESIZE_FS		_IOW('f', 16, __u64)
->>> +#define EXT4_IOC_GET_EXPOSE_STALE	_IOR('f', 17, int)
->>> +#define EXT4_IOC_SET_EXPOSE_STALE	_IOW('f', 18, int)
->>>
->>>   #if defined(__KERNEL__)&&   defined(CONFIG_COMPAT)
->>>   /*
->>> @@ -908,6 +910,9 @@ struct ext4_inode_info {
->>>   	 */
->>>   	tid_t i_sync_tid;
->>>   	tid_t i_datasync_tid;
->>> +
->>> +	/* expose stale data in creating a new extent */
->>> +	int i_expose_stale_data;
->>>   };
->>>
->>>   /*
->>> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
->>> index abcdeab..14f54f1 100644
->>> --- a/fs/ext4/extents.c
->>> +++ b/fs/ext4/extents.c
->>> @@ -4269,6 +4269,7 @@ static void ext4_falloc_update_inode(struct inode *inode,
->>>   long ext4_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
->>>   {
->>>   	struct inode *inode = file->f_path.dentry->d_inode;
->>> +	struct ext4_inode_info *ei = EXT4_I(inode);
->>>   	handle_t *handle;
->>>   	loff_t new_size;
->>>   	unsigned int max_blocks;
->>> @@ -4312,7 +4313,10 @@ long ext4_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
->>>   		trace_ext4_fallocate_exit(inode, offset, max_blocks, ret);
->>>   		return ret;
->>>   	}
->>> -	flags = EXT4_GET_BLOCKS_CREATE_UNINIT_EXT;
->>> +	if (ei->i_expose_stale_data)
->>> +		flags = EXT4_GET_BLOCKS_CREATE;
->>> +	else
->>> +		flags = EXT4_GET_BLOCKS_CREATE_UNINIT_EXT;
->>>   	if (mode&   FALLOC_FL_KEEP_SIZE)
->>>   		flags |= EXT4_GET_BLOCKS_KEEP_SIZE;
->>>   	/*
->>> diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
->>> index 6eee255..a37db8e 100644
->>> --- a/fs/ext4/ioctl.c
->>> +++ b/fs/ext4/ioctl.c
->>> @@ -432,6 +432,47 @@ resizefs_out:
->>>   		return 0;
->>>   	}
->>>
->>> +	case EXT4_IOC_GET_EXPOSE_STALE: {
->>> +		int enable;
->>> +
->>> +		/* security check */
->>> +		if (!capable(CAP_SYS_RAWIO))
->>> +			return -EPERM;
->>> +
->>> +		/*
->>> +		 * currently only extent-based files support (pre)allocate with
->>> +		 * EXPOSE_STALE_DATA flag
->>> +		 */
->>> +		if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
->>> +			return -EOPNOTSUPP;
->>> +
->>> +		enable = ei->i_expose_stale_data;
->>> +
->>> +		return put_user(enable, (int __user *) arg);
->>> +	}
->>> +
->>> +	case EXT4_IOC_SET_EXPOSE_STALE: {
->>> +		int enable;
->>> +
->>> +		/* security check */
->>> +		if (!capable(CAP_SYS_RAWIO))
->>> +			return -EPERM;
->>> +
->>> +		/*
->>> +		 * currently only extent-based files support (pre)allocate with
->>> +		 * EXPOSE_STALE_DATA flag
->>> +		 */
->>> +		if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
->>> +			return -EOPNOTSUPP;
->>> +
->>> +		if (get_user(enable, (int __user *) arg))
->>> +			return -EFAULT;
->>> +
->>> +		ei->i_expose_stale_data = enable;
->>> +
->>> +		return 0;
->>> +	}
->>> +
->>>   	default:
->>>   		return -ENOTTY;
->>>   	}
->>> @@ -495,6 +536,8 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
->>>   	case EXT4_IOC_MOVE_EXT:
->>>   	case FITRIM:
->>>   	case EXT4_IOC_RESIZE_FS:
->>> +	case EXT4_IOC_GET_EXPOSE_STALE:
->>> +	case EXT4_IOC_SET_EXPOSE_STALE:
->>>   		break;
->>>   	default:
->>>   		return -ENOIOCTLCMD;
->>> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
->>> index e1fb1d5..6de2db0 100644
->>> --- a/fs/ext4/super.c
->>> +++ b/fs/ext4/super.c
->>> @@ -943,6 +943,7 @@ static struct inode *ext4_alloc_inode(struct super_block *sb)
->>>   	ei->i_datasync_tid = 0;
->>>   	atomic_set(&ei->i_ioend_count, 0);
->>>   	atomic_set(&ei->i_aiodio_unwritten, 0);
->>> +	ei->i_expose_stale_data = 0;
->>>
->>>   	return&ei->vfs_inode;
->>>   }
+The first and the 2nd bug lead me to believe that 'fbdefio' was set to garbage.
 
