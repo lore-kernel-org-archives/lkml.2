@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab2EGWB7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 18:01:59 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:51398 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752641Ab2EGWB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 18:01:58 -0400
-Date: Tue, 8 May 2012 00:01:42 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>, Yinghai Lu <yinghai@kernel.org>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 00/10] (no)bootmem bits for 3.5
-Message-ID: <20120507220142.GA1202@cmpxchg.org>
-References: <1336390672-14421-1-git-send-email-hannes@cmpxchg.org>
- <20120507204113.GD10521@merkur.ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120507204113.GD10521@merkur.ravnborg.org>
+	id S1756936Ab2EGWJw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 18:09:52 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:51707 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142Ab2EGWJu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 18:09:50 -0400
+From: Eldad Zack <eldad@fogrefinery.com>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Eldad Zack <eldad@fogrefinery.com>
+Subject: [PATCH] net/bluetooth/bnep/core.c: use constant for ethertype
+Date: Tue,  8 May 2012 00:09:35 +0200
+Message-Id: <1336428575-28996-1-git-send-email-eldad@fogrefinery.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 10:41:13PM +0200, Sam Ravnborg wrote:
-> Hi Johannes.
-> 
-> > here are some (no)bootmem fixes and cleanups for 3.5.  Most of it is
-> > unifying allocation behaviour across bootmem and nobootmem when it
-> > comes to respecting the specified allocation address goal and numa.
-> > 
-> > But also refactoring the codebases of the two bootmem APIs so that we
-> > can think about sharing code between them again.
-> 
-> Could you check up on CONFIG_HAVE_ARCH_BOOTMEM use in bootmem.c too?
-> x86 no longer uses bootmem.c
-> avr define it - but to n.
-> 
-> So no-one is actually using this anymore.
-> I have sent patches to remove it from Kconfig for both x86 and avr.
-> 
-> I looked briefly at cleaning up bootmem.c myslef - but I felt not
-> familiar enough with the code to do the cleanup.
-> 
-> I did not check your patchset - but based on the shortlog you
-> did not kill HAVE_ARCH_BOOTMEM.
+The dot1q ethertype number (0x8100) is embedded in the code, although
+it is already defined in included headers.
 
-It was used on x86-32 numa to try all bootmem allocations from node 0
-first (see only remaining definition of bootmem_arch_preferred_node),
-which AFAICS nobootmem no longer respects.
+Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+---
+ net/bluetooth/bnep/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Shouldn't this be fixed instead?
+diff --git a/net/bluetooth/bnep/core.c b/net/bluetooth/bnep/core.c
+index a779ec7..4fab436 100644
+--- a/net/bluetooth/bnep/core.c
++++ b/net/bluetooth/bnep/core.c
+@@ -340,7 +340,7 @@ static inline int bnep_rx_frame(struct bnep_session *s, struct sk_buff *skb)
+ 	}
+ 
+ 	/* Strip 802.1p header */
+-	if (ntohs(s->eh.h_proto) == 0x8100) {
++	if (ntohs(s->eh.h_proto) == ETH_P_8021Q) {
+ 		if (!skb_pull(skb, 4))
+ 			goto badframe;
+ 		s->eh.h_proto = get_unaligned((__be16 *) (skb->data - 2));
+-- 
+1.7.10
 
-But yeah, we can remove the bootmem.c parts, I think.
