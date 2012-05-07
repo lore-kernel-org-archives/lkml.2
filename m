@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab2EGNNw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 09:13:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34466 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449Ab2EGNNv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 09:13:51 -0400
-Subject: Re: [PATCH] sched: Removed redundant set_current_state in "yield"
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Sasikantha babu <sasikanth.v19@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Frank Rowand <frank.rowand@am.sony.com>,
-        Paul Turner <pjt@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1334072733-2614-1-git-send-email-sasikanth.v19@gmail.com>
-References: <1334072733-2614-1-git-send-email-sasikanth.v19@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 May 2012 15:13:36 +0200
-Message-ID: <1336396416.27020.44.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756226Ab2EGNQf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 09:16:35 -0400
+Received: from pc12772.Mathematik.Uni-Marburg.DE ([137.248.123.123]:48439 "EHLO
+	pc12772.Mathematik.Uni-Marburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753449Ab2EGNQe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 09:16:34 -0400
+X-Greylist: delayed 765 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 May 2012 09:16:33 EDT
+From: Christian Strack <strack@Mathematik.Uni-Marburg.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: Debug Exception Handling in Linux
+Date: Mon, 7 May 2012 15:03:46 +0200
+Message-Id: <4E9AE794-8227-4FA5-910A-5F612926A5AB@mathematik.uni-marburg.de>
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1257)
+X-Mailer: Apple Mail (2.1257)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (pc12772.Mathematik.Uni-Marburg.de [137.248.123.123]); Mon, 07 May 2012 15:03:47 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-04-10 at 21:15 +0530, Sasikantha babu wrote:
-> Removed redundant setting current task state to TASK_RUNNING.
-> 
-> During yield process will always remains in TASK_RUNNING state. 
+Hello,
 
-Uhm, no, if you call yield() with !TASK_RUNNING you'll block and need a
-proper wakeup. That is, you can in fact abuse yield() as schedule().
+I'm trying to single-step processes in  a HVM Linux guest using Xen on Intel VT. Especially i've changed the Ether patch for Xen to be able to handle Linux guests. My Problem is that every single step the RIP stored in the VMCS points to kernel instructions (>0xC0000000) and thus only kernel instructions are stepped. To achieve single-stepping, both the exception bitmap and the rflags are masked with the trap flag, debug register 6's 14th bit is set (single-stepping) and the exception is send to the guest using 
 
-> Process state of  yielded process will not change from TASK_RUNNING, so it does not 
-> make sense setting the process state again to TASK_RUNNING (TASK_RUNNING -> TASK_RUNNING).
+vmx_inject_hw_exception(v, TRAP_debug, VMX_DELIVER_NO_ERROR_CODE);
 
-No real objections, but have you tested/verified that all users are
-indeed unaffected by this change?
+Has anybody a clue why the RIP points to kernel instructions or where the userland RIP is stored at this time? To avoid misunderstandings, i'm not searching for Xen specific answers. It would be very helpful if you could enlight me how the linux kernel handles debug exceptions or where the userland RIP is stored.
 
-> Signed-off-by: Sasikantha babu <sasikanth.v19@gmail.com>
-> ---
->  kernel/sched/core.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 4603b9d..c2a357d 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4624,7 +4624,6 @@ EXPORT_SYMBOL(__cond_resched_softirq);
->   */
->  void __sched yield(void)
->  {
-> -	set_current_state(TASK_RUNNING);
->  	sys_sched_yield();
->  }
->  EXPORT_SYMBOL(yield);
+Kind regards
+Christian
 
+PS: Please add my address to CC
 
-
+---
+Ether patch: http://ether.gtisc.gatech.edu/source.html
