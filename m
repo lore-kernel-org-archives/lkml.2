@@ -1,48 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987Ab2EGQDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 12:03:31 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:47509 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756571Ab2EGQD3 convert rfc822-to-8bit (ORCPT
+	id S1757141Ab2EGQD6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 12:03:58 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:27381
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756724Ab2EGQD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 12:03:29 -0400
+	Mon, 7 May 2012 12:03:56 -0400
+X-SpamScore: -12
+X-BigFish: VPS-12(zz936eK1432N98dKzz1202hzzz2dh668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M3NTY5-02-6TL-02
+X-M-MSG: 
+Date: Mon, 7 May 2012 18:03:39 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/7] perf/x86-ibs: Add support for IBS pseudo events
+Message-ID: <20120507160339.GK18810@erda.amd.com>
+References: <1335983192-23731-1-git-send-email-robert.richter@amd.com>
+ <1335983192-23731-5-git-send-email-robert.richter@amd.com>
+ <1336388454.27020.2.camel@laptop>
+ <20120507144756.GG18810@erda.amd.com>
+ <1336403718.27020.64.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <20120503212219.568.15653.stgit@bob.linux.org.uk>
-References: <20120503212151.568.91854.stgit@bob.linux.org.uk> <20120503212219.568.15653.stgit@bob.linux.org.uk>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Mon, 7 May 2012 18:03:07 +0200
-Message-ID: <CA+1xoqezLCQh_fqJ1iNAs25X7Fm24W=-0J8zTZuVVJQnWTtSLg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] tty_lock: Localise the lock
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1336403718.27020.64.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On 07.05.12 17:15:18, Peter Zijlstra wrote:
+> On Mon, 2012-05-07 at 16:47 +0200, Robert Richter wrote:
+> > > Who again wasn't decoding anything in perf_event_attr:config* ?
+> > 
+> > attr:config is one of the ibs control msrs comparable with perfctr's
+> > evntsel msr:
+> > 
+> >  MSRC001_1030 IBS Fetch Control Register (IbsFetchCtl)
+> >  MSRC001_1033 IBS Execution Control Register (IbsOpCtl)
+> 
+> You missed reading a '*', even so:
+> 
+> > There are some options (randomisation, cycle/micro-op counting) but
+> > usually it is null since the period is encoded in attr:period. But ibs
+> > could be setup by an application using attr:config only which then
+> > passes the value directly to the ctl msr. 
+> 
+> PMU_FORMAT_ATTR(IbsFetchMaxCnt, "config:0-15"   );
+> PMU_FORMAT_ATTR(IbsFetchCnt,	"config:16-31"	);
+> PMU_FORMAT_ATTR(IbsFetchVal,	"config:49"	);
+> PMU_FORMAT_ATTR(IbsRandEn,	"config:57"	);
+> 
+> and
+> 
+> PMU_FORMAT_ATTR(IbsOpMaxCnt,	"config:0-15"	);
+> PMU_FORMAT_ATTR(IbsOpVal,	"config:18"	);
+> PMU_FORMAT_ATTR(IbsOpCntCtl,	"config:19"	); /* subject to ibs_caps */
+> 
+> Are the writable bitfields of those two MSRs resp.
+> 
+> This patch adds:
+> 
+> PMU_FORMAT_ATTR(IbsFilter0Idx,	"config1:0-7"	);
+> PMU_FORMAT_ATTR(IbsFilter0Type,	"config1:12-15"	);
+> PMU_FORMAT_ATTR(IbsFilter0Mask,	"config1:16-23"	);
+> PMU_FORMAT_ATTR(IbsFilter0Match,"config1:24-31"	);
+> PMU_FORMAT_ATTR(IbsFilter0Any,	"config1:16-31"	);
+> 
 
-On Thu, May 3, 2012 at 11:24 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-> index 5505ffc..d6fa842 100644
-> --- a/drivers/tty/pty.c
-> +++ b/drivers/tty/pty.c
-> @@ -62,9 +63,7 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
->                        mutex_unlock(&devpts_mutex);
->                }
->  #endif
-> -               tty_unlock();
->                tty_vhangup(tty->link);
-> -               tty_lock();
->        }
->  }
+Yes, let's take this format specification for config and drop kernel
+side filtering in config[12].
 
-I don't believe that this change is correct.
+Passing options like IbsRandEn was another open item. This is a nice
+solution for this.
 
-Consider the following scenario:
+-Robert
 
-tty_release -> tty_lock -> pty_close -> tty_vhangup -> tty_lock
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-Which would cause a deadlock.
