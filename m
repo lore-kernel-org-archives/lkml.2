@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757949Ab2EGULn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 16:11:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57656 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757621Ab2EGULm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 16:11:42 -0400
-Message-ID: <4FA82C6B.4010801@redhat.com>
-Date: Mon, 07 May 2012 16:11:23 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1757757Ab2EGUUU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 16:20:20 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:59687 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757622Ab2EGUUT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 16:20:19 -0400
 MIME-Version: 1.0
-To: Satoru Moriya <satoru.moriya@hds.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        "jweiner@redhat.com" <jweiner@redhat.com>,
-        "shaohua.li@intel.com" <shaohua.li@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Subject: Re: [RFC][PATCH] avoid swapping out with swappiness==0
-References: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
-In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LFD.2.02.1205072117330.6271@ionos>
+References: <1336321508-20981-1-git-send-email-krzysztof.wilczynski@linux.com> <alpine.LFD.2.02.1205072117330.6271@ionos>
+From: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
+Date: Mon, 7 May 2012 21:19:38 +0100
+X-Google-Sender-Auth: dEcY3lcwb9zS66Hus9pW1Jf-f5Y
+Message-ID: <CAC52Y8Ywm7+apVm0Lef4i_Y3Cnb083rg6uXLew-Esa8YH0zKJA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: langwell: Prevent possible NULL pointer dereference
+ in the demux handler.
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2012 12:36 PM, Satoru Moriya wrote:
-> Sometimes we'd like to avoid swapping out anonymous memory
-> in particular, avoid swapping out pages of important process or
-> process groups while there is a reasonable amount of pagecache
-> on RAM so that we can satisfy our customers' requirements.
->
-> OTOH, we can control how aggressive the kernel will swap memory pages
-> with /proc/sys/vm/swappiness for global and
-> /sys/fs/cgroup/memory/memory.swappiness for each memcg.
->
-> But with current reclaim implementation, the kernel may swap out
-> even if we set swappiness==0 and there is pagecache on RAM.
->
-> This patch changes the behavior with swappiness==0. If we set
-> swappiness==0, the kernel does not swap out completely
-> (for global reclaim until the amount of free pages and filebacked
-> pages in a zone has been reduced to something very very small
-> (nr_free + nr_filebacked<  high watermark)).
+Hi,
 
-> Signed-off-by: Satoru Moriya<satoru.moriya@hds.com>
+[...]
+>> -     chip->irq_eoi(data);
+>> +     if (data)
+>> +             chip->irq_eoi(data);
+>
+> And how does data, which is always set as long as the interrupt exist
+> prove that the chip has an eoi function?
 
-Acked-by: Rik van Riel <riel@redhat.com>
+It won't, a very good point. And as you told me (IRC) this has to be
+solved on a more generic level (core handlers), and possibly
+abstracted from the drivers. I will do and read through the code of
+core handlers to learn more. Thanks for pointing it out and help so
+far :)
 
--- 
-All rights reversed
+KW
