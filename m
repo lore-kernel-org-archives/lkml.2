@@ -1,69 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab2EGL1E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 07:27:04 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57888 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755576Ab2EGL1C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 07:27:02 -0400
-Message-ID: <4FA7B184.7080806@ammonit.com>
-Date: Mon, 07 May 2012 13:27:00 +0200
-From: =?ISO-8859-15?Q?Steffen_K=FChn?= <sk@ammonit.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20110307 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: nicolas.ferre@atmel.com
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] solve deadlock problem in atmel-mci (kernel 3.2)
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 May 2012 11:27:00.0633 (UTC) FILETIME=[51DB3090:01CD2C44]
-X-Provags-ID: V02:K0:z4c8F81hXhizFBCXlkwkh78FFZve+XyLbDdO3/Le5vu
- sCSgAYUQzsXBWdTRDZao+Ui754IqXeXz70t3k9c3zA050YBLaX
- ZwNJgzpwFWr/d1D3xPJTxxPaIpinztTx/C92y6Cq12kTug3szY
- EwfgjE6zMHB4TCvRPaF8IG2ml0Cy0+gp+JaU1ZeFOU7HI+Aw8b
- zf9L/gmxYc8frkY8lo0GXKpvZQpmMFMscYJx2iFLjaogleRC8O
- MkNK4qHiTWWaBtHIyHnanNEwQQAFK4120+KU1/BozMIsByZYZI
- sF0jOx16dUhOGN4M9iQmowt+amSvcFChZVK85+dgzhxl+RfXjP
- +TpA3bTDB252A85un9Es=
+	id S1756228Ab2EGL32 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 07:29:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43504 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755434Ab2EGL31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 07:29:27 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
+Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 1/5] perf, tool: Handle different endians properly during symbol load
+Date: Mon,  7 May 2012 13:29:05 +0200
+Message-Id: <1336390149-2970-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1336390149-2970-1-git-send-email-jolsa@redhat.com>
+References: <1336390149-2970-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Nicolas,
+Currently we dont care about the file object's endianness. It's possible
+we read buildid file object from different architecture than we are
+currentlly running on. So we need to care about properly reading such
+object's data - handle different endianness properly.
 
-the appended patch solves a deadlock problem which appears when a SD
-card is removing and a process is reading from the card at the same
-time. The problem occurs not always but only when there are
-error-messages like 'end_request: I/O error, dev mmcblk0, sector XXX'
-(probably a timing thing).
+Adding:
+	needs_swap DSO field
+	dso__swap_init function to initialize DSO's needs_swap
+	DSO__READ to read the data with proper swaps
 
-When the error occurs, the autodetection for SD card insertion does not
-work anymore and unloading of the driver with 'rmmod' is no longer possible.
+Note, running following to test perf endianity handling:
+  - origin system:
+    # perf record -a -- sleep 10 (any perf record will do)
+    # perf report > report.origin
+    # perf archive perf.data
 
-The patch seems to work very well with our hardware. But I have to say,
-that I have not understand the mechanisms in the driver entirely. Please
-check, if the patch make sense.
+  - copy the perf.data, report.origin and perf.data.tar.bz2
+    to a target system and run:
+    # tar xjvf perf.data.tar.bz2 -C ~/.debug
+    # perf report > report.target
+    # diff -u report.origin report.target
 
-Best regards,
-Steffen
+  - the diff should produce no output
+    (besides some white space stuff and possibly different
+     date/TZ output)
 
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/symbol.c |   33 ++++++++++++++++++++++++++++++++-
+ tools/perf/util/symbol.h |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 62 insertions(+), 1 deletions(-)
 
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index ab9867b..a63f15e 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -323,6 +323,7 @@ struct dso *dso__new(const char *name)
+ 		dso->sorted_by_name = 0;
+ 		dso->has_build_id = 0;
+ 		dso->kernel = DSO_TYPE_USER;
++		dso->needs_swap = DSO_SWAP__UNSET;
+ 		INIT_LIST_HEAD(&dso->node);
+ 	}
+ 
+@@ -1156,6 +1157,33 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
+ 	return -1;
+ }
+ 
++static int dso__swap_init(struct dso *dso, unsigned char eidata)
++{
++	static unsigned int const endian = 1;
++
++	dso->needs_swap = DSO_SWAP__NO;
++
++	switch (eidata) {
++	case ELFDATA2LSB:
++		/* We are big endian, DSO is little endian. */
++		if (*(unsigned char const *)&endian != 1)
++			dso->needs_swap = DSO_SWAP__YES;
++		break;
++
++	case ELFDATA2MSB:
++		/* We are little endian, DSO is big endian. */
++		if (*(unsigned char const *)&endian != 0)
++			dso->needs_swap = DSO_SWAP__YES;
++		break;
++
++	default:
++		pr_err("unrecognized DSO data encoding %d\n", eidata);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 			 int fd, symbol_filter_t filter, int kmodule,
+ 			 int want_symtab)
+@@ -1187,6 +1215,9 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 		goto out_elf_end;
+ 	}
+ 
++	if (dso__swap_init(dso, ehdr.e_ident[EI_DATA]))
++		goto out_elf_end;
++
+ 	/* Always reject images with a mismatched build-id: */
+ 	if (dso->has_build_id) {
+ 		u8 build_id[BUILD_ID_SIZE];
+@@ -1272,7 +1303,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 		if (opdsec && sym.st_shndx == opdidx) {
+ 			u32 offset = sym.st_value - opdshdr.sh_addr;
+ 			u64 *opd = opddata->d_buf + offset;
+-			sym.st_value = *opd;
++			sym.st_value = DSO__READ(dso, u64, *opd);
+ 			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
+ 		}
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 1f00388..40a3254 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -9,6 +9,7 @@
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
+ #include <stdio.h>
++#include <byteswap.h>
+ 
+ #ifdef HAVE_CPLUS_DEMANGLE
+ extern char *cplus_demangle(const char *, int);
+@@ -160,11 +161,18 @@ enum dso_kernel_type {
+ 	DSO_TYPE_GUEST_KERNEL
+ };
+ 
++enum dso_swap_type {
++	DSO_SWAP__UNSET,
++	DSO_SWAP__NO,
++	DSO_SWAP__YES,
++};
++
+ struct dso {
+ 	struct list_head node;
+ 	struct rb_root	 symbols[MAP__NR_TYPES];
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
+ 	enum dso_kernel_type	kernel;
++	enum dso_swap_type	needs_swap;
+ 	u8		 adjust_symbols:1;
+ 	u8		 has_build_id:1;
+ 	u8		 hit:1;
+@@ -182,6 +190,28 @@ struct dso {
+ 	char		 name[0];
+ };
+ 
++#define DSO__READ(dso, type, val)			\
++({							\
++	type ____r = val;				\
++	BUG_ON(dso->needs_swap == DSO_SWAP__UNSET);	\
++	if (dso->needs_swap == DSO_SWAP__YES) {		\
++		switch (sizeof(____r)) {		\
++		case 2:					\
++			____r = bswap_16(val);		\
++			break;				\
++		case 4:					\
++			____r = bswap_32(val);		\
++			break;				\
++		case 8:					\
++			____r = bswap_64(val);		\
++			break;				\
++		default:				\
++			BUG_ON(1);			\
++		}					\
++	}						\
++	____r;						\
++})
++
+ struct dso *dso__new(const char *name);
+ void dso__delete(struct dso *dso);
+ 
+-- 
+1.7.7.6
 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index 94c377d..407648f 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -1480,8 +1480,10 @@ static void atmci_tasklet_func(unsigned long priv)
- 			}
-
- 			if (!atmci_test_and_clear_pending(host,
--						EVENT_XFER_COMPLETE))
-+						EVENT_XFER_COMPLETE)) {
-+				host->stop_transfer(host);
- 				break;
-+			}
-
- 			atmci_set_completed(host, EVENT_XFER_COMPLETE);
- 			prev_state = state = STATE_DATA_BUSY;
