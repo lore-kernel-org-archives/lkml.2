@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab2EGQUh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 12:20:37 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44231 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756868Ab2EGQUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 12:20:36 -0400
-Message-ID: <1336407634.18931.5.camel@joe2Laptop>
-Subject: Re: drivers: Probable misuses of ||
-From: Joe Perches <joe@perches.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jarod Wilson <jarod@redhat.com>
-Date: Mon, 07 May 2012 09:20:34 -0700
-In-Reply-To: <20120507083602.GA4415@opensource.wolfsonmicro.com>
-References: <1333580415.23520.29.camel@joe2Laptop>
-	 <1336168477.11505.6.camel@joe2Laptop> <20120504220241.GA6279@sirena.org.uk>
-	 <1336169378.11505.10.camel@joe2Laptop>
-	 <20120504221333.GU14230@opensource.wolfsonmicro.com>
-	 <20120505160042.GA26922@ericsson.com>
-	 <20120507083602.GA4415@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757329Ab2EGQWK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 12:22:10 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46232 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757019Ab2EGQWI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 12:22:08 -0400
+Date: Mon, 7 May 2012 09:21:54 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: linux-next ppc64: RCU mods cause __might_sleep BUGs
+In-Reply-To: <alpine.LSU.2.00.1205021721350.24869@eggly.anvils>
+Message-ID: <alpine.LSU.2.00.1205070858450.1416@eggly.anvils>
+References: <alpine.LSU.2.00.1204301451270.2986@eggly.anvils> <1335832418.20866.95.camel@pasglop> <alpine.LSU.2.00.1204302142310.27208@eggly.anvils> <20120501142208.GA2441@linux.vnet.ibm.com> <alpine.LSU.2.00.1205011410360.28232@eggly.anvils>
+ <20120501232516.GR2441@linux.vnet.ibm.com> <alpine.LSU.2.00.1205021324430.24246@eggly.anvils> <1335993615.4088.1.camel@pasglop> <20120502215406.GL2450@linux.vnet.ibm.com> <CANsGZ6bw4JwMRgUriooDvFB=g-HkpyL8XJa9s47RPfOEPCMcpw@mail.gmail.com>
+ <20120503001433.GO2450@linux.vnet.ibm.com> <alpine.LSU.2.00.1205021721350.24869@eggly.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-07 at 09:36 +0100, Mark Brown wrote:
-> On Sat, May 05, 2012 at 09:00:42AM -0700, Guenter Roeck wrote:
-> > On Fri, May 04, 2012 at 06:13:33PM -0400, Mark Brown wrote:
+On Wed, 2 May 2012, Hugh Dickins wrote:
+> On Wed, 2 May 2012, Paul E. McKenney wrote:
+> > 
+> > In any case, I must confess that I feel quite silly about my series
+> > of patches.  I have reverted them aside from a couple that did useful
+> > optimizations, and they should show up in -next shortly.
 > 
-> > > Right, but you need to look at the code and explain why this is a
-> > > problem.  For example, the case I've left quoted above reads to me like
-> > > the intention is "If the chip isn't one I know doesn't like this then
-> > > let's do it" which is a perfectly sensible thing to write.
-> 
-> > I can not really follow your logic here; it is difficult for me to imagine a situation
-> > where anything along the line of
-> > 	if (val != 1 || val != 2)
-> > would provide value other than creating confusion. Maybe you can explain that a bit further.
-> 
-> Yeah, I hadn't actually read the code closely enough but it's not my
-> main point anyway - the main point was that the reports were very easy
-> to ignore because they're just a paste in of the error message
+> A wee bit sad, but thank you - it was an experiment worth trying,
+> and perhaps there will be reason to come back to it future.
 
-Nope, these were the original source codes.
+The revert indeed showed up in next-20120504: thanks, no problem now.
 
-> with no analysis 
+But although it's just history, and not worth anyone's time to
+investigate, I shouldn't let this thread die without an epilogue.
 
-You did elide the "Likely the || should be &&" preface.
+Although the patch I posted (this_cpu_inc in __rcu_read_lock,
+preempt_disable and enable in __rcu_read_unlock) ran well until
+I killed the test after 70 hours, it did not _entirely_ eliminate
+the sleeping function BUG messages.
 
-> they were very likely to just get ignored unless someone has a
-> particular interest in the code (which is essentially what I did - I
-> glanced at the report but only very briefly).
+In 70 hours I got six isolated messages like the below (but from
+different __might_sleep callsites) - where before I'd have flurries
+of hundreds(?) and freeze within the hour.
 
-No worries, I miss things when I scan code too quickly
-as well.
+And the "rcu_nesting" debug line I'd added to the message was different:
+where before it was showing ffffffff on some tasks and 1 on others i.e.
+increment or decrement had been applied to the wrong task, these messages
+now all showed 0s throughout i.e. by the time the message was printed,
+there was no longer any justification for the message.
 
-> Compare this with the reports from people like Julia Lawall, for example
-> - they tend to be very clear.  Even simply adding "...as with || they
-> will always be true" would've helped.
+As if a memory barrier were missing somewhere, perhaps.
 
-I think it's a pretty basic logic error that most all
-lkml readers should be able to identify most of the time.
+BUG: sleeping function called from invalid context at arch/powerpc/mm/fault.c:305
+cpu=2 preempt_count=0 preempt_offset=0 rcu_nesting=0 nesting_save=0
+in_atomic(): 0, irqs_disabled(): 0, pid: 12266, name: cc1
+Call Trace:
+[c000000003affac0] [c00000000000f36c] .show_stack+0x6c/0x16c (unreliable)
+[c000000003affb70] [c000000000078788] .__might_sleep+0x150/0x170
+[c000000003affc00] [c0000000000255f4] .do_page_fault+0x288/0x664
+[c000000003affe30] [c000000000005868] handle_page_fault+0x10/0x30
 
-cheers, Joe
-
+Hugh
