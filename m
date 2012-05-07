@@ -1,39 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095Ab2EGQIk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 12:08:40 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33572 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756105Ab2EGQIi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 12:08:38 -0400
-Date: Mon, 7 May 2012 17:11:26 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 3/3] tty_lock: Localise the lock
-Message-ID: <20120507171126.5beddc27@pyramind.ukuu.org.uk>
-In-Reply-To: <CA+1xoqezLCQh_fqJ1iNAs25X7Fm24W=-0J8zTZuVVJQnWTtSLg@mail.gmail.com>
-References: <20120503212151.568.91854.stgit@bob.linux.org.uk>
-	<20120503212219.568.15653.stgit@bob.linux.org.uk>
-	<CA+1xoqezLCQh_fqJ1iNAs25X7Fm24W=-0J8zTZuVVJQnWTtSLg@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757313Ab2EGQJH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 12:09:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37542 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757179Ab2EGQJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 12:09:04 -0400
+Message-ID: <1336406944.2385.24.camel@dcbw.foobar.com>
+Subject: Re: [PATCH] mwl8k: Add 0x2a02 PCI device-id (Marvell 88W8361)
+From: Dan Williams <dcbw@redhat.com>
+To: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: sedat.dilek@gmail.com, "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lautriv <admin@coldplug.net>,
+        Jim Cromie <jim.cromie@gmail.com>
+Date: Mon, 07 May 2012 11:09:04 -0500
+In-Reply-To: <20120501125102.GN3157@wantstofly.org>
+References: <20120427094637.GV3157@wantstofly.org>
+	 <CA+icZUXNZ=exTnR=OgD_9bpt_0s-KnR+v-K6u+XzQr4HBoTQHQ@mail.gmail.com>
+	 <20120427095842.GW3157@wantstofly.org>
+	 <CA+icZUWuynSaPE4pdxzoP783pw7r=5x27ewXN_pkR5VS=0kKUg@mail.gmail.com>
+	 <20120427101732.GX3157@wantstofly.org>
+	 <CA+icZUUnJPeDmL9xXfvj62an40bXwwaOnrJmxmLN_cBt9PyCZA@mail.gmail.com>
+	 <CA+icZUV76wSBj88EpzmWbO=u2dP23yi5P98nN2KZehBUni9mEg@mail.gmail.com>
+	 <20120427185809.GZ3157@wantstofly.org>
+	 <CA+icZUWQmCRdjucb4+Nf24_zbJ4fzzp7zjqhKjXE6U01rppDfA@mail.gmail.com>
+	 <CA+icZUXSaEMA=KbQP9UQcU6ZMBh8QD2sv-O=6r_Ly8is==gvSA@mail.gmail.com>
+	 <20120501125102.GN3157@wantstofly.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I don't believe that this change is correct.
+On Tue, 2012-05-01 at 14:51 +0200, Lennert Buytenhek wrote:
+> On Sun, Apr 29, 2012 at 12:25:21AM +0200, Sedat Dilek wrote:
 > 
-> Consider the following scenario:
+> > > On 1st sight, logs look fine:
+> > >
+> > > [21:52:52] <lautriv> [    6.050967] ieee80211 phy0: 88w8361p v4,
+> > > 00173f3bdde3, STA firmware 2.1.4.25
+> > >
+> > > But WLAN connection is not that fast and stable as lautriv reports
+> > > (several abnormalities were observed).
+> > >
+> > > I requested a tarball which includes:
+> > > * dmesg (Linux-3.3.3)
+> > > * e_n_a (/etc/network/interfaces)
+> > > * ifconfig output
+> > > * iwconfig output
+> > > * iw_phy output
+> > > * ps_axu (WPA) output
+> > >
+> > > lautriv will be so kind to be around on #linux-wireless/Freenode the
+> > > next days (UTC+2: German/Swiss local-time).
+> > > Just ping him.
+> > >
+> > > Hope you have fun, together!
+> > >
+> > > - Sedat -
+> > 
+> > A new tarball from lautriv with same outputs as before, but now tested
+> > with Linux-3.4-rc4.
 > 
-> tty_release -> tty_lock -> pty_close -> tty_vhangup -> tty_lock
+> The output looks good enough for me to ACK adding the PCI ID.
+> 
+> Can the firmware being used here be submitted to the linux-firmware
+> git tree?
 
-We hang up tty->link not tty.
+So Marvell sent John a driver for TopDog a long time ago, which he put
+up on kernel.org.  That driver was reworked by Louis and put up in a git
+tree, but both were lost to the kernel.org hack.  I have git backups of
+both git trees.  I put Louis' cleanup here:
 
-It's now a per tty lock. So I think we are ok.
+http://people.redhat.com/dcbw/mrvl_cb82.tar.bz2
 
-Alan
+That driver (mrvl_cb82) has the following PCI IDs:
+
+static const struct pci_device_id mwl_id_tbl[] __devinitdata = {
+        { PCI_VDEVICE(MARVELL, 0x2a02), 0 },
+        { PCI_VDEVICE(MARVELL, 0x2a03), 1 },
+        { PCI_VDEVICE(MARVELL, 0x2a06), 2 },
+        { PCI_VDEVICE(MARVELL, 0x2a07), 3 },
+        { PCI_VDEVICE(MARVELL, 0x2a04), 4 },
+        { PCI_VDEVICE(MARVELL, 0x2a08), 5 },
+        { PCI_VDEVICE(MARVELL, 0x2a0a), 6 },
+        { PCI_VDEVICE(MARVELL, 0x2a0b), 7 },
+        { PCI_VDEVICE(MARVELL, 0x2a0c), 8 },
+        { 0 }
+};
+
+and supposedly works for CB82 + CB85.  The firmware helper for CB82
+looks pretty close to the mwl8k one.
+
+The firmware API exposed by mrvl_cb82 looks very close to mwl8k
+actually.  I only checked the HostCmd bits, not the structures, so I
+would expect a few differences.  There are some commands that mwl8k
+exposes that mrvl_cb82 does not and vice versa, but I'm not sure if the
+drivers actually use those commands.
+
+Hope this helps.
+
+Dan
+
