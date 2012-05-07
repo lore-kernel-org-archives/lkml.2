@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873Ab2EGI4Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:56:16 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:23151
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755564Ab2EGI4O (ORCPT
+	id S1755908Ab2EGI4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:56:32 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38833 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755896Ab2EGI4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:56:14 -0400
-X-SpamScore: -21
-X-BigFish: VPS-21(zzbb2dI9371I1432N98dKzz1202hzz15d4Rz2dh668h839h944hd25he5bh)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M3NA5M-01-5VD-02
-X-M-MSG: 
-Date: Mon, 7 May 2012 10:56:07 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, <kvm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: X86: Add mmx movq emulation
-Message-ID: <20120507085607.GF4687@amd.com>
-References: <1336132029-13523-1-git-send-email-joerg.roedel@amd.com>
- <4FA64D85.1000609@redhat.com>
+	Mon, 7 May 2012 04:56:30 -0400
+Date: Mon, 7 May 2012 10:56:25 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, chuck.lever@oracle.com, linux@razik.name,
+        Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu
+Subject: Re: [PATCH] init: don't try mounting device as nfs root unless type
+ fully matches
+Message-ID: <20120507085625.GA473@gmail.com>
+References: <1336230395-5215-1-git-send-email-levinsasha928@gmail.com>
+ <20120507085419.GN16608@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FA64D85.1000609@redhat.com>
+In-Reply-To: <20120507085419.GN16608@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 06, 2012 at 01:08:05PM +0300, Avi Kivity wrote:
-> On 05/04/2012 02:47 PM, Joerg Roedel wrote:
-> > Add support to the MMX versions of the movq instructions to
-> > the instruction emulator. Also handle possible exceptions
-> > they may cause.
+
+* Ingo Molnar <mingo@kernel.org> wrote:
+
 > 
-> This is already in (cbe2c9d30, e59717550e).  Are you looking at master
-> instead of next?
+> * Sasha Levin <levinsasha928@gmail.com> wrote:
+> 
+> > Currently, we'll try mounting any device who's major device number is
+> > UNNAMED_MAJOR as NFS root. This would happen for non-NFS devices as well (such
+> > as 9p devices) but it wouldn't cause any issues since mounting the device
+> > as NFS would fail quickly and the code proceeded to doing the proper mount:
+> > 
+> >        [  101.522716] VFS: Unable to mount root fs via NFS, trying floppy.
+> >        [  101.534499] VFS: Mounted root (9p filesystem) on device 0:18.
+> > 
+> > Commit 6829a048 ("NFS: Retry mounting NFSROOT") has introduced retries when
+> > mounting NFS root, which means that now we don't immediately fail and instead
+> > it takes an additional 90+ seconds until we stop retrying, which has revealed
+> > the issue this patch fixes.
+> 
+> Just wondering, which tree is commit 6829a048 included in? It 
+> does not appear to be mainline AFAICS.
 
-Right, I was looking at master. Probably I should have re-read your mail
-about the new git workflow.
+appears to be:
 
-> Since you've just thought of the issues involved, I'd appreciate a
-> review of the commits above, both wrt correctness and
-> maintainability.
+43717c7daebf NFS: Retry mounting NFSROOT
 
-The patches above look correct to me. In fact cbe2c9d30 is more general
-than my implementation because it fetches all possible mmx operands.
+The commit ID you cited is apparently one that got exposed to 
+linux-next but got rebased subsequently, before it went 
+upstream, or so.
 
-My implementation on the other side should be a bit faster because it
-looks for FP exceptions directly when the registers are accessed which
-saves one get_fpu/put_fpu cycle (and an fwait instruction).
+Thanks,
 
-> In fact I already see one difference - my patches do reg &= 7, while
-> your patches generate #UD for %mm8-%mm15.
-
-Your version is correct. Documentation says that REX-prefixes are
-ignored where not supported or misplaced. I also tried that directly on
-hardware and it works as documented and implemented in KVM.
-
-
-Regards,
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+	Ingo
