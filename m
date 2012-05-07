@@ -1,66 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab2EGTTB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 15:19:01 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41678 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760Ab2EGTTA (ORCPT
+	id S1757553Ab2EGTTz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 15:19:55 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46868 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab2EGTTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 15:19:00 -0400
-Date: Mon, 7 May 2012 21:18:55 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
-cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio: langwell: Prevent possible NULL pointer dereference
- in the demux handler.
-In-Reply-To: <1336321508-20981-1-git-send-email-krzysztof.wilczynski@linux.com>
-Message-ID: <alpine.LFD.2.02.1205072117330.6271@ionos>
-References: <1336321508-20981-1-git-send-email-krzysztof.wilczynski@linux.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 7 May 2012 15:19:53 -0400
+Message-ID: <4FA82056.2070706@gmail.com>
+Date: Mon, 07 May 2012 15:19:50 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 3/3] vmevent: Implement special low-memory attribute
+References: <20120501132409.GA22894@lizard> <20120501132620.GC24226@lizard> <4FA35A85.4070804@kernel.org> <20120504073810.GA25175@lizard> <CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com> <CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com> <20120507121527.GA19526@lizard>
+In-Reply-To: <20120507121527.GA19526@lizard>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 May 2012, Krzysztof Wilczynski wrote:
+(5/7/12 8:15 AM), Anton Vorontsov wrote:
+> On Mon, May 07, 2012 at 04:26:00AM -0400, KOSAKI Motohiro wrote:
+>>>> If we'll give up on "1." (Pekka, ping), then we need to solve "2."
+>>>> in a sane way: we'll have to add a 'NR_FILE_PAGES - NR_SHMEM -
+>>>> <todo-locked-file-pages>' attribute, and give it a name.
+>>>
+>>> Well, no, we can't give up on (1) completely. That'd mean that
+>>> eventually we'd need to change the ABI and break userspace. The
+>>> difference between exposing internal details and reasonable
+>>> abstractions is by no means black and white.
+>>>
+>>> AFAICT, RECLAIMABLE_CACHE_PAGES is a reasonable thing to support. Can
+>>> anyone come up with a reason why we couldn't do that in the future?
+>>
+>> It can. but the problem is, that is completely useless.
+>
+> Surely it is useful. Could be not ideal, but you can't say that
+> it is completely useless.
 
-> This is to address a possible NULL pointer dereference on a platform that might
-> use this driver but its underlying IRQ chip does not provide an irq_eoi callback.
-> 
-> A commit 0766d20 added an conditional to the code, but then it was later
-> super-seeded by commit 20e2aa9 which introduced number of helper functions
-> for accessing various members of the irq_desc struct, but removed said
-> conditional from the code.
-> 
-> This change will re-introduce conditional guarding against possible NULL
-> pointer dereference caused by missing EIO handler.
-> 
-> Signed-off-by: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
-> ---
->  drivers/gpio/gpio-langwell.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
-> index 00692e8..5749738 100644
-> --- a/drivers/gpio/gpio-langwell.c
-> +++ b/drivers/gpio/gpio-langwell.c
-> @@ -260,7 +260,8 @@ static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
->  		}
->  	}
->  
-> -	chip->irq_eoi(data);
-> +	if (data)
-> +		chip->irq_eoi(data);
+Why? It doesn't work.
 
-And how does data, which is always set as long as the interrupt exist
-prove that the chip has an eoi function?
 
-Thanks,
 
-	tglx
+>> Because of, 1) dirty pages writing-out is sometimes very slow and
+>
+> I don't see it as a unresolvable problem: we can exclude dirty pages,
+> that's a nice idea actually.
+>
+> Easily reclaimable cache pages = file_pages - shmem - locked pages
+> - dirty pages.
+>
+> The amount of dirty pages is configurable, which is also great.
+
+You don't understand the issue. The point is NOT a formula. The problem
+is, dirty and non-dirty pages aren't isolated in our kernel. Then, kernel
+start to get stuck  far before non-dirty pages become empty. Lie notification
+always useless.
+
+
+> Even more, we may introduce two attributes:
+>
+> RECLAIMABLE_CACHE_PAGES and
+> RECLAIMABLE_CACHE_PAGES_NOIO (which excludes dirty pages).
+>
+> This makes ABI detached from the mm internals and still keeps a
+> defined meaning of the attributes.
+
+Collection of craps are also crap. If you want to improve userland
+notification, you should join VM improvement activity. You shouldn't
+think nobody except you haven't think userland notification feature.
+
+The problem is, Any current kernel vm statistics were not created for
+such purpose and don't fit.
+
+Even though, some inaccurate and incorrect statistics fit _your_ usecase,
+they definitely don't fit other. And their people think it is bug.
+
+
+>> 2) libc and some important library's pages are critical important
+>> for running a system even though it is clean and reclaimable. In other
+>> word, kernel don't have an info then can't expose it.
+>
+> First off, I guess LRU would try to keep important/most used pages in
+> the cache, as we try to never fully drain page cache to the zero mark.
+
+Yes, what do you want say?
+
+
+> Secondly, if we're really low on memory (which low memory notifications
+> help to prevent) and kernel decided to throw libc's pages out of the
+> cache, you'll get cache miss and kernel will have to read it back. Well,
+> sometimes cache misses do happen, that's life. And if somebody really
+> don't want this for the essential parts of the system, one have to
+> mlock it (which eliminates your "kernel don't have an info" argument).
+
+First off, "low memory" is very poor definition and we must not use it.
+It is multiple meanings. 1) System free memory is low. Some embedded have userland
+oom killer and they want to know _system_ status. 2) available memory is low.
+This is different from (1) when using NUMA, memcg or cpusets. And in nowadays,
+almost all x86 box have numa. This is userful for swap avoidance activity if
+we can implement correctly.
+
+Secondly, we can't assume someone mlock to libc. Because of, Linux is generic
+purpose kernel. As far as you continue to talk about only user usecase, we can't
+agree you. "Users may have a workaround" don't make excuse to accept broken patch.
+
+
+
+
+> Btw, if you have any better strategy on helping userspace to define
+> 'low memory' conditions, I'll readily try to implement it.
+
+
+
