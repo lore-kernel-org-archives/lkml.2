@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757322Ab2EGRg4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 13:36:56 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:44217 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756665Ab2EGRgz (ORCPT
+	id S932140Ab2EGRjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 13:39:54 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36109 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757110Ab2EGRjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 13:36:55 -0400
-Message-ID: <4FA80832.80403@linaro.org>
-Date: Mon, 07 May 2012 10:36:50 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Mon, 7 May 2012 13:39:52 -0400
+Message-ID: <4FA808E3.1030908@gmail.com>
+Date: Mon, 07 May 2012 19:39:47 +0200
+From: Erwan Velu <erwanaliasr1@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120426 Thunderbird/10.0.4
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V1 4/5] timekeeping: Offer an interface to manipulate
- leap seconds.
-References: <cover.1335510125.git.richardcochran@gmail.com> <52e139c98370c405288cbbb4ac76c435dc36731f.1335510125.git.richardcochran@gmail.com> <4F9B26D3.1030100@linaro.org> <20120505101735.GB8294@netboy.at.omicron.at>
-In-Reply-To: <20120505101735.GB8294@netboy.at.omicron.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12050717-5518-0000-0000-000004367DDC
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, tshimizu818@gmail.com
+Subject: [PATCH] pch_gbe: Adding read memory barriers
+Content-Type: multipart/mixed;
+ boundary="------------070504030608060709050009"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2012 03:17 AM, Richard Cochran wrote:
-> On Fri, Apr 27, 2012 at 04:08:03PM -0700, John Stultz wrote:
->> On 04/27/2012 01:12 AM, Richard Cochran wrote:
->>
->>> +#ifdef CONFIG_DELETE_LEAP_SECONDS
->>> +	/* Remembers whether to insert or to delete. */
->>> +	int insert_leapsecond;
->>> +#endif
->> I'm not a big fan of this additional config option.  The maintenance
->> burden for the extra condition is probably not worth the code size
->> trade-off.  Or it needs way more justification.
-> Out of curiosity, I looked at ntp-4.2.6p5 to see if they really
-> support deleting leap seconds or not. Even though the code appears to
-> try and support them, I spotted a few bugs. There is a hard coded
-> assumption that the TAI offset is increasing.
->
-> This is just the reason why I suggest not supporting deletions (or
-> only conditionally for nit pickers). You can code it up, but it will
-> be in vain, since the code will never be tested or used in practice.
-> Code that is never executed is a true mainenance burden by definition.
->
-Well, testing it from a kernel perspective isn't a problem as its easy 
-to write up a userland app that exercises the code path. But I agree its 
-unlikely to be used in practice.
+This is a multi-part message in MIME format.
+--------------070504030608060709050009
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-And you're argument of the added maintenance burden is reasonable. And 
-while I don't find it terrible to keep, I'd *much* rather just remove it 
-then add a config option and more #ifdefery.  Even so, such a removal 
-needs to be an independent patch that can be discussed and argued on its 
-own without mixing in other features.
+Dear Linux Kernel Developers,
 
-thanks
--john
+Please find attached, a patch to solve "Received CRC" errors reported by 
+the pch_gbe driver under heavy load. It occurred on an Intel ATOM E620T 
+while running a 300mbit/sec multicast network stream leading to a ~100% 
+cpu usage.
 
+This patch got validated on the 3.2.16 kernel but also apply to the 3.x
+family.
+
+Getting it into stable would be perfect as it solves reliability issues.
+
+Cheers,
+Erwan Velu
+
+--------------070504030608060709050009
+Content-Type: application/octet-stream;
+ name="0001-pch_gbe-Adding-read-memory-barriers.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="0001-pch_gbe-Adding-read-memory-barriers.patch"
+
+RnJvbSAzYjY1ODAyZTRjNWE4ODI3YTg0MDIyMDY2ZjEwZGVjNGQ2MWMxZjIyIE1vbiBTZXAg
+MTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBFcndhbiBWZWx1IDxlcndhbi52ZWx1QHpvZGlhY2Fl
+cm9zcGFjZS5jb20+CkRhdGU6IE1vbiwgNyBNYXkgMjAxMiAxNDo1MzoxNyArMDIwMApTdWJq
+ZWN0OiBbUEFUQ0ggMS8xXSBwY2hfZ2JlOiBBZGRpbmcgcmVhZCBtZW1vcnkgYmFycmllcnMK
+ClVuZGVyIGEgc3Ryb25nIGluY29taW5nIHBhY2tldCBzdHJlYW0gYW5kL29yIGhpZ2ggY3B1
+IHVzYWdlLAp0aGUgcGNoX2diZSBkcml2ZXIgcmVwb3J0cyAiUmVjZWl2ZSBDUkMgRXJyb3Ii
+IGFuZCBkaXNjYXJkcyBwYWNrZXQuCgpBZGRpbmcgcm1iKCkgY2FsbHMgYmVmb3JlIGNvbnNp
+ZGVyaW5nIHRoZSBuZXR3b3JrIGNhcmQncyBzdGF0dXMgc29sdmUKdGhpcyBpc3N1ZXMuCgpT
+aWduZWQtb2ZmLWJ5OiBFcndhbiBWZWx1IDxlcndhbi52ZWx1QHpvZGlhY2Flcm9zcGFjZS5j
+b20+Ci0tLQogLi4uL25ldC9ldGhlcm5ldC9va2ktc2VtaS9wY2hfZ2JlL3BjaF9nYmVfbWFp
+bi5jICAgfCAgICA4ICsrKysrKysrCiAxIGZpbGVzIGNoYW5nZWQsIDggaW5zZXJ0aW9ucygr
+KSwgMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL25ldC9ldGhlcm5ldC9v
+a2ktc2VtaS9wY2hfZ2JlL3BjaF9nYmVfbWFpbi5jIGIvZHJpdmVycy9uZXQvZXRoZXJuZXQv
+b2tpLXNlbWkvcGNoX2diZS9wY2hfZ2JlX21haW4uYwppbmRleCA0ODQwNmNhLi43NzQ2Y2Ez
+IDEwMDY0NAotLS0gYS9kcml2ZXJzL25ldC9ldGhlcm5ldC9va2ktc2VtaS9wY2hfZ2JlL3Bj
+aF9nYmVfbWFpbi5jCisrKyBiL2RyaXZlcnMvbmV0L2V0aGVybmV0L29raS1zZW1pL3BjaF9n
+YmUvcGNoX2diZV9tYWluLmMKQEAgLTEyMjIsNiArMTIyMiw4IEBAIHN0YXRpYyBpcnFyZXR1
+cm5fdCBwY2hfZ2JlX2ludHIoaW50IGlycSwgdm9pZCAqZGF0YSkKIAkJfQogCX0KIAorCXNt
+cF9ybWIoKTsgLyogcHJldmVudCBhbnkgb3RoZXIgcmVhZHMgYmVmb3JlKi8KKwogCS8qIFdo
+ZW4gcmVxdWVzdCBzdGF0dXMgaXMgUmVjZWl2ZSBpbnRlcnJ1cHRpb24gKi8KIAlpZiAoKGlu
+dF9zdCAmIChQQ0hfR0JFX0lOVF9SWF9ETUFfQ01QTFQgfCBQQ0hfR0JFX0lOVF9UWF9DTVBM
+VCkpIHx8CiAJICAgIChhZGFwdGVyLT5yeF9zdG9wX2ZsYWcgPT0gdHJ1ZSkpIHsKQEAgLTEz
+OTAsNiArMTM5Miw5IEBAIHBjaF9nYmVfY2xlYW5fdHgoc3RydWN0IHBjaF9nYmVfYWRhcHRl
+ciAqYWRhcHRlciwKIAogCWkgPSB0eF9yaW5nLT5uZXh0X3RvX2NsZWFuOwogCXR4X2Rlc2Mg
+PSBQQ0hfR0JFX1RYX0RFU0MoKnR4X3JpbmcsIGkpOworCisJcm1iKCk7ICAvKiBwcmV2ZW50
+IGFueSBvdGhlciByZWFkcyBiZWZvcmUqLworCiAJcHJfZGVidWcoImdiZWNfc3RhdHVzOjB4
+JTA0eCAgZG1hX3N0YXR1czoweCUwNHhcbiIsCiAJCSB0eF9kZXNjLT5nYmVjX3N0YXR1cywg
+dHhfZGVzYy0+ZG1hX3N0YXR1cyk7CiAKQEAgLTE0OTAsNiArMTQ5NSw5IEBAIHBjaF9nYmVf
+Y2xlYW5fcngoc3RydWN0IHBjaF9nYmVfYWRhcHRlciAqYWRhcHRlciwKIAl3aGlsZSAoKndv
+cmtfZG9uZSA8IHdvcmtfdG9fZG8pIHsKIAkJLyogQ2hlY2sgUnggZGVzY3JpcHRvciBzdGF0
+dXMgKi8KIAkJcnhfZGVzYyA9IFBDSF9HQkVfUlhfREVTQygqcnhfcmluZywgaSk7CisKKwkJ
+cm1iKCk7IC8qIHByZXZlbnQgYW55IG90aGVyIHJlYWRzIGJlZm9yZSovCisKIAkJaWYgKHJ4
+X2Rlc2MtPmdiZWNfc3RhdHVzID09IERTQ19JTklUMTYpCiAJCQlicmVhazsKIAkJY2xlYW5l
+ZCA9IHRydWU7Ci0tIAoxLjcuNC40Cgo=
+--------------070504030608060709050009--
