@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378Ab2EGLam (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 07:30:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16717 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756106Ab2EGL32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 07:29:28 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com,
-        Caspar Zhang <czhang@redhat.com>
-Subject: [PATCHv3 0/5] perf, tool: Fix endian issues
-Date: Mon,  7 May 2012 13:29:04 +0200
-Message-Id: <1336390149-2970-1-git-send-email-jolsa@redhat.com>
+	id S1756311Ab2EGLfe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 07:35:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59784 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756194Ab2EGLfc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 07:35:32 -0400
+Date: Mon, 7 May 2012 12:35:29 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lrg@ti.com, grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V1] regulator: fixed: dt: add property for gpio open
+ drain flag
+Message-ID: <20120507113528.GK4415@opensource.wolfsonmicro.com>
+References: <1336386499-20408-1-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="++alDQ2ROsODg1x+"
+Content-Disposition: inline
+In-Reply-To: <1336386499-20408-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-sending fixies to properly handle perf.data endians.
 
-v3 changes:
-  - added patch 5 to fix addons bitmask handling
+--++alDQ2ROsODg1x+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-v2 changes:
-  - added patches 3 and 4 to handle sample_id_all header endianity
+On Mon, May 07, 2012 at 03:58:19PM +0530, Laxman Dewangan wrote:
+> Add property for the gpio flag open drain when registering
+> fixed regulator.
 
+Applied, thanks.
 
-Attached patches:
-  1/5 perf, tool: Handle different endians properly during symbol load
-  2/5 perf, tool: Carry perf_event_attr bitfield throught different endians
-  3/5 perf, tool: Handle endianity swap on sample_id_all header data
-  4/5 perf, tool: Fix 32 bit values endianity swap for sample_id_all header
-  5/5 perf, tool: Fix endianity trick for adds_features bitmask
+There's no need to put stuff like "v1" in your patch description, it can
+sometimes be useful to do this if it's a revision of a previous patch
+but if it's the first version it's not adding anything.
 
+--++alDQ2ROsODg1x+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Tested by running following usecase:
-  - origin system:
-    # perf record -a -- sleep 10 (any perf record will do)
-    # perf report > report.origin
-    # perf archive perf.data
-    
-  - copy the perf.data, report.origin and perf.data.tar.bz2
-    to a target system and run:
-    # tar xjvf perf.data.tar.bz2 -C ~/.debug
-    # perf report > report.target
-    # diff -u report.origin report.target
-    
-  - the diff should produce no output
-    (besides some white space stuff and possibly different
-     date/TZ output)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Tested by above usecase cross following architectures:
-  i386, x86_64, s390x, ppc64
+iQIcBAEBAgAGBQJPp7LXAAoJEBus8iNuMP3dmAEQAIbdANv6697lMCgE+1U77e2/
+BnaWlVCveLPlxgIBt0Zm7yP1MKeoaMSE9dIZp5vdtCxEUOh4JtBdDVJ873KhuiYp
+tvHS4GmNfptd0mgA68A7OKu+Dtjum+3dGJi8SoE8QeFWbb7cl7unh32CEhqujMe0
+0Ea06uaNmhkPLIaOVExRqyimzpPPLMc46FLVQ2j60caq98dFxwaOsqhs3aIXt3aB
+r/r1uU49CY/UcBnW9YHfe8wpw7S5IXeWQTDy65Y9b2gRQfmKdF2/bHNAmnHVBh/k
+aBGMxv2P9Nc/aObo8ouE+rQqdmPK2gWkPAaYsP4y4EcK3ZKrl2jNUzRGPtWsCfUV
+oJw0JQm+wflHhjz5c6HaidncaFrieBileBSqGDsO0Wrh0FIk1kHsQkJviK+vpbj0
+3WrwsTtcXglaR/lPgTrl0Tj0nMH1yy4pBGEceyvbOZ6dfo5tnn9OBC1TZlLY61FK
+BUF99AoGpsDhhOdoGgTqa/XmSBHxkydy+B8Dj2gP8diWBCE48B8hMNm0GxTL9IZT
+4c44bl3i6RuHq+a6fzdYcM5c/SRTFx/b+jp9BswKAgcP8c4OqNTU/6BgANIVPwaH
+5jZG0Raj3qxfLcCj49a4pRp7k1WbSuPP8slxk8V3XQT6jw5PMeLnDUtKPUeD8tr0
+IIQNkVV0e6QJZ03m7h9h
+=ZAKn
+-----END PGP SIGNATURE-----
 
-Big thank to Caspar Zhang who verified this within RH QE testsuites.
-
-thanks,
-jirka
-
-CC: Caspar Zhang <czhang@redhat.com>
----
- tools/perf/util/evsel.c                |   32 ++++++++--
- tools/perf/util/header.c               |   20 +++++--
- tools/perf/util/include/linux/bitops.h |    1 +
- tools/perf/util/session.c              |  101 ++++++++++++++++++++++++++++----
- tools/perf/util/symbol.c               |   33 ++++++++++-
- tools/perf/util/symbol.h               |   30 +++++++++
- 6 files changed, 192 insertions(+), 25 deletions(-)
+--++alDQ2ROsODg1x+--
