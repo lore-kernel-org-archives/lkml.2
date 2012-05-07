@@ -1,47 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911Ab2EGT4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 15:56:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62192 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757550Ab2EGT4c (ORCPT
+	id S1757915Ab2EGUDP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 16:03:15 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:55702 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757335Ab2EGUDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 15:56:32 -0400
-Date: Mon, 7 May 2012 12:56:28 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: Brian Swetland <swetland@google.com>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: android: logger: Allocate logs dynamically at
- boot
-Message-ID: <20120507195628.GA9977@kroah.com>
-References: <4FA4673C.7010209@am.sony.com>
- <20120504233707.GA24213@kroah.com>
- <4FA8195E.2010706@am.sony.com>
- <20120507185852.GA1838@kroah.com>
- <4FA81EFC.5000405@am.sony.com>
+	Mon, 7 May 2012 16:03:14 -0400
+Message-ID: <4FA82A80.3090001@tilera.com>
+Date: Mon, 7 May 2012 16:03:12 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA81EFC.5000405@am.sony.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 17/18] tile: Use common threadinfo allocator
+References: <20120505150007.543515803@linutronix.de> <20120505150142.311126440@linutronix.de> <4FA54569.2040209@tilera.com> <alpine.LFD.2.02.1205072134130.6271@ionos>
+In-Reply-To: <alpine.LFD.2.02.1205072134130.6271@ionos>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 12:14:04PM -0700, Tim Bird wrote:
-> BTW, I have a whitespace cleanup for one of my previous patches.  I'm unsure
-> if I should send this in, or wait until the code in question is affected
-> by another patch.  I thought the standard kernel policy was to not do
-> standalone whitespace cleanup patches (especially trivial ones).  But
-> is that the same policy for staging?
+On 5/7/2012 3:45 PM, Thomas Gleixner wrote:
+> On Sat, 5 May 2012, Chris Metcalf wrote:
+>
+>> On 5/5/2012 11:05 AM, Thomas Gleixner wrote:
+>>> Use the core allocator and deal with the extra cleanup in
+>>> arch_release_thread_info().
+>>>
+>>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+>>> Cc: Chris Metcalf <cmetcalf@tilera.com>
+>>> ---
+>>>  arch/tile/include/asm/thread_info.h |    6 ++----
+>>>  arch/tile/kernel/process.c          |   23 ++---------------------
+>>>  2 files changed, 4 insertions(+), 25 deletions(-)
+>> We have some changes we haven't yet merged upstream that this will likely
+>> conflict with.
+>>
+>> You may note that we have APIs like homecache_alloc_pages() that take a
+>> core or other magic value to indicate what the "home" cache should be on
+>> our architecture.  This enables significant performance optimizations when
+>> you can co-locate the home cache with where most of the core references are
+>> coming from.
+>>
+>> The additional changes we haven't yet merged are in the area of managing
+>> the home cache dynamically.  Rather than just setting the home cache at
+>> allocation time, we allow it to be modified dynamically: for example, as
+>> the process migrates, we migrate the kernel and user stack pages.  This is
+>> tricky since there are lots of coherence issues to manage, and the changes
+>> we have include a variety of changes in the core mm code to handle
+>> transitioning the home cache, proper locking, unmapping, hooks in the buddy
+>> allocator, blocking other cores while a page is transitioning, etc etc.
+>>
+>> But, the relevance to this change is that as part of that code, we use the
+>> homecache_alloc_page() method to set the home cache of a kernel stack page
+>> to be the core that is running the thread (and then migrate the home cache
+>> dynamically after that).  Using the new proposed core allocator will mean
+>> we lose that hook.  We don't need a free hook (when we're using the dynamic
+>> mode we are already hooked into the allocator itself), but we do need a way
+>> to know when we're allocating a kernel stack page as opposed to any other
+>> kind of a page.
+> What's the difference between a kernel stack page for a given node and
+> a page which is allocated on a given node ?
 
-No, the policy is to do stand-alone whitespace cleanup patches,
-especially trivial ones :)
+No difference except in how it is allocated (and of course how it is
+used).  The task migration code currently knows that the kernel stack
+should have its home cache migrated; it finds it by VA.  In the absence of
+migration the kernel stack page is not treated differently than any other
+page_alloc'ed page.
 
-Well, for portions of the kernel I maintain at least, I don't mind them
-at all, send them on when you have them.
+>> The simplest approach is of course just to allow
+>> __HAVE_ARCH_THREAD_INFO_ALLOCATOR to continue to be meaningful and use it
+>> for tile, but maybe there's some halfway point.  For example, that symbol
+>> could refer only to the allocate function, and not also imply an
+>> arch-specific free function.  Or, we could have a new much more focused
+>> override that was just "a function to use instead of alloc_pages_node",
+>> e.g. provide a weak alloc_threadinfo_pages_node() that just was generically
+>> just a call to alloc_pages_node, which architectures could override.
+> Again, that would give you what? 
 
-thanks,
+The advantage is that when you initially allocate the stack page, you can
+set its home cache appropriately to be on the local cpu, where the new task
+is likely to run.  Otherwise, you could imagine using a suitable hook for
+when the task starts up to migrate the page at that point, but you miss out
+on the opportunity to have the allocator return a suitably-cached page up
+front when the task is created.
 
-greg k-h
+> If you treat kernel stack pages different to general pages allocated
+> on a node then why not using a special GFP flag for that purpose?
+
+There are certainly different possible ways to tell the allocator to
+allocate a page with its cache "here" vs with its cache fully-distributed
+(and thus less local, and less good for stack or percpu pages).  We use a
+different approach (some per-task data structures that pass homing info to
+the allocator) but we could probably use GFP_ values instead.  But the
+point is we need to be able to know to do so, and I think the only obvious
+way is to override something in the threadinfo allocator.
+
+Thanks!
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
