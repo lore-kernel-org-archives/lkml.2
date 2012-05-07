@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757478Ab2EGRGT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 13:06:19 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:25068
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756571Ab2EGRGO (ORCPT
+	id S1757482Ab2EGRIt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 13:08:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51987 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756571Ab2EGRIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 13:06:14 -0400
-X-SpamScore: -13
-X-BigFish: VPS-13(zz936eK146fI1432N98dKzz1202hzzz2dh668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M3NWU2-02-BXP-02
-X-M-MSG: 
-Date: Mon, 7 May 2012 19:05:49 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/7] perf tools: Add parser for dynamic PMU events
-Message-ID: <20120507170549.GM18810@erda.amd.com>
-References: <1335983192-23731-1-git-send-email-robert.richter@amd.com>
- <1335983192-23731-4-git-send-email-robert.richter@amd.com>
- <1336388463.27020.3.camel@laptop>
+	Mon, 7 May 2012 13:08:47 -0400
+Date: Mon, 7 May 2012 10:08:40 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: inux-next: Tree for Apr 27 (uml + mm/memcontrol.c)
+Message-ID: <20120507170840.GA19417@google.com>
+References: <20120427132343.fbb443b9.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1204271420350.4631@chino.kir.corp.google.com>
+ <20120427143646.8209627e.akpm@linux-foundation.org>
+ <87fwbnag6u.fsf@skywalker.in.ibm.com>
+ <alpine.DEB.2.00.1205030208120.21476@chino.kir.corp.google.com>
+ <CABEgKgqWo=b=o7PwOLc=QqCWXQxUaYvMX99GP9cR_Y-RoTEW3g@mail.gmail.com>
+ <alpine.DEB.2.00.1205031343300.1631@chino.kir.corp.google.com>
+ <CABEgKgoNaWtoNN_DOH+KTg7VHYDxVCyekcUC3TBfA313TR0jCw@mail.gmail.com>
+ <20120504172420.GF24639@google.com>
+ <20120507140103.GA4251@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1336388463.27020.3.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20120507140103.GA4251@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.05.12 13:01:03, Peter Zijlstra wrote:
-> On Wed, 2012-05-02 at 20:26 +0200, Robert Richter wrote:
-> > This patch adds support for pmu specific event parsers by extending
-> > the pmu handler. The event syntax is the same as for tracepoints:
-> > 
-> >  <subsys>:<name>:<modifier> 
-> 
-> I really don't like this
-> 
-> > -          event_legacy_tracepoint sep_dc |
-> > +          event_legacy_generic sep_dc |
-> 
-> That 'legacy' in there is a good hint you shouldn't be using this.
-> 
-> Ideally I'd get rid of all legacy formats eventually, we really
-> shouldn't be adding new ones. 
+Hello,
 
-Anyway, we need something like this to specify event names (pseudo
-event names in case of ibs) and userland filter options. Though, it
-must not necessarily this syntax but something else. The one above
-looks esthetic to me while some other event syntax is close to a perl
-regex. ;)
+On Mon, May 07, 2012 at 04:01:04PM +0200, Michal Hocko wrote:
+> > If someone really has to add cgroup support to hugetlbfs, I'm more
+> > inclined to say let them play in their own corner unless incorporating
+> > it into memcg makes it inherently better.
+> 
+> I would agree with you but my impression from the previous (hugetlb)
+> implementation was that it is much harder to implement the charge moving
+> if we do not use page_cgroup.
+> Also the range tracking is rather ugly and clumsy.
 
--Robert
+Understood.  I haven't looked at the code, so my opinion was based on
+the assumption that the whole thing is completely separate (in design
+and implementation) from memcg as hugtlbfs is from the usual mm.  If
+it's better / easier implemented together with memcg, I have no
+objection to making it part of memcg.
+
+Thanks.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+tejun
