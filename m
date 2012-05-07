@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab2EGIZe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 04:25:34 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:57047 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638Ab2EGIZc (ORCPT
+	id S1755666Ab2EGI0P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 04:26:15 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:32883 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755564Ab2EGI0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 04:25:32 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArgLAIWFp09bdWOb/2dsb2JhbABEhXKkbyKHbYEHggwBAQUjBFIQCxgCAiYCAlcGiCWndZIFgS+OWIEYBKZAgms
-X-IronPort-AV: E=Sophos;i="4.75,543,1330902000"; 
-   d="scan'208";a="987295407"
-Message-ID: <1336379095.2852.17.camel@fourier.local.igalia.com>
-Subject: Re: [PATCH v2 1/3] Staging: IndustryPack bus for the Linux Kernel
-From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Mon, 07 May 2012 10:24:55 +0200
-In-Reply-To: <20120507080458.GN22134@mwanda>
-References: <1336375569-21692-1-git-send-email-siglesias@igalia.com>
-	 <20120507080458.GN22134@mwanda>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 7 May 2012 04:26:14 -0400
+X-AuditID: cbfee61b-b7c60ae000000c58-d0-4fa787244400
+Message-id: <4FA78724.5000401@samsung.com>
+Date: Mon, 07 May 2012 17:26:12 +0900
+From: Minho Ban <mhban@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
+ Thunderbird/11.0.1
+MIME-version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RFC/PATCH] PM / Hibernate : Add wait for disk detection if
+ resume_file is MAJOR:MINOR style
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-07 at 11:04 +0300, Dan Carpenter wrote:
-> 
-> [snip]
-> 
-> > +int ipack_device_find_drv(struct device_driver *driver, void *param)
-> > +{
-> > +	int ret;
-> > +	struct ipack_device *dev = (struct ipack_device *)param;
-> > +
-> > +	ret = ipack_bus_match(&dev->dev, driver);
-> > +	if (ret)
-> > +		return !ipack_bus_probe(&dev->dev);
-> 
-> Wouldn't probe() return zero or a negative error code?
+name_to_dev_t is not enough to check device detection when the resume_file is
+MAJOR:MINOR format. get_gendisk is needed in that case.
 
-Yes. However, in case of the function called by bus_for_each_drv(), it
-should return zero if you want to continue or nonzero value to stop the
-iteration.
+Signed-off-by: Minho Ban <mhban@samsung.com>
+---
+ kernel/power/hibernate.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-I considered that if the probe fails, we can try with the next driver in
-the list. So, the returned value of probe() is negated.
-
-I will fix the other things and send it again with other suggestions. 
-
-Thanks,
-
-Sam
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index e09dfbf..27efaef 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -25,6 +25,8 @@
+ #include <linux/freezer.h>
+ #include <linux/gfp.h>
+ #include <linux/syscore_ops.h>
++#include <linux/ctype.h>
++#include <linux/genhd.h>
+ #include <scsi/scsi_scan.h>
+ 
+ #include "power.h"
+@@ -749,6 +751,14 @@ static int software_resume(void)
+ 		}
+ 	}
+ 
++	/* name_to_dev_t is ineffective if resume_file comes in major:minor
++	 * format */
++	if (isdigit(resume_file[0]) && resume_wait) {
++		int partno;
++		while (!get_gendisk(swsusp_resume_device, &partno))
++			msleep(10);
++	}
++
+  Check_image:
+ 	pr_debug("PM: Hibernation image partition %d:%d present\n",
+ 		MAJOR(swsusp_resume_device), MINOR(swsusp_resume_device));
+-- 
+1.7.5.4
 
