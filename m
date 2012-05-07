@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab2EGK70 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 06:59:26 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:47239 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755696Ab2EGK7X (ORCPT
+	id S1756083Ab2EGK7x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 06:59:53 -0400
+Received: from mga03.intel.com ([143.182.124.21]:53610 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752795Ab2EGK7w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 06:59:23 -0400
-Message-ID: <4FA7AAD8.6050003@linux.vnet.ibm.com>
-Date: Mon, 07 May 2012 16:28:32 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Mon, 7 May 2012 06:59:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="139757415"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+CC: Andi Kleen <ak@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH, v3] hwmon: coretemp: use list instead of fixed size
+ array for temp data
+Thread-Topic: [PATCH, v3] hwmon: coretemp: use list instead of fixed size
+ array for temp data
+Thread-Index: AQHNLDzUnmQOFAJAQkaoequKj7BmNpa+J5TQ
+Date: Mon, 7 May 2012 10:59:48 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB591184C1@BGSMSX102.gar.corp.intel.com>
+References: <1336386848-31041-1-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1336386848-31041-1-git-send-email-kirill.shutemov@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Attilio Rao <attilio.rao@citrix.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
-        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
-References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com> <20120507082928.GI16608@gmail.com> <4FA7888F.80505@redhat.com>
-In-Reply-To: <4FA7888F.80505@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12050700-5140-0000-0000-0000013750DD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2012 02:02 PM, Avi Kivity wrote:
-> On 05/07/2012 11:29 AM, Ingo Molnar wrote:
->> This is looking pretty good and complete now - any objections
->> from anyone to trying this out in a separate x86 topic tree?
->
-> No objections, instead an
->
-> Acked-by: Avi Kivity<avi@redhat.com>
->
-
-Thank you.
-
-Here is a benchmark result with the patches.
-
-3 guests with 8VCPU, 8GB RAM, 1 used for kernbench
-(kernbench -f -H -M -o 20) other for cpuhog (shell script while
-true with an instruction)
-
-unpinned scenario
-1x: no hogs
-2x: 8hogs in one guest
-3x: 8hogs each in two guest
-
-BASE: 3.4-rc4 vanilla with CONFIG_PARAVIRT_SPINLOCK=n
-BASE+patch: 3.4-rc4 + debugfs + pv patches with CONFIG_PARAVIRT_SPINLOCK=y
-
-Machine : IBM xSeries with Intel(R) Xeon(R) x5570 2.93GHz CPU (Non PLE) 
-with 8 core , 64GB RAM
-
-(Less is better. Below is time elapsed in sec for x86_64_defconfig (3+3 
-runs)).
-
-		 BASE                    BASE+patch            %improvement
-		 mean (sd)               mean (sd)
-case 1x:	 66.0566 (74.0304) 	 61.3233 (68.8299) 	7.16552
-case 2x:	 1253.2 (1795.74) 	 131.606 (137.358) 	89.4984
-case 3x:	 3431.04 (5297.26) 	 134.964 (149.861) 	96.0664
+Hi,
 
 
-Will be working on further analysis with other benchmarks 
-(pgbench/sysbench/ebizzy...) and further optimization.
+> -----Original Message-----
+> From: Kirill A. Shutemov [mailto:kirill.shutemov@linux.intel.com]
+> Sent: Monday, May 07, 2012 4:04 PM
+> To: Yu, Fenghua; Guenter Roeck; R, Durgadoss
+> Cc: Andi Kleen; Jean Delvare; lm-sensors@lm-sensors.org; linux-
+> kernel@vger.kernel.org; Kirill A. Shutemov
+> Subject: [PATCH, v3] hwmon: coretemp: use list instead of fixed size array for
+> temp data
+> 
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> Let's rework code to allow arbitrary number of cores on a CPU, not
+> limited by hardcoded array size.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  v3:
+>    - drop redundant refcounting and checks;
+>  v2:
+>    - fix NULL pointer dereference. Thanks to R, Durgadoss;
+>    - use mutex instead of spinlock for list locking.
+> ---
+>  drivers/hwmon/coretemp.c |  120 ++++++++++++++++++++++++++++-----------
+> ------
+>  1 files changed, 75 insertions(+), 45 deletions(-)
+> 
+> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+> index b9d5123..fa082d5 100644
+> --- a/drivers/hwmon/coretemp.c
+> +++ b/drivers/hwmon/coretemp.c
+> @@ -36,6 +36,8 @@
+>  #include <linux/cpu.h>
+>  #include <linux/pci.h>
+>  #include <linux/smp.h>
+> +#include <linux/list.h>
+> +#include <linux/kref.h>
 
+I think we don't need to include kref.h now :-)
+
+BTW, at some places, looks like we are using 'tdata' obtained from get_temp_data,
+without checking for NULL values. Other than that, looks Ok for me.
+
+Acked-by: Durgadoss R <durgadoss.r@intel.com>
+
+Thanks,
+Durga
