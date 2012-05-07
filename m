@@ -1,189 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757774Ab2EGTXP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 15:23:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56725 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab2EGTXO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 15:23:14 -0400
+	id S1757788Ab2EGTY4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 15:24:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:6077 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754727Ab2EGTYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 15:24:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="141085705"
+From: "Venkataraman, Meenakshi" <meenakshi.venkataraman@intel.com>
+To: Ben Hutchings <ben@decadent.org.uk>,
+        "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: RE: [ 73/75] iwlwifi: use correct released ucode version
+Thread-Topic: [ 73/75] iwlwifi: use correct released ucode version
+Thread-Index: AQHNLF+UAK3Gku7Q8kWeCc8p19TzFpa+tRUg
+Date: Mon, 7 May 2012 19:24:50 +0000
+Message-ID: <4595B4D22AB93C4FABBA84AAD5AA37FD1531EC@ORSMSX103.amr.corp.intel.com>
+References: <20120504204230.580609792@linuxfoundation.org>
+ <1336401714.8274.320.camel@deadeye>
+In-Reply-To: <1336401714.8274.320.camel@deadeye>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1336390672-14421-9-git-send-email-hannes@cmpxchg.org>
-References: <1336390672-14421-1-git-send-email-hannes@cmpxchg.org>
-	<1336390672-14421-9-git-send-email-hannes@cmpxchg.org>
-Date: Mon, 7 May 2012 12:23:13 -0700
-X-Google-Sender-Auth: 2XQEqw5McJSXHco5d_nJs-JRjJA
-Message-ID: <CAE9FiQU2pJfCTmZjMG7SggjBZUfsnBArhGCxhaKQSZCojwfZPQ@mail.gmail.com>
-Subject: Re: [patch 08/10] mm: nobootmem: unify allocation policy of
- (non-)panicking node allocations
-From: Yinghai Lu <yinghai@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q47JP1Q6020725
 
-On Mon, May 7, 2012 at 4:37 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> While the panicking node-specific allocation function tries to satisfy
-> node+goal, goal, node, anywhere, the non-panicking function still does
-> node+goal, goal, anywhere.
->
-> Make it simpler: define the panicking version in terms of the
-> non-panicking one, like the node-agnostic interface, so they always
-> behave the same way apart from how to deal with allocation failure.
->
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/nobootmem.c |  106 +++++++++++++++++++++++++++++---------------------------
->  1 file changed, 54 insertions(+), 52 deletions(-)
->
-> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-> index b078ff8..77069bb 100644
-> --- a/mm/nobootmem.c
-> +++ b/mm/nobootmem.c
-> @@ -275,6 +275,57 @@ void * __init __alloc_bootmem(unsigned long size, unsigned long align,
->        return ___alloc_bootmem(size, align, goal, limit);
->  }
->
-> +static void * __init ___alloc_bootmem_node_nopanic(pg_data_t *pgdat,
-> +                                                  unsigned long size,
-> +                                                  unsigned long align,
-> +                                                  unsigned long goal,
-> +                                                  unsigned long limit)
-> +{
-> +       void *ptr;
-> +
-> +again:
-> +       ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
-> +                                       goal, limit);
-> +       if (ptr)
-> +               return ptr;
-> +
-> +       ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
-> +                                       goal, limit);
-> +       if (ptr)
-> +               return ptr;
-> +
-> +       if (goal) {
-> +               goal = 0;
-> +               goto again;
-> +       }
-> +
-> +       return NULL;
-> +}
-> +
-> +void * __init __alloc_bootmem_node_nopanic(pg_data_t *pgdat, unsigned long size,
-> +                                  unsigned long align, unsigned long goal)
-> +{
-> +       if (WARN_ON_ONCE(slab_is_available()))
-> +               return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
-> +
-> +       return ___alloc_bootmem_node_nopanic(pgdat, size, align, goal, 0);
-> +}
-> +
-> +void * __init ___alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
-> +                                   unsigned long align, unsigned long goal,
-> +                                   unsigned long limit)
-> +{
-> +       void *ptr;
-> +
-> +       ptr = ___alloc_bootmem_node_nopanic(pgdat, size, align, goal, limit);
-> +       if (ptr)
-> +               return ptr;
-> +
-> +       printk(KERN_ALERT "bootmem alloc of %lu bytes failed!\n", size);
-> +       panic("Out of memory");
-> +       return NULL;
-> +}
-> +
->  /**
->  * __alloc_bootmem_node - allocate boot memory from a specific node
->  * @pgdat: node to allocate from
-> @@ -293,30 +344,10 @@ void * __init __alloc_bootmem(unsigned long size, unsigned long align,
->  void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
->                                   unsigned long align, unsigned long goal)
->  {
-> -       void *ptr;
-> -
->        if (WARN_ON_ONCE(slab_is_available()))
->                return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
->
-> -again:
-> -       ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
-> -                                        goal, -1ULL);
-> -       if (ptr)
-> -               return ptr;
-> -
-> -       ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
-> -                                       goal, -1ULL);
-> -       if (ptr)
-> -               return ptr;
-> -
-> -       if (goal) {
-> -               goal = 0;
-> -               goto again;
-> -       }
-> -
-> -       printk(KERN_ALERT "bootmem alloc of %lu bytes failed!\n", size);
-> -       panic("Out of memory");
-> -       return NULL;
-> +       return ___alloc_bootmem_node(pgdat, size, align, goal, 0);
->  }
->
->  void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
-> @@ -347,22 +378,6 @@ void * __init alloc_bootmem_section(unsigned long size,
->  }
->  #endif
->
-> -void * __init __alloc_bootmem_node_nopanic(pg_data_t *pgdat, unsigned long size,
-> -                                  unsigned long align, unsigned long goal)
-> -{
-> -       void *ptr;
-> -
-> -       if (WARN_ON_ONCE(slab_is_available()))
-> -               return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
-> -
-> -       ptr =  __alloc_memory_core_early(pgdat->node_id, size, align,
-> -                                                goal, -1ULL);
-> -       if (ptr)
-> -               return ptr;
-> -
-> -       return __alloc_bootmem_nopanic(size, align, goal);
-> -}
-> -
->  #ifndef ARCH_LOW_ADDRESS_LIMIT
->  #define ARCH_LOW_ADDRESS_LIMIT 0xffffffffUL
->  #endif
-> @@ -404,22 +419,9 @@ void * __init __alloc_bootmem_low(unsigned long size, unsigned long align,
->  void * __init __alloc_bootmem_low_node(pg_data_t *pgdat, unsigned long size,
->                                       unsigned long align, unsigned long goal)
->  {
-> -       void *ptr;
-> -
->        if (WARN_ON_ONCE(slab_is_available()))
->                return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
->
-> -       ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
-> -                               goal, ARCH_LOW_ADDRESS_LIMIT);
-> -       if (ptr)
-> -               return ptr;
-> -
-> -       ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
-> -                                       goal, ARCH_LOW_ADDRESS_LIMIT);
-> -       if (ptr)
-> -               return ptr;
-> -
-> -       printk(KERN_ALERT "bootmem alloc of %lu bytes failed!\n", size);
-> -       panic("Out of memory");
-> -       return NULL;
-> +       return ___alloc_bootmem_node(pgdat, size, align, goal,
-> +                                    ARCH_LOW_ADDRESS_LIMIT);
->  }
-> --
+Hi Ben,
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+>On Fri, 2012-05-04 at 13:43 -0700, Greg KH wrote:
+>> 3.3-stable review patch.  If anyone has any objections, please let me know.
+>>
+>> ------------------
+>>
+>> From: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
+>>
+>> commit 78cbcf2b9dbe0565820dc7721316f9c401000a68 upstream.
+>>
+>> Report correctly the latest released version of the iwlwifi firmware
+>> for all iwlwifi-supported devices.
+>[...]
+>
+>Isn't this also applicable to 3.2.y?
+
+[MV] Just checked -- it is indeed applicable to 3.2 stable kernels as well.  Do I need to modify the patch to get it into 3.2 as well?
+
+Thanks,
+Meenakshi
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
