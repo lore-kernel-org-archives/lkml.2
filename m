@@ -1,254 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab2EGCmy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 May 2012 22:42:54 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62805 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755154Ab2EGCmx (ORCPT
+	id S1755275Ab2EGCsh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 May 2012 22:48:37 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:43147 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894Ab2EGCsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 May 2012 22:42:53 -0400
-Date: Sun, 6 May 2012 22:42:51 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-next@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: linux-next: triage for May 6, 2012
-Message-ID: <20120507024250.GA2892@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 6 May 2012 22:48:35 -0400
+From: zwu.kernel@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: greg@kroah.com, wuzhy@linux.vnet.ibm.com
+Subject: [PATCH] kobject: fix the uncorrect comment
+Date: Mon,  7 May 2012 10:48:25 +0800
+Message-Id: <1336358905-26456-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12050702-6148-0000-0000-0000059E1FA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is for the state of the tree as of Friday, as there are
-no weekend builds.  The vga_default_device fails are finally
-gone, and so tilegx has traded that fail for the kvm export
-header check fail to keep sparc and parisc company.
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-New breakage since last report:
-  ARM:mv78xx0_defconfig (mach-mv78xx0/pcie.c:256: error: 'bus' undeclared)
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+---
+ lib/kobject.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Randconfig fails that may or may not be new (by their very nature):
-  i386,x86_64: hub.c:(.text+0x11a646): undefined ref to `usb_speed_string'
-	http://kisskb.ellerman.id.au/kisskb/buildresult/6248259/
-	http://kisskb.ellerman.id.au/kisskb/buildresult/6248258/
+diff --git a/lib/kobject.c b/lib/kobject.c
+index aeefa8b..575f4c2 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -634,7 +634,7 @@ struct kobject *kobject_create(void)
+ /**
+  * kobject_create_and_add - create a struct kobject dynamically and register it with sysfs
+  *
+- * @name: the name for the kset
++ * @name: the name for the kobject
+  * @parent: the parent kobject of this kobject, if any.
+  *
+  * This function creates a kobject structure dynamically and registers it
+-- 
+1.7.6
 
-Builds that are fixed since last report:
-  arm:orion5x_defconfig (undef `vga_default_device')
-  mips:ip27_defconfig (undef `vga_default_device')
-  sh:sh7785lcr_32bit_defconfig (undef `vga_default_device')
-  arm:s3c2410_defconfig (implicit of_match_ptr)
-  arm:mini2440_defconfig (implicit of_match_ptr)
-  arm:spear[36]xx_defconfig (implicit decl of func 'clk_register_clkdev')
-
-----------------------
-
-Note1: The randconfig fails are only listed once and not tracked
-in the below listing.
-
-Note2: Build fails that are perpetual and/or unlikely to ever
-get fixed are not tracked here.
-
-Note3: Issues that Stephen finds and reverts/avoids before kicking
-off the all-arch/all-config builds are also not tracked here.
-
-Note4: I'm also not tracking the kallsyms extra pass on ARM on
-a per board basis anymore.  It has nothing to do with the board.
-Why? See:  http://marc.info/?l=linux-next&m=133267456809502
-
-----------------------
-
-Latest results at:
-	http://kisskb.ellerman.id.au/kisskb/branch/9/
-
-Failures as of May 6th, 2012:
-===============================
-
-AM33:asb2303_defconfig,asb2364_defconfig
-	when:	Mar 15
-	why:	cc1: error: unrecognized command line option '-mmem-funcs'
-	status:	Possible fix from TonyB sent for review.
-	fix:	http://marc.info/?l=linux-kernel&m=133185020313818&w=2
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5878400/
-----------------
-
-ARM:mv78xx0_defconfig
-	when:	May 4
-	why:	mach-mv78xx0/pcie.c:256:29: error: 'bus' undeclared
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6243629/
-
-ARM:integrator_defconfig
-	when:	May 3
-	why:	pci_std_swizzle was deleted
-	status:	fix sent to arm kernel ML.
-
-ARM:nhk8815_defconfig
-	when:	May 3
-	why:	gpio-nomadik.c: 'struct gpio_chip' has no member named 'of_node'
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6229016/
-
-ARM:mackerel_defconfig,ag5evm_defconfig
-	when:	Apr 19 (possibly earlier?)
-	why:	pfc-sh7372.c: undefined reference to `mmc_detect_change'
-	why:	pfc-sh73a0.c: undefined reference to `mmc_detect_change'
-	status:	
-	fix:	
-	ref:	http://article.gmane.org/gmane.linux.ports.sh.devel/14412
-	ref:	http://article.gmane.org/gmane.linux.ports.sh.devel/14413
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131930/
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131908/
-
-ARM:bcmring_defconfig
-	when:	Apr 20ish
-	why:	usr/include/asm/kvm_para.h:1: included file 'asm-generic/kvm_para.h' is not exported
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6228994/
-
-ARM:ezx_defconfig
-	when:	Apr 19 (possibly earlier?)
-	why:	ezx-pcap.c: implicit declaration of function 'irq_to_gpio'
-	status:	
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6131924/
-
-ARM:netx_defconfig,pnx4008_defconfig 
-	when:	Mar 14
-	why:	net/core/pktgen.c: can't find a register in class 'GENERAL_REGS'
-	status:	
-	fix:	
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869486/
-	ref:	https://lkml.org/lkml/2012/3/13/670
-
-ARM:ixp4xx_defconfig
-	when:	Oct 26
-	why:	gpio.h: implicit declaration of function '__gpio_get_value'
-	status:	fixed (Imre Kaloz) - but possibly needs rework?
-	fix:	https://lkml.org/lkml/2012/2/8/288
-	ref:	https://lkml.org/lkml/2012/2/8/287
-
-ARM:raumfeld_defconfig
-	when:	Nov 23
-	why:	eeti_ts.c: implicit declaration of function 'irq_to_gpio'
-	status:	perhaps broken since 2010?  See ref below.
-	fix:	
-	ref:	http://www.gossamer-threads.com/lists/linux/kernel/1291618?do=post_view_threaded#1291618
-
-----------------
-
-AVR32:allnoconfig
-	when:	May 26 2010, 20:49
-	why:	at32_map_usart: undefined reference to `atmel_default_console_device'
-	status:
-	fix:
-	ref:
----------------
-
-bfin: 50% of builds
-	when:	Mar 31
-	why:	"Error: pcrel too far BFD_RELOC_BFIN_10" from kernel/time/timekeeping.c
-	status:	unknown, binutils issue?
-	fix:
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6087324/
-
-bfin:SMP
-	when	May 1
-	why:	kernel/smp.c:724: undefined reference to `smp_call_function_many'
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6228892/
----------------
-
-cris:allyesconfig,allmodconfig
-	when:	Apr 3
-	why:	too many to list here
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6035250/
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6035249/
-----------------
-
-i386:allmodconfig
-	when:	Apr 17
-	why:	samples/seccomp/bpf-direct.c:47:2: error: #error Unsupported platform
-	status:	reported
-	ref:	http://marc.info/?l=linux-kernel&m=133471624530782&w=2
-----------------
-
-h8300:defconfig
-	when:	Mar 15
-	why:	time.c: implicit declaration of function 'get_irq_regs'
-	why:	also seems gcc suffers an ICE
-	status:	ICE bug lodged with gcc folks (TonyB)
-	ref:	http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52598
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884668/
-----------------
-
-m32r:m32700ut.smp_defconfig
-	when:	Mar 15
-	why:	No rule to make target `arch/m32r/boot/compressed/vmlinux.bin
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5884670/
-----------------
-
-mips:allmodconfig
-	when:	Apr 17
-	why:	sound/oss/soundcard.c: 'MAX_DMA_CHANNELS' undeclared
-	status: one of many fixes mips needs...
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6091660/
-----------------
-
-parisc:defconfig
-	when:	Apr 20
-	why:	file 'asm-generic/kvm_para.h' is not exported
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6137786/
-
-parisc:allmodconfig
-	when:	?
-	why:	include/linux/log2.h: implicit declaration of function 'fls'
-	status:	reported by PaulG, WIP by David Howells 
-	ref:	http://www.spinics.net/lists/linux-parisc/msg04100.html
-	ref:	https://lkml.org/lkml/2012/2/29/409
-	ref:	https://lkml.org/lkml/2012/3/6/228
-
-parisc64:a500_defconfig 
-	when:	?
-	why:	include/linux/log2.h: implicit declaration of function 'fls'
-	status:	reported by PaulG, WIP by David Howells 
-	ref:	https://lkml.org/lkml/2012/2/29/409
-	ref:	https://lkml.org/lkml/2012/3/6/228
-------------------
-
-powerpc:mpc85xx_defconfig
-	when:	May 3
-	why:	powerpc/mm/hugetlbpage.c: passing argument 7 of 'parse_args' from incompatible pointer type
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6243069/
-
-powerpc:ppc40x_defconfig
-	when:	May 3
-	why:	sysdev/ppc4xx_msi.c:178:2: error: right shift count >= width of type
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6243038/
-------------------
-
-sparc[64]:allyesconfig,allmodconfig
-	when:	Apr 18
-	why:	usr/include/asm/kvm_para.h: included file 'asm-generic/kvm_para.h' is not exported
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6243021/
-
-sparc:allnoconfig
-	when:	Apr 20ish
-	why:	arch/sparc/mm/init_64.c: unused variable 'paddr' 'node'
-	why:	arch/sparc/mm/init_64.c: 'memblock_nid_range' defined but not used
-------------------
-
-s390:allyesconfig,allmodconfig
-	when:	May 3
-	why:	drivers/memory/emif.c: error: implicit declaration of function 'readl'
-	status:	reported
-	ref:	https://lkml.org/lkml/2012/5/3/478
-------------------
-
-tile:defconfig
-	when:	May 5
-	why:	usr/include/asm/kvm_para.h: included file 'asm-generic/kvm_para.h' is not exported
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6248599/
-------------------
-
-xtensa:defconfig
-	when:	Apr 20
-	why:	undefined reference to `_sdata'
-	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6228970/
