@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab2EGOMW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 10:12:22 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:34806 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756729Ab2EGOMT (ORCPT
+	id S1757096Ab2EGOQr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 10:16:47 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:65048 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756776Ab2EGOMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 10:12:19 -0400
+	Mon, 7 May 2012 10:12:20 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, miklos@szeredi.hu, hch@infradead.org,
         michael.brantley@deshaw.com
-Subject: [PATCH v1 RESEND 00/12] vfs: add the ability to retry on ESTALE to several syscalls
-Date: Mon,  7 May 2012 10:11:59 -0400
-Message-Id: <1336399931-20234-1-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v1 RESEND 01/12] vfs: add a retry_estale helper function to handle retries on ESTALE
+Date: Mon,  7 May 2012 10:12:00 -0400
+Message-Id: <1336399931-20234-2-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1336399931-20234-1-git-send-email-jlayton@redhat.com>
+References: <1336399931-20234-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ESTALE errors are a source of pain for many users, primarily those who
-are doing work on NFS. When userspace provides a path to a syscall, then
-there's really little excuse for returning ESTALE. If userspace gave us
-a path that we had to lookup in order to do the call, then it's not
-particularly helpful to return ESTALE just because that path went stale
-before we could do the actual operation.
+This function is expected to be called from path-based syscalls to help
+them decide whether to try the lookup and call again in the event that
+they got an -ESTALE return back on an earier try.
 
-We can and should do better here. The kernel should instead catch that
-error and retry the lookup and call, while forcing a revalidation of all
-dentries involved.
+Currently, we only retry the call once on an ESTALE error, but in the
+event that we decide that that's not enough in the future, we should be
+able to change the logic in this helper without too much effort.
 
-Unfortunately fixing this requires touching the syscalls themselves, or
-at least their immediate helper functions. Not all syscalls can be
-retried -- only those that take a pathname as an argument.
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ include/linux/fs.h |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
 
-This set is a first "official" pass at adding ESTALE retry handling to
-various syscalls.  With this patchset, I've decided to take the
-relatively less controversial approach of just having the kernel retry
-once when it gets an ESTALE error. I still think that it's not as strong
-as it should be, but it should improve the situation in many common
-cases.
-
-I've also tried to engineer this in such a way that if we do decide that
-we need to retry more than once, then it should be easy to change that
-later. This should cover all of the syscalls in fs/stat.c and
-fs/namei.c.
-
-If this approach is reasonable I'll look at adding similar handling to
-other path-based vfs calls in a another set. A quick look shows that
-we have about 50-odd path-based syscalls that will need similar
-handling, so this is just a start.
-
-Comments welcome...
-
-Jeff Layton (12):
-  vfs: add a retry_estale helper function to handle retries on ESTALE
-  vfs: make fstatat retry on ESTALE errors from getattr call
-  vfs: fix readlinkat to retry on ESTALE
-  vfs: add new "reval" argument to kern_path_create and
-    user_path_create
-  vfs: fix mknodat to retry on ESTALE errors
-  vfs: fix mkdir to retry on ESTALE errors
-  vfs: add a "reval" flag to args for user_path_parent
-  vfs: make rmdir retry on ESTALE errors
-  vfs: make do_unlinkat retry on ESTALE errors
-  vfs: fix symlinkat to retry on ESTALE errors
-  vfs: fix linkat to retry on ESTALE errors
-  vfs: fix renameat to retry on ESTALE errors
-
- arch/powerpc/platforms/cell/spufs/syscalls.c |    2 +-
- drivers/base/devtmpfs.c                      |    7 +-
- fs/namei.c                                   |  233 +++++++++++++++-----------
- fs/ocfs2/refcounttree.c                      |    3 +-
- fs/stat.c                                    |   32 +++-
- include/linux/fs.h                           |   21 +++
- include/linux/namei.h                        |    4 +-
- net/unix/af_unix.c                           |    3 +-
- 8 files changed, 191 insertions(+), 114 deletions(-)
-
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 8de6755..3c0bcda 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2026,6 +2026,27 @@ extern struct file * dentry_open(struct dentry *, struct vfsmount *, int,
+ extern int filp_close(struct file *, fl_owner_t id);
+ extern char * getname(const char __user *);
+ 
++/**
++ * retry_estale - determine whether the caller should retry an operation
++ *
++ * @error: the error we'll be returning
++ * @try: number of retries already performed
++ *
++ * Check to see if the error code was -ESTALE, and then determine whether
++ * to retry the call based on the number of retries so far. Currently, we only
++ * retry the call once.
++ *
++ * Returns true if the caller should try again.
++ */
++static inline bool
++retry_estale(const long error, const unsigned int try)
++{
++	if (likely(error != -ESTALE))
++		return false;
++
++	return !try;
++}
++
+ /* fs/ioctl.c */
+ 
+ extern int ioctl_preallocate(struct file *filp, void __user *argp);
 -- 
 1.7.7.6
 
