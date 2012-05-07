@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378Ab2EGQY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 12:24:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43881 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757263Ab2EGQYY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 12:24:24 -0400
-Date: Mon, 7 May 2012 17:24:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, "lrg@ti.com" <lrg@ti.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH V1] regulator: fixed: dt: add property for gpio open
- drain flag
-Message-ID: <20120507162419.GK17002@opensource.wolfsonmicro.com>
-References: <1336386499-20408-1-git-send-email-ldewangan@nvidia.com>
- <4FA7E4A3.6050004@wwwdotorg.org>
- <4FA7E57B.30804@nvidia.com>
- <4FA7E841.7020100@wwwdotorg.org>
+	id S1757333Ab2EGQ2S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 12:28:18 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46655 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756701Ab2EGQ2Q convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 12:28:16 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3D7yMlnunRPwJqC7"
-Content-Disposition: inline
-In-Reply-To: <4FA7E841.7020100@wwwdotorg.org>
-X-Cookie: Be different: conform.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120506151156.GA13805@hp-xd.sh.intel.com>
+References: <20120506151156.GA13805@hp-xd.sh.intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 7 May 2012 09:27:54 -0700
+Message-ID: <CAErSpo5-iwY1X6GrKzEAHM=eZS1hs_6wNV1fB0GhLuo3YQcV-A@mail.gmail.com>
+Subject: Re: [PATCH] PCI: save/restore max Latency Value for device LTR
+To: Xudong Hao <xudong.hao@linux.intel.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, xiantao.zhang@intel.com, xudong.hao@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, May 6, 2012 at 8:11 AM, Xudong Hao <xudong.hao@linux.intel.com> wrote:
+> LTR: Save Max snoop/no-snoop Latency Value in pci_save_pcie_state, and restore them in pci_restore_pcie_state.
+>
+> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+>
+> ---
+>  drivers/pci/pci.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 111569c..c8573c3 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -875,6 +875,12 @@ static int pci_save_pcie_state(struct pci_dev *dev)
+>        pci_read_config_word(dev, pos + PCI_EXP_LNKCTL2, &cap[i++]);
+>    if (pcie_cap_has_sltctl2(dev->pcie_type, flags))
+>        pci_read_config_word(dev, pos + PCI_EXP_SLTCTL2, &cap[i++]);
+> +   if (pci_ltr_supported(dev)) {
+> +       pci_read_config_word(dev, pos + PCI_LTR_MAX_SNOOP_LAT,
+> +                           &cap[i++]);
+> +       pci_read_config_word(dev, pos + PCI_LTR_MAX_NOSNOOP_LAT,
+> +                           &cap[i++]);
+> +   }
+>
+>    return 0;
+>  }
+> @@ -908,6 +914,12 @@ static void pci_restore_pcie_state(struct pci_dev *dev)
+>        pci_write_config_word(dev, pos + PCI_EXP_LNKCTL2, cap[i++]);
+>    if (pcie_cap_has_sltctl2(dev->pcie_type, flags))
+>        pci_write_config_word(dev, pos + PCI_EXP_SLTCTL2, cap[i++]);
+> +   if (pci_ltr_supported(dev)) {
+> +       pci_write_config_word(dev, pos + PCI_LTR_MAX_SNOOP_LAT,
+> +                           cap[i++]);
+> +       pci_write_config_word(dev, pos + PCI_LTR_MAX_NOSNOOP_LAT,
+> +                           cap[i++]);
+> +   }
+>  }
+>
 
---3D7yMlnunRPwJqC7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This doesn't make any sense to me.  "pos" is the offset of the PCI
+Express Capability (identifier 10h).  LTR is a separate extended
+capability (identifier 18h), so you at least have to look up its
+offset.
 
-On Mon, May 07, 2012 at 09:20:33AM -0600, Stephen Warren wrote:
-
-> My point is that there's clear intent for of_gpio_simple_xlate() to
-> return the GPIO flags from a field in the GPIO specifier in device tree,
-> irrespective of whether some GPIO bindings don't allow this, or whether
-> this is fully documented.
-
-It's really not idiomatic for drivers using GPIOs to allow configuration
-of their flags in the first place.  Or, quite frankly, to use flags.
-Honestly I'd not expect any bindings that the GPIO driver provides to
-have any attention at all paid to them most of the time, looking at the
-code seems to support that (though there's surprisingly few bindings
-using GPIOs at all it seems).
-
-Before we start doing stuff to improve this it feels like we should do
-things like get devm_ versions of gpiolib APIs in there (since most
-conversions would really benefit from that too) - I've been sending a
-patch for that but my backlog of unmerged patches for it keeps getting
-bigger rather than smaller.
-
-> We shouldn't have two different mechanisms to represent this
-> information. How do we resolve the situation where a particular SoC's
-> GPIO binding allows the flags to be specified, and this patch allows the
-> open-drain flag to be specified, and the two values are different?
-
-> Either we should force all bindings to have some way of specifying the
-> flags, or we should remove the flags from all bindings and rely on
-> separate properties.
-
-There's also the case where the bindings probably should be ignored
-because the device driver knows what the connection has to be anyway and
-there's no point in forcing people to encode it in the binding.
-
-It's a real shame all these bindings are driver specific, it's just like
-interrupts :(
-
---3D7yMlnunRPwJqC7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPp/ctAAoJEBus8iNuMP3d2PsP/Ajv0ha4ZMhDNv+xdeAySaCT
-5E6XdxEg0r9HC1g3YjckSPH/eXQbTG8r4Q4cfxwR6UG0A3JexBShvY42R9nbbwdX
-rHHhpVa7/T0AIwWloS747O0GNay29om5fu5aOmtGi29JwSKYCIXnT54qOvraSBxL
-pvltea6+MW9JjV7sVHpobNcHr4i/v90gJIbT4QzOJMOE467tIMA+u5M2aM0x7JPU
-Lp9koMitfeXfTtPLKMmXj5GZqab74uo41ZdMJk+xTv8XYVZaPsNKerIdDUGTNKPG
-mlnVed6IuJt8wlNxLApwEwLnoDo0gKCeQvWjY3HIkQDJt6pNccuiQg3VL3ncTVQZ
-hHRvQCXlzH3Cq1Tv5Jx+d+KV0Zv6MRZW7c1Zyx8oZrPm8cHxz2+0sPYsmZMmz7AI
-VZ40mBdE3qRDktQyZK+jO4bImnj8+511oxdYni3bsZZTr9W06T37gUBhidkXOPwj
-fl5XL9IElVWoprTpHXhMjXjlUJ16G1+z9h9hOg48wNUSd3Wgyr70YzTUib0ttmnq
-EuA3fBELcqxUgmJpNyZmL1cVNHUG0clRwU0nm/Nax95q+lPI5vKe0mAbsPcoqwwB
-OTUrYV4owzqtROYpphWGzQ06es+jr5PdFIH4AO/9AivUtoTMql7kfw6glV9uTzlD
-PtsTGmIamicx2pMJnPCl
-=DM2l
------END PGP SIGNATURE-----
-
---3D7yMlnunRPwJqC7--
+Bjorn
