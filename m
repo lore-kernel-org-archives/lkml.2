@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab2EGUdN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 16:33:13 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:57895 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932219Ab2EGUdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 16:33:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: huang ying <huang.ying.caritas@gmail.com>
-Subject: Re: [RFC v2 1/5] PM, Runtime, Add power_must_be_on flag
-Date: Mon, 7 May 2012 22:37:58 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Huang Ying <ying.huang@intel.com>,
-        ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Zheng Yan <zheng.z.yan@intel.com>
-References: <1336119221-21146-1-git-send-email-ying.huang@intel.com> <CAErSpo4EGWndS0c_6SZrCz_O=3WmfZoRoRrU=9AN5TG3QfxHbg@mail.gmail.com> <CAC=cRTPfkw5tQHLbACyJey1MKV=fTZiV_NqKKicgksXEF5QRpQ@mail.gmail.com>
-In-Reply-To: <CAC=cRTPfkw5tQHLbACyJey1MKV=fTZiV_NqKKicgksXEF5QRpQ@mail.gmail.com>
+	id S932401Ab2EGUd0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 16:33:26 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42035 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932219Ab2EGUdW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 16:33:22 -0400
+Date: Mon, 7 May 2012 22:33:20 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 17/18] tile: Use common threadinfo allocator
+In-Reply-To: <4FA82A80.3090001@tilera.com>
+Message-ID: <alpine.LFD.2.02.1205072227540.6271@ionos>
+References: <20120505150007.543515803@linutronix.de> <20120505150142.311126440@linutronix.de> <4FA54569.2040209@tilera.com> <alpine.LFD.2.02.1205072134130.6271@ionos> <4FA82A80.3090001@tilera.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205072237.58753.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, May 05, 2012, huang ying wrote:
-> On Sat, May 5, 2012 at 3:50 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > On Fri, May 4, 2012 at 2:13 AM, Huang Ying <ying.huang@intel.com> wrote:
-> >> --- a/include/linux/pm.h
-> >> +++ b/include/linux/pm.h
-> >> @@ -536,6 +536,7 @@ struct dev_pm_info {
-> >>        unsigned int            irq_safe:1;
-> >>        unsigned int            use_autosuspend:1;
-> >>        unsigned int            timer_autosuspends:1;
-> >> +       unsigned int            power_must_be_on:1;
-> >>        enum rpm_request        request;
-> >>        enum rpm_status         runtime_status;
-> >>        int                     runtime_error;
-> >
-> > It's a little weird to just add the field, with no users.  Would it
-> > make sense to pull out the bits of patch 5 that use this and combine
-> > them into a single smaller patch?
+On Mon, 7 May 2012, Chris Metcalf wrote:
+> On 5/7/2012 3:45 PM, Thomas Gleixner wrote:
+> > What's the difference between a kernel stack page for a given node and
+> > a page which is allocated on a given node ?
 > 
-> This patch is needed by some other subsystem too, such as ZPODD
-> support in following patchset:
+> No difference except in how it is allocated (and of course how it is
+> used).  The task migration code currently knows that the kernel stack
+> should have its home cache migrated; it finds it by VA.  In the absence of
+> migration the kernel stack page is not treated differently than any other
+> page_alloc'ed page.
 > 
-> https://lkml.org/lkml/2012/3/28/23
+> >> The simplest approach is of course just to allow
+> >> __HAVE_ARCH_THREAD_INFO_ALLOCATOR to continue to be meaningful and use it
+> >> for tile, but maybe there's some halfway point.  For example, that symbol
+> >> could refer only to the allocate function, and not also imply an
+> >> arch-specific free function.  Or, we could have a new much more focused
+> >> override that was just "a function to use instead of alloc_pages_node",
+> >> e.g. provide a weak alloc_threadinfo_pages_node() that just was generically
+> >> just a call to alloc_pages_node, which architectures could override.
+> > Again, that would give you what? 
 > 
-> The original plan is to merge this into linux-pm.git firstly, then
-> merge various usage of this flag into various subsystem git tree.
-> That will make cross-tree merging a little easier.  Is it possible?
+> The advantage is that when you initially allocate the stack page, you can
+> set its home cache appropriately to be on the local cpu, where the new task
+> is likely to run.  Otherwise, you could imagine using a suitable hook for
+> when the task starts up to migrate the page at that point, but you miss out
+> on the opportunity to have the allocator return a suitably-cached page up
+> front when the task is created.
 > 
-> > But see related comments there; it
-> > might be safer to have a function that computes this whenever you need
-> > it instead of caching the value.
+> > If you treat kernel stack pages different to general pages allocated
+> > on a node then why not using a special GFP flag for that purpose?
 > 
-> This flag may be used (or calculated if implemented as a function)
-> when device is in suspended state.  Reason is as follow from the
-> changelog of this patch.
-> 
-> "
-> In general, whether to put a device into power off state should be
-> decided by the driver of the device, but for some buses, whether to
-> put a device into power off state may be done by the parent of the
-> device.  For example, a PCIe end point device may be put into power
-> off state by the PCIe port connected to it.
-> "
-> 
-> If all devices can calculate "power_must_be_on" when it is in
-> suspended state, then this will be a design choice.
-> 
-> Hi, Rafael,
-> 
-> What do you think about the idea to replace .power_must_be_on with a
-> function
+> There are certainly different possible ways to tell the allocator to
+> allocate a page with its cache "here" vs with its cache fully-distributed
+> (and thus less local, and less good for stack or percpu pages).  We use a
+> different approach (some per-task data structures that pass homing info to
+> the allocator) but we could probably use GFP_ values instead.  But the
+> point is we need to be able to know to do so, and I think the only obvious
+> way is to override something in the threadinfo allocator.
 
-That looks like a static characteristics of a device (ie. one that's not going
-to change at run time), so it seems better to use a flag for it.
+Wrong. The obvious way is to use the common code and add a special
+flag to it.
 
-> (maybe add a new callback in pm_ops)?
+There is nothing wrong to add
 
-Please don't do that.  We have many of them already.
+#ifndef ARCH_THREADINFO_GFP
+#define ARCH_THREADINFO_GFP (0)
+#endif
+
+and or ARCH_THREADINFO_GFP to the generic THREADINFO_GFP flags
+
+instead of insisting on a separate allocator function for something
+which has no fricking reason to be arch specific (IA64 and some weird
+sparc crap aside)
 
 Thanks,
-Rafael
+
+	tglx
+
