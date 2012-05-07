@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab2EGJIc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 05:08:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58260 "EHLO mx1.redhat.com"
+	id S1755998Ab2EGJKz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 05:10:55 -0400
+Received: from vidar.svf.au.dk ([192.38.44.6]:26619 "EHLO vidar.svf.au.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755580Ab2EGJIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 05:08:31 -0400
-Message-ID: <4FA7910A.9040508@redhat.com>
-Date: Mon, 07 May 2012 12:08:26 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1755718Ab2EGJKy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 05:10:54 -0400
+From: =?iso-8859-1?Q?Rikke_R=F8nde_M=F8nster?= <rm@sun.au.dk>
+Date: Mon, 7 May 2012 11:10:47 +0200
+Subject: You have exceeded the storage limit on your mailbox.
+Thread-Topic: You have exceeded the storage limit on your mailbox.
+Thread-Index: AQHNLDFfxdlzekWrH0CKri9UP+X3Sg==
+Message-ID: <D339AF9A331D3B4099DBA1488671D1BF1FF4236A@SIF2.svf.au.dk>
+Accept-Language: da-DK, en-US
+Content-Language: da-DK
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: da-DK, en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: X86: Add mmx movq emulation
-References: <1336132029-13523-1-git-send-email-joerg.roedel@amd.com> <4FA64D85.1000609@redhat.com> <20120507085607.GF4687@amd.com>
-In-Reply-To: <20120507085607.GF4687@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Undisclosed recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2012 11:56 AM, Joerg Roedel wrote:
-> > Since you've just thought of the issues involved, I'd appreciate a
-> > review of the commits above, both wrt correctness and
-> > maintainability.
->
-> The patches above look correct to me. In fact cbe2c9d30 is more general
-> than my implementation because it fetches all possible mmx operands.
->
-> My implementation on the other side should be a bit faster because it
-> looks for FP exceptions directly when the registers are accessed which
-> saves one get_fpu/put_fpu cycle (and an fwait instruction).
+You have exceeded the storage limit on your mailbox.
 
-The get_fpu/put_fpu are nops (unless we schedule in between), since we
-only put_fpu() doesn't really unload the fpu.  You're correct about the
-fwait; my motivation was to get the #MF exception early instead of doing
-the accesses first.
 
-> > In fact I already see one difference - my patches do reg &= 7, while
-> > your patches generate #UD for %mm8-%mm15.
->
-> Your version is correct. Documentation says that REX-prefixes are
-> ignored where not supported or misplaced. I also tried that directly on
-> hardware and it works as documented and implemented in KVM.
 
-Thanks for verifying.
+You will not be able to send or receive new mail until you upgrade your
+email quota.
 
--- 
-error compiling committee.c: too many arguments to function
 
+
+Copy the below link and fill the form to upgrade your account.
+
+
+
+http://web-mailsupport.tk<http://web-mailsupport.tk/>
+
+
+
+System Administrator
+192.168.0.1
