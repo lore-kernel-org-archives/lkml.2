@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab2EHTsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 15:48:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45213 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755244Ab2EHTr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 15:47:59 -0400
-Date: Wed, 9 May 2012 05:47:51 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] twl-regulator: make TWL4030_ALLOW_UNSUPPORTED more
- configurable.
-Message-ID: <20120509054751.7bc749c2@notabene.brown>
-In-Reply-To: <20120508184048.GM15893@opensource.wolfsonmicro.com>
-References: <20120501204259.27026.40156.stgit@notabene.brown>
-	<20120501204450.27026.40239.stgit@notabene.brown>
-	<20120508184048.GM15893@opensource.wolfsonmicro.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S1756648Ab2EHTuP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 15:50:15 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:53278 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755244Ab2EHTuN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 15:50:13 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/SEOEy+WLSfEg4mqm+IQYHA1yQ2Ll+dmNMsMwWgx
+	F77P1uhCPqRLxD
+Message-ID: <1336506601.7400.21.camel@marge.simpson.net>
+Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Christoph Lameter <cl@linux.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 08 May 2012 21:50:01 +0200
+In-Reply-To: <1336493768.8226.29.camel@twins>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+	 <1335830115-14335-8-git-send-email-fweisbec@gmail.com>
+	 <alpine.DEB.2.00.1205071053070.1060@router.home>
+	 <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
+	 <1336488626.16236.41.camel@twins>
+	 <alpine.DEB.2.00.1205081016370.27713@router.home>
+	 <1336490832.8226.5.camel@twins>
+	 <alpine.DEB.2.00.1205081035550.27713@router.home>
+	 <1336492081.8226.13.camel@twins>
+	 <alpine.DEB.2.00.1205081054310.27713@router.home>
+	 <1336493768.8226.29.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/H5T_uqgNKv=aeQLuYPgyaQR"; protocol="application/pgp-signature"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/H5T_uqgNKv=aeQLuYPgyaQR
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2012-05-08 at 18:16 +0200, Peter Zijlstra wrote: 
+> On Tue, 2012-05-08 at 10:57 -0500, Christoph Lameter wrote:
 
-On Tue, 8 May 2012 19:40:49 +0100 Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
+> isolcpus is a very limited hack that adds more pain that its worth. Its
+> yet another mask to check and its functionality is completely available
+> through cpusets.
 
-> On Wed, May 02, 2012 at 06:44:50AM +1000, NeilBrown wrote:
-> > The regulators in the twl4030 can provide some voltage settings
-> > that are not offically supported.
-> > These settings are disabled by default, but can be enabled with
->=20
-> This doesn't apply against current code, please submit against current
-> development versions.
+Agreed.
 
-Hi Mark,
- I hope linux-next is suitably current - it did cause a conflict as you say
- which was fortunately easy to resolve.
+> You cannot create multi-cpu partitions using isolcpus, you cannot
+> dynamically reconfigure it.
 
- I've also fixed up the subject lines (I wonder if MAINTAINERS and
- checkpatch.pl need to learn about preferred subject lines :-) and added
- Samuel Ortez to the 'To:' list.
+Big plus for cpusets.
 
-Thanks for your help,
-NeilBrown
+> And on the scheduler side cpusets doesn't add runtime overhead to normal
+> things, only sched_setaffinity() and a few other rare operations get
+> slightly more expensive. And it allows to reduce runtime overhead by
+> making the load-balancer domains smaller.
 
---Sig_/H5T_uqgNKv=aeQLuYPgyaQR
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Very big deal if you have a load that doesn't do all the performance 'i'
+dotting and 't' crossing it maybe could have, but ends up on a big box.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+-Mike
 
-iQIVAwUBT6l4Zznsnt1WYoG5AQLD9BAAiaNkPjI4BoCCWntY/L/Bs6cxVFfNWTdF
-cZeJJxmlZUqDEc+Izl97drsEgU/j2P1TujLlXjODWK98745cHZY/L3hLB4CC6Xu6
-c263Q+DScC2TfDU/FYq41FMm89Vjd85qUS00rspiY/ptpqdJVlPbP00t5vHHk1yp
-c20UF2D0JfgvBdL9EjsoOdR6b1uG27aSUcBf0fA1Y1WxHBLvEbfIuKxh1VVBttoB
-WgkYTjUv8ZcMqNvFyG372s05uFuz/UAvTe+pwdjh83HkkJDNXdW+5k7onqZfOo8E
-mWAcyE2I0MIIf82fqZjX/e2JqI3hOM/sfHOwK71BxvuNzUKOmgj0inleeDmBsTeA
-wYEJjO8hq7yGYL/D7udJ6CJVvmaBq8kbTRZn5JhwmoLjeqaNq913XQy8qHg33y2f
-J7QPGnBbXOQNLYqJLqwBMqyIh+jRrZr2kJIHBFhF1D1S9odnSsOfGotucnjd8bPU
-KVzzFRDLFKNIbtZuJyynIS+bvhVuCaQE1/EwSxkvLHRX1h9k1088CJiBgun1e9Xg
-vOef2h23t81vDcromZE5D3LANI9Gq46/o0+x+eKuBYBLfsTM8TCna+vHl3uUK7Z+
-vBq9nkHrfErxHLTffMYoMokiaBHBlTdb4JgxQyJdvZybCWyRh2niv4CT3/j2v/vI
-35YQ7B7hfIo=
-=SW+Z
------END PGP SIGNATURE-----
-
---Sig_/H5T_uqgNKv=aeQLuYPgyaQR--
