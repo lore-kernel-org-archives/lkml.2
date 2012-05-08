@@ -1,135 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026Ab2EHBez (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 21:34:55 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49287 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756623Ab2EHBey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 21:34:54 -0400
-X-AuditID: 9c930197-b7badae000000cfd-89-4fa8783be38a
-Message-ID: <4FA87837.3050208@kernel.org>
-Date: Tue, 08 May 2012 10:34:47 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Nitin Gupta <ngupta@vflare.org>
-CC: Pekka Enberg <penberg@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cl@linux-foundation.org
-Subject: Re: [PATCH 4/4] zsmalloc: zsmalloc: align cache line size
-References: <1336027242-372-1-git-send-email-minchan@kernel.org> <1336027242-372-4-git-send-email-minchan@kernel.org> <4FA28EFD.5070002@vflare.org> <4FA33E89.6080206@kernel.org> <alpine.LFD.2.02.1205071038090.2851@tux.localdomain> <4FA7C2BC.2090400@vflare.org>
-In-Reply-To: <4FA7C2BC.2090400@vflare.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758060Ab2EHBoX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 21:44:23 -0400
+Received: from mga03.intel.com ([143.182.124.21]:41604 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756778Ab2EHBoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 21:44:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="97455103"
+Message-ID: <1336441458.6190.133.camel@yhuang-dev>
+Subject: Re: [RFC v2 2/5] PM, Add sysfs file power_off to control device
+ power off policy
+From: Huang Ying <ying.huang@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: huang ying <huang.ying.caritas@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Zheng Yan <zheng.z.yan@intel.com>, Lan Tianyu <tianyu.lan@intel.com>
+Date: Tue, 08 May 2012 09:44:18 +0800
+In-Reply-To: <201205072253.47736.rjw@sisk.pl>
+References: <1336119221-21146-1-git-send-email-ying.huang@intel.com>
+	 <201205042133.51339.rjw@sisk.pl>
+	 <CAC=cRTPcP4BFjSWDMimmUEjz-ABfhiPZh5VrfLHO6e9oj8VxZw@mail.gmail.com>
+	 <201205072253.47736.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2012 09:40 PM, Nitin Gupta wrote:
-
-> On 5/7/12 3:41 AM, Pekka Enberg wrote:
->> On Fri, 4 May 2012, Minchan Kim wrote:
->>>>> It's a overkill to align pool size with PAGE_SIZE to avoid
->>>>> false-sharing. This patch aligns it with just cache line size.
->>>>>
->>>>> Signed-off-by: Minchan Kim<minchan@kernel.org>
->>>>> ---
->>>>>    drivers/staging/zsmalloc/zsmalloc-main.c |    6 +++---
->>>>>    1 file changed, 3 insertions(+), 3 deletions(-)
->>>>>
->>>>> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c
->>>>> b/drivers/staging/zsmalloc/zsmalloc-main.c
->>>>> index 51074fa..3991b03 100644
->>>>> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
->>>>> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
->>>>> @@ -489,14 +489,14 @@ fail:
->>>>>
->>>>>    struct zs_pool *zs_create_pool(const char *name, gfp_t flags)
->>>>>    {
->>>>> -    int i, error, ovhd_size;
->>>>> +    int i, error;
->>>>>        struct zs_pool *pool;
->>>>>
->>>>>        if (!name)
->>>>>            return NULL;
->>>>>
->>>>> -    ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
->>>>> -    pool = kzalloc(ovhd_size, GFP_KERNEL);
->>>>> +    pool = kzalloc(ALIGN(sizeof(*pool), cache_line_size()),
->>>>> +                GFP_KERNEL);
->>>>
->>>> a basic question:
->>>>   Is rounding off allocation size to cache_line_size enough to ensure
->>>> that the object is cache-line-aligned? Isn't it possible that even
->>>> though the object size is multiple of cache-line, it may still not be
->>>> properly aligned and end up sharing cache line with some other
->>>> read-mostly object?
->>>
->>> AFAIK, SLAB allocates object aligned cache-size so I think that
->>> problem cannot happen.
->>> But needs double check.
->>> Cced Pekka.
->>
->> The kmalloc(size) function only gives you the following guarantees:
->>
->>    (1) The allocated object is _at least_ 'size' bytes.
->>
->>    (2) The returned pointer is aligned to ARCH_KMALLOC_MINALIGN.
->>
->> Anything beyond that is implementation detail and probably will break if
->> you switch between SLAB/SLUB/SLOB.
->>
->>             Pekka
-
-
-Pekka, Thanks.
-
+On Mon, 2012-05-07 at 22:53 +0200, Rafael J. Wysocki wrote:
+> On Saturday, May 05, 2012, huang ying wrote:
+> > On Sat, May 5, 2012 at 3:33 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > On Friday, May 04, 2012, Huang Ying wrote:
+> > >> From: Lan Tianyu <tianyu.lan@intel.com>
+> > >>
+> > >> Some devices can be powered off to save more power via some platform
+> > >> mechanism, e.g., ACPI.  But that may not work as expected for some
+> > >> device or platform.  So, this patch adds a sysfs file named power_off
+> > >> under <device>/power directory to provide a mechanism for user to control
+> > >> whether to allow the device to be power off.
+> > >>
+> > >> power_off => "enabled" means allowing the device to be powered off if
+> > >> possible.
+> > >>
+> > >> power_off => "disabled" means the device must be power on anytime.
+> > >>
+> > >> Also add flag power_off_user to struct dev_pm_info to record users'
+> > >> choice. The bus layer can use this field to determine whether to
+> > >> power off the device.
+> > >
+> > > It looks like the new attribute is added for all devices regardless of whether
+> > > or not they actually can be powered off?  If so, then please don't do that,
+> > > it's _extremely_ confusing.
+> > 
+> > Yes.  You are right.
+> > 
+> > > If you need user space to be able to control that functionality (and I can
+> > > think of a couple of cases in which you do), there need to be 2 flags,
+> > > can_power_off and may_power_off, where the first one is set by the kernel
+> > > if it is known that power can be removed from the device - the attribute
+> > > should be created when this flag is set and removed when it is unset.
+> > >
+> > > Then, the setting of the second flag will be controlled by the new attribute.
+> > >
+> > > And you'll need to patch quite a few places where devices actually have that
+> > > capability, like where power domains are in use, so that's quire a lot of
+> > > work.
+> > 
+> > If so, I think maybe we need 3 flags:
+> > 
+> > - can_power_off, set by kernel when it is possible to power off the device
 > 
-> So, we can probably leave it as is (PAGE_SIZE aligned) or use
-> kmem_cache_create(...,SLAB_HWCACHE_ALIGN,...) for allocating 'struct
-> zs_pool's.
-
-
-3) remove aligning code totally because there isn't any report about degradation by false-sharing. 
-4)
-origin = pool = kzalloc(sizeof(*pool) + cache_line_size, GFP_KERNEL);
-pool = round_up(pool, cache_line_size);
-
-Which preference?
-I choose 3.
-
-
+> Well, on a second thought, it may be difficult to determine that in some
+> cases (eg. for devices belonging to power domains with additional constraints
+> related to the other devices in the same domain etc.).
 > 
-> zcache can potentially create a lot of pools, so the latter will save
-> some memory.
-
-
-Dumb question.
-Why should we create pool per user? 
-What's the problem if there is only one pool in system?
-
+> In other cases power may be removed from devices indirectly, like for example
+> by putting a device's parent into a low power state.
 > 
-> Thanks,
-> Nitin
+> So I guess the can_power_off flag may not be practical after all.
 > 
-> -- 
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign
-> http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > - may_power_off_user, set by user via sysfs attribute
 > 
+> I'd call that one power_off_allowed, meaning "allowed by user space".
+> 
+> > - may_power_off, set by kernel according to may_power_off_user, power
+> > QoS and some other conditions
+> 
+> And I'd call that one power_must_be_on, meaning "don't power off even if
+> allowed by user space".
+> 
+> > Sysfs attribute for may_power_off_user is only created if can_power_off is true.
+> > 
+> > I think we still can do that step by step.  For example, when we add
+> > power off support to PCI devices, we set can_power_off to true for PCI
+> > devices that is possible to be powered off;  when we add power domain
+> > support, we set can_power_off to true for devices in power domain.  Do
+> > you agree?
+> 
+> I think we may add helpers for exporting/unexporting power_off_allowed
+> like for the PM QoS latency attribute.  Then, whoever wants to support
+> power_off_allowed and use it will export it through that helper.
+
+That sounds good!
+
+> Still, I'm afraid we're trying to special case something that really ins't
+> a special case.  Namely, we may want to restrict devices from using some
+> other low-power states as well, not only power off (eg. we may want to
+> prevent devices' clocks from being stopped).
+
+One step towards generalization is to provide a way for user to specify
+lowest power state allowed.  For example, for PCI devices, they can
+specify D1, D2, D3hot or D3cold.  But it is hard to generalize a set of
+low power states for all kind of devices.  Maybe we should keep this
+user space interface bus specific?  For example, we can have a sysfs
+file like "lowest_pm_state_allowed" for each PCI devices.
+
+BTW:  I wonder that are there standard low power states defined for
+devices on platform bus.
+
+Best Regards,
+Huang Ying
 
 
-
--- 
-Kind regards,
-Minchan Kim
