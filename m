@@ -1,105 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab2EHWVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 18:21:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34516 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756972Ab2EHWVs (ORCPT
+	id S1757509Ab2EHWWT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 18:22:19 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:37377 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab2EHWWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 18:21:48 -0400
-Date: Tue, 8 May 2012 15:21:38 -0700
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Message-ID: <tip-024742861124ef26dae4cfc620250f8f47ac934a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1336501366-28617-11-git-send-email-jarkko.sakkinen@intel.com>
-References: <1336501366-28617-11-git-send-email-jarkko.sakkinen@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/trampoline] x86, realmode:
-  Move bits to the proper sections in trampoline_64.S
-Git-Commit-ID: 024742861124ef26dae4cfc620250f8f47ac934a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 15:21:44 -0700 (PDT)
+	Tue, 8 May 2012 18:22:18 -0400
+Message-ID: <1336515735.2097.23.camel@shrek.rexursive.com>
+Subject: [PATCH]: In kernel hibernation, suspend to both
+From: Bojan Smojver <bojan@rexursive.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org
+Date: Wed, 09 May 2012 08:22:15 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  024742861124ef26dae4cfc620250f8f47ac934a
-Gitweb:     http://git.kernel.org/tip/024742861124ef26dae4cfc620250f8f47ac934a
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Tue, 8 May 2012 21:22:33 +0300
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 8 May 2012 11:48:03 -0700
+Hi Rafael,
 
-x86, realmode: Move bits to the proper sections in trampoline_64.S
+Here is the same thing, this time with signed off. Looks like all the
+memory used for hibernation is being released before power_down(), so I
+guess we should be good. The patch is against linux-next.
 
-Move various bits to the sections they really belong in in
-trampoline_64.S.  Use GLOBAL() rather than ENTRY() for data objects:
-ENTRY() should only be used with code and forces alignment to 16
-bytes.
+------------------------------
+Enable suspend to both for in-kernel hibernation.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/1336501366-28617-11-git-send-email-jarkko.sakkinen@intel.com
+It is often useful to suspend to memory after hibernation image has been
+written to disk. If the battery runs out or power is otherwise lost, the
+computer will resume from the hibernated image. If not, it will resume
+from memory and hibernation image will be discarded.
+
+Signed-off-by: Bojan Smojver <bojan@rexursive.com>
 ---
- arch/x86/realmode/rm/trampoline_64.S |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+ Documentation/power/swsusp.txt |    5 +++++
+ kernel/power/hibernate.c       |   36 ++++++++++++++++++++++++++++++++++++
+ kernel/power/power.h           |    3 +++
+ kernel/power/swap.c            |   28 ++++++++++++++++++++++++++++
+ 4 files changed, 72 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/realmode/rm/trampoline_64.S b/arch/x86/realmode/rm/trampoline_64.S
-index 063da00..66c58cf 100644
---- a/arch/x86/realmode/rm/trampoline_64.S
-+++ b/arch/x86/realmode/rm/trampoline_64.S
-@@ -80,6 +80,7 @@ no_longmode:
- 	jmp no_longmode
- #include "../kernel/verify_cpu.S"
+diff --git a/Documentation/power/swsusp.txt b/Documentation/power/swsusp.txt
+index ac190cf..92341b8 100644
+--- a/Documentation/power/swsusp.txt
++++ b/Documentation/power/swsusp.txt
+@@ -33,6 +33,11 @@ echo shutdown > /sys/power/disk; echo disk > /sys/power/state
  
-+	.section ".text32","ax"
- 	.code32
- 	.balign 4
- ENTRY(startup_32)
-@@ -114,6 +115,7 @@ ENTRY(startup_32)
- 	 */
- 	ljmpl	*(pa_startup_64_vector)
+ echo platform > /sys/power/disk; echo disk > /sys/power/state
  
-+	.section ".text64","ax"
- 	.code64
- 	.balign 4
- ENTRY(startup_64)
-@@ -123,7 +125,8 @@ ENTRY(startup_64)
- 	addl	%esi, %eax
- 	jmp	*%rax
++. If you would like to write hibernation image to swap and then suspend
++to RAM (provided your platform supports it), you can try
++
++echo suspend > /sys/power/disk; echo disk > /sys/power/state
++
+ . If you have SATA disks, you'll need recent kernels with SATA suspend
+ support. For suspend and resume to work, make sure your disk drivers
+ are built into kernel -- not modules. [There's way to make
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index e09dfbf..3b5726f 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -5,6 +5,7 @@
+  * Copyright (c) 2003 Open Source Development Lab
+  * Copyright (c) 2004 Pavel Machek <pavel@ucw.cz>
+  * Copyright (c) 2009 Rafael J. Wysocki, Novell Inc.
++ * Copyright (C) 2012 Bojan Smojver <bojan@rexursive.com>
+  *
+  * This file is released under the GPLv2.
+  */
+@@ -44,6 +45,9 @@ enum {
+ 	HIBERNATION_PLATFORM,
+ 	HIBERNATION_SHUTDOWN,
+ 	HIBERNATION_REBOOT,
++#ifdef CONFIG_SUSPEND
++	HIBERNATION_SUSPEND,
++#endif
+ 	/* keep last */
+ 	__HIBERNATION_AFTER_LAST
+ };
+@@ -572,6 +576,10 @@ int hibernation_platform_enter(void)
+  */
+ static void power_down(void)
+ {
++#ifdef CONFIG_SUSPEND
++	int error;
++#endif
++
+ 	switch (hibernation_mode) {
+ 	case HIBERNATION_REBOOT:
+ 		kernel_restart(NULL);
+@@ -581,6 +589,25 @@ static void power_down(void)
+ 	case HIBERNATION_SHUTDOWN:
+ 		kernel_power_off();
+ 		break;
++#ifdef CONFIG_SUSPEND
++	case HIBERNATION_SUSPEND:
++		error = suspend_devices_and_enter(PM_SUSPEND_MEM);
++		if (error) {
++			if (hibernation_ops)
++				hibernation_mode = HIBERNATION_PLATFORM;
++			else
++				hibernation_mode = HIBERNATION_SHUTDOWN;
++			power_down();
++		}
++		/*
++		 * Restore swap signature.
++		 */
++		error = swsusp_unmark();
++		if (error)
++			printk(KERN_ERR "PM: Swap will be unusable! "
++			                "Try swapon -a.\n");
++		return;
++#endif
+ 	}
+ 	kernel_halt();
+ 	/*
+@@ -814,6 +841,9 @@ static const char * const hibernation_modes[] = {
+ 	[HIBERNATION_PLATFORM]	= "platform",
+ 	[HIBERNATION_SHUTDOWN]	= "shutdown",
+ 	[HIBERNATION_REBOOT]	= "reboot",
++#ifdef CONFIG_SUSPEND
++	[HIBERNATION_SUSPEND]	= "suspend",
++#endif
+ };
  
--	# Careful these need to be in the same 64K segment as the above;
-+	.section ".rodata","a"
-+	.balign	16
- tidt:
- 	.word	0			# idt limit = 0
- 	.word	0, 0			# idt base = 0L
-@@ -153,9 +156,8 @@ startup_64_vector:
- 	.word	__KERNEL_CS, 0
+ /*
+@@ -854,6 +884,9 @@ static ssize_t disk_show(struct kobject *kobj, struct kobj_attribute *attr,
+ 		switch (i) {
+ 		case HIBERNATION_SHUTDOWN:
+ 		case HIBERNATION_REBOOT:
++#ifdef CONFIG_SUSPEND
++		case HIBERNATION_SUSPEND:
++#endif
+ 			break;
+ 		case HIBERNATION_PLATFORM:
+ 			if (hibernation_ops)
+@@ -894,6 +927,9 @@ static ssize_t disk_store(struct kobject *kobj, struct kobj_attribute *attr,
+ 		switch (mode) {
+ 		case HIBERNATION_SHUTDOWN:
+ 		case HIBERNATION_REBOOT:
++#ifdef CONFIG_SUSPEND
++		case HIBERNATION_SUSPEND:
++#endif
+ 			hibernation_mode = mode;
+ 			break;
+ 		case HIBERNATION_PLATFORM:
+diff --git a/kernel/power/power.h b/kernel/power/power.h
+index b0bd4be..7d4b7ff 100644
+--- a/kernel/power/power.h
++++ b/kernel/power/power.h
+@@ -156,6 +156,9 @@ extern void swsusp_free(void);
+ extern int swsusp_read(unsigned int *flags_p);
+ extern int swsusp_write(unsigned int flags);
+ extern void swsusp_close(fmode_t);
++#ifdef CONFIG_SUSPEND
++extern int swsusp_unmark(void);
++#endif
  
- 	.data
--
- 	.balign 4
--ENTRY(trampoline_status)
-+GLOBAL(trampoline_status)
- 	.long	0
+ /* kernel/power/block_io.c */
+ extern struct block_device *hib_resume_bdev;
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 11e22c0..83d5051 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -1472,6 +1472,34 @@ void swsusp_close(fmode_t mode)
+ 	blkdev_put(hib_resume_bdev, mode);
+ }
  
- trampoline_stack:
-@@ -164,7 +166,7 @@ trampoline_stack_end:
- 
- 	.globl	level3_ident_pgt
- 	.globl	level3_kernel_pgt
--ENTRY(trampoline_level4_pgt)
-+GLOBAL(trampoline_level4_pgt)
- 	level3_ident_pgt:	.quad	0
- 	.fill 510,8,0
- 	level3_kernel_pgt:	.quad	0
++/**
++ *      swsusp_unmark - Unmark swsusp signature in the resume device
++ */
++
++#ifdef CONFIG_SUSPEND
++int swsusp_unmark(void)
++{
++	int error;
++
++	hib_bio_read_page(swsusp_resume_block, swsusp_header, NULL);
++	if (!memcmp(HIBERNATE_SIG,swsusp_header->sig, 10)) {
++		memcpy(swsusp_header->sig,swsusp_header->orig_sig, 10);
++		error = hib_bio_write_page(swsusp_resume_block,
++					swsusp_header, NULL);
++	} else {
++		printk(KERN_ERR "PM: Cannot find swsusp signature!\n");
++		error = -ENODEV;
++	}
++
++	/*
++	 * We just returned from suspend, we don't need the image any more.
++	 */
++	free_all_swap_pages(root_swap);
++
++	return error;
++}
++#endif
++
+ static int swsusp_header_init(void)
+ {
+ 	swsusp_header = (struct swsusp_header*) __get_free_page(GFP_KERNEL);
+------------------------------
+
+-- 
+Bojan
+
