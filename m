@@ -1,22 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab2EHE0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 00:26:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51350 "EHLO
+	id S1755846Ab2EHE3B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 00:29:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51366 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab2EHE0s (ORCPT
+	with ESMTP id S1752038Ab2EHE27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 00:26:48 -0400
-Date: Mon, 7 May 2012 21:26:36 -0700
-From: tip-bot for Ingo Molnar <mingo@kernel.org>
-Message-ID: <tip-3pfty0ml4yp62phbkchichh0@git.kernel.org>
+	Tue, 8 May 2012 00:28:59 -0400
+Date: Mon, 7 May 2012 21:28:40 -0700
+From: "tip-bot for Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Message-ID: <tip-7164b3f5e5461b58baa82e82544ca5af71af287b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, suresh.b.siddha@intel.com, tglx@linutronix.de
+        kay.sievers@vrfy.org, andreas.herrmann3@amd.com, davej@redhat.com,
+        srivatsa.bhat@linux.vnet.ibm.com, gregkh@linuxfoundation.org,
+        tglx@linutronix.de, borislav.petkov@amd.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, suresh.b.siddha@intel.com, tglx@linutronix.de
+        kay.sievers@vrfy.org, andreas.herrmann3@amd.com,
+        srivatsa.bhat@linux.vnet.ibm.com, davej@redhat.com,
+        gregkh@linuxfoundation.org, tglx@linutronix.de,
+        borislav.petkov@amd.com
+In-Reply-To: <4F8BDB58.6070007@linux.vnet.ibm.com>
+References: <4F8BDB58.6070007@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86/apic: Fix UP boot crash
-Git-Commit-ID: 9438ef7f4ea73d5430a330fc206f97826eb9fb16
+Subject: [tip:x86/urgent] x86/microcode:
+  Ensure that module is only loaded on supported Intel CPUs
+Git-Commit-ID: 7164b3f5e5461b58baa82e82544ca5af71af287b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -25,44 +33,64 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 07 May 2012 21:26:42 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 07 May 2012 21:28:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9438ef7f4ea73d5430a330fc206f97826eb9fb16
-Gitweb:     http://git.kernel.org/tip/9438ef7f4ea73d5430a330fc206f97826eb9fb16
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Mon, 7 May 2012 19:19:56 +0200
+Commit-ID:  7164b3f5e5461b58baa82e82544ca5af71af287b
+Gitweb:     http://git.kernel.org/tip/7164b3f5e5461b58baa82e82544ca5af71af287b
+Author:     Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+AuthorDate: Mon, 16 Apr 2012 14:12:00 +0530
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 7 May 2012 19:19:56 +0200
+CommitDate: Mon, 7 May 2012 14:37:14 +0200
 
-x86/apic: Fix UP boot crash
+x86/microcode: Ensure that module is only loaded on supported Intel CPUs
 
-Commit 31b3c9d72340 ("xen/x86: Implement x86_apic_ops") implemented
-this:
+Exit early when there's no support for a particular CPU family.
 
-... without considering that on UP the function pointer might be NULL.
-
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/n/tip-3pfty0ml4yp62phbkchichh0@git.kernel.org
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Dave Jones <davej@redhat.com>
+Cc: tigran@aivazian.fsnet.co.uk
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Link: http://lkml.kernel.org/r/4F8BDB58.6070007@linux.vnet.ibm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/setup.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ arch/x86/kernel/microcode_intel.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 8526317..7e67c5a 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1012,7 +1012,8 @@ void __init setup_arch(char **cmdline_p)
- 	init_cpu_to_node();
+diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
+index 3ca42d0..0327e2b 100644
+--- a/arch/x86/kernel/microcode_intel.c
++++ b/arch/x86/kernel/microcode_intel.c
+@@ -147,12 +147,6 @@ static int collect_cpu_info(int cpu_num, struct cpu_signature *csig)
  
- 	init_apic_mappings();
--	x86_io_apic_ops.init();
-+	if (x86_io_apic_ops.init)
-+		x86_io_apic_ops.init();
+ 	memset(csig, 0, sizeof(*csig));
  
- 	kvm_guest_init();
+-	if (c->x86_vendor != X86_VENDOR_INTEL || c->x86 < 6 ||
+-	    cpu_has(c, X86_FEATURE_IA64)) {
+-		pr_err("CPU%d not a capable Intel processor\n", cpu_num);
+-		return -1;
+-	}
+-
+ 	csig->sig = cpuid_eax(0x00000001);
+ 
+ 	if ((c->x86_model >= 5) || (c->x86 > 6)) {
+@@ -463,6 +457,14 @@ static struct microcode_ops microcode_intel_ops = {
+ 
+ struct microcode_ops * __init init_intel_microcode(void)
+ {
++	struct cpuinfo_x86 *c = &cpu_data(0);
++
++	if (c->x86_vendor != X86_VENDOR_INTEL || c->x86 < 6 ||
++	    cpu_has(c, X86_FEATURE_IA64)) {
++		pr_err("Intel CPU family 0x%x not supported\n", c->x86);
++		return NULL;
++	}
++
+ 	return &microcode_intel_ops;
+ }
  
