@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab2EHPch (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:32:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57332 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755460Ab2EHPcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:32:36 -0400
-Message-ID: <4FA93C69.3050905@zytor.com>
-Date: Tue, 08 May 2012 08:31:53 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1756540Ab2EHPdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:33:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38805 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755460Ab2EHPds (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 11:33:48 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
-        mgorman@suse.de, npiggin@gmail.com, tglx@linutronix.de,
-        mingo@redhat.com, arnd@arndb.de, rostedt@goodmis.org,
-        fweisbec@gmail.com, jeremy@goop.org, gregkh@linuxfoundation.org,
-        glommer@redhat.com, riel@redhat.com, luto@mit.edu, avi@redhat.com,
-        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
-        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
-        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 7/7] x86/tlb: add tlb_flushall_factor into sysfs for
- user change
-References: <1336485790-30902-1-git-send-email-alex.shi@intel.com> <1336485790-30902-8-git-send-email-alex.shi@intel.com> <1336489894.16236.51.camel@twins> <4FA939B9.6000404@zytor.com> <20120508152516.GF13568@aftab.osrc.amd.com>
-In-Reply-To: <20120508152516.GF13568@aftab.osrc.amd.com>
-X-Enigmail-Version: 1.4
+In-Reply-To: <CAPXgP11882vP5GtMmwdsw-w6-D6q9NXHNsHem3Ump17__r2xOQ@mail.gmail.com>
+References: <1336004953.4240.9.camel@mop> <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+ <1336475689.1179.12.camel@mop> <CA+1xoqdk_yGQyX+6yHyvHsQ1hXiraOzbhVZAgmLmmtMtVTPeGQ@mail.gmail.com>
+ <CAPXgP11882vP5GtMmwdsw-w6-D6q9NXHNsHem3Ump17__r2xOQ@mail.gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Tue, 8 May 2012 17:33:27 +0200
+Message-ID: <CAPXgP11G9Tv37qTy_kLcYphosUXc+2uQDzU6BYekGdVt3Oye4A@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
+ record buffer
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Greg Kroah-Hartmann <greg@kroah.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2012 08:25 AM, Borislav Petkov wrote:
-> 
-> Yep, this was supposed to be for pinpointing the proper entries count.
-> I believe we don't have this thing of having code intree but not really
-> intree - only for testing new silicon. Maybe a debug module or add this
-> to debugfs?
-> 
+On Tue, May 8, 2012 at 4:29 PM, Kay Sievers <kay@vrfy.org> wrote:
+> On Tue, May 8, 2012 at 3:33 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
 
-We have a lot of that kind of code, it is usually hidden under
-CONFIG_*DEBUG* something.
+>> if you're ok with it I can try patching those myself.
+>
+> That would be awesome. If you decide otherwise, please let me know,
+> and I'll take care of them.
 
-	-hpa
+Sent the rest out, which got lost a while ago. Here's the already
+fixed and pending stuff, so you can check what's not covered and still
+missing on your box.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+percpu:
+  http://thread.gmane.org/gmane.linux.kernel/1274450
 
+mm:
+  http://thread.gmane.org/gmane.linux.kernel/1293437
+
+acpi:
+  http://thread.gmane.org/gmane.linux.kernel/1293438
+
+Thanks,
+Kay
