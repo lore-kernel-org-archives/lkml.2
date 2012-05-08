@@ -1,38 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab2EHJYS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 05:24:18 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:41897 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751766Ab2EHJYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 05:24:16 -0400
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
+	id S1752373Ab2EHJ0r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 05:26:47 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:43506 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab2EHJ0q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 05:26:46 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4FA8E6D3.9090709@cam.ac.uk>
+Date: Tue, 08 May 2012 10:26:43 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+CC: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Eric Miao <eric.y.miao@gmail.com>,
         Haojian Zhuang <haojian.zhuang@gmail.com>,
         Philipp Zabel <philipp.zabel@gmail.com>,
         Paul Parsons <lost.distance@yahoo.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
         Marek Vasut <marek.vasut@gmail.com>,
         linux-arm-kernel@lists.infradead.org
 Subject: Re: [PATCH] ARM: mach-pxa: Use REGULATOR_SUPPLY macro
-References: <1336465510.11954.1.camel@phoenix>
-X-URL: http://belgarath.falguerolles.org/
-Date: Tue, 08 May 2012 11:23:37 +0200
-In-Reply-To: <1336465510.11954.1.camel@phoenix> (Axel Lin's message of "Tue,
-	08 May 2012 16:25:10 +0800")
-Message-ID: <87zk9jvxeu.fsf@free.fr>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+References: <1336465510.11954.1.camel@phoenix> <87zk9jvxeu.fsf@free.fr>
+In-Reply-To: <87zk9jvxeu.fsf@free.fr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For mioa701:
-Acked-by: Robert Jarzmik <robert.jarzmik@free.fr>
+On 5/8/2012 10:23 AM, Robert Jarzmik wrote:
+> For mioa701:
+> Acked-by: Robert Jarzmik<robert.jarzmik@free.fr>
+For stargate2
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+>
+> Cheers.
+>
+> --
+> Robert
 
-Cheers.
-
---
-Robert
