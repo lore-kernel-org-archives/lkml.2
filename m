@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757651Ab2EHW5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 18:57:33 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:48930 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755929Ab2EHW5b (ORCPT
+	id S1757486Ab2EHW7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 18:59:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63087 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387Ab2EHW7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 18:57:31 -0400
-X-Sasl-enc: 4h37SO/bwrOvgo7gDXbUV8LZXN9d5sg+Bc3zz326/9Yi 1336517850
-Date: Tue, 8 May 2012 15:57:29 -0700
-From: Greg Kroah-Hartmann <greg@kroah.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Karel Zak <kzak@redhat.com>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
- variable-length record buffer
-Message-ID: <20120508225729.GF7948@kroah.com>
-References: <1336004953.4240.9.camel@mop>
- <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
- <1336475689.1179.12.camel@mop>
- <CA+1xoqdk_yGQyX+6yHyvHsQ1hXiraOzbhVZAgmLmmtMtVTPeGQ@mail.gmail.com>
- <CAPXgP11882vP5GtMmwdsw-w6-D6q9NXHNsHem3Ump17__r2xOQ@mail.gmail.com>
- <CAPXgP11G9Tv37qTy_kLcYphosUXc+2uQDzU6BYekGdVt3Oye4A@mail.gmail.com>
- <CA+1xoqenmuF+K7SAajM5L7zSkKxVKbN7GAdhMJmNjCNW1VQ3Yg@mail.gmail.com>
- <CAPXgP12eWBFcONpYCxHdoED1sy21GYuBdfr46JzgRgXy2EL=+w@mail.gmail.com>
+	Tue, 8 May 2012 18:59:09 -0400
+Date: Tue, 8 May 2012 15:58:49 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: linux-next oops in __lock_acquire for process_one_work
+In-Reply-To: <1336516260.8226.61.camel@twins>
+Message-ID: <alpine.LSU.2.00.1205081553250.4497@eggly.anvils>
+References: <alpine.LSU.2.00.1205070951170.1544@eggly.anvils> <20120507175743.GC19417@google.com> <1336482202.16236.29.camel@twins> <20120508165819.GB10687@google.com> <alpine.LSU.2.00.1205081106160.4071@eggly.anvils> <1336516260.8226.61.camel@twins>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPXgP12eWBFcONpYCxHdoED1sy21GYuBdfr46JzgRgXy2EL=+w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 06:27:42PM +0200, Kay Sievers wrote:
-> On Tue, May 8, 2012 at 5:57 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+On Wed, 9 May 2012, Peter Zijlstra wrote:
+> On Tue, 2012-05-08 at 11:11 -0700, Hugh Dickins wrote:
+> > Please send me the version of patch you'd like to put in
+> > (lest I make it up myself and you don't like the result).
 > 
-> > What about PRINTK_TIME? Are there plans to enable it on console output?
-> 
-> Yeah, we should restore the old behaviour. The timestamp is always
-> stored internally, regardless of the CONFIG_PRINTK_TIME or tunable
-> setting. At the moment, seems they are only (conditionally) added to
-> the syslog() output and (unconditionally) to the /dev/kmsg export.
-> 
-> I guess we just re-define CONFIG_PRINTK_TIME and the tunable as: "show
-> time in syslog() and on the console output".
+> something like so?
 
-That would be good to put back, can you do that?
+More like the one below: I'm not alone in preferring a comma between args!
 
-thanks,
+And you're not a believer in checkpatch.pl, I see: I've removed trailing
+spaces; but left the 85-col line, that's not a fight I'll have with you.
 
-greg k-h
+I'll set it going when I get home later - thanks.
+
+Hugh
+
+---
+ include/linux/lockdep.h |   17 +++++++++++++++++
+ kernel/timer.c          |    4 +++-
+ kernel/workqueue.c      |    4 +++-
+ 3 files changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+index d36619e..968c3e2 100644
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -157,6 +157,23 @@ struct lockdep_map {
+ #endif
+ };
+ 
++static inline void lockdep_copy_map(struct lockdep_map *to, struct lockdep_map *from)
++{
++	int i;
++
++	*to = *from;
++	/*
++	 * Since the class cache can be modified concurrently we could observe
++	 * half pointers (64bit arch using 32bit copy insns). Therefore clear
++	 * the caches and take the performance hit.
++	 *
++	 * XXX it doesn't work well with lockdep_set_class_and_subclass(), since
++	 *     that relies on cache abuse.
++	 */
++	for (i = 0; i < NR_LOCKDEP_CACHING_CLASSES; i++)
++		to->class_cache[i] = NULL;
++}
++
+ /*
+  * Every lock has a list of other locks that were taken after it.
+  * We only grow the list, never remove from it:
+diff --git a/kernel/timer.c b/kernel/timer.c
+index a297ffc..6aa7ad8 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1102,7 +1102,9 @@ static void call_timer_fn(struct timer_list *timer, void (*fn)(unsigned long),
+ 	 * warnings as well as problems when looking into
+ 	 * timer->lockdep_map, make a copy and use that here.
+ 	 */
+-	struct lockdep_map lockdep_map = timer->lockdep_map;
++	struct lockdep_map lockdep_map;
++
++	lockdep_copy_map(&lockdep_map, &timer->lockdep_map);
+ #endif
+ 	/*
+ 	 * Couple the lock chain with the lock chain at
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 5abf42f..7d77d1f 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1810,7 +1810,9 @@ __acquires(&gcwq->lock)
+ 	 * lock freed" warnings as well as problems when looking into
+ 	 * work->lockdep_map, make a copy and use that here.
+ 	 */
+-	struct lockdep_map lockdep_map = work->lockdep_map;
++	struct lockdep_map lockdep_map;
++
++	lockdep_copy_map(&lockdep_map, &work->lockdep_map);
+ #endif
+ 	/*
+ 	 * A single work shouldn't be executed concurrently by
