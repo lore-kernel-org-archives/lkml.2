@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab2EHPQM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:16:12 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:45843 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755943Ab2EHPQL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:16:11 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: abtwyOkVM1meKS76skPvhBi3yl9ZdpVfZsuQIfCtrIPeZeU
- 2IocKqSxPyL92nvYIwrp9aN_RFXObYmuvgJqGrx1c8.23330LNZ3wk1RIQDe
- iek7JyDY8yYBV2AFeBLed4b.IoAAdgS4mBFYpnX2IGlN5Y.Z2CK0a2jmYxjY
- XCAUrBmW7vqCyqLqusLUnCoDrYwe2pDbTkg4i.DLhtm53MgLXgBCLo0ZP.12
- JtDuyGuHoDzNATigv6UnyKFOPU4lh6b9YpYIBaZ26Xen30F_1xFlZL8N7SF0
- l.x3InJ21Y77nBPQkJy8gEEM3zxV34rHTrZ_2SsWk8OhpZdwXKsn7W8e_54p
- ABz0MrPcQ3YPd4ed3ALJQVkrP4AEjjlWu9QvuRahgYCvgoYPWBAfRVzPn2fT
- i
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 8 May 2012 10:16:04 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
-In-Reply-To: <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1205081014480.27713@router.home>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com> <1335830115-14335-8-git-send-email-fweisbec@gmail.com> <alpine.DEB.2.00.1205071053070.1060@router.home> <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756288Ab2EHPQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:16:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57144 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755858Ab2EHPQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 11:16:39 -0400
+Message-ID: <4FA938AE.9070209@zytor.com>
+Date: Tue, 08 May 2012 08:15:58 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-879625646-1336490169=:27713"
+To: Alex Shi <alex.shi@intel.com>
+CC: mgorman@suse.de, npiggin@gmail.com, tglx@linutronix.de, mingo@redhat.com,
+        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, gregkh@linuxfoundation.org, glommer@redhat.com,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, borislav.petkov@amd.com,
+        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
+        a.p.zijlstra@chello.nl, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 4/7] x86/tlb: add tlb flush all factor for specific
+ CPUs
+References: <1336485790-30902-1-git-send-email-alex.shi@intel.com> <1336485790-30902-5-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1336485790-30902-5-git-send-email-alex.shi@intel.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 05/08/2012 07:03 AM, Alex Shi wrote:
+> 
+> like some machine in my hands, balance points is 16 entries on Romely-EP;
+> while it is at 8 entries on Bloomfield NHM-EP; but on model 15 core2 Xeon
+> using invlpg has nothing help.
+> 
+> For untested machine, no optimization now.
+> 
 
----1463811839-879625646-1336490169=:27713
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+This seems a bit concerning from a forward compatibility point of view.
+ It would make more sense to assume that future processors would behave
+more like the most recent (Sandy Bridge in your case) unless there is
+evidence to the contrary.
 
-On Tue, 8 May 2012, Frederic Weisbecker wrote:
+>  
+> -			if ((end - start)/PAGE_SIZE > act_entries/FLUSHALL_BAR)
+> +			if ((end - start)/PAGE_SIZE >
+> +					act_entries/tlb_flushall_factor)
+>  				local_flush_tlb();
 
-> > As I have said before: It would be much simpler if one could specify th=
-e
-> > set of nohz cpus independently of cpusets. Having a flag f.e. as a file=
- in
-> >
-> > =A0 =A0 =A0 =A0/sys/devices/system/cpu/cpuX/nohz
->
-> I don't know if it would be simpler. It's just a different interface
-> to set a per-CPU property.
-> Cpusets of sysfs, I don't mind either way.
->
-> What is the usual policy on where to put which kind of CPU property?
+You are doing a dynamic division (and on unknown/older CPUs you're
+dividing by zero!!) but all your divisors are powers of two.  Make it a
+shift instead.
 
-/sys/devices/system/cpu contains the state information for each processor.
+	-hpa
 
-There are already cpumasks in there that can be used to monitor and modify
-per processor behavior.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
----1463811839-879625646-1336490169=:27713--
