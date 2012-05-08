@@ -1,309 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab2EHWO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 18:14:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34402 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab2EHWOy (ORCPT
+	id S1757354Ab2EHWPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 18:15:14 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3586 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179Ab2EHWPL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 18:14:54 -0400
-Date: Tue, 8 May 2012 15:14:43 -0700
-From: tip-bot for Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Message-ID: <tip-b3266bd6ff52efb9e57c7fbfff4c8f7363dfaab3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jarkko.sakkinen@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, jarkko.sakkinen@intel.com, hpa@linux.intel.com
-In-Reply-To: <1336501366-28617-3-git-send-email-jarkko.sakkinen@intel.com>
-References: <1336501366-28617-3-git-send-email-jarkko.sakkinen@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/trampoline] x86, realmode: realmode.bin infrastructure
-Git-Commit-ID: b3266bd6ff52efb9e57c7fbfff4c8f7363dfaab3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 8 May 2012 18:15:11 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 08 May 2012 15:14:48 -0700
+From: Diwakar Tundlam <dtundlam@nvidia.com>
+To: "'Peter Zijlstra'" <a.p.zijlstra@chello.nl>
+CC: "'Ingo Molnar'" <mingo@kernel.org>,
+        "'David Rientjes'" <rientjes@google.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Date: Tue, 8 May 2012 15:14:48 -0700
+Subject: RE: [PATCH] sched: Make nr_uninterruptible count a signed value
+Thread-Topic: [PATCH] sched: Make nr_uninterruptible count a signed value
+Thread-Index: Ac0tZXwx5Ctm/V5JSnegJFyEdTLyRAAAe2Gw
+Message-ID: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF10D@HQMAIL04.nvidia.com>
+References: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF10C@HQMAIL04.nvidia.com>
+ <1336514192.8226.52.camel@twins>
+In-Reply-To: <1336514192.8226.52.camel@twins>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 15:14:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b3266bd6ff52efb9e57c7fbfff4c8f7363dfaab3
-Gitweb:     http://git.kernel.org/tip/b3266bd6ff52efb9e57c7fbfff4c8f7363dfaab3
-Author:     Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-AuthorDate: Tue, 8 May 2012 21:22:25 +0300
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 8 May 2012 11:41:48 -0700
+Sorry to bug you when it is late for you..
 
-x86, realmode: realmode.bin infrastructure
+You're right, there is no real difference at all.
+Only cosmetic difference when you look at the output of cat /proc/sched_debug.
 
-Create realmode.bin and realmode.relocs files. Piggy
-pack them into relocatable object that will be included
-into .init.data section of the main kernel image.
+But I suddenly realized maybe the increment/decrement of nr_interruptible is reversed.
+Maybe that's the source of the problem: decrement in activate task and increment in deactivate task !!
 
-The first file includes binary image of the real-mode code.
-The latter file includes all relocations. The layout of the
-binary image is specified in realmode.lds.S. The makefile
-generates pa_ prefixed symbols for each exported global.
-These are used in 32-bit code and in realmode header to
-define symbols that need to be relocated.
+Code snip:
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Link: http://lkml.kernel.org/r/1336501366-28617-3-git-send-email-jarkko.sakkinen@intel.com
-Originally-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/Kbuild                     |    2 +-
- arch/x86/realmode/Makefile          |   20 ++++++++++
- arch/x86/realmode/rm/.gitignore     |    3 ++
- arch/x86/realmode/rm/Makefile       |   63 ++++++++++++++++++++++++++++++++
- arch/x86/realmode/rm/header.S       |   16 ++++++++
- arch/x86/realmode/rm/realmode.lds.S |   68 +++++++++++++++++++++++++++++++++++
- arch/x86/realmode/rmpiggy.S         |   18 +++++++++
- 7 files changed, 189 insertions(+), 1 deletions(-)
+/*
+ * activate_task - move a task to the runqueue.
+ */
+static void activate_task(struct rq *rq, struct task_struct *p, int flags)
+{
+	if (task_contributes_to_load(p))
+		rq->nr_uninterruptible--; <<<<< why decrement in activate task
 
-diff --git a/arch/x86/Kbuild b/arch/x86/Kbuild
-index 0e9dec6..e5287d8 100644
---- a/arch/x86/Kbuild
-+++ b/arch/x86/Kbuild
-@@ -1,4 +1,3 @@
--
- obj-$(CONFIG_KVM) += kvm/
- 
- # Xen paravirtualization support
-@@ -7,6 +6,7 @@ obj-$(CONFIG_XEN) += xen/
- # lguest paravirtualization support
- obj-$(CONFIG_LGUEST_GUEST) += lguest/
- 
-+obj-y += realmode/
- obj-y += kernel/
- obj-y += mm/
- 
-diff --git a/arch/x86/realmode/Makefile b/arch/x86/realmode/Makefile
-new file mode 100644
-index 0000000..f22a4f8
---- /dev/null
-+++ b/arch/x86/realmode/Makefile
-@@ -0,0 +1,20 @@
-+#
-+# arch/x86/realmode/Makefile
-+#
-+# This file is subject to the terms and conditions of the GNU General Public
-+# License.  See the file "COPYING" in the main directory of this archive
-+# for more details.
-+#
-+#
-+
-+subdir- := rm
-+
-+obj-y += rmpiggy.o
-+
-+$(obj)/rmpiggy.o: $(obj)/rm/realmode.relocs $(obj)/rm/realmode.bin
-+
-+$(obj)/rm/realmode.bin: FORCE
-+	$(Q)$(MAKE) $(build)=$(obj)/rm $@
-+
-+$(obj)/rm/realmode.relocs: FORCE
-+	$(Q)$(MAKE) $(build)=$(obj)/rm $@
-diff --git a/arch/x86/realmode/rm/.gitignore b/arch/x86/realmode/rm/.gitignore
-new file mode 100644
-index 0000000..b6ed3a2
---- /dev/null
-+++ b/arch/x86/realmode/rm/.gitignore
-@@ -0,0 +1,3 @@
-+pasyms.h
-+realmode.lds
-+realmode.relocs
-diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
-new file mode 100644
-index 0000000..7c3f202
---- /dev/null
-+++ b/arch/x86/realmode/rm/Makefile
-@@ -0,0 +1,63 @@
-+#
-+# arch/x86/realmode/Makefile
-+#
-+# This file is subject to the terms and conditions of the GNU General Public
-+# License.  See the file "COPYING" in the main directory of this archive
-+# for more details.
-+#
-+#
-+
-+subdir- := wakeup
-+
-+always := realmode.bin
-+
-+realmode-y			+= header.o
-+
-+targets	+= $(realmode-y)
-+
-+REALMODE_OBJS = $(addprefix $(obj)/,$(realmode-y))
-+
-+sed-pasyms := -n -r -e 's/^([0-9a-fA-F]+) [ABCDGRSTVW] (.+)$$/pa_\2 = \2;/p'
-+
-+quiet_cmd_pasyms = PASYMS  $@
-+      cmd_pasyms = $(NM) $(filter-out FORCE,$^) | \
-+		   sed $(sed-pasyms) | sort | uniq > $@
-+
-+$(obj)/pasyms.h: $(REALMODE_OBJS) FORCE
-+	$(call if_changed,pasyms)
-+
-+$(obj)/realmode.lds: $(obj)/pasyms.h
-+
-+LDFLAGS_realmode.elf := --emit-relocs -T
-+CPPFLAGS_realmode.lds += -P -C -I$(obj)
-+
-+$(obj)/realmode.elf: $(obj)/realmode.lds $(REALMODE_OBJS) FORCE
-+	$(call if_changed,ld)
-+
-+OBJCOPYFLAGS_realmode.bin := -O binary
-+
-+$(obj)/realmode.bin: $(obj)/realmode.elf
-+	$(call if_changed,objcopy)
-+
-+quiet_cmd_relocs = RELOCS  $@
-+      cmd_relocs = scripts/x86-relocs --realmode $< > $@
-+$(obj)/realmode.relocs: $(obj)/realmode.elf FORCE
-+	$(call if_changed,relocs)
-+
-+# ---------------------------------------------------------------------------
-+
-+# How to compile the 16-bit code.  Note we always compile for -march=i386,
-+# that way we can complain to the user if the CPU is insufficient.
-+KBUILD_CFLAGS	:= $(LINUXINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ \
-+		   -DDISABLE_BRANCH_PROFILING \
-+		   -Wall -Wstrict-prototypes \
-+		   -march=i386 -mregparm=3 \
-+		   -include $(srctree)/$(src)/../../boot/code16gcc.h \
-+		   -fno-strict-aliasing -fomit-frame-pointer \
-+		   $(call cc-option, -ffreestanding) \
-+		   $(call cc-option, -fno-toplevel-reorder,\
-+			$(call cc-option, -fno-unit-at-a-time)) \
-+		   $(call cc-option, -fno-stack-protector) \
-+		   $(call cc-option, -mpreferred-stack-boundary=2)
-+KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
-+GCOV_PROFILE := n
-diff --git a/arch/x86/realmode/rm/header.S b/arch/x86/realmode/rm/header.S
-new file mode 100644
-index 0000000..7be17f2
---- /dev/null
-+++ b/arch/x86/realmode/rm/header.S
-@@ -0,0 +1,16 @@
-+/*
-+ * Real-mode blob header; this should match realmode.h and be
-+ * readonly; for mutable data instead add pointers into the .data
-+ * or .bss sections as appropriate.
-+ */
-+
-+#include <linux/linkage.h>
-+#include <asm/page_types.h>
-+
-+		.section ".header", "a"
-+
-+ENTRY(real_mode_header)
-+		.long	pa_text_start
-+		.long	pa_ro_end
-+		.long	pa_end
-+END(real_mode_header)
-diff --git a/arch/x86/realmode/rm/realmode.lds.S b/arch/x86/realmode/rm/realmode.lds.S
-new file mode 100644
-index 0000000..c5b8a4f
---- /dev/null
-+++ b/arch/x86/realmode/rm/realmode.lds.S
-@@ -0,0 +1,68 @@
-+/*
-+ * realmode.lds.S
-+ *
-+ * Linker script for the real-mode code
-+ */
-+
-+#include <asm/page_types.h>
-+
-+#undef i386
-+
-+OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")
-+OUTPUT_ARCH(i386)
-+
-+SECTIONS
-+{
-+	real_mode_seg = 0;
-+
-+	. = 0;
-+	.header : {
-+		pa_real_mode_base = .;
-+		*(.header)
-+	}
-+
-+	. = ALIGN(4);
-+	.rodata : {
-+		*(.rodata)
-+		*(.rodata.*)
-+	}
-+
-+	. = ALIGN(PAGE_SIZE);
-+	.text : {
-+		pa_text_start = .;
-+		*(.text)
-+		*(.text.*)
-+	}
-+
-+	.text32 : {
-+		*(.text32)
-+		*(.text32.*)
-+		pa_ro_end = .;
-+	}
-+
-+	. = ALIGN(PAGE_SIZE);
-+	.data : {
-+		*(.data)
-+		*(.data.*)
-+	}
-+
-+	. = ALIGN(128);
-+	.bss : {
-+		*(.bss*)
-+	}
-+
-+	/* End signature for integrity checking */
-+	. = ALIGN(4);
-+	.signature : {
-+		*(.signature)
-+		pa_end = .;
-+	}
-+
-+	/DISCARD/ : {
-+		*(.note*)
-+		*(.debug*)
-+		*(.eh_frame*)
-+	}
-+
-+#include "pasyms.h"
-+}
-diff --git a/arch/x86/realmode/rmpiggy.S b/arch/x86/realmode/rmpiggy.S
-new file mode 100644
-index 0000000..6047d7f
---- /dev/null
-+++ b/arch/x86/realmode/rmpiggy.S
-@@ -0,0 +1,18 @@
-+/*
-+ * Wrapper script for the realmode binary as a transport object
-+ * before copying to low memory.
-+ */
-+#include <linux/linkage.h>
-+#include <asm/page_types.h>
-+
-+	.section ".init.data","aw"
-+
-+	.balign PAGE_SIZE
-+
-+ENTRY(real_mode_blob)
-+	.incbin	"arch/x86/realmode/rm/realmode.bin"
-+END(real_mode_blob)
-+
-+ENTRY(real_mode_relocs)
-+	.incbin	"arch/x86/realmode/rm/realmode.relocs"
-+END(real_mode_relocs)
+	enqueue_task(rq, p, flags);
+	inc_nr_running(rq);
+}
+
+/*
+ * deactivate_task - remove a task from the runqueue.
+ */
+static void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
+{
+	if (task_contributes_to_load(p))
+		rq->nr_uninterruptible++; <<<<< why increment in deactivate task
+
+	dequeue_task(rq, p, flags);
+	dec_nr_running(rq);
+}
+
+Thanks,
+--Diwakar.
+
+-----Original Message-----
+From: Peter Zijlstra [mailto:a.p.zijlstra@chello.nl] 
+Sent: Tuesday, May 08, 2012 2:57 PM
+To: Diwakar Tundlam
+Cc: 'Ingo Molnar'; 'David Rientjes'; 'linux-kernel@vger.kernel.org'; Peter De Schrijver
+Subject: Re: [PATCH] sched: Make nr_uninterruptible count a signed value
+
+On Tue, 2012-05-08 at 14:39 -0700, Diwakar Tundlam wrote:
+> Declare nr_uninterruptible as a signed long to avoid garbage values 
+> seen in cat /proc/sched_debug when a task is moved to the run queue of 
+> a newly online core. This is part of a global counter where only the 
+> total sum over all CPUs matters.
+
+Its late here, but do explain how any of this makes any difference what so ever? Since all we do with that field is add/sub the whole sign issue shouldn't matter one way or the other.
+
+
