@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab2EHIDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 04:03:09 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45789 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab2EHIDA (ORCPT
+	id S1752504Ab2EHIEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 04:04:01 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35927 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368Ab2EHIDG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 04:03:00 -0400
-Date: Tue, 8 May 2012 18:02:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay@vrfy.org>,
-        William Douglas <william.douglas@intel.com>
-Subject: linux-next: build failure after merge of the final tree
- (driver-core tree related)
-Message-Id: <20120508180245.002eca30eee763fce1ad468b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__8_May_2012_18_02_45_+1000_Mwm2pAZSHokhTvIS"
+	Tue, 8 May 2012 04:03:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FA8D046.7000808@gmail.com>
+References: <20120501132409.GA22894@lizard>
+	<20120501132620.GC24226@lizard>
+	<4FA35A85.4070804@kernel.org>
+	<20120504073810.GA25175@lizard>
+	<CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com>
+	<CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com>
+	<20120507121527.GA19526@lizard>
+	<4FA82056.2070706@gmail.com>
+	<CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com>
+	<CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com>
+	<CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com>
+	<CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
+	<CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com>
+	<4FA8D046.7000808@gmail.com>
+Date: Tue, 8 May 2012 11:03:05 +0300
+X-Google-Sender-Auth: LX5mz4NUht3WQsL6MvaSrUOYAVc
+Message-ID: <CAOJsxLGWtJy7q6ij_-tN8nVTr-OXpgdWVkXsOda8S9mJzo7n2w@mail.gmail.com>
+Subject: Re: [PATCH 3/3] vmevent: Implement special low-memory attribute
+From: Pekka Enberg <penberg@kernel.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__8_May_2012_18_02_45_+1000_Mwm2pAZSHokhTvIS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, May 8, 2012 at 10:50 AM, KOSAKI Motohiro
+<kosaki.motohiro@gmail.com> wrote:
+>>> 1) sample_period is brain damaged idea. If people ONLY need to
+>>> sampling stastics, they
+>>>  only need to read /proc/vmstat periodically. just remove it and
+>>> implement push notification.
+>>>  _IF_ someone need unfrequent level trigger, just use
+>>> "usleep(timeout); read(vmevent_fd)"
+>>>  on userland code.
+>>
+>> That comes from a real-world requirement. See Leonid's email on the topic:
+>>
+>> https://lkml.org/lkml/2012/5/2/42
+>
+> I know, many embedded guys prefer such timer interval. I also have an
+> experience
+> similar logic when I was TV box developer. but I must disagree. Someone hope
+> timer housekeeping complexity into kernel. but I haven't seen any
+> justification.
 
-Hi all,
+Leonid?
 
-After merging the final tree, today's linux-next build (powerpc
-allnoconfig) failed like this:
+>>> 6) Also vmevent_event must hide from userland.
+>>
+>> Why? That's part of the ABI.
+>
+> Ahhh, if so, I missed something. as far as I look, vmevent_fd() only depend
+> on vmevent_config. which syscall depend on vmevent_evennt?
 
-kernel/built-in.o: In function `devkmsg_read':
-printk.c:(.text+0x27e8): undefined reference to `__udivdi3'
+read(2). See tools/testing/vmevent/vmevent-test.c for an example how
+the ABI is used.
 
-Caused by commit e11fea92e13f ("kmsg: export printk records to
-the /dev/kmsg interface").  Most probably the "msg->ts_nsec / 1000" since
-ts_nsec is a u64 and this is a 32 bit build ...
+>>> 7) vmevent_config::size must be removed. In 20th century, M$ API
+>>> prefer to use this technique. But
+>>>  They dropped the way because a lot of application don't initialize
+>>> size member and they can't use it for keeping upper compitibility.
+>>
+>> It's there to support forward/backward ABI compatibility like perf
+>> does. I'm going to keep it for now but I'm open to dropping it when
+>> the ABI is more mature.
+>
+> perf api is not intended to use from generic applications. then, I don't
+> think it will make abi issue. tool/perf is sane, isn't it? but vmevent_fd()
+> is generic api and we can't trust all userland guy have sane, unfortunately.
 
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The perf ABI is being used by other projects as well. We don't
+_depend_ on ->size being sane as much as use it to detect new features
+in the future.
 
---Signature=_Tue__8_May_2012_18_02_45_+1000_Mwm2pAZSHokhTvIS
-Content-Type: application/pgp-signature
+But anyway, we can consider dropping once the ABI is more stable.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> Hm. If you want vmevent makes depend on CONFIG_EMBEDDED, I have no reason to
+> complain this feature. At that world, almost all applications _know_ their
+> system configuration. then I don't think api misuse issue is big matter.
 
-iQIcBAEBCAAGBQJPqNMlAAoJEECxmPOUX5FE+CAP/1e+emUdGYBueY7i4QKwoSuc
-1nTYsP55/k8PBvNDKit+ePrb4y+1HYxFnRUfXl6EenODFGSjOI0+HvtwyL1Zof/v
-QDXzn4ak+A18doc9ra+Kc1X+tUqyCI58fGOa/bfKdTFGK+MRDvfiVlzd0taoFgqr
-FHiJRK5Gj8+/y62kMdVHs0/Godd3m825HMw+W8pUIV35qjee1YBSkOuqWJKz6PI4
-0iNb+Wwodgzl6c106K4G7LKMROOlih29YvRk4Zf0Tw9Jlz5NogfszhhlWb8L/IUl
-+YEzVph4o3VaBKYzVX4PyDJgK102Dad/x+up0e31drhBoWJUayuxS+IyIWN12IOg
-uinsx9lfrHbir0ec2aKsg5Z5yEEe4ksEO8YxjGUc4CZLucUSrMHY+r2ZO1aVrmH+
-uBFaqQGQWnreOGMhAl+jnoY9U1zI3Zn3a/r7v7LiRsNYsKR41UgLnmcWOqNjel6+
-rtd3cdGJrrv+tirnNq4p34cI5+4ZdqG8bSE7mS8mgmFnhfguYfGbNmgepYz+j3c+
-bW/5+JHyjt66ONkq15opWBvQ77hHqx8vUHAiqTRSp13AlTW5Wv++2llyuTmKXBac
-oKYacB0vxOrGvDnIvo8CJvav/HTI2dHata0JqZ7ug90YF5g57+ce08lnf75oAmWp
-ViTnKWZI9dsJk60lB1L5
-=tW8/
------END PGP SIGNATURE-----
-
---Signature=_Tue__8_May_2012_18_02_45_+1000_Mwm2pAZSHokhTvIS--
+No, I don't want to do that. I was just commeting on why existing
+solutions are the way they are.
