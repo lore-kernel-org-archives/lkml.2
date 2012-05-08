@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab2EHPt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:49:29 -0400
-Received: from mga11.intel.com ([192.55.52.93]:32047 "EHLO mga11.intel.com"
+	id S1756907Ab2EHPuY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:50:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57525 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756514Ab2EHPt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:49:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="150566526"
-Date: Tue, 8 May 2012 17:04:42 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: Regression due to d29f3ef "tty_lock: Localise the lock"
-Message-ID: <20120508170442.409ccbe4@bob.linux.org.uk>
-In-Reply-To: <4FA93FEB.2060200@wwwdotorg.org>
-References: <4FA8557E.5080402@wwwdotorg.org>
-	<20120508103512.42db1c4b@pyramind.ukuu.org.uk>
-	<4FA93FEB.2060200@wwwdotorg.org>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755841Ab2EHPuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 11:50:22 -0400
+Message-ID: <4FA94051.3000307@zytor.com>
+Date: Tue, 08 May 2012 08:48:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        mgorman@suse.de, npiggin@gmail.com, tglx@linutronix.de,
+        mingo@redhat.com, arnd@arndb.de, rostedt@goodmis.org,
+        fweisbec@gmail.com, jeremy@goop.org, gregkh@linuxfoundation.org,
+        glommer@redhat.com, riel@redhat.com, luto@mit.edu, avi@redhat.com,
+        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
+        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 7/7] x86/tlb: add tlb_flushall_factor into sysfs for
+ user change
+References: <1336485790-30902-1-git-send-email-alex.shi@intel.com> <1336485790-30902-8-git-send-email-alex.shi@intel.com> <1336489894.16236.51.camel@twins> <4FA939B9.6000404@zytor.com> <20120508152516.GF13568@aftab.osrc.amd.com> <4FA93C69.3050905@zytor.com> <20120508154150.GG13568@aftab.osrc.amd.com>
+In-Reply-To: <20120508154150.GG13568@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 May 2012 09:46:51 -0600
-Stephen Warren <swarren@wwwdotorg.org> wrote:
-
-> On 05/08/2012 03:35 AM, Alan Cox wrote:
-> > On Mon, 07 May 2012 17:06:38 -0600
-> > Stephen Warren <swarren@wwwdotorg.org> wrote:
-> > 
-> >> Alan,
-> >>
-> >> Commit d29f3ef "tty_lock: Localise the lock" appears to cause a
-> >> problem for me.
-> >>
-> >> With this commit (as in next-20120507), I can no longer log into my
-> >> system (NVIDIA Tegra device with ARM CPU) over the serial console,
-> >> since the login prompt no longer appears. If I wait a few minutes,
-> >> I see the following console spew:
-> > 
-> > Eep. If it's reproducable can you test whether adding the
-> > unlock/relock in drivers/tty/pty.c does the trick ?
-> > 
-> > ie:
-> > 	tty_unlock(tty);
-> > 	tty_vhangup(tty);
-> > 	tty_lock(tty);
+On 05/08/2012 08:41 AM, Borislav Petkov wrote:
+> On Tue, May 08, 2012 at 08:31:53AM -0700, H. Peter Anvin wrote:
+>> On 05/08/2012 08:25 AM, Borislav Petkov wrote:
+>>>
+>>> Yep, this was supposed to be for pinpointing the proper entries count.
+>>> I believe we don't have this thing of having code intree but not really
+>>> intree - only for testing new silicon. Maybe a debug module or add this
+>>> to debugfs?
+>>>
+>>
+>> We have a lot of that kind of code, it is usually hidden under
+>> CONFIG_*DEBUG* something.
 > 
-> Yes, that change in pty_close() solves the problem.
+> Then maybe this is where this knob should go, along with adding it to
+> debugfs instead of sysfs...
+> 
 
-Ok Greg - I think we should go with putting that unlock back until we
-understand exactly what is going on.
+I don't see a problem with it in sysfs.
 
-Alan
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
