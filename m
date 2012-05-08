@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab2EHKSO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 06:18:14 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33656 "EHLO mga03.intel.com"
+	id S1754097Ab2EHKSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 06:18:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57324 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753203Ab2EHKSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 06:18:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="140264858"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>,
-        MIPS Mailing List <linux-mips@linux-mips.org>
-Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mips: bcm63xx: fix compilation problems
-Date: Tue,  8 May 2012 13:19:07 +0300
-Message-Id: <1336472347-25822-1-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.9.1
+	id S1753639Ab2EHKSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 06:18:39 -0400
+Date: Tue, 8 May 2012 13:18:39 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Amit Shah <amit.shah@redhat.com>
+Subject: Re: [RFC PATCH] virtio_console: link vq to port with a private
+ pointer in struct virtqueue
+Message-ID: <20120508101839.GA15598@redhat.com>
+References: <87397be80k.fsf@rustcorp.com.au>
+ <1336470355-19257-1-git-send-email-pbonzini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336470355-19257-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+On Tue, May 08, 2012 at 11:45:55AM +0200, Paolo Bonzini wrote:
+> --- a/drivers/virtio/virtio_ring.c
+> +++ b/drivers/virtio/virtio_ring.c
+> @@ -76,8 +76,6 @@
+>  
+>  struct vring_virtqueue
+>  {
+> -	struct virtqueue vq;
+> -
+>  	/* Actual memory layout for this queue */
+>  	struct vring vring;
+>  
+> @@ -106,6 +104,9 @@ struct vring_virtqueue
+>  	/* How to notify other side. FIXME: commonalize hcalls! */
+>  	void (*notify)(struct virtqueue *vq);
+>  
+> +	/* Tokens for callbacks. */
+> +	void **data;
+> +
+>  #ifdef DEBUG
+>  	/* They're supposed to lock for us. */
+>  	unsigned int in_use;
+> @@ -115,8 +116,9 @@ struct vring_virtqueue
+>  	ktime_t last_add_time;
+>  #endif
+>  
+> -	/* Tokens for callbacks. */
+> -	void *data[];
+> +	struct virtqueue vq;
+> +
+> +	/* Bus-specific virtqueue data goes here.  */
+>  };
+>  
+>  #define to_vvq(_vq) container_of(_vq, struct vring_virtqueue, vq)
 
-I get the following build error when I am compiling the MTD gpio-nand driver
-for bcm63xx:
 
-In file included from arch/mips/include/asm/mach-bcm63xx/gpio.h:4:0,
-                 from arch/mips/include/asm/gpio.h:4,
-                 from include/linux/gpio.h:36,
-                 from drivers/mtd/maps/gpio-addr-flash.c:16:
-arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h: In function 'bcm63xx_gpio_count':
-arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:10:2: error: implicit declaration of function 'bcm63xx_get_cpu_id' [-Werror=implicit-function-declaration]
-arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:11:7: error: 'BCM6358_CPU_ID' undeclared (first use in this function)
-arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:11:7: note: each undeclared identifier is reported only once for each function it appears in
-arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:13:7: error: 'BCM6338_CPU_ID' undeclared (first use in this function)
-arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:15:7: error: 'BCM6345_CPU_ID' undeclared (first use in this function)
-arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:17:7: error: 'BCM6368_CPU_ID' undeclared (first use in this function)
-arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:19:7: error: 'BCM6348_CPU_ID' undeclared (first use in this function)
+This moves the data out of line and the bus specific stuff inline.
+But bus accesses only happen on io and interrupt which are already
+slow, while data accesses happen on fast path.
 
-This patch sloves the problem.
+>From that POV this looks like a wrong thing to do.
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h b/arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h
-index 3d5de96..b4b9103 100644
---- a/arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h
-+++ b/arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h
-@@ -1,6 +1,7 @@
- #ifndef BCM63XX_GPIO_H
- #define BCM63XX_GPIO_H
- 
-+#include "bcm63xx_cpu.h"
- #include <linux/init.h>
- 
- int __init bcm63xx_gpio_init(void);
 -- 
-1.7.9.1
-
+MST
