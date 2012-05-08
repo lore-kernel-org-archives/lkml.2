@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab2EHPs2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:48:28 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50101 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755421Ab2EHPs1 (ORCPT
+	id S1756911Ab2EHPsg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:48:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47960 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756469Ab2EHPsd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:48:27 -0400
-Date: Tue, 8 May 2012 16:48:21 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 5/6 v3] mfd: tps65910-irq: Add devicetree init support
-Message-ID: <20120508154820.GA15893@opensource.wolfsonmicro.com>
-References: <1336502563-31789-1-git-send-email-rklein@nvidia.com>
- <1336502563-31789-6-git-send-email-rklein@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BtNCO5h84ExDStzY"
-Content-Disposition: inline
-In-Reply-To: <1336502563-31789-6-git-send-email-rklein@nvidia.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 8 May 2012 11:48:33 -0400
+Message-ID: <1336492081.8226.13.camel@twins>
+Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 08 May 2012 17:48:01 +0200
+In-Reply-To: <alpine.DEB.2.00.1205081035550.27713@router.home>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+	 <1335830115-14335-8-git-send-email-fweisbec@gmail.com>
+	 <alpine.DEB.2.00.1205071053070.1060@router.home>
+	 <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
+	 <1336488626.16236.41.camel@twins>
+	 <alpine.DEB.2.00.1205081016370.27713@router.home>
+	 <1336490832.8226.5.camel@twins>
+	 <alpine.DEB.2.00.1205081035550.27713@router.home>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-05-08 at 10:38 -0500, Christoph Lameter wrote:
+> On Tue, 8 May 2012, Peter Zijlstra wrote:
+> 
+> > isolating how? The only way to do that is with the (broken) isolcpus
+> > crap and cpusets. There is no other way.
+> 
+> For some reason this seems to work here. What is broken with isolcpus?
 
---BtNCO5h84ExDStzY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It mostly still works I think, but iirc there were a few places that
+ignored the cpuisol mask.
 
-On Tue, May 08, 2012 at 11:42:42AM -0700, Rhyland Klein wrote:
+But really the moment we get proper means of flushing cpu state
+(currently achievable by unplug-replug) isolcpu gets depricated and
+eventually removed.
 
-> +	if (pdata->irq_base <= 0)
-> +		pdata->irq_base = irq_alloc_descs(-1, 0, tps65910->irq_num, -1);
-> +
-> +	if (pdata->irq_base <= 0) {
-> +		dev_err(tps65910->dev, "Failed to allocate irq descs: %d\n",
-> +			pdata->irq_base);
-> +		return pdata->irq_base;
-> +	}
+cpusets can do what isolcpu can and more (provided this flush thing).
 
-I'd expect the driver to always call irq_alloc_descs() but to use the
-value specified in platform data if there is any.  This is the normal
-way of doing things, anyway.
+> > Furthermore there is no other partitioning scheme, cpusets is it.
+> 
+> One can partition the system anyway one wants by setting cpu affinities
+> and memory policies etc. No need for cpusets/cgroups.
 
---BtNCO5h84ExDStzY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Not so, the load-balancer will still try to move the tasks and
+subsequently fail. Partitioning means it won't even try to move tasks
+across the partition boundary.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+By proper partitioning you can split load balance domains (or completely
+disable the load-balancer by giving it a single cpu domain).
 
-iQIcBAEBAgAGBQJPqUA/AAoJEBus8iNuMP3dXpgP/iaxTdpK8yfhWwckz9oQAatR
-WbAsz8Gkf6iiZrxX4kW8OaClB7Ug68VKpA6V+h5hqfIw8YfHMS4QWyQP9X0SZBDR
-eJbItS38oudgpae8nQp7rIESBk5wQrRJqK4tp+UCsLJ/XX9OS26Mstzi9WXuCYby
-o6zw6mlawGrMu5ZlbWBIUePJ0WhXRK0LrVEhUdd4eMiMwKyo1/oCiowoU22CfIAJ
-5OY22W6Bkca+PxfmdMnat1KkPMNpuaYyjt0s9YWXZPJPiDb4srOPWZ7dLSTDwgn9
-F3QL1IyVURUBeLwON8DRFpuFF104/ofiaLCLAGs5/0O2gAkr+s0mF5j5MrGdn1f0
-777UFzCWvaiLcsjTdPyKOZkk+aOiMmAlJaIenb3oJDq5zXhbg+IehyQotk3wHgjv
-+jH5K7Y8h+oJJcaEIRwLuN7JH5NrZjGaz28bN9eVhYE4s85rgXOe4hZ5PycnOUlK
-gREyH4reb43t5ADskKRXytntE9kx7wTTs6cwlWm1rpF5QCuq/WharX1Xfn3Mky9r
-XVr2PxnLGtSw94rBEo4lXvliuT0wBscod32VJ66+kYuQnsf0a2chUotI7LKisHtw
-WnF6ot4LX9R2boOiAWoigqceNYx5JLpD02NbbT/81SfEfBOVSZlqRqyuuKMEMBVq
-+tDcluGIeN71kRWAouS0
-=lrxs
------END PGP SIGNATURE-----
 
---BtNCO5h84ExDStzY--
