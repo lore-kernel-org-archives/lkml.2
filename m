@@ -1,50 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025Ab2EHEuy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 00:50:54 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58606 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab2EHEuw (ORCPT
+	id S1757486Ab2EHExh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 00:53:37 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:33706 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751826Ab2EHExf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 00:50:52 -0400
-Date: Tue, 8 May 2012 05:50:44 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Nick Piggin <npiggin@kernel.dk>, Andi Kleen <ak@linux.intel.com>,
+	Tue, 8 May 2012 00:53:35 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/ZZfBS0KLZxXOCxlrgTuT4bQxUjcJ959D2EbdFoJ
+	EaMi6ZE23sfVs+
+Message-ID: <1336452807.21924.13.camel@marge.simpson.net>
+Subject: Re: [PATCH] vfs: Speed up deactivate_super for non-modular
+ filesystems
+From: Mike Galbraith <efault@gmx.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: paulmck@linux.vnet.ibm.com, Al Viro <viro@ZenIV.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 1/3] lglock: remove online variants of lock
-Message-ID: <20120508045044.GJ22082@ZenIV.linux.org.uk>
-References: <87ehtf3lqh.fsf@rustcorp.com.au>
- <20120227155338.7b5110cd.akpm@linux-foundation.org>
- <20120228112422.GC11324@alboin.amr.corp.intel.com>
- <87ipijzfwn.fsf@rustcorp.com.au>
- <20120420112149.GH25458@amd.local0.net>
- <87sjfcfynb.fsf@rustcorp.com.au>
- <20120507054616.GG22082@ZenIV.linux.org.uk>
- <87txzrcoge.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87txzrcoge.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org
+Date: Tue, 08 May 2012 06:53:27 +0200
+In-Reply-To: <87zk9jzdi5.fsf@xmission.com>
+References: <m1vckcdoey.fsf@fess.ebiederm.org>
+	 <1336142995.25479.49.camel@marge.simpson.net>
+	 <m1zk9oc61j.fsf@fess.ebiederm.org>
+	 <1336150643.7502.4.camel@marge.simpson.net>
+	 <m1fwbfd71h.fsf@fess.ebiederm.org>
+	 <1336197362.7346.9.camel@marge.simpson.net>
+	 <1336198093.7346.11.camel@marge.simpson.net>
+	 <1336201977.7346.22.camel@marge.simpson.net>
+	 <87r4uv64oj.fsf_-_@xmission.com>
+	 <20120507221706.GI22082@ZenIV.linux.org.uk>
+	 <20120507235647.GH21152@linux.vnet.ibm.com> <87zk9jzdi5.fsf@xmission.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 01:29:45PM +0930, Rusty Russell wrote:
-> Optimizing the slow paths adds a lot of complexity.  If you need to
-> grab every lock often, you have other problems.
+On Mon, 2012-05-07 at 18:07 -0700, Eric W. Biederman wrote: 
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
 
-Applied, but I'm not too happy about the situation with vfsmount_lock ;-/
-On kernels built for a lot of possible CPUs the loss of ..._online()
-versions will get painful.  OTOH, we can always put the map + single
-spinlock + single notifier into lglock.c and reproduce the old logics.
-I'll do a patch along those lines and put it on a separate branch;
-then we'll be able to test and compare.
+> What I see as the real need is the filesystem modules need to do:
+> 	rcu_barrier()
+> 	kmem_cache_destroy(cache);
+> 
+> Perhaps we can add some helpers to make it easy.  But I think
+> I would be happy today with simply moving the rcu_barrier into
+> every filesystems module exit path, just before the file system
+> module destoryed it's inode cache.
 
-Contention from cpu map spinlock becoming shared between different
-lglocks (all two of them) is not an issue - we never use the
-files_lock one anyway (there we can't use _online variants).
+One liner kills the reap bottleneck and 99.999% of cache bloat.  1000
+backgrounded vfstpd testcases finished ~instantly and left one
+persistent pid namespace vs taking ages and bloating very badly.
+
+Hacked up hackbench still hurts with all (except user) namespaces, but
+that's a different problem (modulo hackbench wonderfulness).
+
+Previous numbers:
+
+default flags = SIGCHLD
+
+-namespace:  flag |= CLONE_NEWPID 
+-all:  flags |= CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWUSER
+
+marge:/usr/local/tmp/starvation # ./hackbench
+Running with 10*40 (== 400) tasks.
+Time: 2.636
+marge:/usr/local/tmp/starvation # ./hackbench -namespace
+Running with 10*40 (== 400) tasks.
+Time: 11.624
+marge:/usr/local/tmp/starvation # ./hackbench -namespace -all
+Running with 10*40 (== 400) tasks.
+Time: 51.474
+
+
+New numbers: 
+marge:/usr/local/tmp/starvation # time ./hackbench
+Running with 10*40 (== 400) tasks.
+Time: 2.718
+
+real    0m2.877s
+user    0m0.060s
+sys     0m10.057s
+marge:/usr/local/tmp/starvation # time ./hackbench -namespace
+Running with 10*40 (== 400) tasks.
+Time: 2.689
+
+real    0m2.878s
+user    0m0.060s
+sys     0m9.945s
+marge:/usr/local/tmp/starvation # time ./hackbench -namespace -all
+Running with 10*40 (== 400) tasks.                                                                                                                                                                                                          
+Time: 2.521
+                                                                                                                                                                                                                                            
+real    0m27.774s
+user    0m0.048s                                                                                                                                                                                                                            
+sys     0m21.681s
+marge:/usr/local/tmp/starvation #  
+
