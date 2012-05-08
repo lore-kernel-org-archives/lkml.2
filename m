@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab2EHLoL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 07:44:11 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:47121 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752735Ab2EHLoJ (ORCPT
+	id S1754089Ab2EHLqU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 07:46:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49089 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab2EHLqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 07:44:09 -0400
-Message-ID: <4FA90717.4050407@ti.com>
-Date: Tue, 08 May 2012 14:44:23 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120503 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH v2 2/3] MFD: twl6040: Allocate IRQ numbers dynamically
-References: <1336476810-26945-1-git-send-email-peter.ujfalusi@ti.com> <1336476810-26945-3-git-send-email-peter.ujfalusi@ti.com> <20120508114019.GJ15893@opensource.wolfsonmicro.com>
-In-Reply-To: <20120508114019.GJ15893@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Tue, 8 May 2012 07:46:19 -0400
+Message-ID: <1336477570.13339.4.camel@phoenix>
+Subject: [PATCH RFT 1/2] regulator: da903x: Fix list voltage for da9030 ldo14
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Eric Miao <eric.y.miao@gmail.com>, Mike Rapoport <mike@compulab.co.il>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Tue, 08 May 2012 19:46:10 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2012 02:40 PM, Mark Brown wrote:
-> On Tue, May 08, 2012 at 02:33:29PM +0300, Peter Ujfalusi wrote:
-> 
->> The client drivers will receive their interrupt numbers via pdata which
->> is configured based on the received IRQ range we got from irq_alloc_descs()
-> 
-> The idiomatic thing is to use resources and have mfd_add_devices() do
-> the fixup, which actually appears to be what the code is doing so no
-> problem.
+da903x_list_voltage does not return correct voltage for da9030 ldo14.
+Implement da9030_list_ldo14_voltage to return correct voltage for da9030 ldo14.
 
-True, the irq numbers are passed as resource for the device. I should
-probably rephrase the message since the mention of pdata is clearly
-wrong in this context...
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/da903x.c |   20 +++++++++++++++++++-
+ 1 files changed, 19 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/regulator/da903x.c b/drivers/regulator/da903x.c
+index 682bdb3..a9c4590 100644
+--- a/drivers/regulator/da903x.c
++++ b/drivers/regulator/da903x.c
+@@ -267,6 +267,24 @@ static int da9030_get_ldo14_voltage(struct regulator_dev *rdev)
+ 			info->step_uV * (val & ~0x4);
+ }
+ 
++static int da9030_list_ldo14_voltage(struct regulator_dev *rdev,
++				     unsigned selector)
++{
++	struct da903x_regulator_info *info = rdev_get_drvdata(rdev);
++	int volt;
++
++	if (selector & 0x4)
++		volt = info->min_uV + info->step_uV * (3 - (selector & ~0x4));
++	else
++		volt = (info->max_uV + info->min_uV) / 2 +
++		       info->step_uV * (selector & ~0x4);
++
++	if (volt > info->max_uV)
++		return -EINVAL;
++
++	return volt;
++}
++
+ /* DA9034 specific operations */
+ static int da9034_set_dvc_voltage(struct regulator_dev *rdev,
+ 				  int min_uV, int max_uV, unsigned *selector)
+@@ -357,7 +375,7 @@ static struct regulator_ops da903x_regulator_ldo_ops = {
+ static struct regulator_ops da9030_regulator_ldo14_ops = {
+ 	.set_voltage	= da9030_set_ldo14_voltage,
+ 	.get_voltage	= da9030_get_ldo14_voltage,
+-	.list_voltage	= da903x_list_voltage,
++	.list_voltage	= da9030_list_ldo14_voltage,
+ 	.enable		= da903x_enable,
+ 	.disable	= da903x_disable,
+ 	.is_enabled	= da903x_is_enabled,
 -- 
-Péter
+1.7.5.4
+
+
+
