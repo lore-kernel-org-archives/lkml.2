@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758255Ab2EHDBO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 23:01:14 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:53854 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758167Ab2EHDBL (ORCPT
+	id S1758206Ab2EHDIS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 23:08:18 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:58793 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758017Ab2EHDIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 23:01:11 -0400
-Date: Mon, 07 May 2012 22:59:00 -0400 (EDT)
-Message-Id: <20120507.225900.1607360124849584710.davem@davemloft.net>
-To: ddaney.cavm@gmail.com
-Cc: ralf@linux-mips.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        afleming@gmail.com, galak@kernel.crashing.org, david.daney@cavium.com
-Subject: Re: [PATCH v6 3/3] netdev/of/phy: Add MDIO bus multiplexer driven
- by GPIO lines.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1336007799-31016-4-git-send-email-ddaney.cavm@gmail.com>
-References: <1336007799-31016-1-git-send-email-ddaney.cavm@gmail.com>
-	<1336007799-31016-4-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 7 May 2012 23:08:17 -0400
+X-AuditID: b753bd60-a2688ba000000655-40-4fa88e1ec79c
+X-AuditID: b753bd60-a2688ba000000655-40-4fa88e1ec79c
+Message-ID: <4FA88E1B.1020708@hitachi.com>
+Date: Tue, 08 May 2012 12:08:11 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: Re: Re: [PATCH 6/9][RFC] kprobes: Allow probe on ftrace reserved
+ text (but move it)
+References: <20120502192418.024103772@goodmis.org>   <20120502193237.321234712@goodmis.org> <y0mhavyl3kg.fsf@fche.csb>  <1336002032.14207.52.camel@gandalf.stny.rr.com>  <4FA7B410.1000804@hitachi.com> <1336394603.14207.117.camel@gandalf.stny.rr.com>
+In-Reply-To: <1336394603.14207.117.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 07 May 2012 19:59:02 -0700 (PDT)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <ddaney.cavm@gmail.com>
-Date: Wed,  2 May 2012 18:16:39 -0700
+(2012/05/07 21:43), Steven Rostedt wrote:
+> On Mon, 2012-05-07 at 20:37 +0900, Masami Hiramatsu wrote:
+> 
+>> By the way, there is another way to do that transparently which
+>> we add a "real_addr" member to struct kprobes and put the real
+>> probed address to the member (without changing kp->addr). This
+>> will keep API compatibility.
+> 
+> I like this a lot. Perhaps we don't need a flag at all, and just use
+> these two addrs instead?
 
-> From: David Daney <david.daney@cavium.com>
-> 
-> The GPIO pins select which sub bus is connected to the master.
-> 
-> Initially tested with an sn74cbtlv3253 switch device wired into the
-> MDIO bus.
-> 
-> Signed-off-by: David Daney <david.daney@cavium.com>
+Yes, just replacing all "*p->addr" and "kp.addr" with real_addr
+and copying addr to real_addr when registering. That's the basic
+idea.
 
-Applied.
+I just concern about the cost balance... this is feasible, but
+we need to change many arch-dependent parts. Do we really need to
+pay that cost just for the backward compatibility?
+
+I mean, the kprobes itself can be changed because we don't ensure
+the stability of kernel APIs. If so, it looks enough to change the
+behavior of kprobes and give an upgrade hint for users (current patch),
+isn't it?
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
