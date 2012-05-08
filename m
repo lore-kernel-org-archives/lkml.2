@@ -1,72 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab2EHJQJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 05:16:09 -0400
-Received: from smtp.nokia.com ([147.243.128.26]:39905 "EHLO mgw-da02.nokia.com"
+	id S1752592Ab2EHJQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 05:16:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56407 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926Ab2EHJQH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 05:16:07 -0400
-From: <leonid.moiseichuk@nokia.com>
-To: <penberg@kernel.org>, <kosaki.motohiro@gmail.com>
-CC: <anton.vorontsov@linaro.org>, <minchan@kernel.org>,
-        <john.stultz@linaro.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
-        <patches@linaro.org>, <kernel-team@android.com>
-Subject: RE: [PATCH 3/3] vmevent: Implement special low-memory attribute
-Thread-Topic: [PATCH 3/3] vmevent: Implement special low-memory attribute
-Thread-Index: AQHNJ54zt9884we850qVfkvWrpHZv5a463aAgAA1ewCABLBlgIAAE/cAgABAG4CAAHaTAIAAp8wAgAAGDoCAAANQAIAAFcOAgAAG5oCAAAPpAIAAA4SAgAAyfPA=
-Date: Tue, 8 May 2012 09:15:46 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB98269045D63B3@008-AM1MPN1-003.mgdnok.nokia.com>
-References: <20120501132409.GA22894@lizard>	<20120501132620.GC24226@lizard>
-	<4FA35A85.4070804@kernel.org>	<20120504073810.GA25175@lizard>
-	<CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com>
-	<CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com>
-	<20120507121527.GA19526@lizard>	<4FA82056.2070706@gmail.com>
-	<CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com>
-	<CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com>
-	<CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com>
-	<CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
-	<CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com>
-	<4FA8D046.7000808@gmail.com>
- <CAOJsxLGWtJy7q6ij_-tN8nVTr-OXpgdWVkXsOda8S9mJzo7n2w@mail.gmail.com>
-In-Reply-To: <CAOJsxLGWtJy7q6ij_-tN8nVTr-OXpgdWVkXsOda8S9mJzo7n2w@mail.gmail.com>
+	id S1751119Ab2EHJQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 05:16:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="140242159"
+From: "Hao, Xudong" <xudong.hao@intel.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Xudong Hao <xudong.hao@linux.intel.com>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>
+Subject: RE: [PATCH] kvm: Enable device LTR/OBFF capibility before doing
+ guest device assignment
+Thread-Topic: [PATCH] kvm: Enable device LTR/OBFF capibility before doing
+ guest device assignment
+Thread-Index: AQHNK523sQykSXPAVU2m3kyfnWAfgJa98vXAgAAJMQCAAaFgIA==
+Date: Tue, 8 May 2012 09:16:30 +0000
+Message-ID: <403610A45A2B5242BD291EDAE8B37D300FDBDAB9@SHSMSX102.ccr.corp.intel.com>
+References: <20120506152405.GA14009@hp-xd.sh.intel.com>
+	 <4FA699F6.9010605@redhat.com>
+	 <403610A45A2B5242BD291EDAE8B37D300FDAE9B6@SHSMSX102.ccr.corp.intel.com>
+ <1336407384.12477.65.camel@bling.home>
+In-Reply-To: <1336407384.12477.65.camel@bling.home>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.162.29.9]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-X-OriginalArrivalTime: 08 May 2012 09:15:47.0707 (UTC) FILETIME=[27A3C4B0:01CD2CFB]
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q489Gj04024601
 
 > -----Original Message-----
-> From: penberg@gmail.com [mailto:penberg@gmail.com] On Behalf Of ext
-> Pekka Enberg
-> Sent: 08 May, 2012 11:03
-> To: KOSAKI Motohiro
-> Cc: Anton Vorontsov; Minchan Kim; Moiseichuk Leonid (Nokia-MP/Espoo); John
-...
-> >> That comes from a real-world requirement. See Leonid's email on the topic:
-> >>
-> >> https://lkml.org/lkml/2012/5/2/42
-> >
-> > I know, many embedded guys prefer such timer interval. I also have an
-> > experience similar logic when I was TV box developer. but I must
-> > disagree. Someone hope timer housekeeping complexity into kernel. but
-> > I haven't seen any justification.
+> From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> Sent: Tuesday, May 08, 2012 12:16 AM
+> To: Hao, Xudong
+> Cc: Avi Kivity; Xudong Hao; mtosatti@redhat.com; kvm@vger.kernel.org;
+> linux-kernel@vger.kernel.org; Zhang, Xiantao
+> Subject: RE: [PATCH] kvm: Enable device LTR/OBFF capibility before doing guest
+> device assignment
 > 
-> Leonid?
+> On Mon, 2012-05-07 at 07:58 +0000, Hao, Xudong wrote:
+> > > -----Original Message-----
+> > > From: Avi Kivity [mailto:avi@redhat.com]
+> > > Sent: Sunday, May 06, 2012 11:34 PM
+> > > To: Xudong Hao
+> > > Cc: mtosatti@redhat.com; kvm@vger.kernel.org;
+> linux-kernel@vger.kernel.org;
+> > > Zhang, Xiantao; Hao, Xudong; Alex Williamson
+> > > Subject: Re: [PATCH] kvm: Enable device LTR/OBFF capibility before doing
+> guest
+> > > device assignment
+> > >
+> > > On 05/06/2012 06:24 PM, Xudong Hao wrote:
+> > > > Enable device LTR/OBFF capibility before do device assignment, so that
+> guest
+> > > can benefit from them.
+> > >
+> > > cc += Alex
+> > >
+> > > > @@ -166,6 +166,10 @@ int kvm_assign_device(struct kvm *kvm,
+> > > >     if (pdev == NULL)
+> > > >         return -ENODEV;
+> > > >
+> > > > +   /* Enable some device capibility before do device assignment,
+> > > > +    * so that guest can benefit from them.
+> > > > +    */
+> > > > +   kvm_iommu_enable_dev_caps(pdev);
+> > > >     r = iommu_attach_device(domain, &pdev->dev);
+> > >
+> > > Suppose we fail here.  Do we need to disable_dev_caps()?
+> > >
+> 
+> If kvm_assign_device() fails we'll try to restore the state we saved in
+> kvm_vm_ioctl_assign_device(), so ltr/obff should be brought back to
+> initial state.
+> 
+Right, more clear.
 
-The "usleep(timeout); read(vmevent_fd)" will eliminate opportunity to use vmevent API for mobile devices.  
-Developers already have to use heartbeat primitives to align/sync timers and update code which is not always simple to do.
-But the idea is to have user-space wakeup only if we have something change in memory numbers, thus aligned timers will not help much in vmevent case due to memory situation may change a lot in short time.
-Short depends from software stack but usually it below 1s.  To have use-time and wakeups on good level (below 50Hz by e.g. powertop) and allow cpu switch off timers of such short period like 1s are not allowed.
+> > I don't think so. When a device will be assigned to guest, it's be
+> > owned by a pci-stub driver, attach_device fail here do not affect
+> > everything. If host want to use it, host device driver has its own
+> > enable/disable dev_caps.
+> 
+> Why is device assignment unique here?  If there's a default value that's
+> known to be safe, why doesn't pci_enable_device set it for everyone?
+> Host drivers can fine tune the value later if they want.
+> 
+> > > >     if (r) {
+> > > >         printk(KERN_ERR "assign device %x:%x:%x.%x failed",
+> > > > @@ -228,6 +232,7 @@ int kvm_deassign_device(struct kvm *kvm,
+> > > >         PCI_SLOT(assigned_dev->host_devfn),
+> > > >         PCI_FUNC(assigned_dev->host_devfn));
+> > > >
+> > > > +   kvm_iommu_disable_dev_caps(pdev);
+> > > >     return 0;
+> > > >  }
+> > > >
+> > > > @@ -351,3 +356,30 @@ int kvm_iommu_unmap_guest(struct kvm *kvm)
+> > > >     iommu_domain_free(domain);
+> > > >     return 0;
+> > > >  }
+> > > > +
+> > > > +static void kvm_iommu_enable_dev_caps(struct pci_dev *pdev)
+> > > > +{
+> > > > +   /* set default value */
+> > > > +   unsigned long type = PCI_EXP_OBFF_SIGNAL_ALWAYS;
+> > > > +   int snoop_lat_ns = 1024, nosnoop_lat_ns = 1024;
+> > >
+> > > Where does this magic number come from?
+> > >
+> > The number is the max value that register support, set it as default
+> > here, we did not have any device here, and we do not know what's the
+> > proper value, so it set a default value firstly.
+> 
+> The register is composed of latency scale and latency value fields.
+> 1024 is simply the largest value the latency value can hold (+1).  The
+> scale field allows latencies up to 34,326,183,936ns to be specified, so
+> please explain how 1024 is a universal default.
+> 
 
-Leonid
-PS: Sorry, meetings prevent to do interesting things :(  I am tracking conversation with quite low understanding how it will be useful for practical needs because user-space developers in 80% cases needs to track simply dirty memory changes i.e. modified pages which cannot be dropped.
+Since each platform will have its own max supported latency, I think the best way is setting the value to 0 because we have such a device now.
+
+> > > > +
+> > > > +   /* LTR(Latency tolerance reporting) allows devices to send
+> > > > +    * messages to the root complex indicating their latency
+> > > > +    * tolerance for snooped & unsnooped memory transactions.
+> > > > +    */
+> > > > +   pci_enable_ltr(pdev);
+> > > > +   pci_set_ltr(pdev, snoop_lat_ns, nosnoop_lat_ns);
+> > > > +
+> > > > +   /* OBFF (optimized buffer flush/fill), where supported,
+> > > > +    * can help improve energy efficiency by giving devices
+> > > > +    * information about when interrupts and other activity
+> > > > +    * will have a reduced power impact.
+> > > > +    */
+> > > > +   pci_enable_obff(pdev, type);
+> > > > +}
+> > > > +
+> > > > +static void kvm_iommu_disable_dev_caps(struct pci_dev *pdev)
+> > > > +{
+> > > > +   pci_disble_obff(pdev);
+> > > > +   pci_disble_ltr(pdev);
+> > > > +}
+> > >
+> > > Do we need to communicate something about these capabilities to the
+> guest?
+> > >
+> >
+> > I guess you means that here host don't know if guest want to enable them,
+> right?
+> > The ltr/obff new feature are supposed to enabled by guest if platform and
+> device supported.
+> 
+> It looks like ltr is a two part mechanism, the capability and enable
+> lives in the pci express capability, but the tuning registers live in
+> extended capability space.  The guest doesn't yet have access to the
+> latter since we don't have an express chipset.  The capability and
+> enable are read-only to the guest currently, same for obff.  Thanks,
+> 
+> Alex
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
