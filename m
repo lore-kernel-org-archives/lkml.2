@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab2EHRf5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 13:35:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5945 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754552Ab2EHRfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 13:35:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="138293336"
-Message-ID: <4FA95976.9050900@linux.intel.com>
-Date: Tue, 08 May 2012 10:35:50 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1753495Ab2EHRjH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 13:39:07 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49502 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706Ab2EHRjE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 13:39:04 -0400
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        tj@kernel.org, paul.gortmaker@windriver.com, akpm@linux-foundation.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC PATCH] Expand memblock=debug to provide a bit more details
- (v1).
-References: <1336157382-14548-1-git-send-email-konrad.wilk@oracle.com> <CAE9FiQWOps3Hmw=p6mWObRnu2KHVNshpoY+uWcAAQd1Yxi54yQ@mail.gmail.com> <20120504192459.GA5684@phenom.dumpdata.com>
-In-Reply-To: <20120504192459.GA5684@phenom.dumpdata.com>
+In-Reply-To: <20120508165118.GA11750@merkur.ravnborg.org>
+References: <20120428205651.GA7426@merkur.ravnborg.org>
+	<20120428205919.GC7442@merkur.ravnborg.org>
+	<4FA460AB.6060309@suse.cz>
+	<20120505082916.GA14006@merkur.ravnborg.org>
+	<CA+8MBbKd9zAouJy5JvUnLwUHMJ65HsYgCTfBgv42nm32EnMPFA@mail.gmail.com>
+	<20120508165118.GA11750@merkur.ravnborg.org>
+Date: Tue, 8 May 2012 10:39:03 -0700
+Message-ID: <CA+8MBbJHH1niHHR7md844UwphmeYczYQBJOB3huGFaxU9AXMTA@mail.gmail.com>
+Subject: Re: [PATCH 3/4] kbuild: link of vmlinux moved to a script
+From: Tony Luck <tony.luck@gmail.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux arch <linux-arch@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>,
+        "David S. Miller" <davem@davemloft.net>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2012 12:24 PM, Konrad Rzeszutek Wilk wrote:
->>
->> that RET_IP is not very helpful for debugging.
-> 
-> Is there a better way of doing it that is automatic?
->>
+On Tue, May 8, 2012 at 9:51 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
+> -       local aflags="${KBUILD_AFLAGS} ${NOSTDINC_FLAGS}                     \
+> -                     ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
+> +       local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
+> +                     ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
 
-It depends on what "it" is.  You could do a full stack backtrace, or use
-__builtin_return_address(N).
+Heh. When I first got in this morning your e-mail hadn't arrived yet.
+So I ran some make V=1 on the old and latest tree and saw the problem
+was missing KBUILD_AFLAGS_KERNEL. I was just about to send this
+exact patch to you.
 
-	-hpa
+So yes ... it works.
 
+Tested-by: Tony Luck <tony.luck@intel.com>
+
+Thanks
+
+-Tony
