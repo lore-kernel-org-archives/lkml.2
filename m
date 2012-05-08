@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab2EHOK2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 10:10:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34513 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754689Ab2EHOK1 (ORCPT
+	id S1755516Ab2EHONN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 10:13:13 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:39564 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754582Ab2EHONM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 10:10:27 -0400
-Message-ID: <4FA9294F.7070203@gmail.com>
-Date: Tue, 08 May 2012 08:10:23 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 8 May 2012 10:13:12 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: IZGQCxwVM1ntvA8CFbeRNNN0pQWZa4O1Pxz1wep4z1Porix
+ LIbObgpntmwOWLjNX_p4Fr1wgYUTZb2A3xri8SsAjlxnd2WKeNo8SDGaCdfD
+ jYxIzAUXN5gd8ZAK5wQiAb3ie2bpjZKGrhKf8UuW0pEUHQPUovdmqrT3bbLw
+ 74hOCG6yFkzF_ZcOpVQjeOf_ttVifhD8HQ6FijB2tx0Ht44w74yeNZ3nij45
+ g11mRe55Q8OAG0joGOITBG15JsT.pTrdeuA64PbSNoHpFijM3IxgRaNlY_lM
+ qxsQYezg_2w_qHPHCARcwqxcnfxmXaoOhYbqLExDA30NQ5ByTBFU3tkNdXEi
+ PM0j3lGFdzM8RfO4ku9jWcNp2LDkgwguCOF0N0yBhfZ7WtxcWrDM2nZmBlO9
+ y
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 8 May 2012 09:13:09 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: Joonsoo Kim <js1304@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] slub: fix incorrect return type of get_any_partial()
+In-Reply-To: <alpine.LFD.2.02.1205080831580.4372@tux.localdomain>
+Message-ID: <alpine.DEB.2.00.1205080912590.25669@router.home>
+References: <1327651943-28225-1-git-send-email-js1304@gmail.com> <alpine.LFD.2.02.1205080831580.4372@tux.localdomain>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org
-Subject: Re: [PATCH] perf record: fix fallback to cpu-clock on ppc
-References: <1336452004-55724-1-git-send-email-dsahern@gmail.com> <20120508131207.GG2485@infradead.org>
-In-Reply-To: <20120508131207.GG2485@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/8/12 7:12 AM, Arnaldo Carvalho de Melo wrote:
-> Em Mon, May 07, 2012 at 10:40:04PM -0600, David Ahern escreveu:
->> perf-record on PPC is not falling back to cpu-clock:
->>
->> Old kernel, cannot exclude guest or host samples.
->>
->>    Error: sys_perf_event_open() syscall returned with 6 (No such device or address).  /bin/dmesg may provide additional information.
->>
->>    Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
->>
->> The problem is that until 2.6.37 (behavior changed with commit b0a873e)
->> perf on PPC returns ENXIO when hw_perf_event_init() fails. With this
->> patch we get the expected behavior:
->>
->> Old kernel, cannot exclude guest or host samples.
->> The cycles event is not supported, trying to fall back to cpu-clock-ticks
->> [ perf record: Woken up 1 times to write data ]
->> [ perf record: Captured and wrote 0.150 MB /tmp/perf.data (~6569 samples) ]
->
-> Would be good to have this documented on the spot, i.e. just before that
-> if.
->
-> Also, have you checked that 'perf stat' and 'perf top' works as well? We
-> really need to move all this logic to a central place, namely
-> perf_evlist__open().
->
-> For now checking if stat and top ara ok should be enough.
+On Tue, 8 May 2012, Pekka Enberg wrote:
 
-perf-top works because it drops back to cpu-clock for any 
-perf_event_open failure; perf-stat does not. Will fix it and add a 
-comment about PPC and ENXIO errno to both.
+> On Fri, 27 Jan 2012, Joonsoo Kim wrote:
+>
+> > Commit 497b66f2ecc97844493e6a147fd5a7e73f73f408 ('slub: return object pointer
+> > from get_partial() / new_slab().') changed return type of some functions.
+> > This updates missing part.
+> >
+> > Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> >
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index ffe13fd..18bf13e 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -1579,7 +1579,7 @@ static void *get_partial_node(struct kmem_cache *s,
+> >  /*
+> >   * Get a page from somewhere. Search in increasing NUMA distances.
+> >   */
+> > -static struct page *get_any_partial(struct kmem_cache *s, gfp_t flags,
+> > +static void *get_any_partial(struct kmem_cache *s, gfp_t flags,
+> >  		struct kmem_cache_cpu *c)
+> >  {
+> >  #ifdef CONFIG_NUMA
+> > --
+> > 1.7.0.4
+>
+> Applied, thanks!
 
-David
+Could we also fix the comment at the same time?
+
