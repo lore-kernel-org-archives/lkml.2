@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758163Ab2EHCqs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 22:46:48 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:43319 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758087Ab2EHCqr (ORCPT
+	id S1758194Ab2EHC7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 22:59:24 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:53827 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758088Ab2EHC7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 22:46:47 -0400
-Date: Tue, 8 May 2012 10:46:12 +0800
-From: Richard Yang <weiyang@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Richard Yang <weiyang@linux.vnet.ibm.com>,
-        Wei Yang <weiyang.kernel@gmail.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: One problem in reassign pci bus number?
-Message-ID: <20120508024612.GA11485@richard>
-Reply-To: Richard Yang <weiyang@linux.vnet.ibm.com>
-References: <CAE9FiQUVNA_jdRfsSR9Rv47aa6JX-HKET0z3SfK19wT=Fcd9Cg@mail.gmail.com>
- <20120504024721.GA6775@richard>
- <CAE9FiQUz2w815gU5vY5b0BPf+1pz_pafgzqVKizJC++z27RTaQ@mail.gmail.com>
- <20120504045205.GA21624@richard>
- <CAE9FiQWM4OTFp5NN+KOXxNREQxNWipDjWbbPPiHHJsb6yFmuiQ@mail.gmail.com>
- <20120506151715.GA7773@richard>
- <CAE9FiQWsSWK-_zGe1ggaKuZu+RJ1kb1zuTEokdxqFSbE3UjNRw@mail.gmail.com>
- <CAE9FiQXKjxLDLeh8TXU_OCNwFt+UMv3qFjcPrKcPcorA1YmkdQ@mail.gmail.com>
- <20120507011722.GA8122@richard>
- <CAE9FiQUpcJdAvK=wisNc_zq5c9zDtgEM=MNugDcHN9h3=ZPUcA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQUpcJdAvK=wisNc_zq5c9zDtgEM=MNugDcHN9h3=ZPUcA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12050716-1396-0000-0000-0000011C2E71
+	Mon, 7 May 2012 22:59:23 -0400
+Date: Mon, 07 May 2012 22:56:31 -0400 (EDT)
+Message-Id: <20120507.225631.1240115443298845028.davem@davemloft.net>
+To: eldad@fogrefinery.com
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] [IPV6] remove sysctl accept_source_route
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1335695830-19176-1-git-send-email-eldad@fogrefinery.com>
+References: <1335695830-19176-1-git-send-email-eldad@fogrefinery.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 07 May 2012 19:56:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 06, 2012 at 07:04:09PM -0700, Yinghai Lu wrote:
->On Sun, May 6, 2012 at 6:17 PM, Richard Yang <weiyang@linux.vnet.ibm.com> wrote:
->> so this free space will be combined with the free space got from
->> parent, form a big space to meet the requirement.
->>
->> This is the general idea about probe_resource()?
->>
->> And this is the design decision to find the free space at the end
->> of top, even at the start we have more free space?
->
->no, probe_resource will get from start if space is big enough.
->
->if not, it will try to extend top.
+From: Eldad Zack <eldad@fogrefinery.com>
+Date: Sun, 29 Apr 2012 12:37:10 +0200
 
-Hmm... for example we still have this
-               parent[70-160]
-brother1[70-80]  res[90-150]  brother2[151-160]
-                   ->child[105-140]
+> The only place where the accpet_source_route flag is checked is when we
+> are processing the type 2 routing header. In that case we only allow it if
+> it (1) has only segments left = 1 and (2) if it matches our home address,
+> which is the behavior required by RFC 6275 (see sections 8.5, 11.3.3), and
+> it doesn't make sense to block rh2 when we're a mobile node.
+> 
+> Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
 
-if we call probe_resource(res, new_res, 16, par, 1, 0xff,
-IORESOURCE_PCI_FIXED);
+Considering commits:
 
-I think this call is used to allocate a res of size 16 under res.
-When there is no enough free space, it will expend res, and res->parent.
+commit c382bb9d32a55029fb13b118858e25908fab4617
+Author: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Date:   Tue Jul 10 22:47:58 2007 -0700
 
-While in this situation, res doesn't have enough free space. so it need
-to expend itself. 
+    [IPV6]: Restore semantics of Routing Header processing.
+    
+    The "fix" for emerging security threat was overkill and it broke
+    basic semantic of IPv6 routing header processing.  We should assume
+    RT0 (or even RT2, depends on configuration) as "unknown" RH type so
+    that we
+    - silently ignore the routing header if segleft == 0
+    - send ICMPv6 Parameter Problem message back to the sender,
+      otherwise.
+    
+    Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
 
-In the probe_resource() it tries to extend res on the right side. 
-So even there is enough space between brother1 and res, I think the
-probe_resource() will not return 0.
+and:
 
-Do you think my analysis is correct?
->
->Yinghai
+commit bb4dbf9e61d0801927e7df2569bb3dd8287ea301
+Author: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Date:   Tue Jul 10 22:55:49 2007 -0700
 
--- 
-Richard Yang
-Help you, Help me
+    [IPV6]: Do not send RH0 anymore.
+    
+    Based on <draft-ietf-ipv6-deprecate-rh0-00.txt>.
+    
+    Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
 
+the current behavior seems very much intentional.
+
+Secondly, we cannot just delete sysctls like this, if someone
+depends upon whatever current behavior is we will break them.
+
+Therefore, on either account, I cannot apply this patch.
+
+Sorry.
