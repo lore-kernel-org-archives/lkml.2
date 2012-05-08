@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059Ab2EHRwv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 13:52:51 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:33882 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab2EHRwu (ORCPT
+	id S1752300Ab2EHRxu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 13:53:50 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:58959 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2EHRxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 13:52:50 -0400
-Date: Tue, 8 May 2012 10:51:05 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 03/18] fork: Move thread info gfp flags to header
-Message-ID: <20120508175105.GA18741@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120505150007.543515803@linutronix.de>
- <20120505150141.428211694@linutronix.de>
- <20120507043401.GA5406@linux.vnet.ibm.com>
- <alpine.LFD.2.02.1205072112400.6271@ionos>
- <20120507205321.GC21152@linux.vnet.ibm.com>
+	Tue, 8 May 2012 13:53:48 -0400
+Date: Tue, 8 May 2012 19:53:46 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Tony Luck <tony.luck@gmail.com>, Michal Marek <mmarek@suse.cz>
+Cc: Michal Marek <mmarek@suse.cz>, linux arch <linux-arch@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>,
+        "David S. Miller" <davem@davemloft.net>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH] kbuild: fix ia64 link
+Message-ID: <20120508175346.GA11887@merkur.ravnborg.org>
+References: <20120428205651.GA7426@merkur.ravnborg.org> <20120428205919.GC7442@merkur.ravnborg.org> <4FA460AB.6060309@suse.cz> <20120505082916.GA14006@merkur.ravnborg.org> <CA+8MBbKd9zAouJy5JvUnLwUHMJ65HsYgCTfBgv42nm32EnMPFA@mail.gmail.com> <20120508165118.GA11750@merkur.ravnborg.org> <CA+8MBbJHH1niHHR7md844UwphmeYczYQBJOB3huGFaxU9AXMTA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120507205321.GC21152@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12050817-2398-0000-0000-00000677F696
+In-Reply-To: <CA+8MBbJHH1niHHR7md844UwphmeYczYQBJOB3huGFaxU9AXMTA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 01:53:21PM -0700, Paul E. McKenney wrote:
-> On Mon, May 07, 2012 at 09:14:04PM +0200, Thomas Gleixner wrote:
-> > On Sun, 6 May 2012, Paul E. McKenney wrote:
-> > 
-> > > On Sat, May 05, 2012 at 03:05:41PM -0000, Thomas Gleixner wrote:
-> > > > These flags can be useful for extra allocations outside of the core
-> > > > code.
-> > > > 
-> > > > Add __GFP_NOTRACE to them, so the archs which have kmemcheck do
-> > > > not have to provide extra allocators just for that reason.
-> > > 
-> > > This breaks powerpc builds due to __GFP_NOTRACE not being defined.
-> > > I restarted the test after removing the __GFP_NOTRACE as a testing-only
-> > > hack, and will let you know how it goes.  Also looking into why this
-> > > builds on 32-bit x86 but not on powerpc.
-> > 
-> > Hrmpf. Seems the idiot I am fatfingered __GFP_NOTRACK to __GFP_NOTRACE
-> > and then only tested with the DEBUG stuff disabled......
-> 
-> That sounds like something I would do...  ;-)
-> 
-> I will rerun with __GFP_NOTRACK.
+>From aca8f5bd71797534ea220b193772946f59ee8125 Mon Sep 17 00:00:00 2001
+From: Sam Ravnborg <sam@ravnborg.org>
+Date: Tue, 8 May 2012 19:49:59 +0200
+Subject: [PATCH] kbuild: fix ia64 link
 
-Which passes moderate rcutorture testing on Power.
+ia64 build failed like this:
 
-							Thanx, Paul
+  CC      init/version.o
+  LD      init/built-in.o
+  KSYM    .tmp_kallsyms1.o
+ld: .tmp_kallsyms1.o: linking constant-gp files with non-constant-gp files
+ld: failed to merge target specific data of file .tmp_kallsyms1.o
+make: *** [vmlinux] Error 1
+
+This was introduced when link of vmlinux was migrated to a script.
+Add missing option to as to fix this.
+
+Reported-by: Tony Luck <tony.luck@gmail.com>
+Tested-by: Tony Luck <tony.luck@gmail.com>
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+---
+
+Hi Michal - please apply.
+
+	Sam
+
+ scripts/link-vmlinux.sh |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
+index 26c5b65..1f4c27b 100644
+--- a/scripts/link-vmlinux.sh
++++ b/scripts/link-vmlinux.sh
+@@ -78,8 +78,8 @@ kallsyms()
+ 		kallsymopt=--all-symbols
+ 	fi
+ 
+-	local aflags="${KBUILD_AFLAGS} ${NOSTDINC_FLAGS}                     \
+-		      ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
++	local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
++		      ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
+ 
+ 	${NM} -n ${1} | \
+ 		scripts/kallsyms ${kallsymopt} | \
+-- 
+1.6.0.6
 
