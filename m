@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab2EHRDG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 13:03:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51235 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757434Ab2EHRDE convert rfc822-to-8bit (ORCPT
+	id S1757584Ab2EHRDV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 13:03:21 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38283 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757552Ab2EHRDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 13:03:04 -0400
-Message-ID: <1336496568.8226.34.camel@twins>
-Subject: Re: linux-next oops in __lock_acquire for process_one_work
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 08 May 2012 19:02:48 +0200
-In-Reply-To: <20120508165819.GB10687@google.com>
-References: <alpine.LSU.2.00.1205070951170.1544@eggly.anvils>
-	 <20120507175743.GC19417@google.com> <1336482202.16236.29.camel@twins>
-	 <20120508165819.GB10687@google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 8 May 2012 13:03:18 -0400
+Date: Tue, 8 May 2012 13:03:17 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Paul Bolle <pebolle@tiscali.nl>
+cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-scsi@vger.kernel.org>, <usb-storage@lists.one-eyed-alien.net>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] scsi: usb-storage: hide errors for five devices
+In-Reply-To: <1336491453.1933.67.camel@x61.thuisdomein>
+Message-ID: <Pine.LNX.4.44L0.1205081240450.1479-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-08 at 09:58 -0700, Tejun Heo wrote:
-> On Tue, May 08, 2012 at 03:03:22PM +0200, Peter Zijlstra wrote:
-> > I think there's a problem if indeed we do silly things like small copies
-> > like Hugh saw (why would gcc ever generate small copies for objects that
-> > are naturally aligned and naturally sized?).
+On Tue, 8 May 2012, Paul Bolle wrote:
+
+> On Tue, 2012-05-08 at 10:02 -0400, Alan Stern wrote:
+> > On Tue, 8 May 2012, Paul Bolle wrote: 
+> > > 1) These patches try to hide those errors by:
+> > > - downgrading one error to a notice; and
 > > 
-> > Something like the below should fix that problem, but it doesn't explain
-> > the observed issue..
+> > That's a reasonable thing to do, IMO.
+> > 
+> > > - setting the NO_WP_DETECT quirk for these five devices.
+> > 
+> > But that isn't.  These quirks are intended for devices that crash when
+> > they receive the command in question.
 > 
-> Hmmm.... Hugh, can you please verify whether this patch makes the
-> problem go away somehow?
+> Yes, these USB memory sticks don't crash. (They actually seem to work
+> just fine, something that I perhaps should have emphasized in the commit
+> descriptions.)
 > 
-> > @@ -1810,7 +1810,7 @@ __acquires(&gcwq->lock)
-> >  	 * lock freed" warnings as well as problems when looking into
-> >  	 * work->lockdep_map, make a copy and use that here.
-> >  	 */
-> > -	struct lockdep_map lockdep_map = work->lockdep_map;
-> > +	struct lockdep_map lockdep_map = lockdep_copy_map(&work->lockdep_map);
+> > They aren't meant to suppress sending commands to devices that can
+> > properly reject them.
 > 
-> If this is the correct fix for whatever reason, maybe we want the copy
-> interface to be a bit more conventional?  lockdep_copy_map(to, from)?
+> Even the sticks that hit "bad_sense" (in sd_read_cache_type(), which I
+> forgot to mention in the comment descriptions)? Is that not as severe as
+> it suggests?
 
-Sure why not.. still not quite understanding the whole issue though.
+It means that the device either doesn't support the MODE SENSE command
+or it returned useless data.  As a result, we will assume it has a
+write-through cache when it might not.
 
+For memory sticks this doesn't matter.  For other devices it might be 
+more important (although anything with a working cache should not hit 
+this error case).
+
+> Of course, an easy way out would be to downgrade both the "Asking for
+> cache data failed" and the "No Caching mode page present" errors to
+> notices. But the SCSI people might disagree with that approach.
+
+Well, let's see what they say.
+
+Alan Stern
 
