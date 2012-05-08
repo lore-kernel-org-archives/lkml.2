@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756955Ab2EHPn6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:43:58 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5651 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755891Ab2EHPnw (ORCPT
+	id S1756923Ab2EHPn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:43:56 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11199 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755957Ab2EHPnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:43:52 -0400
+	Tue, 8 May 2012 11:43:53 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 08 May 2012 08:43:40 -0700
+	by hqnvupgp08.nvidia.com on Tue, 08 May 2012 08:43:43 -0700
 From: Rhyland Klein <rklein@nvidia.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Samuel Ortiz <sameo@linux.intel.com>,
@@ -16,9 +16,9 @@ To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Rob Herring <rob.herring@calxeda.com>, Liam Girdwood <lrg@ti.com>
 CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         Rhyland Klein <rklein@nvidia.com>
-Subject: [PATCH 3/6 v3] mfd: tps65910: Add device-tree support
-Date: Tue, 8 May 2012 11:42:40 -0700
-Message-ID: <1336502563-31789-4-git-send-email-rklein@nvidia.com>
+Subject: [PATCH 4/6 v3] regulator: tps65910 regulator: add device tree support
+Date: Tue, 8 May 2012 11:42:41 -0700
+Message-ID: <1336502563-31789-5-git-send-email-rklein@nvidia.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1336502563-31789-1-git-send-email-rklein@nvidia.com>
 References: <1336502563-31789-1-git-send-email-rklein@nvidia.com>
@@ -29,140 +29,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree based initialization support for TI's tps65910 pmic.
+Add devicetree based initialization support for TI tps65910 regulators.
 
 Signed-off-by: Rhyland Klein <rklein@nvidia.com>
 ---
- v3: no change since v2.
- v2: split mfd portion into single change to add dt support
-     added of_node to config before calling regulator_register
-     removed passing pdata to mfd_cell child devices
-     removed use_dt_for_init_data flag
+ v3: Modified to use new api of_regulator_match to fetch all regulator
+     init data from device node.
 
- drivers/mfd/tps65910.c |   80 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 79 insertions(+), 1 deletions(-)
+ v2: split off regulator specific dt initialization
 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index f221153..4b52e95 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
+ drivers/regulator/tps65910-regulator.c |  108 ++++++++++++++++++++++++++++++++
+ 1 files changed, 108 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
+index 09fb5cd..67791e1 100644
+--- a/drivers/regulator/tps65910-regulator.c
++++ b/drivers/regulator/tps65910-regulator.c
 @@ -23,6 +23,7 @@
- #include <linux/mfd/core.h>
- #include <linux/regmap.h>
+ #include <linux/slab.h>
+ #include <linux/gpio.h>
  #include <linux/mfd/tps65910.h>
-+#include <linux/of_device.h>
++#include <linux/regulator/of_regulator.h>
  
- static struct mfd_cell tps65910s[] = {
- 	{
-@@ -129,6 +130,77 @@ err_sleep_init:
+ #define TPS65910_SUPPLY_STATE_ENABLED	0x1
+ #define EXT_SLEEP_CONTROL (TPS65910_SLEEP_CONTROL_EXT_INPUT_EN1 |	\
+@@ -1047,6 +1048,105 @@ static int tps65910_set_ext_sleep_config(struct tps65910_reg *pmic,
  	return ret;
  }
  
 +#ifdef CONFIG_OF
-+static struct of_device_id tps65910_of_match[] = {
-+	{ .compatible = "ti,tps65910", .data = (void *)TPS65910},
-+	{ .compatible = "ti,tps65911", .data = (void *)TPS65911},
-+	{ },
++
++static struct of_regulator_match tps65910_matches[] = {
++	{ .name = "VRTC",	.driver_data = (void *) &tps65910_regs[0] },
++	{ .name = "VIO",	.driver_data = (void *) &tps65910_regs[1] },
++	{ .name = "VDD1",	.driver_data = (void *) &tps65910_regs[2] },
++	{ .name = "VDD2",	.driver_data = (void *) &tps65910_regs[3] },
++	{ .name = "VDD3",	.driver_data = (void *) &tps65910_regs[4] },
++	{ .name = "VDIG1",	.driver_data = (void *) &tps65910_regs[5] },
++	{ .name = "VDIG2",	.driver_data = (void *) &tps65910_regs[6] },
++	{ .name = "VPLL",	.driver_data = (void *) &tps65910_regs[7] },
++	{ .name = "VDAC",	.driver_data = (void *) &tps65910_regs[8] },
++	{ .name = "VAUX1",	.driver_data = (void *) &tps65910_regs[9] },
++	{ .name = "VAUX2",	.driver_data = (void *) &tps65910_regs[10] },
++	{ .name = "VAUX33",	.driver_data = (void *) &tps65910_regs[11] },
++	{ .name = "VMMC",	.driver_data = (void *) &tps65910_regs[12] },
 +};
-+MODULE_DEVICE_TABLE(of, tps65910_of_match);
 +
-+static struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
-+						int *chip_id)
++static struct of_regulator_match tps65911_matches[] = {
++	{ .name = "VRTC",	.driver_data = (void *) &tps65911_regs[0] },
++	{ .name = "VIO",	.driver_data = (void *) &tps65911_regs[1] },
++	{ .name = "VDD1",	.driver_data = (void *) &tps65911_regs[2] },
++	{ .name = "VDD2",	.driver_data = (void *) &tps65911_regs[3] },
++	{ .name = "VDDCTRL",	.driver_data = (void *) &tps65911_regs[4] },
++	{ .name = "LDO1",	.driver_data = (void *) &tps65911_regs[5] },
++	{ .name = "LDO2",	.driver_data = (void *) &tps65911_regs[6] },
++	{ .name = "LDO3",	.driver_data = (void *) &tps65911_regs[7] },
++	{ .name = "LDO4",	.driver_data = (void *) &tps65911_regs[8] },
++	{ .name = "LDO5",	.driver_data = (void *) &tps65911_regs[9] },
++	{ .name = "LDO6",	.driver_data = (void *) &tps65911_regs[10] },
++	{ .name = "LDO7",	.driver_data = (void *) &tps65911_regs[11] },
++	{ .name = "LDO8",	.driver_data = (void *) &tps65911_regs[12] },
++};
++
++static struct tps65910_board *tps65910_parse_dt_reg_data(
++				struct platform_device *pdev)
 +{
-+	struct device_node *np = client->dev.of_node;
-+	struct tps65910_board *board_info;
++	struct tps65910_board *pmic_plat_data;
++	struct tps65910 *tps65910 = dev_get_drvdata(pdev->dev.parent);
++	struct device_node *np = pdev->dev.parent->of_node;
++	struct device_node *regulators;
++	struct of_regulator_match *matches;
 +	unsigned int prop;
-+	const struct of_device_id *match;
-+	unsigned int prop_array[TPS6591X_MAX_NUM_GPIO];
-+	int ret = 0;
-+	int idx;
++	int idx = 0, ret, count;
 +
-+	match = of_match_device(tps65910_of_match, &client->dev);
-+	if (!match) {
-+		dev_err(&client->dev, "Failed to find matching dt id\n");
++	pmic_plat_data = devm_kzalloc(&pdev->dev, sizeof(*pmic_plat_data),
++					GFP_KERNEL);
++
++	if (!pmic_plat_data) {
++		dev_err(&pdev->dev, "Failure to alloc pdata for regulators.\n");
 +		return NULL;
 +	}
 +
-+	*chip_id  = (int)match->data;
++	regulators = of_find_node_by_name(np, "regulators");
 +
-+	board_info = devm_kzalloc(&client->dev, sizeof(*board_info),
-+			GFP_KERNEL);
-+	if (!board_info) {
-+		dev_err(&client->dev, "Failed to allocate pdata\n");
++	switch (tps65910_chip_id(tps65910)) {
++	case TPS65910:
++		count = ARRAY_SIZE(tps65910_matches);
++		matches = tps65910_matches;
++		break;
++	case TPS65911:
++		count = ARRAY_SIZE(tps65911_matches);
++		matches = tps65911_matches;
++		break;
++	default:
++		pr_err("Invalid tps chip version\n");
 +		return NULL;
 +	}
 +
-+	ret = of_property_read_u32(np, "ti,vmbch-threshold", &prop);
-+	if (!ret)
-+		board_info->vmbch_threshold = prop;
-+	else if (*chip_id == TPS65911)
-+		dev_warn(&client->dev, "VMBCH-Threshold not specified");
-+
-+	ret = of_property_read_u32(np, "ti,vmbch2-threshold", &prop);
-+	if (!ret)
-+		board_info->vmbch2_threshold = prop;
-+	else if (*chip_id == TPS65911)
-+		dev_warn(&client->dev, "VMBCH2-Threshold not specified");
-+
-+	ret = of_property_read_u32_array(np, "ti,en-gpio-sleep",
-+				   prop_array, TPS6591X_MAX_NUM_GPIO);
-+	if (!ret)
-+		for (idx = 0; idx < ARRAY_SIZE(prop_array); idx++)
-+			board_info->en_gpio_sleep[idx] = (prop_array[idx] != 0);
-+	else if (ret != -EINVAL) {
-+		dev_err(&client->dev,
-+			"error reading property ti,en-gpio-sleep: %d\n.", ret);
++	ret = of_regulator_match(pdev->dev.parent, regulators, matches, count);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Error parsing regulator init data: %d\n",
++			ret);
 +		return NULL;
 +	}
 +
++	for (idx = 0; idx < count; idx++) {
++		if (!matches[idx].init_data || !matches[idx].of_node)
++			continue;
 +
-+	board_info->irq = client->irq;
-+	board_info->irq_base = -1;
-+	board_info->gpio_base = -1;
++		pmic_plat_data->tps65910_pmic_init_data[idx] =
++							matches[idx].init_data;
 +
-+	return board_info;
++		ret = of_property_read_u32(matches[idx].of_node,
++				"ti,regulator-ext-sleep-control", &prop);
++		if (!ret)
++			pmic_plat_data->regulator_ext_sleep_control[idx] = prop;
++	}
++
++	return pmic_plat_data;
 +}
 +#else
-+static inline struct tps65910_board *tps65910_parse_dt(
-+					struct i2c_client *client)
++static inline struct tps65910_board *tps65910_parse_dt_reg_data(
++				struct platform_device *pdev)
 +{
-+	return NULL;
++	return 0;
 +}
 +#endif
- 
- static int tps65910_i2c_probe(struct i2c_client *i2c,
- 			    const struct i2c_device_id *id)
-@@ -137,8 +209,13 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
- 	struct tps65910_board *pmic_plat_data;
- 	struct tps65910_platform_data *init_data;
- 	int ret = 0;
-+	int chip_id = id->driver_data;
- 
- 	pmic_plat_data = dev_get_platdata(&i2c->dev);
 +
-+	if (!pmic_plat_data && i2c->dev.of_node)
-+		pmic_plat_data = tps65910_parse_dt(i2c, &chip_id);
+ static __devinit int tps65910_probe(struct platform_device *pdev)
+ {
+ 	struct tps65910 *tps65910 = dev_get_drvdata(pdev->dev.parent);
+@@ -1059,6 +1159,9 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
+ 	int i, err;
+ 
+ 	pmic_plat_data = dev_get_platdata(tps65910->dev);
++	if (!pmic_plat_data && tps65910->dev->of_node)
++		pmic_plat_data = tps65910_parse_dt_reg_data(pdev);
 +
  	if (!pmic_plat_data)
  		return -EINVAL;
  
-@@ -155,7 +232,7 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
- 	i2c_set_clientdata(i2c, tps65910);
- 	tps65910->dev = &i2c->dev;
- 	tps65910->i2c_client = i2c;
--	tps65910->id = id->driver_data;
-+	tps65910->id = chip_id;
- 	mutex_init(&tps65910->io_mutex);
+@@ -1166,6 +1269,11 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
+ 		config.driver_data = pmic;
+ 		config.regmap = tps65910->regmap;
  
- 	tps65910->regmap = regmap_init_i2c(i2c, &tps65910_regmap_config);
-@@ -215,6 +292,7 @@ static struct i2c_driver tps65910_i2c_driver = {
- 	.driver = {
- 		   .name = "tps65910",
- 		   .owner = THIS_MODULE,
-+		   .of_match_table = of_match_ptr(tps65910_of_match),
- 	},
- 	.probe = tps65910_i2c_probe,
- 	.remove = tps65910_i2c_remove,
++#ifdef CONFIG_OF
++		config.of_node = of_find_node_by_name(tps65910->dev->of_node,
++							info->name);
++#endif
++
+ 		rdev = regulator_register(&pmic->desc[i], &config);
+ 		if (IS_ERR(rdev)) {
+ 			dev_err(tps65910->dev,
 -- 
 1.7.0.4
 
