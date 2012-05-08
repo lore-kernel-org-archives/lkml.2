@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab2EHP0B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:26:01 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51061 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755688Ab2EHPZ7 convert rfc822-to-8bit (ORCPT
+	id S1756346Ab2EHP1I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:27:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48036 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754384Ab2EHP1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:25:59 -0400
+	Tue, 8 May 2012 11:27:05 -0400
+Message-ID: <4FA93B3F.3000906@redhat.com>
+Date: Tue, 08 May 2012 17:26:55 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120425 Thunderbird/12.0
 MIME-Version: 1.0
-In-Reply-To: <1336432421-17972-1-git-send-email-marcheu@chromium.org>
-References: <1336432421-17972-1-git-send-email-marcheu@chromium.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 8 May 2012 08:25:38 -0700
-X-Google-Sender-Auth: CO7ul8nEIRoKJWrm1nzR8VWowbk
-Message-ID: <CA+55aFyd08=eemQsUFvtjerEVQdznhe647w4PmSrPkkEvjNuzg@mail.gmail.com>
-Subject: Re: [PATCH] mm: Work around Intel SNB GTT bug with some physical pages.
-To: =?ISO-8859-1?Q?St=E9phane_Marchesin?= <marcheu@chromium.org>
-Cc: linux-kernel@vger.kernel.org, keithp@keithp.com, seanpaul@chromium.org,
-        olofj@chromium.org, dri-devel@lists.freedesktop.org
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, gleb@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC dontapply 5/5] kvm_para: guest side for eoi avoidance
+References: <cover.1334833140.git.mst@redhat.com> <5e1399d9e743668a87f31d8f2b83cad862c60728.1334833141.git.mst@redhat.com>
+In-Reply-To: <5e1399d9e743668a87f31d8f2b83cad862c60728.1334833141.git.mst@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 7, 2012 at 4:13 PM, Stéphane Marchesin <marcheu@chromium.org> wrote:
->
-> In the end, I came up with the ugly workaround of just leaking the
-> offending pages in shmem.c.
+Il 23/04/2012 16:04, Michael S. Tsirkin ha scritto:
+> +/* Our own copy of __test_and_clear_bit to make sure
+> + * it is done with a single instruction */
 
-Don't leak it.
+Is this for microoptimization or correctness?  If the latter, it does
+not ensure anything without a "lock" prefix.
 
-Instead, add it to some RCU list, and free it using RCU. Or some
-one-second timer or something.
+Paolo
 
-That kind of approach should guarantee that it
+> +static inline int kvm_test_and_clear_bit(int nr, volatile u16* addr)
+> +{
+> +	int oldbit;
+> +
+> +	asm volatile("btr %2,%1\n\t"
+> +		     "sbb %0,%0"
+> +		     : "=r" (oldbit), BITOP_ADDR_CONSTRAINT(*addr) : "Ir" (nr));
+> +	return oldbit;
 
- (a) gets returned to the system
-
-but
-
- (b) the returning to the system gets delayed sufficiently that if the
-i915 driver is doing lots of allocations it will be getting other
-pages.
-
-Hmm?
-
-              Linus
