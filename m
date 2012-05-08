@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab2EHQYM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 12:24:12 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:45842 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754666Ab2EHQYK (ORCPT
+	id S1755869Ab2EHQ0S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 12:26:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46852 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628Ab2EHQ0R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 12:24:10 -0400
-Message-ID: <4FA948B9.20600@xenotime.net>
-Date: Tue, 08 May 2012 09:24:25 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kay@vrfy.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: linux-next: Tree for May 8 (printk)
-References: <20120508181531.072fdc5fefa60d852e784587@canb.auug.org.au>
-In-Reply-To: <20120508181531.072fdc5fefa60d852e784587@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Tue, 8 May 2012 12:26:17 -0400
+Message-ID: <1336494356.8226.32.camel@twins>
+Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Geoff Levand <geoff@infradead.org>,
+        linaro-sched-sig@lists.linaro.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Date: Tue, 08 May 2012 18:25:56 +0200
+In-Reply-To: <1336493768.8226.29.camel@twins>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+	 <1335830115-14335-8-git-send-email-fweisbec@gmail.com>
+	 <alpine.DEB.2.00.1205071053070.1060@router.home>
+	 <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
+	 <1336488626.16236.41.camel@twins>
+	 <alpine.DEB.2.00.1205081016370.27713@router.home>
+	 <1336490832.8226.5.camel@twins>
+	 <alpine.DEB.2.00.1205081035550.27713@router.home>
+	 <1336492081.8226.13.camel@twins>
+	 <alpine.DEB.2.00.1205081054310.27713@router.home>
+	 <1336493768.8226.29.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2012 01:15 AM, Stephen Rothwell wrote:
+On Tue, 2012-05-08 at 18:16 +0200, Peter Zijlstra wrote:
+> No, it simply doesn't (and cannot) know this.. well it could but I think
+> its an NP-hard problem. The way its been solved is by means of explicit
+> configuration using cpusets. 
 
-> Hi all,
-> 
-> There will be no linux-next tomorrow.
-> 
-> Changes since 20120507:
-
-
-Build errors on i386 and x86_64 when CONFIG_PRINTK is not enabled:
-
-drivers/char/mem.c:858:2: error: implicit declaration of function 'printk_emit'
-
-kernel/printk.c:1423:20: error: 'LOG_LINE_MAX' undeclared (first use in this function)
-kernel/printk.c:1427:3: error: 'logbuf_lock' undeclared (first use in this function)
-kernel/printk.c:1428:19: error: 'log_next_seq' undeclared (first use in this function)
-kernel/printk.c:1433:21: error: 'log_first_seq' undeclared (first use in this function)
-kernel/printk.c:1436:18: error: 'log_first_idx' undeclared (first use in this function)
-kernel/printk.c:1442:3: error: implicit declaration of function 'log_from_idx'
-kernel/printk.c:1442:7: warning: assignment makes pointer from integer without a cast
-kernel/printk.c:1443:14: error: dereferencing pointer to incomplete type
-kernel/printk.c:1444:12: error: dereferencing pointer to incomplete type
-kernel/printk.c:1447:3: error: implicit declaration of function 'log_text'
-kernel/printk.c:1450:3: error: implicit declaration of function 'log_next'
-kernel/printk.c:1711:3: error: 'logbuf_lock' undeclared (first use in this function)
-kernel/printk.c:1712:17: error: 'syslog_seq' undeclared (first use in this function)
-kernel/printk.c:1713:17: error: 'syslog_idx' undeclared (first use in this function)
-
-
-
--- 
-~Randy
+Yeah, it looks like a combinatorics problem. Anyway, even if we could
+solve that problem we'd still end up with the cpuset infrastructure.
+Only auto-magically configured instead of manually.
