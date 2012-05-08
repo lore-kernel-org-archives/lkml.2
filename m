@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab2EHAYZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 20:24:25 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:53964 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932297Ab2EHAYU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 20:24:20 -0400
-X-Sasl-enc: pRJM5NUM76298C2gRg8gnyL74S4RnJlQk8sNhd4Uhukq 1336436659
-Message-ID: <4FA867B1.9080003@imap.cc>
-Date: Tue, 08 May 2012 02:24:17 +0200
-From: Tilman Schmidt <tilman@imap.cc>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
+	id S1758055Ab2EHA0q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 20:26:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54838 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757803Ab2EHA0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 20:26:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="141176245"
+Date: Mon, 7 May 2012 17:26:40 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: girish verma <girish.gcet@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [patch] xhci: testing sizeof xhci_doorbell_array 2 time
+Message-ID: <20120508002640.GA10340@xanatos>
+References: <CAMC5Lb4bMfqnWuvzcisGNV-uM08vHJMLt8X+mYmOp0P6RzqtrA@mail.gmail.com>
 MIME-Version: 1.0
-To: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>,
-        netdev@vger.kernel.org
-CC: Hansjoerg Lipp <hjlipp@web.de>, Karsten Keil <keil@b1-systems.de>,
-        i4ldeveloper@listserv.isdn4linux.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] ISDN patches for net-next
-References: <20120425-patch-gigaset-00.tilman@imap.cc>
-In-Reply-To: <20120425-patch-gigaset-00.tilman@imap.cc>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigB038A42B5BBE08B5F883BB2A"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMC5Lb4bMfqnWuvzcisGNV-uM08vHJMLt8X+mYmOp0P6RzqtrA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigB038A42B5BBE08B5F883BB2A
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+Hi Girish,
 
-On 26.04.2012 01:02, /me wrote:
-> here's a series of eight patches to the Kernel CAPI subsystem and
-> the Gigaset driver. Please consider for application to net-next.
-> The first three should also go into -stable and are tagged accordingly.=
+Although this is a pretty trivial change, can you please Cc the
+maintainer of the driver (me, for the xHCI driver) next time?  Either
+check the MAINTAINERS file, or run scripts/get_maintainer.pl.
 
-
-Is there anything missing for these to be accepted into net-next?
-Or should I just be patient?
+In any case, I see no problem with this patch.  Greg's already taken it
+anyway. :)
 
 Thanks,
-Tilman
+Sarah Sharp
 
-> Tilman Schmidt (8):
->       isdn/gigaset: ratelimit CAPI message dumps
->       isdn/gigaset: fix CAPI disconnect B3 handling
->       isdn/gigaset: improve error handling querying firmware version
->       isdn/gigaset: fix readability damage=20
->       isdn/gigaset: internal function name cleanup
->       isdn/gigaset: unify function return values
->       isdn/capi: fix readability damage
->       isdn/capi: elliminate capincci_find() in non-middleware case
-
---=20
-Tilman Schmidt                    E-Mail: tilman@imap.cc
-Bonn, Germany
-Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
-Unge=F6ffnet mindestens haltbar bis: (siehe R=FCckseite)
-
-
---------------enigB038A42B5BBE08B5F883BB2A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk+oZ7EACgkQQ3+did9BuFvO5ACbBek9NUkMMVP35s0PeAW31yQQ
-5rUAoIozr5hIZU4Ou/mC4QpmHUMiw/KF
-=QDpW
------END PGP SIGNATURE-----
-
---------------enigB038A42B5BBE08B5F883BB2A--
+On Sun, May 06, 2012 at 08:35:13PM +0530, girish verma wrote:
+> Testing BUILD_BUG_ON xhci_doorbell_array structure 2 time, redundant statement
+> 
+> Signed-off-by: Girish Verma <girish.gcet@gmail.com>
+> 
+>  ---
+>  drivers/usb/host/xhci.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index 36641a7..cfcf733 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -4090,7 +4090,6 @@ static int __init xhci_hcd_init(void)
+>  	BUILD_BUG_ON(sizeof(struct xhci_intr_reg) != 8*32/8);
+>  	/* xhci_run_regs has eight fields and embeds 128 xhci_intr_regs */
+>  	BUILD_BUG_ON(sizeof(struct xhci_run_regs) != (8+8*128)*32/8);
+> -	BUILD_BUG_ON(sizeof(struct xhci_doorbell_array) != 256*32/8);
+>  	return 0;
+>  unreg_pci:
+>  	xhci_unregister_pci();
+> --
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
