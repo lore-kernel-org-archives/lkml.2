@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab2EHTIr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 15:08:47 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:44777 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754204Ab2EHTIq (ORCPT
+	id S1755997Ab2EHTLW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 15:11:22 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47770 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585Ab2EHTLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 15:08:46 -0400
-Date: Tue, 8 May 2012 15:08:45 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <greg@kroah.com>
-cc: Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [PATCH] device core: fix a copy-paste error
-Message-ID: <Pine.LNX.4.44L0.1205081507010.1164-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 8 May 2012 15:11:21 -0400
+Subject: Re: [PATCH] mm: sl[auo]b: Use atomic bit operations to update
+ page-flags.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Pravin B Shelar <pshelar@nicira.com>
+Cc: cl@linux.com, penberg@kernel.org, mpm@selenic.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, jesse@nicira.com,
+        abhide@nicira.com
+In-Reply-To: <1336503339-18722-1-git-send-email-pshelar@nicira.com>
+References: <1336503339-18722-1-git-send-email-pshelar@nicira.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 May 2012 21:11:16 +0200
+Message-ID: <1336504276.3752.2600.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch (as1552) fixes a fairly obvious copy-paste error that could
-have serious consequences on architectures where sizeof(int) !=
-sizeof(unsigned long).
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: <stable@vger.kernel.org>
-
----
-
-This just caught my eye while I was adding another macro immediately
-below DEVICE_INT_ATTR.
+On Tue, 2012-05-08 at 11:55 -0700, Pravin B Shelar wrote:
+> Transparent huge pages can change page->flags (PG_compound_lock)
+> without taking Slab lock. So sl[auo]b need to use atomic bit
+> operation while changing page->flags.
+> Specificly this patch fixes race between compound_unlock and slab
+> functions which does page-flags update. This can occur when
+> get_page/put_page is called on page from slab object.
 
 
- include/linux/device.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+But should get_page()/put_page() be called on a page own by slub ?
 
-Index: usb-3.4/include/linux/device.h
-===================================================================
---- usb-3.4.orig/include/linux/device.h
-+++ usb-3.4/include/linux/device.h
-@@ -502,7 +502,7 @@ ssize_t device_store_int(struct device *
- 		{ __ATTR(_name, _mode, device_show_ulong, device_store_ulong), &(_var) }
- #define DEVICE_INT_ATTR(_name, _mode, _var) \
- 	struct dev_ext_attribute dev_attr_##_name = \
--		{ __ATTR(_name, _mode, device_show_ulong, device_store_ulong), &(_var) }
-+		{ __ATTR(_name, _mode, device_show_int, device_store_int), &(_var) }
- 
- extern int device_create_file(struct device *device,
- 			      const struct device_attribute *entry);
 
