@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756545Ab2EHP1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:27:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42304 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755937Ab2EHP1n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:27:43 -0400
-Message-ID: <1336490832.8226.5.camel@twins>
-Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 08 May 2012 17:27:12 +0200
-In-Reply-To: <alpine.DEB.2.00.1205081016370.27713@router.home>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
-	 <1335830115-14335-8-git-send-email-fweisbec@gmail.com>
-	 <alpine.DEB.2.00.1205071053070.1060@router.home>
-	 <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
-	 <1336488626.16236.41.camel@twins>
-	 <alpine.DEB.2.00.1205081016370.27713@router.home>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1756597Ab2EHP2s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:28:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31988 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755568Ab2EHP2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 11:28:47 -0400
+Date: Tue, 8 May 2012 18:28:43 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, x86@kernel.org, kvm@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC dontapply 5/5] kvm_para: guest side for eoi avoidance
+Message-ID: <20120508152843.GE8988@redhat.com>
+References: <cover.1334833140.git.mst@redhat.com>
+ <5e1399d9e743668a87f31d8f2b83cad862c60728.1334833141.git.mst@redhat.com>
+ <4FA93B3F.3000906@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA93B3F.3000906@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-08 at 10:18 -0500, Christoph Lameter wrote:
-> On Tue, 8 May 2012, Peter Zijlstra wrote:
+On Tue, May 08, 2012 at 05:26:55PM +0200, Paolo Bonzini wrote:
+> Il 23/04/2012 16:04, Michael S. Tsirkin ha scritto:
+> > +/* Our own copy of __test_and_clear_bit to make sure
+> > + * it is done with a single instruction */
 > 
-> > There's no such policy, but I don't get why Christoph objects to
-> > cpusets, its the option I would prefer. You're going to use cpusets
-> > anyway to partition your system, might as well also use it to mark a
-> > whole partition/set as nohz.
+> Is this for microoptimization or correctness?  If the latter, it does
+> not ensure anything without a "lock" prefix.
 > 
-> We are currently not using cpusets but are simply isolating processors as
-> needed. Not sure that I want the overhead (administratively as well as in
-> kernel) to deal with this.
+It can't race with other vcpus, only with vmexit on the same vcpu.
 
-isolating how? The only way to do that is with the (broken) isolcpus
-crap and cpusets. There is no other way.
+> Paolo
+> 
+> > +static inline int kvm_test_and_clear_bit(int nr, volatile u16* addr)
+> > +{
+> > +	int oldbit;
+> > +
+> > +	asm volatile("btr %2,%1\n\t"
+> > +		     "sbb %0,%0"
+> > +		     : "=r" (oldbit), BITOP_ADDR_CONSTRAINT(*addr) : "Ir" (nr));
+> > +	return oldbit;
 
-> Someone may be using a different partitioning technique (like cgroups) etc
-> and then wont be able to use nohz. Having it not depend on cpusets makes
-> it more universal.
-
-You seem terminally confused on cpuset vs cgroups thing. One more time:
-cpusets is a cgroup controller. Without cgroup support there is no
-cpusets.
-
-Furthermore there is no other partitioning scheme, cpusets is it.
-
-
+--
+			Gleb.
