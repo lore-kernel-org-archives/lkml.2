@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab2EHXsg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 19:48:36 -0400
-Received: from leo.clearchain.com ([199.73.29.74]:25199 "EHLO
-	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab2EHXse (ORCPT
+	id S1752929Ab2EHX4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 19:56:07 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:18229 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab2EHX4F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 19:48:34 -0400
-Date: Wed, 9 May 2012 09:52:19 +1000
-From: Peter Hutterer <peter.hutterer@who-t.net>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, chatty@enac.fr, chasedouglas@gmail.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Input: MT - Include win8 support
-Message-ID: <20120508235219.GA4067@yabbi.redhat.com>
-References: <1336230499-1450-1-git-send-email-rydberg@euromail.se>
- <CAN+gG=HqGmf77P6=7RMFT_Ez7Ysp4ZVJ6skfAoDcZ7JN1JtYnw@mail.gmail.com>
- <20120506182835.GA12221@polaris.bitmath.org>
- <20120508060221.GA15925@yabbi.bne.redhat.com>
- <20120508184052.GA23748@polaris.bitmath.org>
+	Tue, 8 May 2012 19:56:05 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-160.messagelabs.com!1336521362!5832198!3
+X-Originating-IP: [216.166.12.32]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Date: Tue, 8 May 2012 18:55:59 -0500
+Subject: RE: [PATCH] staging: comedi: remove __user annotation inside of
+ struct's
+Thread-Topic: [PATCH] staging: comedi: remove __user annotation inside of
+ struct's
+Thread-Index: Ac0tdC1JNTcA7Ri6ToikClTJYi6DsQAAQ1Wg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698A1774D@AUSP01VMBX24.collaborationhost.net>
+References: <201205081641.00358.hartleys@visionengravers.com>
+In-Reply-To: <201205081641.00358.hartleys@visionengravers.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120508184052.GA23748@polaris.bitmath.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Wed, 09 May 2012 09:18:33 +0930 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 08:40:52PM +0200, Henrik Rydberg wrote:
-> > > to aid in the discussion, I have shared a drawing of the MT model
-> > > and the (supposed) win8 model.
-> > > 
-> > > https://docs.google.com/document/d/1KKu7kqPOsvE9tCmWhdGnmO8tgmN0Cd-Mv_crVaCZueY/view
-> > 
-> > having an asciiart version of this in Documentation/ would be quite useful,
-> > IMO
-> 
-> Yep, that ought to be possible to arrange.
-> 
-> > Insert a paragraph into the actual documentation. I think that's more
-> > helpful than tacking it on (if not quite as nice in a diff)
-> > 
-> > "The orientation of the ellipse. The value should describe a signed quarter
-> > of a revolution clockwise around the touch center. The signed value range
-> > is arbitrary, but zero should be returned for a finger aligned along the Y
-> > axis of the surface, a negative value when finger is turned to the left, and
-> > a positive value when finger turned to the right. When completely aligned
-> > with the X axis, the range max should be returned.  
-> > 
-> > Touch ellipsis are symmetrical by default. For devices capable of true 360
-> > degree orientation, the reported orientation must exceed the range max to
-> > indicate more than a quarter of a revolution. For an upside-down finger, 
-> > range max * 2 should be returned.
-> > 
-> > Orientation can be omitted if the touching object is circular, or if the
-> > information is not available in the kernel driver. Partial orientation
-> > support is possible if the device can distinguish between the two axis, but
-> > not (uniquely) any values in between. In such cases, the range of
-> > ABS_MT_ORIENTATION should be [0, 1] [4]."
-> 
-> Looks good, will copy that in its entirety. :-)
-> 
-> > Not a big fan of reporting values above absmin/absmax, tbh. It means we
-> > can't rely on the axis values and have to special-case it. Plus, there's no
-> > way to detect this before you actually get a value.
-> 
-> True, and I am open to other suggestions. However, I think the
-> proposal integrates pretty well with the existing model and is likely
-> to produce reasonable results without userland modifications.
-> 
-> > > Looking at the figure, it is clear that the MT model has two centers,
-> > > one for each ellipse. Thus, center is not discriminating
-> > > enough. Perhaps ABS_MT_OUTER_X/Y is more appropriate, then?
-> > 
-> > ABS_MT_OUTER_CENTER
-> 
-> I appreciate the suggestion, but along two-word combinations,
-> ABS_MT_OUTER_POSITION would integrate better with existing names. Both
-> seem awfully long, though.
+On Tuesday, May 08, 2012 4:41 PM, H Hartley Sweeten wrote:
+>
+> The structs' comedi_insn, coomedi_insnlist, comedi_cmd,
+> comedi_chaninfo, and comedi_rangeinfo are all passed to
+> the kernel from user space using ioctl commands. They
+> are then copied to kernel space using copy_from_user()
+> before the data is passed to the drivers.
+>
+> The __user annotation should not be used with variables
+> inside the struct. This produces a lot of sparse warnings
+> like:
+>
+> warning: dereference of noderef expression 
+>
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: Mori Hess <fmhess@users.sourceforge.net>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> ---
+>
+> Note: This patch exposes some new warnings about different
+> address space. These will be addressed.
 
-problem I see with "outer position" is that I'd associate it with the
-top/left position of whatever "outer" is, not with the center of said
-envelope. that's why I'd argue that "center" should be somewhere in the
-name.
+Please ignore this patch.
 
-Cheers,
-  Peter
+It appears the annotations in the struct definitions are correct.
+
+The initial copy_from_user will only copy the data  from the
+struct __user *arg to the kernel's struct * it doesn't copy the
+data that the struct variable points to, just the pointer. To get
+that data another copy_from_user needs to be done.
+
+The sparse warnings above will need to be addressed a
+different way.
+
+Sorry for the noise.
+
+Regards,
+Hartley
