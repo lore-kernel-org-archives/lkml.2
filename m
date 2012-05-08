@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab2EHEMm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 00:12:42 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:44390 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751461Ab2EHEJg (ORCPT
+	id S1755135Ab2EHEMk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 00:12:40 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:41993 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751473Ab2EHEJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 May 2012 00:09:36 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
@@ -14,12 +14,10 @@ Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
         <mturquette@linaro.org>, <sshtylyov@mvista.com>, <jgarzik@redhat.com>,
         <linux@arm.linux.org.uk>, <w.sang@pengutronix.de>,
         <LW@KARO-electronics.de>, <andrew@lunn.ch>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>
-Subject: [PATCH V3 Resend 04/12] usb/marvell: Remove conditional compilation of clk code
-Date: Tue, 8 May 2012 09:22:31 +0530
-Message-ID: <1f90c0a36fcae7ad45aef2634c8223600f0b64b8.1336448639.git.viresh.kumar@st.com>
+        Viresh Kumar <viresh.kumar@st.com>, <linux-i2c@vger.kernel.org>
+Subject: [PATCH V3 Resend 03/12] i2c/i2c-pxa: Remove conditional compilation of clk code
+Date: Tue, 8 May 2012 09:22:30 +0530
+Message-ID: <28655b8c590cefc2d6481dafd7bec6ec010b66d3.1336448639.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <cover.1336448639.git.viresh.kumar@st.com>
 References: <cover.1336448639.git.viresh.kumar@st.com>
@@ -35,34 +33,34 @@ With addition of dummy clk_*() calls for non CONFIG_HAVE_CLK cases in clk.h,
 there is no need to have clk code enclosed in #ifdef CONFIG_HAVE_CLK, #endif
 macros.
 
-Marvell usb also has these dummy macros defined locally. Remove them as they
-aren't required anymore.
+pxa i2c also has these dummy macros defined locally. Remove them as they aren't
+required anymore.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org
 ---
- include/linux/platform_data/mv_usb.h |    9 ---------
- 1 files changed, 0 insertions(+), 9 deletions(-)
+ drivers/i2c/busses/i2c-pxa.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/platform_data/mv_usb.h b/include/linux/platform_data/mv_usb.h
-index d94804a..944b01d 100644
---- a/include/linux/platform_data/mv_usb.h
-+++ b/include/linux/platform_data/mv_usb.h
-@@ -52,13 +52,4 @@ struct mv_usb_platform_data {
- 	int	(*set_vbus)(unsigned int vbus);
- 	int     (*private_init)(void __iomem *opregs, void __iomem *phyregs);
- };
--
+diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+index a997c7d..1034d93 100644
+--- a/drivers/i2c/busses/i2c-pxa.c
++++ b/drivers/i2c/busses/i2c-pxa.c
+@@ -41,13 +41,6 @@
+ 
+ #include <asm/irq.h>
+ 
 -#ifndef CONFIG_HAVE_CLK
--/* Dummy stub for clk framework */
--#define clk_get(dev, id)       NULL
--#define clk_put(clock)         do {} while (0)
--#define clk_enable(clock)      do {} while (0)
--#define clk_disable(clock)     do {} while (0)
+-#define clk_get(dev, id)	NULL
+-#define clk_put(clk)		do { } while (0)
+-#define clk_disable(clk)	do { } while (0)
+-#define clk_enable(clk)		do { } while (0)
 -#endif
 -
- #endif
+ struct pxa_reg_layout {
+ 	u32 ibmr;
+ 	u32 idbr;
 -- 
 1.7.9
 
