@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab2EHVle (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 17:41:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50469 "EHLO mx2.suse.de"
+	id S1757250Ab2EHVlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 17:41:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50478 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757105Ab2EHVlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 17:41:32 -0400
+	id S1756727Ab2EHVlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 17:41:42 -0400
 From: NeilBrown <neilb@suse.de>
 To: Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
         Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>
 Date: Wed, 09 May 2012 07:40:40 +1000
-Subject: [PATCH 2/4] power_supply: twl4030_charger: add backup-battery
- charging.
+Subject: [PATCH 3/4] power_supply/MFD: twl4030_charger: Allow charger to
+ control the regulator that feeds it.
 Cc: Grazvydas Ignotas <notasas@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Message-ID: <20120508214039.2844.68906.stgit@notabene.brown>
+        Tero Kristo <t-kristo@ti.com>, NeilBrown <neilb@suse.de>
+Message-ID: <20120508214040.2844.5662.stgit@notabene.brown>
 In-Reply-To: <20120508213518.2844.95446.stgit@notabene.brown>
 References: <20120508213518.2844.95446.stgit@notabene.brown>
 User-Agent: StGIT/0.14.3
@@ -27,137 +27,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows a voltage and current (bb_uvolts and bb_uamps)
-to be specified in the platform_data, and charging of the backup
-battery will be enabled with those specification.
+The charger needs usb3v1 to be running, so add a new consumer to
+keep it running.
 
-As it is not possible to monitor the backup battery at all
-there is no new device created to represent it.
+This allows the charger to draw current even when the USB driver has
+powered down.
 
+Acked-by: Tero Kristo <t-kristo@ti.com>
 Signed-off-by: NeilBrown <neilb@suse.de>
 ---
 
- drivers/power/twl4030_charger.c |   59 +++++++++++++++++++++++++++++++++++++++
- include/linux/i2c/twl.h         |    2 +
- 2 files changed, 61 insertions(+)
+ drivers/mfd/twl-core.c          |    9 +++++----
+ drivers/power/twl4030_charger.c |   15 +++++++++++++++
+ 2 files changed, 20 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index 7c2267e..4cbf285 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -723,8 +723,9 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
+ 		static struct regulator_consumer_supply usb1v8 = {
+ 			.supply =	"usb1v8",
+ 		};
+-		static struct regulator_consumer_supply usb3v1 = {
+-			.supply =	"usb3v1",
++		static struct regulator_consumer_supply usb3v1[] = {
++			{ .supply =	"usb3v1" },
++			{ .supply =	"bci3v1" },
+ 		};
+ 
+ 	/* First add the regulators so that they can be used by transceiver */
+@@ -752,7 +753,7 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
+ 				return PTR_ERR(child);
+ 
+ 			child = add_regulator_linked(TWL4030_REG_VUSB3V1,
+-						      &usb_fixed, &usb3v1, 1,
++						      &usb_fixed, usb3v1, 2,
+ 						      features);
+ 			if (IS_ERR(child))
+ 				return PTR_ERR(child);
+@@ -773,7 +774,7 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
+ 		if (twl_has_regulator() && child) {
+ 			usb1v5.dev_name = dev_name(child);
+ 			usb1v8.dev_name = dev_name(child);
+-			usb3v1.dev_name = dev_name(child);
++			usb3v1[0].dev_name = dev_name(child);
+ 		}
+ 	}
+ 	if (twl_has_usb() && pdata->usb && twl_class_is_6030()) {
 diff --git a/drivers/power/twl4030_charger.c b/drivers/power/twl4030_charger.c
-index 3e6e991..0511610 100644
+index 0511610..bbda083 100644
 --- a/drivers/power/twl4030_charger.c
 +++ b/drivers/power/twl4030_charger.c
-@@ -28,6 +28,7 @@
- #define TWL4030_BCIVBUS		0x0c
- #define TWL4030_BCIMFSTS4	0x10
- #define TWL4030_BCICTL1		0x23
-+#define TWL4030_BB_CFG		0x12
+@@ -21,6 +21,7 @@
+ #include <linux/power_supply.h>
+ #include <linux/notifier.h>
+ #include <linux/usb/otg.h>
++#include <linux/regulator/machine.h>
  
- #define TWL4030_BCIAUTOWEN	BIT(5)
- #define TWL4030_CONFIG_DONE	BIT(4)
-@@ -37,6 +38,17 @@
- #define TWL4030_USBFASTMCHG	BIT(2)
- #define TWL4030_STS_VBUS	BIT(7)
- #define TWL4030_STS_USB_ID	BIT(2)
-+#define TWL4030_BBCHEN		BIT(4)
-+#define TWL4030_BBSEL_MASK	0b1100
-+#define TWL4030_BBSEL_2V5	0b0000
-+#define TWL4030_BBSEL_3V0	0b0100
-+#define TWL4030_BBSEL_3V1	0b1000
-+#define TWL4030_BBSEL_3V2	0b1100
-+#define TWL4030_BBISEL_MASK	0b11
-+#define TWL4030_BBISEL_25uA	0b00
-+#define TWL4030_BBISEL_150uA	0b01
-+#define TWL4030_BBISEL_500uA	0b10
-+#define TWL4030_BBISEL_1000uA	0b11
+ #define TWL4030_BCIMSTATEC	0x02
+ #define TWL4030_BCIICHG		0x08
+@@ -86,6 +87,8 @@ struct twl4030_bci {
+ 	struct work_struct	work;
+ 	int			irq_chg;
+ 	int			irq_bci;
++	struct regulator	*usb_reg;
++	int			usb_enabled;
  
- /* BCI interrupts */
- #define TWL4030_WOVF		BIT(0) /* Watchdog overflow */
-@@ -202,6 +214,49 @@ static int twl4030_charger_enable_ac(bool enable)
- }
- 
- /*
-+ * Enable/Disable charging of Backup Battery.
-+ */
-+static int twl4030_charger_enable_backup(int uvolt, int uamp)
-+{
-+	int ret;
-+	u8 flags;
-+
-+	if (uvolt < 2500000 ||
-+	    uamp < 25) {
-+		/* disable charging of backup battery */
-+		ret = twl4030_clear_set(TWL4030_MODULE_PM_RECEIVER,
-+					TWL4030_BBCHEN, 0, TWL4030_BB_CFG);
-+		return ret;
-+	}
-+
-+	flags = TWL4030_BBCHEN;
-+	if (uvolt >= 3200000)
-+		flags |= TWL4030_BBSEL_3V2;
-+	else if (uvolt >= 3100000)
-+		flags |= TWL4030_BBSEL_3V1;
-+	else if (uvolt >= 3000000)
-+		flags |= TWL4030_BBSEL_3V0;
-+	else
-+		flags |= TWL4030_BBSEL_2V5;
-+
-+	if (uamp >= 1000)
-+		flags |= TWL4030_BBISEL_1000uA;
-+	else if (uamp >= 500)
-+		flags |= TWL4030_BBISEL_500uA;
-+	else if (uamp >= 150)
-+		flags |= TWL4030_BBISEL_150uA;
-+	else
-+		flags |= TWL4030_BBISEL_25uA;
-+
-+	ret = twl4030_clear_set(TWL4030_MODULE_PM_RECEIVER,
-+				TWL4030_BBSEL_MASK | TWL4030_BBISEL_MASK,
-+				flags,
-+				TWL4030_BB_CFG);
-+
-+	return ret;
-+}
-+
-+/*
-  * TWL4030 CHG_PRES (AC charger presence) events
-  */
- static irqreturn_t twl4030_charger_interrupt(int irq, void *arg)
-@@ -424,6 +479,7 @@ static enum power_supply_property twl4030_charger_props[] = {
- static int __init twl4030_bci_probe(struct platform_device *pdev)
- {
- 	struct twl4030_bci *bci;
-+	struct twl4030_bci_platform_data *pdata = pdev->dev.platform_data;
- 	int ret;
- 	u32 reg;
- 
-@@ -503,6 +559,8 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
- 
- 	twl4030_charger_enable_ac(true);
- 	twl4030_charger_enable_usb(bci, true);
-+	twl4030_charger_enable_backup(pdata->bb_uvolt,
-+				      pdata->bb_uamp);
- 
- 	return 0;
- 
-@@ -531,6 +589,7 @@ static int __exit twl4030_bci_remove(struct platform_device *pdev)
- 
- 	twl4030_charger_enable_ac(false);
- 	twl4030_charger_enable_usb(bci, false);
-+	twl4030_charger_enable_backup(0, 0);
- 
- 	/* mask interrupts */
- 	twl_i2c_write_u8(TWL4030_MODULE_INTERRUPTS, 0xff,
-diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index 1f90de0..b526031 100644
---- a/include/linux/i2c/twl.h
-+++ b/include/linux/i2c/twl.h
-@@ -557,6 +557,8 @@ struct twl4030_clock_init_data {
- struct twl4030_bci_platform_data {
- 	int *battery_tmp_tbl;
- 	unsigned int tblsize;
-+	int	bb_uvolt;	/* voltage to charge backup battery */
-+	int	bb_uamp;	/* current for backup battery charging */
+ 	unsigned long		event;
  };
+@@ -183,6 +186,12 @@ static int twl4030_charger_enable_usb(struct twl4030_bci *bci, bool enable)
+ 			return -EACCES;
+ 		}
  
- /* TWL4030_GPIO_MAX (18) GPIOs, with interrupts */
++		/* Need to keep regulator on */
++		if (!bci->usb_enabled) {
++			regulator_enable(bci->usb_reg);
++			bci->usb_enabled = 1;
++		}
++
+ 		/* forcing the field BCIAUTOUSB (BOOT_BCI[1]) to 1 */
+ 		ret = twl4030_clear_set_boot_bci(0, TWL4030_BCIAUTOUSB);
+ 		if (ret < 0)
+@@ -193,6 +202,10 @@ static int twl4030_charger_enable_usb(struct twl4030_bci *bci, bool enable)
+ 			TWL4030_USBFASTMCHG, TWL4030_BCIMFSTS4);
+ 	} else {
+ 		ret = twl4030_clear_set_boot_bci(TWL4030_BCIAUTOUSB, 0);
++		if (bci->usb_enabled) {
++			regulator_disable(bci->usb_reg);
++			bci->usb_enabled = 0;
++		}
+ 	}
+ 
+ 	return ret;
+@@ -511,6 +524,8 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
+ 	bci->usb.num_properties = ARRAY_SIZE(twl4030_charger_props);
+ 	bci->usb.get_property = twl4030_bci_get_property;
+ 
++	bci->usb_reg = regulator_get(bci->dev, "bci3v1");
++
+ 	ret = power_supply_register(&pdev->dev, &bci->usb);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to register usb: %d\n", ret);
 
 
