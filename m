@@ -1,84 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757751Ab2EHHVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 03:21:20 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:58112 "EHLO smtp3-g21.free.fr"
+	id S1757113Ab2EHHYA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 03:24:00 -0400
+Received: from mga01.intel.com ([192.55.52.88]:21801 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756592Ab2EHHVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 03:21:15 -0400
-From: =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
-To: Sascha Hauer <kernel@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
-Subject: [PATCH 07/12] ARM: imx: eukrea_mbimxsd: add audio support
-Date: Tue,  8 May 2012 09:20:22 +0200
-Message-Id: <1336461627-30315-7-git-send-email-eric@eukrea.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1336461627-30315-1-git-send-email-eric@eukrea.com>
-References: <1336461627-30315-1-git-send-email-eric@eukrea.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1756553Ab2EHHX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 03:23:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="150413116"
+Subject: Re: [PATCH] x86 apic: only compile local function if used
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120507131229.GF23858@gmail.com>
+References: <4F89FD7C.2060707@freemail.hu>
+	 <20120507131229.GF23858@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel
+Date: Tue, 08 May 2012 00:24:20 -0700
+Message-ID: <1336461860.2296.3.camel@sbsiddha-mobl2>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Eric Bénard <eric@eukrea.com>
-Cc: Sascha Hauer <kernel@pengutronix.de>
----
- arch/arm/mach-imx/Kconfig                    |    1 +
- arch/arm/mach-imx/eukrea_mbimxsd-baseboard.c |   12 ++++++++++++
- 2 files changed, 13 insertions(+), 0 deletions(-)
+On Mon, 2012-05-07 at 15:12 +0200, Ingo Molnar wrote:
+> * Németh Márton <nm127@freemail.hu> wrote:
+> 
+> > From: Márton Németh <nm127@freemail.hu>
+> > 
+> > The local function io_apic_level_ack_pending() is only called from
+> > io_apic_level_ack_pending(). The later function is only compiled
+> > if CONFIG_GENERIC_PENDING_IRQ is defined. Use this define around
+> > io_apic_level_ack_pending() function as well.
+> > 
+> > This will remove the following warning message during compiling
+> > without CONFIG_GENERIC_PENDING_IRQ defined:
+> >  * arch/x86/kernel/apic/io_apic.c:382: warning: ‘io_apic_level_ack_pending’ defined but not used
+> > 
+> > Signed-off-by: Márton Németh <nm127@freemail.hu>
+> > ---
+> > diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> > index e88300d..9b85009 100644
+> > --- a/arch/x86/kernel/apic/io_apic.c
+> > +++ b/arch/x86/kernel/apic/io_apic.c
+> > @@ -379,6 +379,7 @@ static void __io_apic_modify(unsigned int apic, unsigned int reg, unsigned int v
+> >  	writel(value, &io_apic->data);
+> >  }
+> > 
+> > +#ifdef CONFIG_GENERIC_PENDING_IRQ
+> >  static bool io_apic_level_ack_pending(struct irq_cfg *cfg)
+> >  {
+> >  	struct irq_pin_list *entry;
+> > @@ -401,6 +402,7 @@ static bool io_apic_level_ack_pending(struct irq_cfg *cfg)
+> > 
+> >  	return false;
+> >  }
+> > +#endif
+> > 
+> >  union entry_union {
+> >  	struct { u32 w1, w2; };
+> 
+> it would be better/cleaner to just move this function into the 
+> already existing #ifdef CONFIG_GENERIC_PENDING_IRQ block.
 
-diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-index 96b1c77..18399d1 100644
---- a/arch/arm/mach-imx/Kconfig
-+++ b/arch/arm/mach-imx/Kconfig
-@@ -707,6 +707,7 @@ choice
- config MACH_EUKREA_MBIMXSD51_BASEBOARD
- 	prompt "Eukrea MBIMXSD development board"
- 	bool
-+	select IMX_HAVE_PLATFORM_IMX_SSI
- 	select IMX_HAVE_PLATFORM_SDHCI_ESDHC_IMX
- 	select LEDS_GPIO_REGISTER
- 	help
-diff --git a/arch/arm/mach-imx/eukrea_mbimxsd-baseboard.c b/arch/arm/mach-imx/eukrea_mbimxsd-baseboard.c
-index aaa592f..bc89bb6 100644
---- a/arch/arm/mach-imx/eukrea_mbimxsd-baseboard.c
-+++ b/arch/arm/mach-imx/eukrea_mbimxsd-baseboard.c
-@@ -66,6 +66,11 @@ static iomux_v3_cfg_t eukrea_mbimxsd_pads[] = {
- 	NEW_PAD_CTRL(MX51_PAD_GPIO1_0__SD1_CD, PAD_CTL_PUS_22K_UP |
- 			PAD_CTL_PKE | PAD_CTL_SRE_FAST |
- 			PAD_CTL_DSE_HIGH | PAD_CTL_PUE | PAD_CTL_HYS),
-+	/* SSI */
-+	MX51_PAD_AUD3_BB_TXD__AUD3_TXD,
-+	MX51_PAD_AUD3_BB_RXD__AUD3_RXD,
-+	MX51_PAD_AUD3_BB_CK__AUD3_TXC,
-+	MX51_PAD_AUD3_BB_FS__AUD3_TXFS,
- };
+Sorry missed this patch to review before. Appended the modified patch
+with an updated changelog.
+---
+
+From: Márton Németh <nm127@freemail.hu>
+Subject: x86, ioapic: Fix the warning with !CONFIG_GENERIC_PENDING_IRQ
+
+The local function io_apic_level_ack_pending() is only called from
+io_apic_level_ack_pending(). The later function is only compiled
+if CONFIG_GENERIC_PENDING_IRQ is defined. Move the
+io_apic_level_ack_pending() to the existing #ifdef CONFIG_GENERIC_PENDING_IRQ
+code block.
+
+This will remove the following warning message during compiling
+without CONFIG_GENERIC_PENDING_IRQ defined:
+ * arch/x86/kernel/apic/io_apic.c:382: warning: ‘io_apic_level_ack_pending’ defined but not used
+
+Signed-off-by: Márton Németh <nm127@freemail.hu>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ arch/x86/kernel/apic/io_apic.c |   46 ++++++++++++++++++++--------------------
+ 1 files changed, 23 insertions(+), 23 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 4b7a795..ffdc152 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -362,29 +362,6 @@ void native_io_apic_modify(unsigned int apic, unsigned int reg, unsigned int val
+ 	writel(value, &io_apic->data);
+ }
  
- #define GPIO_LED1	IMX_GPIO_NR(3, 30)
-@@ -112,6 +117,11 @@ static struct i2c_board_info eukrea_mbimxsd_i2c_devices[] = {
- 	},
- };
+-static bool io_apic_level_ack_pending(struct irq_cfg *cfg)
+-{
+-	struct irq_pin_list *entry;
+-	unsigned long flags;
+-
+-	raw_spin_lock_irqsave(&ioapic_lock, flags);
+-	for_each_irq_pin(entry, cfg->irq_2_pin) {
+-		unsigned int reg;
+-		int pin;
+-
+-		pin = entry->pin;
+-		reg = io_apic_read(entry->apic, 0x10 + pin*2);
+-		/* Is the remote IRR bit set? */
+-		if (reg & IO_APIC_REDIR_REMOTE_IRR) {
+-			raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+-			return true;
+-		}
+-	}
+-	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+-
+-	return false;
+-}
+-
+ union entry_union {
+ 	struct { u32 w1, w2; };
+ 	struct IO_APIC_route_entry entry;
+@@ -2406,6 +2383,29 @@ static void ack_apic_edge(struct irq_data *data)
+ atomic_t irq_mis_count;
  
-+static const
-+struct imx_ssi_platform_data eukrea_mbimxsd_ssi_pdata __initconst = {
-+	.flags = IMX_SSI_SYN | IMX_SSI_NET | IMX_SSI_USE_I2S_SLAVE,
-+};
+ #ifdef CONFIG_GENERIC_PENDING_IRQ
++static bool io_apic_level_ack_pending(struct irq_cfg *cfg)
++{
++	struct irq_pin_list *entry;
++	unsigned long flags;
 +
- /*
-  * system init for baseboard usage. Will be called by cpuimx51sd init.
-  *
-@@ -129,6 +139,8 @@ void __init eukrea_mbimxsd51_baseboard_init(void)
- 
- 	imx51_add_sdhci_esdhc_imx(0, NULL);
- 
-+	imx51_add_imx_ssi(0, &eukrea_mbimxsd_ssi_pdata);
++	raw_spin_lock_irqsave(&ioapic_lock, flags);
++	for_each_irq_pin(entry, cfg->irq_2_pin) {
++		unsigned int reg;
++		int pin;
 +
- 	gpio_request(GPIO_LED1, "LED1");
- 	gpio_direction_output(GPIO_LED1, 1);
- 	gpio_free(GPIO_LED1);
--- 
-1.7.7.6
++		pin = entry->pin;
++		reg = io_apic_read(entry->apic, 0x10 + pin*2);
++		/* Is the remote IRR bit set? */
++		if (reg & IO_APIC_REDIR_REMOTE_IRR) {
++			raw_spin_unlock_irqrestore(&ioapic_lock, flags);
++			return true;
++		}
++	}
++	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
++
++	return false;
++}
++
+ static inline bool ioapic_irqd_mask(struct irq_data *data, struct irq_cfg *cfg)
+ {
+ 	/* If we are moving the irq we need to mask it */
+
 
