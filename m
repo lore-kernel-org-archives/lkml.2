@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab2EHPsg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:48:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47960 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756469Ab2EHPsd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:48:33 -0400
-Message-ID: <1336492081.8226.13.camel@twins>
-Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 08 May 2012 17:48:01 +0200
-In-Reply-To: <alpine.DEB.2.00.1205081035550.27713@router.home>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
-	 <1335830115-14335-8-git-send-email-fweisbec@gmail.com>
-	 <alpine.DEB.2.00.1205071053070.1060@router.home>
-	 <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
-	 <1336488626.16236.41.camel@twins>
-	 <alpine.DEB.2.00.1205081016370.27713@router.home>
-	 <1336490832.8226.5.camel@twins>
-	 <alpine.DEB.2.00.1205081035550.27713@router.home>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	id S1756564Ab2EHPt3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:49:29 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32047 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756514Ab2EHPt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 11:49:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="150566526"
+Date: Tue, 8 May 2012 17:04:42 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: Regression due to d29f3ef "tty_lock: Localise the lock"
+Message-ID: <20120508170442.409ccbe4@bob.linux.org.uk>
+In-Reply-To: <4FA93FEB.2060200@wwwdotorg.org>
+References: <4FA8557E.5080402@wwwdotorg.org>
+	<20120508103512.42db1c4b@pyramind.ukuu.org.uk>
+	<4FA93FEB.2060200@wwwdotorg.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-08 at 10:38 -0500, Christoph Lameter wrote:
-> On Tue, 8 May 2012, Peter Zijlstra wrote:
+On Tue, 08 May 2012 09:46:51 -0600
+Stephen Warren <swarren@wwwdotorg.org> wrote:
+
+> On 05/08/2012 03:35 AM, Alan Cox wrote:
+> > On Mon, 07 May 2012 17:06:38 -0600
+> > Stephen Warren <swarren@wwwdotorg.org> wrote:
+> > 
+> >> Alan,
+> >>
+> >> Commit d29f3ef "tty_lock: Localise the lock" appears to cause a
+> >> problem for me.
+> >>
+> >> With this commit (as in next-20120507), I can no longer log into my
+> >> system (NVIDIA Tegra device with ARM CPU) over the serial console,
+> >> since the login prompt no longer appears. If I wait a few minutes,
+> >> I see the following console spew:
+> > 
+> > Eep. If it's reproducable can you test whether adding the
+> > unlock/relock in drivers/tty/pty.c does the trick ?
+> > 
+> > ie:
+> > 	tty_unlock(tty);
+> > 	tty_vhangup(tty);
+> > 	tty_lock(tty);
 > 
-> > isolating how? The only way to do that is with the (broken) isolcpus
-> > crap and cpusets. There is no other way.
-> 
-> For some reason this seems to work here. What is broken with isolcpus?
+> Yes, that change in pty_close() solves the problem.
 
-It mostly still works I think, but iirc there were a few places that
-ignored the cpuisol mask.
+Ok Greg - I think we should go with putting that unlock back until we
+understand exactly what is going on.
 
-But really the moment we get proper means of flushing cpu state
-(currently achievable by unplug-replug) isolcpu gets depricated and
-eventually removed.
-
-cpusets can do what isolcpu can and more (provided this flush thing).
-
-> > Furthermore there is no other partitioning scheme, cpusets is it.
-> 
-> One can partition the system anyway one wants by setting cpu affinities
-> and memory policies etc. No need for cpusets/cgroups.
-
-Not so, the load-balancer will still try to move the tasks and
-subsequently fail. Partitioning means it won't even try to move tasks
-across the partition boundary.
-
-By proper partitioning you can split load balance domains (or completely
-disable the load-balancer by giving it a single cpu domain).
-
-
+Alan
