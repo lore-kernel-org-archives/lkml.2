@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757029Ab2EHQLw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 12:11:52 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9524 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756145Ab2EHQLv (ORCPT
+	id S1756411Ab2EHQP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 12:15:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56853 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756104Ab2EHQPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 12:11:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 08 May 2012 09:11:46 -0700
-Subject: Re: [PATCH 5/6 v3] mfd: tps65910-irq: Add devicetree init support
-From: Rhyland Klein <rklein@nvidia.com>
+	Tue, 8 May 2012 12:15:55 -0400
+Message-ID: <4FA946B7.2020302@wwwdotorg.org>
+Date: Tue, 08 May 2012 10:15:51 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
+CC: Rhyland Klein <rklein@nvidia.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>, Liam Girdwood <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-In-Reply-To: <20120508154820.GA15893@opensource.wolfsonmicro.com>
-References: <1336502563-31789-1-git-send-email-rklein@nvidia.com>
-	 <1336502563-31789-6-git-send-email-rklein@nvidia.com>
-	 <20120508154820.GA15893@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 May 2012 12:11:31 -0700
-Message-ID: <1336504291.31930.24.camel@rklein-linux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 6/6 v3] ARM: Tegra: Add support for TPS65910 PMIC
+References: <1336502563-31789-1-git-send-email-rklein@nvidia.com> <1336502563-31789-7-git-send-email-rklein@nvidia.com> <4FA94212.4000207@wwwdotorg.org> <20120508155847.GC15893@opensource.wolfsonmicro.com>
+In-Reply-To: <20120508155847.GC15893@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-08 at 08:48 -0700, Mark Brown wrote:
-> * PGP Signed by an unknown key
+On 05/08/2012 09:58 AM, Mark Brown wrote:
+> On Tue, May 08, 2012 at 09:56:02AM -0600, Stephen Warren wrote:
+>> On 05/08/2012 12:42 PM, Rhyland Klein wrote:
+>>> Add support for the tps65910 pmic on cardhu.
 > 
-> On Tue, May 08, 2012 at 11:42:42AM -0700, Rhyland Klein wrote:
+>> Lets ignore this one patch for now; it's not clear whether Cardhu
+>> should instantiate the TPS65910 or TPS62360 PMU; apparently
+>> different Cardhu variants have one, the other, or even both. I'm
+>> trying to find out which variant(s) is/are useful to support.
 > 
-> > +	if (pdata->irq_base <= 0)
-> > +		pdata->irq_base = irq_alloc_descs(-1, 0, tps65910->irq_num, -1);
-> > +
-> > +	if (pdata->irq_base <= 0) {
-> > +		dev_err(tps65910->dev, "Failed to allocate irq descs: %d\n",
-> > +			pdata->irq_base);
-> > +		return pdata->irq_base;
-> > +	}
-> 
-> I'd expect the driver to always call irq_alloc_descs() but to use the
-> value specified in platform data if there is any.  This is the normal
-> way of doing things, anyway.
-> 
+> IIRC it's the same as Whistler was and even more fun that that -
+> you might have random PMIC boards appearing from random places and
+> can't rely on what's on the system at all!  See the thread I
+> started about plugin modules the other day :)
 
-Is this more what you would expect? If the dt code initialized the
-irq_base to 0 instead of -1 then this should also work.
-
-pdata->irq_base = irq_alloc_descs(-1, pdata->irq_base,
-			tps65910->irq_num, -1);
-
-if (pdata->irq_base <= 0) {
-	dev_err(tps65910->dev, "Failed to allocate irq descs: %d\n",
-		pdata->irq_base);
-	return pdata->irq_base;
-}
-
-> * Unknown Key
-> * 0x6E30FDDD
-
--- 
-nvpublic
-
+I think you're thinking of some other board. Cardhu is a tablet
+reference platform without pluggable modules, and I believe the PMIC
+mess is just due to some rework in later board revisions to solve some
+under-power issues in the earlier variants. But I believe there is
+some Tegra30 reference board equivalent to Whistler with all kinds of
+pluggable modules, although I haven't touched one yet, and don't
+recall its name.
