@@ -1,66 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab2EHKld (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 06:41:33 -0400
-Received: from smtp.nokia.com ([147.243.1.48]:41108 "EHLO mgw-sa02.nokia.com"
+	id S1753112Ab2EHKsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 06:48:45 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27140 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131Ab2EHKlc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 06:41:32 -0400
-From: <leonid.moiseichuk@nokia.com>
-To: <penberg@kernel.org>
-CC: <kosaki.motohiro@gmail.com>, <anton.vorontsov@linaro.org>,
-        <minchan@kernel.org>, <john.stultz@linaro.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
-        <patches@linaro.org>, <kernel-team@android.com>
-Subject: RE: [PATCH 3/3] vmevent: Implement special low-memory attribute
-Thread-Topic: [PATCH 3/3] vmevent: Implement special low-memory attribute
-Thread-Index: AQHNJ54zt9884we850qVfkvWrpHZv5a463aAgAA1ewCABLBlgIAAE/cAgABAG4CAAHaTAIAAp8wAgAAGDoCAAANQAIAAFcOAgAAG5oCAAAPpAIAAA4SAgAAyfPD//+L9gIAANYkw
-Date: Tue, 8 May 2012 10:38:41 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB98269045D6465@008-AM1MPN1-003.mgdnok.nokia.com>
-References: <20120501132409.GA22894@lizard>	<20120501132620.GC24226@lizard>
-	<4FA35A85.4070804@kernel.org>	<20120504073810.GA25175@lizard>
-	<CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com>
-	<CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com>
-	<20120507121527.GA19526@lizard>	<4FA82056.2070706@gmail.com>
-	<CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com>
-	<CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com>
-	<CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com>
-	<CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
-	<CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com>
-	<4FA8D046.7000808@gmail.com>
-	<CAOJsxLGWtJy7q6ij_-tN8nVTr-OXpgdWVkXsOda8S9mJzo7n2w@mail.gmail.com>
-	<84FF21A720B0874AA94B46D76DB98269045D63B3@008-AM1MPN1-003.mgdnok.nokia.com>
- <CAOJsxLEm2LfBB031-pU5Srhr+=DVDCmexZm_UczCzqQ2JmgoRw@mail.gmail.com>
-In-Reply-To: <CAOJsxLEm2LfBB031-pU5Srhr+=DVDCmexZm_UczCzqQ2JmgoRw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.82.239]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 08 May 2012 10:38:42.0759 (UTC) FILETIME=[BD007570:01CD2D06]
-X-Nokia-AV: Clean
+	id S1752385Ab2EHKso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 06:48:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="138149173"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Fenghua Yu <fenghua.yu@intel.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        "Durgadoss R" <durgadoss.r@intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH, v4] hwmon: coretemp: use list instead of fixed size array for temp data
+Date: Tue,  8 May 2012 13:49:35 +0300
+Message-Id: <1336474175-5714-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: penberg@gmail.com [mailto:penberg@gmail.com] On Behalf Of ext
-> Pekka Enberg
-> Sent: 08 May, 2012 12:20
-...
-> On Tue, May 8, 2012 at 12:15 PM,  <leonid.moiseichuk@nokia.com> wrote:
-> > I am tracking conversation with quite low understanding how it will be
-> > useful for practical needs because user-space developers in 80% cases
-> > needs to track simply dirty memory changes i.e. modified pages which cannot
-> be dropped.
-> 
-> The point is to support those cases in such a way that works sanely across
-> different architectures and configurations.
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Which usually means you need to increase level of abstraction from hugepages, swapped, kernel reclaimable, slab allocated, active memory to used, cache and must-have memory which are common for all platforms. Do you have visibility what do you need to show and how do you will calculate it? Does it possible to do for system, group of processes or particular process?
+Let's rework code to allow arbitrary number of cores on a CPU, not
+limited by hardcoded array size.
 
-I implemented system-wide variant because that was a simplest one and most urgent I need. But e.g. to say how much memory consumed particular process in Linux you need to use smaps. Probably vmevent need to have some scratches (aka roadmap) into this direction as well.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ v4:
+   - address issues pointed by Guenter Roeck;
+ v3:
+   - drop redundant refcounting and checks;
+ v2:
+   - fix NULL pointer dereference. Thanks to R, Durgadoss;
+   - use mutex instead of spinlock for list locking.
+---
+ drivers/hwmon/coretemp.c |  119 ++++++++++++++++++++++++++++++----------------
+ 1 files changed, 78 insertions(+), 41 deletions(-)
+
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index b9d5123..602bdc8 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -36,6 +36,7 @@
+ #include <linux/cpu.h>
+ #include <linux/pci.h>
+ #include <linux/smp.h>
++#include <linux/list.h>
+ #include <linux/moduleparam.h>
+ #include <asm/msr.h>
+ #include <asm/processor.h>
+@@ -52,11 +53,9 @@ module_param_named(tjmax, force_tjmax, int, 0444);
+ MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsius");
+ 
+ #define BASE_SYSFS_ATTR_NO	2	/* Sysfs Base attr no for coretemp */
+-#define NUM_REAL_CORES		32	/* Number of Real cores per cpu */
+ #define CORETEMP_NAME_LENGTH	17	/* String Length of attrs */
+ #define MAX_CORE_ATTRS		4	/* Maximum no of basic attrs */
+ #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
+-#define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
+ 
+ #define TO_PHYS_ID(cpu)		(cpu_data(cpu).phys_proc_id)
+ #define TO_CORE_ID(cpu)		(cpu_data(cpu).cpu_core_id)
+@@ -82,6 +81,8 @@ MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsius");
+  * @valid: If this is 1, the current temperature is valid.
+  */
+ struct temp_data {
++	struct list_head list;
++	int id;
+ 	int temp;
+ 	int ttarget;
+ 	int tjmax;
+@@ -101,7 +102,8 @@ struct temp_data {
+ struct platform_data {
+ 	struct device *hwmon_dev;
+ 	u16 phys_proc_id;
+-	struct temp_data *core_data[MAX_CORE_DATA];
++	struct list_head temp_data_list;
++	struct mutex temp_data_lock;
+ 	struct device_attribute name_attr;
+ };
+ 
+@@ -114,6 +116,20 @@ struct pdev_entry {
+ static LIST_HEAD(pdev_list);
+ static DEFINE_MUTEX(pdev_list_mutex);
+ 
++static struct temp_data *get_temp_data(struct platform_data *pdata, int id)
++{
++	struct temp_data *tdata;
++
++	mutex_lock(&pdata->temp_data_lock);
++	list_for_each_entry(tdata, &pdata->temp_data_list, list)
++		if (tdata->id == id)
++			goto out;
++	tdata = NULL;
++out:
++	mutex_unlock(&pdata->temp_data_lock);
++	return tdata;
++}
++
+ static ssize_t show_name(struct device *dev,
+ 			struct device_attribute *devattr, char *buf)
+ {
+@@ -125,7 +141,7 @@ static ssize_t show_label(struct device *dev,
+ {
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+ 	struct platform_data *pdata = dev_get_drvdata(dev);
+-	struct temp_data *tdata = pdata->core_data[attr->index];
++	struct temp_data *tdata = get_temp_data(pdata, attr->index);
+ 
+ 	if (tdata->is_pkg_data)
+ 		return sprintf(buf, "Physical id %u\n", pdata->phys_proc_id);
+@@ -139,7 +155,7 @@ static ssize_t show_crit_alarm(struct device *dev,
+ 	u32 eax, edx;
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+ 	struct platform_data *pdata = dev_get_drvdata(dev);
+-	struct temp_data *tdata = pdata->core_data[attr->index];
++	struct temp_data *tdata = get_temp_data(pdata, attr->index);
+ 
+ 	rdmsr_on_cpu(tdata->cpu, tdata->status_reg, &eax, &edx);
+ 
+@@ -151,8 +167,9 @@ static ssize_t show_tjmax(struct device *dev,
+ {
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+ 	struct platform_data *pdata = dev_get_drvdata(dev);
++	struct temp_data *tdata = get_temp_data(pdata, attr->index);
+ 
+-	return sprintf(buf, "%d\n", pdata->core_data[attr->index]->tjmax);
++	return sprintf(buf, "%d\n", tdata->tjmax);
+ }
+ 
+ static ssize_t show_ttarget(struct device *dev,
+@@ -160,8 +177,9 @@ static ssize_t show_ttarget(struct device *dev,
+ {
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+ 	struct platform_data *pdata = dev_get_drvdata(dev);
++	struct temp_data *tdata = get_temp_data(pdata, attr->index);
+ 
+-	return sprintf(buf, "%d\n", pdata->core_data[attr->index]->ttarget);
++	return sprintf(buf, "%d\n", tdata->ttarget);
+ }
+ 
+ static ssize_t show_temp(struct device *dev,
+@@ -170,7 +188,7 @@ static ssize_t show_temp(struct device *dev,
+ 	u32 eax, edx;
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+ 	struct platform_data *pdata = dev_get_drvdata(dev);
+-	struct temp_data *tdata = pdata->core_data[attr->index];
++	struct temp_data *tdata = get_temp_data(pdata, attr->index);
+ 
+ 	mutex_lock(&tdata->update_lock);
+ 
+@@ -423,7 +441,7 @@ static struct temp_data __cpuinit *init_temp_data(unsigned int cpu,
+ 	return tdata;
+ }
+ 
+-static int __cpuinit create_core_data(struct platform_device *pdev,
++static int __cpuinit create_temp_data(struct platform_device *pdev,
+ 				unsigned int cpu, int pkg_flag)
+ {
+ 	struct temp_data *tdata;
+@@ -440,9 +458,6 @@ static int __cpuinit create_core_data(struct platform_device *pdev,
+ 	 */
+ 	attr_no = pkg_flag ? 1 : TO_ATTR_NO(cpu);
+ 
+-	if (attr_no > MAX_CORE_DATA - 1)
+-		return -ERANGE;
+-
+ 	/*
+ 	 * Provide a single set of attributes for all HT siblings of a core
+ 	 * to avoid duplicate sensors (the processor ID and core ID of all
+@@ -450,7 +465,8 @@ static int __cpuinit create_core_data(struct platform_device *pdev,
+ 	 * Skip if a HT sibling of this core is already registered.
+ 	 * This is not an error.
+ 	 */
+-	if (pdata->core_data[attr_no] != NULL)
++	tdata = get_temp_data(pdata, attr_no);
++	if (tdata)
+ 		return 0;
+ 
+ 	tdata = init_temp_data(cpu, pkg_flag);
+@@ -480,16 +496,23 @@ static int __cpuinit create_core_data(struct platform_device *pdev,
+ 		}
+ 	}
+ 
+-	pdata->core_data[attr_no] = tdata;
++	tdata->id = attr_no;
++
++	mutex_lock(&pdata->temp_data_lock);
++	list_add(&tdata->list, &pdata->temp_data_list);
++	mutex_unlock(&pdata->temp_data_lock);
+ 
+ 	/* Create sysfs interfaces */
+ 	err = create_core_attrs(tdata, &pdev->dev, attr_no);
+ 	if (err)
+-		goto exit_free;
++		goto exit_list_del;
+ 
+ 	return 0;
++exit_list_del:
++	mutex_lock(&pdata->temp_data_lock);
++	list_del(&tdata->list);
++	mutex_unlock(&pdata->temp_data_lock);
+ exit_free:
+-	pdata->core_data[attr_no] = NULL;
+ 	kfree(tdata);
+ 	return err;
+ }
+@@ -502,23 +525,20 @@ static void __cpuinit coretemp_add_core(unsigned int cpu, int pkg_flag)
+ 	if (!pdev)
+ 		return;
+ 
+-	err = create_core_data(pdev, cpu, pkg_flag);
++	err = create_temp_data(pdev, cpu, pkg_flag);
+ 	if (err)
+ 		dev_err(&pdev->dev, "Adding Core %u failed\n", cpu);
+ }
+ 
+-static void coretemp_remove_core(struct platform_data *pdata,
+-				struct device *dev, int indx)
++static void coretemp_remove_core(struct temp_data *tdata, struct device *dev)
+ {
+ 	int i;
+-	struct temp_data *tdata = pdata->core_data[indx];
+ 
+ 	/* Remove the sysfs attributes */
+ 	for (i = 0; i < tdata->attr_size; i++)
+ 		device_remove_file(dev, &tdata->sd_attrs[i].dev_attr);
+ 
+-	kfree(pdata->core_data[indx]);
+-	pdata->core_data[indx] = NULL;
++	kfree(tdata);
+ }
+ 
+ static int __devinit coretemp_probe(struct platform_device *pdev)
+@@ -536,6 +556,8 @@ static int __devinit coretemp_probe(struct platform_device *pdev)
+ 		goto exit_free;
+ 
+ 	pdata->phys_proc_id = pdev->id;
++	INIT_LIST_HEAD(&pdata->temp_data_list);
++	mutex_init(&pdata->temp_data_lock);
+ 	platform_set_drvdata(pdev, pdata);
+ 
+ 	pdata->hwmon_dev = hwmon_device_register(&pdev->dev);
+@@ -557,11 +579,22 @@ exit_free:
+ static int __devexit coretemp_remove(struct platform_device *pdev)
+ {
+ 	struct platform_data *pdata = platform_get_drvdata(pdev);
+-	int i;
++	struct temp_data *tdata;
+ 
+-	for (i = MAX_CORE_DATA - 1; i >= 0; --i)
+-		if (pdata->core_data[i])
+-			coretemp_remove_core(pdata, &pdev->dev, i);
++	for (;;) {
++		mutex_lock(&pdata->temp_data_lock);
++		if (!list_empty(&pdata->temp_data_list)) {
++			tdata = list_first_entry(&pdata->temp_data_list,
++					struct temp_data, list);
++			list_del(&tdata->list);
++		} else
++			tdata = NULL;
++		mutex_unlock(&pdata->temp_data_lock);
++
++		if (!tdata)
++			break;
++		coretemp_remove_core(tdata, &pdev->dev);
++	}
+ 
+ 	device_remove_file(&pdev->dev, &pdata->name_attr);
+ 	hwmon_device_unregister(pdata->hwmon_dev);
+@@ -641,16 +674,18 @@ static void __cpuinit coretemp_device_remove(unsigned int cpu)
+ 
+ static bool __cpuinit is_any_core_online(struct platform_data *pdata)
+ {
+-	int i;
++	struct temp_data *tdata;
++	bool ret = false;
+ 
+-	/* Find online cores, except pkgtemp data */
+-	for (i = MAX_CORE_DATA - 1; i >= 0; --i) {
+-		if (pdata->core_data[i] &&
+-			!pdata->core_data[i]->is_pkg_data) {
+-			return true;
++	mutex_lock(&pdata->temp_data_lock);
++	list_for_each_entry(tdata, &pdata->temp_data_list, list) {
++		if (!tdata->is_pkg_data) {
++			ret = true;
++			break;
+ 		}
+ 	}
+-	return false;
++	mutex_unlock(&pdata->temp_data_lock);
++	return ret;
+ }
+ 
+ static void __cpuinit get_core_online(unsigned int cpu)
+@@ -697,9 +732,10 @@ static void __cpuinit get_core_online(unsigned int cpu)
+ 
+ static void __cpuinit put_core_offline(unsigned int cpu)
+ {
+-	int i, indx;
++	int i, attr_no;
+ 	struct platform_data *pdata;
+ 	struct platform_device *pdev = coretemp_get_pdev(cpu);
++	struct temp_data *tdata;
+ 
+ 	/* If the physical CPU device does not exist, just return */
+ 	if (!pdev)
+@@ -707,14 +743,15 @@ static void __cpuinit put_core_offline(unsigned int cpu)
+ 
+ 	pdata = platform_get_drvdata(pdev);
+ 
+-	indx = TO_ATTR_NO(cpu);
++	attr_no = TO_ATTR_NO(cpu);
+ 
+-	/* The core id is too big, just return */
+-	if (indx > MAX_CORE_DATA - 1)
+-		return;
+-
+-	if (pdata->core_data[indx] && pdata->core_data[indx]->cpu == cpu)
+-		coretemp_remove_core(pdata, &pdev->dev, indx);
++	tdata = get_temp_data(pdata, attr_no);
++	if (tdata && tdata->cpu == cpu) {
++		mutex_lock(&pdata->temp_data_lock);
++		list_del(&tdata->list);
++		mutex_unlock(&pdata->temp_data_lock);
++		coretemp_remove_core(tdata, &pdev->dev);
++	}
+ 
+ 	/*
+ 	 * If a HT sibling of a core is taken offline, but another HT sibling
+-- 
+1.7.9.1
+
