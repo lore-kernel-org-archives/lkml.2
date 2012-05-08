@@ -1,167 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab2EHAdS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 20:33:18 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37495 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab2EHAdR (ORCPT
+	id S1756523Ab2EHAia (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 20:38:30 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50280 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753854Ab2EHAi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 20:33:17 -0400
-Date: Mon, 7 May 2012 17:31:51 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 3/3] vmevent: Implement special low-memory attribute
-Message-ID: <20120508003150.GA15921@lizard>
-References: <20120501132409.GA22894@lizard>
- <20120501132620.GC24226@lizard>
- <4FA35A85.4070804@kernel.org>
- <20120504073810.GA25175@lizard>
- <CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com>
- <CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com>
- <20120507121527.GA19526@lizard>
- <4FA82056.2070706@gmail.com>
+	Mon, 7 May 2012 20:38:28 -0400
+Date: Mon, 7 May 2012 17:38:23 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: ocfs2-users@oss.oracle.com, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [Ocfs2-users] BUG at fs/ocfs2/extent_map.c:476
+Message-ID: <20120508003822.GH4713@dhcp-172-17-9-228.mtv.corp.google.com>
+Mail-Followup-To: richard -rw- weinberger <richard.weinberger@gmail.com>,
+	ocfs2-users@oss.oracle.com,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Al Viro <viro@zeniv.linux.org.uk>
+References: <CAFLxGvy+9eHbjsAm-FaV8ihXexGGLURbyDTd6X_pqE_mtOutcw@mail.gmail.com>
+ <20120402082539.GA10228@dhcp-172-17-9-228.mtv.corp.google.com>
+ <CAFLxGvyjVnMX6jLvGWtyup1EddFn73MUq_FkFsYBBuUNpKXrYg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4FA82056.2070706@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFLxGvyjVnMX6jLvGWtyup1EddFn73MUq_FkFsYBBuUNpKXrYg@mail.gmail.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 03:19:50PM -0400, KOSAKI Motohiro wrote:
-[...]
-> You don't understand the issue.
-
-Apparently.
-
-> The point is NOT a formula. The problem
-> is, dirty and non-dirty pages aren't isolated in our kernel. Then, kernel
-> start to get stuck  far before non-dirty pages become empty. Lie notification
-> always useless.
-
-Ugh. I don't get it (yeah, see above :-), in what sense they're not
-isolated? In sense of isolate_lru_page and friends? Yes, they're not
-isolated, but how that makes the notifications untrustworthy?
-
-I'm confused. Can you elaborate a bit?
-
-> >Even more, we may introduce two attributes:
+On Mon, Apr 02, 2012 at 10:36:53AM +0200, richard -rw- weinberger wrote:
+> On Mon, Apr 2, 2012 at 10:25 AM, Joel Becker <jlbec@evilplan.org> wrote:
+> > On Sat, Mar 24, 2012 at 09:50:49AM +0100, richard -rw- weinberger wrote:
+> >> Hi!
+> >>
+> >> Today one of my kvm hosts ran into this BUG.
+> >> The host is member of y small ocfs2-cluster (3 hosts).
+> >> CentOS 6.2, Kernel 3.1.1 (vanilla).
+> > ...
+> >> Is this a known/fixed bug?
 > >
-> >RECLAIMABLE_CACHE_PAGES and
-> >RECLAIMABLE_CACHE_PAGES_NOIO (which excludes dirty pages).
+> > Not that I know of.  Have you seen it more than once?
 > >
-> >This makes ABI detached from the mm internals and still keeps a
-> >defined meaning of the attributes.
 > 
-> Collection of craps are also crap. If you want to improve userland
-> notification, you should join VM improvement activity.
-
-I'm all for improving VM, but please, be specific. I'm assuming
-there is currently some efforts on VM improvements, which I'm
-not aware of. Or there are some plans or thoughts on improvements --
-please tell what are they.
-
-> You shouldn't
-> think nobody except you haven't think userland notification feature.
-
-That was never my assumption; surely many people have worked on userland
-notifications, and still, today we have none that would fully suite
-Android's or Nokia's (or "embedded people's") needs, right? ;-)
-
-So, let's try solve things.
-
-Memcg is currently not usable for us, and I explained why (the slab
-accounting for root cgroup thing: http://lkml.org/lkml/2012/4/30/115 ),
-any comments?
-
-> The problem is, Any current kernel vm statistics were not created for
-> such purpose and don't fit.
-
-OK, presuming current statistics don't fit, which ones should we
-implement? How do you see it?
-
-> Even though, some inaccurate and incorrect statistics fit _your_ usecase,
-> they definitely don't fit other. And their people think it is bug.
-
-I'm all for making a single solution for your and ours use cases, but
-you don't say anything specific.
-
-(Btw, what are your use cases?)
-
-> >>2) libc and some important library's pages are critical important
-> >>for running a system even though it is clean and reclaimable. In other
-> >>word, kernel don't have an info then can't expose it.
-> >
-> >First off, I guess LRU would try to keep important/most used pages in
-> >the cache, as we try to never fully drain page cache to the zero mark.
-
-*1
-
-> Yes, what do you want say?
-
-> >Secondly, if we're really low on memory (which low memory notifications
-> >help to prevent) and kernel decided to throw libc's pages out of the
-> >cache, you'll get cache miss and kernel will have to read it back. Well,
-> >sometimes cache misses do happen, that's life. And if somebody really
-> >don't want this for the essential parts of the system, one have to
-> >mlock it (which eliminates your "kernel don't have an info" argument).
+> No. All three cluster members had an uptime of 70 days.
+> Only one showed the BUG.
+> I've rebooted it and it seems to work fine now.
 > 
-> First off, "low memory" is very poor definition and we must not use it.
+> I'm not an ocfs2 expert, what could cause this kind of BUG?
+> Internal logic error? Filesystem corruption?
 
-OK.
+	No idea.  That's the problem.  More details would be nice, but I
+suspect you'd rather not crash again :-)
 
-> It is multiple meanings.
-> 1) System free memory is low. Some embedded have userland
-
-The 'free' has multiple meanings as well. For us, it is
-'not-used-at-all-pages + the-pages-that-we-can-get-in-a-
-jiffy-and-not-disturb-things-much'.
-
-The 'not-disturb-things-much' has a moot meaning as well, so all this
-should probably be tunable. Cool, so let's give the userspace all the
-needed statistics to decide on these meanings.
-
-> oom killer and they want to know _system_ status. 2) available memory is low.
-> This is different from (1) when using NUMA, memcg or cpusets. And in nowadays,
-> almost all x86 box have numa. This is userful for swap avoidance activity if
-> we can implement correctly.
-
-I don't get it: you don't see '1)' as a use case? You're saying
-that the meanings are different when using NUMA/memcg. If we don't
-use memcg, what statistics should we use?
-
-OK, if you are hinting that memcg should be mandatory for proper
-statistics accounting, then please comment on the current memcg
-issues, which don't let us do '1)' via '2)'.
-
-> Secondly, we can't assume someone mlock to libc. Because of, Linux is generic
-> purpose kernel.
-
-You said that libc pages are important, implying that ideally they should
-never leave the page cache (i.e. we should not count the pages as 'easily
-reclaimable').
-
-I answered that if are OK with "not guaranteed, but we'll do our best"
-strategy, then just don't let fully drain the caches, and then LRU will
-try keep "most important" pages (apparently libc) in the cache. *1  It
-is surely userland's task to maintain the needed amount of memory, and
-to do this efficiently we need..... notifications, that's right.
-
-But if you want a guarantee, I guess mlock() is the only option -- it is
-the only way to tell the kernel that the pages are really not to be
-reclaimed.
-
-So, in the light of 'easily reclaimable pages' statistics, what for was
-your libc point again? How would you solve "the libc problem"?
-
-Thanks!
+Joel
 
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+
+"Soap and education are not as sudden as a massacre, but they are more
+ deadly in the long run."
+	- Mark Twain
+
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
