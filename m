@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab2EHQbc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 12:31:32 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:50643 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755943Ab2EHQba convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 12:31:30 -0400
+	id S1756628Ab2EHQcT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 12:32:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21606 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755762Ab2EHQcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 12:32:17 -0400
+Date: Tue, 8 May 2012 19:32:14 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC dontapply 5/5] kvm_para: guest side for eoi avoidance
+Message-ID: <20120508163214.GG8988@redhat.com>
+References: <cover.1334833140.git.mst@redhat.com>
+ <5e1399d9e743668a87f31d8f2b83cad862c60728.1334833141.git.mst@redhat.com>
+ <4FA93B3F.3000906@redhat.com>
+ <20120508152843.GE8988@redhat.com>
+ <4FA93FA3.20306@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <4FA8CF5E.1070202@kernel.org>
-References: <1336054995-22988-1-git-send-email-svenkatr@ti.com> <4FA8CF5E.1070202@kernel.org>
-From: "S, Venkatraman" <svenkatr@ti.com>
-Date: Tue, 8 May 2012 22:01:06 +0530
-Message-ID: <CANfBPZ-d-0FqY8Gruv+KDNoL3+FoQ68JEnxya5PydhY80x8yhA@mail.gmail.com>
-Subject: Re: [PATCHv2 00/16] [FS, MM, block, MMC]: eMMC High Priority
- Interrupt Feature
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org,
-        alex.lemberg@sandisk.com, ilan.smith@sandisk.com, lporzio@micron.com,
-        rmk+kernel@arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA93FA3.20306@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 8, 2012 at 1:16 PM, Minchan Kim <minchan@kernel.org> wrote:
-> On 05/03/2012 11:22 PM, Venkatraman S wrote:
->
->> Standard eMMC (Embedded MultiMedia Card) specification expects to execute
->> one request at a time. If some requests are more important than others, they
->> can't be aborted while the flash procedure is in progress.
->>
->> New versions of the eMMC standard (4.41 and above) specfies a feature
->> called High Priority Interrupt (HPI). This enables an ongoing transaction
->> to be aborted using a special command (HPI command) so that the card is ready
->> to receive new commands immediately. Then the new request can be submitted
->> to the card, and optionally the interrupted command can be resumed again.
->>
->> Some restrictions exist on when and how the command can be used. For example,
->> only write and write-like commands (ERASE) can be preempted, and the urgent
->> request must be a read.
->>
->> In order to support this in software,
->> a) At the top level, some policy decisions have to be made on what is
->> worth preempting for.
->>       This implementation uses the demand paging requests and swap
->> read requests as potential reads worth preempting an ongoing long write.
->>       This is expected to provide improved responsiveness for smarphones
->> with multitasking capabilities - example would be launch a email application
->> while a video capture session (which causes long writes) is ongoing.
->
->
-> Do you have a number to prove it's really big effective?
+On Tue, May 08, 2012 at 08:45:39AM -0700, H. Peter Anvin wrote:
+> On 05/08/2012 08:28 AM, Gleb Natapov wrote:
+> > On Tue, May 08, 2012 at 05:26:55PM +0200, Paolo Bonzini wrote:
+> >> Il 23/04/2012 16:04, Michael S. Tsirkin ha scritto:
+> >>> +/* Our own copy of __test_and_clear_bit to make sure
+> >>> + * it is done with a single instruction */
+> >>
+> >> Is this for microoptimization or correctness?  If the latter, it does
+> >> not ensure anything without a "lock" prefix.
+> >>
+> > It can't race with other vcpus, only with vmexit on the same vcpu.
+> > 
+> 
+> That doesn't answer the question very well... I really don't understand
+> the point of having a private copy here.
+__test_and_clear_bit() is not guarantied to be local CPU atomic an that
+is what we need here.
 
-What type of benchmarks would be appropriate to post ?
-As you know, the response time of a card would vary depending on
-whether the flash device
-has enough empty blocks to write into and doesn't have to resort to GC during
-write requests.
-Macro benchmarks like iozone etc would be inappropriate here, as they won't show
-the latency effects of individual write requests hung up doing page
-reclaim, which happens
-once in a while.
+> 
+> I really, really don't want a bunch of private interfaces around.  It
+> would be a lot better to define a test_and_{set,clear}_bit_local() in
+> <asm/bitops.h> which is defined to be local CPU atomic.
+> 
+Yes, this will be definitely better.
 
->
-> What I have a concern is when we got low memory situation.
-> Then, writing speed for page reclaim is important for response.
-> If we allow read preempt write and write is delay, it means read path takes longer time to
-> get a empty buffer pages in reclaim. In such case, it couldn't be good.
->
-
-I agree. But when writes are delayed anyway as it exceeds
-hpi_time_threshold (the window
-available for invoking HPI), it means that the device is in GC mode
-and either read or write
-could be equally delayed.  Note that even in case of interrupting a
-write, a single block write
-(which usually is too short to be interrupted, as designed) is
-sufficient for doing a page reclaim,
-and further write requests (including multiblock) would not be subject
-to HPI, as they will
-complete within the average time.
+--
+			Gleb.
