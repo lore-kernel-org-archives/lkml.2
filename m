@@ -1,157 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab2EHXiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 19:38:24 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46798 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754347Ab2EHXiV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 19:38:21 -0400
-Message-ID: <1336520271.728.4.camel@mop>
-Subject: Re: linux-next: Tree for May 8 (printk)
-From: Kay Sievers <kay@vrfy.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Wed, 09 May 2012 01:37:51 +0200
-In-Reply-To: <4FA9ABD6.6030006@xenotime.net>
-References: <20120508181531.072fdc5fefa60d852e784587@canb.auug.org.au>
-		 <4FA948B9.20600@xenotime.net> <1336518821.728.1.camel@mop>
-	 <4FA9ABD6.6030006@xenotime.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757637Ab2EHXjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 19:39:01 -0400
+Received: from mga14.intel.com ([143.182.124.37]:20989 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757416Ab2EHXi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 19:38:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="97868202"
+From: Chen Gong <gong.chen@linux.intel.com>
+To: mchehab@redhat.com, greg@kroah.com
+Cc: bp@amd64.org, tony.luck@intel.com, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Chen Gong <gong.chen@linux.intel.com>
+Subject: [PATCH RESEND V3] edac: avoid mce decoding crash after edac driver unloaded
+Date: Wed,  9 May 2012 07:40:12 +0800
+Message-Id: <1336520412-15105-1-git-send-email-gong.chen@linux.intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <4FA8C44A.3070700@linux.intel.com>
+References: <4FA8C44A.3070700@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-08 at 16:27 -0700, Randy Dunlap wrote:
-> On 05/08/2012 04:13 PM, Kay Sievers wrote:
-> 
-> > On Tue, 2012-05-08 at 09:24 -0700, Randy Dunlap wrote:
-> >> On 05/08/2012 01:15 AM, Stephen Rothwell wrote:
-> > 
-> >> Build errors on i386 and x86_64 when CONFIG_PRINTK is not enabled:
-> > 
-> > This seems to work for me.
-> 
-> It still has one build error which was in the initial report:
+Some edac drivers register themselves as mce decoders via
+notifier_chain. But in current notifier_chain implementation logic,
+it doesn't accept same notifier registered twice. If so, it will be
+wrong when adding/removing the element from the list. For example,
+on one SandyBridge platform, remove module sb_edac and then trigger
+one error, it will hit oops because it has no mce decoder registered
+but related notifier_chain still points to an invalid callback
+function. Here is an example:
 
-Ah sorry, missed to add a hunk.
+Call Trace:
+ [<ffffffff8150ef6a>] atomic_notifier_call_chain+0x1a/0x20
+ [<ffffffff8102b936>] mce_log+0x46/0x180
+ [<ffffffff8102eaea>] apei_mce_report_mem_error+0x4a/0x60
+ [<ffffffff812e19d2>] ghes_do_proc+0x192/0x210
+ [<ffffffff812e2066>] ghes_proc+0x46/0x70
+ [<ffffffff812e20d8>] ghes_notify_sci+0x48/0x80
+ [<ffffffff8150ef05>] notifier_call_chain+0x55/0x80
+ [<ffffffff81076f1a>] __blocking_notifier_call_chain+0x5a/0x80
+ [<ffffffff812aea11>] ? acpi_os_wait_events_complete+0x23/0x23
+ [<ffffffff81076f56>] blocking_notifier_call_chain+0x16/0x20
+ [<ffffffff812ddc4d>] acpi_hed_notify+0x19/0x1b
+ [<ffffffff812b16bd>] acpi_device_notify+0x19/0x1b
+ [<ffffffff812beb38>] acpi_ev_notify_dispatch+0x67/0x7f
+ [<ffffffff812aea3a>] acpi_os_execute_deferred+0x29/0x36
+ [<ffffffff81069dc2>] process_one_work+0x132/0x450
+ [<ffffffff8106bbcb>] worker_thread+0x17b/0x3c0
+ [<ffffffff8106ba50>] ? manage_workers+0x120/0x120
+ [<ffffffff81070aee>] kthread+0x9e/0xb0
+ [<ffffffff81514724>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81070a50>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff81514720>] ? gs_change+0x13/0x13
+Code: f3 49 89 d4 45 85 ed 4d 89 c6 48 8b 0f 74 48 48 85 c9 75 17 eb 41
+0f 1f 80 00 00 00 00 41 83 ed 01 4c 89 f9 74 22 4d 85 ff 74 1d <4c> 8b
+79 08 4c 89 e2 48 89 de 48 89 cf ff 11 4d 85 f6 74 04 41
+RIP  [<ffffffff8150eef6>] notifier_call_chain+0x46/0x80
+ RSP <ffff88042868fb20>
+CR2: ffffffffa01af838
+---[ end trace 0100930068e73e6f ]---
+BUG: unable to handle kernel paging request at fffffffffffffff8
+IP: [<ffffffff810705b0>] kthread_data+0x10/0x20
+PGD 1a0d067 PUD 1a0e067 PMD 0
+Oops: 0000 [#2] SMP
 
-Thanks,
-Kay
+Only i7core_edac and sb_edac have such issues because they have more
+than one memory controller which means they have to register mce
+decoder many times.
 
+v3->v2:
+  remove dead code in i7core_edac, suggested by Mauro
 
-From: Kay Sievers <kay@vrfy.org>
-Subject: printk - fix compilation for CONFIG_PRINTK=n
+v2->v1:
+  move register/unregister to the init/exit part
 
-Signed-off-by: Kay Sievers <kay@vrfy.org>
+Cc: <stable@vger.kernel.org> # 3.3.y:
+Cc: <stable@vger.kernel.org> # 3.2.y: 3653ada: x86, mce: Add wrappers
+Cc: <stable@vger.kernel.org> # 3.2.y:
+Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
 ---
- drivers/char/mem.c |    2 ++
- kernel/printk.c    |   41 ++++++++++++++++++++++-------------------
- 2 files changed, 24 insertions(+), 19 deletions(-)
+ drivers/edac/i7core_edac.c |   15 ++++-----------
+ drivers/edac/sb_edac.c     |    8 ++++----
+ 2 files changed, 8 insertions(+), 15 deletions(-)
 
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -825,7 +825,9 @@ static const struct memdev {
- 	 [7] = { "full", 0666, &full_fops, NULL },
- 	 [8] = { "random", 0666, &random_fops, NULL },
- 	 [9] = { "urandom", 0666, &urandom_fops, NULL },
-+#ifdef CONFIG_PRINTK
- 	[11] = { "kmsg", 0644, &kmsg_fops, NULL },
-+#endif
- #ifdef CONFIG_CRASH_DUMP
- 	[12] = { "oldmem", 0, &oldmem_fops, NULL },
- #endif
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -126,7 +126,6 @@ EXPORT_SYMBOL(console_set_on_cmdline);
- /* Flag: console code may call schedule() */
- static int console_may_schedule;
+diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+index 85226cc..0fe2277 100644
+--- a/drivers/edac/i7core_edac.c
++++ b/drivers/edac/i7core_edac.c
+@@ -1932,12 +1932,6 @@ static int i7core_mce_check_error(struct notifier_block *nb, unsigned long val,
+ 	if (mce->bank != 8)
+ 		return NOTIFY_DONE;
  
--#ifdef CONFIG_PRINTK
- /*
-  * The printk log buffer consists of a chain of concatenated variable
-  * length records. Every record starts with a record header, containing
-@@ -208,16 +207,9 @@ struct log {
-  */
- static DEFINE_RAW_SPINLOCK(logbuf_lock);
- 
--/* cpu currently holding logbuf_lock */
--static volatile unsigned int logbuf_cpu = UINT_MAX;
--
--#define LOG_LINE_MAX 1024
--
--/* record buffer */
--#define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
--static char __log_buf[__LOG_BUF_LEN];
--static char *log_buf = __log_buf;
--static u32 log_buf_len = __LOG_BUF_LEN;
-+/* the next printk record to read by syslog(READ) or /proc/kmsg */
-+static u64 syslog_seq;
-+static u32 syslog_idx;
- 
- /* index and sequence number of the first record stored in the buffer */
- static u64 log_first_seq;
-@@ -225,15 +217,23 @@ static u32 log_first_idx;
- 
- /* index and sequence number of the next record to store in the buffer */
- static u64 log_next_seq;
-+#ifdef CONFIG_PRINTK
- static u32 log_next_idx;
- 
- /* the next printk record to read after the last 'clear' command */
- static u64 clear_seq;
- static u32 clear_idx;
- 
--/* the next printk record to read by syslog(READ) or /proc/kmsg */
--static u64 syslog_seq;
--static u32 syslog_idx;
-+#define LOG_LINE_MAX 1024
-+
-+/* record buffer */
-+#define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
-+static char __log_buf[__LOG_BUF_LEN];
-+static char *log_buf = __log_buf;
-+static u32 log_buf_len = __LOG_BUF_LEN;
-+
-+/* cpu currently holding logbuf_lock */
-+static volatile unsigned int logbuf_cpu = UINT_MAX;
- 
- /* human readable text of the record */
- static char *log_text(const struct log *msg)
-@@ -1425,13 +1425,16 @@ asmlinkage int printk(const char *fmt, .
- 	return r;
- }
- EXPORT_SYMBOL(printk);
-+
- #else
- 
--static void call_console_drivers(int level, const char *text, size_t len)
--{
--}
-+#define LOG_LINE_MAX 0
-+static struct log *log_from_idx(u32 idx) { return NULL; }
-+static u32 log_next(u32 idx) { return 0; }
-+static char *log_text(const struct log *msg) { return NULL; }
-+static void call_console_drivers(int level, const char *text, size_t len) {}
- 
+-#ifdef CONFIG_SMP
+-	/* Only handle if it is the right mc controller */
+-	if (mce->socketid != pvt->i7core_dev->socket)
+-		return NOTIFY_DONE;
 -#endif
-+#endif /* CONFIG_PRINTK */
+-
+ 	smp_rmb();
+ 	if ((pvt->mce_out + 1) % MCE_LOG_LEN == pvt->mce_in) {
+ 		smp_wmb();
+@@ -2234,8 +2228,6 @@ static void i7core_unregister_mci(struct i7core_dev *i7core_dev)
+ 	if (pvt->enable_scrub)
+ 		disable_sdram_scrub_setting(mci);
  
- static int __add_preferred_console(char *name, int idx, char *options,
- 				   char *brl_options)
-@@ -1715,7 +1718,7 @@ static u32 console_idx;
-  * by printk().  If this is the case, console_unlock(); emits
-  * the output prior to releasing the lock.
-  *
-- * If there is output waiting, we wake it /dev/kmsg and syslog() users.
-+ * If there is output waiting, we wake /dev/kmsg and syslog() users.
-  *
-  * console_unlock(); may be called from any context.
-  */
-
+-	mce_unregister_decode_chain(&i7_mce_dec);
+-
+ 	/* Disable EDAC polling */
+ 	i7core_pci_ctl_release(pvt);
+ 
+@@ -2336,8 +2328,6 @@ static int i7core_register_mci(struct i7core_dev *i7core_dev)
+ 	/* DCLK for scrub rate setting */
+ 	pvt->dclk_freq = get_dclk_freq();
+ 
+-	mce_register_decode_chain(&i7_mce_dec);
+-
+ 	return 0;
+ 
+ fail0:
+@@ -2481,8 +2471,10 @@ static int __init i7core_init(void)
+ 
+ 	pci_rc = pci_register_driver(&i7core_driver);
+ 
+-	if (pci_rc >= 0)
++	if (pci_rc >= 0) {
++		mce_register_decode_chain(&i7_mce_dec);
+ 		return 0;
++	}
+ 
+ 	i7core_printk(KERN_ERR, "Failed to register device with error %d.\n",
+ 		      pci_rc);
+@@ -2498,6 +2490,7 @@ static void __exit i7core_exit(void)
+ {
+ 	debugf2("MC: " __FILE__ ": %s()\n", __func__);
+ 	pci_unregister_driver(&i7core_driver);
++	mce_unregister_decode_chain(&i7_mce_dec);
+ }
+ 
+ module_init(i7core_init);
+diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+index a203536..e9858ba 100644
+--- a/drivers/edac/sb_edac.c
++++ b/drivers/edac/sb_edac.c
+@@ -1669,8 +1669,6 @@ static void sbridge_unregister_mci(struct sbridge_dev *sbridge_dev)
+ 	debugf0("MC: " __FILE__ ": %s(): mci = %p, dev = %p\n",
+ 		__func__, mci, &sbridge_dev->pdev[0]->dev);
+ 
+-	mce_unregister_decode_chain(&sbridge_mce_dec);
+-
+ 	/* Remove MC sysfs nodes */
+ 	edac_mc_del_mc(mci->dev);
+ 
+@@ -1738,7 +1736,6 @@ static int sbridge_register_mci(struct sbridge_dev *sbridge_dev)
+ 		goto fail0;
+ 	}
+ 
+-	mce_register_decode_chain(&sbridge_mce_dec);
+ 	return 0;
+ 
+ fail0:
+@@ -1867,8 +1864,10 @@ static int __init sbridge_init(void)
+ 
+ 	pci_rc = pci_register_driver(&sbridge_driver);
+ 
+-	if (pci_rc >= 0)
++	if (pci_rc >= 0) {
++		mce_register_decode_chain(&sbridge_mce_dec);
+ 		return 0;
++	}
+ 
+ 	sbridge_printk(KERN_ERR, "Failed to register device with error %d.\n",
+ 		      pci_rc);
+@@ -1884,6 +1883,7 @@ static void __exit sbridge_exit(void)
+ {
+ 	debugf2("MC: " __FILE__ ": %s()\n", __func__);
+ 	pci_unregister_driver(&sbridge_driver);
++	mce_unregister_decode_chain(&sbridge_mce_dec);
+ }
+ 
+ module_init(sbridge_init);
+-- 
+1.7.10
 
