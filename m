@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab2EHNRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 09:17:37 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:42645 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab2EHNRg (ORCPT
+	id S1754984Ab2EHNSk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 09:18:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46889 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754294Ab2EHNSj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 09:17:36 -0400
-Date: Tue, 8 May 2012 10:17:31 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/7] perf tools: Introduce perf_target__strerror()
-Message-ID: <20120508131731.GH2485@infradead.org>
-References: <1336367344-28071-1-git-send-email-namhyung.kim@lge.com>
- <1336367344-28071-6-git-send-email-namhyung.kim@lge.com>
- <20120507172946.GC2485@infradead.org>
- <4FA809AD.7060209@gmail.com>
- <87r4uvcu4n.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r4uvcu4n.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 8 May 2012 09:18:39 -0400
+Message-ID: <1336483073.16236.37.camel@twins>
+Subject: Re: [PATCH v20] tracing: Fix kconfig warning due to a typo
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anton Arapov <anton@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>
+Date: Tue, 08 May 2012 15:17:53 +0200
+In-Reply-To: <1336481312.14207.164.camel@gandalf.stny.rr.com>
+References: <20120508111126.21004.38285.sendpatchset@srdronam.in.ibm.com>
+	 <1336476588.16236.20.camel@twins>
+	 <1336481312.14207.164.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, May 08, 2012 at 10:57:12AM +0900, Namhyung Kim escreveu:
-> On Mon, 07 May 2012 11:43:09 -0600, David Ahern wrote:
-> > On 5/7/12 11:29 AM, Arnaldo Carvalho de Melo wrote:
-> >> So what is missing in this case is that top starts with system_wide set,
-> >> not from the command line.
-> >>
-> > Seems like we should avoid the propagation of the errnos beyond the
-> > depths of the library part. For perf-top why not default to nothing
-> > set and if the user does not request one, set system wide. i.e,
-> > following Patch 6 in this set do:
-> >
-> > if (perf_target__none(&top.target)
-> >     top.target.system_wide = true;
-> >
+On Tue, 2012-05-08 at 08:48 -0400, Steven Rostedt wrote:
+> On Tue, 2012-05-08 at 13:29 +0200, Peter Zijlstra wrote:
+> > On Tue, 2012-05-08 at 16:41 +0530, Srikar Dronamraju wrote:
+> > > +    p:uprobes/p_zsh_0x46420 /bin/zsh:0x00046420 arg1=%ip arg2=%ax
+> > 
+> > can you also do things like:
+> > 
+> >  p:uprobes/ponies /bin/zsh:foo arg1=bar
+> > 
+> > when bar is either a function argument of foo (or an otherwise live
+> > variable at the probe point)?
+> > 
+> > Only sampling register content is somewhat limiting, you might want to
+> > have %ax[5] + 24 for example, or a pure memory deref -- and the dwarves
+> > know where it all lives.
 > 
-> Thanks for catching this (and sorry for not testing thoroughly).
-> 
-> Yes, this would make more sense if it goes to the patch 1. Now I see
-> that Arnaldo fixed it on patch 1 but forgot to update on patch 6 :).
+> But this is for the raw entry into the kernel. The kernel wont know the
+> variable name. Although perf could do that parsing for you.
 
-Oh, I see, adding a follow up patch using the __none method, my case
-wasn't checking cpu_list, so this is not just a simple helper
-replacement but a bug fix.
+Ah, ok. Yes I meant for perf to do this, I overlooked it was the kernel
+input.
 
-- Arnaldo
+> That said, the %ax[5] + 24 could be done in kernel, and that would be
+> useful. Does kprobes handle that?
+
+In general something like: %mr + %c * %cr + %cr would be most useful I
+think (%m - memory address, %r - register, %c - constant). Although
+maybe it needs segment registers too, dunno. Also no idea if this covers
+the addressing scope of all archs.
