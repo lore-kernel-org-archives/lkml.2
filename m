@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab2EHHRq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 03:17:46 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:50042 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754485Ab2EHHRo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 03:17:44 -0400
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Cc: Avi Kivity <avi@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Attilio Rao <attilio.rao@citrix.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
-        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
-In-Reply-To: <alpine.LFD.2.02.1205072240020.6271@ionos>
-References: <4FA7BABA.4040700@redhat.com> <4FA7CC05.50808@linux.vnet.ibm.com> <4FA7CCA2.4030408@redhat.com> <4FA7D06B.60005@linux.vnet.ibm.com> <20120507134611.GB5533@linux.vnet.ibm.com> <4FA7D2E5.1020607@redhat.com> <4FA7D3F7.9080005@linux.vnet.ibm.com> <4FA7D50D.1020209@redhat.com> <4FA7E06E.20304@linux.vnet.ibm.com> <4FA7E1C8.7010509@redhat.com> <20120507172527.GA5357@gmail.com> <alpine.LFD.2.02.1205072240020.6271@ionos>
-User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
-Date: Tue, 08 May 2012 12:16:46 +0530
-Message-ID: <878vh3rwyx.fsf@linux.vnet.ibm.com>
+	id S1756662Ab2EHHSr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 03:18:47 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:37302 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756242Ab2EHHSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 03:18:46 -0400
+From: =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: leoli@freescale.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>,
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: [PATCH 1/2] usb: fsl_mxc_udc.c: add workaround for ENGcm09152 for i.MX25
+Date: Tue,  8 May 2012 09:18:29 +0200
+Message-Id: <1336461510-30190-1-git-send-email-eric@eukrea.com>
+X-Mailer: git-send-email 1.7.7.6
 MIME-Version: 1.0
-Content-Type: text/plain
-x-cbid: 12050806-5564-0000-0000-0000028AFCC2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 May 2012 22:42:30 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Mon, 7 May 2012, Ingo Molnar wrote:
-> > * Avi Kivity <avi@redhat.com> wrote:
-> > 
-> > > > PS: Nikunj had experimented that pv-flush tlb + 
-> > > > paravirt-spinlock is a win on PLE where only one of them 
-> > > > alone could not prove the benefit.
-> > > 
-Do not have PLE numbers yet for pvflush and pvspinlock. 
+this patch gives the possibility to workaround bug ENGcm09152
+on i.MX25 when the hardware workaround is also implemented on
+the board.
+It covers the workaround described on page 42 of the following Errata,
+titled "USB: UTMI_USBPHY VBUS input impedance implementation error" :
+http://cache.freescale.com/files/dsp/doc/errata/IMX25CE.pdf
 
-I have seen on Non-PLE having pvflush and pvspinlock patches -
-kernbench, ebizzy, specjbb, hackbench and dbench all of them improved. 
+Signed-off-by: Eric Bénard <eric@eukrea.com>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+---
+ drivers/usb/gadget/fsl_mxc_udc.c |   22 +++++++++++++---------
+ 1 files changed, 13 insertions(+), 9 deletions(-)
 
-I am chasing a race currently on pv-flush path, it is causing
-file-system corruption. I will post these number along with my v2 post.
-
-> > > I'd like to see those numbers, then.
-> > > 
-> > > Ingo, please hold on the kvm-specific patches, meanwhile.
-> > 
-> > I'll hold off on the whole thing - frankly, we don't want this 
-> > kind of Xen-only complexity. If KVM can make use of PLE then Xen 
-> > ought to be able to do it as well.
-> > 
-> > If both Xen and KVM makes good use of it then that's a different 
-> > matter.
-> 
-> Aside of that, it's kinda strange that a dude named "Nikunj" is
-> referenced in the argument chain, but I can't find him on the CC list.
-> 
-/me waves my hand
-
-Regards
-Nikunj
+diff --git a/drivers/usb/gadget/fsl_mxc_udc.c b/drivers/usb/gadget/fsl_mxc_udc.c
+index dcbc0a2..8bbf673 100644
+--- a/drivers/usb/gadget/fsl_mxc_udc.c
++++ b/drivers/usb/gadget/fsl_mxc_udc.c
+@@ -89,17 +89,21 @@ eenahb:
+ void fsl_udc_clk_finalize(struct platform_device *pdev)
+ {
+ 	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
+-	if (cpu_is_mx35()) {
++
++	/* workaround ENGcm09152 for i.MX25 and i.MX35 */
++	if (pdata->workaround & FLS_USB2_WORKAROUND_ENGCM09152) {
+ 		unsigned int v;
++		void __iomem *otgbase;
+ 
+-		/* workaround ENGcm09152 for i.MX35 */
+-		if (pdata->workaround & FLS_USB2_WORKAROUND_ENGCM09152) {
+-			v = readl(MX35_IO_ADDRESS(MX35_USB_BASE_ADDR +
+-					USBPHYCTRL_OTGBASE_OFFSET));
+-			writel(v | USBPHYCTRL_EVDO,
+-				MX35_IO_ADDRESS(MX35_USB_BASE_ADDR +
+-					USBPHYCTRL_OTGBASE_OFFSET));
+-		}
++		if (cpu_is_mx25())
++			otgbase = MX25_IO_ADDRESS(MX25_USB_BASE_ADDR +
++					USBPHYCTRL_OTGBASE_OFFSET);
++		else if (cpu_is_mx35())
++			otgbase = MX35_IO_ADDRESS(MX35_USB_BASE_ADDR +
++					USBPHYCTRL_OTGBASE_OFFSET);
++
++		v = readl(otgbase);
++		writel(v | USBPHYCTRL_EVDO, otgbase);
+ 	}
+ 
+ 	/* ULPI transceivers don't need usbpll */
+-- 
+1.7.7.6
 
