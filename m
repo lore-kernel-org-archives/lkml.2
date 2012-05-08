@@ -1,130 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab2EHSGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 14:06:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39410 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab2EHSGj (ORCPT
+	id S1754572Ab2EHSGw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 14:06:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49975 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab2EHSGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 14:06:39 -0400
-From: "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
-        "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>,
-        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Amit Kucheria <amit.kucheria@canonical.com>,
-        "Arnaud Patard (Rtp)" <arnaud.patard@rtp-net.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH] arm: imx53-qsb: Add Dialog DA9053 PMIC support
-Date: Wed,  9 May 2012 02:06:27 +0800
-Message-Id: <1336500387-25546-1-git-send-email-paulliu@debian.org>
-X-Mailer: git-send-email 1.7.10
+	Tue, 8 May 2012 14:06:50 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org
+Cc: linux-kernel@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] staging, rts5139: Fix typo in rts5139
+Date: Wed,  9 May 2012 03:06:46 +0900
+Message-Id: <1336500406-25272-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.10.1.487.ga3935e6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>
+Correct spelling typo in rts5139
 
-Add Dialog DA9053 regulators support for imx53-qsb (Loco board)
-
-Signed-off-by: Ying-Chun Liu (PaulLiu) <paulliu@debian.org>
-Cc: Sascha Hauer <kernel@pengutronix.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Amit Kucheria <amit.kucheria@canonical.com>
-Cc: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 ---
- arch/arm/boot/dts/imx53-qsb.dts |   74 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 73 insertions(+), 1 deletion(-)
+ drivers/staging/rts5139/rts51x_chip.h | 10 +++++-----
+ drivers/staging/rts5139/sd.c          |  2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/boot/dts/imx53-qsb.dts b/arch/arm/boot/dts/imx53-qsb.dts
-index b08b587..393e90d 100644
---- a/arch/arm/boot/dts/imx53-qsb.dts
-+++ b/arch/arm/boot/dts/imx53-qsb.dts
-@@ -73,8 +73,80 @@
- 				};
+diff --git a/drivers/staging/rts5139/rts51x_chip.h b/drivers/staging/rts5139/rts51x_chip.h
+index 13fc2a4..65cc30a 100644
+--- a/drivers/staging/rts5139/rts51x_chip.h
++++ b/drivers/staging/rts5139/rts51x_chip.h
+@@ -242,8 +242,8 @@ struct trace_msg_t {
+ #define CUR_ERR                 0x70	/* current error                    */
+ #define DEF_ERR                 0x71	/* specific command error           */
  
- 				pmic: dialog@48 {
--					compatible = "dialog,da9053", "dialog,da9052";
-+					compatible = "dlg,da9053-aa", "dlg,da9052";
- 					reg = <0x48>;
-+
-+					regulators {
-+						buck0 {
-+							regulator-min-microvolt = <500000>;
-+							regulator-max-microvolt = <2075000>;
-+						};
-+
-+						buck1 {
-+							regulator-min-microvolt = <500000>;
-+							regulator-max-microvolt = <2075000>;
-+						};
-+
-+						buck2 {
-+							regulator-min-microvolt = <925000>;
-+					                regulator-max-microvolt = <2500000>;
-+						};
-+
-+						buck3 {
-+							regulator-min-microvolt = <925000>;
-+					                regulator-max-microvolt = <2500000>;
-+						};
-+
-+						ldo4 {
-+							regulator-min-microvolt = <600000>;
-+							regulator-max-microvolt = <1800000>;
-+						};
-+
-+						ldo5 {
-+							regulator-min-microvolt = <600000>;
-+					                regulator-max-microvolt = <1800000>;
-+						};
-+
-+						ldo6 {
-+							regulator-min-microvolt = <1725000>;
-+					                regulator-max-microvolt = <3300000>;
-+						};
-+
-+						ldo7 {
-+							regulator-min-microvolt = <1725000>;
-+					                regulator-max-microvolt = <3300000>;
-+						};
-+
-+						ldo8 {
-+							regulator-min-microvolt = <1200000>;
-+					                regulator-max-microvolt = <3600000>;
-+						};
-+
-+						ldo9 {
-+							regulator-min-microvolt = <1200000>;
-+					                regulator-max-microvolt = <3600000>;
-+						};
-+
-+						ldo10 {
-+							regulator-min-microvolt = <1200000>;
-+					                regulator-max-microvolt = <3600000>;
-+						};
-+
-+						ldo11 {
-+							regulator-min-microvolt = <1200000>;
-+					                regulator-max-microvolt = <3600000>;
-+						};
-+
-+						ldo12 {
-+							regulator-min-microvolt = <1250000>;
-+					                regulator-max-microvolt = <3650000>;
-+						};
-+
-+						ldo13 {
-+							regulator-min-microvolt = <1200000>;
-+					                regulator-max-microvolt = <3600000>;
-+						};
-+					};
- 				};
- 			};
+-/*---- sense key Infomation ----*/
+-#define SNSKEYINFO_LEN          3	/* length of sense key infomation   */
++/*---- sense key Information ----*/
++#define SNSKEYINFO_LEN          3	/* length of sense key information   */
+ 
+ #define SKSV                    0x80
+ #define CDB_ILLEGAL             0x40
+@@ -296,13 +296,13 @@ struct sense_data_t {
+ 	unsigned char seg_no;	/* segment No.                      */
+ 	unsigned char sense_key;	/* byte5 : ILI                      */
+ 	/* bit3-0 : sense key              */
+-	unsigned char info[4];	/* infomation                       */
++	unsigned char info[4];	/* information                       */
+ 	unsigned char ad_sense_len;	/* additional sense data length     */
+-	unsigned char cmd_info[4];	/* command specific infomation      */
++	unsigned char cmd_info[4];	/* command specific information      */
+ 	unsigned char asc;	/* ASC                              */
+ 	unsigned char ascq;	/* ASCQ                             */
+ 	unsigned char rfu;	/* FRU                              */
+-	unsigned char sns_key_info[3];	/* sense key specific infomation    */
++	unsigned char sns_key_info[3];	/* sense key specific information    */
+ };
+ 
+ /* sd_ctl bit map */
+diff --git a/drivers/staging/rts5139/sd.c b/drivers/staging/rts5139/sd.c
+index d5dd2f9..7e1033d 100644
+--- a/drivers/staging/rts5139/sd.c
++++ b/drivers/staging/rts5139/sd.c
+@@ -1562,7 +1562,7 @@ static u8 sd_search_final_phase(struct rts51x_chip *chip, u32 phase_map,
+ 	}
+ 
+ Search_Finish:
+-	RTS51X_DEBUGP("Final choosen phase: %d\n", final_phase);
++	RTS51X_DEBUGP("Final chosen phase: %d\n", final_phase);
+ 	return final_phase;
+ }
  
 -- 
-1.7.10
+1.7.10.1.487.ga3935e6
 
