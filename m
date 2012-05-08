@@ -1,105 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757714Ab2EHXlU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 19:41:20 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:36439 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757553Ab2EHXlT (ORCPT
+	id S1752218Ab2EHXsg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 19:48:36 -0400
+Received: from leo.clearchain.com ([199.73.29.74]:25199 "EHLO
+	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab2EHXse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 19:41:19 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-127.messagelabs.com!1336520464!4941804!8
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: remove __user annotation inside of struct's
-Date: Tue, 8 May 2012 16:41:00 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Tue, 8 May 2012 19:48:34 -0400
+Date: Wed, 9 May 2012 09:52:19 +1000
+From: Peter Hutterer <peter.hutterer@who-t.net>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, chatty@enac.fr, chasedouglas@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Input: MT - Include win8 support
+Message-ID: <20120508235219.GA4067@yabbi.redhat.com>
+References: <1336230499-1450-1-git-send-email-rydberg@euromail.se>
+ <CAN+gG=HqGmf77P6=7RMFT_Ez7Ysp4ZVJ6skfAoDcZ7JN1JtYnw@mail.gmail.com>
+ <20120506182835.GA12221@polaris.bitmath.org>
+ <20120508060221.GA15925@yabbi.bne.redhat.com>
+ <20120508184052.GA23748@polaris.bitmath.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201205081641.00358.hartleys@visionengravers.com>
+In-Reply-To: <20120508184052.GA23748@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Wed, 09 May 2012 09:18:33 +0930 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The structs' comedi_insn, coomedi_insnlist, comedi_cmd,
-comedi_chaninfo, and comedi_rangeinfo are all passed to
-the kernel from user space using ioctl commands. They
-are then copied to kernel space using copy_from_user()
-before the data is passed to the drivers.
+On Tue, May 08, 2012 at 08:40:52PM +0200, Henrik Rydberg wrote:
+> > > to aid in the discussion, I have shared a drawing of the MT model
+> > > and the (supposed) win8 model.
+> > > 
+> > > https://docs.google.com/document/d/1KKu7kqPOsvE9tCmWhdGnmO8tgmN0Cd-Mv_crVaCZueY/view
+> > 
+> > having an asciiart version of this in Documentation/ would be quite useful,
+> > IMO
+> 
+> Yep, that ought to be possible to arrange.
+> 
+> > Insert a paragraph into the actual documentation. I think that's more
+> > helpful than tacking it on (if not quite as nice in a diff)
+> > 
+> > "The orientation of the ellipse. The value should describe a signed quarter
+> > of a revolution clockwise around the touch center. The signed value range
+> > is arbitrary, but zero should be returned for a finger aligned along the Y
+> > axis of the surface, a negative value when finger is turned to the left, and
+> > a positive value when finger turned to the right. When completely aligned
+> > with the X axis, the range max should be returned.  
+> > 
+> > Touch ellipsis are symmetrical by default. For devices capable of true 360
+> > degree orientation, the reported orientation must exceed the range max to
+> > indicate more than a quarter of a revolution. For an upside-down finger, 
+> > range max * 2 should be returned.
+> > 
+> > Orientation can be omitted if the touching object is circular, or if the
+> > information is not available in the kernel driver. Partial orientation
+> > support is possible if the device can distinguish between the two axis, but
+> > not (uniquely) any values in between. In such cases, the range of
+> > ABS_MT_ORIENTATION should be [0, 1] [4]."
+> 
+> Looks good, will copy that in its entirety. :-)
+> 
+> > Not a big fan of reporting values above absmin/absmax, tbh. It means we
+> > can't rely on the axis values and have to special-case it. Plus, there's no
+> > way to detect this before you actually get a value.
+> 
+> True, and I am open to other suggestions. However, I think the
+> proposal integrates pretty well with the existing model and is likely
+> to produce reasonable results without userland modifications.
+> 
+> > > Looking at the figure, it is clear that the MT model has two centers,
+> > > one for each ellipse. Thus, center is not discriminating
+> > > enough. Perhaps ABS_MT_OUTER_X/Y is more appropriate, then?
+> > 
+> > ABS_MT_OUTER_CENTER
+> 
+> I appreciate the suggestion, but along two-word combinations,
+> ABS_MT_OUTER_POSITION would integrate better with existing names. Both
+> seem awfully long, though.
 
-The __user annotation should not be used with variables
-inside the struct. This produces a lot of sparse warnings
-like:
+problem I see with "outer position" is that I'd associate it with the
+top/left position of whatever "outer" is, not with the center of said
+envelope. that's why I'd argue that "center" should be somewhere in the
+name.
 
-warning: dereference of noderef expression 
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
-
-Note: This patch exposes some new warnings about different
-address space. These will be addressed.
-
-diff --git a/drivers/staging/comedi/comedi.h b/drivers/staging/comedi/comedi.h
-index 8ea55ae..2e2f366 100644
---- a/drivers/staging/comedi/comedi.h
-+++ b/drivers/staging/comedi/comedi.h
-@@ -335,7 +335,7 @@
- 	struct comedi_insn {
- 		unsigned int insn;
- 		unsigned int n;
--		unsigned int __user *data;
-+		unsigned int *data;
- 		unsigned int subdev;
- 		unsigned int chanspec;
- 		unsigned int unused[3];
-@@ -343,7 +343,7 @@
- 
- 	struct comedi_insnlist {
- 		unsigned int n_insns;
--		struct comedi_insn __user *insns;
-+		struct comedi_insn *insns;
- 	};
- 
- 	struct comedi_cmd {
-@@ -365,24 +365,24 @@
- 		unsigned int stop_src;
- 		unsigned int stop_arg;
- 
--		unsigned int __user *chanlist;	/* channel/range list */
-+		unsigned int *chanlist;	/* channel/range list */
- 		unsigned int chanlist_len;
- 
--		short __user *data; /* data list, size depends on subd flags */
-+		short *data; /* data list, size depends on subd flags */
- 		unsigned int data_len;
- 	};
- 
- 	struct comedi_chaninfo {
- 		unsigned int subdev;
--		unsigned int __user *maxdata_list;
--		unsigned int __user *flaglist;
--		unsigned int __user *rangelist;
-+		unsigned int *maxdata_list;
-+		unsigned int *flaglist;
-+		unsigned int *rangelist;
- 		unsigned int unused[4];
- 	};
- 
- 	struct comedi_rangeinfo {
- 		unsigned int range_type;
--		void __user *range_ptr;
-+		void *range_ptr;
- 	};
- 
- 	struct comedi_krange {
+Cheers,
+  Peter
