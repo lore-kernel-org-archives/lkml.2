@@ -1,75 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758174Ab2EHDnB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 23:43:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58655 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755225Ab2EHDnA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 23:43:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120508024612.GA11485@richard>
-References: <CAE9FiQUVNA_jdRfsSR9Rv47aa6JX-HKET0z3SfK19wT=Fcd9Cg@mail.gmail.com>
-	<20120504024721.GA6775@richard>
-	<CAE9FiQUz2w815gU5vY5b0BPf+1pz_pafgzqVKizJC++z27RTaQ@mail.gmail.com>
-	<20120504045205.GA21624@richard>
-	<CAE9FiQWM4OTFp5NN+KOXxNREQxNWipDjWbbPPiHHJsb6yFmuiQ@mail.gmail.com>
-	<20120506151715.GA7773@richard>
-	<CAE9FiQWsSWK-_zGe1ggaKuZu+RJ1kb1zuTEokdxqFSbE3UjNRw@mail.gmail.com>
-	<CAE9FiQXKjxLDLeh8TXU_OCNwFt+UMv3qFjcPrKcPcorA1YmkdQ@mail.gmail.com>
-	<20120507011722.GA8122@richard>
-	<CAE9FiQUpcJdAvK=wisNc_zq5c9zDtgEM=MNugDcHN9h3=ZPUcA@mail.gmail.com>
-	<20120508024612.GA11485@richard>
-Date: Mon, 7 May 2012 20:42:59 -0700
-X-Google-Sender-Auth: taEaWfiw1LQVhSlTsbdTmnb7_cc
-Message-ID: <CAE9FiQUU+a4yQJTiud=aYx2xXcoQZpH2rJyVhj19TQKGN7=2BA@mail.gmail.com>
-Subject: Re: One problem in reassign pci bus number?
-From: Yinghai Lu <yinghai@kernel.org>
-To: Richard Yang <weiyang@linux.vnet.ibm.com>
-Cc: Wei Yang <weiyang.kernel@gmail.com>, linux-pci@vger.kernel.org,
+	id S1758217Ab2EHDrG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 23:47:06 -0400
+Received: from gate.crashing.org ([63.228.1.57]:32888 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757751Ab2EHDrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 23:47:04 -0400
+Message-ID: <1336448796.2540.187.camel@pasglop>
+Subject: Re: [PATCH] powerpc: use local var instead of
+ local_paca->irq_happened directly in __check_irq_replay
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+Cc: Milton Miller <miltonm@bga.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Date: Tue, 08 May 2012 13:46:36 +1000
+In-Reply-To: <1336090207.18712.9.camel@pasglop>
+References: <4FA1E527.1090807@gmail.com> <1336011306.2653.3.camel@pasglop>
+	 <1336018961.2653.11.camel@pasglop> <4FA226A8.1080903@gmail.com>
+	 <4FA22CC5.3010107@gmail.com> <1336032561.18712.1.camel@pasglop>
+	 <4FA31653.5090103@gmail.com> <1336090207.18712.9.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 7, 2012 at 7:46 PM, Richard Yang <weiyang@linux.vnet.ibm.com> wrote:
-> On Sun, May 06, 2012 at 07:04:09PM -0700, Yinghai Lu wrote:
->>On Sun, May 6, 2012 at 6:17 PM, Richard Yang <weiyang@linux.vnet.ibm.com> wrote:
->>> so this free space will be combined with the free space got from
->>> parent, form a big space to meet the requirement.
->>>
->>> This is the general idea about probe_resource()?
->>>
->>> And this is the design decision to find the free space at the end
->>> of top, even at the start we have more free space?
->>
->>no, probe_resource will get from start if space is big enough.
->>
->>if not, it will try to extend top.
->
-> Hmm... for example we still have this
->               parent[70-160]
-> brother1[70-80]  res[90-150]  brother2[151-160]
->                   ->child[105-140]
->
-> if we call probe_resource(res, new_res, 16, par, 1, 0xff,
-> IORESOURCE_PCI_FIXED);
->
-> I think this call is used to allocate a res of size 16 under res.
-> When there is no enough free space, it will expend res, and res->parent.
->
-> While in this situation, res doesn't have enough free space. so it need
-> to expend itself.
->
-> In the probe_resource() it tries to extend res on the right side.
-> So even there is enough space between brother1 and res, I think the
-> probe_resource() will not return 0.
->
-> Do you think my analysis is correct?
+Hi Wang !
 
-it will reduce needed size one by one. so at last it will return
-[91, 104]
+Does this patch fixes it for you ?
 
-Yinghai
+>From 249f8649bf95a4c3e6637284754a165c1d83c394 Mon Sep 17 00:00:00 2001
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Tue, 8 May 2012 13:31:59 +1000
+Subject: [PATCH 2/3] powerpc/irq: Fix bug with new lazy IRQ handling code
+
+We had a case where we could turn on hard interrupts while
+leaving the PACA_IRQ_HARD_DIS bit set in the PACA. This can
+in turn cause a BUG_ON() to hit in __check_irq_replay() due
+to interrupt state getting out of sync.
+
+The assembly code was also way too convoluted. Instead, we
+now leave it to the C code to do the right thing which ends
+up being smaller and more readable.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+ arch/powerpc/kernel/entry_64.S |   18 ------------------
+ arch/powerpc/kernel/irq.c      |    8 +++++++-
+ 2 files changed, 7 insertions(+), 19 deletions(-)
+
+diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
+index fd46046..29f1357 100644
+--- a/arch/powerpc/kernel/entry_64.S
++++ b/arch/powerpc/kernel/entry_64.S
+@@ -763,16 +763,6 @@ do_work:
+ 	SOFT_DISABLE_INTS(r3,r4)
+ 1:	bl	.preempt_schedule_irq
+ 
+-	/* Hard-disable interrupts again (and update PACA) */
+-#ifdef CONFIG_PPC_BOOK3E
+-	wrteei	0
+-#else
+-	ld	r10,PACAKMSR(r13) /* Get kernel MSR without EE */
+-	mtmsrd	r10,1
+-#endif /* CONFIG_PPC_BOOK3E */
+-	li	r0,PACA_IRQ_HARD_DIS
+-	stb	r0,PACAIRQHAPPENED(r13)
+-
+ 	/* Re-test flags and eventually loop */
+ 	clrrdi	r9,r1,THREAD_SHIFT
+ 	ld	r4,TI_FLAGS(r9)
+@@ -783,14 +773,6 @@ do_work:
+ user_work:
+ #endif /* CONFIG_PREEMPT */
+ 
+-	/* Enable interrupts */
+-#ifdef CONFIG_PPC_BOOK3E
+-	wrteei	1
+-#else
+-	ori	r10,r10,MSR_EE
+-	mtmsrd	r10,1
+-#endif /* CONFIG_PPC_BOOK3E */
+-
+ 	andi.	r0,r4,_TIF_NEED_RESCHED
+ 	beq	1f
+ 	bl	.restore_interrupts
+diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
+index 5ec1b23..3717fb5 100644
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -260,11 +260,17 @@ EXPORT_SYMBOL(arch_local_irq_restore);
+  * if they are currently disabled. This is typically called before
+  * schedule() or do_signal() when returning to userspace. We do it
+  * in C to avoid the burden of dealing with lockdep etc...
++ *
++ * NOTE: This is called with interrupts hard disabled but not marked
++ * as such in paca->irq_happened, so we need to resync this.
+  */
+ void restore_interrupts(void)
+ {
+-	if (irqs_disabled())
++	if (irqs_disabled()) {
++		local_paca->irq_happened |= PACA_IRQ_HARD_DIS;
+ 		local_irq_enable();
++	} else
++		__hard_irq_enable();
+ }
+ 
+ #endif /* CONFIG_PPC64 */
+-- 
+1.7.9.5
+
+
+
