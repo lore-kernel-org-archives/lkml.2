@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab2EHUis (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 16:38:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35316 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752373Ab2EHUiq convert rfc822-to-8bit (ORCPT
+	id S1754663Ab2EHUkS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 16:40:18 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35214 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458Ab2EHUkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 16:38:46 -0400
-From: "Woodruff, Richard" <r-woodruff2@ti.com>
-To: "AnilKumar, Chimata" <anilkumar@ti.com>, "Hilman, Kevin" <khilman@ti.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "J, KEERTHY" <j-keerthy@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "Pihet-XID, Jean" <j-pihet@ti.com>
-Subject: RE: [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
-Thread-Topic: [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
-Thread-Index: AQHNLKwOKVrKHX1BLEuYFB+9obksBZbAAhcAgABK1oA=
-Date: Tue, 8 May 2012 20:38:35 +0000
-Message-ID: <EF62F09C0797D947AD4180A1043C0DF73C40BCE1@DLEE10.ent.ti.com>
-References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
-	<20120426191159.GA9415@sirena.org.uk>
-	<CAJ6a13a6WN9h1QZynpEOf-R6RXwWBZ2eOPkTeNc15JX_YfAz_w@mail.gmail.com>
-	<20120427175657.GP18260@opensource.wolfsonmicro.com>	<87397o3n4y.fsf@ti.com>
-	<331ABD5ECB02734CA317220B2BBEABC13E9B1A67@DBDE01.ent.ti.com>
- <87mx5jy2li.fsf@ti.com>
- <331ABD5ECB02734CA317220B2BBEABC13E9B6681@DBDE01.ent.ti.com>
-In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC13E9B6681@DBDE01.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 8 May 2012 16:40:16 -0400
+Date: Tue, 8 May 2012 21:43:09 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 2/3] pty: Lock the devpts bits privately
+Message-ID: <20120508214309.2d50e5f0@pyramind.ukuu.org.uk>
+In-Reply-To: <4FA9637B.1060609@zytor.com>
+References: <20120503212151.568.91854.stgit@bob.linux.org.uk>
+	<20120503212205.568.25804.stgit@bob.linux.org.uk>
+	<4FA9637B.1060609@zytor.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 08 May 2012 11:18:35 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-> > >> The only thing the higher-level layers might potentially need to do
-> > >> is to enable/disable AVS around transitions (e.g. when changing OPP, > > >> AVS is disabled before changing OPP and only re-enabled when the new > >> >> nominal voltage has been acheived.)
+> On 05/03/2012 02:22 PM, Alan Cox wrote:
+> > From: Alan Cox <alan@linux.intel.com>
+> > 
+> > This is a private pty affair, we don't want to tangle it with the tty_lock
+> > any more as we know all the other non tty locking is now handled by the vfs
+> > so we too can move.
+> > 
+> > Signed-off-by: Alan Cox <alan@linux.intel.com>
+> 
+> > +		        mutex_lock(&devpts_mutex);
+> >  			devpts_pty_kill(tty->link);
+> > +		        mutex_unlock(&devpts_mutex);
+> 
+> > +	mutex_lock(&devpts_mutex);
+> > +	tty = devpts_get_tty(pts_inode, idx);
+> > +	mutex_unlock(&devpts_mutex);
+> 
+> > +	mutex_lock(&devpts_mutex);
+> >  	tty = tty_init_dev(ptm_driver, index);
+> > +	mutex_unlock(&devpts_mutex);
+> 
+> Conceptually this seems fine, but it would seem cleaner to me to push
+> this mutex into the called functions in devpts; I suspect the lock could
+> be eliminated or at least be made per instance there (which would make
+> massive-container people happy...)
 
-Getting clean baseline in place is huge step but actual production interfaces will need to comprehend some OPP to AVS dependencies beyond on/off.
+One step at a time. I agree entirely that the ideal case is that
+devpts_foo is internally locked and coherent. That is an exercise for
+someone who likes devpts 8)
 
-AVS as used in many OMAP designs (mostly > OMAP4430) do have some per OPP dependent details:
-
-- Multiple PMICs are in use. In some current designs the AVS step size is different per voltage range. At OPP change time you have to reconfigure several AVS parameters before enable.
-
-- ABB-ldo sequencing and parameters in tightly coupled with OPP and AVS enables.
-
-- Good power savings can be had in future 1.5/3.5 by adjusting nominal to calibrated-plus-margin voltage.
-
-Regards,
-Richard W.
-
+Alan
