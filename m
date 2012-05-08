@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742Ab2EHS5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 14:57:53 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:26840 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754285Ab2EHS5v (ORCPT
+	id S1755513Ab2EHTCy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 15:02:54 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:42286 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752489Ab2EHTCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 14:57:51 -0400
-Date: Tue, 8 May 2012 14:51:49 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-mm@kvack.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, ngupta@vflare.org,
-        sjenning@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com,
-        aarcange@redhat.com, dhowells@redhat.com, riel@redhat.com,
-        JBeulich@novell.com
-Subject: Re: [RFC PATCH] frontswap (v15). +--------+ |zsmalloc| +--------+
- +---------+    +------------+          | | swap    +--->| frontswap  +
-          v +---------+    +------------|      +--------+  +----->| zcache |
- +--------+
-Message-ID: <20120508185149.GA8601@phenom.dumpdata.com>
-References: <1334958255-6612-1-git-send-email-konrad.wilk@oracle.com>
+	Tue, 8 May 2012 15:02:53 -0400
+Message-ID: <4FA96DDB.8070403@tilera.com>
+Date: Tue, 8 May 2012 15:02:51 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334958255-6612-1-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: <mingo@kernel.org>, <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
+        <cmetcalf@tilera.com>, <tglx@linutronix.de>
+CC: <linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:smp/hotplug] tile: Use common threadinfo allocator
+References: <20120505150142.311126440@linutronix.de> <tip-d909a81b198a397593495508c4a5755fe95552fb@git.kernel.org>
+In-Reply-To: <tip-d909a81b198a397593495508c4a5755fe95552fb@git.kernel.org>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 20, 2012 at 05:44:09PM -0400, Konrad Rzeszutek Wilk wrote:
-> [Example usage, others are tmem, ramster, and RFC KVM]
+On 5/8/2012 8:34 AM, tip-bot for Thomas Gleixner wrote:
+> Commit-ID:  d909a81b198a397593495508c4a5755fe95552fb
+> Gitweb:     http://git.kernel.org/tip/d909a81b198a397593495508c4a5755fe95552fb
+> Author:     Thomas Gleixner <tglx@linutronix.de>
+> AuthorDate: Sat, 5 May 2012 15:05:47 +0000
+> Committer:  Thomas Gleixner <tglx@linutronix.de>
+> CommitDate: Tue, 8 May 2012 13:55:20 +0200
+>
+> tile: Use common threadinfo allocator
+>
+> Use the core allocator and deal with the extra cleanup in
+> arch_release_thread_info().
+>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Link: http://lkml.kernel.org/r/20120505150142.311126440@linutronix.de
+> ---
+>  arch/tile/include/asm/thread_info.h |    6 ++----
+>  arch/tile/kernel/process.c          |   23 ++---------------------
+>  2 files changed, 4 insertions(+), 25 deletions(-)
 
-Bummer that the little ASCII art got all eaten up in the subject.
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
-> 
-> Frontswap provides a "transcendent memory" interface for swap pages.
-> In some environments, dramatic performance savings may be obtained because
-> swapped pages are saved in RAM (or a RAM-like device) instead of a swap disk.
-> A nice overview of it is visible at: http://lwn.net/Articles/454795/
-.. snip.
-> The last time these patches were posted [https://lkml.org/lkml/2011/10/27/206]
-> the discussion got very technical - and the feeling I got was that:
->  - The API is too simple. The hard decisions (what to do when memory
->    is low and the pages are mlocked, disk is faster than the CPU compression,
->    need some way to shed pages when OOM conditions are close by, which pages
->    to compress) are left to the backends. Adding VM pressure hooks could solve 
->    some (if not all) of these issues? Dan is working on figuring this out for
->    zcache.
->  - the backends - like zcache - are tied in how this API is used. This means
->    that to get zcache out of staging need to think of the frontswap and
->    zcache (and also the other backends).
-
-So I am in a little bind and would appreciate some feedback. Both Seth and Dan
-have been working on finding the corner pieces of the zcache and seeing under
-which workload it works badly (and good) and adding in the appropriate feedback
-mechanism (by using the data that vm core is exporting). This is to keep the
-size of zcache pool a manageable size where it won't impact negatively the rest
-of the system (as zcache uses precious memory and in some cases it might make
-sense for it to bypass some pages, while in other the opposite hold). But for
-virtualization cases the "quality" of pages (so active, was-active) is not
-that important - as the virtualized backend can de-duplicate large amount of
-guest pages.
-
-On a naive side this looks to be dealing with discriminate tastes (zcache which
-needs high quality pages) and less so (xen tmem which doesn't care about which
-type) so perhaps the frontswap should know which backend it is dealing with
-and based on that feed it certain pages. Or it can be simple and just feed it
-to the backend and the backend can decide to skip on the page (or not).
-
-Which brings the next point - perhaps this API should not be in the swap-space.
-Instead much closer to the core VM? This way the heuristics that are attempted
-there do not have to be attempted in the discriminating cases (zcache)?
-
-Either way, for this to work some type of "glue" between the {VM,swapcache} ->
-{zcache, tmem, ramster} needs to be there - either in form of this API or
-some other? Thoughts?
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
