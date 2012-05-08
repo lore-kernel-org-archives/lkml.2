@@ -1,17 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab2EIP4y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 11:56:54 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:27620 "EHLO
+	id S932331Ab2EIP5J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 11:57:09 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:27626 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932254Ab2EIP4u (ORCPT
+	with ESMTP id S932254Ab2EIP44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 11:56:50 -0400
-Message-ID: <201205091556.q49FunnW010418@farm-0027.internal.tilera.com>
+	Wed, 9 May 2012 11:56:56 -0400
+Message-ID: <201205091556.q49Fus3V010419@farm-0027.internal.tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Tue, 8 May 2012 16:53:03 -0400
-Subject: [PATCH v2 1/2] arch/tile: provide kernel support for the tilegx TRIO shim
-To: <linux-kernel@vger.kernel.org>, Jesper Juhl <jj@chaosbits.net>
+Date: Tue, 8 May 2012 17:10:17 -0400
+Subject: [PATCH v2 2/2] arch/tile: tilegx PCI root complex support
+To: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Myron Stowe <myron.stowe@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
+        "David Howells <dhowells@redhat.com> Jesper Juhl" <jj@chaosbits.net>
 In-Reply-To: <201205091555.q49FttvG010396@farm-0027.internal.tilera.com>
 References: <201204072316.q37NGv8d019280@farm-0023.internal.tilera.com>
   <201204072319.q37NJgrI019382@farm-0023.internal.tilera.com>
@@ -27,1839 +33,1808 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide kernel support for the tilegx "Transaction I/O" (TRIO) on-chip
-hardware.  This hardware implements the PCIe interface for tilegx;
-the driver changes to use TRIO for PCIe are in a subsequent commit.
-
-The change is layered on top of the tilegx GXIO IORPC subsystem.
+This change implements PCIe root complex support for tilegx using
+the kernel support layer for accessing the TRIO hardware shim.
 
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/gxio/Kconfig                       |    6 +
- arch/tile/gxio/Makefile                      |    1 +
- arch/tile/gxio/iorpc_trio.c                  |  307 ++++++++++++++++++++++++++
- arch/tile/gxio/trio.c                        |   49 ++++
- arch/tile/include/arch/trio.h                |   72 ++++++
- arch/tile/include/arch/trio_constants.h      |   36 +++
- arch/tile/include/arch/trio_def.h            |   41 ++++
- arch/tile/include/arch/trio_pcie_intfc.h     |  229 +++++++++++++++++++
- arch/tile/include/arch/trio_pcie_intfc_def.h |   32 +++
- arch/tile/include/arch/trio_pcie_rc.h        |  156 +++++++++++++
- arch/tile/include/arch/trio_pcie_rc_def.h    |   24 ++
- arch/tile/include/arch/trio_shm.h            |  125 +++++++++++
- arch/tile/include/arch/trio_shm_def.h        |   19 ++
- arch/tile/include/gxio/iorpc_trio.h          |   97 ++++++++
- arch/tile/include/gxio/trio.h                |  304 +++++++++++++++++++++++++
- arch/tile/include/hv/drv_trio_intf.h         |  195 ++++++++++++++++
- 16 files changed, 1693 insertions(+), 0 deletions(-)
- create mode 100644 arch/tile/gxio/iorpc_trio.c
- create mode 100644 arch/tile/gxio/trio.c
- create mode 100644 arch/tile/include/arch/trio.h
- create mode 100644 arch/tile/include/arch/trio_constants.h
- create mode 100644 arch/tile/include/arch/trio_def.h
- create mode 100644 arch/tile/include/arch/trio_pcie_intfc.h
- create mode 100644 arch/tile/include/arch/trio_pcie_intfc_def.h
- create mode 100644 arch/tile/include/arch/trio_pcie_rc.h
- create mode 100644 arch/tile/include/arch/trio_pcie_rc_def.h
- create mode 100644 arch/tile/include/arch/trio_shm.h
- create mode 100644 arch/tile/include/arch/trio_shm_def.h
- create mode 100644 arch/tile/include/gxio/iorpc_trio.h
- create mode 100644 arch/tile/include/gxio/trio.h
- create mode 100644 arch/tile/include/hv/drv_trio_intf.h
+ arch/tile/Kconfig           |    3 +
+ arch/tile/include/asm/pci.h |   99 +++-
+ arch/tile/kernel/Makefile   |    4 +
+ arch/tile/kernel/pci_gx.c   | 1545 +++++++++++++++++++++++++++++++++++++++++++
+ arch/tile/kernel/setup.c    |    6 +
+ arch/tile/mm/pgtable.c      |    7 -
+ drivers/pci/quirks.c        |    6 +-
+ 7 files changed, 1650 insertions(+), 20 deletions(-)
+ create mode 100644 arch/tile/kernel/pci_gx.c
 
-diff --git a/arch/tile/gxio/Kconfig b/arch/tile/gxio/Kconfig
-index 8aeebb7..68e1cca 100644
---- a/arch/tile/gxio/Kconfig
-+++ b/arch/tile/gxio/Kconfig
-@@ -15,3 +15,9 @@ config TILE_GXIO_MPIPE
- 	bool
- 	select TILE_GXIO
- 	select TILE_GXIO_DMA
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index d79ebc3..631971c 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -359,6 +359,9 @@ config PCI
+ 	default y
+ 	select PCI_DOMAINS
+ 	select GENERIC_PCI_IOMAP
++	select TILE_GXIO_TRIO if TILEGX
++	select ARCH_SUPPORTS_MSI if TILEGX
++	select PCI_MSI if TILEGX
+ 	---help---
+ 	  Enable PCI root complex support, so PCIe endpoint devices can
+ 	  be attached to the Tile chip.  Many, but not all, PCI devices
+diff --git a/arch/tile/include/asm/pci.h b/arch/tile/include/asm/pci.h
+index 5d5a635..54907d8 100644
+--- a/arch/tile/include/asm/pci.h
++++ b/arch/tile/include/asm/pci.h
+@@ -16,8 +16,11 @@
+ #define _ASM_TILE_PCI_H
+ 
+ #include <linux/pci.h>
++#include <linux/numa.h>
+ #include <asm-generic/pci_iomap.h>
+ 
++#ifndef __tilegx__
 +
-+# Support direct access to the TILE-Gx TRIO hardware from kernel space.
-+config TILE_GXIO_TRIO
-+	bool
-+	select TILE_GXIO
-+	select TILE_GXIO_DMA
-diff --git a/arch/tile/gxio/Makefile b/arch/tile/gxio/Makefile
-index 130eec4..2389ef3 100644
---- a/arch/tile/gxio/Makefile
-+++ b/arch/tile/gxio/Makefile
-@@ -5,3 +5,4 @@
- obj-$(CONFIG_TILE_GXIO) += iorpc_globals.o kiorpc.o
- obj-$(CONFIG_TILE_GXIO_DMA) += dma_queue.o
- obj-$(CONFIG_TILE_GXIO_MPIPE) += mpipe.o iorpc_mpipe.o iorpc_mpipe_info.o
-+obj-$(CONFIG_TILE_GXIO_TRIO) += trio.o iorpc_trio.o
-diff --git a/arch/tile/gxio/iorpc_trio.c b/arch/tile/gxio/iorpc_trio.c
-new file mode 100644
-index 0000000..209cb0d
---- /dev/null
-+++ b/arch/tile/gxio/iorpc_trio.c
-@@ -0,0 +1,307 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
+ /*
+  * Structure of a PCI controller (host bridge)
+  */
+@@ -41,6 +44,92 @@ struct pci_controller {
+ };
+ 
+ /*
++ * This flag tells if the platform is TILEmpower that needs
++ * special configuration for the PLX switch chip.
 + */
++extern int tile_plx_gen1;
 +
-+/* This file is machine-generated; DO NOT EDIT! */
-+#include "gxio/iorpc_trio.h"
++static inline void pci_iounmap(struct pci_dev *dev, void __iomem *addr) {}
 +
-+struct alloc_asids_param {
-+	unsigned int count;
-+	unsigned int first;
-+	unsigned int flags;
-+};
++#define	TILE_NUM_PCIE	2
 +
-+int gxio_trio_alloc_asids(gxio_trio_context_t * context, unsigned int count,
-+			  unsigned int first, unsigned int flags)
-+{
-+	struct alloc_asids_param temp;
-+	struct alloc_asids_param *params = &temp;
++#else
 +
-+	params->count = count;
-+	params->first = first;
-+	params->flags = flags;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params), GXIO_TRIO_OP_ALLOC_ASIDS);
-+}
-+
-+EXPORT_SYMBOL(gxio_trio_alloc_asids);
-+
-+
-+struct alloc_memory_maps_param {
-+	unsigned int count;
-+	unsigned int first;
-+	unsigned int flags;
-+};
-+
-+int gxio_trio_alloc_memory_maps(gxio_trio_context_t * context,
-+				unsigned int count, unsigned int first,
-+				unsigned int flags)
-+{
-+	struct alloc_memory_maps_param temp;
-+	struct alloc_memory_maps_param *params = &temp;
-+
-+	params->count = count;
-+	params->first = first;
-+	params->flags = flags;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params), GXIO_TRIO_OP_ALLOC_MEMORY_MAPS);
-+}
-+
-+EXPORT_SYMBOL(gxio_trio_alloc_memory_maps);
-+
-+
-+struct alloc_pio_regions_param {
-+	unsigned int count;
-+	unsigned int first;
-+	unsigned int flags;
-+};
-+
-+int gxio_trio_alloc_pio_regions(gxio_trio_context_t * context,
-+				unsigned int count, unsigned int first,
-+				unsigned int flags)
-+{
-+	struct alloc_pio_regions_param temp;
-+	struct alloc_pio_regions_param *params = &temp;
-+
-+	params->count = count;
-+	params->first = first;
-+	params->flags = flags;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params), GXIO_TRIO_OP_ALLOC_PIO_REGIONS);
-+}
-+
-+EXPORT_SYMBOL(gxio_trio_alloc_pio_regions);
-+
-+struct init_pio_region_aux_param {
-+	unsigned int pio_region;
-+	unsigned int mac;
-+	uint32_t bus_address_hi;
-+	unsigned int flags;
-+};
-+
-+int gxio_trio_init_pio_region_aux(gxio_trio_context_t * context,
-+				  unsigned int pio_region, unsigned int mac,
-+				  uint32_t bus_address_hi, unsigned int flags)
-+{
-+	struct init_pio_region_aux_param temp;
-+	struct init_pio_region_aux_param *params = &temp;
-+
-+	params->pio_region = pio_region;
-+	params->mac = mac;
-+	params->bus_address_hi = bus_address_hi;
-+	params->flags = flags;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params), GXIO_TRIO_OP_INIT_PIO_REGION_AUX);
-+}
-+
-+EXPORT_SYMBOL(gxio_trio_init_pio_region_aux);
-+
-+
-+struct init_memory_map_mmu_aux_param {
-+	unsigned int map;
-+	unsigned long va;
-+	uint64_t size;
-+	unsigned int asid;
-+	unsigned int mac;
-+	uint64_t bus_address;
-+	unsigned int node;
-+	unsigned int order_mode;
-+};
-+
-+int gxio_trio_init_memory_map_mmu_aux(gxio_trio_context_t * context,
-+				      unsigned int map, unsigned long va,
-+				      uint64_t size, unsigned int asid,
-+				      unsigned int mac, uint64_t bus_address,
-+				      unsigned int node,
-+				      unsigned int order_mode)
-+{
-+	struct init_memory_map_mmu_aux_param temp;
-+	struct init_memory_map_mmu_aux_param *params = &temp;
-+
-+	params->map = map;
-+	params->va = va;
-+	params->size = size;
-+	params->asid = asid;
-+	params->mac = mac;
-+	params->bus_address = bus_address;
-+	params->node = node;
-+	params->order_mode = order_mode;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params),
-+			     GXIO_TRIO_OP_INIT_MEMORY_MAP_MMU_AUX);
-+}
-+
-+EXPORT_SYMBOL(gxio_trio_init_memory_map_mmu_aux);
-+
-+
-+struct config_legacy_intr_param {
-+	union iorpc_interrupt interrupt;
-+	unsigned int mac;
-+	unsigned int intx;
-+};
-+
-+int gxio_trio_config_legacy_intr(gxio_trio_context_t * context, int inter_x,
-+				 int inter_y, int inter_ipi, int inter_event,
-+				 unsigned int mac, unsigned int intx)
-+{
-+	struct config_legacy_intr_param temp;
-+	struct config_legacy_intr_param *params = &temp;
-+
-+	params->interrupt.kernel.x = inter_x;
-+	params->interrupt.kernel.y = inter_y;
-+	params->interrupt.kernel.ipi = inter_ipi;
-+	params->interrupt.kernel.event = inter_event;
-+	params->mac = mac;
-+	params->intx = intx;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params), GXIO_TRIO_OP_CONFIG_LEGACY_INTR);
-+}
-+
-+EXPORT_SYMBOL(gxio_trio_config_legacy_intr);
-+
-+struct config_msi_intr_param {
-+	union iorpc_interrupt interrupt;
-+	unsigned int mac;
-+	unsigned int mem_map;
-+	uint64_t mem_map_base;
-+	uint64_t mem_map_limit;
-+	unsigned int asid;
-+};
-+
-+int gxio_trio_config_msi_intr(gxio_trio_context_t * context, int inter_x,
-+			      int inter_y, int inter_ipi, int inter_event,
-+			      unsigned int mac, unsigned int mem_map,
-+			      uint64_t mem_map_base, uint64_t mem_map_limit,
-+			      unsigned int asid)
-+{
-+	struct config_msi_intr_param temp;
-+	struct config_msi_intr_param *params = &temp;
-+
-+	params->interrupt.kernel.x = inter_x;
-+	params->interrupt.kernel.y = inter_y;
-+	params->interrupt.kernel.ipi = inter_ipi;
-+	params->interrupt.kernel.event = inter_event;
-+	params->mac = mac;
-+	params->mem_map = mem_map;
-+	params->mem_map_base = mem_map_base;
-+	params->mem_map_limit = mem_map_limit;
-+	params->asid = asid;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params), GXIO_TRIO_OP_CONFIG_MSI_INTR);
-+}
-+
-+EXPORT_SYMBOL(gxio_trio_config_msi_intr);
-+
-+
-+struct set_mps_mrs_param {
-+	uint16_t mps;
-+	uint16_t mrs;
-+	unsigned int mac;
-+};
-+
-+int gxio_trio_set_mps_mrs(gxio_trio_context_t * context, uint16_t mps,
-+			  uint16_t mrs, unsigned int mac)
-+{
-+	struct set_mps_mrs_param temp;
-+	struct set_mps_mrs_param *params = &temp;
-+
-+	params->mps = mps;
-+	params->mrs = mrs;
-+	params->mac = mac;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params), GXIO_TRIO_OP_SET_MPS_MRS);
-+}
-+
-+EXPORT_SYMBOL(gxio_trio_set_mps_mrs);
-+
-+struct force_rc_link_up_param {
-+	unsigned int mac;
-+};
-+
-+int gxio_trio_force_rc_link_up(gxio_trio_context_t * context, unsigned int mac)
-+{
-+	struct force_rc_link_up_param temp;
-+	struct force_rc_link_up_param *params = &temp;
-+
-+	params->mac = mac;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params), GXIO_TRIO_OP_FORCE_RC_LINK_UP);
-+}
-+
-+EXPORT_SYMBOL(gxio_trio_force_rc_link_up);
-+
-+struct force_ep_link_up_param {
-+	unsigned int mac;
-+};
-+
-+int gxio_trio_force_ep_link_up(gxio_trio_context_t * context, unsigned int mac)
-+{
-+	struct force_ep_link_up_param temp;
-+	struct force_ep_link_up_param *params = &temp;
-+
-+	params->mac = mac;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params), GXIO_TRIO_OP_FORCE_EP_LINK_UP);
-+}
-+
-+EXPORT_SYMBOL(gxio_trio_force_ep_link_up);
-+
-+struct get_mmio_base_param {
-+	HV_PTE base;
-+};
-+
-+int gxio_trio_get_mmio_base(gxio_trio_context_t * context, HV_PTE *base)
-+{
-+	int __result;
-+	struct get_mmio_base_param temp;
-+	struct get_mmio_base_param *params = &temp;
-+
-+	__result =
-+	    hv_dev_pread(context->fd, 0, (HV_VirtAddr) params, sizeof(*params),
-+			 GXIO_TRIO_OP_GET_MMIO_BASE);
-+	*base = params->base;
-+
-+	return __result;
-+}
-+
-+EXPORT_SYMBOL(gxio_trio_get_mmio_base);
-+
-+struct check_mmio_offset_param {
-+	unsigned long offset;
-+	unsigned long size;
-+};
-+
-+int gxio_trio_check_mmio_offset(gxio_trio_context_t * context,
-+				unsigned long offset, unsigned long size)
-+{
-+	struct check_mmio_offset_param temp;
-+	struct check_mmio_offset_param *params = &temp;
-+
-+	params->offset = offset;
-+	params->size = size;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params), GXIO_TRIO_OP_CHECK_MMIO_OFFSET);
-+}
-+
-+EXPORT_SYMBOL(gxio_trio_check_mmio_offset);
-diff --git a/arch/tile/gxio/trio.c b/arch/tile/gxio/trio.c
-new file mode 100644
-index 0000000..69f0b8d
---- /dev/null
-+++ b/arch/tile/gxio/trio.c
-@@ -0,0 +1,49 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/*
-+ * Implementation of trio gxio calls.
-+ */
-+
-+#include <linux/errno.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+
++#include <asm/page.h>
 +#include <gxio/trio.h>
++
++/**
++ * We reserve the hugepage-size address range at the top of the 64-bit address
++ * space to serve as the PCI window, emulating the BAR0 space of an endpoint
++ * device. This window is used by the chip-to-chip applications running on
++ * the RC node. The reason for carving out this window is that Mem-Maps that
++ * back up this window will not overlap with those that map the real physical
++ * memory.
++ */
++#define PCIE_HOST_BAR0_SIZE		HPAGE_SIZE
++#define PCIE_HOST_BAR0_START		HPAGE_MASK
++
++/**
++ * The first PAGE_SIZE of the above "BAR" window is mapped to the
++ * gxpci_host_regs structure.
++ */
++#define PCIE_HOST_REGS_SIZE		PAGE_SIZE
++
++/*
++ * This is the PCI address where the Mem-Map interrupt regions start.
++ * We use the 2nd to the last huge page of the 64-bit address space.
++ * The last huge page is used for the rootcomplex "bar", for C2C purpose.
++ */
++#define	MEM_MAP_INTR_REGIONS_BASE	(HPAGE_MASK - HPAGE_SIZE)
++
++/*
++ * Each Mem-Map interrupt region occupies 4KB.
++ */
++#define	MEM_MAP_INTR_REGION_SIZE	(1<< TRIO_MAP_MEM_LIM__ADDR_SHIFT)
++
++/*
++ * Structure of a PCI controller (host bridge) on Gx.
++ */
++struct pci_controller {
++
++	/* Pointer back to the TRIO that this PCIe port is connected to. */
++	gxio_trio_context_t *trio;
++	int mac;		/* PCIe mac index on the TRIO shim */
++	int trio_index;		/* Index of TRIO shim that contains the MAC. */
++
++	int pio_mem_index;	/* PIO region index for memory access */
++
++	/*
++	 * Mem-Map regions for all the memory controllers so that Linux can
++	 * map all of its physical memory space to the PCI bus.
++	 */
++	int mem_maps[MAX_NUMNODES];
++
++	int index;		/* PCI domain number */
++	struct pci_bus *root_bus;
++
++	int last_busno;
++
++	struct pci_ops *ops;
++
++	/* Table that maps the INTx numbers to Linux irq numbers. */
++	int irq_intx_table[4];
++
++	struct resource mem_space;
++
++	/* Address ranges that are routed to this controller/bridge. */
++	struct resource mem_resources[3];
++};
++
++extern struct pci_controller pci_controllers[TILEGX_NUM_TRIO * TILEGX_TRIO_PCIES];
++extern gxio_trio_context_t trio_contexts[TILEGX_NUM_TRIO];
++
++extern void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max);
++extern void pci_iounmap(struct pci_dev *dev, void __iomem *);
++
++#endif /* __tilegx__ */
++
++/*
+  * The hypervisor maps the entirety of CPA-space as bus addresses, so
+  * bus addresses are physical addresses.  The networking and block
+  * device layers use this boolean for bounce buffer decisions.
+@@ -50,12 +139,8 @@ struct pci_controller {
+ int __devinit tile_pci_init(void);
+ int __devinit pcibios_init(void);
+ 
+-static inline void pci_iounmap(struct pci_dev *dev, void __iomem *addr) {}
+-
+ void __devinit pcibios_fixup_bus(struct pci_bus *bus);
+ 
+-#define	TILE_NUM_PCIE	2
+-
+ #define pci_domain_nr(bus) (((struct pci_controller *)(bus)->sysdata)->index)
+ 
+ /*
+@@ -79,12 +164,6 @@ static inline int pcibios_assign_all_busses(void)
+ #define PCIBIOS_MIN_MEM		0
+ #define PCIBIOS_MIN_IO		0
+ 
+-/*
+- * This flag tells if the platform is TILEmpower that needs
+- * special configuration for the PLX switch chip.
+- */
+-extern int tile_plx_gen1;
+-
+ /* Use any cpu for PCI. */
+ #define cpumask_of_pcibus(bus) cpu_online_mask
+ 
+diff --git a/arch/tile/kernel/Makefile b/arch/tile/kernel/Makefile
+index f19116d..e09281f 100644
+--- a/arch/tile/kernel/Makefile
++++ b/arch/tile/kernel/Makefile
+@@ -14,4 +14,8 @@ obj-$(CONFIG_SMP)		+= smpboot.o smp.o tlb.o
+ obj-$(CONFIG_MODULES)		+= module.o
+ obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
+ obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel_$(BITS).o
++ifdef CONFIG_TILEGX
++obj-$(CONFIG_PCI)		+= pci_gx.o
++else
+ obj-$(CONFIG_PCI)		+= pci.o
++endif
+diff --git a/arch/tile/kernel/pci_gx.c b/arch/tile/kernel/pci_gx.c
+new file mode 100644
+index 0000000..e42bef5
+--- /dev/null
++++ b/arch/tile/kernel/pci_gx.c
+@@ -0,0 +1,1545 @@
++/*
++ * Copyright 2012 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/mmzone.h>
++#include <linux/pci.h>
++#include <linux/delay.h>
++#include <linux/string.h>
++#include <linux/init.h>
++#include <linux/capability.h>
++#include <linux/sched.h>
++#include <linux/errno.h>
++#include <linux/irq.h>
++#include <linux/msi.h>
++#include <linux/io.h>
++#include <linux/uaccess.h>
++#include <linux/ctype.h>
++
++#include <asm/processor.h>
++#include <asm/sections.h>
++#include <asm/byteorder.h>
++
 +#include <gxio/iorpc_globals.h>
-+#include <gxio/iorpc_trio.h>
 +#include <gxio/kiorpc.h>
++#include <gxio/trio.h>
++#include <gxio/iorpc_trio.h>
++#include <hv/drv_trio_intf.h>
 +
-+int gxio_trio_init(gxio_trio_context_t *context, unsigned int trio_index)
++#include <arch/sim.h>
++
++/*
++ * Initialization flow and process
++ * -------------------------------
++ *
++ * This files containes the routines to search for PCI buses,
++ * enumerate the buses, and configure any attached devices.
++ *
++ * There are two entry points here:
++ * 1) tile_pci_init
++ *    This sets up the pci_controller structs, and opens the
++ *    FDs to the hypervisor.  This is called from setup_arch() early
++ *    in the boot process.
++ * 2) pcibios_init
++ *    This probes the PCI bus(es) for any attached hardware.  It's
++ *    called by subsys_initcall.  All of the real work is done by the
++ *    generic Linux PCI layer.
++ *
++ */
++
++#define DEBUG_PCI_CFG	0
++
++#if DEBUG_PCI_CFG
++#define TRACE_CFG_WR(size, val, bus, dev, func, offset) \
++	pr_info("CFG WR %d-byte VAL %#x to bus %d dev %d func %d addr %u\n", \
++		size, val, bus, dev, func, offset & 0xFFF);
++#define TRACE_CFG_RD(size, val, bus, dev, func, offset) \
++	pr_info("CFG RD %d-byte VAL %#x from bus %d dev %d func %d addr %u\n", \
++		size, val, bus, dev, func, offset & 0xFFF);
++#else
++#define TRACE_CFG_WR(...)
++#define TRACE_CFG_RD(...)
++#endif
++
++static int __devinitdata pci_probe = 1;
++
++/* Information on the PCIe RC ports configuration. */
++static int __devinitdata pcie_rc[TILEGX_NUM_TRIO][TILEGX_TRIO_PCIES];
++
++/*
++ * On some platforms with one or more Gx endpoint ports, we need to
++ * delay the PCIe RC port probe for a few seconds to work around
++ * a HW PCIe link-training bug. The exact delay is specified with
++ * a kernel boot argument in the form of "pcie_rc_delay=T,P,S",
++ * where T is the TRIO instance number, P is the port number and S is
++ * the delay in seconds. If the delay is not provided, the value
++ * will be DEFAULT_RC_DELAY.
++ */
++static int __devinitdata rc_delay[TILEGX_NUM_TRIO][TILEGX_TRIO_PCIES];
++
++/* Default number of seconds that the PCIe RC port probe can be delayed. */
++#define DEFAULT_RC_DELAY	10
++
++/* Max number of seconds that the PCIe RC port probe can be delayed. */
++#define MAX_RC_DELAY		20
++
++/* Array of the PCIe ports configuration info obtained from the BIB. */
++struct pcie_port_property pcie_ports[TILEGX_NUM_TRIO][TILEGX_TRIO_PCIES];
++
++/* All drivers share the TRIO contexts defined here. */
++gxio_trio_context_t trio_contexts[TILEGX_NUM_TRIO];
++
++/* Pointer to an array of PCIe RC controllers. */
++struct pci_controller pci_controllers[TILEGX_NUM_TRIO * TILEGX_TRIO_PCIES];
++int num_rc_controllers;
++static int num_ep_controllers;
++
++static struct pci_ops tile_cfg_ops;
++
++/* Mask of CPUs that should receive PCIe interrupts. */
++static struct cpumask intr_cpus_map;
++
++/*
++ * We don't need to worry about the alignment of resources.
++ */
++resource_size_t pcibios_align_resource(void *data, const struct resource *res,
++				resource_size_t size, resource_size_t align)
 +{
-+	char file[32];
-+	int fd;
++	return res->start;
++}
++EXPORT_SYMBOL(pcibios_align_resource);
 +
-+	snprintf(file, sizeof(file), "trio/%d/iorpc", trio_index);
-+	fd = hv_dev_open((HV_VirtAddr) file, 0);
-+	if (fd < 0) {
-+		context->fd = -1;
 +
-+		if (fd >= GXIO_ERR_MIN && fd <= GXIO_ERR_MAX)
-+			return fd;
-+		else
-+			return -ENODEV;
++/*
++ * Pick a CPU to receive and handle the PCIe interrupts, based on the IRQ #.
++ * For now, we simply send interrupts to non-dataplane CPUs.
++ * We may implement methods to allow user to specify the target CPUs,
++ * e.g. via boot arguments.
++ */
++static int tile_irq_cpu(int irq)
++{
++	unsigned int count;
++	int i = 0;
++	int cpu;
++
++	count = cpumask_weight(&intr_cpus_map);
++	if (unlikely(count == 0)) {
++		pr_warning("intr_cpus_map empty, interrupts will be"
++			   " delievered to dataplane tiles\n");
++		return irq % (smp_height * smp_width);
 +	}
 +
-+	context->fd = fd;
++	count = irq % count;
++	for_each_cpu(cpu, &intr_cpus_map) {
++		if (i++ == count)
++			break;
++	}
++	return cpu;
++}
++
++/*
++ * Open a file descriptor to the TRIO shim.
++ */
++static int __devinit tile_pcie_open(int trio_index)
++{
++	gxio_trio_context_t *context = &trio_contexts[trio_index];
++	int ret;
++
++	/*
++	 * This opens a file descriptor to the TRIO shim.
++	 */
++	ret = gxio_trio_init(context, trio_index);
++	if (ret < 0)
++		return ret;
++
++	/*
++	 * Allocate an ASID for the kernel.
++	 */
++	ret = gxio_trio_alloc_asids(context, 1, 0, 0);
++	if (ret < 0) {
++		pr_err("PCI: ASID alloc failure on TRIO %d, give up\n",
++			trio_index);
++		goto asid_alloc_failure;
++	}
++
++	context->asid = ret;
++
++#ifdef USE_SHARED_PCIE_CONFIG_REGION
++	/*
++	 * Alloc a PIO region for config access, shared by all MACs per TRIO.
++	 * This shouldn't fail since the kernel is supposed to the first
++	 * client of the TRIO's PIO regions.
++	 */
++	ret = gxio_trio_alloc_pio_regions(context, 1, 0, 0);
++	if (ret < 0) {
++		pr_err("PCI: CFG PIO alloc failure on TRIO %d, give up\n",
++			trio_index);
++		goto pio_alloc_failure;
++	}
++
++	context->pio_cfg_index = ret;
++
++	/*
++	 * For PIO CFG, the bus_address_hi parameter is 0. The mac parameter
++	 * is also 0 because it is specified in PIO_REGION_SETUP_CFG_ADDR.
++	 */
++	ret = gxio_trio_init_pio_region_aux(context, context->pio_cfg_index,
++		0, 0, HV_TRIO_PIO_FLAG_CONFIG_SPACE);
++	if (ret < 0) {
++		pr_err("PCI: CFG PIO init failure on TRIO %d, give up\n",
++			trio_index);
++		goto pio_alloc_failure;
++	}
++#endif
++
++	return ret;
++
++asid_alloc_failure:
++#ifdef USE_SHARED_PCIE_CONFIG_REGION
++pio_alloc_failure:
++#endif
++	hv_dev_close(context->fd);
++
++	return ret;
++}
++
++static void
++tilegx_legacy_irq_ack(struct irq_data *d)
++{
++	__insn_mtspr(SPR_IPI_EVENT_RESET_K, 1UL << d->irq);
++}
++
++static void
++tilegx_legacy_irq_mask(struct irq_data *d)
++{
++	__insn_mtspr(SPR_IPI_MASK_SET_K, 1UL << d->irq);
++}
++
++static void
++tilegx_legacy_irq_unmask(struct irq_data *d)
++{
++	__insn_mtspr(SPR_IPI_MASK_RESET_K, 1UL << d->irq);
++}
++
++static struct irq_chip tilegx_legacy_irq_chip = {
++	.name			= "tilegx_legacy_irq",
++	.irq_ack		= tilegx_legacy_irq_ack,
++	.irq_mask		= tilegx_legacy_irq_mask,
++	.irq_unmask		= tilegx_legacy_irq_unmask,
++
++	/* TBD: support set_affinity. */
++};
++
++/*
++ * This is a wrapper function of the kernel level-trigger interrupt
++ * handler handle_level_irq() for PCI legacy interrupts. The TRIO
++ * is configured such that only INTx Assert interrupts are proxied
++ * to Linux which just calls handle_level_irq() after clearing the
++ * MAC INTx Assert status bit associated with this interrupt.
++ */
++static void
++trio_handle_level_irq(unsigned int irq, struct irq_desc *desc)
++{
++	struct pci_controller *controller = irq_desc_get_handler_data(desc);
++	gxio_trio_context_t *trio_context = controller->trio;
++	uint64_t intx = (uint64_t)irq_desc_get_chip_data(desc);
++	int mac = controller->mac;
++	unsigned int reg_offset;
++	uint64_t level_mask;
++
++	handle_level_irq(irq, desc);
++
++	/*
++	 * Clear the INTx Level status, otherwise future interrupts are
++	 * not sent.
++	 */
++	reg_offset = (TRIO_PCIE_INTFC_MAC_INT_STS <<
++		TRIO_CFG_REGION_ADDR__REG_SHIFT) |
++		(TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_INTERFACE <<
++		TRIO_CFG_REGION_ADDR__INTFC_SHIFT ) |
++		(mac << TRIO_CFG_REGION_ADDR__MAC_SEL_SHIFT);
++
++	level_mask = TRIO_PCIE_INTFC_MAC_INT_STS__INT_LEVEL_MASK << intx;
++
++	__gxio_mmio_write(trio_context->mmio_base_mac + reg_offset, level_mask);
++}
++
++/*
++ * Create kernel irqs and set up the handlers for the legacy interrupts.
++ * Also some minimum initialization for the MSI support.
++ */
++static int __devinit tile_init_irqs(struct pci_controller *controller)
++{
++	int i;
++	int j;
++	int irq;
++	int result;
++
++	cpumask_copy(&intr_cpus_map, cpu_online_mask);
++
++
++	for (i = 0; i < 4; i++) {
++		gxio_trio_context_t *context = controller->trio;
++		int cpu;
++
++		/* Ask the kernel to allocate an IRQ. */
++		irq = create_irq();
++		if (irq < 0) {
++			pr_err("PCI: no free irq vectors, failed for %d\n", i);
++
++			goto free_irqs;
++		}
++		controller->irq_intx_table[i] = irq;
++
++		/* Distribute the 4 IRQs to different tiles. */
++		cpu = tile_irq_cpu(irq);
++
++		/* Configure the TRIO intr binding for this IRQ. */
++		result = gxio_trio_config_legacy_intr(context, cpu_x(cpu),
++						      cpu_y(cpu), KERNEL_PL,
++						      irq, controller->mac, i);
++		if (result < 0) {
++			pr_err("PCI: MAC intx config failed for %d\n", i);
++
++			goto free_irqs;
++		}
++
++		/*
++		 * Register the IRQ handler with the kernel.
++		 */
++		irq_set_chip_and_handler(irq, &tilegx_legacy_irq_chip,
++					trio_handle_level_irq);
++		irq_set_chip_data(irq, (void *)(uint64_t)i);
++		irq_set_handler_data(irq, controller);
++	}
++
++	return 0;
++
++free_irqs:
++	for (j = 0; j < i; j++)
++		destroy_irq(controller->irq_intx_table[j]);
++
++	return -1;
++}
++
++/*
++ * First initialization entry point, called from setup_arch().
++ *
++ * Find valid controllers and fill in pci_controller structs for each
++ * of them.
++ *
++ * Returns the number of controllers discovered.
++ */
++int __init tile_pci_init(void)
++{
++	int num_trio_shims = 0;
++	int ctl_index = 0;
++	int i, j;
++
++	if (!pci_probe) {
++		pr_info("PCI: disabled by boot argument\n");
++		return 0;
++	}
++
++	pr_info("PCI: Searching for controllers...\n");
++
++	/*
++	 * We loop over all the TRIO shims.
++	 */
++	for (i = 0; i < TILEGX_NUM_TRIO; i++) {
++		int ret;
++
++		ret = tile_pcie_open(i);
++		if (ret < 0)
++			continue;
++
++		num_trio_shims++;
++	}
++
++	if (num_trio_shims == 0 || sim_is_simulator())
++		return 0;
++
++	/*
++	 * Now determine which PCIe ports are configured to operate in RC mode.
++	 * We look at the Board Information Block first and then see if there
++	 * are any overriding configuration by the HW strapping pin.
++	 */
++	for (i = 0; i < TILEGX_NUM_TRIO; i++) {
++		gxio_trio_context_t *context = &trio_contexts[i];
++		int ret;
++
++		if (context->fd < 0)
++			continue;
++
++		ret = hv_dev_pread(context->fd, 0,
++			(HV_VirtAddr)&pcie_ports[i][0],
++			sizeof(struct pcie_port_property) * TILEGX_TRIO_PCIES,
++			GXIO_TRIO_OP_GET_PORT_PROPERTY);
++		if (ret < 0) {
++			pr_err("PCI: PCIE_GET_PORT_PROPERTY failure, error %d,"
++				" on TRIO %d\n", ret, i);
++			continue;
++		}
++
++		for (j = 0; j < TILEGX_TRIO_PCIES; j++) {
++			if (pcie_ports[i][j].allow_rc) {
++				pcie_rc[i][j] = 1;
++				num_rc_controllers++;
++			}
++			else if (pcie_ports[i][j].allow_ep) {
++				num_ep_controllers++;
++			}
++		}
++	}
++
++	/*
++	 * Return if no PCIe ports are configured to operate in RC mode.
++	 */
++	if (num_rc_controllers == 0)
++		return 0;
++
++	/*
++	 * Set the TRIO pointer and MAC index for each PCIe RC port.
++	 */
++	for (i = 0; i < TILEGX_NUM_TRIO; i++) {
++		for (j = 0; j < TILEGX_TRIO_PCIES; j++) {
++			if (pcie_rc[i][j]) {
++				pci_controllers[ctl_index].trio =
++					&trio_contexts[i];
++				pci_controllers[ctl_index].mac = j;
++				pci_controllers[ctl_index].trio_index = i;
++				ctl_index++;
++				if (ctl_index == num_rc_controllers)
++					goto out;
++			}
++		}
++	}
++
++out:
++	/*
++	 * Configure each PCIe RC port.
++	 */
++	for (i = 0; i < num_rc_controllers; i++) {
++		/*
++		 * Configure the PCIe MAC to run in RC mode.
++		 */
++
++		struct pci_controller *controller = &pci_controllers[i];
++
++		controller->index = i;
++		controller->last_busno = 0xff;
++		controller->ops = &tile_cfg_ops;
++
++	}
++
++	return num_rc_controllers;
++}
++
++/*
++ * (pin - 1) converts from the PCI standard's [1:4] convention to
++ * a normal [0:3] range.
++ */
++static int tile_map_irq(const struct pci_dev *dev, u8 device, u8 pin)
++{
++	struct pci_controller *controller =
++		(struct pci_controller *)dev->sysdata;
++	return controller->irq_intx_table[pin - 1];
++}
++
++
++static void __devinit fixup_read_and_payload_sizes(struct pci_controller *
++						controller)
++{
++	gxio_trio_context_t *trio_context = controller->trio;
++	struct pci_bus *root_bus = controller->root_bus;
++	TRIO_PCIE_RC_DEVICE_CONTROL_t dev_control;
++	TRIO_PCIE_RC_DEVICE_CAP_t rc_dev_cap;
++	unsigned int reg_offset;
++	struct pci_bus *child;
++	int mac;
++	int err;
++
++	mac = controller->mac;
++
++	/*
++	 * Set our max read request size to be 4KB.
++	 */
++	reg_offset =
++		(TRIO_PCIE_RC_DEVICE_CONTROL <<
++			TRIO_CFG_REGION_ADDR__REG_SHIFT) |
++		(TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_STANDARD <<
++			TRIO_CFG_REGION_ADDR__INTFC_SHIFT ) |
++		(mac << TRIO_CFG_REGION_ADDR__MAC_SEL_SHIFT);
++
++	dev_control.word = __gxio_mmio_read32(trio_context->mmio_base_mac +
++						reg_offset);
++	dev_control.max_read_req_sz = 5;
++	__gxio_mmio_write32(trio_context->mmio_base_mac + reg_offset,
++						dev_control.word);
++
++	/*
++	 * Set the max payload size supported by this Gx PCIe MAC.
++	 * Though Gx PCIe supports Max Payload Size of up to 1024 bytes,
++	 * experiments have shown that setting MPS to 256 yields the
++	 * best performance.
++	 */
++	reg_offset =
++		(TRIO_PCIE_RC_DEVICE_CAP <<
++			TRIO_CFG_REGION_ADDR__REG_SHIFT) |
++		(TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_STANDARD <<
++			TRIO_CFG_REGION_ADDR__INTFC_SHIFT ) |
++		(mac << TRIO_CFG_REGION_ADDR__MAC_SEL_SHIFT);
++
++	rc_dev_cap.word = __gxio_mmio_read32(trio_context->mmio_base_mac +
++						reg_offset);
++	rc_dev_cap.mps_sup = 1;
++	__gxio_mmio_write32(trio_context->mmio_base_mac + reg_offset,
++						rc_dev_cap.word);
++
++	/* Configure PCI Express MPS setting. */
++	list_for_each_entry(child, &root_bus->children, node) {
++		struct pci_dev *self = child->self;
++		if (!self)
++			continue;
++
++		pcie_bus_configure_settings(child, self->pcie_mpss);
++	}
++
++	/*
++	 * Set the mac_config register in trio based on the MPS/MRS of the link.
++	 */
++	reg_offset =
++		(TRIO_PCIE_RC_DEVICE_CONTROL <<
++			TRIO_CFG_REGION_ADDR__REG_SHIFT) |
++		(TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_STANDARD <<
++			TRIO_CFG_REGION_ADDR__INTFC_SHIFT ) |
++		(mac << TRIO_CFG_REGION_ADDR__MAC_SEL_SHIFT);
++
++	dev_control.word = __gxio_mmio_read32(trio_context->mmio_base_mac +
++						reg_offset);
++
++	err = gxio_trio_set_mps_mrs(trio_context,
++				    dev_control.max_payload_size,
++				    dev_control.max_read_req_sz,
++				    mac);
++        if (err < 0) {
++		pr_err("PCI: PCIE_CONFIGURE_MAC_MPS_MRS failure, "
++			"MAC %d on TRIO %d\n",
++			mac, controller->trio_index);
++	}
++}
++
++static int __devinit setup_pcie_rc_delay(char *str)
++{
++	unsigned long delay = 0;
++	unsigned long trio_index;
++	unsigned long mac;
++
++	if (str == NULL || !isdigit(*str))
++		return -EINVAL;
++	trio_index = simple_strtoul(str, (char **)&str, 10);
++	if (trio_index >= TILEGX_NUM_TRIO)
++		return -EINVAL;
++
++	if (*str != ',')
++		return -EINVAL;
++
++	str++;
++	if (!isdigit(*str))
++		return -EINVAL;
++	mac = simple_strtoul(str, (char **)&str, 10);
++	if (mac >= TILEGX_TRIO_PCIES)
++		return -EINVAL;
++
++	if (*str != '\0') {
++		if (*str != ',')
++			return -EINVAL;
++
++		str++;
++		if (!isdigit(*str))
++			return -EINVAL;
++		delay = simple_strtoul(str, (char **)&str, 10);
++		if (delay > MAX_RC_DELAY)
++			return -EINVAL;
++	}
++
++	rc_delay[trio_index][mac] = delay ? : DEFAULT_RC_DELAY;
++	pr_info("Delaying PCIe RC link training for %u sec"
++		" on MAC %lu on TRIO %lu\n", rc_delay[trio_index][mac],
++		mac, trio_index);
++	return 0;
++}
++early_param("pcie_rc_delay", setup_pcie_rc_delay);
++
++/*
++ * Second PCI initialization entry point, called by subsys_initcall.
++ *
++ * The controllers have been set up by the time we get here, by a call to
++ * tile_pci_init.
++ */
++int __init pcibios_init(void)
++{
++	struct list_head resources;
++	resource_size_t offset;
++	int i;
++
++	if (num_rc_controllers == 0 && num_ep_controllers == 0)
++		return 0;
++
++	pr_info("PCI: Probing PCI hardware\n");
++
++	/*
++	 * We loop over all the TRIO shims and set up the MMIO mappings.
++	 * This step can't be done in tile_pci_init because the MM subsystem
++	 * hasn't been initialized then.
++	 */
++	for (i = 0; i < TILEGX_NUM_TRIO; i++) {
++		gxio_trio_context_t *context = &trio_contexts[i];
++
++		if (context->fd < 0)
++			continue;
++
++		/*
++		 * Map in the MMIO space for the MAC.
++		 */
++		offset = 0;
++		context->mmio_base_mac =
++			iorpc_ioremap(context->fd, offset,
++				      HV_TRIO_CONFIG_IOREMAP_SIZE);
++		if (context->mmio_base_mac == NULL) {
++			pr_err("PCI: MAC map failure on TRIO %d\n", i);
++
++			hv_dev_close(context->fd);
++			context->fd = -1;
++			continue;
++		}
++	}
++
++	/*
++	 * Delay a bit in case devices aren't ready.  Some devices are
++	 * known to require at least 20ms here, but we use a more
++	 * conservative value.
++	 */
++	msleep(250);
++
++	/* Scan all of the recorded PCI controllers.  */
++	for (i = 0; i < num_rc_controllers; i++) {
++		struct pci_controller *controller = &pci_controllers[i];
++		gxio_trio_context_t *trio_context = controller->trio;
++		TRIO_PCIE_INTFC_PORT_CONFIG_t port_config;
++		TRIO_PCIE_INTFC_PORT_STATUS_t port_status;
++		TRIO_PCIE_INTFC_TX_FIFO_CTL_t tx_fifo_ctl;
++		struct pci_bus *bus;
++		unsigned int reg_offset;
++		unsigned int class_code_revision;
++		int trio_index;
++		int mac;
++#ifndef USE_SHARED_PCIE_CONFIG_REGION
++		int ret;
++#endif
++
++		if (trio_context->fd < 0)
++			continue;
++
++		trio_index = controller->trio_index;
++		mac = controller->mac;
++
++		/*
++		 * Check the port strap state which will override the BIB
++		 * setting.
++		 */
++
++		reg_offset =
++			(TRIO_PCIE_INTFC_PORT_CONFIG <<
++				TRIO_CFG_REGION_ADDR__REG_SHIFT) |
++			(TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_INTERFACE <<
++				TRIO_CFG_REGION_ADDR__INTFC_SHIFT ) |
++			(mac << TRIO_CFG_REGION_ADDR__MAC_SEL_SHIFT);
++
++		port_config.word =
++			__gxio_mmio_read(trio_context->mmio_base_mac +
++					 reg_offset);
++
++		if ((port_config.strap_state !=
++			TRIO_PCIE_INTFC_PORT_CONFIG__STRAP_STATE_VAL_AUTO_CONFIG_RC) &&
++			(port_config.strap_state !=
++			TRIO_PCIE_INTFC_PORT_CONFIG__STRAP_STATE_VAL_AUTO_CONFIG_RC_G1)) {
++			/*
++			 * If this is really intended to be an EP port,
++			 * record it so that the endpoint driver will know about it.
++			 */
++			if (port_config.strap_state ==
++			TRIO_PCIE_INTFC_PORT_CONFIG__STRAP_STATE_VAL_AUTO_CONFIG_ENDPOINT ||
++			port_config.strap_state ==
++			TRIO_PCIE_INTFC_PORT_CONFIG__STRAP_STATE_VAL_AUTO_CONFIG_ENDPOINT_G1)
++				pcie_ports[trio_index][mac].allow_ep = 1;
++
++			continue;
++		}
++
++		/*
++		 * Delay the RC link training if needed.
++		 */
++		if (rc_delay[trio_index][mac])
++			msleep(rc_delay[trio_index][mac] * 1000);
++
++		ret = gxio_trio_force_rc_link_up(trio_context, mac);
++		if (ret < 0)
++			pr_err("PCI: PCIE_FORCE_LINK_UP failure, "
++				"MAC %d on TRIO %d\n", mac, trio_index);
++
++		pr_info("PCI: Found PCI controller #%d on TRIO %d MAC %d\n", i,
++			trio_index, controller->mac);
++
++		/*
++		 * Wait a bit here because some EP devices take longer
++		 * to come up.
++		 */
++		msleep(1000);
++
++		/*
++		 * Check for PCIe link-up status.
++		 */
++
++		reg_offset =
++			(TRIO_PCIE_INTFC_PORT_STATUS <<
++				TRIO_CFG_REGION_ADDR__REG_SHIFT) |
++			(TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_INTERFACE <<
++				TRIO_CFG_REGION_ADDR__INTFC_SHIFT ) |
++			(mac << TRIO_CFG_REGION_ADDR__MAC_SEL_SHIFT);
++
++		port_status.word =
++			__gxio_mmio_read(trio_context->mmio_base_mac +
++					 reg_offset);
++		if (!port_status.dl_up) {
++			pr_err("PCI: link is down, MAC %d on TRIO %d\n",
++				mac, trio_index);
++			continue;
++		}
++
++		/*
++		 * Ensure that the link can come out of L1 power down state.
++		 * Strictly speaking, this is needed only in the case of
++		 * heavy RC-initiated DMAs.
++		 */
++		reg_offset =
++			(TRIO_PCIE_INTFC_TX_FIFO_CTL <<
++				TRIO_CFG_REGION_ADDR__REG_SHIFT) |
++			(TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_INTERFACE <<
++				TRIO_CFG_REGION_ADDR__INTFC_SHIFT ) |
++			(mac << TRIO_CFG_REGION_ADDR__MAC_SEL_SHIFT);
++		tx_fifo_ctl.word =
++			__gxio_mmio_read(trio_context->mmio_base_mac +
++					 reg_offset);
++		tx_fifo_ctl.min_p_credits = 0;
++		__gxio_mmio_write(trio_context->mmio_base_mac + reg_offset,
++				  tx_fifo_ctl.word);
++
++		/*
++		 * Change the device ID so that Linux bus crawl doesn't confuse
++		 * the internal bridge with any Tilera endpoints.
++		 */
++
++		reg_offset =
++			(TRIO_PCIE_RC_DEVICE_ID_VEN_ID <<
++				TRIO_CFG_REGION_ADDR__REG_SHIFT) |
++			(TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_STANDARD <<
++				TRIO_CFG_REGION_ADDR__INTFC_SHIFT ) |
++			(mac << TRIO_CFG_REGION_ADDR__MAC_SEL_SHIFT);
++
++		__gxio_mmio_write32(trio_context->mmio_base_mac + reg_offset,
++				    (TILERA_GX36_RC_DEV_ID <<
++				    TRIO_PCIE_RC_DEVICE_ID_VEN_ID__DEV_ID_SHIFT) |
++				    TILERA_VENDOR_ID);
++
++		/*
++		 * Set the internal P2P bridge class code.
++		 */
++
++		reg_offset =
++			(TRIO_PCIE_RC_REVISION_ID <<
++				TRIO_CFG_REGION_ADDR__REG_SHIFT) |
++			(TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_STANDARD <<
++				TRIO_CFG_REGION_ADDR__INTFC_SHIFT ) |
++			(mac << TRIO_CFG_REGION_ADDR__MAC_SEL_SHIFT);
++
++		class_code_revision =
++			__gxio_mmio_read32(trio_context->mmio_base_mac +
++					   reg_offset);
++		class_code_revision = (class_code_revision & 0xff ) |
++					(PCI_CLASS_BRIDGE_PCI << 16);
++
++		__gxio_mmio_write32(trio_context->mmio_base_mac +
++				    reg_offset, class_code_revision);
++
++#ifdef USE_SHARED_PCIE_CONFIG_REGION
++
++		/*
++		 * Map in the MMIO space for the PIO region.
++		 */
++		offset = HV_TRIO_PIO_OFFSET(trio_context->pio_cfg_index) |
++			(((unsigned long long)mac) <<
++			TRIO_TILE_PIO_REGION_SETUP_CFG_ADDR__MAC_SHIFT);
++
++#else
++
++		/*
++		 * Alloc a PIO region for PCI config access per MAC.
++		 */
++		ret = gxio_trio_alloc_pio_regions(trio_context, 1, 0, 0);
++		if (ret < 0) {
++			pr_err("PCI: PCI CFG PIO alloc failure for mac %d "
++				"on TRIO %d, give up\n", mac, trio_index);
++
++			/* TBD: cleanup ... */
++
++			continue;
++		}
++
++		trio_context->pio_cfg_index[mac] = ret;
++
++		/*
++		 * For PIO CFG, the bus_address_hi parameter is 0.
++		 */
++		ret = gxio_trio_init_pio_region_aux(trio_context,
++			trio_context->pio_cfg_index[mac],
++			mac, 0, HV_TRIO_PIO_FLAG_CONFIG_SPACE);
++		if (ret < 0) {
++			pr_err("PCI: PCI CFG PIO init failure for mac %d "
++				"on TRIO %d, give up\n", mac, trio_index);
++
++			/* TBD: cleanup ... */
++
++			continue;
++		}
++
++		offset = HV_TRIO_PIO_OFFSET(trio_context->pio_cfg_index[mac]) |
++			(((unsigned long long)mac) <<
++			TRIO_TILE_PIO_REGION_SETUP_CFG_ADDR__MAC_SHIFT);
++
++#endif
++
++		trio_context->mmio_base_pio_cfg[mac] =
++			iorpc_ioremap(trio_context->fd, offset,
++			(1 << TRIO_TILE_PIO_REGION_SETUP_CFG_ADDR__MAC_SHIFT));
++		if (trio_context->mmio_base_pio_cfg[mac] == NULL) {
++			pr_err("PCI: PIO map failure for mac %d on TRIO %d\n",
++				mac, trio_index);
++
++			/* TBD: cleanup ... */
++
++			continue;
++		}
++
++		/*
++		 * Initialize the PCIe interrupts.
++		 */
++		if (tile_init_irqs(controller)) {
++			pr_err("PCI: IRQs init failure for mac %d on TRIO %d\n",
++				mac, trio_index);
++
++			continue;
++		}
++
++		INIT_LIST_HEAD(&resources);
++		pci_add_resource(&resources, &iomem_resource);
++		bus = pci_scan_root_bus(NULL, 0, controller->ops,
++					controller, &resources);
++		controller->root_bus = bus;
++		controller->last_busno = bus->subordinate;
++
++	}
++
++	/* Do machine dependent PCI interrupt routing */
++	pci_fixup_irqs(pci_common_swizzle, tile_map_irq);
++
++	/*
++	 * This comes from the generic Linux PCI driver.
++	 *
++	 * It allocates all of the resources (I/O memory, etc)
++	 * associated with the devices read in above.
++	 */
++
++	pci_assign_unassigned_resources();
++
++	/* Record the I/O resources in the PCI controller structure. */
++	for (i = 0; i < num_rc_controllers; i++) {
++		struct pci_controller *controller = &pci_controllers[i];
++		gxio_trio_context_t *trio_context = controller->trio;
++		struct pci_bus *root_bus = pci_controllers[i].root_bus;
++		struct pci_bus *next_bus;
++		uint32_t bus_address_hi;
++		struct pci_dev *dev;
++		int ret;
++		int j;
++
++		/*
++		 * Skip controllers that are not properly initialized or
++		 * have down links.
++		 */
++		if (root_bus == NULL)
++			continue;
++
++		/* Configure the max_payload_size values for this domain. */
++		fixup_read_and_payload_sizes(controller);
++
++		list_for_each_entry(dev, &root_bus->devices, bus_list) {
++			/* Find the PCI host controller, ie. the 1st bridge. */
++			if ((dev->class >> 8) == PCI_CLASS_BRIDGE_PCI &&
++				(PCI_SLOT(dev->devfn) == 0)) {
++				next_bus = dev->subordinate;
++				pci_controllers[i].mem_resources[0] =
++					*next_bus->resource[0];
++				pci_controllers[i].mem_resources[1] =
++					 *next_bus->resource[1];
++				pci_controllers[i].mem_resources[2] =
++					 *next_bus->resource[2];
++
++				break;
++			}
++		}
++
++		if (pci_controllers[i].mem_resources[1].flags & IORESOURCE_MEM)
++			bus_address_hi =
++				pci_controllers[i].mem_resources[1].start >> 32;
++		else if (pci_controllers[i].mem_resources[2].flags & IORESOURCE_PREFETCH)
++			bus_address_hi =
++				pci_controllers[i].mem_resources[2].start >> 32;
++		else {
++			/* This is unlikely. */
++			pr_err("PCI: no memory resources on TRIO %d mac %d\n",
++				controller->trio_index, controller->mac);
++			continue;
++		}
++
++		/*
++		 * We always assign 32-bit PCI bus BAR ranges.
++		 */
++		BUG_ON(bus_address_hi != 0);
++
++		/*
++		 * Alloc a PIO region for PCI memory access for each RC port.
++		 */
++		ret = gxio_trio_alloc_pio_regions(trio_context, 1, 0, 0);
++		if (ret < 0) {
++			pr_err("PCI: MEM PIO alloc failure on TRIO %d mac %d, "
++				"give up\n", controller->trio_index,
++				controller->mac);
++
++			/* TBD: cleanup ... */
++
++			continue;
++		}
++
++		controller->pio_mem_index = ret;
++
++		/*
++		 * For PIO MEM, the bus_address_hi parameter is hard-coded 0
++		 * because we always assign 32-bit PCI bus BAR ranges.
++		 */
++		ret = gxio_trio_init_pio_region_aux(trio_context,
++						    controller->pio_mem_index,
++						    controller->mac,
++						    bus_address_hi,
++						    0);
++		if (ret < 0) {
++			pr_err("PCI: MEM PIO init failure on TRIO %d mac %d, "
++				"give up\n", controller->trio_index,
++				controller->mac);
++
++			/* TBD: cleanup ... */
++
++			continue;
++		}
++
++		/*
++		 * Configure a Mem-Map region for each memory controller so
++		 * that Linux can map all of its PA space to the PCI bus.
++		 * Use the IOMMU to handle hash-for-home memory.
++		 */
++		for_each_online_node(j) {
++			unsigned long start_pfn = node_start_pfn[j];
++			unsigned long end_pfn = node_end_pfn[j];
++			unsigned long nr_pages = end_pfn - start_pfn;
++
++			ret = gxio_trio_alloc_memory_maps(trio_context, 1, 0,
++							  0);
++			if (ret < 0) {
++				pr_err("PCI: Mem-Map alloc failure on TRIO %d "
++					"mac %d for MC %d, give up\n",
++					controller->trio_index,
++					controller->mac, j);
++
++				/* TBD: cleanup ... */
++
++				goto alloc_mem_map_failed;
++			}
++
++			controller->mem_maps[j] = ret;
++
++			/*
++			 * Initialize the Mem-Map and the I/O MMU so that all
++			 * the physical memory can be accessed by the endpoint
++			 * devices. The base bus address is set to the base CPA
++			 * of this memory controller, so is the base VA. The
++			 * I/O MMU table essentially translates the CPA to
++			 * the real PA.
++			 */
++			ret = gxio_trio_init_memory_map_mmu_aux(trio_context,
++				controller->mem_maps[j],
++				start_pfn << PAGE_SHIFT,
++				nr_pages << PAGE_SHIFT,
++				trio_context->asid,
++				controller->mac,
++				start_pfn << PAGE_SHIFT,
++				j,
++				GXIO_TRIO_ORDER_MODE_UNORDERED);
++			if (ret < 0) {
++				pr_err("PCI: Mem-Map init failure on TRIO %d "
++					"mac %d for MC %d, give up\n",
++					controller->trio_index,
++					controller->mac, j);
++
++				/* TBD: cleanup ... */
++
++				goto alloc_mem_map_failed;
++			}
++
++			continue;
++
++alloc_mem_map_failed:
++			break;
++		}
++
++	}
++
++	return 0;
++}
++subsys_initcall(pcibios_init);
++
++/*
++ * No bus fixups needed.
++ */
++void __devinit pcibios_fixup_bus(struct pci_bus *bus)
++{
++	/* Nothing needs to be done. */
++}
++
++/*
++ * This can be called from the generic PCI layer, but doesn't need to
++ * do anything.
++ */
++char __devinit *pcibios_setup(char *str)
++{
++	if (!strcmp(str, "off")) {
++		pci_probe = 0;
++		return NULL;
++	}
++	return str;
++}
++
++/*
++ * This is called from the generic Linux layer.
++ */
++void __devinit pcibios_update_irq(struct pci_dev *dev, int irq)
++{
++	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
++}
++
++/*
++ * Enable memory address decoding, as appropriate, for the
++ * device described by the 'dev' struct. The I/O decoding
++ * is disabled, though the TILE-Gx supports I/O addressing.
++ *
++ * This is called from the generic PCI layer, and can be called
++ * for bridges or endpoints.
++ */
++int pcibios_enable_device(struct pci_dev *dev, int mask)
++{
++	return pci_enable_resources(dev, mask);
++}
++
++/* Map a PCI MMIO bus address into VA space. */
++void __iomem *ioremap(resource_size_t phys_addr, unsigned long size)
++{
++	struct pci_controller *controller = NULL;
++	resource_size_t bar_start;
++	resource_size_t bar_end;
++	resource_size_t offset;
++	resource_size_t start;
++	resource_size_t end;
++	int trio_fd;
++	int i, j;
++
++	start = phys_addr;
++	end = phys_addr + size - 1;
++
++	/*
++	 * In the following, each PCI controller's mem_resources[1]
++	 * represents its (non-prefetchable) PCI memory resource and
++	 * mem_resources[2] refers to its prefetchable PCI memory resource.
++	 * By searching phys_addr in each controller's mem_resources[], we can
++	 * determine the controller that should accept the PCI memory access.
++	 */
++
++	for (i = 0; i < num_rc_controllers; i++) {
++		/*
++		 * Skip controllers that are not properly initialized or
++		 * have down links.
++		 */
++		if (pci_controllers[i].root_bus == NULL)
++			continue;
++
++		for (j = 1; j < 3; j++) {
++			bar_start =
++				pci_controllers[i].mem_resources[j].start;
++			bar_end =
++				pci_controllers[i].mem_resources[j].end;
++
++			if ((start >= bar_start) && (end <= bar_end)) {
++
++				controller = &pci_controllers[i];
++
++				goto got_it;
++			}
++		}
++	}
++
++	if (controller == NULL)
++		return NULL;
++
++got_it:
++	trio_fd = controller->trio->fd;
++
++	offset = HV_TRIO_PIO_OFFSET(controller->pio_mem_index) + phys_addr;
++
++	/*
++	 * We need to keep the PCI bus address's in-page offset in the VA.
++	 */
++	return iorpc_ioremap(trio_fd, offset, size) +
++					(phys_addr & (PAGE_SIZE - 1));
++}
++EXPORT_SYMBOL(ioremap);
++
++void pci_iounmap(struct pci_dev *dev, void __iomem *addr)
++{
++	iounmap(addr);
++}
++EXPORT_SYMBOL(pci_iounmap);
++
++/****************************************************************
++ *
++ * Tile PCI config space read/write routines
++ *
++ ****************************************************************/
++
++/*
++ * These are the normal read and write ops
++ * These are expanded with macros from  pci_bus_read_config_byte() etc.
++ *
++ * devfn is the combined PCI device & function.
++ *
++ * offset is in bytes, from the start of config space for the
++ * specified bus & device.
++ */
++
++static int __devinit tile_cfg_read(struct pci_bus *bus,
++				   unsigned int devfn,
++				   int offset,
++				   int size,
++				   u32 *val)
++{
++	struct pci_controller *controller = bus->sysdata;
++	gxio_trio_context_t *trio_context = controller->trio;
++	int busnum = bus->number & 0xff;
++	int device = PCI_SLOT(devfn);
++	int function = PCI_FUNC(devfn);
++	int config_type = 1;
++	TRIO_TILE_PIO_REGION_SETUP_CFG_ADDR_t cfg_addr;
++	void *mmio_addr;
++
++	/*
++	 * Map all accesses to the local device (bus == 0) into the
++	 * MMIO space of the MAC. Accesses to the downstream devices
++	 * go to the PIO space.
++	 */
++	if (busnum == 0) {
++		if (device == 0) {
++			/*
++			 * This is the internal downstream P2P bridge,
++			 * access directly.
++			 */
++			unsigned int reg_offset;
++
++			reg_offset = ((offset & 0xFFF) <<
++				TRIO_CFG_REGION_ADDR__REG_SHIFT) |
++				(TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_PROTECTED
++				<< TRIO_CFG_REGION_ADDR__INTFC_SHIFT ) |
++				(controller->mac <<
++					TRIO_CFG_REGION_ADDR__MAC_SEL_SHIFT);
++
++			mmio_addr = trio_context->mmio_base_mac + reg_offset;
++
++			goto valid_device;
++
++		} else {
++			/*
++			 * We fake an empty device for (device > 0),
++			 * since there is only one device on bus 0.
++			 */
++			goto invalid_device;
++		}
++	}
++
++	/*
++	 * Accesses to the directly attached device (bus == 1) have to be
++	 * sent as type-0 configs.
++	 */
++
++	if (busnum == 1) {
++		/*
++		 * There is only one device off of our built-in P2P bridge.
++		 */
++		if (device != 0)
++			goto invalid_device;
++
++		config_type = 0;
++	}
++
++	cfg_addr.word = 0;
++	cfg_addr.reg_addr = (offset & 0xFFF);
++	cfg_addr.fn = function;
++	cfg_addr.dev = device;
++	cfg_addr.bus = busnum;
++	cfg_addr.type = config_type;
++
++	/*
++	 * Note that we don't set the mac field in cfg_addr because the
++	 * mapping is per port.
++	 */
++
++	mmio_addr = trio_context->mmio_base_pio_cfg[controller->mac] +
++			cfg_addr.word;
++
++valid_device:
++
++	switch (size) {
++	case 4:
++		*val = __gxio_mmio_read32(mmio_addr);
++		break;
++
++	case 2:
++		*val = __gxio_mmio_read16(mmio_addr);
++		break;
++
++	case 1:
++		*val = __gxio_mmio_read8(mmio_addr);
++		break;
++
++	default:
++		return PCIBIOS_FUNC_NOT_SUPPORTED;
++	}
++
++	TRACE_CFG_RD(size, *val, busnum, device, function, offset);
++
++	return 0;
++
++invalid_device:
++
++	switch (size) {
++	case 4:
++		*val = 0xFFFFFFFF;
++		break;
++
++	case 2:
++		*val = 0xFFFF;
++		break;
++
++	case 1:
++		*val = 0xFF;
++		break;
++
++	default:
++		return PCIBIOS_FUNC_NOT_SUPPORTED;
++	}
 +
 +	return 0;
 +}
 +
-+EXPORT_SYMBOL_GPL(gxio_trio_init);
-diff --git a/arch/tile/include/arch/trio.h b/arch/tile/include/arch/trio.h
-new file mode 100644
-index 0000000..d3000a8
---- /dev/null
-+++ b/arch/tile/include/arch/trio.h
-@@ -0,0 +1,72 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/* Machine-generated file; do not edit. */
-+
-+#ifndef __ARCH_TRIO_H__
-+#define __ARCH_TRIO_H__
-+
-+#include <arch/abi.h>
-+#include <arch/trio_def.h>
-+
-+#ifndef __ASSEMBLER__
 +
 +/*
-+ * Tile PIO Region Configuration - CFG Address Format.
-+ * This register describes the address format for PIO accesses when the
-+ * associated region is setup with TYPE=CFG.
++ * See tile_cfg_read() for relevent comments.
++ * Note that "val" is the value to write, not a pointer to that value.
 + */
-+
-+__extension__
-+typedef union
++static int __devinit tile_cfg_write(struct pci_bus *bus,
++				    unsigned int devfn,
++				    int offset,
++				    int size,
++				    u32 val)
 +{
-+  struct
-+  {
-+#ifndef __BIG_ENDIAN__
-+    /* Register Address (full byte address). */
-+    uint_reg_t reg_addr     : 12;
-+    /* Function Number */
-+    uint_reg_t fn           : 3;
-+    /* Device Number */
-+    uint_reg_t dev          : 5;
-+    /* BUS Number */
-+    uint_reg_t bus          : 8;
-+    /* Config Type: 0 for access to directly-attached device.  1 otherwise. */
-+    uint_reg_t type         : 1;
-+    /* Reserved. */
-+    uint_reg_t __reserved_0 : 1;
-+    /*
-+     * MAC select.  This must match the configuration in
-+     * TILE_PIO_REGION_SETUP.MAC.
-+     */
-+    uint_reg_t mac          : 2;
-+    /* Reserved. */
-+    uint_reg_t __reserved_1 : 32;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t __reserved_1 : 32;
-+    uint_reg_t mac          : 2;
-+    uint_reg_t __reserved_0 : 1;
-+    uint_reg_t type         : 1;
-+    uint_reg_t bus          : 8;
-+    uint_reg_t dev          : 5;
-+    uint_reg_t fn           : 3;
-+    uint_reg_t reg_addr     : 12;
-+#endif
-+  };
-+
-+  uint_reg_t word;
-+} TRIO_TILE_PIO_REGION_SETUP_CFG_ADDR_t;
-+#endif /* !defined(__ASSEMBLER__) */
-+
-+#endif /* !defined(__ARCH_TRIO_H__) */
-diff --git a/arch/tile/include/arch/trio_constants.h b/arch/tile/include/arch/trio_constants.h
-new file mode 100644
-index 0000000..628b045
---- /dev/null
-+++ b/arch/tile/include/arch/trio_constants.h
-@@ -0,0 +1,36 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+
-+#ifndef __ARCH_TRIO_CONSTANTS_H__
-+#define __ARCH_TRIO_CONSTANTS_H__
-+
-+#define TRIO_NUM_ASIDS 16
-+#define TRIO_NUM_TLBS_PER_ASID 16
-+
-+#define TRIO_NUM_TPIO_REGIONS 8
-+#define TRIO_LOG2_NUM_TPIO_REGIONS 3
-+
-+#define TRIO_NUM_MAP_MEM_REGIONS 16
-+#define TRIO_LOG2_NUM_MAP_MEM_REGIONS 4
-+#define TRIO_NUM_MAP_SQ_REGIONS 8
-+#define TRIO_LOG2_NUM_MAP_SQ_REGIONS 3
-+
-+#define TRIO_LOG2_NUM_SQ_FIFO_ENTRIES 6
-+
-+#define TRIO_NUM_PUSH_DMA_RINGS 32
-+
-+#define TRIO_NUM_PULL_DMA_RINGS 32
-+
-+#endif /* __ARCH_TRIO_CONSTANTS_H__ */
-diff --git a/arch/tile/include/arch/trio_def.h b/arch/tile/include/arch/trio_def.h
-new file mode 100644
-index 0000000..e805003
---- /dev/null
-+++ b/arch/tile/include/arch/trio_def.h
-@@ -0,0 +1,41 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/* Machine-generated file; do not edit. */
-+
-+#ifndef __ARCH_TRIO_DEF_H__
-+#define __ARCH_TRIO_DEF_H__
-+#define TRIO_CFG_REGION_ADDR__REG_SHIFT 0
-+#define TRIO_CFG_REGION_ADDR__INTFC_SHIFT 16
-+#define TRIO_CFG_REGION_ADDR__INTFC_VAL_TRIO 0x0
-+#define TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_INTERFACE 0x1
-+#define TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_STANDARD 0x2
-+#define TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_PROTECTED 0x3
-+#define TRIO_CFG_REGION_ADDR__MAC_SEL_SHIFT 18
-+#define TRIO_CFG_REGION_ADDR__PROT_SHIFT 20
-+#define TRIO_PIO_REGIONS_ADDR__REGION_SHIFT 32
-+#define TRIO_MAP_MEM_REG_INT0 0x1000000000
-+#define TRIO_MAP_MEM_REG_INT1 0x1000000008
-+#define TRIO_MAP_MEM_REG_INT2 0x1000000010
-+#define TRIO_MAP_MEM_REG_INT3 0x1000000018
-+#define TRIO_MAP_MEM_REG_INT4 0x1000000020
-+#define TRIO_MAP_MEM_REG_INT5 0x1000000028
-+#define TRIO_MAP_MEM_REG_INT6 0x1000000030
-+#define TRIO_MAP_MEM_REG_INT7 0x1000000038
-+#define TRIO_MAP_MEM_LIM__ADDR_SHIFT 12
-+#define TRIO_MAP_MEM_SETUP__ORDER_MODE_VAL_UNORDERED 0x0
-+#define TRIO_MAP_MEM_SETUP__ORDER_MODE_VAL_STRICT 0x1
-+#define TRIO_MAP_MEM_SETUP__ORDER_MODE_VAL_REL_ORD 0x2
-+#define TRIO_TILE_PIO_REGION_SETUP_CFG_ADDR__MAC_SHIFT 30
-+#endif /* !defined(__ARCH_TRIO_DEF_H__) */
-diff --git a/arch/tile/include/arch/trio_pcie_intfc.h b/arch/tile/include/arch/trio_pcie_intfc.h
-new file mode 100644
-index 0000000..0487fdb
---- /dev/null
-+++ b/arch/tile/include/arch/trio_pcie_intfc.h
-@@ -0,0 +1,229 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/* Machine-generated file; do not edit. */
-+
-+#ifndef __ARCH_TRIO_PCIE_INTFC_H__
-+#define __ARCH_TRIO_PCIE_INTFC_H__
-+
-+#include <arch/abi.h>
-+#include <arch/trio_pcie_intfc_def.h>
-+
-+#ifndef __ASSEMBLER__
-+
-+/*
-+ * Port Configuration.
-+ * Configuration of the PCIe Port
-+ */
-+
-+__extension__
-+typedef union
-+{
-+  struct
-+  {
-+#ifndef __BIG_ENDIAN__
-+    /* Provides the state of the strapping pins for this port. */
-+    uint_reg_t strap_state      : 3;
-+    /* Reserved. */
-+    uint_reg_t __reserved_0     : 1;
-+    /*
-+     * When 1, the device type will be overridden using OVD_DEV_TYPE_VAL.
-+     * When 0, the device type is determined based on the STRAP_STATE.
-+     */
-+    uint_reg_t ovd_dev_type     : 1;
-+    /* Provides the device type when OVD_DEV_TYPE is 1. */
-+    uint_reg_t ovd_dev_type_val : 4;
-+    /* Determines how link is trained. */
-+    uint_reg_t train_mode       : 2;
-+    /* Reserved. */
-+    uint_reg_t __reserved_1     : 1;
-+    /*
-+     * For PCIe, used to flip physical RX lanes that were not properly wired.
-+     *  This is not the same as lane reversal which is handled automatically
-+     * during link training.  When 0, RX Lane0 must be wired to the link
-+     * partner (either to its Lane0 or it's LaneN).  When RX_LANE_FLIP is 1,
-+     * the highest numbered lane for this port becomes Lane0 and Lane0 does
-+     * NOT have to be wired to the link partner.
-+     */
-+    uint_reg_t rx_lane_flip     : 1;
-+    /*
-+     * For PCIe, used to flip physical TX lanes that were not properly wired.
-+     *  This is not the same as lane reversal which is handled automatically
-+     * during link training.  When 0, TX Lane0 must be wired to the link
-+     * partner (either to its Lane0 or it's LaneN).  When TX_LANE_FLIP is 1,
-+     * the highest numbered lane for this port becomes Lane0 and Lane0 does
-+     * NOT have to be wired to the link partner.
-+     */
-+    uint_reg_t tx_lane_flip     : 1;
-+    /*
-+     * For StreamIO port, configures the width of the port when TRAIN_MODE is
-+     * not STRAP.
-+     */
-+    uint_reg_t stream_width     : 2;
-+    /*
-+     * For StreamIO port, configures the rate of the port when TRAIN_MODE is
-+     * not STRAP.
-+     */
-+    uint_reg_t stream_rate      : 2;
-+    /* Reserved. */
-+    uint_reg_t __reserved_2     : 46;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t __reserved_2     : 46;
-+    uint_reg_t stream_rate      : 2;
-+    uint_reg_t stream_width     : 2;
-+    uint_reg_t tx_lane_flip     : 1;
-+    uint_reg_t rx_lane_flip     : 1;
-+    uint_reg_t __reserved_1     : 1;
-+    uint_reg_t train_mode       : 2;
-+    uint_reg_t ovd_dev_type_val : 4;
-+    uint_reg_t ovd_dev_type     : 1;
-+    uint_reg_t __reserved_0     : 1;
-+    uint_reg_t strap_state      : 3;
-+#endif
-+  };
-+
-+  uint_reg_t word;
-+} TRIO_PCIE_INTFC_PORT_CONFIG_t;
-+
-+/*
-+ * Port Status.
-+ * Status of the PCIe Port.  This register applies to the StreamIO port when
-+ * StreamIO is enabled.
-+ */
-+
-+__extension__
-+typedef union
-+{
-+  struct
-+  {
-+#ifndef __BIG_ENDIAN__
-+    /*
-+     * Indicates the DL state of the port.  When 1, the port is up and ready
-+     * to receive traffic.
-+     */
-+    uint_reg_t dl_up        : 1;
-+    /*
-+     * Indicates the number of times the link has gone down.  Clears on read.
-+     */
-+    uint_reg_t dl_down_cnt  : 7;
-+    /* Indicates the SERDES PLL has spun up and is providing a valid clock. */
-+    uint_reg_t clock_ready  : 1;
-+    /* Reserved. */
-+    uint_reg_t __reserved_0 : 7;
-+    /* Device revision ID. */
-+    uint_reg_t device_rev   : 8;
-+    /* Link state (PCIe). */
-+    uint_reg_t ltssm_state  : 6;
-+    /* Link power management state (PCIe). */
-+    uint_reg_t pm_state     : 3;
-+    /* Reserved. */
-+    uint_reg_t __reserved_1 : 31;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t __reserved_1 : 31;
-+    uint_reg_t pm_state     : 3;
-+    uint_reg_t ltssm_state  : 6;
-+    uint_reg_t device_rev   : 8;
-+    uint_reg_t __reserved_0 : 7;
-+    uint_reg_t clock_ready  : 1;
-+    uint_reg_t dl_down_cnt  : 7;
-+    uint_reg_t dl_up        : 1;
-+#endif
-+  };
-+
-+  uint_reg_t word;
-+} TRIO_PCIE_INTFC_PORT_STATUS_t;
-+
-+/*
-+ * Transmit FIFO Control.
-+ * Contains TX FIFO thresholds.  These registers are for diagnostics purposes
-+ * only.  Changing these values causes undefined behavior.
-+ */
-+
-+__extension__
-+typedef union
-+{
-+  struct
-+  {
-+#ifndef __BIG_ENDIAN__
-+    /*
-+     * Almost-Empty level for TX0 data.  Typically set to at least
-+     * roundup(38.0*M/N) where N=tclk frequency and M=MAC symbol rate in MHz
-+     * for a x4 port (250MHz).
-+     */
-+    uint_reg_t tx0_data_ae_lvl : 7;
-+    /* Reserved. */
-+    uint_reg_t __reserved_0    : 1;
-+    /* Almost-Empty level for TX1 data. */
-+    uint_reg_t tx1_data_ae_lvl : 7;
-+    /* Reserved. */
-+    uint_reg_t __reserved_1    : 1;
-+    /* Almost-Full level for TX0 data. */
-+    uint_reg_t tx0_data_af_lvl : 7;
-+    /* Reserved. */
-+    uint_reg_t __reserved_2    : 1;
-+    /* Almost-Full level for TX1 data. */
-+    uint_reg_t tx1_data_af_lvl : 7;
-+    /* Reserved. */
-+    uint_reg_t __reserved_3    : 1;
-+    /* Almost-Full level for TX0 info. */
-+    uint_reg_t tx0_info_af_lvl : 5;
-+    /* Reserved. */
-+    uint_reg_t __reserved_4    : 3;
-+    /* Almost-Full level for TX1 info. */
-+    uint_reg_t tx1_info_af_lvl : 5;
-+    /* Reserved. */
-+    uint_reg_t __reserved_5    : 3;
-+    /*
-+     * This register provides performance adjustment for high bandwidth
-+     * flows.  The MAC will assert almost-full to TRIO if non-posted credits
-+     * fall below this level.  Note that setting this larger than the initial
-+     * PORT_CREDIT.NPH value will cause READS to never be sent.  If the
-+     * initial credit value from the link partner is smaller than this value
-+     * when the link comes up, the value will be reset to the initial credit
-+     * value to prevent lockup.
-+     */
-+    uint_reg_t min_np_credits  : 8;
-+    /*
-+     * This register provides performance adjustment for high bandwidth
-+     * flows.  The MAC will assert almost-full to TRIO if posted credits fall
-+     * below this level.  Note that setting this larger than the initial
-+     * PORT_CREDIT.PH value will cause WRITES to never be sent.  If the
-+     * initial credit value from the link partner is smaller than this value
-+     * when the link comes up, the value will be reset to the initial credit
-+     * value to prevent lockup.
-+     */
-+    uint_reg_t min_p_credits   : 8;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t min_p_credits   : 8;
-+    uint_reg_t min_np_credits  : 8;
-+    uint_reg_t __reserved_5    : 3;
-+    uint_reg_t tx1_info_af_lvl : 5;
-+    uint_reg_t __reserved_4    : 3;
-+    uint_reg_t tx0_info_af_lvl : 5;
-+    uint_reg_t __reserved_3    : 1;
-+    uint_reg_t tx1_data_af_lvl : 7;
-+    uint_reg_t __reserved_2    : 1;
-+    uint_reg_t tx0_data_af_lvl : 7;
-+    uint_reg_t __reserved_1    : 1;
-+    uint_reg_t tx1_data_ae_lvl : 7;
-+    uint_reg_t __reserved_0    : 1;
-+    uint_reg_t tx0_data_ae_lvl : 7;
-+#endif
-+  };
-+
-+  uint_reg_t word;
-+} TRIO_PCIE_INTFC_TX_FIFO_CTL_t;
-+#endif /* !defined(__ASSEMBLER__) */
-+
-+#endif /* !defined(__ARCH_TRIO_PCIE_INTFC_H__) */
-diff --git a/arch/tile/include/arch/trio_pcie_intfc_def.h b/arch/tile/include/arch/trio_pcie_intfc_def.h
-new file mode 100644
-index 0000000..d3fd678
---- /dev/null
-+++ b/arch/tile/include/arch/trio_pcie_intfc_def.h
-@@ -0,0 +1,32 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/* Machine-generated file; do not edit. */
-+
-+#ifndef __ARCH_TRIO_PCIE_INTFC_DEF_H__
-+#define __ARCH_TRIO_PCIE_INTFC_DEF_H__
-+#define TRIO_PCIE_INTFC_MAC_INT_STS 0x0000
-+#define TRIO_PCIE_INTFC_MAC_INT_STS__INT_LEVEL_MASK  0xf000
-+#define TRIO_PCIE_INTFC_PORT_CONFIG 0x0018
-+#define TRIO_PCIE_INTFC_PORT_CONFIG__STRAP_STATE_VAL_DISABLED 0x0
-+#define TRIO_PCIE_INTFC_PORT_CONFIG__STRAP_STATE_VAL_AUTO_CONFIG_ENDPOINT 0x1
-+#define TRIO_PCIE_INTFC_PORT_CONFIG__STRAP_STATE_VAL_AUTO_CONFIG_RC 0x2
-+#define TRIO_PCIE_INTFC_PORT_CONFIG__STRAP_STATE_VAL_AUTO_CONFIG_ENDPOINT_G1 0x3
-+#define TRIO_PCIE_INTFC_PORT_CONFIG__STRAP_STATE_VAL_AUTO_CONFIG_RC_G1 0x4
-+#define TRIO_PCIE_INTFC_PORT_CONFIG__STRAP_STATE_VAL_AUTO_XLINK 0x5
-+#define TRIO_PCIE_INTFC_PORT_CONFIG__STRAP_STATE_VAL_STREAM_X1 0x6
-+#define TRIO_PCIE_INTFC_PORT_CONFIG__STRAP_STATE_VAL_STREAM_X4 0x7
-+#define TRIO_PCIE_INTFC_PORT_STATUS 0x0020
-+#define TRIO_PCIE_INTFC_TX_FIFO_CTL 0x0050
-+#endif /* !defined(__ARCH_TRIO_PCIE_INTFC_DEF_H__) */
-diff --git a/arch/tile/include/arch/trio_pcie_rc.h b/arch/tile/include/arch/trio_pcie_rc.h
-new file mode 100644
-index 0000000..6a25d0a
---- /dev/null
-+++ b/arch/tile/include/arch/trio_pcie_rc.h
-@@ -0,0 +1,156 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/* Machine-generated file; do not edit. */
-+
-+#ifndef __ARCH_TRIO_PCIE_RC_H__
-+#define __ARCH_TRIO_PCIE_RC_H__
-+
-+#include <arch/abi.h>
-+#include <arch/trio_pcie_rc_def.h>
-+
-+#ifndef __ASSEMBLER__
-+
-+/* Device Capabilities Register. */
-+
-+__extension__
-+typedef union
-+{
-+  struct
-+  {
-+#ifndef __BIG_ENDIAN__
-+    /*
-+     * Max_Payload_Size Supported, writablethrough the MAC_STANDARD interface
-+     */
-+    uint_reg_t mps_sup                    : 3;
-+    /*
-+     * This field is writable through the MAC_STANDARD interface.  However,
-+     * Phantom Function is not  supported. Therefore, the application must
-+     * not write any value other than 0x0 to this  field.
-+     */
-+    uint_reg_t phantom_function_supported : 2;
-+    /* This bit is writable through the MAC_STANDARD interface. */
-+    uint_reg_t ext_tag_field_supported    : 1;
-+    /* Reserved. */
-+    uint_reg_t __reserved_0               : 3;
-+    /* Endpoint L1 Acceptable Latency Must be 0x0 for non-Endpoint devices. */
-+    uint_reg_t l1_lat                     : 3;
-+    /*
-+     * Undefined since PCI Express 1.1 (Was Attention Button Present for PCI
-+     * Express 1.0a)
-+     */
-+    uint_reg_t r1                         : 1;
-+    /*
-+     * Undefined since PCI Express 1.1 (Was Attention Indicator Present for
-+     * PCI  Express 1.0a)
-+     */
-+    uint_reg_t r2                         : 1;
-+    /*
-+     * Undefined since PCI Express 1.1 (Was Power Indicator Present for PCI
-+     * Express 1.0a)
-+     */
-+    uint_reg_t r3                         : 1;
-+    /*
-+     * Role-Based Error Reporting, writable through the MAC_STANDARD
-+     * interface.  Required to be set for device compliant to 1.1  spec and
-+     * later.
-+     */
-+    uint_reg_t rer                        : 1;
-+    /* Reserved. */
-+    uint_reg_t __reserved_1               : 2;
-+    /* Captured Slot Power Limit Value Upstream port only. */
-+    uint_reg_t slot_pwr_lim               : 8;
-+    /* Captured Slot Power Limit Scale Upstream port only. */
-+    uint_reg_t slot_pwr_scale             : 2;
-+    /* Reserved. */
-+    uint_reg_t __reserved_2               : 4;
-+    /* Endpoint L0s Acceptable LatencyMust be 0x0 for non-Endpoint devices. */
-+    uint_reg_t l0s_lat                    : 1;
-+    /* Reserved. */
-+    uint_reg_t __reserved_3               : 31;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t __reserved_3               : 31;
-+    uint_reg_t l0s_lat                    : 1;
-+    uint_reg_t __reserved_2               : 4;
-+    uint_reg_t slot_pwr_scale             : 2;
-+    uint_reg_t slot_pwr_lim               : 8;
-+    uint_reg_t __reserved_1               : 2;
-+    uint_reg_t rer                        : 1;
-+    uint_reg_t r3                         : 1;
-+    uint_reg_t r2                         : 1;
-+    uint_reg_t r1                         : 1;
-+    uint_reg_t l1_lat                     : 3;
-+    uint_reg_t __reserved_0               : 3;
-+    uint_reg_t ext_tag_field_supported    : 1;
-+    uint_reg_t phantom_function_supported : 2;
-+    uint_reg_t mps_sup                    : 3;
-+#endif
-+  };
-+
-+  uint_reg_t word;
-+} TRIO_PCIE_RC_DEVICE_CAP_t;
-+
-+/* Device Control Register. */
-+
-+__extension__
-+typedef union
-+{
-+  struct
-+  {
-+#ifndef __BIG_ENDIAN__
-+    /* Correctable Error Reporting Enable */
-+    uint_reg_t cor_err_ena      : 1;
-+    /* Non-Fatal Error Reporting Enable */
-+    uint_reg_t nf_err_ena       : 1;
-+    /* Fatal Error Reporting Enable */
-+    uint_reg_t fatal_err_ena    : 1;
-+    /* Unsupported Request Reporting Enable */
-+    uint_reg_t ur_ena           : 1;
-+    /* Relaxed orderring enable */
-+    uint_reg_t ro_ena           : 1;
-+    /* Max Payload Size */
-+    uint_reg_t max_payload_size : 3;
-+    /* Extended Tag Field Enable */
-+    uint_reg_t ext_tag          : 1;
-+    /* Phantom Function Enable */
-+    uint_reg_t ph_fn_ena        : 1;
-+    /* AUX Power PM Enable */
-+    uint_reg_t aux_pm_ena       : 1;
-+    /* Enable NoSnoop */
-+    uint_reg_t no_snoop         : 1;
-+    /* Max read request size */
-+    uint_reg_t max_read_req_sz  : 3;
-+    /* Reserved. */
-+    uint_reg_t __reserved       : 49;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t __reserved       : 49;
-+    uint_reg_t max_read_req_sz  : 3;
-+    uint_reg_t no_snoop         : 1;
-+    uint_reg_t aux_pm_ena       : 1;
-+    uint_reg_t ph_fn_ena        : 1;
-+    uint_reg_t ext_tag          : 1;
-+    uint_reg_t max_payload_size : 3;
-+    uint_reg_t ro_ena           : 1;
-+    uint_reg_t ur_ena           : 1;
-+    uint_reg_t fatal_err_ena    : 1;
-+    uint_reg_t nf_err_ena       : 1;
-+    uint_reg_t cor_err_ena      : 1;
-+#endif
-+  };
-+
-+  uint_reg_t word;
-+} TRIO_PCIE_RC_DEVICE_CONTROL_t;
-+#endif /* !defined(__ASSEMBLER__) */
-+
-+#endif /* !defined(__ARCH_TRIO_PCIE_RC_H__) */
-diff --git a/arch/tile/include/arch/trio_pcie_rc_def.h b/arch/tile/include/arch/trio_pcie_rc_def.h
-new file mode 100644
-index 0000000..74081a6
---- /dev/null
-+++ b/arch/tile/include/arch/trio_pcie_rc_def.h
-@@ -0,0 +1,24 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/* Machine-generated file; do not edit. */
-+
-+#ifndef __ARCH_TRIO_PCIE_RC_DEF_H__
-+#define __ARCH_TRIO_PCIE_RC_DEF_H__
-+#define TRIO_PCIE_RC_DEVICE_CAP 0x0074
-+#define TRIO_PCIE_RC_DEVICE_CONTROL 0x0078
-+#define TRIO_PCIE_RC_DEVICE_ID_VEN_ID 0x0000
-+#define TRIO_PCIE_RC_DEVICE_ID_VEN_ID__DEV_ID_SHIFT 16
-+#define TRIO_PCIE_RC_REVISION_ID 0x0008
-+#endif /* !defined(__ARCH_TRIO_PCIE_RC_DEF_H__) */
-diff --git a/arch/tile/include/arch/trio_shm.h b/arch/tile/include/arch/trio_shm.h
-new file mode 100644
-index 0000000..3382e38
---- /dev/null
-+++ b/arch/tile/include/arch/trio_shm.h
-@@ -0,0 +1,125 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/* Machine-generated file; do not edit. */
-+
-+
-+#ifndef __ARCH_TRIO_SHM_H__
-+#define __ARCH_TRIO_SHM_H__
-+
-+#include <arch/abi.h>
-+#include <arch/trio_shm_def.h>
-+
-+#ifndef __ASSEMBLER__
-+/**
-+ * TRIO DMA Descriptor.
-+ * The TRIO DMA descriptor is written by software and consumed by hardware.
-+ * It is used to specify the location of transaction data in the IO and Tile
-+ * domains.
-+ */
-+
-+__extension__
-+typedef union
-+{
-+  struct
-+  {
-+    /* Word 0 */
-+
-+#ifndef __BIG_ENDIAN__
-+    /** Tile side virtual address. */
-+    int_reg_t va           : 42;
-+    /**
-+     * Encoded size of buffer used on push DMA when C=1:
-+     * 0 = 128 bytes
-+     * 1 = 256 bytes
-+     * 2 = 512 bytes
-+     * 3 = 1024 bytes
-+     * 4 = 1664 bytes
-+     * 5 = 4096 bytes
-+     * 6 = 10368 bytes
-+     * 7 = 16384 bytes
-+     */
-+    uint_reg_t bsz          : 3;
-+    /**
-+     * Chaining designation.  Always zero for pull DMA
-+     * 0 : Unchained buffer pointer
-+     * 1 : Chained buffer pointer.  Next buffer descriptor (e.g. VA) stored
-+     * in 1st 8-bytes in buffer.  For chained buffers, first 8-bytes of each
-+     * buffer contain the next buffer descriptor formatted exactly like a PDE
-+     * buffer descriptor.  This allows a chained PDE buffer to be sent using
-+     * push DMA.
-+     */
-+    uint_reg_t c            : 1;
-+    /**
-+     * Notification interrupt will be delivered when the transaction has
-+     * completed (all data has been read from or written to the Tile-side
-+     * buffer).
-+     */
-+    uint_reg_t notif        : 1;
-+    /**
-+     * When 0, the XSIZE field specifies the total byte count for the
-+     * transaction.  When 1, the XSIZE field is encoded as 2^(N+14) for N in
-+     * {0..6}:
-+     * 0 = 16KB
-+     * 1 = 32KB
-+     * 2 = 64KB
-+     * 3 = 128KB
-+     * 4 = 256KB
-+     * 5 = 512KB
-+     * 6 = 1MB
-+     * All other encodings of the XSIZE field are reserved when SMOD=1
-+     */
-+    uint_reg_t smod         : 1;
-+    /**
-+     * Total number of bytes to move for this transaction.   When SMOD=1,
-+     * this field is encoded - see SMOD description.
-+     */
-+    uint_reg_t xsize        : 14;
-+    /** Reserved. */
-+    uint_reg_t __reserved_0 : 1;
-+    /**
-+     * Generation number.  Used to indicate a valid descriptor in ring.  When
-+     * a new descriptor is written into the ring, software must toggle this
-+     * bit.  The net effect is that the GEN bit being written into new
-+     * descriptors toggles each time the ring tail pointer wraps.
-+     */
-+    uint_reg_t gen          : 1;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t gen          : 1;
-+    uint_reg_t __reserved_0 : 1;
-+    uint_reg_t xsize        : 14;
-+    uint_reg_t smod         : 1;
-+    uint_reg_t notif        : 1;
-+    uint_reg_t c            : 1;
-+    uint_reg_t bsz          : 3;
-+    int_reg_t va           : 42;
-+#endif
-+
-+    /* Word 1 */
-+
-+#ifndef __BIG_ENDIAN__
-+    /** IO-side address */
-+    uint_reg_t io_address : 64;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t io_address : 64;
-+#endif
-+
-+  };
-+
-+  /** Word access */
-+  uint_reg_t words[2];
-+} TRIO_DMA_DESC_t;
-+#endif /* !defined(__ASSEMBLER__) */
-+
-+#endif /* !defined(__ARCH_TRIO_SHM_H__) */
-diff --git a/arch/tile/include/arch/trio_shm_def.h b/arch/tile/include/arch/trio_shm_def.h
-new file mode 100644
-index 0000000..72a59c8
---- /dev/null
-+++ b/arch/tile/include/arch/trio_shm_def.h
-@@ -0,0 +1,19 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/* Machine-generated file; do not edit. */
-+
-+#ifndef __ARCH_TRIO_SHM_DEF_H__
-+#define __ARCH_TRIO_SHM_DEF_H__
-+#endif /* !defined(__ARCH_TRIO_SHM_DEF_H__) */
-diff --git a/arch/tile/include/gxio/iorpc_trio.h b/arch/tile/include/gxio/iorpc_trio.h
-new file mode 100644
-index 0000000..f13677d
---- /dev/null
-+++ b/arch/tile/include/gxio/iorpc_trio.h
-@@ -0,0 +1,97 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/* This file is machine-generated; DO NOT EDIT! */
-+#ifndef __GXIO_TRIO_LINUX_RPC_H__
-+#define __GXIO_TRIO_LINUX_RPC_H__
-+
-+#include <hv/iorpc.h>
-+
-+#include <hv/drv_trio_intf.h>
-+#include <gxio/trio.h>
-+#include <gxio/kiorpc.h>
-+#include <linux/string.h>
-+#include <linux/module.h>
-+#include <asm/pgtable.h>
-+
-+#define GXIO_TRIO_OP_ALLOC_ASIDS       IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1400)
-+
-+#define GXIO_TRIO_OP_ALLOC_MEMORY_MAPS IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1402)
-+
-+#define GXIO_TRIO_OP_ALLOC_PIO_REGIONS IORPC_OPCODE(IORPC_FORMAT_NONE, 0x140e)
-+#define GXIO_TRIO_OP_INIT_PIO_REGION_AUX IORPC_OPCODE(IORPC_FORMAT_NONE, 0x140f)
-+
-+#define GXIO_TRIO_OP_INIT_MEMORY_MAP_MMU_AUX IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x1418)
-+#define GXIO_TRIO_OP_GET_PORT_PROPERTY IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x1419)
-+#define GXIO_TRIO_OP_CONFIG_LEGACY_INTR IORPC_OPCODE(IORPC_FORMAT_KERNEL_INTERRUPT, 0x141a)
-+#define GXIO_TRIO_OP_CONFIG_MSI_INTR   IORPC_OPCODE(IORPC_FORMAT_KERNEL_INTERRUPT, 0x141b)
-+
-+#define GXIO_TRIO_OP_SET_MPS_MRS       IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x141d)
-+#define GXIO_TRIO_OP_FORCE_RC_LINK_UP  IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x141e)
-+#define GXIO_TRIO_OP_FORCE_EP_LINK_UP  IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x141f)
-+#define GXIO_TRIO_OP_GET_MMIO_BASE     IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x8000)
-+#define GXIO_TRIO_OP_CHECK_MMIO_OFFSET IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x8001)
-+
-+int gxio_trio_alloc_asids(gxio_trio_context_t * context, unsigned int count,
-+			  unsigned int first, unsigned int flags);
-+
-+
-+int gxio_trio_alloc_memory_maps(gxio_trio_context_t * context,
-+				unsigned int count, unsigned int first,
-+				unsigned int flags);
-+
-+
-+int gxio_trio_alloc_pio_regions(gxio_trio_context_t * context,
-+				unsigned int count, unsigned int first,
-+				unsigned int flags);
-+
-+int gxio_trio_init_pio_region_aux(gxio_trio_context_t * context,
-+				  unsigned int pio_region, unsigned int mac,
-+				  uint32_t bus_address_hi, unsigned int flags);
-+
-+
-+int gxio_trio_init_memory_map_mmu_aux(gxio_trio_context_t * context,
-+				      unsigned int map, unsigned long va,
-+				      uint64_t size, unsigned int asid,
-+				      unsigned int mac, uint64_t bus_address,
-+				      unsigned int node,
-+				      unsigned int order_mode);
-+
-+int gxio_trio_get_port_property(gxio_trio_context_t * context,
-+				struct pcie_trio_ports_property *trio_ports);
-+
-+int gxio_trio_config_legacy_intr(gxio_trio_context_t * context, int inter_x,
-+				 int inter_y, int inter_ipi, int inter_event,
-+				 unsigned int mac, unsigned int intx);
-+
-+int gxio_trio_config_msi_intr(gxio_trio_context_t * context, int inter_x,
-+			      int inter_y, int inter_ipi, int inter_event,
-+			      unsigned int mac, unsigned int mem_map,
-+			      uint64_t mem_map_base, uint64_t mem_map_limit,
-+			      unsigned int asid);
-+
-+
-+int gxio_trio_set_mps_mrs(gxio_trio_context_t * context, uint16_t mps,
-+			  uint16_t mrs, unsigned int mac);
-+
-+int gxio_trio_force_rc_link_up(gxio_trio_context_t * context, unsigned int mac);
-+
-+int gxio_trio_force_ep_link_up(gxio_trio_context_t * context, unsigned int mac);
-+
-+int gxio_trio_get_mmio_base(gxio_trio_context_t * context, HV_PTE *base);
-+
-+int gxio_trio_check_mmio_offset(gxio_trio_context_t * context,
-+				unsigned long offset, unsigned long size);
-+
-+#endif /* !__GXIO_TRIO_LINUX_RPC_H__ */
-diff --git a/arch/tile/include/gxio/trio.h b/arch/tile/include/gxio/trio.h
-new file mode 100644
-index 0000000..4d79014
---- /dev/null
-+++ b/arch/tile/include/gxio/trio.h
-@@ -0,0 +1,304 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/*
-+ *
-+ * An API for allocating, configuring, and manipulating TRIO hardware
-+ * resources
-+ */
-+
-+/*
-+ *
-+ * The TILE-Gx TRIO shim provides connections to external devices via
-+ * PCIe or other transaction IO standards.  The gxio_trio_ API,
-+ * declared in <gxio/trio.h>, allows applications to allocate and
-+ * configure TRIO IO resources like DMA command rings, memory map
-+ * windows, and device interrupts.  The following sections introduce
-+ * the various components of the API.  We strongly recommend reading
-+ * the TRIO section of the IO Device Guide (UG404) before working with
-+ * this API.
-+ *
-+ * @section trio__ingress TRIO Ingress Hardware Resources
-+ *
-+ * The TRIO ingress hardware is responsible for examining incoming
-+ * PCIe or StreamIO packets and choosing a processing mechanism based
-+ * on the packets' bus address.  The gxio_trio_ API can be used to
-+ * configure different handlers for different ranges of bus address
-+ * space.  The user can configure "mapped memory" and "scatter queue"
-+ * regions to match incoming packets within 4kB-aligned ranges of bus
-+ * addresses.  Each range specifies a different set of mapping
-+ * parameters to be applied when handling the ingress packet.  The
-+ * following sections describe how to work with MapMem and scatter
-+ * queue regions.
-+ *
-+ * @subsection trio__mapmem TRIO MapMem Regions
-+ *
-+ * TRIO mapped memory (or MapMem) regions allow the user to map
-+ * incoming read and write requests directly to the application's
-+ * memory space.  MapMem regions are allocated via
-+ * gxio_trio_alloc_memory_maps().  Given an integer MapMem number,
-+ * applications can use gxio_trio_init_memory_map() to specify the
-+ * range of bus addresses that will match the region and the range of
-+ * virtual addresses to which those packets will be applied.
-+ *
-+ * As with many other gxio APIs, the programmer must be sure to
-+ * register memory pages that will be used with MapMem regions.  Pages
-+ * can be registered with TRIO by allocating an ASID (address space
-+ * identifier) and then using gxio_trio_register_page() to register up to
-+ * 16 pages with the hardware.  The initialization functions for
-+ * resources that require registered memory (MapMem, scatter queues,
-+ * push DMA, and pull DMA) then take an 'asid' parameter in order to
-+ * configure which set of registered pages is used by each resource.
-+ *
-+ * @subsection trio__scatter_queue TRIO Scatter Queues
-+ *
-+ * The TRIO shim's scatter queue regions allow users to dynamically
-+ * map buffers from a large address space into a small range of bus
-+ * addresses.  This is particularly helpful for PCIe endpoint devices,
-+ * where the host generally limits the size of BARs to tens of
-+ * megabytes.
-+ *
-+ * Each scatter queue consists of a memory map region, a queue of
-+ * tile-side buffer VAs to be mapped to that region, and a bus-mapped
-+ * "doorbell" register that the remote endpoint can write to trigger a
-+ * dequeue of the current buffer VA, thus swapping in a new buffer.
-+ * The VAs pushed onto a scatter queue must be 4kB aligned, so
-+ * applications may need to use higher-level protocols to inform
-+ * remote entities that they should apply some additional, sub-4kB
-+ * offset when reading or writing the scatter queue region.  For more
-+ * information, see the IO Device Guide (UG404).
-+ *
-+ * @section trio__egress TRIO Egress Hardware Resources
-+ *
-+ * The TRIO shim supports two mechanisms for egress packet generation:
-+ * programmed IO (PIO) and push/pull DMA.  PIO allows applications to
-+ * create MMIO mappings for PCIe or StreamIO address space, such that
-+ * the application can generate word-sized read or write transactions
-+ * by issuing load or store instructions.  Push and pull DMA are tuned
-+ * for larger transactions; they use specialized hardware engines to
-+ * transfer large blocks of data at line rate.
-+ *
-+ * @subsection trio__pio TRIO Programmed IO
-+ *
-+ * Programmed IO allows applications to create MMIO mappings for PCIe
-+ * or StreamIO address space.  The hardware PIO regions support access
-+ * to PCIe configuration, IO, and memory space, but the gxio_trio API
-+ * only supports memory space accesses.  PIO regions are allocated
-+ * with gxio_trio_alloc_pio_regions() and initialized via
-+ * gxio_trio_init_pio_region().  Once a region is bound to a range of
-+ * bus address via the initialization function, the application can
-+ * use gxio_trio_map_pio_region() to create MMIO mappings from its VA
-+ * space onto the range of bus addresses supported by the PIO region.
-+ *
-+ * @subsection trio_dma TRIO Push and Pull DMA
-+ *
-+ * The TRIO push and pull DMA engines allow users to copy blocks of
-+ * data between application memory and the bus.  Push DMA generates
-+ * write packets that copy from application memory to the bus and pull
-+ * DMA generates read packets that copy from the bus into application
-+ * memory.  The DMA engines are managed via an API that is very
-+ * similar to the mPIPE eDMA interface.  For a detailed explanation of
-+ * the eDMA queue API, see @ref gxio_mpipe_wrappers.
-+ *
-+ * Push and pull DMA queues are allocated via
-+ * gxio_trio_alloc_push_dma_ring() / gxio_trio_alloc_pull_dma_ring().
-+ * Once allocated, users generally use a ::gxio_trio_dma_queue_t
-+ * object to manage the queue, providing easy wrappers for reserving
-+ * command slots in the DMA command ring, filling those slots, and
-+ * waiting for commands to complete.  DMA queues can be initialized
-+ * via gxio_trio_init_push_dma_queue() or
-+ * gxio_trio_init_pull_dma_queue().
-+ *
-+ * See @ref trio/push_dma/app.c for an example of how to use push DMA.
-+ *
-+ * @section trio_shortcomings Plans for Future API Revisions
-+ *
-+ * The API and simulation framework is incomplete.  Future features
-+ * include:
-+ *
-+ * - Support for larger page sizes.  Each hardware IOTLB can only map
-+ * 16 pages at a time, so applications are currently limited to 16 *
-+ * 16MB = 256MB of packet memory.  Larger page sizes will allow
-+ * applications to map arbitrary amounts of packet memory.
-+ *
-+ * - Support for reset and deallocation of resources.
-+ *
-+ * - Support for pull DMA.
-+ *
-+ * - Support for interrupt regions and user-space interrupt delivery.
-+ *
-+ * - Support for getting BAR mappings and reserving regions of BAR
-+ *   address space.
-+ */
-+#ifndef _GXIO_TRIO_H_
-+#define _GXIO_TRIO_H_
-+
-+#include <linux/types.h>
-+
-+#include "common.h"
-+#include "dma_queue.h"
-+
-+#include <arch/trio_constants.h>
-+#include <arch/trio.h>
-+#include <arch/trio_pcie_intfc.h>
-+#include <arch/trio_pcie_rc.h>
-+#include <arch/trio_shm.h>
-+#include <hv/drv_trio_intf.h>
-+#include <hv/iorpc.h>
-+
-+/* A context object used to manage TRIO hardware resources. */
-+typedef struct {
-+
-+	/* File descriptor for calling up to Linux (and thus the HV). */
-+	int fd;
-+
-+	/* The VA at which the MAC MMIO registers are mapped. */
-+	char *mmio_base_mac;
-+
-+	/* The VA at which the PIO config space are mapped for each PCIe MAC.
-+	   Gx36 has max 3 PCIe MACs per TRIO shim. */
-+	char *mmio_base_pio_cfg[TILEGX_TRIO_PCIES];
-+
-+#ifdef USE_SHARED_PCIE_CONFIG_REGION
-+	/* Index of the shared PIO region for PCI config access. */
-+	int pio_cfg_index;
-+#else
-+	/* Index of the PIO region for PCI config access per MAC. */
-+	int pio_cfg_index[TILEGX_TRIO_PCIES];
-+#endif
-+
-+	/*  The VA at which the push DMA MMIO registers are mapped. */
-+	char *mmio_push_dma[TRIO_NUM_PUSH_DMA_RINGS];
-+
-+	/*  The VA at which the pull DMA MMIO registers are mapped. */
-+	char *mmio_pull_dma[TRIO_NUM_PUSH_DMA_RINGS];
-+
-+	/* Application space ID. */
-+	unsigned int asid;
-+
-+} gxio_trio_context_t;
-+
-+/* Command descriptor for push or pull DMA. */
-+typedef TRIO_DMA_DESC_t gxio_trio_dma_desc_t;
-+
-+/* A convenient, thread-safe interface to an eDMA ring. */
-+typedef struct {
-+
-+	/* State object for tracking head and tail pointers. */
-+	__gxio_dma_queue_t dma_queue;
-+
-+	/* The ring entries. */
-+	gxio_trio_dma_desc_t *dma_descs;
-+
-+	/* The number of entries minus one. */
-+	unsigned long mask_num_entries;
-+
-+	/* The log2() of the number of entries. */
-+	unsigned int log2_num_entries;
-+
-+} gxio_trio_dma_queue_t;
-+
-+/* Initialize a TRIO context.
-+ *
-+ * This function allocates a TRIO "service domain" and maps the MMIO
-+ * registers into the the caller's VA space.
-+ *
-+ * @param trio_index Which TRIO shim; Gx36 must pass 0.
-+ * @param context Context object to be initialized.
-+ */
-+extern int gxio_trio_init(gxio_trio_context_t *context,
-+			  unsigned int trio_index);
-+
-+/* This indicates that an ASID hasn't been allocated. */
-+#define GXIO_ASID_NULL -1
-+
-+/* Ordering modes for map memory regions and scatter queue regions. */
-+typedef enum gxio_trio_order_mode_e {
-+	/* Writes are not ordered.  Reads always wait for previous writes. */
-+	GXIO_TRIO_ORDER_MODE_UNORDERED =
-+		TRIO_MAP_MEM_SETUP__ORDER_MODE_VAL_UNORDERED,
-+	/* Both writes and reads wait for previous transactions to complete. */
-+	GXIO_TRIO_ORDER_MODE_STRICT =
-+		TRIO_MAP_MEM_SETUP__ORDER_MODE_VAL_STRICT,
-+	/* Writes are ordered unless the incoming packet has the
-+	   relaxed-ordering attributes set. */
-+	GXIO_TRIO_ORDER_MODE_OBEY_PACKET =
-+		TRIO_MAP_MEM_SETUP__ORDER_MODE_VAL_REL_ORD
-+} gxio_trio_order_mode_t;
-+
-+/* Initialize a memory mapping region.
-+ *
-+ * @param context An initialized TRIO context.
-+ * @param map A Memory map region allocated by gxio_trio_alloc_memory_map().
-+ * @param target_mem VA of backing memory, should be registered via
-+ *   gxio_trio_register_page() and aligned to 4kB.
-+ * @param target_size Length of the memory mapping, must be a multiple
-+ * of 4kB.
-+ * @param asid ASID to be used for Tile-side address translation.
-+ * @param mac MAC number.
-+ * @param bus_address Bus address at which the mapping starts.
-+ * @param order_mode Memory ordering mode for this mapping.
-+ * @return Zero on success, else ::GXIO_TRIO_ERR_BAD_MEMORY_MAP,
-+ * GXIO_TRIO_ERR_BAD_ASID, or ::GXIO_TRIO_ERR_BAD_BUS_RANGE.
-+ */
-+extern int gxio_trio_init_memory_map(gxio_trio_context_t *context,
-+				     unsigned int map, void *target_mem,
-+				     size_t target_size, unsigned int asid,
-+				     unsigned int mac, uint64_t bus_address,
-+				     gxio_trio_order_mode_t order_mode);
-+
-+/* Flags that can be passed to resource allocation functions. */
-+enum gxio_trio_alloc_flags_e {
-+	GXIO_TRIO_ALLOC_FIXED = HV_TRIO_ALLOC_FIXED,
-+};
-+
-+/* Flags that can be passed to memory registration functions. */
-+enum gxio_trio_mem_flags_e {
-+	/* Do not fill L3 when writing, and invalidate lines upon egress. */
-+	GXIO_TRIO_MEM_FLAG_NT_HINT = IORPC_MEM_BUFFER_FLAG_NT_HINT,
-+
-+	/* L3 cache fills should only populate IO cache ways. */
-+	GXIO_TRIO_MEM_FLAG_IO_PIN = IORPC_MEM_BUFFER_FLAG_IO_PIN,
-+};
-+
-+/* Flag indicating a request generator uses a special traffic
-+    class. */
-+#define GXIO_TRIO_FLAG_TRAFFIC_CLASS(N) HV_TRIO_FLAG_TC(N)
-+
-+/* Flag indicating a request generator uses a virtual function
-+    number. */
-+#define GXIO_TRIO_FLAG_VFUNC(N) HV_TRIO_FLAG_VFUNC(N)
-+
-+/*****************************************************************
-+ *                       Memory Registration                      *
-+ ******************************************************************/
-+
-+/* Allocate Application Space Identifiers (ASIDs).  Each ASID can
-+ * register up to 16 page translations.  ASIDs are used by memory map
-+ * regions, scatter queues, and DMA queues to translate application
-+ * VAs into memory system PAs.
-+ *
-+ * @param context An initialized TRIO context.
-+ * @param count Number of ASIDs required.
-+ * @param first Index of first ASID if ::GXIO_TRIO_ALLOC_FIXED flag
-+ *   is set, otherwise ignored.
-+ * @param flags Flag bits, including bits from ::gxio_trio_alloc_flags_e.
-+ * @return Index of first ASID, or ::GXIO_TRIO_ERR_NO_ASID if allocation
-+ *   failed.
-+ */
-+extern int gxio_trio_alloc_asids(gxio_trio_context_t *context,
-+				 unsigned int count, unsigned int first,
-+				 unsigned int flags);
-+
-+#endif /* ! _GXIO_TRIO_H_ */
-diff --git a/arch/tile/include/hv/drv_trio_intf.h b/arch/tile/include/hv/drv_trio_intf.h
-new file mode 100644
-index 0000000..ef9f3f5
---- /dev/null
-+++ b/arch/tile/include/hv/drv_trio_intf.h
-@@ -0,0 +1,195 @@
-+/*
-+ * Copyright 2012 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/**
-+ * Interface definitions for the trio driver.
-+ */
-+
-+#ifndef _SYS_HV_DRV_TRIO_INTF_H
-+#define _SYS_HV_DRV_TRIO_INTF_H
-+
-+#include <arch/trio.h>
-+
-+/** The vendor ID for all Tilera processors. */
-+#define TILERA_VENDOR_ID 0x1a41
-+
-+/** The device ID for the Gx36 processor. */
-+#define TILERA_GX36_DEV_ID 0x0200
-+
-+/** Device ID for our internal bridge when running as RC. */
-+#define TILERA_GX36_RC_DEV_ID 0x2000
-+
-+/** Maximum number of TRIO interfaces. */
-+#define TILEGX_NUM_TRIO         2
-+
-+/** Gx36 has max 3 PCIe MACs per TRIO interface. */
-+#define TILEGX_TRIO_PCIES       3
-+
-+/** Specify port properties for a PCIe MAC. */
-+struct pcie_port_property
-+{
-+  /** If true, the link can be configured in PCIe root complex mode. */
-+  uint8_t allow_rc: 1;
-+
-+  /** If true, the link can be configured in PCIe endpoint mode. */
-+  uint8_t allow_ep: 1;
-+
-+  /** If true, the link can be configured in StreamIO mode. */
-+  uint8_t allow_sio: 1;
-+
-+  /** If true, the link is allowed to support 1-lane operation. Software
-+   *  will not consider it an error if the link comes up as a x1 link. */
-+  uint8_t allow_x1: 1;
-+
-+  /** If true, the link is allowed to support 2-lane operation. Software
-+   *  will not consider it an error if the link comes up as a x2 link. */
-+  uint8_t allow_x2: 1;
-+
-+  /** If true, the link is allowed to support 4-lane operation. Software
-+   *  will not consider it an error if the link comes up as a x4 link. */
-+  uint8_t allow_x4: 1;
-+
-+  /** If true, the link is allowed to support 8-lane operation. Software
-+   *  will not consider it an error if the link comes up as a x8 link. */
-+  uint8_t allow_x8: 1;
-+
-+  /** Reserved. */
-+  uint8_t reserved: 1;
-+
-+};
-+
-+/** Configurations can be issued to configure a char stream interrupt. */
-+typedef enum pcie_stream_intr_config_sel_e
-+{
-+  /** Interrupt configuration for memory map regions. */
-+  MEM_MAP_SEL,
-+
-+  /** Interrupt configuration for push DMAs. */
-+  PUSH_DMA_SEL,
-+
-+  /** Interrupt configuration for pull DMAs. */
-+  PULL_DMA_SEL,
++	struct pci_controller *controller = bus->sysdata;
++	gxio_trio_context_t *trio_context = controller->trio;
++	int busnum = bus->number & 0xff;
++	int device = PCI_SLOT(devfn);
++	int function = PCI_FUNC(devfn);
++	int config_type = 1;
++	TRIO_TILE_PIO_REGION_SETUP_CFG_ADDR_t cfg_addr;
++	void *mmio_addr;
++	u32 val_32 = (u32)val;
++	u16 val_16 = (u16)val;
++	u8 val_8 = (u8)val;
++
++	/*
++	 * Map all accesses to the local device (bus == 0) into the
++	 * MMIO space of the MAC. Accesses to the downstream devices
++	 * go to the PIO space.
++	 */
++	if (busnum == 0) {
++		if (device == 0) {
++			/*
++			 * This is the internal downstream P2P bridge,
++			 * access directly.
++			 */
++			unsigned int reg_offset;
++
++			reg_offset = ((offset & 0xFFF) <<
++				TRIO_CFG_REGION_ADDR__REG_SHIFT) |
++				(TRIO_CFG_REGION_ADDR__INTFC_VAL_MAC_PROTECTED
++				<< TRIO_CFG_REGION_ADDR__INTFC_SHIFT ) |
++				(controller->mac <<
++					TRIO_CFG_REGION_ADDR__MAC_SEL_SHIFT);
++
++			mmio_addr = trio_context->mmio_base_mac + reg_offset;
++
++			goto valid_device;
++
++		} else {
++			/*
++			 * We fake an empty device for (device > 0),
++			 * since there is only one device on bus 0.
++			 */
++			goto invalid_device;
++		}
++	}
++
++	/*
++	 * Accesses to the directly attached device (bus == 1) have to be
++	 * sent as type-0 configs.
++	 */
++
++	if (busnum == 1) {
++		/*
++		 * There is only one device off of our built-in P2P bridge.
++		 */
++		if (device != 0)
++			goto invalid_device;
++
++		config_type = 0;
++	}
++
++	cfg_addr.word = 0;
++	cfg_addr.reg_addr = (offset & 0xFFF);
++	cfg_addr.fn = function;
++	cfg_addr.dev = device;
++	cfg_addr.bus = busnum;
++	cfg_addr.type = config_type;
++
++	/*
++	 * Note that we don't set the mac field in cfg_addr because the
++	 * mapping is per port.
++	 */
++
++	mmio_addr = trio_context->mmio_base_pio_cfg[controller->mac] +
++			cfg_addr.word;
++
++valid_device:
++
++	switch (size) {
++	case 4:
++		__gxio_mmio_write32(mmio_addr, val_32);
++		TRACE_CFG_WR(size, val_32, busnum, device, function, offset);
++		break;
++
++	case 2:
++		__gxio_mmio_write16(mmio_addr, val_16);
++		TRACE_CFG_WR(size, val_16, busnum, device, function, offset);
++		break;
++
++	case 1:
++		__gxio_mmio_write8(mmio_addr, val_8);
++		TRACE_CFG_WR(size, val_8, busnum, device, function, offset);
++		break;
++
++	default:
++		return PCIBIOS_FUNC_NOT_SUPPORTED;
++	}
++
++invalid_device:
++
++	return 0;
 +}
-+pcie_stream_intr_config_sel_t;
 +
 +
-+/** The mmap file offset (PA) of the TRIO config region. */
-+#define HV_TRIO_CONFIG_OFFSET                                        \
-+  ((unsigned long long)TRIO_MMIO_ADDRESS_SPACE__REGION_VAL_CFG <<   \
-+    TRIO_MMIO_ADDRESS_SPACE__REGION_SHIFT)
-+
-+/** The maximum size of the TRIO config region. */
-+#define HV_TRIO_CONFIG_SIZE                                 \
-+  (1ULL << TRIO_CFG_REGION_ADDR__REGION_SHIFT)
-+
-+/** Size of the config region mapped into client. We can't use
-+ *  TRIO_MMIO_ADDRESS_SPACE__OFFSET_WIDTH because it
-+ *  will require the kernel to allocate 4GB VA space
-+ *  from the VMALLOC region which has a total range
-+ *  of 4GB.
-+ */
-+#define HV_TRIO_CONFIG_IOREMAP_SIZE                            \
-+  ((uint64_t) 1 << TRIO_CFG_REGION_ADDR__PROT_SHIFT)
-+
-+/** The mmap file offset (PA) of a scatter queue region. */
-+#define HV_TRIO_SQ_OFFSET(queue)                                        \
-+  (((unsigned long long)TRIO_MMIO_ADDRESS_SPACE__REGION_VAL_MAP_SQ <<   \
-+    TRIO_MMIO_ADDRESS_SPACE__REGION_SHIFT) |                            \
-+   ((queue) << TRIO_MAP_SQ_REGION_ADDR__SQ_SEL_SHIFT))
-+
-+/** The maximum size of a scatter queue region. */
-+#define HV_TRIO_SQ_SIZE                                 \
-+  (1ULL << TRIO_MAP_SQ_REGION_ADDR__SQ_SEL_SHIFT)
-+
-+
-+/** The "hardware MMIO region" of the first PIO region. */
-+#define HV_TRIO_FIRST_PIO_REGION 8
-+
-+/** The mmap file offset (PA) of a PIO region. */
-+#define HV_TRIO_PIO_OFFSET(region)                           \
-+  (((unsigned long long)(region) + HV_TRIO_FIRST_PIO_REGION) \
-+   << TRIO_PIO_REGIONS_ADDR__REGION_SHIFT)
-+
-+/** The maximum size of a PIO region. */
-+#define HV_TRIO_PIO_SIZE (1ULL << TRIO_PIO_REGIONS_ADDR__ADDR_WIDTH)
-+
-+
-+/** The mmap file offset (PA) of a push DMA region. */
-+#define HV_TRIO_PUSH_DMA_OFFSET(ring)                                   \
-+  (((unsigned long long)TRIO_MMIO_ADDRESS_SPACE__REGION_VAL_PUSH_DMA << \
-+    TRIO_MMIO_ADDRESS_SPACE__REGION_SHIFT) |                            \
-+   ((ring) << TRIO_PUSH_DMA_REGION_ADDR__RING_SEL_SHIFT))
-+
-+/** The mmap file offset (PA) of a pull DMA region. */
-+#define HV_TRIO_PULL_DMA_OFFSET(ring)                                   \
-+  (((unsigned long long)TRIO_MMIO_ADDRESS_SPACE__REGION_VAL_PULL_DMA << \
-+    TRIO_MMIO_ADDRESS_SPACE__REGION_SHIFT) |                            \
-+   ((ring) << TRIO_PULL_DMA_REGION_ADDR__RING_SEL_SHIFT))
-+
-+/** The maximum size of a DMA region. */
-+#define HV_TRIO_DMA_REGION_SIZE                         \
-+  (1ULL << TRIO_PUSH_DMA_REGION_ADDR__RING_SEL_SHIFT)
-+
-+
-+/** The mmap file offset (PA) of a Mem-Map interrupt region. */
-+#define HV_TRIO_MEM_MAP_INTR_OFFSET(map)                                 \
-+  (((unsigned long long)TRIO_MMIO_ADDRESS_SPACE__REGION_VAL_MAP_MEM <<   \
-+    TRIO_MMIO_ADDRESS_SPACE__REGION_SHIFT) |                            \
-+   ((map) << TRIO_MAP_MEM_REGION_ADDR__MAP_SEL_SHIFT))
-+
-+/** The maximum size of a Mem-Map interrupt region. */
-+#define HV_TRIO_MEM_MAP_INTR_SIZE                                 \
-+  (1ULL << TRIO_MAP_MEM_REGION_ADDR__MAP_SEL_SHIFT)
-+
-+
-+/** A flag bit indicating a fixed resource allocation. */
-+#define HV_TRIO_ALLOC_FIXED 0x01
-+
-+/** TRIO requires that all mappings have 4kB aligned start addresses. */
-+#define HV_TRIO_PAGE_SHIFT 12
-+
-+/** TRIO requires that all mappings have 4kB aligned start addresses. */
-+#define HV_TRIO_PAGE_SIZE (1ull << HV_TRIO_PAGE_SHIFT)
-+
-+
-+/* Specify all PCIe port properties for a TRIO. */
-+struct pcie_trio_ports_property
-+{
-+  struct pcie_port_property ports[TILEGX_TRIO_PCIES];
++static struct pci_ops tile_cfg_ops = {
++	.read =         tile_cfg_read,
++	.write =        tile_cfg_write,
 +};
 +
-+/* Flags indicating traffic class. */
-+#define HV_TRIO_FLAG_TC_SHIFT 4
-+#define HV_TRIO_FLAG_TC_RMASK 0xf
-+#define HV_TRIO_FLAG_TC(N) \
-+  ((((N) & HV_TRIO_FLAG_TC_RMASK) + 1) << HV_TRIO_FLAG_TC_SHIFT)
 +
-+/* Flags indicating virtual functions. */
-+#define HV_TRIO_FLAG_VFUNC_SHIFT 8
-+#define HV_TRIO_FLAG_VFUNC_RMASK 0xff
-+#define HV_TRIO_FLAG_VFUNC(N) \
-+  ((((N) & HV_TRIO_FLAG_VFUNC_RMASK) + 1) << HV_TRIO_FLAG_VFUNC_SHIFT)
++/*
++ * MSI support starts here.
++ */
++static unsigned int
++tilegx_msi_startup(struct irq_data *d)
++{
++	if (d->msi_desc)
++		unmask_msi_irq(d);
 +
++	return 0;
++}
 +
-+/* Flag indicating an ordered PIO region. */
-+#define HV_TRIO_PIO_FLAG_ORDERED (1 << 16)
++static void
++tilegx_msi_ack(struct irq_data *d)
++{
++	__insn_mtspr(SPR_IPI_EVENT_RESET_K, 1UL << d->irq);
++}
 +
-+/* Flags indicating special types of PIO regions. */
-+#define HV_TRIO_PIO_FLAG_SPACE_SHIFT 17
-+#define HV_TRIO_PIO_FLAG_SPACE_MASK (0x3 << HV_TRIO_PIO_FLAG_SPACE_SHIFT)
-+#define HV_TRIO_PIO_FLAG_CONFIG_SPACE (0x1 << HV_TRIO_PIO_FLAG_SPACE_SHIFT)
-+#define HV_TRIO_PIO_FLAG_IO_SPACE (0x2 << HV_TRIO_PIO_FLAG_SPACE_SHIFT)
++static void
++tilegx_msi_mask(struct irq_data *d)
++{
++	mask_msi_irq(d);
++	__insn_mtspr(SPR_IPI_MASK_SET_K, 1UL << d->irq);
++}
 +
++static void
++tilegx_msi_unmask(struct irq_data *d)
++{
++	__insn_mtspr(SPR_IPI_MASK_RESET_K, 1UL << d->irq);
++	unmask_msi_irq(d);
++}
 +
-+#endif /* _SYS_HV_DRV_TRIO_INTF_H */
++static struct irq_chip tilegx_msi_chip = {
++	.name			= "tilegx_msi",
++	.irq_startup		= tilegx_msi_startup,
++	.irq_ack		= tilegx_msi_ack,
++	.irq_mask		= tilegx_msi_mask,
++	.irq_unmask		= tilegx_msi_unmask,
++
++	/* TBD: support set_affinity. */
++};
++
++int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
++{
++	struct pci_controller *controller;
++	gxio_trio_context_t *trio_context;
++	struct msi_msg msg;
++	int default_irq;
++	uint64_t mem_map_base;
++	uint64_t mem_map_limit;
++	u64 msi_addr;
++	int mem_map;
++	int cpu;
++	int irq;
++	int ret;
++
++	irq = create_irq();
++	if (irq < 0)
++		return irq;
++
++	/*
++	 * Since we use a 64-bit Mem-Map to accept the MSI write, we fail
++	 * devices that are not capable of generating a 64-bit message address.
++	 * These devices will fall back to using the legacy interrupts.
++	 * Most PCIe endpoint devices do support 64-bit message addressing.
++	 */
++	if (desc->msi_attrib.is_64 == 0) {
++		dev_printk(KERN_INFO, &pdev->dev,
++			"64-bit MSI message address not supported, "
++			"falling back to legacy interrupts.\n");
++
++		ret = -ENOMEM;
++		goto is_64_failure;
++	}
++
++	default_irq = desc->msi_attrib.default_irq;
++	controller = irq_get_handler_data(default_irq);
++
++	BUG_ON(!controller);
++
++	trio_context = controller->trio;
++
++	/*
++	 * Allocate the Mem-Map that will accept the MSI write and
++	 * trigger the TILE-side interrupts.
++	 */
++	mem_map = gxio_trio_alloc_memory_maps(trio_context, 1, 0, 0);
++	if (mem_map < 0) {
++		dev_printk(KERN_INFO, &pdev->dev,
++			"%s Mem-Map alloc failure. "
++			"Failed to initialize MSI interrupts. "
++			"Falling back to legacy interrupts.\n",
++			desc->msi_attrib.is_msix ? "MSI-X" : "MSI");
++
++		ret = -ENOMEM;
++		goto msi_mem_map_alloc_failure;
++	}
++
++	/* We try to distribute different IRQs to different tiles. */
++	cpu = tile_irq_cpu(irq);
++
++	/*
++	 * Now call up to the HV to configure the Mem-Map interrupt and
++	 * set up the IPI binding.
++	 */
++	mem_map_base = MEM_MAP_INTR_REGIONS_BASE +
++		mem_map * MEM_MAP_INTR_REGION_SIZE;
++	mem_map_limit = mem_map_base + MEM_MAP_INTR_REGION_SIZE - 1;
++
++	ret = gxio_trio_config_msi_intr(trio_context, cpu_x(cpu), cpu_y(cpu),
++					KERNEL_PL, irq, controller->mac,
++					mem_map, mem_map_base, mem_map_limit,
++					trio_context->asid);
++	if (ret < 0) {
++		dev_printk(KERN_INFO, &pdev->dev, "HV MSI config failed.\n");
++
++		goto hv_msi_config_failure;
++	}
++
++	irq_set_msi_desc(irq, desc);
++
++	msi_addr = mem_map_base + TRIO_MAP_MEM_REG_INT3 - TRIO_MAP_MEM_REG_INT0;
++
++	msg.address_hi = msi_addr >> 32;
++	msg.address_lo = msi_addr & 0xffffffff;
++
++	msg.data = mem_map;
++
++	write_msi_msg(irq, &msg);
++	irq_set_chip_and_handler(irq, &tilegx_msi_chip, handle_level_irq);
++	irq_set_handler_data(irq, controller);
++
++	return 0;
++
++hv_msi_config_failure:
++	/* Free mem-map */
++msi_mem_map_alloc_failure:
++is_64_failure:
++	destroy_irq(irq);
++	return ret;
++}
++
++void arch_teardown_msi_irq(unsigned int irq)
++{
++	destroy_irq(irq);
++}
+diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
+index 445c220..a96ced3 100644
+--- a/arch/tile/kernel/setup.c
++++ b/arch/tile/kernel/setup.c
+@@ -1327,6 +1327,7 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 
+ #ifdef CONFIG_PCI
++#if !defined (__tilegx__)
+ 	/*
+ 	 * Initialize the PCI structures.  This is done before memory
+ 	 * setup so that we know whether or not a pci_reserve region
+@@ -1334,6 +1335,7 @@ void __init setup_arch(char **cmdline_p)
+ 	 */
+ 	if (tile_pci_init() == 0)
+ 		pci_reserve_mb = 0;
++#endif
+ 
+ 	/* PCI systems reserve a region just below 4GB for mapping iomem. */
+ 	pci_reserve_end_pfn  = (1 << (32 - PAGE_SHIFT));
+@@ -1362,6 +1364,10 @@ void __init setup_arch(char **cmdline_p)
+ 	setup_cpu(1);
+ 	setup_clock();
+ 	load_hv_initrd();
++
++#if defined(CONFIG_PCI) && defined (__tilegx__)
++	tile_pci_init();
++#endif
+ }
+ 
+ 
+diff --git a/arch/tile/mm/pgtable.c b/arch/tile/mm/pgtable.c
+index 345edfe..de0de0c 100644
+--- a/arch/tile/mm/pgtable.c
++++ b/arch/tile/mm/pgtable.c
+@@ -575,13 +575,6 @@ void __iomem *ioremap_prot(resource_size_t phys_addr, unsigned long size,
+ }
+ EXPORT_SYMBOL(ioremap_prot);
+ 
+-/* Map a PCI MMIO bus address into VA space. */
+-void __iomem *ioremap(resource_size_t phys_addr, unsigned long size)
+-{
+-	panic("ioremap for PCI MMIO is not supported");
+-}
+-EXPORT_SYMBOL(ioremap);
+-
+ /* Unmap an MMIO VA mapping. */
+ void iounmap(volatile void __iomem *addr_in)
+ {
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 4bf7102..1e7154b 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2143,9 +2143,9 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82865_HB,
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82875_HB,
+ 			quirk_unhide_mch_dev6);
+ 
+-#ifdef CONFIG_TILE
++#ifdef CONFIG_TILEPRO
+ /*
+- * The Tilera TILEmpower platform needs to set the link speed
++ * The Tilera TILEmpower tilepro platform needs to set the link speed
+  * to 2.5GT(Giga-Transfers)/s (Gen 1). The default link speed
+  * setting is 5GT/s (Gen 2). 0x98 is the Link Control2 PCIe
+  * capability register of the PEX8624 PCIe switch. The switch
+@@ -2160,7 +2160,7 @@ static void __devinit quirk_tile_plx_gen1(struct pci_dev *dev)
+ 	}
+ }
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_PLX, 0x8624, quirk_tile_plx_gen1);
+-#endif /* CONFIG_TILE */
++#endif /* CONFIG_TILEPRO */
+ 
+ #ifdef CONFIG_PCI_MSI
+ /* Some chipsets do not support MSI. We cannot easily rely on setting
 -- 
 1.6.5.2
 
