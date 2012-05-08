@@ -1,83 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab2EHSMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 14:12:23 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:16486 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753035Ab2EHSMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 14:12:21 -0400
-X-IronPort-AV: E=Sophos;i="4.75,552,1330923600"; 
-   d="scan'208";a="24990131"
-Message-ID: <4FA96202.9010503@citrix.com>
-Date: Tue, 8 May 2012 19:12:18 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Icedove/3.0.11
+	id S1754736Ab2EHSNB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 14:13:01 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36381 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961Ab2EHSM6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 14:12:58 -0400
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "JBeulich@suse.com" <JBeulich@suse.com>
-Subject: Re: [Xen-devel] [PATCH] auto balloon initial domain and fix dom0_mem=X
- inconsistencies (v5).
-References: <1334596539-18172-1-git-send-email-konrad.wilk@oracle.com>	<20120501163707.GA8741@phenom.dumpdata.com>	<4FA27084.4030005@citrix.com> <4FA2A11E.1060907@cantab.net>	<4FA2B1EF.8080900@citrix.com> <20120507184808.GA7249@phenom.dumpdata.com>
-In-Reply-To: <20120507184808.GA7249@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4FA838D2.9000908@suse.cz>
+References: <20120503212151.568.91854.stgit@bob.linux.org.uk>
+ <20120503212219.568.15653.stgit@bob.linux.org.uk> <CA+1xoqezLCQh_fqJ1iNAs25X7Fm24W=-0J8zTZuVVJQnWTtSLg@mail.gmail.com>
+ <20120507171126.5beddc27@pyramind.ukuu.org.uk> <1336408208.3638.15.camel@lappy>
+ <20120507174240.4209c5cb@pyramind.ukuu.org.uk> <CA+1xoqez0PaX2KBHHN-etztwbFoU1cKx3NwMXX+PO4SguA3bRg@mail.gmail.com>
+ <4FA838D2.9000908@suse.cz>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Tue, 8 May 2012 20:12:37 +0200
+Message-ID: <CA+1xoqdi1Jdkrjtj9bmnDfs4Ok=o=AsmpP=MY0V8cDXjcSNm1w@mail.gmail.com>
+Subject: Re: [PATCH 3/3] tty_lock: Localise the lock
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/12 19:48, Konrad Rzeszutek Wilk wrote:
-> On Thu, May 03, 2012 at 05:27:27PM +0100, David Vrabel wrote:
->> On 03/05/12 16:15, David Vrabel wrote:
->>>
->>> xen: update VA mapping when releasing memory during setup
->>>
->>> In xen_memory_setup(), if a page that is being released has a VA
->>> mapping this must also be updated.  Otherwise, the page will be not
->>> released completely -- it will still be referenced in Xen and won't be
->>> freed util the mapping is removed and this prevents it from being
->>> reallocated at a different PFN.
->>>
->>> This was already being done for the ISA memory region in
->>> xen_ident_map_ISA() but on many systems this was omitting a few pages
->>> as many systems marked a few pages below the ISA memory region as
->>> reserved in the e820 map.
->>>
->>> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
->>> ---
->> [...]
->>> --- a/arch/x86/xen/mmu.c
->>> +++ b/arch/x86/xen/mmu.c
->>> @@ -1929,29 +1929,6 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
->>>  #endif
->>>  }
->>>  
->>> -void __init xen_ident_map_ISA(void)
->>> -{
->>> -	unsigned long pa;
->>> -
->>> -	/*
->>> -	 * If we're dom0, then linear map the ISA machine addresses into
->>> -	 * the kernel's address space.
->>> -	 */
->>> -	if (!xen_initial_domain())
->>> -		return;
+On Mon, May 7, 2012 at 11:04 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+> On 05/07/2012 07:00 PM, Sasha Levin wrote:
+>>> So whatever your trace is showing, that's not the bug. Something more
+>>> complicated would appear to be afoot.
 >>
->> It might look like this test has gone, however the new code which
->> updates the VA mapping uses the e820 map and for a domU its map will not
->> have a ISA region so there's no mapping to be updated.
-> 
-> What if you use e820_hole=1 and the pci=xx in the guest?
+>> Oddly enough, tty != tty->link, but the lockdep warning triggers.
+>>
+>> Any idea why it might happen?
+>
+> I think so, both locks are the same lockdep class. So lockdep thinks it
+> is the same lock. However this is a false positive. I guess we need
+> mutex_lock_nested...
 
-Are these xl configuration options? I'm not familiar with xl.
-
-The PCI memory hole should be above 3 GiB so this hole will be will
-above the memory that will be initially mapped at boot.
-
-I've not managed to persuade my test box to passthrough a PCI device to
-a guest (using xapi as the toolstack) to confirm, though.  I'll have
-another go tomorrow.
-
-David
+It looks like it causes an actual deadlock, and hung_tasks screams if
+left alone for a bit, so it doesn't look like a lockdep issue.
