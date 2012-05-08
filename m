@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756490Ab2EHQK3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 12:10:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53144 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756081Ab2EHQK1 (ORCPT
+	id S1757029Ab2EHQLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 12:11:52 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9524 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756145Ab2EHQLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 12:10:27 -0400
-Date: Tue, 8 May 2012 09:10:22 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Alex Shi <alex.shi@intel.com>, mgorman@suse.de, npiggin@gmail.com,
-        tglx@linutronix.de, mingo@redhat.com, arnd@arndb.de,
-        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
-        glommer@redhat.com, riel@redhat.com, luto@mit.edu, avi@redhat.com,
-        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
-        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
-        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 7/7] x86/tlb: add tlb_flushall_factor into sysfs for
- user change
-Message-ID: <20120508161022.GC20433@kroah.com>
-References: <1336485790-30902-1-git-send-email-alex.shi@intel.com>
- <1336485790-30902-8-git-send-email-alex.shi@intel.com>
- <1336489894.16236.51.camel@twins>
- <4FA939B9.6000404@zytor.com>
- <20120508152516.GF13568@aftab.osrc.amd.com>
- <4FA93C69.3050905@zytor.com>
- <20120508154150.GG13568@aftab.osrc.amd.com>
- <4FA94051.3000307@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA94051.3000307@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 8 May 2012 12:11:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 08 May 2012 09:11:46 -0700
+Subject: Re: [PATCH 5/6 v3] mfd: tps65910-irq: Add devicetree init support
+From: Rhyland Klein <rklein@nvidia.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Liam Girdwood <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+In-Reply-To: <20120508154820.GA15893@opensource.wolfsonmicro.com>
+References: <1336502563-31789-1-git-send-email-rklein@nvidia.com>
+	 <1336502563-31789-6-git-send-email-rklein@nvidia.com>
+	 <20120508154820.GA15893@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 May 2012 12:11:31 -0700
+Message-ID: <1336504291.31930.24.camel@rklein-linux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 08:48:33AM -0700, H. Peter Anvin wrote:
-> On 05/08/2012 08:41 AM, Borislav Petkov wrote:
-> > On Tue, May 08, 2012 at 08:31:53AM -0700, H. Peter Anvin wrote:
-> >> On 05/08/2012 08:25 AM, Borislav Petkov wrote:
-> >>>
-> >>> Yep, this was supposed to be for pinpointing the proper entries count.
-> >>> I believe we don't have this thing of having code intree but not really
-> >>> intree - only for testing new silicon. Maybe a debug module or add this
-> >>> to debugfs?
-> >>>
-> >>
-> >> We have a lot of that kind of code, it is usually hidden under
-> >> CONFIG_*DEBUG* something.
-> > 
-> > Then maybe this is where this knob should go, along with adding it to
-> > debugfs instead of sysfs...
-> > 
+On Tue, 2012-05-08 at 08:48 -0700, Mark Brown wrote:
+> * PGP Signed by an unknown key
 > 
-> I don't see a problem with it in sysfs.
+> On Tue, May 08, 2012 at 11:42:42AM -0700, Rhyland Klein wrote:
+> 
+> > +	if (pdata->irq_base <= 0)
+> > +		pdata->irq_base = irq_alloc_descs(-1, 0, tps65910->irq_num, -1);
+> > +
+> > +	if (pdata->irq_base <= 0) {
+> > +		dev_err(tps65910->dev, "Failed to allocate irq descs: %d\n",
+> > +			pdata->irq_base);
+> > +		return pdata->irq_base;
+> > +	}
+> 
+> I'd expect the driver to always call irq_alloc_descs() but to use the
+> value specified in platform data if there is any.  This is the normal
+> way of doing things, anyway.
+> 
 
-If it's in sysfs, it better be documented in Documentation/ABI.
+Is this more what you would expect? If the dt code initialized the
+irq_base to 0 instead of -1 then this should also work.
+
+pdata->irq_base = irq_alloc_descs(-1, pdata->irq_base,
+			tps65910->irq_num, -1);
+
+if (pdata->irq_base <= 0) {
+	dev_err(tps65910->dev, "Failed to allocate irq descs: %d\n",
+		pdata->irq_base);
+	return pdata->irq_base;
+}
+
+> * Unknown Key
+> * 0x6E30FDDD
+
+-- 
+nvpublic
 
