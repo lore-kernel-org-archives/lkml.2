@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab2EHQgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 12:36:43 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13600 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756027Ab2EHQgl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 12:36:41 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 08 May 2012 09:36:35 -0700
-Subject: Re: [PATCH 5/6 v3] mfd: tps65910-irq: Add devicetree init support
-From: Rhyland Klein <rklein@nvidia.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Liam Girdwood <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-In-Reply-To: <20120508162901.GD15893@opensource.wolfsonmicro.com>
-References: <1336502563-31789-1-git-send-email-rklein@nvidia.com>
-	 <1336502563-31789-6-git-send-email-rklein@nvidia.com>
-	 <20120508154820.GA15893@opensource.wolfsonmicro.com>
-	 <1336504291.31930.24.camel@rklein-linux>
-	 <20120508162901.GD15893@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 May 2012 12:36:18 -0400
-Message-ID: <1336494978.31930.41.camel@rklein-linux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756833Ab2EHQlN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 12:41:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57951 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755039Ab2EHQlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 12:41:09 -0400
+Message-ID: <4FA94C71.7000402@zytor.com>
+Date: Tue, 08 May 2012 09:40:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Andi Kleen <ak@linux.intel.com>
+CC: Alex Shi <alex.shi@intel.com>, mgorman@suse.de, npiggin@gmail.com,
+        tglx@linutronix.de, mingo@redhat.com, arnd@arndb.de,
+        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
+        gregkh@linuxfoundation.org, glommer@redhat.com, riel@redhat.com,
+        luto@mit.edu, avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
+        fenghua.yu@intel.com, borislav.petkov@amd.com, yinghai@kernel.org,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
+        oleg@redhat.com, axboe@kernel.dk, a.p.zijlstra@chello.nl,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 4/7] x86/tlb: add tlb flush all factor for specific
+ CPUs
+References: <1336485790-30902-1-git-send-email-alex.shi@intel.com> <1336485790-30902-5-git-send-email-alex.shi@intel.com> <4FA938AE.9070209@zytor.com> <4FA94239.2010503@linux.intel.com>
+In-Reply-To: <4FA94239.2010503@linux.intel.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-08 at 09:29 -0700, Mark Brown wrote:
-> * PGP Signed by an unknown key
+On 05/08/2012 08:56 AM, Andi Kleen wrote:
 > 
-> On Tue, May 08, 2012 at 12:11:31PM -0700, Rhyland Klein wrote:
+>> This seems a bit concerning from a forward compatibility point of view.
+>>   It would make more sense to assume that future processors would behave
+>> more like the most recent (Sandy Bridge in your case) unless there is
+>> evidence to the contrary.
+> This would not work on new Atoms, which inter mix model numbers.
 > 
-> > Is this more what you would expect? If the dt code initialized the
-> > irq_base to 0 instead of -1 then this should also work.
-> 
-> > pdata->irq_base = irq_alloc_descs(-1, pdata->irq_base,
-> > 			tps65910->irq_num, -1);
-> > if (pdata->irq_base <= 0) {
-> > 	dev_err(tps65910->dev, "Failed to allocate irq descs: %d\n",
-> > 		pdata->irq_base);
-> > 	return pdata->irq_base;
-> > }
-> 
-> More like:
-> 
-> 	if (pdata->irq_base)
-> 		base = pdata->irq_base;
-> 	else
-> 		base = 0;
-> 	pdata->irq_base = irq_alloc_descs(base, 0,
 
-Alright, will do in next round of changes.
+That is another problem, but there isn't much we (as the Linux
+community) can do about that, so we can just do the optimistic thing...
 
-> 
-> * Unknown Key
-> * 0x6E30FDDD
+> In the past I did a hack in other software to check the cache sizes to
+> distinguish the two
+> for unknown models It's not pretty however.
 
--- 
-nvpublic
+Ick.
+
+	-hpa
 
