@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab2EHAia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 20:38:30 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50280 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab2EHAi2 (ORCPT
+	id S1756279Ab2EHArB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 20:47:01 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49220 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab2EHArA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 20:38:28 -0400
-Date: Mon, 7 May 2012 17:38:23 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: ocfs2-users@oss.oracle.com, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [Ocfs2-users] BUG at fs/ocfs2/extent_map.c:476
-Message-ID: <20120508003822.GH4713@dhcp-172-17-9-228.mtv.corp.google.com>
-Mail-Followup-To: richard -rw- weinberger <richard.weinberger@gmail.com>,
-	ocfs2-users@oss.oracle.com,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Al Viro <viro@zeniv.linux.org.uk>
-References: <CAFLxGvy+9eHbjsAm-FaV8ihXexGGLURbyDTd6X_pqE_mtOutcw@mail.gmail.com>
- <20120402082539.GA10228@dhcp-172-17-9-228.mtv.corp.google.com>
- <CAFLxGvyjVnMX6jLvGWtyup1EddFn73MUq_FkFsYBBuUNpKXrYg@mail.gmail.com>
+	Mon, 7 May 2012 20:47:00 -0400
+X-AuditID: 9c930179-b7c19ae000000486-4a-4fa86cffd7eb
+Message-ID: <4FA86CFE.5080603@kernel.org>
+Date: Tue, 08 May 2012 09:46:54 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFLxGvyjVnMX6jLvGWtyup1EddFn73MUq_FkFsYBBuUNpKXrYg@mail.gmail.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Newsgroups: gmane.linux.kernel,gmane.linux.kernel.mm
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Nitin Gupta <ngupta@vflare.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 6/6] zsmalloc: make zsmalloc portable
+References: <1335334994-22138-1-git-send-email-minchan@kernel.org> <1335334994-22138-7-git-send-email-minchan@kernel.org> <4F980AFE.60901@vflare.org> <4F982862.4050302@linux.vnet.ibm.com> <4FA7E6DD.6010607@linux.vnet.ibm.com>
+In-Reply-To: <4FA7E6DD.6010607@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 02, 2012 at 10:36:53AM +0200, richard -rw- weinberger wrote:
-> On Mon, Apr 2, 2012 at 10:25 AM, Joel Becker <jlbec@evilplan.org> wrote:
-> > On Sat, Mar 24, 2012 at 09:50:49AM +0100, richard -rw- weinberger wrote:
-> >> Hi!
-> >>
-> >> Today one of my kvm hosts ran into this BUG.
-> >> The host is member of y small ocfs2-cluster (3 hosts).
-> >> CentOS 6.2, Kernel 3.1.1 (vanilla).
-> > ...
-> >> Is this a known/fixed bug?
-> >
-> > Not that I know of.  Have you seen it more than once?
-> >
-> 
-> No. All three cluster members had an uptime of 70 days.
-> Only one showed the BUG.
-> I've rebooted it and it seems to work fine now.
-> 
-> I'm not an ocfs2 expert, what could cause this kind of BUG?
-> Internal logic error? Filesystem corruption?
+On 05/08/2012 12:14 AM, Seth Jennings wrote:
 
-	No idea.  That's the problem.  More details would be nice, but I
-suspect you'd rather not crash again :-)
+> On 04/25/2012 11:37 AM, Seth Jennings wrote:
+> 
+>> I'll apply your patch and try it out.
+> 
+> Sorry for taking so long.
+> 
+> I finally got around to testing this on an x86_64 VM and it works with
+> the same performance as before and is much cleaner.  I like it.  Just
 
-Joel
+> need to expand the patch to all the arches.
+
+> 
+> I'm also interested to see if this works for ppc64.  I'm hoping to try
+> it out today or tomorrow.
+
+
+I will have a time to make a patch in a weekend if other urgent doesn't
+catch me. :)
+
+Seth, Thanks for the testing!
+
+> 
+> --
+> Seth
+> 
+
+
 
 -- 
-
-"Soap and education are not as sudden as a massacre, but they are more
- deadly in the long run."
-	- Mark Twain
-
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+Kind regards,
+Minchan Kim
