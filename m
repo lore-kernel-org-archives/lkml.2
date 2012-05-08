@@ -1,61 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab2EHTPF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 15:15:05 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1073 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754835Ab2EHTPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 15:15:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="138330412"
-Message-ID: <4FA9709F.6020700@linux.intel.com>
-Date: Tue, 08 May 2012 12:14:39 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Jarkko Sakkinen <jarkko.sakkinen@intel.com>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Joseph Cihula <joseph.cihula@intel.com>,
-        Shane Wang <shane.wang@intel.com>
-Subject: Re: [PATCH 02/23] x86, realmode: realmode.bin infrastructure
-References: <1336501366-28617-1-git-send-email-jarkko.sakkinen@intel.com> <1336501366-28617-3-git-send-email-jarkko.sakkinen@intel.com> <20120508185349.GA12013@merkur.ravnborg.org>
-In-Reply-To: <20120508185349.GA12013@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756007Ab2EHTTs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 15:19:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34771 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754867Ab2EHTTr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 15:19:47 -0400
+Date: Tue, 8 May 2012 12:19:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: linux@arm.linux.org.uk, rpurdie@rpsys.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, arnd.bergmann@linaro.org,
+        nicolas.pitre@linaro.org, tim.gardner@canonical.com
+Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and
+ consolidate LED driver in ARM
+Message-Id: <20120508121946.c20adb87.akpm@linux-foundation.org>
+In-Reply-To: <CAK5ve-J9uTJKC01XFTzU34MY4z_8yVRwTUVXP99Czu=oL-mqxQ@mail.gmail.com>
+References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
+	<CAK5ve-J9uTJKC01XFTzU34MY4z_8yVRwTUVXP99Czu=oL-mqxQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2012 11:53 AM, Sam Ravnborg wrote:
-+# How to compile the 16-bit code.  Note we always compile for -march=i386,
-+# that way we can complain to the user if the CPU is insufficient.
-+KBUILD_CFLAGS	:= $(LINUXINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ \
-+		   -DDISABLE_BRANCH_PROFILING \
-+		   -Wall -Wstrict-prototypes \
-+		   -march=i386 -mregparm=3 \
-+		   -include $(srctree)/$(src)/../../boot/code16gcc.h \
-+		   -fno-strict-aliasing -fomit-frame-pointer \
-+		   $(call cc-option, -ffreestanding) \
-+		   $(call cc-option, -fno-toplevel-reorder,\
-+			$(call cc-option, -fno-unit-at-a-time)) \
-+		   $(call cc-option, -fno-stack-protector) \
-+		   $(call cc-option, -mpreferred-stack-boundary=2)
-+KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
+On Wed, 9 May 2012 01:45:43 +0800
+Bryan Wu <bryan.wu@canonical.com> wrote:
 
+> Any comments and suggestions about my v9 patchset.
 
-> 
-> How much is needed to avoid this misuse of kernel-internal build rules?
-> This was and is an ugly hack.
-> 
-
-It is more or less the same as for arch/x86/boot and other things.  If
-there are better ways to do it suggestions are very much appreciated.
-
-However, it is a bit of a tricky bit because we need *some* of the bits
-of the target compiler configuration and some not (this is the same as
-arch/x86/boot etc.)  It is not "pure target" but it's also most
-definitely not host.
-
-	-hpa
+The drivers/leds/ changes look OK to me.
