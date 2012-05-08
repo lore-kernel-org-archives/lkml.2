@@ -1,99 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002Ab2EHFNc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 01:13:32 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3120 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461Ab2EHFNa (ORCPT
+	id S1751622Ab2EHFU0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 01:20:26 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39093 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1749667Ab2EHFUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 01:13:30 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 07 May 2012 22:12:36 -0700
-Date: Tue, 8 May 2012 08:12:33 +0300
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>, "ohad@wizery.com" <ohad@wizery.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
-Message-ID: <20120508081233.8883eb8ec2a8bc99b4039334@nvidia.com>
-In-Reply-To: <20120507183611.GA725@kroah.com>
-References: <201205070859.29174.arnd@arndb.de>
-	<20120507.122333.2024326166703361049.hdoyu@nvidia.com>
-	<201205071024.48958.arnd@arndb.de>
-	<20120507.143647.508182574757518311.hdoyu@nvidia.com>
-	<20120507183611.GA725@kroah.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-X-NVConfidentiality: public
+	Tue, 8 May 2012 01:20:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4FA82056.2070706@gmail.com>
+References: <20120501132409.GA22894@lizard>
+	<20120501132620.GC24226@lizard>
+	<4FA35A85.4070804@kernel.org>
+	<20120504073810.GA25175@lizard>
+	<CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com>
+	<CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com>
+	<20120507121527.GA19526@lizard>
+	<4FA82056.2070706@gmail.com>
+Date: Tue, 8 May 2012 08:20:24 +0300
+X-Google-Sender-Auth: R5ja0Qw5ABpvAC_kUZjTHaEsFpU
+Message-ID: <CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] vmevent: Implement special low-memory attribute
+From: Pekka Enberg <penberg@kernel.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 May 2012 20:36:11 +0200
-"gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org> wrote:
+On Mon, May 7, 2012 at 10:19 PM, KOSAKI Motohiro
+<kosaki.motohiro@gmail.com> wrote:
+>> Even more, we may introduce two attributes:
+>>
+>> RECLAIMABLE_CACHE_PAGES and
+>> RECLAIMABLE_CACHE_PAGES_NOIO (which excludes dirty pages).
+>>
+>> This makes ABI detached from the mm internals and still keeps a
+>> defined meaning of the attributes.
+>
+> Collection of craps are also crap. If you want to improve userland
+> notification, you should join VM improvement activity. You shouldn't
+> think nobody except you haven't think userland notification feature.
+>
+> The problem is, Any current kernel vm statistics were not created for
+> such purpose and don't fit.
+>
+> Even though, some inaccurate and incorrect statistics fit _your_ usecase,
+> they definitely don't fit other. And their people think it is bug.
 
-> On Mon, May 07, 2012 at 01:36:47PM +0200, Hiroshi Doyu wrote:
-> > From: Arnd Bergmann <arnd@arndb.de>
-> > Subject: Re: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
-> > Date: Mon, 7 May 2012 12:24:48 +0200
-> > Message-ID: <201205071024.48958.arnd@arndb.de>
-> > 
-> > > On Monday 07 May 2012, Hiroshi Doyu wrote:
-> > > > Tegra doesn't enable ARM_AMBA and Tegra doesn't use the following
-> > > > "drivers/amba/bus.c" right now. I needed to make this directory
-> > > > available to ones without ARM_AMBA enabled.
-> > > 
-> > > Ah, right. I looked at arch/arm/Kconfig earlier to see if
-> > > tegra enabled ARM_AMBA but was accidentally looking
-> > > at ARCH_INtegraTOR when grepping for TEGRA ;-)
-> > > 
-> > > Your proposed solution sounds good then.
-> > 
-> > Thank you for reviewing patches & ACK. Attached the update one here,
-> > instead of sending a while series again.
-> > 
-> > >From 16cc2b0fab00c33cd24bb5c43c45a4cda646ad42 Mon Sep 17 00:00:00 2001
-> > From: Hiroshi DOYU <hdoyu@nvidia.com>
-> > Date: Wed, 18 Apr 2012 11:41:56 +0300
-> > Subject: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
-> > 
-> > Tegra AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
-> > High-performance Bus (AHB) architecture.
-> > 
-> > The AHB Arbiter controls AHB bus master arbitration. This effectively
-> > forms a second level of arbitration for access to the memory
-> > controller through the AHB Slave Memory device. The AHB pre-fetch
-> > logic can be configured to enhance performance for devices doing
-> > sequential access. Each AHB master is assigned to either the high or
-> > low priority bin. Both Tegra20/30 have this AHB bus.
-> > 
-> > Some of configuration params could be passed from DT too if needed.
-> > 
-> > Change-Id: I184e0e1ce033e76881353a4bb99234e2850e99c2
-> 
-> What nonsense is this?  Please never put that in a patch you want
-> accepted upstream, as it makes no sense and we just have to edit it out
-> by hand, making us grumpy...
+Well, yeah, if we are to report _number of pages_, the numbers better
+be meaningful.
 
-Sorry, my bad.
-
-Stephen, would you mind removing that line when you take them in?
+That said, I think you are being unfair to Anton who's one of the few
+that's actually taking the time to implement this properly instead of
+settling for an out-of-tree hack.
