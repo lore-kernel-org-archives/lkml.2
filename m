@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab2EHTqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 15:46:07 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50839 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583Ab2EHTqF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 15:46:05 -0400
-Message-ID: <4FA977F7.9080806@wwwdotorg.org>
-Date: Tue, 08 May 2012 13:45:59 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
-References: <201205070859.29174.arnd@arndb.de><20120507.122333.2024326166703361049.hdoyu@nvidia.com><201205071024.48958.arnd@arndb.de> <20120507.143647.508182574757518311.hdoyu@nvidia.com>
-In-Reply-To: <20120507.143647.508182574757518311.hdoyu@nvidia.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756684Ab2EHTsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 15:48:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45213 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755244Ab2EHTr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 15:47:59 -0400
+Date: Wed, 9 May 2012 05:47:51 +1000
+From: NeilBrown <neilb@suse.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] twl-regulator: make TWL4030_ALLOW_UNSUPPORTED more
+ configurable.
+Message-ID: <20120509054751.7bc749c2@notabene.brown>
+In-Reply-To: <20120508184048.GM15893@opensource.wolfsonmicro.com>
+References: <20120501204259.27026.40156.stgit@notabene.brown>
+	<20120501204450.27026.40239.stgit@notabene.brown>
+	<20120508184048.GM15893@opensource.wolfsonmicro.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/H5T_uqgNKv=aeQLuYPgyaQR"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2012 05:36 AM, Hiroshi Doyu wrote:
-...
-> Tegra AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
-> High-performance Bus (AHB) architecture.
-> 
-> The AHB Arbiter controls AHB bus master arbitration. This effectively
-> forms a second level of arbitration for access to the memory
-> controller through the AHB Slave Memory device. The AHB pre-fetch
-> logic can be configured to enhance performance for devices doing
-> sequential access. Each AHB master is assigned to either the high or
-> low priority bin. Both Tegra20/30 have this AHB bus.
+--Sig_/H5T_uqgNKv=aeQLuYPgyaQR
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I've applied this (minus the Change-Id line) and the other two patches
-to Tegra's for-next branch. I'll let it sit there for a day or two
-before sending a pull request into arm-soc for 3.5; hopefully it's not
-too late for that.
+On Tue, 8 May 2012 19:40:49 +0100 Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+
+> On Wed, May 02, 2012 at 06:44:50AM +1000, NeilBrown wrote:
+> > The regulators in the twl4030 can provide some voltage settings
+> > that are not offically supported.
+> > These settings are disabled by default, but can be enabled with
+>=20
+> This doesn't apply against current code, please submit against current
+> development versions.
+
+Hi Mark,
+ I hope linux-next is suitably current - it did cause a conflict as you say
+ which was fortunately easy to resolve.
+
+ I've also fixed up the subject lines (I wonder if MAINTAINERS and
+ checkpatch.pl need to learn about preferred subject lines :-) and added
+ Samuel Ortez to the 'To:' list.
+
+Thanks for your help,
+NeilBrown
+
+--Sig_/H5T_uqgNKv=aeQLuYPgyaQR
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBT6l4Zznsnt1WYoG5AQLD9BAAiaNkPjI4BoCCWntY/L/Bs6cxVFfNWTdF
+cZeJJxmlZUqDEc+Izl97drsEgU/j2P1TujLlXjODWK98745cHZY/L3hLB4CC6Xu6
+c263Q+DScC2TfDU/FYq41FMm89Vjd85qUS00rspiY/ptpqdJVlPbP00t5vHHk1yp
+c20UF2D0JfgvBdL9EjsoOdR6b1uG27aSUcBf0fA1Y1WxHBLvEbfIuKxh1VVBttoB
+WgkYTjUv8ZcMqNvFyG372s05uFuz/UAvTe+pwdjh83HkkJDNXdW+5k7onqZfOo8E
+mWAcyE2I0MIIf82fqZjX/e2JqI3hOM/sfHOwK71BxvuNzUKOmgj0inleeDmBsTeA
+wYEJjO8hq7yGYL/D7udJ6CJVvmaBq8kbTRZn5JhwmoLjeqaNq913XQy8qHg33y2f
+J7QPGnBbXOQNLYqJLqwBMqyIh+jRrZr2kJIHBFhF1D1S9odnSsOfGotucnjd8bPU
+KVzzFRDLFKNIbtZuJyynIS+bvhVuCaQE1/EwSxkvLHRX1h9k1088CJiBgun1e9Xg
+vOef2h23t81vDcromZE5D3LANI9Gq46/o0+x+eKuBYBLfsTM8TCna+vHl3uUK7Z+
+vBq9nkHrfErxHLTffMYoMokiaBHBlTdb4JgxQyJdvZybCWyRh2niv4CT3/j2v/vI
+35YQ7B7hfIo=
+=SW+Z
+-----END PGP SIGNATURE-----
+
+--Sig_/H5T_uqgNKv=aeQLuYPgyaQR--
