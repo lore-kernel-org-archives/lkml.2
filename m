@@ -1,193 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab2EHV2j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 17:28:39 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59816 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab2EHV2i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 17:28:38 -0400
-Message-ID: <4FA99001.8080800@gmail.com>
-Date: Tue, 08 May 2012 23:28:33 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+	id S1756660Ab2EHVaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 17:30:11 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:59990 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752056Ab2EHVaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 17:30:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Huang Ying <ying.huang@intel.com>
+Subject: Re: [RFC v2 2/5] PM, Add sysfs file power_off to control device power off policy
+Date: Tue, 8 May 2012 23:34:57 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: huang ying <huang.ying.caritas@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Zheng Yan <zheng.z.yan@intel.com>, Lan Tianyu <tianyu.lan@intel.com>
+References: <1336119221-21146-1-git-send-email-ying.huang@intel.com> <201205072253.47736.rjw@sisk.pl> <1336441458.6190.133.camel@yhuang-dev>
+In-Reply-To: <1336441458.6190.133.camel@yhuang-dev>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix race condition in AFFS
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enig6E0AB62795F55B7D28938F9B"
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205082334.58157.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig6E0AB62795F55B7D28938F9B
-Content-Type: multipart/mixed;
- boundary="------------070005000907060002030403"
+On Tuesday, May 08, 2012, Huang Ying wrote:
+> On Mon, 2012-05-07 at 22:53 +0200, Rafael J. Wysocki wrote:
+> > On Saturday, May 05, 2012, huang ying wrote:
+> > > On Sat, May 5, 2012 at 3:33 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > > On Friday, May 04, 2012, Huang Ying wrote:
+> > > >> From: Lan Tianyu <tianyu.lan@intel.com>
+[...]
+> > I think we may add helpers for exporting/unexporting power_off_allowed
+> > like for the PM QoS latency attribute.  Then, whoever wants to support
+> > power_off_allowed and use it will export it through that helper.
+> 
+> That sounds good!
+> 
+> > Still, I'm afraid we're trying to special case something that really ins't
+> > a special case.  Namely, we may want to restrict devices from using some
+> > other low-power states as well, not only power off (eg. we may want to
+> > prevent devices' clocks from being stopped).
+> 
+> One step towards generalization is to provide a way for user to specify
+> lowest power state allowed.  For example, for PCI devices, they can
+> specify D1, D2, D3hot or D3cold.  But it is hard to generalize a set of
+> low power states for all kind of devices.  Maybe we should keep this
+> user space interface bus specific?
 
-This is a multi-part message in MIME format.
---------------070005000907060002030403
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+I came to the same conclusion. :-)
 
-AFFS preallocates few blocks per inode as an optimisation. Unfortunately
-there is a race condition and the same blocks ends up being allocated
-for both data and metadata, metadata gets overwritten and so the file is
-partially unreadable. Here is a fix.
-Please indicate if this isn't the right place to submit this or my
-previous fs-related patches.
+Besides, we already have the no_d1d2 and d1_support, d2_support flags
+in struct pci_dev.  We can simply add no_d3_cold in analogy and add a similar
+thing for ATA to cover the ZPODD case.
 
---=20
-Regards
-Vladimir '=CF=86-coder/phcoder' Serbinenko
+I would keep those things bus-type-specific and platform-specific.
 
+> For example, we can have a sysfs file like "lowest_pm_state_allowed" for each
+> PCI devices.
 
---------------070005000907060002030403
-Content-Type: text/x-diff;
- name="affs-race.diff"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
- filename="affs-race.diff"
+I'm not sure if that's going to be sufficient, because some devices appear to
+have problems with _intermediate_ low-power states.
 
-=3D=3D=3D modified file 'affs.h'
---- affs.h	2012-05-07 16:42:19 +0000
-+++ affs.h	2012-05-08 21:24:08 +0000
-@@ -66,8 +66,11 @@ struct affs_inode_info {
- 	struct buffer_head *i_ext_bh;		/* bh of last extended block */
- 	loff_t	 mmu_private;
- 	u32	 i_protect;			/* unused attribute bits */
-+
- 	u32	 i_lastalloc;			/* last allocated block */
- 	int	 i_pa_cnt;			/* number of preallocated blocks */
-+	struct mutex i_alloc;		        /* Protects last 2 fields. */
-+
- 	struct inode vfs_inode;
- };
-=20
+> BTW:  I wonder that are there standard low power states defined for
+> devices on platform bus.
 
-=3D=3D=3D modified file 'bitmap.c'
---- bitmap.c	2012-05-06 21:40:49 +0000
-+++ bitmap.c	2012-05-08 21:24:08 +0000
-@@ -151,12 +151,18 @@ affs_alloc_block(struct inode *inode, u3
-=20
- 	pr_debug("AFFS: balloc(inode=3D%lu,goal=3D%u): ", inode->i_ino, goal);
-=20
-+	mutex_lock(&AFFS_I (inode)->i_alloc);
-+
- 	if (AFFS_I(inode)->i_pa_cnt) {
--		pr_debug("%d\n", AFFS_I(inode)->i_lastalloc+1);
-+		u32 ret;
- 		AFFS_I(inode)->i_pa_cnt--;
--		return ++AFFS_I(inode)->i_lastalloc;
-+		ret =3D ++AFFS_I(inode)->i_lastalloc;
-+		mutex_unlock(&AFFS_I (inode)->i_alloc);
-+		return ret;
- 	}
-=20
-+	mutex_unlock(&AFFS_I (inode)->i_alloc);
-+
- 	if (!goal || goal > sbi->s_partition_size) {
- 		if (goal)
- 			affs_warning(sb, "affs_balloc", "invalid goal %d", goal);
-@@ -230,16 +236,22 @@ find_bit:
- 	bit =3D ffs(tmp & mask) - 1;
- 	blk +=3D bit + sbi->s_reserved;
- 	mask2 =3D mask =3D 1 << (bit & 31);
--	AFFS_I(inode)->i_lastalloc =3D blk;
-=20
--	/* prealloc as much as possible within this word */
--	while ((mask2 <<=3D 1)) {
--		if (!(tmp & mask2))
--			break;
--		AFFS_I(inode)->i_pa_cnt++;
--		mask |=3D mask2;
-+	mutex_lock(&AFFS_I (inode)->i_alloc);
-+	if (!AFFS_I(inode)->i_pa_cnt) {
-+		AFFS_I(inode)->i_lastalloc =3D blk;
-+
-+		/* prealloc as much as possible within this word */
-+		while ((mask2 <<=3D 1)) {
-+			if (!(tmp & mask2))
-+				break;
-+			AFFS_I(inode)->i_pa_cnt++;
-+			mask |=3D mask2;
-+		}
-+		bm->bm_free -=3D AFFS_I(inode)->i_pa_cnt + 1;
- 	}
--	bm->bm_free -=3D AFFS_I(inode)->i_pa_cnt + 1;
-+
-+	mutex_unlock(&AFFS_I (inode)->i_alloc);
-=20
- 	*data =3D cpu_to_be32(tmp & ~mask);
-=20
+Not that I know of.
 
-=3D=3D=3D modified file 'file.c'
---- file.c	2012-05-06 21:40:49 +0000
-+++ file.c	2012-05-08 21:24:08 +0000
-@@ -795,12 +795,21 @@ void
- affs_free_prealloc(struct inode *inode)
- {
- 	struct super_block *sb =3D inode->i_sb;
-+	u32 first, cnt;
-=20
- 	pr_debug("AFFS: free_prealloc(ino=3D%lu)\n", inode->i_ino);
-=20
--	while (AFFS_I(inode)->i_pa_cnt) {
--		AFFS_I(inode)->i_pa_cnt--;
--		affs_free_block(sb, ++AFFS_I(inode)->i_lastalloc);
-+	mutex_lock(&AFFS_I (inode)->i_alloc);
-+	first =3D AFFS_I(inode)->i_lastalloc;
-+	cnt =3D AFFS_I(inode)->i_pa_cnt;
-+	AFFS_I(inode)->i_lastalloc +=3D cnt;
-+	AFFS_I(inode)->i_pa_cnt =3D 0;
-+
-+	mutex_unlock(&AFFS_I (inode)->i_alloc);
-+
-+	while (cnt) {
-+		cnt--;
-+		affs_free_block(sb, ++first);
- 	}
- }
-=20
-
-=3D=3D=3D modified file 'inode.c'
---- inode.c	2012-05-07 16:23:07 +0000
-+++ inode.c	2012-05-08 21:24:08 +0000
-@@ -70,6 +70,7 @@ struct inode *affs_iget(struct super_blo
- 	AFFS_I(inode)->mmu_private =3D 0;
- 	AFFS_I(inode)->i_lastalloc =3D 0;
- 	AFFS_I(inode)->i_pa_cnt =3D 0;
-+	mutex_init(&AFFS_I (inode)->i_alloc);
-=20
- 	if (sbi->s_flags & SF_SETMODE)
- 		inode->i_mode =3D sbi->s_mode;
-@@ -326,6 +327,7 @@ affs_new_inode(struct inode *dir)
- 	AFFS_I(inode)->i_pa_cnt =3D 0;
- 	AFFS_I(inode)->i_extcnt =3D 1;
- 	AFFS_I(inode)->i_ext_last =3D ~1;
-+	mutex_init(&AFFS_I (inode)->i_alloc);
-=20
- 	insert_inode_hash(inode);
-=20
-
-
---------------070005000907060002030403--
-
---------------enig6E0AB62795F55B7D28938F9B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iF4EAREKAAYFAk+pkAEACgkQNak7dOguQgk3JAD7BlkTB8x8NXR31QSOGqEsaL7S
-iusNEAQSyj0Fi8Ap6mIA/1CaD/epsD51SvsTX3uS9ZMxKSCmxykGVcd8VQvDQB56
-=nZaQ
------END PGP SIGNATURE-----
-
---------------enig6E0AB62795F55B7D28938F9B--
+Thanks,
+Rafael
