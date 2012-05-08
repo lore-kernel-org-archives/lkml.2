@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab2EHNMN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 09:12:13 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:52019 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815Ab2EHNML (ORCPT
+	id S1754527Ab2EHNRh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 09:17:37 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:42645 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab2EHNRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 09:12:11 -0400
-Date: Tue, 8 May 2012 10:12:07 -0300
+	Tue, 8 May 2012 09:17:36 -0400
+Date: Tue, 8 May 2012 10:17:31 -0300
 From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org
-Subject: Re: [PATCH] perf record: fix fallback to cpu-clock on ppc
-Message-ID: <20120508131207.GG2485@infradead.org>
-References: <1336452004-55724-1-git-send-email-dsahern@gmail.com>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7] perf tools: Introduce perf_target__strerror()
+Message-ID: <20120508131731.GH2485@infradead.org>
+References: <1336367344-28071-1-git-send-email-namhyung.kim@lge.com>
+ <1336367344-28071-6-git-send-email-namhyung.kim@lge.com>
+ <20120507172946.GC2485@infradead.org>
+ <4FA809AD.7060209@gmail.com>
+ <87r4uvcu4n.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1336452004-55724-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <87r4uvcu4n.fsf@sejong.aot.lge.com>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, May 07, 2012 at 10:40:04PM -0600, David Ahern escreveu:
-> perf-record on PPC is not falling back to cpu-clock:
+Em Tue, May 08, 2012 at 10:57:12AM +0900, Namhyung Kim escreveu:
+> On Mon, 07 May 2012 11:43:09 -0600, David Ahern wrote:
+> > On 5/7/12 11:29 AM, Arnaldo Carvalho de Melo wrote:
+> >> So what is missing in this case is that top starts with system_wide set,
+> >> not from the command line.
+> >>
+> > Seems like we should avoid the propagation of the errnos beyond the
+> > depths of the library part. For perf-top why not default to nothing
+> > set and if the user does not request one, set system wide. i.e,
+> > following Patch 6 in this set do:
+> >
+> > if (perf_target__none(&top.target)
+> >     top.target.system_wide = true;
+> >
 > 
-> Old kernel, cannot exclude guest or host samples.
+> Thanks for catching this (and sorry for not testing thoroughly).
 > 
->   Error: sys_perf_event_open() syscall returned with 6 (No such device or address).  /bin/dmesg may provide additional information.
-> 
->   Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
-> 
-> The problem is that until 2.6.37 (behavior changed with commit b0a873e)
-> perf on PPC returns ENXIO when hw_perf_event_init() fails. With this
-> patch we get the expected behavior:
-> 
-> Old kernel, cannot exclude guest or host samples.
-> The cycles event is not supported, trying to fall back to cpu-clock-ticks
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.150 MB /tmp/perf.data (~6569 samples) ]
+> Yes, this would make more sense if it goes to the patch 1. Now I see
+> that Arnaldo fixed it on patch 1 but forgot to update on patch 6 :).
 
-Would be good to have this documented on the spot, i.e. just before that
-if.
-
-Also, have you checked that 'perf stat' and 'perf top' works as well? We
-really need to move all this logic to a central place, namely
-perf_evlist__open().
-
-For now checking if stat and top ara ok should be enough.
+Oh, I see, adding a follow up patch using the __none method, my case
+wasn't checking cpu_list, so this is not just a simple helper
+replacement but a bug fix.
 
 - Arnaldo
- 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> ---
->  tools/perf/builtin-record.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 42e2414..080c708 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -244,7 +244,8 @@ try_again:
->  			 * based cpu-clock-tick sw counter, which
->  			 * is always available even if no PMU support:
->  			 */
-> -			if (err == ENOENT && attr->type == PERF_TYPE_HARDWARE
-> +			if ((err == ENOENT || err == ENXIO)
-> +					&& attr->type == PERF_TYPE_HARDWARE
->  					&& attr->config == PERF_COUNT_HW_CPU_CYCLES) {
->  
->  				if (verbose)
-> -- 
-> 1.7.5.4
