@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab2EHPhl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:37:41 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:3366 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756106Ab2EHPhi (ORCPT
+	id S1756865Ab2EHPiP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:38:15 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:22880 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755510Ab2EHPiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:37:38 -0400
-Message-ID: <1336491453.1933.67.camel@x61.thuisdomein>
-Subject: Re: [PATCH 0/3] scsi: usb-storage: hide errors for five devices
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-scsi@vger.kernel.org, usb-storage@lists.one-eyed-alien.net,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 08 May 2012 17:37:33 +0200
-In-Reply-To: <Pine.LNX.4.44L0.1205081000250.1479-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1205081000250.1479-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 08 May 2012 15:37:36.0203 (UTC) FILETIME=[7E2AD9B0:01CD2D30]
-X-RcptDomain: vger.kernel.org
+	Tue, 8 May 2012 11:38:14 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: yTlYTLYVM1ktVV.xdS5E6MZhR8rFmLIeUKJlXVhpT.XPCfa
+ j7T9zrLuwFmCee4ES1eTwFykHo7CWRNw79PXUeXwWlE3ZbGKusYxnOK3sjOV
+ l9QoeJ547cDfn9ZjTReCiZaRUysCuBoyZeXKLQADwOCVWYwe_6ooGSjHKsds
+ DhSppVAYnskN_CPT5cPGQogcp9Pzfs84nogtTGtWSCbt93gyNurJS_RRl_hs
+ BbGY6KfSZhNZNSFAJTuZi4CIWik9Sy_0M.KIk51kQ9OTT8y1l.2NGiEo_a8O
+ AadgZdOYvaKmhHW43qBjSM.lRDKNnbYJL96XyLGou09NK9Wkr9z.xxy.v3RE
+ H0clF8r88GXnynFSTCJcFJ7Ve0G4nRFtCyRm1IqXWHPOfnmczF7zRemjdUmw
+ m
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 8 May 2012 10:38:07 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
+In-Reply-To: <1336490832.8226.5.camel@twins>
+Message-ID: <alpine.DEB.2.00.1205081035550.27713@router.home>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com> <1335830115-14335-8-git-send-email-fweisbec@gmail.com> <alpine.DEB.2.00.1205071053070.1060@router.home> <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
+ <1336488626.16236.41.camel@twins> <alpine.DEB.2.00.1205081016370.27713@router.home> <1336490832.8226.5.camel@twins>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-08 at 10:02 -0400, Alan Stern wrote:
-> On Tue, 8 May 2012, Paul Bolle wrote: 
-> > 1) These patches try to hide those errors by:
-> > - downgrading one error to a notice; and
-> 
-> That's a reasonable thing to do, IMO.
-> 
-> > - setting the NO_WP_DETECT quirk for these five devices.
-> 
-> But that isn't.  These quirks are intended for devices that crash when
-> they receive the command in question.
+On Tue, 8 May 2012, Peter Zijlstra wrote:
 
-Yes, these USB memory sticks don't crash. (They actually seem to work
-just fine, something that I perhaps should have emphasized in the commit
-descriptions.)
+> isolating how? The only way to do that is with the (broken) isolcpus
+> crap and cpusets. There is no other way.
 
-> They aren't meant to suppress sending commands to devices that can
-> properly reject them.
+For some reason this seems to work here. What is broken with isolcpus?
 
-Even the sticks that hit "bad_sense" (in sd_read_cache_type(), which I
-forgot to mention in the comment descriptions)? Is that not as severe as
-it suggests?
+> Furthermore there is no other partitioning scheme, cpusets is it.
 
-Of course, an easy way out would be to downgrade both the "Asking for
-cache data failed" and the "No Caching mode page present" errors to
-notices. But the SCSI people might disagree with that approach.
-
-
-Paul Bolle
+One can partition the system anyway one wants by setting cpu affinities
+and memory policies etc. No need for cpusets/cgroups.
 
