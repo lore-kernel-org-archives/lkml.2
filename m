@@ -1,41 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850Ab2EHPfy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:35:54 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34255
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756249Ab2EHPfw (ORCPT
+	id S1756882Ab2EHPhl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:37:41 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:3366 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756106Ab2EHPhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:35:52 -0400
-Date: Tue, 8 May 2012 11:35:51 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: xfs@oss.sgi.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: XFS status update for April 2012
-Message-ID: <20120508153551.GB8176@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 8 May 2012 11:37:38 -0400
+Message-ID: <1336491453.1933.67.camel@x61.thuisdomein>
+Subject: Re: [PATCH 0/3] scsi: usb-storage: hide errors for five devices
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-scsi@vger.kernel.org, usb-storage@lists.one-eyed-alien.net,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 08 May 2012 17:37:33 +0200
+In-Reply-To: <Pine.LNX.4.44L0.1205081000250.1479-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1205081000250.1479-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 08 May 2012 15:37:36.0203 (UTC) FILETIME=[7E2AD9B0:01CD2D30]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-April was a relatively quite month in XFS development, partially because
-most XFS developers traveled to San Francisco for the Linux Filesystem
-and Storage Summit and the first XFS developers meeting co hosted at the
-Linux Foundation Collaboration Summit.
+On Tue, 2012-05-08 at 10:02 -0400, Alan Stern wrote:
+> On Tue, 8 May 2012, Paul Bolle wrote: 
+> > 1) These patches try to hide those errors by:
+> > - downgrading one error to a notice; and
+> 
+> That's a reasonable thing to do, IMO.
+> 
+> > - setting the NO_WP_DETECT quirk for these five devices.
+> 
+> But that isn't.  These quirks are intended for devices that crash when
+> they receive the command in question.
 
-The XFS development tree only saw a series to reduce ilock hold times and
-a few patches merged.  Traffic on the mailing list list has been a bit more
-busy, with a few patchset being reposted again and again after various
-updates.  Features still scheduled for Linux 3.5 include:  removal of
-the xfsbufd daemon, various other cleanups of the buffer layer, moving
-CIL commits into a background thread and thus reducing the impact on
-threads causing the commits, as well as a bigger than usual set of
-cleanups and fixes.
+Yes, these USB memory sticks don't crash. (They actually seem to work
+just fine, something that I perhaps should have emphasized in the commit
+descriptions.)
 
-The user space side as been extremely slow with no patches applied and
-very few posted to the mailing list.
+> They aren't meant to suppress sending commands to devices that can
+> properly reject them.
+
+Even the sticks that hit "bad_sense" (in sd_read_cache_type(), which I
+forgot to mention in the comment descriptions)? Is that not as severe as
+it suggests?
+
+Of course, an easy way out would be to downgrade both the "Asking for
+cache data failed" and the "No Caching mode page present" errors to
+notices. But the SCSI people might disagree with that approach.
+
+
+Paul Bolle
+
