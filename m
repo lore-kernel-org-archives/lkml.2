@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab2EHTuP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 15:50:15 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:53278 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755244Ab2EHTuN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 15:50:13 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/SEOEy+WLSfEg4mqm+IQYHA1yQ2Ll+dmNMsMwWgx
-	F77P1uhCPqRLxD
-Message-ID: <1336506601.7400.21.camel@marge.simpson.net>
-Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christoph Lameter <cl@linux.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	id S1756860Ab2EHTuw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 15:50:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3874 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756058Ab2EHTuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 15:50:50 -0400
+Date: Tue, 8 May 2012 22:50:30 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <hadi@cyberus.ca>,
         Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 08 May 2012 21:50:01 +0200
-In-Reply-To: <1336493768.8226.29.camel@twins>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
-	 <1335830115-14335-8-git-send-email-fweisbec@gmail.com>
-	 <alpine.DEB.2.00.1205071053070.1060@router.home>
-	 <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
-	 <1336488626.16236.41.camel@twins>
-	 <alpine.DEB.2.00.1205081016370.27713@router.home>
-	 <1336490832.8226.5.camel@twins>
-	 <alpine.DEB.2.00.1205081035550.27713@router.home>
-	 <1336492081.8226.13.camel@twins>
-	 <alpine.DEB.2.00.1205081054310.27713@router.home>
-	 <1336493768.8226.29.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Jiri Pirko <jpirko@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
+Message-ID: <20120508195029.GA29111@redhat.com>
+References: <20120408171323.GA16012@redhat.com>
+ <1334044558.3126.5.camel@edumazet-glaptop>
+ <20120410084151.GA27193@redhat.com>
+ <1334048100.3126.21.camel@edumazet-glaptop>
+ <20120410093140.GA27651@redhat.com>
+ <1334052259.3126.68.camel@edumazet-glaptop>
+ <20120410112459.GA28825@redhat.com>
+ <1334058300.3126.99.camel@edumazet-glaptop>
+ <20120410124151.GA29808@redhat.com>
+ <1334065929.5300.40.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334065929.5300.40.camel@edumazet-glaptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-08 at 18:16 +0200, Peter Zijlstra wrote: 
-> On Tue, 2012-05-08 at 10:57 -0500, Christoph Lameter wrote:
+On Tue, Apr 10, 2012 at 03:52:09PM +0200, Eric Dumazet wrote:
+> With following patch, no more qdisc on top of tun device,
 
-> isolcpus is a very limited hack that adds more pain that its worth. Its
-> yet another mask to check and its functionality is completely available
-> through cpusets.
+I'm not sure killing qdisc is a right direction.
+I think tun queue is currently oversized but I
+also think we would benefit from a smart queue
+management. As it is if tun user gets delayed,
+stale packets accumulate in the queue and there's
+no way to get rid of them without ploughing through
+the backlog.
 
-Agreed.
+In a sense we don't really need the queue in tun at all,
+the only reason we have it at all, is to make code simpler.
+We could thinkably move skbs from qdisc directly to userspace.
 
-> You cannot create multi-cpu partitions using isolcpus, you cannot
-> dynamically reconfigure it.
-
-Big plus for cpusets.
-
-> And on the scheduler side cpusets doesn't add runtime overhead to normal
-> things, only sched_setaffinity() and a few other rare operations get
-> slightly more expensive. And it allows to reduce runtime overhead by
-> making the load-balancer domains smaller.
-
-Very big deal if you have a load that doesn't do all the performance 'i'
-dotting and 't' crossing it maybe could have, but ends up on a big box.
-
--Mike
-
+-- 
+MST
