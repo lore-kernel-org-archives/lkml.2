@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074Ab2EHEVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 00:21:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51266 "EHLO
+	id S1753087Ab2EHEWm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 00:22:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51274 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab2EHEVw (ORCPT
+	with ESMTP id S1750868Ab2EHEWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 00:21:52 -0400
-Date: Mon, 7 May 2012 21:21:37 -0700
-From: tip-bot for Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-Message-ID: <tip-489a71b029cd94e3b0132795146e8be3a87bf3fa@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, h-shimamoto@ct.jp.nec.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, h-shimamoto@ct.jp.nec.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de
-In-Reply-To: <4F795CAC.9080206@ct.jp.nec.com>
-References: <4F795CAC.9080206@ct.jp.nec.com>
+	Tue, 8 May 2012 00:22:41 -0400
+Date: Mon, 7 May 2012 21:22:27 -0700
+From: tip-bot for Jan Beulich <JBeulich@suse.com>
+Message-ID: <tip-396e2c6fed4ff13b53ce0e573105531cf53b0cad@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jbeulich@suse.com, JBeulich@suse.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de
+In-Reply-To: <4F79D0BB020000780007C02D@nat28.tlf.novell.com>
+References: <4F79D0BB020000780007C02D@nat28.tlf.novell.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Update documentation and comments
-Git-Commit-ID: 489a71b029cd94e3b0132795146e8be3a87bf3fa
+Subject: [tip:timers/core] x86:
+  Clear HPET configuration registers on startup
+Git-Commit-ID: 396e2c6fed4ff13b53ce0e573105531cf53b0cad
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,80 +28,150 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 07 May 2012 21:21:42 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 07 May 2012 21:22:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  489a71b029cd94e3b0132795146e8be3a87bf3fa
-Gitweb:     http://git.kernel.org/tip/489a71b029cd94e3b0132795146e8be3a87bf3fa
-Author:     Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-AuthorDate: Mon, 2 Apr 2012 17:00:44 +0900
+Commit-ID:  396e2c6fed4ff13b53ce0e573105531cf53b0cad
+Gitweb:     http://git.kernel.org/tip/396e2c6fed4ff13b53ce0e573105531cf53b0cad
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Mon, 2 Apr 2012 15:15:55 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 7 May 2012 15:04:18 +0200
+CommitDate: Mon, 7 May 2012 15:06:27 +0200
 
-sched: Update documentation and comments
+x86: Clear HPET configuration registers on startup
 
-Change sched_*.c to sched/*.c in documentation and comments.
+While Linux itself has been calling hpet_disable() for quite a
+while, having e.g. a secondary (kexec) kernel depend on such
+behavior of the primary (crashed) environment is fragile. It
+particularly broke until very recently when the primary
+environment was Xen based, as that hypervisor did not clear any
+of the HPET settings it may have used.
 
-Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/4F795CAC.9080206@ct.jp.nec.com
+Rather than blindly (and incompletely) clearing certain HPET
+settings in hpet_disable(), latch the config register settings
+during boot and restore then here.
+
+(Note on the hpet_set_mode() change: Now that we're clearing the
+level bit upon initialization, there's no need anymore to do so
+here.)
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/4F79D0BB020000780007C02D@nat28.tlf.novell.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- Documentation/scheduler/sched-design-CFS.txt |    6 +++---
- include/linux/sched.h                        |    2 +-
- kernel/sched/idle_task.c                     |    2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ arch/x86/kernel/hpet.c |   59 +++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 51 insertions(+), 8 deletions(-)
 
-diff --git a/Documentation/scheduler/sched-design-CFS.txt b/Documentation/scheduler/sched-design-CFS.txt
-index 91ecff0..d529e02d 100644
---- a/Documentation/scheduler/sched-design-CFS.txt
-+++ b/Documentation/scheduler/sched-design-CFS.txt
-@@ -130,7 +130,7 @@ CFS implements three scheduling policies:
-     idle timer scheduler in order to avoid to get into priority
-     inversion problems which would deadlock the machine.
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index ad0de0c..70bce5d 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -319,8 +319,6 @@ static void hpet_set_mode(enum clock_event_mode mode,
+ 		now = hpet_readl(HPET_COUNTER);
+ 		cmp = now + (unsigned int) delta;
+ 		cfg = hpet_readl(HPET_Tn_CFG(timer));
+-		/* Make sure we use edge triggered interrupts */
+-		cfg &= ~HPET_TN_LEVEL;
+ 		cfg |= HPET_TN_ENABLE | HPET_TN_PERIODIC |
+ 		       HPET_TN_SETVAL | HPET_TN_32BIT;
+ 		hpet_writel(cfg, HPET_Tn_CFG(timer));
+@@ -787,15 +785,16 @@ static int hpet_clocksource_register(void)
+ 	return 0;
+ }
  
--SCHED_FIFO/_RR are implemented in sched_rt.c and are as specified by
-+SCHED_FIFO/_RR are implemented in sched/rt.c and are as specified by
- POSIX.
- 
- The command chrt from util-linux-ng 2.13.1.1 can set all of these except
-@@ -145,9 +145,9 @@ Classes," an extensible hierarchy of scheduler modules.  These modules
- encapsulate scheduling policy details and are handled by the scheduler core
- without the core code assuming too much about them.
- 
--sched_fair.c implements the CFS scheduler described above.
-+sched/fair.c implements the CFS scheduler described above.
- 
--sched_rt.c implements SCHED_FIFO and SCHED_RR semantics, in a simpler way than
-+sched/rt.c implements SCHED_FIFO and SCHED_RR semantics, in a simpler way than
- the previous vanilla scheduler did.  It uses 100 runqueues (for all 100 RT
- priority levels, instead of 140 in the previous scheduler) and it needs no
- expired array.
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 81a173c..4a559bf 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1950,7 +1950,7 @@ static inline int set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
++static u32 *hpet_boot_cfg;
++
+ /**
+  * hpet_enable - Try to setup the HPET timer. Returns 1 on success.
   */
- extern unsigned long long notrace sched_clock(void);
- /*
-- * See the comment in kernel/sched_clock.c
-+ * See the comment in kernel/sched/clock.c
-  */
- extern u64 cpu_clock(int cpu);
- extern u64 local_clock(void);
-diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-index 91b4c95..b44d604 100644
---- a/kernel/sched/idle_task.c
-+++ b/kernel/sched/idle_task.c
-@@ -4,7 +4,7 @@
-  * idle-task scheduling class.
-  *
-  * (NOTE: these are not related to SCHED_IDLE tasks which are
-- *  handled in sched_fair.c)
-+ *  handled in sched/fair.c)
-  */
+ int __init hpet_enable(void)
+ {
+-	unsigned long hpet_period;
+-	unsigned int id;
++	u32 hpet_period, cfg, id;
+ 	u64 freq;
+-	int i;
++	unsigned int i, last;
  
- #ifdef CONFIG_SMP
+ 	if (!is_hpet_capable())
+ 		return 0;
+@@ -847,15 +846,45 @@ int __init hpet_enable(void)
+ 	id = hpet_readl(HPET_ID);
+ 	hpet_print_config();
+ 
++	last = (id & HPET_ID_NUMBER) >> HPET_ID_NUMBER_SHIFT;
++
+ #ifdef CONFIG_HPET_EMULATE_RTC
+ 	/*
+ 	 * The legacy routing mode needs at least two channels, tick timer
+ 	 * and the rtc emulation channel.
+ 	 */
+-	if (!(id & HPET_ID_NUMBER))
++	if (!last)
+ 		goto out_nohpet;
+ #endif
+ 
++	cfg = hpet_readl(HPET_CFG);
++	hpet_boot_cfg = kmalloc((last + 2) * sizeof(*hpet_boot_cfg),
++				GFP_KERNEL);
++	if (hpet_boot_cfg)
++		*hpet_boot_cfg = cfg;
++	else
++		pr_warn("HPET initial state will not be saved\n");
++	cfg &= ~(HPET_CFG_ENABLE | HPET_CFG_LEGACY);
++	hpet_writel(cfg, HPET_Tn_CFG(i));
++	if (cfg)
++		pr_warn("HPET: Unrecognized bits %#x set in global cfg\n",
++			cfg);
++
++	for (i = 0; i <= last; ++i) {
++		cfg = hpet_readl(HPET_Tn_CFG(i));
++		if (hpet_boot_cfg)
++			hpet_boot_cfg[i + 1] = cfg;
++		cfg &= ~(HPET_TN_ENABLE | HPET_TN_LEVEL | HPET_TN_FSB);
++		hpet_writel(cfg, HPET_Tn_CFG(i));
++		cfg &= ~(HPET_TN_PERIODIC | HPET_TN_PERIODIC_CAP
++			 | HPET_TN_64BIT_CAP | HPET_TN_32BIT | HPET_TN_ROUTE
++			 | HPET_TN_FSB | HPET_TN_FSB_CAP);
++		if (cfg)
++			pr_warn("HPET: Unrecognized bits %#x set in cfg#%u\n",
++				cfg, i);
++	}
++	hpet_print_config();
++
+ 	if (hpet_clocksource_register())
+ 		goto out_nohpet;
+ 
+@@ -923,14 +952,28 @@ fs_initcall(hpet_late_init);
+ void hpet_disable(void)
+ {
+ 	if (is_hpet_capable() && hpet_virt_address) {
+-		unsigned int cfg = hpet_readl(HPET_CFG);
++		unsigned int cfg = hpet_readl(HPET_CFG), id, last;
+ 
+-		if (hpet_legacy_int_enabled) {
++		if (hpet_boot_cfg)
++			cfg = *hpet_boot_cfg;
++		else if (hpet_legacy_int_enabled) {
+ 			cfg &= ~HPET_CFG_LEGACY;
+ 			hpet_legacy_int_enabled = 0;
+ 		}
+ 		cfg &= ~HPET_CFG_ENABLE;
+ 		hpet_writel(cfg, HPET_CFG);
++
++		if (!hpet_boot_cfg)
++			return;
++
++		id = hpet_readl(HPET_ID);
++		last = ((id & HPET_ID_NUMBER) >> HPET_ID_NUMBER_SHIFT);
++
++		for (id = 0; id <= last; ++id)
++			hpet_writel(hpet_boot_cfg[id + 1], HPET_Tn_CFG(id));
++
++		if (*hpet_boot_cfg & HPET_CFG_ENABLE)
++			hpet_writel(*hpet_boot_cfg, HPET_CFG);
+ 	}
+ }
+ 
