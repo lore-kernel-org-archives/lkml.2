@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab2EHN5J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 09:57:09 -0400
-Received: from nm4.bullet.mail.ird.yahoo.com ([77.238.189.61]:22172 "HELO
-	nm4.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755110Ab2EHN5H convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 09:57:07 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 56371.58357.bm@omp1035.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=SrUv+iZY7jsB0XvQUtfS+Vt5pNhe8n86kN4YNaMWfJyz5yYR0ybfUYa5pqqseNN8e8PKY2a2/Rn10jDNXRDGYx3MaJ+dSVi67rfEdeeYyVaJR7SdQy9TZtcZF/jjVpT18D+Ny8xarQXvAWVVgz0p/6W8Sj3E+G9Vnxg+j4O6gS0=;
-X-YMail-OSG: LusbV70VM1kVBhNtQwrhKWVUQieIVF0VfykPep3XnphrTbg
- SSkryXcMW9cLpffOn760sKje.CtjE_uRxc1Pq5gyuFZEhE5xm8k3.BefThSe
- 4ABbhGiP9AvlBsuvkLYtPG__EQ2S35ExK7xo0Ru_nyOGVTB6I8b0cS6Eg6UH
- lMYWIP1glqk6g.zl4DGQMR4c.BONBM6X3oIaUElNfrZwxGkcXCGrtNzp9oS_
- 3S_uwU91Ta.LzjJFpOeuaT4bEE3EiYTRgm2VJAcEHaZf4y..uefK03VkdzQd
- CxkPHAN2I4RjHG3J.28S6DmiYCfdarPy0wkEECJwGZfpqELnU1gowU7hmZ1E
- iQa14vSSR3QPNbwgnQ8DiE0s_zMWZqA2EjQCB7VCZeHSsjJEf0ChWjPD5pNo
- WnFvJgOGbk_9J3pohRhuQuM_il7B.hwoV5z9jB4VQ
-X-Mailer: YahooMailClassic/15.0.6 YahooMailWebService/0.8.117.340979
-Message-ID: <1336485424.10001.YahooMailClassic@web29019.mail.ird.yahoo.com>
-Date: Tue, 8 May 2012 14:57:04 +0100 (BST)
-From: Paul Parsons <lost.distance@yahoo.com>
-Subject: Re: [PATCH] ARM: mach-pxa: Use REGULATOR_SUPPLY macro
-To: linux-kernel@vger.kernel.org, Axel Lin <axel.lin@gmail.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Marek Vasut <marek.vasut@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1336465510.11954.1.camel@phoenix>
+	id S1755339Ab2EHOBI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 10:01:08 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:48062 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754294Ab2EHOBH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 10:01:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Message-ID: <731b6638-8c8c-4381-a00f-4ecd5a0e91ae@default>
+Date: Tue, 8 May 2012 07:00:11 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cl@linux-foundation.org
+Subject: RE: [PATCH 4/4] zsmalloc: zsmalloc: align cache line size
+References: <1336027242-372-1-git-send-email-minchan@kernel.org>
+ <1336027242-372-4-git-send-email-minchan@kernel.org>
+ <4FA28EFD.5070002@vflare.org> <4FA33E89.6080206@kernel.org>
+ <alpine.LFD.2.02.1205071038090.2851@tux.localdomain>
+ <4FA7C2BC.2090400@vflare.org> <4FA87837.3050208@kernel.org>
+In-Reply-To: <4FA87837.3050208@kernel.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Axel,
+> From: Minchan Kim [mailto:minchan@kernel.org]
+> > zcache can potentially create a lot of pools, so the latter will save
+> > some memory.
+> 
+> 
+> Dumb question.
+> Why should we create pool per user?
+> What's the problem if there is only one pool in system?
 
---- On Tue, 8/5/12, Axel Lin <axel.lin@gmail.com> wrote:
->  arch/arm/mach-pxa/hx4700.c    |   13 ++++---------
+zcache doesn't use zsmalloc for cleancache pages today, but
+that's Seth's plan for the future.  Then if there is a
+separate pool for each cleancache pool, when a filesystem
+is umount'ed, it isn't necessary to walk through and delete
+all pages one-by-one, which could take quite awhile.
 
-The hx4700 patch works for me on linux-3.4.0-rc6.
-
-Tested-by: Paul Parsons <lost.distance@yahoo.com>
-
+ramster needs one pool for each client (i.e. machine in the
+cluster) for frontswap pages for the same reason, and
+later, for cleancache pages, one per mounted filesystem
+per client
