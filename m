@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab2EHELu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 00:11:50 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:35285 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751210Ab2EHEJh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752300Ab2EHEJh (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 8 May 2012 00:09:37 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:53795 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751485Ab2EHEJf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 00:09:35 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <akpm@linux-foundation.org>
 Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
@@ -14,12 +14,10 @@ Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
         <mturquette@linaro.org>, <sshtylyov@mvista.com>, <jgarzik@redhat.com>,
         <linux@arm.linux.org.uk>, <w.sang@pengutronix.de>,
         <LW@KARO-electronics.de>, <andrew@lunn.ch>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Bhupesh Sharma <bhupesh.sharma@st.com>
-Subject: [PATCH V3 Resend 08/12] net/c_can: Remove conditional compilation of clk code
-Date: Tue, 8 May 2012 09:22:35 +0530
-Message-ID: <5bde77a369c9bf2eb2efbd9f8d139443336ff849.1336448639.git.viresh.kumar@st.com>
+        Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH V3 Resend 02/12] clk: Remove redundant depends on from drivers/Kconfig
+Date: Tue, 8 May 2012 09:22:29 +0530
+Message-ID: <c0b4b679ea0b0fd7c46ff1fddf4eebc91850a536.1336448639.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <cover.1336448639.git.viresh.kumar@st.com>
 References: <cover.1336448639.git.viresh.kumar@st.com>
@@ -29,69 +27,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With addition of dummy clk_*() calls for non CONFIG_HAVE_CLK cases in clk.h,
-there is no need to have clk code enclosed in #ifdef CONFIG_HAVE_CLK, #endif
-macros.
+menu "Common Clock Framework" has "depends on COMMON_CLK" and so configs defined
+within menu don't require these "depends on COMMON_CLK again".
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Bhupesh Sharma <bhupesh.sharma@st.com>
 ---
- drivers/net/can/c_can/c_can_platform.c |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
+ drivers/clk/Kconfig |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/can/c_can/c_can_platform.c b/drivers/net/can/c_can/c_can_platform.c
-index 5e1a5ff..7ec9316 100644
---- a/drivers/net/can/c_can/c_can_platform.c
-+++ b/drivers/net/can/c_can/c_can_platform.c
-@@ -73,7 +73,6 @@ static int __devinit c_can_plat_probe(struct platform_device *pdev)
- 	struct c_can_priv *priv;
- 	struct resource *mem;
- 	int irq;
--#ifdef CONFIG_HAVE_CLK
- 	struct clk *clk;
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 165e1fe..4f10a21 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -24,7 +24,6 @@ menu "Common Clock Framework"
  
- 	/* get the appropriate clk */
-@@ -83,7 +82,6 @@ static int __devinit c_can_plat_probe(struct platform_device *pdev)
- 		ret = -ENODEV;
- 		goto exit;
- 	}
--#endif
+ config COMMON_CLK_DISABLE_UNUSED
+ 	bool "Disabled unused clocks at boot"
+-	depends on COMMON_CLK
+ 	---help---
+ 	  Traverses the entire clock tree and disables any clocks that are
+ 	  enabled in hardware but have not been enabled by any device drivers.
+@@ -35,7 +34,6 @@ config COMMON_CLK_DISABLE_UNUSED
  
- 	/* get the platform data */
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -118,10 +116,8 @@ static int __devinit c_can_plat_probe(struct platform_device *pdev)
- 
- 	dev->irq = irq;
- 	priv->regs = addr;
--#ifdef CONFIG_HAVE_CLK
- 	priv->can.clock.freq = clk_get_rate(clk);
- 	priv->priv = clk;
--#endif
- 
- 	switch (mem->flags & IORESOURCE_MEM_TYPE_MASK) {
- 	case IORESOURCE_MEM_32BIT:
-@@ -157,10 +153,8 @@ exit_iounmap:
- exit_release_mem:
- 	release_mem_region(mem->start, resource_size(mem));
- exit_free_clk:
--#ifdef CONFIG_HAVE_CLK
- 	clk_put(clk);
- exit:
--#endif
- 	dev_err(&pdev->dev, "probe failed\n");
- 
- 	return ret;
-@@ -181,9 +175,7 @@ static int __devexit c_can_plat_remove(struct platform_device *pdev)
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	release_mem_region(mem->start, resource_size(mem));
- 
--#ifdef CONFIG_HAVE_CLK
- 	clk_put(priv->priv);
--#endif
- 
- 	return 0;
- }
+ config COMMON_CLK_DEBUG
+ 	bool "DebugFS representation of clock tree"
+-	depends on COMMON_CLK
+ 	select DEBUG_FS
+ 	---help---
+ 	  Creates a directory hierchy in debugfs for visualizing the clk
 -- 
 1.7.9
 
