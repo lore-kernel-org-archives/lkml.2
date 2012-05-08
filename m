@@ -1,68 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab2EHP3X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:29:23 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42063 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755460Ab2EHP3V (ORCPT
+	id S1756697Ab2EHP3G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:29:06 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34856 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756618Ab2EHP3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:29:21 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 2/2] perf stat: handle ENXIO error for perf_event_open
-Date: Tue,  8 May 2012 09:29:16 -0600
-Message-Id: <1336490956-57145-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 8 May 2012 11:29:05 -0400
+Date: Tue, 8 May 2012 16:31:44 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Christoph Lameter <cl@linux.com>
+Cc: Robert =?UTF-8?B?xZp3acSZY2tp?= <robert@swiecki.net>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: mmap/clone returns ENOMEM with lots of free memory
+Message-ID: <20120508163144.13ab1814@pyramind.ukuu.org.uk>
+In-Reply-To: <alpine.DEB.2.00.1205080859570.25669@router.home>
+References: <CAP145pjtv-S2oHhn8_QfLKF8APtut4B9qPXK5QM8nQbxzPd2gw@mail.gmail.com>
+	<alpine.DEB.2.00.1205071514040.6029@router.home>
+	<CAP145piK2kW4F94pNdKpo_sGg8OD914exOtwCx2o+83jx5Toog@mail.gmail.com>
+	<alpine.DEB.2.00.1205080859570.25669@router.home>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf stat on PPC currently fails to run:
+> Setting overcommit memory to 2 means that the app is strictly policed
+> for staying within bounds on virtual memory. Dont do that.
 
-$ perf stat -- sleep 1
-  Error: open_counter returned with 6 (No such device or address). /bin/dmesg may provide additional information.
+For a fuzz test you probably do want it at 2 to avoid the box dying in a
+swap storm.
 
-  Fatal: Not all events could be opened.
 
-The problem is that until 2.6.37 (behavior changed with commit b0a873e)
-perf on PPC returns ENXIO when hw_perf_event_init() fails. With this
-patch we get the expected behavior:
-
-$ perf stat -v -- sleep 1
-cycles event is not supported by the kernel.
-stalled-cycles-frontend event is not supported by the kernel.
-stalled-cycles-backend event is not supported by the kernel.
-instructions event is not supported by the kernel.
-branches event is not supported by the kernel.
-branch-misses event is not supported by the kernel.
-
-...
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/builtin-stat.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index e720ba7..bd42189 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -462,8 +462,13 @@ static int run_perf_stat(int argc __used, const char **argv)
- 
- 	list_for_each_entry(counter, &evsel_list->entries, node) {
- 		if (create_perf_stat_counter(counter, first) < 0) {
-+			/* 
-+			 * PPC returns ENXIO for HW counters until 2.6.37
-+			 * (behavior changed with commit b0a873e).
-+			 */
- 			if (errno == EINVAL || errno == ENOSYS ||
--			    errno == ENOENT || errno == EOPNOTSUPP) {
-+			    errno == ENOENT || errno == EOPNOTSUPP ||
-+			    errno == ENXIO) {
- 				if (verbose)
- 					ui__warning("%s event is not supported by the kernel.\n",
- 						    event_name(counter));
--- 
-1.7.5.4
-
+Alan
