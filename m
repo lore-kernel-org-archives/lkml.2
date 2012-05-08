@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab2EHTWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 15:22:43 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:39225 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755619Ab2EHTWm convert rfc822-to-8bit (ORCPT
+	id S1756106Ab2EHT1v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 15:27:51 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60263 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755396Ab2EHT1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 15:22:42 -0400
+	Tue, 8 May 2012 15:27:49 -0400
+Message-ID: <4FA973B1.5080808@gmail.com>
+Date: Tue, 08 May 2012 21:27:45 +0200
+From: Erwan Velu <erwanaliasr1@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120426 Thunderbird/10.0.4
 MIME-Version: 1.0
-In-Reply-To: <1336504803-1951-1-git-send-email-geert@linux-m68k.org>
-References: <1336504803-1951-1-git-send-email-geert@linux-m68k.org>
-Date: Tue, 8 May 2012 21:22:41 +0200
-X-Google-Sender-Auth: Nn-o1lLfyADT2RMgW3-aQL-lS7Y
-Message-ID: <CAMuHMdWQFc-5bqnU97+ej81TzUieZ8bt3y6ueXOiX7QX2J_GNw@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.4-rc6
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linuxppc-dev <linuxppc-dev@ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tshimizu818@gmail.com
+Subject: Re: [PATCH] pch_gbe: Adding read memory barriers
+References: <4FA822C4.60809@gmail.com> <4FA96770.9070009@gmail.com> <20120508.143951.1433269599287007774.davem@davemloft.net>
+In-Reply-To: <20120508.143951.1433269599287007774.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 8, 2012 at 9:20 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.4-rc6 to v3.4-rc5[3], the summaries are:
->  - build errors: +2/-1
+Le 08/05/2012 20:39, David Miller a �crit :
+> You never need to ask questions like this. Your patch is queued up to 
+> be reviewed in patchwork: 
+> http://patchwork.ozlabs.org/project/netdev/list/ Therefore you only 
+> make more work for maintainers and irritate them by asking this, and 
+> therefore it will take even longer for them to get to your patch. 
 
-2 regressions:
-  + arch/powerpc/sysdev/mpic.c: error: case label does not reduce to
-an integer constant:  => 890:9, 898:9, 886:9, 894:9
-  + error: "set_personality_ia32" [arch/x86/ia32/ia32_aout.ko]
-undefined!:  => N/A
+It wasn't my aim to irritate anyone. I'm just brand new into committing 
+something here and surely lack of a good understanding on the complete 
+process.
 
-The former is from powerpc-randconfig, the latter has been fixed in
-the mean time.
+I do understand you are very solicited and newbies like me can sometimes 
+irritate by asking questions & doing thing not properly.
 
-Gr{oetje,eeting}s,
+Anyway, thanks for your help & patience.
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Erwan
