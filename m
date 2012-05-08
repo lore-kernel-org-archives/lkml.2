@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab2EHOU1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 10:20:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43266 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755398Ab2EHOU0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 10:20:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1205071053070.1060@router.home>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
-	<1335830115-14335-8-git-send-email-fweisbec@gmail.com>
-	<alpine.DEB.2.00.1205071053070.1060@router.home>
-Date: Tue, 8 May 2012 16:20:25 +0200
-Message-ID: <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
-Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755738Ab2EHOVX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 10:21:23 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:44504 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755278Ab2EHOVW convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Tue, 8 May 2012 10:21:22 -0400
+Message-Id: <4FA947FE020000780008247F@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 08 May 2012 15:21:18 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: eliminate dead ia32 syscall handlers
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/7 Christoph Lameter <cl@linux.com>:
-> On Tue, 1 May 2012, Frederic Weisbecker wrote:
->
->> Prepare the interface to implement the nohz cpuset flag.
->> This flag, once set, will tell the system to try to
->> shutdown the periodic timer tick when possible.
->>
->> We use here a per cpu refcounter. As long as a CPU
->> is contained into at least one cpuset that has the
->> nohz flag set, it is part of the set of CPUs that
->> run into adaptive nohz mode.
->
-> As I have said before: It would be much simpler if one could specify the
-> set of nohz cpus independently of cpusets. Having a flag f.e. as a file in
->
->        /sys/devices/system/cpu/cpuX/nohz
+None of the three routines being removed here was actually hooked up
+anywhere, so they all represented dead code.
 
-I don't know if it would be simpler. It's just a different interface
-to set a per-CPU property.
-Cpusets of sysfs, I don't mind either way.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-What is the usual policy on where to put which kind of CPU property?
+---
+ arch/x86/ia32/sys_ia32.c |   23 -----------------------
+ 1 file changed, 23 deletions(-)
+
+--- 3.4-rc6/arch/x86/ia32/sys_ia32.c
++++ 3.4-rc6-x86_64-ia32-dead-syscall-handlers/arch/x86/ia32/sys_ia32.c
+@@ -287,11 +287,6 @@ asmlinkage long sys32_sigaction(int sig,
+ 	return ret;
+ }
+ 
+-asmlinkage long sys32_alarm(unsigned int seconds)
+-{
+-	return alarm_setitimer(seconds);
+-}
+-
+ asmlinkage long sys32_waitpid(compat_pid_t pid, unsigned int *stat_addr,
+ 			      int options)
+ {
+@@ -300,11 +295,6 @@ asmlinkage long sys32_waitpid(compat_pid
+ 
+ /* 32-bit timeval and related flotsam.  */
+ 
+-asmlinkage long sys32_sysfs(int option, u32 arg1, u32 arg2)
+-{
+-	return sys_sysfs(option, arg1, arg2);
+-}
+-
+ asmlinkage long sys32_sched_rr_get_interval(compat_pid_t pid,
+ 				    struct compat_timespec __user *interval)
+ {
+@@ -375,19 +365,6 @@ asmlinkage long sys32_pwrite(unsigned in
+ }
+ 
+ 
+-asmlinkage long sys32_personality(unsigned long personality)
+-{
+-	int ret;
+-
+-	if (personality(current->personality) == PER_LINUX32 &&
+-		personality == PER_LINUX)
+-		personality = PER_LINUX32;
+-	ret = sys_personality(personality);
+-	if (ret == PER_LINUX32)
+-		ret = PER_LINUX;
+-	return ret;
+-}
+-
+ asmlinkage long sys32_sendfile(int out_fd, int in_fd,
+ 			       compat_off_t __user *offset, s32 count)
+ {
+
+
+
