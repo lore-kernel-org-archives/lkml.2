@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab2EHR3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 13:29:51 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:53959 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab2EHR3u (ORCPT
+	id S1754302Ab2EHRfr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 13:35:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43098 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765Ab2EHRfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 13:29:50 -0400
-X-IronPort-AV: E=Sophos;i="4.75,552,1330905600"; 
-   d="scan'208";a="12362280"
-Date: Tue, 8 May 2012 18:29:32 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH v3] xen-blkfront: set pages are FOREIGN_FRAME
- when sharing them
-In-Reply-To: <20120507212536.GA24344@andromeda.dapyr.net>
-Message-ID: <alpine.DEB.2.00.1205081826300.26786@kaball-desktop>
-References: <1334075119-25102-1-git-send-email-stefano.stabellini@eu.citrix.com> <20120416195258.GA14982@phenom.dumpdata.com> <alpine.DEB.2.00.1204171138020.26786@kaball-desktop> <20120507212536.GA24344@andromeda.dapyr.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 8 May 2012 13:35:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <alpine.DEB.2.00.1205071055370.1060@router.home>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+	<1335830115-14335-9-git-send-email-fweisbec@gmail.com>
+	<alpine.DEB.2.00.1205071055370.1060@router.home>
+Date: Tue, 8 May 2012 19:35:45 +0200
+Message-ID: <CAFTL4hzM0socf0BphDmD7qv8W8wyJnBNkuXV9tv+yo=AJUYMRg@mail.gmail.com>
+Subject: Re: [PATCH 08/41] nohz: Try not to give the timekeeping duty to an
+ adaptive tickless cpu
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 May 2012, Konrad Rzeszutek Wilk wrote:
-> On Tue, Apr 17, 2012 at 11:58:58AM +0100, Stefano Stabellini wrote:
-> > On Mon, 16 Apr 2012, Konrad Rzeszutek Wilk wrote:
-> > > On Tue, Apr 10, 2012 at 05:25:19PM +0100, Stefano Stabellini wrote:
-> > > > Set pages as FOREIGN_FRAME whenever blkfront shares them with another
-> > > > domain. Then when blkfront un-share them, also removes the
-> > > > FOREIGN_FRAME_BIT from the p2m.
-> > > >
-> > > > We do it so that when the source and the destination domain are the same
-> > > > (blkfront connected to blkback in the same domain) we can more easily
-> 
-> So I've been testing it with my mini config and it worked great. But
-> when I started using a distro .config it blew up. I am not really
-> sure why it does that, but here is the dmesg and .config.
-> 
-> Nothing fancy with the guest config:
-> 
-> cat /crash.xm  | grep -v \#
-> memory = 4096
-> name = "OL6_X86_64_PVHVM"
-> vcpus=12
-> vif = [ 'mac=00:0f:4b:00:00:72,bridge=switch' ]
-> disk= ['phy:/dev/guests/OL6_X86_64_PVHVM,hda,w']
-> vfb = [ 'vnc=1, vnclisten=0.0.0.0,vncunused=1']
-> vnc=1
-> vnclisten="0.0.0.0"
-> hvm_loader="/usr/bin/pygrub"
-> 
-> 
-> This is the #testing branch, but just using my #linux-next along
-> with stable/for-jens-3.5 should reproduce this.
-> 
-> I added a bit of debug statement and found that 0xffffffffffffffff
-> was passed in as a PFN in the set_phys_to_machine.
+2012/5/7 Christoph Lameter <cl@linux.com>:
+> On Tue, 1 May 2012, Frederic Weisbecker wrote:
+>
+>> Try to give the timekeeing duty to a CPU that doesn't belong
+>> to any nohz cpuset when possible, so that we increase the chance
+>> for these nohz cpusets to run their CPUs out of periodic tick
+>> mode.
+>>
+>> [TODO: We need to find a way to ensure there is always one non-nohz
+>> running CPU maintaining the timekeeping duty if every non-idle CPUs are
+>> adaptive tickless]
+>
+> I sure wish this would also be pinnable to a specific cpu.
 
-I have been unable to reproduce this problem (I haven't given up yet)
-but I bet that the following patch fixes it:
-
-
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index e3a9945..88e9304 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -333,7 +333,7 @@ static int blkif_queue_request(struct request *req)
- 					buffer_mfn,
- 					rq_data_dir(req));
- 
--			info->shadow[id].frame[i] = mfn_to_pfn(buffer_mfn);
-+			info->shadow[id].frame[i] = buffer_pfn;
- 			ring_req->u.rw.seg[i] =
- 					(struct blkif_request_segment) {
- 						.gref       = ref,
-
-
-The idea is that the request contains a page for which
-
-pfn->mfn->pfn == 0xffffffffffffffff
-
-I am not sure exactly how it could be possible to get into this state in
-blkfront, I hope that some more tracing and code reading will be able to
-shed some lights on the issue.
+Yeah, well we need to be more flexible and allow for finegrained sets of CPUs,
+I quoted some reasons in one of our previous discussions:
+https://lkml.org/lkml/2012/3/29/559
