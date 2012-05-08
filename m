@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab2EHWzT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 18:55:19 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:50794 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755341Ab2EHWzR (ORCPT
+	id S1757500Ab2EHW52 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 18:57:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36351 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755712Ab2EHW51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 18:55:17 -0400
-X-Sasl-enc: PXhgj+N0fam5DRA6ov1B5TqEu20ZJ5hdoBauYubhHIoU 1336517716
-Date: Tue, 8 May 2012 15:55:15 -0700
-From: Greg KH <greg@kroah.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] device core: fix a copy-paste error
-Message-ID: <20120508225515.GD7948@kroah.com>
-References: <Pine.LNX.4.44L0.1205081507010.1164-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1205081507010.1164-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 8 May 2012 18:57:27 -0400
+Date: Tue, 8 May 2012 15:57:26 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kmsg: limit message size
+Message-Id: <20120508155726.d02d6600.akpm@linux-foundation.org>
+In-Reply-To: <1336229772-3488-1-git-send-email-levinsasha928@gmail.com>
+References: <1336229772-3488-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 03:08:45PM -0400, Alan Stern wrote:
-> This patch (as1552) fixes a fairly obvious copy-paste error that could
-> have serious consequences on architectures where sizeof(int) !=
-> sizeof(unsigned long).
+On Sat,  5 May 2012 16:56:12 +0200
+Sasha Levin <levinsasha928@gmail.com> wrote:
+
+> There are no size checks in kmsg_write(), and we try allocating enough
+> memory to store everything userspace gave us, which may be too much for
+> kmalloc to allocate.
 > 
-> Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-> CC: <stable@vger.kernel.org>
+> Furthermore, we can have an integer overflow if len==INT_MAX, in that case
+> we'll corrupt kernel memory.
 > 
+> This was tested with several userspace programs that write to kmsg, and haven't
+> found a case where the program attempts to write more than PAGE_SIZE.
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 > ---
+>  drivers/char/mem.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 > 
-> This just caught my eye while I was adding another macro immediately
-> below DEVICE_INT_ATTR.
-> 
-> 
->  include/linux/device.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+> index d6e9d08..c90964b 100644
+> --- a/drivers/char/mem.c
+> +++ b/drivers/char/mem.c
+> @@ -815,6 +815,9 @@ static ssize_t kmsg_writev(struct kiocb *iocb, const struct iovec *iv,
+>  	ssize_t ret = -EFAULT;
+>  	size_t len = iov_length(iv, count);
+>  
+> +	if (len > PAGE_SIZE)
+> +		return -E2BIG;
+> +
+>  	line = kmalloc(len + 1, GFP_KERNEL);
+>  	if (line == NULL)
+>  		return -ENOMEM;
 
-This is already fixed up in my driver-core-next tree from a patch from
-Michael Davidson <md@google.com>.
+Well, this is a write(), and write() is permitted to return
+less-than-asked-for.  So what we could do here is to write the first N
+bytes and then return N to userspace.  Well-behaved userspace will
+notice this and then do some more writing from offset N.
 
-sorry,
+Could I ask that you try this and test it a bit, see whether there is
+any well-behaved userspace out there?  Things like cat and echo
+_should_ dtrt.
 
-greg k-h
