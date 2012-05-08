@@ -1,92 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756306Ab2EHPNz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:13:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57093 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755938Ab2EHPNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:13:54 -0400
-Message-ID: <4FA937C0.7080202@zytor.com>
-Date: Tue, 08 May 2012 08:12:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1756266Ab2EHPNx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:13:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57092 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755938Ab2EHPNw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 11:13:52 -0400
+Date: Tue, 8 May 2012 08:13:34 -0700
+From: tip-bot for Jan Beulich <JBeulich@suse.com>
+Message-ID: <tip-fba60c620a6a9ec11140c179e5d0fe0bc3c3ea29@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        jbeulich@suse.com, akpm@linux-foundation.org, JBeulich@suse.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        jbeulich@suse.com, akpm@linux-foundation.org, JBeulich@suse.com,
+        tglx@linutronix.de
+In-Reply-To: <4FA947FE020000780008247F@nat28.tlf.novell.com>
+References: <4FA947FE020000780008247F@nat28.tlf.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86-64: Eliminate dead ia32 syscall handlers
+Git-Commit-ID: fba60c620a6a9ec11140c179e5d0fe0bc3c3ea29
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mgorman@suse.de, npiggin@gmail.com, tglx@linutronix.de, mingo@redhat.com,
-        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, gregkh@linuxfoundation.org, glommer@redhat.com,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, borislav.petkov@amd.com,
-        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
-        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
-        a.p.zijlstra@chello.nl, kamezawa.hiroyu@jp.fujitsu.com,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 4/7] x86/tlb: add tlb flush all factor for specific
- CPUs
-References: <1336485790-30902-1-git-send-email-alex.shi@intel.com> <1336485790-30902-5-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1336485790-30902-5-git-send-email-alex.shi@intel.com>
-X-Enigmail-Version: 1.4
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 08:13:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2012 07:03 AM, Alex Shi wrote:
-> --- a/arch/x86/kernel/cpu/intel.c
-> +++ b/arch/x86/kernel/cpu/intel.c
-> @@ -610,6 +610,35 @@ void intel_tlb_lookup(const unsigned char desc)
->  	}
->  }
->  
-> +void intel_tlb_flushall_factor_set(struct cpuinfo_x86 *c)
-> +{
-> +	switch (c->x86_model) {
-> +	case 15: /* original 65 nm celeron/pentium/core2/xeon, "Merom"/"Conroe" */
-> +		tlb_flushall_factor = 0;
-> +		break;
-> +	case 26: /* 45 nm nehalem, "Bloomfield" */
-> +	case 30: /* 45 nm nehalem, "Lynnfield" */
-> +	case 37: /* 32 nm nehalem, "Clarkdale" */
-> +	case 44: /* 32 nm nehalem, "Gulftown" */
-> +	case 46: /* 45 nm nehalem-ex, "Beckton" */
-> +		tlb_flushall_factor = 64;
-> +		break;
-> +	case 42: /* SandyBridge */
-> +	case 45: /* SandyBridge, "Romely-EP" */
-> +		tlb_flushall_factor = 32;
-> +		break;
-> +	case 28: /* Atom */
-> +	case 47: /* 32 nm Xeon E7 */
-> +	case 14: /* 65 nm core solo/duo, "Yonah" */
-> +	case 22: /* single-core 65 nm celeron/core2solo "Merom-L"/"Conroe-L" */
-> +	case 23: /* current 45 nm celeron/core2/xeon "Penryn"/"Wolfdale" */
-> +	case 29: /* six-core 45 nm xeon "Dunnington" */
-> +
-> +	default:
-> +		tlb_flushall_factor = 0;
-> +	}
-> +}
-> +
+Commit-ID:  fba60c620a6a9ec11140c179e5d0fe0bc3c3ea29
+Gitweb:     http://git.kernel.org/tip/fba60c620a6a9ec11140c179e5d0fe0bc3c3ea29
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Tue, 8 May 2012 15:21:18 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 8 May 2012 16:43:01 +0200
 
-This uses x86_model without qualifying it x86 (family), however that is
-meaningless.  All the CPUs you are dealing with above have c->x86 == 6,
-but you need to handle others correctly (even if that just means
-defaulting it to zero.)
+x86-64: Eliminate dead ia32 syscall handlers
 
-One way to do that is to do:
+None of the three routines being removed here was actually
+hooked up anywhere, so they all represented dead code.
 
-switch ((c->x86 << 8) + c->x86_model) {
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/4FA947FE020000780008247F@nat28.tlf.novell.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/ia32/sys_ia32.c |   23 -----------------------
+ 1 files changed, 0 insertions(+), 23 deletions(-)
 
-... and use numbers like 0x62d instead of 45.
-
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+diff --git a/arch/x86/ia32/sys_ia32.c b/arch/x86/ia32/sys_ia32.c
+index aec2202..edca9c0 100644
+--- a/arch/x86/ia32/sys_ia32.c
++++ b/arch/x86/ia32/sys_ia32.c
+@@ -287,11 +287,6 @@ asmlinkage long sys32_sigaction(int sig, struct old_sigaction32 __user *act,
+ 	return ret;
+ }
+ 
+-asmlinkage long sys32_alarm(unsigned int seconds)
+-{
+-	return alarm_setitimer(seconds);
+-}
+-
+ asmlinkage long sys32_waitpid(compat_pid_t pid, unsigned int *stat_addr,
+ 			      int options)
+ {
+@@ -300,11 +295,6 @@ asmlinkage long sys32_waitpid(compat_pid_t pid, unsigned int *stat_addr,
+ 
+ /* 32-bit timeval and related flotsam.  */
+ 
+-asmlinkage long sys32_sysfs(int option, u32 arg1, u32 arg2)
+-{
+-	return sys_sysfs(option, arg1, arg2);
+-}
+-
+ asmlinkage long sys32_sched_rr_get_interval(compat_pid_t pid,
+ 				    struct compat_timespec __user *interval)
+ {
+@@ -375,19 +365,6 @@ asmlinkage long sys32_pwrite(unsigned int fd, const char __user *ubuf,
+ }
+ 
+ 
+-asmlinkage long sys32_personality(unsigned long personality)
+-{
+-	int ret;
+-
+-	if (personality(current->personality) == PER_LINUX32 &&
+-		personality == PER_LINUX)
+-		personality = PER_LINUX32;
+-	ret = sys_personality(personality);
+-	if (ret == PER_LINUX32)
+-		ret = PER_LINUX;
+-	return ret;
+-}
+-
+ asmlinkage long sys32_sendfile(int out_fd, int in_fd,
+ 			       compat_off_t __user *offset, s32 count)
+ {
