@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab2EHEMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 00:12:38 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:38969 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab2EHEMf (ORCPT
+	id S1755355Ab2EHENY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 00:13:24 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:34257 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751119Ab2EHEJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 00:12:35 -0400
-Date: Tue, 8 May 2012 06:12:29 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH UPDATED 3/3] tracing: Provide trace events interface for
- uprobes
-Message-ID: <20120508041229.GD30652@gmail.com>
-References: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com>
- <20120409091154.8343.50489.sendpatchset@srdronam.in.ibm.com>
- <20120411103043.GB29437@linux.vnet.ibm.com>
+	Tue, 8 May 2012 00:09:36 -0400
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <akpm@linux-foundation.org>
+Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <mturquette@linaro.org>, <sshtylyov@mvista.com>, <jgarzik@redhat.com>,
+        <linux@arm.linux.org.uk>, <w.sang@pengutronix.de>,
+        <LW@KARO-electronics.de>, <andrew@lunn.ch>,
+        Viresh Kumar <viresh.kumar@st.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>
+Subject: [PATCH V3 Resend 05/12] usb/musb: Remove conditional compilation of clk code
+Date: Tue, 8 May 2012 09:22:32 +0530
+Message-ID: <ead52d9fcc8c2bcb1c9dbdc12296a701592004c4.1336448639.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <cover.1336448639.git.viresh.kumar@st.com>
+References: <cover.1336448639.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120411103043.GB29437@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Viresh Kumar <viresh.linux@gmail.com>
 
-FYI, this warning started to trigger in -tip, with the latest 
-uprobes patches:
+With addition of dummy clk_*() calls for non CONFIG_HAVE_CLK cases in clk.h,
+there is no need to have clk code enclosed in #ifdef CONFIG_HAVE_CLK, #endif
+macros.
 
-warning: (UPROBE_EVENT) selects UPROBES which has unmet direct dependencies (UPROBE_EVENTS && PERF_EVENTS)
+musb also has these dummy macros defined locally. Remove them as they aren't
+required anymore.
 
-Thanks,
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org
+---
+ drivers/usb/musb/musb_core.h |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-	Ingo
+diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
+index f4a40f0..f7bc23f 100644
+--- a/drivers/usb/musb/musb_core.h
++++ b/drivers/usb/musb/musb_core.h
+@@ -81,14 +81,6 @@ struct musb_ep;
+ #define is_peripheral_active(m)		(!(m)->is_host)
+ #define is_host_active(m)		((m)->is_host)
+ 
+-#ifndef CONFIG_HAVE_CLK
+-/* Dummy stub for clk framework */
+-#define clk_get(dev, id)	NULL
+-#define clk_put(clock)		do {} while (0)
+-#define clk_enable(clock)	do {} while (0)
+-#define clk_disable(clock)	do {} while (0)
+-#endif
+-
+ #ifdef CONFIG_PROC_FS
+ #include <linux/fs.h>
+ #define MUSB_CONFIG_PROC_FS
+-- 
+1.7.9
+
