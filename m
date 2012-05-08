@@ -1,96 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab2EHDKD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 23:10:03 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37769 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758045Ab2EHDKB (ORCPT
+	id S1757228Ab2EHDQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 23:16:04 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:42036 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941Ab2EHDP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 23:10:01 -0400
-Date: Tue, 8 May 2012 13:09:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>, Sage Weil <sage@newdream.net>,
-        Sage Weil <sage@inktank.com>
-Subject: linux-next: manual merge of the net-next tree with the ceph tree
-Message-Id: <20120508130948.066bcfb7f7742d039c2db5d3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Mon, 7 May 2012 23:15:59 -0400
+Message-ID: <1336446956.2097.16.camel@shrek.rexursive.com>
+Subject: Re: [PATCH]: In kernel hibernation, suspend to both: draft
+From: Bojan Smojver <bojan@rexursive.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org
+Date: Tue, 08 May 2012 13:15:56 +1000
+In-Reply-To: <201205072214.13912.rjw@sisk.pl>
+References: <1336379825.2097.5.camel@shrek.rexursive.com>
+	 <201205072214.13912.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__8_May_2012_13_09_48_+1000_OTCCoMbxcU_QKdOx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__8_May_2012_13_09_48_+1000_OTCCoMbxcU_QKdOx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-05-07 at 22:14 +0200, Rafael J. Wysocki wrote:
+> Looks reasonable at first sight.
 
-Hi all,
+OK, thanks for having a look! I'll check to see whether memory for
+hibernation is been released properly and then I may submit this for
+real. BTW, the patch actually worked on my ThinkPad T510. The miracles
+never stop. :-)
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/ceph/osdmap.c between commit 8b3932690084 ("crush: warn on do_rule
-failure") from the ceph tree and commit 95c961747284 ("net: cleanup
-unsigned to unsigned int") from the net-next tree.
+Just to be sure - I should prepare a patch against your linux-next
+branch, correct? This patch was against mainline, which is still
+somewhat behind.
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-- 
+Bojan
 
-diff --cc net/ceph/osdmap.c
-index 2592f3c,56e561a..0000000
---- a/net/ceph/osdmap.c
-+++ b/net/ceph/osdmap.c
-@@@ -991,11 -998,12 +991,11 @@@ int ceph_calc_object_layout(struct ceph
-  			    struct ceph_file_layout *fl,
-  			    struct ceph_osdmap *osdmap)
-  {
-- 	unsigned num, num_mask;
-+ 	unsigned int num, num_mask;
-  	struct ceph_pg pgid;
- -	s32 preferred =3D (s32)le32_to_cpu(fl->fl_pg_preferred);
-  	int poolid =3D le32_to_cpu(fl->fl_pg_pool);
-  	struct ceph_pg_pool_info *pool;
-- 	unsigned ps;
-+ 	unsigned int ps;
- =20
-  	BUG_ON(!osdmap);
- =20
-@@@ -1027,7 -1045,8 +1027,7 @@@ static int *calc_pg_raw(struct ceph_osd
-  	struct ceph_pg_mapping *pg;
-  	struct ceph_pg_pool_info *pool;
-  	int ruleno;
-- 	unsigned poolid, ps, pps, t, r;
- -	unsigned int poolid, ps, pps, t;
- -	int preferred;
-++	unsigned int poolid, ps, pps, t, r;
- =20
-  	poolid =3D le32_to_cpu(pgid.pool);
-  	ps =3D le16_to_cpu(pgid.ps);
-
---Signature=_Tue__8_May_2012_13_09_48_+1000_OTCCoMbxcU_QKdOx
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPqI58AAoJEECxmPOUX5FEYDUP/Ru1IO148hWw6W2/8o+1JfD6
-bV3J1sr0N7ZVAkQ+JV8Tk8fo2SV0Wnhop7vqFq6rmW4hh5mrvmEPOPCzIOh5Kpoi
-797Xd7/gi6Y76Ir06RH2Bhzg6s1NMKUdrXhFSgGm3xlv0PUwctY/8Wv2UFYr3dTN
-As6OfCApWzMv5g5Uu4tni2W4wHxLAgAWaeaa2m7tjoPYR4xRmSJo2kUtpO11+5Qt
-/DZ2VEBy5oOvGtWem16Njaj3WPzU0evBQIlegZAvChzCfPHkgOP3aXVWvrDgzKaZ
-Jk1pAs/EE6Zh7Eh+N/3HzKSWXdhG9BMyw9phZw4liO5qCUkzw+af969ffVWYD1rY
-YaDER7BOxIkXxO214rOOkdujPEolbNG1SWEp92MzFmraGiVsdF11VkBA27AqGAyD
-3RCzpu9Nu7RoR3cYqP7pQ1rbjmCVJkkZ09hWZFLa9xYBMj5JEoDdbehMDXFIbChz
-IBKalcSbRG9j60OacdGNjCAc3g/HOj9AyDYy3PuaKVH/dWa/tzsR0D+te9dCCCla
-kYF+bxaQTV5mVUqzCaSB7juCLfQvOTY8tGYorekSqv3TSCE76ZsnwDg3fcKnxXmy
-dqLQC5mf4HvE99yz+5GBBQB+pQI6ZrR+w5JJ4mcpcFvTiUwIiS5mg1wgoWbw0pbM
-cth225k2JA3Fkt9NAN9z
-=HlS9
------END PGP SIGNATURE-----
-
---Signature=_Tue__8_May_2012_13_09_48_+1000_OTCCoMbxcU_QKdOx--
