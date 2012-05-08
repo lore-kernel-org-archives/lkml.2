@@ -1,129 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab2EHKFR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 06:05:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53429 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab2EHKFP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 06:05:15 -0400
-Date: Tue, 8 May 2012 03:05:02 -0700
-From: tip-bot for Shai Fultheim <shai@scalemp.com>
-Message-ID: <tip-824a6ae65f085255464155760cb9628a2f0deb29@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        shai@scalemp.com, ido@wizery.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        shai@scalemp.com, tglx@linutronix.de, ido@wizery.com
-In-Reply-To: <1336462455-22544-1-git-send-email-ido@wizery.com>
-References: <1336462455-22544-1-git-send-email-ido@wizery.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] vsmp: Fix number of CPUs when vsmp is disabled
-Git-Commit-ID: 824a6ae65f085255464155760cb9628a2f0deb29
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+	id S1753123Ab2EHKN1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 06:13:27 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:56979 "EHLO violet"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752385Ab2EHKN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 06:13:26 -0400
+Date: Tue, 8 May 2012 12:06:57 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Alex =?utf-8?B?VmlsbGFjw63CrXM=?= Lasso 
+	<avillaci@fiec.espol.edu.ec>
+Cc: Thomas Pilarski <thomas.pi@arcor.de>,
+        Julien Ducourthial <jducourt@free.fr>,
+        Hayes Wang <hayeswang@realtek.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] r8169: fix problem with TSO (TX_BUFFS_AVAIL negative value)
+Message-ID: <20120508100657.GA10744@electric-eye.fr.zoreil.com>
+References: <1336430367.11363.38.camel@blackbone.local> <20120507234205.GA2230@electric-eye.fr.zoreil.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 03:05:09 -0700 (PDT)
+In-Reply-To: <20120507234205.GA2230@electric-eye.fr.zoreil.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  824a6ae65f085255464155760cb9628a2f0deb29
-Gitweb:     http://git.kernel.org/tip/824a6ae65f085255464155760cb9628a2f0deb29
-Author:     Shai Fultheim <shai@scalemp.com>
-AuthorDate: Tue, 8 May 2012 10:34:15 +0300
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 8 May 2012 11:24:45 +0200
+Francois Romieu <romieu@fr.zoreil.com> :
+[...]
+> Alex, Thomas, can you check if Julien's patch below fixes your broken
+> kernels as well ? 
 
-vsmp: Fix number of CPUs when vsmp is disabled
+You will have better luck with a patch whose lines are correctly formed.
 
-In case CONFIG_X86_VSMP is not set, limit the number of CPUs to
-the number of CPUs of the first board.
+Patch below applies on top of 3.4-rc6.
 
-Signed-off-by: Shai Fultheim <shai@scalemp.com>
-[ido@wizery.com: rebased, fixed minor coding-style issues]
-Signed-off-by: Ido Yariv <ido@wizery.com>
-Link: http://lkml.kernel.org/r/1336462455-22544-1-git-send-email-ido@wizery.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/vsmp_64.c |   43 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 43 insertions(+), 0 deletions(-)
+(Julien, please check your mail user agent)
 
-diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
-index a1d804b..6aa0d59 100644
---- a/arch/x86/kernel/vsmp_64.c
-+++ b/arch/x86/kernel/vsmp_64.c
-@@ -15,6 +15,7 @@
- #include <linux/init.h>
- #include <linux/pci_ids.h>
- #include <linux/pci_regs.h>
-+#include <linux/smp.h>
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index f545093..d1e3c51 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -61,8 +61,12 @@
+ #define R8169_MSG_DEFAULT \
+ 	(NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_IFUP | NETIF_MSG_IFDOWN)
  
- #include <asm/apic.h>
- #include <asm/pci-direct.h>
-@@ -22,6 +23,8 @@
- #include <asm/paravirt.h>
- #include <asm/setup.h>
+-#define TX_BUFFS_AVAIL(tp) \
+-	(tp->dirty_tx + NUM_TX_DESC - tp->cur_tx - 1)
++#define TX_SLOTS_AVAIL(tp) \
++	(tp->dirty_tx + NUM_TX_DESC - tp->cur_tx)
++
++/* A skbuff with nr_frags needs nr_frags+1 entries in the tx queue */
++#define TX_FRAGS_READY_FOR(tp,nr_frags) \
++	(TX_SLOTS_AVAIL(tp) >= (nr_frags + 1))
  
-+#define TOPOLOGY_REGISTER_OFFSET 0x10
-+
- #if defined CONFIG_PCI && defined CONFIG_PARAVIRT
- /*
-  * Interrupt control on vSMPowered systems:
-@@ -149,12 +152,52 @@ int is_vsmp_box(void)
- 	return 0;
- }
- #endif
-+
-+static void __init vsmp_cap_cpus(void)
-+{
-+	void __iomem *address;
-+	unsigned int cfg, topology, node_shift, maxcpus;
-+
-+#ifdef CONFIG_X86_VSMP
-+	/* VSMP is enabled, no need to cap cpus */
-+	return;
-+#endif
-+
-+	/*
-+	 * CONFIG_X86_VSMP is not configured, so limit the number CPUs to the
-+	 * ones present in the first board, unless explicitly overridden by
-+	 * setup_max_cpus
-+	 */
-+	if (setup_max_cpus != NR_CPUS)
-+		return;
-+
-+	/* Read the vSMP Foundation topology register */
-+	cfg = read_pci_config(0, 0x1f, 0, PCI_BASE_ADDRESS_0);
-+	address = early_ioremap(cfg + TOPOLOGY_REGISTER_OFFSET, 4);
-+	if (WARN_ON(!address))
-+		return;
-+
-+	topology = readl(address);
-+	node_shift = (topology >> 16) & 0x7;
-+	if (!node_shift)
-+		/* The value 0 should be decoded as 8 */
-+		node_shift = 8;
-+	maxcpus = (topology & ((1 << node_shift) - 1)) + 1;
-+
-+	pr_info("vSMP CTL: Capping CPUs to %d (CONFIG_X86_VSMP is unset)\n",
-+		maxcpus);
-+	setup_max_cpus = maxcpus;
-+	early_iounmap(address, 4);
-+}
-+
- void __init vsmp_init(void)
- {
- 	detect_vsmp_box();
- 	if (!is_vsmp_box())
- 		return;
+ /* Maximum number of multicast addresses to filter (vs. Rx-all-multicast).
+    The RTL chips use a 64 element hash table based on the Ethernet CRC. */
+@@ -5115,7 +5119,7 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
+ 	u32 opts[2];
+ 	int frags;
  
-+	vsmp_cap_cpus();
-+
- 	set_vsmp_pv_ops();
- 	return;
- }
+-	if (unlikely(TX_BUFFS_AVAIL(tp) < skb_shinfo(skb)->nr_frags)) {
++	if (unlikely(!TX_FRAGS_READY_FOR(tp, skb_shinfo(skb)->nr_frags))) {
+ 		netif_err(tp, drv, dev, "BUG! Tx Ring full when queue awake!\n");
+ 		goto err_stop_0;
+ 	}
+@@ -5169,7 +5173,7 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
+ 
+ 	mmiowb();
+ 
+-	if (TX_BUFFS_AVAIL(tp) < MAX_SKB_FRAGS) {
++	if (!TX_FRAGS_READY_FOR(tp, MAX_SKB_FRAGS)) {
+ 		/* Avoid wrongly optimistic queue wake-up: rtl_tx thread must
+ 		 * not miss a ring update when it notices a stopped queue.
+ 		 */
+@@ -5183,7 +5187,7 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
+ 		 * can't.
+ 		 */
+ 		smp_mb();
+-		if (TX_BUFFS_AVAIL(tp) >= MAX_SKB_FRAGS)
++		if (TX_FRAGS_READY_FOR(tp, MAX_SKB_FRAGS))
+ 			netif_wake_queue(dev);
+ 	}
+ 
+@@ -5306,7 +5310,7 @@ static void rtl_tx(struct net_device *dev, struct rtl8169_private *tp)
+ 		 */
+ 		smp_mb();
+ 		if (netif_queue_stopped(dev) &&
+-		    (TX_BUFFS_AVAIL(tp) >= MAX_SKB_FRAGS)) {
++		    TX_FRAGS_READY_FOR(tp, MAX_SKB_FRAGS)) {
+ 			netif_wake_queue(dev);
+ 		}
+ 		/*
+-- 
+Ueimor
