@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab2EHQcT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 12:32:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21606 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755762Ab2EHQcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 12:32:17 -0400
-Date: Tue, 8 May 2012 19:32:14 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC dontapply 5/5] kvm_para: guest side for eoi avoidance
-Message-ID: <20120508163214.GG8988@redhat.com>
-References: <cover.1334833140.git.mst@redhat.com>
- <5e1399d9e743668a87f31d8f2b83cad862c60728.1334833141.git.mst@redhat.com>
- <4FA93B3F.3000906@redhat.com>
- <20120508152843.GE8988@redhat.com>
- <4FA93FA3.20306@zytor.com>
+	id S1756708Ab2EHQev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 12:34:51 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:36519 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755957Ab2EHQes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 12:34:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA93FA3.20306@zytor.com>
+In-Reply-To: <201205041628.20024.arnd@arndb.de>
+References: <20120502124642.30480.41373.sendpatchset@w520>
+	<201205041628.20024.arnd@arndb.de>
+Date: Wed, 9 May 2012 01:34:47 +0900
+Message-ID: <CANqRtoSypEnwgYM+VDL1rn_XvrKCpuKbhDMRkj=c2WSJE38Thw@mail.gmail.com>
+Subject: Re: [PATCH 00/06] serial8250: DLL/DLM rework, Emma Mobile UART driver
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-serial@vger.kernel.org, horms@verge.net.au, linux-sh@vger.kernel.org,
+        gregkh@linuxfoundation.org, swarren@wwwdotorg.org,
+        linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        paul.gortmaker@windriver.com, lethal@linux-sh.org, olof@lixom.net,
+        dan.j.williams@intel.com, alan@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 08:45:39AM -0700, H. Peter Anvin wrote:
-> On 05/08/2012 08:28 AM, Gleb Natapov wrote:
-> > On Tue, May 08, 2012 at 05:26:55PM +0200, Paolo Bonzini wrote:
-> >> Il 23/04/2012 16:04, Michael S. Tsirkin ha scritto:
-> >>> +/* Our own copy of __test_and_clear_bit to make sure
-> >>> + * it is done with a single instruction */
-> >>
-> >> Is this for microoptimization or correctness?  If the latter, it does
-> >> not ensure anything without a "lock" prefix.
-> >>
-> > It can't race with other vcpus, only with vmexit on the same vcpu.
-> > 
-> 
-> That doesn't answer the question very well... I really don't understand
-> the point of having a private copy here.
-__test_and_clear_bit() is not guarantied to be local CPU atomic an that
-is what we need here.
+On Sat, May 5, 2012 at 1:28 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 02 May 2012, Magnus Damm wrote:
+>> Note that there is no DT support included at this point,
+>> but it boils down to a 10 line change. The boot loader on
+>> my board does not do DT so I'd like to use kexec for DT
+>> development (as usual), but to use kexec I first need to
+>> get a non-DT kernel working. Which is basically this. =)
+>
+> As a follow-up on this, based on my comments to your emma platform
+> code, I think it would be easy enough to just use the appended
+> dtb support that we have, which allows you to boot a DT-enabled
+> kernel with a legacy boot loader.
 
-> 
-> I really, really don't want a bunch of private interfaces around.  It
-> would be a lot better to define a test_and_{set,clear}_bit_local() in
-> <asm/bitops.h> which is defined to be local CPU atomic.
-> 
-Yes, this will be definitely better.
+Thanks for your comments! I have some code going with DT now. Will
+post tomorrow.
 
---
-			Gleb.
+As for the appended dtb support, do you know the recommended way to
+include it in the uImage? It feels a bit odd to recommend customers to
+patch their kernel source to build a bootable kernel.  I ended up with
+this local hackery, but there must be better ways:
+
+--- 0001/arch/arm/boot/Makefile
++++ work/arch/arm/boot/Makefile 2012-05-09 00:40:17.000000000 +0900
+@@ -53,6 +53,7 @@ $(obj)/compressed/vmlinux: $(obj)/Image
+
+ $(obj)/zImage: $(obj)/compressed/vmlinux FORCE
+        $(call if_changed,objcopy)
++       cat $(obj)/emev2-kzm9d.dtb >> $@
+        @echo '  Kernel: $@ is ready'
+
+ endif
+
+Cheers,
+
+/ magnus
