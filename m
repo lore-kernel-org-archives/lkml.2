@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757811Ab2EHFIw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 01:08:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60449 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461Ab2EHFIv (ORCPT
+	id S1758002Ab2EHFNc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 01:13:32 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3120 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461Ab2EHFNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 01:08:51 -0400
-Date: Tue, 8 May 2012 15:08:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: linux-next: build warning after merge of the drm tree
-Message-Id: <20120508150839.66910d2ad92ec8889cc82a49@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__8_May_2012_15_08_39_+1000_DhNXapQ8BaUoG5PN"
+	Tue, 8 May 2012 01:13:30 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 07 May 2012 22:12:36 -0700
+Date: Tue, 8 May 2012 08:12:33 +0300
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>, "ohad@wizery.com" <ohad@wizery.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
+Message-ID: <20120508081233.8883eb8ec2a8bc99b4039334@nvidia.com>
+In-Reply-To: <20120507183611.GA725@kroah.com>
+References: <201205070859.29174.arnd@arndb.de>
+	<20120507.122333.2024326166703361049.hdoyu@nvidia.com>
+	<201205071024.48958.arnd@arndb.de>
+	<20120507.143647.508182574757518311.hdoyu@nvidia.com>
+	<20120507183611.GA725@kroah.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__8_May_2012_15_08_39_+1000_DhNXapQ8BaUoG5PN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 7 May 2012 20:36:11 +0200
+"gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org> wrote:
 
-Hi Dave,
+> On Mon, May 07, 2012 at 01:36:47PM +0200, Hiroshi Doyu wrote:
+> > From: Arnd Bergmann <arnd@arndb.de>
+> > Subject: Re: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
+> > Date: Mon, 7 May 2012 12:24:48 +0200
+> > Message-ID: <201205071024.48958.arnd@arndb.de>
+> > 
+> > > On Monday 07 May 2012, Hiroshi Doyu wrote:
+> > > > Tegra doesn't enable ARM_AMBA and Tegra doesn't use the following
+> > > > "drivers/amba/bus.c" right now. I needed to make this directory
+> > > > available to ones without ARM_AMBA enabled.
+> > > 
+> > > Ah, right. I looked at arch/arm/Kconfig earlier to see if
+> > > tegra enabled ARM_AMBA but was accidentally looking
+> > > at ARCH_INtegraTOR when grepping for TEGRA ;-)
+> > > 
+> > > Your proposed solution sounds good then.
+> > 
+> > Thank you for reviewing patches & ACK. Attached the update one here,
+> > instead of sending a while series again.
+> > 
+> > >From 16cc2b0fab00c33cd24bb5c43c45a4cda646ad42 Mon Sep 17 00:00:00 2001
+> > From: Hiroshi DOYU <hdoyu@nvidia.com>
+> > Date: Wed, 18 Apr 2012 11:41:56 +0300
+> > Subject: [PATCHv5 1/3] ARM: tegra: Add Tegra AHB driver
+> > 
+> > Tegra AHB Bus conforms to the AMBA Specification (Rev 2.0) Advanced
+> > High-performance Bus (AHB) architecture.
+> > 
+> > The AHB Arbiter controls AHB bus master arbitration. This effectively
+> > forms a second level of arbitration for access to the memory
+> > controller through the AHB Slave Memory device. The AHB pre-fetch
+> > logic can be configured to enhance performance for devices doing
+> > sequential access. Each AHB master is assigned to either the high or
+> > low priority bin. Both Tegra20/30 have this AHB bus.
+> > 
+> > Some of configuration params could be passed from DT too if needed.
+> > 
+> > Change-Id: I184e0e1ce033e76881353a4bb99234e2850e99c2
+> 
+> What nonsense is this?  Please never put that in a patch you want
+> accepted upstream, as it makes no sense and we just have to edit it out
+> by hand, making us grumpy...
 
-After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
-produced this warning:
+Sorry, my bad.
 
-drivers/gpu/drm/gma500/opregion.c: In function 'asle_set_backlight':
-drivers/gpu/drm/gma500/opregion.c:154:6: warning: unused variable 'max' [-W=
-unused-variable]
-
-Introduced by commit d839ede47a56 ("gma500: opregion and ACPI").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__8_May_2012_15_08_39_+1000_DhNXapQ8BaUoG5PN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPqKpXAAoJEECxmPOUX5FEwUcP+gNSCVbq3zwBWfWZMSt+4Qvw
-kQCA7f3flOsz5wzazlhk4xNX+bJ+5VyyQovO2BtWR0E9uXidIsQ4EmSsSAcvqbOs
-0hjYIkvW//DvOHCCRRsGp5auuK5DQFOCB+SkLoStNP2Ypk5Eqdppg1gXkbKk4UNH
-5ExYwFQ0sbGn03FNO8a/bBCre+TELgxVXKShEc0TYja2SPgNJcXqStXGBh/7AkQr
-zYm/0rY4o4d0qrvhIyOi91oVyP+e6uyvLMKP867wfV1nxvqp/12Xt0rufJgdgPVv
-icj3XKVuNsb0y1wiiwJ8HXXdPibit9eLgvcLiheovTopvO771xJHrZi/iK8IqEKg
-OmdimM7HBPwScxQ5vQYSA4FK1ui2viXxuaQI8Zb/lVS5LCcL1iaaBAAcMQ7rQ01D
-kloTOzvrbgVd7fRfzqV+H2Ncu7Ta84riaofghyAW2XCHSd91r6um2+7gic8NTREh
-uk2BUoHd3tPjJ0atWb9Vb57dgRr5ovxY5bX0RAmfari2EiWp/3pOER55jFrnJWTY
-FRgQVeOcacKD/79akKukBzF8lA4T4H/E4Y+yqjp16CkcMiX2xhU6XmC/kB4X/jUv
-XpCmBlgX+kKZSg6zR0XcHLDSNfffHXdoczT+5oaXwt4TQ+/lijDt3LDcCnQ2W8CV
-CzK3V/g2H5zVkYFWYJzD
-=wRYR
------END PGP SIGNATURE-----
-
---Signature=_Tue__8_May_2012_15_08_39_+1000_DhNXapQ8BaUoG5PN--
+Stephen, would you mind removing that line when you take them in?
