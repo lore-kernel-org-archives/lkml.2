@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab2EHJpw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 05:45:52 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:39219 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752942Ab2EHJpt (ORCPT
+	id S1753142Ab2EHJp6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 05:45:58 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:42255 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752843Ab2EHJpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 05:45:49 -0400
+	Tue, 8 May 2012 05:45:51 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 Cc: Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@freescale.com>,
@@ -15,9 +15,9 @@ Cc: Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@freescale.com>,
         Rajendra Nayak <rajendra.nayak@linaro.org>,
         Haojian Zhuang <haojian.zhuang@marvell.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 10/12] ARM: ux500: switch to using pinctrl for uart0
-Date: Tue, 8 May 2012 11:45:32 +0200
-Message-ID: <1336470332-23816-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 06/12] pinctrl/nomadik: implement pin configuration
+Date: Tue, 8 May 2012 11:45:02 +0200
+Message-ID: <1336470302-23670-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.9.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -27,181 +27,218 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Walleij <linus.walleij@linaro.org>
 
-UART0 had a hack that enabled its pins on init and put it to
-sleep on the exit callback. Replace this with the pinctrl calls
-to do the same thing and update the runtime table with the two
-apropriate states for runtime/active and idle.
+This implements the pin configuration interface for the
+Nomadik pin controller.
+
+As part of the exercise we add a bit in the pin_cfg_t for
+the Nomadik pinctrl driver that indicates if the pin should
+be forced into GPIO mode. This is not done to go behind the
+back of the GPIO subsystem, but to ensure that default modes
+can be set by hogs on boot and system suspend/resume states.
+It was used implicitly by the old code defining all config
+settings and modes in a single config word but we now have
+a split between pinmux and pinconf leading to the need to
+have this.
+
+We also add a bit for explicitly setting sleepmode of the
+pin. This was previously handled by custom calls with the
+_sleep() suffix, but we now have one single interface into
+the configuration so we replace this with a bit indicating
+that the pin shall be configured into sleep mode.
+
+Some of the configuration can be refactored later to use
+less custom fields on the pin_cfg_t but we are currently
+leaving the old function calls in place so we stay
+compatible.
 
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-pins.c |   19 ++++++++++
- arch/arm/mach-ux500/board-mop500.c      |   62 ++++++++++++++++++++-----------
- 2 files changed, 60 insertions(+), 21 deletions(-)
+ arch/arm/plat-nomadik/include/plat/pincfg.h |   13 +++
+ drivers/pinctrl/Kconfig                     |    1 +
+ drivers/pinctrl/pinctrl-nomadik.c           |  116 ++++++++++++++++++++++++++-
+ 3 files changed, 129 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-pins.c b/arch/arm/mach-ux500/board-mop500-pins.c
-index 157af7e..dccd29d 100644
---- a/arch/arm/mach-ux500/board-mop500-pins.c
-+++ b/arch/arm/mach-ux500/board-mop500-pins.c
-@@ -45,6 +45,10 @@ BIAS(gpio_in_pu_slpm_gpio_nopull, PIN_INPUT_PULLUP|PIN_GPIOMODE_ENABLED|PIN_SLPM
- BIAS(gpio_in_pd_slpm_gpio_nopull, PIN_INPUT_PULLDOWN|PIN_GPIOMODE_ENABLED|PIN_SLPM_GPIO|PIN_SLPM_INPUT_NOPULL);
- BIAS(gpio_out_hi, PIN_OUTPUT_HIGH|PIN_GPIOMODE_ENABLED);
- BIAS(gpio_out_lo, PIN_OUTPUT_LOW|PIN_GPIOMODE_ENABLED);
-+/* Sleep modes */
-+BIAS(sleep_in_wkup_pdis, PIN_SLPM_DIR_INPUT|PIN_SLPM_WAKEUP_ENABLE|PIN_SLPM_PDIS_DISABLED);
-+BIAS(sleep_out_hi_wkup_pdis, PIN_SLPM_OUTPUT_HIGH|PIN_SLPM_WAKEUP_ENABLE|PIN_SLPM_PDIS_DISABLED);
-+BIAS(sleep_out_wkup_pdis, PIN_SLPM_DIR_OUTPUT|PIN_SLPM_WAKEUP_ENABLE|PIN_SLPM_PDIS_DISABLED);
+diff --git a/arch/arm/plat-nomadik/include/plat/pincfg.h b/arch/arm/plat-nomadik/include/plat/pincfg.h
+index c015133..9c949c7 100644
+--- a/arch/arm/plat-nomadik/include/plat/pincfg.h
++++ b/arch/arm/plat-nomadik/include/plat/pincfg.h
+@@ -124,6 +124,19 @@ typedef unsigned long pin_cfg_t;
+ #define PIN_LOWEMI_DISABLED	(0 << PIN_LOWEMI_SHIFT)
+ #define PIN_LOWEMI_ENABLED	(1 << PIN_LOWEMI_SHIFT)
  
- /* We use these to define hog settings that are always done on boot */
- #define DB8500_MUX_HOG(group,func) \
-@@ -58,6 +62,10 @@ BIAS(gpio_out_lo, PIN_OUTPUT_LOW|PIN_GPIOMODE_ENABLED);
- #define DB8500_PIN(pin,conf,dev) \
- 	PIN_MAP_CONFIGS_PIN_DEFAULT(dev, "pinctrl-db8500", pin, conf)
- 
-+#define DB8500_PIN_SLEEP(pin,conf,dev) \
-+	PIN_MAP_CONFIGS_PIN(dev, PINCTRL_STATE_SLEEP, "pinctrl-db8500",	\
-+			    pin, conf)
++#define PIN_GPIOMODE_SHIFT	26
++#define PIN_GPIOMODE_MASK	(0x1 << PIN_GPIOMODE_SHIFT)
++#define PIN_GPIOMODE(x)		(((x) & PIN_GPIOMODE_MASK) >> PIN_GPIOMODE_SHIFT)
++#define PIN_GPIOMODE_DISABLED	(0 << PIN_GPIOMODE_SHIFT)
++#define PIN_GPIOMODE_ENABLED	(1 << PIN_GPIOMODE_SHIFT)
 +
- /* Pin control settings */
- static struct pinctrl_map __initdata mop500_family_pinmap[] = {
- 	/*
-@@ -115,6 +123,17 @@ static struct pinctrl_map __initdata mop500_family_pinmap[] = {
- 	 * converted to the pinctrl model. Here we model them as "default"
- 	 * states.
- 	 */
-+	/* Mux in UART0 after initialization */
-+	DB8500_MUX("u0_a_1", "u0", "uart0"),
-+	DB8500_PIN("GPIO0_AJ5", in_pu, "uart0"), /* CTS */
-+	DB8500_PIN("GPIO1_AJ3", out_hi, "uart0"), /* RTS */
-+	DB8500_PIN("GPIO2_AH4", in_pu, "uart0"), /* RXD */
-+	DB8500_PIN("GPIO3_AH3", out_hi, "uart0"), /* TXD */
-+	/* Sleep state for UART0 */
-+	DB8500_PIN_SLEEP("GPIO0_AJ5", sleep_in_wkup_pdis, "uart0"),
-+	DB8500_PIN_SLEEP("GPIO1_AJ3", sleep_out_hi_wkup_pdis, "uart0"),
-+	DB8500_PIN_SLEEP("GPIO2_AH4", sleep_in_wkup_pdis, "uart0"),
-+	DB8500_PIN_SLEEP("GPIO3_AH3", sleep_out_wkup_pdis, "uart0"),
- 	/* Mux in LCD data lines 8 thru 11 and LCDA CLK for MCDE TVOUT */
- 	DB8500_MUX("lcd_d8_d11_a_1", "lcd", "mcde-tvout"),
- 	DB8500_MUX("lcdaclk_b_1", "lcda", "mcde-tvout"),
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index e5c0e6e..1dc3165 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -30,18 +30,17 @@
- #include <linux/smsc911x.h>
- #include <linux/gpio_keys.h>
- #include <linux/delay.h>
--
- #include <linux/of.h>
- #include <linux/of_platform.h>
--
- #include <linux/leds.h>
-+#include <linux/pinctrl/consumer.h>
++#define PIN_SLEEPMODE_SHIFT	27
++#define PIN_SLEEPMODE_MASK	(0x1 << PIN_SLEEPMODE_SHIFT)
++#define PIN_SLEEPMODE(x)	(((x) & PIN_SLEEPMODE_MASK) >> PIN_SLEEPMODE_SHIFT)
++#define PIN_SLEEPMODE_DISABLED	(0 << PIN_SLEEPMODE_SHIFT)
++#define PIN_SLEEPMODE_ENABLED	(1 << PIN_SLEEPMODE_SHIFT)
 +
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
- #include <asm/hardware/gic.h>
++
+ /* Shortcuts.  Use these instead of separate DIR, PULL, and VAL.  */
+ #define PIN_INPUT_PULLDOWN	(PIN_DIR_INPUT | PIN_PULL_DOWN)
+ #define PIN_INPUT_PULLUP	(PIN_DIR_INPUT | PIN_PULL_UP)
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index 0c738fd..7a3e34c 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -41,6 +41,7 @@ config PINCTRL_NOMADIK
+ 	bool "Nomadik pin controller driver"
+ 	depends on ARCH_U8500
+ 	select PINMUX
++	select PINCONF
  
- #include <plat/i2c.h>
- #include <plat/ste_dma40.h>
--#include <plat/pincfg.h>
- #include <plat/gpio-nomadik.h>
+ config PINCTRL_DB8500
+ 	bool "DB8500 pin controller driver"
+diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+index 5f0db60..ff20d97 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.c
++++ b/drivers/pinctrl/pinctrl-nomadik.c
+@@ -26,6 +26,7 @@
+ #include <linux/slab.h>
+ #include <linux/pinctrl/pinctrl.h>
+ #include <linux/pinctrl/pinmux.h>
++#include <linux/pinctrl/pinconf.h>
+ /* Since we request GPIOs from ourself */
+ #include <linux/pinctrl/consumer.h>
  
- #include <mach/hardware.h>
-@@ -49,7 +48,6 @@
- #include <mach/devices.h>
- #include <mach/irqs.h>
+@@ -1561,7 +1562,8 @@ int nmk_gpio_request_enable(struct pinctrl_dev *pctldev,
  
--#include "pins-db8500.h"
- #include "ste-dma40-db8500.h"
- #include "devices-db8500.h"
- #include "board-mop500.h"
-@@ -522,14 +520,6 @@ static struct stedma40_chan_cfg uart2_dma_cfg_tx = {
+ 	clk_enable(nmk_chip->clk);
+ 	bit = offset % NMK_GPIO_PER_CHIP;
+-	__nmk_gpio_set_mode_safe(nmk_chip, bit, NMK_GPIO_ALT_GPIO, false);
++	/* There is no glitch when converting any pin to GPIO */
++	__nmk_gpio_set_mode(nmk_chip, bit, NMK_GPIO_ALT_GPIO);
+ 	clk_disable(nmk_chip->clk);
+ 
+ 	return 0;
+@@ -1587,10 +1589,122 @@ static struct pinmux_ops nmk_pinmux_ops = {
+ 	.gpio_disable_free = nmk_gpio_disable_free,
  };
- #endif
  
--
--static pin_cfg_t mop500_pins_uart0[] = {
--	GPIO0_U0_CTSn   | PIN_INPUT_PULLUP,
--	GPIO1_U0_RTSn   | PIN_OUTPUT_HIGH,
--	GPIO2_U0_RXD    | PIN_INPUT_PULLUP,
--	GPIO3_U0_TXD    | PIN_OUTPUT_HIGH,
--};
--
- #define PRCC_K_SOFTRST_SET      0x18
- #define PRCC_K_SOFTRST_CLEAR    0x1C
- static void ux500_uart0_reset(void)
-@@ -550,24 +540,33 @@ static void ux500_uart0_reset(void)
- 	udelay(1);
- }
- 
-+/* This needs to be referenced by callbacks */
-+struct pinctrl *u0_p;
-+struct pinctrl_state *u0_def;
-+struct pinctrl_state *u0_sleep;
++int nmk_pin_config_get(struct pinctrl_dev *pctldev,
++		       unsigned pin,
++		       unsigned long *config)
++{
++	/* Not implemented */
++	return -EINVAL;
++}
 +
- static void ux500_uart0_init(void)
- {
- 	int ret;
- 
--	ret = nmk_config_pins(mop500_pins_uart0,
--			ARRAY_SIZE(mop500_pins_uart0));
--	if (ret < 0)
--		pr_err("pl011: uart pins_enable failed\n");
-+	if (IS_ERR(u0_p) || IS_ERR(u0_def))
-+		return;
++int nmk_pin_config_set(struct pinctrl_dev *pctldev,
++		       unsigned pin,
++		       unsigned long config)
++{
++	static const char *pullnames[] = {
++		[NMK_GPIO_PULL_NONE]	= "none",
++		[NMK_GPIO_PULL_UP]	= "up",
++		[NMK_GPIO_PULL_DOWN]	= "down",
++		[3] /* illegal */	= "??"
++	};
++	static const char *slpmnames[] = {
++		[NMK_GPIO_SLPM_INPUT]		= "input/wakeup",
++		[NMK_GPIO_SLPM_NOCHANGE]	= "no-change/no-wakeup",
++	};
++	struct nmk_pinctrl *npct = pinctrl_dev_get_drvdata(pctldev);
++	struct nmk_gpio_chip *nmk_chip;
++	struct pinctrl_gpio_range *range;
++	struct gpio_chip *chip;
++	unsigned bit;
 +
-+	ret = pinctrl_select_state(u0_p, u0_def);
-+	if (ret)
-+		pr_err("could not set UART0 defstate\n");
- }
- 
- static void ux500_uart0_exit(void)
- {
- 	int ret;
- 
--	ret = nmk_config_pins_sleep(mop500_pins_uart0,
--			ARRAY_SIZE(mop500_pins_uart0));
--	if (ret < 0)
--		pr_err("pl011: uart pins_disable failed\n");
-+	if (IS_ERR(u0_p) || IS_ERR(u0_sleep))
-+		return;
++	/*
++	 * The pin config contains pin number and altfunction fields, here
++	 * we just ignore that part. It's being handled by the framework and
++	 * pinmux callback respectively.
++	 */
++	pin_cfg_t cfg = (pin_cfg_t) config;
++	int pull = PIN_PULL(cfg);
++	int slpm = PIN_SLPM(cfg);
++	int output = PIN_DIR(cfg);
++	int val = PIN_VAL(cfg);
++	bool lowemi = PIN_LOWEMI(cfg);
++	bool gpiomode = PIN_GPIOMODE(cfg);
++	bool sleep = PIN_SLEEPMODE(cfg);
 +
-+	ret = pinctrl_select_state(u0_p, u0_sleep);
-+	if (ret)
-+		pr_err("could not set UART0 idlestate\n");
- }
- 
- static struct amba_pl011_data uart0_plat = {
-@@ -599,7 +598,28 @@ static struct amba_pl011_data uart2_plat = {
- 
- static void __init mop500_uart_init(struct device *parent)
- {
--	db8500_add_uart0(parent, &uart0_plat);
-+	struct amba_device *uart0_device;
-+
-+	uart0_device = db8500_add_uart0(parent, &uart0_plat);
-+	if (uart0_device) {
-+		u0_p = pinctrl_get(&uart0_device->dev);
-+		if (IS_ERR(u0_p))
-+			dev_err(&uart0_device->dev,
-+				"could not get UART0 pinctrl\n");
-+		else {
-+			u0_def = pinctrl_lookup_state(u0_p,
-+						      PINCTRL_STATE_DEFAULT);
-+			if (IS_ERR(u0_def)) {
-+				dev_err(&uart0_device->dev,
-+					"could not get UART0 defstate\n");
-+			}
-+			u0_sleep = pinctrl_lookup_state(u0_p,
-+							PINCTRL_STATE_SLEEP);
-+			if (IS_ERR(u0_sleep))
-+				dev_err(&uart0_device->dev,
-+					"could not get UART0 idlestate\n");
-+		}
++	range = nmk_match_gpio_range(pctldev, pin);
++	if (!range) {
++		dev_err(npct->dev, "invalid pin offset %d\n", pin);
++		return -EINVAL;
 +	}
- 	db8500_add_uart1(parent, &uart1_plat);
- 	db8500_add_uart2(parent, &uart2_plat);
- }
++	if (!range->gc) {
++		dev_err(npct->dev, "GPIO chip missing in range for pin %d\n",
++			pin);
++		return -EINVAL;
++	}
++	chip = range->gc;
++	nmk_chip = container_of(chip, struct nmk_gpio_chip, chip);
++
++	if (sleep) {
++		int slpm_pull = PIN_SLPM_PULL(cfg);
++		int slpm_output = PIN_SLPM_DIR(cfg);
++		int slpm_val = PIN_SLPM_VAL(cfg);
++
++		/* All pins go into GPIO mode at sleep */
++		gpiomode = true;
++
++		/*
++		 * The SLPM_* values are normal values + 1 to allow zero to
++		 * mean "same as normal".
++		 */
++		if (slpm_pull)
++			pull = slpm_pull - 1;
++		if (slpm_output)
++			output = slpm_output - 1;
++		if (slpm_val)
++			val = slpm_val - 1;
++
++		dev_dbg(nmk_chip->chip.dev, "pin %d: sleep pull %s, dir %s, val %s\n",
++			pin,
++			slpm_pull ? pullnames[pull] : "same",
++			slpm_output ? (output ? "output" : "input") : "same",
++			slpm_val ? (val ? "high" : "low") : "same");
++	}
++
++	dev_dbg(nmk_chip->chip.dev, "pin %d [%#lx]: pull %s, slpm %s (%s%s), lowemi %s\n",
++		pin, cfg, pullnames[pull], slpmnames[slpm],
++		output ? "output " : "input",
++		output ? (val ? "high" : "low") : "",
++		lowemi ? "on" : "off" );
++
++	clk_enable(nmk_chip->clk);
++	bit = pin % NMK_GPIO_PER_CHIP;
++	if (gpiomode)
++		/* No glitch when going to GPIO mode */
++		__nmk_gpio_set_mode(nmk_chip, bit, NMK_GPIO_ALT_GPIO);
++	if (output)
++		__nmk_gpio_make_output(nmk_chip, bit, val);
++	else {
++		__nmk_gpio_make_input(nmk_chip, bit);
++		__nmk_gpio_set_pull(nmk_chip, bit, pull);
++	}
++	/* TODO: isn't this only applicable on output pins? */
++	__nmk_gpio_set_lowemi(nmk_chip, bit, lowemi);
++
++	__nmk_gpio_set_slpm(nmk_chip, bit, slpm);
++	clk_disable(nmk_chip->clk);
++	return 0;
++}
++
++static struct pinconf_ops nmk_pinconf_ops = {
++	.pin_config_get = nmk_pin_config_get,
++	.pin_config_set = nmk_pin_config_set,
++};
++
+ static struct pinctrl_desc nmk_pinctrl_desc = {
+ 	.name = "pinctrl-nomadik",
+ 	.pctlops = &nmk_pinctrl_ops,
+ 	.pmxops = &nmk_pinmux_ops,
++	.confops = &nmk_pinconf_ops,
+ 	.owner = THIS_MODULE,
+ };
+ 
 -- 
 1.7.9.2
 
