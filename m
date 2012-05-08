@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab2EHPMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:12:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48934 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755968Ab2EHPML convert rfc822-to-8bit (ORCPT
+	id S1756168Ab2EHPNF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:13:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57068 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755893Ab2EHPND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:12:11 -0400
-Message-ID: <1336489894.16236.51.camel@twins>
-Subject: Re: [PATCH v3 7/7] x86/tlb: add tlb_flushall_factor into sysfs for
- user change
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Alex Shi <alex.shi@intel.com>
-Cc: mgorman@suse.de, npiggin@gmail.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, gregkh@linuxfoundation.org, glommer@redhat.com,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, borislav.petkov@amd.com,
-        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
-        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Date: Tue, 08 May 2012 17:11:34 +0200
-In-Reply-To: <1336485790-30902-8-git-send-email-alex.shi@intel.com>
-References: <1336485790-30902-1-git-send-email-alex.shi@intel.com>
-	 <1336485790-30902-8-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 8 May 2012 11:13:03 -0400
+Date: Tue, 8 May 2012 08:12:44 -0700
+From: tip-bot for Jan Beulich <JBeulich@suse.com>
+Message-ID: <tip-b2a3477727c1d43b92a3e4223f10ad5bf639df06@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jbeulich@suse.com, JBeulich@suse.com, sp@numascale.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de,
+        sp@numascale.com
+In-Reply-To: <4FA947910200007800082470@nat28.tlf.novell.com>
+References: <4FA947910200007800082470@nat28.tlf.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Fix section annotation of acpi_map_cpu2node(
+ )
+Git-Commit-ID: b2a3477727c1d43b92a3e4223f10ad5bf639df06
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 08:12:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-08 at 22:03 +0800, Alex Shi wrote:
-> kernel will replace cr3 rewrite with invlpg when
-> 	tlb flush entries <= 1/tlb_flushall_factor
-> if tlb_flushall_factor is 0, kernel won't do this replace.
-> 
-> User can modify its value according to specific applications.
+Commit-ID:  b2a3477727c1d43b92a3e4223f10ad5bf639df06
+Gitweb:     http://git.kernel.org/tip/b2a3477727c1d43b92a3e4223f10ad5bf639df06
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Tue, 8 May 2012 15:19:29 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 8 May 2012 16:40:26 +0200
 
-Yay!, another useless config knob :-(
+x86: Fix section annotation of acpi_map_cpu2node()
+
+Commit 943bc7e110f2 ("x86: Fix section warnings") added
+__cpuinitdata here, while for functions __cpuinit should be
+used.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: <sp@numascale.com>
+Link: http://lkml.kernel.org/r/4FA947910200007800082470@nat28.tlf.novell.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Steffen Persvold <sp@numascale.com>
+---
+ arch/x86/kernel/acpi/boot.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index a415b1f..7c439fe 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -593,7 +593,7 @@ void __init acpi_set_irq_model_ioapic(void)
+ #ifdef CONFIG_ACPI_HOTPLUG_CPU
+ #include <acpi/processor.h>
+ 
+-static void __cpuinitdata acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
++static void __cpuinit acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
+ {
+ #ifdef CONFIG_ACPI_NUMA
+ 	int nid;
