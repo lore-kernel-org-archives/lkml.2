@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab2EHLaS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 07:30:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45052 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624Ab2EHLaR convert rfc822-to-8bit (ORCPT
+	id S1754020Ab2EHLdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 07:33:33 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:37952 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753627Ab2EHLdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 07:30:17 -0400
-Message-ID: <1336476588.16236.20.camel@twins>
-Subject: Re: [PATCH v20] tracing: Fix kconfig warning due to a typo
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anton Arapov <anton@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>
-Date: Tue, 08 May 2012 13:29:48 +0200
-In-Reply-To: <20120508111126.21004.38285.sendpatchset@srdronam.in.ibm.com>
-References: <20120508111126.21004.38285.sendpatchset@srdronam.in.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 8 May 2012 07:33:32 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        peter.ujfalusi@ti.com
+Subject: [PATCH v2 0/3] MFD: twl6040: Device tree support
+Date: Tue,  8 May 2012 14:33:27 +0300
+Message-Id: <1336476810-26945-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-08 at 16:41 +0530, Srikar Dronamraju wrote:
-> +    p:uprobes/p_zsh_0x46420 /bin/zsh:0x00046420 arg1=%ip arg2=%ax
+Hello,
 
-can you also do things like:
+Changes since v1:
+- Commit message for patch 2 (Allocate IRQ numbers dynamically) has been updated
+  to describe that the twl6040 can not be used as IRQ extender type of device.
 
- p:uprobes/ponies /bin/zsh:foo arg1=bar
+Commit message from v1:
 
-when bar is either a function argument of foo (or an otherwise live
-variable at the probe point)?
+The following series adds device tree support for the twl6040 MFD core driver.
+Support for the child drivers (vibra, ASoC codec) will be submitted via the
+corresponding subsystem since there is no compile time dependency between them.
 
-Only sampling register content is somewhat limiting, you might want to
-have %ax[5] + 24 for example, or a pure memory deref -- and the dwarves
-know where it all lives.
+The first patch is a minor clean up patch to remove wrapped lines in the
+twl6040-irq.c. The resulting code is more natural to read to me.
+
+The series depends on the regulator support patch for the twl6040:
+http://marc.info/?l=linux-kernel&m=133596703610515&w=2
+
+Regards,
+Peter
+---
+Peter Ujfalusi (3):
+  MFD: twl6040: Code cleanup in interrupt initialization part
+  MFD: twl6040: Allocate IRQ numbers dynamically
+  MFD: twl6040: Support for DT
+
+ Documentation/devicetree/bindings/mfd/twl6040.txt |   51 +++++++++++++++++++++
+ drivers/mfd/twl6040-core.c                        |   26 +++++++---
+ drivers/mfd/twl6040-irq.c                         |   32 +++++++++----
+ 3 files changed, 92 insertions(+), 17 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/twl6040.txt
+
+-- 
+1.7.8.6
+
