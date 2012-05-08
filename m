@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab2EHR5v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 13:57:51 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:50114 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084Ab2EHR5u (ORCPT
+	id S1752592Ab2EHSDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 14:03:38 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:60215 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751945Ab2EHSDh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 13:57:50 -0400
-Date: Tue, 8 May 2012 19:57:48 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>, Yinghai Lu <yinghai@kernel.org>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 00/10] (no)bootmem bits for 3.5
-Message-ID: <20120508175748.GA11906@merkur.ravnborg.org>
-References: <1336390672-14421-1-git-send-email-hannes@cmpxchg.org> <20120507204113.GD10521@merkur.ravnborg.org> <20120507220142.GA1202@cmpxchg.org>
+	Tue, 8 May 2012 14:03:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120507220142.GA1202@cmpxchg.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120508172352.GQ4802@phenom.ffwll.local>
+References: <1336432421-17972-1-git-send-email-marcheu@chromium.org>
+	<CA+55aFyd08=eemQsUFvtjerEVQdznhe647w4PmSrPkkEvjNuzg@mail.gmail.com>
+	<20120508172352.GQ4802@phenom.ffwll.local>
+Date: Tue, 8 May 2012 13:03:36 -0500
+X-Google-Sender-Auth: lFy5wVXwxz9xYGRXAVdepzahR7M
+Message-ID: <CAF6AEGu0c00py3debbk8YUEpBB-FvaakrFkVKbrH-NuavG3gJA@mail.gmail.com>
+Subject: Re: [PATCH] mm: Work around Intel SNB GTT bug with some physical pages.
+From: Rob Clark <rob.clark@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, rob.clark@linaro.org,
+        =?ISO-8859-1?Q?St=E9phane_Marchesin?= <marcheu@chromium.org>,
+        olofj@chromium.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 12:01:42AM +0200, Johannes Weiner wrote:
-> On Mon, May 07, 2012 at 10:41:13PM +0200, Sam Ravnborg wrote:
-> > Hi Johannes.
-> > 
-> > > here are some (no)bootmem fixes and cleanups for 3.5.  Most of it is
-> > > unifying allocation behaviour across bootmem and nobootmem when it
-> > > comes to respecting the specified allocation address goal and numa.
-> > > 
-> > > But also refactoring the codebases of the two bootmem APIs so that we
-> > > can think about sharing code between them again.
-> > 
-> > Could you check up on CONFIG_HAVE_ARCH_BOOTMEM use in bootmem.c too?
-> > x86 no longer uses bootmem.c
-> > avr define it - but to n.
-> > 
-> > So no-one is actually using this anymore.
-> > I have sent patches to remove it from Kconfig for both x86 and avr.
-> > 
-> > I looked briefly at cleaning up bootmem.c myslef - but I felt not
-> > familiar enough with the code to do the cleanup.
-> > 
-> > I did not check your patchset - but based on the shortlog you
-> > did not kill HAVE_ARCH_BOOTMEM.
-> 
-> It was used on x86-32 numa to try all bootmem allocations from node 0
-> first (see only remaining definition of bootmem_arch_preferred_node),
-> which AFAICS nobootmem no longer respects.
-> 
-> Shouldn't this be fixed instead?
-I do not know. Tejun / Yinghai?
+On Tue, May 8, 2012 at 12:23 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Tue, May 08, 2012 at 08:25:38AM -0700, Linus Torvalds wrote:
+>> On Mon, May 7, 2012 at 4:13 PM, Stéphane Marchesin <marcheu@chromium.org> wrote:
+>> >
+>> > In the end, I came up with the ugly workaround of just leaking the
+>> > offending pages in shmem.c.
+>>
+>> Don't leak it.
+>>
+>> Instead, add it to some RCU list, and free it using RCU. Or some
+>> one-second timer or something.
+>>
+>> That kind of approach should guarantee that it
+>>
+>>  (a) gets returned to the system
+>>
+>> but
+>>
+>>  (b) the returning to the system gets delayed sufficiently that if the
+>> i915 driver is doing lots of allocations it will be getting other
+>> pages.
+>>
+>> Hmm?
+>
+> The problem is also that this only affects Sandybdrige gpus, so we'd need
+> to funnel this down to shmfs somehow ... Rob Clarke from Linaro will be
+> working on a gemfs to make backing storage allocation more flexible - they
+> need that to support some arm gpus. That way round we wouldn't need to put
+> some ugly drm/i915 stuff into core shmfs. Rob?
 
-	Sam
+Well, a bit hand-wavey at this point, but the idea is to let the
+driver have control of the page allocation via 'struct
+address_space_operations'.. but otherwise work in a similar way as
+shmfs.
+
+Something like get_xip_mem() is almost what we want, except we don't
+want it to populate the pages, we don't want to force a kernel
+mapping, and shmem doesn't use it..
+
+I suppose we still need a short term fix for i915, but at least it
+would only be temporary.
+
+BR,
+-R
+
+> -Daniel
+> --
+> Daniel Vetter
+> Mail: daniel@ffwll.ch
+> Mobile: +41 (0)79 365 57 48
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
