@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab2EHM2B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 08:28:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54730 "EHLO
+	id S1754562Ab2EHM3M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 08:29:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54772 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106Ab2EHM17 (ORCPT
+	with ESMTP id S1753726Ab2EHM3L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 08:27:59 -0400
-Date: Tue, 8 May 2012 05:27:47 -0700
+	Tue, 8 May 2012 08:29:11 -0400
+Date: Tue, 8 May 2012 05:28:37 -0700
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-85f7f656274fa0ba109dd8774db3887d42de5c6b@git.kernel.org>
+Message-ID: <tip-448eca90932d97856b6a6097fc50eef96d77dec0@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de
+        linux@arm.linux.org.uk, peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20120507175652.190382227@linutronix.de>
-References: <20120507175652.190382227@linutronix.de>
+        linux@arm.linux.org.uk, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20120507175652.260797846@linutronix.de>
+References: <20120507175652.260797846@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] x86: Use kick_all_cpus_sync()
-Git-Commit-ID: 85f7f656274fa0ba109dd8774db3887d42de5c6b
+Subject: [tip:smp/hotplug] arm: Remove unused cpu_idle_wait()
+Git-Commit-ID: 448eca90932d97856b6a6097fc50eef96d77dec0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,80 +27,66 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 05:27:53 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 05:28:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  85f7f656274fa0ba109dd8774db3887d42de5c6b
-Gitweb:     http://git.kernel.org/tip/85f7f656274fa0ba109dd8774db3887d42de5c6b
+Commit-ID:  448eca90932d97856b6a6097fc50eef96d77dec0
+Gitweb:     http://git.kernel.org/tip/448eca90932d97856b6a6097fc50eef96d77dec0
 Author:     Thomas Gleixner <tglx@linutronix.de>
 AuthorDate: Mon, 7 May 2012 17:59:49 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 8 May 2012 12:35:06 +0200
 
-x86: Use kick_all_cpus_sync()
+arm: Remove unused cpu_idle_wait()
 
-Use kick_all_cpus_sync() and remove cpu_idle_wait().
+cpuidle uses a generic function now. Remove the unused code.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120507175652.190382227@linutronix.de
-Cc: x86@kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>
+Link: http://lkml.kernel.org/r/20120507175652.260797846@linutronix.de
 ---
- arch/x86/Kconfig                 |    3 ---
- arch/x86/include/asm/processor.h |    2 --
- arch/x86/kernel/apm_32.c         |    2 +-
- arch/x86/kernel/process.c        |   20 --------------------
- 4 files changed, 1 insertions(+), 26 deletions(-)
+ arch/arm/Kconfig                 |    3 ---
+ arch/arm/include/asm/processor.h |    2 --
+ arch/arm/kernel/process.c        |   20 --------------------
+ 3 files changed, 0 insertions(+), 25 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 046bf4b..98876f5 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -161,9 +161,6 @@ config RWSEM_GENERIC_SPINLOCK
- config RWSEM_XCHGADD_ALGORITHM
- 	def_bool X86_XADD
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index cb253ce..a3ad496 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -160,9 +160,6 @@ config ARCH_HAS_CPUFREQ
+ 	  and that the relevant menu configurations are displayed for
+ 	  it.
  
 -config ARCH_HAS_CPU_IDLE_WAIT
--	def_bool y
+-       def_bool y
 -
- config GENERIC_CALIBRATE_DELAY
- 	def_bool y
- 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 4fa7dcc..ccbb1ea 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -974,8 +974,6 @@ extern bool cpu_has_amd_erratum(const int *);
- #define cpu_has_amd_erratum(x)	(false)
- #endif /* CONFIG_CPU_SUP_AMD */
+ config GENERIC_HWEIGHT
+ 	bool
+ 	default y
+diff --git a/arch/arm/include/asm/processor.h b/arch/arm/include/asm/processor.h
+index 5ac8d3d..d7038fa 100644
+--- a/arch/arm/include/asm/processor.h
++++ b/arch/arm/include/asm/processor.h
+@@ -88,8 +88,6 @@ unsigned long get_wchan(struct task_struct *p);
+ #define cpu_relax()			barrier()
+ #endif
  
 -void cpu_idle_wait(void);
 -
- extern unsigned long arch_align_stack(unsigned long sp);
- extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
- 
-diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
-index 459e78c..07b0c0d 100644
---- a/arch/x86/kernel/apm_32.c
-+++ b/arch/x86/kernel/apm_32.c
-@@ -2401,7 +2401,7 @@ static void __exit apm_exit(void)
- 		 * (pm_idle), Wait for all processors to update cached/local
- 		 * copies of pm_idle before proceeding.
- 		 */
--		cpu_idle_wait();
-+		kick_all_cpus_sync();
- 	}
- 	if (((apm_info.bios.flags & APM_BIOS_DISENGAGED) == 0)
- 	    && (apm_info.connection_version > 0x0100)) {
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 8aa532f..8215458 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -525,26 +525,6 @@ void stop_this_cpu(void *dummy)
- 	}
- }
+ /*
+  * Create a new kernel thread
+  */
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 2b7b017..19c95ea 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -157,26 +157,6 @@ EXPORT_SYMBOL(pm_power_off);
+ void (*arm_pm_restart)(char str, const char *cmd) = null_restart;
+ EXPORT_SYMBOL_GPL(arm_pm_restart);
  
 -static void do_nothing(void *unused)
 -{
@@ -122,6 +108,6 @@ index 8aa532f..8215458 100644
 -}
 -EXPORT_SYMBOL_GPL(cpu_idle_wait);
 -
- /* Default MONITOR/MWAIT with no hints, used for default C1 state */
- static void mwait_idle(void)
- {
+ /*
+  * This is our default idle handler.
+  */
