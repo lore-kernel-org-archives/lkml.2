@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757500Ab2EHW52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 18:57:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36351 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755712Ab2EHW51 (ORCPT
+	id S1757651Ab2EHW5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 18:57:33 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:48930 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755929Ab2EHW5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 18:57:27 -0400
-Date: Tue, 8 May 2012 15:57:26 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: arnd@arndb.de, gregkh@linuxfoundation.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kmsg: limit message size
-Message-Id: <20120508155726.d02d6600.akpm@linux-foundation.org>
-In-Reply-To: <1336229772-3488-1-git-send-email-levinsasha928@gmail.com>
-References: <1336229772-3488-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 8 May 2012 18:57:31 -0400
+X-Sasl-enc: 4h37SO/bwrOvgo7gDXbUV8LZXN9d5sg+Bc3zz326/9Yi 1336517850
+Date: Tue, 8 May 2012 15:57:29 -0700
+From: Greg Kroah-Hartmann <greg@kroah.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Karel Zak <kzak@redhat.com>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
+ variable-length record buffer
+Message-ID: <20120508225729.GF7948@kroah.com>
+References: <1336004953.4240.9.camel@mop>
+ <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+ <1336475689.1179.12.camel@mop>
+ <CA+1xoqdk_yGQyX+6yHyvHsQ1hXiraOzbhVZAgmLmmtMtVTPeGQ@mail.gmail.com>
+ <CAPXgP11882vP5GtMmwdsw-w6-D6q9NXHNsHem3Ump17__r2xOQ@mail.gmail.com>
+ <CAPXgP11G9Tv37qTy_kLcYphosUXc+2uQDzU6BYekGdVt3Oye4A@mail.gmail.com>
+ <CA+1xoqenmuF+K7SAajM5L7zSkKxVKbN7GAdhMJmNjCNW1VQ3Yg@mail.gmail.com>
+ <CAPXgP12eWBFcONpYCxHdoED1sy21GYuBdfr46JzgRgXy2EL=+w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPXgP12eWBFcONpYCxHdoED1sy21GYuBdfr46JzgRgXy2EL=+w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  5 May 2012 16:56:12 +0200
-Sasha Levin <levinsasha928@gmail.com> wrote:
-
-> There are no size checks in kmsg_write(), and we try allocating enough
-> memory to store everything userspace gave us, which may be too much for
-> kmalloc to allocate.
+On Tue, May 08, 2012 at 06:27:42PM +0200, Kay Sievers wrote:
+> On Tue, May 8, 2012 at 5:57 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
 > 
-> Furthermore, we can have an integer overflow if len==INT_MAX, in that case
-> we'll corrupt kernel memory.
+> > What about PRINTK_TIME? Are there plans to enable it on console output?
 > 
-> This was tested with several userspace programs that write to kmsg, and haven't
-> found a case where the program attempts to write more than PAGE_SIZE.
+> Yeah, we should restore the old behaviour. The timestamp is always
+> stored internally, regardless of the CONFIG_PRINTK_TIME or tunable
+> setting. At the moment, seems they are only (conditionally) added to
+> the syslog() output and (unconditionally) to the /dev/kmsg export.
 > 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  drivers/char/mem.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-> index d6e9d08..c90964b 100644
-> --- a/drivers/char/mem.c
-> +++ b/drivers/char/mem.c
-> @@ -815,6 +815,9 @@ static ssize_t kmsg_writev(struct kiocb *iocb, const struct iovec *iv,
->  	ssize_t ret = -EFAULT;
->  	size_t len = iov_length(iv, count);
->  
-> +	if (len > PAGE_SIZE)
-> +		return -E2BIG;
-> +
->  	line = kmalloc(len + 1, GFP_KERNEL);
->  	if (line == NULL)
->  		return -ENOMEM;
+> I guess we just re-define CONFIG_PRINTK_TIME and the tunable as: "show
+> time in syslog() and on the console output".
 
-Well, this is a write(), and write() is permitted to return
-less-than-asked-for.  So what we could do here is to write the first N
-bytes and then return N to userspace.  Well-behaved userspace will
-notice this and then do some more writing from offset N.
+That would be good to put back, can you do that?
 
-Could I ask that you try this and test it a bit, see whether there is
-any well-behaved userspace out there?  Things like cat and echo
-_should_ dtrt.
+thanks,
 
+greg k-h
