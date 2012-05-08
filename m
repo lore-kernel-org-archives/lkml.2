@@ -1,72 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848Ab2EHXKS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 19:10:18 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:35056 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754011Ab2EHXKP convert rfc822-to-8bit (ORCPT
+	id S1755989Ab2EHXON (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 19:14:13 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51480 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754347Ab2EHXOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 19:10:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHGf_=p4py5m1Pe1xon=9FcEEyf6AxW+Pc9Yy9gCvNtbXM_40A@mail.gmail.com>
-References: <CAHGf_=qdE3yNw=htuRssfav2pECO1Q0+gWMRTuNROd_3tVrd6Q@mail.gmail.com>
-	<CAHGf_=ojhwPUWJR0r+jVgjNd5h_sRrppzJntSpHzxyv+OuBueg@mail.gmail.com>
-	<x49ehr4lyw1.fsf@segfault.boston.devel.redhat.com>
-	<CAHGf_=rzcfo3OnwT-YsW2iZLchHs3eBKncobvbhTm7B5PE=L-w@mail.gmail.com>
-	<x491un3nc7a.fsf@segfault.boston.devel.redhat.com>
-	<CAPa8GCCgLUt1EDAy7-O-mo0qir6Bf5Pi3Va1EsQ3ZW5UU=+37g@mail.gmail.com>
-	<20120502081705.GB16976@quack.suse.cz>
-	<CAPa8GCCnvvaj0Do7sdrdfsvbcAf0zBe3ssXn45gMfDKCcvJWxA@mail.gmail.com>
-	<20120502091837.GC16976@quack.suse.cz>
-	<CAHGf_=qfuRZzb91ELEcArNaNHsfO4BBMPO8a-QRBzFNaT2ev_w@mail.gmail.com>
-	<20120502192325.GA18339@quack.suse.cz>
-	<CAHGf_=oOx1qPFEboQeuaeMKtveM2==BSDG=xdfRHz+gFx1GAfw@mail.gmail.com>
-	<CAKgNAkjybL_hmVfONUHtCbBe_VxQHNHOrmWQErGWDUqHiczkFg@mail.gmail.com>
-	<CAHGf_=p4py5m1Pe1xon=9FcEEyf6AxW+Pc9Yy9gCvNtbXM_40A@mail.gmail.com>
-Date: Wed, 9 May 2012 09:10:15 +1000
-Message-ID: <CAPa8GCCh-RrjsQKzh9+Sxx-joRZw4qkpxR9n4svo+QopxAj_XQ@mail.gmail.com>
-Subject: Re: [PATCH] Describe race of direct read and fork for unaligned buffers
-From: Nick Piggin <npiggin@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: mtk.manpages@gmail.com, Jan Kara <jack@suse.cz>,
-        Jeff Moyer <jmoyer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-man@vger.kernel.org, linux-mm@kvack.org, mgorman@suse.de,
-        Andrea Arcangeli <aarcange@redhat.com>, Woodman <lwoodman@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 May 2012 19:14:11 -0400
+Message-ID: <1336518821.728.1.camel@mop>
+Subject: Re: linux-next: Tree for May 8 (printk)
+From: Kay Sievers <kay@vrfy.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Wed, 09 May 2012 01:13:41 +0200
+In-Reply-To: <4FA948B9.20600@xenotime.net>
+References: <20120508181531.072fdc5fefa60d852e784587@canb.auug.org.au>
+	 <4FA948B9.20600@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 May 2012 01:29, KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
->> So, am I correct to assume that right text to add to the page is as below?
->>
->> Nick, can you clarify what you mean by "quiesced"?
->
-> finished?
+On Tue, 2012-05-08 at 09:24 -0700, Randy Dunlap wrote:
+> On 05/08/2012 01:15 AM, Stephen Rothwell wrote:
 
-Yes exactly. That might be a simpler word. Thanks!
+> Build errors on i386 and x86_64 when CONFIG_PRINTK is not enabled:
 
->
->>
->> [[
->> O_DIRECT IOs should never be run concurrently with fork(2) system call,
->> when the memory buffer is anonymous memory, or comes from mmap(2)
->> with MAP_PRIVATE.
->>
->> Any such IOs, whether submitted with asynchronous IO interface or from
->> another thread in the process, should be quiesced before fork(2) is called.
->> Failure to do so can result in data corruption and undefined behavior in
->> parent and child processes.
->>
->> This restriction does not apply when the memory buffer for the O_DIRECT
->> IOs comes from mmap(2) with MAP_SHARED or from shmat(2).
->> Nor does this restriction apply when the memory buffer has been advised
->> as MADV_DONTFORK with madvise(2), ensuring that it will not be available
->> to the child after fork(2).
->> ]]
->
-> I don't have good English and I can't make editorial check. But at least,
-> I don't find any technical incorrect explanation here.
->
->  Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+This seems to work for me.
+
+Thanks,
+Kay
+
+From: Kay Sievers <kay@vrfy.org>
+Subject: printk - fix compilation for CONFIG_PRINTK=n
+
+Signed-off-by: Kay Sievers <kay@vrfy.org>
+---
+ kernel/printk.c |   41 ++++++++++++++++++++++-------------------
+ 1 file changed, 22 insertions(+), 19 deletions(-)
+
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -126,7 +126,6 @@ EXPORT_SYMBOL(console_set_on_cmdline);
+ /* Flag: console code may call schedule() */
+ static int console_may_schedule;
+ 
+-#ifdef CONFIG_PRINTK
+ /*
+  * The printk log buffer consists of a chain of concatenated variable
+  * length records. Every record starts with a record header, containing
+@@ -208,16 +207,9 @@ struct log {
+  */
+ static DEFINE_RAW_SPINLOCK(logbuf_lock);
+ 
+-/* cpu currently holding logbuf_lock */
+-static volatile unsigned int logbuf_cpu = UINT_MAX;
+-
+-#define LOG_LINE_MAX 1024
+-
+-/* record buffer */
+-#define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
+-static char __log_buf[__LOG_BUF_LEN];
+-static char *log_buf = __log_buf;
+-static u32 log_buf_len = __LOG_BUF_LEN;
++/* the next printk record to read by syslog(READ) or /proc/kmsg */
++static u64 syslog_seq;
++static u32 syslog_idx;
+ 
+ /* index and sequence number of the first record stored in the buffer */
+ static u64 log_first_seq;
+@@ -225,15 +217,23 @@ static u32 log_first_idx;
+ 
+ /* index and sequence number of the next record to store in the buffer */
+ static u64 log_next_seq;
++#ifdef CONFIG_PRINTK
+ static u32 log_next_idx;
+ 
+ /* the next printk record to read after the last 'clear' command */
+ static u64 clear_seq;
+ static u32 clear_idx;
+ 
+-/* the next printk record to read by syslog(READ) or /proc/kmsg */
+-static u64 syslog_seq;
+-static u32 syslog_idx;
++#define LOG_LINE_MAX 1024
++
++/* record buffer */
++#define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
++static char __log_buf[__LOG_BUF_LEN];
++static char *log_buf = __log_buf;
++static u32 log_buf_len = __LOG_BUF_LEN;
++
++/* cpu currently holding logbuf_lock */
++static volatile unsigned int logbuf_cpu = UINT_MAX;
+ 
+ /* human readable text of the record */
+ static char *log_text(const struct log *msg)
+@@ -1425,13 +1425,16 @@ asmlinkage int printk(const char *fmt, .
+ 	return r;
+ }
+ EXPORT_SYMBOL(printk);
++
+ #else
+ 
+-static void call_console_drivers(int level, const char *text, size_t len)
+-{
+-}
++#define LOG_LINE_MAX 0
++static struct log *log_from_idx(u32 idx) { return NULL; }
++static u32 log_next(u32 idx) { return 0; }
++static char *log_text(const struct log *msg) { return NULL; }
++static void call_console_drivers(int level, const char *text, size_t len) {}
+ 
+-#endif
++#endif /* CONFIG_PRINTK */
+ 
+ static int __add_preferred_console(char *name, int idx, char *options,
+ 				   char *brl_options)
+@@ -1715,7 +1718,7 @@ static u32 console_idx;
+  * by printk().  If this is the case, console_unlock(); emits
+  * the output prior to releasing the lock.
+  *
+- * If there is output waiting, we wake it /dev/kmsg and syslog() users.
++ * If there is output waiting, we wake /dev/kmsg and syslog() users.
+  *
+  * console_unlock(); may be called from any context.
+  */
+
+
