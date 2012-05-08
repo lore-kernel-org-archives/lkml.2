@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab2EHMfa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 08:35:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54987 "EHLO
+	id S1754996Ab2EHMgX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 08:36:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55012 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754372Ab2EHMf2 (ORCPT
+	with ESMTP id S1754425Ab2EHMgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 08:35:28 -0400
-Date: Tue, 8 May 2012 05:35:19 -0700
+	Tue, 8 May 2012 08:36:22 -0400
+Date: Tue, 8 May 2012 05:36:09 -0700
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-0d15d74a1ead10673b5b1db66d4c90552769096c@git.kernel.org>
+Message-ID: <tip-7b8fe0570a65486e77823d5fcec9998c2aae9970@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de
+        tglx@linutronix.de, msalter@redhat.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de
-In-Reply-To: <20120505150141.491002124@linutronix.de>
-References: <20120505150141.491002124@linutronix.de>
+        tglx@linutronix.de, msalter@redhat.com
+In-Reply-To: <20120505150141.621728944@linutronix.de>
+References: <20120505150141.621728944@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] fork:
-  Provide kmemcache based thread_info allocator
-Git-Commit-ID: 0d15d74a1ead10673b5b1db66d4c90552769096c
+Subject: [tip:smp/hotplug] c6x: Use common threadinfo allocator
+Git-Commit-ID: 7b8fe0570a65486e77823d5fcec9998c2aae9970
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,72 +27,65 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 05:35:24 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 05:36:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0d15d74a1ead10673b5b1db66d4c90552769096c
-Gitweb:     http://git.kernel.org/tip/0d15d74a1ead10673b5b1db66d4c90552769096c
+Commit-ID:  7b8fe0570a65486e77823d5fcec9998c2aae9970
+Gitweb:     http://git.kernel.org/tip/7b8fe0570a65486e77823d5fcec9998c2aae9970
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sat, 5 May 2012 15:05:41 +0000
+AuthorDate: Sat, 5 May 2012 15:05:42 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 8 May 2012 14:08:44 +0200
 
-fork: Provide kmemcache based thread_info allocator
+c6x: Use common threadinfo allocator
 
-Several architectures have their own kmemcache based thread allocator
-because THREAD_SIZE is smaller than PAGE_SIZE. Add it to the core code
-conditionally on THREAD_SIZE < PAGE_SIZE so the private copies can go.
+There is no functional difference. __get_free_pages() ends up calling
+alloc_pages_node().
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20120505150141.491002124@linutronix.de
+Cc: Mark Salter <msalter@redhat.com>
+Link: http://lkml.kernel.org/r/20120505150141.621728944@linutronix.de
 ---
- kernel/fork.c |   27 +++++++++++++++++++++++++++
- 1 files changed, 27 insertions(+), 0 deletions(-)
+ arch/c6x/include/asm/thread_info.h |   17 ++---------------
+ 1 files changed, 2 insertions(+), 15 deletions(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 2dfad02..7590bd6 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -132,6 +132,11 @@ static inline void free_task_struct(struct task_struct *tsk)
- 
- void __weak arch_release_thread_info(struct thread_info *ti) { }
- 
-+/*
-+ * Allocate pages if THREAD_SIZE is >= PAGE_SIZE, otherwise use a
-+ * kmemcache based allocator.
-+ */
-+# if THREAD_SIZE >= PAGE_SIZE
- static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
- 						  int node)
- {
-@@ -146,6 +151,28 @@ static inline void free_thread_info(struct thread_info *ti)
- 	arch_release_thread_info(ti);
- 	free_pages((unsigned long)ti, THREAD_SIZE_ORDER);
- }
-+# else
-+static struct kmem_cache *thread_info_cache;
-+
-+static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
-+						  int node)
-+{
-+	return kmem_cache_alloc_node(thread_info_cache, THREADINFO_GFP, node);
-+}
-+
-+static void free_thread_info(struct thread_info *ti)
-+{
-+	arch_release_thread_info(ti);
-+	kmem_cache_free(thread_info_cache, ti);
-+}
-+
-+void thread_info_cache_init(void)
-+{
-+	thread_info_cache = kmem_cache_create("thread_info", THREAD_SIZE,
-+					      THREAD_SIZE, 0, NULL);
-+	BUG_ON(thread_info_cache == NULL);
-+}
-+# endif
+diff --git a/arch/c6x/include/asm/thread_info.h b/arch/c6x/include/asm/thread_info.h
+index fd99148..1710bcb 100644
+--- a/arch/c6x/include/asm/thread_info.h
++++ b/arch/c6x/include/asm/thread_info.h
+@@ -20,11 +20,11 @@
+ #ifdef CONFIG_4KSTACKS
+ #define THREAD_SIZE		4096
+ #define THREAD_SHIFT		12
+-#define THREAD_ORDER		0
++#define THREAD_SIZE_ORDER	0
+ #else
+ #define THREAD_SIZE		8192
+ #define THREAD_SHIFT		13
+-#define THREAD_ORDER		1
++#define THREAD_SIZE_ORDER	1
  #endif
  
- /* SLAB cache for signal_struct structures (tsk->signal) */
+ #define THREAD_START_SP		(THREAD_SIZE - 8)
+@@ -80,19 +80,6 @@ struct thread_info *current_thread_info(void)
+ 	return ti;
+ }
+ 
+-#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR
+-
+-/* thread information allocation */
+-#ifdef CONFIG_DEBUG_STACK_USAGE
+-#define THREAD_FLAGS (GFP_KERNEL | __GFP_NOTRACK | __GFP_ZERO)
+-#else
+-#define THREAD_FLAGS (GFP_KERNEL | __GFP_NOTRACK)
+-#endif
+-
+-#define alloc_thread_info_node(tsk, node)	\
+-	((struct thread_info *)__get_free_pages(THREAD_FLAGS, THREAD_ORDER))
+-
+-#define free_thread_info(ti)	free_pages((unsigned long) (ti), THREAD_ORDER)
+ #define get_thread_info(ti)	get_task_struct((ti)->task)
+ #define put_thread_info(ti)	put_task_struct((ti)->task)
+ #endif /* __ASSEMBLY__ */
