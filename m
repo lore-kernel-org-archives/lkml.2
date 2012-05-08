@@ -1,126 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab2EHMlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 08:41:39 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:60513 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754550Ab2EHMl1 (ORCPT
+	id S1755212Ab2EHMmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 08:42:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55122 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754550Ab2EHMmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 08:41:27 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4FA9146F.5050802@cam.ac.uk>
-Date: Tue, 08 May 2012 13:41:19 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 8 May 2012 08:42:14 -0400
+Date: Tue, 8 May 2012 05:42:04 -0700
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <tip-96c951179736eb59c5f66de2ac85af9e7a6a8b15@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        benh@kernel.crashing.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, tglx@linutronix.de
+In-Reply-To: <20120505150142.059161130@linutronix.de>
+References: <20120505150142.059161130@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:smp/hotplug] powerpc: Use common threadinfo allocator
+Git-Commit-ID: 96c951179736eb59c5f66de2ac85af9e7a6a8b15
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-CC: Masanari Iida <standby24x7@gmail.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>
-Subject: Re: [PATCH] staging, iio: Fix typo in iio
-References: <1336407522-13818-1-git-send-email-standby24x7@gmail.com> <544AC56F16B56944AEC3BD4E3D5917714E797B53AE@LIMKCMBX1.ad.analog.com>
-In-Reply-To: <544AC56F16B56944AEC3BD4E3D5917714E797B53AE@LIMKCMBX1.ad.analog.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 05:42:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/7/2012 8:35 PM, Hennerich, Michael wrote:
-> Masanari Iida wrote on 2012-05-07:
->> Correct spelling typo in staging/iio
->>
->> Signed-off-by: Masanari Iida<standby24x7@gmail.com>
-> Acked-by: Michael Hennerich<michael.hennerich@analog.com>
-Acked-by: Jonathan Cameron <jic23@kernel.org>
+Commit-ID:  96c951179736eb59c5f66de2ac85af9e7a6a8b15
+Gitweb:     http://git.kernel.org/tip/96c951179736eb59c5f66de2ac85af9e7a6a8b15
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Sat, 5 May 2012 15:05:45 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 8 May 2012 14:08:45 +0200
 
-Please send to Gregkh@linuxfoundation.org
->> ---
->>   drivers/staging/iio/TODO                      | 2 +-
->>   drivers/staging/iio/gyro/adxrs450.h           | 2 +-
->>   drivers/staging/iio/iio_simple_dummy_buffer.c | 4 ++--
->>   drivers/staging/iio/iio_simple_dummy_events.c | 2 +-
->>   4 files changed, 5 insertions(+), 5 deletions(-)
->> diff --git a/drivers/staging/iio/TODO b/drivers/staging/iio/TODO
->> index d1ad35e..cf3f948 100644
->> --- a/drivers/staging/iio/TODO
->> +++ b/drivers/staging/iio/TODO
->> @@ -67,7 +67,7 @@ e-mailing the normal IIO list (see below).
->>
->>   Documentation
->>   1) Lots of cleanup and expansion.
->> -2) Some device require indvidual docs.
->> +2) Some device require individual docs.
->>
->>   Contact: Jonathan Cameron<jic23@cam.ac.uk>.
->>   Mailing list: linux-iio@vger.kernel.org
->> diff --git a/drivers/staging/iio/gyro/adxrs450.h
->> b/drivers/staging/iio/gyro/adxrs450.h index af0c870..f8cf21f 100644 ---
->> a/drivers/staging/iio/gyro/adxrs450.h +++
->> b/drivers/staging/iio/gyro/adxrs450.h @@ -49,7 +49,7 @@ enum {
->>    * @us:                      actual spi_device
->>    * @buf_lock:                mutex to protect tx and rx
->>    * @tx:                      transmit buffer
->> - * @rx:                      recieve buffer
->> + * @rx:                      receive buffer
->>    **/
->>   struct adxrs450_state {
->>        struct spi_device       *us;
->> diff --git a/drivers/staging/iio/iio_simple_dummy_buffer.c
->> b/drivers/staging/iio/iio_simple_dummy_buffer.c index bb4daf7..389c18a
->> 100644 --- a/drivers/staging/iio/iio_simple_dummy_buffer.c +++
->> b/drivers/staging/iio/iio_simple_dummy_buffer.c @@ -37,7 +37,7 @@ static
->> const s16 fakedata[] = {
->>    * @irq: the interrupt number
->>    * @p: private data - always a pointer to the poll func.
->>    *
->> - * This is the guts of buffered capture. On a trigger event occuring,
->> + * This is the guts of buffered capture. On a trigger event occurring,
->>    * if the pollfunc is attached then this handler is called as a
->>    threaded * interrupt (and hence may sleep). It is responsible for
->>    grabbing data * from the device and pushing it into the associated
->>    buffer.
->> @@ -64,7 +64,7 @@ static irqreturn_t iio_simple_dummy_trigger_h(int
->> irq, void *p)
->>                 *   up a fast read.  The capture will consist of all of them.           *
->>   Hence we just call the grab data function and fill the                *   buffer
->>   without processing.
->> -              * sofware scans: can be considered to be random access
->> +              * software scans: can be considered to be random access
->>                 *   so efficient reading is just a case of minimal bus
->>                 *   transactions.
->>                 * software culled hardware scans:
->> diff --git a/drivers/staging/iio/iio_simple_dummy_events.c
->> b/drivers/staging/iio/iio_simple_dummy_events.c index 449c7a5..368317b
->> 100644 --- a/drivers/staging/iio/iio_simple_dummy_events.c +++
->> b/drivers/staging/iio/iio_simple_dummy_events.c @@ -122,7 +122,7 @@ int
->> iio_simple_dummy_write_event_value(struct iio_dev *indio_dev,
->>    * @private: pointer to device instance state.
->>    *
->>    * This handler is responsible for querying the device to find out
->> what
->> - * event occured and for then pushing that event towards userspace.
->> + * event occurred and for then pushing that event towards userspace.
->>    * Here only one event occurs so we push that directly on with locally
->>    * grabbed timestamp.
->>    */
-> Greetings,
-> Michael
->
-> --
-> Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-> Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
-> Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin, Margaret Seif
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+powerpc: Use common threadinfo allocator
 
+The core now has a threadinfo allocator which uses a kmemcache when
+THREAD_SIZE < PAGE_SIZE.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Link: http://lkml.kernel.org/r/20120505150142.059161130@linutronix.de
+---
+ arch/powerpc/include/asm/thread_info.h |   13 -------------
+ arch/powerpc/kernel/process.c          |   31 -------------------------------
+ 2 files changed, 0 insertions(+), 44 deletions(-)
+
+diff --git a/arch/powerpc/include/asm/thread_info.h b/arch/powerpc/include/asm/thread_info.h
+index 4a741c7..1a1bb00 100644
+--- a/arch/powerpc/include/asm/thread_info.h
++++ b/arch/powerpc/include/asm/thread_info.h
+@@ -62,21 +62,8 @@ struct thread_info {
+ #define init_thread_info	(init_thread_union.thread_info)
+ #define init_stack		(init_thread_union.stack)
+ 
+-/* thread information allocation */
+-
+-#if THREAD_SHIFT >= PAGE_SHIFT
+-
+ #define THREAD_SIZE_ORDER	(THREAD_SHIFT - PAGE_SHIFT)
+ 
+-#else /* THREAD_SHIFT < PAGE_SHIFT */
+-
+-#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR
+-
+-extern struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node);
+-extern void free_thread_info(struct thread_info *ti);
+-
+-#endif /* THREAD_SHIFT < PAGE_SHIFT */
+-
+ /* how to get the thread information struct from C */
+ static inline struct thread_info *current_thread_info(void)
+ {
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index 4937c96..aa05935 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -1252,37 +1252,6 @@ void __ppc64_runlatch_off(void)
+ }
+ #endif /* CONFIG_PPC64 */
+ 
+-#if THREAD_SHIFT < PAGE_SHIFT
+-
+-static struct kmem_cache *thread_info_cache;
+-
+-struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node)
+-{
+-	struct thread_info *ti;
+-
+-	ti = kmem_cache_alloc_node(thread_info_cache, GFP_KERNEL, node);
+-	if (unlikely(ti == NULL))
+-		return NULL;
+-#ifdef CONFIG_DEBUG_STACK_USAGE
+-	memset(ti, 0, THREAD_SIZE);
+-#endif
+-	return ti;
+-}
+-
+-void free_thread_info(struct thread_info *ti)
+-{
+-	kmem_cache_free(thread_info_cache, ti);
+-}
+-
+-void thread_info_cache_init(void)
+-{
+-	thread_info_cache = kmem_cache_create("thread_info", THREAD_SIZE,
+-					      THREAD_SIZE, 0, NULL);
+-	BUG_ON(thread_info_cache == NULL);
+-}
+-
+-#endif /* THREAD_SHIFT < PAGE_SHIFT */
+-
+ unsigned long arch_align_stack(unsigned long sp)
+ {
+ 	if (!(current->personality & ADDR_NO_RANDOMIZE) && randomize_va_space)
