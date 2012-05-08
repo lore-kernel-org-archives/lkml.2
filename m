@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab2EHUQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 16:16:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35140 "EHLO
+	id S1757419Ab2EHUQl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 16:16:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35309 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757012Ab2EHUQ1 (ORCPT
+	with ESMTP id S1757009Ab2EHUQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 16:16:27 -0400
-Date: Tue, 8 May 2012 13:16:26 -0700
+	Tue, 8 May 2012 16:16:39 -0400
+Date: Tue, 8 May 2012 13:16:37 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
 To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
 Cc: linux-pm@lists.linux-foundation.org, durgadoss.r@intel.com,
@@ -15,13 +15,16 @@ Cc: linux-pm@lists.linux-foundation.org, durgadoss.r@intel.com,
         linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org, patches@linaro.org
-Subject: Re: [PATCH v3 2/6] thermal: Add generic cpufreq cooling
- implementation
-Message-Id: <20120508131626.ffe262f6.akpm@linux-foundation.org>
-In-Reply-To: <1336493898-7039-3-git-send-email-amit.kachhap@linaro.org>
+Subject: Re: [PATCH v3 5/6] thermal: exynos: Register the tmu sensor with
+ the kernel thermal layer
+Message-Id: <20120508131637.a2f59904.akpm@linux-foundation.org>
+In-Reply-To: <1336493898-7039-6-git-send-email-amit.kachhap@linaro.org>
 References: <1336493898-7039-1-git-send-email-amit.kachhap@linaro.org>
 	<1336493898-7039-2-git-send-email-amit.kachhap@linaro.org>
 	<1336493898-7039-3-git-send-email-amit.kachhap@linaro.org>
+	<1336493898-7039-4-git-send-email-amit.kachhap@linaro.org>
+	<1336493898-7039-5-git-send-email-amit.kachhap@linaro.org>
+	<1336493898-7039-6-git-send-email-amit.kachhap@linaro.org>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -30,173 +33,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  8 May 2012 21:48:14 +0530
+On Tue,  8 May 2012 21:48:17 +0530
 Amit Daniel Kachhap <amit.kachhap@linaro.org> wrote:
 
-> This patch adds support for generic cpu thermal cooling low level
-> implementations using frequency scaling up/down based on the registration
-> parameters. Different cpu related cooling devices can be registered by the
-> user and the binding of these cooling devices to the corresponding
-> trip points can be easily done as the registration APIs return the
-> cooling device pointer. The user of these APIs are responsible for
-> passing clipping frequency . The drivers can also register to recieve
-> notification about any cooling action called. Even the driver can effect
-> the cooling action by modifying the default data such as freq_clip_max if
-> needed.
+> This code added creates a link between temperature sensors, linux thermal
+> framework and cooling devices for samsung exynos platform. This layer
+> monitors the temperature from the sensor and informs the generic thermal
+> layer to take the necessary cooling action.
 > 
 >
 > ...
 >
-> +struct cpufreq_cooling_device {
-> +	int id;
-> +	struct thermal_cooling_device *cool_dev;
-> +	struct freq_clip_table *tab_ptr;
-> +	unsigned int tab_size;
-> +	unsigned int cpufreq_state;
-> +	const struct cpumask *allowed_cpus;
-> +	struct list_head node;
-> +};
-
-It would be nice to document the fields.  Especially id, tab_size,
-cpufreq_state and node.  For `node' we should describe the locking for
-the list, and describe which list_head anchors this list.
-
-> +static LIST_HEAD(cooling_cpufreq_list);
-> +static DEFINE_MUTEX(cooling_cpufreq_lock);
-> +static DEFINE_IDR(cpufreq_idr);
-> +static DEFINE_PER_CPU(unsigned int, max_policy_freq);
-> +static struct freq_clip_table *notify_table;
-> +static int notify_state;
-> +static BLOCKING_NOTIFIER_HEAD(cputherm_state_notifier_list);
-> +
-> +static int get_idr(struct idr *idr, struct mutex *lock, int *id)
+> +static void exynos_report_trigger(void)
 > +{
-> +	int err;
-> +again:
-> +	if (unlikely(idr_pre_get(idr, GFP_KERNEL) == 0))
-> +		return -ENOMEM;
+> +	unsigned int i;
+> +	char data[2];
+> +	char *envp[] = { data, NULL };
 > +
-> +	if (lock)
-> +		mutex_lock(lock);
-
-The test for NULL `lock' is unneeded.  In fact the `lock' argument
-could be removed altogether - just use cooling_cpufreq_lock directly.
-
-> +	err = idr_get_new(idr, NULL, id);
-> +	if (lock)
-> +		mutex_unlock(lock);
-> +	if (unlikely(err == -EAGAIN))
-> +		goto again;
-> +	else if (unlikely(err))
-> +		return err;
+> +	if (!th_zone || !th_zone->therm_dev)
+> +		return;
 > +
-> +	*id = *id & MAX_ID_MASK;
-> +	return 0;
-> +}
+> +	thermal_zone_device_update(th_zone->therm_dev);
 > +
-> +static void release_idr(struct idr *idr, struct mutex *lock, int id)
-> +{
-> +	if (lock)
-> +		mutex_lock(lock);
+> +	mutex_lock(&th_zone->therm_dev->lock);
+> +	/* Find the level for which trip happened */
+> +	for (i = 0; i < th_zone->sensor_conf->trip_data.trip_count; i++) {
+> +		if (th_zone->therm_dev->last_temperature <
+> +			th_zone->sensor_conf->trip_data.trip_val[i] * 1000)
+> +			break;
+> +	}
+> +
+> +	if (th_zone->mode == THERMAL_DEVICE_ENABLED) {
+> +		if (i > 0)
+> +			th_zone->therm_dev->polling_delay = ACTIVE_INTERVAL;
+> +		else
+> +			th_zone->therm_dev->polling_delay = IDLE_INTERVAL;
+> +	}
+> +
+> +	sprintf(data, "%u", i);
 
-Ditto.
+yikes, if `i' exceeds 9, we have a stack scribble.  Please review this
+and at least use snprintf(...  sizeof(data)) to prevent accidents.
 
-> +	idr_remove(idr, id);
-> +	if (lock)
-> +		mutex_unlock(lock);
+
+> +	kobject_uevent_env(&th_zone->therm_dev->device.kobj, KOBJ_CHANGE, envp);
+> +	mutex_unlock(&th_zone->therm_dev->lock);
 > +}
 > +
 >
 > ...
 >
-> +
-> +/*Below codes defines functions to be used for cpufreq as cooling device*/
-> +static bool is_cpufreq_valid(int cpu)
+> +/* Get trip temperature callback functions for thermal zone */
+> +static int exynos_get_trip_temp(struct thermal_zone_device *thermal, int trip,
+> +				unsigned long *temp)
 > +{
-> +	struct cpufreq_policy policy;
-> +	return !cpufreq_get_policy(&policy, cpu) ? true : false;
+> +	if (trip < 0 || trip > 2)
 
-Can use
+I don't know what `trip' does and I don't know the meaning of the
+values 0, 1 and 2.  Documentation, please.
 
-	return !cpufreq_get_policy(&policy, cpu);
-
-> +}
-> +
-> +static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
-> +				unsigned long cooling_state)
-> +{
-> +	unsigned int event, cpuid;
-> +	struct freq_clip_table *th_table;
-> +
-> +	if (cooling_state > cpufreq_device->tab_size)
 > +		return -EINVAL;
 > +
-> +	cpufreq_device->cpufreq_state = cooling_state;
-> +
-> +	/*cpufreq thermal notifier uses this cpufreq device pointer*/
-
-This code looks like it was written by two people.
-
-	/* One who does this */
-	/*And one who does this*/
-
-The first one was right.  Please go through all the comments in all the
-patches and get the layout consistent?
-
-
-> +	notify_state = cooling_state;
-> +
-> +	if (notify_state > 0) {
-> +		th_table = &(cpufreq_device->tab_ptr[cooling_state - 1]);
-> +		memcpy(notify_table, th_table, sizeof(struct freq_clip_table));
-> +		event = CPUFREQ_COOLING_TYPE;
-> +		blocking_notifier_call_chain(&cputherm_state_notifier_list,
-> +						event, notify_table);
-> +	}
-> +
-> +	for_each_cpu(cpuid, cpufreq_device->allowed_cpus) {
-> +		if (is_cpufreq_valid(cpuid))
-> +			cpufreq_update_policy(cpuid);
-> +	}
-> +
-> +	notify_state = -1;
-> +
-> +	return 0;
-> +}
-> +
-> +static int cpufreq_thermal_notifier(struct notifier_block *nb,
-> +					unsigned long event, void *data)
-> +{
-> +	struct cpufreq_policy *policy = data;
-> +	unsigned long max_freq = 0;
-> +
-> +	if ((event != CPUFREQ_ADJUST) || (notify_state == -1))
-
-Please document `notify_state', at its definition site.  This reader
-doesn't know what "notify_state == -1" *means*.  
-
-> +		return 0;
-> +
-> +	if (notify_state > 0) {
-> +		max_freq = notify_table->freq_clip_max;
-> +
-> +		if (per_cpu(max_policy_freq, policy->cpu) == 0)
-> +			per_cpu(max_policy_freq, policy->cpu) = policy->max;
-> +	} else {
-> +		if (per_cpu(max_policy_freq, policy->cpu) != 0) {
-> +			max_freq = per_cpu(max_policy_freq, policy->cpu);
-> +			per_cpu(max_policy_freq, policy->cpu) = 0;
-> +		} else {
-> +			max_freq = policy->max;
-> +		}
-> +	}
-> +
-> +	/* Never exceed user_policy.max*/
-> +	if (max_freq > policy->user_policy.max)
-> +		max_freq = policy->user_policy.max;
-> +
-> +	if (policy->max != max_freq)
-> +		cpufreq_verify_within_limits(policy, 0, max_freq);
+> +	*temp = th_zone->sensor_conf->trip_data.trip_val[trip];
+> +	/* convert the temperature into millicelsius */
+> +	*temp = *temp * 1000;
 > +
 > +	return 0;
 > +}
@@ -204,193 +104,130 @@ doesn't know what "notify_state == -1" *means*.
 >
 > ...
 >
-> +/*This cooling may be as PASSIVE/ACTIVE type*/
-> +static int cpufreq_set_cur_state(struct thermal_cooling_device *cdev,
-> +				 unsigned long state)
+> +/* Bind callback functions for thermal zone */
+> +static int exynos_bind(struct thermal_zone_device *thermal,
+> +			struct thermal_cooling_device *cdev)
 > +{
-> +	int ret = -EINVAL;
-> +	struct cpufreq_cooling_device *cpufreq_device;
+> +	int ret = 0;
 > +
-> +	mutex_lock(&cooling_cpufreq_lock);
-> +	list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
-> +		if (cpufreq_device && cpufreq_device->cool_dev == cdev) {
-> +			ret = 0;
-> +			break;
-> +		}
+> +	/* if the cooling device is the one from exynos4 bind it */
+> +	if (cdev != th_zone->cool_dev[0])
+> +		return 0;
+> +
+> +	if (thermal_zone_bind_cooling_device(thermal, 0, cdev)) {
+> +		pr_err("error binding cooling dev inst 0\n");
+> +		return -EINVAL;
 > +	}
-> +	mutex_unlock(&cooling_cpufreq_lock);
-> +
-> +	if (!ret)
-> +		ret = cpufreq_apply_cooling(cpufreq_device, state);
+> +	if (thermal_zone_bind_cooling_device(thermal, 1, cdev)) {
+> +		pr_err("error binding cooling dev inst 1\n");
+> +		ret = -EINVAL;
+> +		goto error_bind1;
+> +	}
 
-Now that we've dropped the lock, what prevents *cpufreq_device from
-getting freed, or undesirably altered?
+There can never be more than two instances?
 
+> +	return ret;
+> +error_bind1:
+> +	thermal_zone_unbind_cooling_device(thermal, 0, cdev);
 > +	return ret;
 > +}
 > +
-> +/* bind cpufreq callbacks to cpufreq cooling device */
-> +static struct thermal_cooling_device_ops cpufreq_cooling_ops = {
-
-Can it be made const?
-
-> +	.get_max_state = cpufreq_get_max_state,
-> +	.get_cur_state = cpufreq_get_cur_state,
-> +	.set_cur_state = cpufreq_set_cur_state,
-> +};
-> +
-> +static struct notifier_block thermal_cpufreq_notifier_block = {
-> +	.notifier_call = cpufreq_thermal_notifier,
-> +};
-> +
-> +struct thermal_cooling_device *cpufreq_cooling_register(
-> +	struct freq_clip_table *tab_ptr, unsigned int tab_size,
-> +	const struct cpumask *mask_val)
-> +{
-> +	struct thermal_cooling_device *cool_dev;
-> +	struct cpufreq_cooling_device *cpufreq_dev = NULL;
-> +	unsigned int cpufreq_dev_count = 0;
-> +	char dev_name[THERMAL_NAME_LENGTH];
-> +	int ret = 0, id = 0, i;
-> +
-> +	if (tab_ptr == NULL || tab_size == 0)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node)
-> +		cpufreq_dev_count++;
-> +
-> +	cpufreq_dev =
-> +		kzalloc(sizeof(struct cpufreq_cooling_device), GFP_KERNEL);
-
-The 80-col contortions are ugly.  Alternatives are
-
-	cpufreq_dev = kzalloc(sizeof(struct cpufreq_cooling_device),
-			      GFP_KERNEL);
-
-or, better,
-
-	cpufreq_dev = kzalloc(sizeof(*cpufreq_dev), GFP_KERNEL);
-
-
-> +	if (!cpufreq_dev)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	if (cpufreq_dev_count == 0) {
-> +		notify_table = kzalloc(sizeof(struct freq_clip_table),
-> +					GFP_KERNEL);
-> +		if (!notify_table) {
-> +			kfree(cpufreq_dev);
-> +			return ERR_PTR(-ENOMEM);
-> +		}
-> +	}
-> +
-> +	cpufreq_dev->tab_ptr = tab_ptr;
-> +	cpufreq_dev->tab_size = tab_size;
-> +	cpufreq_dev->allowed_cpus = mask_val;
-> +
-> +	/* Initialize all the tab_ptr->mask_val to the passed mask_val */
-> +	for (i = 0; i < tab_size; i++)
-> +		((struct freq_clip_table *)&tab_ptr[i])->mask_val = mask_val;
-> +
-> +	ret = get_idr(&cpufreq_idr, &cooling_cpufreq_lock, &cpufreq_dev->id);
-
-hm, "get_idr" is a poor name.  One would expect it to do a lookup, but
-it actually does an installation.  That's a result of the poorly-named
-idr_get_new(), I expect.
-
-
-> +	if (ret) {
-> +		kfree(cpufreq_dev);
-> +		return ERR_PTR(-EINVAL);
-> +	}
-> +
-> +	sprintf(dev_name, "thermal-cpufreq-%d", cpufreq_dev->id);
-> +
-> +	cool_dev = thermal_cooling_device_register(dev_name, cpufreq_dev,
-> +						&cpufreq_cooling_ops);
-> +	if (!cool_dev) {
-> +		release_idr(&cpufreq_idr, &cooling_cpufreq_lock,
-> +						cpufreq_dev->id);
-> +		kfree(cpufreq_dev);
-> +		return ERR_PTR(-EINVAL);
-> +	}
-> +	cpufreq_dev->id = id;
-> +	cpufreq_dev->cool_dev = cool_dev;
-> +	mutex_lock(&cooling_cpufreq_lock);
-> +	list_add_tail(&cpufreq_dev->node, &cooling_cpufreq_list);
-> +	mutex_unlock(&cooling_cpufreq_lock);
-> +
-> +	/*Register the notifier for first cpufreq cooling device*/
-> +	if (cpufreq_dev_count == 0)
-> +		cpufreq_register_notifier(&thermal_cpufreq_notifier_block,
-> +						CPUFREQ_POLICY_NOTIFIER);
-> +	return cool_dev;
-> +}
-> +EXPORT_SYMBOL(cpufreq_cooling_register);
-> +
-> +void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
-> +{
-> +	struct cpufreq_cooling_device *cpufreq_dev = NULL;
-> +	unsigned int cpufreq_dev_count = 0;
-> +
-> +	mutex_lock(&cooling_cpufreq_lock);
-> +	list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node) {
-> +		if (cpufreq_dev && cpufreq_dev->cool_dev == cdev)
-> +			break;
-> +		cpufreq_dev_count++;
-> +	}
-> +
-> +	if (!cpufreq_dev || cpufreq_dev->cool_dev != cdev) {
-> +		mutex_unlock(&cooling_cpufreq_lock);
-> +		return;
-> +	}
-> +
-> +	list_del(&cpufreq_dev->node);
-> +	mutex_unlock(&cooling_cpufreq_lock);
-> +
-> +	/*Unregister the notifier for the last cpufreq cooling device*/
-> +	if (cpufreq_dev_count == 1) {
-
-But we dropped the lock, so local variable cpufreq_dev_count is now
-meaningless.  What prevents a race here?
-
-> +		cpufreq_unregister_notifier(&thermal_cpufreq_notifier_block,
-> +					CPUFREQ_POLICY_NOTIFIER);
-> +		kfree(notify_table);
-> +	}
-> +
-> +	thermal_cooling_device_unregister(cpufreq_dev->cool_dev);
-> +	release_idr(&cpufreq_idr, &cooling_cpufreq_lock, cpufreq_dev->id);
-> +	kfree(cpufreq_dev);
-> +}
-> +EXPORT_SYMBOL(cpufreq_cooling_unregister);
 >
 > ...
 >
-> +struct freq_clip_table {
-> +	unsigned int freq_clip_max;
-> +	unsigned int polling_interval;
-> +	unsigned int temp_level;
-> +	const struct cpumask *mask_val;
+> +/* Get temperature callback functions for thermal zone */
+> +static int exynos_get_temp(struct thermal_zone_device *thermal,
+> +			unsigned long *temp)
+> +{
+> +	void *data;
+> +
+> +	if (!th_zone->sensor_conf) {
+> +		pr_info("Temperature sensor not initialised\n");
+> +		return -EINVAL;
+> +	}
+> +	data = th_zone->sensor_conf->private_data;
+> +	*temp = th_zone->sensor_conf->read_temperature(data);
+> +	/* convert the temperature into millicelsius */
+> +	*temp = *temp * 1000;
+> +	return 0;
+> +}
+> +
+> +/* Operation callback functions for thermal zone */
+> +static struct thermal_zone_device_ops exynos_dev_ops = {
+
+Can it be const?  That sometimes saves space, as the table doesn't need
+to be moved into writeable storage at runtime.
+
+> +	.bind = exynos_bind,
+> +	.unbind = exynos_unbind,
+> +	.get_temp = exynos_get_temp,
+> +	.get_mode = exynos_get_mode,
+> +	.set_mode = exynos_set_mode,
+> +	.get_trip_type = exynos_get_trip_type,
+> +	.get_trip_temp = exynos_get_trip_temp,
+> +	.get_crit_temp = exynos_get_crit_temp,
 > +};
-
-hm, what does this thing do.  Needs a nice comment for the uninitiated,
-please.  Something which describes the overall roles, responsibilities
-and general reasons for existence.
-
-> +int cputherm_register_notifier(struct notifier_block *nb, unsigned int list);
-> +int cputherm_unregister_notifier(struct notifier_block *nb, unsigned int list);
 > +
-> +#ifdef CONFIG_CPU_FREQ
-> +struct thermal_cooling_device *cpufreq_cooling_register(
-> +	struct freq_clip_table *tab_ptr, unsigned int tab_size,
-> +	const struct cpumask *mask_val);
+> +/* Register with the in-kernel thermal management */
+> +static int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+> +{
+> +	int ret, count, tab_size;
+> +	struct freq_clip_table *tab_ptr;
 > +
-> +void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev);
-> +#else /*!CONFIG_CPU_FREQ*/
+> +	if (!sensor_conf || !sensor_conf->read_temperature) {
+> +		pr_err("Temperature sensor not initialised\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	th_zone = kzalloc(sizeof(struct exynos_thermal_zone), GFP_KERNEL);
+> +	if (!th_zone) {
+> +		ret = -ENOMEM;
+> +		goto err_unregister;
 
-(more whacky comment layout)
+This seems wrong?  If we need to call exynos_unregister_thermal() on
+this error path then we needed to call it on the predecing one? 
+Perhaps?
 
+> +	}
+> +
+> +	th_zone->sensor_conf = sensor_conf;
+> +
+> +	tab_ptr = (struct freq_clip_table *)sensor_conf->cooling_data.freq_data;
+> +	tab_size = sensor_conf->cooling_data.freq_clip_count;
+> +
+> +	/* Register the cpufreq cooling device */
+> +	th_zone->cool_dev_size = 1;
+> +	count = 0;
+> +	th_zone->cool_dev[count] = cpufreq_cooling_register(
+> +			(struct freq_clip_table *)&(tab_ptr[count]),
+> +			tab_size, cpumask_of(0));
+> +
+> +	if (IS_ERR(th_zone->cool_dev[count])) {
+> +		pr_err("Failed to register cpufreq cooling device\n");
+> +		ret = -EINVAL;
+> +		th_zone->cool_dev_size = 0;
+> +		goto err_unregister;
+> +	}
+> +
+> +	th_zone->therm_dev = thermal_zone_device_register(sensor_conf->name,
+> +			3, NULL, &exynos_dev_ops, 0, 0, 0, IDLE_INTERVAL);
+> +
+> +	if (IS_ERR(th_zone->therm_dev)) {
+> +		pr_err("Failed to register thermal zone device\n");
+> +		ret = -EINVAL;
+> +		goto err_unregister;
+> +	}
+> +	th_zone->mode = THERMAL_DEVICE_ENABLED;
+> +
+> +	pr_info("Exynos: Kernel Thermal management registered\n");
+> +
+> +	return 0;
+> +
+> +err_unregister:
+> +	exynos_unregister_thermal();
+> +	return ret;
+> +}
+> +
 >
 > ...
 >
