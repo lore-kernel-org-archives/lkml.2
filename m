@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab2EHI6m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 04:58:42 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48934 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834Ab2EHI6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 04:58:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="141318473"
-Message-ID: <1336467723.23308.23.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] UBI: Replace yield() with cond_resched()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org
-Date: Tue, 08 May 2012 12:02:03 +0300
-In-Reply-To: <1336465602-12627-1-git-send-email-richard@nod.at>
-References: <1336465602-12627-1-git-send-email-richard@nod.at>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-qU9F2YOvAdcoXPhHjZ4z"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1751680Ab2EHJCK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 05:02:10 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:51532 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab2EHJCI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 05:02:08 -0400
+Date: Tue, 8 May 2012 14:20:02 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH UPDATED 3/3] tracing: Provide trace events interface
+ for uprobes
+Message-ID: <20120508085002.GA13272@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com>
+ <20120409091154.8343.50489.sendpatchset@srdronam.in.ibm.com>
+ <20120411103043.GB29437@linux.vnet.ibm.com>
+ <20120508041229.GD30652@gmail.com>
+ <1336465808.16236.13.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1336465808.16236.13.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12050809-2398-0000-0000-000006741700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Peter Zijlstra <peterz@infradead.org> [2012-05-08 10:30:08]:
 
---=-qU9F2YOvAdcoXPhHjZ4z
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> On Tue, 2012-05-08 at 06:12 +0200, Ingo Molnar wrote:
+> > FYI, this warning started to trigger in -tip, with the latest 
+> > uprobes patches:
+> > 
+> > warning: (UPROBE_EVENT) selects UPROBES which has unmet direct dependencies (UPROBE_EVENTS && PERF_EVENTS)
+> 
+> this looks to be the only UPROBE_EVENTS instance, is that a typo?
 
-On Tue, 2012-05-08 at 10:26 +0200, Richard Weinberger wrote:
-> The comment above yield()'s definition says:
->  * If you want to use yield() to wait for something, use wait_event().
->  * If you want to use yield() to be 'nice' for others, use cond_resched()=
-.
->  * If you still want to use yield(), do not!
->=20
-> The yield() usage of UBI really looks like the "be nice for others" case,
-> so use cond_resched().
->=20
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> CC: peterz@infradead.org
 
-I guess we would better sleep for a couple of hundreds of milliseconds
-instead.
+I think I corrected this in the latest posting I sent on April 16th.
 
-The purpose was different. If we have I/O error, we hope it is a
-transient failure. E.g., the HW is temporary unavailable because of an
-internal issue. And with yield() we hoped to schedule away for longer
-time than usual and let other processes which may affect that HW go
-forward and do something.
+Ingo,
 
-But whole this thing does not have any solid real-case basis, just
-something which looked sane to do to me.
+	Since you had asked me to send the patch series again after
+handling comments and acks, I had sent the set. At that time, I had
+handled this change as part of a comment from Stephen Boyd.  I had
+mentioned this in the changelog.
 
-Someone on the list also questioned the entire re-tries, but he did not
-care enough to send a tested patch. But this is a separate and
-independent issue.
+	Would it be possible for you to accept the patches from 
+https://lkml.org/lkml/2012/4/16/109
+with message id: 
+Message-Id: <20120416091936.19174.2641.sendpatchset@srdronam.in.ibm.com> 
 
---=20
-Best Regards,
-Artem Bityutskiy
+Currently you seem to have picked from 
+https://lkml.org/lkml/2012/4/11/117
 
---=-qU9F2YOvAdcoXPhHjZ4z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPqOELAAoJECmIfjd9wqK0txsQALC0dTOz5zqAmf3NQS7O2iS8
-65o1oYrxmPBWKacSN5bpFL45e69/KjU2HbiouthlilKkZQNVxAs/UCI905DJI/mG
-qMXoTeqyd7WykeVJEZ8WM2Warq6Z31G9BxM4WJFktBFplcf94AxhLGcU6YdyaUSh
-Wz+NPBXjvujQAlVaNQfrhFjWt2RMvgVIov05KppCh3yAvKEzc/kShbtyRjXOEjow
-3wH5gJl4W3t/yfl6hVAyO1tXMbvJpr8zuVIZKiGXHKrM49or0mCGKW7j6NR3V34G
-iyHQkeXf0FqbEbKbQ6RNz+5FhDdSVluUQSwtiVjNukPkboka2XCcJBwziQhsNx9M
-OasvUMc0m7yf/uXS8NZ/hIcv18ENQaNcv8Ikc2VkLqsEWmRAcHZcdIFPI6JXGvHA
-n5sX6dRn4yiVUAo4WKFfuZdpmDzz5EMt1Gl/Z8X4umwS2QyB9L22AnSMZBLgK9Oz
-hd6ydUpC54qXLoAscYfd5VWe2O40BQIKIV/aGczRs4C29H1mijOZFv7sA+m9wicC
-CB7T2cuVhiF4VLtpv/5gMKgYHGPf8af8RmUolFZWCY2HakJUY/TCntDBDx+pedoy
-SPjj1jPlEyRLfGa14w8hRBemUrsFFT808rGN3S9Xn4eZ5YTdHFP7reLFXJ8k2MD7
-bhUvP45+NKy7QdzW+vzi
-=ERFN
------END PGP SIGNATURE-----
-
---=-qU9F2YOvAdcoXPhHjZ4z--
+--
+Thanks and Regards
+Srikar
 
