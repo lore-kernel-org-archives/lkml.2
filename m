@@ -1,153 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab2EHGck (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 02:32:40 -0400
-Received: from leo.clearchain.com ([199.73.29.74]:56052 "EHLO
-	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab2EHGci (ORCPT
+	id S1754430Ab2EHGfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 02:35:31 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:59182 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab2EHGf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 02:32:38 -0400
-X-Greylist: delayed 1971 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 May 2012 02:32:38 EDT
-Date: Tue, 8 May 2012 16:02:21 +1000
-From: Peter Hutterer <peter.hutterer@who-t.net>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, chatty@enac.fr, chasedouglas@gmail.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Input: MT - Include win8 support
-Message-ID: <20120508060221.GA15925@yabbi.bne.redhat.com>
-References: <1336230499-1450-1-git-send-email-rydberg@euromail.se>
- <CAN+gG=HqGmf77P6=7RMFT_Ez7Ysp4ZVJ6skfAoDcZ7JN1JtYnw@mail.gmail.com>
- <20120506182835.GA12221@polaris.bitmath.org>
+	Tue, 8 May 2012 02:35:29 -0400
+Message-ID: <4FA8BEAD.8070806@kernel.org>
+Date: Tue, 08 May 2012 02:35:25 -0400
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120506182835.GA12221@polaris.bitmath.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Tue, 08 May 2012 15:28:37 +0930 (CST)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-acpi@vger.kernel.org, x86@kernel.org,
+        "Brown, Len" <len.brown@intel.com>
+Subject: Re: [PATCH 2/2] x86/acpi: Call acpi_enter_sleep_state via an asmlinkage
+ C function from assembler.
+References: <1334769518-7660-1-git-send-email-konrad.wilk@oracle.com> <1334769518-7660-3-git-send-email-konrad.wilk@oracle.com> <4F8F28BF.6010003@zytor.com> <201204182302.51868.rjw@sisk.pl>
+In-Reply-To: <201204182302.51868.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 06, 2012 at 08:28:35PM +0200, Henrik Rydberg wrote:
-> (doh, trying again without attachment)
-> 
-> Hi,
-> 
-> to aid in the discussion, I have shared a drawing of the MT model
-> and the (supposed) win8 model.
-> 
-> https://docs.google.com/document/d/1KKu7kqPOsvE9tCmWhdGnmO8tgmN0Cd-Mv_crVaCZueY/view
+On 04/18/2012 05:02 PM, Rafael J. Wysocki wrote:
 
-having an asciiart version of this in Documentation/ would be quite useful,
-IMO
- 
-> > > @@ -168,7 +168,9 @@ The TOUCH and WIDTH parameters have a geometrical interpretation; imagine
-> > >  looking through a window at someone gently holding a finger against the
-> > >  glass.  You will see two regions, one inner region consisting of the part
-> > >  of the finger actually touching the glass, and one outer region formed by
-> > > -the perimeter of the finger. The diameter of the inner region is the
-> > > +the perimeter of the finger. The center of the inner region is
-> > > +ABS_MT_POSITION_X/Y. The center of the outer region may be different,
-> > > +denoted by ABS_MT_APPROACH_X/Y. The diameter of the inner region is the
-> > >  ABS_MT_TOUCH_MAJOR, the diameter of the outer region is
-> > >  ABS_MT_WIDTH_MAJOR. Now imagine the person pressing the finger harder
-> > >  against the glass. The inner region will increase, and in general, the
-> > > @@ -252,6 +254,9 @@ can distinguish between the two axis, but not (uniquely) any values in
-> > >  between. In such cases, the range of ABS_MT_ORIENTATION should be [0, 1]
-> > >  [4].
-> > >
-> > > +For devices capable of 360 degree orientation, the reported orientation
-> > > +should be twice the given range.
-> > 
-> > Like Chase, I don't understand the necessity of that.
-> 
-> The MT model supports the arbitrary orientation of an ellipse. The
-> angle is defined as a [-90,90] degree clockwise angle between the y
-> axis and the major axis of the ellipse (marked o in the figure). Only
-> 180 degrees are specified due to the symmetry; rotating 135 degrees is
-> equivalent to -45 degrees.
-> 
-> In the win8 model, as in the windows surface model and most
-> implementations of FTIR, it is possible to distinguish the absolute
-> direction of a finger. This is equivalent to an ellipse with an arrow
-> (the angle is marked A in the figure).
-> 
-> To accomodate the directional angle in the MT model, one can simply
-> report the full [-180,180] range instead. That is, report 135 degrees
-> instead of -45.
-
-Insert a paragraph into the actual documentation. I think that's more
-helpful than tacking it on (if not quite as nice in a diff)
-
-"The orientation of the ellipse. The value should describe a signed quarter
-of a revolution clockwise around the touch center. The signed value range
-is arbitrary, but zero should be returned for a finger aligned along the Y
-axis of the surface, a negative value when finger is turned to the left, and
-a positive value when finger turned to the right. When completely aligned
-with the X axis, the range max should be returned.  
-
-Touch ellipsis are symmetrical by default. For devices capable of true 360
-degree orientation, the reported orientation must exceed the range max to
-indicate more than a quarter of a revolution. For an upside-down finger, 
-range max * 2 should be returned.
-
-Orientation can be omitted if the touching object is circular, or if the
-information is not available in the kernel driver. Partial orientation
-support is possible if the device can distinguish between the two axis, but
-not (uniquely) any values in between. In such cases, the range of
-ABS_MT_ORIENTATION should be [0, 1] [4]."
+> On Wednesday, April 18, 2012, H. Peter Anvin wrote:
+>> On 04/18/2012 10:18 AM, Konrad Rzeszutek Wilk wrote:
+>>>
+>>> Suggested-by: H. Peter Anvin <hpa@zytor.com>
+>>> [v2: Remove extra assembler operations, per hpa review]
+>>> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>
+>> Reviewed-by: H. Peter Anvin <hpa@zytor.com>
+>>
+>> Len, your tree or mine?
 
 
-Not a big fan of reporting values above absmin/absmax, tbh. It means we
-can't rely on the axis values and have to special-case it. Plus, there's no
-way to detect this before you actually get a value.
+I think it was a mistake to apply this.
+Instead we should have removed the code that it fixed.
 
-> > > +
-> > >  ABS_MT_POSITION_X
-> > >
-> > >  The surface X coordinate of the center of the touching ellipse.
-> > > @@ -260,6 +265,23 @@ ABS_MT_POSITION_Y
-> > >
-> > >  The surface Y coordinate of the center of the touching ellipse.
-> > >
-> > > +ABS_MT_APPROACH_X
-> > 
-> > Honestly, I think that ABS_MT_APPROACH_* is really confusing for
-> > end-users (Xorg, Wayland, Qt, ...). I know that the explanation are
-> > given, but looking at the mess we had with the use of the MT events
-> > before it has been documented, I don't think this is the right term to
-> > use. Without the doc, and with a little bit of bad faith, I would say
-> > that approach refers to the T coordinate in Win8 doc (the approximate
-> > position where the user wants to touch), whereas the POSITION_* is
-> > more the center of the ellipse of the touch.... But it's the invert...
-> > ;-)
-> 
-> Looking at the figure, it is clear that the MT model has two centers,
-> one for each ellipse. Thus, center is not discriminating
-> enough. Perhaps ABS_MT_OUTER_X/Y is more appropriate, then?
-
-ABS_MT_OUTER_CENTER
-
-Cheers,
-  Peter
-
-> 
-> > > +For win8 devices with Azimuth or Twist defined, the range max is the value
-> > > +for 90 degrees, and the orientation mapping is
-> > > +
-> > > +   ABS_MT_ORIENTATION := twist < 2 * max ? twist : twist - 4 * max
-> 
-> Reading the HID spec again, it seems azimuth is the preferred value
-> for touch, so twist can be omitted here. Also, it seems the angle
-> should be counter-clockwise, thus the sign is wrong. On the other
-> hand, it is unclear what the reference point is, maybe it can only be
-> used for differential updates. Also, the word "cursor" is not further
-> specified, it could be the orientation of the touch point or the
-> orientation of the whole area. This hopefully will become clearer with
-> time.
-> 
-> Thanks,
-> Henrik
+-Len
