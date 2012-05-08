@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab2EHM05 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 08:26:57 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45946 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206Ab2EHM0y (ORCPT
+	id S1754708Ab2EHM1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 08:27:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54693 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754396Ab2EHM1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 08:26:54 -0400
+	Tue, 8 May 2012 08:27:10 -0400
+Date: Tue, 8 May 2012 05:26:57 -0700
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <tip-4a1625133d4faaefcec0dc175941f49b186918d9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20120507175652.119842173@linutronix.de>
+References: <20120507175652.119842173@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:smp/hotplug] cpuidle: Use kick_all_cpus_sync()
+Git-Commit-ID: 4a1625133d4faaefcec0dc175941f49b186918d9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <201205041934.08830.arnd@arndb.de>
-References: <20120504185850.GO14230@opensource.wolfsonmicro.com>
-	<201205041934.08830.arnd@arndb.de>
-Date: Tue, 8 May 2012 14:26:54 +0200
-Message-ID: <CACRpkdb4LGXfJ72uODr841O7M4FGTYKa1X7y6ekeLUw9vaL=mw@mail.gmail.com>
-Subject: Re: Handling of modular boards
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@ardb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Igor Grinberg <grinberg@compulab.co.il>,
-        linux-embedded@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 05:27:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 4, 2012 at 9:34 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+Commit-ID:  4a1625133d4faaefcec0dc175941f49b186918d9
+Gitweb:     http://git.kernel.org/tip/4a1625133d4faaefcec0dc175941f49b186918d9
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Mon, 7 May 2012 17:59:48 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 8 May 2012 12:35:06 +0200
 
-> Thanks for getting the discussion started. I've seen the same issue come
-> up for arch/arm/mach-ux500/board-mop500*uib.c and for the beaglebone.
-> I'm sure there are many more, but we should make sure that everyone
-> of these can live with whatever we come up with.
+cpuidle: Use kick_all_cpus_sync()
 
-The same issue sort of comes up with any system that uses the idiom
-to have a few GPIO lines indicate in a binary code what version of the
-board we're dealing with and what devices are thus on it, right?
+kick_all_cpus_sync() is the core implementation of cpu_idle_wait()
+which is copied all over the arch code.
 
-We have this issue for the U9540 reference design and potentially
-on the Snowball as well.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20120507175652.119842173@linutronix.de
+---
+ drivers/cpuidle/cpuidle.c |   13 +------------
+ 1 files changed, 1 insertions(+), 12 deletions(-)
 
-Yours,
-Linus Walleij
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 2f0083a..d90519c 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -40,17 +40,6 @@ void disable_cpuidle(void)
+ 	off = 1;
+ }
+ 
+-#if defined(CONFIG_ARCH_HAS_CPU_IDLE_WAIT)
+-static void cpuidle_kick_cpus(void)
+-{
+-	cpu_idle_wait();
+-}
+-#elif defined(CONFIG_SMP)
+-# error "Arch needs cpu_idle_wait() equivalent here"
+-#else /* !CONFIG_ARCH_HAS_CPU_IDLE_WAIT && !CONFIG_SMP */
+-static void cpuidle_kick_cpus(void) {}
+-#endif
+-
+ static int __cpuidle_register_device(struct cpuidle_device *dev);
+ 
+ static inline int cpuidle_enter(struct cpuidle_device *dev,
+@@ -186,7 +175,7 @@ void cpuidle_uninstall_idle_handler(void)
+ {
+ 	if (enabled_devices) {
+ 		initialized = 0;
+-		cpuidle_kick_cpus();
++		kick_all_cpus_sync();
+ 	}
+ }
+ 
