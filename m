@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab2EHSX4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 14:23:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11241 "EHLO mga01.intel.com"
+	id S1756054Ab2EHSYI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 14:24:08 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24480 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755699Ab2EHSXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 14:23:54 -0400
+	id S1754610Ab2EHSYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 14:24:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="150637105"
+   d="scan'208";a="150637265"
 From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
         Sam Ravnborg <sam@ravnborg.org>,
         Joseph Cihula <joseph.cihula@intel.com>,
-        Shane Wang <shane.wang@intel.com>, hpa@linux.intel.com
-Subject: [PATCH 14/23] x86, realmode: Replace open-coded ljmpw with a macro
-Date: Tue,  8 May 2012 21:22:37 +0300
-Message-Id: <1336501366-28617-15-git-send-email-jarkko.sakkinen@intel.com>
+        Shane Wang <shane.wang@intel.com>, hpa@linux.intel.com,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Subject: [PATCH 23/23] x86, realmode: read cr4 and EFER from kernel for 64-bit trampoline
+Date: Tue,  8 May 2012 21:22:46 +0300
+Message-Id: <1336501366-28617-24-git-send-email-jarkko.sakkinen@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1336501366-28617-1-git-send-email-jarkko.sakkinen@intel.com>
 References: <1336501366-28617-1-git-send-email-jarkko.sakkinen@intel.com>
@@ -25,154 +26,246 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+This patch changes 64-bit trampoline so that CR4 and
+EFER are provided by the kernel instead of using fixed
+values.
 
-We cannot code an ljmpw to the real-mode segment directly, because gas
-refuses to assemble an ljmp with a symbolic segment.  Instead of
-open-coding it everywhere, define a macro and use it for this case.
-
-This is specifically an ljmpw from a 16-bit segment.  This is okay, as
-one should never enter real mode from a 32-bit segment: if one do, the
-CPU ends up in a bizarre (and useless) mode sometimes called "unreal
-mode" where segments behave like real mode but the default address and
-operand sizes is 32 bits.
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
 ---
- arch/x86/realmode/rm/realmode.h          |   16 ++++++++++++++++
- arch/x86/realmode/rm/reboot_32.S         |    6 ++----
- arch/x86/realmode/rm/trampoline_32.S     |    5 ++---
- arch/x86/realmode/rm/trampoline_64.S     |    5 ++---
- arch/x86/realmode/rm/wakeup/wakeup_asm.S |    9 +++------
- 5 files changed, 25 insertions(+), 16 deletions(-)
- create mode 100644 arch/x86/realmode/rm/realmode.h
+ arch/x86/include/asm/processor.h         |    7 ++++++-
+ arch/x86/include/asm/realmode.h          |    8 ++++++--
+ arch/x86/kernel/realmode.c               |    8 ++++++++
+ arch/x86/kernel/setup.c                  |    2 ++
+ arch/x86/realmode/rm/header.S            |    1 +
+ arch/x86/realmode/rm/trampoline_64.S     |   32 +++++++-----------------------
+ arch/x86/realmode/rm/trampoline_common.S |   19 ++++++++++++++++++
+ 7 files changed, 49 insertions(+), 28 deletions(-)
 
-diff --git a/arch/x86/realmode/rm/realmode.h b/arch/x86/realmode/rm/realmode.h
-new file mode 100644
-index 0000000..15ab633
---- /dev/null
-+++ b/arch/x86/realmode/rm/realmode.h
-@@ -0,0 +1,16 @@
-+#ifndef ARCH_X86_REALMODE_RM_REALMODE_H
-+#define ARCH_X86_REALMODE_RM_REALMODE_H
-+
-+#ifdef __ASSEMBLY__
-+
-+/*
-+ * 16-bit ljmpw to the real_mode_seg
-+ *
-+ * This must be open-coded since gas will choke on using a
-+ * relocatable symbol for the segment portion.
-+ */
-+#define LJMPW_RM(to)	.byte 0xea ; .word (to), real_mode_seg
-+
-+#endif /* __ASSEMBLY__ */
-+
-+#endif /* ARCH_X86_REALMODE_RM_REALMODE_H */
-diff --git a/arch/x86/realmode/rm/reboot_32.S b/arch/x86/realmode/rm/reboot_32.S
-index 83803c2..e90f8c4 100644
---- a/arch/x86/realmode/rm/reboot_32.S
-+++ b/arch/x86/realmode/rm/reboot_32.S
-@@ -2,6 +2,7 @@
- #include <linux/init.h>
- #include <asm/segment.h>
- #include <asm/page_types.h>
-+#include "realmode.h"
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 4fa7dcc..404583c 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -544,13 +544,16 @@ static inline void load_sp0(struct tss_struct *tss,
+  * enable), so that any CPU's that boot up
+  * after us can get the correct flags.
+  */
+-extern unsigned long		mmu_cr4_features;
++extern unsigned long mmu_cr4_features;
++extern u32 *trampoline_cr4_features;
  
- /*
-  * The following code and data reboots the machine by switching to real
-@@ -82,10 +83,7 @@ machine_real_restart_asm16:
- 2:
- 	andb	$0x10, %dl
- 	movl	%edx, %cr0
--	.byte	0xea			/* ljmpw */
--	.word	3f			/* Offset */
--	.word	real_mode_seg		/* Segment */
--
-+	LJMPW_RM(3f)
- 3:
- 	testb	$0, %al
- 	jz	bios
-diff --git a/arch/x86/realmode/rm/trampoline_32.S b/arch/x86/realmode/rm/trampoline_32.S
-index 1315ef4..279f82e 100644
---- a/arch/x86/realmode/rm/trampoline_32.S
-+++ b/arch/x86/realmode/rm/trampoline_32.S
-@@ -29,6 +29,7 @@
- #include <linux/init.h>
- #include <asm/segment.h>
- #include <asm/page_types.h>
-+#include "realmode.h"
+ static inline void set_in_cr4(unsigned long mask)
+ {
+ 	unsigned long cr4;
  
- 	.text
- 	.code16
-@@ -38,9 +39,7 @@
- trampoline_data:
- 	wbinvd			# Needed for NUMA-Q should be harmless for others
+ 	mmu_cr4_features |= mask;
++	if (trampoline_cr4_features)
++		*trampoline_cr4_features = mmu_cr4_features;
+ 	cr4 = read_cr4();
+ 	cr4 |= mask;
+ 	write_cr4(cr4);
+@@ -561,6 +564,8 @@ static inline void clear_in_cr4(unsigned long mask)
+ 	unsigned long cr4;
  
--	.byte	0xea		# ljmpw
--	.word	1f		# Offset
--	.word	real_mode_seg	# Segment
-+	LJMPW_RM(1f)
- 1:
- 	mov	%cs, %ax	# Code and data in the same place
- 	mov	%ax, %ds
+ 	mmu_cr4_features &= ~mask;
++	if (trampoline_cr4_features)
++		*trampoline_cr4_features = mmu_cr4_features;
+ 	cr4 = read_cr4();
+ 	cr4 &= ~mask;
+ 	write_cr4(cr4);
+diff --git a/arch/x86/include/asm/realmode.h b/arch/x86/include/asm/realmode.h
+index 1421eed..937dc60 100644
+--- a/arch/x86/include/asm/realmode.h
++++ b/arch/x86/include/asm/realmode.h
+@@ -24,18 +24,22 @@ struct real_mode_header {
+ #ifdef CONFIG_X86_32
+ 	u32	machine_real_restart_asm;
+ #endif
+-} __attribute__((__packed__));
++};
+ 
+ /* This must match data at trampoline_32/64.S */
+ struct trampoline_header {
+ #ifdef CONFIG_X86_32
+ 	u32 start;
++	u16 gdt_pad;
+ 	u16 gdt_limit;
+ 	u32 gdt_base;
+ #else
+ 	u64 start;
++	u32 cr4;
++	u32 efer_low;
++	u32 efer_high;
+ #endif
+-} __attribute__((__packed__));
++};
+ 
+ extern struct real_mode_header *real_mode_header;
+ extern unsigned char real_mode_blob_end[];
+diff --git a/arch/x86/kernel/realmode.c b/arch/x86/kernel/realmode.c
+index 712fba8..66ac276 100644
+--- a/arch/x86/kernel/realmode.c
++++ b/arch/x86/kernel/realmode.c
+@@ -6,6 +6,7 @@
+ #include <asm/realmode.h>
+ 
+ struct real_mode_header *real_mode_header;
++u32 *trampoline_cr4_features;
+ 
+ void __init setup_real_mode(void)
+ {
+@@ -64,7 +65,14 @@ void __init setup_real_mode(void)
+ 	trampoline_header->gdt_limit = __BOOT_DS + 7;
+ 	trampoline_header->gdt_base = __pa(boot_gdt);
+ #else
++	if (rdmsr_safe(MSR_EFER, &trampoline_header->efer_low,
++		       &trampoline_header->efer_high))
++		BUG();
++
+ 	trampoline_header->start = (u64) secondary_startup_64;
++	trampoline_cr4_features = &trampoline_header->cr4;
++	*trampoline_cr4_features = read_cr4();
++
+ 	trampoline_pgd = (u64 *) __va(real_mode_header->trampoline_pgd);
+ 	trampoline_pgd[0] = __pa(level3_ident_pgt) + _KERNPG_TABLE;
+ 	trampoline_pgd[511] = __pa(level3_kernel_pgt) + _KERNPG_TABLE;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 7a14fec..efcf305 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -975,6 +975,8 @@ void __init setup_arch(char **cmdline_p)
+ 	if (boot_cpu_data.cpuid_level >= 0) {
+ 		/* A CPU has %cr4 if and only if it has CPUID */
+ 		mmu_cr4_features = read_cr4();
++		if (trampoline_cr4_features)
++			*trampoline_cr4_features = mmu_cr4_features;
+ 	}
+ 
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/realmode/rm/header.S b/arch/x86/realmode/rm/header.S
+index b4c3263..4612d53 100644
+--- a/arch/x86/realmode/rm/header.S
++++ b/arch/x86/realmode/rm/header.S
+@@ -9,6 +9,7 @@
+ 
+ 	.section ".header", "a"
+ 
++	.balign	16
+ GLOBAL(real_mode_header)
+ 	.long	pa_text_start
+ 	.long	pa_ro_end
 diff --git a/arch/x86/realmode/rm/trampoline_64.S b/arch/x86/realmode/rm/trampoline_64.S
-index 77b72b4..7459c52 100644
+index c4a60d1..023a925 100644
 --- a/arch/x86/realmode/rm/trampoline_64.S
 +++ b/arch/x86/realmode/rm/trampoline_64.S
-@@ -31,6 +31,7 @@
- #include <asm/msr.h>
- #include <asm/segment.h>
- #include <asm/processor-flags.h>
-+#include "realmode.h"
+@@ -34,9 +34,9 @@
+ #include "realmode.h"
  
  	.text
- 	.balign PAGE_SIZE
-@@ -40,9 +41,7 @@ ENTRY(trampoline_data)
+-	.balign PAGE_SIZE
+ 	.code16
+ 
++	.balign	PAGE_SIZE
+ ENTRY(trampoline_start)
  	cli			# We should be safe anyway
  	wbinvd
+@@ -65,8 +65,8 @@ ENTRY(trampoline_start)
+ 	 * to 32 bit.
+ 	 */
  
--	.byte	0xea		# ljmpw
--	.word	1f		# Offset
--	.word	real_mode_seg	# Segment
-+	LJMPW_RM(1f)
- 1:
- 	mov	%cs, %ax	# Code and data in the same place
- 	mov	%ax, %ds
-diff --git a/arch/x86/realmode/rm/wakeup/wakeup_asm.S b/arch/x86/realmode/rm/wakeup/wakeup_asm.S
-index 4c5c5f2..8064e1c 100644
---- a/arch/x86/realmode/rm/wakeup/wakeup_asm.S
-+++ b/arch/x86/realmode/rm/wakeup/wakeup_asm.S
-@@ -6,6 +6,7 @@
- #include <asm/page_types.h>
- #include <asm/pgtable_types.h>
- #include <asm/processor-flags.h>
-+#include "../realmode.h"
- #include "wakeup.h"
+-	lidtl	tidt	# load idt with 0, 0
+-	lgdtl	tgdt	# load gdt with whatever is appropriate
++	lidtl	tr_idt	# load idt with 0, 0
++	lgdtl	tr_gdt	# load gdt with whatever is appropriate
  
- 		.code16
-@@ -36,9 +37,7 @@ wakeup_start:
- 	cli
- 	cld
+ 	movw	$__KERNEL_DS, %dx	# Data segment descriptor
+ 	
+@@ -93,16 +93,17 @@ ENTRY(startup_32)
+ 	movl	%edx, %fs
+ 	movl	%edx, %gs
  
--	.byte	0xea		/* ljmpw */
--	.word	3f
--	.word	real_mode_seg
-+	LJMPW_RM(3f)
- 3:
- 	/* Apparently some dimwit BIOS programmers don't know how to
- 	   program a PM to RM transition, and we might end up here with
-@@ -59,9 +58,7 @@ wakeup_start:
+-	movl	$X86_CR4_PAE, %eax
++	movl	pa_tr_cr4, %eax
+ 	movl	%eax, %cr4		# Enable PAE mode
  
- 	andb	$~X86_CR0_PE, %al
- 	movl	%eax, %cr0
--	.byte	0xea		/* ljmpw */
--	.word	3f
--	.word	real_mode_seg
-+	LJMPW_RM(3f)
- 3:
- 	/* Set up segments */
- 	movw	%cs, %ax
+ 	# Setup trampoline 4 level pagetables
+ 	movl	$pa_trampoline_pgd, %eax
+ 	movl	%eax, %cr3
+ 
++	# Set up EFER
++	movl	pa_tr_efer, %eax
++	movl	pa_tr_efer + 4, %edx
+ 	movl	$MSR_EFER, %ecx
+-	movl	$((1 << _EFER_LME) | (1 << _EFER_NX)), %eax	# Enable Long Mode
+-	xorl	%edx, %edx
+ 	wrmsr
+ 
+ 	# Enable paging and in turn activate Long Mode
+@@ -124,23 +125,4 @@ ENTRY(startup_64)
+ 	# Now jump into the kernel using virtual addresses
+ 	jmpq	*tr_start(%rip)
+ 
+-	.section ".rodata","a"
+-	.balign	16
+-tidt:
+-	.word	0			# idt limit = 0
+-	.word	0, 0			# idt base = 0L
+-
+-	# Duplicate the global descriptor table
+-	# so the kernel can live anywhere
+-	.balign 16
+-	.globl tgdt
+-tgdt:
+-	.short	tgdt_end - tgdt - 1	# gdt limit
+-	.long	pa_tgdt
+-	.short	0
+-	.quad	0x00cf9b000000ffff	# __KERNEL32_CS
+-	.quad	0x00af9b000000ffff	# __KERNEL_CS
+-	.quad	0x00cf93000000ffff	# __KERNEL_DS
+-tgdt_end:
+-
+ #include "trampoline_common.S"
+diff --git a/arch/x86/realmode/rm/trampoline_common.S b/arch/x86/realmode/rm/trampoline_common.S
+index c3f951c..cac444b 100644
+--- a/arch/x86/realmode/rm/trampoline_common.S
++++ b/arch/x86/realmode/rm/trampoline_common.S
+@@ -1,5 +1,20 @@
+ 	.section ".rodata","a"
+ 
++#ifdef CONFIG_X86_64
++	# Duplicate the global descriptor table
++	# so the kernel can live anywhere
++	.balign	16
++	.globl tr_gdt
++tr_gdt:
++	.short	tr_gdt_end - tr_gdt - 1	# gdt limit
++	.long	pa_tr_gdt
++	.short	0
++	.quad	0x00cf9b000000ffff	# __KERNEL32_CS
++	.quad	0x00af9b000000ffff	# __KERNEL_CS
++	.quad	0x00cf93000000ffff	# __KERNEL_DS
++tr_gdt_end:
++#endif
++
+ 	.balign	4
+ tr_idt: .fill 1, 6, 0
+ 
+@@ -8,12 +23,16 @@ tr_idt: .fill 1, 6, 0
+ 	.balign	4
+ GLOBAL(trampoline_status)	.space	4
+ 
++	.balign	8
+ GLOBAL(trampoline_header)
+ #ifdef CONFIG_X86_32
+ 	tr_start:		.space	4
++	tr_gdt_pad:		.space	2
+ 	tr_gdt:			.space	6
+ #else
+ 	tr_start:		.space	8
++	GLOBAL(tr_cr4)		.space	4
++	GLOBAL(tr_efer)		.space	8
+ #endif
+ END(trampoline_header)
+ 
 -- 
 1.7.9.5
 
