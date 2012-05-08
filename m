@@ -1,345 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab2EHWnm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 18:43:42 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:61225 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754011Ab2EHWnk (ORCPT
+	id S1754972Ab2EHWrI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 18:47:08 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4602 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab2EHWrG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 18:43:40 -0400
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: socketcan@hartkopp.net, wg@grandegger.com, mkl@pengutronix.de,
-        shuahkhan@gmail.com, Fabio Baltieri <fabio.baltieri@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: [RFC PATCH] leds: add oneshot blink functions
-Date: Wed,  9 May 2012 00:45:31 +0200
-Message-Id: <1336517131-3711-1-git-send-email-fabio.baltieri@gmail.com>
-X-Mailer: git-send-email 1.7.5.1
+	Tue, 8 May 2012 18:47:06 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 08 May 2012 15:46:55 -0700
+From: Diwakar Tundlam <dtundlam@nvidia.com>
+To: "'Peter Zijlstra'" <peterz@infradead.org>
+CC: "'Ingo Molnar'" <mingo@kernel.org>,
+        "'David Rientjes'" <rientjes@google.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Date: Tue, 8 May 2012 15:46:54 -0700
+Subject: RE: [PATCH] sched: Make nr_uninterruptible count a signed value
+Thread-Topic: [PATCH] sched: Make nr_uninterruptible count a signed value
+Thread-Index: Ac0tahVKGaVEk9gYTq6bNktgX7uvwQAAP6Tg
+Message-ID: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF10E@HQMAIL04.nvidia.com>
+References: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF10C@HQMAIL04.nvidia.com>
+	 <1336514192.8226.52.camel@twins>
+	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF10D@HQMAIL04.nvidia.com>
+	 <1336516020.8226.57.camel@twins> <1336516174.8226.59.camel@twins>
+In-Reply-To: <1336516174.8226.59.camel@twins>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add two new functions, led_blink_set_oneshot and
-led_trigger_blink_oneshot, to be used by triggers for one-shot blink of
-led devices.
+> No that's right. nr_uninterruptible counts the number of tasks in 
+> uninterruptible sleep, so deactivate_task puts a task to sleep, so we 
+> need to increment the number of sleeping tasks, activate_task wakes a 
+> task up so we need to decrement the number of sleeping tasks.
 
-This is implemented extending the existing software-blink code, and uses
-the same timer and handler function.
+Yep, I looked at the code for task_contributes_to_load() and I understand what it is all about.
+The ++ and -- are correct, I see it now.
 
-The behavior of the code is to do a blink-on, blink-off sequence when
-the function is called, ignoring other calls until the sequence is
-completed so that the leds keep blinking at constant rate if the
-functions are called repeatedly.
+On the -ve values, strangely inspite of %Ld in the print statement, in my kernel, I see high unsigned values instead of -ve values for nr_uninterruptible.
 
-This is meant to be used by drivers which needs to trigger on sporadic
-events, but doesn't have clear busy/idle trigger points.
+But the sum is always 0, though.
 
-After the blink sequence the led remains off. This behavior can be
-inverted setting the "invert" argument, blinking the led off, than on
-and leaving the led on after the sequence.
+Maybe it is an artifact of 32-bit machine displaying 64-bit print format.
+An (unsigned long)(-24) promoted to (signed long long) ends up as 4294967272.
+As seen in my output of sched_debug.
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
----
-Hello everyone,
+Your machine is probably natively 64-bit.
 
-I'm posting this one following a discussion on the linux-can list about the
-implementation of led triggers for tx/rx events of socketcan devices and as
-a reply for the recent patches from Shuah Khan about the transient led
-triggers.
+$ adb shell cat /proc/sched_debug |egrep 'cpu#|nr_'
+cpu#0
+  .nr_running                    : 1
+  .nr_switches                   : 16233
+  .nr_load_updates               : 2529
+  .nr_uninterruptible            : 4294967272 <<<<< 0xffffffe8 == (-24)
+  .nr_spread_over                : 18
+  .nr_running                    : 0
+  .nr_spread_over                : 101
+  .nr_running                    : 1
+  .rt_nr_running                 : 0
+  .rt_nr_running                 : 0
+  .rt_nr_running                 : 0
+cpu#1
+  .nr_running                    : 1
+  .nr_switches                   : 7891
+  .nr_load_updates               : 2124
+  .nr_uninterruptible            : 18
+  .nr_spread_over                : 121
+  .nr_running                    : 1
+  .rt_nr_running                 : 0
+  .rt_nr_running                 : 0
+  .rt_nr_running                 : 0
+cpu#3
+  .nr_running                    : 1
+  .nr_switches                   : 13896
+  .nr_load_updates               : 1179
+  .nr_uninterruptible            : 6
+  .nr_spread_over                : 106
+  .nr_running                    : 1
+  .rt_nr_running                 : 0
+  .rt_nr_running                 : 0
+  .rt_nr_running                 : 0
 
-This patch adds one-shot blink functions similar to the ones used for normal
-blink configuration, and are meant to be used to trigger blinking on
-sporadic events.
+Thanks,
+--Diwakar.
 
-My proposed implementation was similar to the ledtrig-ide-disk and the xt_LED
-ones, and was to use a dedicated timer for each event with a simple logic to
-keep the led blinking at a constant rate under heavy load of the bus.  The reason was that the led was also used to indicate interface state, as in:
+-----Original Message-----
+From: Peter Zijlstra [mailto:peterz@infradead.org] 
+Sent: Tuesday, May 08, 2012 3:30 PM
+To: Diwakar Tundlam
+Cc: 'Ingo Molnar'; 'David Rientjes'; 'linux-kernel@vger.kernel.org'; Peter De Schrijver
+Subject: RE: [PATCH] sched: Make nr_uninterruptible count a signed value
 
-- led ON: interface up
-- led OFF: interface down
-- led blinking: bus activity
+On Wed, 2012-05-09 at 00:27 +0200, Peter Zijlstra wrote:
+> On Tue, 2012-05-08 at 15:14 -0700, Diwakar Tundlam wrote:
+> > Sorry to bug you when it is late for you..
+> > 
+> Nah, I'm the idiot still behind the screen after midnight, its just 
+> the brain that's slightly slower and needs more hints.
+> 
+> > You're right, there is no real difference at all.
+> > Only cosmetic difference when you look at the output of cat 
+> > /proc/sched_debug.
+> 
+> Not sure I see that.. the printf is still using %Ld (signed) so the 
+> output shouldn't matter regardless of if the variable is unsigned long 
+> or long.
+> > 
+> > But I suddenly realized maybe the increment/decrement of 
+> > nr_interruptible is reversed.
+> > Maybe that's the source of the problem: decrement in activate task 
+> > and increment in deactivate task !!
+> 
+> No that's right. nr_uninterruptible counts the number of tasks in 
+> uninterruptible sleep, so deactivate_task puts a task to sleep, so we 
+> need to increment the number of sleeping tasks, activate_task wakes a 
+> task up so we need to decrement the number of sleeping tasks.
+> 
+> I think the problem you're having is that we don't match the cpu where 
+> we inc and dec the counter, and that's fully on purpose since its 
+> rather expensive -- it would require atomics.
+> 
 
-Of course this is similar to how ethernet interface LEDs works.
+FWIW the way to properly read the sched_debug output is something like:
 
-My original patch can be found in this post:
+# grep nr_uninterruptible /proc/sched_debug
+  .nr_uninterruptible            : -1305
+  .nr_uninterruptible            : 336
+  .nr_uninterruptible            : -229
+  .nr_uninterruptible            : 276
+  .nr_uninterruptible            : 105
+  .nr_uninterruptible            : 157
+  .nr_uninterruptible            : -2782
+  .nr_uninterruptible            : 325
+  .nr_uninterruptible            : -471
+  .nr_uninterruptible            : 9
+  .nr_uninterruptible            : 205
+  .nr_uninterruptible            : 88
+  .nr_uninterruptible            : 7
+  .nr_uninterruptible            : 912
+  .nr_uninterruptible            : 188
+  .nr_uninterruptible            : 66
+  .nr_uninterruptible            : 87
+  .nr_uninterruptible            : 45
+  .nr_uninterruptible            : 194
+  .nr_uninterruptible            : 1178
+  .nr_uninterruptible            : 185
+  .nr_uninterruptible            : 143
+  .nr_uninterruptible            : 136
+  .nr_uninterruptible            : 145
 
-http://article.gmane.org/gmane.linux.can/1085
+# awk '/nr_uninterruptible/ {t += $3} END {print t}' /proc/sched_debug
+0
 
-Now, i think that the framework specific implementation was clean and
-lightweight (the mod_timer has to be called in hardirq context after all),
-but the guys on the list pointed out that adding another one-shot-blink
-implementation was redundant and asked to re-implement the blink-part as a
-led-framework extension, as least to discuss about what's the better way to
-do the job... so I gave it a shot!
-
-The implementation re-used most of the current soft-blink code, modifiying it
-in the following way:
-- add a _oneshoot function to both led_trigger_blink and led_blink_set,
-  moving the common code into two _setup functions;
-- add three flags to track the blink status and configuration for the led
-  (oneshot or normal blink, stop after timer, inverted logic);
-- modify led_timer_function to add necessary stop-timer logic;
-
-Again, the timer-retriggering logic has been implemented to keep the led
-blinking at constant rate if led_blink_set_oneshot is called quicker than the
-blink rate (that's what the STOP flag is used for).
-
-That's it, tested on an x86 with a stub driver not worth posting and a
-with a modified version of my original can-led patch.
-
-Altrough this code was meant for device drivers, it looks quite similar to
-what was discussed into the "transient trigger for one shot timer activation"
-patches from Shuah Khan, so I think that Shuah's trigger may be implemented
-on this functions similarly to how ledtrig-timer works for normal blinking.
-
-About the RFC, I was looking forward to discuss about this points:
-- do you think is worth implementing some grade of generic trigger logic like
-  this one into the led framework, or it just have to be kept as a simple
-  abstraction for led-on/led-off event with just normal blink as special case
-  (because it can be hardware assisted)? This is because I feel that this
-  patch is polluting the code a bit.
-- specifically to my can-led patch linked above, considering that some code
-  (can_led_event) is ending up in hard-irq context and the led is going to
-  retrigger quite often, do you think is worth going to a more optimized
-  framework-specific implementation or it's better to come up with some
-  generic code for it?
-
-Regards,
-Fabio
-
- drivers/leds/led-class.c    |   19 ++++++++++++++++
- drivers/leds/led-core.c     |   50 ++++++++++++++++++++++++++++++++----------
- drivers/leds/led-triggers.c |   30 ++++++++++++++++++++++---
- include/linux/leds.h        |   25 +++++++++++++++++++++
- 4 files changed, 108 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
-index 5bff843..42d9359 100644
---- a/drivers/leds/led-class.c
-+++ b/drivers/leds/led-class.c
-@@ -91,6 +91,11 @@ static void led_timer_function(unsigned long data)
- 		return;
- 	}
- 
-+	if (led_cdev->flags & LED_BLINK_ONESHOT_STOP) {
-+		led_cdev->flags &= ~LED_BLINK_ONESHOT_STOP;
-+		return;
-+	}
-+
- 	brightness = led_get_brightness(led_cdev);
- 	if (!brightness) {
- 		/* Time to switch the LED on. */
-@@ -107,6 +112,20 @@ static void led_timer_function(unsigned long data)
- 
- 	led_set_brightness(led_cdev, brightness);
- 
-+	/* Return in next iteration if led is in one-shot mode and we are in
-+	 * the final blink state so that the led is toggled each delay_on +
-+	 * delay_off milliseconds in worst case.
-+	 */
-+	if (led_cdev->flags & LED_BLINK_ONESHOT) {
-+		if (led_cdev->flags & LED_BLINK_INVERT) {
-+			if (brightness)
-+				led_cdev->flags |= LED_BLINK_ONESHOT_STOP;
-+		} else {
-+			if (!brightness)
-+				led_cdev->flags |= LED_BLINK_ONESHOT_STOP;
-+		}
-+	}
-+
- 	mod_timer(&led_cdev->blink_timer, jiffies + msecs_to_jiffies(delay));
- }
- 
-diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
-index d686004..579eb78 100644
---- a/drivers/leds/led-core.c
-+++ b/drivers/leds/led-core.c
-@@ -27,7 +27,6 @@ EXPORT_SYMBOL_GPL(leds_list);
- static void led_stop_software_blink(struct led_classdev *led_cdev)
- {
- 	/* deactivate previous settings */
--	del_timer_sync(&led_cdev->blink_timer);
- 	led_cdev->blink_delay_on = 0;
- 	led_cdev->blink_delay_off = 0;
- }
-@@ -44,11 +43,6 @@ static void led_set_software_blink(struct led_classdev *led_cdev,
- 	if (!led_cdev->blink_brightness)
- 		led_cdev->blink_brightness = led_cdev->max_brightness;
- 
--	if (led_get_trigger_data(led_cdev) &&
--	    delay_on == led_cdev->blink_delay_on &&
--	    delay_off == led_cdev->blink_delay_off)
--		return;
--
- 	led_stop_software_blink(led_cdev);
- 
- 	led_cdev->blink_delay_on = delay_on;
-@@ -68,13 +62,12 @@ static void led_set_software_blink(struct led_classdev *led_cdev,
- }
- 
- 
--void led_blink_set(struct led_classdev *led_cdev,
--		   unsigned long *delay_on,
--		   unsigned long *delay_off)
-+void led_blink_setup(struct led_classdev *led_cdev,
-+		     unsigned long *delay_on,
-+		     unsigned long *delay_off)
- {
--	del_timer_sync(&led_cdev->blink_timer);
--
--	if (led_cdev->blink_set &&
-+	if (!(led_cdev->flags & LED_BLINK_ONESHOT) &&
-+	    led_cdev->blink_set &&
- 	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
- 		return;
- 
-@@ -84,8 +77,41 @@ void led_blink_set(struct led_classdev *led_cdev,
- 
- 	led_set_software_blink(led_cdev, *delay_on, *delay_off);
- }
-+
-+void led_blink_set(struct led_classdev *led_cdev,
-+		   unsigned long *delay_on,
-+		   unsigned long *delay_off)
-+{
-+	del_timer_sync(&led_cdev->blink_timer);
-+
-+	led_cdev->flags &= ~LED_BLINK_ONESHOT;
-+	led_cdev->flags &= ~LED_BLINK_ONESHOT_STOP;
-+
-+	led_blink_setup(led_cdev, delay_on, delay_off);
-+}
- EXPORT_SYMBOL(led_blink_set);
- 
-+void led_blink_set_oneshot(struct led_classdev *led_cdev,
-+			   unsigned long *delay_on,
-+			   unsigned long *delay_off,
-+			   int invert)
-+{
-+	if ((led_cdev->flags & LED_BLINK_ONESHOT) &&
-+	     timer_pending(&led_cdev->blink_timer))
-+		return;
-+
-+	led_cdev->flags |= LED_BLINK_ONESHOT;
-+	led_cdev->flags &= ~LED_BLINK_ONESHOT_STOP;
-+
-+	if (invert)
-+		led_cdev->flags |= LED_BLINK_INVERT;
-+	else
-+		led_cdev->flags &= ~LED_BLINK_INVERT;
-+
-+	led_blink_setup(led_cdev, delay_on, delay_off);
-+}
-+EXPORT_SYMBOL(led_blink_set_oneshot);
-+
- void led_brightness_set(struct led_classdev *led_cdev,
- 			enum led_brightness brightness)
- {
-diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
-index 46b4c76..351cbde 100644
---- a/drivers/leds/led-triggers.c
-+++ b/drivers/leds/led-triggers.c
-@@ -230,9 +230,11 @@ void led_trigger_event(struct led_trigger *trigger,
- }
- EXPORT_SYMBOL_GPL(led_trigger_event);
- 
--void led_trigger_blink(struct led_trigger *trigger,
--		       unsigned long *delay_on,
--		       unsigned long *delay_off)
-+void led_trigger_blink_setup(struct led_trigger *trigger,
-+			     unsigned long *delay_on,
-+			     unsigned long *delay_off,
-+			     int oneshot,
-+			     int invert)
- {
- 	struct list_head *entry;
- 
-@@ -244,12 +246,32 @@ void led_trigger_blink(struct led_trigger *trigger,
- 		struct led_classdev *led_cdev;
- 
- 		led_cdev = list_entry(entry, struct led_classdev, trig_list);
--		led_blink_set(led_cdev, delay_on, delay_off);
-+		if (oneshot)
-+			led_blink_set_oneshot(led_cdev, delay_on, delay_off,
-+					      invert);
-+		else
-+			led_blink_set(led_cdev, delay_on, delay_off);
- 	}
- 	read_unlock(&trigger->leddev_list_lock);
- }
-+
-+void led_trigger_blink(struct led_trigger *trigger,
-+		       unsigned long *delay_on,
-+		       unsigned long *delay_off)
-+{
-+	led_trigger_blink_setup(trigger, delay_on, delay_off, 0, 0);
-+}
- EXPORT_SYMBOL_GPL(led_trigger_blink);
- 
-+void led_trigger_blink_oneshot(struct led_trigger *trigger,
-+			       unsigned long *delay_on,
-+			       unsigned long *delay_off,
-+			       int invert)
-+{
-+	led_trigger_blink_setup(trigger, delay_on, delay_off, 1, invert);
-+}
-+EXPORT_SYMBOL_GPL(led_trigger_blink_oneshot);
-+
- void led_trigger_register_simple(const char *name, struct led_trigger **tp)
- {
- 	struct led_trigger *trigger;
-diff --git a/include/linux/leds.h b/include/linux/leds.h
-index 5884def..f252438 100644
---- a/include/linux/leds.h
-+++ b/include/linux/leds.h
-@@ -38,6 +38,9 @@ struct led_classdev {
- #define LED_SUSPENDED		(1 << 0)
- 	/* Upper 16 bits reflect control information */
- #define LED_CORE_SUSPENDRESUME	(1 << 16)
-+#define LED_BLINK_ONESHOT	(1 << 17)
-+#define LED_BLINK_ONESHOT_STOP	(1 << 18)
-+#define LED_BLINK_INVERT	(1 << 19)
- 
- 	/* Set LED brightness level */
- 	/* Must not sleep, use a workqueue if needed */
-@@ -101,6 +104,24 @@ extern void led_blink_set(struct led_classdev *led_cdev,
- 			  unsigned long *delay_on,
- 			  unsigned long *delay_off);
- /**
-+ * led_blink_set_oneshot - do a oneshot software blink
-+ * @led_cdev: the LED to start blinking
-+ * @delay_on: the time it should be on (in ms)
-+ * @delay_off: the time it should ble off (in ms)
-+ * @invert: blink off, then on, leaving the led on
-+ *
-+ * This function makes the LED blink one time for delay_on +
-+ * delay_off time, ignoring the request if another one-shot
-+ * blink is already in progress.
-+ *
-+ * If invert is set, led blinks for delay_off first, then for
-+ * delay_on and leave the led on after the on-off cycle.
-+ */
-+extern void led_blink_set_oneshot(struct led_classdev *led_cdev,
-+				  unsigned long *delay_on,
-+				  unsigned long *delay_off,
-+				  int invert);
-+/**
-  * led_brightness_set - set LED brightness
-  * @led_cdev: the LED to set
-  * @brightness: the brightness to set it to
-@@ -148,6 +169,10 @@ extern void led_trigger_event(struct led_trigger *trigger,
- extern void led_trigger_blink(struct led_trigger *trigger,
- 			      unsigned long *delay_on,
- 			      unsigned long *delay_off);
-+extern void led_trigger_blink_oneshot(struct led_trigger *trigger,
-+				      unsigned long *delay_on,
-+				      unsigned long *delay_off,
-+				      int invert);
- 
- #else
- 
--- 
-1.7.5.1
-
+The per-cpu value is meaningless, only the sum over all cpus is a meaningful number.
