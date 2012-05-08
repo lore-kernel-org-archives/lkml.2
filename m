@@ -1,158 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab2EHLOY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 07:14:24 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:35900 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000Ab2EHLOX (ORCPT
+	id S1753319Ab2EHLPX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 07:15:23 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55071 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab2EHLPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 07:14:23 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Cc: paul.gortmaker@windriver.com,
-        =?utf-8?B?J+uwleqyveuvvCc=?= <kyungmin.park@samsung.com>,
-        amwang@redhat.com, dri-devel@lists.freedesktop.org,
-        "'???/Mobile S/W Platform Lab.(???)/E3(??)/????'" 
-	<inki.dae@samsung.com>,
-        prashanth.g@samsung.com, Marek Szyprowski <m.szyprowski@samsung.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        Rob Clark <rob@ti.com>, Dave Airlie <airlied@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] scatterlist: add sg_alloc_table_from_pages function
-Date: Tue, 08 May 2012 13:14:23 +0200
-Message-ID: <1976581.7lABks1hJQ@avalon>
-User-Agent: KMail/4.8.3 (Linux/3.2.1-gentoo-r2; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <4FA8EC69.8010805@samsung.com>
-References: <4FA8EC69.8010805@samsung.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 8 May 2012 07:15:21 -0400
+Message-ID: <1336475689.1179.12.camel@mop>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
+ variable-length record buffer
+From: Kay Sievers <kay@vrfy.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Greg Kroah-Hartmann <greg@kroah.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Date: Tue, 08 May 2012 13:14:49 +0200
+In-Reply-To: <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+References: <1336004953.4240.9.camel@mop>
+	 <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
-
-Thank you for the patch.
-
-On Tuesday 08 May 2012 11:50:33 Tomasz Stanislawski wrote:
-> This patch adds a new constructor for an sg table. The table is constructed
-> from an array of struct pages. All contiguous chunks of the pages are merged
-> into a single sg nodes. A user may provide an offset and a size of a buffer
-> if the buffer is not page-aligned.
+On Tue, 2012-05-08 at 10:48 +0200, Sasha Levin wrote:
+> This patch was included in today's linux-next, and it looks like it
+> broke printk on my configuration.
 > 
-> The function is dedicated for DMABUF exporters which often perform
-> conversion from an page array to a scatterlist. Moreover the scatterlist
-> should be squashed in order to save memory and to speed-up the process of
-> DMA mapping using dma_map_sg.
+> It's a bit hard to describe exactly what's wrong, but here are the main points:
 > 
-> The code is based on the patch 'v4l: vb2-dma-contig: add support for
-> scatterlist in userptr mode' and hints from Laurent Pinchart.
-> 
-> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> 1. PRINTK_TIME timing information is gone.
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+It's always unconditionally recorded now. It looks fine in 'dmesg'
+output, right?
 
-> ---
->  include/linux/scatterlist.h |    4 +++
->  lib/scatterlist.c           |   64
-> +++++++++++++++++++++++++++++++++++++++++++ 2 files changed, 68
-> insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
-> index ac9586d..7b600da 100644
-> --- a/include/linux/scatterlist.h
-> +++ b/include/linux/scatterlist.h
-> @@ -214,6 +214,10 @@ void sg_free_table(struct sg_table *);
->  int __sg_alloc_table(struct sg_table *, unsigned int, unsigned int, gfp_t,
->  		     sg_alloc_fn *);
->  int sg_alloc_table(struct sg_table *, unsigned int, gfp_t);
-> +int sg_alloc_table_from_pages(struct sg_table *sgt,
-> +	struct page **pages, unsigned int n_pages,
-> +	unsigned long offset, unsigned long size,
-> +	gfp_t gfp_mask);
-> 
->  size_t sg_copy_from_buffer(struct scatterlist *sgl, unsigned int nents,
->  			   void *buf, size_t buflen);
-> diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-> index 6096e89..85868a1 100644
-> --- a/lib/scatterlist.c
-> +++ b/lib/scatterlist.c
-> @@ -319,6 +319,70 @@ int sg_alloc_table(struct sg_table *table, unsigned int
-> nents, gfp_t gfp_mask) EXPORT_SYMBOL(sg_alloc_table);
-> 
->  /**
-> + * sg_alloc_table_from_pages - Allocate and initialize an sg table from
-> + *			       an array of pages
-> + * @sgt:	The sg table header to use
-> + * @pages:	Pointer to an array of page pointers
-> + * @n_pages:	Number of pages in the pages array
-> + * @offset:     Offset from start of the first page to the start of a
-> buffer + * @size:       Number of valid bytes in the buffer (after offset)
-> + * @gfp_mask:	GFP allocation mask
-> + *
-> + *  Description:
-> + *    Allocate and initialize an sg table from a list of pages. Continuous
-> + *    ranges of the pages are squashed into a single scatterlist node. A
-> user + *    may provide an offset at a start and a size of valid data in a
-> buffer + *    specified by the page array. The returned sg table is
-> released by + *    sg_free_table.
-> + *
-> + * Returns:
-> + *   0 on success, negative error on failure
-> + **/
-> +int sg_alloc_table_from_pages(struct sg_table *sgt,
-> +	struct page **pages, unsigned int n_pages,
-> +	unsigned long offset, unsigned long size,
-> +	gfp_t gfp_mask)
-> +{
-> +	unsigned int chunks;
-> +	unsigned int i;
-> +	unsigned int cur_page;
-> +	int ret;
-> +	struct scatterlist *s;
-> +
-> +	/* compute number of contiguous chunks */
-> +	chunks = 1;
-> +	for (i = 1; i < n_pages; ++i)
-> +		if (page_to_pfn(pages[i]) != page_to_pfn(pages[i - 1]) + 1)
-> +			++chunks;
-> +
-> +	ret = sg_alloc_table(sgt, chunks, gfp_mask);
-> +	if (unlikely(ret))
-> +		return ret;
-> +
-> +	/* merging chunks and putting them into the scatterlist */
-> +	cur_page = 0;
-> +	for_each_sg(sgt->sgl, s, sgt->orig_nents, i) {
-> +		unsigned long chunk_size;
-> +		unsigned int j;
-> +
-> +		/* looking for the end of the current chunk */
-> +		for (j = cur_page + 1; j < n_pages; ++j)
-> +			if (page_to_pfn(pages[j]) !=
-> +			    page_to_pfn(pages[j - 1]) + 1)
-> +				break;
-> +
-> +		chunk_size = ((j - cur_page) << PAGE_SHIFT) - offset;
-> +		sg_set_page(s, pages[cur_page], min(size, chunk_size), offset);
-> +		size -= chunk_size;
-> +		offset = 0;
-> +		cur_page = j;
-> +	}
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(sg_alloc_table_from_pages);
-> +
-> +/**
->   * sg_miter_start - start mapping iteration over a sg list
->   * @miter: sg mapping iter to be started
->   * @sgl: sg list to iterate over
+> 2. Newline issues. It appears to be adding newlines where it
+> shouldn't.
 
--- 
-Regards,
+> parport0: PC-style at 0x378
+> , irq 7
+>  [
+> PCSPP
 
-Laurent Pinchart
+Yeah, we need to make sure, we never merge the (always racy)
+continuation printk() users with (non-racy) non-continuation users.
+Therefore KERN_CONT is required to suppress the newline and to merge the
+content with the earlier non-newline-terminated printk() line. 
+
+I 'm sure, I have signed up for the job to fix what's needed here. :)
+
+Patch for parport is below.
+
+> 3. Things are not properly aligned, such as stack traces.
+
+Mind sending the entire output of your 'dmesg', which shows it?
+
+We recently just needed to fix the "<%u>" in the dump, which got
+recognized as syslog prority prefixes. There might be a few more
+KERN_CONT missing ...
+
+Thanks,
+Kay
+
+
+From: Kay Sievers <kay@vrfy.org>
+Subject: parport: use KERN_CONT in printk() continuation lines
+
+On Tue, May 8, 2012 at 10:48 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> Before:
+> [   10.110626] parport0: PC-style at 0x378, irq 7 [PCSPP,TRISTATE]
+>
+> After:
+> parport0: PC-style at 0x378
+> , irq 7
+>  [
+> PCSPP
+> ,TRISTATE
+> ]
+
+Reported-By: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Kay Sievers <kay@vrfy.org>
+---
+ drivers/parport/parport_pc.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+--- a/drivers/parport/parport_pc.c
++++ b/drivers/parport/parport_pc.c
+@@ -2351,7 +2351,7 @@ struct parport *parport_pc_probe_port(un
+ 
+ 	printk(KERN_INFO "%s: PC-style at 0x%lx", p->name, p->base);
+ 	if (p->base_hi && priv->ecr)
+-		printk(" (0x%lx)", p->base_hi);
++		printk(KERN_CONT " (0x%lx)", p->base_hi);
+ 	if (p->irq == PARPORT_IRQ_AUTO) {
+ 		p->irq = PARPORT_IRQ_NONE;
+ 		parport_irq_probe(p);
+@@ -2362,7 +2362,7 @@ struct parport *parport_pc_probe_port(un
+ 		p->irq = PARPORT_IRQ_NONE;
+ 	}
+ 	if (p->irq != PARPORT_IRQ_NONE) {
+-		printk(", irq %d", p->irq);
++		printk(KERN_CONT ", irq %d", p->irq);
+ 		priv->ctr_writable |= 0x10;
+ 
+ 		if (p->dma == PARPORT_DMA_AUTO) {
+@@ -2386,21 +2386,21 @@ struct parport *parport_pc_probe_port(un
+ 		/* p->ops->ecp_read_data = parport_pc_ecp_read_block_pio; */
+ #endif /* IEEE 1284 support */
+ 		if (p->dma != PARPORT_DMA_NONE) {
+-			printk(", dma %d", p->dma);
++			printk(KERN_CONT ", dma %d", p->dma);
+ 			p->modes |= PARPORT_MODE_DMA;
+ 		} else
+-			printk(", using FIFO");
++			printk(KERN_CONT ", using FIFO");
+ 	} else
+ 		/* We can't use the DMA channel after all. */
+ 		p->dma = PARPORT_DMA_NONE;
+ #endif /* Allowed to use FIFO/DMA */
+ 
+-	printk(" [");
++	printk(KERN_CONT " [");
+ 
+ #define printmode(x) \
+ 	{\
+ 		if (p->modes & PARPORT_MODE_##x) {\
+-			printk("%s%s", f ? "," : "", #x);\
++			printk(KERN_CONT "%s%s", f ? "," : "", #x);\
+ 			f++;\
+ 		} \
+ 	}
+@@ -2416,9 +2416,9 @@ struct parport *parport_pc_probe_port(un
+ 	}
+ #undef printmode
+ #ifndef CONFIG_PARPORT_1284
+-	printk("(,...)");
++	printk(KERN_CONT "(,...)");
+ #endif /* CONFIG_PARPORT_1284 */
+-	printk("]\n");
++	printk(KERN_CONT "]\n");
+ 	if (probedirq != PARPORT_IRQ_NONE)
+ 		printk(KERN_INFO "%s: irq %d detected\n", p->name, probedirq);
+ 
+
 
