@@ -1,148 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab2EHIcm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 04:32:42 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46021 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab2EHIch (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 04:32:37 -0400
-X-AuditID: 9c930179-b7bc8ae0000062c3-71-4fa8da2236a8
-Message-ID: <4FA8DA23.3030609@kernel.org>
-Date: Tue, 08 May 2012 17:32:35 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Pekka Enberg <penberg@kernel.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 3/3] vmevent: Implement special low-memory attribute
-References: <20120501132409.GA22894@lizard> <20120501132620.GC24226@lizard> <4FA35A85.4070804@kernel.org> <20120504073810.GA25175@lizard> <CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com> <CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com> <20120507121527.GA19526@lizard> <4FA82056.2070706@gmail.com> <CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com> <CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com> <CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com> <CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
-In-Reply-To: <CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751800Ab2EHIfC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 04:35:02 -0400
+Received: from mga03.intel.com ([143.182.124.21]:55887 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751266Ab2EHIfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 04:35:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="140227695"
+Message-ID: <1336466097.6190.196.camel@yhuang-dev>
+Subject: Re: [RFC v2 5/5] PCIe, Add PCIe runtime D3cold support
+From: Huang Ying <ying.huang@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: huang ying <huang.ying.caritas@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Zheng Yan <zheng.z.yan@intel.com>
+Date: Tue, 08 May 2012 08:34:57 +0000
+In-Reply-To: <1336443743.6190.159.camel@yhuang-dev>
+References: <1336119221-21146-1-git-send-email-ying.huang@intel.com>
+	 <201205042250.39519.rjw@sisk.pl>
+	 <CAC=cRTP3ZOy1BkvtEZgZ4wfTzaMB8fdZhU_6VOKRwVQ8WLLxJg@mail.gmail.com>
+	 <201205072322.51322.rjw@sisk.pl> <1336443743.6190.159.camel@yhuang-dev>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2012 04:11 PM, KOSAKI Motohiro wrote:
-
-> On Tue, May 8, 2012 at 1:53 AM, Pekka Enberg <penberg@kernel.org> wrote:
->> On Tue, May 8, 2012 at 8:42 AM, KOSAKI Motohiro
->> <kosaki.motohiro@gmail.com> wrote:
->>>> That said, I think you are being unfair to Anton who's one of the few
->>>> that's actually taking the time to implement this properly instead of
->>>> settling for an out-of-tree hack.
->>>
->>> Unfair? But only I can talk about technical comment. To be honest, I
->>> really dislike
->>> I need say the same explanation again and again. A lot of people don't read
->>> past discussion. And as far as the patches take the same mistake, I must say
->>> the same thing. It is just PITA.
->>
->> Unfair because you are trying to make it look as if Anton is only
->> concerned with his specific use case. That's simply not true.
+On Tue, 2012-05-08 at 10:22 +0800, Huang Ying wrote:
+> On Mon, 2012-05-07 at 23:22 +0200, Rafael J. Wysocki wrote:
+> > On Saturday, May 05, 2012, huang ying wrote:
+[...]
+> > > >> --- a/drivers/pci/pci-acpi.c
+> > > >> +++ b/drivers/pci/pci-acpi.c
+> > > >> @@ -48,6 +48,21 @@ static void pci_acpi_wake_dev(acpi_handl
+> > > >>       if (event != ACPI_NOTIFY_DEVICE_WAKE || !pci_dev)
+> > > >>               return;
+> > > >>
+> > > >> +     if (pci_dev->current_state == PCI_D3cold) {
+> > > >> +             unsigned int count = 0;
+> > > >> +
+> > > >> +             /*
+> > > >> +              * Powering on bridge need to resume whole hierarchy,
+> > > >> +              * just resume the children to avoid the bridge going
+> > > >> +              * suspending as soon as resumed
+> > > >> +              */
+> > > >
+> > > > Don't you need to resume the bridge before you start walking the hierarchy
+> > > > below it?
+> > > 
+> > > When we resume the hierarchy below the bridge, its parent, the bridge,
+> > > will be resumed firstly. That is:
+> > > 
+> > > rpm_resume(child)
+> > >   rpm_resume(parent)
+> > >   ->runtime_suspend(child)
+> > > 
+> > > >> +             if (pci_dev->subordinate)
+> > > >> +                     count = pci_wakeup_bus(pci_dev->subordinate);
+> > > >> +             if (count == 0)
+> > > >> +                     pm_runtime_resume(&pci_dev->dev);
+> > > >
+> > > > What's the count for, exactly?
+> > > 
+> > > If there is no devices under the bridge, count returned will be 0,
+> > > then we will resume bridge itself.
+> > 
+> > So it looks like you will resume the bridge in both cases, right?
+> > 
+> > Why don't you call pm_runtime_get_sync() on the bridge first and then
+> > go for resuming the devices below it, then?
 > 
-> However current proposal certainly don't refer past discuss and don't work
-> many environment.
-> 
-> 
->> On Tue, May 8, 2012 at 8:42 AM, KOSAKI Motohiro
->> <kosaki.motohiro@gmail.com> wrote:
->>> I don't disagree vmevent notification itself, but I must disagree lie
->>> notification.
->>> And also, To make just idea statistics doesn't make sense at all. How do an
->>> application choose the right events? If that depend on hardware configuration,
->>> userland developers can't write proper applications.
->>
->> That's exactly the problem we're trying to tackle here! We _want_ the
->> ABI to provide sane, well-defined events that solve real world
->> problems.
-> 
-> Ok, sane. Then I take my time a little and review current vmevent code briefly.
-> (I read vmevent/core branch in pekka's tree. please let me know if
-> there is newer
-> repositry)
-> 
-> I think following thing should be fixed.
-> 
-> 1) sample_period is brain damaged idea. If people ONLY need to
-> sampling stastics, they
->   only need to read /proc/vmstat periodically. just remove it and
-> implement push notification.
->   _IF_ someone need unfrequent level trigger, just use
-> "usleep(timeout); read(vmevent_fd)"
->  on userland code.
-> 2) VMEVENT_ATTR_STATE_ONE_SHOT is misleading name. That is effect as
-> edge trigger
->   shot. not only once.
-> 3) vmevent_fd() seems sane interface. but it has name space unaware.
-> maybe we discuss how
->   to harmonize name space feature.  No hurry. but we have to think
-> that issue since at beginning.
-> 4) Currently, vmstat have per-cpu batch and vmstat updating makes 3
-> second delay at maximum.
->   This is fine for usual case because almost userland watcher only
-> read /proc/vmstat per second.
->   But, for vmevent_fd() case, 3 seconds may be unacceptable delay. At
-> worst, 128 batch x 4096
->   x 4k pagesize = 2G bytes inaccurate is there.
-> 5) __VMEVENT_ATTR_STATE_VALUE_WAS_LT should be removed from userland
-> exporting files.
->   When exporing kenrel internal, always silly gus used them and made unhappy.
-> 6) Also vmevent_event must hide from userland.
-> 7) vmevent_config::size must be removed. In 20th century, M$ API
-> prefer to use this technique. But
->   They dropped the way because a lot of application don't initialize
-> size member and they can't use
->    it for keeping upper compitibility.
-> 8) memcg unaware
-> 9) numa unaware
-> 10) zone unaware
+> OK.  I will do that.
+
+After some thinking, have some question on this method.
+
+Do you suggest something like below?
+
+    pm_runtime_get_sync(&pci_dev->dev);
+    pci_wakeup_bus(pci_dev->subordinate);
+    pm_runtime_put(&pci_dev->dev);
+
+If so,  because pci_wakeup_bus() will call pm_request_resume() on
+subordinate devices, which is asynchronous, bridge may go suspended
+(powered off) again after pm_runtime_put(), if resuming of subordinate
+devices are still pending in work queue.
 
 
-I would like to add a concern.
+If we replace pm_runtime_put() with pm_runtime_put_noidle() as follow,
 
-11) understand storage speed.
+    pm_runtime_get_sync(&pci_dev->dev);
+    pci_wakeup_bus(pci_dev->subordinate);
+    pm_runtime_put_noidle(&pci_dev->dev);
 
-As I mentioned, system can have various storage type(SSD, disk, eMMC, ramfs)
-In some system, user can tolerate ramfs and SSD write or swapout.
-We should consdier that to make it really useful.
+if before pm_runtime_put_noidle(), subordinate devices have already go
+through resuming/suspending cycle and go suspended again (because of
+preemption?), bridge may lose an opportunity to go suspended.
 
-The problem is user can't know it in advance so it should be detected by kernel.
-Unfortunately, it's not easy now.
+Or we can add a parameter to pci_wakeup_bus() which will resume the
+first device synchronously?
 
-The idea is that we can make some levels in advane and explain it to user
+Best Regards,
+Huang Ying
 
-Level 1: It a immediate response to user when kernel decide there are not fast-reclaimable pages any more.
-Level 2: It's rather slower response than level 1 but kernel will consider it as reclaimable target
-Level 3: It's slowest response because kernel will consider page needed long time to reclaim as reclaimable target.
 
-It doesn't expose any internal of kernel and can implment it in internal.
-For simple example,
-
-Level 1: non-mapped clean page
-Level 2: Level 1 + mapped clean-page
-Level 3: Level 2 + dirty pages
- 
-So users of vmevent_fd can select his level.
-Of course, latency sensitive application with slow stoarge would select Level 1.
-Some application might use Level 4(Level 3 + half of swap) because it has very fast storage.
-
-And application receives event can make strategy folloing as.
-
-When it receives level 1 notification, it could request to others if it can release their own buffers.
-When it receives level 2 notification, it could request to suicide if it's not critical application.
-When it receives level 3 notification, it could kill others. 
-
-It's a just example and my point is we should storage speed to make it general.
-
--- 
-Kind regards,
-Minchan Kim
