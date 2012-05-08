@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab2EHMoo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 08:44:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55157 "EHLO
+	id S1755148Ab2EHMpf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 08:45:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55179 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754487Ab2EHMon (ORCPT
+	with ESMTP id S1753719Ab2EHMpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 08:44:43 -0400
-Date: Tue, 8 May 2012 05:44:33 -0700
+	Tue, 8 May 2012 08:45:34 -0400
+Date: Tue, 8 May 2012 05:45:23 -0700
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-c4e26890ff4cb4e85969b1e8565af4b046ce03b8@git.kernel.org>
+Message-ID: <tip-66bb4cda55477efeb1be5c2cbd3785a69b088a8a@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        lennox.wu@gmail.com, tglx@linutronix.de
+        tglx@linutronix.de, davem@davemloft.net
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, lennox.wu@gmail.com
-In-Reply-To: <20120505150142.123383955@linutronix.de>
-References: <20120505150142.123383955@linutronix.de>
+        tglx@linutronix.de, davem@davemloft.net
+In-Reply-To: <20120505150142.252861878@linutronix.de>
+References: <20120505150142.252861878@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] score: Use common threadinfo allocator
-Git-Commit-ID: c4e26890ff4cb4e85969b1e8565af4b046ce03b8
+Subject: [tip:smp/hotplug] sparc: Use common threadinfo allocator
+Git-Commit-ID: 66bb4cda55477efeb1be5c2cbd3785a69b088a8a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,54 +27,65 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 05:44:38 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 05:45:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c4e26890ff4cb4e85969b1e8565af4b046ce03b8
-Gitweb:     http://git.kernel.org/tip/c4e26890ff4cb4e85969b1e8565af4b046ce03b8
+Commit-ID:  66bb4cda55477efeb1be5c2cbd3785a69b088a8a
+Gitweb:     http://git.kernel.org/tip/66bb4cda55477efeb1be5c2cbd3785a69b088a8a
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sat, 5 May 2012 15:05:46 +0000
+AuthorDate: Sat, 5 May 2012 15:05:47 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 8 May 2012 14:08:46 +0200
 
-score: Use common threadinfo allocator
+sparc: Use common threadinfo allocator
 
-No point in using kmalloc for allocating 2 pages.
+Exaclty the same as the core code.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Lennox Wu <lennox.wu@gmail.com>
-Link: http://lkml.kernel.org/r/20120505150142.123383955@linutronix.de
+Acked-by: David S. Miller <davem@davemloft.net>
+Link: http://lkml.kernel.org/r/20120505150142.252861878@linutronix.de
 ---
- arch/score/include/asm/thread_info.h |   10 +++-------
- 1 files changed, 3 insertions(+), 7 deletions(-)
+ arch/sparc/include/asm/thread_info_64.h |   25 ++-----------------------
+ 1 files changed, 2 insertions(+), 23 deletions(-)
 
-diff --git a/arch/score/include/asm/thread_info.h b/arch/score/include/asm/thread_info.h
-index 2205c62..a18006e9 100644
---- a/arch/score/include/asm/thread_info.h
-+++ b/arch/score/include/asm/thread_info.h
-@@ -11,10 +11,9 @@
- #include <linux/const.h>
+diff --git a/arch/sparc/include/asm/thread_info_64.h b/arch/sparc/include/asm/thread_info_64.h
+index 01d057f..7f0981b 100644
+--- a/arch/sparc/include/asm/thread_info_64.h
++++ b/arch/sparc/include/asm/thread_info_64.h
+@@ -138,32 +138,11 @@ register struct thread_info *current_thread_info_reg asm("g6");
  
  /* thread information allocation */
--#define THREAD_SIZE_ORDER 	(1)
--#define THREAD_SIZE 		(PAGE_SIZE << THREAD_SIZE_ORDER)
--#define THREAD_MASK 		(THREAD_SIZE - _AC(1,UL))
+ #if PAGE_SHIFT == 13
+-#define __THREAD_INFO_ORDER	1
++#define THREAD_SIZE_ORDER	1
+ #else /* PAGE_SHIFT == 13 */
+-#define __THREAD_INFO_ORDER	0
++#define THREAD_SIZE_ORDER	0
+ #endif /* PAGE_SHIFT == 13 */
+ 
 -#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR
-+#define THREAD_SIZE_ORDER	(1)
-+#define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
-+#define THREAD_MASK		(THREAD_SIZE - _AC(1,UL))
- 
- #ifndef __ASSEMBLY__
- 
-@@ -71,9 +70,6 @@ struct thread_info {
- register struct thread_info *__current_thread_info __asm__("r28");
- #define current_thread_info()	__current_thread_info
- 
--#define alloc_thread_info_node(tsk, node) kmalloc_node(THREAD_SIZE, GFP_KERNEL, node)
--#define free_thread_info(info) kfree(info)
 -
- #endif /* !__ASSEMBLY__ */
- 
- #define PREEMPT_ACTIVE		0x10000000
+-#ifdef CONFIG_DEBUG_STACK_USAGE
+-#define THREAD_FLAGS (GFP_KERNEL | __GFP_ZERO)
+-#else
+-#define THREAD_FLAGS (GFP_KERNEL)
+-#endif
+-
+-#define alloc_thread_info_node(tsk, node)				\
+-({									\
+-	struct page *page = alloc_pages_node(node, THREAD_FLAGS,	\
+-					     __THREAD_INFO_ORDER);	\
+-	struct thread_info *ret;					\
+-									\
+-	ret = page ? page_address(page) : NULL;				\
+-	ret;								\
+-})
+-
+-#define free_thread_info(ti) \
+-	free_pages((unsigned long)(ti),__THREAD_INFO_ORDER)
+-
+ #define __thread_flag_byte_ptr(ti)	\
+ 	((unsigned char *)(&((ti)->flags)))
+ #define __cur_thread_flag_byte_ptr	__thread_flag_byte_ptr(current_thread_info())
