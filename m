@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400Ab2EHTfb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 15:35:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1983 "EHLO mx1.redhat.com"
+	id S1756679Ab2EHTgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 15:36:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13113 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755917Ab2EHTfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 15:35:30 -0400
-Date: Tue, 8 May 2012 22:35:08 +0300
+	id S1756285Ab2EHTgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 15:36:13 -0400
+Date: Tue, 8 May 2012 22:36:13 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <hadi@cyberus.ca>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
-Message-ID: <20120508193507.GC28536@redhat.com>
-References: <20120408171323.GA16012@redhat.com>
- <1334044558.3126.5.camel@edumazet-glaptop>
- <20120410084151.GA27193@redhat.com>
- <1334048100.3126.21.camel@edumazet-glaptop>
- <20120410093140.GA27651@redhat.com>
- <1334052259.3126.68.camel@edumazet-glaptop>
- <20120410112459.GA28825@redhat.com>
- <1334058300.3126.99.camel@edumazet-glaptop>
- <20120410124151.GA29808@redhat.com>
- <1334065929.5300.40.camel@edumazet-glaptop>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC dontapply 5/5] kvm_para: guest side for eoi avoidance
+Message-ID: <20120508193612.GD28536@redhat.com>
+References: <cover.1334833140.git.mst@redhat.com>
+ <5e1399d9e743668a87f31d8f2b83cad862c60728.1334833141.git.mst@redhat.com>
+ <4FA93B3F.3000906@redhat.com>
+ <20120508152843.GE8988@redhat.com>
+ <4FA93FA3.20306@zytor.com>
+ <20120508165736.GA26795@redhat.com>
+ <4FA96092.2090004@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1334065929.5300.40.camel@edumazet-glaptop>
+In-Reply-To: <4FA96092.2090004@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 10, 2012 at 03:52:09PM +0200, Eric Dumazet wrote:
-> By the way, skb orphaning should already be done in skb_orphan_try(),
-> not sure why its done again in tun_net_xmit().
+On Tue, May 08, 2012 at 11:06:10AM -0700, H. Peter Anvin wrote:
+> On 05/08/2012 09:57 AM, Michael S. Tsirkin wrote:
+> > 
+> > Will do. OK to only define them for x86 for now?
+> > They would be unused on other arches even if I defined them ...
+> > 
+> 
+> I don't know if it's possible/practical to define them so they fall back
+> to the fully atomic versions unless arch-overridden, but that would be
+> the best, I would think.
 
-Because we need to force it for skbs which have tx_flags set.
-
-> Note we perform orphaning
-> right before giving skb to device on premise it'll be sent (and freed)
-> in a reasonable amount of time.
-
-It is usually the case. I think this assumption holds for
-tun normally.
+Ah, good idea, will do.
 
