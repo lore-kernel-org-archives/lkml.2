@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab2EHTc1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 15:32:27 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:42790 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756026Ab2EHTcZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 15:32:25 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AntxAGt0qU9V5qg+PGdsb2JhbABEsg4DgRsZAQEBATc0ggwBAQEBAwECLwEjIxAIAxguFBQRChqIJQe7OROKcHCEP2MEk0+CLoYGjSg
-X-IronPort-AV: E=Sophos;i="4.75,553,1330902000"; 
-   d="scan'208";a="331214729"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 8 May 2012 21:37:24 +0200
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Chase Douglas <chasedouglas@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, chatty@enac.fr,
-        benjamin.tissoires@gmail.com, peter.hutterer@who-t.net,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Input: MT - Include win8 support
-Message-ID: <20120508193724.GA24034@polaris.bitmath.org>
-References: <1336230499-1450-1-git-send-email-rydberg@euromail.se>
- <4FA5889E.2030008@gmail.com>
- <4FA96AEF.4090106@zytor.com>
+	id S1756400Ab2EHTfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 15:35:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1983 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755917Ab2EHTfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 15:35:30 -0400
+Date: Tue, 8 May 2012 22:35:08 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <hadi@cyberus.ca>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Jiri Pirko <jpirko@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH] net: orphan queued skbs if device tx can stall
+Message-ID: <20120508193507.GC28536@redhat.com>
+References: <20120408171323.GA16012@redhat.com>
+ <1334044558.3126.5.camel@edumazet-glaptop>
+ <20120410084151.GA27193@redhat.com>
+ <1334048100.3126.21.camel@edumazet-glaptop>
+ <20120410093140.GA27651@redhat.com>
+ <1334052259.3126.68.camel@edumazet-glaptop>
+ <20120410112459.GA28825@redhat.com>
+ <1334058300.3126.99.camel@edumazet-glaptop>
+ <20120410124151.GA29808@redhat.com>
+ <1334065929.5300.40.camel@edumazet-glaptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4FA96AEF.4090106@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1334065929.5300.40.camel@edumazet-glaptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 11:50:23AM -0700, H. Peter Anvin wrote:
-> On 05/05/2012 01:07 PM, Chase Douglas wrote:
-> >>  
-> >> +For devices capable of 360 degree orientation, the reported orientation
-> >> +should be twice the given range.
-> > 
-> > I don't understand what this means. Can you elaborate?
-> > 
-> 
-> A guess is that it means that the value is encoded as a single byte with
-> a 2° granuarity?
+On Tue, Apr 10, 2012 at 03:52:09PM +0200, Eric Dumazet wrote:
+> By the way, skb orphaning should already be done in skb_orphan_try(),
+> not sure why its done again in tun_net_xmit().
 
-Both Benjamin and Chase had the same question, and the reply is here:
+Because we need to force it for skbs which have tx_flags set.
 
-http://www.spinics.net/lists/linux-input/msg20736.html
+> Note we perform orphaning
+> right before giving skb to device on premise it'll be sent (and freed)
+> in a reasonable amount of time.
 
-Hopefully that helps.
+It is usually the case. I think this assumption holds for
+tun normally.
 
-Thanks for chipping in,
-Henrik
