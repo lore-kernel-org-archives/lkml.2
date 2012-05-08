@@ -1,106 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244Ab2EHDtX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 23:49:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50215 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755355Ab2EHDtW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 23:49:22 -0400
-Message-ID: <4FA897BD.4000304@gmail.com>
-Date: Mon, 07 May 2012 21:49:17 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1758254Ab2EHDuE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 23:50:04 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:37386 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758191Ab2EHDuD convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 May 2012 23:50:03 -0400
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, Caspar Zhang <czhang@redhat.com>
-Subject: Re: [PATCHv3 0/5] perf, tool: Fix endian issues
-References: <1336390149-2970-1-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1336390149-2970-1-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87r4uvwnpi.fsf@ti.com>
+References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
+	<1335462041-4949-5-git-send-email-j-keerthy@ti.com>
+	<331ABD5ECB02734CA317220B2BBEABC13E9B1AA2@DBDE01.ent.ti.com>
+	<CAJ6a13ZSWSa_RpGB9NxtfyChUba9NGivGogpsfyk7oT9pNayjg@mail.gmail.com>
+	<87d36fzhkm.fsf@ti.com>
+	<87r4uvwnpi.fsf@ti.com>
+Date: Tue, 8 May 2012 09:14:16 +0530
+Message-ID: <CAJ6a13ZC6CYG+EtOZeBsCF1Fkz8oZWSzX3T1hNPf-OCOf0oOMw@mail.gmail.com>
+Subject: Re: [PATCH V3 04/10] ARM: OMAP3: hwmod: rename the smartreflex entries
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: Kevin Hilman <khilman@ti.com>
+Cc: "AnilKumar, Chimata" <anilkumar@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "Pihet-XID, Jean" <j-pihet@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/7/12 5:29 AM, Jiri Olsa wrote:
-> Tested by running following usecase:
->    - origin system:
->      # perf record -a -- sleep 10 (any perf record will do)
->      # perf report>  report.origin
->      # perf archive perf.data
+On Tue, May 8, 2012 at 5:25 AM, Kevin Hilman <khilman@ti.com> wrote:
+> Kevin Hilman <khilman@ti.com> writes:
 >
->    - copy the perf.data, report.origin and perf.data.tar.bz2
->      to a target system and run:
->      # tar xjvf perf.data.tar.bz2 -C ~/.debug
->      # perf report>  report.target
->      # diff -u report.origin report.target
+>> "J, KEERTHY" <j-keerthy@ti.com> writes:
 >
->    - the diff should produce no output
->      (besides some white space stuff and possibly different
->       date/TZ output)
+> [...]
 >
-> Tested by above usecase cross following architectures:
->    i386, x86_64, s390x, ppc64
+>>>>> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
+>>>>> index 2edd1e2..d859277 100644
+>>>>> --- a/arch/arm/mach-omap2/smartreflex.c
+>>>>> +++ b/arch/arm/mach-omap2/smartreflex.c
+>>>>> @@ -183,7 +183,7 @@ static void sr_set_regfields(struct omap_sr *sr)
+>>>>>               sr->err_weight = OMAP3430_SR_ERRWEIGHT;
+>>>>>               sr->err_maxlimit = OMAP3430_SR_ERRMAXLIMIT;
+>>>>>               sr->accum_data = OMAP3430_SR_ACCUMDATA;
+>>>>> -             if (!(strcmp(sr->name, "sr1"))) {
+>>>>> +             if (!(strcmp(sr->name, "smartreflex_mpu_iva"))) {
+>>>>
+>>>> What if voltage rail is different for mpu and iva? I have seen some devices
+>>>> supports SmartReflex have different voltage rails for mpu and iva.
+>>>>
+>>>
+>>> I get the point. OMAP3 iva and mpu have a common rail. OMAP4 onwards
+>>> even we have different rails for mpu and iva. I will enhance the checks here.
+>>
+>> Rather than enhancing the checks, this SoC specific data should probably
+>> just be made part of the SoC specific hwmod dev_attr.
+>
+> That being said, this is an additional feature we can add after this
+> driver is moved.
+>
+> I would like this series to concentrate on the cleanups necessary to
+> move to drivers/*, then additional features to support other SoCs can be
+> added on top.
+>
+> Keerthy, please prepare a patch to generalize this to other SoCs by
+> using dev_attr for this SoC specific data.   We can add it after this
+> series is merged upstream.
+Kevin,
 
-Short answer: Now that I have perf compiling in a 32-bit PPC VM, applied 
-the patchset and rebuilding -- it does not work for me.
+Ok. I will do that.
 
-Long answer to reproduce:
-
-In the PPC VM:
-1. build perf without your patches
-
-2. perf record -ag -fo /tmp/perf.data -- sleep 1
-
-
-In the host (x86_64) using the same code base:
-1. build perf without your patches
-
-2. mount ppc filesystem (e.g.,
-sshfs root@172.16.128.67:/ /tmp/f12-ppc/ -o direct_io)
-
-3. analyze ppc file. Verify life is good:
-/tmp/jiri/perf script --symfs /tmp/f12-ppc \
-     -I -i /tmp/f12-ppc/tmp/perf.data \
-      --kallsyms /tmp/f12-ppc/proc/kallsyms
-
-
-# ========
-# captured on: Mon May  7 21:32:15 2012
-# hostname : f12-ppc
-# os release : 2.6.32.26-175.fc12.ppc
-# perf version : 3.4.0-rc2
-# arch : ppc
-# nrcpus online : 1
-# nrcpus avail : 1
-# cpudesc : 740/750
-# cpuid : 8,769
-# total memory : 1024572 kB
-# cmdline : /tmp/pbuild/perf record -ag -fo /tmp/perf.data -v -e 
-cpu-clock -- sleep 5
-# event : name = cpu-clock, type = 1, config = 0x0, config1 = 0x0, 
-config2 = 0x0, excl_usr = 0, excl_kern = 0, id = { 6 }
-# ========
-#
-...
-
-Apply your patches and rebuild the host (x86_64 version). Life is not so 
-good:
-
-/tmp/jiri/perf script --symfs /tmp/f12-ppc \
-     -I -i /tmp/f12-ppc/tmp/perf.data \
-      --kallsyms /tmp/f12-ppc/proc/kallsyms
-
-# ========
-# captured on: Mon May  7 21:32:15 2012
-# ========
-#
+>
+> Thanks,
+>
+> Kevin
 
 
-i.e, all the feature data has gone missing.
 
-David
-
+-- 
+Regards and Thanks,
+Keerthy
