@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678Ab2EHQ2G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 12:28:06 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36301 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843Ab2EHQ2E (ORCPT
+	id S1756116Ab2EHQ2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 12:28:23 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:45318 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754969Ab2EHQ2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 12:28:04 -0400
+	Tue, 8 May 2012 12:28:22 -0400
+Date: Tue, 8 May 2012 18:28:09 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Borislav Petkov <bp@amd64.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        mgorman@suse.de, npiggin@gmail.com, tglx@linutronix.de,
+        mingo@redhat.com, arnd@arndb.de, rostedt@goodmis.org,
+        fweisbec@gmail.com, jeremy@goop.org, glommer@redhat.com,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, yinghai@kernel.org,
+        ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 7/7] x86/tlb: add tlb_flushall_factor into sysfs for
+ user change
+Message-ID: <20120508162809.GL13568@aftab.osrc.amd.com>
+References: <1336485790-30902-1-git-send-email-alex.shi@intel.com>
+ <1336485790-30902-8-git-send-email-alex.shi@intel.com>
+ <1336489894.16236.51.camel@twins>
+ <4FA939B9.6000404@zytor.com>
+ <20120508152516.GF13568@aftab.osrc.amd.com>
+ <4FA93C69.3050905@zytor.com>
+ <20120508154150.GG13568@aftab.osrc.amd.com>
+ <4FA94051.3000307@zytor.com>
+ <20120508161022.GC20433@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+1xoqenmuF+K7SAajM5L7zSkKxVKbN7GAdhMJmNjCNW1VQ3Yg@mail.gmail.com>
-References: <1336004953.4240.9.camel@mop> <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
- <1336475689.1179.12.camel@mop> <CA+1xoqdk_yGQyX+6yHyvHsQ1hXiraOzbhVZAgmLmmtMtVTPeGQ@mail.gmail.com>
- <CAPXgP11882vP5GtMmwdsw-w6-D6q9NXHNsHem3Ump17__r2xOQ@mail.gmail.com>
- <CAPXgP11G9Tv37qTy_kLcYphosUXc+2uQDzU6BYekGdVt3Oye4A@mail.gmail.com> <CA+1xoqenmuF+K7SAajM5L7zSkKxVKbN7GAdhMJmNjCNW1VQ3Yg@mail.gmail.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Tue, 8 May 2012 18:27:42 +0200
-Message-ID: <CAPXgP12eWBFcONpYCxHdoED1sy21GYuBdfr46JzgRgXy2EL=+w@mail.gmail.com>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
- record buffer
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Greg Kroah-Hartmann <greg@kroah.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Karel Zak <kzak@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120508161022.GC20433@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 8, 2012 at 5:57 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+On Tue, May 08, 2012 at 09:10:22AM -0700, Greg KH wrote:
+> > > Then maybe this is where this knob should go, along with adding it to
+> > > debugfs instead of sysfs...
+> > 
+> > I don't see a problem with it in sysfs.
+> 
+> If it's in sysfs, it better be documented in Documentation/ABI.
 
-> What about PRINTK_TIME? Are there plans to enable it on console output?
+See what I'm sayin'? And besides, debugfs fits better the purpose of
+this, maybe somewhere under <debugfs>/x86/...
 
-Yeah, we should restore the old behaviour. The timestamp is always
-stored internally, regardless of the CONFIG_PRINTK_TIME or tunable
-setting. At the moment, seems they are only (conditionally) added to
-the syslog() output and (unconditionally) to the /dev/kmsg export.
+-- 
+Regards/Gruss,
+Boris.
 
-I guess we just re-define CONFIG_PRINTK_TIME and the tunable as: "show
-time in syslog() and on the console output".
-
-Karel will likely extend dmesg(1) to use /dev/kmsg instead of syslog()
-when it's readable and dmesg(1) can still show the time stamps read
-from /dev/kmsg, even when CONFIG_PRINTK_TIME is not set, so the old
-tunable basically becomes a "show timestamps on the console" flag. :)
-
-Kay
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
