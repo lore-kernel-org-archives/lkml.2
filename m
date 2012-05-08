@@ -1,138 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756541Ab2EHTgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 15:36:12 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:53519 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756279Ab2EHTgK (ORCPT
+	id S1756726Ab2EHTge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 15:36:34 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60907 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756555Ab2EHTgO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 15:36:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [PATCH 01/02] mach-shmobile: Emma Mobile EV2 SoC base support
-Date: Tue, 8 May 2012 19:35:53 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-sh@vger.kernel.org, lethal@linux-sh.org,
-        linux-kernel@vger.kernel.org, rjw@sisk.pl, horms@verge.net.au,
-        olof@lixom.net
-References: <20120503144645.6390.62303.sendpatchset@w520> <201205041307.46080.arnd@arndb.de> <CANqRtoRqiFQEH+xaC9WtHy3v2rAHOZBNPTffOVQoDNuPb9H4-A@mail.gmail.com>
-In-Reply-To: <CANqRtoRqiFQEH+xaC9WtHy3v2rAHOZBNPTffOVQoDNuPb9H4-A@mail.gmail.com>
+	Tue, 8 May 2012 15:36:14 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205081935.54082.arnd@arndb.de>
-X-Provags-ID: V02:K0:Of2eHeV8SlF/In3J/Jt/fjk5Ciywf8xLHFE5G3mUO3u
- rxPoVixpMoKhdmwCRF5BiSBHUiOSCRLF1Pjpb4ejS37HSISi+Z
- Uo/NwSeDPoKJpfmaTEaVCo4X7umQBH7BFdX5QpGtjSJCAuTSQ8
- 7VlQkE921Xhat+/60RjJjmh1je1tJT/Lj5YTaoP6073pAQ8zN1
- Xo7BWVYw3sY6ZnwPloyg67aXhrw70qribrFG8LFNrqBk2+d/Z0
- AhJwsW6Tm5uk6kXhpnTlV/lMeR30v4PNubhjeW5JB+BZT7yuI8
- 2Wy0FrndyWZN6zQ2PveBTJK7tMOQij2vhnJy84rhXN0l2gbavU
- qG6jaNcF50Njnkrb5QjQ=
+In-Reply-To: <20120412203517.GA30769@merkur.ravnborg.org>
+References: <1332960678-11879-1-git-send-email-andi@firstfloor.org>
+	<1332960678-11879-2-git-send-email-andi@firstfloor.org>
+	<CAMuHMdVX28zeebzN6277B5p2b=9s-Q06i01o5AHPyXAuKMigGQ@mail.gmail.com>
+	<20120412194016.GA30558@merkur.ravnborg.org>
+	<CAMuHMdXfpvprGD18_YYyctfrAk6iRJonWFGFRf9oSaH0u0zfhw@mail.gmail.com>
+	<4F8733C5.5080609@linux.intel.com>
+	<20120412200752.GA30685@merkur.ravnborg.org>
+	<CAMuHMdXN0PcxZQb6=ReFrpG6U49tP8ujA+OKkeVGd_yeftaydw@mail.gmail.com>
+	<20120412203517.GA30769@merkur.ravnborg.org>
+Date: Tue, 8 May 2012 21:36:12 +0200
+X-Google-Sender-Auth: 7Vt72O3JlDNGdSrJK9L5xqqdP_U
+Message-ID: <CAMuHMdViZUB1812w3RnVysX6ESZuKAVtP8yyqPv25FJyzHbzCQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Add CONFIG_READABLE_ASM
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        x86@kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 08 May 2012, Magnus Damm wrote:
-> >> +void __init emev2_clock_init(void)
-> >> +{
-> >> +     int k, ret = 0;
-> >> +
-> >> +     /* setup STI timer to run on 37.768 kHz and deassert reset */
-> >> +     __raw_writel(0, STI_CLKSEL);
-> >> +     __raw_writel(1, STI_RSTCTRL);
-> >> +
-> >> +     /* deassert reset for UART0->UART3 */
-> >> +     __raw_writel(2, USIAU0_RSTCTRL);
-> >> +     __raw_writel(2, USIBU1_RSTCTRL);
-> >> +     __raw_writel(2, USIBU2_RSTCTRL);
-> >> +     __raw_writel(2, USIBU3_RSTCTRL);
-> >
-> > Better use iowrite32 or writel or writel_relaxed here, but not __raw_*.
-> 
-> Ok. Would you like us to convert exiting code for other SoCs as well?
+On Thu, Apr 12, 2012 at 10:35 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+> On Thu, Apr 12, 2012 at 10:17:07PM +0200, Geert Uytterhoeven wrote:
+>> On Thu, Apr 12, 2012 at 22:07, Sam Ravnborg <sam@ravnborg.org> wrote:
+>> > Could you try this:
+>> >
+>> > cc-disable-opt = $(call try-run,\
+>> >        $(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -f$(strip $(1)) -c -xc /dev/null -o "$TMP",-fno-$(strip $(1)))
+>> >
+>> > KBUILD_CFLAGS += $(call cc-disable-opt, ipa-cp-clone)
+>> >
+>> >
+>> > It will try if "gcc -fipa-cp-clone" is supported,
+>> > and add -fno-ipa-cp-clone in that case.
+>>
+>> Unfortunately not:
+>>
+>> m68k-linux-gnu-gcc -Wp,-MD,kernel/.bounds.s.d  -nostdinc -isystem
+>> /usr/lib/gcc/m68k-linux-gnu/4.1.2/include
+>> -I/scratch/geert/linux/linux-next/arch/m68k/include
+>> Iarch/m68k/include/generated -Iinclude  -include
+>> /scratch/geert/linux/linux-next/include/linux/kconfig.h -D__KERNEL__
+>> -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing
+>> -fno-common -Werror-implicit-function-declaration -Wno-format-security
+>> -fno-delete-null-pointer-checks -Os -fno-reorder-blocks
+>> -fno-ipa-cp-clone -pipe -fno-strength-reduce -ffixed-a2
+>> -fno-omit-frame-pointer -fno-optimize-sibling-calls -g
+>> -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(bounds)"
+>> -D"KBUILD_MODNAME=KBUILD_STR(bounds)" -fverbose-asm -S -o
+>> kernel/bounds.s kernel/bounds.c
+>> cc1: error: unrecognized command line option "-fno-ipa-cp-clone"
+>> make[1]: *** [kernel/bounds.s] Error 1
+>> make: *** [prepare0] Error 2
+>
+> So with the above command-line gcc fails with an exit code for -fno-ipa-cp-clone.
+> But with cc-option it does not.
+>
+> Can you dig out the command-line used for cc-option?
+> We may be able to analyze why it fails in the above case, but
+> not with cc-option.
 
-In the long run yes, but there is no need to hurry. I just want to stop
-more of this from getting added because at some point we might have to
-change it all.
+gcc -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs
+-fno-strict-aliasing -fno-common -Werror-implicit-function-declaration
+-Wno-format-security -fno-delete-null-pointer-checks -Os
+-fno-ipa-cp-clone -c -xc /dev/null -o .6376.tmp
 
-> >> --- 0003/arch/arm/mach-shmobile/include/mach/common.h
-> >> +++ work/arch/arm/mach-shmobile/include/mach/common.h 2012-05-03 20:45:56.000000000 +0900
-> >> @@ -85,4 +85,10 @@ extern void r8a7779_secondary_init(unsig
-> >>  extern int r8a7779_boot_secondary(unsigned int cpu);
-> >>  extern void r8a7779_smp_prepare_cpus(void);
-> >>
-> >> +extern void emev2_init_irq(void);
-> >> +extern void emev2_map_io(void);
-> >> +extern void emev2_add_early_devices(void);
-> >> +extern void emev2_add_standard_devices(void);
-> >> +extern void emev2_clock_init(void);
-> >> +
-> >>  #endif /* __ARCH_MACH_COMMON_H */
-> >
-> > I would feel more comfortable with a separate header for this than putting
-> > it into the same file as everything else, but it's not important to me.
-> 
-> I've been thinking about something along those lines myself too.
-> 
-> Perhaps I can also move the existing soc symbols in common.h into
-> separate per-soc header files, like for instance moving the sh7372
-> symbols to sh7372.h. Not sure if we have enough time for the upcoming
-> merge window though, when do you need the code?
+So it's running "gcc" instead of "m68k-linux-gnu-gcc".
 
-Hard to say. Depends on whether there will be an -rc7. Sooner is better,
-but again I care more about the new stuff here than about changing the
-existing bits.
+I used the gmail-damaged patch below to get the command in /tmp/x.
 
-> >> +static struct map_desc emev2_io_desc[] __initdata = {
-> >> +     /* 128K entity map for 0xe0020000 (GIC) */
-> >> +     {
-> >> +             .virtual        = 0xe0020000,
-> >> +             .pfn            = __phys_to_pfn(0xe0020000),
-> >> +             .length         = SZ_128K,
-> >> +             .type           = MT_UNCACHED
-> >> +     },
-> >> +     /* 128K entity map for 0xe0100000 (SMU) */
-> >> +     {
-> >> +             .virtual        = 0xe0100000,
-> >> +             .pfn            = __phys_to_pfn(0xe0100000),
-> >> +             .length         = SZ_128K,
-> >> +             .type           = MT_DEVICE
-> >> +     },
-> >> +};
-> >> +
-> >> +void __init emev2_map_io(void)
-> >> +{
-> >> +     iotable_init(emev2_io_desc, ARRAY_SIZE(emev2_io_desc));
-> >> +}
-> 
-> As you said, this iotable can most likely go away too. The only valid
-> use case I can think of (which is not included above) is our early
-> platform driver based console. Basically, it's the 8250_em driver
-> being probed as early as possible. This allows us to get console
-> output at MACHINE->init_early() timing. To get that working we rely on
-> having entity mappings in our iotable so ioremap() can give us those
-> early on. Something does however seem busted with the early ioremap()
-> - but I need to spend more time to investigate that. And this is
-> totally untested with DT, so it needs more work in general.
+diff --git a/Makefile b/Makefile
+index d17a616..0e0cbb9 100644
+--- a/Makefile
++++ b/Makefile
+@@ -567,7 +567,7 @@ ifdef CONFIG_READABLE_ASM
+ # ipa clone creates specialized cloned functions
+ # partial inlining inlines only parts of functions
+ KBUILD_CFLAGS += $(call cc-option,-fno-reorder-blocks,) \
+-                 $(call cc-option,-fno-ipa-cp-clone,) \
++                 $(call cc-option2,-fno-ipa-cp-clone,) \
+                  $(call cc-option,-fno-partial-inlining)
+ endif
 
-Do you actually need to do anything at init_early() or map_io() time
-that needs debugging these days?
-We already have too many different ways of doing early console output,
-but if you cannot use the drivers/tty/serial/8250/8250_early.c code,
-maybe it makes sense to just move the map_io() call for your 8250
-port into that driver.
+diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
+index 6a3ee98..41c80bf 100644
+--- a/scripts/Kbuild.include
++++ b/scripts/Kbuild.include
+@@ -94,6 +94,16 @@ try-run = $(shell set -e;            \
+        fi;                             \
+        rm -f "$$TMP" "$$TMPO")
 
-> I intend to post some SMP support patch together with some DT support
-> tomorrow. I also have some GPIO code and some board-level network
-> support. Ideally I'd like to go DT-only, but I'm a bit unsure how to
-> tie in the SMP bits in a DT-only scenario. And we still have the
-> clocks.
++try-run2 = $(shell set -e;             \
++       TMP="$(TMPOUT).$$$$.tmp";       \
++       TMPO="$(TMPOUT).$$$$.o";        \
++       echo "$(1)" > /tmp/x;           \
++       if ($(1)) >/dev/null 2>&1;      \
++       then echo "$(2)";               \
++       else echo "$(3)";               \
++       fi;                             \
++       rm -f "$$TMP" "$$TMPO")
++
+ # as-option
+ # Usage: cflags-y += $(call as-option,-Wa$(comma)-isa=foo,)
 
-Don't worry about SMP and clocks for now for moving to DT, just do
-the easy bits that are directly connected to the SoC and that have
-existing bindings or those that can be trivially added.
+@@ -112,6 +122,9 @@ as-instr = $(call try-run,\
+ cc-option = $(call try-run,\
+        $(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc
+/dev/null -o "$$TMP",$(1),$(2))
 
-	Arnd
++cc-option2 = $(call try-run2,\
++       $(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc
+/dev/null -o "$$TMP",$(1),$(2))
++
+ # cc-option-yn
+ # Usage: flag := $(call cc-option-yn,-march=winchip-c6)
+ cc-option-yn = $(call try-run,\
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
