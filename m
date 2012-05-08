@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab2EHJa5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 05:30:57 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51615 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab2EHJa4 (ORCPT
+	id S1752689Ab2EHJca (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 05:32:30 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34403 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab2EHJc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 05:30:56 -0400
-Date: Tue, 8 May 2012 14:49:42 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH UPDATED 3/3] tracing: Provide trace events interface
- for uprobes
-Message-ID: <20120508091942.GB13272@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120409091133.8343.65289.sendpatchset@srdronam.in.ibm.com>
- <20120409091154.8343.50489.sendpatchset@srdronam.in.ibm.com>
- <20120411103043.GB29437@linux.vnet.ibm.com>
- <20120508041229.GD30652@gmail.com>
- <1336465808.16236.13.camel@twins>
- <20120508085002.GA13272@linux.vnet.ibm.com>
- <20120508092041.GE27323@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120508092041.GE27323@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12050809-5518-0000-0000-0000043B19C0
+	Tue, 8 May 2012 05:32:29 -0400
+Date: Tue, 8 May 2012 10:35:12 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: Regression due to d29f3ef "tty_lock: Localise the lock"
+Message-ID: <20120508103512.42db1c4b@pyramind.ukuu.org.uk>
+In-Reply-To: <4FA8557E.5080402@wwwdotorg.org>
+References: <4FA8557E.5080402@wwwdotorg.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ingo Molnar <mingo@kernel.org> [2012-05-08 11:20:41]:
+On Mon, 07 May 2012 17:06:38 -0600
+Stephen Warren <swarren@wwwdotorg.org> wrote:
 
+> Alan,
 > 
-> * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+> Commit d29f3ef "tty_lock: Localise the lock" appears to cause a problem
+> for me.
 > 
-> > * Peter Zijlstra <peterz@infradead.org> [2012-05-08 10:30:08]:
-> > 
-> > > On Tue, 2012-05-08 at 06:12 +0200, Ingo Molnar wrote:
-> > > > FYI, this warning started to trigger in -tip, with the latest 
-> > > > uprobes patches:
-> > > > 
-> > > > warning: (UPROBE_EVENT) selects UPROBES which has unmet direct dependencies (UPROBE_EVENTS && PERF_EVENTS)
-> > > 
-> > > this looks to be the only UPROBE_EVENTS instance, is that a typo?
-> > 
-> > 
-> > I think I corrected this in the latest posting I sent on April 16th.
-> > 
-> > Ingo,
-> > 
-> > 	Since you had asked me to send the patch series again 
-> > after handling comments and acks, I had sent the set. [...]
-> 
-> Mind sending a delta patch instead? The patches are now 
-> reasonably well tested and don't seem to break in any functional 
-> way, so unless the delta patch is really ugly we should try that 
-> instead of rebasing the branch.
-> 
+> With this commit (as in next-20120507), I can no longer log into my
+> system (NVIDIA Tegra device with ARM CPU) over the serial console, since
+> the login prompt no longer appears. If I wait a few minutes, I see the
+> following console spew:
 
-Okay .. will send the delta patch now
+Eep. If it's reproducable can you test whether adding the unlock/relock
+in drivers/tty/pty.c does the trick ?
 
--- 
-Thanks and Regards
-Srikar
 
+ie:
+	tty_unlock(tty);
+	tty_vhangup(tty);
+	tty_lock(tty);
+
+or if changing it for tty_hangup(tty) does it.
+
+
+There's some kind of lurking circular locking deadlock that I've not
+managed to trigger here but a couple of reports point towards.
