@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758206Ab2EHDIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 23:08:18 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:58793 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758017Ab2EHDIR (ORCPT
+	id S1758228Ab2EHDKD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 23:10:03 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37769 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758045Ab2EHDKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 23:08:17 -0400
-X-AuditID: b753bd60-a2688ba000000655-40-4fa88e1ec79c
-X-AuditID: b753bd60-a2688ba000000655-40-4fa88e1ec79c
-Message-ID: <4FA88E1B.1020708@hitachi.com>
-Date: Tue, 08 May 2012 12:08:11 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: Re: Re: [PATCH 6/9][RFC] kprobes: Allow probe on ftrace reserved
- text (but move it)
-References: <20120502192418.024103772@goodmis.org>   <20120502193237.321234712@goodmis.org> <y0mhavyl3kg.fsf@fche.csb>  <1336002032.14207.52.camel@gandalf.stny.rr.com>  <4FA7B410.1000804@hitachi.com> <1336394603.14207.117.camel@gandalf.stny.rr.com>
-In-Reply-To: <1336394603.14207.117.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 7 May 2012 23:10:01 -0400
+Date: Tue, 8 May 2012 13:09:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>, Sage Weil <sage@newdream.net>,
+        Sage Weil <sage@inktank.com>
+Subject: linux-next: manual merge of the net-next tree with the ceph tree
+Message-Id: <20120508130948.066bcfb7f7742d039c2db5d3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__8_May_2012_13_09_48_+1000_OTCCoMbxcU_QKdOx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/05/07 21:43), Steven Rostedt wrote:
-> On Mon, 2012-05-07 at 20:37 +0900, Masami Hiramatsu wrote:
-> 
->> By the way, there is another way to do that transparently which
->> we add a "real_addr" member to struct kprobes and put the real
->> probed address to the member (without changing kp->addr). This
->> will keep API compatibility.
-> 
-> I like this a lot. Perhaps we don't need a flag at all, and just use
-> these two addrs instead?
+--Signature=_Tue__8_May_2012_13_09_48_+1000_OTCCoMbxcU_QKdOx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, just replacing all "*p->addr" and "kp.addr" with real_addr
-and copying addr to real_addr when registering. That's the basic
-idea.
+Hi all,
 
-I just concern about the cost balance... this is feasible, but
-we need to change many arch-dependent parts. Do we really need to
-pay that cost just for the backward compatibility?
+Today's linux-next merge of the net-next tree got a conflict in
+net/ceph/osdmap.c between commit 8b3932690084 ("crush: warn on do_rule
+failure") from the ceph tree and commit 95c961747284 ("net: cleanup
+unsigned to unsigned int") from the net-next tree.
 
-I mean, the kprobes itself can be changed because we don't ensure
-the stability of kernel APIs. If so, it looks enough to change the
-behavior of kprobes and give an upgrade hint for users (current patch),
-isn't it?
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thank you,
+diff --cc net/ceph/osdmap.c
+index 2592f3c,56e561a..0000000
+--- a/net/ceph/osdmap.c
++++ b/net/ceph/osdmap.c
+@@@ -991,11 -998,12 +991,11 @@@ int ceph_calc_object_layout(struct ceph
+  			    struct ceph_file_layout *fl,
+  			    struct ceph_osdmap *osdmap)
+  {
+- 	unsigned num, num_mask;
++ 	unsigned int num, num_mask;
+  	struct ceph_pg pgid;
+ -	s32 preferred =3D (s32)le32_to_cpu(fl->fl_pg_preferred);
+  	int poolid =3D le32_to_cpu(fl->fl_pg_pool);
+  	struct ceph_pg_pool_info *pool;
+- 	unsigned ps;
++ 	unsigned int ps;
+ =20
+  	BUG_ON(!osdmap);
+ =20
+@@@ -1027,7 -1045,8 +1027,7 @@@ static int *calc_pg_raw(struct ceph_osd
+  	struct ceph_pg_mapping *pg;
+  	struct ceph_pg_pool_info *pool;
+  	int ruleno;
+- 	unsigned poolid, ps, pps, t, r;
+ -	unsigned int poolid, ps, pps, t;
+ -	int preferred;
+++	unsigned int poolid, ps, pps, t, r;
+ =20
+  	poolid =3D le32_to_cpu(pgid.pool);
+  	ps =3D le16_to_cpu(pgid.ps);
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+--Signature=_Tue__8_May_2012_13_09_48_+1000_OTCCoMbxcU_QKdOx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPqI58AAoJEECxmPOUX5FEYDUP/Ru1IO148hWw6W2/8o+1JfD6
+bV3J1sr0N7ZVAkQ+JV8Tk8fo2SV0Wnhop7vqFq6rmW4hh5mrvmEPOPCzIOh5Kpoi
+797Xd7/gi6Y76Ir06RH2Bhzg6s1NMKUdrXhFSgGm3xlv0PUwctY/8Wv2UFYr3dTN
+As6OfCApWzMv5g5Uu4tni2W4wHxLAgAWaeaa2m7tjoPYR4xRmSJo2kUtpO11+5Qt
+/DZ2VEBy5oOvGtWem16Njaj3WPzU0evBQIlegZAvChzCfPHkgOP3aXVWvrDgzKaZ
+Jk1pAs/EE6Zh7Eh+N/3HzKSWXdhG9BMyw9phZw4liO5qCUkzw+af969ffVWYD1rY
+YaDER7BOxIkXxO214rOOkdujPEolbNG1SWEp92MzFmraGiVsdF11VkBA27AqGAyD
+3RCzpu9Nu7RoR3cYqP7pQ1rbjmCVJkkZ09hWZFLa9xYBMj5JEoDdbehMDXFIbChz
+IBKalcSbRG9j60OacdGNjCAc3g/HOj9AyDYy3PuaKVH/dWa/tzsR0D+te9dCCCla
+kYF+bxaQTV5mVUqzCaSB7juCLfQvOTY8tGYorekSqv3TSCE76ZsnwDg3fcKnxXmy
+dqLQC5mf4HvE99yz+5GBBQB+pQI6ZrR+w5JJ4mcpcFvTiUwIiS5mg1wgoWbw0pbM
+cth225k2JA3Fkt9NAN9z
+=HlS9
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__8_May_2012_13_09_48_+1000_OTCCoMbxcU_QKdOx--
