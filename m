@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab2EHOri (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 10:47:38 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42603 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547Ab2EHOrh convert rfc822-to-8bit (ORCPT
+	id S1755906Ab2EHOvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 10:51:13 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51419 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755334Ab2EHOvM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 10:47:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1205080859570.25669@router.home>
-References: <CAP145pjtv-S2oHhn8_QfLKF8APtut4B9qPXK5QM8nQbxzPd2gw@mail.gmail.com>
-	<alpine.DEB.2.00.1205071514040.6029@router.home>
-	<CAP145piK2kW4F94pNdKpo_sGg8OD914exOtwCx2o+83jx5Toog@mail.gmail.com>
-	<alpine.DEB.2.00.1205080859570.25669@router.home>
-Date: Tue, 8 May 2012 16:47:37 +0200
-Message-ID: <CAP145phLFDzoop_kUq-qN8a132Dj4oXsxJGcR_rv+LbZV-NObA@mail.gmail.com>
-Subject: Re: mmap/clone returns ENOMEM with lots of free memory
-From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 May 2012 10:51:12 -0400
+Message-ID: <1336488626.16236.41.camel@twins>
+Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 08 May 2012 16:50:26 +0200
+In-Reply-To: <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+	 <1335830115-14335-8-git-send-email-fweisbec@gmail.com>
+	 <alpine.DEB.2.00.1205071053070.1060@router.home>
+	 <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 8, 2012 at 4:02 PM, Christoph Lameter <cl@linux.com> wrote:
-> On Mon, 7 May 2012, Robert Święcki wrote:
->
->> Yup (btw: I attached dump of some proc files and some debug commands
->> in the original e-mail - can be found here
->> http://marc.info/?l=linux-kernel&m=133640623421007&w=2 in case some
->> MTA removed them)
->>
->> CommitLimit:     1981528 kB
->> Committed_AS:    1916788 kB
->>
->> just not sure if Committed_AS should present this kind of value. Did I
->> just hit a legitimate condition, or may it suggest a bug? I'm a bit
->> puzzled cause
->
-> This is a legitimate condition. No bug.
->>
->> root@ise-test:/proc# grep Mem /proc/meminfo
->> MemTotal:        3963060 kB
->> MemFree:         3098324 kB
->
-> Physical memory is free in quantity but virtual memory is exhausted.
->
->> Also, some sysctl values:
->> vm.overcommit_memory = 2
->> vm.overcommit_ratio = 50
->
-> Setting overcommit memory to 2 means that the app is strictly policed
-> for staying within bounds on virtual memory. Dont do that.
->
-> See linux source linux/Documentation/vm/overcommit-accounting for more
-> details.
+On Tue, 2012-05-08 at 16:20 +0200, Frederic Weisbecker wrote:
+> 2012/5/7 Christoph Lameter <cl@linux.com>:
+> > On Tue, 1 May 2012, Frederic Weisbecker wrote:
+> >
+> >> Prepare the interface to implement the nohz cpuset flag.
+> >> This flag, once set, will tell the system to try to
+> >> shutdown the periodic timer tick when possible.
+> >>
+> >> We use here a per cpu refcounter. As long as a CPU
+> >> is contained into at least one cpuset that has the
+> >> nohz flag set, it is part of the set of CPUs that
+> >> run into adaptive nohz mode.
+> >
+> > As I have said before: It would be much simpler if one could specify the
+> > set of nohz cpus independently of cpusets. Having a flag f.e. as a file in
+> >
+> >        /sys/devices/system/cpu/cpuX/nohz
+> 
+> I don't know if it would be simpler. It's just a different interface
+> to set a per-CPU property.
+> Cpusets of sysfs, I don't mind either way.
+> 
+> What is the usual policy on where to put which kind of CPU property?
 
-Thanks Christoph.
-
--- 
-Robert Święcki
+There's no such policy, but I don't get why Christoph objects to
+cpusets, its the option I would prefer. You're going to use cpusets
+anyway to partition your system, might as well also use it to mark a
+whole partition/set as nohz.
