@@ -1,156 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab2EHNDs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 09:03:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46642 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab2EHNDr convert rfc822-to-8bit (ORCPT
+	id S1754304Ab2EHNE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 09:04:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22458 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753809Ab2EHNE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 09:03:47 -0400
-Message-ID: <1336482202.16236.29.camel@twins>
-Subject: Re: linux-next oops in __lock_acquire for process_one_work
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 08 May 2012 15:03:22 +0200
-In-Reply-To: <20120507175743.GC19417@google.com>
-References: <alpine.LSU.2.00.1205070951170.1544@eggly.anvils>
-	 <20120507175743.GC19417@google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Tue, 8 May 2012 09:04:57 -0400
+X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=QVz34xbDK3MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=CjxXgO3LAAAA:8 a=4cKv_Weqv5ZKf3A5wTAA:9 a=KWWT3aF88Er1eI_m_FkA:7 a=PUjeQqilurYA:10 a=Efwj4qSePvMA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1336482295.14207.172.camel@gandalf.stny.rr.com>
+Subject: Re: Re: Re: [PATCH 6/9][RFC] kprobes: Allow probe on ftrace
+ reserved text (but move it)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
+Date: Tue, 08 May 2012 09:04:55 -0400
+In-Reply-To: <4FA88E1B.1020708@hitachi.com>
+References: <20120502192418.024103772@goodmis.org>
+	   <20120502193237.321234712@goodmis.org> <y0mhavyl3kg.fsf@fche.csb>
+	  <1336002032.14207.52.camel@gandalf.stny.rr.com>
+	  <4FA7B410.1000804@hitachi.com>
+	 <1336394603.14207.117.camel@gandalf.stny.rr.com>
+	 <4FA88E1B.1020708@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-07 at 10:57 -0700, Tejun Heo wrote:
-> (cc'ing Peter and Ingo and quoting whole body)
-> 
-> On Mon, May 07, 2012 at 10:19:09AM -0700, Hugh Dickins wrote:
-> > Running MM load on recent linux-nexts (e.g. 3.4.0-rc5-next-20120504),
-> > with CONFIG_PROVE_LOCKING=y, I've been hitting an oops in __lock_acquire
-> > called from lock_acquire called from process_one_work: serving mm/swap.c's
-> > lru_add_drain_all - schedule_on_each_cpu(lru_add_drain_per_cpu).
+On Tue, 2012-05-08 at 12:08 +0900, Masami Hiramatsu wrote:
+> (2012/05/07 21:43), Steven Rostedt wrote:
+> > On Mon, 2012-05-07 at 20:37 +0900, Masami Hiramatsu wrote:
 > > 
-> > In each case the oopsing address has been ffffffff00000198, and the
-> > oopsing instruction is the "atomic_inc((atomic_t *)&class->ops)" in
-> > __lock_acquire: so class is ffffffff00000000.
+> >> By the way, there is another way to do that transparently which
+> >> we add a "real_addr" member to struct kprobes and put the real
+> >> probed address to the member (without changing kp->addr). This
+> >> will keep API compatibility.
 > > 
-> > I notice Stephen's commit 0976dfc1d0cd80a4e9dfaf87bd8744612bde475a
-> > workqueue: Catch more locking problems with flush_work()
-> > in linux-next but not 3.4-rc, adding
-> > 	lock_map_acquire(&work->lockdep_map);
-> > 	lock_map_release(&work->lockdep_map);
-> > to flush_work.
-> > 
-> > I believe that occasionally races with your
-> > 	struct lockdep_map lockdep_map = work->lockdep_map;
-> > in process_one_work, putting an entry into the class_cache
-> > just as you're copying it, so you end up with half a pointer.
-> > yes, the structure copy is using "rep movsl" not "rep movsq".
-
-But the copy is copying from work->lockdep_map, not to, so it doesn't
-matter does it? If anything would explode it would be the:
-
-  lock_map_acquire(&lockdep_map);
-
-because that's the target of the copy and could indeed observe a partial
-update (assuming the reported but silly "rep movsl").
-
-> The offending commit is 0976dfc1d0cd80a4e9dfaf87bd8744612bde475a
-> "workqueue: Catch more locking problems with flush_work()".  It sounds
-> fancy but all it does is adding the following to flush_work().
+> > I like this a lot. Perhaps we don't need a flag at all, and just use
+> > these two addrs instead?
 > 
-> 	lock_map_acquire(&work->lockdep_map);
-> 	lock_map_release(&work->lockdep_map);
+> Yes, just replacing all "*p->addr" and "kp.addr" with real_addr
+> and copying addr to real_addr when registering. That's the basic
+> idea.
 > 
-> Which seems correct to me and more importantly not different from what
-> wait_on_work() does, so if this is broken, flush_work_sync() and
-> cancel_work_sync() are broken too - probably masked by lower usage
-> frequency.
+> I just concern about the cost balance... this is feasible, but
+> we need to change many arch-dependent parts. Do we really need to
+> pay that cost just for the backward compatibility?
 > 
-> It seems the problem stems from how process_one_work() "caches"
-> lockdep_map.  This part predates cmwq changes but it seems necessary
-> because the work item may be freed during execution but lockdep_map
-> should be released after execution is complete.
+> I mean, the kprobes itself can be changed because we don't ensure
+> the stability of kernel APIs. If so, it looks enough to change the
+> behavior of kprobes and give an upgrade hint for users (current patch),
+> isn't it?
+> 
+> Thank you,
 
-Exactly.
+I guess the question is what's best long term. That's what I would like
+to do. If a flag is "good enough" for both now and long term, than
+that's fine with me. But if we find that it would be better to have a
+"real_addr" then we should do it now and bite the bullet with all archs.
 
->   Peter, do you
-> remember how this lockdep_map copying is added?  Is (or was) this
-> correct?  If it's broken, how do we fix it?  Add a lockdep_map copy
-> API which does some magic lockdep locking dancing?
+Otherwise, we'll have all the archs doing something special with the
+MOVE flag and that would cause even more pain to update it later.
 
-I think there's a problem if indeed we do silly things like small copies
-like Hugh saw (why would gcc ever generate small copies for objects that
-are naturally aligned and naturally sized?).
+I also like the real addr because it helps with the optimize probes. We
+only need to search one location. This doesn't matter with this patch
+set, but with the code I have that uses ftrace hooks. One solution with
+that is to have the optimize code see that the probe was moved, (or its
+real addr was on a ftrace nop) and then just use the ftrace code on
+optimization instead of normal optimizations (replacing with a jump).
 
-Something like the below should fix that problem, but it doesn't explain
-the observed issue..
+Note, the big difference with using ftrace optimization and normal
+kprobe jump optimization is that the ftrace one can be used on a preempt
+kernel. But this code is still under development. I want to get a
+solution for the current code (this patch set) now. It would be nice if
+it was ready for 3.5.
 
----
- include/linux/lockdep.h |   19 +++++++++++++++++++
- kernel/timer.c          |    2 +-
- kernel/workqueue.c      |    2 +-
- 3 files changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-index d36619e..dc6661b 100644
---- a/include/linux/lockdep.h
-+++ b/include/linux/lockdep.h
-@@ -157,6 +157,25 @@ struct lockdep_map {
- #endif
- };
- 
-+static inline struct lockdep_map lockdep_copy_map(struct lockdep_map *lock)
-+{
-+	struct lockdep_map _lock = *lock;
-+	int i;
-+
-+	/*
-+	 * Since the class cache can be modified concurrently we could observe
-+	 * half pointers (64bit arch using 32bit copy insns). Therefore clear
-+	 * the caches and take the performance hit.
-+	 *
-+	 * XXX it doesn't work well with lockdep_set_class_and_subclass(), since
-+	 *     that relies on cache abuse.
-+	 */
-+	for (i = 0; i < NR_LOCKDEP_CACHING_CLASSES; i++)
-+		_lock.class_cache[i] = NULL;
-+
-+	return _lock;
-+}
-+
- /*
-  * Every lock has a list of other locks that were taken after it.
-  * We only grow the list, never remove from it:
-diff --git a/kernel/timer.c b/kernel/timer.c
-index a297ffc..fa98821 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1102,7 +1102,7 @@ static void call_timer_fn(struct timer_list *timer, void (*fn)(unsigned long),
- 	 * warnings as well as problems when looking into
- 	 * timer->lockdep_map, make a copy and use that here.
- 	 */
--	struct lockdep_map lockdep_map = timer->lockdep_map;
-+	struct lockdep_map lockdep_map = lockdep_map_copy(&timer->lockdep_map);
- #endif
- 	/*
- 	 * Couple the lock chain with the lock chain at
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 5abf42f..5d92b43 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1810,7 +1810,7 @@ __acquires(&gcwq->lock)
- 	 * lock freed" warnings as well as problems when looking into
- 	 * work->lockdep_map, make a copy and use that here.
- 	 */
--	struct lockdep_map lockdep_map = work->lockdep_map;
-+	struct lockdep_map lockdep_map = lockdep_copy_map(&work->lockdep_map);
- #endif
- 	/*
- 	 * A single work shouldn't be executed concurrently by
+-- Steve
+
 
