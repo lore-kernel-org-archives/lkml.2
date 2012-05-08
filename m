@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756353Ab2EHVYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 17:24:05 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:59976 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755270Ab2EHVYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 17:24:03 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Minho Ban <mhban@samsung.com>
-Subject: Re: [RFC/PATCH] PM / Hibernate : Add wait for disk detection if resume_file is MAJOR:MINOR style
-Date: Tue, 8 May 2012 23:28:53 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <4FA78724.5000401@samsung.com> <201205072139.20129.rjw@sisk.pl> <4FA8612F.70207@samsung.com>
-In-Reply-To: <4FA8612F.70207@samsung.com>
+	id S1756295Ab2EHV0V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 17:26:21 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55933 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab2EHV0U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 17:26:20 -0400
+Message-ID: <4FA98F78.4080803@wwwdotorg.org>
+Date: Tue, 08 May 2012 15:26:16 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+CC: Laxman Dewangan <ldewangan@nvidia.com>, "lrg@ti.com" <lrg@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH V1] regulator: fixed: dt: add property for gpio open drain
+ flag
+References: <1336386499-20408-1-git-send-email-ldewangan@nvidia.com> <4FA7E4A3.6050004@wwwdotorg.org> <4FA7E57B.30804@nvidia.com> <4FA7E841.7020100@wwwdotorg.org> <20120507162419.GK17002@opensource.wolfsonmicro.com>
+In-Reply-To: <20120507162419.GK17002@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205082328.54057.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 08, 2012, Minho Ban wrote:
-> On 05/08/2012 04:39 AM, Rafael J. Wysocki wrote:
-> >> +	/* name_to_dev_t is ineffective if resume_file comes in major:minor
-> >> +	 * format */
-> >> +	if (isdigit(resume_file[0]) && resume_wait) {
-> > 
-> > The check here is too late.  It should be done before name_to_dev_t() is
-> > used on resume_file for the first time.
-> > 
+On 05/07/2012 10:24 AM, Mark Brown wrote:
+> On Mon, May 07, 2012 at 09:20:33AM -0600, Stephen Warren wrote:
 > 
-> Thanks for comment, I'll pull it up.
+>> My point is that there's clear intent for of_gpio_simple_xlate()
+>> to return the GPIO flags from a field in the GPIO specifier in
+>> device tree, irrespective of whether some GPIO bindings don't
+>> allow this, or whether this is fully documented.
 > 
-> >> +		int partno;
-> >> +		while (!get_gendisk(swsusp_resume_device, &partno))
-> >> +			msleep(10);
-> >> +	}
-> >> +
-> >>   Check_image:
-> >>  	pr_debug("PM: Hibernation image partition %d:%d present\n",
-> >>  		MAJOR(swsusp_resume_device), MINOR(swsusp_resume_device));
-> > 
-> > Besides, I'd like the documentation to be updated to reflect this change too.
-> 
-> Do you mean resumewait is needed to be updated in kernel-parameters.txt?
+> It's really not idiomatic for drivers using GPIOs to allow
+> configuration of their flags in the first place.  Or, quite
+> frankly, to use flags. Honestly I'd not expect any bindings that
+> the GPIO driver provides to have any attention at all paid to them
+> most of the time, looking at the code seems to support that (though
+> there's surprisingly few bindings using GPIOs at all it seems).
 
-No, but it should be decumented what exactly is to be passed in
-the resume= command line option (in kernel-parameters.txt).  Please do that
-when you're at it.
+So, are you saying we should remove the flags from the GPIO bindings,
+and do something custom in each consumer?
 
-Thanks,
-Rafael
+Right now, we can't rely on of_get_gpio_flags(), since not all GPIO
+drivers actually allow flags to be represented in bindings.
+
+However, having each client have a unique binding for things like
+open-drain, inverted, ... seems bad; there are probably fewer
+providers than consumers, although a single standardized
+representation might admittedly have been ever better.
+
+> Before we start doing stuff to improve this it feels like we should
+> do things like get devm_ versions of gpiolib APIs in there (since
+> most conversions would really benefit from that too) - I've been
+> sending a patch for that but my backlog of unmerged patches for it
+> keeps getting bigger rather than smaller.
+> 
+>> We shouldn't have two different mechanisms to represent this 
+>> information. How do we resolve the situation where a particular
+>> SoC's GPIO binding allows the flags to be specified, and this
+>> patch allows the open-drain flag to be specified, and the two
+>> values are different?
+> 
+>> Either we should force all bindings to have some way of
+>> specifying the flags, or we should remove the flags from all
+>> bindings and rely on separate properties.
+> 
+> There's also the case where the bindings probably should be
+> ignored because the device driver knows what the connection has to
+> be anyway and there's no point in forcing people to encode it in
+> the binding.
+> 
+> It's a real shame all these bindings are driver specific, it's just
+> like interrupts :(
+
