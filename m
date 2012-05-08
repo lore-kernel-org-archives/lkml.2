@@ -1,107 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757486Ab2EHW7L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 18:59:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63087 "EHLO
+	id S1757565Ab2EHXCR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 19:02:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63448 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387Ab2EHW7J (ORCPT
+	with ESMTP id S1754179Ab2EHXCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 18:59:09 -0400
-Date: Tue, 8 May 2012 15:58:49 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: linux-next oops in __lock_acquire for process_one_work
-In-Reply-To: <1336516260.8226.61.camel@twins>
-Message-ID: <alpine.LSU.2.00.1205081553250.4497@eggly.anvils>
-References: <alpine.LSU.2.00.1205070951170.1544@eggly.anvils> <20120507175743.GC19417@google.com> <1336482202.16236.29.camel@twins> <20120508165819.GB10687@google.com> <alpine.LSU.2.00.1205081106160.4071@eggly.anvils> <1336516260.8226.61.camel@twins>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Tue, 8 May 2012 19:02:16 -0400
+Date: Tue, 8 May 2012 16:02:12 -0700
+From: Greg Kroah-Hartmann <gregkh@linuxfoundation.org>
+To: Hannes Reinecke <hare@suse.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, Stable Kernel <stable@kernel.org>
+Subject: Re: [PATCH] driver core: check start node in klist_iter_init_node
+Message-ID: <20120508230211.GA14839@kroah.com>
+References: <1336458502-34402-1-git-send-email-hare@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1336458502-34402-1-git-send-email-hare@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 May 2012, Peter Zijlstra wrote:
-> On Tue, 2012-05-08 at 11:11 -0700, Hugh Dickins wrote:
-> > Please send me the version of patch you'd like to put in
-> > (lest I make it up myself and you don't like the result).
-> 
-> something like so?
+On Tue, May 08, 2012 at 08:28:22AM +0200, Hannes Reinecke wrote:
+> klist_iter_init_node() takes a node as a start argument.
+> However, this node might not be valid anymore.
+> This patch updates the klist_iter_init_node() and
+> dependent functions to return an error if so.
+> All calling functions have been audited to check
+> for a return code here.
 
-More like the one below: I'm not alone in preferring a comma between args!
+Still breaks the build:
 
-And you're not a believer in checkpatch.pl, I see: I've removed trailing
-spaces; but left the 85-col line, that's not a fight I'll have with you.
+lib/klist.c: In function ‘klist_iter_init_node’:
+lib/klist.c:287:9: error: ‘struct klist_node’ has no member named ‘klist’
+make[1]: *** [lib/klist.o] Error 1
+make[1]: *** Waiting for unfinished jobs....
+make: *** [lib] Error 2
+make: *** Waiting for unfinished jobs....
 
-I'll set it going when I get home later - thanks.
-
-Hugh
-
----
- include/linux/lockdep.h |   17 +++++++++++++++++
- kernel/timer.c          |    4 +++-
- kernel/workqueue.c      |    4 +++-
- 3 files changed, 23 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-index d36619e..968c3e2 100644
---- a/include/linux/lockdep.h
-+++ b/include/linux/lockdep.h
-@@ -157,6 +157,23 @@ struct lockdep_map {
- #endif
- };
- 
-+static inline void lockdep_copy_map(struct lockdep_map *to, struct lockdep_map *from)
-+{
-+	int i;
-+
-+	*to = *from;
-+	/*
-+	 * Since the class cache can be modified concurrently we could observe
-+	 * half pointers (64bit arch using 32bit copy insns). Therefore clear
-+	 * the caches and take the performance hit.
-+	 *
-+	 * XXX it doesn't work well with lockdep_set_class_and_subclass(), since
-+	 *     that relies on cache abuse.
-+	 */
-+	for (i = 0; i < NR_LOCKDEP_CACHING_CLASSES; i++)
-+		to->class_cache[i] = NULL;
-+}
-+
- /*
-  * Every lock has a list of other locks that were taken after it.
-  * We only grow the list, never remove from it:
-diff --git a/kernel/timer.c b/kernel/timer.c
-index a297ffc..6aa7ad8 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1102,7 +1102,9 @@ static void call_timer_fn(struct timer_list *timer, void (*fn)(unsigned long),
- 	 * warnings as well as problems when looking into
- 	 * timer->lockdep_map, make a copy and use that here.
- 	 */
--	struct lockdep_map lockdep_map = timer->lockdep_map;
-+	struct lockdep_map lockdep_map;
-+
-+	lockdep_copy_map(&lockdep_map, &timer->lockdep_map);
- #endif
- 	/*
- 	 * Couple the lock chain with the lock chain at
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 5abf42f..7d77d1f 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1810,7 +1810,9 @@ __acquires(&gcwq->lock)
- 	 * lock freed" warnings as well as problems when looking into
- 	 * work->lockdep_map, make a copy and use that here.
- 	 */
--	struct lockdep_map lockdep_map = work->lockdep_map;
-+	struct lockdep_map lockdep_map;
-+
-+	lockdep_copy_map(&lockdep_map, &work->lockdep_map);
- #endif
- 	/*
- 	 * A single work shouldn't be executed concurrently by
