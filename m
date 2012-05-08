@@ -1,176 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756474Ab2EHPS0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:18:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13128 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756384Ab2EHPSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:18:24 -0400
-Message-ID: <1336490302.12477.105.camel@bling.home>
-Subject: RE: [PATCH] kvm: Enable device LTR/OBFF capibility before doing
- guest device assignment
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Hao, Xudong" <xudong.hao@intel.com>
-Cc: Avi Kivity <avi@redhat.com>, Xudong Hao <xudong.hao@linux.intel.com>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>
-Date: Tue, 08 May 2012 09:18:22 -0600
-In-Reply-To: <403610A45A2B5242BD291EDAE8B37D300FDBDAB9@SHSMSX102.ccr.corp.intel.com>
-References: <20120506152405.GA14009@hp-xd.sh.intel.com>
-	 <4FA699F6.9010605@redhat.com>
-	 <403610A45A2B5242BD291EDAE8B37D300FDAE9B6@SHSMSX102.ccr.corp.intel.com>
-	 <1336407384.12477.65.camel@bling.home>
-	 <403610A45A2B5242BD291EDAE8B37D300FDBDAB9@SHSMSX102.ccr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756610Ab2EHPSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:18:54 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:45047 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755671Ab2EHPSw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 11:18:52 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: pUazTMAVM1nvCPXwWynTUFoi1C6GmoAVHAHdT8fzLPYdM1H
+ knyJ2a29hsNRgd177qnjh40_sw0fnG7sUCmFnNhKZC7mX5r1cxWh4MjFjX6c
+ UJiQ6T8ggkdxBYuqxjFwmeE5EIsYVRu.b2MNUPkM1eGMoUytEyGzyhUXSFOk
+ EAEYeh3hpOaiq0ooPgMiPmr84SKK5Y0N0fztcZCQMWNOmv0iPQlnv8uOyELC
+ FMIdNdeh4.o32cvpkviACI_cS9s9Zi8ZcHpZuL9XXi3kiL4tFOccD9BhlI74
+ 5zLxw_Rn8Oqh19phq4UjbKsgBpmqviexfnyORYpPO6yy4rkaUniSw223Z6qq
+ 52wa8isLw2jxYrb_ioUobyuiLv_9Eycw2SlMbzBTUneg1uqSkAjznIxYicX3
+ y
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 8 May 2012 10:18:46 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
+In-Reply-To: <1336488626.16236.41.camel@twins>
+Message-ID: <alpine.DEB.2.00.1205081016370.27713@router.home>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com> <1335830115-14335-8-git-send-email-fweisbec@gmail.com> <alpine.DEB.2.00.1205071053070.1060@router.home> <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
+ <1336488626.16236.41.camel@twins>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-08 at 09:16 +0000, Hao, Xudong wrote:
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Tuesday, May 08, 2012 12:16 AM
-> > To: Hao, Xudong
-> > Cc: Avi Kivity; Xudong Hao; mtosatti@redhat.com; kvm@vger.kernel.org;
-> > linux-kernel@vger.kernel.org; Zhang, Xiantao
-> > Subject: RE: [PATCH] kvm: Enable device LTR/OBFF capibility before doing guest
-> > device assignment
-> > 
-> > On Mon, 2012-05-07 at 07:58 +0000, Hao, Xudong wrote:
-> > > > -----Original Message-----
-> > > > From: Avi Kivity [mailto:avi@redhat.com]
-> > > > Sent: Sunday, May 06, 2012 11:34 PM
-> > > > To: Xudong Hao
-> > > > Cc: mtosatti@redhat.com; kvm@vger.kernel.org;
-> > linux-kernel@vger.kernel.org;
-> > > > Zhang, Xiantao; Hao, Xudong; Alex Williamson
-> > > > Subject: Re: [PATCH] kvm: Enable device LTR/OBFF capibility before doing
-> > guest
-> > > > device assignment
-> > > >
-> > > > On 05/06/2012 06:24 PM, Xudong Hao wrote:
-> > > > > Enable device LTR/OBFF capibility before do device assignment, so that
-> > guest
-> > > > can benefit from them.
-> > > >
-> > > > cc += Alex
-> > > >
-> > > > > @@ -166,6 +166,10 @@ int kvm_assign_device(struct kvm *kvm,
-> > > > >     if (pdev == NULL)
-> > > > >         return -ENODEV;
-> > > > >
-> > > > > +   /* Enable some device capibility before do device assignment,
-> > > > > +    * so that guest can benefit from them.
-> > > > > +    */
-> > > > > +   kvm_iommu_enable_dev_caps(pdev);
-> > > > >     r = iommu_attach_device(domain, &pdev->dev);
-> > > >
-> > > > Suppose we fail here.  Do we need to disable_dev_caps()?
-> > > >
-> > 
-> > If kvm_assign_device() fails we'll try to restore the state we saved in
-> > kvm_vm_ioctl_assign_device(), so ltr/obff should be brought back to
-> > initial state.
-> > 
-> Right, more clear.
-> 
-> > > I don't think so. When a device will be assigned to guest, it's be
-> > > owned by a pci-stub driver, attach_device fail here do not affect
-> > > everything. If host want to use it, host device driver has its own
-> > > enable/disable dev_caps.
-> > 
-> > Why is device assignment unique here?  If there's a default value that's
-> > known to be safe, why doesn't pci_enable_device set it for everyone?
-> > Host drivers can fine tune the value later if they want.
-> > 
-> > > > >     if (r) {
-> > > > >         printk(KERN_ERR "assign device %x:%x:%x.%x failed",
-> > > > > @@ -228,6 +232,7 @@ int kvm_deassign_device(struct kvm *kvm,
-> > > > >         PCI_SLOT(assigned_dev->host_devfn),
-> > > > >         PCI_FUNC(assigned_dev->host_devfn));
-> > > > >
-> > > > > +   kvm_iommu_disable_dev_caps(pdev);
-> > > > >     return 0;
-> > > > >  }
-> > > > >
-> > > > > @@ -351,3 +356,30 @@ int kvm_iommu_unmap_guest(struct kvm *kvm)
-> > > > >     iommu_domain_free(domain);
-> > > > >     return 0;
-> > > > >  }
-> > > > > +
-> > > > > +static void kvm_iommu_enable_dev_caps(struct pci_dev *pdev)
-> > > > > +{
-> > > > > +   /* set default value */
-> > > > > +   unsigned long type = PCI_EXP_OBFF_SIGNAL_ALWAYS;
-> > > > > +   int snoop_lat_ns = 1024, nosnoop_lat_ns = 1024;
-> > > >
-> > > > Where does this magic number come from?
-> > > >
-> > > The number is the max value that register support, set it as default
-> > > here, we did not have any device here, and we do not know what's the
-> > > proper value, so it set a default value firstly.
-> > 
-> > The register is composed of latency scale and latency value fields.
-> > 1024 is simply the largest value the latency value can hold (+1).  The
-> > scale field allows latencies up to 34,326,183,936ns to be specified, so
-> > please explain how 1024 is a universal default.
-> > 
-> 
-> Since each platform will have its own max supported latency, I think
-> the best way is setting the value to 0 because we have such a device
-> now.
+On Tue, 8 May 2012, Peter Zijlstra wrote:
 
-What's the benefit to that device vs the risk to other devices?  Again,
-if there's a safe default value for both LTR and OBFF, why isn't PCI
-core setting it for everyone?  I'm inclined to wait for qemu express
-support and expose LTR/OBFF control to the guest if and only if we can
-enable it on the root complex and intermediate switches.  Thanks,
+> There's no such policy, but I don't get why Christoph objects to
+> cpusets, its the option I would prefer. You're going to use cpusets
+> anyway to partition your system, might as well also use it to mark a
+> whole partition/set as nohz.
 
-Alex
+We are currently not using cpusets but are simply isolating processors as
+needed. Not sure that I want the overhead (administratively as well as in
+kernel) to deal with this.
 
-> > > > > +
-> > > > > +   /* LTR(Latency tolerance reporting) allows devices to send
-> > > > > +    * messages to the root complex indicating their latency
-> > > > > +    * tolerance for snooped & unsnooped memory transactions.
-> > > > > +    */
-> > > > > +   pci_enable_ltr(pdev);
-> > > > > +   pci_set_ltr(pdev, snoop_lat_ns, nosnoop_lat_ns);
-> > > > > +
-> > > > > +   /* OBFF (optimized buffer flush/fill), where supported,
-> > > > > +    * can help improve energy efficiency by giving devices
-> > > > > +    * information about when interrupts and other activity
-> > > > > +    * will have a reduced power impact.
-> > > > > +    */
-> > > > > +   pci_enable_obff(pdev, type);
-> > > > > +}
-> > > > > +
-> > > > > +static void kvm_iommu_disable_dev_caps(struct pci_dev *pdev)
-> > > > > +{
-> > > > > +   pci_disble_obff(pdev);
-> > > > > +   pci_disble_ltr(pdev);
-> > > > > +}
-> > > >
-> > > > Do we need to communicate something about these capabilities to the
-> > guest?
-> > > >
-> > >
-> > > I guess you means that here host don't know if guest want to enable them,
-> > right?
-> > > The ltr/obff new feature are supposed to enabled by guest if platform and
-> > device supported.
-> > 
-> > It looks like ltr is a two part mechanism, the capability and enable
-> > lives in the pci express capability, but the tuning registers live in
-> > extended capability space.  The guest doesn't yet have access to the
-> > latter since we don't have an express chipset.  The capability and
-> > enable are read-only to the guest currently, same for obff.  Thanks,
-> > 
-> > Alex
-> 
-
-
+Someone may be using a different partitioning technique (like cgroups) etc
+and then wont be able to use nohz. Having it not depend on cpusets makes
+it more universal.
 
