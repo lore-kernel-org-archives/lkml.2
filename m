@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab2EHHAU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 03:00:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:34337 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755418Ab2EHHAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 03:00:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="141274423"
-Message-ID: <1336460605.23308.8.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v2 3.4-rc6] MTD: NAND: ams-delta: fix
- request_mem_region() failure
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: David Woodhouse <dwmw2@infradead.org>, Tony Lindgren <tony@atomide.com>,
-        linux-mtd@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 08 May 2012 10:03:25 +0300
-In-Reply-To: <1336423897-31729-1-git-send-email-jkrzyszt@tis.icnet.pl>
-References: <20120504171125.GD5613@atomide.com>
-	 <1336423897-31729-1-git-send-email-jkrzyszt@tis.icnet.pl>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-e6v+0eKZGKcV0XmYP3Qw"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1755660Ab2EHHAR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 03:00:17 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42617 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755399Ab2EHG7z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 02:59:55 -0400
+Date: Mon, 7 May 2012 23:58:29 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 3/3] vmevent: Implement special low-memory attribute
+Message-ID: <20120508065829.GA13357@lizard>
+References: <20120501132409.GA22894@lizard>
+ <20120501132620.GC24226@lizard>
+ <4FA35A85.4070804@kernel.org>
+ <20120504073810.GA25175@lizard>
+ <CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com>
+ <CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com>
+ <20120507121527.GA19526@lizard>
+ <4FA82056.2070706@gmail.com>
+ <CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com>
+ <CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 08, 2012 at 01:42:05AM -0400, KOSAKI Motohiro wrote:
+[...]
+> > Well, yeah, if we are to report _number of pages_, the numbers better
+> > be meaningful.
+> >
+> > That said, I think you are being unfair to Anton who's one of the few
+> > that's actually taking the time to implement this properly instead of
+> > settling for an out-of-tree hack.
+> 
+> Unfair? But only I can talk about technical comment. To be honest, I
+> really dislike
+> I need say the same explanation again and again. A lot of people don't read
+> past discussion. And as far as the patches take the same mistake, I must say
+> the same thing. It is just PITA.
 
---=-e6v+0eKZGKcV0XmYP3Qw
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Note that just telling people that something is PITA doesn't help solve
+things (so people will come back to you with stupid questions over and
+over again). You can call people morons, idiots and dumbasses (that's
+all fine) but still finding a way to be productive. :-)
 
-On Mon, 2012-05-07 at 22:51 +0200, Janusz Krzysztofik wrote:
-> A call to request_mem_region() has been introduced in the omap-gpio
-> driver recently (commit 96751fcbe5438e95514b025e9cee7a6d38038f40,
-> "gpio/omap: Use devm_ API and add request_mem_region"). This change
-> prevented the Amstrad Delta NAND driver, which was doing the same in
-> order to take control over OMAP MPU I/O lines that the NAND device hangs
-> off, from loading successfully.
+You could just give a link to a previous discussion, in which you think
+you explained all your concerns regarding cache handling issues, or
+memory notifications/statistics in general.
 
-Aiaiai found out that your patch adds this gcc warning:
+So, feel free to call me an idiot, but please expand your points a
+little bit or give a link to the discussion you're referring to?
 
----------------------------------------------------------------------------=
------
+Thanks,
 
-Successfully built configuration "l2_omap1_defconfig,arm,arm-unknown-linux-=
-gnueabi-", results:
-
---- before_patching.log
-+++ after_patching.log
-@@ @@
-+drivers/mtd/nand/ams-delta.c: In function 'ams_delta_cleanup':
-+drivers/mtd/nand/ams-delta.c:285:19: warning: unused variable 'res' [-Wunu=
-sed-variable]
-
----------------------------------------------------------------------------=
------
-
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-e6v+0eKZGKcV0XmYP3Qw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPqMU9AAoJECmIfjd9wqK0sB4QAIH5VWPQ7iL0ZgpR3BwS1R8w
-B3HSyXrvrIJjdmsDDzmi7Ajf8AncDMJMeXjbf/har/UsunS2K76ADhSeMmFWgGmC
-K8daNbkve+Mu3qcrsy2mS2Mn5CrqcW9CT6Ih0/1K3JoddlirpjnpnOTI0RcmwFlA
-5tOngtIlgA2ESHoxJiYtsykkbnsr/wGqzCkuagl7fUSUtKb9eoU/qshIbrx4dOuo
-/Bi/+wQsAz3zPP1HOHaQbHn3HgVPUB82A/026850uM9yfH552nRLTAp80Pj+DLPX
-w2IuGou/vZSrd3mYAMscM33/G9MUMn+33FVqs/sRPU8pLqX10/HWl+uBz+P9T6Zq
-jSQJR/uQvXhBt4/b8QmHmhRuqxQ+VPEVLdtRv7WzXJ7PNme6PQckQIEZQX1HQXgM
-DsxJhnYkkCrBZWjmfWsxjT1Z/Eyr/qxGuQJPaZpmH4jkQn5S4RQrfx3DaeO886wA
-i2Y7V4PLfvandMa0TzYl5dzU/1Gc/FgLjptR3fEm5pC90hSfUh+ooUkrMdrTVt0y
-R9OQtpoFYolG5ZsxaacVhKL3kVFRQWMeUpzvK6mN3WyZd6MLbqF/9jIAcC65g82k
-WHwvc9ezcxH1d+3GHwtLD0c64HWwoF0wOGVheSNtV5M07WPcoidCanWFl+lDtk1x
-B4gIcAgtAbRVuCEw1o7j
-=eXKD
------END PGP SIGNATURE-----
-
---=-e6v+0eKZGKcV0XmYP3Qw--
-
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
