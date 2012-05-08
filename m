@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab2EHSXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 14:23:53 -0400
+	id S1756301Ab2EHS0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 14:26:53 -0400
 Received: from mga01.intel.com ([192.55.52.88]:11241 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755495Ab2EHSXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 14:23:48 -0400
+	id S1755653Ab2EHSXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 14:23:52 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="150637048"
+   d="scan'208";a="150637075"
 From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
         Sam Ravnborg <sam@ravnborg.org>,
         Joseph Cihula <joseph.cihula@intel.com>,
         Shane Wang <shane.wang@intel.com>, hpa@linux.intel.com
-Subject: [PATCH 09/23] x86, realmode: Add .text64 section, make barrier symbols absolute
-Date: Tue,  8 May 2012 21:22:32 +0300
-Message-Id: <1336501366-28617-10-git-send-email-jarkko.sakkinen@intel.com>
+Subject: [PATCH 12/23] x86, realmode: Remove indirect jumps in trampoline_64.S
+Date: Tue,  8 May 2012 21:22:35 +0300
+Message-Id: <1336501366-28617-13-git-send-email-jarkko.sakkinen@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1336501366-28617-1-git-send-email-jarkko.sakkinen@intel.com>
 References: <1336501366-28617-1-git-send-email-jarkko.sakkinen@intel.com>
@@ -27,58 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-Add a .text64 section.  The purpose of this is to keep 16-, 32- and
-64-bit code segregated into separate sections, mainly to keep
-disassembly sane.
-
-Move barrier symbols out of sections to avoid the "symbol in empty
-section" problem in some versions of GNU ld.
+Remove indirect jumps in trampoline_64.S which are no longer
+necessary: the realmode code can relocate the absolute jumps
+correctly from the start.
 
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/realmode/rm/realmode.lds.S |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ arch/x86/realmode/rm/trampoline_64.S |   15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/realmode/rm/realmode.lds.S b/arch/x86/realmode/rm/realmode.lds.S
-index 91b83ea..4d4afca 100644
---- a/arch/x86/realmode/rm/realmode.lds.S
-+++ b/arch/x86/realmode/rm/realmode.lds.S
-@@ -32,8 +32,8 @@ SECTIONS
- 	}
+diff --git a/arch/x86/realmode/rm/trampoline_64.S b/arch/x86/realmode/rm/trampoline_64.S
+index 66c58cf..77b72b4 100644
+--- a/arch/x86/realmode/rm/trampoline_64.S
++++ b/arch/x86/realmode/rm/trampoline_64.S
+@@ -73,7 +73,7 @@ ENTRY(trampoline_data)
+ 	lmsw	%ax			# into protected mode
  
- 	. = ALIGN(PAGE_SIZE);
-+	pa_text_start = .;
- 	.text : {
--		pa_text_start = .;
- 		*(.text)
- 		*(.text.*)
- 	}
-@@ -41,9 +41,14 @@ SECTIONS
- 	.text32 : {
- 		*(.text32)
- 		*(.text32.*)
--		pa_ro_end = .;
- 	}
+ 	# flush prefetch and jump to startup_32
+-	ljmpl	*(startup_32_vector)
++	ljmpl	$__KERNEL32_CS, $pa_startup_32
  
-+	.text64 : {
-+		*(.text64)
-+		*(.text64.*)
-+	}
-+	pa_ro_end = .;
-+
- 	. = ALIGN(PAGE_SIZE);
- 	.data : {
- 		*(.data)
-@@ -59,8 +64,8 @@ SECTIONS
- 	. = ALIGN(4);
- 	.signature : {
- 		*(.signature)
--		pa_end = .;
- 	}
-+	pa_end = .;
+ no_longmode:
+ 	hlt
+@@ -113,7 +113,7 @@ ENTRY(startup_32)
+ 	 * EFER.LMA = 1). Now we want to jump in 64bit mode, to do that we use
+ 	 * the new gdt/idt that has __KERNEL_CS with CS.L = 1.
+ 	 */
+-	ljmpl	*(pa_startup_64_vector)
++	ljmpl	$__KERNEL_CS, $pa_startup_64
  
- 	/DISCARD/ : {
- 		*(.note*)
+ 	.section ".text64","ax"
+ 	.code64
+@@ -144,17 +144,6 @@ tgdt:
+ 	.quad	0x00cf93000000ffff	# __KERNEL_DS
+ tgdt_end:
+ 
+-	.balign 4
+-startup_32_vector:
+-	.long	pa_startup_32
+-	.word	__KERNEL32_CS, 0
+-
+-	.balign 4
+-	.globl startup_64_vector
+-startup_64_vector:
+-	.long	pa_startup_64
+-	.word	__KERNEL_CS, 0
+-
+ 	.data
+ 	.balign 4
+ GLOBAL(trampoline_status)
 -- 
 1.7.9.5
 
