@@ -1,96 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab2EHE3B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 00:29:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51366 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038Ab2EHE27 (ORCPT
+	id S1753035Ab2EHEkN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 00:40:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34169 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab2EHEkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 00:28:59 -0400
-Date: Mon, 7 May 2012 21:28:40 -0700
-From: "tip-bot for Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Message-ID: <tip-7164b3f5e5461b58baa82e82544ca5af71af287b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        kay.sievers@vrfy.org, andreas.herrmann3@amd.com, davej@redhat.com,
-        srivatsa.bhat@linux.vnet.ibm.com, gregkh@linuxfoundation.org,
-        tglx@linutronix.de, borislav.petkov@amd.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        kay.sievers@vrfy.org, andreas.herrmann3@amd.com,
-        srivatsa.bhat@linux.vnet.ibm.com, davej@redhat.com,
-        gregkh@linuxfoundation.org, tglx@linutronix.de,
-        borislav.petkov@amd.com
-In-Reply-To: <4F8BDB58.6070007@linux.vnet.ibm.com>
-References: <4F8BDB58.6070007@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/microcode:
-  Ensure that module is only loaded on supported Intel CPUs
-Git-Commit-ID: 7164b3f5e5461b58baa82e82544ca5af71af287b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 07 May 2012 21:28:48 -0700 (PDT)
+	Tue, 8 May 2012 00:40:11 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf record: fix fallback to cpu-clock on ppc
+Date: Mon,  7 May 2012 22:40:04 -0600
+Message-Id: <1336452004-55724-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7164b3f5e5461b58baa82e82544ca5af71af287b
-Gitweb:     http://git.kernel.org/tip/7164b3f5e5461b58baa82e82544ca5af71af287b
-Author:     Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-AuthorDate: Mon, 16 Apr 2012 14:12:00 +0530
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 7 May 2012 14:37:14 +0200
+perf-record on PPC is not falling back to cpu-clock:
 
-x86/microcode: Ensure that module is only loaded on supported Intel CPUs
+Old kernel, cannot exclude guest or host samples.
 
-Exit early when there's no support for a particular CPU family.
+  Error: sys_perf_event_open() syscall returned with 6 (No such device or address).  /bin/dmesg may provide additional information.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Dave Jones <davej@redhat.com>
-Cc: tigran@aivazian.fsnet.co.uk
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Link: http://lkml.kernel.org/r/4F8BDB58.6070007@linux.vnet.ibm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+  Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
+
+The problem is that until 2.6.37 (behavior changed with commit b0a873e)
+perf on PPC returns ENXIO when hw_perf_event_init() fails. With this
+patch we get the expected behavior:
+
+Old kernel, cannot exclude guest or host samples.
+The cycles event is not supported, trying to fall back to cpu-clock-ticks
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.150 MB /tmp/perf.data (~6569 samples) ]
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
 ---
- arch/x86/kernel/microcode_intel.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+ tools/perf/builtin-record.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
-index 3ca42d0..0327e2b 100644
---- a/arch/x86/kernel/microcode_intel.c
-+++ b/arch/x86/kernel/microcode_intel.c
-@@ -147,12 +147,6 @@ static int collect_cpu_info(int cpu_num, struct cpu_signature *csig)
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 42e2414..080c708 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -244,7 +244,8 @@ try_again:
+ 			 * based cpu-clock-tick sw counter, which
+ 			 * is always available even if no PMU support:
+ 			 */
+-			if (err == ENOENT && attr->type == PERF_TYPE_HARDWARE
++			if ((err == ENOENT || err == ENXIO)
++					&& attr->type == PERF_TYPE_HARDWARE
+ 					&& attr->config == PERF_COUNT_HW_CPU_CYCLES) {
  
- 	memset(csig, 0, sizeof(*csig));
- 
--	if (c->x86_vendor != X86_VENDOR_INTEL || c->x86 < 6 ||
--	    cpu_has(c, X86_FEATURE_IA64)) {
--		pr_err("CPU%d not a capable Intel processor\n", cpu_num);
--		return -1;
--	}
--
- 	csig->sig = cpuid_eax(0x00000001);
- 
- 	if ((c->x86_model >= 5) || (c->x86 > 6)) {
-@@ -463,6 +457,14 @@ static struct microcode_ops microcode_intel_ops = {
- 
- struct microcode_ops * __init init_intel_microcode(void)
- {
-+	struct cpuinfo_x86 *c = &cpu_data(0);
-+
-+	if (c->x86_vendor != X86_VENDOR_INTEL || c->x86 < 6 ||
-+	    cpu_has(c, X86_FEATURE_IA64)) {
-+		pr_err("Intel CPU family 0x%x not supported\n", c->x86);
-+		return NULL;
-+	}
-+
- 	return &microcode_intel_ops;
- }
- 
+ 				if (verbose)
+-- 
+1.7.5.4
+
