@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab2EHEU5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 00:20:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51254 "EHLO
+	id S1752074Ab2EHEVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 00:21:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51266 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437Ab2EHEU4 (ORCPT
+	with ESMTP id S1750737Ab2EHEVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 00:20:56 -0400
-Date: Mon, 7 May 2012 21:20:46 -0700
-From: tip-bot for Daniel Drake <dsd@laptop.org>
-Message-ID: <tip-c2c21e9bb17549e8add4ff76931bcec2e2d3ad48@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dsd@laptop.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dsd@laptop.org, tglx@linutronix.de
-In-Reply-To: <20120418223402.D73249D401E@zog.reactivated.net>
-References: <20120418223402.D73249D401E@zog.reactivated.net>
+	Tue, 8 May 2012 00:21:52 -0400
+Date: Mon, 7 May 2012 21:21:37 -0700
+From: tip-bot for Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+Message-ID: <tip-489a71b029cd94e3b0132795146e8be3a87bf3fa@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, h-shimamoto@ct.jp.nec.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, h-shimamoto@ct.jp.nec.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de
+In-Reply-To: <4F795CAC.9080206@ct.jp.nec.com>
+References: <4F795CAC.9080206@ct.jp.nec.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/olpc/xo1/sci: Report RTC wakeup events
-Git-Commit-ID: c2c21e9bb17549e8add4ff76931bcec2e2d3ad48
+Subject: [tip:sched/core] sched: Update documentation and comments
+Git-Commit-ID: 489a71b029cd94e3b0132795146e8be3a87bf3fa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,78 +28,80 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 07 May 2012 21:20:51 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 07 May 2012 21:21:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c2c21e9bb17549e8add4ff76931bcec2e2d3ad48
-Gitweb:     http://git.kernel.org/tip/c2c21e9bb17549e8add4ff76931bcec2e2d3ad48
-Author:     Daniel Drake <dsd@laptop.org>
-AuthorDate: Wed, 18 Apr 2012 23:34:02 +0100
+Commit-ID:  489a71b029cd94e3b0132795146e8be3a87bf3fa
+Gitweb:     http://git.kernel.org/tip/489a71b029cd94e3b0132795146e8be3a87bf3fa
+Author:     Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+AuthorDate: Mon, 2 Apr 2012 17:00:44 +0900
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 7 May 2012 15:02:26 +0200
+CommitDate: Mon, 7 May 2012 15:04:18 +0200
 
-x86/olpc/xo1/sci: Report RTC wakeup events
+sched: Update documentation and comments
 
-When the system is woken due to a RTC event, report the wakeup
-event on the relevant rtc device (if it can be found).
+Change sched_*.c to sched/*.c in documentation and comments.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Cc: dilinger@queued.net
-Cc: pgf@laptop.org
-Link: http://lkml.kernel.org/r/20120418223402.D73249D401E@zog.reactivated.net
+Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/4F795CAC.9080206@ct.jp.nec.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/platform/olpc/olpc-xo1-sci.c |   17 +++++++++++++++--
- include/linux/cs5535.h                |    1 +
- 2 files changed, 16 insertions(+), 2 deletions(-)
+ Documentation/scheduler/sched-design-CFS.txt |    6 +++---
+ include/linux/sched.h                        |    2 +-
+ kernel/sched/idle_task.c                     |    2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/platform/olpc/olpc-xo1-sci.c b/arch/x86/platform/olpc/olpc-xo1-sci.c
-index 4b93ff4..04b8c73 100644
---- a/arch/x86/platform/olpc/olpc-xo1-sci.c
-+++ b/arch/x86/platform/olpc/olpc-xo1-sci.c
-@@ -236,6 +236,18 @@ static irqreturn_t xo1_sci_intr(int irq, void *dev_id)
- 		pm_wakeup_event(&power_button_idev->dev, 0);
- 	}
+diff --git a/Documentation/scheduler/sched-design-CFS.txt b/Documentation/scheduler/sched-design-CFS.txt
+index 91ecff0..d529e02d 100644
+--- a/Documentation/scheduler/sched-design-CFS.txt
++++ b/Documentation/scheduler/sched-design-CFS.txt
+@@ -130,7 +130,7 @@ CFS implements three scheduling policies:
+     idle timer scheduler in order to avoid to get into priority
+     inversion problems which would deadlock the machine.
  
-+	if ((sts & (CS5536_RTC_FLAG | CS5536_WAK_FLAG)) ==
-+			(CS5536_RTC_FLAG | CS5536_WAK_FLAG)) {
-+		/* When the system is woken by the RTC alarm, report the
-+		 * event on the rtc device. */
-+		struct device *rtc = bus_find_device_by_name(
-+			&platform_bus_type, NULL, "rtc_cmos");
-+		if (rtc) {
-+			pm_wakeup_event(rtc, 0);
-+			put_device(rtc);
-+		}
-+	}
-+
- 	if (gpe & CS5536_GPIOM7_PME_FLAG) { /* EC GPIO */
- 		cs5535_gpio_set(OLPC_GPIO_ECSCI, GPIO_NEGATIVE_EDGE_STS);
- 		schedule_work(&sci_work);
-@@ -326,9 +338,10 @@ static int __devinit setup_sci_interrupt(struct platform_device *pdev)
- 		outb(lo, CS5536_PIC_INT_SEL2);
- 	}
+-SCHED_FIFO/_RR are implemented in sched_rt.c and are as specified by
++SCHED_FIFO/_RR are implemented in sched/rt.c and are as specified by
+ POSIX.
  
--	/* Enable SCI from power button, and clear pending interrupts */
-+	/* Enable interesting SCI events, and clear pending interrupts */
- 	sts = inl(acpi_base + CS5536_PM1_STS);
--	outl((CS5536_PM_PWRBTN << 16) | 0xffff, acpi_base + CS5536_PM1_STS);
-+	outl(((CS5536_PM_PWRBTN | CS5536_PM_RTC) << 16) | 0xffff,
-+	     acpi_base + CS5536_PM1_STS);
+ The command chrt from util-linux-ng 2.13.1.1 can set all of these except
+@@ -145,9 +145,9 @@ Classes," an extensible hierarchy of scheduler modules.  These modules
+ encapsulate scheduling policy details and are handled by the scheduler core
+ without the core code assuming too much about them.
  
- 	r = request_irq(sci_irq, xo1_sci_intr, 0, DRV_NAME, pdev);
- 	if (r)
-diff --git a/include/linux/cs5535.h b/include/linux/cs5535.h
-index c077aec..cfe8323 100644
---- a/include/linux/cs5535.h
-+++ b/include/linux/cs5535.h
-@@ -95,6 +95,7 @@ static inline int cs5535_pic_unreqz_select_high(unsigned int group,
+-sched_fair.c implements the CFS scheduler described above.
++sched/fair.c implements the CFS scheduler described above.
  
- /* CS5536_PM1_STS bits */
- #define CS5536_WAK_FLAG		(1 << 15)
-+#define CS5536_RTC_FLAG		(1 << 10)
- #define CS5536_PWRBTN_FLAG	(1 << 8)
+-sched_rt.c implements SCHED_FIFO and SCHED_RR semantics, in a simpler way than
++sched/rt.c implements SCHED_FIFO and SCHED_RR semantics, in a simpler way than
+ the previous vanilla scheduler did.  It uses 100 runqueues (for all 100 RT
+ priority levels, instead of 140 in the previous scheduler) and it needs no
+ expired array.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 81a173c..4a559bf 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1950,7 +1950,7 @@ static inline int set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
+  */
+ extern unsigned long long notrace sched_clock(void);
+ /*
+- * See the comment in kernel/sched_clock.c
++ * See the comment in kernel/sched/clock.c
+  */
+ extern u64 cpu_clock(int cpu);
+ extern u64 local_clock(void);
+diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
+index 91b4c95..b44d604 100644
+--- a/kernel/sched/idle_task.c
++++ b/kernel/sched/idle_task.c
+@@ -4,7 +4,7 @@
+  * idle-task scheduling class.
+  *
+  * (NOTE: these are not related to SCHED_IDLE tasks which are
+- *  handled in sched_fair.c)
++ *  handled in sched/fair.c)
+  */
  
- /* CS5536_PM1_EN bits */
+ #ifdef CONFIG_SMP
