@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705Ab2EHTop (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 15:44:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44860 "EHLO mx2.suse.de"
+	id S1756827Ab2EHTox (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 15:44:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44871 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754605Ab2EHTon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 15:44:43 -0400
+	id S1756722Ab2EHTov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 15:44:51 -0400
 From: NeilBrown <neilb@suse.de>
 To: Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Samuel Ortiz <sameo@linux.intel.com>
-Date: Wed, 09 May 2012 05:43:59 +1000
-Subject: [PATCH 1/2] MFD: twl-regulator: define all feature flags in one place.
+Date: Wed, 09 May 2012 05:44:00 +1000
+Subject: [PATCH 2/2] regulator: twl-regulator: make TWL4030_ALLOW_UNSUPPORTED
+ more configurable.
 Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>
-Message-ID: <20120508194359.31629.43495.stgit@notabene.brown>
+Message-ID: <20120508194359.31629.80664.stgit@notabene.brown>
 In-Reply-To: <20120508193938.31629.64303.stgit@notabene.brown>
 References: <20120508193938.31629.64303.stgit@notabene.brown>
 User-Agent: StGIT/0.14.3
@@ -24,61 +25,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-twl-regulator has a collection of feature flags, some defined
-in twl-core.c and  one defined in i2c/twl.h.
-This is confusing for anyone adding a new feature flag.
+The regulators in the twl4030 can provide some voltage settings
+that are not offically supported.
+These settings are disabled by default, but can be enabled with
+  CONFIG_TWL4030_ALLOW_UNSUPPORTED=y
+However
+ - that config variable is not mentioned in any Kconfig so cannot
+   be used, and
+ - a global setting is clumsy - a per regulator setting would be
+   better.
 
-So collect them together and place them in twl.h immediately
-after the structure in which they are initially set.
+So define a new 'feature' flag that a board file can set to enable
+these unsupported volatages for boards which need them.
+
+This flag cannot (yet) be set using device-tree.
 
 Signed-off-by: NeilBrown <neilb@suse.de>
 ---
 
- drivers/mfd/twl-core.c  |    7 -------
- include/linux/i2c/twl.h |    8 ++++++--
- 2 files changed, 6 insertions(+), 9 deletions(-)
+ drivers/regulator/twl-regulator.c |   10 ++++------
+ include/linux/i2c/twl.h           |    5 +++++
+ 2 files changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index 7c2267e..6fc90be 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -224,13 +224,6 @@
- #define HIGH_PERF_SQ			(1 << 3)
- #define CK32K_LOWPWR_EN			(1 << 7)
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index fffacb4..c739071 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -395,14 +395,12 @@ static int twl6030reg_set_mode(struct regulator_dev *rdev, unsigned mode)
+  * VAUX3 at 3V is incorrectly listed in some TI manuals as unsupported.
+  * TI are revising the twl5030/tps659x0 specs to support that 3.0V setting.
+  */
+-#ifdef CONFIG_TWL4030_ALLOW_UNSUPPORTED
+-#define UNSUP_MASK	0x0000
+-#else
+ #define UNSUP_MASK	0x8000
+-#endif
  
--
--/* chip-specific feature flags, for i2c_device_id.driver_data */
--#define TWL4030_VAUX2		BIT(0)	/* pre-5030 voltage ranges */
--#define TPS_SUBSET		BIT(1)	/* tps659[23]0 have fewer LDOs */
--#define TWL5031			BIT(2)  /* twl5031 has different registers */
--#define TWL6030_CLASS		BIT(3)	/* TWL6030 class */
--
- /*----------------------------------------------------------------------*/
+ #define UNSUP(x)	(UNSUP_MASK | (x))
+-#define IS_UNSUP(x)	(UNSUP_MASK & (x))
++#define IS_UNSUP(info, x)			\
++	((UNSUP_MASK & (x)) &&			\
++	 !((info)->features & TWL4030_ALLOW_UNSUPPORTED))
+ #define LDO_MV(x)	(~UNSUP_MASK & (x))
  
- /* is driver active, bound to a chip? */
+ 
+@@ -476,7 +474,7 @@ static int twl4030ldo_list_voltage(struct regulator_dev *rdev, unsigned index)
+ 	struct twlreg_info	*info = rdev_get_drvdata(rdev);
+ 	int			mV = info->table[index];
+ 
+-	return IS_UNSUP(mV) ? 0 : (LDO_MV(mV) * 1000);
++	return IS_UNSUP(info, mV) ? 0 : (LDO_MV(mV) * 1000);
+ }
+ 
+ static int
 diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index 1f90de0..d1afedc 100644
+index d1afedc..3993477 100644
 --- a/include/linux/i2c/twl.h
 +++ b/include/linux/i2c/twl.h
-@@ -171,8 +171,6 @@ static inline int twl_class_is_ ##class(void)	\
- TWL_CLASS_IS(4030, TWL4030_CLASS_ID)
- TWL_CLASS_IS(6030, TWL6030_CLASS_ID)
- 
--#define TWL6025_SUBCLASS	BIT(4)  /* TWL6025 has changed registers */
--
- /*
-  * Read and write single 8-bit registers
-  */
-@@ -746,6 +744,12 @@ struct twl_regulator_driver_data {
- 	void		*data;
- 	unsigned long	features;
- };
-+/* chip-specific feature flags, for twl_regulator_driver_data.features */
-+#define TWL4030_VAUX2		BIT(0)	/* pre-5030 voltage ranges */
-+#define TPS_SUBSET		BIT(1)	/* tps659[23]0 have fewer LDOs */
-+#define TWL5031			BIT(2)  /* twl5031 has different registers */
-+#define TWL6030_CLASS		BIT(3)	/* TWL6030 class */
-+#define TWL6025_SUBCLASS	BIT(4)  /* TWL6025 has changed registers */
+@@ -750,6 +750,11 @@ struct twl_regulator_driver_data {
+ #define TWL5031			BIT(2)  /* twl5031 has different registers */
+ #define TWL6030_CLASS		BIT(3)	/* TWL6030 class */
+ #define TWL6025_SUBCLASS	BIT(4)  /* TWL6025 has changed registers */
++#define TWL4030_ALLOW_UNSUPPORTED BIT(5) /* Some voltages are possible
++					  * but not officially supported.
++					  * This flag is necessary to
++					  * enable them.
++					  */
  
  /*----------------------------------------------------------------------*/
  
