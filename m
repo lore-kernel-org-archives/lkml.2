@@ -1,53 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab2EHUPc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 16:15:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33272 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756974Ab2EHUPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 16:15:30 -0400
-Message-ID: <4FA97ED3.1060105@intel.com>
-Date: Tue, 08 May 2012 13:15:15 -0700
-From: "H. Peter Anvin" <h.peter.anvin@intel.com>
-Organization: Intel Corporation
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-CC: Sam Ravnborg <sam@ravnborg.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>, Joseph Cihula <joseph.cihula@intel.com>,
-        Shane Wang <shane.wang@intel.com>
-Subject: Re: [PATCH 02/23] x86, realmode: realmode.bin infrastructure
-References: <1336501366-28617-1-git-send-email-jarkko.sakkinen@intel.com> <1336501366-28617-3-git-send-email-jarkko.sakkinen@intel.com> <20120508185349.GA12013@merkur.ravnborg.org> <4FA9709F.6020700@linux.intel.com>
-In-Reply-To: <4FA9709F.6020700@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757056Ab2EHUPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 16:15:39 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41738 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757027Ab2EHUPh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 16:15:37 -0400
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Cc: DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Arjan van de Veen <arjan@infradead.org>
+Subject: [PATCH] [RFC] sched/drm: add infrastructure for gpu waits
+Date: Tue,  8 May 2012 22:16:41 +0200
+Message-Id: <1336508201-16780-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2012 12:14 PM, H. Peter Anvin wrote:
->>
->> How much is needed to avoid this misuse of kernel-internal build rules?
->> This was and is an ugly hack.
->>
-> 
-> It is more or less the same as for arch/x86/boot and other things.  If
-> there are better ways to do it suggestions are very much appreciated.
-> 
-> However, it is a bit of a tricky bit because we need *some* of the bits
-> of the target compiler configuration and some not (this is the same as
-> arch/x86/boot etc.)  It is not "pure target" but it's also most
-> definitely not host.
-> 
+This is a quick hack inspired by Arjan to help the ondemand cpufreq
+governor a bit in figuring out what should be done. A similar trick is
+used for io related waits to ensure that the cpu can pick up right
+away.
 
-Anyway... to answer your direct question: all of that would have been
-required anyway.  In therms of build rules the overall patchset is
-pretty much a lateral move from arch/x86/kernel/acpi/rm to
-arch/x86/realmode/rm.  That doesn't mean we couldn't do it
-better/centralize/etc; however, none of this is new and would be a
-separate change.
+Some benchmarking shows squat gains, and for the bugs we manage to
+track down to ondemand doing something suboptimal, it doesn't help
+either. So I'll just toss this over the wall as an rfc.
 
-	-hpa
+v2: Arjan van der Veen pointed out the the inc/dec needs to happen on
+the same runqueue, so pass back the cpu id from _begin and use that in
+_end.
+
+Cc: Arjan van de Veen <arjan@infradead.org>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/gpu/drm/i915/i915_gem.c |    3 +++
+ include/linux/sched.h           |    3 +++
+ kernel/sched/core.c             |   33 +++++++++++++++++++++++++++++++++
+ 3 files changed, 39 insertions(+)
+
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 44a5f24..6630fd8 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1873,6 +1873,7 @@ static int __wait_seqno(struct intel_ring_buffer *ring, u32 seqno,
+ {
+ 	drm_i915_private_t *dev_priv = ring->dev->dev_private;
+ 	int ret = 0;
++	int cpu;
+ 
+ 	if (i915_seqno_passed(ring->get_seqno(ring), seqno))
+ 		return 0;
+@@ -1881,6 +1882,7 @@ static int __wait_seqno(struct intel_ring_buffer *ring, u32 seqno,
+ 	if (WARN_ON(!ring->irq_get(ring)))
+ 		return -ENODEV;
+ 
++	cpu = gpu_wait_begin();
+ #define EXIT_COND \
+ 	(i915_seqno_passed(ring->get_seqno(ring), seqno) || \
+ 	atomic_read(&dev_priv->mm.wedged))
+@@ -1894,6 +1896,7 @@ static int __wait_seqno(struct intel_ring_buffer *ring, u32 seqno,
+ 	ring->irq_put(ring);
+ 	trace_i915_gem_request_wait_end(ring, seqno);
+ #undef EXIT_COND
++	gpu_wait_end(cpu);
+ 
+ 	return ret;
+ }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 81a173c..c3bf19e 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -301,6 +301,9 @@ extern void show_stack(struct task_struct *task, unsigned long *sp);
+ void io_schedule(void);
+ long io_schedule_timeout(long timeout);
+ 
++int gpu_wait_begin(void);
++void gpu_wait_end(int cpu);
++
+ extern void cpu_init (void);
+ extern void trap_init(void);
+ extern void update_process_times(int user);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 0533a68..d6b0469 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4708,6 +4708,7 @@ void __sched io_schedule(void)
+ 	delayacct_blkio_start();
+ 	atomic_inc(&rq->nr_iowait);
+ 	blk_flush_plug(current);
++	WARN_ON(current->in_iowait);
+ 	current->in_iowait = 1;
+ 	schedule();
+ 	current->in_iowait = 0;
+@@ -4732,6 +4733,38 @@ long __sched io_schedule_timeout(long timeout)
+ 	return ret;
+ }
+ 
++/*
++ * gpu_wait_begin/end
++ *
++ * Mark the task as stalling for an offload engine (most often a gpu). Waits
++ * done in-between will be accounted as performance-critical sections and
++ * prevent the ondemand cpu governor from clocking down the cpu.
++ *
++ * Calls may not nest.
++ */
++int gpu_wait_begin(void)
++{
++	int cpu = smp_processor_id();
++	struct rq *rq = cpu_rq(cpu);
++
++	atomic_inc(&rq->nr_iowait);
++	WARN_ON(current->in_iowait);
++	current->in_iowait = 1;
++
++	return cpu;
++}
++EXPORT_SYMBOL(gpu_wait_begin);
++
++void gpu_wait_end(int cpu)
++{
++	struct rq *rq = cpu_rq(cpu);
++
++	atomic_dec(&rq->nr_iowait);
++	WARN_ON(!current->in_iowait);
++	current->in_iowait = 0;
++}
++EXPORT_SYMBOL(gpu_wait_end);
++
+ /**
+  * sys_sched_get_priority_max - return maximum RT priority.
+  * @policy: scheduling class.
+-- 
+1.7.10
 
