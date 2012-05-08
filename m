@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035Ab2EHEkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 00:40:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34169 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab2EHEkL (ORCPT
+	id S1757025Ab2EHEuy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 00:50:54 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58606 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2EHEuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 00:40:11 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf record: fix fallback to cpu-clock on ppc
-Date: Mon,  7 May 2012 22:40:04 -0600
-Message-Id: <1336452004-55724-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 8 May 2012 00:50:52 -0400
+Date: Tue, 8 May 2012 05:50:44 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Nick Piggin <npiggin@kernel.dk>, Andi Kleen <ak@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/3] lglock: remove online variants of lock
+Message-ID: <20120508045044.GJ22082@ZenIV.linux.org.uk>
+References: <87ehtf3lqh.fsf@rustcorp.com.au>
+ <20120227155338.7b5110cd.akpm@linux-foundation.org>
+ <20120228112422.GC11324@alboin.amr.corp.intel.com>
+ <87ipijzfwn.fsf@rustcorp.com.au>
+ <20120420112149.GH25458@amd.local0.net>
+ <87sjfcfynb.fsf@rustcorp.com.au>
+ <20120507054616.GG22082@ZenIV.linux.org.uk>
+ <87txzrcoge.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87txzrcoge.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf-record on PPC is not falling back to cpu-clock:
+On Tue, May 08, 2012 at 01:29:45PM +0930, Rusty Russell wrote:
+> Optimizing the slow paths adds a lot of complexity.  If you need to
+> grab every lock often, you have other problems.
 
-Old kernel, cannot exclude guest or host samples.
+Applied, but I'm not too happy about the situation with vfsmount_lock ;-/
+On kernels built for a lot of possible CPUs the loss of ..._online()
+versions will get painful.  OTOH, we can always put the map + single
+spinlock + single notifier into lglock.c and reproduce the old logics.
+I'll do a patch along those lines and put it on a separate branch;
+then we'll be able to test and compare.
 
-  Error: sys_perf_event_open() syscall returned with 6 (No such device or address).  /bin/dmesg may provide additional information.
-
-  Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
-
-The problem is that until 2.6.37 (behavior changed with commit b0a873e)
-perf on PPC returns ENXIO when hw_perf_event_init() fails. With this
-patch we get the expected behavior:
-
-Old kernel, cannot exclude guest or host samples.
-The cycles event is not supported, trying to fall back to cpu-clock-ticks
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.150 MB /tmp/perf.data (~6569 samples) ]
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/builtin-record.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 42e2414..080c708 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -244,7 +244,8 @@ try_again:
- 			 * based cpu-clock-tick sw counter, which
- 			 * is always available even if no PMU support:
- 			 */
--			if (err == ENOENT && attr->type == PERF_TYPE_HARDWARE
-+			if ((err == ENOENT || err == ENXIO)
-+					&& attr->type == PERF_TYPE_HARDWARE
- 					&& attr->config == PERF_COUNT_HW_CPU_CYCLES) {
- 
- 				if (verbose)
--- 
-1.7.5.4
-
+Contention from cpu map spinlock becoming shared between different
+lglocks (all two of them) is not an issue - we never use the
+files_lock one anyway (there we can't use _online variants).
