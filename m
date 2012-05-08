@@ -1,125 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab2EHMZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 08:25:58 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50002 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754503Ab2EHMZz (ORCPT
+	id S1754502Ab2EHM0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 08:26:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54661 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab2EHM0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 08:25:55 -0400
-Date: Tue, 8 May 2012 14:25:49 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: hpa@zytor.com, linux-kernel@vger.kernel.org, shai@scalemp.com,
-        tglx@linutronix.de, ido@wizery.com
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/platform] vsmp: Fix number of CPUs when vsmp is disabled
-Message-ID: <20120508122548.GA5741@gmail.com>
-References: <1336462455-22544-1-git-send-email-ido@wizery.com>
- <tip-824a6ae65f085255464155760cb9628a2f0deb29@git.kernel.org>
+	Tue, 8 May 2012 08:26:24 -0400
+Date: Tue, 8 May 2012 05:26:08 -0700
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <tip-f37f435f33717dcf15fd4bb422da739da7fc2052@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20120507175652.049316594@linutronix.de>
+References: <20120507175652.049316594@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:smp/hotplug] smp: Implement kick_all_cpus_sync()
+Git-Commit-ID: f37f435f33717dcf15fd4bb422da739da7fc2052
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <tip-824a6ae65f085255464155760cb9628a2f0deb29@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 05:26:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  f37f435f33717dcf15fd4bb422da739da7fc2052
+Gitweb:     http://git.kernel.org/tip/f37f435f33717dcf15fd4bb422da739da7fc2052
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Mon, 7 May 2012 17:59:48 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 8 May 2012 12:35:06 +0200
 
-* tip-bot for Shai Fultheim <shai@scalemp.com> wrote:
+smp: Implement kick_all_cpus_sync()
 
-> Commit-ID:  824a6ae65f085255464155760cb9628a2f0deb29
-> Gitweb:     http://git.kernel.org/tip/824a6ae65f085255464155760cb9628a2f0deb29
-> Author:     Shai Fultheim <shai@scalemp.com>
-> AuthorDate: Tue, 8 May 2012 10:34:15 +0300
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Tue, 8 May 2012 11:24:45 +0200
-> 
-> vsmp: Fix number of CPUs when vsmp is disabled
-> 
-> In case CONFIG_X86_VSMP is not set, limit the number of CPUs to
-> the number of CPUs of the first board.
-> 
-> Signed-off-by: Shai Fultheim <shai@scalemp.com>
-> [ido@wizery.com: rebased, fixed minor coding-style issues]
-> Signed-off-by: Ido Yariv <ido@wizery.com>
-> Link: http://lkml.kernel.org/r/1336462455-22544-1-git-send-email-ido@wizery.com
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  arch/x86/kernel/vsmp_64.c |   43 +++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 43 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
-> index a1d804b..6aa0d59 100644
-> --- a/arch/x86/kernel/vsmp_64.c
-> +++ b/arch/x86/kernel/vsmp_64.c
-> @@ -15,6 +15,7 @@
->  #include <linux/init.h>
->  #include <linux/pci_ids.h>
->  #include <linux/pci_regs.h>
-> +#include <linux/smp.h>
->  
->  #include <asm/apic.h>
->  #include <asm/pci-direct.h>
-> @@ -22,6 +23,8 @@
->  #include <asm/paravirt.h>
->  #include <asm/setup.h>
->  
-> +#define TOPOLOGY_REGISTER_OFFSET 0x10
-> +
->  #if defined CONFIG_PCI && defined CONFIG_PARAVIRT
->  /*
->   * Interrupt control on vSMPowered systems:
-> @@ -149,12 +152,52 @@ int is_vsmp_box(void)
->  	return 0;
->  }
->  #endif
-> +
-> +static void __init vsmp_cap_cpus(void)
-> +{
-> +	void __iomem *address;
-> +	unsigned int cfg, topology, node_shift, maxcpus;
-> +
-> +#ifdef CONFIG_X86_VSMP
-> +	/* VSMP is enabled, no need to cap cpus */
-> +	return;
-> +#endif
-> +
-> +	/*
-> +	 * CONFIG_X86_VSMP is not configured, so limit the number CPUs to the
-> +	 * ones present in the first board, unless explicitly overridden by
-> +	 * setup_max_cpus
-> +	 */
-> +	if (setup_max_cpus != NR_CPUS)
-> +		return;
-> +
-> +	/* Read the vSMP Foundation topology register */
-> +	cfg = read_pci_config(0, 0x1f, 0, PCI_BASE_ADDRESS_0);
-> +	address = early_ioremap(cfg + TOPOLOGY_REGISTER_OFFSET, 4);
-> +	if (WARN_ON(!address))
-> +		return;
-> +
-> +	topology = readl(address);
-> +	node_shift = (topology >> 16) & 0x7;
-> +	if (!node_shift)
-> +		/* The value 0 should be decoded as 8 */
-> +		node_shift = 8;
-> +	maxcpus = (topology & ((1 << node_shift) - 1)) + 1;
-> +
-> +	pr_info("vSMP CTL: Capping CPUs to %d (CONFIG_X86_VSMP is unset)\n",
-> +		maxcpus);
-> +	setup_max_cpus = maxcpus;
-> +	early_iounmap(address, 4);
+Will replace the misnomed cpu_idle_wait() function which is copied a
+gazillion times all over arch/*
 
-On !CONFIG_SMP this produces the following build failure:
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20120507175652.049316594@linutronix.de
+---
+ include/linux/smp.h |    4 ++++
+ kernel/smp.c        |   23 +++++++++++++++++++++++
+ 2 files changed, 27 insertions(+), 0 deletions(-)
 
- arch/x86/kernel/vsmp_64.c:171:6: error: ‘setup_max_cpus’ undeclared (first use in this function)
-
-Do you want to keep vSMP on UP? If not then you could add a 
-'depends on SMP' to the vSMP Kconfig entry, avoiding the whole 
-UP problem space.
-
-Thanks,
-
-	Ingo
+diff --git a/include/linux/smp.h b/include/linux/smp.h
+index 24360de..717fb74 100644
+--- a/include/linux/smp.h
++++ b/include/linux/smp.h
+@@ -81,6 +81,8 @@ void __smp_call_function_single(int cpuid, struct call_single_data *data,
+ int smp_call_function_any(const struct cpumask *mask,
+ 			  smp_call_func_t func, void *info, int wait);
+ 
++void kick_all_cpus_sync(void);
++
+ /*
+  * Generic and arch helpers
+  */
+@@ -192,6 +194,8 @@ smp_call_function_any(const struct cpumask *mask, smp_call_func_t func,
+ 	return smp_call_function_single(0, func, info, wait);
+ }
+ 
++static inline void kick_all_cpus_sync(void) {  }
++
+ #endif /* !SMP */
+ 
+ /*
+diff --git a/kernel/smp.c b/kernel/smp.c
+index a61294c..d0ae5b2 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -795,3 +795,26 @@ void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
+ 	}
+ }
+ EXPORT_SYMBOL(on_each_cpu_cond);
++
++static void do_nothing(void *unused)
++{
++}
++
++/**
++ * kick_all_cpus_sync - Force all cpus out of idle
++ *
++ * Used to synchronize the update of pm_idle function pointer. It's
++ * called after the pointer is updated and returns after the dummy
++ * callback function has been executed on all cpus. The execution of
++ * the function can only happen on the remote cpus after they have
++ * left the idle function which had been called via pm_idle function
++ * pointer. So it's guaranteed that nothing uses the previous pointer
++ * anymore.
++ */
++void kick_all_cpus_sync(void)
++{
++	/* Make sure the change is visible before we kick the cpus */
++	smp_mb();
++	smp_call_function(do_nothing, NULL, 1);
++}
++EXPORT_SYMBOL_GPL(kick_all_cpus_sync);
