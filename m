@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756394Ab2EHPOe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:14:34 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:44901 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909Ab2EHPOd (ORCPT
+	id S1756223Ab2EHPQM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:16:12 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:45843 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755943Ab2EHPQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:14:33 -0400
-Message-ID: <4FA9382A.9090709@candelatech.com>
-Date: Tue, 08 May 2012 08:13:46 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Tue, 8 May 2012 11:16:11 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: abtwyOkVM1meKS76skPvhBi3yl9ZdpVfZsuQIfCtrIPeZeU
+ 2IocKqSxPyL92nvYIwrp9aN_RFXObYmuvgJqGrx1c8.23330LNZ3wk1RIQDe
+ iek7JyDY8yYBV2AFeBLed4b.IoAAdgS4mBFYpnX2IGlN5Y.Z2CK0a2jmYxjY
+ XCAUrBmW7vqCyqLqusLUnCoDrYwe2pDbTkg4i.DLhtm53MgLXgBCLo0ZP.12
+ JtDuyGuHoDzNATigv6UnyKFOPU4lh6b9YpYIBaZ26Xen30F_1xFlZL8N7SF0
+ l.x3InJ21Y77nBPQkJy8gEEM3zxV34rHTrZ_2SsWk8OhpZdwXKsn7W8e_54p
+ ABz0MrPcQ3YPd4ed3ALJQVkrP4AEjjlWu9QvuRahgYCvgoYPWBAfRVzPn2fT
+ i
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 8 May 2012 10:16:04 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
+In-Reply-To: <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1205081014480.27713@router.home>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com> <1335830115-14335-8-git-send-email-fweisbec@gmail.com> <alpine.DEB.2.00.1205071053070.1060@router.home> <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Cristian Chilipirea <cristian.chilipirea@gmail.com>
-CC: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, daniel.baluta@gmail.com
-Subject: Re: [PATCH] ipv4: Fixed checkpatch warnings and errors
-References: <1336474704-9366-1-git-send-email-cristian.chilipirea@gmail.com>
-In-Reply-To: <1336474704-9366-1-git-send-email-cristian.chilipirea@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-879625646-1336490169=:27713"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2012 03:58 AM, Cristian Chilipirea wrote:
-> Fixed warnings and errors in af_inet.c.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
->   #ifdef CONFIG_COMPAT
-> -static int inet_compat_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
-> +static int inet_compat_ioctl(struct socket *sock, unsigned int cmd,
-> +		unsigned long arg)
->   {
+---1463811839-879625646-1336490169=:27713
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-That is so much worse than what was there before.
+On Tue, 8 May 2012, Frederic Weisbecker wrote:
 
-Lets stop useless checkpatch crap on existing code
-unless it's really ugly.
+> > As I have said before: It would be much simpler if one could specify th=
+e
+> > set of nohz cpus independently of cpusets. Having a flag f.e. as a file=
+ in
+> >
+> > =A0 =A0 =A0 =A0/sys/devices/system/cpu/cpuX/nohz
+>
+> I don't know if it would be simpler. It's just a different interface
+> to set a per-CPU property.
+> Cpusets of sysfs, I don't mind either way.
+>
+> What is the usual policy on where to put which kind of CPU property?
 
-Thanks,
-Ben
+/sys/devices/system/cpu contains the state information for each processor.
 
+There are already cpumasks in there that can be used to monitor and modify
+per processor behavior.
 
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+---1463811839-879625646-1336490169=:27713--
