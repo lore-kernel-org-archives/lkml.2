@@ -1,115 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530Ab2EHKSA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 06:18:00 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49405 "EHLO bear.ext.ti.com"
+	id S1753732Ab2EHKSO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 06:18:14 -0400
+Received: from mga03.intel.com ([143.182.124.21]:33656 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753203Ab2EHKR5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 06:17:57 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: "Hilman, Kevin" <khilman@ti.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "J, KEERTHY" <j-keerthy@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "Pihet-XID, Jean" <j-pihet@ti.com>
-Subject: RE: [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
-Thread-Topic: [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
-Thread-Index: AQHNLKvnVVAPpqbPUUi69DgexgXZqpa/rVYg
-Date: Tue, 8 May 2012 10:17:44 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9B6681@DBDE01.ent.ti.com>
-References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
-	<20120426191159.GA9415@sirena.org.uk>
-	<CAJ6a13a6WN9h1QZynpEOf-R6RXwWBZ2eOPkTeNc15JX_YfAz_w@mail.gmail.com>
-	<20120427175657.GP18260@opensource.wolfsonmicro.com>	<87397o3n4y.fsf@ti.com>
-	<331ABD5ECB02734CA317220B2BBEABC13E9B1A67@DBDE01.ent.ti.com>
- <87mx5jy2li.fsf@ti.com>
-In-Reply-To: <87mx5jy2li.fsf@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.24]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753203Ab2EHKSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 06:18:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="140264858"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>,
+        MIPS Mailing List <linux-mips@linux-mips.org>
+Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mips: bcm63xx: fix compilation problems
+Date: Tue,  8 May 2012 13:19:07 +0300
+Message-Id: <1336472347-25822-1-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 05:18:41, Hilman, Kevin wrote:
-> "AnilKumar, Chimata" <anilkumar@ti.com> writes:
-> 
-> > On Sat, Apr 28, 2012 at 02:31:17, Hilman, Kevin wrote:
-> >> Hi Mark,
-> >> 
-> >> Mark Brown <broonie@opensource.wolfsonmicro.com> writes:
-> >> 
-> >> > On Fri, Apr 27, 2012 at 11:09:10AM +0530, J, KEERTHY wrote:
-> >> >
-> >> >> Devfreq and cpufreq are related to dynamic frequency/voltage switching between
-> >> >> pre defined Operating Performance Points or the OPPs. Every OPP being
-> >> >> a voltage/frequency pair. Smartreflex is a different
-> >> >> power management technique.
-> >> >
-> >> > But presumably these things should integrate somehow - for example,
-> >> > should devfreq and cpufreq be providing inputs into what AVS is doing,
-> >> > and if so how?
-> >> 
-> >> The way it is currently designed, cpufreq/devfreq/regulator layers don't
-> >> need to know about AVS.
-> >> 
-> >> The higher-level layers only know about the "nominal" voltage.  AVS
-> >> hardware does automatic, adaptive, micro-adjustments around that nominal
-> >> voltage, and these micro-adjustments are managed by the AVS hardware
-> >> sending commands to the PMIC.  (specifically, on OMAP, the AVS sensors
-> >> provide inputs to the voltage processor (VP) which provide inputs to the
-> >> voltage controller (VC) which sends commands to the PMIC[1].)
-> >> 
-> >> The driver proposed here is primarily for initializing the various
-> >> parameters/sensitivity/etc. of the AVS hardware, but the actual voltage
-> >> adjustments are done in hardware by VC/VP.
-> >> 
-> >> The only thing the higher-level layers might potentially need to do to
-> >> enable/disable AVS around transitions (e.g. when changing OPP, AVS is
-> >> disabled before changing OPP and only re-enabled when the new nominal
-> >> voltage has been acheived.)
-> >> 
-> >> On OMAP, we handle this inside the OMAP-specific voltage layer which is
-> >> called by the regulator framework, so even the regulators do not need
-> >> any knowledge of AVS.
-> >
-> > Kevin,
-> >
-> > I want to point out some cases of SR implementation where this may not
-> > be true.
-> >
-> > Devices like DM8168, DM8148 and AM335X use Class 2B implementation of SR.
-> >
-> > Under this, SR module issues an interrupt to ARM when there is a need to
-> > change the voltage based on temperature changes, ageing etc.
-> >
-> > Once the interrupt arrives, kernel needs to adjust voltage using regulator API.
-> > The voltage change is a micro adjustment as in other SR classes.
-> 
-> That can easily be handled writing a plugin specific to class 2B.  This
-> driver was designed so plugins for other classes can be supported.  
-> 
-> Sure, we might need some enhancements for other classes (we already know
-> that we will for class 1 support.)  However, the purpose of this series
-> is to do the cleanups necessary for the driver to move to drivers/*.
-> 
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-It's perfectly fine with me. My intention was just to highlight that
-class 2B SR will have to interact with regulator layer for voltage
-changes, so I guess it is little different from other SR classes.
+I get the following build error when I am compiling the MTD gpio-nand driver
+for bcm63xx:
 
-Thanks,
-AnilKumar
+In file included from arch/mips/include/asm/mach-bcm63xx/gpio.h:4:0,
+                 from arch/mips/include/asm/gpio.h:4,
+                 from include/linux/gpio.h:36,
+                 from drivers/mtd/maps/gpio-addr-flash.c:16:
+arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h: In function 'bcm63xx_gpio_count':
+arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:10:2: error: implicit declaration of function 'bcm63xx_get_cpu_id' [-Werror=implicit-function-declaration]
+arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:11:7: error: 'BCM6358_CPU_ID' undeclared (first use in this function)
+arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:11:7: note: each undeclared identifier is reported only once for each function it appears in
+arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:13:7: error: 'BCM6338_CPU_ID' undeclared (first use in this function)
+arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:15:7: error: 'BCM6345_CPU_ID' undeclared (first use in this function)
+arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:17:7: error: 'BCM6368_CPU_ID' undeclared (first use in this function)
+arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:19:7: error: 'BCM6348_CPU_ID' undeclared (first use in this function)
+
+This patch sloves the problem.
+
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+ arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h b/arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h
+index 3d5de96..b4b9103 100644
+--- a/arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h
++++ b/arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h
+@@ -1,6 +1,7 @@
+ #ifndef BCM63XX_GPIO_H
+ #define BCM63XX_GPIO_H
+ 
++#include "bcm63xx_cpu.h"
+ #include <linux/init.h>
+ 
+ int __init bcm63xx_gpio_init(void);
+-- 
+1.7.9.1
 
