@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab2EHMb3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 08:31:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54854 "EHLO
+	id S1754826Ab2EHMcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 08:32:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54881 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006Ab2EHMb2 (ORCPT
+	with ESMTP id S1754372Ab2EHMcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 08:31:28 -0400
-Date: Tue, 8 May 2012 05:31:07 -0700
+	Tue, 8 May 2012 08:32:11 -0400
+Date: Tue, 8 May 2012 05:31:58 -0700
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-86627c93b35082f7a0e4d3111546943984b932c7@git.kernel.org>
+Message-ID: <tip-6c0a9fa62feb7e9fdefa9720bcc03040c9b0b311@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, lethal@linux-sh.org, tglx@linutronix.de
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, lethal@linux-sh.org
-In-Reply-To: <20120507175652.461648208@linutronix.de>
-References: <20120507175652.461648208@linutronix.de>
+        tglx@linutronix.de
+In-Reply-To: <20120505150141.306358267@linutronix.de>
+References: <20120505150141.306358267@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] sh: Remove cpu_idle_wait()
-Git-Commit-ID: 86627c93b35082f7a0e4d3111546943984b932c7
+Subject: [tip:smp/hotplug] fork: Remove the weak insanity
+Git-Commit-ID: 6c0a9fa62feb7e9fdefa9720bcc03040c9b0b311
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,90 +27,72 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 05:31:14 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 05:32:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  86627c93b35082f7a0e4d3111546943984b932c7
-Gitweb:     http://git.kernel.org/tip/86627c93b35082f7a0e4d3111546943984b932c7
+Commit-ID:  6c0a9fa62feb7e9fdefa9720bcc03040c9b0b311
+Gitweb:     http://git.kernel.org/tip/6c0a9fa62feb7e9fdefa9720bcc03040c9b0b311
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Mon, 7 May 2012 17:59:51 +0000
+AuthorDate: Sat, 5 May 2012 15:05:40 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 8 May 2012 12:35:07 +0200
+CommitDate: Tue, 8 May 2012 13:55:20 +0200
 
-sh: Remove cpu_idle_wait()
+fork: Remove the weak insanity
 
-cpuidle uses generic kick_all_cpus_sync() now. Remove the unused code.
+We error out when compiling with gcc4.1.[01] as it miscompiles
+__weak. The workaround with magic defines is not longer
+necessary. Make it __weak again.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Link: http://lkml.kernel.org/r/20120507175652.461648208@linutronix.de
----
- arch/sh/Kconfig                 |    3 ---
- arch/sh/include/asm/processor.h |    1 -
- arch/sh/kernel/idle.c           |   20 --------------------
- 3 files changed, 0 insertions(+), 24 deletions(-)
+Link: http://lkml.kernel.org/r/20120505150141.306358267@linutronix.de
 
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index 244cfd0..04a8cb4 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -153,9 +153,6 @@ config ARCH_NO_VIRT_TO_BUS
- config ARCH_HAS_DEFAULT_IDLE
- 	def_bool y
+---
+ arch/sh/include/asm/thread_info.h  |    1 -
+ arch/x86/include/asm/thread_info.h |    1 -
+ kernel/fork.c                      |    8 +-------
+ 3 files changed, 1 insertions(+), 9 deletions(-)
+
+diff --git a/arch/sh/include/asm/thread_info.h b/arch/sh/include/asm/thread_info.h
+index 20ee40a..09963d4 100644
+--- a/arch/sh/include/asm/thread_info.h
++++ b/arch/sh/include/asm/thread_info.h
+@@ -98,7 +98,6 @@ static inline struct thread_info *current_thread_info(void)
+ extern struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node);
+ extern void free_thread_info(struct thread_info *ti);
+ extern void arch_task_cache_init(void);
+-#define arch_task_cache_init arch_task_cache_init
+ extern int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src);
+ extern void init_thread_xstate(void);
  
--config ARCH_HAS_CPU_IDLE_WAIT
--	def_bool y
--
- config NO_IOPORT
- 	def_bool !PCI
- 	depends on !SH_CAYMAN && !SH_SH4202_MICRODEV && !SH_SHMIN
-diff --git a/arch/sh/include/asm/processor.h b/arch/sh/include/asm/processor.h
-index 6d87912..6dbc1be 100644
---- a/arch/sh/include/asm/processor.h
-+++ b/arch/sh/include/asm/processor.h
-@@ -98,7 +98,6 @@ extern struct sh_cpuinfo cpu_data[];
- #define cpu_relax()	barrier()
- 
- void default_idle(void);
--void cpu_idle_wait(void);
- void stop_this_cpu(void *);
- 
- /* Forward decl */
-diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
-index ee226e2..0c91016 100644
---- a/arch/sh/kernel/idle.c
-+++ b/arch/sh/kernel/idle.c
-@@ -132,10 +132,6 @@ void __init select_idle_routine(void)
- 		pm_idle = poll_idle;
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index ad6df8c..8692a16 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -284,6 +284,5 @@ static inline bool is_ia32_task(void)
+ extern void arch_task_cache_init(void);
+ extern void free_thread_info(struct thread_info *ti);
+ extern int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src);
+-#define arch_task_cache_init arch_task_cache_init
+ #endif
+ #endif /* _ASM_X86_THREAD_INFO_H */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index b9372a0..a79b36e 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -203,13 +203,7 @@ void __put_task_struct(struct task_struct *tsk)
  }
+ EXPORT_SYMBOL_GPL(__put_task_struct);
  
--static void do_nothing(void *unused)
--{
--}
--
- void stop_this_cpu(void *unused)
- {
- 	local_irq_disable();
-@@ -144,19 +140,3 @@ void stop_this_cpu(void *unused)
- 	for (;;)
- 		cpu_sleep();
- }
--
 -/*
-- * cpu_idle_wait - Used to ensure that all the CPUs discard old value of
-- * pm_idle and update to new pm_idle value. Required while changing pm_idle
-- * handler on SMP systems.
-- *
-- * Caller must have changed pm_idle to the new value before the call. Old
-- * pm_idle value will not be used by any CPU after the return of this function.
+- * macro override instead of weak attribute alias, to workaround
+- * gcc 4.1.0 and 4.1.1 bugs with weak attribute and empty functions.
 - */
--void cpu_idle_wait(void)
--{
--	smp_mb();
--	/* kick all the CPUs so that they exit out of pm_idle */
--	smp_call_function(do_nothing, NULL, 1);
--}
--EXPORT_SYMBOL_GPL(cpu_idle_wait);
+-#ifndef arch_task_cache_init
+-#define arch_task_cache_init()
+-#endif
++void __init __weak arch_task_cache_init(void) { }
+ 
+ void __init fork_init(unsigned long mempages)
+ {
