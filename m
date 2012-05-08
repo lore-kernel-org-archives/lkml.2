@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab2EHPiP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:38:15 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:22880 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755510Ab2EHPiO (ORCPT
+	id S1756866Ab2EHPmF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:42:05 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:45041 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756104Ab2EHPmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:38:14 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: yTlYTLYVM1ktVV.xdS5E6MZhR8rFmLIeUKJlXVhpT.XPCfa
- j7T9zrLuwFmCee4ES1eTwFykHo7CWRNw79PXUeXwWlE3ZbGKusYxnOK3sjOV
- l9QoeJ547cDfn9ZjTReCiZaRUysCuBoyZeXKLQADwOCVWYwe_6ooGSjHKsds
- DhSppVAYnskN_CPT5cPGQogcp9Pzfs84nogtTGtWSCbt93gyNurJS_RRl_hs
- BbGY6KfSZhNZNSFAJTuZi4CIWik9Sy_0M.KIk51kQ9OTT8y1l.2NGiEo_a8O
- AadgZdOYvaKmhHW43qBjSM.lRDKNnbYJL96XyLGou09NK9Wkr9z.xxy.v3RE
- H0clF8r88GXnynFSTCJcFJ7Ve0G4nRFtCyRm1IqXWHPOfnmczF7zRemjdUmw
- m
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 8 May 2012 10:38:07 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
-In-Reply-To: <1336490832.8226.5.camel@twins>
-Message-ID: <alpine.DEB.2.00.1205081035550.27713@router.home>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com> <1335830115-14335-8-git-send-email-fweisbec@gmail.com> <alpine.DEB.2.00.1205071053070.1060@router.home> <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
- <1336488626.16236.41.camel@twins> <alpine.DEB.2.00.1205081016370.27713@router.home> <1336490832.8226.5.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 8 May 2012 11:42:03 -0400
+Date: Tue, 8 May 2012 17:41:50 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        mgorman@suse.de, npiggin@gmail.com, tglx@linutronix.de,
+        mingo@redhat.com, arnd@arndb.de, rostedt@goodmis.org,
+        fweisbec@gmail.com, jeremy@goop.org, gregkh@linuxfoundation.org,
+        glommer@redhat.com, riel@redhat.com, luto@mit.edu, avi@redhat.com,
+        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
+        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 7/7] x86/tlb: add tlb_flushall_factor into sysfs for
+ user change
+Message-ID: <20120508154150.GG13568@aftab.osrc.amd.com>
+References: <1336485790-30902-1-git-send-email-alex.shi@intel.com>
+ <1336485790-30902-8-git-send-email-alex.shi@intel.com>
+ <1336489894.16236.51.camel@twins>
+ <4FA939B9.6000404@zytor.com>
+ <20120508152516.GF13568@aftab.osrc.amd.com>
+ <4FA93C69.3050905@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA93C69.3050905@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 May 2012, Peter Zijlstra wrote:
+On Tue, May 08, 2012 at 08:31:53AM -0700, H. Peter Anvin wrote:
+> On 05/08/2012 08:25 AM, Borislav Petkov wrote:
+> > 
+> > Yep, this was supposed to be for pinpointing the proper entries count.
+> > I believe we don't have this thing of having code intree but not really
+> > intree - only for testing new silicon. Maybe a debug module or add this
+> > to debugfs?
+> > 
+> 
+> We have a lot of that kind of code, it is usually hidden under
+> CONFIG_*DEBUG* something.
 
-> isolating how? The only way to do that is with the (broken) isolcpus
-> crap and cpusets. There is no other way.
+Then maybe this is where this knob should go, along with adding it to
+debugfs instead of sysfs...
 
-For some reason this seems to work here. What is broken with isolcpus?
+-- 
+Regards/Gruss,
+Boris.
 
-> Furthermore there is no other partitioning scheme, cpusets is it.
-
-One can partition the system anyway one wants by setting cpu affinities
-and memory policies etc. No need for cpusets/cgroups.
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
