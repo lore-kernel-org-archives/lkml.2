@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669Ab2EHXPw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 19:15:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47432 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755378Ab2EHXPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 19:15:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="138405374"
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: torvalds@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
-        oleg@redhat.com
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
-        suresh@aristanetworks.com
-Subject: [PATCH 1/3] coredump: flush the fpu exit state for proper multi-threaded core dump
-Date: Tue,  8 May 2012 16:18:03 -0700
-Message-Id: <1336519085-27450-2-git-send-email-suresh.b.siddha@intel.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1336519085-27450-1-git-send-email-suresh.b.siddha@intel.com>
-References: <1336421341.19423.4.camel@sbsiddha-desk.sc.intel.com>
- <1336519085-27450-1-git-send-email-suresh.b.siddha@intel.com>
+	id S1757402Ab2EHXTu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 19:19:50 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:18289 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755712Ab2EHXTt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 19:19:49 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-16.tower-209.messagelabs.com!1336519188!5134673!1
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: mite: mite_io_addr and daq_io_addr are void __iomem *
+Date: Tue, 8 May 2012 16:19:34 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201205081619.34886.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nalluru reported hitting the BUG_ON(__thread_has_fpu(tsk)) in
-arch/x86/kernel/xsave.c:__sanitize_i387_state() during the coredump
-of a multi-threaded application.
+The mite_io_addr and daq_io_addr variables in struct mite_struct
+are both ioremap'ed pci resources and should be void __iomem *
+not void *.
 
-A look at the exit seqeuence shows that other threads can still be on the
-runqueue potentially at the below shown exit_mm() code snippet:
+This quiets a lot of sparse warings for the write[lwb],read[lwb]
+calls in the comedi mite drives like:
 
-		if (atomic_dec_and_test(&core_state->nr_threads))
-			complete(&core_state->startup);
+warning: incorrect type in argument 1 (different address spaces)
+   expected void const volatile [noderef] <asn:2>*addr
+   got void *<noident>
 
-===> other threads can still be active here, but we notify the thread
-===> dumping core to wakeup from the coredump_wait() after the last thread
-===> joins this point. Core dumping thread will continue dumping
-===> all the threads state to the core file.
+warning: incorrect type in argument 2 (different address spaces)
+   expected void volatile [noderef] <asn:2>*addr
+   got void *
 
-		for (;;) {
-			set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-			if (!self.task) /* see coredump_finish() */
-				break;
-			schedule();
-		}
+It also exposed some warnings in the mite ni_660x driver where
+the daq_io_address was getting cast as a void *const.
 
-As some of those threads are on the runqueue and didn't call schedule() yet,
-their fpu state is still active in the live registers and the thread
-proceeding with the coredump will hit the above mentioned BUG_ON while
-trying to dump other threads fpustate to the coredump file.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-BUG_ON() in arch/x86/kernel/xsave.c:__sanitize_i387_state() is
-in the code paths for processors supporting xsaveopt. With or without
-xsaveopt, multi-threaded coredump is broken and maynot contain
-the correct fpustate at the time of exit.
-
-If the coredump is in progress, explicitly flush the fpu state by calling
-prepare_to_copy().
-
-Reported-by: Suresh Nalluru <suresh@aristanetworks.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 ---
- kernel/exit.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index d8bd3b42..dc90d63 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -656,6 +656,11 @@ static void exit_mm(struct task_struct * tsk)
- 		struct core_thread self;
- 		up_read(&mm->mmap_sem);
+diff --git a/drivers/staging/comedi/drivers/mite.h b/drivers/staging/comedi/drivers/mite.h
+index 999551f..83f1b27 100644
+--- a/drivers/staging/comedi/drivers/mite.h
++++ b/drivers/staging/comedi/drivers/mite.h
+@@ -66,9 +66,9 @@ struct mite_struct {
  
-+		/*
-+		 * Flush the live extended register state to memory.
-+		 */
-+		prepare_to_copy(tsk);
-+
- 		self.task = tsk;
- 		self.next = xchg(&core_state->dumper.next, &self);
- 		/*
--- 
-1.7.6.5
-
+ 	struct pci_dev *pcidev;
+ 	resource_size_t mite_phys_addr;
+-	void *mite_io_addr;
++	void __iomem *mite_io_addr;
+ 	resource_size_t daq_phys_addr;
+-	void *daq_io_addr;
++	void __iomem *daq_io_addr;
+ 
+ 	struct mite_channel channels[MAX_MITE_DMA_CHANNELS];
+ 	short channel_allocated[MAX_MITE_DMA_CHANNELS];
+diff --git a/drivers/staging/comedi/drivers/ni_660x.c b/drivers/staging/comedi/drivers/ni_660x.c
+index eea7047..21eb7fb 100644
+--- a/drivers/staging/comedi/drivers/ni_660x.c
++++ b/drivers/staging/comedi/drivers/ni_660x.c
+@@ -761,7 +761,7 @@ static inline void ni_660x_write_register(struct comedi_device *dev,
+ 					  unsigned chip_index, unsigned bits,
+ 					  enum NI_660x_Register reg)
+ {
+-	void *const write_address =
++	void __iomem *write_address =
+ 	    private(dev)->mite->daq_io_addr + GPCT_OFFSET[chip_index] +
+ 	    registerData[reg].offset;
+ 
+@@ -784,7 +784,7 @@ static inline unsigned ni_660x_read_register(struct comedi_device *dev,
+ 					     unsigned chip_index,
+ 					     enum NI_660x_Register reg)
+ {
+-	void *const read_address =
++	void __iomem *read_address =
+ 	    private(dev)->mite->daq_io_addr + GPCT_OFFSET[chip_index] +
+ 	    registerData[reg].offset;
+ 
