@@ -1,38 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab2EHP3G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:29:06 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34856 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756618Ab2EHP3F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:29:05 -0400
-Date: Tue, 8 May 2012 16:31:44 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Christoph Lameter <cl@linux.com>
-Cc: Robert =?UTF-8?B?xZp3acSZY2tp?= <robert@swiecki.net>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: mmap/clone returns ENOMEM with lots of free memory
-Message-ID: <20120508163144.13ab1814@pyramind.ukuu.org.uk>
-In-Reply-To: <alpine.DEB.2.00.1205080859570.25669@router.home>
-References: <CAP145pjtv-S2oHhn8_QfLKF8APtut4B9qPXK5QM8nQbxzPd2gw@mail.gmail.com>
-	<alpine.DEB.2.00.1205071514040.6029@router.home>
-	<CAP145piK2kW4F94pNdKpo_sGg8OD914exOtwCx2o+83jx5Toog@mail.gmail.com>
-	<alpine.DEB.2.00.1205080859570.25669@router.home>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756618Ab2EHPch (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:32:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57332 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755460Ab2EHPcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 11:32:36 -0400
+Message-ID: <4FA93C69.3050905@zytor.com>
+Date: Tue, 08 May 2012 08:31:53 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        mgorman@suse.de, npiggin@gmail.com, tglx@linutronix.de,
+        mingo@redhat.com, arnd@arndb.de, rostedt@goodmis.org,
+        fweisbec@gmail.com, jeremy@goop.org, gregkh@linuxfoundation.org,
+        glommer@redhat.com, riel@redhat.com, luto@mit.edu, avi@redhat.com,
+        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
+        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 7/7] x86/tlb: add tlb_flushall_factor into sysfs for
+ user change
+References: <1336485790-30902-1-git-send-email-alex.shi@intel.com> <1336485790-30902-8-git-send-email-alex.shi@intel.com> <1336489894.16236.51.camel@twins> <4FA939B9.6000404@zytor.com> <20120508152516.GF13568@aftab.osrc.amd.com>
+In-Reply-To: <20120508152516.GF13568@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Setting overcommit memory to 2 means that the app is strictly policed
-> for staying within bounds on virtual memory. Dont do that.
+On 05/08/2012 08:25 AM, Borislav Petkov wrote:
+> 
+> Yep, this was supposed to be for pinpointing the proper entries count.
+> I believe we don't have this thing of having code intree but not really
+> intree - only for testing new silicon. Maybe a debug module or add this
+> to debugfs?
+> 
 
-For a fuzz test you probably do want it at 2 to avoid the box dying in a
-swap storm.
+We have a lot of that kind of code, it is usually hidden under
+CONFIG_*DEBUG* something.
 
+	-hpa
 
-Alan
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
