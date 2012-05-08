@@ -1,58 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab2EHMtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 08:49:04 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42448 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886Ab2EHMtC convert rfc822-to-8bit (ORCPT
+	id S1755303Ab2EHMvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 08:51:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55245 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753886Ab2EHMvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 08:49:02 -0400
+	Tue, 8 May 2012 08:51:15 -0400
+Date: Tue, 8 May 2012 05:49:27 -0700
+From: tip-bot for Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Message-ID: <tip-ec83db0f78cd44c3b586ec1c3a348d1a8a389797@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        sboyd@codeaurora.org, hch@infradead.org, anton@redhat.com,
+        ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
+        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
+        oleg@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        sboyd@codeaurora.org, hch@infradead.org, ananth@in.ibm.com,
+        anton@redhat.com, masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        acme@infradead.org, srikar@linux.vnet.ibm.com, oleg@redhat.com,
+        tglx@linutronix.de
+In-Reply-To: <20120508111126.21004.38285.sendpatchset@srdronam.in.ibm.com>
+References: <20120508111126.21004.38285.sendpatchset@srdronam.in.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/uprobes] tracing: Fix kconfig warning due to a typo
+Git-Commit-ID: ec83db0f78cd44c3b586ec1c3a348d1a8a389797
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1336472347-25822-1-git-send-email-dedekind1@gmail.com>
-References: <1336472347-25822-1-git-send-email-dedekind1@gmail.com>
-From: Jonas Gorski <jonas.gorski@gmail.com>
-Date: Tue, 8 May 2012 14:48:41 +0200
-Message-ID: <CAOiHx==iC27f=frCedDH2xahaK=HBzXBxrWhb-AuG+vcCqSUCw@mail.gmail.com>
-Subject: Re: [PATCH] mips: bcm63xx: fix compilation problems
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>,
-        MIPS Mailing List <linux-mips@linux-mips.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 05:49:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Artem,
+Commit-ID:  ec83db0f78cd44c3b586ec1c3a348d1a8a389797
+Gitweb:     http://git.kernel.org/tip/ec83db0f78cd44c3b586ec1c3a348d1a8a389797
+Author:     Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+AuthorDate: Tue, 8 May 2012 16:41:26 +0530
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 8 May 2012 14:17:25 +0200
 
-On 8 May 2012 12:19, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
->
-> I get the following build error when I am compiling the MTD gpio-nand driver
-> for bcm63xx:
->
-> In file included from arch/mips/include/asm/mach-bcm63xx/gpio.h:4:0,
->                 from arch/mips/include/asm/gpio.h:4,
->                 from include/linux/gpio.h:36,
->                 from drivers/mtd/maps/gpio-addr-flash.c:16:
-> arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h: In function 'bcm63xx_gpio_count':
-> arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:10:2: error: implicit declaration of function 'bcm63xx_get_cpu_id' [-Werror=implicit-function-declaration]
-> arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:11:7: error: 'BCM6358_CPU_ID' undeclared (first use in this function)
-> arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:11:7: note: each undeclared identifier is reported only once for each function it appears in
-> arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:13:7: error: 'BCM6338_CPU_ID' undeclared (first use in this function)
-> arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:15:7: error: 'BCM6345_CPU_ID' undeclared (first use in this function)
-> arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:17:7: error: 'BCM6368_CPU_ID' undeclared (first use in this function)
-> arch/mips/include/asm/mach-bcm63xx/bcm63xx_gpio.h:19:7: error: 'BCM6348_CPU_ID' undeclared (first use in this function)
->
-> (snip)
+tracing: Fix kconfig warning due to a typo
 
-I already submitted almost the same patch ~3 months ago:
-http://patchwork.linux-mips.org/patch/3351/
+Commit f3f096cfe ("tracing: Provide trace events interface for
+uprobes") throws a warning about unmet dependencies.
 
-> This patch sloves the problem.
+The exact warning message is:
+	warning: (UPROBE_EVENT) selects UPROBES which has unmet direct dependencies (UPROBE_EVENTS && PERF_EVENTS)
 
-"sloves"? ;p
+This is due to a typo in arch/Kconfig file. Fix similar typos in
+the uprobetracer documentation.
 
+Also add sample format of a uprobe event in the uprobetracer
+documentation as suggested by Masami Hiramatsu.
 
-Jonas
+Reported-by: Stephen Boyd <sboyd@codeaurora.org>
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Anton Arapov <anton@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20120508111126.21004.38285.sendpatchset@srdronam.in.ibm.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ Documentation/trace/uprobetracer.txt |   22 ++++++++++++++++++++--
+ arch/Kconfig                         |    2 +-
+ 2 files changed, 21 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
+index eae40a0..24ce682 100644
+--- a/Documentation/trace/uprobetracer.txt
++++ b/Documentation/trace/uprobetracer.txt
+@@ -5,7 +5,7 @@
+ Overview
+ --------
+ Uprobe based trace events are similar to kprobe based trace events.
+-To enable this feature, build your kernel with CONFIG_UPROBE_EVENTS=y.
++To enable this feature, build your kernel with CONFIG_UPROBE_EVENT=y.
+ 
+ Similar to the kprobe-event tracer, this doesn't need to be activated via
+ current_tracer. Instead of that, add probe points via
+@@ -68,7 +68,25 @@ in the object. We can see the events that are registered by looking at the
+ uprobe_events file.
+ 
+     # cat uprobe_events
+-    p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
++    p:uprobes/p_zsh_0x46420 /bin/zsh:0x00046420 arg1=%ip arg2=%ax
++
++The format of events can be seen by viewing the file events/uprobes/p_zsh_0x46420/format
++
++    # cat events/uprobes/p_zsh_0x46420/format
++    name: p_zsh_0x46420
++    ID: 922
++    format:
++	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
++	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
++	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
++	field:int common_pid;	offset:4;	size:4;	signed:1;
++	field:int common_padding;	offset:8;	size:4;	signed:1;
++
++	field:unsigned long __probe_ip;	offset:12;	size:4;	signed:0;
++	field:u32 arg1;	offset:16;	size:4;	signed:0;
++	field:u32 arg2;	offset:20;	size:4;	signed:0;
++
++    print fmt: "(%lx) arg1=%lx arg2=%lx", REC->__probe_ip, REC->arg1, REC->arg2
+ 
+ Right after definition, each event is disabled by default. For tracing these
+ events, you need to enable it by:
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 0f8f968..2880abf 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -78,7 +78,7 @@ config OPTPROBES
+ 
+ config UPROBES
+ 	bool "Transparent user-space probes (EXPERIMENTAL)"
+-	depends on UPROBE_EVENTS && PERF_EVENTS
++	depends on UPROBE_EVENT && PERF_EVENTS
+ 	default n
+ 	help
+ 	  Uprobes is the user-space counterpart to kprobes: they
