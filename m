@@ -1,119 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab2EHJyN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 05:54:13 -0400
-Received: from mail.southpole.se ([193.12.106.18]:56642 "EHLO
+	id S1753779Ab2EHJyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 05:54:37 -0400
+Received: from mail.southpole.se ([193.12.106.18]:56644 "EHLO
 	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753498Ab2EHJyJ (ORCPT
+	with ESMTP id S1753520Ab2EHJyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 05:54:09 -0400
+	Tue, 8 May 2012 05:54:12 -0400
 From: Jonas Bonn <jonas@southpole.se>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
 Cc: Jonas Bonn <jonas@southpole.se>
-Subject: [PATCH 4/6] openrisc: header file cleanups
-Date: Tue,  8 May 2012 11:54:03 +0200
-Message-Id: <1336470845-13859-5-git-send-email-jonas@southpole.se>
+Subject: [PATCH 6/6] openrisc: use scratch regs in atomic syscall
+Date: Tue,  8 May 2012 11:54:05 +0200
+Message-Id: <1336470845-13859-7-git-send-email-jonas@southpole.se>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1336470845-13859-1-git-send-email-jonas@southpole.se>
 References: <1336470845-13859-1-git-send-email-jonas@southpole.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Assp-Version: 2.1.1(11364) on assp.southpole.se
 X-Assp-Client-SSL: yes
-X-Assp-ID: assp.southpole.se 70846-00600
+X-Assp-ID: assp.southpole.se 70848-08813
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-elf.h: We can export some of these symbols to userspace.  libc needs them
-and we just as well provide them as asm/elf.h as copying them into separate
-libc headers.
+The function sys_or1k_atomic was using call-saved registers without
+restoring their value before returning.  This is a faux pas: either
+we need to restore their values or use scratch regs; the latter is
+less code so that's the route this patch takes.
 
-ptrace.h: Having padding in the user_regs_struct isn't of any particular
-value and just confuses GDB.  spr_defs isn't needed in userspace; libc
-has its own copy anyway.
+Thanks to David Hennerström for doing most of the heavy-lifting in
+tracking this one down.
 
+Reported-by: Davd Hennerström <david.hennerstrom@aacmicrotec.com>
 Signed-off-by: Jonas Bonn <jonas@southpole.se>
 ---
- arch/openrisc/include/asm/Kbuild   |    3 ++-
- arch/openrisc/include/asm/elf.h    |   12 ++++++++++--
- arch/openrisc/include/asm/ptrace.h |    6 ++----
- 3 files changed, 14 insertions(+), 7 deletions(-)
+ arch/openrisc/kernel/entry.S |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/openrisc/include/asm/Kbuild b/arch/openrisc/include/asm/Kbuild
-index dcea5a0..c936483 100644
---- a/arch/openrisc/include/asm/Kbuild
-+++ b/arch/openrisc/include/asm/Kbuild
-@@ -1,6 +1,7 @@
- include include/asm-generic/Kbuild.asm
- 
--header-y += spr_defs.h
-+header-y += elf.h
-+header-y += ucontext.h
- 
- generic-y += atomic.h
- generic-y += auxvec.h
-diff --git a/arch/openrisc/include/asm/elf.h b/arch/openrisc/include/asm/elf.h
-index 2ce603b..a8fe2c5 100644
---- a/arch/openrisc/include/asm/elf.h
-+++ b/arch/openrisc/include/asm/elf.h
-@@ -20,11 +20,17 @@
- #define __ASM_OPENRISC_ELF_H
- 
- /*
-+ * This files is partially exported to userspace.  This allows us to keep
-+ * the ELF bits in one place which should assist in keeping the kernel and
-+ * userspace in sync.
-+ */
-+
-+/*
-  * ELF register definitions..
-  */
--#include <linux/types.h>
--#include <linux/ptrace.h>
- 
-+/* for struct user_regs_struct definition */
-+#include <asm/ptrace.h>
- 
- /* The OR1K relocation types... not all relevant for module loader */
- #define R_OR32_NONE	0
-@@ -62,6 +68,8 @@ typedef unsigned long elf_fpregset_t;
- 
- #ifdef __KERNEL__
- 
-+#include <linux/types.h>
-+
- /*
-  * This is used to ensure we don't load something for the wrong architecture.
-  */
-diff --git a/arch/openrisc/include/asm/ptrace.h b/arch/openrisc/include/asm/ptrace.h
-index 4651a73..8555c0c 100644
---- a/arch/openrisc/include/asm/ptrace.h
-+++ b/arch/openrisc/include/asm/ptrace.h
-@@ -19,8 +19,6 @@
- #ifndef __ASM_OPENRISC_PTRACE_H
- #define __ASM_OPENRISC_PTRACE_H
- 
--#include <asm/spr_defs.h>
--
- #ifndef __ASSEMBLY__
- /*
-  * This is the layout of the regset returned by the GETREGSET ptrace call
-@@ -30,13 +28,13 @@ struct user_regs_struct {
- 	unsigned long gpr[32];
- 	unsigned long pc;
- 	unsigned long sr;
--	unsigned long pad1;
--	unsigned long pad2;
- };
- #endif
- 
- #ifdef __KERNEL__
- 
-+#include <asm/spr_defs.h>
-+
- /*
-  * Make kernel PTrace/register structures opaque to userspace... userspace can
-  * access thread state via the regset mechanism.  This allows us a bit of
+diff --git a/arch/openrisc/kernel/entry.S b/arch/openrisc/kernel/entry.S
+index 6e61af8..ddfcaa8 100644
+--- a/arch/openrisc/kernel/entry.S
++++ b/arch/openrisc/kernel/entry.S
+@@ -1117,10 +1117,10 @@ ENTRY(sys_rt_sigreturn)
+ ENTRY(sys_or1k_atomic)
+ 	/* FIXME: This ignores r3 and always does an XCHG */
+ 	DISABLE_INTERRUPTS(r17,r19)
+-	l.lwz	r30,0(r4)
+-	l.lwz	r28,0(r5)
+-	l.sw	0(r4),r28
+-	l.sw	0(r5),r30
++	l.lwz	r29,0(r4)
++	l.lwz	r27,0(r5)
++	l.sw	0(r4),r27
++	l.sw	0(r5),r29
+ 	ENABLE_INTERRUPTS(r17)
+ 	l.jr	r9
+ 	 l.or	r11,r0,r0
 -- 
 1.7.0.4
 
