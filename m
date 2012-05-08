@@ -1,100 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab2EHPYw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 11:24:52 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62151 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756516Ab2EHPYt (ORCPT
+	id S1756638Ab2EHPZM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 11:25:12 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:61637 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755688Ab2EHPZI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 11:24:49 -0400
-Message-ID: <1336490660.1179.39.camel@mop>
-Subject: [PATCH] acpi: use KERN_CONT in printk() continuation lines
-From: Kay Sievers <kay@vrfy.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 08 May 2012 17:24:20 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 8 May 2012 11:25:08 -0400
+MIME-Version: 1.0
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <alpine.DEB.2.00.1205071438240.2215@router.home>
+References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
+	<1336056962-10465-6-git-send-email-gilad@benyossef.com>
+	<alpine.DEB.2.00.1205071024550.1060@router.home>
+	<4FA823A7.9000801@gmail.com>
+	<alpine.DEB.2.00.1205071438240.2215@router.home>
+Date: Tue, 8 May 2012 18:25:07 +0300
+Message-ID: <CAOtvUMf95gmZ4ZTSpTb+5NZdEiDTg_CPtp3L2_notdz+dZWG6A@mail.gmail.com>
+Subject: Re: [PATCH v1 5/6] mm: make vmstat_update periodic run conditional
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kay Sievers <kay@vrfy.org>
-Subject: acpi: use KERN_CONT in printk() continuation lines
+On Mon, May 7, 2012 at 10:40 PM, Christoph Lameter <cl@linux.com> wrote:
+> On Mon, 7 May 2012, KOSAKI Motohiro wrote:
+>
+>> > > @@ -1204,8 +1265,14 @@ static int __init setup_vmstat(void)
+>> > >
+>> > >           register_cpu_notifier(&vmstat_notifier);
+>> > >
+>> > > + INIT_DELAYED_WORK_DEFERRABLE(&vmstat_monitor_work,
+>> > > +                         vmstat_update_monitor);
+>> > > + queue_delayed_work(system_unbound_wq,
+>> > > +                         &vmstat_monitor_work,
+>> > > +                         round_jiffies_relative(HZ));
+>> > > +
+>> > >           for_each_online_cpu(cpu)
+>> > > -         start_cpu_timer(cpu);
+>> > > +         setup_cpu_timer(cpu);
+>> > >   #endif
+>> > >   #ifdef CONFIG_PROC_FS
+>> > >           proc_create("buddyinfo", S_IRUGO,
+>> > > NULL,&fragmentation_file_operations);
+>> >
+>> > So the monitoring thread just bounces around the system? Hope that the
+>> > scheduler does the right thing to keep it on processors that do some other
+>> > work.
+>>
+>> Good point. Usually, all cpus have update items and monitor worker only makes
+>> new noise. I think this feature is only useful some hpc case.  So I wonder if
+>> this vmstat improvemnt can integrate Frederic's Nohz cpusets activity. I.e.
+>> vmstat-update integrate timer house keeping and automatically stop when
+>> stopping
+>> hz house keeping.
+>
+> Right. We could do the same processing in vmstat update and the
+> thread could check if it is the last vmstat update thread. If so simply
+> continue and do not terminate.
+>
+> But this would still mean that the vmstat update thread would run on an
+> arbitrary cpu. If I have a sacrificial lamb processor for OS processing
+> then I would expect the vmstat update thread to stick to that processor
+> and avoid to run on the other processor that I would like to be as free
+> from OS noise as possible.
+>
 
-Cc: Len Brown <lenb@kernel.org>
-Signed-off-by: Kay Sievers <kay@vrfy.org>
----
- drivers/acpi/pci_link.c |   12 ++++++------
- drivers/acpi/sleep.c    |    8 ++++----
- 2 files changed, 10 insertions(+), 10 deletions(-)
+OK, what about -
 
---- a/drivers/acpi/pci_link.c
-+++ b/drivers/acpi/pci_link.c
-@@ -720,21 +720,21 @@ static int acpi_pci_link_add(struct acpi
- 	       acpi_device_bid(device));
- 	for (i = 0; i < link->irq.possible_count; i++) {
- 		if (link->irq.active == link->irq.possible[i]) {
--			printk(" *%d", link->irq.possible[i]);
-+			printk(KERN_CONT " *%d", link->irq.possible[i]);
- 			found = 1;
- 		} else
--			printk(" %d", link->irq.possible[i]);
-+			printk(KERN_CONT " %d", link->irq.possible[i]);
- 	}
- 
--	printk(")");
-+	printk(KERN_CONT ")");
- 
- 	if (!found)
--		printk(" *%d", link->irq.active);
-+		printk(KERN_CONT " *%d", link->irq.active);
- 
- 	if (!link->device->status.enabled)
--		printk(", disabled.");
-+		printk(KERN_CONT ", disabled.");
- 
--	printk("\n");
-+	printk(KERN_CONT "\n");
- 
- 	list_add_tail(&link->list, &acpi_link_list);
- 
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -887,7 +887,7 @@ int __init acpi_sleep_init(void)
- 		status = acpi_get_sleep_type_data(i, &type_a, &type_b);
- 		if (ACPI_SUCCESS(status)) {
- 			sleep_states[i] = 1;
--			printk(" S%d", i);
-+			printk(KERN_CONT " S%d", i);
- 		}
- 	}
- 
-@@ -901,7 +901,7 @@ int __init acpi_sleep_init(void)
- 		hibernation_set_ops(old_suspend_ordering ?
- 			&acpi_hibernation_ops_old : &acpi_hibernation_ops);
- 		sleep_states[ACPI_STATE_S4] = 1;
--		printk(" S4");
-+		printk(KERN_CONT " S4");
- 		if (!nosigcheck) {
- 			acpi_get_table(ACPI_SIG_FACS, 1,
- 				(struct acpi_table_header **)&facs);
-@@ -914,11 +914,11 @@ int __init acpi_sleep_init(void)
- 	status = acpi_get_sleep_type_data(ACPI_STATE_S5, &type_a, &type_b);
- 	if (ACPI_SUCCESS(status)) {
- 		sleep_states[ACPI_STATE_S5] = 1;
--		printk(" S5");
-+		printk(KERN_CONT " S5");
- 		pm_power_off_prepare = acpi_power_off_prepare;
- 		pm_power_off = acpi_power_off;
- 	}
--	printk(")\n");
-+	printk(KERN_CONT ")\n");
- 	/*
- 	 * Register the tts_notifier to reboot notifier list so that the _TTS
- 	 * object can also be evaluated when the system enters S5.
+- We pick a scapegoat cpu (the first to come up gets the job).
+- We add a knob to let user designate another cpu for the job.
+- If scapegoat cpus goes offline, the cpu processing the off lining is
+the new scapegoat.
+
+Does this makes better sense?
+
+Gilad
 
 
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
