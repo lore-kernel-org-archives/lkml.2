@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757584Ab2EHRDV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 13:03:21 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38283 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757552Ab2EHRDS (ORCPT
+	id S1757590Ab2EHREV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 13:04:21 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:59586 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757462Ab2EHREU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 13:03:18 -0400
-Date: Tue, 8 May 2012 13:03:17 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Paul Bolle <pebolle@tiscali.nl>
-cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-scsi@vger.kernel.org>, <usb-storage@lists.one-eyed-alien.net>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] scsi: usb-storage: hide errors for five devices
-In-Reply-To: <1336491453.1933.67.camel@x61.thuisdomein>
-Message-ID: <Pine.LNX.4.44L0.1205081240450.1479-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 8 May 2012 13:04:20 -0400
+Date: Tue, 08 May 2012 13:01:39 -0400 (EDT)
+Message-Id: <20120508.130139.515602646900287732.davem@davemloft.net>
+To: greearb@candelatech.com
+Cc: cristian.chilipirea@gmail.com, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, daniel.baluta@gmail.com
+Subject: Re: [PATCH] ipv4: Fixed checkpatch warnings and errors
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4FA9382A.9090709@candelatech.com>
+References: <1336474704-9366-1-git-send-email-cristian.chilipirea@gmail.com>
+	<4FA9382A.9090709@candelatech.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 08 May 2012 10:01:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 May 2012, Paul Bolle wrote:
+From: Ben Greear <greearb@candelatech.com>
+Date: Tue, 08 May 2012 08:13:46 -0700
 
-> On Tue, 2012-05-08 at 10:02 -0400, Alan Stern wrote:
-> > On Tue, 8 May 2012, Paul Bolle wrote: 
-> > > 1) These patches try to hide those errors by:
-> > > - downgrading one error to a notice; and
-> > 
-> > That's a reasonable thing to do, IMO.
-> > 
-> > > - setting the NO_WP_DETECT quirk for these five devices.
-> > 
-> > But that isn't.  These quirks are intended for devices that crash when
-> > they receive the command in question.
+> On 05/08/2012 03:58 AM, Cristian Chilipirea wrote:
+>> Fixed warnings and errors in af_inet.c.
 > 
-> Yes, these USB memory sticks don't crash. (They actually seem to work
-> just fine, something that I perhaps should have emphasized in the commit
-> descriptions.)
+>>   #ifdef CONFIG_COMPAT
+>> -static int inet_compat_ioctl(struct socket *sock, unsigned int cmd,
+>> -unsigned long arg)
+>> +static int inet_compat_ioctl(struct socket *sock, unsigned int cmd,
+>> +		unsigned long arg)
+>>   {
 > 
-> > They aren't meant to suppress sending commands to devices that can
-> > properly reject them.
+> That is so much worse than what was there before.
 > 
-> Even the sticks that hit "bad_sense" (in sd_read_cache_type(), which I
-> forgot to mention in the comment descriptions)? Is that not as severe as
-> it suggests?
+> Lets stop useless checkpatch crap on existing code
+> unless it's really ugly.
 
-It means that the device either doesn't support the MODE SENSE command
-or it returned useless data.  As a result, we will assume it has a
-write-through cache when it might not.
-
-For memory sticks this doesn't matter.  For other devices it might be 
-more important (although anything with a working cache should not hit 
-this error case).
-
-> Of course, an easy way out would be to downgrade both the "Asking for
-> cache data failed" and the "No Caching mode page present" errors to
-> notices. But the SCSI people might disagree with that approach.
-
-Well, let's see what they say.
-
-Alan Stern
-
+Agreed, this patch is terrible.
