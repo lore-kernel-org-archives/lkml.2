@@ -1,77 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836Ab2EHHUJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 03:20:09 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:35269 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754548Ab2EHHUG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 03:20:06 -0400
-Date: Tue, 8 May 2012 09:21:09 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: =?iso-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        olofj@chromium.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH] mm: Work around Intel SNB GTT bug with some physical
- pages.
-Message-ID: <20120508072109.GA4802@phenom.ffwll.local>
-Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
-	=?iso-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-	olofj@chromium.org, torvalds@linux-foundation.org
-References: <1336432421-17972-1-git-send-email-marcheu@chromium.org>
- <CAPM=9txbqEsejvtQJ9XfRcuU-vwJUkASTW6cxEhbwf0tUTSTow@mail.gmail.com>
+	id S1756925Ab2EHHUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 03:20:41 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:56883 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756547Ab2EHHUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 03:20:40 -0400
+From: =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
+To: Sascha Hauer <kernel@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
+Subject: [PATCH 01/12] ARM: imx: eukrea_cpuimx25: enable workaround ENGcm09152
+Date: Tue,  8 May 2012 09:20:16 +0200
+Message-Id: <1336461627-30315-1-git-send-email-eric@eukrea.com>
+X-Mailer: git-send-email 1.7.7.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPM=9txbqEsejvtQJ9XfRcuU-vwJUkASTW6cxEhbwf0tUTSTow@mail.gmail.com>
-X-Operating-System: Linux phenom 3.4.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 07:53:36AM +0100, Dave Airlie wrote:
-> On Tue, May 8, 2012 at 12:13 AM, Stéphane Marchesin
-> <marcheu@chromium.org> wrote:
-> > While investing some Sandy Bridge rendering corruption, I found out
-> > that all physical memory pages below 1MiB were returning garbage when
-> > read through the GTT. This has been causing graphics corruption (when
-> > it's used for textures, render targets and pixmaps) and GPU hangups
-> > (when it's used for GPU batch buffers).
-> >
-> > I talked with some people at Intel and they confirmed my findings,
-> > and said that a couple of other random pages were also affected.
-> >
-> > We could fix this problem by adding an e820 region preventing the
-> > memory below 1 MiB to be used, but that prevents at least my machine
-> > from booting. One could think that we should be able to fix it in
-> > i915, but since the allocation is done by the backing shmem this is
-> > not possible.
-> >
-> > In the end, I came up with the ugly workaround of just leaking the
-> > offending pages in shmem.c. I do realize it's truly ugly, but I'm
-> > looking for a fix to the existing code, and am wondering if people on
-> > this list have a better idea, short of rewriting i915_gem.c to
-> > allocate its own pages directly.
-> 
-> Ouch, can Intel get some details on why these pages are "special" and
-> if they are special across chipsets, Ironlake? Ivybridge?
-> 
-> Like I can handle the < 1MB but the other selected pages look pretty
-> random or misc, (2005, 2011, 2013? years?, 40004000, some shout out to
-> the 4004?
+this fix usb device controler behaviour in gadget mode
 
-I've discussed this with Stéphane, and that enumeration of 5 pages is
-exhaustive. And both these 4 pages and the low 1mb block only cause
-problems on snb (ivb and later is fixed). For the special pages the
-official workaround is that the bios marks the two 2M blocks of memory at
-512M and 1024M as reserved. And for the low 1M I guess Windows doesn't
-hand out any of these to device drivers.
--Daniel
+Signed-off-by: Eric BÃ©nard <eric@eukrea.com>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+---
+ arch/arm/mach-imx/mach-eukrea_cpuimx25.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-imx/mach-eukrea_cpuimx25.c b/arch/arm/mach-imx/mach-eukrea_cpuimx25.c
+index 76a97a5..b22fb02 100644
+--- a/arch/arm/mach-imx/mach-eukrea_cpuimx25.c
++++ b/arch/arm/mach-imx/mach-eukrea_cpuimx25.c
+@@ -106,6 +106,7 @@ static const struct mxc_usbh_platform_data usbh2_pdata __initconst = {
+ static const struct fsl_usb2_platform_data otg_device_pdata __initconst = {
+ 	.operating_mode = FSL_USB2_DR_DEVICE,
+ 	.phy_mode       = FSL_USB2_PHY_UTMI,
++	.workaround     = FLS_USB2_WORKAROUND_ENGCM09152,
+ };
+ 
+ static int otg_mode_host;
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+1.7.7.6
+
