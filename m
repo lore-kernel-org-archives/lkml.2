@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab2EHJo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 05:44:29 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44440 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294Ab2EHJo1 (ORCPT
+	id S1752789Ab2EHJou (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 05:44:50 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:35384 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752067Ab2EHJot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 05:44:27 -0400
-Date: Tue, 8 May 2012 11:44:26 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Galbraith <mgalbraith@suse.de>
-cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clockevents: Per cpu tick skew boot option
-In-Reply-To: <1336447221.7364.2.camel@marge.simpson.net>
-Message-ID: <alpine.LFD.2.02.1205081143510.6271@ionos>
-References: <1336309127.7351.13.camel@marge.simpson.net>  <alpine.LFD.2.02.1205072115000.6271@ionos> <1336447221.7364.2.camel@marge.simpson.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 8 May 2012 05:44:49 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 01/12] gpio: move the Nomadik GPIO driver to pinctrl
+Date: Tue, 8 May 2012 11:44:22 +0200
+Message-ID: <1336470262-23483-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.9.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 May 2012, Mike Galbraith wrote:
+From: Linus Walleij <linus.walleij@linaro.org>
 
-> On Mon, 2012-05-07 at 21:17 +0200, Thomas Gleixner wrote: 
-> > On Sun, 6 May 2012, Mike Galbraith wrote:
-> > >  
-> > > +	skew_tick=	[KNL] Offset the periodic timer tick per cpu to mitigate
-> > > +			xtime_lock contention on larger systems.  Note: increases
-> > > +			power consumption, and should only be enabled if running
-> > > +			jitter sensitive (HPC/RT) workloads.
-> > > +
-> > 
-> > The "=" is wrong as skew_tick should not take parameters. It's
-> > disabled by default. So "skew_tick" simply enables it, right ?
-> 
-> Unless as I have RT set up, it's turned on by default, so '=' lets the
-> user turn it back off.
+I'm moving this driver over to the pinctrl subsystem to convert
+the custom pin mux/config scheme over to use pinctrl.
 
-Then the doc should say what's the parameter after the "+" is :)
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/gpio/Makefile                              |    1 -
+ drivers/pinctrl/Makefile                           |    1 +
+ .../gpio-nomadik.c => pinctrl/pinctrl-nomadik.c}   |    0
+ 3 files changed, 1 insertion(+), 1 deletion(-)
+ rename drivers/{gpio/gpio-nomadik.c => pinctrl/pinctrl-nomadik.c} (100%)
+
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 007f54b..a4193ab 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -36,7 +36,6 @@ obj-$(CONFIG_GPIO_MSM_V1)	+= gpio-msm-v1.o
+ obj-$(CONFIG_GPIO_MSM_V2)	+= gpio-msm-v2.o
+ obj-$(CONFIG_GPIO_MXC)		+= gpio-mxc.o
+ obj-$(CONFIG_GPIO_MXS)		+= gpio-mxs.o
+-obj-$(CONFIG_PLAT_NOMADIK)	+= gpio-nomadik.o
+ obj-$(CONFIG_ARCH_OMAP)		+= gpio-omap.o
+ obj-$(CONFIG_GPIO_PCA953X)	+= gpio-pca953x.o
+ obj-$(CONFIG_GPIO_PCF857X)	+= gpio-pcf857x.o
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index 6d4150b..274e069 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -8,6 +8,7 @@ obj-$(CONFIG_PINCONF)		+= pinconf.o
+ obj-$(CONFIG_GENERIC_PINCONF)	+= pinconf-generic.o
+ obj-$(CONFIG_PINCTRL_PXA3xx)	+= pinctrl-pxa3xx.o
+ obj-$(CONFIG_PINCTRL_MMP2)	+= pinctrl-mmp2.o
++obj-$(CONFIG_PLAT_NOMADIK)	+= pinctrl-nomadik.o
+ obj-$(CONFIG_PINCTRL_PXA168)	+= pinctrl-pxa168.o
+ obj-$(CONFIG_PINCTRL_PXA910)	+= pinctrl-pxa910.o
+ obj-$(CONFIG_PINCTRL_SIRF)	+= pinctrl-sirf.o
+diff --git a/drivers/gpio/gpio-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+similarity index 100%
+rename from drivers/gpio/gpio-nomadik.c
+rename to drivers/pinctrl/pinctrl-nomadik.c
+-- 
+1.7.9.2
+
