@@ -1,113 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281Ab2EHUQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 16:16:15 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:4223 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757039Ab2EHUQJ (ORCPT
+	id S1757320Ab2EHUQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 16:16:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35018 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757012Ab2EHUQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 16:16:09 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: lenb@kernel.org, linux-acpi@vger.kernel.org
-Cc: bhelgaas@google.com, shuahkhan@gmail.com, linux-kernel@vger.kernel.org,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v2 6/7] ACPI: Add _OST support for ACPI container hotplug
-Date: Tue,  8 May 2012 14:12:23 -0600
-Message-Id: <1336507944-10219-7-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1336507944-10219-1-git-send-email-toshi.kani@hp.com>
-References: <1336507944-10219-1-git-send-email-toshi.kani@hp.com>
+	Tue, 8 May 2012 16:16:18 -0400
+Date: Tue, 8 May 2012 13:16:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+Cc: linux-pm@lists.linux-foundation.org, durgadoss.r@intel.com,
+        linux-acpi@vger.kernel.org, lenb@kernel.org, rui.zhang@intel.com,
+        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, patches@linaro.org
+Subject: Re: [PATCH v3 0/6] thermal: exynos: Add kernel thermal support for
+ exynos platform
+Message-Id: <20120508131616.f60c1f90.akpm@linux-foundation.org>
+In-Reply-To: <1336493898-7039-1-git-send-email-amit.kachhap@linaro.org>
+References: <1336493898-7039-1-git-send-email-amit.kachhap@linaro.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed container_notify_cb() to call ACPI _OST method when ACPI
-container hotplug operation has completed. Slightly restructured
-the code with the same logic. The function sets eject_pending bit
-for an eject request since it does not initiate hot-remove operation.
-This bit is checked by the sysfs eject handler to determine if the
-request is originated from an ACPI eject notification.
+On Tue,  8 May 2012 21:48:12 +0530
+Amit Daniel Kachhap <amit.kachhap@linaro.org> wrote:
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
- drivers/acpi/container.c |   43 ++++++++++++++++++++++++++++---------------
- 1 files changed, 28 insertions(+), 15 deletions(-)
+> This patchset introduces a new generic cooling device based on cpufreq that
+> can be used on non-ACPI platforms. As a proof of concept, we have drivers for
+> the following platforms using this mechanism now:
+> 
+>  * TI OMAP (git://git.linaro.org/people/amitdanielk/linux.git omap4460_thermal)
+>  * Samsung Exynos (Exynos4 and Exynos5) in the current patchset.
+>  * Freescale i.MX (git://git.linaro.org/people/amitdanielk/linux.git imx6q_thermal)
+> 
+> These patches have been reviewed by Rui Zhang (https://lkml.org/lkml/2012/4/9/448)
 
-diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
-index 45cd03b..1f9f7d7 100644
---- a/drivers/acpi/container.c
-+++ b/drivers/acpi/container.c
-@@ -158,9 +158,7 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
- 	int result;
- 	int present;
- 	acpi_status status;
--
--
--	present = is_device_present(handle);
-+	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
- 
- 	switch (type) {
- 	case ACPI_NOTIFY_BUS_CHECK:
-@@ -169,32 +167,47 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
- 		printk(KERN_WARNING "Container driver received %s event\n",
- 		       (type == ACPI_NOTIFY_BUS_CHECK) ?
- 		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
-+
-+		present = is_device_present(handle);
- 		status = acpi_bus_get_device(handle, &device);
--		if (present) {
--			if (ACPI_FAILURE(status) || !device) {
--				result = container_device_add(&device, handle);
--				if (!result)
--					kobject_uevent(&device->dev.kobj,
--						       KOBJ_ONLINE);
--				else
--					printk(KERN_WARNING
--					       "Failed to add container\n");
--			}
--		} else {
-+		if (!present) {
- 			if (ACPI_SUCCESS(status)) {
- 				/* device exist and this is a remove request */
-+				device->flags.eject_pending = 1;
- 				kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
-+				return;
- 			}
-+			break;
-+		}
-+
-+		if (!ACPI_FAILURE(status) || device)
-+			break;
-+
-+		result = container_device_add(&device, handle);
-+		if (result) {
-+			printk(KERN_WARNING "Failed to add container\n");
-+			break;
- 		}
-+
-+		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
-+		ost_code = ACPI_OST_SC_SUCCESS;
- 		break;
-+
- 	case ACPI_NOTIFY_EJECT_REQUEST:
- 		if (!acpi_bus_get_device(handle, &device) && device) {
-+			device->flags.eject_pending = 1;
- 			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
-+			return;
- 		}
- 		break;
-+
- 	default:
--		break;
-+		/* non-hotplug event; possibly handled by other handler */
-+		return;
- 	}
-+
-+	/* Inform firmware that the hotplug operation has completed */
-+	(void) acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
- 	return;
- }
- 
--- 
-1.7.7.6
+But we don't have explicit Reviewed-by:s for the changelogs?
 
+> who seems to agree with them in principle, but I haven't had any luck getting them
+> merged, perhaps a lack of maintainer bandwidth.
+> 
+> ACPI platforms currently have such a mechanism but it is wrapped in ACPI'isms
+> that we don't have on ARM platforms. If this is accepted, I'm proposing to
+> convert over the ACPI thermal driver to use this common code too.
