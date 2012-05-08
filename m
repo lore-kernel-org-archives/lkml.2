@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab2EHEMQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 00:12:16 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:38379 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751697Ab2EHEJg (ORCPT
+	id S1755961Ab2EHEMm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 00:12:42 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:44390 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751461Ab2EHEJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 May 2012 00:09:36 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
@@ -14,10 +14,12 @@ Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
         <mturquette@linaro.org>, <sshtylyov@mvista.com>, <jgarzik@redhat.com>,
         <linux@arm.linux.org.uk>, <w.sang@pengutronix.de>,
         <LW@KARO-electronics.de>, <andrew@lunn.ch>,
-        Viresh Kumar <viresh.kumar@st.com>, <linux-ide@vger.kernel.org>
-Subject: [PATCH V3 Resend 06/12] ata/pata_arasan: Remove conditional compilation of clk code
-Date: Tue, 8 May 2012 09:22:33 +0530
-Message-ID: <0a3ff891741dfe39d69dd6d90c123ec276a10d4d.1336448639.git.viresh.kumar@st.com>
+        Viresh Kumar <viresh.kumar@st.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>
+Subject: [PATCH V3 Resend 04/12] usb/marvell: Remove conditional compilation of clk code
+Date: Tue, 8 May 2012 09:22:31 +0530
+Message-ID: <1f90c0a36fcae7ad45aef2634c8223600f0b64b8.1336448639.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <cover.1336448639.git.viresh.kumar@st.com>
 References: <cover.1336448639.git.viresh.kumar@st.com>
@@ -27,91 +29,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Viresh Kumar <viresh.linux@gmail.com>
+
 With addition of dummy clk_*() calls for non CONFIG_HAVE_CLK cases in clk.h,
 there is no need to have clk code enclosed in #ifdef CONFIG_HAVE_CLK, #endif
 macros.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-Cc: Jeff Garzik <jgarzik@redhat.com>
-Cc: linux-ide@vger.kernel.org
----
- drivers/ata/pata_arasan_cf.c |   14 +-------------
- 1 files changed, 1 insertions(+), 13 deletions(-)
+Marvell usb also has these dummy macros defined locally. Remove them as they
+aren't required anymore.
 
-diff --git a/drivers/ata/pata_arasan_cf.c b/drivers/ata/pata_arasan_cf.c
-index 3239517..b943be0 100644
---- a/drivers/ata/pata_arasan_cf.c
-+++ b/drivers/ata/pata_arasan_cf.c
-@@ -184,10 +184,8 @@
- struct arasan_cf_dev {
- 	/* pointer to ata_host structure */
- 	struct ata_host *host;
--	/* clk structure, only if HAVE_CLK is defined */
--#ifdef CONFIG_HAVE_CLK
-+	/* clk structure */
- 	struct clk *clk;
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org
+---
+ include/linux/platform_data/mv_usb.h |    9 ---------
+ 1 files changed, 0 insertions(+), 9 deletions(-)
+
+diff --git a/include/linux/platform_data/mv_usb.h b/include/linux/platform_data/mv_usb.h
+index d94804a..944b01d 100644
+--- a/include/linux/platform_data/mv_usb.h
++++ b/include/linux/platform_data/mv_usb.h
+@@ -52,13 +52,4 @@ struct mv_usb_platform_data {
+ 	int	(*set_vbus)(unsigned int vbus);
+ 	int     (*private_init)(void __iomem *opregs, void __iomem *phyregs);
+ };
+-
+-#ifndef CONFIG_HAVE_CLK
+-/* Dummy stub for clk framework */
+-#define clk_get(dev, id)       NULL
+-#define clk_put(clock)         do {} while (0)
+-#define clk_enable(clock)      do {} while (0)
+-#define clk_disable(clock)     do {} while (0)
 -#endif
- 
- 	/* physical base address of controller */
- 	dma_addr_t pbase;
-@@ -312,13 +310,11 @@ static int cf_init(struct arasan_cf_dev *acdev)
- 	unsigned long flags;
- 	int ret = 0;
- 
--#ifdef CONFIG_HAVE_CLK
- 	ret = clk_enable(acdev->clk);
- 	if (ret) {
- 		dev_dbg(acdev->host->dev, "clock enable failed");
- 		return ret;
- 	}
--#endif
- 
- 	spin_lock_irqsave(&acdev->host->lock, flags);
- 	/* configure CF interface clock */
-@@ -344,9 +340,7 @@ static void cf_exit(struct arasan_cf_dev *acdev)
- 	writel(readl(acdev->vbase + OP_MODE) & ~CFHOST_ENB,
- 			acdev->vbase + OP_MODE);
- 	spin_unlock_irqrestore(&acdev->host->lock, flags);
--#ifdef CONFIG_HAVE_CLK
- 	clk_disable(acdev->clk);
--#endif
- }
- 
- static void dma_callback(void *dev)
-@@ -828,13 +822,11 @@ static int __devinit arasan_cf_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--#ifdef CONFIG_HAVE_CLK
- 	acdev->clk = clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(acdev->clk)) {
- 		dev_warn(&pdev->dev, "Clock not found\n");
- 		return PTR_ERR(acdev->clk);
- 	}
--#endif
- 
- 	/* allocate host */
- 	host = ata_host_alloc(&pdev->dev, 1);
-@@ -899,9 +891,7 @@ static int __devinit arasan_cf_probe(struct platform_device *pdev)
- 			&arasan_cf_sht);
- 
- free_clk:
--#ifdef CONFIG_HAVE_CLK
- 	clk_put(acdev->clk);
--#endif
- 	return ret;
- }
- 
-@@ -912,9 +902,7 @@ static int __devexit arasan_cf_remove(struct platform_device *pdev)
- 
- 	ata_host_detach(host);
- 	cf_exit(acdev);
--#ifdef CONFIG_HAVE_CLK
- 	clk_put(acdev->clk);
--#endif
- 
- 	return 0;
- }
+-
+ #endif
 -- 
 1.7.9
 
