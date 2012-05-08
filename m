@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab2EHJoI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 05:44:08 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:34672 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751536Ab2EHJoG (ORCPT
+	id S1752574Ab2EHJo3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 05:44:29 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44440 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab2EHJo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 05:44:06 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 00/12] pinctrl for Ux500 and Nomadik family
-Date: Tue, 8 May 2012 11:43:34 +0200
-Message-ID: <1336470214-23407-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.9.2
+	Tue, 8 May 2012 05:44:27 -0400
+Date: Tue, 8 May 2012 11:44:26 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mike Galbraith <mgalbraith@suse.de>
+cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clockevents: Per cpu tick skew boot option
+In-Reply-To: <1336447221.7364.2.camel@marge.simpson.net>
+Message-ID: <alpine.LFD.2.02.1205081143510.6271@ionos>
+References: <1336309127.7351.13.camel@marge.simpson.net>  <alpine.LFD.2.02.1205072115000.6271@ionos> <1336447221.7364.2.camel@marge.simpson.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Tue, 8 May 2012, Mike Galbraith wrote:
 
-This moves the Nomadik "GPIO" driver to the pinctrl subsystem
-and adds the interfaces needed to provide a pinctrl driver for
-the DB8500 ASIC.
+> On Mon, 2012-05-07 at 21:17 +0200, Thomas Gleixner wrote: 
+> > On Sun, 6 May 2012, Mike Galbraith wrote:
+> > >  
+> > > +	skew_tick=	[KNL] Offset the periodic timer tick per cpu to mitigate
+> > > +			xtime_lock contention on larger systems.  Note: increases
+> > > +			power consumption, and should only be enabled if running
+> > > +			jitter sensitive (HPC/RT) workloads.
+> > > +
+> > 
+> > The "=" is wrong as skew_tick should not take parameters. It's
+> > disabled by default. So "skew_tick" simply enables it, right ?
+> 
+> Unless as I have RT set up, it's turned on by default, so '=' lets the
+> user turn it back off.
 
-It further switches Ux500 over to using it with a combination
-of hogs and runtime controls.
-
-The ux500 portions were developed on top of the gpio and pins
-branch earlier sent for integration in the ARM SoC tree.
-
-Linus Walleij (12):
-  gpio: move the Nomadik GPIO driver to pinctrl
-  pinctrl: basic Nomadik pinctrl interface
-  pinctrl/nomadik: break out single GPIO debug function
-  pinctrl/nomadik: reuse GPIO debug function for pins
-  pinctrl/nomadik: implement pin multiplexing
-  pinctrl/nomadik: implement pin configuration
-  pinctrl: add sleep state definition
-  ARM: ux500: switch over to Nomadik pinctrl driver
-  ARM: ux500: delete custom pin control system
-  ARM: ux500: switch to using pinctrl for uart0
-  ARM: ux500: alter MSP registration to return a device pointer
-  ARM: ux500: switch MSP to using pinctrl for pins
-
- arch/arm/mach-ux500/Kconfig                 |    3 +
- arch/arm/mach-ux500/board-mop500-msp.c      |   85 +-
- arch/arm/mach-ux500/board-mop500-pins.c     |  855 ++++++-------
- arch/arm/mach-ux500/board-mop500.c          |   83 +-
- arch/arm/mach-ux500/board-mop500.h          |    6 +-
- arch/arm/mach-ux500/cpu-db8500.c            |    1 +
- arch/arm/mach-ux500/devices-common.h        |   12 +
- arch/arm/mach-ux500/pins.c                  |   88 --
- arch/arm/mach-ux500/pins.h                  |   46 -
- arch/arm/plat-nomadik/include/plat/pincfg.h |   13 +
- drivers/gpio/Makefile                       |    1 -
- drivers/gpio/gpio-nomadik.c                 | 1306 -------------------
- drivers/pinctrl/Kconfig                     |   10 +
- drivers/pinctrl/Makefile                    |    2 +
- drivers/pinctrl/pinctrl-nomadik-db8500.c    |  857 +++++++++++++
- drivers/pinctrl/pinctrl-nomadik.c           | 1800 +++++++++++++++++++++++++++
- drivers/pinctrl/pinctrl-nomadik.h           |   77 ++
- include/linux/pinctrl/pinctrl-state.h       |   13 +
- 18 files changed, 3326 insertions(+), 1932 deletions(-)
- delete mode 100644 arch/arm/mach-ux500/pins.c
- delete mode 100644 arch/arm/mach-ux500/pins.h
- delete mode 100644 drivers/gpio/gpio-nomadik.c
- create mode 100644 drivers/pinctrl/pinctrl-nomadik-db8500.c
- create mode 100644 drivers/pinctrl/pinctrl-nomadik.c
- create mode 100644 drivers/pinctrl/pinctrl-nomadik.h
-
--- 
-1.7.9.2
-
+Then the doc should say what's the parameter after the "+" is :)
