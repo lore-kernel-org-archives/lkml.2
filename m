@@ -1,46 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab2EHSGe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 14:06:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58913 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751258Ab2EHSGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 14:06:32 -0400
-Message-ID: <4FA96092.2090004@zytor.com>
-Date: Tue, 08 May 2012 11:06:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC dontapply 5/5] kvm_para: guest side for eoi avoidance
-References: <cover.1334833140.git.mst@redhat.com> <5e1399d9e743668a87f31d8f2b83cad862c60728.1334833141.git.mst@redhat.com> <4FA93B3F.3000906@redhat.com> <20120508152843.GE8988@redhat.com> <4FA93FA3.20306@zytor.com> <20120508165736.GA26795@redhat.com>
-In-Reply-To: <20120508165736.GA26795@redhat.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754260Ab2EHSGl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 14:06:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39410 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab2EHSGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 14:06:39 -0400
+From: "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
+        "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>,
+        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Amit Kucheria <amit.kucheria@canonical.com>,
+        "Arnaud Patard (Rtp)" <arnaud.patard@rtp-net.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: [PATCH] arm: imx53-qsb: Add Dialog DA9053 PMIC support
+Date: Wed,  9 May 2012 02:06:27 +0800
+Message-Id: <1336500387-25546-1-git-send-email-paulliu@debian.org>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2012 09:57 AM, Michael S. Tsirkin wrote:
-> 
-> Will do. OK to only define them for x86 for now?
-> They would be unused on other arches even if I defined them ...
-> 
+From: "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>
 
-I don't know if it's possible/practical to define them so they fall back
-to the fully atomic versions unless arch-overridden, but that would be
-the best, I would think.
+Add Dialog DA9053 regulators support for imx53-qsb (Loco board)
 
-	-hpa
+Signed-off-by: Ying-Chun Liu (PaulLiu) <paulliu@debian.org>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Amit Kucheria <amit.kucheria@canonical.com>
+Cc: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+---
+ arch/arm/boot/dts/imx53-qsb.dts |   74 ++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 73 insertions(+), 1 deletion(-)
 
-
+diff --git a/arch/arm/boot/dts/imx53-qsb.dts b/arch/arm/boot/dts/imx53-qsb.dts
+index b08b587..393e90d 100644
+--- a/arch/arm/boot/dts/imx53-qsb.dts
++++ b/arch/arm/boot/dts/imx53-qsb.dts
+@@ -73,8 +73,80 @@
+ 				};
+ 
+ 				pmic: dialog@48 {
+-					compatible = "dialog,da9053", "dialog,da9052";
++					compatible = "dlg,da9053-aa", "dlg,da9052";
+ 					reg = <0x48>;
++
++					regulators {
++						buck0 {
++							regulator-min-microvolt = <500000>;
++							regulator-max-microvolt = <2075000>;
++						};
++
++						buck1 {
++							regulator-min-microvolt = <500000>;
++							regulator-max-microvolt = <2075000>;
++						};
++
++						buck2 {
++							regulator-min-microvolt = <925000>;
++					                regulator-max-microvolt = <2500000>;
++						};
++
++						buck3 {
++							regulator-min-microvolt = <925000>;
++					                regulator-max-microvolt = <2500000>;
++						};
++
++						ldo4 {
++							regulator-min-microvolt = <600000>;
++							regulator-max-microvolt = <1800000>;
++						};
++
++						ldo5 {
++							regulator-min-microvolt = <600000>;
++					                regulator-max-microvolt = <1800000>;
++						};
++
++						ldo6 {
++							regulator-min-microvolt = <1725000>;
++					                regulator-max-microvolt = <3300000>;
++						};
++
++						ldo7 {
++							regulator-min-microvolt = <1725000>;
++					                regulator-max-microvolt = <3300000>;
++						};
++
++						ldo8 {
++							regulator-min-microvolt = <1200000>;
++					                regulator-max-microvolt = <3600000>;
++						};
++
++						ldo9 {
++							regulator-min-microvolt = <1200000>;
++					                regulator-max-microvolt = <3600000>;
++						};
++
++						ldo10 {
++							regulator-min-microvolt = <1200000>;
++					                regulator-max-microvolt = <3600000>;
++						};
++
++						ldo11 {
++							regulator-min-microvolt = <1200000>;
++					                regulator-max-microvolt = <3600000>;
++						};
++
++						ldo12 {
++							regulator-min-microvolt = <1250000>;
++					                regulator-max-microvolt = <3650000>;
++						};
++
++						ldo13 {
++							regulator-min-microvolt = <1200000>;
++					                regulator-max-microvolt = <3600000>;
++						};
++					};
+ 				};
+ 			};
+ 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.10
 
