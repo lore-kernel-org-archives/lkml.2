@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758091Ab2EHB6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 May 2012 21:58:42 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56176 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755944Ab2EHB6l (ORCPT
+	id S1758115Ab2EHB7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 May 2012 21:59:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45852 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758044Ab2EHB7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 May 2012 21:58:41 -0400
-X-AuditID: 9c93016f-b7c79ae0000006b3-30-4fa87dcd4086
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/7] perf tools: Introduce perf_target__strerror()
-References: <1336367344-28071-1-git-send-email-namhyung.kim@lge.com>
-	<1336367344-28071-6-git-send-email-namhyung.kim@lge.com>
-	<20120507172946.GC2485@infradead.org> <4FA809AD.7060209@gmail.com>
-Date: Tue, 08 May 2012 10:57:12 +0900
-In-Reply-To: <4FA809AD.7060209@gmail.com> (David Ahern's message of "Mon, 07
-	May 2012 11:43:09 -0600")
-Message-ID: <87r4uvcu4n.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	Mon, 7 May 2012 21:59:31 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: jolsa@redhat.com, David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf report: fix compile failure on ppc, 32-bit
+Date: Mon,  7 May 2012 19:59:22 -0600
+Message-Id: <1336442362-53217-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Builds currently fail with:
+    CC /tmp/pbuild/builtin-report.o
+cc1: warnings being treated as errors
+builtin-report.c: In function ‘hists__fprintf_nr_sample_events’:
+builtin-report.c:307: error: format ‘%lu’ expects type ‘long unsigned int’, but argument 3 has type ‘u64’
+make: *** [/tmp/pbuild/builtin-report.o] Error 1
 
-On Mon, 07 May 2012 11:43:09 -0600, David Ahern wrote:
-> On 5/7/12 11:29 AM, Arnaldo Carvalho de Melo wrote:
->> Em Mon, May 07, 2012 at 02:09:02PM +0900, Namhyung Kim escreveu:
->>> The perf_target__strerror() sets @buf to a string that
->>> describes the (perf_target-specific) error condition
->>> that is passed via @errnum.
->>>
->>> This is similar to strerror_r() and does same thing if
->>> @errnum has a standard errno value.
->>
->> This has a problem: why should I be warned when I do, as root:
->>
->> # perf top -u acme
->>
->> It warns me that "UID switch overriding SYSTEM", yeah, right that is
->> what I asked, no need to tell me that :-)
->>
->> So what is missing in this case is that top starts with system_wide set,
->> not from the command line.
->>
-> Seems like we should avoid the propagation of the errnos beyond the
-> depths of the library part. For perf-top why not default to nothing
-> set and if the user does not request one, set system wide. i.e,
-> following Patch 6 in this set do:
->
-> if (perf_target__none(&top.target)
->     top.target.system_wide = true;
->
+$ rpm -q gcc
+gcc-4.4.4-10.fc12.ppc
 
-Thanks for catching this (and sorry for not testing thoroughly).
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/builtin-report.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Yes, this would make more sense if it goes to the patch 1. Now I see
-that Arnaldo fixed it on patch 1 but forgot to update on patch 6 :).
-
-Thanks,
-Namhyung
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 5df829f..7477655 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -304,7 +304,7 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
+ 	if (evname != NULL)
+ 		ret += fprintf(fp, " of event '%s'", evname);
+ 
+-	ret += fprintf(fp, "\n# Event count (approx.): %lu", nr_events);
++	ret += fprintf(fp, "\n# Event count (approx.): %" PRIu64, nr_events);
+ 	return ret + fprintf(fp, "\n#\n");
+ }
+ 
+-- 
+1.7.5.4
 
