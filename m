@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589Ab2EHIWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 04:22:17 -0400
-Received: from cernmx30.cern.ch ([137.138.144.177]:11507 "EHLO
-	CERNMX30.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab2EHIWP (ORCPT
+	id S1751762Ab2EHIXR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 04:23:17 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38978 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab2EHIXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 04:22:15 -0400
-Date: Tue, 8 May 2012 10:15:49 +0200
-From: Manohar Vanga <manohar.vanga@cern.ch>
-To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH v3 2/3] Staging: ipack: added support for the TEWS
- TPCI-200 carrier board
-Message-ID: <20120508081549.GB18595@becoht-mvanga>
-Mail-Followup-To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-	Dan Carpenter <dan.carpenter@oracle.com>
-References: <1336463005-26234-1-git-send-email-siglesias@igalia.com>
- <1336463005-26234-2-git-send-email-siglesias@igalia.com>
+	Tue, 8 May 2012 04:23:12 -0400
+Date: Tue, 8 May 2012 01:21:47 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 3/3] vmevent: Implement special low-memory attribute
+Message-ID: <20120508082147.GA22425@lizard>
+References: <20120504073810.GA25175@lizard>
+ <CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com>
+ <CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com>
+ <20120507121527.GA19526@lizard>
+ <4FA82056.2070706@gmail.com>
+ <CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com>
+ <CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com>
+ <20120508065829.GA13357@lizard>
+ <4FA8C86B.8010205@gmail.com>
+ <20120508081305.GA20574@lizard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1336463005-26234-2-git-send-email-siglesias@igalia.com>
+In-Reply-To: <20120508081305.GA20574@lizard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [137.138.192.18]
-Keywords: CERN SpamKiller Note: -50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Samuel,
+On Tue, May 08, 2012 at 01:13:05AM -0700, Anton Vorontsov wrote:
+> On Tue, May 08, 2012 at 03:16:59AM -0400, KOSAKI Motohiro wrote:
+> [...]
+> > >So, feel free to call me an idiot, but please expand your points a
+> > >little bit or give a link to the discussion you're referring to?
+> > 
+> > I don't think you are idiot. But I hope you test your patch before submitting.
+> > That just don't work especially on x86. Because of, all x86 box have multiple zone
+> > and summarized statistics (i.e. global_page_state() thing) don't work and can't
+> > prevent oom nor swapping.
+> 
+> Now I think I understand you: we don't take into account that e.g. DMA
+> zone is not usable by the normal allocations, and so if we're basing our
+> calculations on summarized stats, it is indeed possible to get an OOM
+> in such a case.
 
-> +static void tpci200_uninstall(struct tpci200_board *tpci200)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < TPCI200_NB_SLOT; i++) {
-> +		if (tpci200->slots[i].dev == NULL)
-> +			continue;
-> +		else
-> +			tpci200->slots[i].dev->driver->ops->remove(tpci200->slots[i].dev);
+Oops. Looking into it more, I think I was wrong here: kernel will surely
+use pages from the DMA zone when we have no pages in normal zones.
 
-Check whether the function exists or you could have trouble :)
-If you already added a check when registering to make sure this is always non-NULL then
-ignore this. I would recommend wrapping this up in some function:
+So, I don't see how we can get OOM in that case.
 
-    void tpci_slot_remove(struct tpci_slot *slot)
-    {
-        if (slot->dev->driver->ops->remove)
-        	slot->dev->driver->ops->remove(slot->dev);
-    }
+Hm.
 
 -- 
-/manohar
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
