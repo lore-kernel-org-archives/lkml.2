@@ -1,97 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab2EHKN1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 06:13:27 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:56979 "EHLO violet"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752385Ab2EHKN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 06:13:26 -0400
-Date: Tue, 8 May 2012 12:06:57 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Alex =?utf-8?B?VmlsbGFjw63CrXM=?= Lasso 
-	<avillaci@fiec.espol.edu.ec>
-Cc: Thomas Pilarski <thomas.pi@arcor.de>,
-        Julien Ducourthial <jducourt@free.fr>,
-        Hayes Wang <hayeswang@realtek.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] r8169: fix problem with TSO (TX_BUFFS_AVAIL negative value)
-Message-ID: <20120508100657.GA10744@electric-eye.fr.zoreil.com>
-References: <1336430367.11363.38.camel@blackbone.local> <20120507234205.GA2230@electric-eye.fr.zoreil.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120507234205.GA2230@electric-eye.fr.zoreil.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	id S1753221Ab2EHKR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 06:17:57 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49402 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752851Ab2EHKRz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 06:17:55 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: "J, KEERTHY" <j-keerthy@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Hilman, Kevin" <khilman@ti.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "Pihet-XID, Jean" <j-pihet@ti.com>
+Subject: RE: [PATCH V3 05/10] ARM: OMAP2+: SmartReflex: introduce a busy
+ loop condition test macro
+Thread-Topic: [PATCH V3 05/10] ARM: OMAP2+: SmartReflex: introduce a busy
+ loop condition test macro
+Thread-Index: AQHNI9QqacStCvxp2EqO7BVNbqIaSpa5YatQgAQdGYCAAkDsIA==
+Date: Tue, 8 May 2012 10:17:41 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9B667C@DBDE01.ent.ti.com>
+References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
+	<1335462041-4949-6-git-send-email-j-keerthy@ti.com>
+	<331ABD5ECB02734CA317220B2BBEABC13E9B1B40@DBDE01.ent.ti.com>
+ <CAJ6a13aA9nutZvRkcj8GHok9cEe8A=J2bwzSXt=Sd0Hu_WPaPw@mail.gmail.com>
+In-Reply-To: <CAJ6a13aA9nutZvRkcj8GHok9cEe8A=J2bwzSXt=Sd0Hu_WPaPw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.133.24]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Francois Romieu <romieu@fr.zoreil.com> :
-[...]
-> Alex, Thomas, can you check if Julien's patch below fixes your broken
-> kernels as well ? 
+On Mon, May 07, 2012 at 10:51:53, J, KEERTHY wrote:
+> On Fri, May 4, 2012 at 2:42 PM, AnilKumar, Chimata <anilkumar@ti.com> wrote:
+> > On Thu, Apr 26, 2012 at 23:10:36, J, KEERTHY wrote:
+> >> From: Jean Pihet <j-pihet@ti.com>
+> >>
+> >> Now that omap_test_timeout is only accessible from mach-omap2/,
+> >> introduce a similar function for SR.
+> >>
+> >> This change makes the SmartReflex implementation ready for the move
+> >> to drivers/.
+> >>
+> >> Signed-off-by: Jean Pihet <j-pihet@ti.com>
+> >> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> >> ---
+> >>  arch/arm/mach-omap2/smartreflex.c |   12 ++++++------
+> >>  include/linux/power/smartreflex.h |   23 ++++++++++++++++++++++-
+> >>  2 files changed, 28 insertions(+), 7 deletions(-)
+> >>
+> >> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
+> >> index d859277..acef08d 100644
+> >> --- a/arch/arm/mach-omap2/smartreflex.c
+> >> +++ b/arch/arm/mach-omap2/smartreflex.c
+> >> @@ -289,9 +289,9 @@ static void sr_v1_disable(struct omap_sr *sr)
+> >>        * Wait for SR to be disabled.
+> >>        * wait until ERRCONFIG.MCUDISACKINTST = 1. Typical latency is 1us.
+> >>        */
+> >> -     omap_test_timeout((sr_read_reg(sr, ERRCONFIG_V1) &
+> >> -                     ERRCONFIG_MCUDISACKINTST), SR_DISABLE_TIMEOUT,
+> >> -                     timeout);
+> >> +     sr_test_cond_timeout((sr_read_reg(sr, ERRCONFIG_V1) &
+> >> +                          ERRCONFIG_MCUDISACKINTST), SR_DISABLE_TIMEOUT,
+> >> +                          timeout);
+> >>
+> >>       if (timeout >= SR_DISABLE_TIMEOUT)
+> >>               dev_warn(&sr->pdev->dev, "%s: Smartreflex disable timedout\n",
+> >> @@ -334,9 +334,9 @@ static void sr_v2_disable(struct omap_sr *sr)
+> >>        * Wait for SR to be disabled.
+> >>        * wait until IRQSTATUS.MCUDISACKINTST = 1. Typical latency is 1us.
+> >>        */
+> >> -     omap_test_timeout((sr_read_reg(sr, IRQSTATUS) &
+> >> -                     IRQSTATUS_MCUDISABLEACKINT), SR_DISABLE_TIMEOUT,
+> >> -                     timeout);
+> >> +     sr_test_cond_timeout((sr_read_reg(sr, IRQSTATUS) &
+> >> +                          IRQSTATUS_MCUDISABLEACKINT), SR_DISABLE_TIMEOUT,
+> >> +                          timeout);
+> >>
+> >>       if (timeout >= SR_DISABLE_TIMEOUT)
+> >>               dev_warn(&sr->pdev->dev, "%s: Smartreflex disable timedout\n",
+> >> diff --git a/include/linux/power/smartreflex.h b/include/linux/power/smartreflex.h
+> >> index 884eaee..78b795e 100644
+> >> --- a/include/linux/power/smartreflex.h
+> >> +++ b/include/linux/power/smartreflex.h
+> >> @@ -22,7 +22,7 @@
+> >>
+> >>  #include <linux/types.h>
+> >>  #include <linux/platform_device.h>
+> >> -
+> >> +#include <linux/delay.h>
+> >>  #include <plat/voltage.h>
+> >>
+> >>  /*
+> >> @@ -168,6 +168,27 @@ struct omap_sr {
+> >>  };
+> >>
+> >>  /**
+> >> + * test_cond_timeout - busy-loop, testing a condition
+> >> + * @cond: condition to test until it evaluates to true
+> >> + * @timeout: maximum number of microseconds in the timeout
+> >> + * @index: loop index (integer)
+> >> + *
+> >> + * Loop waiting for @cond to become true or until at least @timeout
+> >> + * microseconds have passed.  To use, define some integer @index in the
+> >> + * calling code.  After running, if @index == @timeout, then the loop has
+> >> + * timed out.
+> >> + *
+> >> + * Copied from omap_test_timeout */
+> >> +#define sr_test_cond_timeout(cond, timeout, index)           \
+> >> +({                                                           \
+> >> +     for (index = 0; index < timeout; index++) {             \
+> >> +             if (cond)                                       \
+> >> +                     break;                                  \
+> >> +             udelay(1);                                      \
+> >> +     }                                                       \
+> >> +})
+> >
+> > I think we can use time_after()/time_before() APIs for timeout and cpu_relax() for
+> > tight loops instead of udelay().
+> 
+> cpu_relax() changes the priority everytime to low and will yield to
+> another thread.
+> Considering that we are checking the condition every microsecond does it make
+> some saving using cpu_relax().
+> 
 
-You will have better luck with a patch whose lines are correctly formed.
+cpu_relax() does not involve any priority changes or scheduling AFAICS.
+Have a look at this thread:
 
-Patch below applies on top of 3.4-rc6.
+http://www.spinics.net/lists/netdev/msg151699.html
 
-(Julien, please check your mail user agent)
+Regards
+AnilKumar
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index f545093..d1e3c51 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -61,8 +61,12 @@
- #define R8169_MSG_DEFAULT \
- 	(NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_IFUP | NETIF_MSG_IFDOWN)
- 
--#define TX_BUFFS_AVAIL(tp) \
--	(tp->dirty_tx + NUM_TX_DESC - tp->cur_tx - 1)
-+#define TX_SLOTS_AVAIL(tp) \
-+	(tp->dirty_tx + NUM_TX_DESC - tp->cur_tx)
-+
-+/* A skbuff with nr_frags needs nr_frags+1 entries in the tx queue */
-+#define TX_FRAGS_READY_FOR(tp,nr_frags) \
-+	(TX_SLOTS_AVAIL(tp) >= (nr_frags + 1))
- 
- /* Maximum number of multicast addresses to filter (vs. Rx-all-multicast).
-    The RTL chips use a 64 element hash table based on the Ethernet CRC. */
-@@ -5115,7 +5119,7 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
- 	u32 opts[2];
- 	int frags;
- 
--	if (unlikely(TX_BUFFS_AVAIL(tp) < skb_shinfo(skb)->nr_frags)) {
-+	if (unlikely(!TX_FRAGS_READY_FOR(tp, skb_shinfo(skb)->nr_frags))) {
- 		netif_err(tp, drv, dev, "BUG! Tx Ring full when queue awake!\n");
- 		goto err_stop_0;
- 	}
-@@ -5169,7 +5173,7 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
- 
- 	mmiowb();
- 
--	if (TX_BUFFS_AVAIL(tp) < MAX_SKB_FRAGS) {
-+	if (!TX_FRAGS_READY_FOR(tp, MAX_SKB_FRAGS)) {
- 		/* Avoid wrongly optimistic queue wake-up: rtl_tx thread must
- 		 * not miss a ring update when it notices a stopped queue.
- 		 */
-@@ -5183,7 +5187,7 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
- 		 * can't.
- 		 */
- 		smp_mb();
--		if (TX_BUFFS_AVAIL(tp) >= MAX_SKB_FRAGS)
-+		if (TX_FRAGS_READY_FOR(tp, MAX_SKB_FRAGS))
- 			netif_wake_queue(dev);
- 	}
- 
-@@ -5306,7 +5310,7 @@ static void rtl_tx(struct net_device *dev, struct rtl8169_private *tp)
- 		 */
- 		smp_mb();
- 		if (netif_queue_stopped(dev) &&
--		    (TX_BUFFS_AVAIL(tp) >= MAX_SKB_FRAGS)) {
-+		    TX_FRAGS_READY_FOR(tp, MAX_SKB_FRAGS)) {
- 			netif_wake_queue(dev);
- 		}
- 		/*
--- 
-Ueimor
