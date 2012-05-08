@@ -1,173 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755631Ab2EHIQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 04:16:15 -0400
-Received: from mga14.intel.com ([143.182.124.37]:15844 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754412Ab2EHIQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 04:16:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="97551906"
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: chris.mason@oracle.com, linux-btrfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Subject: [PATCH] Btrfs: use ALIGN macro instead of open-coded expression
-Date: Tue,  8 May 2012 16:16:24 +0800
-Message-Id: <1336464984-30746-1-git-send-email-yuanhan.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1751571Ab2EHIVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 04:21:18 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:45641 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab2EHIVM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 04:21:12 -0400
+From: Cristian Chilipirea <cristian.chilipirea@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: daniel.baluta@gmail.com,
+        Cristian Chilipirea <cristian.chilipirea@gmail.com>
+Subject: [PATCH] Kernel: acct.c: fixed checkpatch warnings
+Date: Tue,  8 May 2012 11:21:06 +0300
+Message-Id: <1336465266-7505-1-git-send-email-cristian.chilipirea@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to section 'Find open-coded helpers or macros' at
-https://btrfs.wiki.kernel.org/index.php/Cleanup_ideas, here
-in the patch we use ALIGN macro to do the alignment.
+Fixed some checkpatch warnings and errors.
 
-Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Signed-off-by: Cristian Chilipirea <cristian.chilipirea@gmail.com>
 ---
- fs/btrfs/extent-tree.c |    4 ++--
- fs/btrfs/extent_io.c   |    9 ++++-----
- fs/btrfs/inode.c       |   15 +++++----------
- fs/btrfs/volumes.c     |    3 +--
- 4 files changed, 12 insertions(+), 19 deletions(-)
+ kernel/acct.c |   25 +++++++++++++------------
+ 1 files changed, 13 insertions(+), 12 deletions(-)
+ mode change 100644 => 100755 kernel/acct.c
 
-diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-index 49fd7b6..9161dca 100644
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -3280,7 +3280,7 @@ int btrfs_check_data_free_space(struct inode *inode, u64 bytes)
- 	int ret = 0, committed = 0, alloc_chunk = 1;
- 
- 	/* make sure bytes are sectorsize aligned */
--	bytes = (bytes + root->sectorsize - 1) & ~((u64)root->sectorsize - 1);
-+	bytes = ALIGN(bytes, root->sectorsize);
- 
- 	if (root == root->fs_info->tree_root ||
- 	    BTRFS_I(inode)->location.objectid == BTRFS_FREE_INO_OBJECTID) {
-@@ -3377,7 +3377,7 @@ void btrfs_free_reserved_data_space(struct inode *inode, u64 bytes)
- 	struct btrfs_space_info *data_sinfo;
- 
- 	/* make sure bytes are sectorsize aligned */
--	bytes = (bytes + root->sectorsize - 1) & ~((u64)root->sectorsize - 1);
-+	bytes = ALIGN(bytes, root->sectorsize);
- 
- 	data_sinfo = BTRFS_I(inode)->space_info;
- 	spin_lock(&data_sinfo->lock);
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index c9018a0..b1bc411 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2653,7 +2653,7 @@ static int __extent_read_full_page(struct extent_io_tree *tree,
- 
- 		iosize = min(extent_map_end(em) - cur, end - cur + 1);
- 		cur_end = min(extent_map_end(em) - 1, end);
--		iosize = (iosize + blocksize - 1) & ~((u64)blocksize - 1);
-+		iosize = ALIGN(iosize, blocksize);
- 		if (this_bio_flag & EXTENT_BIO_COMPRESSED) {
- 			disk_io_size = em->block_len;
- 			sector = em->block_start >> 9;
-@@ -2950,7 +2950,7 @@ static int __extent_writepage(struct page *page, struct writeback_control *wbc,
- 		BUG_ON(extent_map_end(em) <= cur);
- 		BUG_ON(end < cur);
- 		iosize = min(extent_map_end(em) - cur, end - cur + 1);
--		iosize = (iosize + blocksize - 1) & ~((u64)blocksize - 1);
-+		iosize = ALIGN(iosize, blocksize);
- 		sector = (em->block_start + extent_offset) >> 9;
- 		bdev = em->bdev;
- 		block_start = em->block_start;
-@@ -3580,7 +3580,7 @@ int extent_invalidatepage(struct extent_io_tree *tree,
- 	u64 end = start + PAGE_CACHE_SIZE - 1;
- 	size_t blocksize = page->mapping->host->i_sb->s_blocksize;
- 
--	start += (offset + blocksize - 1) & ~(blocksize - 1);
-+	start += ALIGN(offset, blocksize);
- 	if (start > end)
- 		return 0;
- 
-@@ -3688,7 +3688,6 @@ static struct extent_map *get_extent_skip_holes(struct inode *inode,
- 						u64 last,
- 						get_extent_t *get_extent)
- {
--	u64 sectorsize = BTRFS_I(inode)->root->sectorsize;
- 	struct extent_map *em;
- 	u64 len;
- 
-@@ -3699,7 +3698,7 @@ static struct extent_map *get_extent_skip_holes(struct inode *inode,
- 		len = last - offset;
- 		if (len == 0)
- 			break;
--		len = (len + sectorsize - 1) & ~(sectorsize - 1);
-+		len = ALIGN(len, BTRFS_I(inode)->root->sectorsize);
- 		em = get_extent(inode, NULL, 0, offset, len, 0);
- 		if (IS_ERR_OR_NULL(em))
- 			return em;
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 61b16c6..af5d6a9 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -228,8 +228,7 @@ static noinline int cow_file_range_inline(struct btrfs_trans_handle *trans,
- 	u64 isize = i_size_read(inode);
- 	u64 actual_end = min(end + 1, isize);
- 	u64 inline_len = actual_end - start;
--	u64 aligned_end = (end + root->sectorsize - 1) &
--			~((u64)root->sectorsize - 1);
-+	u64 aligned_end = ALIGN(end, root->sectorsize);
- 	u64 hint_byte;
- 	u64 data_len = inline_len;
- 	int ret;
-@@ -483,15 +482,13 @@ cont:
- 		 * up to a block size boundary so the allocator does sane
- 		 * things
- 		 */
--		total_compressed = (total_compressed + blocksize - 1) &
--			~(blocksize - 1);
-+		total_compressed = ALIGN(total_compressed, blocksize);
- 
- 		/*
- 		 * one last check to make sure the compression is really a
- 		 * win, compare the page count read with the blocks on disk
- 		 */
--		total_in = (total_in + PAGE_CACHE_SIZE - 1) &
--			~(PAGE_CACHE_SIZE - 1);
-+		total_in = ALIGN(total_in, PAGE_CACHE_SIZE);
- 		if (total_compressed >= total_in) {
- 			will_compress = 0;
- 		} else {
-@@ -5194,8 +5191,7 @@ again:
- 	} else if (found_type == BTRFS_FILE_EXTENT_INLINE) {
- 		size_t size;
- 		size = btrfs_file_extent_inline_len(leaf, item);
--		extent_end = (extent_start + size + root->sectorsize - 1) &
--			~((u64)root->sectorsize - 1);
-+		extent_end = ALIGN(extent_start + size, root->sectorsize);
+diff --git a/kernel/acct.c b/kernel/acct.c
+old mode 100644
+new mode 100644
+index 02e6167..882c915
+--- a/kernel/acct.c
++++ b/kernel/acct.c
+@@ -134,7 +134,7 @@ static int check_free_space(struct bsd_acct_struct *acct, struct file *file)
+ 	spin_lock(&acct_lock);
+ 	if (file != acct->file) {
+ 		if (act)
+-			res = act>0;
++			res = act > 0;
+ 		goto out;
  	}
  
- 	if (start >= extent_end) {
-@@ -5265,8 +5261,7 @@ again:
- 		copy_size = min_t(u64, PAGE_CACHE_SIZE - pg_offset,
- 				size - extent_offset);
- 		em->start = extent_start + extent_offset;
--		em->len = (copy_size + root->sectorsize - 1) &
--			~((u64)root->sectorsize - 1);
-+		em->len = ALIGN(copy_size, root->sectorsize);
- 		em->orig_start = EXTENT_MAP_INLINE;
- 		if (compress_type) {
- 			set_bit(EXTENT_FLAG_COMPRESSED, &em->flags);
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 1411b99..e09aab3 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -3761,8 +3761,7 @@ static int __btrfs_map_block(struct btrfs_mapping_tree *map_tree, int rw,
- 	num_stripes = 1;
- 	stripe_index = 0;
- 	stripe_nr_orig = stripe_nr;
--	stripe_nr_end = (offset + *length + map->stripe_len - 1) &
--			(~(map->stripe_len - 1));
-+	stripe_nr_end = ALIGN(offset + *length, map->stripe_len);
- 	do_div(stripe_nr_end, map->stripe_len);
- 	stripe_end_offset = stripe_nr_end * map->stripe_len -
- 			    (offset + *length);
+@@ -262,7 +262,7 @@ SYSCALL_DEFINE1(acct, const char __user *, name)
+ 	if (name) {
+ 		char *tmp = getname(name);
+ 		if (IS_ERR(tmp))
+-			return (PTR_ERR(tmp));
++			return PTR_ERR(tmp);
+ 		error = acct_on(tmp);
+ 		putname(tmp);
+ 	} else {
+@@ -376,7 +376,7 @@ static comp_t encode_comp_t(unsigned long value)
+ 	return exp;
+ }
+ 
+-#if ACCT_VERSION==1 || ACCT_VERSION==2
++#if ACCT_VERSION == 1 || ACCT_VERSION == 2
+ /*
+  * encode an u64 into a comp2_t (24 bits)
+  *
+@@ -389,7 +389,7 @@ static comp_t encode_comp_t(unsigned long value)
+ #define MANTSIZE2       20                      /* 20 bit mantissa. */
+ #define EXPSIZE2        5                       /* 5 bit base 2 exponent. */
+ #define MAXFRACT2       ((1ul << MANTSIZE2) - 1) /* Maximum fractional value. */
+-#define MAXEXP2         ((1 <<EXPSIZE2) - 1)    /* Maximum exponent. */
++#define MAXEXP2         ((1 << EXPSIZE2) - 1)    /* Maximum exponent. */
+ 
+ static comp2_t encode_comp2_t(u64 value)
+ {
+@@ -420,7 +420,7 @@ static comp2_t encode_comp2_t(u64 value)
+ }
+ #endif
+ 
+-#if ACCT_VERSION==3
++#if ACCT_VERSION == 3
+ /*
+  * encode an u64 into a 32 bit IEEE float
+  */
+@@ -429,8 +429,9 @@ static u32 encode_float(u64 value)
+ 	unsigned exp = 190;
+ 	unsigned u;
+ 
+-	if (value==0) return 0;
+-	while ((s64)value > 0){
++	if (value == 0)
++		return 0;
++	while ((s64)value > 0) {
+ 		value <<= 1;
+ 		exp--;
+ 	}
+@@ -490,13 +491,13 @@ static void do_acct_process(struct bsd_acct_struct *acct,
+ 		       + current->group_leader->start_time.tv_nsec;
+ 	/* convert nsec -> AHZ */
+ 	elapsed = nsec_to_AHZ(run_time);
+-#if ACCT_VERSION==3
++#if ACCT_VERSION == 3
+ 	ac.ac_etime = encode_float(elapsed);
+ #else
+ 	ac.ac_etime = encode_comp_t(elapsed < (unsigned long) -1l ?
+ 	                       (unsigned long) elapsed : (unsigned long) -1l);
+ #endif
+-#if ACCT_VERSION==1 || ACCT_VERSION==2
++#if ACCT_VERSION == 1 || ACCT_VERSION == 2
+ 	{
+ 		/* new enlarged etime field */
+ 		comp2_t etime = encode_comp2_t(elapsed);
+@@ -509,15 +510,15 @@ static void do_acct_process(struct bsd_acct_struct *acct,
+ 	/* we really need to bite the bullet and change layout */
+ 	ac.ac_uid = orig_cred->uid;
+ 	ac.ac_gid = orig_cred->gid;
+-#if ACCT_VERSION==2
++#if ACCT_VERSION == 2
+ 	ac.ac_ahz = AHZ;
+ #endif
+-#if ACCT_VERSION==1 || ACCT_VERSION==2
++#if ACCT_VERSION == 1 || ACCT_VERSION == 2
+ 	/* backward-compatible 16 bit fields */
+ 	ac.ac_uid16 = ac.ac_uid;
+ 	ac.ac_gid16 = ac.ac_gid;
+ #endif
+-#if ACCT_VERSION==3
++#if ACCT_VERSION == 3
+ 	ac.ac_pid = task_tgid_nr_ns(current, ns);
+ 	rcu_read_lock();
+ 	ac.ac_ppid = task_tgid_nr_ns(rcu_dereference(current->real_parent), ns);
 -- 
-1.7.7.6
+1.7.5.4
 
