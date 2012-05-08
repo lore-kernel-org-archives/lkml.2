@@ -1,135 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab2EHMvQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 08:51:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55245 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886Ab2EHMvP (ORCPT
+	id S1754180Ab2EHNDs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 09:03:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46642 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753257Ab2EHNDr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 08:51:15 -0400
-Date: Tue, 8 May 2012 05:49:27 -0700
-From: tip-bot for Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Message-ID: <tip-ec83db0f78cd44c3b586ec1c3a348d1a8a389797@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        sboyd@codeaurora.org, hch@infradead.org, anton@redhat.com,
-        ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
-        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
-        oleg@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        sboyd@codeaurora.org, hch@infradead.org, ananth@in.ibm.com,
-        anton@redhat.com, masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
-        acme@infradead.org, srikar@linux.vnet.ibm.com, oleg@redhat.com,
-        tglx@linutronix.de
-In-Reply-To: <20120508111126.21004.38285.sendpatchset@srdronam.in.ibm.com>
-References: <20120508111126.21004.38285.sendpatchset@srdronam.in.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/uprobes] tracing: Fix kconfig warning due to a typo
-Git-Commit-ID: ec83db0f78cd44c3b586ec1c3a348d1a8a389797
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 08 May 2012 05:49:33 -0700 (PDT)
+	Tue, 8 May 2012 09:03:47 -0400
+Message-ID: <1336482202.16236.29.camel@twins>
+Subject: Re: linux-next oops in __lock_acquire for process_one_work
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+Date: Tue, 08 May 2012 15:03:22 +0200
+In-Reply-To: <20120507175743.GC19417@google.com>
+References: <alpine.LSU.2.00.1205070951170.1544@eggly.anvils>
+	 <20120507175743.GC19417@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ec83db0f78cd44c3b586ec1c3a348d1a8a389797
-Gitweb:     http://git.kernel.org/tip/ec83db0f78cd44c3b586ec1c3a348d1a8a389797
-Author:     Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-AuthorDate: Tue, 8 May 2012 16:41:26 +0530
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 8 May 2012 14:17:25 +0200
+On Mon, 2012-05-07 at 10:57 -0700, Tejun Heo wrote:
+> (cc'ing Peter and Ingo and quoting whole body)
+> 
+> On Mon, May 07, 2012 at 10:19:09AM -0700, Hugh Dickins wrote:
+> > Running MM load on recent linux-nexts (e.g. 3.4.0-rc5-next-20120504),
+> > with CONFIG_PROVE_LOCKING=y, I've been hitting an oops in __lock_acquire
+> > called from lock_acquire called from process_one_work: serving mm/swap.c's
+> > lru_add_drain_all - schedule_on_each_cpu(lru_add_drain_per_cpu).
+> > 
+> > In each case the oopsing address has been ffffffff00000198, and the
+> > oopsing instruction is the "atomic_inc((atomic_t *)&class->ops)" in
+> > __lock_acquire: so class is ffffffff00000000.
+> > 
+> > I notice Stephen's commit 0976dfc1d0cd80a4e9dfaf87bd8744612bde475a
+> > workqueue: Catch more locking problems with flush_work()
+> > in linux-next but not 3.4-rc, adding
+> > 	lock_map_acquire(&work->lockdep_map);
+> > 	lock_map_release(&work->lockdep_map);
+> > to flush_work.
+> > 
+> > I believe that occasionally races with your
+> > 	struct lockdep_map lockdep_map = work->lockdep_map;
+> > in process_one_work, putting an entry into the class_cache
+> > just as you're copying it, so you end up with half a pointer.
+> > yes, the structure copy is using "rep movsl" not "rep movsq".
 
-tracing: Fix kconfig warning due to a typo
+But the copy is copying from work->lockdep_map, not to, so it doesn't
+matter does it? If anything would explode it would be the:
 
-Commit f3f096cfe ("tracing: Provide trace events interface for
-uprobes") throws a warning about unmet dependencies.
+  lock_map_acquire(&lockdep_map);
 
-The exact warning message is:
-	warning: (UPROBE_EVENT) selects UPROBES which has unmet direct dependencies (UPROBE_EVENTS && PERF_EVENTS)
+because that's the target of the copy and could indeed observe a partial
+update (assuming the reported but silly "rep movsl").
 
-This is due to a typo in arch/Kconfig file. Fix similar typos in
-the uprobetracer documentation.
+> The offending commit is 0976dfc1d0cd80a4e9dfaf87bd8744612bde475a
+> "workqueue: Catch more locking problems with flush_work()".  It sounds
+> fancy but all it does is adding the following to flush_work().
+> 
+> 	lock_map_acquire(&work->lockdep_map);
+> 	lock_map_release(&work->lockdep_map);
+> 
+> Which seems correct to me and more importantly not different from what
+> wait_on_work() does, so if this is broken, flush_work_sync() and
+> cancel_work_sync() are broken too - probably masked by lower usage
+> frequency.
+> 
+> It seems the problem stems from how process_one_work() "caches"
+> lockdep_map.  This part predates cmwq changes but it seems necessary
+> because the work item may be freed during execution but lockdep_map
+> should be released after execution is complete.
 
-Also add sample format of a uprobe event in the uprobetracer
-documentation as suggested by Masami Hiramatsu.
+Exactly.
 
-Reported-by: Stephen Boyd <sboyd@codeaurora.org>
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120508111126.21004.38285.sendpatchset@srdronam.in.ibm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+>   Peter, do you
+> remember how this lockdep_map copying is added?  Is (or was) this
+> correct?  If it's broken, how do we fix it?  Add a lockdep_map copy
+> API which does some magic lockdep locking dancing?
+
+I think there's a problem if indeed we do silly things like small copies
+like Hugh saw (why would gcc ever generate small copies for objects that
+are naturally aligned and naturally sized?).
+
+Something like the below should fix that problem, but it doesn't explain
+the observed issue..
+
 ---
- Documentation/trace/uprobetracer.txt |   22 ++++++++++++++++++++--
- arch/Kconfig                         |    2 +-
- 2 files changed, 21 insertions(+), 3 deletions(-)
+ include/linux/lockdep.h |   19 +++++++++++++++++++
+ kernel/timer.c          |    2 +-
+ kernel/workqueue.c      |    2 +-
+ 3 files changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
-index eae40a0..24ce682 100644
---- a/Documentation/trace/uprobetracer.txt
-+++ b/Documentation/trace/uprobetracer.txt
-@@ -5,7 +5,7 @@
- Overview
- --------
- Uprobe based trace events are similar to kprobe based trace events.
--To enable this feature, build your kernel with CONFIG_UPROBE_EVENTS=y.
-+To enable this feature, build your kernel with CONFIG_UPROBE_EVENT=y.
+diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+index d36619e..dc6661b 100644
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -157,6 +157,25 @@ struct lockdep_map {
+ #endif
+ };
  
- Similar to the kprobe-event tracer, this doesn't need to be activated via
- current_tracer. Instead of that, add probe points via
-@@ -68,7 +68,25 @@ in the object. We can see the events that are registered by looking at the
- uprobe_events file.
- 
-     # cat uprobe_events
--    p:uprobes/p_zsh_0x46420 /bin/zsh:0x0000000000046420
-+    p:uprobes/p_zsh_0x46420 /bin/zsh:0x00046420 arg1=%ip arg2=%ax
++static inline struct lockdep_map lockdep_copy_map(struct lockdep_map *lock)
++{
++	struct lockdep_map _lock = *lock;
++	int i;
 +
-+The format of events can be seen by viewing the file events/uprobes/p_zsh_0x46420/format
++	/*
++	 * Since the class cache can be modified concurrently we could observe
++	 * half pointers (64bit arch using 32bit copy insns). Therefore clear
++	 * the caches and take the performance hit.
++	 *
++	 * XXX it doesn't work well with lockdep_set_class_and_subclass(), since
++	 *     that relies on cache abuse.
++	 */
++	for (i = 0; i < NR_LOCKDEP_CACHING_CLASSES; i++)
++		_lock.class_cache[i] = NULL;
 +
-+    # cat events/uprobes/p_zsh_0x46420/format
-+    name: p_zsh_0x46420
-+    ID: 922
-+    format:
-+	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
-+	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
-+	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
-+	field:int common_pid;	offset:4;	size:4;	signed:1;
-+	field:int common_padding;	offset:8;	size:4;	signed:1;
++	return _lock;
++}
 +
-+	field:unsigned long __probe_ip;	offset:12;	size:4;	signed:0;
-+	field:u32 arg1;	offset:16;	size:4;	signed:0;
-+	field:u32 arg2;	offset:20;	size:4;	signed:0;
-+
-+    print fmt: "(%lx) arg1=%lx arg2=%lx", REC->__probe_ip, REC->arg1, REC->arg2
- 
- Right after definition, each event is disabled by default. For tracing these
- events, you need to enable it by:
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 0f8f968..2880abf 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -78,7 +78,7 @@ config OPTPROBES
- 
- config UPROBES
- 	bool "Transparent user-space probes (EXPERIMENTAL)"
--	depends on UPROBE_EVENTS && PERF_EVENTS
-+	depends on UPROBE_EVENT && PERF_EVENTS
- 	default n
- 	help
- 	  Uprobes is the user-space counterpart to kprobes: they
+ /*
+  * Every lock has a list of other locks that were taken after it.
+  * We only grow the list, never remove from it:
+diff --git a/kernel/timer.c b/kernel/timer.c
+index a297ffc..fa98821 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1102,7 +1102,7 @@ static void call_timer_fn(struct timer_list *timer, void (*fn)(unsigned long),
+ 	 * warnings as well as problems when looking into
+ 	 * timer->lockdep_map, make a copy and use that here.
+ 	 */
+-	struct lockdep_map lockdep_map = timer->lockdep_map;
++	struct lockdep_map lockdep_map = lockdep_map_copy(&timer->lockdep_map);
+ #endif
+ 	/*
+ 	 * Couple the lock chain with the lock chain at
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 5abf42f..5d92b43 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1810,7 +1810,7 @@ __acquires(&gcwq->lock)
+ 	 * lock freed" warnings as well as problems when looking into
+ 	 * work->lockdep_map, make a copy and use that here.
+ 	 */
+-	struct lockdep_map lockdep_map = work->lockdep_map;
++	struct lockdep_map lockdep_map = lockdep_copy_map(&work->lockdep_map);
+ #endif
+ 	/*
+ 	 * A single work shouldn't be executed concurrently by
+
