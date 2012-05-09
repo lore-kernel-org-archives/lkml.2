@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932381Ab2EIUvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 16:51:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54718 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932347Ab2EIUva (ORCPT
+	id S932378Ab2EIUxy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 16:53:54 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54839 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755458Ab2EIUxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 16:51:30 -0400
-Date: Wed, 9 May 2012 13:51:26 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Johannes Thumshirn <morbidrsa@googlemail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        stefanha@gmail.com, andor.daam@googlemail.com, grabner@icg.tugraz.at,
-        jj@chaosbits.net, thomas@m3y3r.de
-Subject: Re: [PATCH 36/36] drivers/staging/line6/config.h: Delete CHECKPOINT
- macro
-Message-ID: <20120509205126.GA15545@kroah.com>
-References: <1336415273-11713-1-git-send-email-morbidrsa@googlemail.com>
+	Wed, 9 May 2012 16:53:52 -0400
+Message-ID: <4FAAD95D.9010108@wwwdotorg.org>
+Date: Wed, 09 May 2012 14:53:49 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336415273-11713-1-git-send-email-morbidrsa@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Subject: Re: [PATCH 12/12] ARM: ux500: switch MSP to using pinctrl for pins
+References: <1336470347-23886-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1336470347-23886-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 08:27:53PM +0200, Johannes Thumshirn wrote:
-> Kill unused debugging macro CHECKPOINT
+On 05/08/2012 03:45 AM, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> Signed-off-by: Johannes Thumshirn <morbidrsa@googlemail.com>
-> ---
->  drivers/staging/line6/config.h |    5 -----
->  1 files changed, 0 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/staging/line6/config.h b/drivers/staging/line6/config.h
-> index a82d8bf..2493491 100644
-> --- a/drivers/staging/line6/config.h
-> +++ b/drivers/staging/line6/config.h
-> @@ -34,11 +34,6 @@
->  #define CREATE_RAW_FILE      0
->  
->  #if DO_DEBUG_MESSAGES
-> -#define CHECKPOINT pr_info("line6usb: %s (%s:%d)\n", \
-> -			  __func__, __FILE__, __LINE__)
-> -#endif
+> The MSP platform data callbacks use the old custom callbacks to
+> set the state of the pins, switch over to using pinctrl.
 
-This patch doesn't apply as it seems to depend on a patch that is not in
-my tree anywhere :(
+Aside from the comments I've already made, I guess you can consider the
+whole series:
 
-greg k-h
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+
+I'm not at all familiar with this HW, and didn't look at every detail,
+but at least I see no particular reason not to ack it.
