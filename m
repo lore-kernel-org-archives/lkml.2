@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757088Ab2EIHZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 03:25:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40684 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025Ab2EIHZX (ORCPT
+	id S1757329Ab2EIHfz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 03:35:55 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61234 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab2EIHfx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 03:25:23 -0400
-Date: Wed, 9 May 2012 00:25:18 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
-        Yufeng Shen <miletus@chromium.org>
-Subject: Re: [PATCH 03/14 v3] Input: atmel_mxt_ts - refactor
- mxt_read/write_reg to take a length
-Message-ID: <20120509072517.GH10514@core.coreip.homeip.net>
-References: <1334755319-21365-1-git-send-email-djkurtz@chromium.org>
- <1334755319-21365-4-git-send-email-djkurtz@chromium.org>
- <20120509055411.GG10514@core.coreip.homeip.net>
- <20120509090500.1dc9143e@endymion.delvare>
+	Wed, 9 May 2012 03:35:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120509090500.1dc9143e@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87sjfcfynb.fsf@rustcorp.com.au>
+References: <87ehtf3lqh.fsf@rustcorp.com.au>
+	<20120227155338.7b5110cd.akpm@linux-foundation.org>
+	<20120228112422.GC11324@alboin.amr.corp.intel.com>
+	<87ipijzfwn.fsf@rustcorp.com.au>
+	<20120420112149.GH25458@amd.local0.net>
+	<87sjfcfynb.fsf@rustcorp.com.au>
+Date: Wed, 9 May 2012 17:35:53 +1000
+Message-ID: <CAPa8GCCSBxZZVS+ROshEW9qXwXLpwkoeiFiL0xnSGW6rsDQyrA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] brlocks/lglocks: turn into functions
+From: Nick Piggin <npiggin@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Nick Piggin <npiggin@kernel.dk>, Andi Kleen <ak@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 09:05:00AM +0200, Jean Delvare wrote:
-> Hi Dmirty,
-> 
-> On Tue, 8 May 2012 22:54:11 -0700, Dmitry Torokhov wrote:
-> > Hi Daniel,
-> > 
-> > On Wed, Apr 18, 2012 at 09:21:48PM +0800, Daniel Kurtz wrote:
-> > > +	ret = i2c_transfer(client->adapter, xfer, 2);
-> > > +	if (ret != 2) {
-> > > +		dev_err(&client->dev, "i2c read reg failed (%d)\n", ret);
-> > > +		if (ret >= 0)
-> > > +			ret = -EIO;
-> > >  	}
-> > >  
-> > > -	return 0;
-> > > +	return (ret == 2) ? 0 : ret;
-> > >  }
-> > 
-> > Would prefer:
-> > 
-> > 	ret = i2c_transfer(client->adapter, xfer, ARRAY_SIZE(xfer));
-> > 	if (ret != ARRAY_SIZE(xfer)) {
-> > 		if (ret >= 0)
-> > 			ret = -EIO;
-> > 		dev_err(&client->dev, "i2c read reg failed (%d)\n", ret);
-> > 		return ret;
-> > 	}
-> > 
-> > 	return 0;
-> > 
-> > 
-> > Or maybe we need i2c_transfer_exact() wrapper? Jean?
-> 
-> What would this function do? Return 0 on success instead of the number
-> of transferred messages? And -EIO on partial transfers?
+On 7 May 2012 13:39, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> On Fri, 20 Apr 2012 21:21:49 +1000, Nick Piggin <npiggin@kernel.dk> wrote:
+>> This still not merged?
+>
+> No, I've been away.  I've put it in -next for tomorrow, though I'm not
+> sure what the best way to get it to Linus next merge window.
+>
+>> There is a reason, which is performance. Extra function call, but also
+>> IIRC the percpu accessor was not so fast doing it this way. Maybe
+>> that's improved...
+>>
+>> So what's the performance difference?
+>
+> What benchmarks you usually run?  Feel free to try it out and report
+> back; I only have small hardware here.
 
-Yes, exactly.
+Nothing big. The actual scalability should be unchanged, because you're
+not going to be dirtying any shared cachelines. It's the use of dynamic
+percpu allocator and out of line calls etc which will slow down straight
+line performance.
 
-> 
-> That would make sense. Partial success is a rare case anyway, and
-> recovery possibilities are even rarer. I think most drivers don't
-> bother and either retry the whole transaction or fail right away. In
-> fact the number of messages successfully transferred is more useful to
-> diagnose problems during driver development or debugging.
-> 
-> Feel free to write and send a patch introducing i2c_transfer_exact().
-> It would make sense to have it log a debug message on partial success,
-> as it is a rare case. Bonus points if you also sent one or more patches
-> converting (some of) the existing callers to make use of the new
-> function.
+How many microseconds does it take to stat("./dir1/dir2/myfile"), for
+example?
 
-OK, thanks.
-
--- 
-Dmitry
+`git diff` of a large tree, for something more realistic but still going to
+exercise that path.
