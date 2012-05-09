@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab2EIF5z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:57:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39166 "EHLO
+	id S1757152Ab2EIFxr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:53:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38885 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756655Ab2EIFxt (ORCPT
+	by vger.kernel.org with ESMTP id S1756119Ab2EIFxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:49 -0400
-Message-Id: <20120509055039.267551992@decadent.org.uk>
+	Wed, 9 May 2012 01:53:13 -0400
+Message-Id: <20120509055038.318026845@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:37 +0100
+Date: Wed, 09 May 2012 06:51:30 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Veaceslav Falico <vfalico@redhat.com>,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        Marcelo Ricardo Leitner <mleitner@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 068/167] [PATCH 08/26] bonding: properly unset current_arp_slave on slave
- link up
+        alan@lxorguk.ukuu.org.uk, "J. Bruce Fields" <bfields@redhat.com>,
+        Orion Poplawski <orion@cora.nwra.com>
+Subject: [ 061/167] [PATCH] nfsd: dont fail unchecked creates of non-special files
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,46 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-[ Upstream commit 5a4309746cd74734daa964acb02690c22b3c8911 ]
+commit 9dc4e6c4d1182d34604ea40fef641775f5b15456 upstream.
 
-When a slave comes up, we're unsetting the current_arp_slave without
-removing active flags from it, which can lead to situations where we have
-more than one slave with active flags in active-backup mode.
+Allow a v3 unchecked open of a non-regular file succeed as if it were a
+lookup; typically a client in such a case will want to fall back on a
+local open, so succeeding and giving it the filehandle is more useful
+than failing with nfserr_exist, which makes it appear that nothing at
+all exists by that name.
 
-To avoid this situation we must remove the active flags from a slave before
-removing it as a current_arp_slave.
+Similarly for v4, on an open-create, return the same errors we would on
+an attempt to open a non-regular file, instead of returning
+nfserr_exist.
 
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
-Signed-off-by: Andy Gospodarek <andy@greyhouse.net>
-Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This fixes a problem found doing a v4 open of a symlink with
+O_RDONLY|O_CREAT, which resulted in the current client returning EEXIST.
+
+Thanks also to Trond for analysis.
+
+Reported-by: Orion Poplawski <orion@cora.nwra.com>
+Tested-by: Orion Poplawski <orion@cora.nwra.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[bwh: Backported to 3.2: use &resfh, not resfh]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/bonding/bond_main.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ fs/nfsd/nfs4proc.c |    8 ++++----
+ fs/nfsd/vfs.c      |    2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index e58aa2b..f65e0b9 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -2982,7 +2982,11 @@ static void bond_ab_arp_commit(struct bonding *bond, int delta_in_ticks)
- 					   trans_start + delta_in_ticks)) ||
- 			    bond->curr_active_slave != slave) {
- 				slave->link = BOND_LINK_UP;
--				bond->current_arp_slave = NULL;
-+				if (bond->current_arp_slave) {
-+					bond_set_slave_inactive_flags(
-+						bond->current_arp_slave);
-+					bond->current_arp_slave = NULL;
-+				}
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -235,17 +235,17 @@ do_open_lookup(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nfsd4_o
+ 		 */
+ 		if (open->op_createmode == NFS4_CREATE_EXCLUSIVE && status == 0)
+ 			open->op_bmval[1] = (FATTR4_WORD1_TIME_ACCESS |
+-						FATTR4_WORD1_TIME_MODIFY);
++							FATTR4_WORD1_TIME_MODIFY);
+ 	} else {
+ 		status = nfsd_lookup(rqstp, current_fh,
+ 				     open->op_fname.data, open->op_fname.len, &resfh);
+ 		fh_unlock(current_fh);
+-		if (status)
+-			goto out;
+-		status = nfsd_check_obj_isreg(&resfh);
+ 	}
+ 	if (status)
+ 		goto out;
++	status = nfsd_check_obj_isreg(&resfh);
++	if (status)
++		goto out;
  
- 				pr_info("%s: link status definitely up for interface %s.\n",
- 					bond->dev->name, slave->dev->name);
--- 
-1.7.10
-
+ 	if (is_create_with_attrs(open) && open->op_acl != NULL)
+ 		do_set_nfs4_acl(rqstp, &resfh, open->op_acl, open->op_bmval);
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -1458,7 +1458,7 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 		switch (createmode) {
+ 		case NFS3_CREATE_UNCHECKED:
+ 			if (! S_ISREG(dchild->d_inode->i_mode))
+-				err = nfserr_exist;
++				goto out;
+ 			else if (truncp) {
+ 				/* in nfsv4, we need to treat this case a little
+ 				 * differently.  we don't want to truncate the
 
 
