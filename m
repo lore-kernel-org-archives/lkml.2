@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760102Ab2EIP4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 11:56:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41914 "EHLO mail.zytor.com"
+	id S932251Ab2EIP4c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 11:56:32 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20823 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758178Ab2EIP4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 11:56:07 -0400
-Message-ID: <4FAA938A.1030003@zytor.com>
-Date: Wed, 09 May 2012 08:55:54 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1758178Ab2EIP43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 11:56:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="164004683"
+Date: Wed, 9 May 2012 18:06:07 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Felipe Balbi <balbi@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH 4/6] twl4030_charger: Allow charger to control the
+ regulator that feeds it.
+Message-ID: <20120509160607.GQ1794@sortiz-mobl>
+References: <20120425072931.20124.56635.stgit@notabene.brown>
+ <20120425073310.20124.68293.stgit@notabene.brown>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Ido Yariv <ido@wizery.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Shai Fultheim <shai@scalemp.com>
-Subject: Re: [PATCH v4] vsmp: Fix number of CPUs when vsmp is disabled
-References: <20120509082225.GB5036@NoteStation.colubris.lan> <1336552121-6742-1-git-send-email-ido@wizery.com> <20120509154448.GD2653@gmail.com>
-In-Reply-To: <20120509154448.GD2653@gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120425073310.20124.68293.stgit@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2012 08:44 AM, Ingo Molnar wrote:
-> 
-> * Ido Yariv <ido@wizery.com> wrote:
-> 
->> +static void __init vsmp_cap_cpus(void)
->> +{
->> +	void __iomem *address;
->> +	unsigned int cfg, topology, node_shift, maxcpus;
->> +
->> +#ifdef CONFIG_X86_VSMP
->> +	/* VSMP is enabled, no need to cap cpus */
->> +	return;
->> +#elif defined(CONFIG_SMP)
->> +	/*
->> +	 * CONFIG_X86_VSMP is not configured, so limit the number CPUs to the
-> 
-> I suspect this will throw compiler warnings in the 
-> CONFIG_X86_VSMP && !CONFIG_SMP case.
-> 
+Hi Neil,
 
-What on Earth is the point of allowing that combination?  Why not make
-X86_VSMP depend on SMP and reduce the testing matrix?
+On Wed, Apr 25, 2012 at 05:33:11PM +1000, NeilBrown wrote:
+> The charger needs usb3v1 to be running, so add a new consumer to
+> keep it running.
+> 
+> This allows the charger to draw current even when the USB driver has
+> powered down.
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> ---
+> 
+>  drivers/mfd/twl-core.c          |    9 +++++----
+>  drivers/power/twl4030_charger.c |   15 +++++++++++++++
+>  2 files changed, 20 insertions(+), 4 deletions(-)
+In case Anton has not taken that patchset yet:
 
-	-hpa
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+
+Cheers,
+Samuel.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
