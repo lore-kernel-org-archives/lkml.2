@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab2EIGW4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:22:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38919 "EHLO
+	id S1758293Ab2EIGYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:24:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38880 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756211Ab2EIFxQ (ORCPT
+	by vger.kernel.org with ESMTP id S1756116Ab2EIFxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:16 -0400
-Message-Id: <20120509055040.364221613@decadent.org.uk>
+	Wed, 9 May 2012 01:53:14 -0400
+Message-Id: <20120509055039.400449756@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:45 +0100
+Date: Wed, 09 May 2012 06:51:38 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tony Zelenoff <antonz@parallels.com>,
+        alan@lxorguk.ukuu.org.uk, Phil Sutter <phil.sutter@viprinet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 076/167] [PATCH 16/26] atl1: fix kernel panic in case of DMA errors
+Subject: [ 069/167] [PATCH 09/26] wimax: i2400m - prevent a possible kernel bug due to
+ missing fw_name string
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,106 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Zelenoff <antonz@parallels.com>
+From: Phil Sutter <phil.sutter@viprinet.com>
 
-[ Upstream commit 03662e41c7cff64a776bfb1b3816de4be43de881 ]
+[ Upstream commit 4eee6a3a04e8bb53fbe7de0f64d0524d3fbe3f80 ]
 
-Problem:
-There was two separate work_struct structures which share one
-handler. Unfortunately getting atl1_adapter structure from
-work_struct in case of DMA error was done from incorrect
-offset which cause kernel panics.
+This happened on a machine with a custom hotplug script calling nameif,
+probably due to slow firmware loading. At the time nameif uses ethtool
+to gather interface information, i2400m->fw_name is zero and so a null
+pointer dereference occurs from within i2400m_get_drvinfo().
 
-Solution:
-The useless work_struct for DMA error removed and
-handler name changed to more generic one.
-
-Signed-off-by: Tony Zelenoff <antonz@parallels.com>
+Signed-off-by: Phil Sutter <phil.sutter@viprinet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/atheros/atlx/atl1.c |   12 +++++-------
- drivers/net/ethernet/atheros/atlx/atl1.h |    3 +--
- drivers/net/ethernet/atheros/atlx/atlx.c |    2 +-
- 3 files changed, 7 insertions(+), 10 deletions(-)
+ drivers/net/wimax/i2400m/netdev.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/atheros/atlx/atl1.c b/drivers/net/ethernet/atheros/atlx/atl1.c
-index 33a4e35..ee532e1 100644
---- a/drivers/net/ethernet/atheros/atlx/atl1.c
-+++ b/drivers/net/ethernet/atheros/atlx/atl1.c
-@@ -2473,7 +2473,7 @@ static irqreturn_t atl1_intr(int irq, void *data)
- 					"pcie phy link down %x\n", status);
- 			if (netif_running(adapter->netdev)) {	/* reset MAC */
- 				iowrite32(0, adapter->hw.hw_addr + REG_IMR);
--				schedule_work(&adapter->pcie_dma_to_rst_task);
-+				schedule_work(&adapter->reset_dev_task);
- 				return IRQ_HANDLED;
- 			}
- 		}
-@@ -2485,7 +2485,7 @@ static irqreturn_t atl1_intr(int irq, void *data)
- 					"pcie DMA r/w error (status = 0x%x)\n",
- 					status);
- 			iowrite32(0, adapter->hw.hw_addr + REG_IMR);
--			schedule_work(&adapter->pcie_dma_to_rst_task);
-+			schedule_work(&adapter->reset_dev_task);
- 			return IRQ_HANDLED;
- 		}
+diff --git a/drivers/net/wimax/i2400m/netdev.c b/drivers/net/wimax/i2400m/netdev.c
+index 64a1106..4697cf3 100644
+--- a/drivers/net/wimax/i2400m/netdev.c
++++ b/drivers/net/wimax/i2400m/netdev.c
+@@ -607,7 +607,8 @@ static void i2400m_get_drvinfo(struct net_device *net_dev,
+ 	struct i2400m *i2400m = net_dev_to_i2400m(net_dev);
  
-@@ -2630,10 +2630,10 @@ static void atl1_down(struct atl1_adapter *adapter)
- 	atl1_clean_rx_ring(adapter);
- }
- 
--static void atl1_tx_timeout_task(struct work_struct *work)
-+static void atl1_reset_dev_task(struct work_struct *work)
- {
- 	struct atl1_adapter *adapter =
--		container_of(work, struct atl1_adapter, tx_timeout_task);
-+		container_of(work, struct atl1_adapter, reset_dev_task);
- 	struct net_device *netdev = adapter->netdev;
- 
- 	netif_device_detach(netdev);
-@@ -3032,12 +3032,10 @@ static int __devinit atl1_probe(struct pci_dev *pdev,
- 		    (unsigned long)adapter);
- 	adapter->phy_timer_pending = false;
- 
--	INIT_WORK(&adapter->tx_timeout_task, atl1_tx_timeout_task);
-+	INIT_WORK(&adapter->reset_dev_task, atl1_reset_dev_task);
- 
- 	INIT_WORK(&adapter->link_chg_task, atlx_link_chg_task);
- 
--	INIT_WORK(&adapter->pcie_dma_to_rst_task, atl1_tx_timeout_task);
--
- 	err = register_netdev(netdev);
- 	if (err)
- 		goto err_common;
-diff --git a/drivers/net/ethernet/atheros/atlx/atl1.h b/drivers/net/ethernet/atheros/atlx/atl1.h
-index 109d6da..e04bf4d 100644
---- a/drivers/net/ethernet/atheros/atlx/atl1.h
-+++ b/drivers/net/ethernet/atheros/atlx/atl1.h
-@@ -758,9 +758,8 @@ struct atl1_adapter {
- 	u16 link_speed;
- 	u16 link_duplex;
- 	spinlock_t lock;
--	struct work_struct tx_timeout_task;
-+	struct work_struct reset_dev_task;
- 	struct work_struct link_chg_task;
--	struct work_struct pcie_dma_to_rst_task;
- 
- 	struct timer_list phy_config_timer;
- 	bool phy_timer_pending;
-diff --git a/drivers/net/ethernet/atheros/atlx/atlx.c b/drivers/net/ethernet/atheros/atlx/atlx.c
-index aabcf4b..41c6d83 100644
---- a/drivers/net/ethernet/atheros/atlx/atlx.c
-+++ b/drivers/net/ethernet/atheros/atlx/atlx.c
-@@ -193,7 +193,7 @@ static void atlx_tx_timeout(struct net_device *netdev)
- {
- 	struct atlx_adapter *adapter = netdev_priv(netdev);
- 	/* Do the reset outside of interrupt context */
--	schedule_work(&adapter->tx_timeout_task);
-+	schedule_work(&adapter->reset_dev_task);
- }
- 
- /*
+ 	strncpy(info->driver, KBUILD_MODNAME, sizeof(info->driver) - 1);
+-	strncpy(info->fw_version, i2400m->fw_name, sizeof(info->fw_version) - 1);
++	strncpy(info->fw_version,
++	        i2400m->fw_name ? : "", sizeof(info->fw_version) - 1);
+ 	if (net_dev->dev.parent)
+ 		strncpy(info->bus_info, dev_name(net_dev->dev.parent),
+ 			sizeof(info->bus_info) - 1);
 -- 
 1.7.10
 
