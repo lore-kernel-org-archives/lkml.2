@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758302Ab2EILRR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 07:17:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48154 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758021Ab2EILRP convert rfc822-to-8bit (ORCPT
+	id S1758356Ab2EILVv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 07:21:51 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63061 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757959Ab2EILVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 07:17:15 -0400
-Message-ID: <1336555184.2527.6.camel@twins>
-Subject: Re: [PATCH 0/5] [x86]: Improve secondary CPU bring-up process
- robustness
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, rob@landley.net, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, luto@mit.edu,
-        suresh.b.siddha@intel.com, avi@redhat.com, johnstul@us.ibm.com,
-        arjan@linux.intel.com, linux-doc@vger.kernel.org
-Date: Wed, 09 May 2012 11:19:44 +0200
-In-Reply-To: <1336559102-28103-1-git-send-email-imammedo@redhat.com>
-References: <1336559102-28103-1-git-send-email-imammedo@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 9 May 2012 07:21:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH] serial8250-em: Add DT support
+Date: Wed, 9 May 2012 11:21:38 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: linux-serial@vger.kernel.org, horms@verge.net.au, linux-sh@vger.kernel.org,
+        gregkh@linuxfoundation.org, swarren@wwwdotorg.org,
+        linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        paul.gortmaker@windriver.com, lethal@linux-sh.org, olof@lixom.net,
+        dan.j.williams@intel.com, alan@linux.intel.com
+References: <20120509065514.18528.83245.sendpatchset@w520>
+In-Reply-To: <20120509065514.18528.83245.sendpatchset@w520>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205091121.38313.arnd@arndb.de>
+X-Provags-ID: V02:K0:f+zROg400LX/K25iGt5oexoVSqohOX+qX9HtKJ1lmq1
+ 5Ur84HOmjA05nUtbNNfvf0JVKVgUFaOUKF5msrk77X27TyZXVP
+ mm3kyheoAh1On813x2bkT0YA8tutNPq3tb1HKapf+pBlkhxJwF
+ DQYhxCeQ+55EaWIXwaCzwx+3NuT4hIcXs12RTOhO1kDJPBJHDt
+ XJCBlunUKb3O6mdMxodpGOInbrenW9cbSMQrGoM6atn/6Tr9cm
+ gck7uAEdOjN89q5OvMt6uBeE1jb2uCQo/d6Q5qNJcDGFmhUCNA
+ KwiZzjYft0yc8loWNTzcOf5m2wWfUUC4sT6f3GeHxCTCVgQVnB
+ QGivTSTTtlWwhdUBMDLg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 12:24 +0200, Igor Mammedov wrote:
-> Target audience for this patches is mostly virt. environments, where
-> physical CPUs are shared beetween many guests and on overcommited
-> host it can uncover different race conditions during secondary CPU
-> bring-up.
+On Wednesday 09 May 2012, Magnus Damm wrote:
+> 
+> From: Magnus Damm <damm@opensource.se>
+> 
+> Update the 8250_em driver to support DT.
+> 
+> Signed-off-by: Magnus Damm <damm@opensource.se>
 
-The good news is that you're working on this, the bad news is that all
-this code is slated for the scrap heap :-)
-
-Thomas is currently in the process of doing a massive overhaul of the
-hotplug code, included in that would be the stuff you're touching.
-
-Every architecture does this hand-shake differently and probably buggy,
-all that needs to move into generic code. The only bits needed in the
-arch code are the cpu wakeup and initial trampoline, the rest should be
-generic.
-
-I'm not quite sure how far along he is, but it would be awesome if you
-could help him out somehow.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
