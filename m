@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab2EIFxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:53:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38800 "EHLO
+	id S1758351Ab2EIGZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:25:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38815 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755557Ab2EIFxA (ORCPT
+	by vger.kernel.org with ESMTP id S1755901Ab2EIFxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:00 -0400
-Message-Id: <20120509055033.881015895@decadent.org.uk>
+	Wed, 9 May 2012 01:53:03 -0400
+Message-Id: <20120509055032.625646340@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:00 +0100
+Date: Wed, 09 May 2012 06:50:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Peter Chen <B29397@freescale.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 031/167] [PATCH] EHCI: fix criterion for resuming the root hub
+        alan@lxorguk.ukuu.org.uk, David Miller <davem@davemloft.net>,
+        Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 022/167] Fix modpost failures in fedora 17
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,50 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: David Miller <davem@davemloft.net>
 
-commit dc75ce9d929aabeb0843a6b1a4ab320e58ba1597 upstream.
+commit e88aa7bbbe3046a125ea1936b16bb921cc9c6349 upstream.
 
-This patch (as1542) changes the criterion ehci-hcd uses to tell when
-it needs to resume the controller's root hub.  A resume is needed when
-a port status change is detected, obviously, but only if the root hub
-is currently suspended.
+The symbol table on x86-64 starts to have entries that have names
+like:
 
-Right now the driver tests whether the root hub is running, and that
-is not the correct test.  In particular, if the controller has died
-then the root hub should not be restarted.  In addition, some buggy
-hardware occasionally requires the root hub to be running and
-sending out SOF packets even while it is nominally supposed to be
-suspended.
+_GLOBAL__sub_I_65535_0___mod_x86cpu_device_table
 
-In the end, the test needs to be changed.  Rather than checking whether
-the root hub is currently running, the driver will now check whether
-the root hub is currently suspended.  This will yield the correct
-behavior in all cases.
+They are of type STT_FUNCTION and this one had a length of 18.  This
+matched the device ID validation logic and it barfed because the
+length did not meet the device type's criteria.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Peter Chen <B29397@freescale.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+--------------------
+FATAL: arch/x86/crypto/aesni-intel: sizeof(struct x86cpu_device_id)=16 is not a modulo of the size of section __mod_x86cpu_device_table=18.
+Fix definition of struct x86cpu_device_id in mod_devicetable.h
+--------------------
+
+These are some kind of compiler tool internal stuff being emitted and
+not something we want to inspect in modpost's device ID table
+validation code.
+
+So skip the symbol if it is not of type STT_OBJECT.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/ehci-hcd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ scripts/mod/file2alias.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 806cc95..95ca07a 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -910,7 +910,7 @@ static irqreturn_t ehci_irq (struct usb_hcd *hcd)
- 		pcd_status = status;
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -905,6 +905,10 @@ void handle_moddevtable(struct module *m
+ 	if (!sym->st_shndx || get_secindex(info, sym) >= info->num_sections)
+ 		return;
  
- 		/* resume root hub? */
--		if (!(cmd & CMD_RUN))
-+		if (ehci->rh_state == EHCI_RH_SUSPENDED)
- 			usb_hcd_resume_root_hub(hcd);
- 
- 		/* get per-port change detect bits */
--- 
-1.7.10
-
++	/* We're looking for an object */
++	if (ELF_ST_TYPE(sym->st_info) != STT_OBJECT)
++		return;
++
+ 	/* Handle all-NULL symbols allocated into .bss */
+ 	if (info->sechdrs[get_secindex(info, sym)].sh_type & SHT_NOBITS) {
+ 		zeros = calloc(1, sym->st_size);
 
 
