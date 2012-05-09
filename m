@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757937Ab2EIGJP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:09:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39025 "EHLO
+	id S1757918Ab2EIGJN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:09:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38960 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754951Ab2EIFxe (ORCPT
+	by vger.kernel.org with ESMTP id S1756489Ab2EIFxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:34 -0400
-Message-Id: <20120509055043.572522896@decadent.org.uk>
+Message-Id: <20120509055042.231589453@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:09 +0100
+Date: Wed, 09 May 2012 06:51:59 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>
-Subject: [ 100/167] [PATCH] dmaengine: at_hdmac: remove clear-on-read in atc_dostart()
+        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 090/167] [PATCH] NFSv4: Ensure that we check lock exclusive/shared type
+ against open modes
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,39 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit ed8b0d67f33518a16c6b2450fe5ebebf180c2d04 upstream.
+commit 55725513b5ef9d462aa3e18527658a0362aaae83 upstream.
 
-This loop on EBCISR register was designed to clear IRQ sources before enabling
-a DMA channel. This register is clear-on-read so a race condition can appear if
-another channel is already active and has just finished its transfer.
-Removing this read on EBCISR is fixing the issue as there is no case where an IRQ
-could be pending: we already make sure that this register is drained at probe()
-time and during resume.
+Since we may be simulating flock() locks using NFS byte range locks,
+we can't rely on the VFS having checked the file open mode for us.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/dma/at_hdmac.c |    4 ----
- 1 file changed, 4 deletions(-)
+ fs/nfs/nfs4proc.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index 7aa58d2..445fdf8 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -221,10 +221,6 @@ static void atc_dostart(struct at_dma_chan *atchan, struct at_desc *first)
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 3c787d0..ba837d9 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -4726,6 +4726,20 @@ nfs4_proc_lock(struct file *filp, int cmd, struct file_lock *request)
  
- 	vdbg_dump_regs(atchan);
- 
--	/* clear any pending interrupt */
--	while (dma_readl(atdma, EBCISR))
--		cpu_relax();
--
- 	channel_writel(atchan, SADDR, 0);
- 	channel_writel(atchan, DADDR, 0);
- 	channel_writel(atchan, CTRLA, 0);
+ 	if (state == NULL)
+ 		return -ENOLCK;
++	/*
++	 * Don't rely on the VFS having checked the file open mode,
++	 * since it won't do this for flock() locks.
++	 */
++	switch (request->fl_type & (F_RDLCK|F_WRLCK|F_UNLCK)) {
++	case F_RDLCK:
++		if (!(filp->f_mode & FMODE_READ))
++			return -EBADF;
++		break;
++	case F_WRLCK:
++		if (!(filp->f_mode & FMODE_WRITE))
++			return -EBADF;
++	}
++
+ 	do {
+ 		status = nfs4_proc_setlk(state, cmd, request);
+ 		if ((status != -EAGAIN) || IS_SETLK(cmd))
 -- 
 1.7.10
 
