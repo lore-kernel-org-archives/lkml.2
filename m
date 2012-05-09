@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182Ab2EIGYG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:24:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38897 "EHLO
+	id S1756006Ab2EIFxG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:53:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38794 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756145Ab2EIFxO (ORCPT
+	by vger.kernel.org with ESMTP id S1755809Ab2EIFw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:14 -0400
-Message-Id: <20120509055032.760931560@decadent.org.uk>
+	Wed, 9 May 2012 01:52:59 -0400
+Message-Id: <20120509055034.172795946@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:50:52 +0100
+Date: Wed, 09 May 2012 06:51:02 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Ken Chen <kenchen@google.com>
-Subject: [ 023/167] [PATCH] mm: fix s390 BUG by __set_page_dirty_no_writeback on swap
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 033/167] [PATCH] USB: fix deadlock in bConfigurationValue attribute method
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,59 +29,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit aca50bd3b4c4bb5528a1878158ba7abce41de534 upstream.
+commit 8963c487a80b4688c9e68dcc504a90074aacc145 upstream.
 
-Mel reports a BUG_ON(slot == NULL) in radix_tree_tag_set() on s390
-3.0.13: called from __set_page_dirty_nobuffers() when page_remove_rmap()
-tries to transfer dirty flag from s390 storage key to struct page and
-radix_tree.
+This patch (as154) fixes a self-deadlock that occurs when userspace
+writes to the bConfigurationValue sysfs attribute for a hub with
+children.  The task tries to lock the bandwidth_mutex at a time when
+it already owns the lock:
 
-That would be because of reclaim's shrink_page_list() calling
-add_to_swap() on this page at the same time: first PageSwapCache is set
-(causing page_mapping(page) to appear as &swapper_space), then
-page->private set, then tree_lock taken, then page inserted into
-radix_tree - so there's an interval before taking the lock when the
-radix_tree slot is empty.
+	The attribute's method calls usb_set_configuration(),
+	which calls usb_disable_device() with the bandwidth_mutex
+	held.
 
-We could fix this by moving __add_to_swap_cache()'s spin_lock_irq up
-before the SetPageSwapCache.  But a better fix is simply to do what's
-five years overdue: Ken Chen introduced __set_page_dirty_no_writeback()
-(if !PageDirty TestSetPageDirty) for tmpfs to skip all the radix_tree
-overhead, and swap is just the same - it ignores the radix_tree tag, and
-does not participate in dirty page accounting, so should be using
-__set_page_dirty_no_writeback() too.
+	usb_disable_device() unregisters the existing interfaces,
+	which causes the hub driver to be unbound.
 
-s390 testing now confirms that this does indeed fix the problem.
+	The hub_disconnect() routine calls hub_quiesce(), which
+	calls usb_disconnect() for each of the hub's children.
 
-Reported-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Ken Chen <kenchen@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+	usb_disconnect() attempts to acquire the bandwidth_mutex
+	around a call to usb_disable_device().
+
+The solution is to make usb_disable_device() acquire the mutex for
+itself instead of requiring the caller to hold it.  Then the mutex can
+cover only the bandwidth deallocation operation and not the region
+where the interfaces are unregistered.
+
+This has the potential to change system behavior slightly when a
+config change races with another config or altsetting change.  Some of
+the bandwidth released from the old config might get claimed by the
+other config or altsetting, make it impossible to restore the old
+config in case of a failure.  But since we don't try to recover from
+config-change failures anyway, this doesn't matter.
+
+[This should be marked for stable kernels that contain the commit
+fccf4e86200b8f5edd9a65da26f150e32ba79808 "USB: Free bandwidth when
+usb_disable_device is called."
+That commit was marked for stable kernels as old as 2.6.32.]
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/swap_state.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/hub.c     |    3 ---
+ drivers/usb/core/message.c |    6 +++---
+ 2 files changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/mm/swap_state.c b/mm/swap_state.c
-index 9d3dd37..4c5ff7f 100644
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -26,7 +26,7 @@
-  */
- static const struct address_space_operations swap_aops = {
- 	.writepage	= swap_writepage,
--	.set_page_dirty	= __set_page_dirty_nobuffers,
-+	.set_page_dirty	= __set_page_dirty_no_writeback,
- 	.migratepage	= migrate_page,
- };
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index a2aa9d6..ec6c97d 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1667,7 +1667,6 @@ void usb_disconnect(struct usb_device **pdev)
+ {
+ 	struct usb_device	*udev = *pdev;
+ 	int			i;
+-	struct usb_hcd		*hcd = bus_to_hcd(udev->bus);
  
+ 	/* mark the device as inactive, so any further urb submissions for
+ 	 * this device (and any of its children) will fail immediately.
+@@ -1690,9 +1689,7 @@ void usb_disconnect(struct usb_device **pdev)
+ 	 * so that the hardware is now fully quiesced.
+ 	 */
+ 	dev_dbg (&udev->dev, "unregistering device\n");
+-	mutex_lock(hcd->bandwidth_mutex);
+ 	usb_disable_device(udev, 0);
+-	mutex_unlock(hcd->bandwidth_mutex);
+ 	usb_hcd_synchronize_unlinks(udev);
+ 
+ 	usb_remove_ep_devs(&udev->ep0);
+diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
+index aed3e07..ca717da 100644
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -1136,8 +1136,6 @@ void usb_disable_interface(struct usb_device *dev, struct usb_interface *intf,
+  * Deallocates hcd/hardware state for the endpoints (nuking all or most
+  * pending urbs) and usbcore state for the interfaces, so that usbcore
+  * must usb_set_configuration() before any interfaces could be used.
+- *
+- * Must be called with hcd->bandwidth_mutex held.
+  */
+ void usb_disable_device(struct usb_device *dev, int skip_ep0)
+ {
+@@ -1190,7 +1188,9 @@ void usb_disable_device(struct usb_device *dev, int skip_ep0)
+ 			usb_disable_endpoint(dev, i + USB_DIR_IN, false);
+ 		}
+ 		/* Remove endpoints from the host controller internal state */
++		mutex_lock(hcd->bandwidth_mutex);
+ 		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
++		mutex_unlock(hcd->bandwidth_mutex);
+ 		/* Second pass: remove endpoint pointers */
+ 	}
+ 	for (i = skip_ep0; i < 16; ++i) {
+@@ -1750,7 +1750,6 @@ free_interfaces:
+ 	/* if it's already configured, clear out old state first.
+ 	 * getting rid of old interfaces means unbinding their drivers.
+ 	 */
+-	mutex_lock(hcd->bandwidth_mutex);
+ 	if (dev->state != USB_STATE_ADDRESS)
+ 		usb_disable_device(dev, 1);	/* Skip ep0 */
+ 
+@@ -1763,6 +1762,7 @@ free_interfaces:
+ 	 * host controller will not allow submissions to dropped endpoints.  If
+ 	 * this call fails, the device state is unchanged.
+ 	 */
++	mutex_lock(hcd->bandwidth_mutex);
+ 	ret = usb_hcd_alloc_bandwidth(dev, cp, NULL, NULL);
+ 	if (ret < 0) {
+ 		mutex_unlock(hcd->bandwidth_mutex);
 -- 
 1.7.10
 
