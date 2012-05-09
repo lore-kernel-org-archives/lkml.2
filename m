@@ -1,124 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760272Ab2EIXT1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 19:19:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38087 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758442Ab2EIXTZ (ORCPT
+	id S932471Ab2EIXVj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 19:21:39 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:51576 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758527Ab2EIXVi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 19:19:25 -0400
+	Wed, 9 May 2012 19:21:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <1336490660.1179.39.camel@mop>
-References: <1336490660.1179.39.camel@mop>
-Date: Wed, 9 May 2012 16:19:24 -0700
-X-Google-Sender-Auth: KV81pVr0BAXufcCfTSOg1mGD0G4
-Message-ID: <CAE9FiQU=LAA-B9e=YzvZ6sOA1HD8_vRW8_TeRXsF+wJH7L=nYQ@mail.gmail.com>
-Subject: Re: [PATCH] acpi: use KERN_CONT in printk() continuation lines
-From: Yinghai Lu <yinghai@kernel.org>
-To: Kay Sievers <kay@vrfy.org>, James Bottomley <jejb@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Cc: Len Brown <lenb@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=e89a8ff1c3d0eb533604bfa2bb58
+In-Reply-To: <20120509145956.97b4ff63.akpm@linux-foundation.org>
+References: <20120504182114.24883.40748.stgit@beardog.cce.hp.com>
+	<20120509145956.97b4ff63.akpm@linux-foundation.org>
+Date: Wed, 9 May 2012 18:21:37 -0500
+Message-ID: <CADzpL0Qs_4SZeR-E_TCnagQQwNR3OC_ncOGZpGS62dNPtCwfdw@mail.gmail.com>
+Subject: Re: [PATCH] cciss: fix incorrect scsi status reporting
+From: Stephen Cameron <stephenmcameron@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>, axboe@kernel.dk,
+        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org,
+        thenzl@redhat.com, roel.vanmeer@bokxing.nl
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8ff1c3d0eb533604bfa2bb58
-Content-Type: text/plain; charset=ISO-8859-1
+On Wed, May 9, 2012 at 4:59 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Fri, 04 May 2012 13:21:14 -0500
+> "Stephen M. Cameron" <scameron@beardog.cce.hp.com> wrote:
+>
+>> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+>>
+>> Delete code which sets SCSI status incorrectly as it's already
+>> been set correctly above this incorrect code.  Bug was introduced
+>> by b0e15f6db1110319cb2e747e59e1200450a5ba3e
+>> "cciss: fix typo that causes scsi status to be lost." in 2009.
+>>
+>> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+>> Reported-and-tested-by: Roel van Meer <roel.vanmeer@bokxing.nl>
+>> Cc: stable@vger.kernel.org
+>
+> If the bug is three years old, it presumably isn't a terribly serious
+> one.  Why was the -stable backport recommended?
 
-also need attached ones for scsi/lsi mpt2sas and ioapic debug printout
+(added roel.vanmeer@bokxing.nl to cc list)
 
-you may search and fix them all.
+Due to my subjective interpretation of stable_kernel_rules.txt,
+specifically this part:
 
-Thanks
+ - It must fix a problem that causes a build error (but not for things
+   marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
+   security issue, or some "oh, that's not good" issue.  In short, something
+   critical.
 
-Yinghai
+I thought it fell under the "oh, that's not good", in that, according
+to the tester, iirc, it made his tape drive not show up at all, which
+seemed bad (though not a symptom I observed directly), and it seemed
+like a trivial fix to something obviously incorrect, so thought stable
+might like to know about it.  But, maybe not.
 
---e89a8ff1c3d0eb533604bfa2bb58
-Content-Type: application/octet-stream; name="lsi_printk_fix.patch"
-Content-Disposition: attachment; filename="lsi_printk_fix.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h210bppz0
-
-LS0tCiBkcml2ZXJzL3Njc2kvbXB0MnNhcy9tcHQyc2FzX2Jhc2UuYyB8ICAgMzAgKysrKysrKysr
-KysrKysrLS0tLS0tLS0tLS0tLS0tCiAxIGZpbGUgY2hhbmdlZCwgMTUgaW5zZXJ0aW9ucygrKSwg
-MTUgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvc2NzaS9tcHQyc2FzL21w
-dDJzYXNfYmFzZS5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvc2NzaS9t
-cHQyc2FzL21wdDJzYXNfYmFzZS5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9zY3NpL21wdDJzYXMv
-bXB0MnNhc19iYXNlLmMKQEAgLTIwODUsNzkgKzIwODUsNzkgQEAgX2Jhc2VfZGlzcGxheV9pb2Nf
-Y2FwYWJpbGl0aWVzKHN0cnVjdCBNUAogCXByaW50ayhNUFQyU0FTX0lORk9fRk1UICJQcm90b2Nv
-bD0oIiwgaW9jLT5uYW1lKTsKIAogCWlmIChpb2MtPmZhY3RzLlByb3RvY29sRmxhZ3MgJiBNUEky
-X0lPQ0ZBQ1RTX1BST1RPQ09MX1NDU0lfSU5JVElBVE9SKSB7Ci0JCXByaW50aygiSW5pdGlhdG9y
-Iik7CisJCXByaW50ayhLRVJOX0NPTlQgIkluaXRpYXRvciIpOwogCQlpKys7CiAJfQogCiAJaWYg
-KGlvYy0+ZmFjdHMuUHJvdG9jb2xGbGFncyAmIE1QSTJfSU9DRkFDVFNfUFJPVE9DT0xfU0NTSV9U
-QVJHRVQpIHsKLQkJcHJpbnRrKCIlc1RhcmdldCIsIGkgPyAiLCIgOiAiIik7CisJCXByaW50ayhL
-RVJOX0NPTlQgIiVzVGFyZ2V0IiwgaSA/ICIsIiA6ICIiKTsKIAkJaSsrOwogCX0KIAogCWkgPSAw
-OwotCXByaW50aygiKSwgIik7Ci0JcHJpbnRrKCJDYXBhYmlsaXRpZXM9KCIpOworCXByaW50ayhL
-RVJOX0NPTlQgIiksICIpOworCXByaW50ayhLRVJOX0NPTlQgIkNhcGFiaWxpdGllcz0oIik7CiAK
-IAlpZiAoIWlvYy0+aGlkZV9pcl9tc2cpIHsKIAkJaWYgKGlvYy0+ZmFjdHMuSU9DQ2FwYWJpbGl0
-aWVzICYKIAkJICAgIE1QSTJfSU9DRkFDVFNfQ0FQQUJJTElUWV9JTlRFR1JBVEVEX1JBSUQpIHsK
-LQkJCXByaW50aygiUmFpZCIpOworCQkJcHJpbnRrKEtFUk5fQ09OVCAiUmFpZCIpOwogCQkJaSsr
-OwogCQl9CiAJfQogCiAJaWYgKGlvYy0+ZmFjdHMuSU9DQ2FwYWJpbGl0aWVzICYgTVBJMl9JT0NG
-QUNUU19DQVBBQklMSVRZX1RMUikgewotCQlwcmludGsoIiVzVExSIiwgaSA/ICIsIiA6ICIiKTsK
-KwkJcHJpbnRrKEtFUk5fQ09OVCAiJXNUTFIiLCBpID8gIiwiIDogIiIpOwogCQlpKys7CiAJfQog
-CiAJaWYgKGlvYy0+ZmFjdHMuSU9DQ2FwYWJpbGl0aWVzICYgTVBJMl9JT0NGQUNUU19DQVBBQklM
-SVRZX01VTFRJQ0FTVCkgewotCQlwcmludGsoIiVzTXVsdGljYXN0IiwgaSA/ICIsIiA6ICIiKTsK
-KwkJcHJpbnRrKEtFUk5fQ09OVCAiJXNNdWx0aWNhc3QiLCBpID8gIiwiIDogIiIpOwogCQlpKys7
-CiAJfQogCiAJaWYgKGlvYy0+ZmFjdHMuSU9DQ2FwYWJpbGl0aWVzICYKIAkgICAgTVBJMl9JT0NG
-QUNUU19DQVBBQklMSVRZX0JJRElSRUNUSU9OQUxfVEFSR0VUKSB7Ci0JCXByaW50aygiJXNCSURJ
-IFRhcmdldCIsIGkgPyAiLCIgOiAiIik7CisJCXByaW50ayhLRVJOX0NPTlQgIiVzQklESSBUYXJn
-ZXQiLCBpID8gIiwiIDogIiIpOwogCQlpKys7CiAJfQogCiAJaWYgKGlvYy0+ZmFjdHMuSU9DQ2Fw
-YWJpbGl0aWVzICYgTVBJMl9JT0NGQUNUU19DQVBBQklMSVRZX0VFRFApIHsKLQkJcHJpbnRrKCIl
-c0VFRFAiLCBpID8gIiwiIDogIiIpOworCQlwcmludGsoS0VSTl9DT05UICIlc0VFRFAiLCBpID8g
-IiwiIDogIiIpOwogCQlpKys7CiAJfQogCiAJaWYgKGlvYy0+ZmFjdHMuSU9DQ2FwYWJpbGl0aWVz
-ICYKIAkgICAgTVBJMl9JT0NGQUNUU19DQVBBQklMSVRZX1NOQVBTSE9UX0JVRkZFUikgewotCQlw
-cmludGsoIiVzU25hcHNob3QgQnVmZmVyIiwgaSA/ICIsIiA6ICIiKTsKKwkJcHJpbnRrKEtFUk5f
-Q09OVCAiJXNTbmFwc2hvdCBCdWZmZXIiLCBpID8gIiwiIDogIiIpOwogCQlpKys7CiAJfQogCiAJ
-aWYgKGlvYy0+ZmFjdHMuSU9DQ2FwYWJpbGl0aWVzICYKIAkgICAgTVBJMl9JT0NGQUNUU19DQVBB
-QklMSVRZX0RJQUdfVFJBQ0VfQlVGRkVSKSB7Ci0JCXByaW50aygiJXNEaWFnIFRyYWNlIEJ1ZmZl
-ciIsIGkgPyAiLCIgOiAiIik7CisJCXByaW50ayhLRVJOX0NPTlQgIiVzRGlhZyBUcmFjZSBCdWZm
-ZXIiLCBpID8gIiwiIDogIiIpOwogCQlpKys7CiAJfQogCiAJaWYgKGlvYy0+ZmFjdHMuSU9DQ2Fw
-YWJpbGl0aWVzICYKIAkgICAgTVBJMl9JT0NGQUNUU19DQVBBQklMSVRZX0VYVEVOREVEX0JVRkZF
-UikgewotCQlwcmludGsoS0VSTl9JTkZPICIlc0RpYWcgRXh0ZW5kZWQgQnVmZmVyIiwgaSA/ICIs
-IiA6ICIiKTsKKwkJcHJpbnRrKEtFUk5fQ09OVCAiJXNEaWFnIEV4dGVuZGVkIEJ1ZmZlciIsIGkg
-PyAiLCIgOiAiIik7CiAJCWkrKzsKIAl9CiAKIAlpZiAoaW9jLT5mYWN0cy5JT0NDYXBhYmlsaXRp
-ZXMgJgogCSAgICBNUEkyX0lPQ0ZBQ1RTX0NBUEFCSUxJVFlfVEFTS19TRVRfRlVMTF9IQU5ETElO
-RykgewotCQlwcmludGsoIiVzVGFzayBTZXQgRnVsbCIsIGkgPyAiLCIgOiAiIik7CisJCXByaW50
-ayhLRVJOX0NPTlQgIiVzVGFzayBTZXQgRnVsbCIsIGkgPyAiLCIgOiAiIik7CiAJCWkrKzsKIAl9
-CiAKIAlpb3VuaXRfcGcxX2ZsYWdzID0gbGUzMl90b19jcHUoaW9jLT5pb3VuaXRfcGcxLkZsYWdz
-KTsKIAlpZiAoIShpb3VuaXRfcGcxX2ZsYWdzICYgTVBJMl9JT1VOSVRQQUdFMV9OQVRJVkVfQ09N
-TUFORF9RX0RJU0FCTEUpKSB7Ci0JCXByaW50aygiJXNOQ1EiLCBpID8gIiwiIDogIiIpOworCQlw
-cmludGsoS0VSTl9DT05UICIlc05DUSIsIGkgPyAiLCIgOiAiIik7CiAJCWkrKzsKIAl9CiAKLQlw
-cmludGsoIilcbiIpOworCXByaW50ayhLRVJOX0NPTlQgIilcbiIpOwogfQogCiAvKioK
---e89a8ff1c3d0eb533604bfa2bb58
-Content-Type: application/octet-stream; name="fix_ioapic_printk.patch"
-Content-Disposition: attachment; filename="fix_ioapic_printk.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h210c1zm1
-
-LS0tCiBhcmNoL3g4Ni9rZXJuZWwvYXBpYy9pb19hcGljLmMgfCAgICA4ICsrKystLS0tCiAxIGZp
-bGUgY2hhbmdlZCwgNCBpbnNlcnRpb25zKCspLCA0IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4
-LTIuNi9hcmNoL3g4Ni9rZXJuZWwvYXBpYy9pb19hcGljLmMKPT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgt
-Mi42Lm9yaWcvYXJjaC94ODYva2VybmVsL2FwaWMvaW9fYXBpYy5jCisrKyBsaW51eC0yLjYvYXJj
-aC94ODYva2VybmVsL2FwaWMvaW9fYXBpYy5jCkBAIC0xNzE5LDcgKzE3MTksNyBAQCBfX2FwaWNk
-ZWJ1Z2luaXQodm9pZCkgcHJpbnRfSU9fQVBJQyhpbnQKIAkJCQlpLAogCQkJCWlyX2VudHJ5LT5p
-bmRleAogCQkJKTsKLQkJCXByaW50aygiJTFkICAgJTFkICAgICUxZCAgICAlMWQgICAlMWQgICAi
-CisJCQlwcmludGsoS0VSTl9DT05UICIlMWQgICAlMWQgICAgJTFkICAgICUxZCAgICUxZCAgICIK
-IAkJCQkiJTFkICAgICUxZCAgICAgJVggICAgJTAyWFxuIiwKIAkJCQlpcl9lbnRyeS0+Zm9ybWF0
-LAogCQkJCWlyX2VudHJ5LT5tYXNrLApAQCAtMTczOSw3ICsxNzM5LDcgQEAgX19hcGljZGVidWdp
-bml0KHZvaWQpIHByaW50X0lPX0FQSUMoaW50CiAJCQkJaSwKIAkJCQllbnRyeS5kZXN0CiAJCQkp
-OwotCQkJcHJpbnRrKCIlMWQgICAgJTFkICAgICUxZCAgICUxZCAgICUxZCAgICAiCisJCQlwcmlu
-dGsoS0VSTl9DT05UICIlMWQgICAgJTFkICAgICUxZCAgICUxZCAgICUxZCAgICAiCiAJCQkJIiUx
-ZCAgICAlMWQgICAgJTAyWFxuIiwKIAkJCQllbnRyeS5tYXNrLAogCQkJCWVudHJ5LnRyaWdnZXIs
-CkBAIC0xNzkxLDggKzE3OTEsOCBAQCBfX2FwaWNkZWJ1Z2luaXQodm9pZCkgcHJpbnRfSU9fQVBJ
-Q3Modm9pCiAJCQljb250aW51ZTsKIAkJcHJpbnRrKEtFUk5fREVCVUcgIklSUSVkICIsIGlycSk7
-CiAJCWZvcl9lYWNoX2lycV9waW4oZW50cnksIGNmZy0+aXJxXzJfcGluKQotCQkJcHJpbnRrKCIt
-PiAlZDolZCIsIGVudHJ5LT5hcGljLCBlbnRyeS0+cGluKTsKLQkJcHJpbnRrKCJcbiIpOworCQkJ
-cHJpbnRrKEtFUk5fQ09OVCAiLT4gJWQ6JWQiLCBlbnRyeS0+YXBpYywgZW50cnktPnBpbik7CisJ
-CXByaW50ayhLRVJOX0NPTlQgIlxuIik7CiAJfQogCiAJcHJpbnRrKEtFUk5fSU5GTyAiLi4uLi4u
-Li4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uIGRvbmUuXG4iKTsK
---e89a8ff1c3d0eb533604bfa2bb58--
+-- steve
