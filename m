@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab2EIFwU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:52:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38613 "EHLO
+	id S1754361Ab2EIFw0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:52:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38620 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751079Ab2EIFwS (ORCPT
+	by vger.kernel.org with ESMTP id S1751079Ab2EIFwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:52:18 -0400
-Message-Id: <20120509055030.317834781@decadent.org.uk>
+	Wed, 9 May 2012 01:52:22 -0400
+Message-Id: <20120509055029.784819231@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:50:34 +0100
+Date: Wed, 09 May 2012 06:50:30 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alexander Shiyan <shc_work@mail.ru>,
+        alan@lxorguk.ukuu.org.uk, Zeev Tarantov <zeev.tarantov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 005/167] [PATCH] ARM: clps711x: serial driver hungs are a result of call
- disable_irq within ISR
+Subject: [ 001/167] Perf: fix build breakage
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,55 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Shiyan <shc_work@mail.ru>
+From: Zeev Tarantov <zeev.tarantov@gmail.com>
 
-commit 7a6fbc9a887193a1e9f8658703881c528040afbc upstream.
+[Patch not needed upstream as this is a backport build bugfix - gregkh
 
-Since 2.6.30-rc1 clps711x serial driver hungs system. This is a result
-of call disable_irq from ISR. synchronize_irq waits for end of interrupt
-and goes to infinite loop. This patch fix this problem.
+gcc correctly complains:
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+util/hist.c: In function ‘__hists__add_entry’:
+util/hist.c:240:27: error: invalid type argument of ‘->’ (have ‘struct hist_entry’)
+util/hist.c:241:23: error: invalid type argument of ‘->’ (have ‘struct hist_entry’)
+
+for this new code:
+
++                       if (he->ms.map != entry->ms.map) {
++                               he->ms.map = entry->ms.map;
++                               if (he->ms.map)
++                                       he->ms.map->referenced = true;
++                       }
+
+because "entry" is a "struct hist_entry", not a pointer to a struct.
+
+In mainline, "entry" is a pointer to struct passed as argument to the function.
+So this is broken during backporting. But obviously not compile tested.
+
+Signed-off-by: Zeev Tarantov <zeev.tarantov@gmail.com>
+Cc: Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/serial/clps711x.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ tools/perf/util/hist.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/serial/clps711x.c b/drivers/tty/serial/clps711x.c
-index e6c3dbd..836fe273 100644
---- a/drivers/tty/serial/clps711x.c
-+++ b/drivers/tty/serial/clps711x.c
-@@ -154,10 +154,9 @@ static irqreturn_t clps711xuart_int_tx(int irq, void *dev_id)
- 		port->x_char = 0;
- 		return IRQ_HANDLED;
- 	}
--	if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
--		clps711xuart_stop_tx(port);
--		return IRQ_HANDLED;
--	}
-+
-+	if (uart_circ_empty(xmit) || uart_tx_stopped(port))
-+		goto disable_tx_irq;
- 
- 	count = port->fifosize >> 1;
- 	do {
-@@ -171,8 +170,11 @@ static irqreturn_t clps711xuart_int_tx(int irq, void *dev_id)
- 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
- 		uart_write_wakeup(port);
- 
--	if (uart_circ_empty(xmit))
--		clps711xuart_stop_tx(port);
-+	if (uart_circ_empty(xmit)) {
-+	disable_tx_irq:
-+		disable_irq_nosync(TX_IRQ(port));
-+		tx_enabled(port) = 0;
-+	}
- 
- 	return IRQ_HANDLED;
- }
--- 
-1.7.10
-
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -237,8 +237,8 @@ struct hist_entry *__hists__add_entry(st
+ 			 * mis-adjust symbol addresses when computing
+ 			 * the history counter to increment.
+ 			 */
+-			if (he->ms.map != entry->ms.map) {
+-				he->ms.map = entry->ms.map;
++			if (he->ms.map != entry.ms.map) {
++				he->ms.map = entry.ms.map;
+ 				if (he->ms.map)
+ 					he->ms.map->referenced = true;
+ 			}
 
 
