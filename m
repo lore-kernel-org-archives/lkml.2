@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761344Ab2EIXtO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 19:49:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56983 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761274Ab2EIXrz (ORCPT
+	id S1761295Ab2EIXuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 19:50:55 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:47776 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760483Ab2EIXux convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 19:47:55 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: Yadwinder Singh <yadi.brar@samsung.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 5/6] regulator: wm8350: Convert LDOs to set_voltage_sel()
-Date: Thu, 10 May 2012 00:47:33 +0100
-Message-Id: <1336607255-4967-5-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1336607255-4967-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1336607255-4967-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Wed, 9 May 2012 19:50:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAHo-OowjvXat8dZOpp50GO_KSTYBy_Wa96wvFUfTXmua3oBrUw@mail.gmail.com>
+References: <CAHo-OoxRj-sP1Tcy3oJ7DE3BOGSTnsWHZ5Q3hdmnK8A5jfjFcQ@mail.gmail.com>
+ <CA+55aFzY+W3ECUnyvqU_Su8_2TFqYj-K7U40KZaoe61oDUGdxw@mail.gmail.com>
+ <CAHo-OoxwSNFVCvdBxnMruKMebMW37NLX7eOKkLx=R7cSkhknGw@mail.gmail.com>
+ <CA+55aFyrSNTh3B7L=Lq1L_Hz=0NEPC95TWmo2-W9odKi+80XJg@mail.gmail.com> <CAHo-OowjvXat8dZOpp50GO_KSTYBy_Wa96wvFUfTXmua3oBrUw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 9 May 2012 16:50:32 -0700
+X-Google-Sender-Auth: 4koImgbbpt0_8NP-OVtNCMCAqcg
+Message-ID: <CA+55aFyXP8PRusYYrpAnFfV=eL69ktfQfiGxAH1B-Ds8HH+bJQ@mail.gmail.com>
+Subject: Re: setuid and RLIMIT_NPROC and 3.1+
+To: =?ISO-8859-2?Q?Maciej_=AFenczykowski?= <zenczykowski@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Neil Brown <neilb@suse.de>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since there are two linear ranges for the LDO voltages provide a voltage
-mapping function and then use regulator_set_voltage_sel_regmap().
+On Wed, May 9, 2012 at 4:46 PM, Maciej Żenczykowski
+<zenczykowski@gmail.com> wrote:
+>
+> Doesn't that just reintroduce the security 'hole' in buggy userspace apps
+> that the original patch was attempting to fix?
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/wm8350-regulator.c |   38 +++++++---------------------------
- 1 file changed, 8 insertions(+), 30 deletions(-)
+Well, those bggy apps have to be really *odd* buggy apps now. IOW,
+they need to do setuid(), and then not execve(). At that point, they
+really do have to check the error return, since there is no execve()
+for them to check.
 
-diff --git a/drivers/regulator/wm8350-regulator.c b/drivers/regulator/wm8350-regulator.c
-index a618284..9efca21 100644
---- a/drivers/regulator/wm8350-regulator.c
-+++ b/drivers/regulator/wm8350-regulator.c
-@@ -671,13 +671,12 @@ static int wm8350_ldo_set_suspend_disable(struct regulator_dev *rdev)
- 	return 0;
- }
- 
--static int wm8350_ldo_set_voltage(struct regulator_dev *rdev, int min_uV,
--				  int max_uV, unsigned *selector)
-+static int wm8350_ldo_map_voltage(struct regulator_dev *rdev, int min_uV,
-+				  int max_uV)
- {
--	struct wm8350 *wm8350 = rdev_get_drvdata(rdev);
--	int volt_reg, ldo = rdev_get_id(rdev), mV, min_mV = min_uV / 1000,
--		max_mV = max_uV / 1000;
--	u16 val;
-+	int mV;
-+	int min_mV = min_uV / 1000;
-+	int max_mV = max_uV / 1000;
- 
- 	if (min_mV < 900 || min_mV > 3300)
- 		return -EINVAL;
-@@ -698,29 +697,7 @@ static int wm8350_ldo_set_voltage(struct regulator_dev *rdev, int min_uV,
- 		BUG_ON(wm8350_ldo_val_to_mvolts(mV) < min_mV);
- 	}
- 
--	switch (ldo) {
--	case WM8350_LDO_1:
--		volt_reg = WM8350_LDO1_CONTROL;
--		break;
--	case WM8350_LDO_2:
--		volt_reg = WM8350_LDO2_CONTROL;
--		break;
--	case WM8350_LDO_3:
--		volt_reg = WM8350_LDO3_CONTROL;
--		break;
--	case WM8350_LDO_4:
--		volt_reg = WM8350_LDO4_CONTROL;
--		break;
--	default:
--		return -EINVAL;
--	}
--
--	*selector = mV;
--
--	/* all LDOs have same mV bits */
--	val = wm8350_reg_read(wm8350, volt_reg) & ~WM8350_LDO1_VSEL_MASK;
--	wm8350_reg_write(wm8350, volt_reg, val | mV);
--	return 0;
-+	return mV;
- }
- 
- static int wm8350_ldo_list_voltage(struct regulator_dev *rdev,
-@@ -1057,7 +1034,8 @@ static struct regulator_ops wm8350_dcdc2_5_ops = {
- };
- 
- static struct regulator_ops wm8350_ldo_ops = {
--	.set_voltage = wm8350_ldo_set_voltage,
-+	.map_voltage = wm8350_ldo_map_voltage,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
- 	.list_voltage = wm8350_ldo_list_voltage,
- 	.enable = regulator_enable_regmap,
--- 
-1.7.10
+In the end, we can do only so much to counter buggy apps. I think my
+patch is a reasonable "we can try to give the error at execve() time,
+but if somebody does tons of setuid() without ever doing the execve(),
+at some point they do have to check the error return of setuid()
+itself".
 
+I suspect most users of setuid() are good and check the error return.
+
+                       Linus
