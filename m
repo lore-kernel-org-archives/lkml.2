@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab2EIFwb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:52:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38630 "EHLO
+	id S1754703Ab2EIFwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:52:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38636 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751651Ab2EIFw3 (ORCPT
+	by vger.kernel.org with ESMTP id S1754404Ab2EIFwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:52:29 -0400
-Message-Id: <20120509055032.228633354@decadent.org.uk>
+	Wed, 9 May 2012 01:52:32 -0400
+Message-Id: <20120509055032.360572129@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:50:48 +0100
+Date: Wed, 09 May 2012 06:50:49 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?David=20H=C3=A4rdeman?= <david@hardeman.nu>,
+        alan@lxorguk.ukuu.org.uk, Alexey Khoroshilov <khoroshilov@ispras.ru>,
         Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 019/167] [PATCH] [media] rc-core: set mode for winbond-cir
+Subject: [ 020/167] [PATCH] [media] drxk: Does not unlock mutex if sanity check failed
+ in scu_command()
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,34 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?David=20H=C3=A4rdeman?= <david@hardeman.nu>
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-commit d9b786955f80fb306471fdb9ea24c6d03af6ca36 upstream.
+commit e4459e1682c107d7ee1bf102c1ba534230e9b50b upstream.
 
-Setting the correct mode is required by rc-core or scancodes won't be
-generated (which isn't very user-friendly).
+If sanity check fails in scu_command(), goto error leads to unlock of
+an unheld mutex. The check should not fail in reality, but it nevertheless
+worth fixing.
 
-This one-line fix should be suitable for 3.4-rc2.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Signed-off-by: David Härdeman <david@hardeman.nu>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/media/rc/winbond-cir.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/dvb/frontends/drxk_hard.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/rc/winbond-cir.c b/drivers/media/rc/winbond-cir.c
-index b09c5fa..af52658 100644
---- a/drivers/media/rc/winbond-cir.c
-+++ b/drivers/media/rc/winbond-cir.c
-@@ -1046,6 +1046,7 @@ wbcir_probe(struct pnp_dev *device, const struct pnp_device_id *dev_id)
- 		goto exit_unregister_led;
- 	}
+diff --git a/drivers/media/dvb/frontends/drxk_hard.c b/drivers/media/dvb/frontends/drxk_hard.c
+index 36d1175..a414b1f 100644
+--- a/drivers/media/dvb/frontends/drxk_hard.c
++++ b/drivers/media/dvb/frontends/drxk_hard.c
+@@ -1520,8 +1520,10 @@ static int scu_command(struct drxk_state *state,
+ 	dprintk(1, "\n");
  
-+	data->dev->driver_type = RC_DRIVER_IR_RAW;
- 	data->dev->driver_name = WBCIR_NAME;
- 	data->dev->input_name = WBCIR_NAME;
- 	data->dev->input_phys = "wbcir/cir0";
+ 	if ((cmd == 0) || ((parameterLen > 0) && (parameter == NULL)) ||
+-	    ((resultLen > 0) && (result == NULL)))
+-		goto error;
++	    ((resultLen > 0) && (result == NULL))) {
++		printk(KERN_ERR "drxk: Error %d on %s\n", status, __func__);
++		return status;
++	}
+ 
+ 	mutex_lock(&state->mutex);
+ 
 -- 
 1.7.10
 
