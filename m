@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758328Ab2EIOF7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:05:59 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:48758 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758249Ab2EIOF6 (ORCPT
+	id S1758505Ab2EIOGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:06:36 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60115 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755727Ab2EIOGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:05:58 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: ocLs_VMVM1nxasFymcOoI2giHuAkNoNR7yowKJ2Z3xet5bo
- cusMuWE.cKc0RSi7dOxhkU_el3hbP4L6FJOnfgNlGyUINpl6AEB0s8Npv5GY
- RkjR4aCLDHSS3FCIKk3VvnxqxFlTk7yFpA4q6JJ9XOymLTZiOsln92RVdjQh
- 0xkXCmk7aptfXa4KJMW8IOjxHeCOKjDOwfBD7d6wlZse5H4azVGuZKFj0xuD
- yNa6O_1WaQt8n4GMOhd.EpDENmPSQGyQeROhDdpmZzIxicFZSwkTtD2kr.3C
- MbP89rKxxSZhlUzjIGzKSdVoIDXEsruoOwzpcdTXsZqAKxwB0j8h6tdK6wDx
- MIx7RaGo.qZbJICFU6dYOqub1jeHbbMWKb8wX6CgejrOIICCfpJpVe7Y3pMC
- yd_qNZ2gBjs7MoiFF_8lUSj5bpAanCF_K_Jlo
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 9 May 2012 09:05:54 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Andrey Vagin <avagin@openvz.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: lockdep reports about recursive locking in kmemleak
-In-Reply-To: <CAOJsxLFR0uqxJRysz+r5ojqPe0A4q14LeOuinSBPrNKbYuAAxw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1205090904110.8171@router.home>
-References: <4F9A835C.2020801@openvz.org> <20120430110420.GL10632@arm.com> <CAOJsxLFR0uqxJRysz+r5ojqPe0A4q14LeOuinSBPrNKbYuAAxw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 9 May 2012 10:06:34 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH] bitops: add _local bitops
+Date: Wed, 9 May 2012 14:06:15 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <20120509134528.GA18044@redhat.com>
+In-Reply-To: <20120509134528.GA18044@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205091406.15627.arnd@arndb.de>
+X-Provags-ID: V02:K0:CXxHochwWzmZEHrkz670Ij7oAxZPqfUuEyMpKN7OIAY
+ G2tySxjTcAT+SHuT2TxvRD0BKonSwXqzbkQs7MI9nRueTIeoQB
+ Epxn3iGsn9LCeGeEfLZ+zo60k2zc8GZh/vNUusZmCO5zYPTFwe
+ 3LqGLpakhPq7OvUDTkwXdCjj+c5g4X2xK/Ubi9P1w5baxJ1rD0
+ 7XwvDSEjKG8lZt943bpC+vI5ZIhKPlAIdoCEfw7UrjiP1VwxS4
+ D5U0/KyTQ3r3YRfIGy/1T0gXLPJy54upsmGTUR9dL8yGvrB9sW
+ 9ajLMysPtaRu0mQlJInkgBX/ksdCmgwFyIA2BQxC2PlaCT5tHi
+ SWdfNYqs24yvBDV04RP0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 May 2012, Pekka Enberg wrote:
+On Wednesday 09 May 2012, Michael S. Tsirkin wrote:
+>  Documentation/atomic_ops.txt              |   19 ++++++
+>  arch/x86/include/asm/bitops.h             |    1 +
+>  include/asm-generic/bitops.h              |    1 +
+>  include/asm-generic/bitops/local-atomic.h |   92 +++++++++++++++++++++++++++++
+>  include/asm-generic/bitops/local.h        |   85 ++++++++++++++++++++++++++
+>  include/linux/bitops.h                    |    8 +++
+>  6 files changed, 206 insertions(+), 0 deletions(-)
 
-> > I'm not sure what the right fix is (cc'ing Christoph for the slab.c
-> > code). The lockdep warning is not in kmemleak, it just happens that
-> > cache_flusharray() (holding an l3->list_lock) triggers a new allocation
-> > via debug_object_activate() and kmemleak also tries to allocate its
-> > metadata, causing a cache_alloc_refill() call which acquires a
-> > different l3->list_lock, hence the lockdep warning.
->
-> How do we know it's always a different nodelist ("l3")?
+Unless I'm misreading the patch, you have two versions of the same file here,
+where one version should be enough.
 
-The second l3 is from a cache that makes no use of "off-slab" secondary
-slabs otherwise we would have a bad case of recursion.
+Both versions look fine to me though, so if you remove one of them:
 
-If you mark the locks of caches with off-slab features differently from
-the simple ones then we should be fine.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
