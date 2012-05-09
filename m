@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757808Ab2EIGJL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:09:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39173 "EHLO
+	id S1757518Ab2EIGJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:09:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39135 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756737Ab2EIFxe (ORCPT
+	by vger.kernel.org with ESMTP id S1756636Ab2EIFxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:34 -0400
-Message-Id: <20120509055052.587401183@decadent.org.uk>
+Message-Id: <20120509055049.208740392@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:53:16 +0100
+Date: Wed, 09 May 2012 06:52:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Paolo Pisati <paolo.pisati@canonical.com>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 167/167] [PATCH] smsc95xx: mark link down on startup and let PHY interrupt
- deal with carrier changes
+        alan@lxorguk.ukuu.org.uk, Roland Stigge <stigge@antcom.de>,
+        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
+Subject: [ 142/167] [PATCH] i2c: pnx: Disable clk in suspend
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,45 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Pisati <paolo.pisati@canonical.com>
+From: Roland Stigge <stigge@antcom.de>
 
-commit 07d69d4238418746a7b85c5d05ec17c658a2a390 upstream.
+commit 6c557cfee08751d22aed34840f389b846f0f4508 upstream.
 
-Without this patch sysfs reports the cable as present
+In the driver's suspend function, clk_enable() was used instead of
+clk_disable(). This is corrected with this patch.
 
-flag@flag-desktop:~$ cat /sys/class/net/eth0/carrier
-1
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 
-while it's not:
+[wsa: reworded commit header slightly]
 
-flag@flag-desktop:~$ sudo mii-tool eth0
-eth0: no link
-
-Tested on my Beagle XM.
-
-v2: added mantainer to the list of recipient
-
-Signed-off-by: Paolo Pisati <paolo.pisati@canonical.com>
-Acked-by: Steve Glendinning <steve.glendinning@shawell.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/usb/smsc95xx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/i2c/busses/i2c-pnx.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
-index 53a1ba5..94ae669 100644
---- a/drivers/net/usb/smsc95xx.c
-+++ b/drivers/net/usb/smsc95xx.c
-@@ -1192,7 +1192,7 @@ static const struct driver_info smsc95xx_info = {
- 	.rx_fixup	= smsc95xx_rx_fixup,
- 	.tx_fixup	= smsc95xx_tx_fixup,
- 	.status		= smsc95xx_status,
--	.flags		= FLAG_ETHER | FLAG_SEND_ZLP,
-+	.flags		= FLAG_ETHER | FLAG_SEND_ZLP | FLAG_LINK_INTR,
- };
+diff --git a/drivers/i2c/busses/i2c-pnx.c b/drivers/i2c/busses/i2c-pnx.c
+index 04be9f8..eb8ad53 100644
+--- a/drivers/i2c/busses/i2c-pnx.c
++++ b/drivers/i2c/busses/i2c-pnx.c
+@@ -546,8 +546,7 @@ static int i2c_pnx_controller_suspend(struct platform_device *pdev,
+ {
+ 	struct i2c_pnx_algo_data *alg_data = platform_get_drvdata(pdev);
  
- static const struct usb_device_id products[] = {
+-	/* FIXME: shouldn't this be clk_disable? */
+-	clk_enable(alg_data->clk);
++	clk_disable(alg_data->clk);
+ 
+ 	return 0;
+ }
 -- 
 1.7.10
 
