@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab2EIFwr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:52:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38692 "EHLO
+	id S1757957Ab2EIGcS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:32:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38705 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755138Ab2EIFwo (ORCPT
+	by vger.kernel.org with ESMTP id S1755219Ab2EIFwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:52:44 -0400
-Message-Id: <20120509055030.851970163@decadent.org.uk>
+	Wed, 9 May 2012 01:52:46 -0400
+Message-Id: <20120509055034.752013456@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:50:38 +0100
+Date: Wed, 09 May 2012 06:51:06 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, Chris Ball <cjb@laptop.org>
-Subject: [ 009/167] [PATCH] mmc: unbreak sdhci-esdhc-imx on i.MX25
+        alan@lxorguk.ukuu.org.uk, Kishon Vijay Abraham I <kishon@ti.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [ 037/167] [PATCH] usb: musb: omap: fix crash when musb glue (omap) gets
+ initialized
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,34 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
+From: Kishon Vijay Abraham I <kishon@ti.com>
 
-commit b89152824f993a9572b47eb31f4579feadeac34c upstream.
+commit 3006dc8c627d738693e910c159630e4368c9e86c upstream.
 
-This was broken by me in 37865fe91582582a6f6c00652f6a2b1ff71f8a78
-("mmc: sdhci-esdhc-imx: fix timeout on i.MX's sdhci") where more
-extensive tests would have shown that read or write of data to the
-card were failing (even if the partition table was correctly read).
+pm_runtime_enable is being called after omap2430_musb_init. Hence
+pm_runtime_get_sync in omap2430_musb_init does not have any effect (does
+not enable clocks) resulting in a crash during register access. It is
+fixed here.
 
-Signed-off-by: Eric Bénard <eric@eukrea.com>
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mmc/host/sdhci-esdhc-imx.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/musb/omap2430.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- linux.orig/drivers/mmc/host/sdhci-esdhc-imx.c
-+++ linux/drivers/mmc/host/sdhci-esdhc-imx.c
-@@ -467,8 +467,7 @@
- 	clk_enable(clk);
- 	pltfm_host->clk = clk;
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index 3dfd122..0fb4ce8 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -453,14 +453,14 @@ static int __devinit omap2430_probe(struct platform_device *pdev)
+ 		goto err2;
+ 	}
  
--	if (!is_imx25_esdhc(imx_data))
--		host->quirks |= SDHCI_QUIRK_BROKEN_TIMEOUT_VAL;
-+	host->quirks |= SDHCI_QUIRK_BROKEN_TIMEOUT_VAL;
++	pm_runtime_enable(&pdev->dev);
++
+ 	ret = platform_device_add(musb);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to register musb device\n");
+ 		goto err2;
+ 	}
  
- 	if (is_imx25_esdhc(imx_data) || is_imx35_esdhc(imx_data))
- 		/* Fix errata ENGcm07207 present on i.MX25 and i.MX35 */
+-	pm_runtime_enable(&pdev->dev);
+-
+ 	return 0;
+ 
+ err2:
+-- 
+1.7.10
+
 
 
