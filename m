@@ -1,40 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757568Ab2EIIZb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 04:25:31 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:37157
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751030Ab2EIIZ3 (ORCPT
+	id S1758604Ab2EII0R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 04:26:17 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:16686 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab2EII0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 04:25:29 -0400
-Date: Wed, 9 May 2012 04:25:27 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Jeff Garzik <jeff@garzik.org>, Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: [RFC][PATCH] libata: enable SATA disk fua detection on default
-Message-ID: <20120509082527.GA10674@infradead.org>
-References: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com>
- <4FAA02DA.3000201@gmail.com>
- <20120509061956.GA12329@gmail.com>
+	Wed, 9 May 2012 04:26:15 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 09 May 2012 01:26:10 -0700
+Message-ID: <4FAA294F.9020406@nvidia.com>
+Date: Wed, 9 May 2012 13:52:39 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120509061956.GA12329@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFT] regulator: tps65910: Convert to get_voltage_sel
+References: <1336526567.14246.1.camel@phoenix>
+In-Reply-To: <1336526567.14246.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 02:19:56PM +0800, Zheng Liu wrote:
-> disable FUA detection for SATA disk.  If FUA feature can be used, we
-> could disable io_barrier to improve the performance.  Now one solution
+On Wednesday 09 May 2012 06:52 AM, Axel Lin wrote:
+> Signed-off-by: Axel Lin<axel.lin@gmail.com>
+> ---
 
-You can't run with -o nobarrier just because the driver/hardware support
-FUA.  However the implementation of -o barrier (aka REQ_FUA) is a lot
-more efficient if it is implemented.  If your workload has a high
-percentage of REQ_FUA requests it might be better to switch the disks to
-write through mode entirely.
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
 
