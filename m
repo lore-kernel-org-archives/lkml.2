@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932555Ab2EIWId (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 18:08:33 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:50334 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932494Ab2EIWIb convert rfc822-to-8bit (ORCPT
+	id S932528Ab2EIWIZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 18:08:25 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40965 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932162Ab2EIWIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 18:08:31 -0400
+	Wed, 9 May 2012 18:08:22 -0400
+Date: Wed, 9 May 2012 15:08:18 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: sarah.a.sharp@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 3/5, resend] USB: adjust PCI quirk handler section
+ annotations
+Message-ID: <20120509220818.GB27659@kroah.com>
+References: <4FAA4B1F0200007800082708@nat28.tlf.novell.com>
 MIME-Version: 1.0
-In-Reply-To: <4FAAE9D9.40707@gmail.com>
-References: <4FAAE6EA.3080308@gmail.com>
-	<CAFLxGvzo9JNGdxGqr1nn+aQtq7aiVOqkn+bD7Xn7idvfKo-wrA@mail.gmail.com>
-	<4FAAE9D9.40707@gmail.com>
-Date: Thu, 10 May 2012 00:08:29 +0200
-Message-ID: <CAFLxGvxAd9HFJuG_GdkzZvfSp1EBNcg1S4v6O3dNpRMKRX45Rw@mail.gmail.com>
-Subject: Re: [PATCH] allow to create a minix3fs with a blocksize != 1K
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: =?ISO-8859-7?Q?Vladimir_=27=F6=2Dcoder=2Fphcoder=27_Serbinenko?= 
-	<phcoder@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FAA4B1F0200007800082708@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 12:04 AM, Vladimir 'ö-coder/phcoder'
-Serbinenko <phcoder@gmail.com> wrote:
-> Yes, I've already noticed this and resent it to the util-linux list.
-> Do you know if linux-kernel is the right list for my other patches like
-> wrong minixfs block allocation check or AFFS race condition? It seems
-> they've all been ignored.
+On Wed, May 09, 2012 at 09:46:55AM +0100, Jan Beulich wrote:
+> This is in preparation to adjust modpost to check section mismatches
+> on most of the .pci_fixup* sections:
+> 
+> .pci_fixup_final is only used from .init.text, and hence can (along
+> with the respective handler functions) reside in .init.*.
+> 
+> Several other .pci_fixup_* sections are needed only during boot and
+> suspend/resume, and can therefore be moved into .init.* if
+> !CONFIG_PM.
+> 
+> Handler (and eventual static data) section annotations need to/can be
+> changed accordingly.
+> 
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-Not really.
-At least send them to linux-fsdevel too.
-Please read MAINTAINERS and Documentation/SubmittingPatches and
-use checkpatch.pl/get_maintainer.pl.
-
--- 
-Thanks,
-//richard
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
