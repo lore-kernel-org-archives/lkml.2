@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab2EIGTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:19:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39054 "EHLO
+	id S1758165Ab2EIGT5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:19:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38977 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756394Ab2EIFxY (ORCPT
+	by vger.kernel.org with ESMTP id S1756347Ab2EIFxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:24 -0400
-Message-Id: <20120509055047.180843827@decadent.org.uk>
+	Wed, 9 May 2012 01:53:23 -0400
+Message-Id: <20120509055039.962244801@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:36 +0100
+Date: Wed, 09 May 2012 06:51:42 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Jackson <thomas.p.jackson@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 127/167] [PATCH] [SCSI] libsas: fix sas_find_bcast_phy() in the presence of
- vacant phys
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
+        Marc MERLIN <marc@merlins.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 073/167] [PATCH 13/26] net: allow pskb_expand_head() to get maximum tailroom
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,58 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Jackson <thomas.p.jackson@intel.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit 1699490db339e2c6b3037ea8e7dcd6b2755b688e upstream.
+[ Upstream commit 87151b8689d890dfb495081f7be9b9e257f7a2df ]
 
-If an expander reports 'PHY VACANT' for a phy index prior to the one
-that generated a BCN libsas fails rediscovery.  Since a vacant phy is
-defined as a valid phy index that will never have an attached device
-just continue the search.
+Marc Merlin reported many order-1 allocations failures in TX path on its
+wireless setup, that dont make any sense with MTU=1500 network, and non
+SG capable hardware.
 
-Signed-off-by: Thomas Jackson <thomas.p.jackson@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Turns out part of the problem comes from pskb_expand_head() not using
+ksize() to get exact head size given by kmalloc(). Doing the same thing
+than __alloc_skb() allows more tailroom in skb and can prevent future
+reallocations.
+
+As a bonus, struct skb_shared_info becomes cache line aligned.
+
+Reported-by: Marc MERLIN <marc@merlins.org>
+Tested-by: Marc MERLIN <marc@merlins.org>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/libsas/sas_expander.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ net/core/skbuff.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
-index 05acd9e..833bea0 100644
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -1718,9 +1718,17 @@ static int sas_find_bcast_phy(struct domain_device *dev, int *phy_id,
- 		int phy_change_count = 0;
- 
- 		res = sas_get_phy_change_count(dev, i, &phy_change_count);
--		if (res)
--			goto out;
--		else if (phy_change_count != ex->ex_phy[i].phy_change_count) {
-+		switch (res) {
-+		case SMP_RESP_PHY_VACANT:
-+		case SMP_RESP_NO_PHY:
-+			continue;
-+		case SMP_RESP_FUNC_ACC:
-+			break;
-+		default:
-+			return res;
-+		}
-+
-+		if (phy_change_count != ex->ex_phy[i].phy_change_count) {
- 			if (update)
- 				ex->ex_phy[i].phy_change_count =
- 					phy_change_count;
-@@ -1728,8 +1736,7 @@ static int sas_find_bcast_phy(struct domain_device *dev, int *phy_id,
- 			return 0;
- 		}
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 29cb392..2ec200de 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -903,9 +903,11 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
+ 		goto adjust_others;
  	}
--out:
--	return res;
-+	return 0;
- }
  
- static int sas_get_ex_change_count(struct domain_device *dev, int *ecc)
+-	data = kmalloc(size + sizeof(struct skb_shared_info), gfp_mask);
++	data = kmalloc(size + SKB_DATA_ALIGN(sizeof(struct skb_shared_info)),
++		       gfp_mask);
+ 	if (!data)
+ 		goto nodata;
++	size = SKB_WITH_OVERHEAD(ksize(data));
+ 
+ 	/* Copy only real data... and, alas, header. This should be
+ 	 * optimized for the cases when header is void.
 -- 
 1.7.10
 
