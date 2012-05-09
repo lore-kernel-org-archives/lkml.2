@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757646Ab2EIGAg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:00:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39138 "EHLO
+	id S1757705Ab2EIGBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:01:25 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39105 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756610Ab2EIFxp (ORCPT
+	by vger.kernel.org with ESMTP id S1756586Ab2EIFxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:45 -0400
-Message-Id: <20120509055050.980305127@decadent.org.uk>
+	Wed, 9 May 2012 01:53:44 -0400
+Message-Id: <20120509055045.173553374@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:53:04 +0100
+Date: Wed, 09 May 2012 06:52:21 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Colin Cross <ccross@android.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 155/167] [PATCH] ARM: 7414/1: SMP: prevent use of the console when using
- idmap_pgd
+        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 112/167] [PATCH] drm/i915: fix integer overflow in i915_gem_do_execbuffer()
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,57 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit fde165b2a29673aabf18ceff14dea1f1cfb0daad upstream.
+commit 44afb3a04391a74309d16180d1e4f8386fdfa745 upstream.
 
-Commit 4e8ee7de227e3ab9a72040b448ad728c5428a042 (ARM: SMP: use
-idmap_pgd for mapping MMU enable during secondary booting)
-switched secondary boot to use idmap_pgd, which is initialized
-during early_initcall, instead of a page table initialized during
-__cpu_up.  This causes idmap_pgd to contain the static mappings
-but be missing all dynamic mappings.
+On 32-bit systems, a large args->num_cliprects from userspace via ioctl
+may overflow the allocation size, leading to out-of-bounds access.
 
-If a console is registered that creates a dynamic mapping, the
-printk in secondary_start_kernel will trigger a data abort on
-the missing mapping before the exception handlers have been
-initialized, leading to a hang.  Initial boot is not affected
-because no consoles have been registered, and resume is usually
-not affected because the offending console is suspended.
-Onlining a cpu with hotplug triggers the problem.
+This vulnerability was introduced in commit 432e58ed ("drm/i915: Avoid
+allocation for execbuffer object list").
 
-A workaround is to the printk in secondary_start_kernel until
-after the page tables have been switched back to init_mm.
-
-Signed-off-by: Colin Cross <ccross@android.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/kernel/smp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index f6a4d32..8f46446 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -251,8 +251,6 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
- 	struct mm_struct *mm = &init_mm;
- 	unsigned int cpu = smp_processor_id();
+diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+index 7c50e58..de43194 100644
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -1133,6 +1133,11 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
+ 			return -EINVAL;
+ 		}
  
--	printk("CPU%u: Booted secondary processor\n", cpu);
--
- 	/*
- 	 * All kernel threads share the same mm context; grab a
- 	 * reference and switch to it.
-@@ -264,6 +262,8 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
- 	enter_lazy_tlb(mm, current);
- 	local_flush_tlb_all();
- 
-+	printk("CPU%u: Booted secondary processor\n", cpu);
-+
- 	cpu_init();
- 	preempt_disable();
- 	trace_hardirqs_off();
++		if (args->num_cliprects > UINT_MAX / sizeof(*cliprects)) {
++			DRM_DEBUG("execbuf with %u cliprects\n",
++				  args->num_cliprects);
++			return -EINVAL;
++		}
+ 		cliprects = kmalloc(args->num_cliprects * sizeof(*cliprects),
+ 				    GFP_KERNEL);
+ 		if (cliprects == NULL) {
 -- 
 1.7.10
 
