@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759907Ab2EIPdv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 11:33:51 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:53941 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759694Ab2EIPdu (ORCPT
+	id S1760004Ab2EIPeX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 11:34:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54651 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758501Ab2EIPeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 11:33:50 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18SrmIi614Svu01vPNfC0gd2B3FKYc2VflPnm9IAF
-	OpNEE9aIv+ngiv
-Message-ID: <1336577622.16079.39.camel@marge.simpson.net>
-Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
-From: Mike Galbraith <efault@gmx.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 09 May 2012 17:33:42 +0200
-In-Reply-To: <alpine.DEB.2.00.1205091001480.10177@router.home>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
-	 <1335830115-14335-8-git-send-email-fweisbec@gmail.com>
-	 <alpine.DEB.2.00.1205071053070.1060@router.home>
-	 <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
-	 <1336488626.16236.41.camel@twins>
-	 <alpine.DEB.2.00.1205081016370.27713@router.home>
-	 <1336490832.8226.5.camel@twins>
-	 <alpine.DEB.2.00.1205081035550.27713@router.home>
-	 <1336492081.8226.13.camel@twins>
-	 <alpine.DEB.2.00.1205081054310.27713@router.home>
-	 <1336493768.8226.29.camel@twins>
-	 <1336506601.7400.21.camel@marge.simpson.net>
-	 <alpine.DEB.2.00.1205081541010.1391@router.home>
-	 <1336537289.7365.62.camel@marge.simpson.net>
-	 <alpine.DEB.2.00.1205090915430.8171@router.home>
-	 <1336574836.16079.17.camel@marge.simpson.net>
-	 <alpine.DEB.2.00.1205091001480.10177@router.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Wed, 9 May 2012 11:34:19 -0400
+Date: Wed, 9 May 2012 16:34:16 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] regmap fix for 3.4
+Message-ID: <20120509153416.GB3955@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="t8N2qprAjL+0GVly"
+Content-Disposition: inline
+X-Cookie: You are fairminded, just and loving.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 10:05 -0500, Christoph Lameter wrote:
 
-> I do not get how a cpuset could be used by an application with load
-> balancing disabled. Seems to defeat the purpose of the cpuset (which IMHO
-> is to generate a custom load balancing domain after all). You would
-> have to manually pin the processes to processors of the cpuset anyways.
-> 
-> If you already have to pin then why would you want a cpuset on top of
-> that?
+--t8N2qprAjL+0GVly
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-You don't have to turn load balancing completely off.  I have at least
-one customer with modest isolation requirements, an exclusive set with
-load balancing enabled is perfect for them.  OTOH, for tight constraint
-RT, I have no choice but to turn everything I can get my hands on off.
-Any such app manages itself or is busted crud, so all is well, cpusets
-work nicely.
+The following changes since commit d48b97b403d23f6df0b990cee652bdf9a52337a3:
 
-I don't like cgroups much, but I've become rather fond of cpusets.
+  Linux 3.4-rc6 (2012-05-06 15:07:32 -0700)
 
--Mike
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-3.4
 
+for you to fetch changes up to 6560ffd1ccd688152393dc7c35dbdcc33140633b:
+
+  regmap: fix possible memory corruption in regmap_bulk_read() (2012-05-09 15:44:11 +0100)
+
+----------------------------------------------------------------
+regmap: Last minute bug fix for 3.4
+
+This is a last minute bug fix that was only just noticed since the code
+path that's being exercised here is one that is fairly rarely used.  The
+changelog for the change itself is extremely clear and the code itself
+is obvious to inspection so should be pretty safe.
+
+----------------------------------------------------------------
+Laxman Dewangan (1):
+      regmap: fix possible memory corruption in regmap_bulk_read()
+
+ drivers/base/regmap/regmap.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--t8N2qprAjL+0GVly
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPqo5xAAoJEBus8iNuMP3dcjwQAJpDZu/Sf0P/UWAltpWjx0UR
+K87ltyaGe3EsohC8ASy004A/DK41oObyeICrM04bEjkrs4SJoc3azOqGXjig4ya2
+DnzFi8vZYVkp0td5w62osODD45xOzzWcFl/VNVQLZYqVFvA8nhBCyCxvmy7djT8h
+Q5Thzuel24Cp6uilQCLliQGbFlnK0CHjZBFyeG5h21qqedJ3VmVLpCEjIAi7p/M+
+HXbWzylyotipBgmoE7V8cNJYI6o1PJgt1iwJ70oi0VBUb5ATtZFE0YPj0MMRDH6Q
+BIdUbmmRB6BpfPUIWEiLC96lomyZpCf/IuHWHefxkP6QAF8weqLdfaCrIz2AQQmc
+0ez9npD5kgTDP8RSNtaeD1HSaXcHCA/TArhjiwQR6Iqb1BiXqAMyDh0ZJDinoQwM
+IZcYtdWTkJECq6oeAOBZEghRR9H8E4O84SD3r3gCjMT3s32CUfCVLyDeaKgG4MJ2
+xs3RG0fv85GOOzz32zyKN+r9laJSSF+9wKmPtU9SJNsIwPMySF/5WvwaL61Syg1z
+PjdaFulbitYrOz7rvANA1hzkI8RctcxLpxEYhSqlxe+d47LPwne6JeW4zCM0PkTV
+cxLVXoOBpbxqdyQiYxGOfVALb7yUGo/wglDIWqU8wZ2p6LHFXL0gg4p+zwfXM2BO
+X6ksvkN9/YZwWD9UyYNj
+=agwn
+-----END PGP SIGNATURE-----
+
+--t8N2qprAjL+0GVly--
