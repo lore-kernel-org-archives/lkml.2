@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760650Ab2EIRva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:51:30 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38465 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758335Ab2EIRv2 (ORCPT
+	id S1760667Ab2EIRwJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:52:09 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62173 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759652Ab2EIRwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 13:51:28 -0400
+	Wed, 9 May 2012 13:52:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1205082259350.16707@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1205042250130.18896@file.rdu.redhat.com>
- <20120505115851.1fecbe50@pyramind.ukuu.org.uk> <Pine.LNX.4.64.1205051448400.2623@file.rdu.redhat.com>
- <CA+55aFy2O8KcLC-yGCG2ZRpCpAdZ_T7z-sSme4fMrXG=YNAAhA@mail.gmail.com> <Pine.LNX.4.64.1205082259350.16707@file.rdu.redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 9 May 2012 10:51:06 -0700
-X-Google-Sender-Auth: 8QPIICG2HEhdT4mGMIQ3VFA7x7k
-Message-ID: <CA+55aFwiLp1z+2mzkrFsid1WZQ0TQkcn8F2E6NL_AVR+m1fZ2w@mail.gmail.com>
-Subject: Re: [PATCH] Fix compile failure on PA-RISC
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1205091637570.26736@pobox.suse.cz>
+References: <1336136030-18503-1-git-send-email-benjamin.tissoires@gmail.com>
+	<alpine.LNX.2.00.1205091637570.26736@pobox.suse.cz>
+Date: Wed, 9 May 2012 19:52:04 +0200
+Message-ID: <CAN+gG=HaQkO03whpuZFvBWTEe88TbM+uYUD8PsCa7bhO6v25uw@mail.gmail.com>
+Subject: Re: [patch 0/5] Bug fix and win8 for hid-multitouch
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 8, 2012 at 8:20 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
->>
->> Switching it to zero and testing that things still work would be appreciated.
+Hello Jiri,
+
+On Wed, May 9, 2012 at 4:39 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Fri, 4 May 2012, benjamin.tissoires wrote:
 >
-> It works, but there is plenty of interrupt controllers on PC-RISC and I
-> can only test it on C8000 with IO-SAPIC. I don't know if irq 0 is used on
-> some PA-RISC interrupt controller. It would be best if James Bottomley
-> tests it on his set of machines.
+>> The first patch fixes the bug I discovered lately. This bug was related to the out
+>> of bound bitfield test, so it concerns every known devices. Ideally, it should go
+>> to upstream-fixes, but this would requires additional adaptations.
+>> Jiri, How do you want to proceed?
+>
+> When did the bug get introduced, please? i.e. is it a regression?
 
-Heh. It sounds like we have more PA-RISC machines than we have actual users.
+Well, it's not exactly a regression: it's always been there... ;-)
 
-> And what about x86? --- irq 0 is used for timer and there is
-> void __init setup_default_timer_irq(void)
-> {
->        setup_irq(0, &irq0);
-> }
-> in arch/x86/kernel/time.c.
+More seriously, the bug was introduced in the commit
+"HID: multitouch: fix handling of buggy reports descriptors for Dell
+ST2220T" (in kernel 3.3)
+The thing is that this bug fix was not good and was working by miracle.
 
-That's fine. There's no "irq" variable associated with it that people
-can test. No driver will ever see an irq number of zero, no dynamic
-irq code will ever see the zero.
+>
+> As we are getting close to 3.5 merge window being open, maybe the best
+> thing to do would be just push it there once it's open, and then
+> eventually backport it for stable@ if necessary.
 
-So x86 rules have always been that the way drivers etc test for irq
-existence has always been "irq 0 means no irq". Despite the fact that
-it internally uses irq0 for its own nefarious uses.
+That seems fair.
 
-                    Linus
+>
+>> The last 4 patches are the beginning of the support of Win8 devices.
+>> It's only the beginning as the specification is much more precise than
+>> the Win7, and we will need to do more tuning in the future. However,
+>> Win8 devices are retro-compatible with Win7, so they will work out of
+>> the box though.
+>
+> I understand that Henrik had some valid concerns, so I will wait for a
+> second respin and Henrik's ack, ok?
+
+ok,
+Thanks,
+Benjamin
+
+>
+> Thanks,
+>
+> --
+> Jiri Kosina
+> SUSE Labs
