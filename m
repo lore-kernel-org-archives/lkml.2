@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab2EIFx1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:53:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38846 "EHLO
+	id S1756879Ab2EIFxa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:53:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38847 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756054Ab2EIFxJ (ORCPT
+	by vger.kernel.org with ESMTP id S1756058Ab2EIFxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:09 -0400
-Message-Id: <20120509055030.716996294@decadent.org.uk>
+Message-Id: <20120509055030.585061570@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:50:37 +0100
+Date: Wed, 09 May 2012 06:50:36 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Adrian Hunter <adrian.hunter@intel.com>,
         Jaehoon Chung <jh80.chung@samsung.com>,
         Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>
-Subject: [ 008/167] [PATCH] mmc: fixes for eMMC v4.5 sanitize operation
+Subject: [ 007/167] [PATCH] mmc: fixes for eMMC v4.5 discard operation
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,11 +31,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-commit 283028122db37621b124f079ca8eae5b64807ad4 upstream.
+commit 7194efb8f063ee3aa0cb50d9002348887e68ec10 upstream.
 
-eMMC v4.5 sanitize operation erases all copies of unmapped
-data.  However trim or erase operations must be used first
-to unmap the required sectors.  That was not being done.
+eMMC v4.5 discard operation is significantly different from the
+existing trim operation because it is not guaranteed to work with
+the new sanitize operation.  Consequently mmc_can_trim() is
+separated from mmc_can_discard().
+
+Also the new discard operation does not result in the sectors being
+set to all-zeros, so discard_zeroes_data must not be set.
+
+In addition, the new discard has the same timeout as trim, but from
+v4.5 trim is defined to use the hc timeout.  The timeout calculation
+is adjusted accordingly.
 
 Fixes apply to linux 3.2 on.
 
@@ -45,120 +53,48 @@ Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mmc/card/block.c |   54 ++++++++++++++++++++++++++++++++--------------
- drivers/mmc/core/core.c  |    2 ++
- 2 files changed, 40 insertions(+), 16 deletions(-)
+ drivers/mmc/card/queue.c |    2 +-
+ drivers/mmc/core/core.c  |    7 ++++---
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index b180965..4232bc4 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -873,7 +873,7 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
- {
- 	struct mmc_blk_data *md = mq->data;
- 	struct mmc_card *card = md->queue.card;
--	unsigned int from, nr, arg;
-+	unsigned int from, nr, arg, trim_arg, erase_arg;
- 	int err = 0, type = MMC_BLK_SECDISCARD;
+diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+index 2517547..996f8e3 100644
+--- a/drivers/mmc/card/queue.c
++++ b/drivers/mmc/card/queue.c
+@@ -139,7 +139,7 @@ static void mmc_queue_setup_discard(struct request_queue *q,
  
- 	if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
-@@ -881,20 +881,26 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
- 		goto out;
- 	}
- 
-+	from = blk_rq_pos(req);
-+	nr = blk_rq_sectors(req);
-+
- 	/* The sanitize operation is supported at v4.5 only */
- 	if (mmc_can_sanitize(card)) {
--		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
--				EXT_CSD_SANITIZE_START, 1, 0);
--		goto out;
-+		erase_arg = MMC_ERASE_ARG;
-+		trim_arg = MMC_TRIM_ARG;
-+	} else {
-+		erase_arg = MMC_SECURE_ERASE_ARG;
-+		trim_arg = MMC_SECURE_TRIM1_ARG;
- 	}
- 
--	from = blk_rq_pos(req);
--	nr = blk_rq_sectors(req);
--
--	if (mmc_can_trim(card) && !mmc_erase_group_aligned(card, from, nr))
--		arg = MMC_SECURE_TRIM1_ARG;
--	else
--		arg = MMC_SECURE_ERASE_ARG;
-+	if (mmc_erase_group_aligned(card, from, nr))
-+		arg = erase_arg;
-+	else if (mmc_can_trim(card))
-+		arg = trim_arg;
-+	else {
-+		err = -EINVAL;
-+		goto out;
-+	}
- retry:
- 	if (card->quirks & MMC_QUIRK_INAND_CMD38) {
- 		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-@@ -904,25 +910,41 @@ retry:
- 				 INAND_CMD38_ARG_SECERASE,
- 				 0);
- 		if (err)
--			goto out;
-+			goto out_retry;
- 	}
-+
- 	err = mmc_erase(card, from, nr, arg);
--	if (!err && arg == MMC_SECURE_TRIM1_ARG) {
-+	if (err == -EIO)
-+		goto out_retry;
-+	if (err)
-+		goto out;
-+
-+	if (arg == MMC_SECURE_TRIM1_ARG) {
- 		if (card->quirks & MMC_QUIRK_INAND_CMD38) {
- 			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
- 					 INAND_CMD38_ARG_EXT_CSD,
- 					 INAND_CMD38_ARG_SECTRIM2,
- 					 0);
- 			if (err)
--				goto out;
-+				goto out_retry;
- 		}
-+
- 		err = mmc_erase(card, from, nr, MMC_SECURE_TRIM2_ARG);
-+		if (err == -EIO)
-+			goto out_retry;
-+		if (err)
-+			goto out;
- 	}
--out:
--	if (err == -EIO && !mmc_blk_reset(md, card->host, type))
-+
-+	if (mmc_can_sanitize(card))
-+		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-+				 EXT_CSD_SANITIZE_START, 1, 0);
-+out_retry:
-+	if (err && !mmc_blk_reset(md, card->host, type))
- 		goto retry;
- 	if (!err)
- 		mmc_blk_reset_success(md, type);
-+out:
- 	spin_lock_irq(&md->lock);
- 	__blk_end_request(req, err, blk_rq_bytes(req));
- 	spin_unlock_irq(&md->lock);
+ 	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, q);
+ 	q->limits.max_discard_sectors = max_discard;
+-	if (card->erased_byte == 0)
++	if (card->erased_byte == 0 && !mmc_can_discard(card))
+ 		q->limits.discard_zeroes_data = 1;
+ 	q->limits.discard_granularity = card->pref_erase << 9;
+ 	/* granularity must not be greater than max. discard */
 diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 83db5ef..e541efb 100644
+index 7474c47..83db5ef 100644
 --- a/drivers/mmc/core/core.c
 +++ b/drivers/mmc/core/core.c
-@@ -1702,6 +1702,8 @@ EXPORT_SYMBOL(mmc_can_discard);
- 
- int mmc_can_sanitize(struct mmc_card *card)
+@@ -1409,7 +1409,10 @@ static unsigned int mmc_mmc_erase_timeout(struct mmc_card *card,
  {
-+	if (!mmc_can_trim(card) && !mmc_can_erase(card))
-+		return 0;
- 	if (card->ext_csd.sec_feature_support & EXT_CSD_SEC_SANITIZE)
+ 	unsigned int erase_timeout;
+ 
+-	if (card->ext_csd.erase_group_def & 1) {
++	if (arg == MMC_DISCARD_ARG ||
++	    (arg == MMC_TRIM_ARG && card->ext_csd.rev >= 6)) {
++		erase_timeout = card->ext_csd.trim_timeout;
++	} else if (card->ext_csd.erase_group_def & 1) {
+ 		/* High Capacity Erase Group Size uses HC timeouts */
+ 		if (arg == MMC_TRIM_ARG)
+ 			erase_timeout = card->ext_csd.trim_timeout;
+@@ -1681,8 +1684,6 @@ int mmc_can_trim(struct mmc_card *card)
+ {
+ 	if (card->ext_csd.sec_feature_support & EXT_CSD_SEC_GB_CL_EN)
  		return 1;
+-	if (mmc_can_discard(card))
+-		return 1;
  	return 0;
+ }
+ EXPORT_SYMBOL(mmc_can_trim);
 -- 
 1.7.10
 
