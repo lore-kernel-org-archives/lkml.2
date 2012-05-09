@@ -1,72 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab2EIFij (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:38:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64273 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab2EIFih (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:38:37 -0400
-Message-ID: <4FAA02DA.3000201@gmail.com>
-Date: Tue, 08 May 2012 23:38:34 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Zheng Liu <gnehzuil.liu@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, Jeff Garzik <jeff@garzik.org>,
-        Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: [RFC][PATCH] libata: enable SATA disk fua detection on default
-References: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com>
-In-Reply-To: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752532Ab2EIFtG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:49:06 -0400
+Received: from mga01.intel.com ([192.55.52.88]:7414 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751915Ab2EIFtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 01:49:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="163789056"
+From: Jenny TC <jenny.tc@intel.com>
+To: cbouatmailru@gmail.com, anton.vorontsov@linaro.org
+Cc: linux-kernel@vger.kernel.org, durgadoss.r@intel.com,
+        Jenny TC <jenny.tc@intel.com>
+Subject: [PATCH] power_supply: Register battery as a thermal zone
+Date: Wed,  9 May 2012 16:48:38 +0530
+Message-Id: <1336562318-16096-1-git-send-email-jenny.tc@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2012 09:24 PM, Zheng Liu wrote:
-> From: Zheng Liu<wenqing.lz@taobao.com>
->
-> Currently, SATA disk fua detection is disabled on default because most of
-> devices don't support this feature at that time.  With the development of
-> technology, more and more SATA disks support this feature.  So now we can enable
-> this detection on default.
->
-> Although fua detection is defined as a kernel module parameter, it is too hard
-> to set its value because it must be loaded and set before system starts up.
-> That needs to modify initrd file.  So it is inconvenient for administrator who
-> needs to manage a huge number of servers.
->
-> CC: Jeff Garzik<jeff@garzik.org>
-> Signed-off-by: Zheng Liu<wenqing.lz@taobao.com>
-> ---
->   drivers/ata/libata-core.c |    4 ++--
->   1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-> index 23763a1..3627251 100644
-> --- a/drivers/ata/libata-core.c
-> +++ b/drivers/ata/libata-core.c
-> @@ -133,9 +133,9 @@ int atapi_passthru16 = 1;
->   module_param(atapi_passthru16, int, 0444);
->   MODULE_PARM_DESC(atapi_passthru16, "Enable ATA_16 passthru for ATAPI devices (0=off, 1=on [default])");
->
-> -int libata_fua = 0;
-> +int libata_fua = 1;
->   module_param_named(fua, libata_fua, int, 0444);
-> -MODULE_PARM_DESC(fua, "FUA support (0=off [default], 1=on)");
-> +MODULE_PARM_DESC(fua, "FUA support (0=off, 1=on [default])");
->
->   static int ata_ignore_hpa;
->   module_param_named(ignore_hpa, ata_ignore_hpa, int, 0644);
+Battery and charger contribute to Thermals in most of the embedded
+devices. So, it makes sense to identify them as Thermal zones in a
+particular platform.
 
-I don't see that this is very likely to cause issues, but the FUA 
-implementation also seems a bit incomplete. FUA will only get enabled if 
-the drive claims support for the FUA-specific commands like 
-WRITE_DMA_FUA_EXT. But theoretically any drive that supports NCQ should 
-be able to do FUA since there's a FUA bit provided in those commands. Of 
-course this makes things a bit more complicated (for example, if NCQ 
-gets disabled by user request or due to too many errors, and the drive 
-doesn't support the separate FUA commands, then FUA needs to be disabled 
-too.)
+This patch registers a thermal zone if the power supply is reporting
+a temperature property. The thermal zone will be used by platform's
+thermal management solution.
+
+Signed-off-by: Jenny TC <jenny.tc@intel.com>
+---
+ drivers/power/power_supply_core.c |   52 ++++++++++++++++++++++++++++++++++++-
+ include/linux/power_supply.h      |    3 ++
+ 2 files changed, 54 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+index 6ad6127..ea690ba 100644
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -17,6 +17,7 @@
+ #include <linux/device.h>
+ #include <linux/err.h>
+ #include <linux/power_supply.h>
++#include <linux/thermal.h>
+ #include "power_supply.h"
+ 
+ /* exported for the APM Power driver, APM emulation */
+@@ -169,10 +170,36 @@ static void power_supply_dev_release(struct device *dev)
+ 	kfree(dev);
+ }
+ 
++#ifdef CONFIG_THERMAL
++static int power_supply_read_temp(struct thermal_zone_device *tzd,
++		unsigned long *temp)
++{
++	struct power_supply *psy;
++	union power_supply_propval val;
++	int ret;
++
++	WARN_ON(tzd == NULL);
++	psy = tzd->devdata;
++	WARN_ON(psy == NULL);
++	ret = psy->get_property(psy,
++				  POWER_SUPPLY_PROP_TEMP, &val);
++	if (!ret)
++		*temp = val.intval * 100;
++	return ret;
++}
++
++static struct thermal_zone_device_ops psy_tzd_ops = {
++	.get_temp = power_supply_read_temp,
++};
++#endif
++
+ int power_supply_register(struct device *parent, struct power_supply *psy)
+ {
+ 	struct device *dev;
+ 	int rc;
++#ifdef CONFIG_THERMAL
++	int i;
++#endif
+ 
+ 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+ 	if (!dev)
+@@ -196,7 +223,21 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
+ 	rc = device_add(dev);
+ 	if (rc)
+ 		goto device_add_failed;
+-
++#ifdef CONFIG_THERMAL
++	/* Register battery zone device psy reports temperature */
++	for (i = 0; i < psy->num_properties; i++) {
++		if (psy->properties[i] == POWER_SUPPLY_PROP_TEMP) {
++			psy->tzd = thermal_zone_device_register(
++					(char *)psy->name, 0, psy,
++					&psy_tzd_ops, 0, 0, 0, 0);
++			if (IS_ERR(psy->tzd)) {
++				rc = PTR_ERR(psy->tzd);
++				goto therm_zone_reg_failed;
++			}
++			break;
++		}
++	}
++#endif
+ 	rc = power_supply_create_triggers(psy);
+ 	if (rc)
+ 		goto create_triggers_failed;
+@@ -206,6 +247,11 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
+ 	goto success;
+ 
+ create_triggers_failed:
++#ifdef CONFIG_THERMAL
++therm_zone_reg_failed:
++	if (!IS_ERR(psy->tzd))
++		thermal_zone_device_unregister(psy->tzd);
++#endif
+ 	device_del(dev);
+ kobject_set_name_failed:
+ device_add_failed:
+@@ -220,6 +266,10 @@ void power_supply_unregister(struct power_supply *psy)
+ 	cancel_work_sync(&psy->changed_work);
+ 	sysfs_remove_link(&psy->dev->kobj, "powers");
+ 	power_supply_remove_triggers(psy);
++#ifdef CONFIG_THERMAL
++	if (psy->tzd)
++		thermal_zone_device_unregister(psy->tzd);
++#endif
+ 	device_unregister(psy->dev);
+ }
+ EXPORT_SYMBOL_GPL(power_supply_unregister);
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index c38c13d..1f58435 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -172,6 +172,9 @@ struct power_supply {
+ 	/* private */
+ 	struct device *dev;
+ 	struct work_struct changed_work;
++#ifdef CONFIG_THERMAL
++	struct thermal_zone_device *tzd;
++#endif
+ 
+ #ifdef CONFIG_LEDS_TRIGGERS
+ 	struct led_trigger *charging_full_trig;
+-- 
+1.7.1
+
