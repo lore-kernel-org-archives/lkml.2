@@ -1,115 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758693Ab2EII3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 04:29:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45853 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab2EII3F (ORCPT
+	id S1758651Ab2EIIeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 04:34:09 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:39529 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab2EIIeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 04:29:05 -0400
-From: Ido Yariv <ido@wizery.com>
-To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Shai Fultheim <shai@scalemp.com>, Ido Yariv <ido@wizery.com>
-Subject: [PATCH v4] vsmp: Fix number of CPUs when vsmp is disabled
-Date: Wed,  9 May 2012 11:28:41 +0300
-Message-Id: <1336552121-6742-1-git-send-email-ido@wizery.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <20120509082225.GB5036@NoteStation.colubris.lan>
-References: <20120509082225.GB5036@NoteStation.colubris.lan>
+	Wed, 9 May 2012 04:34:05 -0400
+Message-ID: <4FAA2673.50007@linux.vnet.ibm.com>
+Date: Wed, 09 May 2012 13:40:27 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+MIME-Version: 1.0
+To: Bojan Smojver <bojan@rexursive.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        bp@alien8.de
+Subject: Re: [PATCH]: In kernel hibernation, suspend to both
+References: <1336515735.2097.23.camel@shrek.rexursive.com>
+In-Reply-To: <1336515735.2097.23.camel@shrek.rexursive.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12050822-0260-0000-0000-0000010A3842
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shai Fultheim <shai@scalemp.com>
+On 05/09/2012 03:52 AM, Bojan Smojver wrote:
 
-In case CONFIG_X86_VSMP is not set, limit the number of CPUs to the
-number of CPUs of the first board.
+> Hi Rafael,
+> 
+> Here is the same thing, this time with signed off. Looks like all the
+> memory used for hibernation is being released before power_down(), so I
+> guess we should be good. The patch is against linux-next.
+> 
+> ------------------------------
+> Enable suspend to both for in-kernel hibernation.
+> 
+> It is often useful to suspend to memory after hibernation image has been
+> written to disk. If the battery runs out or power is otherwise lost, the
+> computer will resume from the hibernated image. If not, it will resume
+> from memory and hibernation image will be discarded.
+> 
+> Signed-off-by: Bojan Smojver <bojan@rexursive.com>
+> ---
+>  Documentation/power/swsusp.txt |    5 +++++
+>  kernel/power/hibernate.c       |   36 ++++++++++++++++++++++++++++++++++++
+>  kernel/power/power.h           |    3 +++
+>  kernel/power/swap.c            |   28 ++++++++++++++++++++++++++++
+>  4 files changed, 72 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/power/swsusp.txt b/Documentation/power/swsusp.txt
+> index ac190cf..92341b8 100644
+> --- a/Documentation/power/swsusp.txt
+> +++ b/Documentation/power/swsusp.txt
+> @@ -33,6 +33,11 @@ echo shutdown > /sys/power/disk; echo disk > /sys/power/state
+> 
+>  echo platform > /sys/power/disk; echo disk > /sys/power/state
+> 
+> +. If you would like to write hibernation image to swap and then suspend
+> +to RAM (provided your platform supports it), you can try
+> +
+> +echo suspend > /sys/power/disk; echo disk > /sys/power/state
+> +
+>  . If you have SATA disks, you'll need recent kernels with SATA suspend
+>  support. For suspend and resume to work, make sure your disk drivers
+>  are built into kernel -- not modules. [There's way to make
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> index e09dfbf..3b5726f 100644
+> --- a/kernel/power/hibernate.c
+> +++ b/kernel/power/hibernate.c
+> @@ -5,6 +5,7 @@
+>   * Copyright (c) 2003 Open Source Development Lab
+>   * Copyright (c) 2004 Pavel Machek <pavel@ucw.cz>
+>   * Copyright (c) 2009 Rafael J. Wysocki, Novell Inc.
+> + * Copyright (C) 2012 Bojan Smojver <bojan@rexursive.com>
+>   *
+>   * This file is released under the GPLv2.
+>   */
+> @@ -44,6 +45,9 @@ enum {
+>  	HIBERNATION_PLATFORM,
+>  	HIBERNATION_SHUTDOWN,
+>  	HIBERNATION_REBOOT,
+> +#ifdef CONFIG_SUSPEND
+> +	HIBERNATION_SUSPEND,
+> +#endif
+>  	/* keep last */
+>  	__HIBERNATION_AFTER_LAST
+>  };
+> @@ -572,6 +576,10 @@ int hibernation_platform_enter(void)
+>   */
+>  static void power_down(void)
+>  {
+> +#ifdef CONFIG_SUSPEND
+> +	int error;
+> +#endif
+> +
+>  	switch (hibernation_mode) {
+>  	case HIBERNATION_REBOOT:
+>  		kernel_restart(NULL);
+> @@ -581,6 +589,25 @@ static void power_down(void)
+>  	case HIBERNATION_SHUTDOWN:
+>  		kernel_power_off();
+>  		break;
+> +#ifdef CONFIG_SUSPEND
+> +	case HIBERNATION_SUSPEND:
+> +		error = suspend_devices_and_enter(PM_SUSPEND_MEM);
 
-Signed-off-by: Shai Fultheim <shai@scalemp.com>
-[ido@wizery.com: rebased, fixed minor coding-style issues]
-Signed-off-by: Ido Yariv <ido@wizery.com>
----
-Changes from v3:
-- Don't reference setup_max_cpus if CONFIG_SMP isn't set
 
- arch/x86/kernel/vsmp_64.c |   43 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 43 insertions(+), 0 deletions(-)
+I can imagine running into a host of problems here, since the suspend
+sequence is not carried out fully, from the beginning.
 
-diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
-index a1d804b..5234c83 100644
---- a/arch/x86/kernel/vsmp_64.c
-+++ b/arch/x86/kernel/vsmp_64.c
-@@ -15,6 +15,7 @@
- #include <linux/init.h>
- #include <linux/pci_ids.h>
- #include <linux/pci_regs.h>
-+#include <linux/smp.h>
- 
- #include <asm/apic.h>
- #include <asm/pci-direct.h>
-@@ -22,6 +23,8 @@
- #include <asm/paravirt.h>
- #include <asm/setup.h>
- 
-+#define TOPOLOGY_REGISTER_OFFSET 0x10
-+
- #if defined CONFIG_PCI && defined CONFIG_PARAVIRT
- /*
-  * Interrupt control on vSMPowered systems:
-@@ -149,12 +152,52 @@ int is_vsmp_box(void)
- 	return 0;
- }
- #endif
-+
-+static void __init vsmp_cap_cpus(void)
-+{
-+	void __iomem *address;
-+	unsigned int cfg, topology, node_shift, maxcpus;
-+
-+#ifdef CONFIG_X86_VSMP
-+	/* VSMP is enabled, no need to cap cpus */
-+	return;
-+#elif defined(CONFIG_SMP)
-+	/*
-+	 * CONFIG_X86_VSMP is not configured, so limit the number CPUs to the
-+	 * ones present in the first board, unless explicitly overridden by
-+	 * setup_max_cpus
-+	 */
-+	if (setup_max_cpus != NR_CPUS)
-+		return;
-+
-+	/* Read the vSMP Foundation topology register */
-+	cfg = read_pci_config(0, 0x1f, 0, PCI_BASE_ADDRESS_0);
-+	address = early_ioremap(cfg + TOPOLOGY_REGISTER_OFFSET, 4);
-+	if (WARN_ON(!address))
-+		return;
-+
-+	topology = readl(address);
-+	node_shift = (topology >> 16) & 0x7;
-+	if (!node_shift)
-+		/* The value 0 should be decoded as 8 */
-+		node_shift = 8;
-+	maxcpus = (topology & ((1 << node_shift) - 1)) + 1;
-+
-+	pr_info("vSMP CTL: Capping CPUs to %d (CONFIG_X86_VSMP is unset)\n",
-+		maxcpus);
-+	setup_max_cpus = maxcpus;
-+	early_iounmap(address, 4);
-+#endif
-+}
-+
- void __init vsmp_init(void)
- {
- 	detect_vsmp_box();
- 	if (!is_vsmp_box())
- 		return;
- 
-+	vsmp_cap_cpus();
-+
- 	set_vsmp_pv_ops();
- 	return;
- }
--- 
-1.7.6.5
+For example, this will skip sending out the PM_SUSPEND_PREPARE and the
+PM_POST_SUSPEND notifiers. Worse, we actually send out the PM_HIBERNATION_PREPARE
+and PM_POST_HIBERNATION notifiers and then do a suspend instead, underneath!
+
+(Similar cases for the rest of the notifiers sent during suspend vs hibernation).
+
+Don't we need to handle such things properly, in order to make suspend-to-both
+work reliably?
+
+Regards,
+Srivatsa S. Bhat
+
+> +		if (error) {
+> +			if (hibernation_ops)
+> +				hibernation_mode = HIBERNATION_PLATFORM;
+> +			else
+> +				hibernation_mode = HIBERNATION_SHUTDOWN;
+> +			power_down();
+> +		}
+> +		/*
+> +		 * Restore swap signature.
+> +		 */
+> +		error = swsusp_unmark();
+> +		if (error)
+> +			printk(KERN_ERR "PM: Swap will be unusable! "
+> +			                "Try swapon -a.\n");
+> +		return;
+> +#endif
+
+>  	}
+
+>  	kernel_halt();
+>  	/*
+
 
