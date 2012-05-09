@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757749Ab2EIGCP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:02:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38962 "EHLO
+	id S1757834Ab2EIGCi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:02:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39040 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756295Ab2EIFxm (ORCPT
+	by vger.kernel.org with ESMTP id S1756855Ab2EIFxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:42 -0400
-Message-Id: <20120509055042.362330034@decadent.org.uk>
+	Wed, 9 May 2012 01:53:41 -0400
+Message-Id: <20120509055043.975915949@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:00 +0100
+Date: Wed, 09 May 2012 06:52:12 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Fred Isaman <iisaman@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 091/167] [PATCH] NFS: put open context on error in nfs_pagein_multi
+        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [ 103/167] [PATCH] hwmon: fam15h_power: fix bogus values with current BIOSes
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,30 +29,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fred Isaman <iisaman@netapp.com>
+From: Andre Przywara <andre.przywara@amd.com>
 
-commit 73fb7bc7c57d971b11f2e00536ac2d3e316e0609 upstream.
+commit 00250ec90963b7ef6678438888f3244985ecde14 upstream.
 
-Signed-off-by: Fred Isaman <iisaman@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Newer BKDG[1] versions recommend a different initialization value for
+the running average range register in the northbridge. This improves
+the power reading by avoiding counter saturations resulting in bogus
+values for anything below about 80% of TDP power consumption.
+Updated BIOSes will have this new value set up from the beginning,
+but meanwhile we correct this value ourselves.
+This needs to be done on all northbridges, even on those where the
+driver itself does not register at.
+
+This fixes the driver on all current machines to provide proper
+values for idle load.
+
+[1]
+http://support.amd.com/us/Processor_TechDocs/42301_15h_Mod_00h-0Fh_BKDG.pdf
+Chapter 3.8: D18F5xE0 Processor TDP Running Average (p. 452)
+
+Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+[guenter.roeck@ericsson.com: Removed unnecessary return statement]
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/read.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hwmon/fam15h_power.c |   39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
-diff --git a/fs/nfs/read.c b/fs/nfs/read.c
-index 9a0e8ef..0a4be28 100644
---- a/fs/nfs/read.c
-+++ b/fs/nfs/read.c
-@@ -322,7 +322,7 @@ out_bad:
- 	while (!list_empty(res)) {
- 		data = list_entry(res->next, struct nfs_read_data, list);
- 		list_del(&data->list);
--		nfs_readdata_free(data);
-+		nfs_readdata_release(data);
- 	}
- 	nfs_readpage_release(req);
- 	return -ENOMEM;
+diff --git a/drivers/hwmon/fam15h_power.c b/drivers/hwmon/fam15h_power.c
+index b7494af..37a8fc9 100644
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -122,6 +122,38 @@ static bool __devinit fam15h_power_is_internal_node0(struct pci_dev *f4)
+ 	return true;
+ }
+ 
++/*
++ * Newer BKDG versions have an updated recommendation on how to properly
++ * initialize the running average range (was: 0xE, now: 0x9). This avoids
++ * counter saturations resulting in bogus power readings.
++ * We correct this value ourselves to cope with older BIOSes.
++ */
++static void __devinit tweak_runavg_range(struct pci_dev *pdev)
++{
++	u32 val;
++	const struct pci_device_id affected_device = {
++		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
++
++	/*
++	 * let this quirk apply only to the current version of the
++	 * northbridge, since future versions may change the behavior
++	 */
++	if (!pci_match_id(&affected_device, pdev))
++		return;
++
++	pci_bus_read_config_dword(pdev->bus,
++		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
++		REG_TDP_RUNNING_AVERAGE, &val);
++	if ((val & 0xf) != 0xe)
++		return;
++
++	val &= ~0xf;
++	val |=  0x9;
++	pci_bus_write_config_dword(pdev->bus,
++		PCI_DEVFN(PCI_SLOT(pdev->devfn), 5),
++		REG_TDP_RUNNING_AVERAGE, val);
++}
++
+ static void __devinit fam15h_power_init_data(struct pci_dev *f4,
+ 					     struct fam15h_power_data *data)
+ {
+@@ -155,6 +187,13 @@ static int __devinit fam15h_power_probe(struct pci_dev *pdev,
+ 	struct device *dev;
+ 	int err;
+ 
++	/*
++	 * though we ignore every other northbridge, we still have to
++	 * do the tweaking on _each_ node in MCM processors as the counters
++	 * are working hand-in-hand
++	 */
++	tweak_runavg_range(pdev);
++
+ 	if (!fam15h_power_is_internal_node0(pdev)) {
+ 		err = -ENODEV;
+ 		goto exit;
 -- 
 1.7.10
 
