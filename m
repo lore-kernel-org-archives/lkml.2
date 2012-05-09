@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760892Ab2EITlP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 15:41:15 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:51739 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760879Ab2EITlJ (ORCPT
+	id S1760886Ab2EITpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 15:45:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56864 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756718Ab2EITpv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 15:41:09 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsO4AO/Fqk9V5qg+PGdsb2JhbABEijemZwF3AwGBIhkBAQEBHhkNJ4IMAQEEATocIxAIA0YUJQoaiBwJu34TizyBa4MBYwSVfIYGg1SJUw
-X-IronPort-AV: E=Sophos;i="4.75,559,1330902000"; 
-   d="scan'208";a="331931227"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 9 May 2012 21:46:23 +0200
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] HID: hid-multitouch: get maxcontacts also from
- logical_max value
-Message-ID: <20120509194623.GA12381@polaris.bitmath.org>
-References: <1336136030-18503-1-git-send-email-benjamin.tissoires@gmail.com>
- <1336136030-18503-3-git-send-email-benjamin.tissoires@gmail.com>
- <20120506190322.GB12571@polaris.bitmath.org>
- <CAN+gG=HQ_U5dhVvgLu0zfMjv1+SAVB2Rx8fNq8tLX2DUHOMa9A@mail.gmail.com>
+	Wed, 9 May 2012 15:45:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN+gG=HQ_U5dhVvgLu0zfMjv1+SAVB2Rx8fNq8tLX2DUHOMa9A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FAAC652.4060502@tilera.com>
+References: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
+	<1336422606-4244-20-git-send-email-yinghai@kernel.org>
+	<4FAAC652.4060502@tilera.com>
+Date: Wed, 9 May 2012 12:45:50 -0700
+X-Google-Sender-Auth: pucW-TPlssew2IRCj2TtymwZaBM
+Message-ID: <CAE9FiQXLriREi1m==3-yXrQja3Qi+HNfnvvq_0Sr7Rpiu_JKTg@mail.gmail.com>
+Subject: Re: [PATCH 19/21] tile/PCI: Use pci_scan_root_bus instead pci_scan_bus
+From: Yinghai Lu <yinghai@kernel.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+On Wed, May 9, 2012 at 12:32 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+> On 5/7/2012 4:30 PM, Yinghai Lu wrote:
+>> It will update busn_res accordingly, so we get that for last_busno.
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> Cc: Chris Metcalf <cmetcalf@tilera.com>
+>> ---
+>>  arch/tile/kernel/pci.c |    5 ++++-
+>>  1 files changed, 4 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/tile/kernel/pci.c b/arch/tile/kernel/pci.c
+>> index 7aa2743..4a951b87 100644
+>> --- a/arch/tile/kernel/pci.c
+>> +++ b/arch/tile/kernel/pci.c
+>> @@ -310,6 +310,7 @@ int __devinit pcibios_init(void)
+>>               if (pci_scan_flags[i] == 0 && controllers[i].ops != NULL) {
+>>                       struct pci_controller *controller = &controllers[i];
+>>                       struct pci_bus *bus;
+>> +                     LIST_HEAD(resources);
+>>
+>>                       if (tile_init_irqs(i, controller)) {
+>>                               pr_err("PCI: Could not initialize IRQs\n");
+>> @@ -327,7 +328,9 @@ int __devinit pcibios_init(void)
+>>                        * This is inlined in linux/pci.h and calls into
+>>                        * pci_scan_bus_parented() in probe.c.
+>>                        */
+>> -                     bus = pci_scan_bus(0, controller->ops, controller);
+>> +                     pci_add_resource(&resources, &ioport_resource);
+>> +                     pci_add_resource(&resources, &iomem_resource);
+>> +                     bus = pci_scan_root_bus(NULL, 0, controller->ops, controller, &resources);
+>>                       controller->root_bus = bus;
+>>                       controller->last_busno = bus->busn_res.end;
+>>               }
+>
+> We don't want ioport_resource on tilepro, since we don't support accessing
+> I/O port space.
+>
+> With that one line removed:
+>
+> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
-> >> Win8 devices are required to present the feature "Maximum Contact Number".
-> >> If the current value is 0, then, the driver can get the actual supported
-> >> contact count by seeing the logical_max.
-> >
-> > And for win7, it is zero?
-> 
-> Well, the truth is that the Win8 specification formally describes the
-> values here. And to get the certification, hardware makers have to put
-> the right value in logical_max.
-> TBH, I don't care that much now with win7 devices. Most of them are a
-> piece of crap (not true dual fingers, problems in hid reports
-> descriptors, etc...), but they just work (we made the necessary
-> things). With the introduction of Win8, hardware makers will have to
-> *certify* their devices, and thus, the Win8 driver is much less
-> tolerant. I really think that we are going to see more and more win8
-> devices, whereas win7 devices will fade out.
-> 
-> I had to add this patch because I have a win8 device that has the
-> value associated to this field at 0, and it's the first I saw with
-> this behavior.
+Thanks.
 
-As long as all existing devices are unaffected, it's fine, hence the question.
+>
+> Or, I can queue this change to take through the tile tree when the merge
+> window opens.  Which would you prefer?
 
-Thanks,
-Henrik
+have to go through pci-next tree. because other change like
+
+ controller->last_busno = bus->busn_res.end;
+
+is in pci-next.
+
+Yinghai
