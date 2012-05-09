@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab2EIKsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 06:48:09 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:46773 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751071Ab2EIKsH convert rfc822-to-8bit (ORCPT
+	id S1756141Ab2EIKtm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 06:49:42 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:39187 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab2EIKtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 06:48:07 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] pch_gbe: Adding read memory barriers
-Date: Wed, 9 May 2012 11:47:42 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F602CD83CB@saturn3.aculab.com>
-In-Reply-To: <4FA822C4.60809@gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] pch_gbe: Adding read memory barriers
-Thread-Index: Ac0sh9V5cDAN6R5lTrK7GvkOPTf60gBSEEWA
-References: <4FA822C4.60809@gmail.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Erwan Velu" <erwanaliasr1@gmail.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: <tshimizu818@gmail.com>
-X-OriginalArrivalTime: 09 May 2012 10:47:44.0541 (UTC) FILETIME=[2A5794D0:01CD2DD1]
+	Wed, 9 May 2012 06:49:41 -0400
+Message-ID: <1336560579.2097.32.camel@shrek.rexursive.com>
+Subject: Re: [PATCH]: In kernel hibernation, suspend to both
+From: Bojan Smojver <bojan@rexursive.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        bp@alien8.de
+Date: Wed, 09 May 2012 20:49:39 +1000
+In-Reply-To: <4FAA2673.50007@linux.vnet.ibm.com>
+References: <1336515735.2097.23.camel@shrek.rexursive.com>
+	 <4FAA2673.50007@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> Under a strong incoming packet stream and/or high cpu usage,
-> the pch_gbe driver reports "Receive CRC Error" and discards packet.
+On Wed, 2012-05-09 at 13:40 +0530, Srivatsa S. Bhat wrote:
+> > +             error = suspend_devices_and_enter(PM_SUSPEND_MEM);
 > 
-> It occurred on an Intel ATOM E620T while running a 
-> 300mbit/sec multicast
-> network stream leading to a ~100% cpu usage.
 > 
-> Adding rmb() calls before considering the network card's status solve
-> this issue.
+> I can imagine running into a host of problems here, since the suspend
+> sequence is not carried out fully, from the beginning.
 > 
-> Getting it into stable would be perfect as it solves 
-> reliability issues.
+> For example, this will skip sending out the PM_SUSPEND_PREPARE and the
+> PM_POST_SUSPEND notifiers. Worse, we actually send out the
+> PM_HIBERNATION_PREPARE
+> and PM_POST_HIBERNATION notifiers and then do a suspend instead,
+> underneath!
 > 
-> Signed-off-by: Erwan Velu <erwan.velu@zodiacaerospace.com>
-> ---
->   .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |    3 +++
->   1 files changed, 3 insertions(+), 0 deletions(-)
+> (Similar cases for the rest of the notifiers sent during suspend vs
+> hibernation).
 > 
-> diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c 
-> b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> index 8035e5f..ace3654 100644
-> --- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> +++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> @@ -1413,6 +1413,7 @@ static irqreturn_t pch_gbe_intr(int 
-> irq, void *data)
->   			pch_gbe_mac_set_pause_packet(hw);
->   		}
->   	}
-> +	smp_rmb(); /* prevent any other reads before*/
+> Don't we need to handle such things properly, in order to make
+> suspend-to-both
+> work reliably? 
 
-Under the assumption that your memory references are uncached,
-you only need to stop gcc reordering the object code,
-Rather than actually adding one of the 'fence' instructions.
+Honest answer - I have absolutely no idea. I've seen the code of
+suspend-utils (i.e. user mode stuff) and it seems to me that it does
+exactly this. Could be wrong of course, just like many times before.
 
-So you should only need: asm volatile(:::"memory")
-NFI which define generates that, the defines in the copy of
-sysdep.h I just looked at always include one of the fences.
+Rafael?
 
-	David
-
+-- 
+Bojan
 
