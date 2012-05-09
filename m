@@ -1,64 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025Ab2EIFBF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:01:05 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45468 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754527Ab2EIFBA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:01:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1336534682.14207.197.camel@gandalf.stny.rr.com>
-References: <1335388704-26790-1-git-send-email-vnagarnaik@google.com>
- <1336096792-25373-1-git-send-email-vnagarnaik@google.com> <1336534682.14207.197.camel@gandalf.stny.rr.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Tue, 8 May 2012 22:00:29 -0700
-Message-ID: <CAL26m8J9j9oqGRte80Kp7zH8DQr5RuHPS88w7+2hry2E-N7VYg@mail.gmail.com>
-Subject: Re: [PATCH v7 1/3] trace: Make removal of ring buffer pages atomic
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Laurent Chavey <chavey@google.com>,
-        Justin Teravest <teravest@google.com>,
-        David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1753999Ab2EIE6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 00:58:16 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44122 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751968Ab2EIE5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 00:57:51 -0400
+From: Joe Perches <joe@perches.com>
+To: "David S. Miller" <davem@davemloft.net>, Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 03/13] 8021q: Convert compare_ether_addr to ether_addr_equal
+Date: Tue,  8 May 2012 21:56:47 -0700
+Message-Id: <8167269651fa71407be1938157a7db7f0451bc5f.1336538938.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
+In-Reply-To: <cover.1336538937.git.joe@perches.com>
+References: <cover.1336538937.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 8, 2012 at 8:38 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> BTW, why the two loops and not just:
->
->                for_each_buffer_cpu(buffer, cpu) {
->                        cpu_buffer = buffer->buffers[cpu];
->                        if (!cpu_buffer->nr_pages_to_update)
->                                continue;
->
->                        if (cpu_online(cpu))
->                                schedule_work_on(cpu, &cpu_buffer->update_pages_work);
->                        else
->                                rb_update_pages(cpu_buffer);
->                }
->
-> ??
->
->
->>
->>               /* wait for all the updates to complete */
->>               for_each_buffer_cpu(buffer, cpu) {
->>                       cpu_buffer = buffer->buffers[cpu];
->> -                     if (cpu_buffer->nr_pages_to_update) {
->> -                             update_pages_handler(cpu_buffer);
->> -                     }
->> +                     if (!cpu_buffer->nr_pages_to_update||
->
->                              !cpu_buffer->nr_pages_to_update ||
+Use the new bool function ether_addr_equal to add
+some clarity and reduce the likelihood for misuse
+of compare_ether_addr for sorting.
 
-This schedules work for all online CPUs and the offline CPUs resizing
-(if any) can occur concurrently. It might not be too much of big deal
-to just make it one loop.
+Done via cocci script:
 
+$ cat compare_ether_addr.cocci
+@@
+expression a,b;
+@@
+-	!compare_ether_addr(a, b)
++	ether_addr_equal(a, b)
 
+@@
+expression a,b;
+@@
+-	compare_ether_addr(a, b)
++	!ether_addr_equal(a, b)
 
-Vaibhav Nagarnaik
+@@
+expression a,b;
+@@
+-	!ether_addr_equal(a, b) == 0
++	ether_addr_equal(a, b)
+
+@@
+expression a,b;
+@@
+-	!ether_addr_equal(a, b) != 0
++	!ether_addr_equal(a, b)
+
+@@
+expression a,b;
+@@
+-	ether_addr_equal(a, b) == 0
++	!ether_addr_equal(a, b)
+
+@@
+expression a,b;
+@@
+-	ether_addr_equal(a, b) != 0
++	ether_addr_equal(a, b)
+
+@@
+expression a,b;
+@@
+-	!!ether_addr_equal(a, b)
++	ether_addr_equal(a, b)
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ net/8021q/vlan.c      |   10 +++++-----
+ net/8021q/vlan_core.c |    3 +--
+ net/8021q/vlan_dev.c  |   10 +++++-----
+ 3 files changed, 11 insertions(+), 12 deletions(-)
+
+diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+index efea35b..6089f0c 100644
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -266,19 +266,19 @@ static void vlan_sync_address(struct net_device *dev,
+ 	struct vlan_dev_priv *vlan = vlan_dev_priv(vlandev);
+ 
+ 	/* May be called without an actual change */
+-	if (!compare_ether_addr(vlan->real_dev_addr, dev->dev_addr))
++	if (ether_addr_equal(vlan->real_dev_addr, dev->dev_addr))
+ 		return;
+ 
+ 	/* vlan address was different from the old address and is equal to
+ 	 * the new address */
+-	if (compare_ether_addr(vlandev->dev_addr, vlan->real_dev_addr) &&
+-	    !compare_ether_addr(vlandev->dev_addr, dev->dev_addr))
++	if (!ether_addr_equal(vlandev->dev_addr, vlan->real_dev_addr) &&
++	    ether_addr_equal(vlandev->dev_addr, dev->dev_addr))
+ 		dev_uc_del(dev, vlandev->dev_addr);
+ 
+ 	/* vlan address was equal to the old address and is different from
+ 	 * the new address */
+-	if (!compare_ether_addr(vlandev->dev_addr, vlan->real_dev_addr) &&
+-	    compare_ether_addr(vlandev->dev_addr, dev->dev_addr))
++	if (ether_addr_equal(vlandev->dev_addr, vlan->real_dev_addr) &&
++	    !ether_addr_equal(vlandev->dev_addr, dev->dev_addr))
+ 		dev_uc_add(dev, vlandev->dev_addr);
+ 
+ 	memcpy(vlan->real_dev_addr, dev->dev_addr, ETH_ALEN);
+diff --git a/net/8021q/vlan_core.c b/net/8021q/vlan_core.c
+index 4d39d80..8ca533c 100644
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -31,8 +31,7 @@ bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
+ 		/* Our lower layer thinks this is not local, let's make sure.
+ 		 * This allows the VLAN to have a different MAC than the
+ 		 * underlying device, and still route correctly. */
+-		if (!compare_ether_addr(eth_hdr(skb)->h_dest,
+-					vlan_dev->dev_addr))
++		if (ether_addr_equal(eth_hdr(skb)->h_dest, vlan_dev->dev_addr))
+ 			skb->pkt_type = PACKET_HOST;
+ 	}
+ 
+diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+index 9988d4a..eaf5f21 100644
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -277,7 +277,7 @@ static int vlan_dev_open(struct net_device *dev)
+ 	    !(vlan->flags & VLAN_FLAG_LOOSE_BINDING))
+ 		return -ENETDOWN;
+ 
+-	if (compare_ether_addr(dev->dev_addr, real_dev->dev_addr)) {
++	if (!ether_addr_equal(dev->dev_addr, real_dev->dev_addr)) {
+ 		err = dev_uc_add(real_dev, dev->dev_addr);
+ 		if (err < 0)
+ 			goto out;
+@@ -307,7 +307,7 @@ clear_allmulti:
+ 	if (dev->flags & IFF_ALLMULTI)
+ 		dev_set_allmulti(real_dev, -1);
+ del_unicast:
+-	if (compare_ether_addr(dev->dev_addr, real_dev->dev_addr))
++	if (!ether_addr_equal(dev->dev_addr, real_dev->dev_addr))
+ 		dev_uc_del(real_dev, dev->dev_addr);
+ out:
+ 	netif_carrier_off(dev);
+@@ -326,7 +326,7 @@ static int vlan_dev_stop(struct net_device *dev)
+ 	if (dev->flags & IFF_PROMISC)
+ 		dev_set_promiscuity(real_dev, -1);
+ 
+-	if (compare_ether_addr(dev->dev_addr, real_dev->dev_addr))
++	if (!ether_addr_equal(dev->dev_addr, real_dev->dev_addr))
+ 		dev_uc_del(real_dev, dev->dev_addr);
+ 
+ 	netif_carrier_off(dev);
+@@ -345,13 +345,13 @@ static int vlan_dev_set_mac_address(struct net_device *dev, void *p)
+ 	if (!(dev->flags & IFF_UP))
+ 		goto out;
+ 
+-	if (compare_ether_addr(addr->sa_data, real_dev->dev_addr)) {
++	if (!ether_addr_equal(addr->sa_data, real_dev->dev_addr)) {
+ 		err = dev_uc_add(real_dev, addr->sa_data);
+ 		if (err < 0)
+ 			return err;
+ 	}
+ 
+-	if (compare_ether_addr(dev->dev_addr, real_dev->dev_addr))
++	if (!ether_addr_equal(dev->dev_addr, real_dev->dev_addr))
+ 		dev_uc_del(real_dev, dev->dev_addr);
+ 
+ out:
+-- 
+1.7.8.111.gad25c.dirty
+
