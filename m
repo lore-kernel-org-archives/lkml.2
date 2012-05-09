@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002Ab2EIGK4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:10:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39044 "EHLO
+	id S1757986Ab2EIGKz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:10:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39063 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756408Ab2EIFxc (ORCPT
+	by vger.kernel.org with ESMTP id S1756446Ab2EIFxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:32 -0400
-Message-Id: <20120509055045.979354170@decadent.org.uk>
+Message-Id: <20120509055049.474633982@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:27 +0100
+Date: Wed, 09 May 2012 06:52:53 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Felipe Balbi <balbi@ti.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 118/167] [PATCH] usb: gadget: dummy: do not call pullup() on udc_stop()
+        alan@lxorguk.ukuu.org.uk, Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 144/167] [PATCH] mac80211: fix AP mode EAP tx for VLAN stations
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,34 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 15b120d67019d691e4389372967332d74a80522a upstream.
+commit 66f2c99af3d6f2d0aa1120884cf1c60613ef61c0 upstream.
 
-pullup() is already called properly by udc-core.c and
-there's no need to call it from udc_stop(), in fact that
-will cause issues.
+EAP frames for stations in an AP VLAN are sent on the main AP interface
+to avoid race conditions wrt. moving stations.
+For that to work properly, sta_info_get_bss must be used instead of
+sta_info_get when sending EAP packets.
+Previously this was only done for cooked monitor injected packets, so
+this patch adds a check for tx->skb->protocol to the same place.
 
-Reviewed-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/gadget/dummy_hcd.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/mac80211/tx.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
-index a6dfd21..170cbe8 100644
---- a/drivers/usb/gadget/dummy_hcd.c
-+++ b/drivers/usb/gadget/dummy_hcd.c
-@@ -927,7 +927,6 @@ static int dummy_udc_stop(struct usb_gadget *g,
- 
- 	dum->driver = NULL;
- 
--	dummy_pullup(&dum->gadget, 0);
- 	return 0;
- }
- 
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index 782a601..e76facc 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -1158,7 +1158,8 @@ ieee80211_tx_prepare(struct ieee80211_sub_if_data *sdata,
+ 		tx->sta = rcu_dereference(sdata->u.vlan.sta);
+ 		if (!tx->sta && sdata->dev->ieee80211_ptr->use_4addr)
+ 			return TX_DROP;
+-	} else if (info->flags & IEEE80211_TX_CTL_INJECTED) {
++	} else if (info->flags & IEEE80211_TX_CTL_INJECTED ||
++		   tx->sdata->control_port_protocol == tx->skb->protocol) {
+ 		tx->sta = sta_info_get_bss(sdata, hdr->addr1);
+ 	}
+ 	if (!tx->sta)
 -- 
 1.7.10
 
