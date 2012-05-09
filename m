@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab2EIDHP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 23:07:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37541 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752521Ab2EIDHN (ORCPT
+	id S1753457Ab2EIDI5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 23:08:57 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:30885 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521Ab2EIDI4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 23:07:13 -0400
-Message-ID: <1336532828.8274.340.camel@deadeye>
-Subject: Re: [ 57/75] exit_signal: simplify the "we have changed execution
- domain" logic
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Date: Wed, 09 May 2012 04:07:08 +0100
-In-Reply-To: <20120508003125.GC4150@kroah.com>
-References: <20120504204229.240075699@linuxfoundation.org>
-	 <1336355835.8274.262.camel@deadeye> <20120508003125.GC4150@kroah.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-bPU5R06eLfopLPa/CTCZ"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 8 May 2012 23:08:56 -0400
+MIME-Version: 1.0
+Message-ID: <8a42cbff-f7f2-400a-a9c1-c3b3d73ab979@default>
+Date: Tue, 8 May 2012 20:08:29 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cl@linux-foundation.org
+Subject: RE: [PATCH 4/4] zsmalloc: zsmalloc: align cache line size
+References: <1336027242-372-1-git-send-email-minchan@kernel.org>
+ <1336027242-372-4-git-send-email-minchan@kernel.org>
+ <4FA28EFD.5070002@vflare.org> <4FA33E89.6080206@kernel.org>
+ <alpine.LFD.2.02.1205071038090.2851@tux.localdomain>
+ <4FA7C2BC.2090400@vflare.org> <4FA87837.3050208@kernel.org>
+ <731b6638-8c8c-4381-a00f-4ecd5a0e91ae@default> <4FA9C127.5020908@kernel.org>
+In-Reply-To: <4FA9C127.5020908@kernel.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> From: Minchan Kim [mailto:minchan@kernel.org]
+> Subject: Re: [PATCH 4/4] zsmalloc: zsmalloc: align cache line size
+> 
+> On 05/08/2012 11:00 PM, Dan Magenheimer wrote:
+> 
+> >> From: Minchan Kim [mailto:minchan@kernel.org]
+> >>> zcache can potentially create a lot of pools, so the latter will save
+> >>> some memory.
+> >>
+> >>
+> >> Dumb question.
+> >> Why should we create pool per user?
+> >> What's the problem if there is only one pool in system?
+> >
+> > zcache doesn't use zsmalloc for cleancache pages today, but
+> > that's Seth's plan for the future.  Then if there is a
+> > separate pool for each cleancache pool, when a filesystem
+> > is umount'ed, it isn't necessary to walk through and delete
+> > all pages one-by-one, which could take quite awhile.
+> 
+> > ramster needs one pool for each client (i.e. machine in the
+> > cluster) for frontswap pages for the same reason, and
+> > later, for cleancache pages, one per mounted filesystem
+> > per client
+> 
+> Fair enough.
+> 
+> Then, how about this interfaces like slab?
+> 
+> 1. zs_handle zs_malloc(size_t size, gfp_t flags) - share a pool by many subsystem(like kmalloc)
+> 2. zs_handle zs_malloc_pool(struct zs_pool *pool, size_t size) - use own pool(like kmem_cache_alloc)
+> 
+> Any thoughts?
 
---=-bPU5R06eLfopLPa/CTCZ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Seems fine to me.
 
-On Mon, 2012-05-07 at 17:31 -0700, Greg KH wrote:
-> On Mon, May 07, 2012 at 02:57:15AM +0100, Ben Hutchings wrote:
-> > On Fri, 2012-05-04 at 13:43 -0700, Greg KH wrote:
-> > > 3.3-stable review patch.  If anyone has any objections, please let me=
- know.
-> > >=20
-> > > ------------------
-> > >=20
-> > > From: Oleg Nesterov <oleg@redhat.com>
-> > >=20
-> > > commit e636825346b36a07ccfc8e30946d52855e21f681 upstream.
-> > [...]
-> >=20
-> > This and the following commit b6e238dceed36891cc633167afe7151f1f3d83c5
-> > ('exit_signal: fix the "parent has changed security domain" logic')
-> > appear to be applicable to 3.2.y as well.  Should I queue them up?
->=20
-> Yes, that would be good to do.
+> But some subsystems can't want a own pool for not waste unnecessary memory.
 
-Done.
+Are you using zsmalloc for something else in the kernel?  I'm
+wondering what other subsystem would have random size allocations
+always less than a page.
 
-Ben.
-
---=20
-Ben Hutchings
-Life is what happens to you while you're busy making other plans.
-                                                               - John Lenno=
-n
-
---=-bPU5R06eLfopLPa/CTCZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT6nfXee/yOyVhhEJAQqiNQ//QniB2/BaAyYVGyDaVbJZRxX+3mPST7iw
-RwoaU0PoBtZ66z7H6X/7xB14MoXA3ocfy2v8Z4LaO3BG65MDw8H+ujdH9RQsWPqy
-j+Q7yht2H2eDrRxPr7VyviEpkgt1T+PPKC6TV8My+mnawQlQ6aU0DDosz7AmfSdq
-x1I4bppVjKbZX9VAr71KFDMc3jHCsZa30M+v8CAhG2kLtpAXPncrbkuVSRB5h7yl
-7vorEuw/iB869XrRa2xvCHEy4KCc6sQKuXvLwT8DD96qXPOI0ZZxeaFPj2GLPXh1
-7zzhtXZlnJAmHDijuwKuUU39UDhd2VX4YrpFapEsLb52lCtEWvXH6zwjrVIvp3Zj
-51TLBR2YVhSkNLxlzUdIuREgXFdVEmjAihksbvzUMS7ZMEt8iNfgIflcJVZvUGfX
-ZxGgTe+3STQtWfZb4KW0FNdzw9HuvabWZ3DgUUpNEzTbEGd0Y/+cCycJlhUyKyOZ
-FoUgUjGhPMsEP8DuuMpI1OdNVF5XNnynvq8HeOiS1x5uadKBvMB9KV/i15eTd+cB
-SVDKLeKmPt/63OAgPuuH2Xl+6UZa5EKOnn/qIjJQExNtFuSrWShfc6NIjIguVLjL
-Y4mnmAgMQC7A9zz7YdtlRH3pKcZZMPDWpAq9jkCPpEL5acjFtuggqgtMC2E3QjpA
-+9Y/UwQm6AQ=
-=DqWW
------END PGP SIGNATURE-----
-
---=-bPU5R06eLfopLPa/CTCZ--
+Thanks,
+Dan
