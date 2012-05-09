@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab2EIFwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:52:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38636 "EHLO
+	id S1756088Ab2EIFxI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:53:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38805 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754404Ab2EIFwc (ORCPT
+	by vger.kernel.org with ESMTP id S1755869Ab2EIFxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:52:32 -0400
-Message-Id: <20120509055032.360572129@decadent.org.uk>
+	Wed, 9 May 2012 01:53:00 -0400
+Message-Id: <20120509055036.064659639@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:50:49 +0100
+Date: Wed, 09 May 2012 06:51:15 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 020/167] [PATCH] [media] drxk: Does not unlock mutex if sanity check failed
- in scu_command()
+        alan@lxorguk.ukuu.org.uk,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [ 046/167] [PATCH] spi: Fix device unregistration when unregistering the bus
+ master
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,40 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-commit e4459e1682c107d7ee1bf102c1ba534230e9b50b upstream.
+commit 178db7d30f94707efca1a189753c105ef69942ed upstream.
 
-If sanity check fails in scu_command(), goto error leads to unlock of
-an unheld mutex. The check should not fail in reality, but it nevertheless
-worth fixing.
+Device are added as children of the bus master's parent device, but
+spi_unregister_master() looks for devices to unregister in the bus
+master's children. This results in the child devices not being
+unregistered.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+Fix this by registering devices as direct children of the bus master.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/media/dvb/frontends/drxk_hard.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/spi/spi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/media/dvb/frontends/drxk_hard.c b/drivers/media/dvb/frontends/drxk_hard.c
-index 36d1175..a414b1f 100644
---- a/drivers/media/dvb/frontends/drxk_hard.c
-+++ b/drivers/media/dvb/frontends/drxk_hard.c
-@@ -1520,8 +1520,10 @@ static int scu_command(struct drxk_state *state,
- 	dprintk(1, "\n");
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 77eae99..b2ccdea 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -319,7 +319,7 @@ struct spi_device *spi_alloc_device(struct spi_master *master)
+ 	}
  
- 	if ((cmd == 0) || ((parameterLen > 0) && (parameter == NULL)) ||
--	    ((resultLen > 0) && (result == NULL)))
--		goto error;
-+	    ((resultLen > 0) && (result == NULL))) {
-+		printk(KERN_ERR "drxk: Error %d on %s\n", status, __func__);
-+		return status;
-+	}
- 
- 	mutex_lock(&state->mutex);
- 
+ 	spi->master = master;
+-	spi->dev.parent = dev;
++	spi->dev.parent = &master->dev;
+ 	spi->dev.bus = &spi_bus_type;
+ 	spi->dev.release = spidev_release;
+ 	device_initialize(&spi->dev);
 -- 
 1.7.10
 
