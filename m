@@ -1,35 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758815Ab2EIMXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 08:23:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35678 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756301Ab2EIMXH convert rfc822-to-8bit (ORCPT
+	id S1758886Ab2EIMX7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 08:23:59 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:49491 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756301Ab2EIMX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 08:23:07 -0400
-Message-ID: <1336566178.2527.31.camel@twins>
-Subject: Re: [PATCH] sched_groups are expected to be circular linked list,
- make it so right after allocation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, pjt@google.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com
-Date: Wed, 09 May 2012 14:22:58 +0200
-In-Reply-To: <1336566096.2527.30.camel@twins>
-References: <1336559908-32533-1-git-send-email-imammedo@redhat.com>
-	 <4FAA452A.1070909@gmail.com> <4FAA588B.5010404@redhat.com>
-	 <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
-	 <1336566096.2527.30.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 9 May 2012 08:23:57 -0400
+Date: Wed, 9 May 2012 14:23:44 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>
+Subject: Re: [EDAC ABI v13 08/25] edac: use Documentation-nano format for
+ some data structs
+Message-ID: <20120509122344.GB22737@aftab.osrc.amd.com>
+References: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
+ <1334608729-30803-9-git-send-email-mchehab@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334608729-30803-9-git-send-email-mchehab@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 14:21 +0200, Peter Zijlstra wrote:
-> Does something like the below give any clues as to how we got there?
+On Mon, Apr 16, 2012 at 05:38:32PM -0300, Mauro Carvalho Chehab wrote:
+> No functional changes. Just comment improvements.
+> 
+> Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+> Cc: Doug Thompson <norsk5@yahoo.com>
+> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> ---
+>  include/linux/edac.h |   80 +++++++++++++++++++++++++++++++++++--------------
+>  1 files changed, 57 insertions(+), 23 deletions(-)
+> 
+> diff --git a/include/linux/edac.h b/include/linux/edac.h
+> index ffb189b..138b147 100644
+> --- a/include/linux/edac.h
+> +++ b/include/linux/edac.h
+> @@ -45,7 +45,19 @@ static inline void opstate_init(void)
+>  #define EDAC_MC_LABEL_LEN	31
+>  #define MC_PROC_NAME_MAX_LEN	7
+>  
+> -/* memory devices */
+> +/**
+> + * enum dev_type - describe the type of memory DRAM chips used at the stick
+> + * @DEV_UNKNOWN:	Can't be determined, or MC doesn't support detect it
+> + * @DEV_X1:		1 bit for data
+> + * @DEV_X2:		2 bits for data
+> + * @DEV_X4:		4 bits for data
+> + * @DEV_X8:		8 bits for data
+> + * @DEV_X16:		16 bits for data
+> + * @DEV_X32:		32 bits for data
+> + * @DEV_X64:		64 bits for data
+> + *
+> + * Typical values are x4 and x8.
+> + */
+>  enum dev_type {
+>  	DEV_UNKNOWN = 0,
+>  	DEV_X1,
+> @@ -163,18 +175,29 @@ enum mem_type {
+>  #define MEM_FLAG_DDR3		 BIT(MEM_DDR3)
+>  #define MEM_FLAG_RDDR3		 BIT(MEM_RDDR3)
+>  
+> -/* chipset Error Detection and Correction capabilities and mode */
+> +/** enum edac-type - Error Detection and Correction capabilities and mode
 
-I'm assuming you've got means of reproducing this?
+This probably needs to be
+
+/**
+ * enum edac-type
+
+with the text starting on the second line and leaving the "/**" marker
+alone on the first line.
+
+> + * @EDAC_UNKNOWN:	Unknown if ECC is available
+> + * @EDAC_NONE:		Doesn't support ECC
+> + * @EDAC_RESERVED:	Reserved ECC type
+> + * @EDAC_PARITY:	Detects parity errors
+> + * @EDAC_EC:		Error Checking - no correction
+> + * @EDAC_SECDED:	Single bit error correction, Double detection
+> + * @EDAC_S2ECD2ED:	Chipkill x2 devices - do these exist?
+> + * @EDAC_S4ECD4ED:	Chipkill x4 devices
+> + * @EDAC_S8ECD8ED:	Chipkill x8 devices
+> + * @EDAC_S16ECD16ED:	Chipkill x16 devices
+> + */
+>  enum edac_type {
+> -	EDAC_UNKNOWN = 0,	/* Unknown if ECC is available */
+> -	EDAC_NONE,		/* Doesn't support ECC */
+> -	EDAC_RESERVED,		/* Reserved ECC type */
+> -	EDAC_PARITY,		/* Detects parity errors */
+> -	EDAC_EC,		/* Error Checking - no correction */
+> -	EDAC_SECDED,		/* Single bit error correction, Double detection */
+> -	EDAC_S2ECD2ED,		/* Chipkill x2 devices - do these exist? */
+> -	EDAC_S4ECD4ED,		/* Chipkill x4 devices */
+> -	EDAC_S8ECD8ED,		/* Chipkill x8 devices */
+> -	EDAC_S16ECD16ED,	/* Chipkill x16 devices */
+> +	EDAC_UNKNOWN =	0,
+> +	EDAC_NONE,
+> +	EDAC_RESERVED,
+> +	EDAC_PARITY,
+> +	EDAC_EC,
+> +	EDAC_SECDED,
+> +	EDAC_S2ECD2ED,
+> +	EDAC_S4ECD4ED,
+> +	EDAC_S8ECD8ED,
+> +	EDAC_S16ECD16ED,
+>  };
+>  
+>  #define EDAC_FLAG_UNKNOWN	BIT(EDAC_UNKNOWN)
+> @@ -187,18 +210,29 @@ enum edac_type {
+>  #define EDAC_FLAG_S8ECD8ED	BIT(EDAC_S8ECD8ED)
+>  #define EDAC_FLAG_S16ECD16ED	BIT(EDAC_S16ECD16ED)
+>  
+> -/* scrubbing capabilities */
+> +/** enum scrub_type - scrubbing capabilities
+
+ditto.
+
+> + * @SCRUB_UNKNOWN		Unknown if scrubber is available
+> + * @SCRUB_NONE:			No scrubber
+> + * @SCRUB_SW_PROG:		SW progressive (sequential) scrubbing
+> + * @SCRUB_SW_SRC:		Software scrub only errors
+> + * @SCRUB_SW_PROG_SRC:		Progressive software scrub from an error
+> + * @SCRUB_SW_TUNABLE:		Software scrub frequency is tunable
+> + * @SCRUB_HW_PROG:		HW progressive (sequential) scrubbing
+> + * @SCRUB_HW_SRC:		Hardware scrub only errors
+> + * @SCRUB_HW_PROG_SRC:		Progressive hardware scrub from an error
+> + * SCRUB_HW_TUNABLE:		Hardware scrub frequency is tunable
+> + */
+>  enum scrub_type {
+> -	SCRUB_UNKNOWN = 0,	/* Unknown if scrubber is available */
+> -	SCRUB_NONE,		/* No scrubber */
+> -	SCRUB_SW_PROG,		/* SW progressive (sequential) scrubbing */
+> -	SCRUB_SW_SRC,		/* Software scrub only errors */
+> -	SCRUB_SW_PROG_SRC,	/* Progressive software scrub from an error */
+> -	SCRUB_SW_TUNABLE,	/* Software scrub frequency is tunable */
+> -	SCRUB_HW_PROG,		/* HW progressive (sequential) scrubbing */
+> -	SCRUB_HW_SRC,		/* Hardware scrub only errors */
+> -	SCRUB_HW_PROG_SRC,	/* Progressive hardware scrub from an error */
+> -	SCRUB_HW_TUNABLE	/* Hardware scrub frequency is tunable */
+> +	SCRUB_UNKNOWN =	0,
+> +	SCRUB_NONE,
+> +	SCRUB_SW_PROG,
+> +	SCRUB_SW_SRC,
+> +	SCRUB_SW_PROG_SRC,
+> +	SCRUB_SW_TUNABLE,
+> +	SCRUB_HW_PROG,
+> +	SCRUB_HW_SRC,
+> +	SCRUB_HW_PROG_SRC,
+> +	SCRUB_HW_TUNABLE
+>  };
+>  
+>  #define SCRUB_FLAG_SW_PROG	BIT(SCRUB_SW_PROG)
+> -- 
+> 1.7.8
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
