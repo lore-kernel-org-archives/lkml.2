@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336Ab2EIUb7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 16:31:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30382 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761026Ab2EIUb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 16:31:58 -0400
-Date: Wed, 9 May 2012 22:30:47 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: torvalds@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, suresh@aristanetworks.com
-Subject: Re: [PATCH 2/3] x86, xsave: remove thread_has_fpu() bug check in
-	__sanitize_i387_state()
-Message-ID: <20120509203047.GA334@redhat.com>
-References: <1336421341.19423.4.camel@sbsiddha-desk.sc.intel.com> <1336519085-27450-1-git-send-email-suresh.b.siddha@intel.com> <1336519085-27450-3-git-send-email-suresh.b.siddha@intel.com>
+	id S1761080Ab2EIUe4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 16:34:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51613 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab2EIUez (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 16:34:55 -0400
+Message-ID: <4FAAD4EB.4010007@wwwdotorg.org>
+Date: Wed, 09 May 2012 14:34:51 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336519085-27450-3-git-send-email-suresh.b.siddha@intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 02/12] pinctrl: basic Nomadik pinctrl interface
+References: <1336470270-23518-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1336470270-23518-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suresh,
+On 05/08/2012 03:44 AM, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> This adds a scratch pin control interface to the Nomadik pinctrl
+> driver, and defines the pins and groups in the DB8500 ASIC. We
+> define GPIO ranges to cover the pins exposed. The DB8500 has
+> more pins than this but we restrict the driver to the pins that
+> can be controlled from the combined GPIO and pin control hardware
+> to begin with.
 
-I can't really comment this series, my understanding of this code
-is too limited.
+> diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
 
-But could you explain this patch? I am just curious.
+> +static int nmk_list_groups(struct pinctrl_dev *pctldev, unsigned selector)
+> +{
+> +	struct nmk_pinctrl *npct = pinctrl_dev_get_drvdata(pctldev);
+> +
+> +	if (selector >= npct->soc->ngroups)
+> +		return -EINVAL;
 
-On 05/08, Suresh Siddha wrote:
->
-> BUG_ON() in __sanitize_i387_state() is checking that the fpu state
-> is not live any more. But for preempt kernels, task can be scheduled
-> out and in at any place and the preload_fpu logic during context switch
-> can make the fpu registers live again.
+I think all the other drivers removed this error-checking from functions
+called by the pinctrl core, assuming that the core would error-check any
+user-supplied data and respect limits in the pinctrl device descriptor.
 
-And? Do you see any particular scenario when this BUG_ON() is wrong?
+> +static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
 
-Afaics, __sanitize_i387_state() should not be called if the task can
-be scheduled in with ->fpu_counter != 0.
+> +	/* Poke in other ASIC variants here */
+> +	if (platid->driver_data == PINCTRL_NMK_DB8500)
+> +		nmk_pinctrl_db8500_init(&npct->soc);
 
-> Similarly during core dump, thread dumping the core can schedule out
-> and in for page-allocations etc in non-preempt case.
-
-Again, can't understand. The core-dumping thread does init_fpu()
-before it calls sanitize_i387_state().
-
-Oleg.
-
+Other platforms have a unique top-level driver for each variant, with
+the probe() function for each variant calling into a utility function.
+That way, the common/utility code doesn't need to contain a
+table/list/... of all the variants. Can the same approach be used here?
