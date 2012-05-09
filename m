@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679Ab2EIPGK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 11:06:10 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:48897 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751133Ab2EIPGI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 11:06:08 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 4Gf79fkVM1kb9HTduNZawOqbBVwZWheej4J_VupnhJoCARM
- XxEjWStznP1YhoFrFZgm_Ni9xE7VKO.8znxGF.4ndmcTotSUeE9pBkOvsO63
- E1i.FfTFMR.HE1op.1DU_lJGK2rx4VjtK4JAv79bdbGF0JT8Gx0O9V5FthVw
- iSgocks7KOA8eOF1en3.NInqoTNI_ogQRmFWqolviOA3hxnNg7ME6M9wtcJu
- qqA0VtFTV7TmndzHvs1Mpz6K6nZ21oP924BCpU6Nfg31hCj3iFDCXTBh5yRb
- giFjrRZBEXuW0FOiApMaj28d6lToxqIm1pWD8bSbQhYvZ2MqUnFiJXhobSva
- FshqlJH.99SL0Yn6ZwHigW0g0lFHDdJMtWmCJ6rQDSB4lstO8bfwfVvz_e1r
- 7
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 9 May 2012 10:05:56 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mike Galbraith <efault@gmx.de>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
-In-Reply-To: <1336574836.16079.17.camel@marge.simpson.net>
-Message-ID: <alpine.DEB.2.00.1205091001480.10177@router.home>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com> <1335830115-14335-8-git-send-email-fweisbec@gmail.com> <alpine.DEB.2.00.1205071053070.1060@router.home> <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
- <1336488626.16236.41.camel@twins> <alpine.DEB.2.00.1205081016370.27713@router.home> <1336490832.8226.5.camel@twins> <alpine.DEB.2.00.1205081035550.27713@router.home> <1336492081.8226.13.camel@twins> <alpine.DEB.2.00.1205081054310.27713@router.home>
- <1336493768.8226.29.camel@twins> <1336506601.7400.21.camel@marge.simpson.net> <alpine.DEB.2.00.1205081541010.1391@router.home> <1336537289.7365.62.camel@marge.simpson.net> <alpine.DEB.2.00.1205090915430.8171@router.home>
- <1336574836.16079.17.camel@marge.simpson.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758397Ab2EIPH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 11:07:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18365 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755449Ab2EIPH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 11:07:27 -0400
+Date: Wed, 9 May 2012 18:06:35 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] bitops: add _local bitops
+Message-ID: <20120509150635.GA20474@redhat.com>
+References: <20120509134528.GA18044@redhat.com>
+ <4FAA7939.6040706@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FAA7939.6040706@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 May 2012, Mike Galbraith wrote:
+On Wed, May 09, 2012 at 07:03:37AM -0700, H. Peter Anvin wrote:
+> On 05/09/2012 06:45 AM, Michael S. Tsirkin wrote:
+> > kvm needs to update some hypervisor variables atomically
+> > in a sense that the operation can't be interrupted
+> > in the middle. However the hypervisor always runs
+> > on the same CPU so it does not need any memory
+> > barrier or lock prefix.
+> > 
+> > At Peter Anvin's suggestion, add _local bitops for this purpose:
+> > define them as non-atomics for x86 and (for now) atomics
+> > for everyone else.
+> > 
+> > Uses are not restricted to virtualization: they
+> > might be useful to communicate with an interrupt
+> > handler if we know that it's running on the same CPU.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 
+> I don't think you can use the x86 nonatomics as-is, because they don't
+> contain optimization barriers.
+> 
+> 	-hpa
 
-> On Wed, 2012-05-09 at 09:22 -0500, Christoph Lameter wrote:
-> > On Wed, 9 May 2012, Mike Galbraith wrote:
->
-> > > > isolcpus are not part of load balancer domains.
-> > >
-> > > Yup, so if you have an application with an RT component, somewhat
-> > > sensitive, needs isolation from rest of a big box, but app also has
-> > > SCHED_OTHER components.  isolcpus is a pain, everything has to be static
-> > > and nailed to the floor.  Load just works when plugged into a cpuset.
-> >
-> > Well you have low latency requirements. If you code for lowest latency
-> > then you have to consider cache sizes, cache sharing etc etc. This means
-> > you will have to nail down everything anyways. Cpusets would just be
-> > another thing that one has to worry about.
-> >
-> > The loads definitely wont work right if just "plugged into a cpuset".
->
-> You're talking about serious RT/HPC.  I'm talking about apps/loads with
-> modest requirements, like "Please keep that evil nVidia (this that the
-> other) thing the _hell_ away from me, I cannot deal with it's futzing
-> around in the kernel for a _full second_ at a time".
+You are right of course. So I'll remove bitops/local.h
+move the code to x86/ and open-code.
 
-Well I hope you understand that I do not want to get another complexity
-thrown in by having to deal with cpusets too in addition to the pinning,
-caches, etc etc.
-
-I do not get how a cpuset could be used by an application with load
-balancing disabled. Seems to defeat the purpose of the cpuset (which IMHO
-is to generate a custom load balancing domain after all). You would
-have to manually pin the processes to processors of the cpuset anyways.
-
-If you already have to pin then why would you want a cpuset on top of
-that?
-
-
+-- 
+MST
