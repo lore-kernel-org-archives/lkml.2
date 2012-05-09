@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760544Ab2EIRXu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:23:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37585 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756689Ab2EIRXt convert rfc822-to-8bit (ORCPT
+	id S1760586Ab2EIRYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:24:11 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:40629 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760559Ab2EIRYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 13:23:49 -0400
-Message-ID: <1336584160.2527.62.camel@twins>
-Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
+	Wed, 9 May 2012 13:24:08 -0400
+Date: Wed, 9 May 2012 19:24:03 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
 Cc: Igor Mammedov <imammedo@redhat.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
-        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 09 May 2012 19:22:40 +0200
-In-Reply-To: <CA+55aFyjGZ=PLOBfyFub4kS3r2vJ0SFD58rTf21koPodFTSARQ@mail.gmail.com>
-References: <1336559908-32533-1-git-send-email-imammedo@redhat.com>
-	 <4FAA452A.1070909@gmail.com> <4FAA588B.5010404@redhat.com>
-	 <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
-	 <1336566096.2527.30.camel@twins> <1336566644.2527.33.camel@twins>
-	 <1336570043.2527.38.camel@twins>
-	 <CA+55aFyjGZ=PLOBfyFub4kS3r2vJ0SFD58rTf21koPodFTSARQ@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+        linux-kernel@vger.kernel.org, pjt@google.com, tglx@linutronix.de,
+        seto.hidetoshi@jp.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
+Message-ID: <20120509172403.GB8135@gmail.com>
+References: <1336566096.2527.30.camel@twins>
+ <1336566644.2527.33.camel@twins>
+ <1336570043.2527.38.camel@twins>
+ <20120509133607.GA26124@gmail.com>
+ <1336571049.2527.43.camel@twins>
+ <1336571947.2527.47.camel@twins>
+ <20120509141528.GA3623@gmail.com>
+ <1336577562.2527.58.camel@twins>
+ <20120509154116.GC2653@gmail.com>
+ <1336579592.2527.60.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1336579592.2527.60.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 10:15 -0700, Linus Torvalds wrote:
+
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Wed, 2012-05-09 at 17:41 +0200, Ingo Molnar wrote:
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > On Wed, 2012-05-09 at 16:15 +0200, Ingo Molnar wrote:
+> > > > > I guess I should use %.*pb and keep the field_width in case someone
+> > > > > manages to actually make bitmap_scnlistprintf() conform to it. The
+> > > > > precision is unused anyway.
+> > > > 
+> > > > That's a cute trick, and it's intuitive as well. 
+> > > 
+> > > kernel/sched/core.c:5570:3: warning: precision used with ‘%p’ gnu_printf format [-Wformat]
+> > > 
+> > > /me curses a bit.. anybody?
+> > 
+> > Yeah, that's a floating point precision thing (or for strings, 
+> > right-align) - could you use %30pb, etc?
 > 
-> The "bc" and "bn" would work, except for the fact that I doubt they
-> are printed out enough to matter.
+> %*pb you mean? Yeah that works, field width is allowed for %p. 
+> It does mean we cannot ever make bitmaps respect field width 
+> though.
 
-There's a number %pbc candidates in the scheduler that would be nice to
-not have to do manually.
+I don't think that's a significant limitation, because it's 
+fixed width anyway. So if this works then this would be a pretty 
+good and simple to use solution.
 
-> A "%.*pb" is the only interface that can work for a "sized" bitmap
-> (with obviously fixed-length ones being possible with a "%.32bp" like
-> thing)
+Thanks,
 
-Right, sadly that also generates a warning :/
-
-> But the whole va_args games you play are not acceptable. %p *will*
-> continue to take a void *, and nothing else. 
-
-The va_args() games are dead.
+	Ingo
