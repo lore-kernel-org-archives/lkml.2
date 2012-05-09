@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761250Ab2EIWYO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 18:24:14 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34979 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753538Ab2EIWYN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 18:24:13 -0400
-X-Sasl-enc: nQztIbMfzZeE6lL3wljE3J5YnAZZ4oBuJIZC7esW2e67 1336602252
-Date: Wed, 9 May 2012 15:24:11 -0700
-From: Greg KH <greg@kroah.com>
-To: Markus Franke <markus.franke@s2002.tu-chemnitz.de>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] w1: Add 1-wire slave device driver for DS28E04-100
-Message-ID: <20120509222411.GA24302@kroah.com>
-References: <20120430021300.GA18148@kroah.com>
- <4FA1953B.40008@hrz.tu-chemnitz.de>
- <20120502202134.GB26628@kroah.com>
- <20120503180056.GB13988@ioremap.net>
- <4FAAD584.70102@hrz.tu-chemnitz.de>
- <20120509220636.GA27659@kroah.com>
- <4FAAECB7.8070904@hrz.tu-chemnitz.de>
+	id S1758896Ab2EIWeU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 18:34:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48944 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756028Ab2EIWeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 18:34:19 -0400
+Date: Wed, 9 May 2012 18:34:06 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Matt Turner <mattst88@gmail.com>
+cc: torvalds@linux-foundation.org, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rolf Eike Beer <eike-kernel@sf-tec.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>
+Subject: Re: [PATCH 5/5] PA-RISC: fix compile errors
+In-Reply-To: <CAEdQ38H4MjAGKYW3jbcRs98qKnikPwgN_0k2KWbK8wLmJa8xxQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1205091832420.1272@file.rdu.redhat.com>
+References: <Pine.LNX.4.64.1205091758310.1272@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1205091816470.1272@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1205091817170.1272@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1205091818160.1272@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1205091818430.1272@file.rdu.redhat.com>
+ <CAEdQ38H4MjAGKYW3jbcRs98qKnikPwgN_0k2KWbK8wLmJa8xxQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FAAECB7.8070904@hrz.tu-chemnitz.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="185242623-560017539-1336602846=:1272"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-A: No.
-Q: Should I include quotations after my reply?
+--185242623-560017539-1336602846=:1272
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-http://daringfireball.net/2007/07/on_top
 
-On Thu, May 10, 2012 at 12:16:23AM +0200, Markus Franke wrote:
-> Dear Greg,
-> 
-> the file "pio" is used for reading the current PIO state of the
-> DS28E04-100.
 
-Why is this a binary file?  That seems like it should not be, as a
-binary sysfs file should be "pass-through" only.
+On Wed, 9 May 2012, Matt Turner wrote:
 
-> The "eeprom" file is for reading/writing the EEPROM memory of the same
-> device.
+> On Wed, May 9, 2012 at 6:19 PM, Mikulas Patocka <mpatocka@redhat.com> wro=
+te:
+> > From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+> >
+> > This was defined in asm/pdc.h which needs to include asm/page.h for
+> > __PAGE_OFFSET. This leads to an include loop so that page.h eventually =
+will
+> > include pdc.h again. While this is no problem because of header guards,=
+ it is
+> > a problem because some symbols may be undefined. Such an error is this:
+> >
+> > In file included from /home/buildbot/repos/linux/include/linux/bitops.h=
+:35:0,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 from /home/buildbot/repos/linux/include=
+/asm-generic/getorder.h:7,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 from /home/buildbot/repos/linux/arch/pa=
+risc/include/asm/page.h:162,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 from /home/buildbot/repos/linux/arch/pa=
+risc/include/asm/pdc.h:346,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 from /home/buildbot/repos/linux/arch/pa=
+risc/include/asm/processor.h:16,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 from /home/buildbot/repos/linux/arch/pa=
+risc/include/asm/spinlock.h:6,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 from /home/buildbot/repos/linux/arch/pa=
+risc/include/asm/atomic.h:20,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 from /home/buildbot/repos/linux/include=
+/linux/atomic.h:4,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 from /home/buildbot/repos/linux/include=
+/linux/sysfs.h:20,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 from /home/buildbot/repos/linux/include=
+/linux/kobject.h:21,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 from /home/buildbot/repos/linux/include=
+/linux/device.h:17,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 from /home/buildbot/repos/linux/include=
+/linux/eisa.h:5,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 from /home/buildbot/repos/linux/arch/pa=
+risc/kernel/pci.c:11:
+> > /home/buildbot/repos/linux/arch/parisc/include/asm/bitops.h: In functio=
+n "set_bit":
+> > /home/buildbot/repos/linux/arch/parisc/include/asm/bitops.h:82:2: error=
+: implicit declaration of function "_atomic_spin_lock_irqsave" [-Werror=3Di=
+mplicit-function-declaration]
+> > /home/buildbot/repos/linux/arch/parisc/include/asm/bitops.h:84:2: error=
+: implicit declaration of function "_atomic_spin_unlock_irqrestore" [-Werro=
+r=3Dimplicit-function-declaration]
+> >
+> > Signed-off-by: Rolf Eike Beer <eike-kernel@xxxxxxxxx>
+>=20
+> Email address got eaten?
 
-That seems ok.
+I was copying the patch from mailing list web archive and it mangles=20
+addresses. I fixed the others addresses, but forgot about this one.
 
-> As already mentioned before this is exactly the way how other w1 slave
-> drivers are handling stuff like this.
+Mikulas
 
-Then those drivers are wrong as well, sorry :(
-
-thanks,
-
-greg k-h
+> > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+>=20
+--185242623-560017539-1336602846=:1272--
