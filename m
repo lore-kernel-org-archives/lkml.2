@@ -1,117 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759843Ab2EIPY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 11:24:26 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56674 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759780Ab2EIPYE (ORCPT
+	id S1759922Ab2EIPYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 11:24:36 -0400
+Received: from mga14.intel.com ([143.182.124.37]:56834 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759859Ab2EIPYd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 11:24:04 -0400
-Message-ID: <1336577114.3638.23.camel@lappy>
-Subject: vfs: INFO: possible circular locking dependency detected
-From: Sasha Levin <levinsasha928@gmail.com>
-To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 09 May 2012 17:25:14 +0200
+	Wed, 9 May 2012 11:24:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="140913613"
+From: "Sosnowski, Maciej" <maciej.sosnowski@intel.com>
+To: Jiang Liu <liuj97@gmail.com>, "Williams, Dan J" <dan.j.williams@intel.com>
+CC: Jiang Liu <jiang.liu@huawei.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Keping Chen <chenkeping@huawei.com>
+Subject: RE: [RESEND,PATCH] DCA, x86: fix invalid memory access in DCA core
+Thread-Topic: [RESEND,PATCH] DCA, x86: fix invalid memory access in DCA core
+Thread-Index: AQHNLGpswXPcpzMJXUaOCs7yj0xbMZbBjugA
+Date: Wed, 9 May 2012 15:24:13 +0000
+Message-ID: <436EC33EF05C3442BBF5497FC9483FF41626EACA@IRSMSX101.ger.corp.intel.com>
+References: <1336406288-9479-1-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1336406288-9479-1-git-send-email-jiang.liu@huawei.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.181]
 Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, May 07, 2012 5:58 PM, Jiang Liu <liuj97@gmail.com> wrote:
+>
+>From: Jiang Liu <jiang.liu@huawei.com>
+>
+>When unregister_dca_providers() is called, it will remove all registered
+>providers from the dca_providrers list by calling list_del(&dca->node).
+>list_del(node) poisons node->next and node->prev as 0xDEADBEEF and
+>0xBEEFDEAD.
+>Later when unregister_dca_provider() is called to remove a DCA provier,
+>it calls list_del(&dca->node) to remove the dca from the list again,
+>but dca->node has already been poisoned, then causes invalid memory
+>access.
+>
+>The solution here is to use list_del_init(&dca->node) instead of
+>list_del(&dca->node) in function unregister_dca_providers(), so it won't
+>cause invalid memory access in unregister_dca_provider() later.
+>
+>---
+>
+>This issue is triggered when hot-removing IOHs on Intel platforms, which
+>will remove all IOAT devices built in the IOHs.
+>
+>ioatdma 0000:80:16.7: Removing dma and dca services
+>ioatdma 0000:80:16.7: PCI INT D disabled
+>ioatdma 0000:80:16.6: Removing dma and dca services
+>ioatdma 0000:80:16.7: Removing dma and dca services
+>ioatdma 0000:80:16.7: PCI INT D disabled
+>ioatdma 0000:80:16.6: Removing dma and dca services
+>ioatdma 0000:80:16.6: PCI INT C disabled
+>ioatdma 0000:00:16.0: Removing dma and dca services
+>------------[ cut here ]------------
+>WARNING: at lib/list_debug.c:47 __list_del_entry+0x63/0xd0()
+>Hardware name: System x3850 X5 -[7143O3G]-
+>list_del corruption, ffff880463540bc0->next is LIST_POISON1
+>(dead000000100100)
+>Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat
+>nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc
+>cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT
+>nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT
+>nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter
+>ip6_tables ipv6 vfat fat vhost_net macvtap macvlan tun kvm_intel kvm uinput
+>microcode pcspkr serio_raw pmcraid sg be2net cdc_ether usbnet mii i2c_i801
+>i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma i7core_edac
+>edac_core igb dca e1000e bnx2 ext4 mbcache jbd2 sr_mod cdrom sd_mod
+>crc_t10dif qla2xxx pata_acpi ata_generic ata_piix bfa scsi_transport_fc
+>scsi_tgt megaraid_sas dm_mirror dm_region_hash dm_log dm_mod [last
+>unloaded: scsi_wait_scan]
+>Pid: 10049, comm: bash.sh Not tainted 3.2.0IOAT+ #5
+>Call Trace:
+> [<ffffffff8106426f>] warn_slowpath_common+0x7f/0xc0
+> [<ffffffff81064366>] warn_slowpath_fmt+0x46/0x50
+> [<ffffffff8108c675>] ? __blocking_notifier_call_chain+0x65/0x80
+> [<ffffffff81256073>] __list_del_entry+0x63/0xd0
+> [<ffffffff812560f1>] list_del+0x11/0x40
+> [<ffffffffa001b2e2>] unregister_dca_provider+0x42/0xe0 [dca]
+> [<ffffffffa021f87d>] ioat_remove+0x43/0x67 [ioatdma]
+> [<ffffffff8126b1a2>] pci_device_remove+0x52/0x120
+> [<ffffffff8132b2dc>] __device_release_driver+0x7c/0xe0
+> [<ffffffff8132b42d>] device_release_driver+0x2d/0x40
+> [<ffffffff8132a871>] driver_unbind+0xa1/0xc0
+> [<ffffffff81329cbc>] drv_attr_store+0x2c/0x30
+> [<ffffffff811d72ef>] sysfs_write_file+0xef/0x170
+> [<ffffffff81167338>] vfs_write+0xc8/0x190
+> [<ffffffff81167501>] sys_write+0x51/0x90
+> [<ffffffff814fa382>] system_call_fastpath+0x16/0x1b
+>---[ end trace b81b51e7c494ec0d ]---
+>BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+>IP: [<ffffffffa001b360>] unregister_dca_provider+0xc0/0xe0 [dca]
+>PGD 1465b48067 PUD 1465035067 PMD 0
+>Oops: 0000 [#1] SMP
+>CPU 57
+>Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat
+>nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc
+>cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT
+>nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT
+>nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter
+>ip6_tables ipv6 vfat fat vhost_net macvtap macvlan tun kvm_intel kvm uinput
+>microcode pcspkr serio_raw pmcraid sg be2net cdc_ether usbnet mii i2c_i801
+>i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma i7core_edac
+>edac_core igb dca e1000e bnx2 ext4 mbcache jbd2 sr_mod cdrom sd_mod
+>crc_t10dif qla2xxx pata_acpi ata_generic ata_piix bfa scsi_transport_fc
+>scsi_tgt megaraid_sas dm_mirror dm_region_hash dm_log dm_mod [last
+>unloaded: scsi_wait_scan]
+>
+>Pid: 10049, comm: bash.sh Tainted: G        W    3.2.0IOAT+ #5 IBM System x3850
+>X5 -[7143O3G]-/Node 1, Processor Card
+>RIP: 0010:[<ffffffffa001b360>]  [<ffffffffa001b360>]
+>unregister_dca_provider+0xc0/0xe0 [dca]
+>RSP: 0018:ffff880c4eafbdb8  EFLAGS: 00010046
+>RAX: 0000000000000010 RBX: ffff880463540bc0 RCX: 0000000000002288
+>RDX: ffff881465a51800 RSI: 0000000000000046 RDI: 0000000000000009
+>RBP: ffff880c4eafbdd8 R08: 0000000000000000 R09: 0000000000000000
+>R10: 0000000000000010 R11: 000000000000000b R12: 0000000000000000
+>R13: 0000000000000257 R14: ffff881465abe000 R15: ffff881464199840
+>FS:  00007f91d8314700(0000) GS:ffff88147fd20000(0000)
+>knlGS:0000000000000000
+>CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>CR2: 0000000000000010 CR3: 0000001457b07000 CR4: 00000000000006e0
+>DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>Process bash.sh (pid: 10049, threadinfo ffff880c4eafa000, task
+>ffff880c4e3b8af0)
+>Stack:
+> 0000000000000206 ffff88046133a218 ffff881465abe090 ffffffffa0222560
+> ffff880c4eafbdf8 ffffffffa021f87d ffff881465abe090 ffff881465abe208
+> ffff880c4eafbe28 ffffffff8126b1a2 ffff881465abe090 ffffffffa02225c0
+>Call Trace:
+> [<ffffffffa021f87d>] ioat_remove+0x43/0x67 [ioatdma]
+> [<ffffffff8126b1a2>] pci_device_remove+0x52/0x120
+> [<ffffffff8132b2dc>] __device_release_driver+0x7c/0xe0
+> [<ffffffff8132b42d>] device_release_driver+0x2d/0x40
+> [<ffffffff8132a871>] driver_unbind+0xa1/0xc0
+> [<ffffffff81329cbc>] drv_attr_store+0x2c/0x30
+> [<ffffffff811d72ef>] sysfs_write_file+0xef/0x170
+> [<ffffffff81167338>] vfs_write+0xc8/0x190
+> [<ffffffff81167501>] sys_write+0x51/0x90
+> [<ffffffff814fa382>] system_call_fastpath+0x16/0x1b
+>Code: c7 20 c0 01 a0 e8 51 6c 4d e1 48 89 df e8 c9 05 00 00 48 83 c4 08 5b 41 5c 41
+>5d c9 c3 66 0f 1f 44 00 00 45 31 e4 49 8d 44 24 10 <49> 39 44 24 10 75 c9 4c 89 e7
+>e8 71 ad 23 e1 4c 89 e7 e8 19 7b
+>RIP  [<ffffffffa001b360>] unregister_dca_provider+0xc0/0xe0 [dca]
+> RSP <ffff880c4eafbdb8>
+>CR2: 0000000000000010
+>---[ end trace b81b51e7c494ec0e ]---
+>
+>Signed-off-by: Jiang Liu <liuj97@gmail.com>
+>---
+> drivers/dca/dca-core.c |    2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+>
+>diff --git a/drivers/dca/dca-core.c b/drivers/dca/dca-core.c
+>index bc6f5fa..075c4bd 100644
+>--- a/drivers/dca/dca-core.c
+>+++ b/drivers/dca/dca-core.c
+>@@ -121,7 +121,7 @@ static void unregister_dca_providers(void)
+>
+> 	list_for_each_entry_safe(dca, _dca, &unregistered_providers, node)
+>{
+> 		dca_sysfs_remove_provider(dca);
+>-		list_del(&dca->node);
+>+		list_del_init(&dca->node);
+> 	}
+> }
+>
+>--
+>1.7.9.5
 
-I've started seeing the following warning while fuzzing inside a KVM guest with the latest -next:
+Thanks for reporting and debugging. However I think this patch is not
+the right solution. Dca should be prevented from trying to unregister
+any provider after providers have been blocked and
+unregister_dca_providers() has been called.
+I will prepare a patch.
 
-[   91.892449] ======================================================
-[   91.894167] [ INFO: possible circular locking dependency detected ]
-[   91.894167] 3.4.0-rc6-next-20120508-sasha-00003-g9f34dd7-dirty #120 Tainted: G        W   
-[   91.894167] -------------------------------------------------------
-[   91.894167] trinity/21513 is trying to acquire lock:
-[   91.894167]  (&p->lock){+.+.+.}, at: [<ffffffff811fe53a>] seq_read+0x3a/0x420
-[   91.894167] 
-[   91.894167] but task is already holding lock:
-[   91.894167]  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811e2cb2>] prepare_bprm_creds+0x32/0x80
-[   91.894167] 
-[   91.894167] which lock already depends on the new lock.
-[   91.894167] 
-[   91.894167] 
-[   91.894167] the existing dependency chain (in reverse order) is:
-[   91.894167] 
-[   91.894167] -> #1 (&sig->cred_guard_mutex){+.+.+.}:
-[   91.894167]        [<ffffffff81115e3e>] validate_chain.clone.26+0x70e/0x8c0
-[   91.894167]        [<ffffffff8111910d>] __lock_acquire+0xa3d/0xb00
-[   91.894167]        [<ffffffff81119881>] lock_acquire+0xd1/0x110
-[   91.894167]        [<ffffffff82d89515>] __mutex_lock_common+0x65/0x570
-[   91.894167]        [<ffffffff82d89b00>] mutex_lock_killable_nested+0x40/0x50
-[   91.894167]        [<ffffffff810b1a7f>] mm_access+0x2f/0xb0
-[   91.894167]        [<ffffffff8123f0c4>] m_start+0x74/0x1c0
-[   91.894167]        [<ffffffff811fe687>] seq_read+0x187/0x420
-[   91.894167]        [<ffffffff811dac8d>] vfs_read+0xbd/0x190
-[   91.894167]        [<ffffffff811db04f>] sys_read+0x4f/0x90
-[   91.894167]        [<ffffffff82d8dbbd>] system_call_fastpath+0x1a/0x1f
-[   91.894167] 
-[   91.894167] -> #0 (&p->lock){+.+.+.}:
-[   91.894167]        [<ffffffff8111523e>] check_prev_add+0x11e/0x610
-[   91.894167]        [<ffffffff81115e3e>] validate_chain.clone.26+0x70e/0x8c0
-[   91.894167]        [<ffffffff8111910d>] __lock_acquire+0xa3d/0xb00
-[   91.894167]        [<ffffffff81119881>] lock_acquire+0xd1/0x110
-[   91.894167]        [<ffffffff82d89515>] __mutex_lock_common+0x65/0x570
-[   91.894167]        [<ffffffff82d89a60>] mutex_lock_nested+0x40/0x50
-[   91.894167]        [<ffffffff811fe53a>] seq_read+0x3a/0x420
-[   91.894167]        [<ffffffff81241769>] proc_reg_read+0xa9/0xe0
-[   91.894167]        [<ffffffff811dac8d>] vfs_read+0xbd/0x190
-[   91.894167]        [<ffffffff811e2a51>] kernel_read+0x41/0x60
-[   91.894167]        [<ffffffff811e2ed3>] prepare_binprm+0x123/0x140
-[   91.894167]        [<ffffffff811e3487>] do_execve_common.clone.32+0x197/0x320
-[   91.894167]        [<ffffffff811e3626>] do_execve+0x16/0x20
-[   91.894167]        [<ffffffff81056571>] sys_execve+0x51/0x80
-[   91.894167]        [<ffffffff82d8e08c>] stub_execve+0x6c/0xc0
-[   91.894167] 
-[   91.894167] other info that might help us debug this:
-[   91.894167] 
-[   91.894167]  Possible unsafe locking scenario:
-[   91.894167] 
-[   91.894167]        CPU0                    CPU1
-[   91.894167]        ----                    ----
-[   91.894167]   lock(&sig->cred_guard_mutex);
-[   91.894167]                                lock(&p->lock);
-[   91.894167]                                lock(&sig->cred_guard_mutex);
-[   91.894167]   lock(&p->lock);
-[   91.894167] 
-[   91.894167]  *** DEADLOCK ***
-[   91.894167] 
-[   91.894167] 1 lock held by trinity/21513:
-[   91.894167]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811e2cb2>] prepare_bprm_creds+0x32/0x80
-[   91.894167] 
-[   91.894167] stack backtrace:
-[   91.894167] Pid: 21513, comm: trinity Tainted: G        W    3.4.0-rc6-next-20120508-sasha-00003-g9f34dd7-dirty #120
-[   91.894167] Call Trace:
-[   91.894167]  [<ffffffff811144d7>] print_circular_bug+0x107/0x130
-[   91.894167]  [<ffffffff8111523e>] check_prev_add+0x11e/0x610
-[   91.894167]  [<ffffffff81115e3e>] validate_chain.clone.26+0x70e/0x8c0
-[   91.894167]  [<ffffffff8111910d>] __lock_acquire+0xa3d/0xb00
-[   91.894167]  [<ffffffff81116c06>] ? mark_held_locks+0xe6/0x120
-[   91.894167]  [<ffffffff81119881>] lock_acquire+0xd1/0x110
-[   91.894167]  [<ffffffff811fe53a>] ? seq_read+0x3a/0x420
-[   91.894167]  [<ffffffff82d8d426>] ? retint_kernel+0x26/0x30
-[   91.894167]  [<ffffffff82d89515>] __mutex_lock_common+0x65/0x570
-[   91.894167]  [<ffffffff811fe53a>] ? seq_read+0x3a/0x420
-[   91.894167]  [<ffffffff810b4879>] ? vprintk+0x3f9/0x480
-[   91.894167]  [<ffffffff811fe53a>] ? seq_read+0x3a/0x420
-[   91.894167]  [<ffffffff811fe500>] ? seq_open+0xb0/0xb0
-[   91.894167]  [<ffffffff82d89a60>] mutex_lock_nested+0x40/0x50
-[   91.894167]  [<ffffffff811fe53a>] seq_read+0x3a/0x420
-[   91.894167]  [<ffffffff810e891e>] ? sub_preempt_count+0xae/0xe0
-[   91.894167]  [<ffffffff811fe500>] ? seq_open+0xb0/0xb0
-[   91.894167]  [<ffffffff81241769>] proc_reg_read+0xa9/0xe0
-[   91.894167]  [<ffffffff811dac8d>] vfs_read+0xbd/0x190
-[   91.894167]  [<ffffffff811e2a51>] kernel_read+0x41/0x60
-[   91.894167]  [<ffffffff811e2ed3>] prepare_binprm+0x123/0x140
-[   91.894167]  [<ffffffff811e3487>] do_execve_common.clone.32+0x197/0x320
-[   91.894167]  [<ffffffff811e3626>] do_execve+0x16/0x20
-[   91.894167]  [<ffffffff81056571>] sys_execve+0x51/0x80
-[   91.894167]  [<ffffffff82d8e08c>] stub_execve+0x6c/0xc0
-
+Thanks,
+Maciej
