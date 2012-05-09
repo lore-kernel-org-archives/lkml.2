@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759389Ab2EINQr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 09:16:47 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:65017 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759379Ab2EINQo (ORCPT
+	id S1759338Ab2EINSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 09:18:36 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:63359 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757968Ab2EINSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 09:16:44 -0400
-Date: Wed, 9 May 2012 15:16:38 +0200
-From: Christoph Fritz <chf.fritz@googlemail.com>
-To: Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Cc: Christian Hemp <c.hemp@phytec.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@hansjkoch.de>
-Subject: [PATCH] ARM: mx35: add WEIM register addresses
-Message-ID: <20120509131638.GA2057@lovely.krouter>
+	Wed, 9 May 2012 09:18:35 -0400
+Message-ID: <1336569510.8274.360.camel@deadeye>
+Subject: RE: [PATCH] pch_gbe: Adding read memory barriers
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Laight <David.Laight@ACULAB.COM>
+CC: Erwan Velu <erwanaliasr1@gmail.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <tshimizu818@gmail.com>
+Date: Wed, 9 May 2012 14:18:30 +0100
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F602CD83CB@saturn3.aculab.com>
+References: <4FA822C4.60809@gmail.com>
+	 <AE90C24D6B3A694183C094C60CF0A2F602CD83CB@saturn3.aculab.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [88.96.1.126]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18894.005
+X-TM-AS-Result: No--20.192200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-05-09 at 11:47 +0100, David Laight wrote:
+> > Under a strong incoming packet stream and/or high cpu usage,
+> > the pch_gbe driver reports "Receive CRC Error" and discards packet.
+> > 
+> > It occurred on an Intel ATOM E620T while running a 
+> > 300mbit/sec multicast
+> > network stream leading to a ~100% cpu usage.
+> > 
+> > Adding rmb() calls before considering the network card's status solve
+> > this issue.
+> > 
+> > Getting it into stable would be perfect as it solves 
+> > reliability issues.
+> > 
+> > Signed-off-by: Erwan Velu <erwan.velu@zodiacaerospace.com>
+> > ---
+> >   .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |    3 +++
+> >   1 files changed, 3 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c 
+> > b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+> > index 8035e5f..ace3654 100644
+> > --- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+> > +++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+> > @@ -1413,6 +1413,7 @@ static irqreturn_t pch_gbe_intr(int 
+> > irq, void *data)
+> >   			pch_gbe_mac_set_pause_packet(hw);
+> >   		}
+> >   	}
+> > +	smp_rmb(); /* prevent any other reads before*/
+> 
+> Under the assumption that your memory references are uncached,
+> you only need to stop gcc reordering the object code,
+> Rather than actually adding one of the 'fence' instructions.
 
-This patch adds WEIM register addresses to mx35 platform header file.
+Also, the usual MMIO functions already include compiler barriers.
 
-Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
-Signed-off-by: Christian Hemp <c.hemp@phytec.de>
----
- arch/arm/plat-mxc/include/mach/mx35.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+> So you should only need: asm volatile(:::"memory")
+> NFI which define generates that, the defines in the copy of
+> sysdep.h I just looked at always include one of the fences.
 
-diff --git a/arch/arm/plat-mxc/include/mach/mx35.h b/arch/arm/plat-mxc/include/mach/mx35.h
-index 80965a9..8b8f424 100644
---- a/arch/arm/plat-mxc/include/mach/mx35.h
-+++ b/arch/arm/plat-mxc/include/mach/mx35.h
-@@ -111,6 +111,11 @@
- #define MX35_EMI_CTL_BASE_ADDR			(MX35_X_MEMC_BASE_ADDR + 0x4000)
- #define MX35_PCMCIA_CTL_BASE_ADDR		MX35_EMI_CTL_BASE_ADDR
- 
-+#define MX35_WEIM_CSCRx_BASE_ADDR(cs)	(MX35_WEIM_BASE_ADDR + (cs) * 0x10)
-+#define MX35_WEIM_CSCRxU(cs)		(MX35_WEIM_CSCRx_BASE_ADDR(cs))
-+#define MX35_WEIM_CSCRxL(cs)		(MX35_WEIM_CSCRx_BASE_ADDR(cs) + 0x4)
-+#define MX35_WEIM_CSCRxA(cs)		(MX35_WEIM_CSCRx_BASE_ADDR(cs) + 0x8)
-+
- #define MX35_NFC_BASE_ADDR		0xbb000000
- #define MX35_PCMCIA_MEM_BASE_ADDR	0xbc000000
- 
+This is barrier().  But I think this must be intended to control
+ordering of fields that are written elsewhere.
+
+Really, this needs a much more specific comment to explain the intent.
+Then reviewers can work out whether it actually achieves the intent!
+
+Ben.
+
 -- 
-1.7.2.5
-
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
