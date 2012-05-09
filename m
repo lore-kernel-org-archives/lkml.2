@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759488Ab2EIOXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:23:43 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:24132 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755874Ab2EIOXm (ORCPT
+	id S1759519Ab2EIOY0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:24:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38105 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755874Ab2EIOYZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:23:42 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: rmgcbSgVM1m8kIlNtgaVZtMZXwl.aDtGr.oTHxK2mIQoFrU
- 1EpUhbnXZD5aqIsawyPKE5R2jpQXSrBSEKOyp3R01TIuYNC8hvVDg_EAfxq.
- 9pCHa2JROHb.5XiduBn4nwEgO2J8MTw4Z.LinR8C5Cbc8bJw8FLYElaAWhIR
- sB8OcYo2jS31KotBIPaTph954Lt9zsffsGg7W.1BRnZ.eSfO69OUZPU9bVPV
- PKKKUjRcWdUoErFf06z4_Ft4.IswZgK3Axds_vG6_nYVKqh9uLWkNhLghMG4
- 3U7y_OTlwnkO4aP.3rpRFfidiApafKXp6HM1dF_MtZJ2QiXBkTT5D.KO7jhn
- 6EvExi92ZqFmZDOXnafkbIDEdlMQzDls3NpoUeNU3dVGY2PBW2XABErDPwUU
- -
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 9 May 2012 09:23:33 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
-In-Reply-To: <CAFTL4hx_b-XvqQDswtPnaDZLj6hBjoescBS3A8oFpCGPPUByrg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1205090922510.8171@router.home>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com> <1335830115-14335-8-git-send-email-fweisbec@gmail.com> <alpine.DEB.2.00.1205071053070.1060@router.home> <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
- <1336488626.16236.41.camel@twins> <alpine.DEB.2.00.1205081016370.27713@router.home> <1336490832.8226.5.camel@twins> <alpine.DEB.2.00.1205081035550.27713@router.home> <1336492081.8226.13.camel@twins> <alpine.DEB.2.00.1205081054310.27713@router.home>
- <1336493768.8226.29.camel@twins> <1336506601.7400.21.camel@marge.simpson.net> <alpine.DEB.2.00.1205081541010.1391@router.home> <1336537289.7365.62.camel@marge.simpson.net> <CAFTL4hx_b-XvqQDswtPnaDZLj6hBjoescBS3A8oFpCGPPUByrg@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 9 May 2012 10:24:25 -0400
+Message-ID: <1336573457.2527.50.camel@twins>
+Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Igor Mammedov <imammedo@redhat.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-kernel@vger.kernel.org, pjt@google.com, tglx@linutronix.de,
+        seto.hidetoshi@jp.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 09 May 2012 16:24:17 +0200
+In-Reply-To: <20120509141528.GA3623@gmail.com>
+References: <4FAA452A.1070909@gmail.com> <4FAA588B.5010404@redhat.com>
+	 <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
+	 <1336566096.2527.30.camel@twins> <1336566644.2527.33.camel@twins>
+	 <1336570043.2527.38.camel@twins> <20120509133607.GA26124@gmail.com>
+	 <1336571049.2527.43.camel@twins> <1336571947.2527.47.camel@twins>
+	 <20120509141528.GA3623@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 May 2012, Frederic Weisbecker wrote:
+On Wed, 2012-05-09 at 16:15 +0200, Ingo Molnar wrote:
+> So, if someone specifies an incomplete "%pb" format - fmt[1] 
+> will be 0 and we take precision as the length - presumably also 
+> 0. 
 
-> May be I should indeed rather use sysfs, it's actually true that cpusets
-> is confusing for this kind of thing.
+yes, printf_spec is initialized to 0s.
 
-Yes lets manage the cpu characteristics from the directory with the cpu
-properties.
+> We stick that 0 into:
+> 
+> > +                     len = bitmap_scnlistprintf(buf, end - buf, ptr, bits);
+> 
+> Will that work? 
+
+Yes, bitmap_scnlistprintf() will only set buf[0] = 0 (which will be
+overwritten by a possible next printf token) and return 0 length not
+advancing the ptr.
+
+
