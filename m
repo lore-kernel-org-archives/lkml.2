@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760527Ab2EIRW6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:22:58 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51118 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760483Ab2EIRW4 (ORCPT
+	id S1760544Ab2EIRXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:23:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37585 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756689Ab2EIRXt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 13:22:56 -0400
-Message-ID: <4FAAA7CC.7050208@mvista.com>
-Date: Wed, 09 May 2012 21:22:20 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        plagnioj@jcrosoft.com, gregkh@linuxfoundation.org,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] USB: ohci-at91: add a reset function to fix race condition
-References: <1336553334-31058-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1336553334-31058-1-git-send-email-nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 9 May 2012 13:23:49 -0400
+Message-ID: <1336584160.2527.62.camel@twins>
+Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Igor Mammedov <imammedo@redhat.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
+        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Wed, 09 May 2012 19:22:40 +0200
+In-Reply-To: <CA+55aFyjGZ=PLOBfyFub4kS3r2vJ0SFD58rTf21koPodFTSARQ@mail.gmail.com>
+References: <1336559908-32533-1-git-send-email-imammedo@redhat.com>
+	 <4FAA452A.1070909@gmail.com> <4FAA588B.5010404@redhat.com>
+	 <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
+	 <1336566096.2527.30.camel@twins> <1336566644.2527.33.camel@twins>
+	 <1336570043.2527.38.camel@twins>
+	 <CA+55aFyjGZ=PLOBfyFub4kS3r2vJ0SFD58rTf21koPodFTSARQ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, 2012-05-09 at 10:15 -0700, Linus Torvalds wrote:
+> 
+> The "bc" and "bn" would work, except for the fact that I doubt they
+> are printed out enough to matter.
 
-On 09-05-2012 12:48, Nicolas Ferre wrote:
+There's a number %pbc candidates in the scheduler that would be nice to
+not have to do manually.
 
-> A possible race condition appears because we are not initializing
-> the ohci->regs before calling usb_hcd_request_irqs().
-> We move the call to ohci_init() in hcd->driver->reset() instead of
-> hcd->driver->start() to fix this.
-> This was experienced when we share the same IRQ line between OHCI and EHCI
-> controllers.
+> A "%.*pb" is the only interface that can work for a "sized" bitmap
+> (with obviously fixed-length ones being possible with a "%.32bp" like
+> thing)
 
-> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
-> Tested-by: Christian Eggers<christian.eggers@kathrein.de>
-> Cc: stable<stable@vger.kernel.org>
-> ---
->   drivers/usb/host/ohci-at91.c |   11 ++++++++++-
->   1 file changed, 10 insertions(+), 1 deletion(-)
+Right, sadly that also generates a warning :/
 
-> diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-> index 13ebeca..55d3d64 100644
-> --- a/drivers/usb/host/ohci-at91.c
-> +++ b/drivers/usb/host/ohci-at91.c
-> @@ -223,7 +223,7 @@ static void __devexit usb_hcd_at91_remove(struct usb_hcd *hcd,
->   /*-------------------------------------------------------------------------*/
->
->   static int __devinit
-> -ohci_at91_start (struct usb_hcd *hcd)
-> +ohci_at91_reset (struct usb_hcd *hcd)
+> But the whole va_args games you play are not acceptable. %p *will*
+> continue to take a void *, and nothing else. 
 
-    Have you run the patch thru scripts/checkpatch.pl? There should be no 
-space between function name and '('.
-
->   {
->   	struct at91_usbh_data	*board = hcd->self.controller->platform_data;
->   	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
-> @@ -233,6 +233,14 @@ ohci_at91_start (struct usb_hcd *hcd)
->   		return ret;
->
->   	ohci->num_ports = board->ports;
-> +	return 0;
-> +}
-> +
-> +static int __devinit
-> +ohci_at91_start (struct usb_hcd *hcd)
-
-    Same here.
-
-> +{
-> +	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
-
-    And here.
-
-WBR, Sergei
+The va_args() games are dead.
