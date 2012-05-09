@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760612Ab2EIRtA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:49:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54024 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754963Ab2EIRs6 (ORCPT
+	id S1760650Ab2EIRva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:51:30 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38465 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758335Ab2EIRv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 13:48:58 -0400
-Date: Wed, 9 May 2012 10:48:53 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Lockdep false positive in sysfs
-Message-ID: <20120509174853.GF24636@google.com>
-References: <20120509174114.GE24636@google.com>
- <Pine.LNX.4.44L0.1205091346070.1658-100000@iolanthe.rowland.org>
+	Wed, 9 May 2012 13:51:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1205091346070.1658-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <Pine.LNX.4.64.1205082259350.16707@file.rdu.redhat.com>
+References: <Pine.LNX.4.64.1205042250130.18896@file.rdu.redhat.com>
+ <20120505115851.1fecbe50@pyramind.ukuu.org.uk> <Pine.LNX.4.64.1205051448400.2623@file.rdu.redhat.com>
+ <CA+55aFy2O8KcLC-yGCG2ZRpCpAdZ_T7z-sSme4fMrXG=YNAAhA@mail.gmail.com> <Pine.LNX.4.64.1205082259350.16707@file.rdu.redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 9 May 2012 10:51:06 -0700
+X-Google-Sender-Auth: 8QPIICG2HEhdT4mGMIQ3VFA7x7k
+Message-ID: <CA+55aFwiLp1z+2mzkrFsid1WZQ0TQkcn8F2E6NL_AVR+m1fZ2w@mail.gmail.com>
+Subject: Re: [PATCH] Fix compile failure on PA-RISC
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 01:47:34PM -0400, Alan Stern wrote:
-> On Wed, 9 May 2012, Tejun Heo wrote:
-> 
-> > Hello,
-> > 
-> > On Tue, May 08, 2012 at 02:53:11PM -0400, Alan Stern wrote:
-> > > On Mon, 7 May 2012, Tejun Heo wrote:
-> > > 
-> > > > On Mon, May 07, 2012 at 05:51:52PM -0400, Alan Stern wrote:
-> > > > > I guess in the end it's a question of balance.  Which has more 
-> > > > > overhead, adding a few function calls here and there, or adding a new 
-> > > > > flags field to every struct attribute?
-> > > > 
-> > > > Yes, and there are different types of overheads.  I'm happy to trade
-> > > > some runtime memory overhead under debugging mode for lower code
-> > > > complexity.  Lock proving is pretty expensive anyway.  I don't think
-> > > > there's much point in trying to optimize some bytes from struct
-> > > > attributes.
-> > > 
-> > > Okay, then what do you think about this approach?  It does seem smaller 
-> > > and simpler than the previous attempt.
-> > > 
-> > > And I did try to avoid unnecessary bloat; if lockdep isn't being used
-> > > then the extra attribute flag isn't present.
-> > 
-> > Yeap, looks good to me.
-> 
-> Unless there are any objections from Eric or Peter in the next few
-> days, I'll submit it.  Can I add your Acked-by?
+On Tue, May 8, 2012 at 8:20 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+>>
+>> Switching it to zero and testing that things still work would be appreciated.
+>
+> It works, but there is plenty of interrupt controllers on PC-RISC and I
+> can only test it on C8000 with IO-SAPIC. I don't know if irq 0 is used on
+> some PA-RISC interrupt controller. It would be best if James Bottomley
+> tests it on his set of machines.
 
-Sure.
+Heh. It sounds like we have more PA-RISC machines than we have actual users.
 
-Thanks for the persistence.
+> And what about x86? --- irq 0 is used for timer and there is
+> void __init setup_default_timer_irq(void)
+> {
+>        setup_irq(0, &irq0);
+> }
+> in arch/x86/kernel/time.c.
 
--- 
-tejun
+That's fine. There's no "irq" variable associated with it that people
+can test. No driver will ever see an irq number of zero, no dynamic
+irq code will ever see the zero.
+
+So x86 rules have always been that the way drivers etc test for irq
+existence has always been "irq 0 means no irq". Despite the fact that
+it internally uses irq0 for its own nefarious uses.
+
+                    Linus
