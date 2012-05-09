@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758645Ab2EIIUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 04:20:04 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:37201 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758604Ab2EIIT7 convert rfc822-to-8bit (ORCPT
+	id S1758621Ab2EIIWb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 04:22:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47489 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab2EIIW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 04:19:59 -0400
-Subject: Re: [linux-pm] [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
-Mime-Version: 1.0 (Apple Message framework v1257)
+	Wed, 9 May 2012 04:22:29 -0400
+Date: Wed, 9 May 2012 11:22:25 +0300
+From: Ido Yariv <ido@wizery.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, shai@scalemp.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/platform] vsmp: Fix number of CPUs when vsmp is disabled
+Message-ID: <20120509082225.GB5036@NoteStation.colubris.lan>
+References: <1336462455-22544-1-git-send-email-ido@wizery.com>
+ <tip-824a6ae65f085255464155760cb9628a2f0deb29@git.kernel.org>
+ <20120508122548.GA5741@gmail.com>
+ <20120509080335.GA5556@NoteStation.colubris.lan>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <EF62F09C0797D947AD4180A1043C0DF73C40C247@DLEE10.ent.ti.com>
-Date: Wed, 9 May 2012 10:19:55 +0200
-Cc: "Hilman, Kevin" <khilman@ti.com>, "AnilKumar, Chimata" <anilkumar@ti.com>,
-        "J, KEERTHY" <j-keerthy@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Pihet-XID, Jean" <j-pihet@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <7F5F5AD1-DC14-4693-817E-ADCC9EFB3D3D@dominion.thruhere.net>
-References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com> <20120426191159.GA9415@sirena.org.uk> <CAJ6a13a6WN9h1QZynpEOf-R6RXwWBZ2eOPkTeNc15JX_YfAz_w@mail.gmail.com> <20120427175657.GP18260@opensource.wolfsonmicro.com>	<87397o3n4y.fsf@ti.com> <331ABD5ECB02734CA317220B2BBEABC13E9B1A67@DBDE01.ent.ti.com> <87mx5jy2li.fsf@ti.com> <331ABD5ECB02734CA317220B2BBEABC13E9B6681@DBDE01.ent.ti.com> <EF62F09C0797D947AD4180A1043C0DF73C40BCE1@DLEE10.ent.ti.com> <87lil2jp2z.fsf@ti.com> <EF62F09C0797D947AD4180A1043C0DF73C40C247@DLEE10.ent.ti.com>
-To: "Woodruff, Richard" <r-woodruff2@ti.com>
-X-Mailer: Apple Mail (2.1257)
+Content-Disposition: inline
+In-Reply-To: <20120509080335.GA5556@NoteStation.colubris.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 09, 2012 at 11:03:35AM +0300, Ido Yariv wrote:
+> +#ifdef CONFIG_X86_VSMP
+> +	/* VSMP is enabled, no need to cap cpus */
+> +	return;
+> +#elif CONFIG_SMP
 
-Op 9 mei 2012, om 02:39 heeft Woodruff, Richard het volgende geschreven:
+I've missed a 'defined' here. I'll send a new version right away.
 
->> From: Hilman, Kevin
->> Sent: Tuesday, May 08, 2012 5:17 PM
-> 
->> A basic OMAP AVS driver has been in mainline for a long time, yet we
->> have not seen support submitted for all of these features.
-> 
-> 1.5/3.5 is a feature.
-> 
-> ABB is requirement for a production useable driver. 
-
-ABB/FBB is also needed for 1GHz support on omap3 based SoCs like AM37xx and DM37xx.
-
-regards,
-
-Koen
+Thanks,
+Ido.
