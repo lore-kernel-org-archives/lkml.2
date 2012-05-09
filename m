@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab2EIIM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 04:12:59 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:42887 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757999Ab2EIIMy (ORCPT
+	id S1758635Ab2EIINQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 04:13:16 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37594 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab2EIINM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 04:12:54 -0400
+	Wed, 9 May 2012 04:13:12 -0400
+Date: Wed, 9 May 2012 10:13:06 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Christoph Fritz <chf.fritz@googlemail.com>
+Cc: Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Daniel Mack <daniel@zonque.org>
+Subject: Re: [PATCH] ARM: mx35: add cpufreq support
+Message-ID: <20120509081306.GK27341@pengutronix.de>
+References: <20120507141437.GA9636@lovely.krouter>
+ <20120509072239.GG27341@pengutronix.de>
+ <20120509075618.GA4412@lovely.krouter>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdUR4mk6ErCj8o2xt2k3vw9RYe5c7MvtQ3q0Xq2sfnV32A@mail.gmail.com>
-References: <20120503144645.6390.62303.sendpatchset@w520>
-	<201205050722.45500.arnd@arndb.de>
-	<201205052108.03001.rjw@sisk.pl>
-	<201205051921.13209.arnd@arndb.de>
-	<CAMuHMdUR4mk6ErCj8o2xt2k3vw9RYe5c7MvtQ3q0Xq2sfnV32A@mail.gmail.com>
-Date: Wed, 9 May 2012 17:12:52 +0900
-Message-ID: <CANqRtoTamkCfu0yHiF8oGXdLKDjSxhBO-GqPDJ00Ejw5LkSqkw@mail.gmail.com>
-Subject: Re: [PATCH 00/02] mach-shmobile: Emma Mobile EV2 - first shot
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-arm-kernel@lists.infradead.org, horms@verge.net.au,
-        linux@arm.linux.org.uk, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lethal@linux-sh.org, olof@lixom.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120509075618.GA4412@lovely.krouter>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:03:17 up 178 days, 15:50, 66 users,  load average: 0.09, 0.13,
+ 0.14
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 4:57 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Sat, May 5, 2012 at 9:21 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Saturday 05 May 2012, Rafael J. Wysocki wrote:
->>> Now, if you insist on us having a separate mach- directory for every platform
->>> (SoC), we can do that I think, but then we should start with splitting up the
->>> existing mach-shmobile into a number of SoC-specific directories rather than
->>> adding new mach- directories for random new parts, because that goes against
->>> our development history to date, which is important too IMHO.
->>
->> All the chips in there so far share a common ancestry and they all use a
->> significant subset of the same drivers shared with arch/sh: i2c-sh_mobile,
->> sh-dma-engine, sh_cmt, sh-sci, sh_tmu, intc, pfc and sh_clk. AFAICT, this one
->> uses none of those and apparently was developed by NEC before the merger with
->> Renesas.
->
-> Ah, I didn't know NEC joined Renesas, but Wikipedia proves you're right.
+On Wed, May 09, 2012 at 09:56:18AM +0200, Christoph Fritz wrote:
+> Hi Sascha,
+> 
+> On Wed, May 09, 2012 at 09:22:39AM +0200, Sascha Hauer wrote:
+> > On Mon, May 07, 2012 at 04:14:37PM +0200, Christoph Fritz wrote:
+> > > This patch adds the mx35 to the supported cpu-families of the
+> > > "CPUfreq driver for i.MX CPUs".
+> > 
+> > I'm afraid this has to wait another cycle since you are patching a file
+> > that is scheduled to be replaced with common clock framework support.
+> 
+> Has this "scheduled replacement" somewhere (e.g. calendar) been
+> marked? So that I can check in the future before editing "scheduled
+> files".
 
-Actually, for those of you who care about details - NEC Electronics
-and Renesas merged into Renesas Electronics. Other parts of NEC are
-still around as usual.
+The clock framework conversion has been a hot topic for quite a while
+now, but there hasn't been an official note about it outside the list.
+I can understand that the occasional linux arm kernel reader is not
+aware of it, but we currently have nothing in place to anounce such
+things. (Other than feature-removal.txt which seems not very suitable
+since no feature is removed, only updated)
 
-> So, any similarities with the MIPS-based NEC EMMA SOCs, i.e. more code to
-> share?
+Sascha
 
-That would be very interested to know. I've grepped the kernel tree
-for existing code matching Uart, STI and GPIO but nothing so far. Does
-anyone know where I can find docs for the MIPS based ones?
 
-Good news is that documentation for Emma Mobile EV2 and Emma Mobile
-1-S can be downloaded from renesas.com.
-
-Cheers,
-
-/ magnus
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
