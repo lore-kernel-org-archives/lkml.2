@@ -1,87 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab2EIG52 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:57:28 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:37791 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646Ab2EIG51 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 02:57:27 -0400
-Date: Wed, 9 May 2012 01:57:17 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
-        Jan Ceuleers <jan.ceuleers@computer.org>
-Subject: Re: [ 024/167] [PATCH] md: dont call ->add_disk unless there is good
- reason.
-Message-ID: <20120509065717.GB32230@burratino>
-References: <20120509055029.588587017@decadent.org.uk>
- <20120509055032.897593072@decadent.org.uk>
+	id S1754858Ab2EIHBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 03:01:05 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57689 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751800Ab2EIHBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 03:01:03 -0400
+Date: Wed, 9 May 2012 09:00:58 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "H. Peter Anvin" <hpa@zytor.com>, Shuah Khan <shuahkhan@gmail.com>,
+        mingo@redhat.com, tglx@linutronix.de, tigran@aivazian.fsnet.co.uk,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] x86: kernel/microcode_core.c simple_strtoul
+ cleanup
+Message-ID: <20120509070058.GA19853@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Ingo Molnar <mingo@kernel.org>,
+	Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+	"H. Peter Anvin" <hpa@zytor.com>, Shuah Khan <shuahkhan@gmail.com>,
+	mingo@redhat.com, tglx@linutronix.de, tigran@aivazian.fsnet.co.uk,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1336324264.2897.9.camel@lorien2>
+ <20120507104943.GA3896@x1.osrc.amd.com>
+ <4FA815E3.1030101@zytor.com>
+ <20120507211612.GA19700@liondog.tnic>
+ <20120508012341.GA27000@khazad-dum.debian.net>
+ <20120508040009.GB30652@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120509055032.897593072@decadent.org.uk>
+In-Reply-To: <20120508040009.GB30652@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Ben Hutchings wrote:
-
-> 3.2-stable review patch.  If anyone has any objections, please let me know.
-[...]
-> commit ed209584c38fb74b7eecc03e5b1bfe674e591bd8 upstream.
->
-> Commit 7bfec5f35c68121e7b18
->
->    md/raid5: If there is a spare and a want_replacement device, start replacement.
->
-> cause md_check_recovery to call ->add_disk much more often.
-> Instead of only when the array is degraded, it is now called whenever
-> md_check_recovery finds anything useful to do, which includes
-> updating the metadata for clean<->dirty transition.
-> This causes unnecessary work, and causes info messages from ->add_disk
-> to be reported much too often.
-
-Does 3.2.y need this?  Commit 7bfec5f35c68121e7b18 (aka v3.3-rc3~3^2~22)
-does not seem to be part of the 3.2-stable tree.
-
-Jonathan
-
-> So refine md_check_recovery to only do any actual recovery checking
-> (including ->add_disk) if MD_RECOVERY_NEEDED is set.
+On Tue, May 08, 2012 at 06:00:10AM +0200, Ingo Molnar wrote:
 > 
-> This fix is suitable for 3.3.y:
+> * Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
 > 
-> Reported-by: Jan Ceuleers <jan.ceuleers@computer.org>
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
->  drivers/md/md.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/md/md.c b/drivers/md/md.c
-> index b572e1e..8beb19c 100644
-> --- a/drivers/md/md.c
-> +++ b/drivers/md/md.c
-> @@ -7560,14 +7560,14 @@ void md_check_recovery(struct mddev *mddev)
->  		 * any transients in the value of "sync_action".
->  		 */
->  		set_bit(MD_RECOVERY_RUNNING, &mddev->recovery);
-> -		clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
->  		/* Clear some bits that don't mean anything, but
->  		 * might be left set
->  		 */
->  		clear_bit(MD_RECOVERY_INTR, &mddev->recovery);
->  		clear_bit(MD_RECOVERY_DONE, &mddev->recovery);
->  
-> -		if (test_bit(MD_RECOVERY_FROZEN, &mddev->recovery))
-> +		if (!test_and_clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery) ||
-> +		    test_bit(MD_RECOVERY_FROZEN, &mddev->recovery))
->  			goto unlock;
->  		/* no recovery is running.
->  		 * remove any failed drives, then
+> > > Of course, one can iterate over each core in a shell-loop 
+> > > and write into the reload file to reload ucode after having 
+> > > updated the ucode image in /lib/firmware but removing and 
+> > > then modprobing the module is shorter :-)
+> > 
+> > Can we PLEASE fix it properly by adding a new node (which is 
+> > _not_ per-cpu) that requests the microcode core to refresh all 
+> > cpus?
+
+Ok, where do you want to have it:
+
+$ find /sys -iname "microcode"
+/sys/bus/platform/devices/microcode
+/sys/devices/system/cpu/cpu0/microcode
+/sys/devices/system/cpu/cpu1/microcode
+/sys/devices/virtual/misc/microcode
+/sys/devices/platform/microcode
+/sys/class/misc/microcode
+/sys/module/microcode
+
+I'm all for the level at
+
+/sys/devices/system/cpu/
+
+where CPU-related stuff can go in - not per-CPU but per whole system.
+Ingo?
+
+> > Preferably by invalidating the microcode cache, THEN fetching each
+> > required microcode just once for the first core that needs it, and
+> > caching it for use the other cores.
+
+That should be easy, the most part is already there.
+
+> > You can leave the (IMHO mostly useless) per-cpu sysfs nodes alone,
+> > so as to not break ABI, or deprecate them for an year or something.
+
+Yeah, about that, what is not breaking the ABI? Having the sysfs node but
+reading/writing it returns -E<something>, having the sysfs node and
+reading/writing it does nothing, or...?
+
+> > I *do NOT* want to rmmod crap in a production server to update
+> > microcode. And I want to be able to support static-compiled
+> > microcode.
+
+I'd need this more explained, why?
+
+If by "static-compiled microcode" you mean the microcode.ko module
+should be built-in that can't fly because for request_firmware we need
+userspace to actually find the ucode image.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
