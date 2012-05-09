@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757056Ab2EIFxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:53:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38873 "EHLO
+	id S1757735Ab2EIGBw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:01:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39057 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756103Ab2EIFxM (ORCPT
+	by vger.kernel.org with ESMTP id S1756490Ab2EIFxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:12 -0400
-Message-Id: <20120509055036.788842023@decadent.org.uk>
+	Wed, 9 May 2012 01:53:43 -0400
+Message-Id: <20120509055050.693943991@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:20 +0100
+Date: Wed, 09 May 2012 06:53:02 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 051/167] nfsd: fix endianness breakage in TEST_STATEID handling
+        alan@lxorguk.ukuu.org.uk, Kusanagi Kouichi <slash@ac.auone-net.jp>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 153/167] [PATCH] x86, relocs: Remove an unused variable
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,34 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Kusanagi Kouichi <slash@ac.auone-net.jp>
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+commit 7c77cda0fe742ed07622827ce80963bbeebd1e3f upstream.
 
-commit 02f5fde5df0ea930e70f93763dd48beff182b208 upstream.
+sh_symtab is set but not used.
 
-->ts_id_status gets nfs errno, i.e. it's already big-endian; no need
-to apply htonl() to it.  Broken by commit 174568 (NFSD: Added TEST_STATEID
-operation) last year...
+[ hpa: putting this in urgent because of the sheer harmlessness of the patch:
+  it quiets a build warning but does not change any generated code. ]
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
+Link: http://lkml.kernel.org/r/20120401082932.D5E066FC03D@msa105.auone-net.jp
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfsd/nfs4xdr.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/boot/compressed/relocs.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -3410,7 +3410,7 @@ nfsd4_encode_test_stateid(struct nfsd4_c
- 		nfsd4_decode_stateid(argp, &si);
- 		valid = nfs4_validate_stateid(cl, &si);
- 		RESERVE_SPACE(4);
--		*p++ = htonl(valid);
-+		*p++ = valid;
- 		resp->p = p;
- 	}
- 	nfs4_unlock_state();
+diff --git a/arch/x86/boot/compressed/relocs.c b/arch/x86/boot/compressed/relocs.c
+index d3c0b02..fb7117a 100644
+--- a/arch/x86/boot/compressed/relocs.c
++++ b/arch/x86/boot/compressed/relocs.c
+@@ -403,13 +403,11 @@ static void print_absolute_symbols(void)
+ 	for (i = 0; i < ehdr.e_shnum; i++) {
+ 		struct section *sec = &secs[i];
+ 		char *sym_strtab;
+-		Elf32_Sym *sh_symtab;
+ 		int j;
+ 
+ 		if (sec->shdr.sh_type != SHT_SYMTAB) {
+ 			continue;
+ 		}
+-		sh_symtab = sec->symtab;
+ 		sym_strtab = sec->link->strtab;
+ 		for (j = 0; j < sec->shdr.sh_size/sizeof(Elf32_Sym); j++) {
+ 			Elf32_Sym *sym;
+-- 
+1.7.10
+
 
 
