@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758486Ab2EIGcv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:32:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38700 "EHLO
+	id S1758552Ab2EIGdO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:33:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38677 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755178Ab2EIFwp (ORCPT
+	by vger.kernel.org with ESMTP id S1754720Ab2EIFwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:52:45 -0400
-Message-Id: <20120509055031.979916598@decadent.org.uk>
+	Wed, 9 May 2012 01:52:42 -0400
+Message-Id: <20120509055031.816478498@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:50:46 +0100
+Date: Wed, 09 May 2012 06:50:45 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 017/167] [PATCH] mwifiex: update pcie8766 scratch register addresses
+        alan@lxorguk.ukuu.org.uk,
+        Christian Riesch <christian.riesch@omicron.at>,
+        Cyril Chemparathy <cyril@ti.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 016/167] [PATCH] davinci_mdio: Fix MDIO timeout check
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,50 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Christian Riesch <christian.riesch@omicron.at>
 
-commit 428ca8a7065354877db63ceabfc493107686eebe upstream.
+commit 5b76d0600b2b08eef77f8e9226938b7b6bde3099 upstream.
 
-The scratch register addresses have been changed for newer chips.
-Since the old chip was never shipped and it will not be supported
-any more, just update register addresses to support the new chips.
+Under heavy load (flood ping) it is possible for the MDIO timeout to
+expire before the loop checks the GO bit again. This patch adds an
+additional check whether the operation was done before actually
+returning -ETIMEDOUT.
 
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+To reproduce this bug, flood ping the device, e.g., ping -f -l 1000
+After some time, a "timed out waiting for user access" warning
+may appear. And even worse, link may go down since the PHY reported a
+timeout.
+
+Signed-off-by: Christian Riesch <christian.riesch@omicron.at>
+Cc: Cyril Chemparathy <cyril@ti.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/mwifiex/pcie.h |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/net/ethernet/ti/davinci_mdio.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/net/wireless/mwifiex/pcie.h b/drivers/net/wireless/mwifiex/pcie.h
-index 445ff21..2f218f9 100644
---- a/drivers/net/wireless/mwifiex/pcie.h
-+++ b/drivers/net/wireless/mwifiex/pcie.h
-@@ -48,15 +48,15 @@
- #define PCIE_HOST_INT_STATUS_MASK			0xC3C
- #define PCIE_SCRATCH_2_REG				0xC40
- #define PCIE_SCRATCH_3_REG				0xC44
--#define PCIE_SCRATCH_4_REG				0xCC0
--#define PCIE_SCRATCH_5_REG				0xCC4
--#define PCIE_SCRATCH_6_REG				0xCC8
--#define PCIE_SCRATCH_7_REG				0xCCC
--#define PCIE_SCRATCH_8_REG				0xCD0
--#define PCIE_SCRATCH_9_REG				0xCD4
--#define PCIE_SCRATCH_10_REG				0xCD8
--#define PCIE_SCRATCH_11_REG				0xCDC
--#define PCIE_SCRATCH_12_REG				0xCE0
-+#define PCIE_SCRATCH_4_REG				0xCD0
-+#define PCIE_SCRATCH_5_REG				0xCD4
-+#define PCIE_SCRATCH_6_REG				0xCD8
-+#define PCIE_SCRATCH_7_REG				0xCDC
-+#define PCIE_SCRATCH_8_REG				0xCE0
-+#define PCIE_SCRATCH_9_REG				0xCE4
-+#define PCIE_SCRATCH_10_REG				0xCE8
-+#define PCIE_SCRATCH_11_REG				0xCEC
-+#define PCIE_SCRATCH_12_REG				0xCF0
- 
- #define CPU_INTR_DNLD_RDY				BIT(0)
- #define CPU_INTR_DOOR_BELL				BIT(1)
+diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
+index 2757c7d..e4e4708 100644
+--- a/drivers/net/ethernet/ti/davinci_mdio.c
++++ b/drivers/net/ethernet/ti/davinci_mdio.c
+@@ -181,6 +181,11 @@ static inline int wait_for_user_access(struct davinci_mdio_data *data)
+ 		__davinci_mdio_reset(data);
+ 		return -EAGAIN;
+ 	}
++
++	reg = __raw_readl(&regs->user[0].access);
++	if ((reg & USERACCESS_GO) == 0)
++		return 0;
++
+ 	dev_err(data->dev, "timed out waiting for user access\n");
+ 	return -ETIMEDOUT;
+ }
 -- 
 1.7.10
 
