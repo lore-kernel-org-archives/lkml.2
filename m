@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab2EIVEH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 17:04:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36767 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758661Ab2EIVEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 17:04:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="138805987"
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: lenb@kernel.org
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, len.brown@intel.com,
-        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH] acpi, bgrd: Add missing <linux/io.h> to drivers/acpi/bgrt.c
-Date: Wed,  9 May 2012 14:04:02 -0700
-Message-Id: <1336597442-9399-1-git-send-email-hpa@linux.intel.com>
-X-Mailer: git-send-email 1.7.6.4
+	id S932410Ab2EIVEY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 17:04:24 -0400
+Received: from relay.parallels.com ([195.214.232.42]:55045 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932205Ab2EIVEV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 17:04:21 -0400
+Message-ID: <4FAADBD3.7020109@parallels.com>
+Date: Thu, 10 May 2012 01:04:19 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 0/6] Lockd: service start cleanup patch set
+References: <20120425141934.22909.53047.stgit@localhost6.localdomain6> <20120509190855.GB27077@fieldses.org>
+In-Reply-To: <20120509190855.GB27077@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+09.05.2012 23:08, J. Bruce Fields написал:
+> On Wed, Apr 25, 2012 at 06:22:32PM +0400, Stanislav Kinsbursky wrote:
+>> This patch set simplifies LockD start logic, makes code looks straight-forward
+>> and clear.
+> I've applied and pushed these out.
+>
+> I believe I now have everything from you except your latest grace-period
+> handling rfc.  Could you check and make sure that I'm not missing
+> anything else, and that I haven't messed up anything else?
 
-The ACPI BGRT driver uses ioremap() and memcpy_fromio(), which means
-it needs to #include <linux/io.h>.
+Sure, Bruce.
+I'll check and reply in few days.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Matthew Garrett <mjg@redhat.com>
----
- drivers/acpi/bgrt.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/acpi/bgrt.c b/drivers/acpi/bgrt.c
-index 8cf6c46..6680df3 100644
---- a/drivers/acpi/bgrt.c
-+++ b/drivers/acpi/bgrt.c
-@@ -11,6 +11,7 @@
- #include <linux/init.h>
- #include <linux/device.h>
- #include <linux/sysfs.h>
-+#include <linux/io.h>
- #include <acpi/acpi.h>
- #include <acpi/acpi_bus.h>
- 
--- 
-1.7.6.4
+> --b.
+>
+>> The following series consists of:
+>>
+>> ---
+>>
+>> Stanislav Kinsbursky (6):
+>>        LockD: pass service to per-net up and down functions
+>>        LockD: use existent per-net data function on service creation
+>>        LockD: service creation function introduced
+>>        LockD: move global usage counter manipulation from error path
+>>        LockD: service start function introduced
+>>        LockD: add debug message to start and stop functions
+>>
+>>
+>>   fs/lockd/svc.c |  140 +++++++++++++++++++++++++++++++++-----------------------
+>>   1 files changed, 83 insertions(+), 57 deletions(-)
+>>
 
