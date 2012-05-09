@@ -1,145 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758960Ab2EIJCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 05:02:05 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:40592 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758900Ab2EIJCB convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:2>);
-	Wed, 9 May 2012 05:02:01 -0400
-Message-Id: <4FAA4BBE020000780008270E@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 09 May 2012 09:49:34 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Michal Marek" <mmarek@suse.cz>
-Cc: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/5, resend] kbuild: move some .pci_fixup_* sections
- into .init
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1758943Ab2EIJCu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 05:02:50 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:60940 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758893Ab2EIJCr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 05:02:47 -0400
+X-AuditID: b753bd60-9145cba000002c51-06-4faa32b4b0b2
+X-AuditID: b753bd60-9145cba000002c51-06-4faa32b4b0b2
+Message-ID: <4FAA32B3.3070806@hitachi.com>
+Date: Wed, 09 May 2012 18:02:43 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 6/9][RFC] kprobes: Allow probe on ftrace reserved text
+ (but move it)
+References: <20120502192418.024103772@goodmis.org>    <20120502193237.321234712@goodmis.org> <y0mhavyl3kg.fsf@fche.csb>   <1336002032.14207.52.camel@gandalf.stny.rr.com>   <4FA7B410.1000804@hitachi.com>  <1336394603.14207.117.camel@gandalf.stny.rr.com>  <4FA88E1B.1020708@hitachi.com> <1336482295.14207.172.camel@gandalf.stny.rr.com> <4FAA0641.7070409@hitachi.com> <4FAA26DD.4050403@hitachi.com>
+In-Reply-To: <4FAA26DD.4050403@hitachi.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-.pci_fixup_final is only used from .init.text, and hence can (along
-with the respective handler functions) reside in .init.*.
+(2012/05/09 17:12), Masami Hiramatsu wrote:
+> (2012/05/09 14:53), Masami Hiramatsu wrote:
+>> (2012/05/08 22:04), Steven Rostedt wrote:
+>>> Note, the big difference with using ftrace optimization and normal
+>>> kprobe jump optimization is that the ftrace one can be used on a preempt
+>>> kernel. But this code is still under development. I want to get a
+>>> solution for the current code (this patch set) now. It would be nice if
+>>> it was ready for 3.5.
+>>
+>> I doubt that we can really do this. If this is possible, I can make
+>> jump optimization work with preemptive kernel.
+> 
+> Now I'm clear that it can be done only with ftrace-nop.
+> What I concerned with is out-of-line execution buffer releasing
+> timing. but with the ftrace-nop, we don't need to do that.
+> 
+> Theoretically, that will be done in following steps;
+> 
+> 1. call mcount (w/ push call-site address+5)
+> 2. mcount calls ftrace handlers
+> 3. mcount makes pt_regs on the stack
+>  - on x86-32, regs->cs should be the call-site address+5, since
+>    regs->sp must be the top of original stack.
 
-Several other .pci_fixup_* sections are needed only during boot and
-suspend/resume, and can therefore be moved into .init.* if
-!CONFIG_PM.
+Oops, no, %flags is stored on regs->cs and regs->flags is
+call-site address. So we have to fix it up in optprobe handler.
 
-While generally section mismatch checking is being turned on by this
-patch for all of .pci_fixup_*, for .pci_fixup_header it is being
-suppressed for the moment as it caused way too much fallout.
-Theoretically all respective handlers must get their __init/__devinit
-removed, as this gets processed from a non-__init, non-__devinit
-function.
+>  - on x86-64, it is enough that regs->sp points the top of original
+>    stack.
+> 4. mcount store call-site address+5 to %ax
+> 5. mcount calls new-optprobe handler (which returns call-site address+5)
+> 6. mcount restores registers
+> 7. mcount returns to the call-site address+5.
+> 
+> Between 6 and 7, original opt-probe has to do out-of-line execution,
+> but this ftrace-based one doesn't need to do that. In that case,
+> we don't need to allocate nor to release out-of-line execution buffer
+> for this probe.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+And I got an concrete idea of kprobes call-optimization which
+uses call instead of jump. That will make ftrace-based optimization
+very easy. :)
 
----
- include/asm-generic/vmlinux.lds.h |   45 ++++++++++++++++++++------------------
- scripts/mod/modpost.c             |   11 +++++----
- 2 files changed, 31 insertions(+), 25 deletions(-)
+Thank you,
 
---- 3.4-rc6/include/asm-generic/vmlinux.lds.h
-+++ 3.4-rc6-pci-fixup-sections/include/asm-generic/vmlinux.lds.h
-@@ -98,6 +98,19 @@
- #define MEM_DISCARD(sec) *(.mem##sec)
- #endif
- 
-+#define PCI_FIXUPS(what)				\
-+	VMLINUX_SYMBOL(__start_pci_fixups_##what) = .;	\
-+	*(.pci_fixup_##what)				\
-+	VMLINUX_SYMBOL(__end_pci_fixups_##what) = .;
-+
-+#ifdef CONFIG_PM
-+#define PCI_FIXUPS_PM_KEEP PCI_FIXUPS
-+#define PCI_FIXUPS_PM_DISCARD(what)
-+#else
-+#define PCI_FIXUPS_PM_KEEP(what)
-+#define PCI_FIXUPS_PM_DISCARD PCI_FIXUPS
-+#endif
-+
- #ifdef CONFIG_FTRACE_MCOUNT_RECORD
- #define MCOUNT_REC()	. = ALIGN(8);				\
- 			VMLINUX_SYMBOL(__start_mcount_loc) = .; \
-@@ -234,27 +247,12 @@
- 									\
- 	/* PCI quirks */						\
- 	.pci_fixup        : AT(ADDR(.pci_fixup) - LOAD_OFFSET) {	\
--		VMLINUX_SYMBOL(__start_pci_fixups_early) = .;		\
--		*(.pci_fixup_early)					\
--		VMLINUX_SYMBOL(__end_pci_fixups_early) = .;		\
--		VMLINUX_SYMBOL(__start_pci_fixups_header) = .;		\
--		*(.pci_fixup_header)					\
--		VMLINUX_SYMBOL(__end_pci_fixups_header) = .;		\
--		VMLINUX_SYMBOL(__start_pci_fixups_final) = .;		\
--		*(.pci_fixup_final)					\
--		VMLINUX_SYMBOL(__end_pci_fixups_final) = .;		\
--		VMLINUX_SYMBOL(__start_pci_fixups_enable) = .;		\
--		*(.pci_fixup_enable)					\
--		VMLINUX_SYMBOL(__end_pci_fixups_enable) = .;		\
--		VMLINUX_SYMBOL(__start_pci_fixups_resume) = .;		\
--		*(.pci_fixup_resume)					\
--		VMLINUX_SYMBOL(__end_pci_fixups_resume) = .;		\
--		VMLINUX_SYMBOL(__start_pci_fixups_resume_early) = .;	\
--		*(.pci_fixup_resume_early)				\
--		VMLINUX_SYMBOL(__end_pci_fixups_resume_early) = .;	\
--		VMLINUX_SYMBOL(__start_pci_fixups_suspend) = .;		\
--		*(.pci_fixup_suspend)					\
--		VMLINUX_SYMBOL(__end_pci_fixups_suspend) = .;		\
-+		PCI_FIXUPS(early)					\
-+		PCI_FIXUPS(header)					\
-+		PCI_FIXUPS(enable)					\
-+		PCI_FIXUPS_PM_KEEP(resume)				\
-+		PCI_FIXUPS_PM_KEEP(resume_early)			\
-+		PCI_FIXUPS_PM_KEEP(suspend)				\
- 	}								\
- 									\
- 	/* Built-in firmware blobs */					\
-@@ -486,6 +484,11 @@
- 	CPU_DISCARD(init.data)						\
- 	MEM_DISCARD(init.data)						\
- 	KERNEL_CTORS()							\
-+	. = ALIGN(16);							\
-+	PCI_FIXUPS(final)						\
-+	PCI_FIXUPS_PM_DISCARD(resume)					\
-+	PCI_FIXUPS_PM_DISCARD(resume_early)				\
-+	PCI_FIXUPS_PM_DISCARD(suspend)					\
- 	*(.init.rodata)							\
- 	MCOUNT_REC()							\
- 	FTRACE_EVENTS()							\
---- 3.4-rc6/scripts/mod/modpost.c
-+++ 3.4-rc6-pci-fixup-sections/scripts/mod/modpost.c
-@@ -853,7 +853,8 @@ static void check_section(const char *mo
- #define ALL_INIT_DATA_SECTIONS \
- 	".init.setup$", ".init.rodata$", \
- 	".devinit.rodata$", ".cpuinit.rodata$", ".meminit.rodata$", \
--	".init.data$", ".devinit.data$", ".cpuinit.data$", ".meminit.data$"
-+	".init.data$", ".devinit.data$", ".cpuinit.data$", ".meminit.data$", \
-+	".pci_fixup_final$", ".pci_fixup_suspend*", ".pci_fixup_resume*"
- #define ALL_EXIT_DATA_SECTIONS \
- 	".exit.data$", ".devexit.data$", ".cpuexit.data$", ".memexit.data$"
- 
-@@ -870,11 +871,13 @@ static void check_section(const char *mo
- #define ALL_INIT_SECTIONS INIT_SECTIONS, ALL_XXXINIT_SECTIONS
- #define ALL_EXIT_SECTIONS EXIT_SECTIONS, ALL_XXXEXIT_SECTIONS
- 
--#define DATA_SECTIONS ".data$", ".data.rel$"
-+#define DATA_SECTIONS ".data$", ".data.rel$", ".pci_fixup$", \
-+	".pci_fixup_early$", ".pci_fixup_enable$"/*, ".pci_fixup_header$"*/
- #define TEXT_SECTIONS ".text$"
- 
--#define INIT_SECTIONS      ".init.*"
--#define DEV_INIT_SECTIONS  ".devinit.*"
-+#define INIT_SECTIONS      ".init.*", ".pci_fixup_final$"
-+#define DEV_INIT_SECTIONS  ".devinit.*", \
-+	".pci_fixup_suspend*", ".pci_fixup_resume*"
- #define CPU_INIT_SECTIONS  ".cpuinit.*"
- #define MEM_INIT_SECTIONS  ".meminit.*"
- 
-
-
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
