@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568Ab2EIXWG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 19:22:06 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:57008 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932501Ab2EIXWD (ORCPT
+	id S1759997Ab2EIXaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 19:30:13 -0400
+Received: from mail.siteground.com ([67.19.240.234]:35311 "EHLO
+	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759093Ab2EIXaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 19:22:03 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Colin Cross <ccross@android.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jesper Juhl <jj@chaosbits.net>,
-        Jiri Kosina <jkosina@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH] trace: power: add trace_clock_set_parent
-Date: Wed,  9 May 2012 16:21:30 -0700
-Message-Id: <1336605692-14509-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.7.3
+	Wed, 9 May 2012 19:30:08 -0400
+X-Greylist: delayed 2371 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 May 2012 19:30:08 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=simple; s=mtadk; d=siteground.com;
+	h=Received:Message-ID:Date:From:Reply-To:Organization:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:X-Enigmail-Version:Content-Type:Content-Transfer-Encoding;
+	b=HfQCnjs/PzyuB0SNSfk8cJZRHxdFvzEkazi9oD79OqBwAvybe9fBIY7DQsNUEqZAftv5IAvZzwLqYIknrveqLtpr9DtKTkqpmV5BFFZkWSS7GMUv1dMbIwkMvCbvOJup5J8SEN3nc1MYbbzERmPoi0bcIi6pJfsouWWLHT8jCxs=;
+Message-ID: <4FAAF4B6.4030507@siteground.com>
+Date: Thu, 10 May 2012 01:50:30 +0300
+From: Marian Marinov <mm@siteground.com>
+Reply-To: mm@siteground.com
+Organization: Siteground.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: vaLentin chernoZemski <valentin@siteground.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: 3.2.14 - Sporadic HARD lockups/__slab_free/intel_pmu_handle_irq->perf_event_overflow
+References: <4FA8D8A7.8020704@siteground.com> <20120509224411.GA8872@kroah.com>
+In-Reply-To: <20120509224411.GA8872@kroah.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=windows-1251
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - mail.siteground.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - siteground.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a new trace event to be called from clk_set_parent.  Some
-cpufreq drivers, including Tegra, reparent the cpu clock to a
-slower clock while the main pll is relocking, tracing
-clk_set_parent allows traces to show how for long the cpu is
-running slower.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Uses a separate TRACE_EVENT instead of the clock event class to
-allow the event to contain string names for the child and the
-parent.
+On 05/10/2012 01:44 AM, Greg KH wrote:
+> On Tue, May 08, 2012 at 11:26:15AM +0300, vaLentin chernoZemski wrote:
+>>> Kindly Note that kernel is patched against grsec but grsec is not enabled inside the kernel configuration.
 
-Signed-off-by: Colin Cross <ccross@android.com>
----
- include/trace/events/power.h |   19 +++++++++++++++++++
- 1 files changed, 19 insertions(+), 0 deletions(-)
+Yes, we can.
+Unfortunately it is very hard to reproduce the bug. It happens randomly within a month.
 
-diff --git a/include/trace/events/power.h b/include/trace/events/power.h
-index cae9a94..2b81df6 100644
---- a/include/trace/events/power.h
-+++ b/include/trace/events/power.h
-@@ -204,6 +204,25 @@ enum {
- 	TP_ARGS(name, state, cpu_id)
- );
- 
-+TRACE_EVENT(clock_set_parent,
-+
-+	TP_PROTO(const char *name, const char *parent_name),
-+
-+	TP_ARGS(name, parent_name),
-+
-+	TP_STRUCT__entry(
-+		__string(       name,           name            )
-+		__string(       parent_name,    parent_name     )
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(name, name);
-+		__assign_str(name, parent_name);
-+	),
-+
-+	TP_printk("%s parent=%s", __get_str(name), __get_str(parent_name))
-+);
-+
- /*
-  * The power domain events are used for power domains transitions
-  */
--- 
-1.7.7.3
+Marian
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
+iEYEARECAAYFAk+q9LMACgkQ4mt9JeIbjJSo6gCeKeS5E0rRfrDaP7mMuKyktDTo
+IEQAoKeEVSKXgZUhm/rgOGrGn/x5EvxD
+=zOZM
+-----END PGP SIGNATURE-----
