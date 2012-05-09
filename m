@@ -1,211 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab2EIFyH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:54:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38999 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756299Ab2EIFyB (ORCPT
+	id S1756073Ab2EIFyU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:54:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34477 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602Ab2EIFyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:54:01 -0400
-Message-Id: <20120509055044.505679408@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:16 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [ 107/167] [PATCH] drm/i915: handle input/output sdvo timings separately in
- mode_set
-In-Reply-To: <20120509055029.588587017@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 9 May 2012 01:54:17 -0400
+Date: Tue, 8 May 2012 22:54:11 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>, khali@linux-fr.org
+Subject: Re: [PATCH 03/14 v3] Input: atmel_mxt_ts - refactor
+ mxt_read/write_reg to take a length
+Message-ID: <20120509055411.GG10514@core.coreip.homeip.net>
+References: <1334755319-21365-1-git-send-email-djkurtz@chromium.org>
+ <1334755319-21365-4-git-send-email-djkurtz@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1334755319-21365-4-git-send-email-djkurtz@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+Hi Daniel,
 
-------------------
+On Wed, Apr 18, 2012 at 09:21:48PM +0800, Daniel Kurtz wrote:
+> +	ret = i2c_transfer(client->adapter, xfer, 2);
+> +	if (ret != 2) {
+> +		dev_err(&client->dev, "i2c read reg failed (%d)\n", ret);
+> +		if (ret >= 0)
+> +			ret = -EIO;
+>  	}
+>  
+> -	return 0;
+> +	return (ret == 2) ? 0 : ret;
+>  }
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+Would prefer:
 
-commit 6651819b4b4fc3caa6964c5d825eb4bb996f3905 upstream.
+	ret = i2c_transfer(client->adapter, xfer, ARRAY_SIZE(xfer));
+	if (ret != ARRAY_SIZE(xfer)) {
+		if (ret >= 0)
+			ret = -EIO;
+		dev_err(&client->dev, "i2c read reg failed (%d)\n", ret);
+		return ret;
+	}
 
-We seem to have a decent confusion between the output timings and the
-input timings of the sdvo encoder. If I understand the code correctly,
-we use the original mode unchanged for the output timings, safe for
-the lvds case. And we should use the adjusted mode for input timings.
+	return 0;
 
-Clarify the situation by adding an explicit output_dtd to the sdvo
-mode_set function and streamline the code-flow by moving the input and
-output mode setting in the sdvo encode together.
 
-Furthermore testing showed that the sdvo input timing needs the
-unadjusted dotclock, the sdvo chip will automatically compute the
-required pixel multiplier to get a dotclock above 100 MHz.
+Or maybe we need i2c_transfer_exact() wrapper? Jean?
 
-Fix this up when converting a drm mode to an sdvo dtd.
+Thanks.
 
-This regression was introduced in
-
-commit c74696b9c890074c1e1ee3d7496fc71eb3680ced
-Author: Pavel Roskin <proski@gnu.org>
-Date:   Thu Sep 2 14:46:34 2010 -0400
-
-    i915: revert some checks added by commit 32aad86f
-
-particularly the following hunk:
-
-> diff --git a/drivers/gpu/drm/i915/intel_sdvo.c
-> b/drivers/gpu/drm/i915/intel_sdvo.c
-> index 093e914..62d22ae 100644
-> --- a/drivers/gpu/drm/i915/intel_sdvo.c
-> +++ b/drivers/gpu/drm/i915/intel_sdvo.c
-> @@ -1122,11 +1123,9 @@ static void intel_sdvo_mode_set(struct drm_encoder *encoder,
-> 
->      /* We have tried to get input timing in mode_fixup, and filled into
->         adjusted_mode */
-> -    if (intel_sdvo->is_tv || intel_sdvo->is_lvds) {
-> -        intel_sdvo_get_dtd_from_mode(&input_dtd, adjusted_mode);
-> +    intel_sdvo_get_dtd_from_mode(&input_dtd, adjusted_mode);
-> +    if (intel_sdvo->is_tv || intel_sdvo->is_lvds)
->          input_dtd.part2.sdvo_flags = intel_sdvo->sdvo_flags;
-> -    } else
-> -        intel_sdvo_get_dtd_from_mode(&input_dtd, mode);
-> 
->      /* If it's a TV, we already set the output timing in mode_fixup.
->       * Otherwise, the output timing is equal to the input timing.
-
-Due to questions raised in review, below a more elaborate analysis of
-the bug at hand:
-
-Sdvo seems to have two timings, one is the output timing which will be
-sent over whatever is connected on the other side of the sdvo chip (panel,
-hdmi screen, tv), the other is the input timing which will be generated by
-the gmch pipe. It looks like sdvo is expected to scale between the two.
-
-To make things slightly more complicated, we have a bunch of special
-cases:
-- For lvds panel we always use a fixed output timing, namely
-  intel_sdvo->sdvo_lvds_fixed_mode, hence that special case.
-- Sdvo has an interface to generate a preferred input timing for a given
-  output timing. This is the confusing thing that I've tried to clear up
-  with the follow-on patches.
-- A special requirement is that the input pixel clock needs to be between
-  100MHz and 200MHz (likely to keep it within the electromechanical design
-  range of PCIe), 270MHz on later gen4+. Lower pixel clocks are
-  doubled/quadrupled.
-
-The thing this patch tries to fix is that the pipe needs to be
-explicitly instructed to double/quadruple the pixels and needs the
-correspondingly higher pixel clock, whereas the sdvo adaptor seems to
-do that itself and needs the unadjusted pixel clock. For the sdvo
-encode side we already set the pixel mutliplier with a different
-command (0x21).
-
-This patch tries to fix this mess by:
-- Keeping the output mode timing in the unadjusted plain mode, safe
-  for the lvds case.
-- Storing the input timing in the adjusted_mode with the adjusted
-  pixel clock. This way we don't need to frob around with the core
-  crtc mode set code.
-- Fixing up the pixelclock when constructing the sdvo dtd timing
-  struct. This is why the first hunk of the patch is an integral part
-  of the series.
-- Dropping the is_tv special case because input_dtd is equivalent to
-  adjusted_mode after these changes. Follow-up patches clear this up
-  further (by simply ripping out intel_sdvo->input_dtd because it's
-  not needed).
-
-v2: Extend commit message with an in-depth bug analysis.
-
-Reported-and-Tested-by: Bernard Blackham <b-linuxgit@largestprime.net>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=48157
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Indented the hunk quoted above so quilt doesn't try to apply it]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/gpu/drm/i915/intel_sdvo.c |   34 ++++++++++++++++++----------------
- 1 file changed, 18 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-index e36b171..232d77d 100644
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -731,6 +731,7 @@ static void intel_sdvo_get_dtd_from_mode(struct intel_sdvo_dtd *dtd,
- 	uint16_t width, height;
- 	uint16_t h_blank_len, h_sync_len, v_blank_len, v_sync_len;
- 	uint16_t h_sync_offset, v_sync_offset;
-+	int mode_clock;
- 
- 	width = mode->crtc_hdisplay;
- 	height = mode->crtc_vdisplay;
-@@ -745,7 +746,11 @@ static void intel_sdvo_get_dtd_from_mode(struct intel_sdvo_dtd *dtd,
- 	h_sync_offset = mode->crtc_hsync_start - mode->crtc_hblank_start;
- 	v_sync_offset = mode->crtc_vsync_start - mode->crtc_vblank_start;
- 
--	dtd->part1.clock = mode->clock / 10;
-+	mode_clock = mode->clock;
-+	mode_clock /= intel_mode_get_pixel_multiplier(mode) ?: 1;
-+	mode_clock /= 10;
-+	dtd->part1.clock = mode_clock;
-+
- 	dtd->part1.h_active = width & 0xff;
- 	dtd->part1.h_blank = h_blank_len & 0xff;
- 	dtd->part1.h_high = (((width >> 8) & 0xf) << 4) |
-@@ -996,7 +1001,7 @@ static void intel_sdvo_mode_set(struct drm_encoder *encoder,
- 	struct intel_sdvo *intel_sdvo = to_intel_sdvo(encoder);
- 	u32 sdvox;
- 	struct intel_sdvo_in_out_map in_out;
--	struct intel_sdvo_dtd input_dtd;
-+	struct intel_sdvo_dtd input_dtd, output_dtd;
- 	int pixel_multiplier = intel_mode_get_pixel_multiplier(adjusted_mode);
- 	int rate;
- 
-@@ -1021,20 +1026,13 @@ static void intel_sdvo_mode_set(struct drm_encoder *encoder,
- 					  intel_sdvo->attached_output))
- 		return;
- 
--	/* We have tried to get input timing in mode_fixup, and filled into
--	 * adjusted_mode.
--	 */
--	if (intel_sdvo->is_tv || intel_sdvo->is_lvds) {
--		input_dtd = intel_sdvo->input_dtd;
--	} else {
--		/* Set the output timing to the screen */
--		if (!intel_sdvo_set_target_output(intel_sdvo,
--						  intel_sdvo->attached_output))
--			return;
--
--		intel_sdvo_get_dtd_from_mode(&input_dtd, adjusted_mode);
--		(void) intel_sdvo_set_output_timing(intel_sdvo, &input_dtd);
--	}
-+	/* lvds has a special fixed output timing. */
-+	if (intel_sdvo->is_lvds)
-+		intel_sdvo_get_dtd_from_mode(&output_dtd,
-+					     intel_sdvo->sdvo_lvds_fixed_mode);
-+	else
-+		intel_sdvo_get_dtd_from_mode(&output_dtd, mode);
-+	(void) intel_sdvo_set_output_timing(intel_sdvo, &output_dtd);
- 
- 	/* Set the input timing to the screen. Assume always input 0. */
- 	if (!intel_sdvo_set_target_input(intel_sdvo))
-@@ -1052,6 +1050,10 @@ static void intel_sdvo_mode_set(struct drm_encoder *encoder,
- 	    !intel_sdvo_set_tv_format(intel_sdvo))
- 		return;
- 
-+	/* We have tried to get input timing in mode_fixup, and filled into
-+	 * adjusted_mode.
-+	 */
-+	intel_sdvo_get_dtd_from_mode(&input_dtd, adjusted_mode);
- 	(void) intel_sdvo_set_input_timing(intel_sdvo, &input_dtd);
- 
- 	switch (pixel_multiplier) {
 -- 
-1.7.10
-
-
-
+Dmitry
