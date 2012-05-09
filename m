@@ -1,22 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757797Ab2EIGCf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:02:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39066 "EHLO
+	id S1757771Ab2EIGCd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:02:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39042 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756451Ab2EIFxl (ORCPT
+	by vger.kernel.org with ESMTP id S1756445Ab2EIFxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:41 -0400
-Message-Id: <20120509055048.811947195@decadent.org.uk>
+Message-Id: <20120509055038.584464078@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:48 +0100
+Date: Wed, 09 May 2012 06:51:32 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [ 139/167] [PATCH] hwmon: (coretemp) fix oops on cpu unplug
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
+        Tom Herbert <therbert@google.com>,
+        Nandita Dukkipati <nanditad@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Yuchung Cheng <ycheng@google.com>, "H.K. Jerry Chu" <hkchu@google.com>,
+        =?ISO-8859-15?q?Maciej=20=C5=BBenczykowski?= <maze@google.com>,
+        Mahesh Bandewar <maheshb@google.com>,
+        =?ISO-8859-15?q?Ilpo=20J=C3=A4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 063/167] [PATCH 03/26] tcp: allow splice() to build full TSO packets
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,77 +35,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit b704871124b477807966f06789c2b32f2de58bf7 upstream.
+[ This combines upstream commit
+  2f53384424251c06038ae612e56231b96ab610ee and the follow-on bug fix
+  commit 35f9c09fe9c72eb8ca2b8e89a593e1c151f28fc2 ]
 
-coretemp tries to access core_data array beyond bounds on cpu unplug if
-core id of the cpu if more than NUM_REAL_CORES-1.
+vmsplice()/splice(pipe, socket) call do_tcp_sendpages() one page at a
+time, adding at most 4096 bytes to an skb. (assuming PAGE_SIZE=4096)
 
-BUG: unable to handle kernel NULL pointer dereference at 000000000000013c
-IP: [<ffffffffa00159af>] coretemp_cpu_callback+0x93/0x1ba [coretemp]
-PGD 673e5a067 PUD 66e9b3067 PMD 0
-Oops: 0000 [#1] SMP
-CPU 79
-Modules linked in: sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf bnep bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter nf_conntrack_ipv4 nf_defrag_ipv4 ip6_tables xt_state nf_conntrack coretemp crc32c_intel asix tpm_tis pcspkr usbnet iTCO_wdt i2c_i801 microcode mii joydev tpm i2c_core iTCO_vendor_support tpm_bios i7core_edac igb ioatdma edac_core dca megaraid_sas [last unloaded: oprofile]
+The call to tcp_push() at the end of do_tcp_sendpages() forces an
+immediate xmit when pipe is not already filled, and tso_fragment() try
+to split these skb to MSS multiples.
 
-Pid: 3315, comm: set-cpus Tainted: G        W    3.4.0-rc5+ #2 QCI QSSC-S4R/QSSC-S4R
-RIP: 0010:[<ffffffffa00159af>]  [<ffffffffa00159af>] coretemp_cpu_callback+0x93/0x1ba [coretemp]
-RSP: 0018:ffff880472fb3d48  EFLAGS: 00010246
-RAX: 0000000000000124 RBX: 0000000000000034 RCX: 00000000ffffffff
-RDX: 0000000000000000 RSI: 0000000000000046 RDI: 0000000000000246
-RBP: ffff880472fb3d88 R08: ffff88077fcd36c0 R09: 0000000000000001
-R10: ffffffff8184bc48 R11: 0000000000000000 R12: ffff880273095800
-R13: 0000000000000013 R14: ffff8802730a1810 R15: 0000000000000000
-FS:  00007f694a20f720(0000) GS:ffff88077fcc0000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 000000000000013c CR3: 000000067209b000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process set-cpus (pid: 3315, threadinfo ffff880472fb2000, task ffff880471fa0000)
-Stack:
- ffff880277b4c308 0000000000000003 ffff880472fb3d88 0000000000000005
- 0000000000000034 00000000ffffffd1 ffffffff81cadc70 ffff880472fb3e14
- ffff880472fb3dc8 ffffffff8161f48d ffff880471fa0000 0000000000000034
-Call Trace:
- [<ffffffff8161f48d>] notifier_call_chain+0x4d/0x70
- [<ffffffff8107f1be>] __raw_notifier_call_chain+0xe/0x10
- [<ffffffff81059d30>] __cpu_notify+0x20/0x40
- [<ffffffff815fa251>] _cpu_down+0x81/0x270
- [<ffffffff815fa477>] cpu_down+0x37/0x50
- [<ffffffff815fd6a3>] store_online+0x63/0xc0
- [<ffffffff813c7078>] dev_attr_store+0x18/0x30
- [<ffffffff811f02cf>] sysfs_write_file+0xef/0x170
- [<ffffffff81180443>] vfs_write+0xb3/0x180
- [<ffffffff8118076a>] sys_write+0x4a/0x90
- [<ffffffff816236a9>] system_call_fastpath+0x16/0x1b
-Code: 48 c7 c7 94 60 01 a0 44 0f b7 ac 10 ac 00 00 00 31 c0 e8 41 b7 5f e1 41 83 c5 02 49 63 c5 49 8b 44 c4 10 48 85 c0 74 56 45 31 ff <39> 58 18 75 4e eb 1f 49 63 d7 4c 89 f7 48 89 45 c8 48 6b d2 28
-RIP  [<ffffffffa00159af>] coretemp_cpu_callback+0x93/0x1ba [coretemp]
- RSP <ffff880472fb3d48>
-CR2: 000000000000013c
+4096 bytes are usually split in a skb with 2 MSS, and a remaining
+sub-mss skb (assuming MTU=1500)
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+This makes slow start suboptimal because many small frames are sent to
+qdisc/driver layers instead of big ones (constrained by cwnd and packets
+in flight of course)
+
+In fact, applications using sendmsg() (adding an additional memory copy)
+instead of vmsplice()/splice()/sendfile() are a bit faster because of
+this anomaly, especially if serving small files in environments with
+large initial [c]wnd.
+
+Call tcp_push() only if MSG_MORE is not set in the flags parameter.
+
+This bit is automatically provided by splice() internals but for the
+last page, or on all pages if user specified SPLICE_F_MORE splice()
+flag.
+
+In some workloads, this can reduce number of sent logical packets by an
+order of magnitude, making zero-copy TCP actually faster than
+one-copy :)
+
+Reported-by: Tom Herbert <therbert@google.com>
+Cc: Nandita Dukkipati <nanditad@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Tom Herbert <therbert@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Cc: H.K. Jerry Chu <hkchu@google.com>
+Cc: Maciej Żenczykowski <maze@google.com>
+Cc: Mahesh Bandewar <maheshb@google.com>
+Cc: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/coretemp.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/splice.c            |    5 ++++-
+ include/linux/socket.h |    2 +-
+ net/ipv4/tcp.c         |    2 +-
+ net/socket.c           |    6 +++---
+ 4 files changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index 0d3141f..54a70fe 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -709,6 +709,10 @@ static void __cpuinit put_core_offline(unsigned int cpu)
+diff --git a/fs/splice.c b/fs/splice.c
+index fa2defa..6d0dfb8 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -31,6 +31,7 @@
+ #include <linux/uio.h>
+ #include <linux/security.h>
+ #include <linux/gfp.h>
++#include <linux/socket.h>
  
- 	indx = TO_ATTR_NO(cpu);
+ /*
+  * Attempt to steal a page from a pipe buffer. This should perhaps go into
+@@ -691,7 +692,9 @@ static int pipe_to_sendpage(struct pipe_inode_info *pipe,
+ 	if (!likely(file->f_op && file->f_op->sendpage))
+ 		return -EINVAL;
  
-+	/* The core id is too big, just return */
-+	if (indx > MAX_CORE_DATA - 1)
-+		return;
-+
- 	if (pdata->core_data[indx] && pdata->core_data[indx]->cpu == cpu)
- 		coretemp_remove_core(pdata, &pdev->dev, indx);
+-	more = (sd->flags & SPLICE_F_MORE) || sd->len < sd->total_len;
++	more = (sd->flags & SPLICE_F_MORE) ? MSG_MORE : 0;
++	if (sd->len < sd->total_len)
++		more |= MSG_SENDPAGE_NOTLAST;
+ 	return file->f_op->sendpage(file, buf->page, buf->offset,
+ 				    sd->len, &pos, more);
+ }
+diff --git a/include/linux/socket.h b/include/linux/socket.h
+index d0e77f6..ad919e0 100644
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -265,7 +265,7 @@ struct ucred {
+ #define MSG_NOSIGNAL	0x4000	/* Do not generate SIGPIPE */
+ #define MSG_MORE	0x8000	/* Sender will send more */
+ #define MSG_WAITFORONE	0x10000	/* recvmmsg(): block until 1+ packets avail */
+-
++#define MSG_SENDPAGE_NOTLAST 0x20000 /* sendpage() internal : not the last page */
+ #define MSG_EOF         MSG_FIN
  
+ #define MSG_CMSG_CLOEXEC 0x40000000	/* Set close_on_exit for file
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 34f5db1..36611ab 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -860,7 +860,7 @@ wait_for_memory:
+ 	}
+ 
+ out:
+-	if (copied)
++	if (copied && !(flags & MSG_SENDPAGE_NOTLAST))
+ 		tcp_push(sk, flags, mss_now, tp->nonagle);
+ 	return copied;
+ 
+diff --git a/net/socket.c b/net/socket.c
+index 2dce67a..273cbce 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -791,9 +791,9 @@ static ssize_t sock_sendpage(struct file *file, struct page *page,
+ 
+ 	sock = file->private_data;
+ 
+-	flags = !(file->f_flags & O_NONBLOCK) ? 0 : MSG_DONTWAIT;
+-	if (more)
+-		flags |= MSG_MORE;
++	flags = (file->f_flags & O_NONBLOCK) ? MSG_DONTWAIT : 0;
++	/* more is a combination of MSG_MORE and MSG_SENDPAGE_NOTLAST */
++	flags |= more;
+ 
+ 	return kernel_sendpage(sock, page, offset, size, flags);
+ }
 -- 
 1.7.10
 
