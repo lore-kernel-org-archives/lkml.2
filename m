@@ -1,94 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317Ab2EIP5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 11:57:06 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57192 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932297Ab2EIP45 (ORCPT
+	id S932236Ab2EIP5c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 11:57:32 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:41041 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932108Ab2EIP52 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 11:56:57 -0400
-Date: Wed, 9 May 2012 08:56:53 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+	Wed, 9 May 2012 11:57:28 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-131.messagelabs.com!1336578951!21913514!74
+X-Originating-IP: [216.166.12.178]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
         "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: comedi: remove __user annotation inside of
- struct's
-Message-ID: <20120509155653.GA23058@kroah.com>
-References: <201205081641.00358.hartleys@visionengravers.com>
- <ADE657CA350FB648AAC2C43247A983F0020698A1774D@AUSP01VMBX24.collaborationhost.net>
- <4FAA44D7.1040209@mev.co.uk>
- <20120509142436.GC11695@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F0020698A17862@AUSP01VMBX24.collaborationhost.net>
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Date: Wed, 9 May 2012 10:56:54 -0500
+Subject: RE: [PATCH] staging: comedi: refactor sysfs files in comedi_fops.c
+Thread-Topic: [PATCH] staging: comedi: refactor sysfs files in comedi_fops.c
+Thread-Index: Ac0tieoyDogQyEn0Rzu48ChUVouXswAcfrrg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698A1786A@AUSP01VMBX24.collaborationhost.net>
+References: <201205081916.51659.hartleys@visionengravers.com>
+In-Reply-To: <201205081916.51659.hartleys@visionengravers.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698A17862@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 10:52:34AM -0500, H Hartley Sweeten wrote:
-> On Wednesday, May 09, 2012 7:25 AM, gregkh@linuxfoundation.org wrote:
-> > On Wed, May 09, 2012 at 11:20:07AM +0100, Ian Abbott wrote:
-> >> On 2012-05-09 00:55, H Hartley Sweeten wrote:
-> >>> On Tuesday, May 08, 2012 4:41 PM, H Hartley Sweeten wrote:
-> >>>>
-> >>>> The structs' comedi_insn, coomedi_insnlist, comedi_cmd,
-> >>>> comedi_chaninfo, and comedi_rangeinfo are all passed to
-> >>>> the kernel from user space using ioctl commands. They
-> >>>> are then copied to kernel space using copy_from_user()
-> >>>> before the data is passed to the drivers.
-> >>>>
-> >>>> The __user annotation should not be used with variables
-> >>>> inside the struct. This produces a lot of sparse warnings
-> >>>> like:
-> >>>>
-> >>>>warning: dereference of noderef expression
-> >>>>
-> >>>> Signed-off-by: H Hartley Sweeten<hsweeten@visionengravers.com>
-> >>>> Cc: Ian Abbott<abbotti@mev.co.uk>
-> >>>> Cc: Mori Hess<fmhess@users.sourceforge.net>
-> >>>> Cc: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
-> >>>>
-> >>>> ---
-> >>>>
-> >>>> Note: This patch exposes some new warnings about different
-> >>>> address space. These will be addressed.
-> >>>
-> >>> Please ignore this patch.
-> >>>
-> >>> It appears the annotations in the struct definitions are correct.
-> >> 
-> >> Personally, I think you were on the mark with the patch.  It's
-> >> better to avoid using __user in comedi.h so it can be used as-is in
-> >> user-space. All of the structures in comedi.h are used in user-space
-> >> (although Comedilib uses its own version of comedi.h without all the
-> >> typedef eliminations that have been done in "staging") and some of
-> >> them are also deep-copied into kernel-space objects of the same
-> >> type, where the pointers in the structs would no longer be
-> >> user-space pointers.
-> >
-> > When the kernel exports .h files, stuff like this should work
-> > "automatically", so there is no need to not put __user markings.
-> >
-> > So please, yes, continue to work to get this correct, it is very
-> > essencial to ensure we don't mess stuff up.
-> 
-> Greg,
-> 
-> Based on the discussion I assume this patch is ok then. Do you
-> want me to repost it?
+On Tuesday, May 08, 2012 7:17 PM, H Hartley Sweeten wrote:
+>
+> Refactor the sysfs attributes and functions to remove
+> the need for the forward declarations and use the
+> DEVICE_ATTR macro to define them.
+>
+> Instead of individually creating sysfs device attribute
+> files, wrap them in an attribute_group and use the
+> sysfs_create_group function to create them.
+>
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: Mori Hess <fmhess@users.sourceforge.net>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> ---
 
-Sure, I'll review it with the other patches you have sent later today.
+Oops... spotted a copy-paste error after I posted this.
 
-> I'll work on fixing the other issues with the user <-> kernel transitions.
+<snip>
 
-Wonderful, thanks for the work you are doing on this code, it's greatly
-appreciated.
+> @@ -2367,42 +2620,15 @@ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
+>  	if (!IS_ERR(csdev))
+>  		s->class_dev = csdev;
+>  	dev_set_drvdata(csdev, info);
+> -	retval = device_create_file(csdev, &dev_attr_max_read_buffer_kb);
+> +
+> +	retval = sysfs_create_group(&csdev->kobj, &comedi_sysfs_files);
+>  	if (retval) {
+>  		printk(KERN_ERR
+> -		       "comedi: "
+> -		       "failed to create sysfs attribute file \"%s\".\n",
+> -		       dev_attr_max_read_buffer_kb.attr.name);
+> -		comedi_free_subdevice_minor(s);
+> -		return retval;
+> -	}
+> -	retval = device_create_file(csdev, &dev_attr_read_buffer_kb);
+> -	if (retval) {
+> -		printk(KERN_ERR
+> -		       "comedi: "
+> -		       "failed to create sysfs attribute file \"%s\".\n",
+> -		       dev_attr_read_buffer_kb.attr.name);
+> -		comedi_free_subdevice_minor(s);
+> -		return retval;
+> -	}
+> -	retval = device_create_file(csdev, &dev_attr_max_write_buffer_kb);
+> -	if (retval) {
+> -		printk(KERN_ERR
+> -		       "comedi: "
+> -		       "failed to create sysfs attribute file \"%s\".\n",
+> -		       dev_attr_max_write_buffer_kb.attr.name);
+> -		comedi_free_subdevice_minor(s);
+> -		return retval;
+> -	}
+> -	retval = device_create_file(csdev, &dev_attr_write_buffer_kb);
+> -	if (retval) {
+> -		printk(KERN_ERR
+> -		       "comedi: "
+> -		       "failed to create sysfs attribute file \"%s\".\n",
+> -		       dev_attr_write_buffer_kb.attr.name);
+> -		comedi_free_subdevice_minor(s);
+> +		       "comedi: failed to create sysfs attribute files\n");
+> +		comedi_free_board_minor(i);
 
-greg k-h
+This should still be:
+
+		comedi_free_subdevice_minor(s);
+
+I'll fix it and re-post.
+
+>  		return retval;
+>  	}
+> +
+>  	return i;
+>  }
+
+Regards,
+Hartley
+
+ 
