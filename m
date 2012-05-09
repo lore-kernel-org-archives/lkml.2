@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761096Ab2EIUi2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 16:38:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49701 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab2EIUi0 (ORCPT
+	id S932340Ab2EIUjV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 16:39:21 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34786 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761077Ab2EIUjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 16:38:26 -0400
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and consolidate LED driver in ARM
-Date: Wed, 9 May 2012 20:38:16 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: Bryan Wu <bryan.wu@canonical.com>, linux@arm.linux.org.uk,
-        rpurdie@rpsys.net, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
-        nicolas.pitre@linaro.org, tim.gardner@canonical.com,
-        Olof Johansson <olof@lixom.net>
-References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com> <CAK5ve-KSyvZSHw7csQ5M88q0008NSrs1kwuyUH3hFqxD0f7BQQ@mail.gmail.com> <20120509122436.1b612004.akpm@linux-foundation.org>
-In-Reply-To: <20120509122436.1b612004.akpm@linux-foundation.org>
+	Wed, 9 May 2012 16:39:20 -0400
+Date: Wed, 9 May 2012 13:39:16 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        fmhess@users.sourceforge.net, abbotti@mev.co.uk
+Subject: Re: [PATCH v2] staging: comedi: refactor sysfs files in comedi_fops.c
+Message-ID: <20120509203916.GA16972@kroah.com>
+References: <201205090920.09769.hartleys@visionengravers.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205092038.16722.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:OKfBd1uPZCEaS/jOVdAPuA9jXdAnyT81v+/2rIZhII+
- wR2wKaQZMZiLn0+47oK2hiYxFeM4/7brj3Mo+F1a5CTIdWKyQ5
- X+Mk6x3CYJDfZKBnSnxGT6lMN2Oi6jl0UVdw0Gl7HzRH9iSTnP
- uxZ77ITgAaSFeGj7JcXJ+wuoIOb1vFIDDtA4hdzoXPlfrkknl4
- uiz6U3ew4J7zX/EsUzYSbHCozNLRzH147ckCFzdVPTPtq9CVPd
- 582x8RCYdX7eQuEnSIgdtuY2NBsHYG2cRFIsjoSM5QaH9ziROa
- fKhKgMdkdmtIOu/5OmKrrLZrFnRQDhJ+PHt1y7zKDAm+xhzgtD
- Jwm5RuQOzv4TI8SKnBF5IFYZGsF1Ep6XGU5K71hzX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201205090920.09769.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 May 2012, Andrew Morton wrote:
-> I'm the LEDs patchmonkey at present.  I can merge the drivers/leds
-> change if you like, but there doesn't seem much point in that unless
-> all the other patches get merged.
+On Wed, May 09, 2012 at 09:20:08AM -0700, H Hartley Sweeten wrote:
+> Refactor the sysfs attributes and functions to remove
+> the need for the forward declarations and use the
+> DEVICE_ATTR macro to define them.
 > 
-> So my preferred approach would be for the patch series to get merged
-> via some ARM tree.
+> Instead of individually creating sysfs device attribute
+> files, wrap them in an attribute_group and use the
+> sysfs_create_group function to create them.
 
-I'm fine with taking it through arm-soc if that helps. In the long run,
-it would be nice to have a proper maintainer for this again after Richard
-more or less stepped down from that position. Given that Bryan has shown
-that he's persistent enough to get this patch series to v9, how about
-making him the primary maintainer for the entire subsystem? He should
-know a lot about it already. Bryan?
+This is great, and needed to be done, but you need to take this one step
+further.  This attribute group needs to be registered by the driver
+core, not the comedi core, so userspace doesn't get an add event before
+the files are created.  To do that, assign this attribute group to the
+class and the core will handle it for you.
 
-	Arnd
+I've taken this patch, but will you make a follow-on patch that makes
+this change, which will remove this race?  It should be a net removal of
+code in the comedi core overall.
+
+thanks,
+
+greg k-h
