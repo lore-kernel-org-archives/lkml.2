@@ -1,150 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758845Ab2EII5a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 04:57:30 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:56502 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754521Ab2EII52 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
-	Wed, 9 May 2012 04:57:28 -0400
-Message-Id: <4FAA3EAF02000078000826E4@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 09 May 2012 08:53:51 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] xfrm: make xfrm_algo.c a module
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1758853Ab2EII6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 04:58:37 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:36686 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757903Ab2EII6g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 04:58:36 -0400
+Date: Wed, 09 May 2012 04:58:34 -0400 (EDT)
+From: Zhouping Liu <zliu@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Subject: mm: move_pages syscall can't return ENOENT when pages are not present
+Message-ID: <85e08d38-234a-4bc6-8c4f-6c92b50dc9b1@zmail13.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <50e8b720-2459-4cf4-bfbd-fcc4cd408249@zmail13.collab.prod.int.phx2.redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.66.112.86]
+X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By making this a standalone config option (selected as needed),
-selecting CRYPTO from here rather than from XFRM (which is boolean)
-allows the core crypto code to become a module again even when XFRM=y.
+hi, all
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Recently, I found an error in move_pages syscall:
 
----
- net/ipv4/Kconfig     |    4 ++--
- net/ipv6/Kconfig     |    4 ++--
- net/xfrm/Kconfig     |   13 +++++++++----
- net/xfrm/Makefile    |    3 ++-
- net/xfrm/xfrm_algo.c |    5 ++---
- 5 files changed, 17 insertions(+), 12 deletions(-)
+depending on move_pages(2), when page is not present,
+it should fail with ENOENT, in fact, it's ok without
+any errno.
 
---- 3.4-rc6/net/ipv4/Kconfig
-+++ 3.4-rc6-xfrm-algo-module/net/ipv4/Kconfig
-@@ -312,7 +312,7 @@ config SYN_COOKIES
- 
- config INET_AH
- 	tristate "IP: AH transformation"
--	select XFRM
-+	select XFRM_ALGO
- 	select CRYPTO
- 	select CRYPTO_HMAC
- 	select CRYPTO_MD5
-@@ -324,7 +324,7 @@ config INET_AH
- 
- config INET_ESP
- 	tristate "IP: ESP transformation"
--	select XFRM
-+	select XFRM_ALGO
- 	select CRYPTO
- 	select CRYPTO_AUTHENC
- 	select CRYPTO_HMAC
---- 3.4-rc6/net/ipv6/Kconfig
-+++ 3.4-rc6-xfrm-algo-module/net/ipv6/Kconfig
-@@ -69,7 +69,7 @@ config IPV6_OPTIMISTIC_DAD
- 
- config INET6_AH
- 	tristate "IPv6: AH transformation"
--	select XFRM
-+	select XFRM_ALGO
- 	select CRYPTO
- 	select CRYPTO_HMAC
- 	select CRYPTO_MD5
-@@ -81,7 +81,7 @@ config INET6_AH
- 
- config INET6_ESP
- 	tristate "IPv6: ESP transformation"
--	select XFRM
-+	select XFRM_ALGO
- 	select CRYPTO
- 	select CRYPTO_AUTHENC
- 	select CRYPTO_HMAC
---- 3.4-rc6/net/xfrm/Kconfig
-+++ 3.4-rc6-xfrm-algo-module/net/xfrm/Kconfig
-@@ -3,12 +3,17 @@
- #
- config XFRM
-        bool
--       select CRYPTO
-        depends on NET
- 
-+config XFRM_ALGO
-+	tristate
-+	select XFRM
-+	select CRYPTO
-+
- config XFRM_USER
- 	tristate "Transformation user configuration interface"
--	depends on INET && XFRM
-+	depends on INET
-+	select XFRM_ALGO
- 	---help---
- 	  Support for Transformation(XFRM) user configuration interface
- 	  like IPsec used by native Linux tools.
-@@ -48,13 +53,13 @@ config XFRM_STATISTICS
- 
- config XFRM_IPCOMP
- 	tristate
--	select XFRM
-+	select XFRM_ALGO
- 	select CRYPTO
- 	select CRYPTO_DEFLATE
- 
- config NET_KEY
- 	tristate "PF_KEY sockets"
--	select XFRM
-+	select XFRM_ALGO
- 	---help---
- 	  PF_KEYv2 socket family, compatible to KAME ones.
- 	  They are required if you are going to use IPsec tools ported
---- 3.4-rc6/net/xfrm/Makefile
-+++ 3.4-rc6-xfrm-algo-module/net/xfrm/Makefile
-@@ -3,8 +3,9 @@
- #
- 
- obj-$(CONFIG_XFRM) := xfrm_policy.o xfrm_state.o xfrm_hash.o \
--		      xfrm_input.o xfrm_output.o xfrm_algo.o \
-+		      xfrm_input.o xfrm_output.o \
- 		      xfrm_sysctl.o xfrm_replay.o
- obj-$(CONFIG_XFRM_STATISTICS) += xfrm_proc.o
-+obj-$(CONFIG_XFRM_ALGO) += xfrm_algo.o
- obj-$(CONFIG_XFRM_USER) += xfrm_user.o
- obj-$(CONFIG_XFRM_IPCOMP) += xfrm_ipcomp.o
---- 3.4-rc6/net/xfrm/xfrm_algo.c
-+++ 3.4-rc6-xfrm-algo-module/net/xfrm/xfrm_algo.c
-@@ -15,9 +15,6 @@
- #include <linux/crypto.h>
- #include <linux/scatterlist.h>
- #include <net/xfrm.h>
--#if defined(CONFIG_INET_AH) || defined(CONFIG_INET_AH_MODULE) || defined(CONFIG_INET6_AH) || defined(CONFIG_INET6_AH_MODULE)
--#include <net/ah.h>
--#endif
- #if defined(CONFIG_INET_ESP) || defined(CONFIG_INET_ESP_MODULE) || defined(CONFIG_INET6_ESP) || defined(CONFIG_INET6_ESP_MODULE)
- #include <net/esp.h>
- #endif
-@@ -752,3 +749,5 @@ void *pskb_put(struct sk_buff *skb, stru
- }
- EXPORT_SYMBOL_GPL(pskb_put);
- #endif
-+
-+MODULE_LICENSE("GPL");
+the following reproducer can easily reproduce
+the issue, suggest you get more details by strace.
+inside reproducer, I try to move a non-exist page from
+node 1 to node 0.
 
+I have tested it on the latest kernel 3.4-rc5 with 2 and 4 numa nodes.
+[zliu@ZhoupingLiu ~]$ gcc -o reproducer reproducer.c -lnuma
+[zliu@ZhoupingLiu ~]$ ./reproducer 
+from_node is 1, to_node is 0
+ERROR: move_pages expected FAIL.
 
+I'm not in mail list, please CC me.
 
+/*
+ * Copyright (C) 2012  Red Hat, Inc.
+ *
+ * This work is licensed under the terms of the GNU GPL, version 2. See
+ * the COPYING file in the top-level directory.
+ *
+ * Compiled: gcc -o reproducer reproducer.c -lnuma
+ * Description:
+ * it's designed to check move_pages syscall, when
+ * page is not present, it should fail with ENOENT.
+ */
+
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <errno.h>
+#include <numa.h>
+#include <numaif.h>
+
+#define TEST_PAGES 4
+
+int main(int argc, char **argv)
+{
+	void *pages[TEST_PAGES];
+	int onepage;
+	int nodes[TEST_PAGES];
+	int status, ret;
+	int i, from_node = 1, to_node = 0;
+
+	onepage = getpagesize();
+
+	for (i = 0; i < TEST_PAGES - 1; i++) {
+		pages[i] = numa_alloc_onnode(onepage, from_node);
+		nodes[i] = to_node;
+	}
+
+	nodes[TEST_PAGES - 1] = to_node;
+
+	/*
+	 * the follow page is not available, also not aligned,
+	 * depend on move_pages(2), it can't be moved, and should
+	 * return ENOENT errno.
+	 */
+	pages[TEST_PAGES - 1] = pages[TEST_PAGES - 2] - onepage * 4 + 1;
+
+	printf("from_node is %u, to_node is %u\n", from_node, to_node);
+	ret = move_pages(0, TEST_PAGES, pages, nodes, &status, MPOL_MF_MOVE);
+	if (ret == -1) {
+		if (errno != ENOENT)
+			perror("move_pages expected ENOENT errno, but it's");
+		else
+			printf("Succeed\n");
+	} else {
+		printf("ERROR: move_pages expected FAIL.\n");
+	}
+
+	for (i = 0; i < TEST_PAGES; i++)
+		numa_free(pages[i], onepage);
+
+	return 0;
+}
+
+-- 
+Thanks,
+Zhouping
