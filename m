@@ -1,207 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab2EIHqY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 03:46:24 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53630 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244Ab2EIHqW (ORCPT
+	id S1756685Ab2EIHxP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 03:53:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42704 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab2EIHxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 03:46:22 -0400
-From: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
-Organization: 3ality Technica
-To: <grant.likely@secretlab.ca>, <linus.walleij@stericsson.com>
-Subject: [PATCH v2] Add support for TCA6424A
-Date: Wed, 9 May 2012 09:46:17 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.11-desktop; KDE/4.6.5; x86_64; ; )
-CC: <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-KSE-AntiSpam-Interceptor-Info: protection disabled
-X-KSE-Antivirus-Interceptor-Info: scan successful
-X-KSE-Antivirus-Info: Clean
-Message-Id: <0Mcu17-1Sjy5i0WRt-00I8s9@mrelayeu.kundenserver.de>
-X-Provags-ID: V02:K0:PFYwvZW7WvtxO3GaZiY5BwRnf51spxRt1ptJsgJGLPu
- fZMEYUog6WR39LUKAyUzuHWWSBRq/rCJ9Nqa8HFlryY6fwv5dD
- sOteeBMYtf19Ty6jzILjFzJymRvzYLrG1zQzSJ4n2ZU6pEoE5h
- anywJDmaAAl4yRWfAwJagyTB3YMI3yJDQ7dx+GirrzN1Q/1QJl
- oxjItRvNaKr777Ez5rlb7Fc8eUh5ePeZ8R+TMhWlrRND23uIZ+
- E7JM+f1UaQyPK9DKiTYJkvKLTiAgA40FABCInJgN0BtWkYCLmZ
- yaK1ZZ3IRBPgLkYBw+wrw4+YCXuGuHEUgIbPwchLxeyOSO+Bkl
- QMcKUpThyK7iXKQJ5QcSDPK5XI2yEm1lFmdZVtbXGN6I4pvYPq
- DxmKhBP5VNl5A==
+	Wed, 9 May 2012 03:53:13 -0400
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: horms@verge.net.au, linux@arm.linux.org.uk, arnd@arndb.de,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        lethal@linux-sh.org, olof@lixom.net,
+        Magnus Damm <magnus.damm@gmail.com>
+Date: Wed, 09 May 2012 16:54:07 +0900
+Message-Id: <20120509075407.5991.60556.sendpatchset@w520>
+Subject: [PATCH] mach-shmobile: Emma Mobile EV2 SMP prototype code
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends the PCA953x driver to support TI's TCA6424A 24 bit I2C I/O expander. The patch is based on code by Michele 
-Bevilacqua.
+From: Magnus Damm <damm@opensource.se>
 
-Changes in v2:
-- Compare ngpio against 24 in both places, not >16
-- Larger datatype now u32 instead of uint.
-  Bit fields not used for struct members since their address is taken.
-- Be precise: TCA6424A (untested for older TCA6424)
+Prototype code that adds SMP support to EMEV2.
 
-Signed-off-by: Andreas Schallenberg<Andreas.Schallenberg@3alitytechnica.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+At this point only the most basic form of SMP operation
+is supported. TWD and CPU Hotplug support is excluded.
 
+Based on V1 of the Emma Mobile EV2 code. Needs to be
+reworked to coexist with DT. Work in progress.
+
+Not-yet-signed-off-by: Magnus Damm <damm@opensource.se>
 ---
- drivers/gpio/gpio-pca953x.c |   43 ++++++++++++++++++++++++++++++-------------
- 1 files changed, 30 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
-index d3f3e8f..bef3cb1 100644
---- a/drivers/gpio/gpio-pca953x.c
-+++ b/drivers/gpio/gpio-pca953x.c
-@@ -28,6 +28,8 @@
- #define PCA953X_INVERT		2
- #define PCA953X_DIRECTION	3
+  Depends on the following series:
+  "[PATCH 00/02] mach-shmobile: Emma Mobile EV2 - first shot"
+  And the following patches:
+  "[PATCH] serial8250-em: Emma Mobile UART driver V2"
+  "[PATCH] clocksource: em_sti: Emma Mobile STI driver"
+
+ arch/arm/mach-shmobile/Makefile              |    1 
+ arch/arm/mach-shmobile/include/mach/common.h |    6 +
+ arch/arm/mach-shmobile/platsmp.c             |   16 ++++
+ arch/arm/mach-shmobile/setup-emev2.c         |    7 +
+ arch/arm/mach-shmobile/smp-emev2.c           |   95 ++++++++++++++++++++++++++
+ 5 files changed, 125 insertions(+)
+
+--- 0012/arch/arm/mach-shmobile/Makefile
++++ work/arch/arm/mach-shmobile/Makefile	2012-05-09 16:43:48.000000000 +0900
+@@ -19,6 +19,7 @@ smp-y				:= platsmp.o headsmp.o
+ smp-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
+ smp-$(CONFIG_ARCH_SH73A0)	+= smp-sh73a0.o
+ smp-$(CONFIG_ARCH_R8A7779)	+= smp-r8a7779.o
++smp-$(CONFIG_ARCH_EMEV2)	+= smp-emev2.o
  
-+#define REG_ADDR_AI		0x80
+ # Pinmux setup
+ pfc-y				:=
+--- 0011/arch/arm/mach-shmobile/include/mach/common.h
++++ work/arch/arm/mach-shmobile/include/mach/common.h	2012-05-09 16:43:48.000000000 +0900
+@@ -91,4 +91,10 @@ extern void emev2_add_early_devices(void
+ extern void emev2_add_standard_devices(void);
+ extern void emev2_clock_init(void);
+ 
++extern unsigned int emev2_get_core_count(void);
++extern int emev2_platform_cpu_kill(unsigned int cpu);
++extern void emev2_secondary_init(unsigned int cpu);
++extern int emev2_boot_secondary(unsigned int cpu);
++extern void emev2_smp_prepare_cpus(void);
 +
- #define PCA957X_IN		0
- #define PCA957X_INVRT		1
- #define PCA957X_BKEN		2
-@@ -63,15 +65,15 @@ static const struct i2c_device_id pca953x_id[] = {
- 	{ "pca6107", 8  | PCA953X_TYPE | PCA_INT, },
- 	{ "tca6408", 8  | PCA953X_TYPE | PCA_INT, },
- 	{ "tca6416", 16 | PCA953X_TYPE | PCA_INT, },
--	/* NYET:  { "tca6424", 24, }, */
-+	{ "tca6424", 24 | PCA953X_TYPE | PCA_INT, },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, pca953x_id);
+ #endif /* __ARCH_MACH_COMMON_H */
+--- 0001/arch/arm/mach-shmobile/platsmp.c
++++ work/arch/arm/mach-shmobile/platsmp.c	2012-05-09 16:43:48.000000000 +0900
+@@ -22,6 +22,7 @@
  
- struct pca953x_chip {
- 	unsigned gpio_start;
--	uint16_t reg_output;
--	uint16_t reg_direction;
-+	u32 reg_output;
-+	u32 reg_direction;
- 	struct mutex i2c_lock;
+ #define is_sh73a0() (machine_is_ag5evm() || machine_is_kota2())
+ #define is_r8a7779() machine_is_marzen()
++#define is_emev2() machine_is_kzm9d()
  
- #ifdef CONFIG_GPIO_PCA953X_IRQ
-@@ -89,12 +91,20 @@ struct pca953x_chip {
- 	int	chip_type;
- };
- 
--static int pca953x_write_reg(struct pca953x_chip *chip, int reg, uint16_t val)
-+static int pca953x_write_reg(struct pca953x_chip *chip, int reg, u32 val)
+ static unsigned int __init shmobile_smp_get_core_count(void)
  {
- 	int ret = 0;
+@@ -31,6 +32,9 @@ static unsigned int __init shmobile_smp_
+ 	if (is_r8a7779())
+ 		return r8a7779_get_core_count();
  
- 	if (chip->gpio_chip.ngpio <= 8)
- 		ret = i2c_smbus_write_byte_data(chip->client, reg, val);
-+	else if (chip->gpio_chip.ngpio == 24) {
-+		ret = i2c_smbus_write_word_data(chip->client,
-+						(reg << 2) | REG_ADDR_AI,
-+						val & 0xffff);
-+		ret = i2c_smbus_write_byte_data(chip->client,
-+						(reg << 2) + 2,
-+						(val & 0xff0000) >> 16);
-+	}
- 	else {
- 		switch (chip->chip_type) {
- 		case PCA953X_TYPE:
-@@ -121,12 +131,17 @@ static int pca953x_write_reg(struct pca953x_chip *chip, int reg, uint16_t val)
- 	return 0;
++	if (is_emev2())
++		return emev2_get_core_count();
++
+ 	return 1;
  }
  
--static int pca953x_read_reg(struct pca953x_chip *chip, int reg, uint16_t *val)
-+static int pca953x_read_reg(struct pca953x_chip *chip, int reg, u32 *val)
- {
- 	int ret;
+@@ -41,6 +45,9 @@ static void __init shmobile_smp_prepare_
  
- 	if (chip->gpio_chip.ngpio <= 8)
- 		ret = i2c_smbus_read_byte_data(chip->client, reg);
-+	else if (chip->gpio_chip.ngpio == 24) {
-+		ret =  i2c_smbus_read_word_data(chip->client, reg << 2);
-+		ret |= (i2c_smbus_read_byte_data(chip->client,
-+						 (reg << 2) + 2)<<16);
-+	}
- 	else
- 		ret = i2c_smbus_read_word_data(chip->client, reg << 1);
- 
-@@ -135,14 +150,14 @@ static int pca953x_read_reg(struct pca953x_chip *chip, int reg, uint16_t *val)
- 		return ret;
- 	}
- 
--	*val = (uint16_t)ret;
-+	*val = (u32)ret;
- 	return 0;
+ 	if (is_r8a7779())
+ 		r8a7779_smp_prepare_cpus();
++
++	if (is_emev2())
++		emev2_smp_prepare_cpus();
  }
  
- static int pca953x_gpio_direction_input(struct gpio_chip *gc, unsigned off)
- {
- 	struct pca953x_chip *chip;
--	uint16_t reg_val;
-+	uint reg_val;
- 	int ret, offset = 0;
+ int shmobile_platform_cpu_kill(unsigned int cpu)
+@@ -48,6 +55,9 @@ int shmobile_platform_cpu_kill(unsigned
+ 	if (is_r8a7779())
+ 		return r8a7779_platform_cpu_kill(cpu);
  
- 	chip = container_of(gc, struct pca953x_chip, gpio_chip);
-@@ -173,7 +188,7 @@ static int pca953x_gpio_direction_output(struct gpio_chip *gc,
- 		unsigned off, int val)
- {
- 	struct pca953x_chip *chip;
--	uint16_t reg_val;
-+	uint reg_val;
- 	int ret, offset = 0;
++	if (is_emev2())
++		return emev2_platform_cpu_kill(cpu);
++
+ 	return 1;
+ }
  
- 	chip = container_of(gc, struct pca953x_chip, gpio_chip);
-@@ -223,7 +238,7 @@ exit:
- static int pca953x_gpio_get_value(struct gpio_chip *gc, unsigned off)
- {
- 	struct pca953x_chip *chip;
--	uint16_t reg_val;
-+	u32 reg_val;
- 	int ret, offset = 0;
+@@ -60,6 +70,9 @@ void __cpuinit platform_secondary_init(u
  
- 	chip = container_of(gc, struct pca953x_chip, gpio_chip);
-@@ -253,7 +268,7 @@ static int pca953x_gpio_get_value(struct gpio_chip *gc, unsigned off)
- static void pca953x_gpio_set_value(struct gpio_chip *gc, unsigned off, int val)
- {
- 	struct pca953x_chip *chip;
--	uint16_t reg_val;
-+	u32 reg_val;
- 	int ret, offset = 0;
+ 	if (is_r8a7779())
+ 		r8a7779_secondary_init(cpu);
++
++	if (is_emev2())
++		emev2_secondary_init(cpu);
+ }
  
- 	chip = container_of(gc, struct pca953x_chip, gpio_chip);
-@@ -386,7 +401,7 @@ static struct irq_chip pca953x_irq_chip = {
+ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+@@ -70,6 +83,9 @@ int __cpuinit boot_secondary(unsigned in
+ 	if (is_r8a7779())
+ 		return r8a7779_boot_secondary(cpu);
  
- static uint16_t pca953x_irq_pending(struct pca953x_chip *chip)
- {
--	uint16_t cur_stat;
-+	u32 cur_stat;
- 	uint16_t old_stat;
- 	uint16_t pending;
- 	uint16_t trigger;
-@@ -449,6 +464,7 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- {
- 	struct i2c_client *client = chip->client;
- 	int ret, offset = 0;
-+	u32 temporary;
++	if (is_emev2())
++		return emev2_boot_secondary(cpu);
++
+ 	return -ENOSYS;
+ }
  
- 	if (irq_base != -1
- 			&& (id->driver_data & PCA_INT)) {
-@@ -462,7 +478,8 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- 			offset = PCA957X_IN;
- 			break;
- 		}
--		ret = pca953x_read_reg(chip, offset, &chip->irq_stat);
-+		ret = pca953x_read_reg(chip, offset, &temporary);
-+		chip->irq_stat = temporary;
- 		if (ret)
- 			goto out_failed;
+--- 0011/arch/arm/mach-shmobile/setup-emev2.c
++++ work/arch/arm/mach-shmobile/setup-emev2.c	2012-05-09 16:43:48.000000000 +0900
+@@ -47,6 +47,13 @@ static struct map_desc emev2_io_desc[] _
+ 		.length		= SZ_128K,
+ 		.type		= MT_DEVICE
+ 	},
++	/* 2M mapping for SCU + L2 controller */
++	{
++		.virtual	= 0xf0000000,
++		.pfn		= __phys_to_pfn(0x1e000000),
++		.length		= SZ_2M,
++		.type		= MT_DEVICE
++	},
+ };
  
-@@ -603,7 +620,7 @@ out:
- static int __devinit device_pca957x_init(struct pca953x_chip *chip, int invert)
- {
- 	int ret;
--	uint16_t val = 0;
-+	u32 val = 0;
- 
- 	/* Let every port in proper state, that could save power */
- 	pca953x_write_reg(chip, PCA957X_PUPD, 0x0);
--- 
-1.7.3.4 
+ void __init emev2_map_io(void)
+--- /dev/null
++++ work/arch/arm/mach-shmobile/smp-emev2.c	2012-05-09 16:44:26.000000000 +0900
+@@ -0,0 +1,95 @@
++/*
++ * SMP support for Emma Mobile EV2
++ *
++ * Copyright (C) 2012  Renesas Solutions Corp.
++ * Copyright (C) 2012  Magnus Damm
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ */
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/smp.h>
++#include <linux/spinlock.h>
++#include <linux/io.h>
++#include <linux/delay.h>
++#include <mach/common.h>
++#include <asm/smp_plat.h>
++#include <asm/smp_scu.h>
++#include <asm/hardware/gic.h>
++#include <asm/cacheflush.h>
++
++#define SMU_GENERAL_REG0	IOMEM(0xe01107c0)
++
++static void __iomem *scu_base_addr(void)
++{
++	return IOMEM(0xf0000000);
++}
++
++static DEFINE_SPINLOCK(scu_lock);
++static unsigned long tmp;
++
++static void modify_scu_cpu_psr(unsigned long set, unsigned long clr)
++{
++	void __iomem *scu_base = scu_base_addr();
++
++	spin_lock(&scu_lock);
++	tmp = readl(scu_base + 8);
++	tmp &= ~clr;
++	tmp |= set;
++	spin_unlock(&scu_lock);
++
++	/* disable cache coherency after releasing the lock */
++	writel(tmp, scu_base + 8);
++}
++
++unsigned int __init emev2_get_core_count(void)
++{
++	void __iomem *scu_base = scu_base_addr();
++
++	return scu_get_core_count(scu_base);
++}
++
++int emev2_platform_cpu_kill(unsigned int cpu)
++{
++	return 0; /* not supported yet */
++}
++
++void __cpuinit emev2_secondary_init(unsigned int cpu)
++{
++	gic_secondary_init(0);
++}
++
++int __cpuinit emev2_boot_secondary(unsigned int cpu)
++{
++	cpu = cpu_logical_map(cpu);
++
++	/* enable cache coherency */
++	modify_scu_cpu_psr(0, 3 << (cpu * 8));
++
++	/* Tell ROM loader about our vector (in headsmp.S) */
++	writel(__pa(shmobile_secondary_vector), SMU_GENERAL_REG0);
++
++	gic_raise_softirq(cpumask_of(cpu), 1);
++	return 0;
++}
++
++void __init emev2_smp_prepare_cpus(void)
++{
++	int cpu = cpu_logical_map(0);
++
++	scu_enable(scu_base_addr());
++
++	/* enable cache coherency on CPU0 */
++	modify_scu_cpu_psr(0, 3 << (cpu * 8));
++}
