@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab2EIE6f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 00:58:35 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:36395 "EHLO
+	id S1754972Ab2EIE7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 00:59:09 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:33260 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754393Ab2EIE6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 00:58:30 -0400
+	id S1751425Ab2EIE7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 00:59:05 -0400
 From: Joe Perches <joe@perches.com>
-To: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 07/13] bluetooth: Convert compare_ether_addr to ether_addr_equal
-Date: Tue,  8 May 2012 21:56:51 -0700
-Message-Id: <81fc602aa661c0919a9864a40c950ce8a3b72275.1336538938.git.joe@perches.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>
+Cc: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 10/13] netfilter: Convert compare_ether_addr to ether_addr_equal
+Date: Tue,  8 May 2012 21:56:54 -0700
+Message-Id: <6fc964a05b125385dc75798c24226bf20e16aa5d.1336538938.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 In-Reply-To: <cover.1336538937.git.joe@perches.com>
 References: <cover.1336538937.git.joe@perches.com>
@@ -73,35 +74,45 @@ expression a,b;
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/bluetooth/bnep/core.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ net/netfilter/ipset/ip_set_bitmap_ipmac.c |    4 ++--
+ net/netfilter/xt_mac.c                    |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/bluetooth/bnep/core.c b/net/bluetooth/bnep/core.c
-index a779ec7..88884d1 100644
---- a/net/bluetooth/bnep/core.c
-+++ b/net/bluetooth/bnep/core.c
-@@ -69,7 +69,7 @@ static struct bnep_session *__bnep_get_session(u8 *dst)
- 	BT_DBG("");
- 
- 	list_for_each_entry(s, &bnep_session_list, list)
--		if (!compare_ether_addr(dst, s->eh.h_source))
-+		if (ether_addr_equal(dst, s->eh.h_source))
- 			return s;
- 
- 	return NULL;
-@@ -422,10 +422,10 @@ static inline int bnep_tx_frame(struct bnep_session *s, struct sk_buff *skb)
- 	iv[il++] = (struct kvec) { &type, 1 };
- 	len++;
- 
--	if (compress_src && !compare_ether_addr(eh->h_dest, s->eh.h_source))
-+	if (compress_src && ether_addr_equal(eh->h_dest, s->eh.h_source))
- 		type |= 0x01;
- 
--	if (compress_dst && !compare_ether_addr(eh->h_source, s->eh.h_dest))
-+	if (compress_dst && ether_addr_equal(eh->h_source, s->eh.h_dest))
- 		type |= 0x02;
- 
- 	if (type)
+diff --git a/net/netfilter/ipset/ip_set_bitmap_ipmac.c b/net/netfilter/ipset/ip_set_bitmap_ipmac.c
+index 0bb16c4..d7eaf10 100644
+--- a/net/netfilter/ipset/ip_set_bitmap_ipmac.c
++++ b/net/netfilter/ipset/ip_set_bitmap_ipmac.c
+@@ -111,7 +111,7 @@ bitmap_ipmac_test(struct ip_set *set, void *value, u32 timeout, u32 flags)
+ 		return -EAGAIN;
+ 	case MAC_FILLED:
+ 		return data->ether == NULL ||
+-		       compare_ether_addr(data->ether, elem->ether) == 0;
++		       ether_addr_equal(data->ether, elem->ether);
+ 	}
+ 	return 0;
+ }
+@@ -225,7 +225,7 @@ bitmap_ipmac_ttest(struct ip_set *set, void *value, u32 timeout, u32 flags)
+ 		return -EAGAIN;
+ 	case MAC_FILLED:
+ 		return (data->ether == NULL ||
+-			compare_ether_addr(data->ether, elem->ether) == 0) &&
++			ether_addr_equal(data->ether, elem->ether)) &&
+ 		       !bitmap_expired(map, data->id);
+ 	}
+ 	return 0;
+diff --git a/net/netfilter/xt_mac.c b/net/netfilter/xt_mac.c
+index 8160f6b..d5b4fd4 100644
+--- a/net/netfilter/xt_mac.c
++++ b/net/netfilter/xt_mac.c
+@@ -36,7 +36,7 @@ static bool mac_mt(const struct sk_buff *skb, struct xt_action_param *par)
+ 		return false;
+ 	if (skb_mac_header(skb) + ETH_HLEN > skb->data)
+ 		return false;
+-	ret  = compare_ether_addr(eth_hdr(skb)->h_source, info->srcaddr) == 0;
++	ret  = ether_addr_equal(eth_hdr(skb)->h_source, info->srcaddr);
+ 	ret ^= info->invert;
+ 	return ret;
+ }
 -- 
 1.7.8.111.gad25c.dirty
 
