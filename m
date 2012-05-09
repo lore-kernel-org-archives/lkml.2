@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758253Ab2EIGW7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:22:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38900 "EHLO
+	id S1758240Ab2EIGW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:22:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38924 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756154Ab2EIFxQ (ORCPT
+	by vger.kernel.org with ESMTP id S1756223Ab2EIFxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:16 -0400
-Message-Id: <20120509055043.303337476@decadent.org.uk>
+Message-Id: <20120509055039.667565710@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:07 +0100
+Date: Wed, 09 May 2012 06:51:40 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 098/167] [PATCH] ASoC: dapm: Ensure power gets managed for line widgets
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 071/167] [PATCH 11/26] net: fix a race in sock_queue_err_skb()
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,42 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit 7e1f7c8a6e517900cd84da1b8ae020f08f286c3b upstream.
+[ Upstream commit 110c43304db6f06490961529536c362d9ac5732f ]
 
-Line widgets had not been included in either the power up or power down
-sequences so if a widget had an event associated with it that event would
-never be run. Fix this minimally by adding them to the sequences, we
-should probably be doing away with the specific widget types as they all
-have the same priority anyway.
+As soon as an skb is queued into socket error queue, another thread
+can consume it, so we are not allowed to reference skb anymore, or risk
+use after free.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/soc/soc-dapm.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/core/skbuff.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-index 6241490..dc7dbfe 100644
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -67,6 +67,7 @@ static int dapm_up_seq[] = {
- 	[snd_soc_dapm_out_drv] = 10,
- 	[snd_soc_dapm_hp] = 10,
- 	[snd_soc_dapm_spk] = 10,
-+	[snd_soc_dapm_line] = 10,
- 	[snd_soc_dapm_post] = 11,
- };
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 3c30ee4..29cb392 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -3111,6 +3111,8 @@ static void sock_rmem_free(struct sk_buff *skb)
+  */
+ int sock_queue_err_skb(struct sock *sk, struct sk_buff *skb)
+ {
++	int len = skb->len;
++
+ 	if (atomic_read(&sk->sk_rmem_alloc) + skb->truesize >=
+ 	    (unsigned)sk->sk_rcvbuf)
+ 		return -ENOMEM;
+@@ -3125,7 +3127,7 @@ int sock_queue_err_skb(struct sock *sk, struct sk_buff *skb)
  
-@@ -75,6 +76,7 @@ static int dapm_down_seq[] = {
- 	[snd_soc_dapm_adc] = 1,
- 	[snd_soc_dapm_hp] = 2,
- 	[snd_soc_dapm_spk] = 2,
-+	[snd_soc_dapm_line] = 2,
- 	[snd_soc_dapm_out_drv] = 2,
- 	[snd_soc_dapm_pga] = 4,
- 	[snd_soc_dapm_mixer_named_ctl] = 5,
+ 	skb_queue_tail(&sk->sk_error_queue, skb);
+ 	if (!sock_flag(sk, SOCK_DEAD))
+-		sk->sk_data_ready(sk, skb->len);
++		sk->sk_data_ready(sk, len);
+ 	return 0;
+ }
+ EXPORT_SYMBOL(sock_queue_err_skb);
 -- 
 1.7.10
 
