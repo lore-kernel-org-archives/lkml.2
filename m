@@ -1,65 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab2EIVPz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 17:15:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36030 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932238Ab2EIVPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 17:15:53 -0400
-Date: Wed, 9 May 2012 23:14:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Pedro Alves <palves@redhat.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        pacman@kosh.dhis.org, linux-man <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>
-Subject: Re: ptrace.2: PTRACE_KILL needs a stopped process too
-Message-ID: <20120509211429.GA2455@redhat.com>
-References: <20091216004533.22261.qmail@kosh.dhis.org> <4FAAC706.6000808@redhat.com> <20120509201219.GA32051@redhat.com> <201205091241.59060.vapier@gentoo.org>
+	id S1758969Ab2EIVVW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 17:21:22 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:28019 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab2EIVVU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 17:21:20 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-13.tower-127.messagelabs.com!1336598430!5049397!64
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
+Date: Wed, 9 May 2012 16:21:15 -0500
+Subject: RE: [PATCH v2] staging: comedi: remove __user annotation inside of
+ struct's
+Thread-Topic: [PATCH v2] staging: comedi: remove __user annotation inside of
+ struct's
+Thread-Index: Ac0uJDkrF+NU5a03TRylDGCgabEgfQABDjsw
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698A17992@AUSP01VMBX24.collaborationhost.net>
+References: <201205090936.03921.hartleys@visionengravers.com>
+ <20120509204210.GA22184@kroah.com>
+In-Reply-To: <20120509204210.GA22184@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201205091241.59060.vapier@gentoo.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09, Mike Frysinger wrote:
+On Wednesday, May 09, 2012 1:42 PM, Greg KH wrote:
+> On Wed, May 09, 2012 at 09:36:03AM -0700, H Hartley Sweeten wrote:
+>> Remove the __user annotations in the struct definitions in
+>> comedi.h.
+>> 
+>> These structs are used to pass information from user-space
+>> to kernel-space. The copy_from_user and copy_to_user functions
+>> are used to transfer the data between the address spaces.
+>> 
+>> The drivers then use the information internally under the
+>> assumption that they are kernel-space objects. Having the
+>> __user annotations inside the structs produces a number of
+>> sparse warnings of the type:
+>> 
+>> warning: dereference of noderef expression
+>> 
+>> According to Grek Kroah-Hartman:
+
+Sorry about that typo... ;-)
+
+>> 
+>> "When the kernel exports .h files, stuff like this should work
+>> "automatically", so there is no need to not put __user markings."
 >
-> On Wednesday 09 May 2012 16:12:19 Oleg Nesterov wrote:
-> > On 05/09, Pedro Alves wrote:
-> > > On 05/09/2012 04:09 PM, Mike Frysinger wrote:
-> > > > probably not that big of a deal, but the reason i like using
-> > > > ptrace(PTRACE_KILL) over a raw kill() is that you are less likely to
-> > > > kill the wrong process by accident.  maybe not that big of a deal in
-> > > > practice though.
-> > >
-> > > And you can do tgkill instead.  It was specifically invented to handle
-> > > the reuse case.
-> >
-> > tgkill() can kill the wrong process/thread too, although it lessens the
-> > risk.
-> >
-> > But I don't really understand the problem. The traced thread can't go away
-> > until the tracer does wait/detach, and thus its pid can't be reused?
+> Wait, for some reason I thought you were adding __user markings, not
+> removing them from the structures.  That is why I said the above
+> statement.
+
+Ah.. Missed the "not" in your comment...
+
 >
-> or the process has received a SIGKILL for some reason
+> Why again are you removing them?  Didn't you just cause more sparse
+> warnings to pop up?
 
-And? In this case it will be killed, yes. But this zombie can't go away
-until the tracer does do_wait().
+I still think they should be removed but I need to dig thru it a bit.
 
-OK, the multi-threaded exec adds more fun.
+The structs in question are used internally in the comedi drivers after
+the data has been passed into the kernel using the various ioctl's.
+The ioctl code does do the copy_from/to_user correctly (kind of,
+I did notice one place where the copy_from_user is referencing a
+kernel pointer). But, when the driver's try to use the data, assuming
+it's kernel space data, it's still annotated as __user so we get all the
+"warning: dereference of noderef expression" along with a couple
+other sparse warnings.
 
-> > May be, "by accident" above means something else, not pid reuse...
->
-> i like to assume that my code isn't going to be bug free, so the more
-> mechanisms i have in place to protect innocent bystanders the better :)
-> -mike
+Ian Abbott did reply that he thought the patch was correct. With my
+miss-read of your comment I thought you were agreeing.
 
->From this pov PTRACE_KILL is safer, I agree ;)
+Regardless, I'll keep looking it over...
 
-Oleg.
-
+Regards,
+Hartley
