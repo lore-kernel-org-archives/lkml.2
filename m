@@ -1,122 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759143Ab2EIJeF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 05:34:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3795 "EHLO mga03.intel.com"
+	id S1759167Ab2EIJg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 05:36:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64138 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758933Ab2EIJeD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 05:34:03 -0400
+	id S1753886Ab2EIJg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 05:36:58 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="98024726"
-From: "Tc, Jenny" <jenny.tc@intel.com>
-To: Ryan Mallon <rmallon@gmail.com>
-CC: "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        "anton.vorontsov@linaro.org" <anton.vorontsov@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "R, Durgadoss" <durgadoss.r@intel.com>
-Subject: RE: [PATCH] power_supply: Register battery as a thermal zone
-Thread-Topic: [PATCH] power_supply: Register battery as a thermal zone
-Thread-Index: AQHNLaeAypD0HzHv1k6+9rfWyo9PeJbAnuaAgAB/LkA=
-Date: Wed, 9 May 2012 09:33:57 +0000
-Message-ID: <20ADAB092842284E95860F279283C56421D47A@BGSMSX101.gar.corp.intel.com>
-References: <1336562318-16096-1-git-send-email-jenny.tc@intel.com>
- <4FAA0BA1.5080004@gmail.com>
-In-Reply-To: <4FAA0BA1.5080004@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="141792971"
+From: Jenny TC <jenny.tc@intel.com>
+To: cbouatmailru@gmail.com, anton.vorontsov@linaro.org
+Cc: linux-kernel@vger.kernel.org, durgadoss.r@intel.com,
+        Jenny TC <jenny.tc@intel.com>
+Subject: [PATCHv2] power_supply: Register battery as a thermal zone
+Date: Wed,  9 May 2012 20:36:47 +0530
+Message-Id: <1336576007-8772-1-git-send-email-jenny.tc@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> > Battery and charger contribute to Thermals in most of the embedded
-> > devices. So, it makes sense to identify them as Thermal zones in a
-> > particular platform.
-> >
-> > This patch registers a thermal zone if the power supply is reporting a
-> > temperature property. The thermal zone will be used by platform's
-> > thermal management solution.
-> >
-> > Signed-off-by: Jenny TC <jenny.tc@intel.com>
-> > ---
-> 
-> > +#ifdef CONFIG_THERMAL
-> > +static int power_supply_read_temp(struct thermal_zone_device *tzd,
-> > +		unsigned long *temp)
-> > +{
-> > +	struct power_supply *psy;
-> > +	union power_supply_propval val;
-> > +	int ret;
-> > +
-> > +	WARN_ON(tzd == NULL);
-> > +	psy = tzd->devdata;
-> > +	WARN_ON(psy == NULL);
-> 
-> 
-> These WARN_ONs seem unnecessary since you will oops if either of them
-> are NULL anyway.
-> 
+Battery and charger contribute to Thermals in most of the embedded
+devices. So, it makes sense to identify them as Thermal zones in a
+particular platform.
 
-Agreed.
+This patch registers a thermal zone if the power supply is reporting
+a temperature property. The thermal zone will be used by platform's
+thermal management solution.
 
-> > +	ret = psy->get_property(psy,
-> > +				  POWER_SUPPLY_PROP_TEMP, &val);
-> > +	if (!ret)
-> > +		*temp = val.intval * 100;
-> > +	return ret;
-> > +}
-> 
-> 
-> <snip>
-> 
-> >  int power_supply_register(struct device *parent, struct power_supply
-> > *psy)  {
-> >  	struct device *dev;
-> >  	int rc;
-> > +#ifdef CONFIG_THERMAL
-> > +	int i;
-> > +#endif
-> >
-> >  	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-> >  	if (!dev)
-> > @@ -196,7 +223,21 @@ int power_supply_register(struct device *parent,
-> struct power_supply *psy)
-> >  	rc = device_add(dev);
-> >  	if (rc)
-> >  		goto device_add_failed;
-> > -
-> > +#ifdef CONFIG_THERMAL
-> > +	/* Register battery zone device psy reports temperature */
-> > +	for (i = 0; i < psy->num_properties; i++) {
-> > +		if (psy->properties[i] == POWER_SUPPLY_PROP_TEMP) {
-> > +			psy->tzd = thermal_zone_device_register(
-> > +					(char *)psy->name, 0, psy,
-> > +					&psy_tzd_ops, 0, 0, 0, 0);
-> > +			if (IS_ERR(psy->tzd)) {
-> > +				rc = PTR_ERR(psy->tzd);
-> > +				goto therm_zone_reg_failed;
-> > +			}
-> > +			break;
-> > +		}
-> > +	}
-> > +#endif
-> 
-> 
-> This would be better moved into its own function, so you can minimise the
-> amount of ifdefs needed. Having extra ifdefs for variable declarations and
-> exit paths is especially ugly :-/. Ideally you can have a single #ifdef
-> CONFIG_THERMAL block, and define empty functions for the
-> !CONFIG_THERMAL case.
-> 
+Signed-off-by: Jenny TC <jenny.tc@intel.com>
+---
+v1
+ * Made initial code changes
+v2
+ * Removed unnecessary WARN_ON's
+ * Consolidated all #ifdef CONFIG_THERMAL in one place
+ drivers/power/power_supply_core.c |   59 +++++++++++++++++++++++++++++++++++++
+ include/linux/power_supply.h      |    3 ++
+ 2 files changed, 62 insertions(+), 0 deletions(-)
 
-Agreed. I will submit another patch in a few minutes.
+diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+index 6ad6127..8e01432 100644
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -17,6 +17,7 @@
+ #include <linux/device.h>
+ #include <linux/err.h>
+ #include <linux/power_supply.h>
++#include <linux/thermal.h>
+ #include "power_supply.h"
+ 
+ /* exported for the APM Power driver, APM emulation */
+@@ -169,6 +170,53 @@ static void power_supply_dev_release(struct device *dev)
+ 	kfree(dev);
+ }
+ 
++#ifdef CONFIG_THERMAL
++static int power_supply_read_temp(struct thermal_zone_device *tzd,
++		unsigned long *temp)
++{
++	struct power_supply *psy;
++	union power_supply_propval val;
++	int ret;
++
++	WARN_ON(tzd == NULL);
++	psy = tzd->devdata;
++	ret = psy->get_property(psy,
++				  POWER_SUPPLY_PROP_TEMP, &val);
++
++	/* Convert tenths of degree Celsius to milli degree Celsius*/
++	if (!ret)
++		*temp = val.intval * 100;
++
++	return ret;
++}
++
++static struct thermal_zone_device_ops psy_tzd_ops = {
++	.get_temp = power_supply_read_temp,
++};
++
++static int register_thermal(struct power_supply *psy)
++{
++	int i;
++	/* Register battery zone device psy reports temperature */
++	for (i = 0; i < psy->num_properties; i++) {
++		if (psy->properties[i] == POWER_SUPPLY_PROP_TEMP) {
++			psy->tzd = thermal_zone_device_register(
++					(char *)psy->name, 0, psy,
++					&psy_tzd_ops, 0, 0, 0, 0);
++			if (IS_ERR(psy->tzd))
++				return PTR_ERR(psy->tzd);
++			break;
++		}
++	}
++	return 0;
++}
++#else
++static int register_thermal(struct power_supply *psy)
++{
++	return 0;
++}
++#endif
++
+ int power_supply_register(struct device *parent, struct power_supply *psy)
+ {
+ 	struct device *dev;
+@@ -197,6 +245,10 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
+ 	if (rc)
+ 		goto device_add_failed;
+ 
++	rc = register_thermal(psy);
++	if (rc)
++		goto therm_zone_reg_failed;
++
+ 	rc = power_supply_create_triggers(psy);
+ 	if (rc)
+ 		goto create_triggers_failed;
+@@ -206,6 +258,9 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
+ 	goto success;
+ 
+ create_triggers_failed:
++	if (psy->tzd)
++		thermal_zone_device_unregister(psy->tzd);
++therm_zone_reg_failed:
+ 	device_del(dev);
+ kobject_set_name_failed:
+ device_add_failed:
+@@ -220,6 +275,10 @@ void power_supply_unregister(struct power_supply *psy)
+ 	cancel_work_sync(&psy->changed_work);
+ 	sysfs_remove_link(&psy->dev->kobj, "powers");
+ 	power_supply_remove_triggers(psy);
++#ifdef CONFIG_THERMAL
++	if (psy->tzd)
++		thermal_zone_device_unregister(psy->tzd);
++#endif
+ 	device_unregister(psy->dev);
+ }
+ EXPORT_SYMBOL_GPL(power_supply_unregister);
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index c38c13d..1f58435 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -172,6 +172,9 @@ struct power_supply {
+ 	/* private */
+ 	struct device *dev;
+ 	struct work_struct changed_work;
++#ifdef CONFIG_THERMAL
++	struct thermal_zone_device *tzd;
++#endif
+ 
+ #ifdef CONFIG_LEDS_TRIGGERS
+ 	struct led_trigger *charging_full_trig;
+-- 
+1.7.1
 
-> ~Ryan
