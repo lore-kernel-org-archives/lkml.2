@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760211Ab2EIQZF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 12:25:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42172 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760056Ab2EIQZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 12:25:02 -0400
-Message-ID: <4FAA9A49.8080900@zytor.com>
-Date: Wed, 09 May 2012 09:24:41 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1760222Ab2EIQZP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 12:25:15 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39560 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760204Ab2EIQZE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 12:25:04 -0400
+Date: Wed, 9 May 2012 17:25:00 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: vfs: INFO: possible circular locking dependency detected
+Message-ID: <20120509162459.GL22082@ZenIV.linux.org.uk>
+References: <1336577114.3638.23.camel@lappy>
+ <20120509161203.GK22082@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] bitops: add _local bitops
-References: <20120509134528.GA18044@redhat.com> <4FAA7939.6040706@zytor.com> <20120509154734.GB20867@redhat.com>
-In-Reply-To: <20120509154734.GB20867@redhat.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120509161203.GK22082@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2012 08:47 AM, Michael S. Tsirkin wrote:
+On Wed, May 09, 2012 at 05:12:03PM +0100, Al Viro wrote:
+> On Wed, May 09, 2012 at 05:25:14PM +0200, Sasha Levin wrote:
+> > Hi all,
+> > 
+> > I've started seeing the following warning while fuzzing inside a KVM guest with the latest -next:
 > 
-> By the way, clear_bit on x86 does not seem to contain
-> an optimization barrier - is my reading correct?
-> Lock prefix does not affect the compiler, right?
+> [->read() may grab ->cred_guard_mutex, but it may itself be called by
+> prepare_binprm() after having ->cred_guard_mutex grabbed]
+> 
+> Nasty, that...  What's more, it's not just prepare_binprm() itself -
+> ->load_binary() might end up calling read(); it doesn't have to
+> limit itself to mmap(), so essentially anything that can be grabbed
+> by ->read() of a regular file might nest under ->cred_guard_mutex.
+> 
+> 	AFAICS, /proc/*/stack, /proc/*/syscall, /proc/*/personality,
+> /proc/*/io_accounting, /proc/*/auxv, /proc/*/environ, /proc/*/*maps
+> and /proc/*/pagemap have ->cred_guard_mutex grabbed on read.  seq_file
+> is a red herring here - io_accounting has the same issue and it does
+> things directly, without seq_read().
+> 
+> 	It's not a realistic attack, fortunately, since you need root
+> to get past open_exec() on any of those...  Wait.  How _did_ you get
+> past open_exec(), anyway?  MAY_EXEC is not supposed to be granted on
+> anything that has no exec bits at all and AFAICS none of those files
+> have them.
 
-Yes, as it clearly states in the comment:
+FWIW, that's _probably_ a false positive, but I really wonder what has
+triggered it.  It would take seq_file-based file somewhere with _some_
+exec bits set (otherwise it shouldn't have been seen by prepare_binprm()).
+The file itself isn't one of those that grab ->cred_guard_mutex anywhere
+in their ->read(), but since lockdep can't tell one seq_file from another,
+we get the warning.
 
- * clear_bit() is atomic and may not be reordered.  However, it does
- * not contain a memory barrier, so if it is used for locking purposes,
- * you should call smp_mb__before_clear_bit() and/or
-smp_mb__after_clear_bit()
- * in order to ensure changes are visible on other processors.
-
-There is clear_bit_unlock() which has the barrier semantics.
-
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+	The interesting part is who the hell had managed to do executable
+seq_file-based anything - false positive or not, it's almost certainly
+a bug...
