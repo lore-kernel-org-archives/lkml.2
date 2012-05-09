@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab2EIFwR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:52:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38609 "EHLO
+	id S1754106Ab2EIFwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:52:20 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38613 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752884Ab2EIFwM (ORCPT
+	by vger.kernel.org with ESMTP id S1751079Ab2EIFwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:52:12 -0400
-Message-Id: <20120509055030.051275955@decadent.org.uk>
+	Wed, 9 May 2012 01:52:18 -0400
+Message-Id: <20120509055030.317834781@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:50:32 +0100
+Date: Wed, 09 May 2012 06:50:34 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [ 003/167] [PATCH] ALSA: hda/conexant - Dont set HP pin-control bit
- unconditionally
+        alan@lxorguk.ukuu.org.uk, Alexander Shiyan <shc_work@mail.ru>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 005/167] [PATCH] ARM: clps711x: serial driver hungs are a result of call
+ disable_irq within ISR
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,42 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Alexander Shiyan <shc_work@mail.ru>
 
-commit ca3649de026ff95c6f2847e8d096cf2f411c02b3 upstream.
+commit 7a6fbc9a887193a1e9f8658703881c528040afbc upstream.
 
-Some output pins on Conexant chips have no HP control bit, but the
-auto-parser initializes these pins unconditionally with PIN_HP.
+Since 2.6.30-rc1 clps711x serial driver hungs system. This is a result
+of call disable_irq from ISR. synchronize_irq waits for end of interrupt
+and goes to infinite loop. This patch fix this problem.
 
-Check the pin-capability and avoid the HP bit if not supported.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_conexant.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/tty/serial/clps711x.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
-index d29d6d3..f52c9ef 100644
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -3951,9 +3951,14 @@ static void cx_auto_init_output(struct hda_codec *codec)
- 	int i;
+diff --git a/drivers/tty/serial/clps711x.c b/drivers/tty/serial/clps711x.c
+index e6c3dbd..836fe273 100644
+--- a/drivers/tty/serial/clps711x.c
++++ b/drivers/tty/serial/clps711x.c
+@@ -154,10 +154,9 @@ static irqreturn_t clps711xuart_int_tx(int irq, void *dev_id)
+ 		port->x_char = 0;
+ 		return IRQ_HANDLED;
+ 	}
+-	if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
+-		clps711xuart_stop_tx(port);
+-		return IRQ_HANDLED;
+-	}
++
++	if (uart_circ_empty(xmit) || uart_tx_stopped(port))
++		goto disable_tx_irq;
  
- 	mute_outputs(codec, spec->multiout.num_dacs, spec->multiout.dac_nids);
--	for (i = 0; i < cfg->hp_outs; i++)
-+	for (i = 0; i < cfg->hp_outs; i++) {
-+		unsigned int val = PIN_OUT;
-+		if (snd_hda_query_pin_caps(codec, cfg->hp_pins[i]) &
-+		    AC_PINCAP_HP_DRV)
-+			val |= AC_PINCTL_HP_EN;
- 		snd_hda_codec_write(codec, cfg->hp_pins[i], 0,
--				    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_HP);
-+				    AC_VERB_SET_PIN_WIDGET_CONTROL, val);
+ 	count = port->fifosize >> 1;
+ 	do {
+@@ -171,8 +170,11 @@ static irqreturn_t clps711xuart_int_tx(int irq, void *dev_id)
+ 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+ 		uart_write_wakeup(port);
+ 
+-	if (uart_circ_empty(xmit))
+-		clps711xuart_stop_tx(port);
++	if (uart_circ_empty(xmit)) {
++	disable_tx_irq:
++		disable_irq_nosync(TX_IRQ(port));
++		tx_enabled(port) = 0;
 +	}
- 	mute_outputs(codec, cfg->hp_outs, cfg->hp_pins);
- 	mute_outputs(codec, cfg->line_outs, cfg->line_out_pins);
- 	mute_outputs(codec, cfg->speaker_outs, cfg->speaker_pins);
+ 
+ 	return IRQ_HANDLED;
+ }
 -- 
 1.7.10
 
