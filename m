@@ -1,83 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759585Ab2EIO0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:26:14 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:45053 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759495Ab2EIO0L convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:26:11 -0400
-MIME-Version: 1.0
-X-Originating-IP: [109.64.13.136]
-In-Reply-To: <alpine.DEB.2.00.1205081033450.27713@router.home>
-References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
-	<1336056962-10465-6-git-send-email-gilad@benyossef.com>
-	<alpine.DEB.2.00.1205071024550.1060@router.home>
-	<4FA823A7.9000801@gmail.com>
-	<alpine.DEB.2.00.1205071438240.2215@router.home>
-	<CAOtvUMf95gmZ4ZTSpTb+5NZdEiDTg_CPtp3L2_notdz+dZWG6A@mail.gmail.com>
-	<alpine.DEB.2.00.1205081033450.27713@router.home>
-Date: Wed, 9 May 2012 17:26:08 +0300
-Message-ID: <CAOtvUMfGkjTwPX7fk_uBvFyd2EpcoksLJoNET-6Ox6y=JN+LeA@mail.gmail.com>
-Subject: Re: [PATCH v1 5/6] mm: make vmstat_update periodic run conditional
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1759594Ab2EIO0d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:26:33 -0400
+Received: from relay.sigmatic.fi ([80.69.161.51]:45812 "EHLO relay.sigmatic.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757995Ab2EIO0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 10:26:30 -0400
+From: Hannu Heikkinen <hannuxx@iki.fi>
+To: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
+Cc: mika.westerberg@iki.fi, hsweeten@visionengravers.com
+Subject: [PATCH v3 RESEND] spi/ep93xx: clean probe/remove routines
+Date: Wed,  9 May 2012 17:26:26 +0300
+Message-Id: <1336573586-9504-1-git-send-email-hannuxx@iki.fi>
+X-Mailer: git-send-email 1.7.10
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 8, 2012 at 6:34 PM, Christoph Lameter <cl@linux.com> wrote:
-> On Tue, 8 May 2012, Gilad Ben-Yossef wrote:
->
->> > But this would still mean that the vmstat update thread would run on an
->> > arbitrary cpu. If I have a sacrificial lamb processor for OS processing
->> > then I would expect the vmstat update thread to stick to that processor
->> > and avoid to run on the other processor that I would like to be as free
->> > from OS noise as possible.
->> >
->>
->> OK, what about -
->>
->> - We pick a scapegoat cpu (the first to come up gets the job).
->> - We add a knob to let user designate another cpu for the job.
->> - If scapegoat cpus goes offline, the cpu processing the off lining is
->> the new scapegoat.
->>
->> Does this makes better sense?
->
-> Sounds good. The first that comes up. If the cpu is isolated then the
-> first non isolated cpu is picked.
->
+Use devm_* functions for managing devres resources.
 
-OK, will do.
+Also use local variable irq and remove irq variable from
+struct ep93xx_spi, as it is needed only in probe routine.
 
-Thanks,
-Gilad
+Acked-by: Mika Westerberg <mika.westerberg@iki.fi>
+Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Signed-off-by: Hannu Heikkinen <hannuxx@iki.fi>
+---
+ drivers/spi/spi-ep93xx.c |   37 ++++++++++---------------------------
+ 1 file changed, 10 insertions(+), 27 deletions(-)
 
-
+diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
+index e805507..f97f1d2 100644
+--- a/drivers/spi/spi-ep93xx.c
++++ b/drivers/spi/spi-ep93xx.c
+@@ -76,7 +76,6 @@
+  * @clk: clock for the controller
+  * @regs_base: pointer to ioremap()'d registers
+  * @sspdr_phys: physical address of the SSPDR register
+- * @irq: IRQ number used by the driver
+  * @min_rate: minimum clock rate (in Hz) supported by the controller
+  * @max_rate: maximum clock rate (in Hz) supported by the controller
+  * @running: is the queue running
+@@ -114,7 +113,6 @@ struct ep93xx_spi {
+ 	struct clk			*clk;
+ 	void __iomem			*regs_base;
+ 	unsigned long			sspdr_phys;
+-	int				irq;
+ 	unsigned long			min_rate;
+ 	unsigned long			max_rate;
+ 	bool				running;
+@@ -1031,6 +1029,7 @@ static int __devinit ep93xx_spi_probe(struct platform_device *pdev)
+ 	struct ep93xx_spi_info *info;
+ 	struct ep93xx_spi *espi;
+ 	struct resource *res;
++	int irq;
+ 	int error;
+ 
+ 	info = pdev->dev.platform_data;
+@@ -1070,8 +1069,8 @@ static int __devinit ep93xx_spi_probe(struct platform_device *pdev)
+ 	espi->min_rate = clk_get_rate(espi->clk) / (254 * 256);
+ 	espi->pdev = pdev;
+ 
+-	espi->irq = platform_get_irq(pdev, 0);
+-	if (espi->irq < 0) {
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0) {
+ 		error = -EBUSY;
+ 		dev_err(&pdev->dev, "failed to get irq resources\n");
+ 		goto fail_put_clock;
+@@ -1084,26 +1083,20 @@ static int __devinit ep93xx_spi_probe(struct platform_device *pdev)
+ 		goto fail_put_clock;
+ 	}
+ 
+-	res = request_mem_region(res->start, resource_size(res), pdev->name);
+-	if (!res) {
+-		dev_err(&pdev->dev, "unable to request iomem resources\n");
+-		error = -EBUSY;
+-		goto fail_put_clock;
+-	}
+-
+ 	espi->sspdr_phys = res->start + SSPDR;
+-	espi->regs_base = ioremap(res->start, resource_size(res));
++
++	espi->regs_base = devm_request_and_ioremap(&pdev->dev, res);
+ 	if (!espi->regs_base) {
+ 		dev_err(&pdev->dev, "failed to map resources\n");
+ 		error = -ENODEV;
+-		goto fail_free_mem;
++		goto fail_put_clock;
+ 	}
+ 
+-	error = request_irq(espi->irq, ep93xx_spi_interrupt, 0,
+-			    "ep93xx-spi", espi);
++	error = devm_request_irq(&pdev->dev, irq, ep93xx_spi_interrupt,
++				0, "ep93xx-spi", espi);
+ 	if (error) {
+ 		dev_err(&pdev->dev, "failed to request irq\n");
+-		goto fail_unmap_regs;
++		goto fail_put_clock;
+ 	}
+ 
+ 	if (info->use_dma && ep93xx_spi_setup_dma(espi))
+@@ -1128,7 +1121,7 @@ static int __devinit ep93xx_spi_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	dev_info(&pdev->dev, "EP93xx SPI Controller at 0x%08lx irq %d\n",
+-		 (unsigned long)res->start, espi->irq);
++		 (unsigned long)res->start, irq);
+ 
+ 	return 0;
+ 
+@@ -1136,11 +1129,6 @@ fail_free_queue:
+ 	destroy_workqueue(espi->wq);
+ fail_free_dma:
+ 	ep93xx_spi_release_dma(espi);
+-	free_irq(espi->irq, espi);
+-fail_unmap_regs:
+-	iounmap(espi->regs_base);
+-fail_free_mem:
+-	release_mem_region(res->start, resource_size(res));
+ fail_put_clock:
+ 	clk_put(espi->clk);
+ fail_release_master:
+@@ -1154,7 +1142,6 @@ static int __devexit ep93xx_spi_remove(struct platform_device *pdev)
+ {
+ 	struct spi_master *master = platform_get_drvdata(pdev);
+ 	struct ep93xx_spi *espi = spi_master_get_devdata(master);
+-	struct resource *res;
+ 
+ 	spin_lock_irq(&espi->lock);
+ 	espi->running = false;
+@@ -1180,10 +1167,6 @@ static int __devexit ep93xx_spi_remove(struct platform_device *pdev)
+ 	spin_unlock_irq(&espi->lock);
+ 
+ 	ep93xx_spi_release_dma(espi);
+-	free_irq(espi->irq, espi);
+-	iounmap(espi->regs_base);
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(res->start, resource_size(res));
+ 	clk_put(espi->clk);
+ 	platform_set_drvdata(pdev, NULL);
+ 
 -- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
+1.7.10
 
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
