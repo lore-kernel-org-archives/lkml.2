@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759540Ab2EIOTu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:19:50 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:34140 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757095Ab2EIOTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:19:47 -0400
-Message-ID: <1336573182.30189.42.camel@joe2Laptop>
-Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
-From: Joe Perches <joe@perches.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Igor Mammedov <imammedo@redhat.com>,
-        Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
-        pjt@google.com, tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 09 May 2012 07:19:42 -0700
-In-Reply-To: <1336571947.2527.47.camel@twins>
-References: <1336559908-32533-1-git-send-email-imammedo@redhat.com>
-	 <4FAA452A.1070909@gmail.com> <4FAA588B.5010404@redhat.com>
-	 <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
-	 <1336566096.2527.30.camel@twins> <1336566644.2527.33.camel@twins>
-	 <1336570043.2527.38.camel@twins> <20120509133607.GA26124@gmail.com>
-	 <1336571049.2527.43.camel@twins> <1336571947.2527.47.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759551Ab2EIOUL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:20:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63999 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757995Ab2EIOUJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 10:20:09 -0400
+Date: Wed, 9 May 2012 07:20:04 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Oleksij Rempel <bug-track@fisher-privat.net>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrey Rahmatullin <wrar@wrar.name>
+Subject: Re: [ 116/167] [PATCH] USB: EHCI: fix crash during suspend on ASUS
+ computers
+Message-ID: <20120509142004.GA11695@kroah.com>
+References: <20120509055045.705106794@decadent.org.uk>
+ <4FAA0DC8.5050602@fisher-privat.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FAA0DC8.5050602@fisher-privat.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 15:59 +0200, Peter Zijlstra wrote:
-> The current implementation limits both (field_width and precision) to
-> s16, which will limit us to printing 32Kb bitmaps. If need arises we
-> could increase printf_spec size I guess.
+On Wed, May 09, 2012 at 08:25:12AM +0200, Oleksij Rempel wrote:
+> What is actually with acpi fix of this problem? Will be this patch
+> removed and acpi fix applied instead?
 
-Not sure that's a problem really.
-A single printk is limited to 1024 bytes.
+When that acpi fix goes into the tree, yes, that will happen.  Until
+then, this patch solves the problem for a number of users.
 
-> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-[]
-> @@ -941,6 +947,26 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
->  			return netdev_feature_string(buf, end, ptr, spec);
->  		}
->  		break;
-> +	case 'b':
-> +		{
-> +			int bits, len;
+thanks,
 
-trivia: a tab indent could be avoided by using
-	case b: {
-
-
+greg k-h
