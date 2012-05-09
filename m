@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab2EIGbA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:31:00 -0400
+	id S1758533Ab2EIGbT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:31:19 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39965 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755979Ab2EIGa6 (ORCPT
+	by vger.kernel.org with ESMTP id S1758229Ab2EIGa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 02:30:58 -0400
-Message-Id: <20120509055051.115608089@decadent.org.uk>
+	Wed, 9 May 2012 02:30:59 -0400
+Message-Id: <20120509055044.372679815@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:53:05 +0100
+Date: Wed, 09 May 2012 06:52:15 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [ 156/167] [PATCH] drm/i915: disable sdvo hotplug on i945g/gm
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 106/167] [PATCH] drm/radeon/kms: need to set up ss on DP bridges as well
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,53 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 768b107e4b3be0acf6f58e914afe4f337c00932b upstream.
+commit 700698e7c303f5095107c62a81872c2c3dad1702 upstream.
 
-Chris Wilson dug out a hw erratum saying that there's noise on the
-interrupt line on i945G chips. We also have a bug report from a i945GM
-chip with an sdvo hotplug interrupt storm (and no apparent cause).
+Makes Nutmeg DP to VGA bridges work for me.
 
-Play it safe and disable sdvo hotplug on all i945 variants.
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=42490
 
-Note that this is a regression that has been introduced in 3.1,
-when we've enabled sdvo hotplug support with
+Noticed by Jerome Glisse (after weeks of debugging).
 
-commit cc68c81aed7d892deaf12d720d5455208e94cd0a
-Author: Simon Farnsworth <simon.farnsworth@onelan.co.uk>
-Date:   Wed Sep 21 17:13:30 2011 +0100
-
-    drm/i915: Enable SDVO hotplug interrupts for HDMI and DVI
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=38442
-Reported-and-tested-by: Dominik Köppl <dominik@devwork.org>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/gpu/drm/radeon/atombios_crtc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-index 232d77d..ae5e748 100644
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -1220,8 +1220,14 @@ static bool intel_sdvo_get_capabilities(struct intel_sdvo *intel_sdvo, struct in
+diff --git a/drivers/gpu/drm/radeon/atombios_crtc.c b/drivers/gpu/drm/radeon/atombios_crtc.c
+index c5c31e0..af1054f 100644
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -958,8 +958,8 @@ static void atombios_crtc_set_pll(struct drm_crtc *crtc, struct drm_display_mode
+ 		break;
+ 	}
  
- static int intel_sdvo_supports_hotplug(struct intel_sdvo *intel_sdvo)
- {
-+	struct drm_device *dev = intel_sdvo->base.base.dev;
- 	u8 response[2];
- 
-+	/* HW Erratum: SDVO Hotplug is broken on all i945G chips, there's noise
-+	 * on the line. */
-+	if (IS_I945G(dev) || IS_I945GM(dev))
-+		return false;
-+
- 	return intel_sdvo_get_value(intel_sdvo, SDVO_CMD_GET_HOT_PLUG_SUPPORT,
- 				    &response, 2) && response[0];
- }
+-	if (radeon_encoder->active_device &
+-	    (ATOM_DEVICE_LCD_SUPPORT | ATOM_DEVICE_DFP_SUPPORT)) {
++	if ((radeon_encoder->active_device & (ATOM_DEVICE_LCD_SUPPORT | ATOM_DEVICE_DFP_SUPPORT)) ||
++	    (radeon_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_OBJECT_ID_NONE)) {
+ 		struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
+ 		struct drm_connector *connector =
+ 			radeon_get_connector_for_encoder(encoder);
 -- 
 1.7.10
 
