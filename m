@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab2EIDiG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 23:38:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10751 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab2EIDiE (ORCPT
+	id S1754097Ab2EIDw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 23:52:29 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64605 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752863Ab2EIDw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 23:38:04 -0400
-X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=0in4RCm__d4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Nma7w3rrDWtLwQp3n5kA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1336534682.14207.197.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH v7 1/3] trace: Make removal of ring buffer pages atomic
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Laurent Chavey <chavey@google.com>,
-        Justin Teravest <teravest@google.com>,
-        David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org
-Date: Tue, 08 May 2012 23:38:02 -0400
-In-Reply-To: <1336096792-25373-1-git-send-email-vnagarnaik@google.com>
-References: <1335388704-26790-1-git-send-email-vnagarnaik@google.com>
-	 <1336096792-25373-1-git-send-email-vnagarnaik@google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 8 May 2012 23:52:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <1336475689.1179.12.camel@mop>
+References: <1336004953.4240.9.camel@mop> <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+ <1336475689.1179.12.camel@mop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 8 May 2012 20:52:06 -0700
+X-Google-Sender-Auth: WjKsk4ejE7W_KgxrVW3wfGUKHjw
+Message-ID: <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
+ record buffer
+To: Kay Sievers <kay@vrfy.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Greg Kroah-Hartmann <greg@kroah.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-03 at 18:59 -0700, Vaibhav Nagarnaik wrote:
+On Tue, May 8, 2012 at 4:14 AM, Kay Sievers <kay@vrfy.org> wrote:
+>
+> Yeah, we need to make sure, we never merge the (always racy)
+> continuation printk() users with (non-racy) non-continuation users.
+> Therefore KERN_CONT is required to suppress the newline and to merge the
+> content with the earlier non-newline-terminated printk() line.
 
-> +		get_online_cpus();
-> +		/*
-> +		 * Fire off all the required work handlers
-> +		 * Look out for offline CPUs
-> +		 */
-> +		for_each_buffer_cpu(buffer, cpu) {
-> +			cpu_buffer = buffer->buffers[cpu];
-> +			if (!cpu_buffer->nr_pages_to_update ||
-> +			    !cpu_online(cpu))
-> +				continue;
-> +
-> +			schedule_work_on(cpu, &cpu_buffer->update_pages_work);
-> +		}
-> +		/*
-> +		 * This loop is for the CPUs that are not online.
-> +		 * We can't schedule anything on them, but it's not necessary
-> +		 * since we can change their buffer sizes without any race.
-> +		 */
-> +		for_each_buffer_cpu(buffer, cpu) {
-> +			cpu_buffer = buffer->buffers[cpu];
-> +			if (!cpu_buffer->nr_pages_to_update ||
-> +			    cpu_online(cpu))
-> +				continue;
-> +
-> +			rb_update_pages(cpu_buffer);
->  		}
+Why?
 
-BTW, why the two loops and not just:
+I really think this is just a bug in the new code.
 
-		for_each_buffer_cpu(buffer, cpu) {
-			cpu_buffer = buffer->buffers[cpu];
-			if (!cpu_buffer->nr_pages_to_update)
-				continue;
+KERN_CONT should not be needed if the previous printk didn't have a final "\n".
 
-			if (cpu_online(cpu))
-				schedule_work_on(cpu, &cpu_buffer->update_pages_work);
-			else
-				rb_update_pages(cpu_buffer);
-		}
+We made it easier to use printk for a reason a few months ago. The new
+rules are:
 
-??
+ - If you have a KERN_<loglevel>, it *always* starts a new line, the
+obvious exception being KERN_CONT
 
+ - the loglevels *only* matter at the start of the printk - so if you
+have '\n' embedded in a single printk, that changes nothing
+what-so-ever. It's not line-based.
 
->  
->  		/* wait for all the updates to complete */
->  		for_each_buffer_cpu(buffer, cpu) {
->  			cpu_buffer = buffer->buffers[cpu];
-> -			if (cpu_buffer->nr_pages_to_update) {
-> -				update_pages_handler(cpu_buffer);
-> -			}
-> +			if (!cpu_buffer->nr_pages_to_update||
+ - if you didn't have a '\n', and don't have a loglevel, KERN_CONT is implied.
 
-			      !cpu_buffer->nr_pages_to_update ||
+Quite frankly, those three rules (a) make sense and (b) make things easy.
 
--- Steve
+Breaking them now is a bug. Please don't go adding ugly KERN_CONT when
+there really isn't any reason for it. Just fix the printk code you
+broke.
 
-> +			    !cpu_online(cpu))
-> +				continue;
-> +
-> +			wait_for_completion(&cpu_buffer->update_completion);
-> +			/* reset this value */
-> +			cpu_buffer->nr_pages_to_update = 0;
->  		}
-
-
+                  Linus
