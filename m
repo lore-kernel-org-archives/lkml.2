@@ -1,76 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758860Ab2EII4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 04:56:06 -0400
-Received: from mga14.intel.com ([143.182.124.37]:34088 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758796Ab2EII4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 04:56:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="98012850"
-Subject: Re: [PATCH V2 1/2] dma: dmaengine: add slave req id in slave_config
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: dan.j.williams@intel.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org
-In-Reply-To: <1336030889-32269-2-git-send-email-ldewangan@nvidia.com>
-References: <1336030889-32269-1-git-send-email-ldewangan@nvidia.com>
-	 <1336030889-32269-2-git-send-email-ldewangan@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 May 2012 14:19:18 +0530
-Message-ID: <1336553358.1540.169.camel@vkoul-udesk3>
+	id S1758845Ab2EII5a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 04:57:30 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:56502 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754521Ab2EII52 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
+	Wed, 9 May 2012 04:57:28 -0400
+Message-Id: <4FAA3EAF02000078000826E4@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 09 May 2012 08:53:51 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] xfrm: make xfrm_algo.c a module
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-03 at 13:11 +0530, Laxman Dewangan wrote:
-> The dma controller like Nvidia's Tegra Dma controller
-> supports the different slave requestor id from different slave.
-> This need to be configure in dma controller to handle the request
-> properly.
-> 
-> Adding the slave-id in the slave configuration so that information
-> can be passed from client when configuring for slave.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
-> 
-> This change is require to get rid of tegra_dma header to pass the
-> slave requestor id.
-> 
->  include/linux/dmaengine.h |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index 1082698..b0b275f 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -338,6 +338,9 @@ enum dma_slave_buswidth {
->   * @device_fc: Flow Controller Settings. Only valid for slave channels. Fill
->   * with 'true' if peripheral should be flow controller. Direction will be
->   * selected at Runtime.
-> + * @slave_id: Slave requester id. Only valid for slave channels. The dma
-> + * slave peripheral will have unique id as dma requester which need to be
-> + * pass as slave config.
->   *
->   * This struct is passed in as configuration data to a DMA engine
->   * in order to set up a certain channel for DMA transport at runtime.
-> @@ -365,6 +368,7 @@ struct dma_slave_config {
->  	u32 src_maxburst;
->  	u32 dst_maxburst;
->  	bool device_fc;
-> +	int slave_id;
-This wont be negative, so perhaps an unsigned value?
->  };
->  
->  static inline const char *dma_chan_name(struct dma_chan *chan)
+By making this a standalone config option (selected as needed),
+selecting CRYPTO from here rather than from XFRM (which is boolean)
+allows the core crypto code to become a module again even when XFRM=y.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+
+---
+ net/ipv4/Kconfig     |    4 ++--
+ net/ipv6/Kconfig     |    4 ++--
+ net/xfrm/Kconfig     |   13 +++++++++----
+ net/xfrm/Makefile    |    3 ++-
+ net/xfrm/xfrm_algo.c |    5 ++---
+ 5 files changed, 17 insertions(+), 12 deletions(-)
+
+--- 3.4-rc6/net/ipv4/Kconfig
++++ 3.4-rc6-xfrm-algo-module/net/ipv4/Kconfig
+@@ -312,7 +312,7 @@ config SYN_COOKIES
+ 
+ config INET_AH
+ 	tristate "IP: AH transformation"
+-	select XFRM
++	select XFRM_ALGO
+ 	select CRYPTO
+ 	select CRYPTO_HMAC
+ 	select CRYPTO_MD5
+@@ -324,7 +324,7 @@ config INET_AH
+ 
+ config INET_ESP
+ 	tristate "IP: ESP transformation"
+-	select XFRM
++	select XFRM_ALGO
+ 	select CRYPTO
+ 	select CRYPTO_AUTHENC
+ 	select CRYPTO_HMAC
+--- 3.4-rc6/net/ipv6/Kconfig
++++ 3.4-rc6-xfrm-algo-module/net/ipv6/Kconfig
+@@ -69,7 +69,7 @@ config IPV6_OPTIMISTIC_DAD
+ 
+ config INET6_AH
+ 	tristate "IPv6: AH transformation"
+-	select XFRM
++	select XFRM_ALGO
+ 	select CRYPTO
+ 	select CRYPTO_HMAC
+ 	select CRYPTO_MD5
+@@ -81,7 +81,7 @@ config INET6_AH
+ 
+ config INET6_ESP
+ 	tristate "IPv6: ESP transformation"
+-	select XFRM
++	select XFRM_ALGO
+ 	select CRYPTO
+ 	select CRYPTO_AUTHENC
+ 	select CRYPTO_HMAC
+--- 3.4-rc6/net/xfrm/Kconfig
++++ 3.4-rc6-xfrm-algo-module/net/xfrm/Kconfig
+@@ -3,12 +3,17 @@
+ #
+ config XFRM
+        bool
+-       select CRYPTO
+        depends on NET
+ 
++config XFRM_ALGO
++	tristate
++	select XFRM
++	select CRYPTO
++
+ config XFRM_USER
+ 	tristate "Transformation user configuration interface"
+-	depends on INET && XFRM
++	depends on INET
++	select XFRM_ALGO
+ 	---help---
+ 	  Support for Transformation(XFRM) user configuration interface
+ 	  like IPsec used by native Linux tools.
+@@ -48,13 +53,13 @@ config XFRM_STATISTICS
+ 
+ config XFRM_IPCOMP
+ 	tristate
+-	select XFRM
++	select XFRM_ALGO
+ 	select CRYPTO
+ 	select CRYPTO_DEFLATE
+ 
+ config NET_KEY
+ 	tristate "PF_KEY sockets"
+-	select XFRM
++	select XFRM_ALGO
+ 	---help---
+ 	  PF_KEYv2 socket family, compatible to KAME ones.
+ 	  They are required if you are going to use IPsec tools ported
+--- 3.4-rc6/net/xfrm/Makefile
++++ 3.4-rc6-xfrm-algo-module/net/xfrm/Makefile
+@@ -3,8 +3,9 @@
+ #
+ 
+ obj-$(CONFIG_XFRM) := xfrm_policy.o xfrm_state.o xfrm_hash.o \
+-		      xfrm_input.o xfrm_output.o xfrm_algo.o \
++		      xfrm_input.o xfrm_output.o \
+ 		      xfrm_sysctl.o xfrm_replay.o
+ obj-$(CONFIG_XFRM_STATISTICS) += xfrm_proc.o
++obj-$(CONFIG_XFRM_ALGO) += xfrm_algo.o
+ obj-$(CONFIG_XFRM_USER) += xfrm_user.o
+ obj-$(CONFIG_XFRM_IPCOMP) += xfrm_ipcomp.o
+--- 3.4-rc6/net/xfrm/xfrm_algo.c
++++ 3.4-rc6-xfrm-algo-module/net/xfrm/xfrm_algo.c
+@@ -15,9 +15,6 @@
+ #include <linux/crypto.h>
+ #include <linux/scatterlist.h>
+ #include <net/xfrm.h>
+-#if defined(CONFIG_INET_AH) || defined(CONFIG_INET_AH_MODULE) || defined(CONFIG_INET6_AH) || defined(CONFIG_INET6_AH_MODULE)
+-#include <net/ah.h>
+-#endif
+ #if defined(CONFIG_INET_ESP) || defined(CONFIG_INET_ESP_MODULE) || defined(CONFIG_INET6_ESP) || defined(CONFIG_INET6_ESP_MODULE)
+ #include <net/esp.h>
+ #endif
+@@ -752,3 +749,5 @@ void *pskb_put(struct sk_buff *skb, stru
+ }
+ EXPORT_SYMBOL_GPL(pskb_put);
+ #endif
++
++MODULE_LICENSE("GPL");
 
 
--- 
-~Vinod
 
