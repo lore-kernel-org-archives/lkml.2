@@ -1,74 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760589Ab2EITES (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 15:04:18 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3500 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760413Ab2EITEP (ORCPT
+	id S932185Ab2EITEg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 15:04:36 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64834 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758575Ab2EITEK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 15:04:15 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 09 May 2012 12:03:24 -0700
-From: Diwakar Tundlam <dtundlam@nvidia.com>
-To: "'Peter Zijlstra'" <peterz@infradead.org>
-CC: "'Ingo Molnar'" <mingo@kernel.org>,
-        "'David Rientjes'" <rientjes@google.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Date: Wed, 9 May 2012 12:04:07 -0700
-Subject: RE: [PATCH] sched: Make nr_uninterruptible count a signed value
-Thread-Topic: [PATCH] sched: Make nr_uninterruptible count a signed value
-Thread-Index: Ac0tu2C+vh+h5DsrQ+mPKx2QiGamsAAWgORw
-Message-ID: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF118@HQMAIL04.nvidia.com>
-References: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF10C@HQMAIL04.nvidia.com>
-	 <1336514192.8226.52.camel@twins>
-	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF10D@HQMAIL04.nvidia.com>
-	 <1336516020.8226.57.camel@twins> <1336516174.8226.59.camel@twins>
-	 <1DD7BFEDD3147247B1355BEFEFE46652379C3DF10E@HQMAIL04.nvidia.com>
- <1336551100.27020.84.camel@laptop>
-In-Reply-To: <1336551100.27020.84.camel@laptop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Wed, 9 May 2012 15:04:10 -0400
 MIME-Version: 1.0
+In-Reply-To: <20120506190146.GA12571@polaris.bitmath.org>
+References: <1336136030-18503-1-git-send-email-benjamin.tissoires@gmail.com>
+	<1336136030-18503-2-git-send-email-benjamin.tissoires@gmail.com>
+	<20120506190146.GA12571@polaris.bitmath.org>
+Date: Wed, 9 May 2012 21:04:09 +0200
+Message-ID: <CAN+gG=G9y_0Le-Mja2z68r76nBmz0De95Lc6671EkrrMZRSEHw@mail.gmail.com>
+Subject: Re: [PATCH 1/5] HID: hid-multitouch: fix wrong protocol detection
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q49J4RUr005272
 
-The issue is because when promoting from 32-bit unsigned to 64-bit signed, the compiler first does SIZE increase and then the sign change. If it did SIGN change first and then size increase (with sign-extension) and it will work correctly.
+Hi Henrik,
 
-But then, the compiler is probably doing the right thing here because the starting point is an unsigned value and when it is assigned a negative value, the compiler is perfectly justified in converting it to a large positive value which is what happened here.
+thanks for the review.
+Some comments inlined:
 
-The theoretical correct fix is to change the declaration to signed long nr_uninterruptible simply because it can sometimes become -ve.
+On Sun, May 6, 2012 at 9:01 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Benjamin,
+>
+>> The previous implementation introduced a randomness in the splitting
+>> of the different touches reported by the device. This version is more
+>> robust as we don't rely on hi->input->absbit, but on our own structure.
+>>
+>> This also prepares hid-multitouch to better support Win8 devices.
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+>> ---
+>>  drivers/hid/hid-multitouch.c |   58 +++++++++++++++++++++++++++++++++--------
+>>  1 files changed, 46 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+>> index 84bb32e..c6ffb05 100644
+>> --- a/drivers/hid/hid-multitouch.c
+>> +++ b/drivers/hid/hid-multitouch.c
+>> @@ -70,9 +70,16 @@ struct mt_class {
+>>       bool is_indirect;       /* true for touchpads */
+>>  };
+>>
+>> +struct mt_fields {
+>> +     unsigned usages[HID_MAX_FIELDS];
+>> +     unsigned int length;
+>> +};
+>> +
+>>  struct mt_device {
+>>       struct mt_slot curdata; /* placeholder of incoming data */
+>>       struct mt_class mtclass;        /* our mt device class */
+>> +     struct mt_fields *fields;       /* temporary placeholder for storing the
+>> +                                        multitouch fields */
+>
+> Why not skip the pointer here?
 
-The other fix is to fix the print statement - but it feels wrong.
+well, the idea was to keep the memory footprint low. As these values
+are only needed at init, then I freed them once I finished using them.
+I can of course skip the pointer, but in that case, wouldn't the
+struct declaration be worthless?
 
-It would be good to fix the declaration...
+>
+>>       unsigned last_field_index;      /* last field index of the report */
+>>       unsigned last_slot_field;       /* the last field of a slot */
+>>       __s8 inputmode;         /* InputMode HID feature, -1 if non-existent */
+>> @@ -275,11 +282,15 @@ static void set_abs(struct input_dev *input, unsigned int code,
+>>       input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
+>>  }
+>>
+>> -static void set_last_slot_field(struct hid_usage *usage, struct mt_device *td,
+>> +static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
+>>               struct hid_input *hi)
+>
+> How about adding the last_field_index here also, using a function like
 
-Thanks,
---Diwakar.
+I'm not a big fan of this idea.
+last_field_index represent the last mt field, was it local or global
+(i.e. per touch or global to the report).
+mt_store_field stores only the local (per-touch) information to be
+able to divide the array by the number of touch. Adding the global
+items there too will force us to introduce a switch to exclude global
+items.
 
------Original Message-----
-From: Peter Zijlstra [mailto:peterz@infradead.org] 
-Sent: Wednesday, May 09, 2012 1:12 AM
-To: Diwakar Tundlam
-Cc: 'Ingo Molnar'; 'David Rientjes'; 'linux-kernel@vger.kernel.org'; Peter De Schrijver
-Subject: RE: [PATCH] sched: Make nr_uninterruptible count a signed value
+Cheers,
+Benjamin
 
-On Tue, 2012-05-08 at 15:46 -0700, Diwakar Tundlam wrote:
-> Maybe it is an artifact of 32-bit machine displaying 64-bit print format.
-> An (unsigned long)(-24) promoted to (signed long long) ends up as 4294967272.
-> As seen in my output of sched_debug.
-
-Ah, quite possible. %Ld is indeed %lld and the value is long, not long long. So the proper fix is to fudge that printk statement somehow.
-
-> Your machine is probably natively 64-bit. 
-
-Yeah, I gave up on 32bit computing a while ago..
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>
+> static void mt_store_field(struct mt_device *td, struct hid_input *hi,
+>                        struct hid_field *field, struct hid_usage *usage)
+>
+>>  {
+>> -     if (!test_bit(usage->hid, hi->input->absbit))
+>> -             td->last_slot_field = usage->hid;
+>> +     struct mt_fields *f = td->fields;
+>
+> And inserting td->last_field_index = field->index here.
+>
+>> +
+>> +     if (f->length >= HID_MAX_FIELDS)
+>> +             return;
+>> +
+>> +     f->usages[f->length++] = usage->hid;
+>>  }
+>>
+>>  static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>> @@ -330,7 +341,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>>                               cls->sn_move);
+>>                       /* touchscreen emulation */
+>>                       set_abs(hi->input, ABS_X, field, cls->sn_move);
+>> -                     set_last_slot_field(usage, td, hi);
+>> +                     mt_store_field(usage, td, hi);
+>>                       td->last_field_index = field->index;
+>>                       return 1;
+>>               case HID_GD_Y:
+>> @@ -340,7 +351,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>>                               cls->sn_move);
+>>                       /* touchscreen emulation */
+>>                       set_abs(hi->input, ABS_Y, field, cls->sn_move);
+>> -                     set_last_slot_field(usage, td, hi);
+>> +                     mt_store_field(usage, td, hi);
+>>                       td->last_field_index = field->index;
+>>                       return 1;
+>>               }
+>> @@ -349,24 +360,24 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>>       case HID_UP_DIGITIZER:
+>>               switch (usage->hid) {
+>>               case HID_DG_INRANGE:
+>> -                     set_last_slot_field(usage, td, hi);
+>> +                     mt_store_field(usage, td, hi);
+>>                       td->last_field_index = field->index;
+>>                       return 1;
+>>               case HID_DG_CONFIDENCE:
+>> -                     set_last_slot_field(usage, td, hi);
+>> +                     mt_store_field(usage, td, hi);
+>>                       td->last_field_index = field->index;
+>>                       return 1;
+>>               case HID_DG_TIPSWITCH:
+>>                       hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
+>>                       input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
+>> -                     set_last_slot_field(usage, td, hi);
+>> +                     mt_store_field(usage, td, hi);
+>>                       td->last_field_index = field->index;
+>>                       return 1;
+>>               case HID_DG_CONTACTID:
+>>                       if (!td->maxcontacts)
+>>                               td->maxcontacts = MT_DEFAULT_MAXCONTACT;
+>>                       input_mt_init_slots(hi->input, td->maxcontacts);
+>> -                     td->last_slot_field = usage->hid;
+>> +                     mt_store_field(usage, td, hi);
+>>                       td->last_field_index = field->index;
+>>                       td->touches_by_report++;
+>>                       return 1;
+>> @@ -375,7 +386,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>>                                       EV_ABS, ABS_MT_TOUCH_MAJOR);
+>>                       set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
+>>                               cls->sn_width);
+>> -                     set_last_slot_field(usage, td, hi);
+>> +                     mt_store_field(usage, td, hi);
+>>                       td->last_field_index = field->index;
+>>                       return 1;
+>>               case HID_DG_HEIGHT:
+>> @@ -385,7 +396,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>>                               cls->sn_height);
+>>                       input_set_abs_params(hi->input,
+>>                                       ABS_MT_ORIENTATION, 0, 1, 0, 0);
+>> -                     set_last_slot_field(usage, td, hi);
+>> +                     mt_store_field(usage, td, hi);
+>>                       td->last_field_index = field->index;
+>>                       return 1;
+>>               case HID_DG_TIPPRESSURE:
+>> @@ -396,7 +407,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>>                       /* touchscreen emulation */
+>>                       set_abs(hi->input, ABS_PRESSURE, field,
+>>                               cls->sn_pressure);
+>> -                     set_last_slot_field(usage, td, hi);
+>> +                     mt_store_field(usage, td, hi);
+>>                       td->last_field_index = field->index;
+>>                       return 1;
+>>               case HID_DG_CONTACTCOUNT:
+>> @@ -650,6 +661,16 @@ static void mt_post_parse_default_settings(struct mt_device *td)
+>>       td->mtclass.quirks = quirks;
+>>  }
+>>
+>> +static void mt_post_parse(struct mt_device *td)
+>> +{
+>> +     struct mt_fields *f = td->fields;
+>> +
+>> +     if (td->touches_by_report > 0) {
+>> +             int field_count_per_touch = f->length / td->touches_by_report;
+>> +             td->last_slot_field = f->usages[field_count_per_touch - 1]->hid;
+>> +     }
+>> +}
+>> +
+>>  static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>>  {
+>>       int ret, i;
+>> @@ -680,6 +701,13 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>>       td->maxcontact_report_id = -1;
+>>       hid_set_drvdata(hdev, td);
+>>
+>> +     td->fields = kzalloc(sizeof(struct mt_fields), GFP_KERNEL);
+>> +     if (!td->fields) {
+>> +             dev_err(&hdev->dev, "cannot allocate multitouch fields data\n");
+>> +             ret = -ENOMEM;
+>> +             goto fail;
+>> +     }
+>> +
+>
+> This can be skipped.
+>
+>>       ret = hid_parse(hdev);
+>>       if (ret != 0)
+>>               goto fail;
+>> @@ -688,6 +716,8 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>>       if (ret)
+>>               goto fail;
+>>
+>> +     mt_post_parse(td);
+>> +
+>>       if (id->vendor == HID_ANY_ID && id->product == HID_ANY_ID)
+>>               mt_post_parse_default_settings(td);
+>>
+>> @@ -705,9 +735,13 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>>       mt_set_maxcontacts(hdev);
+>>       mt_set_input_mode(hdev);
+>>
+>> +     kfree(td->fields);
+>> +     td->fields = NULL;
+>> +
+>
+> Ditto.
+>
+>>       return 0;
+>>
+>>  fail:
+>> +     kfree(td->fields);
+>
+> Ditto.
+>
+>>       kfree(td);
+>>       return ret;
+>>  }
+>> --
+>> 1.7.7.6
+>>
+>
+> Thanks,
+> Henrik
