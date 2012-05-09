@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab2EIRgn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:36:43 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:4821 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258Ab2EIRgl (ORCPT
+	id S1757160Ab2EIRid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:38:33 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:44886 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754386Ab2EIRic convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 13:36:41 -0400
-Message-ID: <1336585000.2498.23.camel@lorien2>
-Subject: Re: [PATCH v2 0/7] ACPI: Add _OST support for ACPI hotplug
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: shuahkhan@gmail.com, lenb@kernel.org, linux-acpi@vger.kernel.org,
-        bhelgaas@google.com, linux-kernel@vger.kernel.org
-Date: Wed, 09 May 2012 11:36:40 -0600
-In-Reply-To: <1336507944-10219-1-git-send-email-toshi.kani@hp.com>
-References: <1336507944-10219-1-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 9 May 2012 13:38:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120506132413.28499956@pyramind.ukuu.org.uk>
+References: <Pine.LNX.4.64.1205042250130.18896@file.rdu.redhat.com>
+	<20120505115851.1fecbe50@pyramind.ukuu.org.uk>
+	<Pine.LNX.4.64.1205051448400.2623@file.rdu.redhat.com>
+	<20120506132413.28499956@pyramind.ukuu.org.uk>
+Date: Wed, 9 May 2012 10:38:30 -0700
+Message-ID: <CAP6odjhVK0PjXQ_vLbK2dWs4CnnxJwmhcDPDV=qLJmxBMBBDJQ@mail.gmail.com>
+Subject: Re: [PATCH] Fix compile failure on PA-RISC
+From: Grant Grundler <grantgrundler@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-08 at 14:12 -0600, Toshi Kani wrote:
-> This patchset supports ACPI OSPM Status Indication (_OST) method for
-> ACPI CPU/memory/container hotplug operations and sysfs eject. After
-> ACPI hotplug operation has completed, OSPM calls _OST to indicate the
-> status of the operation to the platform. If _OST is not present, this
-> patchset has no effect on the platform.
-> 
-> This _OST support can be enabled or disabled with a new config option
-> CONFIG_ACPI_HOTPLUG_OST. This option is disabled by default. When
-> this option is disabled, this patchset has no effect on the platform.
-> 
-> The _OST definition can be found in section 6.3.5 of ACPI 5.0 spec.
-> The HPPF spec below also describes hotplug flows with _OST.
-> 
->   DIG64 Hot-Plug & Partitioning Flow (HPPF) Specification R1.0
->   http://www.dig64.org/home/DIG64_HPPF_R1_0.pdf
-> 
-> The changes have been tested with simulated _OST methods.
-> 
-> v2:
->  - Added CONFIG_ACPI_HOTPLUG_OST option. 
->  - Added _OST support for container hotplug and sysfs eject.
->  - Reordered patchset to enable _OST support bit of _OSC in the 
->    last patch.
-> 
-> ---
-> Toshi Kani (7):
->  ACPI: Add CONFIG_HOTPLUG_OST option
->  ACPI: Add an interface to evaluate _OST
->  ACPI: Add _OST support for sysfs eject
->  ACPI: Add _OST support for ACPI CPU hotplug
->  ACPI: Add _OST support for ACPI memory hotplug
->  ACPI: Add _OST support for ACPI container hotplug
->  ACPI: Set hotplug _OST support bit to _OSC
-> 
+On Sun, May 6, 2012 at 5:24 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> What NO_IRQ problem do you mean? There is
+>> #define NO_IRQ          (-1)
+>> in arch/parisc/include/asm/irq.h.
+>
+> It should be zero ready for us to get rid of it. Aa far as I can tell
+> pa-risc can just move to 0 without anything breaking. In fact some stuff
+> like serial port polling on 8250 ports will begin to work if it's done.
 
-Did you look into implementing this maybe in a generic way by adding a
-new device_ops that adds the ability to return status back to firmware?
-It can be left null on systems that don't implement _OST. This way it
-might be cleaner and can extend to other means of returning status back
-to firmware if any.
+Alan,
+Didn't this patch of yours go in?
+    http://www.spinics.net/lists/linux-parisc/msg03894.html
 
-Adding _OST support the way it is done in this patch set is rather
-invasive and CONFIG_HOTPLUG_OST only helps disable just the evaluation
-of _OST method. Other code changes do get executed on all platforms.
+And it's amusing to read linus' previous rants on this issue from 2005:
+    http://lkml.indiana.edu/hypermail/linux/kernel/0511.2/1720.html
+    http://lkml.indiana.edu/hypermail/linux/kernel/0511.2/1741.html
+    http://lkml.indiana.edu/hypermail/linux/kernel/0511.2/1845.html
 
--- Shuah
-
+cheers,
+grant
