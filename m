@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757942Ab2EIGGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:06:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39140 "EHLO
+	id S1757959Ab2EIGGk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:06:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38933 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756777Ab2EIFxg (ORCPT
+	by vger.kernel.org with ESMTP id S1756241Ab2EIFxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:36 -0400
-Message-Id: <20120509055050.156641309@decadent.org.uk>
+Message-Id: <20120509055040.099618905@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:58 +0100
+Date: Wed, 09 May 2012 06:51:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 149/167] [PATCH] iwlwifi: fix hardware queue programming
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
+        Vijay Subramanian <subramanian.vijay@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 074/167] [PATCH 14/26] tcp: fix tcp_trim_head()
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,114 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit 5ef4acd58ab2abd0dd0c8e3cacd61a0dc5d73646 upstream.
+[ Upstream commit 4fa48bf3c75069d636fc8830743c929a062e80dc ]
 
-Newer devices have 20 (5000 series) or 30 (6000 series)
-hardware queues, rather than the 16 that 4965 had. This
-was added to the driver a long time ago, but improperly:
-the queue registers for the higher queues aren't just
-continuations of the registers for the first 16 queues,
-they are in other places. Therefore, the hardware would
-lock up when trying to activate queue 16 or above and
-the device would have to be restarted.
+commit f07d960df3 (tcp: avoid frag allocation for small frames)
+breaked assumption in tcp stack that skb is either linear (skb->data_len
+== 0), or fully fragged (skb->data_len == skb->len)
 
-Thanks goes to Emmanuel who identified this and told me
-how the queue programming should be done.
+tcp_trim_head() made this assumption, we must fix it.
 
-Note that we don't use queues 20 and higher today and
-doing so needs more work than this.
+Thanks to Vijay for providing a very detailed explanation.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Vijay Subramanian <subramanian.vijay@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/iwlwifi/iwl-fh.h   |   24 +++++++++++++++++++-----
- drivers/net/wireless/iwlwifi/iwl-prph.h |   27 ++++++++++++++++++++++++---
- 2 files changed, 43 insertions(+), 8 deletions(-)
+ net/ipv4/tcp_output.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-fh.h b/drivers/net/wireless/iwlwifi/iwl-fh.h
-index 9020809..74bce97 100644
---- a/drivers/net/wireless/iwlwifi/iwl-fh.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-fh.h
-@@ -104,15 +104,29 @@
-  * (see struct iwl_tfd_frame).  These 16 pointer registers are offset by 0x04
-  * bytes from one another.  Each TFD circular buffer in DRAM must be 256-byte
-  * aligned (address bits 0-7 must be 0).
-+ * Later devices have 20 (5000 series) or 30 (higher) queues, but the registers
-+ * for them are in different places.
-  *
-  * Bit fields in each pointer register:
-  *  27-0: TFD CB physical base address [35:8], must be 256-byte aligned
-  */
--#define FH_MEM_CBBC_LOWER_BOUND          (FH_MEM_LOWER_BOUND + 0x9D0)
--#define FH_MEM_CBBC_UPPER_BOUND          (FH_MEM_LOWER_BOUND + 0xA10)
--
--/* Find TFD CB base pointer for given queue (range 0-15). */
--#define FH_MEM_CBBC_QUEUE(x)  (FH_MEM_CBBC_LOWER_BOUND + (x) * 0x4)
-+#define FH_MEM_CBBC_0_15_LOWER_BOUND		(FH_MEM_LOWER_BOUND + 0x9D0)
-+#define FH_MEM_CBBC_0_15_UPPER_BOUND		(FH_MEM_LOWER_BOUND + 0xA10)
-+#define FH_MEM_CBBC_16_19_LOWER_BOUND		(FH_MEM_LOWER_BOUND + 0xBF0)
-+#define FH_MEM_CBBC_16_19_UPPER_BOUND		(FH_MEM_LOWER_BOUND + 0xC00)
-+#define FH_MEM_CBBC_20_31_LOWER_BOUND		(FH_MEM_LOWER_BOUND + 0xB20)
-+#define FH_MEM_CBBC_20_31_UPPER_BOUND		(FH_MEM_LOWER_BOUND + 0xB80)
-+
-+/* Find TFD CB base pointer for given queue */
-+static inline unsigned int FH_MEM_CBBC_QUEUE(unsigned int chnl)
-+{
-+	if (chnl < 16)
-+		return FH_MEM_CBBC_0_15_LOWER_BOUND + 4 * chnl;
-+	if (chnl < 20)
-+		return FH_MEM_CBBC_16_19_LOWER_BOUND + 4 * (chnl - 16);
-+	WARN_ON_ONCE(chnl >= 32);
-+	return FH_MEM_CBBC_20_31_LOWER_BOUND + 4 * (chnl - 20);
-+}
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 097e0c7..7413437 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1093,6 +1093,13 @@ static void __pskb_trim_head(struct sk_buff *skb, int len)
+ {
+ 	int i, k, eat;
  
++	eat = min_t(int, len, skb_headlen(skb));
++	if (eat) {
++		__skb_pull(skb, eat);
++		len -= eat;
++		if (!len)
++			return;
++	}
+ 	eat = len;
+ 	k = 0;
+ 	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+@@ -1124,11 +1131,7 @@ int tcp_trim_head(struct sock *sk, struct sk_buff *skb, u32 len)
+ 	if (skb_cloned(skb) && pskb_expand_head(skb, 0, 0, GFP_ATOMIC))
+ 		return -ENOMEM;
  
- /**
-diff --git a/drivers/net/wireless/iwlwifi/iwl-prph.h b/drivers/net/wireless/iwlwifi/iwl-prph.h
-index 75dc20b..3b10692 100644
---- a/drivers/net/wireless/iwlwifi/iwl-prph.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-prph.h
-@@ -223,12 +223,33 @@
- #define SCD_AIT			(SCD_BASE + 0x0c)
- #define SCD_TXFACT		(SCD_BASE + 0x10)
- #define SCD_ACTIVE		(SCD_BASE + 0x14)
--#define SCD_QUEUE_WRPTR(x)	(SCD_BASE + 0x18 + (x) * 4)
--#define SCD_QUEUE_RDPTR(x)	(SCD_BASE + 0x68 + (x) * 4)
- #define SCD_QUEUECHAIN_SEL	(SCD_BASE + 0xe8)
- #define SCD_AGGR_SEL		(SCD_BASE + 0x248)
- #define SCD_INTERRUPT_MASK	(SCD_BASE + 0x108)
--#define SCD_QUEUE_STATUS_BITS(x)	(SCD_BASE + 0x10c + (x) * 4)
-+
-+static inline unsigned int SCD_QUEUE_WRPTR(unsigned int chnl)
-+{
-+	if (chnl < 20)
-+		return SCD_BASE + 0x18 + chnl * 4;
-+	WARN_ON_ONCE(chnl >= 32);
-+	return SCD_BASE + 0x284 + (chnl - 20) * 4;
-+}
-+
-+static inline unsigned int SCD_QUEUE_RDPTR(unsigned int chnl)
-+{
-+	if (chnl < 20)
-+		return SCD_BASE + 0x68 + chnl * 4;
-+	WARN_ON_ONCE(chnl >= 32);
-+	return SCD_BASE + 0x2B4 + (chnl - 20) * 4;
-+}
-+
-+static inline unsigned int SCD_QUEUE_STATUS_BITS(unsigned int chnl)
-+{
-+	if (chnl < 20)
-+		return SCD_BASE + 0x10c + chnl * 4;
-+	WARN_ON_ONCE(chnl >= 32);
-+	return SCD_BASE + 0x384 + (chnl - 20) * 4;
-+}
+-	/* If len == headlen, we avoid __skb_pull to preserve alignment. */
+-	if (unlikely(len < skb_headlen(skb)))
+-		__skb_pull(skb, len);
+-	else
+-		__pskb_trim_head(skb, len - skb_headlen(skb));
++	__pskb_trim_head(skb, len);
  
- /*********************** END TX SCHEDULER *************************************/
- 
+ 	TCP_SKB_CB(skb)->seq += len;
+ 	skb->ip_summed = CHECKSUM_PARTIAL;
 -- 
 1.7.10
 
