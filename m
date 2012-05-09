@@ -1,82 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760954Ab2EIUGR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 16:06:17 -0400
-Received: from mga14.intel.com ([143.182.124.37]:58847 "EHLO mga14.intel.com"
+	id S1760962Ab2EIUIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 16:08:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1253 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760879Ab2EIUGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 16:06:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="141041138"
-Message-ID: <4FAACE2C.1050405@linux.intel.com>
-Date: Wed, 09 May 2012 13:06:04 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1758037Ab2EIUH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 16:07:58 -0400
+Date: Wed, 9 May 2012 23:07:36 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        David Howells <dhowells@redhat.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] bitops: add _local bitops
+Message-ID: <20120509200735.GA22743@redhat.com>
+References: <20120509134528.GA18044@redhat.com>
+ <20120509121940.459e93ba.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-CC: "H. Peter Anvin" <h.peter.anvin@intel.com>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Joseph Cihula <joseph.cihula@intel.com>,
-        Shane Wang <shane.wang@intel.com>
-Subject: Re: [PATCH 02/23] x86, realmode: realmode.bin infrastructure
-References: <1336501366-28617-1-git-send-email-jarkko.sakkinen@intel.com> <1336501366-28617-3-git-send-email-jarkko.sakkinen@intel.com> <4FAA9207.8070709@intel.com> <alpine.DEB.2.02.1205092256240.31031@jsakkine-mobl1.(null)>
-In-Reply-To: <alpine.DEB.2.02.1205092256240.31031@jsakkine-mobl1.(null)>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120509121940.459e93ba.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2012 12:57 PM, Jarkko Sakkinen wrote:
+On Wed, May 09, 2012 at 12:19:40PM -0700, Andrew Morton wrote:
+> On Wed, 9 May 2012 16:45:29 +0300
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > 
-> diff --git a/arch/x86/realmode/Makefile b/arch/x86/realmode/Makefile
-> index f22a4f8..615878e 100644
-> --- a/arch/x86/realmode/Makefile
-> +++ b/arch/x86/realmode/Makefile
-> @@ -15,6 +15,3 @@ $(obj)/rmpiggy.o: $(obj)/rm/realmode.relocs
-> $(obj)/rm/realmode.bin
+> > kvm needs to update some hypervisor variables atomically
+> > in a sense that the operation can't be interrupted
+> > in the middle. However the hypervisor always runs
+> > on the same CPU so it does not need any memory
+> > barrier or lock prefix.
 > 
->  $(obj)/rm/realmode.bin: FORCE
->         $(Q)$(MAKE) $(build)=$(obj)/rm $@
-> -
-> -$(obj)/rm/realmode.relocs: FORCE
-> -       $(Q)$(MAKE) $(build)=$(obj)/rm $@
-> diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
-> index de40bc4..1c1d3d3 100644
-> --- a/arch/x86/realmode/rm/Makefile
-> +++ b/arch/x86/realmode/rm/Makefile
-> @@ -48,7 +48,7 @@ $(obj)/realmode.elf: $(obj)/realmode.lds
-> $(REALMODE_OBJS) FORCE
+> Well.  It adds more complexity, makes the kernel harder to understand
+> and maintain and introduces more opportunities for developers to add
+> bugs.  So from that point of view, the best way of handling this patch
+> is to delete it.
 > 
->  OBJCOPYFLAGS_realmode.bin := -O binary
+> Presumably the patch offers some benefit to offest all those costs. 
+> But you didn't tell us what that benefit is, so we cannot make
+> a decision.
 > 
-> -$(obj)/realmode.bin: $(obj)/realmode.elf
-> +$(obj)/realmode.bin: $(obj)/realmode.elf $(obj)/realmode.relocs
->         $(call if_changed,objcopy)
-> 
->  quiet_cmd_relocs = RELOCS  $@
-> 
-> Would this resolve the existing issues or not?
-> 
+> IOW: numbers, please.  Convincing ones, for realistic test cases.
 
-That should would work, although it is definitely a hack.  It all really
-comes down to make not having a good way to deal with a single process
-generating more than one output.  I discussed this about a decade(!) ago
-with the GNU make maintainers, and they said that make *can* be made to
-do the right thing by doing a pattern rule:
+I can try but in practice it's not an optimization.
+What kvm needs is a guarantee that a memory update will be done in a
+single instruction.
 
-%.foo %.bar: %.baz
+> Secondly: can KVM just use __set_bit() and friends?  I suspect those
+> interfaces happen to meet your requirements.  At least on architectures
+> you care about.
 
-... as pattern rules with multiple targets are handled differently than
-non-pattern rules with multiple targets.  They were -- and still are --
-reluctant to actually fix the problem since it wouldn't be backwards
-compatible, but of course that is true with any new Make feature.
+Sigh. I started with this, but then Avi Kivity said that he's worried
+about someone changing __test_and_clear_bit on x86
+such that the change won't be atomic (single instruction) anymore.
+So I put inline asm into kvm.c. This drew comment from Peter
+that maintaining separate asm code in kvm.c adds too much
+maintainance overhead so I should implement _local, add
+asm-generic fallback and put it all in generic code.
 
-Not sure how to use the pattern rule in this case, so I guess we might
-as well go with the hack.  Can you send it as a proper patch (with a
-description and Signed-off-by:), please?
+In practice ATM any of the above will work. We probably don't even need
+to add barrier() calls since what we do afterwards is apic access which
+has an optimization barrier anyway.  But I'm fine with adding them in
+there just in case if that's what people want.
 
-	-hpa
+However, since we've come full circle, I'd like to have a discussion
+on what, exactly, is acceptable to all maintainers.
+Avi, Andrew, Peter, could you please comment?
 
+-- 
+MST
