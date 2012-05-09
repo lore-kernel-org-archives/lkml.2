@@ -1,136 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab2EIKei (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 06:34:38 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:47749 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753702Ab2EIKeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 06:34:36 -0400
-Date: Wed, 9 May 2012 03:32:12 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Durgadoss R <durgadoss.r@intel.com>,
-        Andi Kleen <ak@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, v4] hwmon: coretemp: use list instead of fixed size
- array for temp data
-Message-ID: <20120509103212.GA16699@ericsson.com>
-References: <1336474175-5714-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1336495180.22553.68.camel@groeck-laptop>
- <20120509070906.GA21556@otc-wbsnb-06>
- <20120509072339.GB21556@otc-wbsnb-06>
- <20120509095617.GB15630@ericsson.com>
- <20120509101634.GA24566@otc-wbsnb-06>
+	id S1756271Ab2EIKfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 06:35:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39288 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753702Ab2EIKfE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 06:35:04 -0400
+Date: Wed, 9 May 2012 03:34:42 -0700
+From: tip-bot for Jan Beulich <JBeulich@suse.com>
+Message-ID: <tip-57da8b960b9a25646a8ddb5a9c1d0b5978e69bec@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        arjan@linux.intel.com, torvalds@linux-foundation.org,
+        jbeulich@suse.com, fweisbec@gmail.com, akpm@linux-foundation.org,
+        JBeulich@suse.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, arjan@linux.intel.com,
+        jbeulich@suse.com, fweisbec@gmail.com, akpm@linux-foundation.org,
+        JBeulich@suse.com, tglx@linutronix.de
+In-Reply-To: <4FAA3D3902000078000826E1@nat28.tlf.novell.com>
+References: <4FAA3D3902000078000826E1@nat28.tlf.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86: Avoid double stack traces with show_regs()
+Git-Commit-ID: 57da8b960b9a25646a8ddb5a9c1d0b5978e69bec
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120509101634.GA24566@otc-wbsnb-06>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 09 May 2012 03:34:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 06:16:34AM -0400, Kirill A. Shutemov wrote:
-> On Wed, May 09, 2012 at 02:56:17AM -0700, Guenter Roeck wrote:
-> > On Wed, May 09, 2012 at 03:23:39AM -0400, Kirill A. Shutemov wrote:
-> > > On Wed, May 09, 2012 at 10:09:06AM +0300, Kirill A. Shutemov wrote:
-> > > > On Tue, May 08, 2012 at 09:39:40AM -0700, Guenter Roeck wrote:
-> > > > > On Tue, 2012-05-08 at 06:49 -0400, Kirill A. Shutemov wrote:
-> > > > > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > > > > > 
-> > > > > > Let's rework code to allow arbitrary number of cores on a CPU, not
-> > > > > > limited by hardcoded array size.
-> > > > > > 
-> > > > > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > > > > > ---
-> > > > > >  v4:
-> > > > > >    - address issues pointed by Guenter Roeck;
-> > > > > >  v3:
-> > > > > >    - drop redundant refcounting and checks;
-> > > > > >  v2:
-> > > > > >    - fix NULL pointer dereference. Thanks to R, Durgadoss;
-> > > > > >    - use mutex instead of spinlock for list locking.
-> > > > > > ---
-> > > > > 
-> > > > > Hi Kirill,
-> > > > > 
-> > > > > unfortunately now we have another race condition :(. See below ...
-> > > > 
-> > > > Ughh..
-> > > > 
-> > > > > > @@ -557,11 +579,22 @@ exit_free:
-> > > > > >  static int __devexit coretemp_remove(struct platform_device *pdev)
-> > > > > >  {
-> > > > > >  	struct platform_data *pdata = platform_get_drvdata(pdev);
-> > > > > > -	int i;
-> > > > > > +	struct temp_data *tdata;
-> > > > > >  
-> > > > > > -	for (i = MAX_CORE_DATA - 1; i >= 0; --i)
-> > > > > > -		if (pdata->core_data[i])
-> > > > > > -			coretemp_remove_core(pdata, &pdev->dev, i);
-> > > > > > +	for (;;) {
-> > > > > > +		mutex_lock(&pdata->temp_data_lock);
-> > > > > > +		if (!list_empty(&pdata->temp_data_list)) {
-> > > > > > +			tdata = list_first_entry(&pdata->temp_data_list,
-> > > > > > +					struct temp_data, list);
-> > > > > > +			list_del(&tdata->list);
-> > > > > > +		} else
-> > > > > > +			tdata = NULL;
-> > > > > > +		mutex_unlock(&pdata->temp_data_lock);
-> > > > > > +
-> > > > > > +		if (!tdata)
-> > > > > > +			break;
-> > > > > > +		coretemp_remove_core(tdata, &pdev->dev);
-> > > > > > +	}
-> > > > > >  
-> > > > > Unfortunately, that results in a race condition, since the tdata list
-> > > > > entry is gone before the attribute file is deleted.
-> > > > > 
-> > > > > I think you can still use list_for_each_entry_safe, only outside the
-> > > > > mutex, and remove the list entry at the end of coretemp_remove_core()
-> > > 
-> > > I haven't got how list_for_each_entry_safe() will be really safe without
-> > > the lock.
-> > > 
-> > We know that it by itself won't be called multiple times. So the only question is 
-> > if the functions to add/remove a core can be called while coretemp_remove is called,
-> > or if that is mutually exclusive (not that the current code handles this case).
-> > 
-> > Fortunately, there is a function to block CPU removal/insertion: get_online_cpus()
-> > and put_online_cpus(). I have no idea if it is necessary to protect coretemp_remove()
-> > with it, but it might be on the safe side anyway.
-> > 
-> > > > > after deleting the attribute file. Just keep the code as it was, and
-> > > > > remove the list entry (mutex-protected) where core_data[] was set to
-> > > > > NULL.
-> > > > 
-> > > > I think
-> > > > 
-> > > > if (tdata)
-> > > > 	return -ENODEV;
-> > > > 
-> > > > in show methods will fix the issue. Right?
-> > > 
-> > > It won't. Stupid me.
-> > > 
-> > > But the check + kref seems will work...
-> > > 
-> > Yes, but would be way too complicated.
-> 
-> More code, yes, but complicated? What you propose looks like a trick. It
-> has too many assumptions on context.
-> 
+Commit-ID:  57da8b960b9a25646a8ddb5a9c1d0b5978e69bec
+Gitweb:     http://git.kernel.org/tip/57da8b960b9a25646a8ddb5a9c1d0b5978e69bec
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Wed, 9 May 2012 08:47:37 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 9 May 2012 11:44:42 +0200
 
-There is an even better solution: unregistering the hotplug notifier
-before removing the driver. And, as you will notice, that is already done.
-So list_for_each_entry_safe() is safe after all, since no other remove/add
-activity will occur at the same time.
+x86: Avoid double stack traces with show_regs()
 
-> I personally prefer kref since it's straight forward and more friendly for
-> future changes.
-> 
-Guess we have to agree to disagree on that one.
+What was called show_registers() so far already showed a stack
+trace for kernel faults, and kernel_stack_pointer() isn't even
+valid to be used for faults from user mode, hence it was
+pointless for show_regs() to call show_trace() after
+show_registers().
 
-Thanks,
-Guenter
+Simply rename show_registers() to show_regs() and eliminate
+the old definition.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/r/4FAA3D3902000078000826E1@nat28.tlf.novell.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/include/asm/kdebug.h  |    1 -
+ arch/x86/kernel/dumpstack.c    |    2 +-
+ arch/x86/kernel/dumpstack_32.c |    2 +-
+ arch/x86/kernel/dumpstack_64.c |    2 +-
+ arch/x86/kernel/kprobes.c      |    4 ++--
+ arch/x86/kernel/nmi.c          |    2 +-
+ arch/x86/kernel/process.c      |    6 ------
+ 7 files changed, 6 insertions(+), 13 deletions(-)
+
+diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
+index d73f157..2c37aad 100644
+--- a/arch/x86/include/asm/kdebug.h
++++ b/arch/x86/include/asm/kdebug.h
+@@ -24,7 +24,6 @@ enum die_val {
+ extern void printk_address(unsigned long address, int reliable);
+ extern void die(const char *, struct pt_regs *,long);
+ extern int __must_check __die(const char *, struct pt_regs *, long);
+-extern void show_registers(struct pt_regs *regs);
+ extern void show_trace(struct task_struct *t, struct pt_regs *regs,
+ 		       unsigned long *sp, unsigned long bp);
+ extern void __show_regs(struct pt_regs *regs, int all);
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index 1b81839..40989da 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -271,7 +271,7 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
+ 			current->thread.trap_nr, SIGSEGV) == NOTIFY_STOP)
+ 		return 1;
+ 
+-	show_registers(regs);
++	show_regs(regs);
+ #ifdef CONFIG_X86_32
+ 	if (user_mode_vm(regs)) {
+ 		sp = regs->sp;
+diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
+index 88ec912..e0b1d78 100644
+--- a/arch/x86/kernel/dumpstack_32.c
++++ b/arch/x86/kernel/dumpstack_32.c
+@@ -82,7 +82,7 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ }
+ 
+ 
+-void show_registers(struct pt_regs *regs)
++void show_regs(struct pt_regs *regs)
+ {
+ 	int i;
+ 
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index 17107bd..791b761 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -245,7 +245,7 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
+ }
+ 
+-void show_registers(struct pt_regs *regs)
++void show_regs(struct pt_regs *regs)
+ {
+ 	int i;
+ 	unsigned long sp;
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index e213fc8..e2f751e 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -1037,9 +1037,9 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+ 			       "current sp %p does not match saved sp %p\n",
+ 			       stack_addr(regs), kcb->jprobe_saved_sp);
+ 			printk(KERN_ERR "Saved registers for jprobe %p\n", jp);
+-			show_registers(saved_regs);
++			show_regs(saved_regs);
+ 			printk(KERN_ERR "Current registers\n");
+-			show_registers(regs);
++			show_regs(regs);
+ 			BUG();
+ 		}
+ 		*regs = kcb->jprobe_saved_regs;
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index 47acaf3..03c1345 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -244,7 +244,7 @@ io_check_error(unsigned char reason, struct pt_regs *regs)
+ 	pr_emerg(
+ 	"NMI: IOCK error (debug interrupt?) for reason %02x on CPU %d.\n",
+ 		 reason, smp_processor_id());
+-	show_registers(regs);
++	show_regs(regs);
+ 
+ 	if (panic_on_io_nmi)
+ 		panic("NMI IOCK error: Not continuing");
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 1d92a5a..856d5bc 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -105,12 +105,6 @@ void exit_thread(void)
+ 	}
+ }
+ 
+-void show_regs(struct pt_regs *regs)
+-{
+-	show_registers(regs);
+-	show_trace(NULL, regs, (unsigned long *)kernel_stack_pointer(regs), 0);
+-}
+-
+ void show_regs_common(void)
+ {
+ 	const char *vendor, *product, *board;
