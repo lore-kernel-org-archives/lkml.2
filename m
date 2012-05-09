@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab2EIVPV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 17:15:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47330 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932405Ab2EIVPP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 17:15:15 -0400
-Date: Wed, 9 May 2012 14:15:11 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Manohar Vanga <manohar.vanga@cern.ch>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH v4 2/3] Staging: ipack: added support for the TEWS
- TPCI-200 carrier board
-Message-ID: <20120509211511.GA23372@kroah.com>
-References: <1336570041-32724-1-git-send-email-siglesias@igalia.com>
- <1336570041-32724-2-git-send-email-siglesias@igalia.com>
+	id S932463Ab2EIVPz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 17:15:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36030 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932238Ab2EIVPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 17:15:53 -0400
+Date: Wed, 9 May 2012 23:14:29 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Pedro Alves <palves@redhat.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        pacman@kosh.dhis.org, linux-man <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>
+Subject: Re: ptrace.2: PTRACE_KILL needs a stopped process too
+Message-ID: <20120509211429.GA2455@redhat.com>
+References: <20091216004533.22261.qmail@kosh.dhis.org> <4FAAC706.6000808@redhat.com> <20120509201219.GA32051@redhat.com> <201205091241.59060.vapier@gentoo.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1336570041-32724-2-git-send-email-siglesias@igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201205091241.59060.vapier@gentoo.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 03:27:20PM +0200, Samuel Iglesias Gonsalvez wrote:
-> Driver for the carrier board TEWS TPCI-200, a bridge between PCIe bus and
-> IndustryPack bus.
-> 
-> Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+On 05/09, Mike Frysinger wrote:
+>
+> On Wednesday 09 May 2012 16:12:19 Oleg Nesterov wrote:
+> > On 05/09, Pedro Alves wrote:
+> > > On 05/09/2012 04:09 PM, Mike Frysinger wrote:
+> > > > probably not that big of a deal, but the reason i like using
+> > > > ptrace(PTRACE_KILL) over a raw kill() is that you are less likely to
+> > > > kill the wrong process by accident.  maybe not that big of a deal in
+> > > > practice though.
+> > >
+> > > And you can do tgkill instead.  It was specifically invented to handle
+> > > the reuse case.
+> >
+> > tgkill() can kill the wrong process/thread too, although it lessens the
+> > risk.
+> >
+> > But I don't really understand the problem. The traced thread can't go away
+> > until the tracer does wait/detach, and thus its pid can't be reused?
+>
+> or the process has received a SIGKILL for some reason
 
-Please fix up all of the sparse warnings in this file, there are a bunch
-:(
+And? In this case it will be killed, yes. But this zombie can't go away
+until the tracer does do_wait().
 
-And again, be sure of the "any later version" on your licensing.
+OK, the multi-threaded exec adds more fun.
 
-thanks,
+> > May be, "by accident" above means something else, not pid reuse...
+>
+> i like to assume that my code isn't going to be bug free, so the more
+> mechanisms i have in place to protect innocent bystanders the better :)
+> -mike
 
-greg k-h
+>From this pov PTRACE_KILL is safer, I agree ;)
+
+Oleg.
+
