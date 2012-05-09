@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759367Ab2EINVJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 09:21:09 -0400
-Received: from mailgw1.uni-kl.de ([131.246.120.220]:56453 "EHLO
-	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757967Ab2EINVH (ORCPT
+	id S1759384Ab2EINVy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 09:21:54 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64732 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757899Ab2EINVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 09:21:07 -0400
-Message-ID: <4FAA6F38.6080801@fastmail.fm>
-Date: Wed, 09 May 2012 15:20:56 +0200
-From: Bernd Schubert <bernd.schubert@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Wed, 9 May 2012 09:21:53 -0400
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>,
-        Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Jeff Garzik <jeff@garzik.org>, Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: [RFC][PATCH] libata: enable SATA disk fua detection on default
-References: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com> <4FAA02DA.3000201@gmail.com> <20120509061956.GA12329@gmail.com> <20120509082527.GA10674@infradead.org> <20120509093016.GA12754@gmail.com> <20120509111243.GB29593@infradead.org> <20120509124804.GA13329@gmail.com>
-In-Reply-To: <20120509124804.GA13329@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ITWM-CharSet: ISO-8859-1
-X-ITWM-Scanned-By: mail2.itwm.fhg.de
+In-Reply-To: <20120509070710.GA29981@gmail.com>
+References: <1336004953.4240.9.camel@mop> <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+ <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
+ <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
+ <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
+ <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com> <20120509070710.GA29981@gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 9 May 2012 15:21:32 +0200
+Message-ID: <CAPXgP12G+KgqN43BQjzADAPtz2zhZs-0+AHC+YnHZc2JYqwAEA@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
+ record buffer
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2012 02:48 PM, Zheng Liu wrote:
-> On Wed, May 09, 2012 at 07:12:43AM -0400, Christoph Hellwig wrote:
->> On Wed, May 09, 2012 at 05:30:16PM +0800, Zheng Liu wrote:
->>> IMHO, FUA provides a solution that we can get better performance in write
->>> cache mode when we do many flush operations.  If I set the disk to write
->>> through mode, I won't get this benefit.  Am I missing something?
->>
->> If you set the disk to write through mode you never have to flush the
->> cache.  So as soonas your number of flushes gets close to the number of
->> writes it tends to be a clear win - for ATA the tradeoff is even more in
->> favour of write through because the flush command can't be queued yetin
->> commonly available standards versions.  So if you have a workload that
->> basically needs to flush out every write you win - if you have workloads
->> where you have a lot more writes than cache flushes write back mode
->> wins.
+On Wed, May 9, 2012 at 9:07 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
 >
-> Thanks for your explanation.  It seems that there still has a problem.
-> If I set the disk to write through mode, I need to modify my application
-> to remove all of flush/sync operations.  It is unacceptable for us.
+>> [...]
+>>
+>> So it's like a defibrillator: it is good to *have* one, but
+>> it's really bad to have to *use* one.
 
-Why? You still need to flush the linux page cache. Just the disk cache 
-does not need to be flushed anymore. So changing the application would 
-be the wrong thing to do.
+I rather teach the people with known heart problems to only slap their
+shocks at people who wear a sign that they are prepared to get
+treated, instead of just letting them "help" the healthy random next
+guy. :)
 
+> /me nominates this for LWN quote of the week!
+>
+> Thanks for bringing sanity into printk,
 
-Cheers,
-Bernd
+Sounds like the view of sanity of the guys with heart problems, not so
+much of the healthy guys. :)
+
+In other words:
+Isolation of risk-takers from non-risk-takers is usually a good thing.
+
+Explicit annotation of exceptions almost every time beats expressions
+which need heuristics to construct the context.
+
+We use typed pointer instead of void too, even when we don't need it
+most of the time. :)
+
+Kay
