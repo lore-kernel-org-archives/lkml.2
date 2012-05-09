@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895Ab2EIGDj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:03:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38950 "EHLO
+	id S1757877Ab2EIGDi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:03:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39158 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756411Ab2EIFxk (ORCPT
+	by vger.kernel.org with ESMTP id S1756897Ab2EIFxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:40 -0400
-Message-Id: <20120509055039.135695490@decadent.org.uk>
+Message-Id: <20120509055051.248515698@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:36 +0100
+Date: Wed, 09 May 2012 06:53:06 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
-        =?ISO-8859-15?q?R=C3=A9mi=20Denis-Courmont?= 
-	<remi.denis-courmont@nokia.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 067/167] [PATCH 07/26] phonet: Check input from user before allocating
+        alan@lxorguk.ukuu.org.uk, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>,
+        Kenneth Graunke <kenneth@whitecape.org>
+Subject: [ 157/167] [PATCH] drm/i915: Do no set Stencil Cache eviction LRA w/a on gen7+
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,75 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <levinsasha928@gmail.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-[ Upstream commit bcf1b70ac6eb0ed8286c66e6bf37cb747cbaa04c ]
+commit 2e7a44814d802c8ba479164b8924070cd908d6b5 upstream.
 
-A phonet packet is limited to USHRT_MAX bytes, this is never checked during
-tx which means that the user can specify any size he wishes, and the kernel
-will attempt to allocate that size.
+I've flagged this while reviewing the first version and Ken Graunke
+fixed it up in v2, but unfortunately Dave Airlie picked up the wrong
+version.
 
-In the good case, it'll lead to the following warning, but it may also cause
-the kernel to kick in the OOM and kill a random task on the server.
-
-[ 8921.744094] WARNING: at mm/page_alloc.c:2255 __alloc_pages_slowpath+0x65/0x730()
-[ 8921.749770] Pid: 5081, comm: trinity Tainted: G        W    3.4.0-rc1-next-20120402-sasha #46
-[ 8921.756672] Call Trace:
-[ 8921.758185]  [<ffffffff810b2ba7>] warn_slowpath_common+0x87/0xb0
-[ 8921.762868]  [<ffffffff810b2be5>] warn_slowpath_null+0x15/0x20
-[ 8921.765399]  [<ffffffff8117eae5>] __alloc_pages_slowpath+0x65/0x730
-[ 8921.769226]  [<ffffffff81179c8a>] ? zone_watermark_ok+0x1a/0x20
-[ 8921.771686]  [<ffffffff8117d045>] ? get_page_from_freelist+0x625/0x660
-[ 8921.773919]  [<ffffffff8117f3a8>] __alloc_pages_nodemask+0x1f8/0x240
-[ 8921.776248]  [<ffffffff811c03e0>] kmalloc_large_node+0x70/0xc0
-[ 8921.778294]  [<ffffffff811c4bd4>] __kmalloc_node_track_caller+0x34/0x1c0
-[ 8921.780847]  [<ffffffff821b0e3c>] ? sock_alloc_send_pskb+0xbc/0x260
-[ 8921.783179]  [<ffffffff821b3c65>] __alloc_skb+0x75/0x170
-[ 8921.784971]  [<ffffffff821b0e3c>] sock_alloc_send_pskb+0xbc/0x260
-[ 8921.787111]  [<ffffffff821b002e>] ? release_sock+0x7e/0x90
-[ 8921.788973]  [<ffffffff821b0ff0>] sock_alloc_send_skb+0x10/0x20
-[ 8921.791052]  [<ffffffff824cfc20>] pep_sendmsg+0x60/0x380
-[ 8921.792931]  [<ffffffff824cb4a6>] ? pn_socket_bind+0x156/0x180
-[ 8921.794917]  [<ffffffff824cb50f>] ? pn_socket_autobind+0x3f/0x90
-[ 8921.797053]  [<ffffffff824cb63f>] pn_socket_sendmsg+0x4f/0x70
-[ 8921.798992]  [<ffffffff821ab8e7>] sock_aio_write+0x187/0x1b0
-[ 8921.801395]  [<ffffffff810e325e>] ? sub_preempt_count+0xae/0xf0
-[ 8921.803501]  [<ffffffff8111842c>] ? __lock_acquire+0x42c/0x4b0
-[ 8921.805505]  [<ffffffff821ab760>] ? __sock_recv_ts_and_drops+0x140/0x140
-[ 8921.807860]  [<ffffffff811e07cc>] do_sync_readv_writev+0xbc/0x110
-[ 8921.809986]  [<ffffffff811958e7>] ? might_fault+0x97/0xa0
-[ 8921.811998]  [<ffffffff817bd99e>] ? security_file_permission+0x1e/0x90
-[ 8921.814595]  [<ffffffff811e17e2>] do_readv_writev+0xe2/0x1e0
-[ 8921.816702]  [<ffffffff810b8dac>] ? do_setitimer+0x1ac/0x200
-[ 8921.818819]  [<ffffffff810e2ec1>] ? get_parent_ip+0x11/0x50
-[ 8921.820863]  [<ffffffff810e325e>] ? sub_preempt_count+0xae/0xf0
-[ 8921.823318]  [<ffffffff811e1926>] vfs_writev+0x46/0x60
-[ 8921.825219]  [<ffffffff811e1a3f>] sys_writev+0x4f/0xb0
-[ 8921.827127]  [<ffffffff82658039>] system_call_fastpath+0x16/0x1b
-[ 8921.829384] ---[ end trace dffe390f30db9eb7 ]---
-
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Acked-by: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: Kenneth Graunke <kenneth@whitecape.org>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/phonet/pep.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/i915/intel_ringbuffer.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/net/phonet/pep.c b/net/phonet/pep.c
-index 2ba6e9f..007546d 100644
---- a/net/phonet/pep.c
-+++ b/net/phonet/pep.c
-@@ -1046,6 +1046,9 @@ static int pep_sendmsg(struct kiocb *iocb, struct sock *sk,
- 	int flags = msg->msg_flags;
- 	int err, done;
+diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+index 80fce51..62892a8 100644
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -398,10 +398,8 @@ static int init_render_ring(struct intel_ring_buffer *ring)
+ 			return ret;
+ 	}
  
-+	if (len > USHRT_MAX)
-+		return -EMSGSIZE;
+-	if (INTEL_INFO(dev)->gen >= 6) {
+-		I915_WRITE(INSTPM,
+-			   INSTPM_FORCE_ORDERING << 16 | INSTPM_FORCE_ORDERING);
+ 
++	if (IS_GEN6(dev)) {
+ 		/* From the Sandybridge PRM, volume 1 part 3, page 24:
+ 		 * "If this bit is set, STCunit will have LRA as replacement
+ 		 *  policy. [...] This bit must be reset.  LRA replacement
+@@ -411,6 +409,11 @@ static int init_render_ring(struct intel_ring_buffer *ring)
+ 			   CM0_STC_EVICT_DISABLE_LRA_SNB << CM0_MASK_SHIFT);
+ 	}
+ 
++	if (INTEL_INFO(dev)->gen >= 6) {
++		I915_WRITE(INSTPM,
++			   INSTPM_FORCE_ORDERING << 16 | INSTPM_FORCE_ORDERING);
++	}
 +
- 	if ((msg->msg_flags & ~(MSG_DONTWAIT|MSG_EOR|MSG_NOSIGNAL|
- 				MSG_CMSG_COMPAT)) ||
- 			!(msg->msg_flags & MSG_EOR))
+ 	return ret;
+ }
+ 
 -- 
 1.7.10
 
