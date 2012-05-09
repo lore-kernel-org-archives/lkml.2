@@ -1,70 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759155Ab2EIJzK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 05:55:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:53028 "EHLO mga11.intel.com"
+	id S1755547Ab2EIJ6t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 05:58:49 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:41313 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759065Ab2EIJzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 05:55:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="163869714"
-Date: Wed, 9 May 2012 12:56:24 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linus.walleij@stericsson.com
-Subject: Re: [PATCH v3] gpio: langwell: convert to use irq_domain
-Message-ID: <20120509095624.GK31494@intel.com>
-References: <1335946550-3092-1-git-send-email-mika.westerberg@linux.intel.com>
- <20120508174434.80D773E05D0@localhost>
+	id S1751277Ab2EIJ6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 05:58:48 -0400
+Date: Wed, 9 May 2012 02:56:17 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Fenghua Yu <fenghua.yu@intel.com>, Durgadoss R <durgadoss.r@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, v4] hwmon: coretemp: use list instead of fixed size
+ array for temp data
+Message-ID: <20120509095617.GB15630@ericsson.com>
+References: <1336474175-5714-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1336495180.22553.68.camel@groeck-laptop>
+ <20120509070906.GA21556@otc-wbsnb-06>
+ <20120509072339.GB21556@otc-wbsnb-06>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20120508174434.80D773E05D0@localhost>
-Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
+In-Reply-To: <20120509072339.GB21556@otc-wbsnb-06>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 11:44:34AM -0600, Grant Likely wrote:
-> On Wed,  2 May 2012 11:15:50 +0300, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
-> > irq_domain already provides a facility to translate from hardware IRQ
-> > numbers to Linux IRQ numbers so use that instead of open-coding the logic
-> > in the driver.
+On Wed, May 09, 2012 at 03:23:39AM -0400, Kirill A. Shutemov wrote:
+> On Wed, May 09, 2012 at 10:09:06AM +0300, Kirill A. Shutemov wrote:
+> > On Tue, May 08, 2012 at 09:39:40AM -0700, Guenter Roeck wrote:
+> > > On Tue, 2012-05-08 at 06:49 -0400, Kirill A. Shutemov wrote:
+> > > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > > > 
+> > > > Let's rework code to allow arbitrary number of cores on a CPU, not
+> > > > limited by hardcoded array size.
+> > > > 
+> > > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > > > ---
+> > > >  v4:
+> > > >    - address issues pointed by Guenter Roeck;
+> > > >  v3:
+> > > >    - drop redundant refcounting and checks;
+> > > >  v2:
+> > > >    - fix NULL pointer dereference. Thanks to R, Durgadoss;
+> > > >    - use mutex instead of spinlock for list locking.
+> > > > ---
+> > > 
+> > > Hi Kirill,
+> > > 
+> > > unfortunately now we have another race condition :(. See below ...
 > > 
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > Ughh..
+> > 
+> > > > @@ -557,11 +579,22 @@ exit_free:
+> > > >  static int __devexit coretemp_remove(struct platform_device *pdev)
+> > > >  {
+> > > >  	struct platform_data *pdata = platform_get_drvdata(pdev);
+> > > > -	int i;
+> > > > +	struct temp_data *tdata;
+> > > >  
+> > > > -	for (i = MAX_CORE_DATA - 1; i >= 0; --i)
+> > > > -		if (pdata->core_data[i])
+> > > > -			coretemp_remove_core(pdata, &pdev->dev, i);
+> > > > +	for (;;) {
+> > > > +		mutex_lock(&pdata->temp_data_lock);
+> > > > +		if (!list_empty(&pdata->temp_data_list)) {
+> > > > +			tdata = list_first_entry(&pdata->temp_data_list,
+> > > > +					struct temp_data, list);
+> > > > +			list_del(&tdata->list);
+> > > > +		} else
+> > > > +			tdata = NULL;
+> > > > +		mutex_unlock(&pdata->temp_data_lock);
+> > > > +
+> > > > +		if (!tdata)
+> > > > +			break;
+> > > > +		coretemp_remove_core(tdata, &pdev->dev);
+> > > > +	}
+> > > >  
+> > > Unfortunately, that results in a race condition, since the tdata list
+> > > entry is gone before the attribute file is deleted.
+> > > 
+> > > I think you can still use list_for_each_entry_safe, only outside the
+> > > mutex, and remove the list entry at the end of coretemp_remove_core()
 > 
-> Applied, thanks.
+> I haven't got how list_for_each_entry_safe() will be really safe without
+> the lock.
+> 
+We know that it by itself won't be called multiple times. So the only question is 
+if the functions to add/remove a core can be called while coretemp_remove is called,
+or if that is mutually exclusive (not that the current code handles this case).
 
-Thanks.
+Fortunately, there is a function to block CPU removal/insertion: get_online_cpus()
+and put_online_cpus(). I have no idea if it is necessary to protect coretemp_remove()
+with it, but it might be on the safe side anyway.
 
-> BTW, I noticed a bug below (unrelated to this patch)...
+> > > after deleting the attribute file. Just keep the code as it was, and
+> > > remove the list entry (mutex-protected) where core_data[] was set to
+> > > NULL.
+> > 
+> > I think
+> > 
+> > if (tdata)
+> > 	return -ENODEV;
+> > 
+> > in show methods will fix the issue. Right?
 > 
-> > ---
-> >  static int lnw_irq_type(struct irq_data *d, unsigned type)
-> >  {
-> >  	struct lnw_gpio *lnw = irq_data_get_irq_chip_data(d);
-> > -	u32 gpio = d->irq - lnw->irq_base;
-> > +	u32 gpio = irqd_to_hwirq(d);
-> >  	unsigned long flags;
-> >  	u32 value;
-> >  	void __iomem *grer = gpio_reg(&lnw->chip, gpio, GRER);
-> > @@ -256,7 +257,8 @@ static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
-> >  			pending &= ~mask;
-> >  			/* Clear before handling so we can't lose an edge */
-> >  			writel(mask, gedr);
-> > -			generic_handle_irq(lnw->irq_base + base + gpio);
-> > +			generic_handle_irq(irq_find_mapping(lnw->domain,
-> > +							    base + gpio));
-> >  		}
-> >  	}
+> It won't. Stupid me.
 > 
-> This while loop is actually buggy.  After handling each pending irq
-> bit the status register should be re-read.  Otherwise if the same irq
-> gets raised again after it is handled, then this loop will ignore it.
+> But the check + kref seems will work...
 > 
-> It's not a major issue, but it would mean unnecessary exiting and
-> reentering the handler function.
+Yes, but would be way too complicated.
 
-Indeed. I'll take a look.
+Guenter
+
