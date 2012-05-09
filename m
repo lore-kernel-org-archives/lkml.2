@@ -1,194 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab2EIK6n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 06:58:43 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:46446 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755138Ab2EIK6k convert rfc822-to-8bit (ORCPT
+	id S1756956Ab2EIK7m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 06:59:42 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:20878 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab2EIK7k convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 06:58:40 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Nick Piggin <npiggin@gmail.com>
-Cc: paulmck@linux.vnet.ibm.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Louis Rilling <louis.rilling@kerlabs.com>,
-        Mike Galbraith <efault@gmx.de>, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org
-References: <m1vckcdoey.fsf@fess.ebiederm.org>
-	<1336142995.25479.49.camel@marge.simpson.net>
-	<m1zk9oc61j.fsf@fess.ebiederm.org>
-	<1336150643.7502.4.camel@marge.simpson.net>
-	<m1fwbfd71h.fsf@fess.ebiederm.org>
-	<1336197362.7346.9.camel@marge.simpson.net>
-	<1336198093.7346.11.camel@marge.simpson.net>
-	<1336201977.7346.22.camel@marge.simpson.net>
-	<87r4uv64oj.fsf_-_@xmission.com>
-	<20120507221706.GI22082@ZenIV.linux.org.uk>
-	<20120507235647.GH21152@linux.vnet.ibm.com>
-	<87zk9jzdi5.fsf@xmission.com>
-	<CAPa8GCBE--64++-B3H5K-y-sUtyeVrhKwKG-eazVx8Dc7RH+YQ@mail.gmail.com>
-Date: Wed, 09 May 2012 04:02:52 -0700
-In-Reply-To: <CAPa8GCBE--64++-B3H5K-y-sUtyeVrhKwKG-eazVx8Dc7RH+YQ@mail.gmail.com>
-	(Nick Piggin's message of "Wed, 9 May 2012 17:55:57 +1000")
-Message-ID: <m1havp62hv.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18xMgoxguP55iiNUoU4N4Al4YRIPju8tvM=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Nick Piggin <npiggin@gmail.com>
-X-Spam-Relay-Country: **
-Subject: Re: [PATCH] vfs: Speed up deactivate_super for non-modular filesystems
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Wed, 9 May 2012 06:59:40 -0400
+Date: Wed, 09 May 2012 12:59:34 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH 1/1] v4l: mem2mem_testdev: Fix race conditions in driver.
+In-reply-to: <1336423141-10956-1-git-send-email-desowin@gmail.com>
+To: "=?utf-8?Q?'Tomasz_Mo=C5=84'?=" <desowin@gmail.com>,
+        "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
+        "'Guennadi Liakhovetski'" <g.liakhovetski@gmx.de>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, pawel@osciak.com
+Message-id: <005301cd2dd2$d1972ca0$74c585e0$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=utf-8
+Content-language: pl
+Content-transfer-encoding: 8BIT
+Thread-index: Ac0skbMV8KX0M6ImSwa9nx5avE1rvABPYp5g
+References: <1336423141-10956-1-git-send-email-desowin@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nick Piggin <npiggin@gmail.com> writes:
+Hi Tomasz,
 
-> On 8 May 2012 11:07, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
->>
->>> On Mon, May 07, 2012 at 11:17:06PM +0100, Al Viro wrote:
->>>> On Mon, May 07, 2012 at 02:51:08PM -0700, Eric W. Biederman wrote:
->>>>
->>>> > /proc and similar non-modular filesystems do not need a rcu_barrier
->>>> > in deactivate_locked_super.  Being non-modular there is no danger
->>>> > of the rcu callback running after the module is unloaded.
->>>>
->>>> There's more than just a module unload there, though - actual freeing
->>>>  struct super_block also happens past that rcu_barrier()...
->>
->> Al.  I have not closely audited the entire code path but at a quick
->> sample I see no evidence that anything depends on inode->i_sb being
->> rcu safe.  Do you know of any such location?
->>
->> It has only been a year and a half since Nick added this code which
->> isn't very much time to have grown strange dependencies like that.
->
-> No, it has always depended on this.
->
-> Look at ncp_compare_dentry(), for example.
+On Monday, May 07, 2012 10:39 PM Tomasz Moń wrote:
 
-Interesting. ncp_compare_dentry this logic is broken.
+> The mem2mem_testdev allows multiple instances to be opened in parallel.
+> Source and destination queue data are being shared between all
+> instances, which can lead to kernel oops due to race conditions (most
+> likely to happen inside device_run()).
+> 
+> Attached patch fixes mentioned problem by storing queue data per device
+> context.
+> 
+> Signed-off-by: Tomasz Moń <desowin@gmail.com>
 
-Accessing i_sb->s_fs_info for parameters does seem reasonable.
-Unfortunately ncp_put_super frees server directly.
+Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
 
-Meaning if we are depending on only rcu protections a badly timed
-ncp_compare_dentry will oops the kernel.
+Thanks for fixing this bug!
 
-I am going to go out on a limb and guess that every other filesystem
-with a similar dependency follows the same pattern and is likely
-broken as well.
+> ---
+>  drivers/media/video/mem2mem_testdev.c |   50 +++++++++++++++++----------------
+>  1 file changed, 26 insertions(+), 24 deletions(-)
+> 
+> diff --git a/drivers/media/video/mem2mem_testdev.c b/drivers/media/video/mem2mem_testdev.c
+> index 12897e8..ae7ca12 100644
+> --- a/drivers/media/video/mem2mem_testdev.c
+> +++ b/drivers/media/video/mem2mem_testdev.c
+> @@ -110,22 +110,6 @@ enum {
+>  	V4L2_M2M_DST = 1,
+>  };
+> 
+> -/* Source and destination queue data */
+> -static struct m2mtest_q_data q_data[2];
+> -
+> -static struct m2mtest_q_data *get_q_data(enum v4l2_buf_type type)
+> -{
+> -	switch (type) {
+> -	case V4L2_BUF_TYPE_VIDEO_OUTPUT:
+> -		return &q_data[V4L2_M2M_SRC];
+> -	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
+> -		return &q_data[V4L2_M2M_DST];
+> -	default:
+> -		BUG();
+> -	}
+> -	return NULL;
+> -}
+> -
+>  #define V4L2_CID_TRANS_TIME_MSEC	V4L2_CID_PRIVATE_BASE
+>  #define V4L2_CID_TRANS_NUM_BUFS		(V4L2_CID_PRIVATE_BASE + 1)
+> 
+> @@ -198,8 +182,26 @@ struct m2mtest_ctx {
+>  	int			aborting;
+> 
+>  	struct v4l2_m2m_ctx	*m2m_ctx;
+> +
+> +	/* Source and destination queue data */
+> +	struct m2mtest_q_data   q_data[2];
+>  };
+> 
+> +static struct m2mtest_q_data *get_q_data(struct m2mtest_ctx *ctx,
+> +					 enum v4l2_buf_type type)
+> +{
+> +	switch (type) {
+> +	case V4L2_BUF_TYPE_VIDEO_OUTPUT:
+> +		return &ctx->q_data[V4L2_M2M_SRC];
+> +	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
+> +		return &ctx->q_data[V4L2_M2M_DST];
+> +	default:
+> +		BUG();
+> +	}
+> +	return NULL;
+> +}
+> +
+> +
+>  static struct v4l2_queryctrl *get_ctrl(int id)
+>  {
+>  	int i;
+> @@ -223,7 +225,7 @@ static int device_process(struct m2mtest_ctx *ctx,
+>  	int tile_w, bytes_left;
+>  	int width, height, bytesperline;
+> 
+> -	q_data = get_q_data(V4L2_BUF_TYPE_VIDEO_OUTPUT);
+> +	q_data = get_q_data(ctx, V4L2_BUF_TYPE_VIDEO_OUTPUT);
+> 
+>  	width	= q_data->width;
+>  	height	= q_data->height;
+> @@ -436,7 +438,7 @@ static int vidioc_g_fmt(struct m2mtest_ctx *ctx, struct v4l2_format *f)
+>  	if (!vq)
+>  		return -EINVAL;
+> 
+> -	q_data = get_q_data(f->type);
+> +	q_data = get_q_data(ctx, f->type);
+> 
+>  	f->fmt.pix.width	= q_data->width;
+>  	f->fmt.pix.height	= q_data->height;
+> @@ -535,7 +537,7 @@ static int vidioc_s_fmt(struct m2mtest_ctx *ctx, struct v4l2_format *f)
+>  	if (!vq)
+>  		return -EINVAL;
+> 
+> -	q_data = get_q_data(f->type);
+> +	q_data = get_q_data(ctx, f->type);
+>  	if (!q_data)
+>  		return -EINVAL;
+> 
+> @@ -747,7 +749,7 @@ static int m2mtest_queue_setup(struct vb2_queue *vq,
+>  	struct m2mtest_q_data *q_data;
+>  	unsigned int size, count = *nbuffers;
+> 
+> -	q_data = get_q_data(vq->type);
+> +	q_data = get_q_data(ctx, vq->type);
+> 
+>  	size = q_data->width * q_data->height * q_data->fmt->depth >> 3;
+> 
+> @@ -775,7 +777,7 @@ static int m2mtest_buf_prepare(struct vb2_buffer *vb)
+> 
+>  	dprintk(ctx->dev, "type: %d\n", vb->vb2_queue->type);
+> 
+> -	q_data = get_q_data(vb->vb2_queue->type);
+> +	q_data = get_q_data(ctx, vb->vb2_queue->type);
+> 
+>  	if (vb2_plane_size(vb, 0) < q_data->sizeimage) {
+>  		dprintk(ctx->dev, "%s data will not fit into plane (%lu < %lu)\n",
+> @@ -860,6 +862,9 @@ static int m2mtest_open(struct file *file)
+>  	ctx->transtime = MEM2MEM_DEF_TRANSTIME;
+>  	ctx->num_processed = 0;
+> 
+> +	ctx->q_data[V4L2_M2M_SRC].fmt = &formats[0];
+> +	ctx->q_data[V4L2_M2M_DST].fmt = &formats[0];
+> +
+>  	ctx->m2m_ctx = v4l2_m2m_ctx_init(dev->m2m_dev, ctx, &queue_init);
+> 
+>  	if (IS_ERR(ctx->m2m_ctx)) {
+> @@ -982,9 +987,6 @@ static int m2mtest_probe(struct platform_device *pdev)
+>  		goto err_m2m;
+>  	}
+> 
+> -	q_data[V4L2_M2M_SRC].fmt = &formats[0];
+> -	q_data[V4L2_M2M_DST].fmt = &formats[0];
+> -
+>  	return 0;
+> 
+>  	v4l2_m2m_release(dev->m2m_dev);
+> --
+> 1.7.10
 
->> We need to drain all of the rcu callbacks before we free the slab
->> and unload the module.
->>
->> This actually makes deactivate_locked_super the totally wrong place
->> for the rcu_barrier.  We want the rcu_barrier in the module exit
->> routine where we destroy the inode cache.
->>
->> What I see as the real need is the filesystem modules need to do:
->>        rcu_barrier()
->>        kmem_cache_destroy(cache);
->>
->> Perhaps we can add some helpers to make it easy.  But I think
->> I would be happy today with simply moving the rcu_barrier into
->> every filesystems module exit path, just before the file system
->> module destoryed it's inode cache.
->
-> No, because that's not the only requirement for the rcu_barrier.
->
-> Making it asynchronous is not something I wanted to do, because
-> then we potentially have a process exiting from kernel space after
-> releasing last reference on a mount, but the mount does not go
-> away until "some time" later. Which is crazy.
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
-Well we certainly want a deliberate unmount of a filesystem to safely
-and successfully put the filesystem in a sane state before the unmount
-returns.
 
-If we have a few linger data structures waiting for an rcu grace period
-after a process exits I'm not certain that is bad.  Although I would not
-mind it much.
 
-> However. We are holding vfsmount_lock for read at the point
-> where we ever actually do anything with an "rcu-referenced"
-> dentry/inode. I wonder if we could use this to get i_sb pinned.
-
-Interesting observation.
-
-Taking that observation farther we have a mount reference count, that
-pins the super block.  So at first glance the super block looks safe
-without any rcu protections.
-
-I'm not certain what pins the inodes. Let's see:
-
-mnt->d_mnt_root has the root dentry of the dentry tree, and that
-dentry count is protected by the vfsmount_lock.
-
-Beyond that we have kill_sb.
-  kill_sb() typically calls generic_shutdown_super()
-  From generic_shutdown_super() we call:
-     shrink_dcache_for_umount() which flushes lingering dentries.
-     evict_inodes() which flushes lingering inodes.
-
-So in some sense the reference counts on mounts and dentries protect
-the cache.
-
-So the only case I can see where rcu appears to matter is when we are
-freeing dentries.
-
-When freeing dentries the idiom is:
-dentry_iput(dentry);
-d_free(dentry);
-
-d_free does if (dentry->d_flags & DCACHE_RCUACCESS) call_rcu(... __d_free);
-
-So while most of the time dentries hold onto inodes reliably with a
-reference count and most of the time dentries are kept alive by the
-dentry->d_count part of the time there is this gray zone where only
-rcu references to dentries are keeping them alive.
-
-Which explains the need for rcu freeing of inodes. 
-
-This makes me wonder why we think calling d_release is safe
-before we want the rcu grace period.
-
-Documentation/filesystems/vfs.txt seems to duplicate this reasoning
-of why the superblock is safe.  Because we hold a real reference to it
-from the vfsmount.
-
-The strangest case is calling __lookup_mnt during an "rcu-path-walk".
-But mounts are reference counted from the mount namespace, and
-are protected during an "rcu-path-walk" by vfsmount_lock read locked,
-and are only changed with vfsmount_lock write locked.
-
-Which leads again (with stronger reasons now) to the conclusions that:
-a) We don't depend on rcu_barrier to protect the superblock.
-b) My trivial patch is safe.
-c) We probably should move rcu_barrier to the filesystem module exit
-   routines, just to make things clear and to make everything faster.
-
-Eric
