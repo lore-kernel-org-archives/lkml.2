@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759185Ab2EIJjB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 05:39:01 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50404 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759149Ab2EIJi7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 05:38:59 -0400
+	id S1759155Ab2EIJzK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 05:55:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:53028 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759065Ab2EIJzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 05:55:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="163869714"
+Date: Wed, 9 May 2012 12:56:24 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linus.walleij@stericsson.com
+Subject: Re: [PATCH v3] gpio: langwell: convert to use irq_domain
+Message-ID: <20120509095624.GK31494@intel.com>
+References: <1335946550-3092-1-git-send-email-mika.westerberg@linux.intel.com>
+ <20120508174434.80D773E05D0@localhost>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
-References: <1336004953.4240.9.camel@mop> <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
- <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 9 May 2012 11:38:38 +0200
-Message-ID: <CAPXgP13-XQdn0wMP=coVqS=Eko1vWkOrjOtfq4JQLHFZ3JNbgg@mail.gmail.com>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
- record buffer
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Greg Kroah-Hartmann <greg@kroah.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120508174434.80D773E05D0@localhost>
+Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 5:52 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, May 8, 2012 at 4:14 AM, Kay Sievers <kay@vrfy.org> wrote:
->>
->> Yeah, we need to make sure, we never merge the (always racy)
->> continuation printk() users with (non-racy) non-continuation users.
->> Therefore KERN_CONT is required to suppress the newline and to merge the
->> content with the earlier non-newline-terminated printk() line.
->
-> Why?
+On Tue, May 08, 2012 at 11:44:34AM -0600, Grant Likely wrote:
+> On Wed,  2 May 2012 11:15:50 +0300, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+> > irq_domain already provides a facility to translate from hardware IRQ
+> > numbers to Linux IRQ numbers so use that instead of open-coding the logic
+> > in the driver.
+> > 
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> Applied, thanks.
 
-The idea was: Prefixes are not used that often, but not using a prefix
-should not expose the user to wrongly get appended to an earlier
-non-terminated line of another thread.
+Thanks.
 
-The point was to limit the "risk" of wrong merges to users of
-continuation, and not to users which send ordinary "atomic" lines.
+> BTW, I noticed a bug below (unrelated to this patch)...
+> 
+> > ---
+> >  static int lnw_irq_type(struct irq_data *d, unsigned type)
+> >  {
+> >  	struct lnw_gpio *lnw = irq_data_get_irq_chip_data(d);
+> > -	u32 gpio = d->irq - lnw->irq_base;
+> > +	u32 gpio = irqd_to_hwirq(d);
+> >  	unsigned long flags;
+> >  	u32 value;
+> >  	void __iomem *grer = gpio_reg(&lnw->chip, gpio, GRER);
+> > @@ -256,7 +257,8 @@ static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
+> >  			pending &= ~mask;
+> >  			/* Clear before handling so we can't lose an edge */
+> >  			writel(mask, gedr);
+> > -			generic_handle_irq(lnw->irq_base + base + gpio);
+> > +			generic_handle_irq(irq_find_mapping(lnw->domain,
+> > +							    base + gpio));
+> >  		}
+> >  	}
+> 
+> This while loop is actually buggy.  After handling each pending irq
+> bit the status register should be re-read.  Otherwise if the same irq
+> gets raised again after it is handled, then this loop will ignore it.
+> 
+> It's not a major issue, but it would mean unnecessary exiting and
+> reentering the handler function.
 
-> I really think this is just a bug in the new code.
->
-> KERN_CONT should not be needed if the previous printk didn't have a final "\n".
-
-It significantly limits wrong merges, especially for users which can
-rightfully expect not to get a wrong merge.
-
-> We made it easier to use printk for a reason a few months ago. The new
-> rules are:
->
->  - If you have a KERN_<loglevel>, it *always* starts a new line, the
-> obvious exception being KERN_CONT
->
->  - the loglevels *only* matter at the start of the printk - so if you
-> have '\n' embedded in a single printk, that changes nothing
-> what-so-ever. It's not line-based.
-
-It is a different behaviour. "Innocent" users are not exposed to "risky" users.
-
->  - if you didn't have a '\n', and don't have a loglevel, KERN_CONT is implied.
-
-But a lot of stuff which does not look for continuation, has no
-prefix, hasn't it? I rather make the "I want to be appended" explicit,
-instead giving the "I don't care about the log level" any meaning.
-
-I think continuation is special, and ideally should not be much used.
-We should not "optimize" for it, and not accept breakage introduced to
-ordinary users that way.
-
-> Quite frankly, those three rules (a) make sense and (b) make things easy.
-
-It's true, it's much easier, but it's also much less reliable.
-
-> Breaking them now is a bug. Please don't go adding ugly KERN_CONT when
-> there really isn't any reason for it. Just fix the printk code you
-> broke.
-
-I can do this, I just don't think it's the right thing to do.
-
-I surely would prefer reliability over rather weird heuristics for
-special cases. Today, we should be able to trust at least
-non-continuation printk users, which we can't, if we do expose them to
-the very real problems of continuation.
-
-Still not convinced? :)
-
-Kay
+Indeed. I'll take a look.
