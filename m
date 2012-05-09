@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab2EIFfo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:35:44 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37994 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab2EIFfm (ORCPT
+	id S1753928Ab2EIFij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:38:39 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64273 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab2EIFih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:35:42 -0400
+	Wed, 9 May 2012 01:38:37 -0400
+Message-ID: <4FAA02DA.3000201@gmail.com>
+Date: Tue, 08 May 2012 23:38:34 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <CAPa8GCCh-RrjsQKzh9+Sxx-joRZw4qkpxR9n4svo+QopxAj_XQ@mail.gmail.com>
-References: <CAHGf_=qdE3yNw=htuRssfav2pECO1Q0+gWMRTuNROd_3tVrd6Q@mail.gmail.com>
- <CAHGf_=ojhwPUWJR0r+jVgjNd5h_sRrppzJntSpHzxyv+OuBueg@mail.gmail.com>
- <x49ehr4lyw1.fsf@segfault.boston.devel.redhat.com> <CAHGf_=rzcfo3OnwT-YsW2iZLchHs3eBKncobvbhTm7B5PE=L-w@mail.gmail.com>
- <x491un3nc7a.fsf@segfault.boston.devel.redhat.com> <CAPa8GCCgLUt1EDAy7-O-mo0qir6Bf5Pi3Va1EsQ3ZW5UU=+37g@mail.gmail.com>
- <20120502081705.GB16976@quack.suse.cz> <CAPa8GCCnvvaj0Do7sdrdfsvbcAf0zBe3ssXn45gMfDKCcvJWxA@mail.gmail.com>
- <20120502091837.GC16976@quack.suse.cz> <CAHGf_=qfuRZzb91ELEcArNaNHsfO4BBMPO8a-QRBzFNaT2ev_w@mail.gmail.com>
- <20120502192325.GA18339@quack.suse.cz> <CAHGf_=oOx1qPFEboQeuaeMKtveM2==BSDG=xdfRHz+gFx1GAfw@mail.gmail.com>
- <CAKgNAkjybL_hmVfONUHtCbBe_VxQHNHOrmWQErGWDUqHiczkFg@mail.gmail.com>
- <CAHGf_=p4py5m1Pe1xon=9FcEEyf6AxW+Pc9Yy9gCvNtbXM_40A@mail.gmail.com> <CAPa8GCCh-RrjsQKzh9+Sxx-joRZw4qkpxR9n4svo+QopxAj_XQ@mail.gmail.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Wed, 9 May 2012 17:35:21 +1200
-Message-ID: <CAKgNAkh5TkwSzFVKVo5JUvkDWkzY8EaQNxJSQnv3fTHTdj0+FQ@mail.gmail.com>
-Subject: Re: [PATCH] Describe race of direct read and fork for unaligned buffers
-To: Nick Piggin <npiggin@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, Jan Kara <jack@suse.cz>,
-        Jeff Moyer <jmoyer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-man@vger.kernel.org, linux-mm@kvack.org, mgorman@suse.de,
-        Andrea Arcangeli <aarcange@redhat.com>, Woodman <lwoodman@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Zheng Liu <gnehzuil.liu@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Jeff Garzik <jeff@garzik.org>,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [RFC][PATCH] libata: enable SATA disk fua detection on default
+References: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com>
+In-Reply-To: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 11:10 AM, Nick Piggin <npiggin@gmail.com> wrote:
-> On 6 May 2012 01:29, KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
->>> So, am I correct to assume that right text to add to the page is as below?
->>>
->>> Nick, can you clarify what you mean by "quiesced"?
->>
->> finished?
+On 05/07/2012 09:24 PM, Zheng Liu wrote:
+> From: Zheng Liu<wenqing.lz@taobao.com>
 >
-> Yes exactly. That might be a simpler word. Thanks!
+> Currently, SATA disk fua detection is disabled on default because most of
+> devices don't support this feature at that time.  With the development of
+> technology, more and more SATA disks support this feature.  So now we can enable
+> this detection on default.
+>
+> Although fua detection is defined as a kernel module parameter, it is too hard
+> to set its value because it must be loaded and set before system starts up.
+> That needs to modify initrd file.  So it is inconvenient for administrator who
+> needs to manage a huge number of servers.
+>
+> CC: Jeff Garzik<jeff@garzik.org>
+> Signed-off-by: Zheng Liu<wenqing.lz@taobao.com>
+> ---
+>   drivers/ata/libata-core.c |    4 ++--
+>   1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+> index 23763a1..3627251 100644
+> --- a/drivers/ata/libata-core.c
+> +++ b/drivers/ata/libata-core.c
+> @@ -133,9 +133,9 @@ int atapi_passthru16 = 1;
+>   module_param(atapi_passthru16, int, 0444);
+>   MODULE_PARM_DESC(atapi_passthru16, "Enable ATA_16 passthru for ATAPI devices (0=off, 1=on [default])");
+>
+> -int libata_fua = 0;
+> +int libata_fua = 1;
+>   module_param_named(fua, libata_fua, int, 0444);
+> -MODULE_PARM_DESC(fua, "FUA support (0=off [default], 1=on)");
+> +MODULE_PARM_DESC(fua, "FUA support (0=off, 1=on [default])");
+>
+>   static int ata_ignore_hpa;
+>   module_param_named(ignore_hpa, ata_ignore_hpa, int, 0644);
 
-Thanks.
-
-But see below. I realize the text is still ambiguous.
-
->>> [[
->>> O_DIRECT IOs should never be run concurrently with fork(2) system call,
->>> when the memory buffer is anonymous memory, or comes from mmap(2)
->>> with MAP_PRIVATE.
->>>
->>> Any such IOs, whether submitted with asynchronous IO interface or from
->>> another thread in the process, should be quiesced before fork(2) is called.
->>> Failure to do so can result in data corruption and undefined behavior in
->>> parent and child processes.
->>>
->>> This restriction does not apply when the memory buffer for the O_DIRECT
->>> IOs comes from mmap(2) with MAP_SHARED or from shmat(2).
->>> Nor does this restriction apply when the memory buffer has been advised
->>> as MADV_DONTFORK with madvise(2), ensuring that it will not be available
->>> to the child after fork(2).
->>> ]]
-
-In the above, the status of a MAP_SHARED MAP_ANONYMOUS buffer is
-unclear. The first paragraph implies that such a buffer is unsafe,
-while the third paragraph implies that it *is* safe, thus
-contradicting the first paragraph. Which is correct?
-
-Cheers,
-
-Michael
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+I don't see that this is very likely to cause issues, but the FUA 
+implementation also seems a bit incomplete. FUA will only get enabled if 
+the drive claims support for the FUA-specific commands like 
+WRITE_DMA_FUA_EXT. But theoretically any drive that supports NCQ should 
+be able to do FUA since there's a FUA bit provided in those commands. Of 
+course this makes things a bit more complicated (for example, if NCQ 
+gets disabled by user request or due to too many errors, and the drive 
+doesn't support the separate FUA commands, then FUA needs to be disabled 
+too.)
