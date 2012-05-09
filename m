@@ -1,79 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab2EIRMi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:12:38 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39379 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758273Ab2EIRMh (ORCPT
+	id S1760418Ab2EIRNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:13:52 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37869 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758456Ab2EIRNu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 13:12:37 -0400
-Date: Wed, 9 May 2012 18:12:33 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Arnd Bergmann <arnd@ardb.de>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Igor Grinberg <grinberg@compulab.co.il>,
-        linux-embedded@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Handling of modular boards
-Message-ID: <20120509171233.GL3955@opensource.wolfsonmicro.com>
-References: <20120504185850.GO14230@opensource.wolfsonmicro.com>
- <201205041934.08830.arnd@arndb.de>
- <CACRpkdb4LGXfJ72uODr841O7M4FGTYKa1X7y6ekeLUw9vaL=mw@mail.gmail.com>
+	Wed, 9 May 2012 13:13:50 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/0D4jGRsNl8cPNu/"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdb4LGXfJ72uODr841O7M4FGTYKa1X7y6ekeLUw9vaL=mw@mail.gmail.com>
-X-Cookie: You are fairminded, just and loving.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120509163732.GN22082@ZenIV.linux.org.uk>
+References: <1336577114.3638.23.camel@lappy> <20120509161203.GK22082@ZenIV.linux.org.uk>
+ <CA+1xoqdEFOBPSng99jFcgj9Un9ZguXqKhXYdDCeKv3k5nLrC6Q@mail.gmail.com>
+ <20120509162854.GM22082@ZenIV.linux.org.uk> <20120509163732.GN22082@ZenIV.linux.org.uk>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Wed, 9 May 2012 19:13:29 +0200
+Message-ID: <CA+1xoqf=fDqJq1ks=fo9B27nGrAEVGArYSddmX49Otxw+jpKJw@mail.gmail.com>
+Subject: Re: vfs: INFO: possible circular locking dependency detected
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 9, 2012 at 6:37 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> If that's _all_ that happened, I'm not particulary
+> concerned; it's not pretty, but saying "thou shalt not grab ->cred_guard_mutex
+> anywhere in ->read() on anything that has exec bits or might get one" is
+> not too terrible.  If that's something else, though, we might have a real
+> problem...
 
---/0D4jGRsNl8cPNu/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+That's probably the case. The proc file got chmodded and exec'ed.
 
-On Tue, May 08, 2012 at 02:26:54PM +0200, Linus Walleij wrote:
-> On Fri, May 4, 2012 at 9:34 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+Can we do something to eliminate this false positive though? I can't
+think of anything nice...
 
-> > Thanks for getting the discussion started. I've seen the same issue come
-> > up for arch/arm/mach-ux500/board-mop500*uib.c and for the beaglebone.
-> > I'm sure there are many more, but we should make sure that everyone
-> > of these can live with whatever we come up with.
-
-> The same issue sort of comes up with any system that uses the idiom
-> to have a few GPIO lines indicate in a binary code what version of the
-> board we're dealing with and what devices are thus on it, right?
-
-> We have this issue for the U9540 reference design and potentially
-> on the Snowball as well.
-
-Yes, I think that's basically the same problem.
-
---/0D4jGRsNl8cPNu/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPqqV5AAoJEBus8iNuMP3dubkP/ig0bcbV70YSY3mW4Im8OwA6
-nVbGILSoGgQMQS43bbNp+lnYc0QePA5QDn1U5CXMU5ZkU370Vq1qli9HyyXJ3whn
-4B6wOmqfhaGwg66VDOdEpuFCN/rPg+dFVj1gUOZynCk7lg7AAekUw2coJ72EZcYi
-hx9+mX7teLLTWXywV+Iyf0fSbvDcMllULEdrB6Nex28dAc27TnkY5DB+nj14lHIO
-ZQMmN3nmFbcqrgZ1pqj3FICUnD1ioHvVspYVCqr2osCuDZLX1vgipxttxN8pWWT3
-ZI1hhRwtGy/Pxg4NPy2fTVNnAnZlp9CPcz6r6ug9raWq6WcWdMDTNlmEcj5Oih5e
-xU+6rapTyv3SKCk1rNpLxcp6Dprlot34kWIkHRxOFhw903jBUA8gJlToEMvfqCj8
-cA/gF8EgrKgVjfEByWgHEVWzWBAhk/Uoz9bBd3goznBMgQO28VgtrBy66v0q/5Az
-wrhs5jafVBjZ6uVP1Dopv9CF5rImjtQqpTSa/7GKqSoSIuHMctQxLSflhit179J1
-0HC1QD5YuO2FTerTDK0JnsQ09Ih3OTE7RSRnZRJp0Edo8y80wztzUlPXFZy0Jt9p
-UONT4+/bHTxobfG+msRiT7BPojPPWBZkPahI6+SCnCT8LFjxb5L6WO/SMKSSqp4I
-fyhYYgDFiVYHhJwSd+Ru
-=Q92r
------END PGP SIGNATURE-----
-
---/0D4jGRsNl8cPNu/--
+btw,
+I've never seen this issue before, even though I run same tests for a
+while now. What could have triggered it now?
