@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759668Ab2EIOf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:35:58 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:32983 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756809Ab2EIOf4 convert rfc822-to-8bit (ORCPT
+	id S1759699Ab2EIOgG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:36:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41128 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759683Ab2EIOgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:35:56 -0400
+	Wed, 9 May 2012 10:36:01 -0400
+Date: Wed, 9 May 2012 07:35:42 -0700
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-fc006cf7cc7471e1bdf34e40111971e03622af6c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
+In-Reply-To: <1333390758-10893-9-git-send-email-robert.richter@amd.com>
+References: <1333390758-10893-9-git-send-email-robert.richter@amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86-ibs:
+  Trigger overflow if remaining period is too small
+Git-Commit-ID: fc006cf7cc7471e1bdf34e40111971e03622af6c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-X-Originating-IP: [109.64.13.136]
-In-Reply-To: <CAAZUjxBp7f_Tt3bXSOcac6RmeT23npELYO52P_2LdMN-MdH=7g@mail.gmail.com>
-References: <CAAZUjxBp7f_Tt3bXSOcac6RmeT23npELYO52P_2LdMN-MdH=7g@mail.gmail.com>
-Date: Wed, 9 May 2012 17:35:55 +0300
-Message-ID: <CAOtvUMfZeZ0OSXDjeo0xFF-hdQwzLfrdCucJfP_hM_1ZJ8oXBA@mail.gmail.com>
-Subject: Re: Work queues and cpu isolation
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: wilson self <wself00@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 09 May 2012 07:35:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wilson,
+Commit-ID:  fc006cf7cc7471e1bdf34e40111971e03622af6c
+Gitweb:     http://git.kernel.org/tip/fc006cf7cc7471e1bdf34e40111971e03622af6c
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Mon, 2 Apr 2012 20:19:14 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 9 May 2012 15:23:15 +0200
 
-On Wed, May 9, 2012 at 12:03 AM, wilson self <wself00@gmail.com> wrote:
-> I have done some reading on the subject of work queues and CPU
-> isolation, and specifically I've read a number of posts from Max K.
-> dating back to 2008 on the subject of CPU isolation.  However, I have
-> not seen much in the way of discussion on the subject in more recent
-> times, specifically in the 3.x kernels; where it appears there are
-> some significant differences in the structure of workqueue in general.
->
-> Is there anyone currently doing work on additional isolation of CPUs
-> from work queues? I have some requirement to further isolate cores on
-> a machine from these queues and am hoping someone here could point me
-> in the right direction.
->
+perf/x86-ibs: Trigger overflow if remaining period is too small
 
-Yes, I am and so do many other people on the general topic of CPU isolation.
+There are cases where the remaining period is smaller than the minimal
+possible value. In this case the counter is restarted with the minimal
+period. This is of no use as the interrupt handler will trigger
+immediately again and most likely hits itself. This biases the
+results.
 
-Start here: https://github.com/gby/linux/wiki
+So, if the remaining period is within the min range, we better do not
+restart the counter and instead trigger the overflow.
 
-Continue here: https://lkml.org/lkml/2012/5/3/268
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1333390758-10893-9-git-send-email-robert.richter@amd.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-And if you are interested in CPU isolation in general, then these will
-interest you as well:
-
-http://lwn.net/Articles/495422/
-
-http://lkml.indiana.edu/hypermail/linux/kernel/1202.1/00590.html (this
-last patch set has gone into 3.4-rc1 already)
-
-I'd be very glad to cooperate :-)
-
-Gilad
-
-> Thanks.
-> wilson
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
+diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+index 29a1bff..3e32908 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
++++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+@@ -78,16 +78,13 @@ perf_event_set_period(struct hw_perf_event *hwc, u64 min, u64 max, u64 *hw_perio
+ 		overflow = 1;
+ 	}
+ 
+-	if (unlikely(left <= 0)) {
++	if (unlikely(left < (s64)min)) {
+ 		left += period;
+ 		local64_set(&hwc->period_left, left);
+ 		hwc->last_period = period;
+ 		overflow = 1;
+ 	}
+ 
+-	if (unlikely(left < min))
+-		left = min;
+-
+ 	if (left > max)
+ 		left = max;
+ 
