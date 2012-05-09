@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757002Ab2EIFxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:53:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38870 "EHLO
+	id S1757872Ab2EIGEy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:04:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38968 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755869Ab2EIFxM (ORCPT
+	by vger.kernel.org with ESMTP id S1756310Ab2EIFxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:12 -0400
-Message-Id: <20120509055042.769766413@decadent.org.uk>
+	Wed, 9 May 2012 01:53:38 -0400
+Message-Id: <20120509055038.185719796@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:03 +0100
+Date: Wed, 09 May 2012 06:51:29 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Bryan ODonoghue <bryan.odonoghue@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 094/167] [PATCH] x86, apic: APIC code touches invalid MSR on P5 class
- machines
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
+        Ben Greear <greearb@candelatech.com>,
+        Mihai Maruseac <mmaruseac@ixiacom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 060/167] [PATCH 01/26] net: fix /proc/net/dev regression
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,90 +30,185 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan O'Donoghue <bryan.odonoghue@linux.intel.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit cbf2829b61c136edcba302a5e1b6b40e97d32c00 upstream.
+[ Upstream commit 2def16ae6b0c77571200f18ba4be049b03d75579 ]
 
-Current APIC code assumes MSR_IA32_APICBASE is present for all systems.
-Pentium Classic P5 and friends didn't have this MSR. MSR_IA32_APICBASE
-was introduced as an architectural MSR by Intel @ P6.
+Commit f04565ddf52 (dev: use name hash for dev_seq_ops) added a second
+regression, as some devices are missing from /proc/net/dev if many
+devices are defined.
 
-Code paths that can touch this MSR invalidly are when vendor == Intel &&
-cpu-family == 5 and APIC bit is set in CPUID - or when you simply pass
-lapic on the kernel command line, on a P5.
+When seq_file buffer is filled, the last ->next/show() method is
+canceled (pos value is reverted to value prior ->next() call)
 
-The below patch stops Linux incorrectly interfering with the
-MSR_IA32_APICBASE for P5 class machines. Other code paths exist that
-touch the MSR - however those paths are not currently reachable for a
-conformant P5.
+Problem is after above commit, we dont restart the lookup at right
+position in ->start() method.
 
-Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linux.intel.com>
-Link: http://lkml.kernel.org/r/4F8EEDD3.1080404@linux.intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Fix this by removing the internal 'pos' pointer added in commit, since
+we need to use the 'loff_t *pos' provided by seq_file layer.
+
+This also reverts commit 5cac98dd0 (net: Fix corruption
+in /proc/*/net/dev_mcast), since its not needed anymore.
+
+Reported-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Mihai Maruseac <mmaruseac@ixiacom.com>
+Tested-by:  Ben Greear <greearb@candelatech.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/apic/apic.c |   34 ++++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 14 deletions(-)
+ include/linux/netdevice.h |    2 --
+ net/core/dev.c            |   58 ++++++++++-----------------------------------
+ net/core/dev_addr_lists.c |    3 ++-
+ 3 files changed, 15 insertions(+), 48 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 11544d8..edc2448 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1637,9 +1637,11 @@ static int __init apic_verify(void)
- 	mp_lapic_addr = APIC_DEFAULT_PHYS_BASE;
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index a82ad4d..cbeb586 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -2536,8 +2536,6 @@ extern void		net_disable_timestamp(void);
+ extern void *dev_seq_start(struct seq_file *seq, loff_t *pos);
+ extern void *dev_seq_next(struct seq_file *seq, void *v, loff_t *pos);
+ extern void dev_seq_stop(struct seq_file *seq, void *v);
+-extern int dev_seq_open_ops(struct inode *inode, struct file *file,
+-			    const struct seq_operations *ops);
+ #endif
  
- 	/* The BIOS may have set up the APIC at some other address */
--	rdmsr(MSR_IA32_APICBASE, l, h);
--	if (l & MSR_IA32_APICBASE_ENABLE)
--		mp_lapic_addr = l & MSR_IA32_APICBASE_BASE;
-+	if (boot_cpu_data.x86 >= 6) {
-+		rdmsr(MSR_IA32_APICBASE, l, h);
-+		if (l & MSR_IA32_APICBASE_ENABLE)
-+			mp_lapic_addr = l & MSR_IA32_APICBASE_BASE;
-+	}
+ extern int netdev_class_create_file(struct class_attribute *class_attr);
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 55cd370..cd5050e 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4102,54 +4102,41 @@ static int dev_ifconf(struct net *net, char __user *arg)
  
- 	pr_info("Found and enabled local APIC!\n");
- 	return 0;
-@@ -1657,13 +1659,15 @@ int __init apic_force_enable(unsigned long addr)
- 	 * MSR. This can only be done in software for Intel P6 or later
- 	 * and AMD K7 (Model > 1) or later.
- 	 */
--	rdmsr(MSR_IA32_APICBASE, l, h);
--	if (!(l & MSR_IA32_APICBASE_ENABLE)) {
--		pr_info("Local APIC disabled by BIOS -- reenabling.\n");
--		l &= ~MSR_IA32_APICBASE_BASE;
--		l |= MSR_IA32_APICBASE_ENABLE | addr;
--		wrmsr(MSR_IA32_APICBASE, l, h);
--		enabled_via_apicbase = 1;
-+	if (boot_cpu_data.x86 >= 6) {
-+		rdmsr(MSR_IA32_APICBASE, l, h);
-+		if (!(l & MSR_IA32_APICBASE_ENABLE)) {
-+			pr_info("Local APIC disabled by BIOS -- reenabling.\n");
-+			l &= ~MSR_IA32_APICBASE_BASE;
-+			l |= MSR_IA32_APICBASE_ENABLE | addr;
-+			wrmsr(MSR_IA32_APICBASE, l, h);
-+			enabled_via_apicbase = 1;
-+		}
+ #ifdef CONFIG_PROC_FS
+ 
+-#define BUCKET_SPACE (32 - NETDEV_HASHBITS)
+-
+-struct dev_iter_state {
+-	struct seq_net_private p;
+-	unsigned int pos; /* bucket << BUCKET_SPACE + offset */
+-};
++#define BUCKET_SPACE (32 - NETDEV_HASHBITS - 1)
+ 
+ #define get_bucket(x) ((x) >> BUCKET_SPACE)
+ #define get_offset(x) ((x) & ((1 << BUCKET_SPACE) - 1))
+ #define set_bucket_offset(b, o) ((b) << BUCKET_SPACE | (o))
+ 
+-static inline struct net_device *dev_from_same_bucket(struct seq_file *seq)
++static inline struct net_device *dev_from_same_bucket(struct seq_file *seq, loff_t *pos)
+ {
+-	struct dev_iter_state *state = seq->private;
+ 	struct net *net = seq_file_net(seq);
+ 	struct net_device *dev;
+ 	struct hlist_node *p;
+ 	struct hlist_head *h;
+-	unsigned int count, bucket, offset;
++	unsigned int count = 0, offset = get_offset(*pos);
+ 
+-	bucket = get_bucket(state->pos);
+-	offset = get_offset(state->pos);
+-	h = &net->dev_name_head[bucket];
+-	count = 0;
++	h = &net->dev_name_head[get_bucket(*pos)];
+ 	hlist_for_each_entry_rcu(dev, p, h, name_hlist) {
+-		if (count++ == offset) {
+-			state->pos = set_bucket_offset(bucket, count);
++		if (++count == offset)
+ 			return dev;
+-		}
  	}
- 	return apic_verify();
+ 
+ 	return NULL;
  }
-@@ -2209,10 +2213,12 @@ static void lapic_resume(void)
- 		 * FIXME! This will be wrong if we ever support suspend on
- 		 * SMP! We'll need to do this as part of the CPU restore!
- 		 */
--		rdmsr(MSR_IA32_APICBASE, l, h);
--		l &= ~MSR_IA32_APICBASE_BASE;
--		l |= MSR_IA32_APICBASE_ENABLE | mp_lapic_addr;
--		wrmsr(MSR_IA32_APICBASE, l, h);
-+		if (boot_cpu_data.x86 >= 6) {
-+			rdmsr(MSR_IA32_APICBASE, l, h);
-+			l &= ~MSR_IA32_APICBASE_BASE;
-+			l |= MSR_IA32_APICBASE_ENABLE | mp_lapic_addr;
-+			wrmsr(MSR_IA32_APICBASE, l, h);
-+		}
- 	}
  
- 	maxlvt = lapic_get_maxlvt();
+-static inline struct net_device *dev_from_new_bucket(struct seq_file *seq)
++static inline struct net_device *dev_from_bucket(struct seq_file *seq, loff_t *pos)
+ {
+-	struct dev_iter_state *state = seq->private;
+ 	struct net_device *dev;
+ 	unsigned int bucket;
+ 
+-	bucket = get_bucket(state->pos);
+ 	do {
+-		dev = dev_from_same_bucket(seq);
++		dev = dev_from_same_bucket(seq, pos);
+ 		if (dev)
+ 			return dev;
+ 
+-		bucket++;
+-		state->pos = set_bucket_offset(bucket, 0);
++		bucket = get_bucket(*pos) + 1;
++		*pos = set_bucket_offset(bucket, 1);
+ 	} while (bucket < NETDEV_HASHENTRIES);
+ 
+ 	return NULL;
+@@ -4162,33 +4149,20 @@ static inline struct net_device *dev_from_new_bucket(struct seq_file *seq)
+ void *dev_seq_start(struct seq_file *seq, loff_t *pos)
+ 	__acquires(RCU)
+ {
+-	struct dev_iter_state *state = seq->private;
+-
+ 	rcu_read_lock();
+ 	if (!*pos)
+ 		return SEQ_START_TOKEN;
+ 
+-	/* check for end of the hash */
+-	if (state->pos == 0 && *pos > 1)
++	if (get_bucket(*pos) >= NETDEV_HASHENTRIES)
+ 		return NULL;
+ 
+-	return dev_from_new_bucket(seq);
++	return dev_from_bucket(seq, pos);
+ }
+ 
+ void *dev_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ {
+-	struct net_device *dev;
+-
+ 	++*pos;
+-
+-	if (v == SEQ_START_TOKEN)
+-		return dev_from_new_bucket(seq);
+-
+-	dev = dev_from_same_bucket(seq);
+-	if (dev)
+-		return dev;
+-
+-	return dev_from_new_bucket(seq);
++	return dev_from_bucket(seq, pos);
+ }
+ 
+ void dev_seq_stop(struct seq_file *seq, void *v)
+@@ -4287,13 +4261,7 @@ static const struct seq_operations dev_seq_ops = {
+ static int dev_seq_open(struct inode *inode, struct file *file)
+ {
+ 	return seq_open_net(inode, file, &dev_seq_ops,
+-			    sizeof(struct dev_iter_state));
+-}
+-
+-int dev_seq_open_ops(struct inode *inode, struct file *file,
+-		     const struct seq_operations *ops)
+-{
+-	return seq_open_net(inode, file, ops, sizeof(struct dev_iter_state));
++			    sizeof(struct seq_net_private));
+ }
+ 
+ static const struct file_operations dev_seq_fops = {
+diff --git a/net/core/dev_addr_lists.c b/net/core/dev_addr_lists.c
+index febba51..277faef 100644
+--- a/net/core/dev_addr_lists.c
++++ b/net/core/dev_addr_lists.c
+@@ -696,7 +696,8 @@ static const struct seq_operations dev_mc_seq_ops = {
+ 
+ static int dev_mc_seq_open(struct inode *inode, struct file *file)
+ {
+-	return dev_seq_open_ops(inode, file, &dev_mc_seq_ops);
++	return seq_open_net(inode, file, &dev_mc_seq_ops,
++			    sizeof(struct seq_net_private));
+ }
+ 
+ static const struct file_operations dev_mc_seq_fops = {
 -- 
 1.7.10
 
