@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340Ab2EIUjV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 16:39:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34786 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761077Ab2EIUjU (ORCPT
+	id S932364Ab2EIUjc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 16:39:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44105 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932347Ab2EIUj3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 16:39:20 -0400
-Date: Wed, 9 May 2012 13:39:16 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
-        fmhess@users.sourceforge.net, abbotti@mev.co.uk
-Subject: Re: [PATCH v2] staging: comedi: refactor sysfs files in comedi_fops.c
-Message-ID: <20120509203916.GA16972@kroah.com>
-References: <201205090920.09769.hartleys@visionengravers.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201205090920.09769.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 May 2012 16:39:29 -0400
+Message-ID: <1336595963.2527.69.camel@twins>
+Subject: Re: [tip:sched/core] sched/fair: Let minimally loaded cpu balance
+ the group
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Date: Wed, 09 May 2012 22:39:23 +0200
+In-Reply-To: <tip-v8zlrmgmkne3bkcy9dej1fvm@git.kernel.org>
+References: <tip-v8zlrmgmkne3bkcy9dej1fvm@git.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 09:20:08AM -0700, H Hartley Sweeten wrote:
-> Refactor the sysfs attributes and functions to remove
-> the need for the forward declarations and use the
-> DEVICE_ATTR macro to define them.
+On Wed, 2012-05-09 at 07:26 -0700, tip-bot for Peter Zijlstra wrote:
+> sched/fair: Let minimally loaded cpu balance the group
 > 
-> Instead of individually creating sysfs device attribute
-> files, wrap them in an attribute_group and use the
-> sysfs_create_group function to create them.
+> Currently we let the leftmost (or first idle) cpu ascend the
+> sched_domain tree and perform load-balancing. The result is that the
+> busiest cpu in the group might be performing this function and pull
+> more load to itself. The next load balance pass will then try to
+> equalize this again.
+> 
+> Change this to pick the least loaded cpu to perform higher domain
+> balancing. 
 
-This is great, and needed to be done, but you need to take this one step
-further.  This attribute group needs to be registered by the driver
-core, not the comedi core, so userspace doesn't get an add event before
-the files are created.  To do that, assign this attribute group to the
-class and the core will handle it for you.
+OK, so while this all sounds great its horrible broken.. there's no
+guarantee the selected cpu actually gets to balance the domain for it
+might never reach as high in its own balance pass since by then it might
+not be the least loaded anymore.
 
-I've taken this patch, but will you make a follow-on patch that makes
-this change, which will remove this race?  It should be a net removal of
-code in the comedi core overall.
+Will have to poke at this more tomorrow, but from what my tired brain
+makes of it there's nothing but a straight revert (and probably similar
+for the next patch).
 
-thanks,
 
-greg k-h
