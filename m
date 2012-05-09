@@ -1,53 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760570Ab2EIR0S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:26:18 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38394 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756689Ab2EIR0Q (ORCPT
+	id S1760609Ab2EIRaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:30:30 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:48239 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760514Ab2EIRa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 13:26:16 -0400
-Date: Wed, 9 May 2012 19:26:11 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Igor Mammedov <imammedo@redhat.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, pjt@google.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
-Message-ID: <20120509172611.GC8135@gmail.com>
-References: <1336559908-32533-1-git-send-email-imammedo@redhat.com>
- <4FAA452A.1070909@gmail.com>
- <4FAA588B.5010404@redhat.com>
- <1336564330.2527.23.camel@twins>
- <4FAA5BFB.40309@redhat.com>
- <1336566096.2527.30.camel@twins>
- <1336566644.2527.33.camel@twins>
- <1336570043.2527.38.camel@twins>
- <CA+55aFyjGZ=PLOBfyFub4kS3r2vJ0SFD58rTf21koPodFTSARQ@mail.gmail.com>
- <1336584160.2527.62.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336584160.2527.62.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 May 2012 13:30:29 -0400
+From: Pawel Moll <pawel.moll@arm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH] virtio-mmio: Devices parameter parsing
+Date: Wed,  9 May 2012 18:30:16 +0100
+Message-Id: <1336584616-7802-1-git-send-email-pawel.moll@arm.com>
+X-Mailer: git-send-email 1.7.5.4
+X-OriginalArrivalTime: 09 May 2012 17:32:02.0969 (UTC) FILETIME=[A57DF090:01CD2E09]
+X-MC-Unique: 112050918302603001
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q49HUaoc004668
+
+This patch adds an option to instantiate guest virtio-mmio devices
+basing on a kernel command line (or module) parameter, for example:
+
+	virtio_mmio.devices=0x100@0x100b0000:48
+
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+---
+
+Hi Rusty,
+
+As the param changes are in now, could you queue this
+long-time-forgotten patch for 3.5?
+
+Cheers!
+
+Pawel
+
+PS. Congratulations once again and see you in HK.
+
+ Documentation/kernel-parameters.txt |   17 ++++
+ drivers/virtio/Kconfig              |   11 +++
+ drivers/virtio/virtio_mmio.c        |  163 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 191 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index c1601e5..8b35051 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -110,6 +110,7 @@ parameter is applicable:
+ 	USB	USB support is enabled.
+ 	USBHID	USB Human Interface Device support is enabled.
+ 	V4L	Video For Linux support is enabled.
++	VMMIO   Driver for memory mapped virtio devices is enabled.
+ 	VGA	The VGA console has been enabled.
+ 	VT	Virtual terminal support is enabled.
+ 	WDT	Watchdog support is enabled.
+@@ -2847,6 +2848,22 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	video=		[FB] Frame buffer configuration
+ 			See Documentation/fb/modedb.txt.
+ 
++	virtio_mmio.device=
++			[VMMIO] Memory mapped virtio (platform) device.
++
++				<size>@<baseaddr>:<irq>[:<id>]
++			where:
++				<size>     := size (can use standard suffixes
++						like K, M and G)
++				<baseaddr> := physical base address
++				<irq>      := interrupt number (as passed to
++						request_irq())
++				<id>       := (optional) platform device id
++			example:
++				virtio_mmio.device=1K@0x100b0000:48:7
++
++			Can be used multiple times for multiple devices.
++
+ 	vga=		[BOOT,X86-32] Select a particular video mode
+ 			See Documentation/x86/boot.txt and
+ 			Documentation/svga.txt.
+diff --git a/drivers/virtio/Kconfig b/drivers/virtio/Kconfig
+index 1a61939..f38b17a 100644
+--- a/drivers/virtio/Kconfig
++++ b/drivers/virtio/Kconfig
+@@ -46,4 +46,15 @@ config VIRTIO_BALLOON
+ 
+  	 If unsure, say N.
+ 
++config VIRTIO_MMIO_CMDLINE_DEVICES
++	bool "Memory mapped virtio devices parameter parsing"
++	depends on VIRTIO_MMIO
++	---help---
++	 Allow virtio-mmio devices instantiation via the kernel command line
++	 or module parameters. Be aware that using incorrect parameters (base
++	 address in particular) can crash your system - you have been warned.
++	 See Documentation/kernel-parameters.txt for details.
++
++	 If unsure, say 'N'.
++
+ endmenu
+diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
+index 01d6dc2..453db0c 100644
+--- a/drivers/virtio/virtio_mmio.c
++++ b/drivers/virtio/virtio_mmio.c
+@@ -6,6 +6,50 @@
+  * This module allows virtio devices to be used over a virtual, memory mapped
+  * platform device.
+  *
++ * The guest device(s) may be instantiated in one of three equivalent ways:
++ *
++ * 1. Static platform device in board's code, eg.:
++ *
++ *	static struct platform_device v2m_virtio_device = {
++ *		.name = "virtio-mmio",
++ *		.id = -1,
++ *		.num_resources = 2,
++ *		.resource = (struct resource []) {
++ *			{
++ *				.start = 0x1001e000,
++ *				.end = 0x1001e0ff,
++ *				.flags = IORESOURCE_MEM,
++ *			}, {
++ *				.start = 42 + 32,
++ *				.end = 42 + 32,
++ *				.flags = IORESOURCE_IRQ,
++ *			},
++ *		}
++ *	};
++ *
++ * 2. Device Tree node, eg.:
++ *
++ *		virtio_block@1e000 {
++ *			compatible = "virtio,mmio";
++ *			reg = <0x1e000 0x100>;
++ *			interrupts = <42>;
++ *		}
++ *
++ * 3. Kernel module (or command line) parameter. Can be used more than once -
++ *    one device will be created for each one. Syntax:
++ *
++ *		[virtio_mmio.]device=<size>@<baseaddr>:<irq>[:<id>]
++ *    where:
++ *		<size>     := size (can use standard suffixes like K, M or G)
++ *		<baseaddr> := physical base address
++ *		<irq>      := interrupt number (as passed to request_irq())
++ *		<id>       := (optional) platform device id
++ *    eg.:
++ *		virtio_mmio.device=0x100@0x100b0000:48 \
++ *				virtio_mmio.device=1K@0x1001e000:74
++ *
++ *
++ *
+  * Registers layout (all 32-bit wide):
+  *
+  * offset d. name             description
+@@ -42,6 +86,8 @@
+  * See the COPYING file in the top-level directory.
+  */
+ 
++#define pr_fmt(fmt) "virtio-mmio: " fmt
++
+ #include <linux/highmem.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+@@ -449,6 +495,122 @@ static int __devexit virtio_mmio_remove(struct platform_device *pdev)
+ 
+ 
+ 
++/* Devices list parameter */
++
++#if defined(CONFIG_VIRTIO_MMIO_CMDLINE_DEVICES)
++
++static struct device vm_cmdline_parent = {
++	.init_name = "virtio-mmio-cmdline",
++};
++
++static int vm_cmdline_parent_registered;
++static int vm_cmdline_id;
++
++static int vm_cmdline_set(const char *device,
++		const struct kernel_param *kp)
++{
++	int err;
++	struct resource resources[2] = {};
++	char *str;
++	long long int base;
++	int processed, consumed = 0;
++	struct platform_device *pdev;
++
++	resources[0].flags = IORESOURCE_MEM;
++	resources[1].flags = IORESOURCE_IRQ;
++
++	resources[0].end = memparse(device, &str) - 1;
++
++	processed = sscanf(str, "@%lli:%u%n:%d%n",
++			&base, &resources[1].start, &consumed,
++			&vm_cmdline_id, &consumed);
++
++	if (processed < 2 || processed > 3 || str[consumed])
++		return -EINVAL;
++
++	resources[0].start = base;
++	resources[0].end += base;
++	resources[1].end = resources[1].start;
++
++	if (!vm_cmdline_parent_registered) {
++		err = device_register(&vm_cmdline_parent);
++		if (err) {
++			pr_err("Failed to register parent device!\n");
++			return err;
++		}
++		vm_cmdline_parent_registered = 1;
++	}
++
++	pr_info("Registering device virtio-mmio.%d at 0x%llx-0x%llx, IRQ %d.\n",
++		       vm_cmdline_id,
++		       (unsigned long long)resources[0].start,
++		       (unsigned long long)resources[0].end,
++		       (int)resources[1].start);
++
++	pdev = platform_device_register_resndata(&vm_cmdline_parent,
++			"virtio-mmio", vm_cmdline_id++,
++			resources, ARRAY_SIZE(resources), NULL, 0);
++	if (IS_ERR(pdev))
++		return PTR_ERR(pdev);
++
++	return 0;
++}
++
++static int vm_cmdline_get_device(struct device *dev, void *data)
++{
++	char *buffer = data;
++	unsigned int len = strlen(buffer);
++	struct platform_device *pdev = to_platform_device(dev);
++
++	snprintf(buffer + len, PAGE_SIZE - len, "0x%llx@0x%llx:%llu:%d\n",
++			pdev->resource[0].end - pdev->resource[0].start + 1ULL,
++			(unsigned long long)pdev->resource[0].start,
++			(unsigned long long)pdev->resource[1].start,
++			pdev->id);
++	return 0;
++}
++
++static int vm_cmdline_get(char *buffer, const struct kernel_param *kp)
++{
++	buffer[0] = '\0';
++	device_for_each_child(&vm_cmdline_parent, buffer,
++			vm_cmdline_get_device);
++	return strlen(buffer) + 1;
++}
++
++static struct kernel_param_ops vm_cmdline_param_ops = {
++	.set = vm_cmdline_set,
++	.get = vm_cmdline_get,
++};
++
++device_param_cb(device, &vm_cmdline_param_ops, NULL, S_IRUSR);
++
++static int vm_unregister_cmdline_device(struct device *dev,
++		void *data)
++{
++	platform_device_unregister(to_platform_device(dev));
++
++	return 0;
++}
++
++static void vm_unregister_cmdline_devices(void)
++{
++	if (vm_cmdline_parent_registered) {
++		device_for_each_child(&vm_cmdline_parent, NULL,
++				vm_unregister_cmdline_device);
++		device_unregister(&vm_cmdline_parent);
++		vm_cmdline_parent_registered = 0;
++	}
++}
++
++#else
++
++static void vm_unregister_cmdline_devices(void)
++{
++}
++
++#endif
++
+ /* Platform driver */
+ 
+ static struct of_device_id virtio_mmio_match[] = {
+@@ -475,6 +637,7 @@ static int __init virtio_mmio_init(void)
+ static void __exit virtio_mmio_exit(void)
+ {
+ 	platform_driver_unregister(&virtio_mmio_driver);
++	vm_unregister_cmdline_devices();
+ }
+ 
+ module_init(virtio_mmio_init);
+-- 
+1.7.5.4
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> > A "%.*pb" is the only interface that can work for a "sized" 
-> > bitmap (with obviously fixed-length ones being possible with 
-> > a "%.32bp" like thing)
-> 
-> Right, sadly that also generates a warning :/
-
-Why not use what I suggested, %*pb? It also doubles as a width 
-field in essence, as bitmap output is fundamentally fixed width.
-
-Thanks,
-
-	Ingo
