@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760487Ab2EIRW1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:22:27 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41389 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755283Ab2EIRW0 (ORCPT
+	id S1760527Ab2EIRW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:22:58 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51118 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760483Ab2EIRW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 13:22:26 -0400
-Date: Wed, 9 May 2012 19:22:20 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Joe Perches <joe@perches.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Igor Mammedov <imammedo@redhat.com>,
-        Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
-        pjt@google.com, tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
-Message-ID: <20120509172220.GA8135@gmail.com>
-References: <1336566644.2527.33.camel@twins>
- <1336570043.2527.38.camel@twins>
- <20120509133607.GA26124@gmail.com>
- <1336571049.2527.43.camel@twins>
- <1336571947.2527.47.camel@twins>
- <20120509141528.GA3623@gmail.com>
- <1336577562.2527.58.camel@twins>
- <20120509154116.GC2653@gmail.com>
- <1336579592.2527.60.camel@twins>
- <1336581561.1905.3.camel@joe2Laptop>
+	Wed, 9 May 2012 13:22:56 -0400
+Message-ID: <4FAAA7CC.7050208@mvista.com>
+Date: Wed, 09 May 2012 21:22:20 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1336581561.1905.3.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        plagnioj@jcrosoft.com, gregkh@linuxfoundation.org,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] USB: ohci-at91: add a reset function to fix race condition
+References: <1336553334-31058-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1336553334-31058-1-git-send-email-nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
-* Joe Perches <joe@perches.com> wrote:
+On 09-05-2012 12:48, Nicolas Ferre wrote:
 
-> On Wed, 2012-05-09 at 18:06 +0200, Peter Zijlstra wrote:
-> > On Wed, 2012-05-09 at 17:41 +0200, Ingo Molnar wrote:
-> > > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > > 
-> > > > On Wed, 2012-05-09 at 16:15 +0200, Ingo Molnar wrote:
-> > > > > > I guess I should use %.*pb and keep the field_width in case someone
-> > > > > > manages to actually make bitmap_scnlistprintf() conform to it. The
-> > > > > > precision is unused anyway.
-> > > > > 
-> > > > > That's a cute trick, and it's intuitive as well. 
-> > > > 
-> > > > kernel/sched/core.c:5570:3: warning: precision used with ‘%p’ gnu_printf format [-Wformat]
-> > > > 
-> > > > /me curses a bit.. anybody?
-> > > 
-> > > Yeah, that's a floating point precision thing (or for strings, 
-> > > right-align) - could you use %30pb, etc?
-> > 
-> > %*pb you mean? Yeah that works, field width is allowed for %p. It does
-> > mean we cannot ever make bitmaps respect field width though.
-> 
-> You could also fill a new struct with info
-> about the bitmap and pass a pointer to that.
-> 
-> struct print_bitmap_info {
-> 	int foo;
-> 	int precision;
-> 	int width;
-> 	void *bitmap;
-> };
-> ...
-> 	struct print_bitmap_info bi;
-> 	bi.foo = bar;
-> 	...
-> 	bi.bitmap = &bitmap;
-> ...
-> 	printk("%pb", &bi);
+> A possible race condition appears because we are not initializing
+> the ohci->regs before calling usb_hcd_request_irqs().
+> We move the call to ohci_init() in hcd->driver->reset() instead of
+> hcd->driver->start() to fix this.
+> This was experienced when we share the same IRQ line between OHCI and EHCI
+> controllers.
 
-That defeats the whole purpose of avoiding extra complexity and 
-preparation - just passing in the bitmap pointer is the most 
-natural, most intuitive type to use.
+> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
+> Tested-by: Christian Eggers<christian.eggers@kathrein.de>
+> Cc: stable<stable@vger.kernel.org>
+> ---
+>   drivers/usb/host/ohci-at91.c |   11 ++++++++++-
+>   1 file changed, 10 insertions(+), 1 deletion(-)
 
-Thanks,
+> diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
+> index 13ebeca..55d3d64 100644
+> --- a/drivers/usb/host/ohci-at91.c
+> +++ b/drivers/usb/host/ohci-at91.c
+> @@ -223,7 +223,7 @@ static void __devexit usb_hcd_at91_remove(struct usb_hcd *hcd,
+>   /*-------------------------------------------------------------------------*/
+>
+>   static int __devinit
+> -ohci_at91_start (struct usb_hcd *hcd)
+> +ohci_at91_reset (struct usb_hcd *hcd)
 
-	Ingo
+    Have you run the patch thru scripts/checkpatch.pl? There should be no 
+space between function name and '('.
+
+>   {
+>   	struct at91_usbh_data	*board = hcd->self.controller->platform_data;
+>   	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
+> @@ -233,6 +233,14 @@ ohci_at91_start (struct usb_hcd *hcd)
+>   		return ret;
+>
+>   	ohci->num_ports = board->ports;
+> +	return 0;
+> +}
+> +
+> +static int __devinit
+> +ohci_at91_start (struct usb_hcd *hcd)
+
+    Same here.
+
+> +{
+> +	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
+
+    And here.
+
+WBR, Sergei
