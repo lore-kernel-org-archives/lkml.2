@@ -1,110 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759462Ab2EIRjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:39:18 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1759381Ab2EIRjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:39:16 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47836 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756786Ab2EIRjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756337Ab2EIRjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 13:39:08 -0400
 From: Richard Weinberger <richard@nod.at>
 To: linux-mtd@lists.infradead.org
 Cc: tim.bird@am.sony.com, tglx@linutronix.de, dedekind1@gmail.com,
-        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de
-Subject: [RFC v2] UBI: UBIVIS (aka checkpointing) support
-Date: Wed,  9 May 2012 19:38:38 +0200
-Message-Id: <1336585125-127220-1-git-send-email-richard@nod.at>
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 2/7] [RFC] UBI: Add checkpoint struct to ubi_device
+Date: Wed,  9 May 2012 19:38:40 +0200
+Message-Id: <1336585125-127220-3-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1336585125-127220-1-git-send-email-richard@nod.at>
+References: <1336585125-127220-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch set implements UBIVIS (checkpointing) support for
-UBI.
+struct ubi_checkpoint describes the currently used checkpoint.
+Upon checkpoint recreation all currently used PEBs will be returned
+to the wl subsystem.
 
-Changes since v1:
-        - renamed it to UBIVIS (at least in Kconfig)
-        - UBIVIS parameters are now configurable via Kconfig
-        - several bugs have been fixed (design and implementation bugs)
-        - added lots of comments to make the review process easier
-        - made checkpatch.pl happy
+struct ubi_cp_pool describes a checkpoint pool.
+All PEBs within this pool have to be rescanned after reading the checkpoint.
+The pools are needed to handle the three types of PEBs which can be obtained
+from the wl subsystem.
+Longterm, shortterm and unknown.
 
-Currently I'm testing UBIVIS on different workloads to find bugs
-and good configuration parameters (mostly for the pool size).
-So, expect v3 soon! :-)
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/mtd/ubi/ubi.h |   43 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 42 insertions(+), 1 deletions(-)
 
-Description:
+diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
+index b162790..83fd308 100644
+--- a/drivers/mtd/ubi/ubi.h
++++ b/drivers/mtd/ubi/ubi.h
+@@ -196,6 +196,41 @@ struct ubi_rename_entry {
+ 
+ struct ubi_volume_desc;
+ 
++#ifdef CONFIG_MTD_UBI_CHECKPOINT
++/**
++ * struct ubi_checkpoint - in-memory checkpoint data structure.
++ * @peb: PEBs used by the current checkpoint
++ * @ec: the erase counter of each used PEB
++ * @size: size of the checkpoint in bytes
++ * @used_blocks: number of used PEBs
++ */
++struct ubi_checkpoint {
++	int peb[UBI_CP_MAX_BLOCKS];
++	unsigned int ec[UBI_CP_MAX_BLOCKS];
++	size_t size;
++	int used_blocks;
++};
++
++/**
++ * struct ubi_cp_pool - in-memory checkpoint pool
++ * @pebs: PEBs in this pool
++ * @used: number of used PEBs
++ * @size: total number of PEBs in this pool
++ * @max_size: maximal size of the pool
++ *
++ * A pool gets filled with up to max_size.
++ * If all PEBs within the pool are used a new checkpoint
++ * will be written and the pool gets refilled with empty PEBs.
++ *
++ */
++struct ubi_cp_pool {
++	int pebs[UBI_CP_MAX_POOL_SIZE];
++	int used;
++	int size;
++	int max_size;
++};
++#endif
++
+ /**
+  * struct ubi_volume - UBI volume description data structure.
+  * @dev: device object to make use of the the Linux device model
+@@ -424,7 +459,13 @@ struct ubi_device {
+ 	spinlock_t ltree_lock;
+ 	struct rb_root ltree;
+ 	struct mutex alc_mutex;
+-
++#ifdef CONFIG_MTD_UBI_CHECKPOINT
++	struct ubi_checkpoint *cp;
++	struct ubi_checkpoint *old_cp;
++	struct ubi_cp_pool long_pool;
++	struct ubi_cp_pool short_pool;
++	struct ubi_cp_pool unk_pool;
++#endif
+ 	/* Wear-leveling sub-system's stuff */
+ 	struct rb_root used;
+ 	struct rb_root erroneous;
+-- 
+1.7.6.5
 
-Checkpointing is an optional feature which stores the physical to
-logical eraseblock relations in a checkpointing superblock to reduce
-the initialization time of UBI. The current init time of UBI is
-proportional to the number of physical erase blocks on the FLASH
-device. With checkpointing enabled the scan time is limited to a fixed
-number of blocks.
-
-Checkpointing does not affect any of the existing UBI robustness
-features and in fact the checkpointing code falls back into scanning
-mode when the checkpoint superblock(s) are corrupted.
-
-The checkpoints consist of two elements:
-
-1) A primary checkpoint block, which contains merily a pointer to the
-   erase block(s) which hold the real checkpointing data.
-
-   This primary block is guaranteed to be held within the first N
-   eraseblocks of a device. N is momentarily set to 64, this value can
-   be changed via Kconfig.
-
-2) The secondary checkpoint blocks, which contain the real
-   checkpointing data (physical to logical eraseblock relations,
-   erase counts, sequence numbers ...)
-
-   Aside of that the checkpointing data contains a list of blocks
-   which belong to the active working pool. The active working pool is
-   a fixed number of blocks for shortterm, longterm and unknown
-   storage time, which can be modified before the next checkpoint set
-   is written to FLASH. These blocks need to be scanned in the
-   conventional UBI scan mode.
-
-   The reason for these pool blocks is to reduce the checkpoint
-   updates to the necessary minimum to avoid accelerated device
-   wearout in scenarios where data changes rapidly. The checkpoint
-   data is updated whenever a working pool runs out of blocks.
-
-   The number of pool blocks can be defined with a config option at
-   the moment, but this could also be done at runtime via sysfs. In
-   case of a change the checkpointing data would be reconstructed.
-
-So the checkpoint scan consists of the following steps:
-
-   1) Find the primary checkpoint block by scanning the start of the
-      device.
-
-   2) Read the real checkpoint data and construct the UBI device info
-      structures.
-
-   3) Scan the pool blocks.
-
-All these operations scan a limited number of erase blocks which makes
-the UBI init O(1) and independent of the device size.
-
-The checkpoint functionality is fully compatible with existing UBI
-deployments. If no checkpoint blocks can be found then the device is
-scanned and the checkpoint blocks are created from the scanned
-information.
-
-Aside of review and testing it needs to be decided, whether the number
-of pool blocks should be deduced from the device size (number of
-physical eraseblocks) or made configurable at compile or runtime.
-
-Thanks to the folks at CELF who sponsored this work!
-
-[PATCH 1/7] [RFC] UBI: Add checkpoint on-chip layout
-[PATCH 2/7] [RFC] UBI: Add checkpoint struct to ubi_device
-[PATCH 3/7] [RFC] UBI: Export next_sqnum()
-[PATCH 4/7] [RFC] UBI: Export compare_lebs()
-[PATCH 5/7] [RFC] UBI: Make wl subsystem checkpoint aware
-[PATCH 6/7] [RFC] UBI: Implement checkpointing support
-[PATCH 7/7] [RFC] UBI: wire up checkpointing
-
-Thanks,
-//richard
