@@ -1,56 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760085Ab2EIQHi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 12:07:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56526 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757617Ab2EIQHh convert rfc822-to-8bit (ORCPT
+	id S1760113Ab2EIQIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 12:08:00 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41118 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757617Ab2EIQH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 12:07:37 -0400
-Message-ID: <1336579592.2527.60.camel@twins>
-Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Igor Mammedov <imammedo@redhat.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, pjt@google.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Joe Perches <joe@perches.com>
-Date: Wed, 09 May 2012 18:06:32 +0200
-In-Reply-To: <20120509154116.GC2653@gmail.com>
-References: <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
-	 <1336566096.2527.30.camel@twins> <1336566644.2527.33.camel@twins>
-	 <1336570043.2527.38.camel@twins> <20120509133607.GA26124@gmail.com>
-	 <1336571049.2527.43.camel@twins> <1336571947.2527.47.camel@twins>
-	 <20120509141528.GA3623@gmail.com> <1336577562.2527.58.camel@twins>
-	 <20120509154116.GC2653@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2- 
+	Wed, 9 May 2012 12:07:59 -0400
+Date: Wed, 09 May 2012 12:05:46 -0400 (EDT)
+Message-Id: <20120509.120546.788906941073754076.davem@davemloft.net>
+To: wolfgang.walter@stwm.de
+Cc: gregkh@linuxfoundation.org, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: 3.3.x: e1000 and ixgbe hang
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201205091107.11820.wolfgang.walter@stwm.de>
+References: <201205082330.12831.wolfgang.walter@stwm.de>
+	<20120508215645.GA22200@kroah.com>
+	<201205091107.11820.wolfgang.walter@stwm.de>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 09 May 2012 09:05:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 17:41 +0200, Ingo Molnar wrote:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Wed, 2012-05-09 at 16:15 +0200, Ingo Molnar wrote:
-> > > > I guess I should use %.*pb and keep the field_width in case someone
-> > > > manages to actually make bitmap_scnlistprintf() conform to it. The
-> > > > precision is unused anyway.
-> > > 
-> > > That's a cute trick, and it's intuitive as well. 
-> > 
-> > kernel/sched/core.c:5570:3: warning: precision used with ‘%p’ gnu_printf format [-Wformat]
-> > 
-> > /me curses a bit.. anybody?
-> 
-> Yeah, that's a floating point precision thing (or for strings, 
-> right-align) - could you use %30pb, etc?
+From: Wolfgang Walter <wolfgang.walter@stwm.de>
+Date: Wed, 9 May 2012 11:07:11 +0200
 
-%*pb you mean? Yeah that works, field width is allowed for %p. It does
-mean we cannot ever make bitmaps respect field width though.
+> c) Dave Miller is a busy man.
 
-
+Therefore pinging me on crap like this makes me a more busy man, so
+don't do it, unless you want it to take even longer for me to get
+to it.
