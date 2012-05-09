@@ -1,177 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab2EICeG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 22:34:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32288 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753165Ab2EICeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 22:34:04 -0400
-Message-ID: <1336530841.12477.115.camel@bling.home>
-Subject: RE: [PATCH] kvm: Enable device LTR/OBFF capibility before doing
- guest device assignment
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Hao, Xudong" <xudong.hao@intel.com>
-Cc: Avi Kivity <avi@redhat.com>, Xudong Hao <xudong.hao@linux.intel.com>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+	id S1753287Ab2EIC76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 22:59:58 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:56970
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752789Ab2EIC75 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 May 2012 22:59:57 -0400
+X-SpamScore: -8
+X-BigFish: VS-8(zz1432Nzz1202hzz8275bh5eeeKz2dh2a8h668h839h8e2h8e3h93fhd25hbe9i)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Chen Peter-B29397 <B29397@freescale.com>
+To: =?utf-8?B?RXJpYyBCw6luYXJk?= <eric@eukrea.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Li Yang-R58472 <r58472@freescale.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>
-Date: Tue, 08 May 2012 20:34:01 -0600
-In-Reply-To: <403610A45A2B5242BD291EDAE8B37D300FDBEF09@SHSMSX102.ccr.corp.intel.com>
-References: <20120506152405.GA14009@hp-xd.sh.intel.com>
-	 <4FA699F6.9010605@redhat.com>
-	 <403610A45A2B5242BD291EDAE8B37D300FDAE9B6@SHSMSX102.ccr.corp.intel.com>
-	 <1336407384.12477.65.camel@bling.home>
-	 <403610A45A2B5242BD291EDAE8B37D300FDBDAB9@SHSMSX102.ccr.corp.intel.com>
-	 <1336490302.12477.105.camel@bling.home>
-	 <403610A45A2B5242BD291EDAE8B37D300FDBEF09@SHSMSX102.ccr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: RE: [PATCH 1/2] usb: fsl_mxc_udc.c: add workaround for ENGcm09152
+ for i.MX25
+Thread-Topic: [PATCH 1/2] usb: fsl_mxc_udc.c: add workaround for ENGcm09152
+ for i.MX25
+Thread-Index: AQHNLOrSgxZZssN9KUeqLLBY89v7VZbAxKeQ
+Date: Wed, 9 May 2012 02:59:52 +0000
+Message-ID: <F281D0F91ED19E4D8E63A7504E8A649803B91ED2@039-SN2MPN1-022.039d.mgd.msft.net>
+References: <1336461510-30190-1-git-send-email-eric@eukrea.com>
+In-Reply-To: <1336461510-30190-1-git-send-email-eric@eukrea.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.2]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4930qHs030877
 
-On Wed, 2012-05-09 at 01:18 +0000, Hao, Xudong wrote:
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Tuesday, May 08, 2012 11:18 PM
-> > To: Hao, Xudong
-> > Cc: Avi Kivity; Xudong Hao; mtosatti@redhat.com; kvm@vger.kernel.org;
-> > linux-kernel@vger.kernel.org; Zhang, Xiantao
-> > Subject: RE: [PATCH] kvm: Enable device LTR/OBFF capibility before doing guest
-> > device assignment
-> > 
-> > On Tue, 2012-05-08 at 09:16 +0000, Hao, Xudong wrote:
-> > > > -----Original Message-----
-> > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > > Sent: Tuesday, May 08, 2012 12:16 AM
-> > > > To: Hao, Xudong
-> > > > Cc: Avi Kivity; Xudong Hao; mtosatti@redhat.com; kvm@vger.kernel.org;
-> > > > linux-kernel@vger.kernel.org; Zhang, Xiantao
-> > > > Subject: RE: [PATCH] kvm: Enable device LTR/OBFF capibility before doing
-> > guest
-> > > > device assignment
-> > > >
-> > > > On Mon, 2012-05-07 at 07:58 +0000, Hao, Xudong wrote:
-> > > > > > -----Original Message-----
-> > > > > > From: Avi Kivity [mailto:avi@redhat.com]
-> > > > > > Sent: Sunday, May 06, 2012 11:34 PM
-> > > > > > To: Xudong Hao
-> > > > > > Cc: mtosatti@redhat.com; kvm@vger.kernel.org;
-> > > > linux-kernel@vger.kernel.org;
-> > > > > > Zhang, Xiantao; Hao, Xudong; Alex Williamson
-> > > > > > Subject: Re: [PATCH] kvm: Enable device LTR/OBFF capibility before doing
-> > > > guest
-> > > > > > device assignment
-> > > > > >
-> > > > > > On 05/06/2012 06:24 PM, Xudong Hao wrote:
-> > > > > > > Enable device LTR/OBFF capibility before do device assignment, so that
-> > > > guest
-> > > > > > can benefit from them.
-> > > > > >
-> > > > > > cc += Alex
-> > > > > >
-> > > > > > > @@ -166,6 +166,10 @@ int kvm_assign_device(struct kvm *kvm,
-> > > > > > >     if (pdev == NULL)
-> > > > > > >         return -ENODEV;
-> > > > > > >
-> > > > > > > +   /* Enable some device capibility before do device assignment,
-> > > > > > > +    * so that guest can benefit from them.
-> > > > > > > +    */
-> > > > > > > +   kvm_iommu_enable_dev_caps(pdev);
-> > > > > > >     r = iommu_attach_device(domain, &pdev->dev);
-> > > > > >
-> > > > > > Suppose we fail here.  Do we need to disable_dev_caps()?
-> > > > > >
-> > > >
-> > > > If kvm_assign_device() fails we'll try to restore the state we saved in
-> > > > kvm_vm_ioctl_assign_device(), so ltr/obff should be brought back to
-> > > > initial state.
-> > > >
-> > > Right, more clear.
-> > >
-> > > > > I don't think so. When a device will be assigned to guest, it's be
-> > > > > owned by a pci-stub driver, attach_device fail here do not affect
-> > > > > everything. If host want to use it, host device driver has its own
-> > > > > enable/disable dev_caps.
-> > > >
-> > > > Why is device assignment unique here?  If there's a default value that's
-> > > > known to be safe, why doesn't pci_enable_device set it for everyone?
-> > > > Host drivers can fine tune the value later if they want.
-> > > >
+ 
 > 
-> If host did not have this device driver or host did not load the
-> driver, who will enable them? Guest? But in guest, it really need qemu
-> PCIe support.
-
-The kvm driver does pci_enable_device(), just like any other PCI driver.
-If there's a safe default value, why isn't it set there?
-
-> > > > > > >     if (r) {
-> > > > > > >         printk(KERN_ERR "assign device %x:%x:%x.%x failed",
-> > > > > > > @@ -228,6 +232,7 @@ int kvm_deassign_device(struct kvm *kvm,
-> > > > > > >         PCI_SLOT(assigned_dev->host_devfn),
-> > > > > > >         PCI_FUNC(assigned_dev->host_devfn));
-> > > > > > >
-> > > > > > > +   kvm_iommu_disable_dev_caps(pdev);
-> > > > > > >     return 0;
-> > > > > > >  }
-> > > > > > >
-> > > > > > > @@ -351,3 +356,30 @@ int kvm_iommu_unmap_guest(struct kvm
-> > *kvm)
-> > > > > > >     iommu_domain_free(domain);
-> > > > > > >     return 0;
-> > > > > > >  }
-> > > > > > > +
-> > > > > > > +static void kvm_iommu_enable_dev_caps(struct pci_dev *pdev)
-> > > > > > > +{
-> > > > > > > +   /* set default value */
-> > > > > > > +   unsigned long type = PCI_EXP_OBFF_SIGNAL_ALWAYS;
-> > > > > > > +   int snoop_lat_ns = 1024, nosnoop_lat_ns = 1024;
-> > > > > >
-> > > > > > Where does this magic number come from?
-> > > > > >
-> > > > > The number is the max value that register support, set it as default
-> > > > > here, we did not have any device here, and we do not know what's the
-> > > > > proper value, so it set a default value firstly.
-> > > >
-> > > > The register is composed of latency scale and latency value fields.
-> > > > 1024 is simply the largest value the latency value can hold (+1).  The
-> > > > scale field allows latencies up to 34,326,183,936ns to be specified, so
-> > > > please explain how 1024 is a universal default.
-> > > >
-> > >
-> > > Since each platform will have its own max supported latency, I think
-> > > the best way is setting the value to 0 because we have such a device
-> > > now.
-> > 
-> > What's the benefit to that device vs the risk to other devices?  
+> this patch gives the possibility to workaround bug ENGcm09152
+> on i.MX25 when the hardware workaround is also implemented on
+> the board.
+> It covers the workaround described on page 42 of the following Errata,
+> titled "USB: UTMI_USBPHY VBUS input impedance implementation error" :
+> http://cache.freescale.com/files/dsp/doc/errata/IMX25CE.pdf
 > 
-> Default value 0 does not affect any device, right?
 
-I don't know, but if it doesn't affect any device, why bother?  On the
-risk side we have to question whether the device ltr/obff support works,
-whether the values we use are appropriate, whether the upstream
-interconnects support the same, and work, and whether the guest driver
-will behave appropriately with these enabled versus a gain of what?  So
-far it looks like we're turning it on simply because it's there.
+The two patches are ok, I am not sure if sascha is ok for these two
+as there is cpu_is_xxx code although it is bug fix.
 
-> > Again,
-> > if there's a safe default value for both LTR and OBFF, why isn't PCI
-> > core setting it for everyone?  I'm inclined to wait for qemu express
-> > support and expose LTR/OBFF control to the guest if and only if we can
-> > enable it on the root complex and intermediate switches.  Thanks,
-> > 
-> 
-> Alex, do you means you're working on the qemu express support and
-> ltr/obff exposing? If so, when will this support finish?
+ 
 
-Qemu express support is being worked on by the community, once
-available, it may be simple to expose these register if we determine
-it's safe for the guest to manipulate them.  I think there's a goal of
-incorporating express support by qemu 1.2, but I'm not driving it.
-Thanks,
-
-Alex
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
