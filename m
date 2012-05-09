@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab2EIE7J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 00:59:09 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:33260 "EHLO
+	id S1755219Ab2EIE73 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 00:59:29 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:48353 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751425Ab2EIE7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 00:59:05 -0400
+	id S1754403Ab2EIE70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 00:59:26 -0400
 From: Joe Perches <joe@perches.com>
 To: "David S. Miller" <davem@davemloft.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>
-Cc: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 10/13] netfilter: Convert compare_ether_addr to ether_addr_equal
-Date: Tue,  8 May 2012 21:56:54 -0700
-Message-Id: <6fc964a05b125385dc75798c24226bf20e16aa5d.1336538938.git.joe@perches.com>
+Subject: [PATCH 12/13] wireless: Convert compare_ether_addr to ether_addr_equal by hand
+Date: Tue,  8 May 2012 21:56:56 -0700
+Message-Id: <173dcbff1655387845a430508dcf686cc35af1bb.1336538938.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 In-Reply-To: <cover.1336538937.git.joe@perches.com>
 References: <cover.1336538937.git.joe@perches.com>
@@ -23,96 +22,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new bool function ether_addr_equal to add
-some clarity and reduce the likelihood for misuse
-of compare_ether_addr for sorting.
+spatch/coccinelle isn't perfect.  It doesn't understand
+__aligned(x) and doesn't convert functions it can't parse.
 
-Done via cocci script:
-
-$ cat compare_ether_addr.cocci
-@@
-expression a,b;
-@@
--	!compare_ether_addr(a, b)
-+	ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	compare_ether_addr(a, b)
-+	!ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	!ether_addr_equal(a, b) == 0
-+	ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	!ether_addr_equal(a, b) != 0
-+	!ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	ether_addr_equal(a, b) == 0
-+	!ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	ether_addr_equal(a, b) != 0
-+	ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	!!ether_addr_equal(a, b)
-+	ether_addr_equal(a, b)
+Convert the remaining compare_ether_addr uses.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/netfilter/ipset/ip_set_bitmap_ipmac.c |    4 ++--
- net/netfilter/xt_mac.c                    |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ net/wireless/util.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/netfilter/ipset/ip_set_bitmap_ipmac.c b/net/netfilter/ipset/ip_set_bitmap_ipmac.c
-index 0bb16c4..d7eaf10 100644
---- a/net/netfilter/ipset/ip_set_bitmap_ipmac.c
-+++ b/net/netfilter/ipset/ip_set_bitmap_ipmac.c
-@@ -111,7 +111,7 @@ bitmap_ipmac_test(struct ip_set *set, void *value, u32 timeout, u32 flags)
- 		return -EAGAIN;
- 	case MAC_FILLED:
- 		return data->ether == NULL ||
--		       compare_ether_addr(data->ether, elem->ether) == 0;
-+		       ether_addr_equal(data->ether, elem->ether);
- 	}
- 	return 0;
- }
-@@ -225,7 +225,7 @@ bitmap_ipmac_ttest(struct ip_set *set, void *value, u32 timeout, u32 flags)
- 		return -EAGAIN;
- 	case MAC_FILLED:
- 		return (data->ether == NULL ||
--			compare_ether_addr(data->ether, elem->ether) == 0) &&
-+			ether_addr_equal(data->ether, elem->ether)) &&
- 		       !bitmap_expired(map, data->id);
- 	}
- 	return 0;
-diff --git a/net/netfilter/xt_mac.c b/net/netfilter/xt_mac.c
-index 8160f6b..d5b4fd4 100644
---- a/net/netfilter/xt_mac.c
-+++ b/net/netfilter/xt_mac.c
-@@ -36,7 +36,7 @@ static bool mac_mt(const struct sk_buff *skb, struct xt_action_param *par)
- 		return false;
- 	if (skb_mac_header(skb) + ETH_HLEN > skb->data)
- 		return false;
--	ret  = compare_ether_addr(eth_hdr(skb)->h_source, info->srcaddr) == 0;
-+	ret  = ether_addr_equal(eth_hdr(skb)->h_source, info->srcaddr);
- 	ret ^= info->invert;
- 	return ret;
- }
+diff --git a/net/wireless/util.c b/net/wireless/util.c
+index 3ba366f..1cd2558 100644
+--- a/net/wireless/util.c
++++ b/net/wireless/util.c
+@@ -370,7 +370,7 @@ int ieee80211_data_to_8023(struct sk_buff *skb, const u8 *addr,
+ 		     iftype != NL80211_IFTYPE_P2P_CLIENT &&
+ 		     iftype != NL80211_IFTYPE_MESH_POINT) ||
+ 		    (is_multicast_ether_addr(dst) &&
+-		     !compare_ether_addr(src, addr)))
++		     ether_addr_equal(src, addr)))
+ 			return -1;
+ 		if (iftype == NL80211_IFTYPE_MESH_POINT) {
+ 			struct ieee80211s_hdr *meshdr =
+@@ -398,9 +398,9 @@ int ieee80211_data_to_8023(struct sk_buff *skb, const u8 *addr,
+ 	payload = skb->data + hdrlen;
+ 	ethertype = (payload[6] << 8) | payload[7];
+ 
+-	if (likely((compare_ether_addr(payload, rfc1042_header) == 0 &&
++	if (likely((ether_addr_equal(payload, rfc1042_header) &&
+ 		    ethertype != ETH_P_AARP && ethertype != ETH_P_IPX) ||
+-		   compare_ether_addr(payload, bridge_tunnel_header) == 0)) {
++		   ether_addr_equal(payload, bridge_tunnel_header))) {
+ 		/* remove RFC1042 or Bridge-Tunnel encapsulation and
+ 		 * replace EtherType */
+ 		skb_pull(skb, hdrlen + 6);
 -- 
 1.7.8.111.gad25c.dirty
 
