@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760678Ab2EIR4T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:56:19 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53892 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab2EIR4S (ORCPT
+	id S1758230Ab2EISHe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 14:07:34 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60266 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754952Ab2EISHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 13:56:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Subject: Re: Big I/O latencies, except when iotop is hooked
-Date: Wed, 9 May 2012 17:56:15 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <CAMP44s2eVtquLoB6Zjbs4nGVKP6e=Dxse4uicL4s8vmrFeJdTQ@mail.gmail.com>
-In-Reply-To: <CAMP44s2eVtquLoB6Zjbs4nGVKP6e=Dxse4uicL4s8vmrFeJdTQ@mail.gmail.com>
+	Wed, 9 May 2012 14:07:32 -0400
+Date: Wed, 9 May 2012 11:07:27 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Wolfgang Walter <wolfgang.walter@stwm.de>
+Cc: David Miller <davem@davemloft.net>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: 3.3.x: e1000 and ixgbe hang
+Message-ID: <20120509180727.GA14152@kroah.com>
+References: <201205082330.12831.wolfgang.walter@stwm.de>
+ <201205091107.11820.wolfgang.walter@stwm.de>
+ <20120509.120546.788906941073754076.davem@davemloft.net>
+ <201205091857.14406.wolfgang.walter@stwm.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205091756.16050.arnd@arndb.de>
-X-Provags-ID: V02:K0:D68caDW6HjKkSiedbDgiSAGTEaO4qZhaLeLzko4l9cp
- nEDv0GLkSq4ilLXBQJnu+ryfUeJnURH/VjA0RnKj/wTCVDCkDg
- P0+sinERudyZRdLpWhZZY8SbWUFCcOoUUzwdyQbMh1AHklPuNc
- u/B7/pDqSkAKl3n+re7vQgZRGvsDCtn0tKY2BFg85nD1yoB+du
- RiozI0sZHAXG+UiIRAKfu7/7kFMJmSq1xVPkuzaVBN1vygrt9R
- NJEMTDMDhijokNmHZXVeJoFposf3uhIfgIbOiC9fzmc2I6CVzV
- /wClpg7DmnyLySGkMI21ZlRQQ6tbPDz5ZYrkBmaT/+ufB6D85P
- bHc3FThS/E3IvA5Iy4bk=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201205091857.14406.wolfgang.walter@stwm.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 May 2012, Felipe Contreras wrote:
-> I've been noticing big I/O latencies when doing operations with
-> notmuch (xapian database), the operations are quite simple and
-> probably should not need a lot of I/O, however, they seen to take a
-> long time, sometimes even seconds. But when I hook iotop (-p pid), the
-> latency goes away, and every operation is reliably instantaneous
-> (basically).
+On Wed, May 09, 2012 at 06:57:13PM +0200, Wolfgang Walter wrote:
+> Am Mittwoch, 9. Mai 2012 schrieben Sie:
+> > From: Wolfgang Walter <wolfgang.walter@stwm.de>
+> > Date: Wed, 9 May 2012 11:07:11 +0200
+> >
+> > > c) Dave Miller is a busy man.
+> >
+> > Therefore pinging me on crap like this makes me a more busy man, so
+> > don't do it, unless you want it to take even longer for me to get
+> > to it.
 > 
-> Do you have any ideas what might be causing this delay, and why is
-> iotop making it go away?
+> I don't understand why you are so unfriendly.
 > 
-> BTW. This is an ext4 encrypted partition on a USB stick, I tried
-> different mount options without any noticeable change. I tried to copy
-> the data to my SSD drive and do the same operations, while it was much
-> faster, it still seemed to have some delays triggered randomly. This
-> is with v3.3.5.
+> I didn't sent you any mail nor did I complain to you. If you read my first 
+> mail on this issue then you will see that.
 
-USB sticks like most other cheap flash media tend to have long latencies
-because of the effects I describe on https://lwn.net/Articles/428584/.
+You were complaining to me, about how David isn't working fast enough to
+solve a problem that is affecting you, when he said he would take care
+of it when he got the chance to.
 
-I don't know if you have the chance to run flashbench[1] on it (which
-will destroy the data for the partition you are testing), but that
-should at least tell you if it's a problem with the drive.
-You can also use the information from that and combine it with
-a blocktrace log and flashsim[2] to see where the actual latencies
-are expected to happen.
+You didn't say it in so many words, but that was the general gist of it.
+And I don't blame David for being brisk, I think it was really crappy of
+you to do that.
 
-The first thing you should check is whether the partitions are
-properly aligned, using 'fdisk -l -u /dev/sdX'.
+> But when we are at it: I think that when a bug in a stable kernel is found and 
+> the final fix is known it is bad practice to hord that patch till submission 
+> without letting stable@ know about it. I don't mean that the patch should go 
+> into the stable tree immediately. Of course it makes sense to wait some time 
+> to see if it works in Linus' tree. But why should other people waste their 
+> time hunting a bug already solved? And why deny people the fix?
 
-Of course none of this will tell you why iotop makes any difference.
+No one is "denying" anyone anything, it's all open, you are free to take
+the patch and do with it what you want, if you need to.  Some of us have
+other responsibilities and tasks and will get to things as soon as we
+possibly can.
 
-	Arnd
+In other words, trust us, if you don't, that's fine, then do it
+yourself, but to try to route around the documented and well-working
+procedures that we have in place, is flat out rude.
 
-[1] http://git.linaro.org/gitweb?p=people/arnd/flashbench.git
-[2] http://yxit.co.uk/public/flash-performance/flashsim/
+greg k-h
