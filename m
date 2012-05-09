@@ -1,59 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759169Ab2EIXlf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 19:41:35 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:48940 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765Ab2EIXle convert rfc822-to-8bit (ORCPT
+	id S1761263Ab2EIXmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 19:42:05 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:13141 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760071Ab2EIXmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 19:41:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <201205092038.16722.arnd.bergmann@linaro.org>
-References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
- <CAK5ve-KSyvZSHw7csQ5M88q0008NSrs1kwuyUH3hFqxD0f7BQQ@mail.gmail.com>
- <20120509122436.1b612004.akpm@linux-foundation.org> <201205092038.16722.arnd.bergmann@linaro.org>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Thu, 10 May 2012 07:41:12 +0800
-X-Google-Sender-Auth: _ffcYwqtKhGghWlXP8jPRqzU7SY
-Message-ID: <CAK5ve-Ko6EjZsJBW++ofL0eHxiR5W+wafb3T99Rm9a1L8pHLBQ@mail.gmail.com>
-Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and
- consolidate LED driver in ARM
-To: Arnd Bergmann <arnd.bergmann@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux@arm.linux.org.uk,
-        rpurdie@rpsys.net, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
-        nicolas.pitre@linaro.org, tim.gardner@canonical.com,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 May 2012 19:42:02 -0400
+X-AuditID: cbfee61a-b7b97ae000004342-13-4fab00c86fb7
+Message-id: <4FAB00C8.8000308@samsung.com>
+Date: Thu, 10 May 2012 08:42:00 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Yadwinder Singh <yadi.brar@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Sylwester Nawrocki <snjw23@gmail.com>
+Subject: Re: [PATCH 1/2] mfd: Add support for MAX77686.
+References: <1336580695-1184-1-git-send-email-yadi.brar@samsung.com>
+ <1336580695-1184-2-git-send-email-yadi.brar@samsung.com>
+ <20120509182757.GB32037@sirena.org.uk>
+In-reply-to: <20120509182757.GB32037@sirena.org.uk>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 4:38 AM, Arnd Bergmann <arnd.bergmann@linaro.org> wrote:
-> On Wednesday 09 May 2012, Andrew Morton wrote:
->> I'm the LEDs patchmonkey at present.  I can merge the drivers/leds
->> change if you like, but there doesn't seem much point in that unless
->> all the other patches get merged.
->>
->> So my preferred approach would be for the patch series to get merged
->> via some ARM tree.
->
-> I'm fine with taking it through arm-soc if that helps.
+Hi Mark,
 
-That would be great to merge from arm-soc tree, thanks a lot, Arnd and Andrew.
+We have posted following patch on the last week and received
+your comment. So, We are implementing that use regmap API for I2C
+and modify MFD driver of MAX77686 according to your comment.
 
-> In the long run,
-> it would be nice to have a proper maintainer for this again after Richard
-> more or less stepped down from that position. Given that Bryan has shown
-> that he's persistent enough to get this patch series to v9, how about
-> making him the primary maintainer for the entire subsystem? He should
-> know a lot about it already. Bryan?
->
+[PATCH] MFD : add MAX77686 mfd driver
+- https://lkml.org/lkml/2012/4/30/96
 
-I do love to start to do more contribution and maintain the
-drivers/leds subsystem with Richard's help, if Richard is fine with
-this, I can send out patch to add a MAINTAINER entry.
+Additionally, We are intergrating support irq_domain for MAX77686 irq.
+
+We will post new patch to support MFD driver of MAX77686 including
+modification by your comment within this week.
 
 Best Regards,
--Bryan
+Chanwoo Choi
+
+On 05/10/2012 03:27 AM, Mark Brown wrote:
+
+> On Wed, May 09, 2012 at 09:54:54PM +0530, Yadwinder Singh wrote:
+> 
+>> +int max77686_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest)
+>> +{
+>> +	int ret;
+>> +
+>> +	ret = i2c_smbus_read_byte_data(i2c, reg);
+>> +	if (ret < 0)
+> 
+> It would really be better if this used the regmap API - the regulator
+> API is starting to build out functionality on top of regmap which this
+> won't be able to take advantage of if it doesn't use regmap.
+> 
+>> +	if (of_get_property(dev->of_node, "max77686,wakeup", NULL))
+>> +		pd->wakeup = true;
+> 
+> You haven't included any binding documentatiojn for the device tree
+> bindings - you should do this.
+> 
+>> +	max77686 = kzalloc(sizeof(struct max77686_dev), GFP_KERNEL);
+>> +	if (max77686 == NULL) {
+>> +		dev_err(max77686->dev, "could not allocate memory\n");
+>> +		return -ENOMEM;
+>> +	}
+> 
+> devm_kzalloc().
+> 
+>> +	device_init_wakeup(max77686->dev, max77686->wakeup);
+> 
+> Why is this not just done unconditionally?  There's sysfs files to allow
+> userspace control.
+> 
+>> +	if (max77686_read_reg(i2c, MAX77686_REG_DEVICE_ID, &data) < 0) {
+>> +		ret = -EIO;
+>> +		dbg_info("%s : device not found on this channel\n", __func__);
+>> +		goto err_mfd;
+>> +	} else
+>> +		dev_info(max77686->dev, "device found\n");
+> 
+> You should verify that the device ID you read back is the expected one.
+> 
+>> +	dev_err(max77686->dev, "device probe failed : %d\n", ret);
+> 
+> Driver core should do this for you.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
