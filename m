@@ -1,52 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751194Ab2EIEMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 00:12:14 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39795 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800Ab2EIEMN convert rfc822-to-8bit (ORCPT
+	id S1751190Ab2EIEVk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 00:21:40 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:57346 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750758Ab2EIEVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 00:12:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
-References: <1336004953.4240.9.camel@mop> <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
- <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Wed, 9 May 2012 06:11:51 +0200
-Message-ID: <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
- record buffer
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kay Sievers <kay@vrfy.org>, Greg Kroah-Hartmann <greg@kroah.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 May 2012 00:21:39 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18RvRZWpOcR3Vu4XpHNR6/6nhpCVQOEb4RENOKyAI
+	g65azQd2t7jY2g
+Message-ID: <1336537289.7365.62.camel@marge.simpson.net>
+Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
+From: Mike Galbraith <efault@gmx.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 09 May 2012 06:21:29 +0200
+In-Reply-To: <alpine.DEB.2.00.1205081541010.1391@router.home>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+	 <1335830115-14335-8-git-send-email-fweisbec@gmail.com>
+	 <alpine.DEB.2.00.1205071053070.1060@router.home>
+	 <CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
+	 <1336488626.16236.41.camel@twins>
+	 <alpine.DEB.2.00.1205081016370.27713@router.home>
+	 <1336490832.8226.5.camel@twins>
+	 <alpine.DEB.2.00.1205081035550.27713@router.home>
+	 <1336492081.8226.13.camel@twins>
+	 <alpine.DEB.2.00.1205081054310.27713@router.home>
+	 <1336493768.8226.29.camel@twins>
+	 <1336506601.7400.21.camel@marge.simpson.net>
+	 <alpine.DEB.2.00.1205081541010.1391@router.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 5:52 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> KERN_CONT should not be needed if the previous printk didn't have a final "\n".
->
-> We made it easier to use printk for a reason a few months ago. The new
-> rules are:
->
->  - If you have a KERN_<loglevel>, it *always* starts a new line, the
-> obvious exception being KERN_CONT
->
->  - the loglevels *only* matter at the start of the printk - so if you
-> have '\n' embedded in a single printk, that changes nothing
-> what-so-ever. It's not line-based.
->
->  - if you didn't have a '\n', and don't have a loglevel, KERN_CONT is implied.
->
-> Quite frankly, those three rules (a) make sense and (b) make things easy.
+On Tue, 2012-05-08 at 15:45 -0500, Christoph Lameter wrote: 
+> On Tue, 8 May 2012, Mike Galbraith wrote:
+> 
+> > On Tue, 2012-05-08 at 18:16 +0200, Peter Zijlstra wrote:
+> > > On Tue, 2012-05-08 at 10:57 -0500, Christoph Lameter wrote:
+> >
+> > > isolcpus is a very limited hack that adds more pain that its worth. Its
+> > > yet another mask to check and its functionality is completely available
+> > > through cpusets.
+> >
+> > Agreed.
+> 
+> How would that work? By creating cpusets that only have a single cpu in
+> them?
 
-Is there a reason to keep KERN_CONT under this set of rules at all?
+No, just turn load balancing off for exclusive set, domains go poof.
 
-I'm guessing that there are very few places that have a final '\n' but
-still want to use KERN_CONT, and even in that case it should be
-trivially easy to fix them up.
+> > > You cannot cree multi-cpu partitions using isolcpus, you cannot
+> > > dynamically reconfigure it.
+> >
+> > Big plus for cpusets.
+> 
+> Why would you want to do anything like it? cpusets are confusing. You can
+> have a cpu be part of multiple cpusets. Which nohz setting applies for a
+> particular cpu then? If any of the cpusets have nohz set then it applies
+> to the cpu? And thus someone in a cpuset that does not has nohz set will
+> find that a cpu will have nohz functionality?
 
-Besides that, from what I understand, KERN_CONT isn't really needed.
+nohz has to be at least an exclusive set property.
+
+> Its not a good match for this. You would want a per cpu attribute for
+> nohz.
+
+Or per cpuset, which can be the same thing as per cpu if you want.
+
+> > > And on the scheduler side cpusets doesn't add runtime overhead to normal
+> > > things, only sched_setaffinity() and a few other rare operations get
+> > > slightly more expensive. And it allows to reduce runtime overhead by
+> > > making the load-balancer domains smaller.
+> >
+> > Very big deal if you have a load that doesn't do all the performance 'i'
+> > dotting and 't' crossing it maybe could have, but ends up on a big box.
+> 
+> isolcpus are not part of load balancer domains.
+
+Yup, so if you have an application with an RT component, somewhat
+sensitive, needs isolation from rest of a big box, but app also has
+SCHED_OTHER components.  isolcpus is a pain, everything has to be static
+and nailed to the floor.  Load just works when plugged into a cpuset.
+
+-Mike
+
