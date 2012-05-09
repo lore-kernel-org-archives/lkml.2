@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758444Ab2EIIEX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 04:04:23 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.180]:26634 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677Ab2EIIEQ (ORCPT
+	id S1758559Ab2EIIFd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 04:05:33 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:41425 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757039Ab2EIIDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 04:04:16 -0400
-X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
-X-RZG-CLASS-ID: mo05
-Message-Id: <201205090803.q4983lYa013593@gatekeeper.vosshq.de>
-From: Nikolaus Voss <n.voss@weinmann.de>
-Date: Wed, 9 May 2012 08:30:44 +0200
-Subject: [PATCH] drivers/power/sbs-battery.c: don't trigger false
- supply_changed event
-To: linux-kernel@vger.kernel.org
-Cc: cbouatmailru@gmail.com, rklein@nvidia.com
+	Wed, 9 May 2012 04:03:46 -0400
+X-AuditID: cbfee61a-b7b97ae000004342-2e-4faa24e11824
+Message-id: <4FAA24E1.7040201@samsung.com>
+Date: Wed, 09 May 2012 17:03:45 +0900
+From: Minho Ban <mhban@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
+ Thunderbird/11.0.1
+MIME-version: 1.0
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH] PM / Hibernate : Add wait for disk detection if
+ resume_file is MAJOR:MINOR style
+References: <4FA78724.5000401@samsung.com> <4FAA0ABB.8090906@linux.vnet.ibm.com>
+In-reply-to: <4FAA0ABB.8090906@linux.vnet.ibm.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-power_supply_changed() events are triggerd based on the return value
-of a get_property() call. However the property TECHNOLOGY is
-hard-coded to LION in this driver, thus always succeeds.
+On 05/09/2012 03:12 PM, Srivatsa S. Bhat wrote:
+> On 05/07/2012 01:56 PM, Minho Ban wrote:
+>> +	/* name_to_dev_t is ineffective if resume_file comes in major:minor
+>> +	 * format */
+> 
+> 
+> Nitpick: Multi-line comments should be of the form:
+> 
+> /*
+>  * name_to_dev_t is ineffective....
+>  * ....... major:minor format
+>  */
+> 
 
-So, with the battery removed, this triggers a false battery present
-uevent. This uevent triggers a new query via power_supply_uevent()
-which again starts to query all known properties and thus leads to
-an infinite loop of battery present/not-present uevents.
+Thank you for pointing this out. I'll fix it.
 
-This patch skips the battery presence detection for the hard-coded
-property TECHNOLOGY.
-
-Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
----
- drivers/power/sbs-battery.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/power/sbs-battery.c b/drivers/power/sbs-battery.c
-index 182d2ed..ef142f8 100644
---- a/drivers/power/sbs-battery.c
-+++ b/drivers/power/sbs-battery.c
-@@ -469,7 +469,7 @@ static int sbs_get_property(struct power_supply *psy,
- 
- 	case POWER_SUPPLY_PROP_TECHNOLOGY:
- 		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
--		break;
-+		goto done; /* don't trigger power_supply_changed()! */
- 
- 	case POWER_SUPPLY_PROP_ENERGY_NOW:
- 	case POWER_SUPPLY_PROP_ENERGY_FULL:
--- 
-1.7.9.5
-
+Regards,
+Minho Ban
