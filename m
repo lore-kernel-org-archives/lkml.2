@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759651Ab2EIOfI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:35:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41114 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756054Ab2EIOfG (ORCPT
+	id S1759668Ab2EIOf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:35:58 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:32983 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756809Ab2EIOf4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:35:06 -0400
-Date: Wed, 9 May 2012 07:34:53 -0700
-From: tip-bot for Robert Richter <robert.richter@amd.com>
-Message-ID: <tip-98112d2e957e0d348f06d8a40f2f720204a70b55@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
-In-Reply-To: <1333390758-10893-8-git-send-email-robert.richter@amd.com>
-References: <1333390758-10893-8-git-send-email-robert.richter@amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86-ibs: Rename some variables
-Git-Commit-ID: 98112d2e957e0d348f06d8a40f2f720204a70b55
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 9 May 2012 10:35:56 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 09 May 2012 07:34:58 -0700 (PDT)
+X-Originating-IP: [109.64.13.136]
+In-Reply-To: <CAAZUjxBp7f_Tt3bXSOcac6RmeT23npELYO52P_2LdMN-MdH=7g@mail.gmail.com>
+References: <CAAZUjxBp7f_Tt3bXSOcac6RmeT23npELYO52P_2LdMN-MdH=7g@mail.gmail.com>
+Date: Wed, 9 May 2012 17:35:55 +0300
+Message-ID: <CAOtvUMfZeZ0OSXDjeo0xFF-hdQwzLfrdCucJfP_hM_1ZJ8oXBA@mail.gmail.com>
+Subject: Re: Work queues and cpu isolation
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: wilson self <wself00@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  98112d2e957e0d348f06d8a40f2f720204a70b55
-Gitweb:     http://git.kernel.org/tip/98112d2e957e0d348f06d8a40f2f720204a70b55
-Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Mon, 2 Apr 2012 20:19:13 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 May 2012 15:23:14 +0200
+Hi Wilson,
 
-perf/x86-ibs: Rename some variables
+On Wed, May 9, 2012 at 12:03 AM, wilson self <wself00@gmail.com> wrote:
+> I have done some reading on the subject of work queues and CPU
+> isolation, and specifically I've read a number of posts from Max K.
+> dating back to 2008 on the subject of CPU isolation.  However, I have
+> not seen much in the way of discussion on the subject in more recent
+> times, specifically in the 3.x kernels; where it appears there are
+> some significant differences in the structure of workqueue in general.
+>
+> Is there anyone currently doing work on additional isolation of CPUs
+> from work queues? I have some requirement to further isolate cores on
+> a machine from these queues and am hoping someone here could point me
+> in the right direction.
+>
 
-Simple patch that just renames some variables for better
-understanding.
+Yes, I am and so do many other people on the general topic of CPU isolation.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1333390758-10893-8-git-send-email-robert.richter@amd.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_amd_ibs.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+Start here: https://github.com/gby/linux/wiki
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-index 34dfa85..29a1bff 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -62,7 +62,7 @@ struct perf_ibs_data {
- };
- 
- static int
--perf_event_set_period(struct hw_perf_event *hwc, u64 min, u64 max, u64 *count)
-+perf_event_set_period(struct hw_perf_event *hwc, u64 min, u64 max, u64 *hw_period)
- {
- 	s64 left = local64_read(&hwc->period_left);
- 	s64 period = hwc->sample_period;
-@@ -91,7 +91,7 @@ perf_event_set_period(struct hw_perf_event *hwc, u64 min, u64 max, u64 *count)
- 	if (left > max)
- 		left = max;
- 
--	*count = (u64)left;
-+	*hw_period = (u64)left;
- 
- 	return overflow;
- }
-@@ -262,13 +262,13 @@ static int perf_ibs_init(struct perf_event *event)
- static int perf_ibs_set_period(struct perf_ibs *perf_ibs,
- 			       struct hw_perf_event *hwc, u64 *period)
- {
--	int ret;
-+	int overflow;
- 
- 	/* ignore lower 4 bits in min count: */
--	ret = perf_event_set_period(hwc, 1<<4, perf_ibs->max_period, period);
-+	overflow = perf_event_set_period(hwc, 1<<4, perf_ibs->max_period, period);
- 	local64_set(&hwc->prev_count, 0);
- 
--	return ret;
-+	return overflow;
- }
- 
- static u64 get_ibs_fetch_count(u64 config)
+Continue here: https://lkml.org/lkml/2012/5/3/268
+
+And if you are interested in CPU isolation in general, then these will
+interest you as well:
+
+http://lwn.net/Articles/495422/
+
+http://lkml.indiana.edu/hypermail/linux/kernel/1202.1/00590.html (this
+last patch set has gone into 3.4-rc1 already)
+
+I'd be very glad to cooperate :-)
+
+Gilad
+
+> Thanks.
+> wilson
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
