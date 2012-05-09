@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab2EIPo7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 11:44:59 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43879 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932220Ab2EIPo4 (ORCPT
+	id S1760049Ab2EIPq3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 11:46:29 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51076 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758277Ab2EIPq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 11:44:56 -0400
-Date: Wed, 9 May 2012 17:44:51 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Ido Yariv <ido@wizery.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Shai Fultheim <shai@scalemp.com>
-Subject: Re: [PATCH v4] vsmp: Fix number of CPUs when vsmp is disabled
-Message-ID: <20120509154448.GD2653@gmail.com>
-References: <20120509082225.GB5036@NoteStation.colubris.lan>
- <1336552121-6742-1-git-send-email-ido@wizery.com>
+	Wed, 9 May 2012 11:46:27 -0400
+Message-ID: <4FAA914E.7040908@wwwdotorg.org>
+Date: Wed, 09 May 2012 09:46:22 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336552121-6742-1-git-send-email-ido@wizery.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-input@vger.kernel.org, Viresh Kumar <viresh.kumar@st.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Rakesh Iyer <riyer@nvidia.com>
+Subject: Re: [PATCH 2/2] Input: matrix_keymap - wire up device tree support
+References: <20120426081909.GA2726@core.coreip.homeip.net> <4F99642E.1010305@wwwdotorg.org> <20120430041955.GC1055@core.coreip.homeip.net> <4F9EB72A.10403@wwwdotorg.org> <20120509052540.GC10514@core.coreip.homeip.net>
+In-Reply-To: <20120509052540.GC10514@core.coreip.homeip.net>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/08/2012 11:25 PM, Dmitry Torokhov wrote:
+> On Mon, Apr 30, 2012 at 10:00:42AM -0600, Stephen Warren wrote:
+>> On 04/29/2012 10:19 PM, Dmitry Torokhov wrote:
+>>> On Thu, Apr 26, 2012 at 09:05:18AM -0600, Stephen Warren wrote:
+>>>> On 04/26/2012 02:19 AM, Dmitry Torokhov wrote:
+>>>>> When platform keymap is not supplied to matrix_keypad_build_keymap()
+>>>>> and device tree support is enabled, try locating specified property
+>>>>> and load keymap from it. If property name is not defined, try using
+>>>>> "linux,keymap".
+>>>>>
+>>>>> Based on earlier patch by Viresh Kumar <viresh.kumar@st.com>
+>>>>
+>>>> I think this series looks mostly OK. A few comments below.
+>>>>
+>>>> We don't actually have the KBC driver hooked up on any boards yet, so I
+>>>> can't actually test this yet.
+>>>>
+>>>> How will the linux,fn-keymap handling work? It looks like this code is
+>>>> allocating a keymap data structure with one additional row to represent
+>>>> fn-not-pressed vs. fn-pressed.
+>>>
+>>> No, it loads 2x rows (therefore giving you twice original keymap size).
+>>
+>> Yes, I mean an extra row signal, so therefore twice as many rows.
+>>
+>>>> I assume this will work without issue
+>>>> even though the second half is not filled in. Won't this allow the
+>>>> linux,keymap property entries to pass validation "if (row >= rows)" for
+>>>> one more row than it should?
+>>>
+>>> Maybe... I think we should revisit this when you actually have
+>>> linux,fn-keymap. Probably will need to export matrix_keypad_parse_
+>>
+>> Would it be better to just drop the support for the linux,fn-keymap
+>> property, until the full support is there? That wouldn't lose any
+>> functionality, but would avoid this potential error-checking issue.
+> 
+> Fair enough, how about the version below?
 
-* Ido Yariv <ido@wizery.com> wrote:
+Yes, I think that will work.
 
-> +static void __init vsmp_cap_cpus(void)
-> +{
-> +	void __iomem *address;
-> +	unsigned int cfg, topology, node_shift, maxcpus;
-> +
-> +#ifdef CONFIG_X86_VSMP
-> +	/* VSMP is enabled, no need to cap cpus */
-> +	return;
-> +#elif defined(CONFIG_SMP)
-> +	/*
-> +	 * CONFIG_X86_VSMP is not configured, so limit the number CPUs to the
-
-I suspect this will throw compiler warnings in the 
-CONFIG_X86_VSMP && !CONFIG_SMP case.
-
-Why not do something like:
-
-static void __init vsmp_cap_cpus(void)
-{
-#if !defined(CONFIG_X86_VSMP) && defined(CONFIG_SMP)
-   ...
-#endif
-}
-
-This keeps the #ifdef complexity reasonably concentrated.
-
-Thanks,
-
-	Ingo
+I would expect that when linux,fn-keymap support gets added, perhaps the
+"keymap_rows *= 2" would move into the DT keymap parsing code, since
+only it will know whether its going to parse the second property. But I
+don't think that influences the current patch.
