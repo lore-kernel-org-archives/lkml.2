@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758472Ab2EIGaF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:30:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38735 "EHLO
+	id S1758508Ab2EIGad (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:30:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38732 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755576Ab2EIFww (ORCPT
+	by vger.kernel.org with ESMTP id S1755190Ab2EIFwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:52:52 -0400
-Message-Id: <20120509055036.920955681@decadent.org.uk>
+	Wed, 9 May 2012 01:52:51 -0400
+Message-Id: <20120509055036.653452389@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:21 +0100
+Date: Wed, 09 May 2012 06:51:19 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 052/167] [PATCH] nfsd: fix compose_entry_fh() failure exits
+Subject: [ 050/167] [PATCH] nfsd: fix error values returned by nfsd4_lockt() when
+ nfsd_open() fails
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,90 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit efe39651f08813180f37dc508d950fc7d92b29a8 upstream.
+commit 04da6e9d63427b2d0fd04766712200c250b3278f upstream.
 
-Restore the original logics ("fail on mountpoints, negatives and in
-case of fh_compose() failures").  Since commit 8177e (nfsd: clean up
-readdirplus encoding) that got broken -
-	rv = fh_compose(fhp, exp, dchild, &cd->fh);
-	if (rv)
-	       goto out;
-	if (!dchild->d_inode)
-		goto out;
-	rv = 0;
-out:
-is equivalent to
-	rv = fh_compose(fhp, exp, dchild, &cd->fh);
-out:
-and the second check has no effect whatsoever...
+nfsd_open() already returns an NFS error value; only vfs_test_lock()
+result needs to be fed through nfserrno().  Broken by commit 55ef12
+(nfsd: Ensure nfsv4 calls the underlying filesystem on LOCKT)
+three years ago...
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfsd/nfs3xdr.c |   22 ++++++++--------------
- 1 file changed, 8 insertions(+), 14 deletions(-)
+ fs/nfsd/nfs4state.c |   23 +++++++++--------------
+ 1 file changed, 9 insertions(+), 14 deletions(-)
 
-diff --git a/fs/nfsd/nfs3xdr.c b/fs/nfsd/nfs3xdr.c
-index 08c6e36..43f46cd 100644
---- a/fs/nfsd/nfs3xdr.c
-+++ b/fs/nfsd/nfs3xdr.c
-@@ -803,13 +803,13 @@ encode_entry_baggage(struct nfsd3_readdirres *cd, __be32 *p, const char *name,
- 	return p;
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 1841f8b..7f71c69 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -4211,16 +4211,14 @@ out:
+  * vfs_test_lock.  (Arguably perhaps test_lock should be done with an
+  * inode operation.)
+  */
+-static int nfsd_test_lock(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file_lock *lock)
++static __be32 nfsd_test_lock(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file_lock *lock)
+ {
+ 	struct file *file;
+-	int err;
+-
+-	err = nfsd_open(rqstp, fhp, S_IFREG, NFSD_MAY_READ, &file);
+-	if (err)
+-		return err;
+-	err = vfs_test_lock(file, lock);
+-	nfsd_close(file);
++	__be32 err = nfsd_open(rqstp, fhp, S_IFREG, NFSD_MAY_READ, &file);
++	if (!err) {
++		err = nfserrno(vfs_test_lock(file, lock));
++		nfsd_close(file);
++	}
+ 	return err;
  }
  
--static int
-+static __be32
- compose_entry_fh(struct nfsd3_readdirres *cd, struct svc_fh *fhp,
- 		const char *name, int namlen)
- {
- 	struct svc_export	*exp;
- 	struct dentry		*dparent, *dchild;
--	int rv = 0;
-+	__be32 rv = nfserr_noent;
+@@ -4234,7 +4232,6 @@ nfsd4_lockt(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ 	struct inode *inode;
+ 	struct file_lock file_lock;
+ 	struct nfs4_lockowner *lo;
+-	int error;
+ 	__be32 status;
  
- 	dparent = cd->fh.fh_dentry;
- 	exp  = cd->fh.fh_export;
-@@ -817,26 +817,20 @@ compose_entry_fh(struct nfsd3_readdirres *cd, struct svc_fh *fhp,
- 	if (isdotent(name, namlen)) {
- 		if (namlen == 2) {
- 			dchild = dget_parent(dparent);
--			if (dchild == dparent) {
--				/* filesystem root - cannot return filehandle for ".." */
--				dput(dchild);
--				return -ENOENT;
--			}
-+			/* filesystem root - cannot return filehandle for ".." */
-+			if (dchild == dparent)
-+				goto out;
- 		} else
- 			dchild = dget(dparent);
- 	} else
- 		dchild = lookup_one_len(name, dparent, namlen);
- 	if (IS_ERR(dchild))
--		return -ENOENT;
--	rv = -ENOENT;
-+		return rv;
- 	if (d_mountpoint(dchild))
- 		goto out;
--	rv = fh_compose(fhp, exp, dchild, &cd->fh);
--	if (rv)
--		goto out;
- 	if (!dchild->d_inode)
- 		goto out;
--	rv = 0;
-+	rv = fh_compose(fhp, exp, dchild, &cd->fh);
- out:
- 	dput(dchild);
- 	return rv;
-@@ -845,7 +839,7 @@ out:
- static __be32 *encode_entryplus_baggage(struct nfsd3_readdirres *cd, __be32 *p, const char *name, int namlen)
- {
- 	struct svc_fh	fh;
--	int err;
-+	__be32 err;
+ 	if (locks_in_grace())
+@@ -4280,12 +4277,10 @@ nfsd4_lockt(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
  
- 	fh_init(&fh, NFS3_FHSIZE);
- 	err = compose_entry_fh(cd, &fh, name, namlen);
+ 	nfs4_transform_lock_offset(&file_lock);
+ 
+-	status = nfs_ok;
+-	error = nfsd_test_lock(rqstp, &cstate->current_fh, &file_lock);
+-	if (error) {
+-		status = nfserrno(error);
++	status = nfsd_test_lock(rqstp, &cstate->current_fh, &file_lock);
++	if (status)
+ 		goto out;
+-	}
++
+ 	if (file_lock.fl_type != F_UNLCK) {
+ 		status = nfserr_denied;
+ 		nfs4_set_lock_denied(&file_lock, &lockt->lt_denied);
 -- 
 1.7.10
 
