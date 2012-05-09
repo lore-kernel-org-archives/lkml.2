@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760761Ab2EISeT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 14:34:19 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:46785 "HELO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1760726Ab2EISeS (ORCPT
+	id S1758493Ab2EISmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 14:42:53 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:52647 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754845Ab2EISmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 14:34:18 -0400
+	Wed, 9 May 2012 14:42:52 -0400
+X-IronPort-AV: E=Sophos;i="4.75,559,1330905600"; 
+   d="scan'208";a="12387349"
+Date: Wed, 9 May 2012 19:42:33 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH v3] xen-blkfront: set pages are FOREIGN_FRAME
+ when sharing them
+In-Reply-To: <alpine.DEB.2.00.1205081826300.26786@kaball-desktop>
+Message-ID: <alpine.DEB.2.00.1205091849580.26786@kaball-desktop>
+References: <1334075119-25102-1-git-send-email-stefano.stabellini@eu.citrix.com> <20120416195258.GA14982@phenom.dumpdata.com> <alpine.DEB.2.00.1204171138020.26786@kaball-desktop> <20120507212536.GA24344@andromeda.dapyr.net>
+ <alpine.DEB.2.00.1205081826300.26786@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1205091224460.11225@router.home>
-References: <1336503339-18722-1-git-send-email-pshelar@nicira.com>
-	<1336504276.3752.2600.camel@edumazet-glaptop>
-	<alpine.DEB.2.00.1205081417120.27713@router.home>
-	<CALnjE+pExzAS4bk89RD4XJtHtSyB2g0qMsqdrGWPuD27axiNBw@mail.gmail.com>
-	<alpine.DEB.2.00.1205091224460.11225@router.home>
-Date: Wed, 9 May 2012 11:34:17 -0700
-Message-ID: <CALnjE+qWHv4Egqm=+UoP6t-Bm6B=ZSjv82cmfxYdbZiFC65f3Q@mail.gmail.com>
-Subject: Re: [PATCH] mm: sl[auo]b: Use atomic bit operations to update page-flags.
-From: Pravin Shelar <pshelar@nicira.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, penberg@kernel.org, mpm@selenic.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, jesse@nicira.com,
-        abhide@nicira.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 10:25 AM, Christoph Lameter <cl@linux.com> wrote:
-> On Wed, 9 May 2012, Pravin Shelar wrote:
->
->> On Tue, May 8, 2012 at 12:22 PM, Christoph Lameter <cl@linux.com> wrote:
->> > On Tue, 8 May 2012, Eric Dumazet wrote:
->> >
->> >> On Tue, 2012-05-08 at 11:55 -0700, Pravin B Shelar wrote:
->> >> > Transparent huge pages can change page->flags (PG_compound_lock)
->> >> > without taking Slab lock. So sl[auo]b need to use atomic bit
->> >> > operation while changing page->flags.
->> >> > Specificly this patch fixes race between compound_unlock and slab
->> >> > functions which does page-flags update. This can occur when
->> >> > get_page/put_page is called on page from slab object.
->> >>
->> >>
->> >> But should get_page()/put_page() be called on a page own by slub ?
->> >
->> > Can occur in slab allocators if the slab memory is used for DMA. I dont
->> > like the performance impact of the atomics. In particular slab_unlock() in
->> > slub is or used to be a hot path item. It is still hot on arches that do
->> > not support this_cpu_cmpxchg_double. With the cmpxchg_double only the
->> > debug mode is affected.
->> >
->>
->> I agree this would impact performance. I am not sure how else we can
->> fix this issue. As far as slab_unlock in hot path case is concerned,
->> it is more likely to corrupt page->flags in that case.
->
-> Dont modify any page flags from THP logic if its a slab page? THP cannot
-> break up or merge slab pages anyways.
+On Tue, 8 May 2012, Stefano Stabellini wrote:
+> I have been unable to reproduce this problem (I haven't given up yet)
+> but I bet that the following patch fixes it:
+> 
+> 
+> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> index e3a9945..88e9304 100644
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -333,7 +333,7 @@ static int blkif_queue_request(struct request *req)
+>  					buffer_mfn,
+>  					rq_data_dir(req));
+>  
+> -			info->shadow[id].frame[i] = mfn_to_pfn(buffer_mfn);
+> +			info->shadow[id].frame[i] = buffer_pfn;
+>  			ring_req->u.rw.seg[i] =
+>  					(struct blkif_request_segment) {
+>  						.gref       = ref,
+> 
+> 
+> The idea is that the request contains a page for which
+> 
+> pfn->mfn->pfn == 0xffffffffffffffff
+> 
+> I am not sure exactly how it could be possible to get into this state in
+> blkfront, I hope that some more tracing and code reading will be able to
+> shed some lights on the issue.
 
-Good idea, I will post patch soon.
->
->
+The one line patch fixes the issue: when using LVM in the guest the same
+page can be used in two different requests (in blkif_queue_request)
+before being unmapped.
+The second time mfn_to_pfn is going to return ~0 because buffer_mfn has
+the FOREIGN_FRAME_BIT set.
+But actually we don't need to call mfn_to_pfn at all because we already
+know the pfn value, that is stored in buffer_pfn.
+
+However the real problem remains at the time of blkif_completion: we
+will remove the FOREIGN_FRAME_BIT before the other requests have been
+completed.
+
+If sharing the same page twice (or more) is a normal condition then I
+might have to revisit this patch completely and choose another
+strategy...
