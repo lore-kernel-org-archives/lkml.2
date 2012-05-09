@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932478Ab2EIVic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 17:38:32 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:34538 "EHLO ogre.sisk.pl"
+	id S932490Ab2EIVip (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 17:38:45 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:34541 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932416Ab2EIVi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 17:38:28 -0400
+	id S932440Ab2EIVib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 17:38:31 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [RFC][PATCH 1/2] PM / cpuidle: Add driver reference counter
-Date: Wed, 9 May 2012 23:41:55 +0200
+Subject: [RFC][PATCH 2/2] PM / Domains: Add preliminary cpuidle support
+Date: Wed, 9 May 2012 23:43:10 +0200
 User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
         Colin Cross <ccross@android.com>, Kevin Hilman <khilman@ti.com>,
@@ -22,92 +22,326 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205092341.56059.rjw@sisk.pl>
+Message-Id: <201205092343.11050.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Add a reference counter for the cpuidle driver, so that it can't
-be unregistered when it is in use.
+On some systems there are CPU cores located in the same power
+domains as I/O devices.  Then, power can only be removed from the
+domain if all I/O devices in it are not in use and the CPU core
+is idle.  Add preliminary support for that to the generic PM domains
+framework.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+This assumes that there is only one CPU core in the system and it is
+supposed to be set up in the following way.
+
+First, the platform is expected to provide a cpuidle driver with one
+extra state designated for the generic PM domains code to handle.
+This state should be initially disabled and its exit_latency value
+should be set to whatever time is needed to bring up the CPU core
+itself after restoring power to it, not including the domain's
+power on latency.  Its .enter() callback should point to a procedure
+that will save the CPU core's state as appropriate before power
+removal.  On success, it should return the same value as it has
+been passed as its third argument, but it shouldn't put the CPU
+core into a C-state.  If it is about to return the index of
+a different cpuidle state, however, it should make sure that the CPU
+be put into that state before it returns.
+
+The remaining characteristics of the extra cpuidle state, referred to
+as the "domain" cpuidle state below, (e.g. power usage, target
+residency) should be populated in accordance with the properties of
+the hardware.
+
+Next, the platform should execute genpd_attach_cpuidle() on the PM
+domain containing the CPU core.  That will cause the generic PM
+domains framework to treat that domain in a special way such that:
+
+ * When all devices in the domain have been suspended and it is about
+   to be turned off, the states of the devices will be saved, but
+   power will not be removed from the domain.  Instead, the "domain"
+   cpuidle state will be enabled so that power can be removed from
+   the domain when the CPU core is idle and the state has been chosen
+   as the target by the cpuidle governor.  In that case, before
+   removing power from the domain, the framework will execute the
+   .enter() callback initially defined for the "domain" state.
+
+ * When the first I/O device in the domain is resumed and
+   __pm_genpd_poweron(() is called for the first time after
+   power has been removed from the domain, the "domain" cpuidle
+   state will be disabled to avoid subsequent surprise power removals
+   via cpuidle.
+
 ---
- drivers/cpuidle/driver.c |   29 ++++++++++++++++++++++++++++-
- include/linux/cpuidle.h  |    6 +++++-
- 2 files changed, 33 insertions(+), 2 deletions(-)
+ drivers/base/power/domain.c |  152 +++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/cpuidle.h     |    2 
+ include/linux/pm_domain.h   |   20 +++++
+ 3 files changed, 173 insertions(+), 1 deletion(-)
 
-Index: linux/drivers/cpuidle/driver.c
+Index: linux/include/linux/pm_domain.h
 ===================================================================
---- linux.orig/drivers/cpuidle/driver.c
-+++ linux/drivers/cpuidle/driver.c
-@@ -16,6 +16,7 @@
+--- linux.orig/include/linux/pm_domain.h
++++ linux/include/linux/pm_domain.h
+@@ -15,6 +15,7 @@
+ #include <linux/err.h>
+ #include <linux/of.h>
+ #include <linux/notifier.h>
++#include <linux/cpuidle.h>
  
- static struct cpuidle_driver *cpuidle_curr_driver;
- DEFINE_SPINLOCK(cpuidle_driver_lock);
-+int cpuidle_driver_refcount;
+ enum gpd_status {
+ 	GPD_STATE_ACTIVE = 0,	/* PM domain is active */
+@@ -45,6 +46,14 @@ struct gpd_dev_ops {
+ 	bool (*active_wakeup)(struct device *dev);
+ };
  
- static void __cpuidle_register_driver(struct cpuidle_driver *drv)
++struct gpd_cpu_data {
++	unsigned int saved_exit_latency;
++	struct cpuidle_state *idle_state;
++	int (*idle_enter)(struct cpuidle_device *dev,
++			  struct cpuidle_driver *drv,
++			  int index);
++};
++
+ struct generic_pm_domain {
+ 	struct dev_pm_domain domain;	/* PM domain operations */
+ 	struct list_head gpd_list_node;	/* Node in the global PM domains list */
+@@ -75,6 +84,7 @@ struct generic_pm_domain {
+ 	bool max_off_time_changed;
+ 	bool cached_power_down_ok;
+ 	struct device_node *of_node; /* Node in device tree */
++	struct gpd_cpu_data *cpu_data;
+ };
+ 
+ static inline struct generic_pm_domain *pd_to_genpd(struct dev_pm_domain *pd)
+@@ -154,6 +164,8 @@ extern int pm_genpd_add_callbacks(struct
+ 				  struct gpd_dev_ops *ops,
+ 				  struct gpd_timing_data *td);
+ extern int __pm_genpd_remove_callbacks(struct device *dev, bool clear_td);
++extern int genpd_attach_cpuidle(struct generic_pm_domain *genpd, int state);
++extern int genpd_detach_cpuidle(struct generic_pm_domain *genpd);
+ extern void pm_genpd_init(struct generic_pm_domain *genpd,
+ 			  struct dev_power_governor *gov, bool is_off);
+ 
+@@ -209,6 +221,14 @@ static inline int __pm_genpd_remove_call
  {
-@@ -89,8 +90,34 @@ void cpuidle_unregister_driver(struct cp
- 	}
- 
- 	spin_lock(&cpuidle_driver_lock);
--	cpuidle_curr_driver = NULL;
-+
-+	if (!WARN_ON(cpuidle_driver_refcount > 0))
-+		cpuidle_curr_driver = NULL;
-+
- 	spin_unlock(&cpuidle_driver_lock);
+ 	return -ENOSYS;
+ }
++static inline int genpd_attach_cpuidle(struct generic_pm_domain *genpd, int st)
++{
++	return -ENOSYS;
++}
++static inline int genpd_detach_cpuidle(struct generic_pm_domain *genpd)
++{
++	return -ENOSYS;
++}
+ static inline void pm_genpd_init(struct generic_pm_domain *genpd,
+ 				 struct dev_power_governor *gov, bool is_off)
+ {
+Index: linux/drivers/base/power/domain.c
+===================================================================
+--- linux.orig/drivers/base/power/domain.c
++++ linux/drivers/base/power/domain.c
+@@ -139,6 +139,19 @@ static void genpd_set_active(struct gene
+ 		genpd->status = GPD_STATE_ACTIVE;
  }
  
- EXPORT_SYMBOL_GPL(cpuidle_unregister_driver);
-+
-+struct cpuidle_driver *cpuidle_driver_ref(void)
++static void genpd_recalc_cpu_exit_latency(struct generic_pm_domain *genpd)
 +{
-+	struct cpuidle_driver *drv;
++	s64 usecs64;
 +
-+	spin_lock(&cpuidle_driver_lock);
++	if (!genpd->cpu_data)
++		return;
 +
-+	drv = cpuidle_curr_driver;
-+	cpuidle_driver_refcount++;
-+
-+	spin_unlock(&cpuidle_driver_lock);
-+	return drv;
++	usecs64 = genpd->power_on_latency_ns;
++	do_div(usecs64, NSEC_PER_USEC);
++	usecs64 += genpd->cpu_data->saved_exit_latency;
++	genpd->cpu_data->idle_state->exit_latency = usecs64;
 +}
 +
-+void cpuidle_driver_unref(void)
+ /**
+  * __pm_genpd_poweron - Restore power to a given PM domain and its masters.
+  * @genpd: PM domain to power up.
+@@ -203,7 +216,11 @@ int __pm_genpd_poweron(struct generic_pm
+ 		}
+ 	}
+ 
+-	if (genpd->power_on) {
++	if (genpd->cpu_data) {
++		cpuidle_pause_and_lock();
++		genpd->cpu_data->idle_state->disable = true;
++		cpuidle_resume_and_unlock();
++	} else if (genpd->power_on) {
+ 		ktime_t time_start = ktime_get();
+ 		s64 elapsed_ns;
+ 
+@@ -215,6 +232,7 @@ int __pm_genpd_poweron(struct generic_pm
+ 		if (elapsed_ns > genpd->power_on_latency_ns) {
+ 			genpd->power_on_latency_ns = elapsed_ns;
+ 			genpd->max_off_time_changed = true;
++			genpd_recalc_cpu_exit_latency(genpd);
+ 			if (genpd->name)
+ 				pr_warning("%s: Power-on latency exceeded, "
+ 					"new value %lld ns\n", genpd->name,
+@@ -464,6 +482,21 @@ static int pm_genpd_poweroff(struct gene
+ 		}
+ 	}
+ 
++	if (genpd->cpu_data) {
++		/*
++		 * If cpu_data is set, cpuidle should turn the domain off when
++		 * the CPU in it is idle.  In that case we don't decrement the
++		 * subdomain counts of the master domains, so that power is not
++		 * removed from the current domain prematurely as a result of
++		 * cutting off the masters' power.
++		 */
++		genpd->status = GPD_STATE_POWER_OFF;
++		cpuidle_pause_and_lock();
++		genpd->cpu_data->idle_state->disable = false;
++		cpuidle_resume_and_unlock();
++		goto out;
++	}
++
+ 	if (genpd->power_off) {
+ 		ktime_t time_start;
+ 		s64 elapsed_ns;
+@@ -1597,6 +1630,123 @@ int __pm_genpd_remove_callbacks(struct d
+ }
+ EXPORT_SYMBOL_GPL(__pm_genpd_remove_callbacks);
+ 
++int genpd_cpuidle_enter(struct cpuidle_device *dev, struct cpuidle_driver *drv,
++			int index)
 +{
-+	spin_lock(&cpuidle_driver_lock);
++	struct cpuidle_state *target = &drv->states[index];
++	struct generic_pm_domain *genpd = target->platform_data;
++	struct gpd_cpu_data *cpu_data;
++	int state;
 +
-+	if (!WARN_ON(cpuidle_driver_refcount <= 0))
-+		cpuidle_driver_refcount--;
++	if (!genpd || !genpd->cpu_data)
++		goto fall_back;
 +
-+	spin_unlock(&cpuidle_driver_lock);
++	cpu_data = genpd->cpu_data;
++	state = cpu_data->idle_enter(dev, drv, index);
++	if (state != index)
++		return state;
++
++	if (!genpd->power_off)
++		goto fall_back;
++
++	/*
++	 * We can safely power off here, because __pm_genpd_poweron(() has to
++	 * run in process context, so the CPU has to exit idle before that
++	 * function runs.
++	 */
++	if (!genpd->power_off(genpd))
++		return index;
++
++ fall_back:
++	index = drv->safe_state_index;
++	return drv->states[index].enter(dev, drv, index);
 +}
++
++int genpd_attach_cpuidle(struct generic_pm_domain *genpd, int state)
++{
++	struct cpuidle_driver *cpuidle_drv;
++	struct gpd_cpu_data *cpu_data;
++	struct cpuidle_state *idle_state;
++	int ret = 0;
++
++	if (IS_ERR_OR_NULL(genpd) || state < 0)
++		return -EINVAL;
++
++	genpd_acquire_lock(genpd);
++
++	if (genpd->cpu_data) {
++		ret = -EEXIST;
++		goto out;
++	}
++	cpu_data = kzalloc(sizeof(*cpu_data), GFP_KERNEL);
++	if (!cpu_data) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	cpuidle_drv = cpuidle_driver_ref();
++	if (!cpuidle_drv) {
++		ret = -ENODEV;
++		goto out;
++	}
++	if (cpuidle_drv->state_count <= state) {
++		ret = -EINVAL;
++		goto err;
++	}
++	idle_state = &cpuidle_drv->states[state];
++	if (!idle_state->disable) {
++		ret = -EAGAIN;
++		goto err;
++	}
++	cpu_data->idle_state = idle_state;
++	cpu_data->saved_exit_latency = idle_state->exit_latency;
++	cpu_data->idle_enter = idle_state->enter;
++	genpd->cpu_data = cpu_data;
++	idle_state->platform_data = genpd;
++	idle_state->enter = genpd_cpuidle_enter;
++	genpd_recalc_cpu_exit_latency(genpd);
++
++ out:
++	genpd_release_lock(genpd);
++	return ret;
++
++ err:
++	cpuidle_driver_unref();
++	goto out;
++}
++
++int genpd_detach_cpuidle(struct generic_pm_domain *genpd)
++{
++	struct gpd_cpu_data *cpu_data;
++	struct cpuidle_state *idle_state;
++	int ret = 0;
++
++	if (IS_ERR_OR_NULL(genpd))
++		return -EINVAL;
++
++	genpd_acquire_lock(genpd);
++
++	cpu_data = genpd->cpu_data;
++	if (!cpu_data) {
++		ret = -ENODEV;
++		goto out;
++	}
++	idle_state = cpu_data->idle_state;
++	if (!idle_state->disable) {
++		ret = -EAGAIN;
++		goto out;
++	}
++	idle_state->enter = cpu_data->idle_enter;
++	idle_state->exit_latency = cpu_data->saved_exit_latency;
++	idle_state->platform_data = NULL;
++	cpuidle_driver_unref();
++	genpd->cpu_data = NULL;
++	kfree(cpu_data);
++
++ out:
++	genpd_release_lock(genpd);
++	return ret;
++}
++
+ /* Default device callbacks for generic PM domains. */
+ 
+ /**
 Index: linux/include/linux/cpuidle.h
 ===================================================================
 --- linux.orig/include/linux/cpuidle.h
 +++ linux/include/linux/cpuidle.h
-@@ -136,7 +136,9 @@ struct cpuidle_driver {
- extern void disable_cpuidle(void);
- extern int cpuidle_idle_call(void);
- extern int cpuidle_register_driver(struct cpuidle_driver *drv);
--struct cpuidle_driver *cpuidle_get_driver(void);
-+extern struct cpuidle_driver *cpuidle_get_driver(void);
-+extern struct cpuidle_driver *cpuidle_driver_ref(void);
-+extern void cpuidle_driver_unref(void);
- extern void cpuidle_unregister_driver(struct cpuidle_driver *drv);
- extern int cpuidle_register_device(struct cpuidle_device *dev);
- extern void cpuidle_unregister_device(struct cpuidle_device *dev);
-@@ -157,6 +159,8 @@ static inline int cpuidle_idle_call(void
- static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
- {return -ENODEV; }
- static inline struct cpuidle_driver *cpuidle_get_driver(void) {return NULL; }
-+static inline struct cpuidle_driver *cpuidle_driver_ref(void) {return NULL; }
-+static inline void cpuidle_driver_unref(void) {}
- static inline void cpuidle_unregister_driver(struct cpuidle_driver *drv) { }
- static inline int cpuidle_register_device(struct cpuidle_device *dev)
- {return -ENODEV; }
+@@ -53,6 +53,8 @@ struct cpuidle_state {
+ 			int index);
+ 
+ 	int (*enter_dead) (struct cpuidle_device *dev, int index);
++
++	void		*platform_data;
+ };
+ 
+ /* Idle State Flags */
 
