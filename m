@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab2EIAuf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 20:50:35 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:8434 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab2EIAue (ORCPT
+	id S1755982Ab2EIA6R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 20:58:17 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42993 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791Ab2EIA6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 20:50:34 -0400
-X-AuditID: cbfee61a-b7b97ae000004342-4c-4fa9bf57913a
-Message-id: <4FA9BF58.9040507@samsung.com>
-Date: Wed, 09 May 2012 09:50:32 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] Extcon: add MAX8997 extcon driver
-References: <4FA8EF07.5000907@samsung.com> <20120508160716.GA14856@kroah.com>
-In-reply-to: <20120508160716.GA14856@kroah.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
+	Tue, 8 May 2012 20:58:16 -0400
+X-AuditID: 9c930179-b7bc8ae0000062c3-bc-4fa9c1240932
+Message-ID: <4FA9C127.5020908@kernel.org>
+Date: Wed, 09 May 2012 09:58:15 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cl@linux-foundation.org
+Subject: Re: [PATCH 4/4] zsmalloc: zsmalloc: align cache line size
+References: <1336027242-372-1-git-send-email-minchan@kernel.org> <1336027242-372-4-git-send-email-minchan@kernel.org> <4FA28EFD.5070002@vflare.org> <4FA33E89.6080206@kernel.org> <alpine.LFD.2.02.1205071038090.2851@tux.localdomain> <4FA7C2BC.2090400@vflare.org> <4FA87837.3050208@kernel.org> <731b6638-8c8c-4381-a00f-4ecd5a0e91ae@default>
+In-Reply-To: <731b6638-8c8c-4381-a00f-4ecd5a0e91ae@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2012 01:07 AM, Greg KH wrote:
+On 05/08/2012 11:00 PM, Dan Magenheimer wrote:
 
-> On Tue, May 08, 2012 at 07:01:43PM +0900, Chanwoo Choi wrote:
->> + *
->> + * You should have received a copy of the GNU General Public License
->> + * along with this program; if not, write to the Free Software
->> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
->>  USA
+>> From: Minchan Kim [mailto:minchan@kernel.org]
+>>> zcache can potentially create a lot of pools, so the latter will save
+>>> some memory.
+>>
+>>
+>> Dumb question.
+>> Why should we create pool per user?
+>> What's the problem if there is only one pool in system?
 > 
-> Unless you wish to track the movments of the FSF's offices for the next
-> 40 years, please just drop this paragraph, it is not needed.
+> zcache doesn't use zsmalloc for cleancache pages today, but
+> that's Seth's plan for the future.  Then if there is a
+> separate pool for each cleancache pool, when a filesystem
+> is umount'ed, it isn't necessary to walk through and delete
+> all pages one-by-one, which could take quite awhile.
+
 > 
 
-OK, I will drop it.
+> ramster needs one pool for each client (i.e. machine in the
+> cluster) for frontswap pages for the same reason, and
+> later, for cleancache pages, one per mounted filesystem
+> per client
 
-Thank you & Best Regards,
-Chanwoo Choi
+
+Fair enough.
+But some subsystems can't want a own pool for not waste unnecessary memory.
+
+Then, how about this interfaces like slab?
+
+1. zs_handle zs_malloc(size_t size, gfp_t flags) - share a pool by many subsystem(like kmalloc)
+2. zs_handle zs_malloc_pool(struct zs_pool *pool, size_t size) - use own pool(like kmem_cache_alloc)
+
+Any thoughts?
+
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=ilto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
+
+
+-- 
+Kind regards,
+Minchan Kim
