@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758914Ab2EIW6v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 18:58:51 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59396 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758466Ab2EIW6s convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 18:58:48 -0400
+	id S1759009Ab2EIW7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 18:59:09 -0400
+Received: from mailin.studentenwerk.mhn.de ([141.84.225.229]:37197 "EHLO
+	email.studentenwerk.mhn.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758466Ab2EIW7H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 18:59:07 -0400
+From: Wolfgang Walter <wolfgang.walter@stwm.de>
+Organization: Studentenwerk =?iso-8859-1?q?M=FCnchen?=
+To: David Miller <davem@davemloft.net>
+Subject: Re: 3.3.x: e1000 and ixgbe hang
+Date: Thu, 10 May 2012 00:59:04 +0200
+User-Agent: KMail/1.13.7 (Linux/3.3.5-ei+6.4; KDE/4.7.4; x86_64; ; )
+Cc: gregkh@linuxfoundation.org, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201205091107.11820.wolfgang.walter@stwm.de> <201205091857.14406.wolfgang.walter@stwm.de> <20120509.154558.1469429813580317150.davem@davemloft.net>
+In-Reply-To: <20120509.154558.1469429813580317150.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <20120508165118.GA11750@merkur.ravnborg.org>
-References: <20120428205651.GA7426@merkur.ravnborg.org> <20120428205919.GC7442@merkur.ravnborg.org>
- <4FA460AB.6060309@suse.cz> <20120505082916.GA14006@merkur.ravnborg.org>
- <CA+8MBbKd9zAouJy5JvUnLwUHMJ65HsYgCTfBgv42nm32EnMPFA@mail.gmail.com> <20120508165118.GA11750@merkur.ravnborg.org>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Wed, 9 May 2012 18:58:16 -0400
-X-Google-Sender-Auth: hBZjgnkToQiuUDj08rIywATPKZ8
-Message-ID: <CAP=VYLobO--uwxv_hiMYBnjD-AU_0fqyQJD6argQygnkHnm5Vg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] kbuild: link of vmlinux moved to a script
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Tony Luck <tony.luck@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        linux arch <linux-arch@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        "David S. Miller" <davem@davemloft.net>,
-        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        ralf@linux-mips.org, linux-mips@linux-mips.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201205100059.04723.wolfgang.walter@stwm.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 8, 2012 at 12:51 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> Hi Tony.
->
-> On Mon, May 07, 2012 at 04:15:44PM -0700, Tony Luck wrote:
->> This patch is now in linux-next (tag next-20120507). But it looks to have
->> broken the ia64 build. I see this error:
->>
->>   CC      init/version.o
->>   LD      init/built-in.o
->>   KSYM    .tmp_kallsyms1.o
->> ld: .tmp_kallsyms1.o: linking constant-gp files with non-constant-gp files
->> ld: failed to merge target specific data of file .tmp_kallsyms1.o
->> make: *** [vmlinux] Error 1
->>
->> which looks like we used the wrong compile options when building
->> .tmp_kallsyms1.o
->
-> Thanks for testing!
->
-> Could you try if this helps.
->
->        Sam
->
-> diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-> index 26c5b65..1f4c27b 100644
-> --- a/scripts/link-vmlinux.sh
-> +++ b/scripts/link-vmlinux.sh
-> @@ -78,8 +78,8 @@ kallsyms()
->                kallsymopt=--all-symbols
->        fi
->
-> -       local aflags="${KBUILD_AFLAGS} ${NOSTDINC_FLAGS}                     \
-> -                     ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
-> +       local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
-> +                     ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
+On Wednesday 09 May 2012, David Miller wrote:
+> From: Wolfgang Walter <wolfgang.walter@stwm.de>
+> Date: Wed, 9 May 2012 18:57:13 +0200
+> 
+> > But when we are at it: I think that when a bug in a stable kernel is
+> > found and the final fix is known it is bad practice to hord that
+> > patch till submission without letting stable@ know about it.
+> 
+> I think you have no idea what goes into vetting patches for -stable.
 
-All the linux-next builds for mips are failing, which I tracked down to this.
-Applying the above update doesn't help.  What is happening is that MIPS
-gets KBUILD_CPPFLAGS double-quoted, and then you get:
+I can imagine that very well. I wrote and manage a bunch of larger patches 
+against wine vanilla for us and to port them regularly to newer versions.
 
-+ mips-wrs-linux-gnu-nm -n .tmp_vmlinux1
-+ scripts/kallsyms
-+ mips-wrs-linux-gnu-gcc -D__ASSEMBLY__ <..snip..>  -D__KERNEL__
-'-D"VMLINUX_LOAD_ADDRESS=0xffffffff81100000"' '-D"DATAOFFSET=0"' -c -o
-.tmp_kallsyms1.o -x assembler-with-cpp -
-<command-line>:0: error: macro names must be identifiers
-<command-line>:0: error: macro names must be identifiers
-make[1]: *** [vmlinux] Error 1
+> 
+> It can take me days to put together a series, and also I time my
+> -stable submissions with when Linus pulls my 'net' bug fixes into his
+> tree since a part of the -stable requirements is presence in Linus's
+> tree.
 
-Note the  '-D"VMLINUX_LOAD_ADDRESS=0xffffffff81100000"' '-D"DATAOFFSET=0"'
-part -- that is what triggers the two above errors.
+I know.
 
-Paul.
+> 
+> I therefore batch, because bleeding out individual fixes one by one to
+> -stable rarely, if ever, makes sense.
 
->
->        ${NM} -n ${1} | \
->                scripts/kallsyms ${kallsymopt} | \
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I understand that and as I sad it was not my intention to question that.
+
+> 
+> And another part of what goes into vetting a patch is time.  The
+> longer a patch sits in a non-stable tree getting tested, the more
+> likely any unwanted bugs and side effects will be caught before the
+> patch goes into -stable.
+> 
+> And finally I am under no obligation whatsoever to post some kind of
+> status report to -stable every few days saying when I'll do this or
+> that.
+> 
+
+I didn't say that you should do that.
+
+I just don't see the point why I should not send a mail to stable@. It 
+documented that there is a known problem in 3.3.5, the fix for it and that you 
+already aware of it and will take care to get it into stable. Nobody had 
+reported that on stable@.
+
+I mentioned your mail not to blame you but so nobody thinks I want du submit 
+it directly. Everybody reading your mail I linked to could see that you wrote 
+it May 1st and therefor could not be in 3.3.5.
+
+But I think it would have been good if someone (not you) had sent a mail as 
+early as 2012-04-20 to stable@ so that others could find the solution more 
+easily.
+
+
+Regards,
+-- 
+Wolfgang Walter
+Studentenwerk München
+Anstalt des öffentlichen Rechts
