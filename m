@@ -1,91 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab2EIE6O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 00:58:14 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50648 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751946Ab2EIE5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 00:57:40 -0400
-From: Joe Perches <joe@perches.com>
-To: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Subject: [PATCH 02/13] 802: Convert compare_ether_addr to ether_addr_equal
-Date: Tue,  8 May 2012 21:56:46 -0700
-Message-Id: <ee8418803f60b1a19ccb098cecb7c23396659380.1336538938.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
-In-Reply-To: <cover.1336538937.git.joe@perches.com>
-References: <cover.1336538937.git.joe@perches.com>
+	id S1754896Ab2EIFCI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:02:08 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41309 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753779Ab2EIFCF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 01:02:05 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FA9F9CF.8050706@jp.fujitsu.com>
+Date: Wed, 09 May 2012 13:59:59 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Sasha Levin <levinsasha928@gmail.com>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, yinghan@google.com,
+        kosaki.motohiro@jp.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: rcu: BUG on exit_group
+References: <CA+1xoqd_z8Zavzraq1oXVRpwkJRoac57tojBYf7x=Kzs+cbJ_w@mail.gmail.com> <20120503154140.GA2592@linux.vnet.ibm.com> <CA+1xoqepggR4YRzDXFz=Hk9EeXACMRyeXorQm7rE3r5MQyY6Fw@mail.gmail.com> <20120503170101.GF2592@linux.vnet.ibm.com> <CA+1xoqcXMVG0J4r8XhtzcxxDqLuyR30x5a3o8BsrBqDakDdHgg@mail.gmail.com> <20120504053331.GA16836@linux.vnet.ibm.com>
+In-Reply-To: <20120504053331.GA16836@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new bool function ether_addr_equal to add
-some clarity and reduce the likelihood for misuse
-of compare_ether_addr for sorting.
+(2012/05/04 14:33), Paul E. McKenney wrote:
 
-Done via cocci script:
+> On Fri, May 04, 2012 at 06:08:34AM +0200, Sasha Levin wrote:
+>> On Thu, May 3, 2012 at 7:01 PM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>>> On Thu, May 03, 2012 at 05:55:14PM +0200, Sasha Levin wrote:
+>>>> On Thu, May 3, 2012 at 5:41 PM, Paul E. McKenney
+>>>> <paulmck@linux.vnet.ibm.com> wrote:
+>>>>> On Thu, May 03, 2012 at 10:57:19AM +0200, Sasha Levin wrote:
+>>>>>> Hi Paul,
+>>>>>>
+>>>>>> I've hit a BUG similar to the schedule_tail() one when. It happened
+>>>>>> when I've started fuzzing exit_group() syscalls, and all of the traces
+>>>>>> are starting with exit_group() (there's a flood of them).
+>>>>>>
+>>>>>> I've verified that it indeed BUGs due to the rcu preempt count.
+>>>>>
+>>>>> Hello, Sasha,
+>>>>>
+>>>>> Which version of -next are you using?  I did some surgery on this
+>>>>> yesterday based on some bugs Hugh Dickins tracked down, so if you
+>>>>> are using something older, please move to the current -next.
+>>>>
+>>>> I'm using -next from today (3.4.0-rc5-next-20120503-sasha-00002-g09f55ae-dirty).
+>>>
+>>> Hmmm...  Looking at this more closely, it looks like there really is
+>>> an attempt to acquire a mutex within an RCU read-side critical section,
+>>> which is illegal.  Could you please bisect this?
+>>
+>> Right, the issue is as you described, taking a mutex inside rcu_read_lock().
+>>
+>> The offending commit is (I've cc'ed all parties from it):
+>>
+>> commit adf79cc03092ee4aec70da10e91b05fb8116ac7b
+>> Author: Ying Han <yinghan@google.com>
+>> Date:   Thu May 3 15:44:01 2012 +1000
+>>
+>>     memcg: add mlock statistic in memory.stat
+>>
+>> With the issue there being is that in munlock_vma_page(), it now does
+>> a mem_cgroup_begin_update_page_stat() which takes the rcu_read_lock(),
+>> so when the older code that was there previously will try taking a
+>> mutex you'll get a BUG.
+> 
+> Hmmm...  One approach would be to switch from rcu_read_lock() to
+> srcu_read_lock(), though this means carrying the index returned from
+> the srcu_read_lock() to the matching srcu_read_unlock() -- and making
+> the update side use synchronize_srcu() rather than synchronize_rcu().
+> Alternatively, it might be possible to defer acquiring the lock until
+> after exiting the RCU read-side critical section, but I don't know enough
+> about mm to even guess whether this might be possible.
+> 
+> There are probably other approaches as well...
 
-$ cat compare_ether_addr.cocci
-@@
-expression a,b;
-@@
--	!compare_ether_addr(a, b)
-+	ether_addr_equal(a, b)
 
-@@
-expression a,b;
-@@
--	compare_ether_addr(a, b)
-+	!ether_addr_equal(a, b)
+How about this ?
+==
+[PATCH] memcg: fix taking mutex under rcu at munlock
 
-@@
-expression a,b;
-@@
--	!ether_addr_equal(a, b) == 0
-+	ether_addr_equal(a, b)
+Following bug was reported because mutex is held under rcu_read_lock().
 
-@@
-expression a,b;
-@@
--	!ether_addr_equal(a, b) != 0
-+	!ether_addr_equal(a, b)
+[   83.820976] BUG: sleeping function called from invalid context at
+kernel/mutex.c:269
+[   83.827870] in_atomic(): 0, irqs_disabled(): 0, pid: 4506, name: trinity
+[   83.832154] 1 lock held by trinity/4506:
+[   83.834224]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff811a7d87>]
+munlock_vma_page+0x197/0x200
+[   83.839310] Pid: 4506, comm: trinity Tainted: G        W
+3.4.0-rc5-next-20120503-sasha-00002-g09f55ae-dirty #108
+[   83.849418] Call Trace:
+[   83.851182]  [<ffffffff810e7218>] __might_sleep+0x1f8/0x210
+[   83.854076]  [<ffffffff82d9540a>] mutex_lock_nested+0x2a/0x50
+[   83.857120]  [<ffffffff811b0830>] try_to_unmap_file+0x40/0x2f0
+[   83.860242]  [<ffffffff82d984bb>] ? _raw_spin_unlock_irq+0x2b/0x80
+[   83.863423]  [<ffffffff810e7ffe>] ? sub_preempt_count+0xae/0xf0
+[   83.866347]  [<ffffffff82d984e9>] ? _raw_spin_unlock_irq+0x59/0x80
+[   83.869570]  [<ffffffff811b0caa>] try_to_munlock+0x6a/0x80
+[   83.872667]  [<ffffffff811a7cc6>] munlock_vma_page+0xd6/0x200
+[   83.875646]  [<ffffffff811a7d87>] ? munlock_vma_page+0x197/0x200
+[   83.878798]  [<ffffffff811a7e7f>] munlock_vma_pages_range+0x8f/0xd0
+[   83.882235]  [<ffffffff811a8b8a>] exit_mmap+0x5a/0x160
 
-@@
-expression a,b;
-@@
--	ether_addr_equal(a, b) == 0
-+	!ether_addr_equal(a, b)
+This bug was introduced by mem_cgroup_begin/end_update_page_stat()
+which uses rcu_read_lock(). This patch fixes the bug by modifying
+the range of rcu_read_lock().
 
-@@
-expression a,b;
-@@
--	ether_addr_equal(a, b) != 0
-+	ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	!!ether_addr_equal(a, b)
-+	ether_addr_equal(a, b)
-
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- net/802/stp.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/mlock.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/net/802/stp.c b/net/802/stp.c
-index 15540b7..2c40ba0 100644
---- a/net/802/stp.c
-+++ b/net/802/stp.c
-@@ -46,7 +46,7 @@ static int stp_pdu_rcv(struct sk_buff *skb, struct net_device *dev,
- 		proto = rcu_dereference(garp_protos[eh->h_dest[5] -
- 						    GARP_ADDR_MIN]);
- 		if (proto &&
--		    compare_ether_addr(eh->h_dest, proto->group_address))
-+		    !ether_addr_equal(eh->h_dest, proto->group_address))
- 			goto err;
- 	} else
- 		proto = rcu_dereference(stp_proto);
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 2fd967a..05ac10d1 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -123,6 +123,7 @@ void munlock_vma_page(struct page *page)
+ 	if (TestClearPageMlocked(page)) {
+ 		dec_zone_page_state(page, NR_MLOCK);
+ 		mem_cgroup_dec_page_stat(page, MEMCG_NR_MLOCK);
++		mem_cgroup_end_update_page_stat(page, &locked, &flags);
+ 		if (!isolate_lru_page(page)) {
+ 			int ret = SWAP_AGAIN;
+ 
+@@ -154,8 +155,8 @@ void munlock_vma_page(struct page *page)
+ 			else
+ 				count_vm_event(UNEVICTABLE_PGMUNLOCKED);
+ 		}
+-	}
+-	mem_cgroup_end_update_page_stat(page, &locked, &flags);
++	} else
++		mem_cgroup_end_update_page_stat(page, &locked, &flags);
+ }
+ 
+ /**
 -- 
-1.7.8.111.gad25c.dirty
+1.7.4.1
+
+
 
