@@ -1,328 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab2EINqD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 09:46:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36349 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347Ab2EINp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 09:45:59 -0400
-Date: Wed, 9 May 2012 16:45:29 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] bitops: add _local bitops
-Message-ID: <20120509134528.GA18044@redhat.com>
+	id S1756436Ab2EINqZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 09:46:25 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60605 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755812Ab2EINqW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 09:46:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [PATCH] mach-shmobile: Emma Mobile EV2 SMP prototype code
+Date: Wed, 9 May 2012 13:45:34 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: Magnus Damm <magnus.damm@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "horms@verge.net.au" <horms@verge.net.au>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        "olof@lixom.net" <olof@lixom.net>
+References: <20120509075407.5991.60556.sendpatchset@w520> <201205091212.08239.arnd@arndb.de> <4FAA6DE6.3040001@arm.com>
+In-Reply-To: <4FAA6DE6.3040001@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205091345.34404.arnd@arndb.de>
+X-Provags-ID: V02:K0:hMJLafwHxGRINVF0rZ6x7UX3BJc7vUXEAqoB2wJNNnh
+ a34iOhpzuSHUlcWMnzoJD5G+Dx7YiPfcl5nDbN6iTyLqGk2C0w
+ yNOJjuJkDm3xTsiQT6x5vw7zDaI6FkfXJI8J0dwUbeSVDiAlTq
+ +fUwC0t93c4iqlixtU5Xr6kGYwD/kz/oR579jo9CTUMI44zYot
+ 9nv9hiM1/0F5iGp+v8xXVevS7fzbG5iRYJRUMaLP/dm/ssLXA7
+ UfAlwbb+IkgAr+cGrQvbvlQPidDzMajYI44++0HHINrc+TuL0o
+ HhZOKO+gUdaSdN4aHSIHjmQ+Yp0LcKpkaXZz2V9C+W7vIRbcMH
+ bku4HLeFI3T/XWy7fdY4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kvm needs to update some hypervisor variables atomically
-in a sense that the operation can't be interrupted
-in the middle. However the hypervisor always runs
-on the same CPU so it does not need any memory
-barrier or lock prefix.
+On Wednesday 09 May 2012, Marc Zyngier wrote:
+> On 09/05/12 13:12, Arnd Bergmann wrote:
+> > On Wednesday 09 May 2012, Magnus Damm wrote:
+> >>  static unsigned int __init shmobile_smp_get_core_count(void)
+> >>  {
+> >> @@ -31,6 +32,9 @@ static unsigned int __init shmobile_smp_
+> >>  	if (is_r8a7779())
+> >>  		return r8a7779_get_core_count();
+> >>  
+> >> +	if (is_emev2())
+> >> +		return emev2_get_core_count();
+> >> +
+> >>  	return 1;
+> >>  }
+> >>  
+> >> @@ -41,6 +45,9 @@ static void __init shmobile_smp_prepare_
+> >>  
+> >>  	if (is_r8a7779())
+> >>  		r8a7779_smp_prepare_cpus();
+> >> +
+> >> +	if (is_emev2())
+> >> +		emev2_smp_prepare_cpus();
+> >>  }
+> >>  
+> >>  int shmobile_platform_cpu_kill(unsigned int cpu)
+> >> ...
+> > 
+> > This shows that we really want an abstraction for soc-specific SMP ops
+> > even within one platform, and we'll need the same thing for multiplatform.
+> > 
+> > Marc Zyngier already proposed a solution for this last year, but I
+> > think we couldn't agree on the details back then before he lost interest.
+> > I think we should pick that up again and get it into 3.6 so the code above
+> > can be simplified and we can do the multiplatform solution. We'll probably
+> > discuss the details in Hong Kong in a couple of weeks, so there is no
+> > point in changing it now, but I'd hope that you can migrate this to
+> > whatever we come up with in the following merge window.
+> 
+> I'm happy to revive the series if there is an interest.
 
-At Peter Anvin's suggestion, add _local bitops for this purpose:
-define them as non-atomics for x86 and (for now) atomics
-for everyone else.
+Ok, good. I think we were almost there the last time, but I don't
+know if Russell still had any objections. Magnus, can you comment on
+the "[PATCH v6 09/15] ARM: SoC: convert shmobile SMP to SoC descriptor"
+patch from February to see if it fits your needs?
 
-Uses are not restricted to virtualization: they
-might be useful to communicate with an interrupt
-handler if we know that it's running on the same CPU.
+FWIW, I would actually prefer merging the 'struct arm_soc_desc', 'struct
+arm_soc_smp_init_ops' and 'struct arm_soc_smp_ops' structures into a
+single 'struct smp_ops' for simplicity. While that would no longer allow
+us to put more stuff in there, I also don't see an urgent need to do so.
+I also don't mind the code that we had in version 6.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
-
-Link to previous discussion:
-http://www.spinics.net/lists/kvm/msg72241.html
-
-
- Documentation/atomic_ops.txt              |   19 ++++++
- arch/x86/include/asm/bitops.h             |    1 +
- include/asm-generic/bitops.h              |    1 +
- include/asm-generic/bitops/local-atomic.h |   92 +++++++++++++++++++++++++++++
- include/asm-generic/bitops/local.h        |   85 ++++++++++++++++++++++++++
- include/linux/bitops.h                    |    8 +++
- 6 files changed, 206 insertions(+), 0 deletions(-)
- create mode 100644 include/asm-generic/bitops/local-atomic.h
- create mode 100644 include/asm-generic/bitops/local.h
-
-diff --git a/Documentation/atomic_ops.txt b/Documentation/atomic_ops.txt
-index 27f2b21..b7e3b67 100644
---- a/Documentation/atomic_ops.txt
-+++ b/Documentation/atomic_ops.txt
-@@ -520,6 +520,25 @@ The __clear_bit_unlock version is non-atomic, however it still implements
- unlock barrier semantics. This can be useful if the lock itself is protecting
- the other bits in the word.
- 
-+Local versions of the bitmask operations are also provided.  They are used in
-+contexts where the operations need to be performed atomically with respect to
-+the local CPU, but no other CPU accesses the bitmask.  This assumption makes it
-+possible to avoid the need for SMP protection and use less expensive atomic
-+operations in the implementation.
-+They have names similar to the above bitmask operation interfaces,
-+except that _local is sufficed to the interface name.
-+
-+	void set_bit_local(unsigned long nr, volatile unsigned long *addr);
-+	void clear_bit_local(unsigned long nr, volatile unsigned long *addr);
-+	void change_bit_local(unsigned long nr, volatile unsigned long *addr);
-+	int test_and_set_bit_local(unsigned long nr, volatile unsigned long *addr);
-+	int test_and_clear_bit_local(unsigned long nr, volatile unsigned long *addr);
-+	int test_and_change_bit_local(unsigned long nr, volatile unsigned long *addr);
-+
-+These local variants are useful for example if the bitmask may be accessed from
-+a local intrerrupt, or from a hypervisor on the same CPU if running in a VM.
-+These local variants also do not have any special memory barrier semantics.
-+
- Finally, there are non-atomic versions of the bitmask operations
- provided.  They are used in contexts where some other higher-level SMP
- locking scheme is being used to protect the bitmask, and thus less
-diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index b97596e..8784cd7 100644
---- a/arch/x86/include/asm/bitops.h
-+++ b/arch/x86/include/asm/bitops.h
-@@ -509,6 +509,7 @@ static __always_inline int fls64(__u64 x)
- #include <asm-generic/bitops/le.h>
- 
- #include <asm-generic/bitops/ext2-atomic-setbit.h>
-+#include <asm-generic/bitops/local.h>
- 
- #endif /* __KERNEL__ */
- #endif /* _ASM_X86_BITOPS_H */
-diff --git a/include/asm-generic/bitops.h b/include/asm-generic/bitops.h
-index 280ca7a..d720c9e 100644
---- a/include/asm-generic/bitops.h
-+++ b/include/asm-generic/bitops.h
-@@ -40,5 +40,6 @@
- #include <asm-generic/bitops/non-atomic.h>
- #include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-atomic.h>
-+#include <asm-generic/bitops/local-atomic.h>
- 
- #endif /* __ASM_GENERIC_BITOPS_H */
-diff --git a/include/asm-generic/bitops/local-atomic.h b/include/asm-generic/bitops/local-atomic.h
-new file mode 100644
-index 0000000..94ad261
---- /dev/null
-+++ b/include/asm-generic/bitops/local-atomic.h
-@@ -0,0 +1,92 @@
-+#ifndef ASM_GENERIC_BITOPS_LOCAL_ATOMIC_H
-+#define ASM_GENERIC_BITOPS_LOCAL_ATOMIC_H
-+/**
-+ * Local atomic operations
-+ *
-+ * These operations give no atomicity or ordering guarantees if result
-+ * observed from another CPU.  Atomicity is guaranteed if result is observed
-+ * from the same CPU, e.g. from a local interrupt, or a hypervisor if running
-+ * in a VM.
-+ * Atomicity is not guaranteed across CPUs: if two examples of these operations
-+ * race on different CPUs, one can appear to succeed but actually fail.  Use
-+ * non-local atomics instead or protect such SMP accesses with a lock.
-+ * These operations can be reordered. No memory barrier is implied.
-+ */
-+
-+/**
-+ * Implement local operations in terms of atomics.
-+ * For use from a local interrupt, this is always safe but suboptimal: many
-+ * architectures can use bitops/local.h instead.
-+ * For use from a hypervisor, make sure your architecture doesn't
-+ * rely on locks for atomics: if it does - override these operations.
-+ */
-+
-+#define HAVE_ASM_BITOPS_LOCAL
-+
-+/**
-+ * set_bit_local - Sets a bit in memory
-+ * @nr: the bit to set
-+ * @addr: the address to start counting from
-+ *
-+ * This operation is atomic with respect to local CPU only. No memory barrier
-+ * is implied.
-+ * Note that @nr may be almost arbitrarily large; this function is not
-+ * restricted to acting on a single-word quantity.
-+ */
-+#define set_bit_local(nr, addr) set_bit(nr, addr)
-+
-+/**
-+ * clear_bit_local - Clears a bit in memory
-+ * @nr: Bit to clear
-+ * @addr: Address to start counting from
-+ *
-+ * This operation is atomic with respect to local CPU only. No memory barrier
-+ * is implied.
-+ * Note that @nr may be almost arbitrarily large; this function is not
-+ * restricted to acting on a single-word quantity.
-+ */
-+#define clear_bit_local(nr, addr) clear_bit(nr, addr)
-+
-+/**
-+ * test_and_set_bit_local - Set a bit and return its old value
-+ * @nr: Bit to set
-+ * @addr: Address to count from
-+ *
-+ * This operation is atomic with respect to local CPU only. No memory barrier
-+ * is implied.
-+ */
-+#define test_and_set_bit_local(nr, addr) test_and_set_bit(nr, addr)
-+
-+/**
-+ * test_and_clear_bit_local - Clear a bit and return its old value
-+ * @nr: Bit to clear
-+ * @addr: Address to count from
-+ *
-+ * This operation is atomic with respect to local CPU only. No memory barrier
-+ * is implied.
-+ * Note that @nr may be almost arbitrarily large; this function is not
-+ * restricted to acting on a single-word quantity.
-+ */
-+#define test_and_clear_bit_local(nr, addr) test_and_clear_bit(nr, addr)
-+
-+/**
-+ * change_bit_local - Toggle a bit in memory
-+ * @nr: Bit to change
-+ * @addr: Address to start counting from
-+ *
-+ * This operation is atomic with respect to local CPU only. No memory barrier
-+ * is implied.
-+ */
-+#define change_bit_local(nr, addr) change_bit(nr, addr)
-+
-+/**
-+ * test_and_change_bit_local - Change a bit and return its old value
-+ * @nr: Bit to change
-+ * @addr: Address to count from
-+ *
-+ * This operation is atomic with respect to local CPU only. No memory barrier
-+ * is implied.
-+ */
-+#define test_and_change_bit_local(nr, addr) test_and_change_bit(nr, addr)
-+
-+#endif /* ASM_GENERIC_BITOPS_LOCAL_ATOMIC_H */
-diff --git a/include/asm-generic/bitops/local.h b/include/asm-generic/bitops/local.h
-new file mode 100644
-index 0000000..64ab358
---- /dev/null
-+++ b/include/asm-generic/bitops/local.h
-@@ -0,0 +1,85 @@
-+#ifndef ASM_GENERIC_BITOPS_LOCAL_ATOMIC_H
-+#define ASM_GENERIC_BITOPS_LOCAL_ATOMIC_H
-+/**
-+ * Local atomic operations
-+ *
-+ * These operations give no atomicity or ordering guarantees if result
-+ * observed from another CPU.  Atomicity is guaranteed if result is observed
-+ * from the same CPU, e.g. from a local interrupt, or a hypervisor if running
-+ * in a VM.
-+ * Atomicity is not guaranteed across CPUs: if two examples of these operations
-+ * race on different CPUs, one can appear to succeed but actually fail.  Use
-+ * non-local atomics instead or protect such SMP accesses with a lock.
-+ * These operations can be reordered. No memory barrier is implied.
-+ */
-+
-+
-+/**
-+ * Implement local operations in terms of non-atomics.
-+ * Only safe on architectures, such as x86, that implement
-+ * non-atomics in terms of a single instruction.
-+ */
-+
-+#define HAVE_ASM_BITOPS_LOCAL
-+
-+/**
-+ * set_bit - Atomically set a bit in memory
-+ * @nr: the bit to set
-+ * @addr: the address to start counting from
-+ *
-+ * This operation is atomic with respect to local CPU only. No memory barrier
-+ * is implied.
-+ */
-+#define set_bit_local(nr, addr) set_bit(nr, addr)
-+
-+/**
-+ * clear_bit - Clears a bit in memory
-+ * @nr: Bit to clear
-+ * @addr: Address to start counting from
-+ *
-+ * This operation is atomic with respect to local CPU only. No memory barrier
-+ * is implied.
-+ */
-+#define clear_bit_local(nr, addr) clear_bit(nr, addr)
-+
-+/**
-+ * test_and_set_bit_local - Set a bit and return its old value
-+ * @nr: Bit to set
-+ * @addr: Address to count from
-+ *
-+ * This operation is atomic with respect to local CPU only. No memory barrier
-+ * is implied.
-+ */
-+#define test_and_set_bit_local(nr, addr) test_and_set_bit(nr, addr)
-+
-+/**
-+ * test_and_clear_bit - Clear a bit and return its old value
-+ * @nr: Bit to clear
-+ * @addr: Address to count from
-+ *
-+ * This operation is atomic with respect to local CPU only. No memory barrier
-+ * is implied.
-+ */
-+#define test_and_clear_bit_local(nr, addr) test_and_clear_bit(nr, addr)
-+
-+/**
-+ * change_bit - Toggle a bit in memory
-+ * @nr: Bit to change
-+ * @addr: Address to start counting from
-+ *
-+ * This operation is atomic with respect to local CPU only. No memory barrier
-+ * is implied.
-+ */
-+#define change_bit_local(nr, addr) change_bit(nr, addr)
-+
-+/**
-+ * test_and_change_bit - Change a bit and return its old value
-+ * @nr: Bit to change
-+ * @addr: Address to count from
-+ *
-+ * This operation is atomic with respect to local CPU only. No memory barrier
-+ * is implied.
-+ */
-+#define test_and_change_bit_local(nr, addr) test_and_change_bit(nr, addr)
-+
-+#endif /* ASM_GENERIC_BITOPS_LOCAL_ATOMIC_H */
-diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-index a3b6b82..ba86418 100644
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -197,5 +197,13 @@ extern unsigned long find_last_bit(const unsigned long *addr,
- 				   unsigned long size);
- #endif
- 
-+/**
-+ * Include the generic version for local atomics unless
-+ * an architecture overrides it.
-+ * */
-+#ifndef HAVE_ASM_BITOPS_LOCAL
-+#include "include/asm-generic/bitops/local-atomic.h"
-+#endif
-+
- #endif /* __KERNEL__ */
- #endif
--- 
-MST
+	Arnd
