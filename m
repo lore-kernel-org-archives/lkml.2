@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab2EIF43 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:56:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38940 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756246Ab2EIFxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757265Ab2EIFxy (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 9 May 2012 01:53:54 -0400
-Message-Id: <20120509055041.165623104@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38876 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756110Ab2EIFxN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 01:53:13 -0400
+Message-Id: <20120509055035.029721328@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:51 +0100
+Date: Wed, 09 May 2012 06:51:08 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 082/167] [PATCH] dummy: Add ndo_uninit().
+        alan@lxorguk.ukuu.org.uk,
+        Thomas Jarosch <thomas.jarosch@intra2net.com>,
+        Charlie Suffin <charlie.suffin@stratus.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [ 039/167] [PATCH] PCI: Add quirk for still enabled interrupts on Intel Sandy
+ Bridge GPUs
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,57 +31,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
 
-commit 890fdf2a0cb88202d1427589db2cf29c1bdd3c1d upstream.
+commit f67fd55fa96f7d7295b43ffbc4a97d8f55e473aa upstream.
 
-In register_netdevice(), when ndo_init() is successful and later
-some error occurred, ndo_uninit() will be called.
-So dummy deivce is desirable to implement ndo_uninit() method
-to free percpu stats for this case.
-And, ndo_uninit() is also called along with dev->destructor() when
-device is unregistered, so in order to prevent dev->dstats from
-being freed twice, dev->destructor is modified to free_netdev().
+Some BIOS implementations leave the Intel GPU interrupts enabled,
+even though no one is handling them (f.e. i915 driver is never loaded).
+Additionally the interrupt destination is not set up properly
+and the interrupt ends up -somewhere-.
 
-Signed-off-by: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+These spurious interrupts are "sticky" and the kernel disables
+the (shared) interrupt line after 100.000+ generated interrupts.
+
+Fix it by disabling the still enabled interrupts.
+This resolves crashes often seen on monitor unplug.
+
+Tested on the following boards:
+- Intel DH61CR: Affected
+- Intel DH67BL: Affected
+- Intel S1200KP server board: Affected
+- Asus P8H61-M LE: Affected, but system does not crash.
+  Probably the IRQ ends up somewhere unnoticed.
+
+According to reports on the net, the Intel DH61WW board is also affected.
+
+Many thanks to Jesse Barnes from Intel for helping
+with the register configuration and to Intel in general
+for providing public hardware documentation.
+
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Tested-by: Charlie Suffin <charlie.suffin@stratus.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/dummy.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/pci/quirks.c |   34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
 
-diff --git a/drivers/net/dummy.c b/drivers/net/dummy.c
-index d5c6d92..442d91a 100644
---- a/drivers/net/dummy.c
-+++ b/drivers/net/dummy.c
-@@ -107,14 +107,14 @@ static int dummy_dev_init(struct net_device *dev)
- 	return 0;
- }
+--- linux.orig/drivers/pci/quirks.c
++++ linux/drivers/pci/quirks.c
+@@ -2906,6 +2906,40 @@
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x65f9, quirk_intel_mc_errata);
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x65fa, quirk_intel_mc_errata);
  
--static void dummy_dev_free(struct net_device *dev)
-+static void dummy_dev_uninit(struct net_device *dev)
++/*
++ * Some BIOS implementations leave the Intel GPU interrupts enabled,
++ * even though no one is handling them (f.e. i915 driver is never loaded).
++ * Additionally the interrupt destination is not set up properly
++ * and the interrupt ends up -somewhere-.
++ *
++ * These spurious interrupts are "sticky" and the kernel disables
++ * the (shared) interrupt line after 100.000+ generated interrupts.
++ *
++ * Fix it by disabling the still enabled interrupts.
++ * This resolves crashes often seen on monitor unplug.
++ */
++#define I915_DEIER_REG 0x4400c
++static void __devinit disable_igfx_irq(struct pci_dev *dev)
++{
++	void __iomem *regs = pci_iomap(dev, 0, 0);
++	if (regs == NULL) {
++		dev_warn(&dev->dev, "igfx quirk: Can't iomap PCI device\n");
++		return;
++	}
++
++	/* Check if any interrupt line is still enabled */
++	if (readl(regs + I915_DEIER_REG) != 0) {
++		dev_warn(&dev->dev, "BIOS left Intel GPU interrupts enabled; "
++			"disabling\n");
++
++		writel(0, regs + I915_DEIER_REG);
++	}
++
++	pci_iounmap(dev, regs);
++}
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
++
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
  {
- 	free_percpu(dev->dstats);
--	free_netdev(dev);
- }
- 
- static const struct net_device_ops dummy_netdev_ops = {
- 	.ndo_init		= dummy_dev_init,
-+	.ndo_uninit		= dummy_dev_uninit,
- 	.ndo_start_xmit		= dummy_xmit,
- 	.ndo_validate_addr	= eth_validate_addr,
- 	.ndo_set_rx_mode	= set_multicast_list,
-@@ -128,7 +128,7 @@ static void dummy_setup(struct net_device *dev)
- 
- 	/* Initialize the device structure. */
- 	dev->netdev_ops = &dummy_netdev_ops;
--	dev->destructor = dummy_dev_free;
-+	dev->destructor = free_netdev;
- 
- 	/* Fill in device structure with ethernet-generic values. */
- 	dev->tx_queue_len = 0;
--- 
-1.7.10
-
 
 
