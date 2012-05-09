@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758011Ab2EIGWX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:22:23 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38892 "EHLO
+	id S1758279Ab2EIGXE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:23:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38909 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756125Ab2EIFxS (ORCPT
+	by vger.kernel.org with ESMTP id S1756174Ab2EIFxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:18 -0400
-Message-Id: <20120509055042.908703215@decadent.org.uk>
+	Wed, 9 May 2012 01:53:15 -0400
+Message-Id: <20120509055040.496214589@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:04 +0100
+Date: Wed, 09 May 2012 06:51:46 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ian Kent <raven@themaw.net>
-Subject: [ 095/167] [PATCH] Revert "autofs: work around unhappy compat problem on
- x86-64"
+        alan@lxorguk.ukuu.org.uk, Jason Wang <jasowang@redhat.com>,
+        Flavio Leitner <fbl@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 077/167] [PATCH 17/26] 8139cp: set intr mask after its handler is registered
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,125 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Jason Wang <jasowang@redhat.com>
 
-commit fcbf94b9dedd2ce08e798a99aafc94fec8668161 upstream.
+[ Upstream commit a8c9cb106fe79c28d6b7f1397652cadd228715ff ]
 
-This reverts commit a32744d4abae24572eff7269bc17895c41bd0085.
+We set intr mask before its handler is registered, this does not work well when
+8139cp is sharing irq line with other devices. As the irq could be enabled by
+the device before 8139cp's hander is registered which may lead unhandled
+irq. Fix this by introducing an helper cp_irq_enable() and call it after
+request_irq().
 
-While that commit was technically the right thing to do, and made the
-x86-64 compat mode work identically to native 32-bit mode (and thus
-fixing the problem with a 32-bit systemd install on a 64-bit kernel), it
-turns out that the automount binaries had workarounds for this compat
-problem.
-
-Now, the workarounds are disgusting: doing an "uname()" to find out the
-architecture of the kernel, and then comparing it for the 64-bit cases
-and fixing up the size of the read() in automount for those.  And they
-were confused: it's not actually a generic 64-bit issue at all, it's
-very much tied to just x86-64, which has different alignment for an
-'u64' in 64-bit mode than in 32-bit mode.
-
-But the end result is that fixing the compat layer actually breaks the
-case of a 32-bit automount on a x86-64 kernel.
-
-There are various approaches to fix this (including just doing a
-"strcmp()" on current->comm and comparing it to "automount"), but I
-think that I will do the one that teaches pipes about a special "packet
-mode", which will allow user space to not have to care too deeply about
-the padding at the end of the autofs packet.
-
-That change will make the compat workaround unnecessary, so let's revert
-it first, and get automount working again in compat mode.  The
-packetized pipes will then fix autofs for systemd.
-
-Reported-and-requested-by: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Ian Kent <raven@themaw.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Reviewed-by: Flavio Leitner <fbl@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/autofs4/autofs_i.h  |    1 -
- fs/autofs4/dev-ioctl.c |    1 -
- fs/autofs4/inode.c     |    2 --
- fs/autofs4/waitq.c     |   22 +++-------------------
- 4 files changed, 3 insertions(+), 23 deletions(-)
+ drivers/net/ethernet/realtek/8139cp.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- linux.orig/fs/autofs4/autofs_i.h
-+++ linux/fs/autofs4/autofs_i.h
-@@ -110,7 +110,6 @@
- 	int sub_version;
- 	int min_proto;
- 	int max_proto;
--	int compat_daemon;
- 	unsigned long exp_timeout;
- 	unsigned int type;
- 	int reghost_enabled;
---- linux.orig/fs/autofs4/dev-ioctl.c
-+++ linux/fs/autofs4/dev-ioctl.c
-@@ -385,7 +385,6 @@
- 		sbi->pipefd = pipefd;
- 		sbi->pipe = pipe;
- 		sbi->catatonic = 0;
--		sbi->compat_daemon = is_compat_task();
- 	}
- out:
- 	mutex_unlock(&sbi->wq_mutex);
---- linux.orig/fs/autofs4/inode.c
-+++ linux/fs/autofs4/inode.c
-@@ -19,7 +19,6 @@
- #include <linux/parser.h>
- #include <linux/bitops.h>
- #include <linux/magic.h>
--#include <linux/compat.h>
- #include "autofs_i.h"
- #include <linux/module.h>
- 
-@@ -225,7 +224,6 @@
- 	set_autofs_type_indirect(&sbi->type);
- 	sbi->min_proto = 0;
- 	sbi->max_proto = 0;
--	sbi->compat_daemon = is_compat_task();
- 	mutex_init(&sbi->wq_mutex);
- 	spin_lock_init(&sbi->fs_lock);
- 	sbi->queues = NULL;
---- linux.orig/fs/autofs4/waitq.c
-+++ linux/fs/autofs4/waitq.c
-@@ -90,24 +90,7 @@
- 
- 	return (bytes > 0);
+diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
+index aba4f67..8f47907 100644
+--- a/drivers/net/ethernet/realtek/8139cp.c
++++ b/drivers/net/ethernet/realtek/8139cp.c
+@@ -961,6 +961,11 @@ static inline void cp_start_hw (struct cp_private *cp)
+ 	cpw8(Cmd, RxOn | TxOn);
  }
--
--/*
-- * The autofs_v5 packet was misdesigned.
-- *
-- * The packets are identical on x86-32 and x86-64, but have different
-- * alignment. Which means that 'sizeof()' will give different results.
-- * Fix it up for the case of running 32-bit user mode on a 64-bit kernel.
-- */
--static noinline size_t autofs_v5_packet_size(struct autofs_sb_info *sbi)
--{
--	size_t pktsz = sizeof(struct autofs_v5_packet);
--#if defined(CONFIG_X86_64) && defined(CONFIG_COMPAT)
--	if (sbi->compat_daemon > 0)
--		pktsz -= 4;
--#endif
--	return pktsz;
--}
--
-+	
- static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
- 				 struct autofs_wait_queue *wq,
- 				 int type)
-@@ -164,7 +147,8 @@
- 	{
- 		struct autofs_v5_packet *packet = &pkt.v5_pkt.v5_packet;
  
--		pktsz = autofs_v5_packet_size(sbi);
-+		pktsz = sizeof(*packet);
++static void cp_enable_irq(struct cp_private *cp)
++{
++	cpw16_f(IntrMask, cp_intr_mask);
++}
 +
- 		packet->wait_queue_token = wq->wait_queue_token;
- 		packet->len = wq->name.len;
- 		memcpy(packet->name, wq->name.name, wq->name.len);
+ static void cp_init_hw (struct cp_private *cp)
+ {
+ 	struct net_device *dev = cp->dev;
+@@ -1000,8 +1005,6 @@ static void cp_init_hw (struct cp_private *cp)
+ 
+ 	cpw16(MultiIntr, 0);
+ 
+-	cpw16_f(IntrMask, cp_intr_mask);
+-
+ 	cpw8_f(Cfg9346, Cfg9346_Lock);
+ }
+ 
+@@ -1133,6 +1136,8 @@ static int cp_open (struct net_device *dev)
+ 	if (rc)
+ 		goto err_out_hw;
+ 
++	cp_enable_irq(cp);
++
+ 	netif_carrier_off(dev);
+ 	mii_check_media(&cp->mii_if, netif_msg_link(cp), true);
+ 	netif_start_queue(dev);
+@@ -2034,6 +2039,7 @@ static int cp_resume (struct pci_dev *pdev)
+ 	/* FIXME: sh*t may happen if the Rx ring buffer is depleted */
+ 	cp_init_rings_index (cp);
+ 	cp_init_hw (cp);
++	cp_enable_irq(cp);
+ 	netif_start_queue (dev);
+ 
+ 	spin_lock_irqsave (&cp->lock, flags);
+-- 
+1.7.10
+
 
 
