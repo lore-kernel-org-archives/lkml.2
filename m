@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759612Ab2EIOcl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:32:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41061 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758009Ab2EIOcj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:32:39 -0400
-Date: Wed, 9 May 2012 07:32:24 -0700
-From: tip-bot for Robert Richter <robert.richter@amd.com>
-Message-ID: <tip-6accb9cf76080422d400a641d9068b6b2a2c216f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
-In-Reply-To: <1333390758-10893-5-git-send-email-robert.richter@amd.com>
-References: <1333390758-10893-5-git-send-email-robert.richter@amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86-ibs: Fix frequency profiling
-Git-Commit-ID: 6accb9cf76080422d400a641d9068b6b2a2c216f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1759642Ab2EIOcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:32:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:53667 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758009Ab2EIOco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 10:32:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="98117061"
+Date: Wed, 9 May 2012 16:42:18 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] mfd: add LM3533 lighting-power core driver
+Message-ID: <20120509144218.GI1794@sortiz-mobl>
+References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
+ <1336040799-18433-1-git-send-email-jhovold@gmail.com>
+ <1336040799-18433-2-git-send-email-jhovold@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 09 May 2012 07:32:30 -0700 (PDT)
+In-Reply-To: <1336040799-18433-2-git-send-email-jhovold@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6accb9cf76080422d400a641d9068b6b2a2c216f
-Gitweb:     http://git.kernel.org/tip/6accb9cf76080422d400a641d9068b6b2a2c216f
-Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Mon, 2 Apr 2012 20:19:10 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 May 2012 15:23:13 +0200
+Hi Johan
 
-perf/x86-ibs: Fix frequency profiling
+On Thu, May 03, 2012 at 12:26:36PM +0200, Johan Hovold wrote:
+> Add support for National Semiconductor / TI LM3533 lighting power chips.
+> 
+> This is the core driver which provides register access over I2C and
+> registers the ambient-light-sensor, LED and backlight sub-drivers.
+> 
+> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> ---
+> 
+> v2:
+>  - add sysfs-ABI documentation
+>  - merge i2c implementation with core
+>  - use regmap and kill custom debugfs interface
+> 
+> 
+>  .../ABI/testing/sysfs-bus-i2c-devices-lm3533       |   38 +
+>  drivers/mfd/Kconfig                                |   13 +
+>  drivers/mfd/Makefile                               |    1 +
+>  drivers/mfd/lm3533-core.c                          |  717 ++++++++++++++++++++
+>  drivers/mfd/lm3533-ctrlbank.c                      |  134 ++++
+>  include/linux/mfd/lm3533.h                         |   89 +++
+>  6 files changed, 992 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/ABI/testing/sysfs-bus-i2c-devices-lm3533
+>  create mode 100644 drivers/mfd/lm3533-core.c
+>  create mode 100644 drivers/mfd/lm3533-ctrlbank.c
+>  create mode 100644 include/linux/mfd/lm3533.h
+Patch applied to my for-next branch, thanks.
 
-Fixing profiling at a fixed frequency, in this case the freq value and
-sample period was setup incorrectly. Since sampling periods are
-adjusted we also allow periods that have lower 4 bits set.
+Cheers,
+Samuel.
 
-Another fix is the setup of the hw counter: If we modify
-hwc->sample_period, we also need to update hwc->last_period and
-hwc->period_left.
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1333390758-10893-5-git-send-email-robert.richter@amd.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_amd_ibs.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-index ebf169f..bc401bd 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -162,9 +162,16 @@ static int perf_ibs_init(struct perf_event *event)
- 		if (config & perf_ibs->cnt_mask)
- 			/* raw max_cnt may not be set */
- 			return -EINVAL;
--		if (hwc->sample_period & 0x0f)
--			/* lower 4 bits can not be set in ibs max cnt */
-+		if (!event->attr.sample_freq && hwc->sample_period & 0x0f)
-+			/*
-+			 * lower 4 bits can not be set in ibs max cnt,
-+			 * but allowing it in case we adjust the
-+			 * sample period to set a frequency.
-+			 */
- 			return -EINVAL;
-+		hwc->sample_period &= ~0x0FULL;
-+		if (!hwc->sample_period)
-+			hwc->sample_period = 0x10;
- 	} else {
- 		max_cnt = config & perf_ibs->cnt_mask;
- 		config &= ~perf_ibs->cnt_mask;
-@@ -175,6 +182,13 @@ static int perf_ibs_init(struct perf_event *event)
- 	if (!hwc->sample_period)
- 		return -EINVAL;
- 
-+	/*
-+	 * If we modify hwc->sample_period, we also need to update
-+	 * hwc->last_period and hwc->period_left.
-+	 */
-+	hwc->last_period = hwc->sample_period;
-+	local64_set(&hwc->period_left, hwc->sample_period);
-+
- 	hwc->config_base = perf_ibs->msr;
- 	hwc->config = config;
- 
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
