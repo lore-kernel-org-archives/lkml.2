@@ -1,300 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759558Ab2EIOZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:25:12 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:50383 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757863Ab2EIOZK (ORCPT
+	id S1759572Ab2EIO0C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:26:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40929 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759495Ab2EIO0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:25:10 -0400
-Date: Wed, 9 May 2012 16:24:56 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Tony Luck <tony.luck@intel.com>
-Subject: Re: [EDAC ABI v13 04/25] events/hw_event: Create a Hardware Events
- Report Mecanism (HERM)
-Message-ID: <20120509142456.GH22737@aftab.osrc.amd.com>
-References: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
- <1334608729-30803-5-git-send-email-mchehab@redhat.com>
- <20120509121326.GA22737@aftab.osrc.amd.com>
- <4FAA6802.9070506@redhat.com>
- <20120509132237.GD22737@aftab.osrc.amd.com>
- <4FAA7649.5080606@redhat.com>
- <20120509140632.GG22737@aftab.osrc.amd.com>
- <4FAA7C1A.3020406@redhat.com>
+	Wed, 9 May 2012 10:26:00 -0400
+Date: Wed, 9 May 2012 07:25:41 -0700
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-y3tvyszjdmbibade5bw8zl81@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Change rq->nr_running to unsigned int
+Git-Commit-ID: c82513e513556a04f81aa511cd890acd23349c48
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <4FAA7C1A.3020406@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 09 May 2012 07:25:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 11:15:54AM -0300, Mauro Carvalho Chehab wrote:
-> Em 09-05-2012 11:06, Borislav Petkov escreveu:
-> > On Wed, May 09, 2012 at 10:51:05AM -0300, Mauro Carvalho Chehab wrote:
-> >>> Now, if you really want to have a generic mechanism for RAS, used
-> >>> by all the kernel, then I don't have a problem with you adding it
-> >>> to include/ras/hw_event.h or somewhere in that vicinity along with
-> >>> making it generic enough for other users and then taking care of it and
-> >>> developing it to address users' needs.
-> >>
-> >> I'm ok to move it to include/ras, but, if I remember well from my initial
-> >> tests when I wrote this, several kernel versions ago, there is/was
-> >> a limitation that required that all trace events should be under
-> >> include/trace/events/.
-> >>
-> >> One other option would be to call it as "include/trace/events/ras.h".
-> >>
-> >> Steven,
-> >>
-> >> Would it be possible/recommendable to move this trace header
-> >> to include/linux/ras/hw_event.h?
-> > 
-> > Oh, yeah, I remember vaguely something like that. Lets wait what Steven
-> > has to say.
+Commit-ID:  c82513e513556a04f81aa511cd890acd23349c48
+Gitweb:     http://git.kernel.org/tip/c82513e513556a04f81aa511cd890acd23349c48
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Thu, 26 Apr 2012 13:12:27 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 9 May 2012 15:00:49 +0200
 
-btw, http://lwn.net/Articles/383362/ explains how to define tracepoints outside
-of include/trace/events.
+sched: Change rq->nr_running to unsigned int
 
-[ … ]
+Since there's a PID space limit of 30bits (see
+futex.h:FUTEX_TID_MASK) and allocating that many tasks (assuming a
+lower bound of 2 pages per task) would still take 8T of memory it
+seems reasonable to say that unsigned int is sufficient for
+rq->nr_running.
 
-> > and above says "Hardware Events Report Method (HERM)" The fact that you
-> > yourself are not exactly sure about what this abbreviation is supposed
-> > to be/mean/etc, simply should tell you that it is causing only confusion
-> > with no benefit what-so-ever, even to you!
-> 
-> Fixed.
+When we do get anywhere near that amount of tasks I suspect other
+things would go funny, load-balancer load computations would really
+need to be hoisted to 128bit etc.
 
-No, you haven't. It still says HERM below. Please drop the marketing speak!
+So save a few bytes and convert rq->nr_running and friends to
+unsigned int.
 
-> events/hw_event: use a tracepoint-based Hardware Events Report Method (HERM)
-> 
-> From: Mauro Carvalho Chehab <mchehab@redhat.com>
-> 
-> Adds a trace event for handle hardware issues
-> 
-> Part of the description bellow is shamelessly copied from Tony
-> Luck's notes about the Hardware Error BoF during LPC 2010 [1].
-> Tony, thanks for your notes and discussions to generate the
-> h/w error reporting requirements.
-> 
-> [1] http://lwn.net/Articles/416669/
-> 
->     We have several subsystems & methods for reporting hardware errors:
-> 
->     1) EDAC ("Error Detection and Correction").  In its original form
->     this consisted of a platform specific driver that read topology
->     information and error counts from chipset registers and reported
->     the results via a sysfs interface.
-> 
->     2) mcelog - x86 specific decoding of machine check bank registers
->     reporting in binary form via /dev/mcelog. Recent additions make use
->     of the APEI extensions that were documented in version 4.0a of the
->     ACPI specification to acquire more information about errors without
->     having to rely reading chipset registers directly. A user level
->     programs decodes into somewhat human readable format.
-> 
->     3) drivers/edac/mce_amd.c - this driver hooks into the mcelog path and
->     decodes errors reported via machine check bank registers in AMD
->     processors to the console log using printk();
-> 
->     Each of these mechanisms has a band of followers ... and none
->     of them appear to meet all the needs of all users.
-> 
-> As part of a hardware event subsystem, let's encapsulate the memory
-> error hardware events into a trace facility.
-> 
-> NOTE: The original patch was providing an additional mechanism for
-> MCA-based trace events that also contained MCA error register data.
-> Hoever, as no agreement was reached so far for the MCA-based trace
-> events, for now, let's add events only for memory errors.
-> A latter patch is planned to change the tracepoint, for those types
-> of event.
-> 
-> Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
-> Cc: Doug Thompson <norsk5@yahoo.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> 
-> diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-> index f06ce9a..eee7360 100644
-> --- a/drivers/edac/edac_core.h
-> +++ b/drivers/edac/edac_core.h
-> @@ -468,7 +468,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
->  			  const int layer2,
->  			  const char *msg,
->  			  const char *other_detail,
-> -			  const void *mcelog);
-> +			  const void *arch_log);
->  
->  /*
->   * edac_device APIs
-> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-> index e5b5563..eff8266 100644
-> --- a/drivers/edac/edac_mc.c
-> +++ b/drivers/edac/edac_mc.c
-> @@ -33,6 +33,9 @@
->  #include "edac_core.h"
->  #include "edac_module.h"
->  
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/hw_event.h>
-> +
->  /* lock to memory controller's control array */
->  static DEFINE_MUTEX(mem_ctls_mutex);
->  static LIST_HEAD(mc_devices);
-> @@ -381,6 +384,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
->  	 * which will perform kobj unregistration and the actual free
->  	 * will occur during the kobject callback operation
->  	 */
-> +
->  	return mci;
->  }
->  EXPORT_SYMBOL_GPL(edac_mc_alloc);
-> @@ -982,7 +986,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
->  			  const int layer2,
->  			  const char *msg,
->  			  const char *other_detail,
-> -			  const void *mcelog)
-> +			  const void *arch_log)
->  {
->  	/* FIXME: too much for stack: move it to some pre-alocated area */
->  	char detail[80], location[80];
-> @@ -1119,21 +1123,27 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
->  	}
->  
->  	/* Memory type dependent details about the error */
-> -	if (type == HW_EVENT_ERR_CORRECTED) {
-> +	if (type == HW_EVENT_ERR_CORRECTED)
->  		snprintf(detail, sizeof(detail),
->  			"page:0x%lx offset:0x%lx grain:%d syndrome:0x%lx",
->  			page_frame_number, offset_in_page,
->  			grain, syndrome);
-> -		edac_ce_error(mci, pos, msg, location, label, detail,
-> -			      other_detail, enable_per_layer_report,
-> -			      page_frame_number, offset_in_page, grain);
-> -	} else {
-> +	else
->  		snprintf(detail, sizeof(detail),
->  			"page:0x%lx offset:0x%lx grain:%d",
->  			page_frame_number, offset_in_page, grain);
->  
-> +	/* Report the error via the trace interface */
-> +	trace_mc_error(type, mci->mc_idx, msg, label, location,
-> +		       detail, other_detail);
-> +
-> +	/* Report the error via the edac_mc_printk() interface */
-> +	if (type == HW_EVENT_ERR_CORRECTED)
-> +		edac_ce_error(mci, pos, msg, location, label, detail,
-> +			      other_detail, enable_per_layer_report,
-> +			      page_frame_number, offset_in_page, grain);
-> +	else
->  		edac_ue_error(mci, pos, msg, location, label, detail,
->  			      other_detail, enable_per_layer_report);
-> -	}
->  }
->  EXPORT_SYMBOL_GPL(edac_mc_handle_error);
-> diff --git a/include/trace/events/hw_event.h b/include/trace/events/hw_event.h
-> new file mode 100644
-> index 0000000..fe2ec3b
-> --- /dev/null
-> +++ b/include/trace/events/hw_event.h
-> @@ -0,0 +1,77 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM hw_event
-> +
-> +#if !defined(_TRACE_HW_EVENT_MC_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_HW_EVENT_MC_H
-> +
-> +#include <linux/tracepoint.h>
-> +#include <linux/edac.h>
-> +#include <linux/ktime.h>
-> +
-> +/*
-> + * Hardware Events Report Method (HERM)
-> + *
-> + * Those events are generated when hardware detected a corrected or
-> + * uncorrected event, and are meant to replace the current API to report
-> + * errors defined on both EDAC and MCE subsystems.
-> + *
-> + * FIXME: Add events for handling memory errors originated from the
-> + *        MCE subsystem.
-> + */
-> +
-> +/*
-> + * Hardware-independent Memory Controller specific events
-> + */
-> +
-> +/*
-> + * Default error mechanisms for Memory Controller errors (CE and UE)
-> + */
-> +TRACE_EVENT(mc_error,
-> +
-> +	TP_PROTO(const unsigned int err_type,
-> +		 const unsigned int mc_index,
-> +		 const char *msg,
-> +		 const char *label,
-> +		 const char *location,
-> +		 const char *detail,
-> +		 const char *driver_detail),
-> +
-> +	TP_ARGS(err_type, mc_index, msg, label, location,
-> +		detail, driver_detail),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	unsigned int,	err_type		)
-> +		__field(	unsigned int,	mc_index		)
-> +		__string(	msg,		msg			)
-> +		__string(	label,		label			)
-> +		__string(	detail,		detail			)
-> +		__string(	location,	location		)
-> +		__string(	driver_detail,	driver_detail		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->err_type		= err_type;
-> +		__entry->mc_index		= mc_index;
-> +		__assign_str(msg, msg);
-> +		__assign_str(label, label);
-> +		__assign_str(location, location);
-> +		__assign_str(detail, detail);
-> +		__assign_str(driver_detail, driver_detail);
-> +	),
-> +
-> +	TP_printk(HW_ERR "mce#%d: %s error %s on memory stick \"%s\" (%s %s %s)",
-> +		  __entry->mc_index,
-> +		  (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
-> +			((__entry->err_type == HW_EVENT_ERR_FATAL) ?
-> +			"Fatal" : "Uncorrected"),
-> +		  __get_str(msg),
-> +		  __get_str(label),
-> +		  __get_str(location),
-> +		  __get_str(detail),
-> +		  __get_str(driver_detail))
-> +);
-> +
-> +#endif /* _TRACE_HW_EVENT_MC_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
-> 
-> 
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-y3tvyszjdmbibade5bw8zl81@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/debug.c |    2 +-
+ kernel/sched/fair.c  |    8 ++++----
+ kernel/sched/sched.h |    6 +++---
+ 3 files changed, 8 insertions(+), 8 deletions(-)
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 09acaa1..31e4f61 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -202,7 +202,7 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 			SPLIT_NS(spread0));
+ 	SEQ_printf(m, "  .%-30s: %d\n", "nr_spread_over",
+ 			cfs_rq->nr_spread_over);
+-	SEQ_printf(m, "  .%-30s: %ld\n", "nr_running", cfs_rq->nr_running);
++	SEQ_printf(m, "  .%-30s: %d\n", "nr_running", cfs_rq->nr_running);
+ 	SEQ_printf(m, "  .%-30s: %ld\n", "load", cfs_rq->load.weight);
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ #ifdef CONFIG_SMP
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index e955364..678966c 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4447,10 +4447,10 @@ redo:
+ 		 * correctly treated as an imbalance.
+ 		 */
+ 		env.flags |= LBF_ALL_PINNED;
+-		env.load_move	= imbalance;
+-		env.src_cpu	= busiest->cpu;
+-		env.src_rq	= busiest;
+-		env.loop_max	= min_t(unsigned long, sysctl_sched_nr_migrate, busiest->nr_running);
++		env.load_move = imbalance;
++		env.src_cpu   = busiest->cpu;
++		env.src_rq    = busiest;
++		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
+ 
+ more_balance:
+ 		local_irq_save(flags);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index fb3acba..7282e7b 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -201,7 +201,7 @@ struct cfs_bandwidth { };
+ /* CFS-related fields in a runqueue */
+ struct cfs_rq {
+ 	struct load_weight load;
+-	unsigned long nr_running, h_nr_running;
++	unsigned int nr_running, h_nr_running;
+ 
+ 	u64 exec_clock;
+ 	u64 min_vruntime;
+@@ -279,7 +279,7 @@ static inline int rt_bandwidth_enabled(void)
+ /* Real-Time classes' related field in a runqueue: */
+ struct rt_rq {
+ 	struct rt_prio_array active;
+-	unsigned long rt_nr_running;
++	unsigned int rt_nr_running;
+ #if defined CONFIG_SMP || defined CONFIG_RT_GROUP_SCHED
+ 	struct {
+ 		int curr; /* highest queued rt task prio */
+@@ -353,7 +353,7 @@ struct rq {
+ 	 * nr_running and cpu_load should be in the same cacheline because
+ 	 * remote CPUs use both these fields when doing load calculation.
+ 	 */
+-	unsigned long nr_running;
++	unsigned int nr_running;
+ 	#define CPU_LOAD_IDX_MAX 5
+ 	unsigned long cpu_load[CPU_LOAD_IDX_MAX];
+ 	unsigned long last_load_update_tick;
