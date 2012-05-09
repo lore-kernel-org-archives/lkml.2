@@ -1,38 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759353Ab2EINaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 09:30:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39002 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757560Ab2EINaD convert rfc822-to-8bit (ORCPT
+	id S1759426Ab2EINaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 09:30:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59939 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759186Ab2EINaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 09:30:03 -0400
-Message-ID: <1336570167.2527.39.camel@twins>
-Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
-From: Peter Zijlstra <peterz@infradead.org>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, pjt@google.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 09 May 2012 15:29:27 +0200
-In-Reply-To: <1336570043.2527.38.camel@twins>
-References: <1336559908-32533-1-git-send-email-imammedo@redhat.com>
-	 <4FAA452A.1070909@gmail.com> <4FAA588B.5010404@redhat.com>
-	 <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
-	 <1336566096.2527.30.camel@twins> <1336566644.2527.33.camel@twins>
-	 <1336570043.2527.38.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 9 May 2012 09:30:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120509070710.GA29981@gmail.com>
+References: <1336004953.4240.9.camel@mop> <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+ <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
+ <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
+ <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
+ <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com> <20120509070710.GA29981@gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 9 May 2012 15:29:47 +0200
+Message-ID: <CAPXgP11evyQQKNDaa00R7qsOFy5Xk-utN1w9OgB4y6NxLZG=UA@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
+ record buffer
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 15:27 +0200, Peter Zijlstra wrote:
-> +char *pointer(const char *fmt, char *buf, char *end, va_list args,
-> struct printf_spec spec)
+On Wed, May 9, 2012 at 9:07 AM, Ingo Molnar <mingo@kernel.org> wrote:
 
-I'd better make that a va_list *, otherwise the iteration gets lost.
+> Thanks for bringing sanity into printk,
+
+Just to check all the options we have, and I have no good idea how
+they would work out. It's just an idea, without giving much thought
+about possible side effects:
+
+Can we somehow store the PID of the printk() thread that has left the
+un-terminated line behind in the buffer, and flush it out when the
+next printk() is from a differnt PID? That could prevent the mangling
+of "atomic" printk()s by continuation users, and merging unrelated
+continuation users together.
+
+Would it make sense to make the printk line buffer per CPU, so they
+are not shared between threads, and continuation could work more
+reliable?
+
+Kay
