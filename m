@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757100Ab2EIFxq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:53:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38840 "EHLO
+	id S1757038Ab2EIF74 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:59:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38973 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755809Ab2EIFxI (ORCPT
+	by vger.kernel.org with ESMTP id S1756288Ab2EIFxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:08 -0400
-Message-Id: <20120509055038.856409551@decadent.org.uk>
+	Wed, 9 May 2012 01:53:45 -0400
+Message-Id: <20120509055040.232524491@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:34 +0100
+Date: Wed, 09 May 2012 06:51:44 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Herbert Xu <herbert@gondor.hengli.com.au>,
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
+        Marc MERLIN <marc@merlins.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 065/167] [PATCH 05/26] bridge: Do not send queries on multicast group leaves
+Subject: [ 075/167] [PATCH 15/26] tcp: avoid order-1 allocations on wifi and tx path
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,198 +29,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 996304bbea3d2a094b7ba54c3bd65d3fffeac57b ]
+[ This combines upstream commit
+  a21d45726acacc963d8baddf74607d9b74e2b723 and the follow-on bug fix
+  commit 22b4a4f22da4b39c6f7f679fd35f3d35c91bf851 ]
 
-As it stands the bridge IGMP snooping system will respond to
-group leave messages with queries for remaining membership.
-This is both unnecessary and undesirable.  First of all any
-multicast routers present should be doing this rather than us.
-What's more the queries that we send may end up upsetting other
-multicast snooping swithces in the system that are buggy.
+Marc Merlin reported many order-1 allocations failures in TX path on its
+wireless setup, that dont make any sense with MTU=1500 network, and non
+SG capable hardware.
 
-In fact, we can simply remove the code that send these queries
-because the existing membership expiry mechanism doesn't rely
-on them anyway.
+After investigation, it turns out TCP uses sk_stream_alloc_skb() and
+used as a convention skb_tailroom(skb) to know how many bytes of data
+payload could be put in this skb (for non SG capable devices)
 
-So this patch simply removes all code associated with group
-queries in response to group leave messages.
+Note : these skb used kmalloc-4096 (MTU=1500 + MAX_HEADER +
+sizeof(struct skb_shared_info) being above 2048)
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Later, mac80211 layer need to add some bytes at the tail of skb
+(IEEE80211_ENCRYPT_TAILROOM = 18 bytes) and since no more tailroom is
+available has to call pskb_expand_head() and request order-1
+allocations.
+
+This patch changes sk_stream_alloc_skb() so that only
+sk->sk_prot->max_header bytes of headroom are reserved, and use a new
+skb field, avail_size to hold the data payload limit.
+
+This way, order-0 allocations done by TCP stack can leave more than 2 KB
+of tailroom and no more allocation is performed in mac80211 layer (or
+any layer needing some tailroom)
+
+avail_size is unioned with mark/dropcount, since mark will be set later
+in IP stack for output packets. Therefore, skb size is unchanged.
+
+Reported-by: Marc MERLIN <marc@merlins.org>
+Tested-by: Marc MERLIN <marc@merlins.org>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Correct commit hash for follow-on bug fix]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/bridge/br_multicast.c |   81 ---------------------------------------------
- net/bridge/br_private.h   |    4 ---
- 2 files changed, 85 deletions(-)
+ include/linux/skbuff.h |   13 +++++++++++++
+ net/ipv4/tcp.c         |    8 ++++----
+ net/ipv4/tcp_output.c  |    3 ++-
+ 3 files changed, 19 insertions(+), 5 deletions(-)
 
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index 8eb6b15..5ac1811 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -241,7 +241,6 @@ static void br_multicast_group_expired(unsigned long data)
- 	hlist_del_rcu(&mp->hlist[mdb->ver]);
- 	mdb->size--;
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 6cf8b53..e689b47 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -458,6 +458,7 @@ struct sk_buff {
+ 	union {
+ 		__u32		mark;
+ 		__u32		dropcount;
++		__u32		avail_size;
+ 	};
  
--	del_timer(&mp->query_timer);
- 	call_rcu_bh(&mp->rcu, br_multicast_free_group);
- 
- out:
-@@ -271,7 +270,6 @@ static void br_multicast_del_pg(struct net_bridge *br,
- 		rcu_assign_pointer(*pp, p->next);
- 		hlist_del_init(&p->mglist);
- 		del_timer(&p->timer);
--		del_timer(&p->query_timer);
- 		call_rcu_bh(&p->rcu, br_multicast_free_pg);
- 
- 		if (!mp->ports && !mp->mglist &&
-@@ -507,74 +505,6 @@ static struct sk_buff *br_multicast_alloc_query(struct net_bridge *br,
- 	return NULL;
+ 	__u16			vlan_tci;
+@@ -1326,6 +1327,18 @@ static inline int skb_tailroom(const struct sk_buff *skb)
  }
  
--static void br_multicast_send_group_query(struct net_bridge_mdb_entry *mp)
--{
--	struct net_bridge *br = mp->br;
--	struct sk_buff *skb;
--
--	skb = br_multicast_alloc_query(br, &mp->addr);
--	if (!skb)
--		goto timer;
--
--	netif_rx(skb);
--
--timer:
--	if (++mp->queries_sent < br->multicast_last_member_count)
--		mod_timer(&mp->query_timer,
--			  jiffies + br->multicast_last_member_interval);
--}
--
--static void br_multicast_group_query_expired(unsigned long data)
--{
--	struct net_bridge_mdb_entry *mp = (void *)data;
--	struct net_bridge *br = mp->br;
--
--	spin_lock(&br->multicast_lock);
--	if (!netif_running(br->dev) || !mp->mglist ||
--	    mp->queries_sent >= br->multicast_last_member_count)
--		goto out;
--
--	br_multicast_send_group_query(mp);
--
--out:
--	spin_unlock(&br->multicast_lock);
--}
--
--static void br_multicast_send_port_group_query(struct net_bridge_port_group *pg)
--{
--	struct net_bridge_port *port = pg->port;
--	struct net_bridge *br = port->br;
--	struct sk_buff *skb;
--
--	skb = br_multicast_alloc_query(br, &pg->addr);
--	if (!skb)
--		goto timer;
--
--	br_deliver(port, skb);
--
--timer:
--	if (++pg->queries_sent < br->multicast_last_member_count)
--		mod_timer(&pg->query_timer,
--			  jiffies + br->multicast_last_member_interval);
--}
--
--static void br_multicast_port_group_query_expired(unsigned long data)
--{
--	struct net_bridge_port_group *pg = (void *)data;
--	struct net_bridge_port *port = pg->port;
--	struct net_bridge *br = port->br;
--
--	spin_lock(&br->multicast_lock);
--	if (!netif_running(br->dev) || hlist_unhashed(&pg->mglist) ||
--	    pg->queries_sent >= br->multicast_last_member_count)
--		goto out;
--
--	br_multicast_send_port_group_query(pg);
--
--out:
--	spin_unlock(&br->multicast_lock);
--}
--
- static struct net_bridge_mdb_entry *br_multicast_get_group(
- 	struct net_bridge *br, struct net_bridge_port *port,
- 	struct br_ip *group, int hash)
-@@ -690,8 +620,6 @@ rehash:
- 	mp->addr = *group;
- 	setup_timer(&mp->timer, br_multicast_group_expired,
- 		    (unsigned long)mp);
--	setup_timer(&mp->query_timer, br_multicast_group_query_expired,
--		    (unsigned long)mp);
- 
- 	hlist_add_head_rcu(&mp->hlist[mdb->ver], &mdb->mhash[hash]);
- 	mdb->size++;
-@@ -746,8 +674,6 @@ static int br_multicast_add_group(struct net_bridge *br,
- 	hlist_add_head(&p->mglist, &port->mglist);
- 	setup_timer(&p->timer, br_multicast_port_group_expired,
- 		    (unsigned long)p);
--	setup_timer(&p->query_timer, br_multicast_port_group_query_expired,
--		    (unsigned long)p);
- 
- 	rcu_assign_pointer(*pp, p);
- 
-@@ -1291,9 +1217,6 @@ static void br_multicast_leave_group(struct net_bridge *br,
- 		     time_after(mp->timer.expires, time) :
- 		     try_to_del_timer_sync(&mp->timer) >= 0)) {
- 			mod_timer(&mp->timer, time);
--
--			mp->queries_sent = 0;
--			mod_timer(&mp->query_timer, now);
+ /**
++ *	skb_availroom - bytes at buffer end
++ *	@skb: buffer to check
++ *
++ *	Return the number of bytes of free space at the tail of an sk_buff
++ *	allocated by sk_stream_alloc()
++ */
++static inline int skb_availroom(const struct sk_buff *skb)
++{
++	return skb_is_nonlinear(skb) ? 0 : skb->avail_size - skb->len;
++}
++
++/**
+  *	skb_reserve - adjust headroom
+  *	@skb: buffer to alter
+  *	@len: bytes to move
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 36611ab..7904db4 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -701,11 +701,12 @@ struct sk_buff *sk_stream_alloc_skb(struct sock *sk, int size, gfp_t gfp)
+ 	skb = alloc_skb_fclone(size + sk->sk_prot->max_header, gfp);
+ 	if (skb) {
+ 		if (sk_wmem_schedule(sk, skb->truesize)) {
++			skb_reserve(skb, sk->sk_prot->max_header);
+ 			/*
+ 			 * Make sure that we have exactly size bytes
+ 			 * available to the caller, no more, no less.
+ 			 */
+-			skb_reserve(skb, skb_tailroom(skb) - size);
++			skb->avail_size = size;
+ 			return skb;
  		}
+ 		__kfree_skb(skb);
+@@ -995,10 +996,9 @@ new_segment:
+ 				copy = seglen;
  
- 		goto out;
-@@ -1310,9 +1233,6 @@ static void br_multicast_leave_group(struct net_bridge *br,
- 		     time_after(p->timer.expires, time) :
- 		     try_to_del_timer_sync(&p->timer) >= 0)) {
- 			mod_timer(&p->timer, time);
--
--			p->queries_sent = 0;
--			mod_timer(&p->query_timer, now);
- 		}
+ 			/* Where to copy to? */
+-			if (skb_tailroom(skb) > 0) {
++			if (skb_availroom(skb) > 0) {
+ 				/* We have some space in skb head. Superb! */
+-				if (copy > skb_tailroom(skb))
+-					copy = skb_tailroom(skb);
++				copy = min_t(int, copy, skb_availroom(skb));
+ 				err = skb_add_data_nocache(sk, skb, from, copy);
+ 				if (err)
+ 					goto do_fault;
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 7413437..c51dd5b 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1096,6 +1096,7 @@ static void __pskb_trim_head(struct sk_buff *skb, int len)
+ 	eat = min_t(int, len, skb_headlen(skb));
+ 	if (eat) {
+ 		__skb_pull(skb, eat);
++		skb->avail_size -= eat;
+ 		len -= eat;
+ 		if (!len)
+ 			return;
+@@ -2060,7 +2061,7 @@ static void tcp_retrans_try_collapse(struct sock *sk, struct sk_buff *to,
+ 		/* Punt if not enough space exists in the first SKB for
+ 		 * the data in the second
+ 		 */
+-		if (skb->len > skb_tailroom(to))
++		if (skb->len > skb_availroom(to))
+ 			break;
  
- 		break;
-@@ -1680,7 +1600,6 @@ void br_multicast_stop(struct net_bridge *br)
- 		hlist_for_each_entry_safe(mp, p, n, &mdb->mhash[i],
- 					  hlist[ver]) {
- 			del_timer(&mp->timer);
--			del_timer(&mp->query_timer);
- 			call_rcu_bh(&mp->rcu, br_multicast_free_group);
- 		}
- 	}
-diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
-index d7d6fb0..93264df 100644
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -82,9 +82,7 @@ struct net_bridge_port_group {
- 	struct hlist_node		mglist;
- 	struct rcu_head			rcu;
- 	struct timer_list		timer;
--	struct timer_list		query_timer;
- 	struct br_ip			addr;
--	u32				queries_sent;
- };
- 
- struct net_bridge_mdb_entry
-@@ -94,10 +92,8 @@ struct net_bridge_mdb_entry
- 	struct net_bridge_port_group __rcu *ports;
- 	struct rcu_head			rcu;
- 	struct timer_list		timer;
--	struct timer_list		query_timer;
- 	struct br_ip			addr;
- 	bool				mglist;
--	u32				queries_sent;
- };
- 
- struct net_bridge_mdb_htable
+ 		if (after(TCP_SKB_CB(skb)->end_seq, tcp_wnd_end(tp)))
 -- 
 1.7.10
 
