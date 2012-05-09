@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759338Ab2EINSg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 09:18:36 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:63359 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757968Ab2EINSf (ORCPT
+	id S1759367Ab2EINVJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 09:21:09 -0400
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:56453 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757967Ab2EINVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 09:18:35 -0400
-Message-ID: <1336569510.8274.360.camel@deadeye>
-Subject: RE: [PATCH] pch_gbe: Adding read memory barriers
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Laight <David.Laight@ACULAB.COM>
-CC: Erwan Velu <erwanaliasr1@gmail.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <tshimizu818@gmail.com>
-Date: Wed, 9 May 2012 14:18:30 +0100
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F602CD83CB@saturn3.aculab.com>
-References: <4FA822C4.60809@gmail.com>
-	 <AE90C24D6B3A694183C094C60CF0A2F602CD83CB@saturn3.aculab.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Wed, 9 May 2012 09:21:07 -0400
+Message-ID: <4FAA6F38.6080801@fastmail.fm>
+Date: Wed, 09 May 2012 15:20:56 +0200
+From: Bernd Schubert <bernd.schubert@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-X-Originating-IP: [88.96.1.126]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18894.005
-X-TM-AS-Result: No--20.192200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+To: Christoph Hellwig <hch@infradead.org>,
+        Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Jeff Garzik <jeff@garzik.org>, Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [RFC][PATCH] libata: enable SATA disk fua detection on default
+References: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com> <4FAA02DA.3000201@gmail.com> <20120509061956.GA12329@gmail.com> <20120509082527.GA10674@infradead.org> <20120509093016.GA12754@gmail.com> <20120509111243.GB29593@infradead.org> <20120509124804.GA13329@gmail.com>
+In-Reply-To: <20120509124804.GA13329@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ITWM-CharSet: ISO-8859-1
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 11:47 +0100, David Laight wrote:
-> > Under a strong incoming packet stream and/or high cpu usage,
-> > the pch_gbe driver reports "Receive CRC Error" and discards packet.
-> > 
-> > It occurred on an Intel ATOM E620T while running a 
-> > 300mbit/sec multicast
-> > network stream leading to a ~100% cpu usage.
-> > 
-> > Adding rmb() calls before considering the network card's status solve
-> > this issue.
-> > 
-> > Getting it into stable would be perfect as it solves 
-> > reliability issues.
-> > 
-> > Signed-off-by: Erwan Velu <erwan.velu@zodiacaerospace.com>
-> > ---
-> >   .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |    3 +++
-> >   1 files changed, 3 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c 
-> > b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> > index 8035e5f..ace3654 100644
-> > --- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> > +++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> > @@ -1413,6 +1413,7 @@ static irqreturn_t pch_gbe_intr(int 
-> > irq, void *data)
-> >   			pch_gbe_mac_set_pause_packet(hw);
-> >   		}
-> >   	}
-> > +	smp_rmb(); /* prevent any other reads before*/
-> 
-> Under the assumption that your memory references are uncached,
-> you only need to stop gcc reordering the object code,
-> Rather than actually adding one of the 'fence' instructions.
+On 05/09/2012 02:48 PM, Zheng Liu wrote:
+> On Wed, May 09, 2012 at 07:12:43AM -0400, Christoph Hellwig wrote:
+>> On Wed, May 09, 2012 at 05:30:16PM +0800, Zheng Liu wrote:
+>>> IMHO, FUA provides a solution that we can get better performance in write
+>>> cache mode when we do many flush operations.  If I set the disk to write
+>>> through mode, I won't get this benefit.  Am I missing something?
+>>
+>> If you set the disk to write through mode you never have to flush the
+>> cache.  So as soonas your number of flushes gets close to the number of
+>> writes it tends to be a clear win - for ATA the tradeoff is even more in
+>> favour of write through because the flush command can't be queued yetin
+>> commonly available standards versions.  So if you have a workload that
+>> basically needs to flush out every write you win - if you have workloads
+>> where you have a lot more writes than cache flushes write back mode
+>> wins.
+>
+> Thanks for your explanation.  It seems that there still has a problem.
+> If I set the disk to write through mode, I need to modify my application
+> to remove all of flush/sync operations.  It is unacceptable for us.
 
-Also, the usual MMIO functions already include compiler barriers.
+Why? You still need to flush the linux page cache. Just the disk cache 
+does not need to be flushed anymore. So changing the application would 
+be the wrong thing to do.
 
-> So you should only need: asm volatile(:::"memory")
-> NFI which define generates that, the defines in the copy of
-> sysdep.h I just looked at always include one of the fences.
 
-This is barrier().  But I think this must be intended to control
-ordering of fields that are written elsewhere.
-
-Really, this needs a much more specific comment to explain the intent.
-Then reviewers can work out whether it actually achieves the intent!
-
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Cheers,
+Bernd
