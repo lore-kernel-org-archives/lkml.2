@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973Ab2EIUO5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 16:14:57 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:50158 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641Ab2EIUO4 (ORCPT
+	id S1759473Ab2EIUQQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 16:16:16 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37732 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271Ab2EIUQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 16:14:56 -0400
-Message-ID: <4FAACF55.5070809@gmail.com>
-Date: Wed, 09 May 2012 22:11:01 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+	Wed, 9 May 2012 16:16:15 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] fix minixfs block limit check
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enigE19A38006A126D8B59881D05"
+In-Reply-To: <201205091756.16050.arnd@arndb.de>
+References: <CAMP44s2eVtquLoB6Zjbs4nGVKP6e=Dxse4uicL4s8vmrFeJdTQ@mail.gmail.com>
+	<201205091756.16050.arnd@arndb.de>
+Date: Wed, 9 May 2012 22:16:13 +0200
+Message-ID: <CAMP44s2eKgTzn9q1CN1X-8P+m0bcTw+UCz7FGQ1ekjzRe8j0SQ@mail.gmail.com>
+Subject: Re: Big I/O latencies, except when iotop is hooked
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigE19A38006A126D8B59881D05
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 9, 2012 at 7:56 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 09 May 2012, Felipe Contreras wrote:
+>> I've been noticing big I/O latencies when doing operations with
+>> notmuch (xapian database), the operations are quite simple and
+>> probably should not need a lot of I/O, however, they seen to take a
+>> long time, sometimes even seconds. But when I hook iotop (-p pid), the
+>> latency goes away, and every operation is reliably instantaneous
+>> (basically).
+>>
+>> Do you have any ideas what might be causing this delay, and why is
+>> iotop making it go away?
+>>
+>> BTW. This is an ext4 encrypted partition on a USB stick, I tried
+>> different mount options without any noticeable change. I tried to copy
+>> the data to my SSD drive and do the same operations, while it was much
+>> faster, it still seemed to have some delays triggered randomly. This
+>> is with v3.3.5.
+>
+> USB sticks like most other cheap flash media tend to have long latencies
+> because of the effects I describe on https://lwn.net/Articles/428584/.
+>
+> I don't know if you have the chance to run flashbench[1] on it (which
+> will destroy the data for the partition you are testing), but that
+> should at least tell you if it's a problem with the drive.
+> You can also use the information from that and combine it with
+> a blocktrace log and flashsim[2] to see where the actual latencies
+> are expected to happen.
+>
+> The first thing you should check is whether the partitions are
+> properly aligned, using 'fdisk -l -u /dev/sdX'.
+>
+> Of course none of this will tell you why iotop makes any difference.
 
-Hello, all. On minix2 and minix3 usually max_size is 7fffffff and the
-check in question prohibits creation of last block spanning right before
-7fffffff. Here is a fix:
+And it doesn't tell me why I see the issue on my SSD as well; albeit
+with much less delay.
 
---- fs/minix/itree_v2.c    2011-04-23 01:34:36.363725380 +0200
-+++ /home/phcoder/projects/fs/minix/itree_v2.c    2012-05-09
-21:47:52.335621065 +0200
-@@ -32,7 +32,8 @@
-     if (block < 0) {
-         printk("MINIX-fs: block_to_path: block %ld < 0 on dev %s\n",
-             block, bdevname(sb->s_bdev, b));
--    } else if (block >=3D
-(minix_sb(inode->i_sb)->s_max_size/sb->s_blocksize)) {
-+    } else if ((u64) block * (u64) sb->s_blocksize
-+           >=3D minix_sb(inode->i_sb)->s_max_size) {
-         if (printk_ratelimit())
-             printk("MINIX-fs: block_to_path: "
+I'll try what you suggest, maybe I will get better performance by
+aligning the partitions, but the real issue seems to lie elsewhere,
+right?
 
---=20
-Regards
-Vladimir '=CF=86-coder/phcoder' Serbinenko
+Cheers.
 
-
-
---------------enigE19A38006A126D8B59881D05
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iF4EAREKAAYFAk+q0DkACgkQNak7dOguQglhJwD/USv5OIeKQU3M5MN6WcMeKujL
-Tk3pZh0RoJr6QPQK+FoA/iUbihhRRsl0vl9NF8gFlLCPLjArCqXzS5whQMhuZlL+
-=hRAZ
------END PGP SIGNATURE-----
-
---------------enigE19A38006A126D8B59881D05--
+-- 
+Felipe Contreras
