@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757815Ab2EIGCg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:02:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39004 "EHLO
+	id S1757797Ab2EIGCf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:02:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39066 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756359Ab2EIFxl (ORCPT
+	by vger.kernel.org with ESMTP id S1756451Ab2EIFxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:41 -0400
-Message-Id: <20120509055047.576938749@decadent.org.uk>
+Message-Id: <20120509055048.811947195@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:39 +0100
+Date: Wed, 09 May 2012 06:52:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matthew Garrett <mjg@redhat.com>
-Subject: [ 130/167] [PATCH] efi: Validate UEFI boot variables
+        alan@lxorguk.ukuu.org.uk,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [ 139/167] [PATCH] hwmon: (coretemp) fix oops on cpu unplug
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,231 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-commit fec6c20b570bcf541e581fc97f2e0cbdb9725b98 upstream.
+commit b704871124b477807966f06789c2b32f2de58bf7 upstream.
 
-A common flaw in UEFI systems is a refusal to POST triggered by a malformed
-boot variable. Once in this state, machines may only be restored by
-reflashing their firmware with an external hardware device. While this is
-obviously a firmware bug, the serious nature of the outcome suggests that
-operating systems should filter their variable writes in order to prevent
-a malicious user from rendering the machine unusable.
+coretemp tries to access core_data array beyond bounds on cpu unplug if
+core id of the cpu if more than NUM_REAL_CORES-1.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+BUG: unable to handle kernel NULL pointer dereference at 000000000000013c
+IP: [<ffffffffa00159af>] coretemp_cpu_callback+0x93/0x1ba [coretemp]
+PGD 673e5a067 PUD 66e9b3067 PMD 0
+Oops: 0000 [#1] SMP
+CPU 79
+Modules linked in: sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf bnep bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter nf_conntrack_ipv4 nf_defrag_ipv4 ip6_tables xt_state nf_conntrack coretemp crc32c_intel asix tpm_tis pcspkr usbnet iTCO_wdt i2c_i801 microcode mii joydev tpm i2c_core iTCO_vendor_support tpm_bios i7core_edac igb ioatdma edac_core dca megaraid_sas [last unloaded: oprofile]
+
+Pid: 3315, comm: set-cpus Tainted: G        W    3.4.0-rc5+ #2 QCI QSSC-S4R/QSSC-S4R
+RIP: 0010:[<ffffffffa00159af>]  [<ffffffffa00159af>] coretemp_cpu_callback+0x93/0x1ba [coretemp]
+RSP: 0018:ffff880472fb3d48  EFLAGS: 00010246
+RAX: 0000000000000124 RBX: 0000000000000034 RCX: 00000000ffffffff
+RDX: 0000000000000000 RSI: 0000000000000046 RDI: 0000000000000246
+RBP: ffff880472fb3d88 R08: ffff88077fcd36c0 R09: 0000000000000001
+R10: ffffffff8184bc48 R11: 0000000000000000 R12: ffff880273095800
+R13: 0000000000000013 R14: ffff8802730a1810 R15: 0000000000000000
+FS:  00007f694a20f720(0000) GS:ffff88077fcc0000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 000000000000013c CR3: 000000067209b000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process set-cpus (pid: 3315, threadinfo ffff880472fb2000, task ffff880471fa0000)
+Stack:
+ ffff880277b4c308 0000000000000003 ffff880472fb3d88 0000000000000005
+ 0000000000000034 00000000ffffffd1 ffffffff81cadc70 ffff880472fb3e14
+ ffff880472fb3dc8 ffffffff8161f48d ffff880471fa0000 0000000000000034
+Call Trace:
+ [<ffffffff8161f48d>] notifier_call_chain+0x4d/0x70
+ [<ffffffff8107f1be>] __raw_notifier_call_chain+0xe/0x10
+ [<ffffffff81059d30>] __cpu_notify+0x20/0x40
+ [<ffffffff815fa251>] _cpu_down+0x81/0x270
+ [<ffffffff815fa477>] cpu_down+0x37/0x50
+ [<ffffffff815fd6a3>] store_online+0x63/0xc0
+ [<ffffffff813c7078>] dev_attr_store+0x18/0x30
+ [<ffffffff811f02cf>] sysfs_write_file+0xef/0x170
+ [<ffffffff81180443>] vfs_write+0xb3/0x180
+ [<ffffffff8118076a>] sys_write+0x4a/0x90
+ [<ffffffff816236a9>] system_call_fastpath+0x16/0x1b
+Code: 48 c7 c7 94 60 01 a0 44 0f b7 ac 10 ac 00 00 00 31 c0 e8 41 b7 5f e1 41 83 c5 02 49 63 c5 49 8b 44 c4 10 48 85 c0 74 56 45 31 ff <39> 58 18 75 4e eb 1f 49 63 d7 4c 89 f7 48 89 45 c8 48 6b d2 28
+RIP  [<ffffffffa00159af>] coretemp_cpu_callback+0x93/0x1ba [coretemp]
+ RSP <ffff880472fb3d48>
+CR2: 000000000000013c
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/firmware/efivars.c |  182 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 182 insertions(+)
+ drivers/hwmon/coretemp.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index d25599f..891e467 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -191,6 +191,176 @@ utf16_strncmp(const efi_char16_t *a, const efi_char16_t *b, size_t len)
- 	}
- }
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index 0d3141f..54a70fe 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -709,6 +709,10 @@ static void __cpuinit put_core_offline(unsigned int cpu)
  
-+static bool
-+validate_device_path(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	struct efi_generic_dev_path *node;
-+	int offset = 0;
-+
-+	node = (struct efi_generic_dev_path *)buffer;
-+
-+	while (offset < len) {
-+		offset += node->length;
-+
-+		if (offset > len)
-+			return false;
-+
-+		if ((node->type == EFI_DEV_END_PATH ||
-+		     node->type == EFI_DEV_END_PATH2) &&
-+		    node->sub_type == EFI_DEV_END_ENTIRE)
-+			return true;
-+
-+		node = (struct efi_generic_dev_path *)(buffer + offset);
-+	}
-+
-+	/*
-+	 * If we're here then either node->length pointed past the end
-+	 * of the buffer or we reached the end of the buffer without
-+	 * finding a device path end node.
-+	 */
-+	return false;
-+}
-+
-+static bool
-+validate_boot_order(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	/* An array of 16-bit integers */
-+	if ((len % 2) != 0)
-+		return false;
-+
-+	return true;
-+}
-+
-+static bool
-+validate_load_option(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	u16 filepathlength;
-+	int i, desclength = 0;
-+
-+	/* Either "Boot" or "Driver" followed by four digits of hex */
-+	for (i = match; i < match+4; i++) {
-+		if (hex_to_bin(var->VariableName[i] & 0xff) < 0)
-+			return true;
-+	}
-+
-+	/* A valid entry must be at least 6 bytes */
-+	if (len < 6)
-+		return false;
-+
-+	filepathlength = buffer[4] | buffer[5] << 8;
-+
-+	/*
-+	 * There's no stored length for the description, so it has to be
-+	 * found by hand
-+	 */
-+	desclength = utf16_strsize((efi_char16_t *)(buffer + 6), len) + 2;
-+
-+	/* Each boot entry must have a descriptor */
-+	if (!desclength)
-+		return false;
-+
-+	/*
-+	 * If the sum of the length of the description, the claimed filepath
-+	 * length and the original header are greater than the length of the
-+	 * variable, it's malformed
-+	 */
-+	if ((desclength + filepathlength + 6) > len)
-+		return false;
-+
-+	/*
-+	 * And, finally, check the filepath
-+	 */
-+	return validate_device_path(var, match, buffer + desclength + 6,
-+				    filepathlength);
-+}
-+
-+static bool
-+validate_uint16(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	/* A single 16-bit integer */
-+	if (len != 2)
-+		return false;
-+
-+	return true;
-+}
-+
-+static bool
-+validate_ascii_string(struct efi_variable *var, int match, u8 *buffer, int len)
-+{
-+	int i;
-+
-+	for (i = 0; i < len; i++) {
-+		if (buffer[i] > 127)
-+			return false;
-+
-+		if (buffer[i] == 0)
-+			return true;
-+	}
-+
-+	return false;
-+}
-+
-+struct variable_validate {
-+	char *name;
-+	bool (*validate)(struct efi_variable *var, int match, u8 *data,
-+			 int len);
-+};
-+
-+static const struct variable_validate variable_validate[] = {
-+	{ "BootNext", validate_uint16 },
-+	{ "BootOrder", validate_boot_order },
-+	{ "DriverOrder", validate_boot_order },
-+	{ "Boot*", validate_load_option },
-+	{ "Driver*", validate_load_option },
-+	{ "ConIn", validate_device_path },
-+	{ "ConInDev", validate_device_path },
-+	{ "ConOut", validate_device_path },
-+	{ "ConOutDev", validate_device_path },
-+	{ "ErrOut", validate_device_path },
-+	{ "ErrOutDev", validate_device_path },
-+	{ "Timeout", validate_uint16 },
-+	{ "Lang", validate_ascii_string },
-+	{ "PlatformLang", validate_ascii_string },
-+	{ "", NULL },
-+};
-+
-+static bool
-+validate_var(struct efi_variable *var, u8 *data, int len)
-+{
-+	int i;
-+	u16 *unicode_name = var->VariableName;
-+
-+	for (i = 0; variable_validate[i].validate != NULL; i++) {
-+		const char *name = variable_validate[i].name;
-+		int match;
-+
-+		for (match = 0; ; match++) {
-+			char c = name[match];
-+			u16 u = unicode_name[match];
-+
-+			/* All special variables are plain ascii */
-+			if (u > 127)
-+				return true;
-+
-+			/* Wildcard in the matching name means we've matched */
-+			if (c == '*')
-+				return variable_validate[i].validate(var,
-+							     match, data, len);
-+
-+			/* Case sensitive match */
-+			if (c != u)
-+				break;
-+
-+			/* Reached the end of the string while matching */
-+			if (!c)
-+				return variable_validate[i].validate(var,
-+							     match, data, len);
-+		}
-+	}
-+
-+	return true;
-+}
-+
- static efi_status_t
- get_var_data_locked(struct efivars *efivars, struct efi_variable *var)
- {
-@@ -324,6 +494,12 @@ efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
- 		return -EINVAL;
- 	}
+ 	indx = TO_ATTR_NO(cpu);
  
-+	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
-+	    validate_var(new_var, new_var->Data, new_var->DataSize) == false) {
-+		printk(KERN_ERR "efivars: Malformed variable content\n");
-+		return -EINVAL;
-+	}
++	/* The core id is too big, just return */
++	if (indx > MAX_CORE_DATA - 1)
++		return;
 +
- 	spin_lock(&efivars->lock);
- 	status = efivars->ops->set_variable(new_var->VariableName,
- 					    &new_var->VendorGuid,
-@@ -626,6 +802,12 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EACCES;
+ 	if (pdata->core_data[indx] && pdata->core_data[indx]->cpu == cpu)
+ 		coretemp_remove_core(pdata, &pdev->dev, indx);
  
-+	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
-+	    validate_var(new_var, new_var->Data, new_var->DataSize) == false) {
-+		printk(KERN_ERR "efivars: Malformed variable content\n");
-+		return -EINVAL;
-+	}
-+
- 	spin_lock(&efivars->lock);
- 
- 	/*
 -- 
 1.7.10
 
