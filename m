@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759713Ab2EIPgR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 11:36:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53694 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757972Ab2EIPgP (ORCPT
+	id S1759952Ab2EIPhR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 11:37:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46191 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753197Ab2EIPhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 11:36:15 -0400
-Date: Wed, 9 May 2012 08:36:11 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: Killing the tty lock
-Message-ID: <20120509153611.GC22566@kroah.com>
-References: <20120501173739.4fe61fb5@pyramind.ukuu.org.uk>
- <20120502044544.GA32521@kroah.com>
- <20120502114515.2cc22a26@pyramind.ukuu.org.uk>
- <20120502203653.GC27158@kroah.com>
- <CAE9FiQWyjP7yqJ5HBg-8NvZPu9JZMEpG10sQE1oNRzOnPdYx1g@mail.gmail.com>
+	Wed, 9 May 2012 11:37:14 -0400
+Date: Wed, 9 May 2012 16:37:10 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 6/9 v3] ASoC: siu: prepare for conversion to the shdma
+ base library
+Message-ID: <20120509153710.GC3955@opensource.wolfsonmicro.com>
+References: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de>
+ <1336576161-27082-7-git-send-email-g.liakhovetski@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dOtxUVmLoGkyu1PA"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQWyjP7yqJ5HBg-8NvZPu9JZMEpG10sQE1oNRzOnPdYx1g@mail.gmail.com>
+In-Reply-To: <1336576161-27082-7-git-send-email-g.liakhovetski@gmx.de>
+X-Cookie: You are fairminded, just and loving.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 11:08:29AM -0700, Yinghai Lu wrote:
-> On Wed, May 2, 2012 at 1:36 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Wed, May 02, 2012 at 11:45:15AM +0100, Alan Cox wrote:
-> >> > It's mostly pretty "sane", but what is this:
-> >> >
-> >> > > +/*
-> >> > > + * Getting the big tty mutex for a pair of ttys with lock ordering
-> >> > > + * On a non pty/tty pair tty2 can be NULL which is just fine.
-> >> > > + */
-> >> > > +void __lockfunc tty_lock_pair(struct tty_struct *tty,
-> >> > > +                                 struct tty_struct *tty2)
-> >> > > +{
-> >> > > + if (tty < tty2) {
-> >> > > +         tty_lock(tty);
-> >> > > +         tty_lock(tty2);
-> >> > > + } else {
-> >> > > +         if (tty2 && tty2 != tty)
-> >> > > +                 tty_lock(tty2);
-> >> > > +         tty_lock(tty);
-> >> > > + }
-> >> > > +}
-> >> > > +EXPORT_SYMBOL(tty_lock_pair);
-> >> > > +
-> >> > > +void __lockfunc tty_unlock_pair(struct tty_struct *tty,
-> >> > > +                                         struct tty_struct *tty2)
-> >> > > +{
-> >> > > + tty_unlock(tty);
-> >> > > + if (tty2 && tty2 != tty)
-> >> > > +         tty_unlock(tty2);
-> >> > > +}
-> >> > > +EXPORT_SYMBOL(tty_unlock_pair);
-> >> >
-> >> > for?
-> >>
-> >> We need to take locks on a pair of tty devices at the same time in some
-> >> cases (pty/tty pairs).
-> >
-> > Ok.
-> >
-> >> > And what's with the comparing of pointers as "<"?  How portable is that
-> >> > really, and how are we supposed to control the memory location of these
-> >> > structures?
-> >>
-> >> You don't need to. The point is that we must lock any arbitrary pair of
-> >> tty structs in a defined order. Pointer comparisons work just fine for
-> >> this. The fs layer uses similar logic for inode locking. We only care
-> >> that for any given pair of objects the lock ordering is consistent.
-> >
-> > Ah, ok, that makes more sense, sorry, I didn't understand that.
-> 
-> looks like some patches from Alan in your tty-next cause dead look...
 
-Yes, Alan is currently working on it...
+--dOtxUVmLoGkyu1PA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed, May 09, 2012 at 05:09:18PM +0200, Guennadi Liakhovetski wrote:
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+--dOtxUVmLoGkyu1PA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPqo8ZAAoJEBus8iNuMP3dRwgP/3WKq5h5IXvlGRXChuXGMVnE
+4zodvSzx2z0haYzyZC/BHhq7CvSCggbuc0hztzqMnmvRNhTFMpSoVUTAPjTd8Sx/
+CWq6dQFDETlovfS5p28DADcyMUWJdxegAvj1UM/AWDJ8ov/PIY5qR8EMV3yhEAsK
+fV0sko9Dm+nuNo9l8HCEIR/nVfeNQVgnJGjxJvWpQTixU6+gXevMPLFC0wykVbL3
+k1WazI1WciZsyt0ml/jf06LGTdko2RkIMGhR5AOfRziNCXk8ofwqzknK8pJS5CvA
+qURZ5BQLXuKv9axXxuA0hlOUzixmwh7OFe9BYkNw2aQ1dltkOHlfiB9kNG6VVkfW
+p9/mivOoSR2n69iAnEYoksIMRPAq7eMQXWMFBVXx+LAANNYy0KKaVTy5w0zRDgwk
+0h7hv3z/oc7YIUjH/si0tdpnIQXeHcWmhCIMNBGRau30NKsIahJVxxKbFu1ex8bO
+GmGgbCeIFjB0Rq2QJuUvbWSTYmKb848dK2m2R9uATBe5SXaJdusLrCNvpxuAIlSJ
+F9WU2/LhN+FpM0we1BRMkR8VL9/hPh55dsxk2DfJXwmjD7UFs52hyxjKsGmR/Ns2
+yLSxkCNMM5hHG2COprosIATBMAzBtXrTiizcfyyk666U/ZbJzo7OQ/d9TNQ5B4S3
+v6Wp2SkxJTUh+0kyR9DU
+=YPox
+-----END PGP SIGNATURE-----
+
+--dOtxUVmLoGkyu1PA--
