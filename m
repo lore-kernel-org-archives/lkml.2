@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab2EIOBZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:01:25 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:51045 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064Ab2EIOBX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:01:23 -0400
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: kdorfman@codeaurora.org
-Subject: Re: [PATCH v2 14/16] mmc: block: Implement HPI invocation and handling logic.
-Date: Wed, 9 May 2012 14:01:11 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: "Venkatraman S" <svenkatr@ti.com>, linux-mmc@vger.kernel.org,
-        cjb@laptop.org, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alex.lemberg@sandisk.com, ilan.smith@sandisk.com, lporzio@micron.com,
-        rmk+kernel@arm.linux.org.uk
-References: <1336054995-22988-1-git-send-email-svenkatr@ti.com> <1336054995-22988-15-git-send-email-svenkatr@ti.com> <3f7a217a08fd2c508576cbac8d26b017.squirrel@www.codeaurora.org>
-In-Reply-To: <3f7a217a08fd2c508576cbac8d26b017.squirrel@www.codeaurora.org>
+	id S1757732Ab2EIOET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:04:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40726 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751641Ab2EIOER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 10:04:17 -0400
+Message-ID: <4FAA7939.6040706@zytor.com>
+Date: Wed, 09 May 2012 07:03:37 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] bitops: add _local bitops
+References: <20120509134528.GA18044@redhat.com>
+In-Reply-To: <20120509134528.GA18044@redhat.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205091401.11894.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:68LsodyIizETltarm6tBmnwOgHySosFvIW59nITylXJ
- GZO36pWQ3l921/lNXDOiZd0zkIIDQzCqEhqaLkSXr9fRL6d8pC
- tCR0j0ghm4ZeIAbCga9x+wsL/OMDk3V0jE3G9Ck5YCzWqtwPeF
- S0eUw5Siyj0vC7FOJNrbcInSjNPBKeXylcicFCheVkh7GO/vRQ
- mu1xtf7ZgS54kWjuYxGsG473ReUFMlEHxlNDBb4kgV3trNr9c3
- zoiw0Ejpj3hvf/DFJz89s4jbnYaLGYR286Utapn+cKjyVTLkNH
- hRr445tsv8F07gbiIRBNdYp0DiV1VMCHOWIn/0i7MuO8vyvbJ4
- P03z3drw326jsW2OrEelRiiB/iP4I+jAKRfcrgl6n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 May 2012, kdorfman@codeaurora.org wrote:
-> > +static bool mmc_can_do_foreground_hpi(struct mmc_queue *mq,
-> > +                     struct request *req, unsigned int thpi)
-> > +{
-> > +
-> > +     /*
-> > +      * If some time has elapsed since the issuing of previous write
-> > +      * command, or if the size of the request was too small, there's
-> > +      * no point in preempting it. Check if it's worthwhile to preempt
-> > +      */
-> > +     int time_elapsed = jiffies_to_msecs(jiffies -
-> > +                     mq->mqrq_cur->mmc_active.mrq->cmd->started_time);
-> > +
-> > +     if (time_elapsed <= thpi)
-> > +                     return true;
-> Some host controllers (or DMA) has possibility to get the byte count of
-> current transaction. It may be implemented as host api (similar to abort
-> ops). Then you have more accurate estimation of worthiness.
+On 05/09/2012 06:45 AM, Michael S. Tsirkin wrote:
+> kvm needs to update some hypervisor variables atomically
+> in a sense that the operation can't be interrupted
+> in the middle. However the hypervisor always runs
+> on the same CPU so it does not need any memory
+> barrier or lock prefix.
+> 
+> At Peter Anvin's suggestion, add _local bitops for this purpose:
+> define them as non-atomics for x86 and (for now) atomics
+> for everyone else.
+> 
+> Uses are not restricted to virtualization: they
+> might be useful to communicate with an interrupt
+> handler if we know that it's running on the same CPU.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-I'm rather sure that the byte count is not relevant here: it's not
-the actual write that is taking so long, it's the garbage collection
-that the device does internally before the write actually gets done.
-The data transfer is much faster than the time we are waiting for here.
+I don't think you can use the x86 nonatomics as-is, because they don't
+contain optimization barriers.
 
-	Arnd
+	-hpa
+
