@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758203Ab2EIGWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:22:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38965 "EHLO
+	id S1758011Ab2EIGWX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:22:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38892 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751651Ab2EIFxS (ORCPT
+	by vger.kernel.org with ESMTP id S1756125Ab2EIFxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:18 -0400
-Message-Id: <20120509055041.563205578@decadent.org.uk>
+Message-Id: <20120509055042.908703215@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:54 +0100
+Date: Wed, 09 May 2012 06:52:04 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 085/167] [PATCH 24/26] ksz884x: dont copy too much in
- netdev_set_mac_address()
+        alan@lxorguk.ukuu.org.uk, Ian Kent <raven@themaw.net>
+Subject: [ 095/167] [PATCH] Revert "autofs: work around unhappy compat problem on
+ x86-64"
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,37 +28,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commit 716af4abd6e6370226f567af50bfaca274515980 ]
+commit fcbf94b9dedd2ce08e798a99aafc94fec8668161 upstream.
 
-MAX_ADDR_LEN is 32.  ETH_ALEN is 6.  mac->sa_data is a 14 byte array, so
-the memcpy() is doing a read past the end of the array.  I asked about
-this on netdev and Ben Hutchings told me it's supposed to be copying
-ETH_ALEN bytes (thanks Ben).
+This reverts commit a32744d4abae24572eff7269bc17895c41bd0085.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+While that commit was technically the right thing to do, and made the
+x86-64 compat mode work identically to native 32-bit mode (and thus
+fixing the problem with a 32-bit systemd install on a 64-bit kernel), it
+turns out that the automount binaries had workarounds for this compat
+problem.
+
+Now, the workarounds are disgusting: doing an "uname()" to find out the
+architecture of the kernel, and then comparing it for the 64-bit cases
+and fixing up the size of the read() in automount for those.  And they
+were confused: it's not actually a generic 64-bit issue at all, it's
+very much tied to just x86-64, which has different alignment for an
+'u64' in 64-bit mode than in 32-bit mode.
+
+But the end result is that fixing the compat layer actually breaks the
+case of a 32-bit automount on a x86-64 kernel.
+
+There are various approaches to fix this (including just doing a
+"strcmp()" on current->comm and comparing it to "automount"), but I
+think that I will do the one that teaches pipes about a special "packet
+mode", which will allow user space to not have to care too deeply about
+the padding at the end of the autofs packet.
+
+That change will make the compat workaround unnecessary, so let's revert
+it first, and get automount working again in compat mode.  The
+packetized pipes will then fix autofs for systemd.
+
+Reported-and-requested-by: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Ian Kent <raven@themaw.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/micrel/ksz884x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/autofs4/autofs_i.h  |    1 -
+ fs/autofs4/dev-ioctl.c |    1 -
+ fs/autofs4/inode.c     |    2 --
+ fs/autofs4/waitq.c     |   22 +++-------------------
+ 4 files changed, 3 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/net/ethernet/micrel/ksz884x.c b/drivers/net/ethernet/micrel/ksz884x.c
-index 7ece990..4b9f4bd 100644
---- a/drivers/net/ethernet/micrel/ksz884x.c
-+++ b/drivers/net/ethernet/micrel/ksz884x.c
-@@ -5679,7 +5679,7 @@ static int netdev_set_mac_address(struct net_device *dev, void *addr)
- 		memcpy(hw->override_addr, mac->sa_data, MAC_ADDR_LEN);
+--- linux.orig/fs/autofs4/autofs_i.h
++++ linux/fs/autofs4/autofs_i.h
+@@ -110,7 +110,6 @@
+ 	int sub_version;
+ 	int min_proto;
+ 	int max_proto;
+-	int compat_daemon;
+ 	unsigned long exp_timeout;
+ 	unsigned int type;
+ 	int reghost_enabled;
+--- linux.orig/fs/autofs4/dev-ioctl.c
++++ linux/fs/autofs4/dev-ioctl.c
+@@ -385,7 +385,6 @@
+ 		sbi->pipefd = pipefd;
+ 		sbi->pipe = pipe;
+ 		sbi->catatonic = 0;
+-		sbi->compat_daemon = is_compat_task();
  	}
+ out:
+ 	mutex_unlock(&sbi->wq_mutex);
+--- linux.orig/fs/autofs4/inode.c
++++ linux/fs/autofs4/inode.c
+@@ -19,7 +19,6 @@
+ #include <linux/parser.h>
+ #include <linux/bitops.h>
+ #include <linux/magic.h>
+-#include <linux/compat.h>
+ #include "autofs_i.h"
+ #include <linux/module.h>
  
--	memcpy(dev->dev_addr, mac->sa_data, MAX_ADDR_LEN);
-+	memcpy(dev->dev_addr, mac->sa_data, ETH_ALEN);
+@@ -225,7 +224,6 @@
+ 	set_autofs_type_indirect(&sbi->type);
+ 	sbi->min_proto = 0;
+ 	sbi->max_proto = 0;
+-	sbi->compat_daemon = is_compat_task();
+ 	mutex_init(&sbi->wq_mutex);
+ 	spin_lock_init(&sbi->fs_lock);
+ 	sbi->queues = NULL;
+--- linux.orig/fs/autofs4/waitq.c
++++ linux/fs/autofs4/waitq.c
+@@ -90,24 +90,7 @@
  
- 	interrupt = hw_block_intr(hw);
+ 	return (bytes > 0);
+ }
+-
+-/*
+- * The autofs_v5 packet was misdesigned.
+- *
+- * The packets are identical on x86-32 and x86-64, but have different
+- * alignment. Which means that 'sizeof()' will give different results.
+- * Fix it up for the case of running 32-bit user mode on a 64-bit kernel.
+- */
+-static noinline size_t autofs_v5_packet_size(struct autofs_sb_info *sbi)
+-{
+-	size_t pktsz = sizeof(struct autofs_v5_packet);
+-#if defined(CONFIG_X86_64) && defined(CONFIG_COMPAT)
+-	if (sbi->compat_daemon > 0)
+-		pktsz -= 4;
+-#endif
+-	return pktsz;
+-}
+-
++	
+ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
+ 				 struct autofs_wait_queue *wq,
+ 				 int type)
+@@ -164,7 +147,8 @@
+ 	{
+ 		struct autofs_v5_packet *packet = &pkt.v5_pkt.v5_packet;
  
--- 
-1.7.10
-
+-		pktsz = autofs_v5_packet_size(sbi);
++		pktsz = sizeof(*packet);
++
+ 		packet->wait_queue_token = wq->wait_queue_token;
+ 		packet->len = wq->name.len;
+ 		memcpy(packet->name, wq->name.name, wq->name.len);
 
 
