@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033Ab2EIOAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:00:05 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:62884 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755165Ab2EIN75 (ORCPT
+	id S1757764Ab2EIOAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:00:16 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:59320 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757182Ab2EIOAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 09:59:57 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Wed, 09 May 2012 09:59:56 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Marc Zyngier <marc.zyngier@arm.com>, Magnus Damm <magnus.damm@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "horms@verge.net.au" <horms@verge.net.au>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "olof@lixom.net" <olof@lixom.net>
-Subject: Re: [PATCH] mach-shmobile: Emma Mobile EV2 SMP prototype code
-In-reply-to: <201205091345.34404.arnd@arndb.de>
-Message-id: <alpine.LFD.2.02.1205090955520.21030@xanadu.home>
-References: <20120509075407.5991.60556.sendpatchset@w520>
- <201205091212.08239.arnd@arndb.de> <4FAA6DE6.3040001@arm.com>
- <201205091345.34404.arnd@arndb.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 9 May 2012 10:00:11 -0400
+From: Arnd Bergmann <arnd.bergmann@linaro.org>
+Organization: Linaro Limited 
+To: Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH v2 01/16] FS: Added demand paging markers to filesystem
+Date: Wed, 9 May 2012 13:59:40 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: "S, Venkatraman" <svenkatr@ti.com>, linux-mmc@vger.kernel.org,
+        cjb@laptop.org, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alex.lemberg@sandisk.com, ilan.smith@sandisk.com, lporzio@micron.com,
+        rmk+kernel@arm.linux.org.uk
+References: <1336054995-22988-1-git-send-email-svenkatr@ti.com> <CANfBPZ_2JeWUu7ti97CVc=ODeEi65ke9EKV6Uje0JHcCM8gYqQ@mail.gmail.com> <20120509003348.GM5091@dastard>
+In-Reply-To: <20120509003348.GM5091@dastard>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205091359.40554.arnd.bergmann@linaro.org>
+X-Provags-ID: V02:K0:WTjuwwrqY6qs5R8yKyMuxkMyusXA+tuxezfXRWnxw8N
+ 0wiTW2aAmdJ4bqh6si49AdphsZ7IfIKFS/uGOc9bb2qyNhmuGb
+ e4dYE9K9aiYJK2pA3FcA6jnUk+jGEipasy1YcesFFMWj8Br63z
+ wlLmvQbXjre7fSlUPczSaOeBjrlcHMjOZD15nASBB/KlAigVVt
+ C59ui+oq7j+fgXaZg6gCWim2Bqe+Bb0DSbzP8f1Ks66qWAVfXd
+ Lyqm9M3lqjK3cVnTVoqL7YPkXmUdJUrzAp+29mzSsjpynBNoqc
+ W9g3vxN+jrZOQltNDhB5NYIhrY+L0+gU1KESHR4fWOO5df6ktl
+ P9meTHs4i4jjp56GwBqRcpmZu8A5bntiv3sb3h7Ml
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 May 2012, Arnd Bergmann wrote:
+On Wednesday 09 May 2012, Dave Chinner wrote:
+> > In low end flash devices, some requests might take too long than normal
+> > due to background device maintenance (i.e flash erase / reclaim procedure)
+> > kicking in in the context of an ongoing write, stalling them by several
+> > orders of magnitude.
+> 
+> And thereby stalling what might be writes critical to operation.
+> Indeed, how does this affect the system when it starts swapping
+> heavily? If you keep stalling writes, the system won't be able to
+> swap and free memory...
 
-> FWIW, I would actually prefer merging the 'struct arm_soc_desc', 'struct
-> arm_soc_smp_init_ops' and 'struct arm_soc_smp_ops' structures into a
-> single 'struct smp_ops' for simplicity.
+The point here is that reads have a consistent latency, e.g. 500
+microseconds for a small access, while writes have a latency
+that can easily become 1000x the read latency (e.g. 500 ms of
+blocking the device) depending on the state of the device. Most
+of the time, writes are fast as well, but sometimes (when garbage
+collection happens in the device), they are extremely slow and
+block everything else.
+This is the only time we ever want to interrupt a write: keeping
+the system running interactively while eventually getting to do
+the writeback. There is a small penalty for interrupting the garbage
+collection, but the device should be able to pick up its work
+at the point where we interrupt it, so we can still make forward
+progress.
 
-You can't easily validate correct usage of __init marked code from the 
-rest if everything is pulled in the same struct.  This is why I asked 
-they be split.
+> > > This really seems like functionality that belongs in an IO
+> > > scheduler so that write starvation can be avoided, not in high-level
+> > > data read paths where we have no clue about anything else going on
+> > > in the IO subsystem....
+> > 
+> > Indeed, the feature is built mostly in the low level device driver and
+> > minor changes in the elevator. Changes above the block layer are only
+> > about setting
+> > attributes and transparent to their operation.
+> 
+> The problem is that the attribute you are setting covers every
+> single data read that is done by all users. If that's what you want
+> to have happen, then why do you even need a new flag at this layer?
+> Just treat every non-REQ_META read request as a demand paged IO and
+> you've got exactly the same behaviour without needing to tag at the
+> higher layer....
 
+My feeling is that we should just treat every (REQ_SYNC | REQ_READ)
+request the same and let them interrupt long-running writes,
+independent of whether it's REQ_META or demand paging.
 
-Nicolas
+	Arnd
