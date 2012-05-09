@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761117Ab2EIUkH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 16:40:07 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42856 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758618Ab2EIUkG convert rfc822-to-8bit (ORCPT
+	id S1761141Ab2EIUkW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 16:40:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58680 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761126Ab2EIUkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 16:40:06 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] mfd: tps65217: Staticise non-exported
- tps65217_update_bis()
-Thread-Topic: [PATCH] mfd: tps65217: Staticise non-exported
- tps65217_update_bis()
-Thread-Index: AQHNLiDd4JPbg1qUpEeQPb6f1rA20JbB6oeQ
-Date: Wed, 9 May 2012 20:39:58 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9B95BF@DBDE01.ent.ti.com>
-References: <1336594685-20954-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1336594685-20954-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 May 2012 16:40:19 -0400
+Date: Wed, 9 May 2012 13:40:15 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        fmhess@users.sourceforge.net, abbotti@mev.co.uk
+Subject: Re: [PATCH v2] staging: comedi: remove __user annotation inside of
+ struct's
+Message-ID: <20120509204015.GA22153@kroah.com>
+References: <201205090936.03921.hartleys@visionengravers.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201205090936.03921.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-Thanks for the patch
-
-Acked-by: AnilKumar Ch <anilkumar@ti.com>
-
-On Thu, May 10, 2012 at 01:48:05, Mark Brown wrote:
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/tps65217.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Wed, May 09, 2012 at 09:36:03AM -0700, H Hartley Sweeten wrote:
+> Remove the __user annotations in the struct definitions in
+> comedi.h.
 > 
-> diff --git a/drivers/mfd/tps65217.c b/drivers/mfd/tps65217.c
-> index f7d854e..1c0fd2b 100644
-> --- a/drivers/mfd/tps65217.c
-> +++ b/drivers/mfd/tps65217.c
-> @@ -96,7 +96,7 @@ EXPORT_SYMBOL_GPL(tps65217_reg_write);
->   * @val: Value to write.
->   * @level: Password protected level
->   */
-> -int tps65217_update_bits(struct tps65217 *tps, unsigned int reg,
-> +static int tps65217_update_bits(struct tps65217 *tps, unsigned int reg,
->  		unsigned int mask, unsigned int val, unsigned int level)
->  {
->  	int ret;
-> -- 
-> 1.7.10
+> These structs are used to pass information from user-space
+> to kernel-space. The copy_from_user and copy_to_user functions
+> are used to transfer the data between the address spaces.
 > 
+> The drivers then use the information internally under the
+> assumption that they are kernel-space objects. Having the
+> __user annotations inside the structs produces a number of
+> sparse warnings of the type:
 > 
+> warning: dereference of noderef expression
+> 
+> According to Grek Kroah-Hartman:
+
+That would be "Greg" :)
 
