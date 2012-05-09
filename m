@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab2EIHWn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 03:22:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63013 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752906Ab2EIHWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 03:22:42 -0400
-Date: Wed, 9 May 2012 09:22:40 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Linus Walleij <linus.walleij@linaro.org>
-cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] pinctrl: (cosmetic) fix two entries in DocBook comments
-Message-ID: <Pine.LNX.4.64.1205090921540.8599@axis700.grange>
+	id S1756786Ab2EIHYX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 03:24:23 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57319 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753025Ab2EIHYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 03:24:22 -0400
+Date: Wed, 9 May 2012 09:24:18 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bojan Smojver <bojan@rexursive.com>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]: In kernel hibernation, suspend to both: draft
+Message-ID: <20120509072418.GC19853@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Bojan Smojver <bojan@rexursive.com>,
+	Linux PM list <linux-pm@vger.kernel.org>,
+	linux-kernel@vger.kernel.org
+References: <1336379825.2097.5.camel@shrek.rexursive.com>
+ <201205072214.13912.rjw@sisk.pl>
+ <1336446956.2097.16.camel@shrek.rexursive.com>
+ <201205082326.42970.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:j/xFUK5ELuQBdvlc3AiXkcuRpyCTpR/zR9dGJHeFhNt
- UArA6386vfzEY+xEIK30v5tPDxHdLpFsLEcAu6nrXpf6ZpN6f6
- tu3BgGh7Pv12lbzf1EnRoQOfLhrY9xK2cPUZnrOjkMrpLzFYB5
- YzP3cv7hdteklD2hMS6HcOi4shlaLKlhxv3Nxe9u/2WtPH1vkI
- /WRMcZysZtKVl4wHwH8PCwxf//xg2L+or8dIki+DfAFJZ5orQC
- HNme5g0nBeMSlfQzbC6HJG/6VtliWuDfQ0pIAIQyNwP5dLpaMV
- pIrNdIt+5dOzpEtTD/Y5YzFimBAeAkrxiGKKU2Tyhb/hqLtBya
- lNnMb9AyD2ok7iwYV4EKIMc7P5WhjdfztYgfznAP+u4vB6PTCn
- E/HibuEL9agMg==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <201205082326.42970.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes a repeated word and a repeated and incomplete line from two
-pinctrl headers.
+On Tue, May 08, 2012 at 11:26:42PM +0200, Rafael J. Wysocki wrote:
+> On Tuesday, May 08, 2012, Bojan Smojver wrote:
+> > On Mon, 2012-05-07 at 22:14 +0200, Rafael J. Wysocki wrote:
+> > > Looks reasonable at first sight.
+> > 
+> > OK, thanks for having a look! I'll check to see whether memory for
+> > hibernation is been released properly and then I may submit this for
+> > real. BTW, the patch actually worked on my ThinkPad T510. The miracles
+> > never stop. :-)
+> > 
+> > Just to be sure - I should prepare a patch against your linux-next
+> > branch, correct?
+> 
+> Yup.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
----
- include/linux/pinctrl/pinconf.h |    1 -
- include/linux/pinctrl/pinmux.h  |    2 +-
- 2 files changed, 1 insertions(+), 2 deletions(-)
+Oh goody, that's what the apples do - suspend to ram and disk. When you
+have the patch ready, you'll have another tester, just send it on my way
+too pls :-).
 
-diff --git a/include/linux/pinctrl/pinconf.h b/include/linux/pinctrl/pinconf.h
-index ec431f0..b6d2011 100644
---- a/include/linux/pinctrl/pinconf.h
-+++ b/include/linux/pinctrl/pinconf.h
-@@ -25,7 +25,6 @@ struct seq_file;
-  * @pin_config_get: get the config of a certain pin, if the requested config
-  *	is not available on this controller this should return -ENOTSUPP
-  *	and if it is available but disabled it should return -EINVAL
-- * @pin_config_get: get the config of a certain pin
-  * @pin_config_set: configure an individual pin
-  * @pin_config_group_get: get configurations for an entire pin group
-  * @pin_config_group_set: configure all pins in a group
-diff --git a/include/linux/pinctrl/pinmux.h b/include/linux/pinctrl/pinmux.h
-index 47e9237..a192f57 100644
---- a/include/linux/pinctrl/pinmux.h
-+++ b/include/linux/pinctrl/pinmux.h
-@@ -23,7 +23,7 @@ struct pinctrl_dev;
- /**
-  * struct pinmux_ops - pinmux operations, to be implemented by pin controller
-  * drivers that support pinmuxing
-- * @request: called by the core to see if a certain pin can be made available
-+ * @request: called by the core to see if a certain pin can be made
-  *	available for muxing. This is called by the core to acquire the pins
-  *	before selecting any actual mux setting across a function. The driver
-  *	is allowed to answer "no" by returning a negative error code
+Thanks.
+
 -- 
-1.7.2.5
-
+Regards/Gruss,
+    Boris.
