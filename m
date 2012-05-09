@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758959Ab2EIXCm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 19:02:42 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40874 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755382Ab2EIXCk (ORCPT
+	id S1758993Ab2EIXFG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 19:05:06 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:15365 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab2EIXFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 19:02:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPXgP11jt5u=wXs9Pe7QksZ25QTKCwNXgTHn+T6JXD6+2NzgBQ@mail.gmail.com>
-References: <1336004953.4240.9.camel@mop>
-	<CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
-	<1336475689.1179.12.camel@mop>
-	<CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
-	<CAPXgP13-XQdn0wMP=coVqS=Eko1vWkOrjOtfq4JQLHFZ3JNbgg@mail.gmail.com>
-	<1336571457.30189.29.camel@joe2Laptop>
-	<CAPXgP11jt5u=wXs9Pe7QksZ25QTKCwNXgTHn+T6JXD6+2NzgBQ@mail.gmail.com>
-Date: Wed, 9 May 2012 16:02:40 -0700
-X-Google-Sender-Auth: 0TeO5lnxf72QtfJVdZJm3wpe99Q
-Message-ID: <CAE9FiQUzsu8CFNLXxUyZnu53YobdNdJfQQmPQd8s8r5rgJpcNg@mail.gmail.com>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
- record buffer
-From: Yinghai Lu <yinghai@kernel.org>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Joe Perches <joe@perches.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Greg Kroah-Hartmann <greg@kroah.com>, Ingo Molnar <mingo@kernel.org>,
+	Wed, 9 May 2012 19:05:04 -0400
+X-AuditID: cbfee61a-b7b97ae000004342-a4-4faaf81e10e2
+Message-id: <4FAAF81E.5040406@samsung.com>
+Date: Thu, 10 May 2012 08:05:02 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: arnd@arndb.de, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH v4 0/2] Extcon: Add MAX8997 extcon driver for MUIC feature
+References: <1336534304-26273-1-git-send-email-cw00.choi@samsung.com>
+ <20120509221810.GA17417@kroah.com>
+In-reply-to: <20120509221810.GA17417@kroah.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 7:37 AM, Kay Sievers <kay@vrfy.org> wrote:
->
->> Changing printk semantics and trying to stabilize
->> printk message content are bad ideas though.
->
-> Again, nobody talks about content of here.
+Hi Greg,
 
-printk_time=1 does not work anymore with this patch on serial console.
+On 05/10/2012 07:18 AM, Greg KH wrote:
 
-but dmesg still have that time printout.
+> On Wed, May 09, 2012 at 12:31:44PM +0900, Chanwoo Choi wrote:
+>> This patchset use Extcon framework in extcon-max8997 driver to control
+>> external connector instead of max8997-muic driver which is implemented
+>> with callback function through platform_data to control external connector.
+>>
+>> So, first patch add MAX8997 extcon driver (drivers/extcon/extcon-max8997.c),
+>> the last patch remove previous MAX8997 MUIC driver(drivers/misc/max8997-muic.c)
+>> which support MUIC feature of Maxim MAX8997 with callback function.
+> 
+> Nice job, all applied now.
+> 
 
-Yinghai
+Thank you for your reply and applied.
+
+Best Regards,
+Chanwoo Choi
