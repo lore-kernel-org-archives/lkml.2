@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759123Ab2EIJaJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 05:30:09 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35004 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758801Ab2EIJaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 05:30:07 -0400
-Date: Wed, 9 May 2012 11:30:02 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: joro@8bytes.org, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, Joerg Roedel <joerg.roedel@amd.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/3] irq_remap: fix the UP build failure
-Message-ID: <20120509093001.GD8585@gmail.com>
-References: <20120508035153.GA30652@gmail.com>
- <1336460934-23592-2-git-send-email-suresh.b.siddha@intel.com>
- <20120508090945.GC27323@gmail.com>
- <1336531035.22618.23.camel@sbsiddha-desk.sc.intel.com>
+	id S1759137Ab2EIJat (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 05:30:49 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:50740 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758882Ab2EIJar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 05:30:47 -0400
+Date: Wed, 9 May 2012 10:41:02 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: linus.walleij@linaro.org
+Cc: broonie@opensource.wolfsonmicro.com, swarren@wwwdotorg.org,
+        sameo@linux.intel.com, linux-embedded@vger.kernel.org,
+        linux-kernel@vger.kernel.org, grinberg@compulab.co.il, olof@lixom.net,
+        arnd@ardb.de, linux-arm-kernel@lists.infradead.org
+Subject: Re: Handling of modular boards
+Message-ID: <20120509084102.GA16228@mail.gnudd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1336531035.22618.23.camel@sbsiddha-desk.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <CACRpkdbyp=BNGn8Eub6vcAgB9CS5PhYcGt2foi8kNxA3oU5Fzg@mail.gmail.com>
+References: <CACRpkdbyp=BNGn8Eub6vcAgB9CS5PhYcGt2foi8kNxA3oU5Fzg@mail.gmail.com>
+  <20120504185850.GO14230@opensource.wolfsonmicro.com>
+  <4FA432E9.9050606@wwwdotorg.org>
+  <20120504204455.GR14230@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
-* Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-
-> On Tue, 2012-05-08 at 11:09 +0200, Ingo Molnar wrote:
-> > * Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-> > 
-> > > Fix the below UP build failure with CONFIG_IRQ_REMAP enabled.
-> > > 
-> > >  drivers/iommu/intel_irq_remapping.c:955:19: error: ‘struct irq_data’ has no member named ‘affinity’
-> > 
-> > hm:
-> > 
-> > > +++ b/drivers/iommu/intel_irq_remapping.c
-> > > +#ifdef CONFIG_SMP
-> > > +#endif
-> > > +#ifdef CONFIG_SMP
-> > > +#endif
-> > > +#ifdef CONFIG_SMP
-> > > +#endif
-> > > +#ifdef CONFIG_SMP
-> > > +#endif
-> > 
-> > Adding this many #ifdefs is a bit sad. Could we not make the UP 
-> > side have the (supposedly zero length!) affinity cpumask 
-> > instead, or so, and make sure that the SMP functions compile to 
-> > something sensible on UP?
-> > 
+>> This is another issue - a similar set of problems does apply to some PCI
+>> type cards where the PCI device is essentially a bridge to a typical
+>> embedded system - though practically speaking it's much less severe.
 > 
-> How about using config_enabled() to clean this up? Something 
-> like the appended?
-> 
-> I first tried config_enabled(SMP) with out closely looking at 
-> the macro definition and didn't work. I had to use 
-> config_enabled(CONFIG_SMP) to really get this working. So in 
-> the appended patch I fixed config_enabled macro to accept 
-> config_enabled(SMP). If this all sounds ok, then I can split 
-> the appended patch into multiple patches.
+> I think Alessandro is working on a board like that right now, so looping
+> in Ale to this discussion to get his attention...
 
-Looks a lot cleaner!
+> I think Alessandro is working on a board like that right now, so looping
+> in Ale to this discussion to get his attention...
 
-Please split out the config_enabled() change into a separate 
-patch and Cc: Linus on the resend.
+Yes, that's it. The vendor of my thing has wrapped everything under
+pci headers, so the "typical embedded system", which actually is a
+demasculated ARM SoC is self-described by PCI (no need for device tree)
 
-I like your idea of allowing config_enabled(SMP) as well, 
-there's no reason to say 'config' twice. It's too easy to get 
-this wrong and AFAICS there's no build error if we are using a 
-non-existent config flag, right?
+A previous poster said:
+>>> b) Doesn't integrate well with hotplug; the DT for the board
+>>> configuration is static at boot. What if a board can be unplugged and
+>>> another plugged in; a reboot or similar would be needed to adjust the
+>>> kernel to this.
 
-Thanks,
+I think you need some enumeration mechanism in this case. Actually, I
+think this will become common in the near future, as you can reprogram
+your FPGA devices while the system runs.
 
-	Ingo
+The issue is real, and I'm involved in a self-description project; it
+allows to use the well-known bus abstraction (with bus controller,
+devices, drivers) to ease handling soft cores that may come and go
+while the system is alive.
+
+Thank you Linus for involving me, I'll now go to read the whole thread
+/alessandro
