@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab2EIGXE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:23:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38909 "EHLO
+	id S1758266Ab2EIGXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:23:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38911 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756174Ab2EIFxP (ORCPT
+	by vger.kernel.org with ESMTP id S1756184Ab2EIFxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:15 -0400
-Message-Id: <20120509055040.496214589@decadent.org.uk>
+Message-Id: <20120509055041.030028768@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:46 +0100
+Date: Wed, 09 May 2012 06:51:50 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jason Wang <jasowang@redhat.com>,
-        Flavio Leitner <fbl@redhat.com>,
+        alan@lxorguk.ukuu.org.uk, Stephane Fillod <fillods@users.sf.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 077/167] [PATCH 17/26] 8139cp: set intr mask after its handler is registered
+Subject: [ 081/167] [PATCH 21/26] net: usb: smsc75xx: fix mtu
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,66 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Stephane Fillod <fillods@users.sf.net>
 
-[ Upstream commit a8c9cb106fe79c28d6b7f1397652cadd228715ff ]
+[ Upstream commit a99ff7d0123b19ecad3b589480b6542716ab6b52 ]
 
-We set intr mask before its handler is registered, this does not work well when
-8139cp is sharing irq line with other devices. As the irq could be enabled by
-the device before 8139cp's hander is registered which may lead unhandled
-irq. Fix this by introducing an helper cp_irq_enable() and call it after
-request_irq().
+Make smsc75xx recalculate the hard_mtu after adjusting the
+hard_header_len.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Reviewed-by: Flavio Leitner <fbl@redhat.com>
+Without this, usbnet adjusts the MTU down to 1492 bytes, and the host is
+unable to receive standard 1500-byte frames from the device.
+
+Inspired by same fix on cdc_eem 78fb72f7936c01d5b426c03a691eca082b03f2b9.
+
+Tested on ARM/Omap3 with EVB-LAN7500-LC.
+
+Signed-off-by: Stephane Fillod <fillods@users.sf.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/realtek/8139cp.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/net/usb/smsc75xx.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
-index aba4f67..8f47907 100644
---- a/drivers/net/ethernet/realtek/8139cp.c
-+++ b/drivers/net/ethernet/realtek/8139cp.c
-@@ -961,6 +961,11 @@ static inline void cp_start_hw (struct cp_private *cp)
- 	cpw8(Cmd, RxOn | TxOn);
+diff --git a/drivers/net/usb/smsc75xx.c b/drivers/net/usb/smsc75xx.c
+index a5b9b12..7bd219b 100644
+--- a/drivers/net/usb/smsc75xx.c
++++ b/drivers/net/usb/smsc75xx.c
+@@ -1050,6 +1050,7 @@ static int smsc75xx_bind(struct usbnet *dev, struct usb_interface *intf)
+ 	dev->net->ethtool_ops = &smsc75xx_ethtool_ops;
+ 	dev->net->flags |= IFF_MULTICAST;
+ 	dev->net->hard_header_len += SMSC75XX_TX_OVERHEAD;
++	dev->hard_mtu = dev->net->mtu + dev->net->hard_header_len;
+ 	return 0;
  }
  
-+static void cp_enable_irq(struct cp_private *cp)
-+{
-+	cpw16_f(IntrMask, cp_intr_mask);
-+}
-+
- static void cp_init_hw (struct cp_private *cp)
- {
- 	struct net_device *dev = cp->dev;
-@@ -1000,8 +1005,6 @@ static void cp_init_hw (struct cp_private *cp)
- 
- 	cpw16(MultiIntr, 0);
- 
--	cpw16_f(IntrMask, cp_intr_mask);
--
- 	cpw8_f(Cfg9346, Cfg9346_Lock);
- }
- 
-@@ -1133,6 +1136,8 @@ static int cp_open (struct net_device *dev)
- 	if (rc)
- 		goto err_out_hw;
- 
-+	cp_enable_irq(cp);
-+
- 	netif_carrier_off(dev);
- 	mii_check_media(&cp->mii_if, netif_msg_link(cp), true);
- 	netif_start_queue(dev);
-@@ -2034,6 +2039,7 @@ static int cp_resume (struct pci_dev *pdev)
- 	/* FIXME: sh*t may happen if the Rx ring buffer is depleted */
- 	cp_init_rings_index (cp);
- 	cp_init_hw (cp);
-+	cp_enable_irq(cp);
- 	netif_start_queue (dev);
- 
- 	spin_lock_irqsave (&cp->lock, flags);
 -- 
 1.7.10
 
