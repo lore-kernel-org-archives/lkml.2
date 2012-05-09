@@ -1,38 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625Ab2EIWSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 18:18:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50045 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932538Ab2EIWSO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 18:18:14 -0400
-Date: Wed, 9 May 2012 15:18:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: arnd@arndb.de, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/2] Extcon: Add MAX8997 extcon driver for MUIC feature
-Message-ID: <20120509221810.GA17417@kroah.com>
-References: <1336534304-26273-1-git-send-email-cw00.choi@samsung.com>
+	id S932637Ab2EIWSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 18:18:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37898 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932538Ab2EIWSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 18:18:45 -0400
+Date: Wed, 9 May 2012 18:18:38 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: torvalds@linux-foundation.org
+cc: linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rolf Eike Beer <eike-kernel@sf-tec.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>
+Subject: [PATCH 4/5] PA-RISC: fix compile errors
+In-Reply-To: <Pine.LNX.4.64.1205091817170.1272@file.rdu.redhat.com>
+Message-ID: <Pine.LNX.4.64.1205091818160.1272@file.rdu.redhat.com>
+References: <Pine.LNX.4.64.1205091758310.1272@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1205091816470.1272@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1205091817170.1272@file.rdu.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336534304-26273-1-git-send-email-cw00.choi@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 12:31:44PM +0900, Chanwoo Choi wrote:
-> This patchset use Extcon framework in extcon-max8997 driver to control
-> external connector instead of max8997-muic driver which is implemented
-> with callback function through platform_data to control external connector.
-> 
-> So, first patch add MAX8997 extcon driver (drivers/extcon/extcon-max8997.c),
-> the last patch remove previous MAX8997 MUIC driver(drivers/misc/max8997-muic.c)
-> which support MUIC feature of Maxim MAX8997 with callback function.
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
 
-Nice job, all applied now.
+Fixes these errors:
 
-greg k-h
+In file included from /home/buildbot/repos/linux/arch/parisc/include/asm/io.h:5:0,
+                 from /home/buildbot/repos/linux/include/linux/io.h:22,
+                 from /home/buildbot/repos/linux/include/linux/pci.h:54,
+                 from /home/buildbot/repos/linux/arch/parisc/kernel/setup.c:35:
+/home/buildbot/repos/linux/arch/parisc/include/asm/pgtable.h:92:6: warning: "PAGE_SHIFT" is not defined [-Wundef]
+/home/buildbot/repos/linux/arch/parisc/include/asm/pgtable.h:92:6: warning: "PAGE_SHIFT" is not defined [-Wundef]
+/home/buildbot/repos/linux/arch/parisc/include/asm/pgtable.h:92:6: warning: "BITS_PER_PTE_ENTRY" is not defined [-Wundef]
+
+Signed-off-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+---
+ arch/parisc/include/asm/pgtable.h |    2 ++
+ 1 file changed, 2 insertions(+)
+
+Index: linux-3.4-rc6-fast/arch/parisc/include/asm/pgtable.h
+===================================================================
+--- linux-3.4-rc6-fast.orig/arch/parisc/include/asm/pgtable.h	2012-05-09 04:34:41.000000000 +0200
++++ linux-3.4-rc6-fast/arch/parisc/include/asm/pgtable.h	2012-05-09 04:35:16.000000000 +0200
+@@ -44,6 +44,8 @@ struct vm_area_struct;
+ 
+ #endif /* !__ASSEMBLY__ */
+ 
++#include <asm/page.h>
++
+ #define pte_ERROR(e) \
+ 	printk("%s:%d: bad pte %08lx.\n", __FILE__, __LINE__, pte_val(e))
+ #define pmd_ERROR(e) \
+
