@@ -1,83 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759282Ab2EIVVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 17:21:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51186 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759161Ab2EIVV2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 17:21:28 -0400
-Date: Thu, 10 May 2012 00:21:17 +0300
-From: Ido Yariv <ido@wizery.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "Shai Fultheim (Shai@ScaleMP.com)" <Shai@ScaleMP.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Ravikiran Thirumalai <kiran.thirumalai@gmail.com>
-Subject: Re: [PATCH v2 2/2] vsmp: Ignore IOAPIC IRQ affinity if possible
-Message-ID: <20120509212117.GA32594@NoteStation.guest.lab126.com>
-References: <1333715987-26059-2-git-send-email-ido@wizery.com>
- <1334561976-13965-1-git-send-email-ido@wizery.com>
- <1334561976-13965-2-git-send-email-ido@wizery.com>
- <20120507131943.GI23858@gmail.com>
- <9B14D1490DDECA4E974F6B9FC9EBAB317D0A62A08B@VMBX108.ihostexchange.net>
- <20120509091827.GB8585@gmail.com>
+	id S1759237Ab2EIV0g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 17:26:36 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:34505 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751720Ab2EIV0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 17:26:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Colin Cross <ccross@android.com>
+Subject: Re: [PATCHv4 4/4] cpuidle: coupled: add parallel barrier function
+Date: Wed, 9 May 2012 23:31:24 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@lists.linux-foundation.org, Kevin Hilman <khilman@ti.com>,
+        Len Brown <len.brown@intel.com>, Trinabh Gupta <g.trinabh@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+References: <1336438662-10484-1-git-send-email-ccross@android.com> <1336438662-10484-5-git-send-email-ccross@android.com>
+In-Reply-To: <1336438662-10484-5-git-send-email-ccross@android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120509091827.GB8585@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205092331.24487.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
-
-On Wed, May 09, 2012 at 11:18:27AM +0200, Ingo Molnar wrote:
+On Tuesday, May 08, 2012, Colin Cross wrote:
+> Adds cpuidle_coupled_parallel_barrier, which can be used by coupled
+> cpuidle state enter functions to handle resynchronization after
+> determining if any cpu needs to abort.  The normal use case will
+> be:
 > 
-> * Shai Fultheim (Shai@ScaleMP.com) <Shai@ScaleMP.com> wrote:
+> static bool abort_flag;
+> static atomic_t abort_barrier;
 > 
-> > Ingo Molnar <mingo.kernel.org@gmail.com> wrote:
-> > > * Ido Yariv <ido@wizery.com> wrote:
-> > 
-> > > > @@ -51,6 +60,7 @@ void __init default_setup_apic_routing(void)
-> > > >  	if (is_vsmp_box()) {
-> > > >  		/* need to update phys_pkg_id */
-> > > >  		apic->phys_pkg_id = apicid_phys_pkg_id;
-> > > > +		apic->vector_allocation_domain =
-> > > fill_vector_allocation_domain;
-> > > >  	}
-> > > >  }
-> > > 
-> > > This is_vsmp_box() special case should really move into its own
-> > > apic handler.
-> > > 
-> > > Thanks,
-> > 
-> > Ingo,
-> > 
-> > vSMP Foundation virtualize multiple systems as one.  The Guest 
-> > OS is using the underlying hardware APIC driver, and therefore 
-> > we must allow the various APIC drivers to kick in.  When using 
-> > vSMP Foundation APIC driver is selected by the kernel based on 
-> > the hardware that is being virtualized, and that can be APIC, 
-> > X2APIC phys, X2APIC cluster, summit, etc.
-> > 
-> > If we would to implement an APIC handler, we would not be able 
-> > to use the native hardware APIC driver (unless we do an ugly 
-> > hack).
+> int arch_cpuidle_enter(struct cpuidle_device *dev, ...)
+> {
+> 	if (arch_turn_off_irq_controller()) {
+> 	   	/* returns an error if an irq is pending and would be lost
+> 		   if idle continued and turned off power */
+> 		abort_flag = true;
+> 	}
 > 
-> If you need a callback on that level then there's a cleaner 
-> mechanism than open-coding vsmp handlers into generic code:
+> 	cpuidle_coupled_parallel_barrier(dev, &abort_barrier);
+>
+> 	if (abort_flag) {
+> 	   	/* One of the cpus didn't turn off it's irq controller */
+> 	   	arch_turn_on_irq_controller();
+> 		return -EINTR;
+> 	}
 > 
->  - create a new platform callback in x86_platform_ops
->  - call it from apic_64.c if set
->  - fill in the vSMP specific handler from the vSMP init code
+> 	/* continue with idle */
+> 	...
+> }
+> 
+> This will cause all cpus to abort idle together if one of them needs
+> to abort.
+> 
+> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Reviewed-by: Kevin Hilman <khilman@ti.com>
+> Tested-by: Kevin Hilman <khilman@ti.com>
+> Signed-off-by: Colin Cross <ccross@android.com>
+> ---
+>  drivers/cpuidle/coupled.c |   37 +++++++++++++++++++++++++++++++++++++
+>  include/linux/cpuidle.h   |    4 ++++
+>  2 files changed, 41 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+> index 93101fb..3e65de1 100644
+> --- a/drivers/cpuidle/coupled.c
+> +++ b/drivers/cpuidle/coupled.c
+> @@ -130,6 +130,43 @@ struct cpuidle_coupled {
+>  static cpumask_t cpuidle_coupled_poked_mask;
+>  
+>  /**
+> + * cpuidle_coupled_parallel_barrier - synchronize all online coupled cpus
+> + * @dev: cpuidle_device of the calling cpu
+> + * @a:   atomic variable to hold the barrier
+> + *
+> + * No caller to this function will return from this function until all online
+> + * cpus in the same coupled group have called this function.  Once any caller
+> + * has returned from this function, the barrier is immediately available for
+> + * reuse.
+> + *
+> + * The atomic variable a must be initialized to 0 before any cpu calls
+> + * this function, will be reset to 0 before any cpu returns from this function.
+> + *
+> + * Must only be called from within a coupled idle state handler
+> + * (state.enter when state.flags has CPUIDLE_FLAG_COUPLED set).
+> + *
+> + * Provides full smp barrier semantics before and after calling.
+> + */
+> +void cpuidle_coupled_parallel_barrier(struct cpuidle_device *dev, atomic_t *a)
+> +{
+> +	int n = dev->coupled->online_count;
+> +
+> +	smp_mb__before_atomic_inc();
+> +	atomic_inc(a);
+> +
+> +	while (atomic_read(a) < n)
+> +		cpu_relax();
+> +
+> +	if (atomic_inc_return(a) == n * 2) {
+> +		atomic_set(a, 0);
+> +		return;
+> +	}
+> +
+> +	while (atomic_read(a) > n)
+> +		cpu_relax();
+> +}
 
-Sounds good.
+Well, this looks like "wait until all CPUs execute this code".  Don't we have
+anything like this already somewhere?
 
-We'll look into it and post an alternative patch to this one.
+> +
+> +/**
+>   * cpuidle_state_is_coupled - check if a state is part of a coupled set
+>   * @dev: struct cpuidle_device for the current cpu
+>   * @drv: struct cpuidle_driver for the platform
+> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> index 6038448..5ab7183 100644
+> --- a/include/linux/cpuidle.h
+> +++ b/include/linux/cpuidle.h
+> @@ -183,6 +183,10 @@ static inline int cpuidle_wrap_enter(struct cpuidle_device *dev,
+>  
+>  #endif
+>  
+> +#ifdef CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED
+> +void cpuidle_coupled_parallel_barrier(struct cpuidle_device *dev, atomic_t *a);
+> +#endif
 
-Thanks,
-Ido.
+Why exactly is the extra Kconfig option necessary?
+
+> +
+>  /******************************
+>   * CPUIDLE GOVERNOR INTERFACE *
+>   ******************************/
+
+Rafael
