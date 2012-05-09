@@ -1,94 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757145Ab2EIOpN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:45:13 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:51835 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753082Ab2EIOpL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:45:11 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1758073Ab2EIOp4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:45:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37407 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757939Ab2EIOpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 10:45:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="141891835"
+Date: Wed, 9 May 2012 16:55:23 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dtor@mail.ru>
+Subject: Re: [PATCH] mfd/stmpe: allow for const keyboard data
+Message-ID: <20120509145523.GK1794@sortiz-mobl>
+References: <1335184124-9105-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] pch_gbe: Adding read memory barriers
-Date: Wed, 9 May 2012 15:44:47 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F602CD848A@saturn3.aculab.com>
-In-Reply-To: <CAL2JzuxirjAnmbcV+R=MJFAi1+ayrRnM6i0Dz5poqMuG7Cxwxg@mail.gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] pch_gbe: Adding read memory barriers
-Thread-Index: Ac0t6dnBBIjcNgVNSzGpNrTmSx0OAQAA+KfQ
-References: <4FA822C4.60809@gmail.com><AE90C24D6B3A694183C094C60CF0A2F602CD83CB@saturn3.aculab.com><1336569510.8274.360.camel@deadeye> <CAL2JzuxirjAnmbcV+R=MJFAi1+ayrRnM6i0Dz5poqMuG7Cxwxg@mail.gmail.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Erwan Velu" <erwanaliasr1@gmail.com>,
-        "Ben Hutchings" <bhutchings@solarflare.com>
-Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tshimizu818@gmail.com>
-X-OriginalArrivalTime: 09 May 2012 14:44:48.0683 (UTC) FILETIME=[489767B0:01CD2DF2]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335184124-9105-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> So I've been reading how does others drivers are working regarding
-this type of message.
-> While reading many drivers, I found that many does rmb() calls at this
-points.
-> As I'm not a linux kernel expert, I did mimic them to the result
-> and it was good since the errors disappeared.
+Hi Linus,
 
-> So do you mean the patch is wrong or shall I rework only the comments
-?
+On Mon, Apr 23, 2012 at 02:28:44PM +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Since it's not like we will re-arrange the keys at run-time, it
+> seems proper to allow the keymap data to be const. This solves
+> a compilation warning in ux500.
+> 
+> Cc: Dmitry Torokhov <dtor@mail.ru>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  include/linux/mfd/stmpe.h |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+Patch applied, thanks.
 
-The problem is that barriers are not understood at all well
-by most driver writers - so a lot of code is sub-optimal.
+Cheers,
+Samuel.
 
-It isn't helped by the readability of the cpu documentation,
-never mind some old docs that described something that an
-engineer thought they might want to allow - rather than
-describing what any cpus actually did/do.
-
-For x86 cpus (amd and intel at least) reads and writes to
-uncached memory and io are guaranteed to happen in instruction
-order. For other cpus (sparc and ppc) such reads can
-overtake writes - requiring something to force the write to
-complete (eg a synchronising instruction, or maybe a readeback).
-
-One problem is that the barrier instructions are generally
-slow - so you don't want to use them where unnecessary,
-however whether you need them is somewhat hardware specific
-and the typical OS lists of barriers doesn't cover all the
-cases - even for things that are actually compile time knowable.
-Eg: what you need between a write to 'dma coherent' memory
-and a write to a control register depends on whether 'dma
-coherency' is implemented by disabling the cache.
-
-For SMP there may be additional synchronisation, especially
-for cached data, but for most drivers that is handled by
-mutex/lock operations.
-
-The other, and separate, issue is making sure that the compiler
-itself doesn't reorder of optimise away memory cycles.
-By far the best way is to mark the data (not the pointer to the
-data) 'volatile', this forces the compiler to generate object
-code for every variable reference in the source, and in the right
-order.
-Sometimes that is inappropiate, gcc's asm volatile (:::"memory")
-tells the compiler that this asm statement might modify all
-of memory (even though there are actually no instructions!).
-This forces it to avoid having anything in a register that is
-a copy of something in memory - thus enforcing the order of
-memory accesses.
-It can also be used to reduce register pressure within the
-compiler.
-
-In your case I suspect that the compiler has re-ordered the
-reads - adding almost anything between them will change the
-order.
-
-	David
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
