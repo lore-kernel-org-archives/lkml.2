@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759035Ab2EIJYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 05:24:39 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53315 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869Ab2EIJYh (ORCPT
+	id S1759068Ab2EIJZn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 05:25:43 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50128 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753869Ab2EIJZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 05:24:37 -0400
-From: =?UTF-8?q?Steffen=20K=C3=BChn?= <sk@ammonit.com>
-To: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Steffen=20K=C3=BChn?= <sk@ammonit.com>
-Subject: [PATCH] mmc: atmel-mci: fix deadlock
-Date: Wed,  9 May 2012 11:23:36 +0200
-Message-Id: <1336555416-14640-1-git-send-email-sk@ammonit.com>
-X-Mailer: git-send-email 1.7.2.5
-X-OriginalArrivalTime: 09 May 2012 09:24:23.0295 (UTC) FILETIME=[855E00F0:01CD2DC5]
-X-Provags-ID: V02:K0:q75AUeCfGhmrIoaU5a/21ikjnYiBvTJK10PZWbXjo8Q
- kbTkdEUSHq/kCBkWtEaOboQ+jkt2M931TgUiBgAl8CcEm+ZixL
- 5ecOrzGog/snztah1i35EC36nSyWCUHTZIME1NA5gPyc0r7rRw
- rj06rQJN6NxhH+DhiKd31d7++ZNf2DQ3Ngw+6IZFpNduJS1XyT
- hbXgQS0SU9B2rRuOPfHUtIBU+hEQshSr7JOUvU4qJPr+APyMnR
- cRq3ANJsh/PVULnqghYdY9ah0paH9UFkQBR70L2sKb7rDOvXoy
- nPHmi87ogawGKcDq/xdpEG7dPYkvpusMK6IOWuVlFN1RuYQ3b8
- jq9yZPaiYNiCyAMcbidlZlGmSOkTn1H+6ZkkhPrbIefkN5Fezh
- ua2qNtY6DFnQg==
+	Wed, 9 May 2012 05:25:42 -0400
+Date: Wed, 9 May 2012 11:25:36 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: linux-next oops in __lock_acquire for process_one_work
+Message-ID: <20120509092536.GC8585@gmail.com>
+References: <alpine.LSU.2.00.1205070951170.1544@eggly.anvils>
+ <20120507175743.GC19417@google.com>
+ <1336482202.16236.29.camel@twins>
+ <20120508165819.GB10687@google.com>
+ <alpine.LSU.2.00.1205081106160.4071@eggly.anvils>
+ <1336516260.8226.61.camel@twins>
+ <alpine.LSU.2.00.1205081553250.4497@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1205081553250.4497@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-solves a deadlock problem which appears when a mmc card is
-removing and a process is reading from the card at the same time.
----
- drivers/mmc/host/atmel-mci.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index e94476b..effdc36 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -1499,8 +1499,10 @@ static void atmci_tasklet_func(unsigned long priv)
-			}
+* Hugh Dickins <hughd@google.com> wrote:
 
-			if (!atmci_test_and_clear_pending(host,
--						EVENT_XFER_COMPLETE))
-+						EVENT_XFER_COMPLETE)) {
-+				host->stop_transfer(host);
-				break;
-+            }
+> On Wed, 9 May 2012, Peter Zijlstra wrote:
+> > On Tue, 2012-05-08 at 11:11 -0700, Hugh Dickins wrote:
+> > > Please send me the version of patch you'd like to put in
+> > > (lest I make it up myself and you don't like the result).
+> > 
+> > something like so?
+> 
+> More like the one below: I'm not alone in preferring a comma 
+> between args!
 
-			atmci_set_completed(host, EVENT_XFER_COMPLETE);
-			prev_state = state = STATE_DATA_BUSY;
---
-1.7.2.5
+Silly compilers!
+
+> And you're not a believer in checkpatch.pl, I see: I've removed trailing
+> spaces; but left the 85-col line, that's not a fight I'll have with you.
+
+I suspect we could break up the prototype like this:
+
+static inline void
+lockdep_copy_map(struct lockdep_map *to, struct lockdep_map *from)
+
+> I'll set it going when I get home later - thanks.
+
+Do we still need an explanation about why it's needed and why it 
+makes a difference?
+
+Thanks,
+
+	Ingo
