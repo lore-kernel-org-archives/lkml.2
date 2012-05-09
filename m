@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757959Ab2EIGGk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:06:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38933 "EHLO
+	id S1757926Ab2EIGGh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:06:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39020 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756241Ab2EIFxg (ORCPT
+	by vger.kernel.org with ESMTP id S1756529Ab2EIFxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:36 -0400
-Message-Id: <20120509055040.099618905@decadent.org.uk>
+Message-Id: <20120509055044.108912893@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:43 +0100
+Date: Wed, 09 May 2012 06:52:13 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-        Vijay Subramanian <subramanian.vijay@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 074/167] [PATCH 14/26] tcp: fix tcp_trim_head()
+        alan@lxorguk.ukuu.org.uk, Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 104/167] [PATCH] hwmon: (fam15h_power) Fix pci_device_id array
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,57 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Guenter Roeck <guenter.roeck@ericsson.com>
 
-[ Upstream commit 4fa48bf3c75069d636fc8830743c929a062e80dc ]
+commit c3e40a9972428d6e2d8e287ed0233a57a218c30f upstream.
 
-commit f07d960df3 (tcp: avoid frag allocation for small frames)
-breaked assumption in tcp stack that skb is either linear (skb->data_len
-== 0), or fully fragged (skb->data_len == skb->len)
+pci_match_id() takes an *array* of IDs which must be properly zero-
+terminated.
 
-tcp_trim_head() made this assumption, we must fix it.
-
-Thanks to Vijay for providing a very detailed explanation.
-
-Reported-by: Vijay Subramanian <subramanian.vijay@gmail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/tcp_output.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/hwmon/fam15h_power.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 097e0c7..7413437 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1093,6 +1093,13 @@ static void __pskb_trim_head(struct sk_buff *skb, int len)
+diff --git a/drivers/hwmon/fam15h_power.c b/drivers/hwmon/fam15h_power.c
+index 37a8fc9..e8e18ca 100644
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -128,17 +128,20 @@ static bool __devinit fam15h_power_is_internal_node0(struct pci_dev *f4)
+  * counter saturations resulting in bogus power readings.
+  * We correct this value ourselves to cope with older BIOSes.
+  */
++static DEFINE_PCI_DEVICE_TABLE(affected_device) = {
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
++	{ 0 }
++};
++
+ static void __devinit tweak_runavg_range(struct pci_dev *pdev)
  {
- 	int i, k, eat;
+ 	u32 val;
+-	const struct pci_device_id affected_device = {
+-		PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) };
  
-+	eat = min_t(int, len, skb_headlen(skb));
-+	if (eat) {
-+		__skb_pull(skb, eat);
-+		len -= eat;
-+		if (!len)
-+			return;
-+	}
- 	eat = len;
- 	k = 0;
- 	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
-@@ -1124,11 +1131,7 @@ int tcp_trim_head(struct sock *sk, struct sk_buff *skb, u32 len)
- 	if (skb_cloned(skb) && pskb_expand_head(skb, 0, 0, GFP_ATOMIC))
- 		return -ENOMEM;
+ 	/*
+ 	 * let this quirk apply only to the current version of the
+ 	 * northbridge, since future versions may change the behavior
+ 	 */
+-	if (!pci_match_id(&affected_device, pdev))
++	if (!pci_match_id(affected_device, pdev))
+ 		return;
  
--	/* If len == headlen, we avoid __skb_pull to preserve alignment. */
--	if (unlikely(len < skb_headlen(skb)))
--		__skb_pull(skb, len);
--	else
--		__pskb_trim_head(skb, len - skb_headlen(skb));
-+	__pskb_trim_head(skb, len);
- 
- 	TCP_SKB_CB(skb)->seq += len;
- 	skb->ip_summed = CHECKSUM_PARTIAL;
+ 	pci_bus_read_config_dword(pdev->bus,
 -- 
 1.7.10
 
