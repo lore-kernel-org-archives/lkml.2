@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759010Ab2EIJNT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 05:13:19 -0400
-Received: from dresden.studentenwerk.mhn.de ([141.84.225.229]:33030 "EHLO
-	email.studentenwerk.mhn.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758929Ab2EIJNS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 05:13:18 -0400
-X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 May 2012 05:13:18 EDT
-From: Wolfgang Walter <wolfgang.walter@stwm.de>
-Organization: Studentenwerk =?iso-8859-1?q?M=FCnchen?=
-To: Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: 3.3.x: e1000 and ixgbe hang
-Date: Wed, 9 May 2012 11:07:11 +0200
-User-Agent: KMail/1.9.9
-References: <201205082330.12831.wolfgang.walter@stwm.de> <20120508215645.GA22200@kroah.com>
-In-Reply-To: <20120508215645.GA22200@kroah.com>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1759038Ab2EIJNd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 05:13:33 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:54864 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759020Ab2EIJNb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 05:13:31 -0400
+Message-ID: <4FAA3513.1060906@linux.vnet.ibm.com>
+Date: Wed, 09 May 2012 14:42:51 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201205091107.11820.wolfgang.walter@stwm.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: mingo@kernel.org, pjt@google.com, paul@paulmenage.org,
+        akpm@linux-foundation.org, rjw@sisk.pl, nacc@us.ibm.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        seto.hidetoshi@jp.fujitsu.com, rob@landley.net, tj@kernel.org,
+        mschmidt@redhat.com, berrange@redhat.com, nikunj@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2 0/7] CPU hotplug, cpusets: Fix issues with cpusets
+ handling upon CPU hotplug
+References: <20120504191535.4603.83236.stgit@srivatsabhat> <1336159496.6509.51.camel@twins> <4FA434E9.6000305@linux.vnet.ibm.com> <1336162456.6509.63.camel@twins>
+In-Reply-To: <1336162456.6509.63.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12050909-2674-0000-0000-00000455E191
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 8. Mai 2012 schrieben Sie:
-> On Tue, May 08, 2012 at 11:30:12PM +0200, Wolfgang Walter wrote:
-> > I would be very glad if these two patches will make it into the next
-> > stable 3.3:
-> >
-> > http://article.gmane.org/gmane.linux.drivers.e1000.devel/9948
-> >
-> > Dave Miller said that he will take care of it:
-> >
-> > http://article.gmane.org/gmane.linux.drivers.e1000.devel/9993
->
-> If he said he would take care of it, why are you posting it here again?
+On 05/05/2012 01:44 AM, Peter Zijlstra wrote:
 
-a) Because it didn't make it into 3.3.5. The fix (for 3.3.x) is known since 
-2012-04-20 and I find it appropriate to remind of it after more than two 
-weeks.
+> On Sat, 2012-05-05 at 01:28 +0530, Srivatsa S. Bhat wrote:
+>> On 05/05/2012 12:54 AM, Peter Zijlstra wrote:
+>>
+>>>
+>>>>   Documentation/cgroups/cpusets.txt |   43 +++--
+>>>>  include/linux/cpuset.h            |    4 
+>>>>  kernel/cpuset.c                   |  317 ++++++++++++++++++++++++++++---------
+>>>>  kernel/sched/core.c               |    4 
+>>>>  4 files changed, 274 insertions(+), 94 deletions(-)
+>>>
+>>> Bah, I really hate this complexity you've created for a problem that
+>>> really doesn't exist.
+>>>
+>>
+>>
+>> Doesn't exist? Well, I believe we do have a problem and a serious one
+>> at that too!
+> 
+>>> So why not fix the active mask crap?
+>>
+>>
+>> Because I doubt if that is the right way to approach this problem.
+>>
+>> An updated cpu_active_mask not being the necessary and sufficient condition
+>> for all scheduler related activities, is a different problem altogether, IMHO.
+> 
+> It was the sole cause the previous, simple, patch didn't work. So fixing
+> that seems like important.
+> 
 
-b) To document the bug (which makes 3.3. i.e. unusable for us) and that there 
-are fixes in the stable mailinglist and not only in e1000-devel (especially 
-as it isn't a e1000 specific problem).
 
-c) I met 2 colleague yesterday which had the same problems but didn't know 
-there was a fix.
+Some thoughts on this..
 
-c) Dave Miller is a busy man.
+First of all, why would it be reasonable to expect the scheduler to work
+flawlessly with half its infrastructure (sched domains for example) in a
+stale/inconsistent/outdated state?  
 
-It's unclear how one should use new kernels if it is difficult to find known 
-fixes.
+IOW, I am finding it difficult to understand why you would consider it a bug if
+the scheduler falters when cpu_active mask is up-to-date but the sched domains
+are old/outdated.. Is it not expected? And hence, wouldn't it make sense to keep
+the sched domains up-to-date so that the scheduler functions properly?
+
+Also, to "fix" that, sprinkling checks for active cpu, wherever the sched domain
+tree traversal is done, like:
+
+	if (!cpu_active(cpu)) 
+		/* Go out */
+
+	for_each_domain(cpu, sd) {
+	}
+
+looks quite ugly/hacky to me, because, if the sched domains were up-to-date
+(as they should be), then the domain traversal would automatically become a
+nop since the sd pointer would have been NULL... Thus, there wouldn't be a
+need for such checks.
+
+Moreover, those checks for active cpu, if added, could also end up in hot
+paths, such as schedule()..
 
 Regards,
--- 
-Wolfgang Walter
-Studentenwerk München
-Anstalt des öffentlichen Rechts
+Srivatsa S. Bhat
+
