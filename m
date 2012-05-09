@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760255Ab2EIQ3S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 12:29:18 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:53038 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758285Ab2EIQ2o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 12:28:44 -0400
+	id S1760241Ab2EIQaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 12:30:19 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35704 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755761Ab2EIQaR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 12:30:17 -0400
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-Date: Wed, 9 May 2012 09:28:43 -0700
-Message-ID: <CAOesGMheimXMjB=-+9WNXc8Wu2nStfF3=6C3tMENTJybhn96ng@mail.gmail.com>
-Subject: [GIT PULL] ARM: SoC fixes for 3.4
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1336580669.16079.68.camel@marge.simpson.net>
+References: <CABS55+A_ZbJT4Tz-XfacbURpgfx2WuXqvPnn1_XkAfhxJMP6eA@mail.gmail.com>
+ <1336580669.16079.68.camel@marge.simpson.net>
+From: Jason Garrett-Glaser <jason@x264.com>
+Date: Wed, 9 May 2012 09:29:35 -0700
+X-Google-Sender-Auth: JBQ3ANYsNfLEmqmNhgPZE3uCxoQ
+Message-ID: <CABS55+Ayu9nM2QEnb1154f115Q4GmrKzaY=VKBoVwEA17=A8Jg@mail.gmail.com>
+Subject: Re: Scheduler still seems awful with x264, worse with patches
+To: Mike Galbraith <efault@gmx.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d48b97b403d23f6df0b990cee652bdf9a52337a3:
+On Wed, May 9, 2012 at 9:24 AM, Mike Galbraith <efault@gmx.de> wrote:
+> On Wed, 2012-05-09 at 09:00 -0700, Jason Garrett-Glaser wrote:
+>> Many months ago, the topic of CFS's inefficiencies with x264 came up
+>> and some improvements were made, but BFS and Windows still stayed a
+>> little bit in the lead.  This seemed to be because of a mix of two
+>> issues.  Firstly, a combination of relatively short-lived jobs (x264
+>> uses a thread pool, so the actual threads are long-lived).  Secondly,
+>> in frame threads, heavy dependencies between threads, benefiting
+>> greatly from a dumb scheduler.  Thirdly, in sliced threads -- the
+>> focus of this post -- the best scheduling approach is to simply spread
+>> them throughout the cores and do nothing, so again, a dumb scheduler
+>> will do the right thing.
+>
+> I took x264 for a quick test drive a short while ago, and it looks like
+> we slipped a bit.  I didn't have time to futz with it much, but did find
+> that SCHED_IDLE kicked SCHED_OTHER's butt.  x264 really really wants RR.
 
-  Linux 3.4-rc6 (2012-05-06 15:07:32 -0700)
+Do remember to separate frame and slice threading in tests; they work
+totally differently and, while you might be able to kill two birds
+with one stone sometimes, some particular tuning might not affect both
+in the same way.
 
-are available in the git repository at:
+Slice-threading is probably harder in general because the threads last
+far less time, and that seems to be the thing that angers CFS.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git
-tags/fixes-for-linus
+Note also that my patch slice-threads the lookahead, even if the main
+encode is frame-threaded.  This is because for various reasons
+frame-threading the lookahead may be harder and more difficult, so I
+decided to do it this way (and it worked on Windows, so...).  Note
+also that when using automatic lookahead threads (default in that
+patch), x264 currently does:
 
-for you to fetch changes up to e396dbd4ed2ccfd362261b05027bbdccec192b14:
+number of lookahead threads = MIN( sliced threads ? threads : threads / 6, 16 );
 
-  Merge tag 'omap-fixes-for-v3.4-rc6-take-2' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap into
-fixes (2012-05-09 09:03:34 -0700)
-
-----------------------------------------------------------------
-
-ARM: SoC fixes for 3.4-rc
-
-Things have slowed down a lot for us, but we have five more fixes for
-omap and kirkwood below. Three are for boards setup issues, two are
-SoC-level fixes.
-
-----------------------------------------------------------------
-Archit Taneja (1):
-      ARM: OMAP: Revert "ARM: OMAP: ctrl: Fix CONTROL_DSIPHY register fields"
-
-Ben Hutchings (1):
-      ARM: orion5x: Fix GPIO enable bits for MPP9
-
-Enrico Butera (1):
-      ARM: OMAP: igep0020: fix smsc911x dummy regulator id
-
-Ian Campbell (1):
-      ARM: kirkwood: add missing kexec.h include
-
-Janusz Krzysztofik (1):
-      ARM: OMAP1: Amstrad Delta: Fix wrong IRQ base in FIQ handler
-
-Olof Johansson (2):
-      Merge branch 'kirkwood_fixes_for_v3.4' of
-git://git.infradead.org/users/jcooper/linux-kirkwood into fixes
-      Merge tag 'omap-fixes-for-v3.4-rc6-take-2' of
-git://git.kernel.org/.../tmlind/linux-omap into fixes
-
- arch/arm/mach-kirkwood/board-dt.c                            | 1 +
- arch/arm/mach-omap1/ams-delta-fiq.c                          | 2 +-
- arch/arm/mach-omap2/board-igep0020.c                         | 2 +-
- arch/arm/mach-omap2/include/mach/ctrl_module_pad_core_44xx.h | 8 ++++----
- arch/arm/mach-orion5x/mpp.h                                  | 4 ++--
- 5 files changed, 9 insertions(+), 8 deletions(-)
+Jason
