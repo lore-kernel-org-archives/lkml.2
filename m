@@ -1,37 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759635Ab2EIOaS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:30:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41012 "EHLO
+	id S932138Ab2EIObF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:31:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41037 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759581Ab2EIOaN (ORCPT
+	with ESMTP id S1758108Ab2EIObC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:30:13 -0400
-Date: Wed, 9 May 2012 07:29:02 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-r74n3n8hhuc2ynbrnp3vt954@git.kernel.org>
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        cmetcalf@tilera.com, tony.luck@intel.com, sivanich@sgi.com,
-        akpm@linux-foundation.org, ralf@linux-mips.org, greg.pearson@hp.com,
-        ink@jurassic.park.msu.ru, tglx@linutronix.de,
-        kamezawa.hiroyu@jp.fujitsu.com, rth@twiddle.net,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, anton@samba.org,
-        paulus@samba.org, lethal@linux-sh.org, davem@davemloft.net,
-        dhowells@redhat.com, benh@kernel.crashing.org, fenghua.yu@intel.com,
-        mattst88@gmail.com
-Reply-To: mingo@kernel.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, cmetcalf@tilera.com,
-        tony.luck@intel.com, sivanich@sgi.com, akpm@linux-foundation.org,
-        ralf@linux-mips.org, greg.pearson@hp.com, ink@jurassic.park.msu.ru,
-        tglx@linutronix.de, rth@twiddle.net, kamezawa.hiroyu@jp.fujitsu.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        anton@samba.org, lethal@linux-sh.org, davem@davemloft.net,
-        benh@kernel.crashing.org, dhowells@redhat.com, mattst88@gmail.com,
-        fenghua.yu@intel.com
+	Wed, 9 May 2012 10:31:02 -0400
+Date: Wed, 9 May 2012 07:30:45 -0700
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-fd0d000b2c34aa43d4e92dcf0dfaeda7e123008a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
+In-Reply-To: <1333390758-10893-3-git-send-email-robert.richter@amd.com>
+References: <1333390758-10893-3-git-send-email-robert.richter@amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/numa:
-  Rewrite the CONFIG_NUMA sched domain support
-Git-Commit-ID: cb83b629bae0327cf9f44f096adc38d150ceb913
+Subject: [tip:perf/core] perf:
+  Pass last sampling period to perf_sample_data_init()
+Git-Commit-ID: fd0d000b2c34aa43d4e92dcf0dfaeda7e123008a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,735 +28,391 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 09 May 2012 07:29:12 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 09 May 2012 07:30:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cb83b629bae0327cf9f44f096adc38d150ceb913
-Gitweb:     http://git.kernel.org/tip/cb83b629bae0327cf9f44f096adc38d150ceb913
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 17 Apr 2012 15:49:36 +0200
+Commit-ID:  fd0d000b2c34aa43d4e92dcf0dfaeda7e123008a
+Gitweb:     http://git.kernel.org/tip/fd0d000b2c34aa43d4e92dcf0dfaeda7e123008a
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Mon, 2 Apr 2012 20:19:08 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 May 2012 15:00:55 +0200
+CommitDate: Wed, 9 May 2012 15:23:12 +0200
 
-sched/numa: Rewrite the CONFIG_NUMA sched domain support
+perf: Pass last sampling period to perf_sample_data_init()
 
-The current code groups up to 16 nodes in a level and then puts an
-ALLNODES domain spanning the entire tree on top of that. This doesn't
-reflect the numa topology and esp for the smaller not-fully-connected
-machines out there today this might make a difference.
+We always need to pass the last sample period to
+perf_sample_data_init(), otherwise the event distribution will be
+wrong. Thus, modifiyng the function interface with the required period
+as argument. So basically a pattern like this:
 
-Therefore, build a proper numa topology based on node_distance().
+        perf_sample_data_init(&data, ~0ULL);
+        data.period = event->hw.last_period;
 
-Since there's no fixed numa layers anymore, the static SD_NODE_INIT
-and SD_ALLNODES_INIT aren't usable anymore, the new code tries to
-construct something similar and scales some values either on the
-number of cpus in the domain and/or the node_distance() ratio.
+will now be like that:
 
+        perf_sample_data_init(&data, ~0ULL, event->hw.last_period);
+
+Avoids unininitialized data.period and simplifies code.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Anton Blanchard <anton@samba.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: linux-alpha@vger.kernel.org
-Cc: linux-ia64@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-mips@linux-mips.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-sh@vger.kernel.org
-Cc: Matt Turner <mattst88@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: sparclinux@vger.kernel.org
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: x86@kernel.org
-Cc: Dimitri Sivanich <sivanich@sgi.com>
-Cc: Greg Pearson <greg.pearson@hp.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: bob.picco@oracle.com
-Cc: chris.mason@oracle.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-r74n3n8hhuc2ynbrnp3vt954@git.kernel.org
+Link: http://lkml.kernel.org/r/1333390758-10893-3-git-send-email-robert.richter@amd.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/ia64/include/asm/topology.h           |   25 ---
- arch/mips/include/asm/mach-ip27/topology.h |   17 --
- arch/powerpc/include/asm/topology.h        |   36 ----
- arch/sh/include/asm/topology.h             |   25 ---
- arch/sparc/include/asm/topology_64.h       |   19 --
- arch/tile/include/asm/topology.h           |   26 ---
- arch/x86/include/asm/topology.h            |   38 ----
- include/linux/topology.h                   |   37 ----
- kernel/sched/core.c                        |  280 ++++++++++++++++++----------
- 9 files changed, 185 insertions(+), 318 deletions(-)
+ arch/alpha/kernel/perf_event.c            |    3 +--
+ arch/arm/kernel/perf_event_v6.c           |    4 +---
+ arch/arm/kernel/perf_event_v7.c           |    4 +---
+ arch/arm/kernel/perf_event_xscale.c       |    8 ++------
+ arch/mips/kernel/perf_event_mipsxx.c      |    2 +-
+ arch/powerpc/perf/core-book3s.c           |    3 +--
+ arch/powerpc/perf/core-fsl-emb.c          |    3 +--
+ arch/sparc/kernel/perf_event.c            |    4 +---
+ arch/x86/kernel/cpu/perf_event.c          |    4 +---
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c  |    3 +--
+ arch/x86/kernel/cpu/perf_event_intel.c    |    4 +---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    6 ++----
+ arch/x86/kernel/cpu/perf_event_p4.c       |    6 +++---
+ include/linux/perf_event.h                |    5 ++++-
+ kernel/events/core.c                      |    9 ++++-----
+ 15 files changed, 25 insertions(+), 43 deletions(-)
 
-diff --git a/arch/ia64/include/asm/topology.h b/arch/ia64/include/asm/topology.h
-index 09f6467..a2496e4 100644
---- a/arch/ia64/include/asm/topology.h
-+++ b/arch/ia64/include/asm/topology.h
-@@ -70,31 +70,6 @@ void build_cpu_to_node_map(void);
- 	.nr_balance_failed	= 0,			\
- }
+diff --git a/arch/alpha/kernel/perf_event.c b/arch/alpha/kernel/perf_event.c
+index 0dae252..d821b17 100644
+--- a/arch/alpha/kernel/perf_event.c
++++ b/arch/alpha/kernel/perf_event.c
+@@ -824,7 +824,6 @@ static void alpha_perf_event_irq_handler(unsigned long la_ptr,
  
--/* sched_domains SD_NODE_INIT for IA64 NUMA machines */
--#define SD_NODE_INIT (struct sched_domain) {		\
--	.parent			= NULL,			\
--	.child			= NULL,			\
--	.groups			= NULL,			\
--	.min_interval		= 8,			\
--	.max_interval		= 8*(min(num_online_cpus(), 32U)), \
--	.busy_factor		= 64,			\
--	.imbalance_pct		= 125,			\
--	.cache_nice_tries	= 2,			\
--	.busy_idx		= 3,			\
--	.idle_idx		= 2,			\
--	.newidle_idx		= 0,			\
--	.wake_idx		= 0,			\
--	.forkexec_idx		= 0,			\
--	.flags			= SD_LOAD_BALANCE	\
--				| SD_BALANCE_NEWIDLE	\
--				| SD_BALANCE_EXEC	\
--				| SD_BALANCE_FORK	\
--				| SD_SERIALIZE,		\
--	.last_balance		= jiffies,		\
--	.balance_interval	= 64,			\
--	.nr_balance_failed	= 0,			\
--}
--
- #endif /* CONFIG_NUMA */
+ 	idx = la_ptr;
  
- #ifdef CONFIG_SMP
-diff --git a/arch/mips/include/asm/mach-ip27/topology.h b/arch/mips/include/asm/mach-ip27/topology.h
-index 1b1a7d1..b2cf641 100644
---- a/arch/mips/include/asm/mach-ip27/topology.h
-+++ b/arch/mips/include/asm/mach-ip27/topology.h
-@@ -36,23 +36,6 @@ extern unsigned char __node_distances[MAX_COMPACT_NODES][MAX_COMPACT_NODES];
- 
- #define node_distance(from, to)	(__node_distances[(from)][(to)])
- 
--/* sched_domains SD_NODE_INIT for SGI IP27 machines */
--#define SD_NODE_INIT (struct sched_domain) {		\
--	.parent			= NULL,			\
--	.child			= NULL,			\
--	.groups			= NULL,			\
--	.min_interval		= 8,			\
--	.max_interval		= 32,			\
--	.busy_factor		= 32,			\
--	.imbalance_pct		= 125,			\
--	.cache_nice_tries	= 1,			\
--	.flags			= SD_LOAD_BALANCE |	\
--				  SD_BALANCE_EXEC,	\
--	.last_balance		= jiffies,		\
--	.balance_interval	= 1,			\
--	.nr_balance_failed	= 0,			\
--}
--
- #include <asm-generic/topology.h>
- 
- #endif /* _ASM_MACH_TOPOLOGY_H */
-diff --git a/arch/powerpc/include/asm/topology.h b/arch/powerpc/include/asm/topology.h
-index c971858..852ed1b 100644
---- a/arch/powerpc/include/asm/topology.h
-+++ b/arch/powerpc/include/asm/topology.h
-@@ -18,12 +18,6 @@ struct device_node;
-  */
- #define RECLAIM_DISTANCE 10
- 
--/*
-- * Avoid creating an extra level of balancing (SD_ALLNODES) on the largest
-- * POWER7 boxes which have a maximum of 32 nodes.
-- */
--#define SD_NODES_PER_DOMAIN 32
--
- #include <asm/mmzone.h>
- 
- static inline int cpu_to_node(int cpu)
-@@ -51,36 +45,6 @@ static inline int pcibus_to_node(struct pci_bus *bus)
- 				 cpu_all_mask :				\
- 				 cpumask_of_node(pcibus_to_node(bus)))
- 
--/* sched_domains SD_NODE_INIT for PPC64 machines */
--#define SD_NODE_INIT (struct sched_domain) {				\
--	.min_interval		= 8,					\
--	.max_interval		= 32,					\
--	.busy_factor		= 32,					\
--	.imbalance_pct		= 125,					\
--	.cache_nice_tries	= 1,					\
--	.busy_idx		= 3,					\
--	.idle_idx		= 1,					\
--	.newidle_idx		= 0,					\
--	.wake_idx		= 0,					\
--	.forkexec_idx		= 0,					\
--									\
--	.flags			= 1*SD_LOAD_BALANCE			\
--				| 0*SD_BALANCE_NEWIDLE			\
--				| 1*SD_BALANCE_EXEC			\
--				| 1*SD_BALANCE_FORK			\
--				| 0*SD_BALANCE_WAKE			\
--				| 1*SD_WAKE_AFFINE			\
--				| 0*SD_PREFER_LOCAL			\
--				| 0*SD_SHARE_CPUPOWER			\
--				| 0*SD_POWERSAVINGS_BALANCE		\
--				| 0*SD_SHARE_PKG_RESOURCES		\
--				| 1*SD_SERIALIZE			\
--				| 0*SD_PREFER_SIBLING			\
--				,					\
--	.last_balance		= jiffies,				\
--	.balance_interval	= 1,					\
--}
--
- extern int __node_distance(int, int);
- #define node_distance(a, b) __node_distance(a, b)
- 
-diff --git a/arch/sh/include/asm/topology.h b/arch/sh/include/asm/topology.h
-index 88e7340..b0a282d 100644
---- a/arch/sh/include/asm/topology.h
-+++ b/arch/sh/include/asm/topology.h
-@@ -3,31 +3,6 @@
- 
- #ifdef CONFIG_NUMA
- 
--/* sched_domains SD_NODE_INIT for sh machines */
--#define SD_NODE_INIT (struct sched_domain) {		\
--	.parent			= NULL,			\
--	.child			= NULL,			\
--	.groups			= NULL,			\
--	.min_interval		= 8,			\
--	.max_interval		= 32,			\
--	.busy_factor		= 32,			\
--	.imbalance_pct		= 125,			\
--	.cache_nice_tries	= 2,			\
--	.busy_idx		= 3,			\
--	.idle_idx		= 2,			\
--	.newidle_idx		= 0,			\
--	.wake_idx		= 0,			\
--	.forkexec_idx		= 0,			\
--	.flags			= SD_LOAD_BALANCE	\
--				| SD_BALANCE_FORK	\
--				| SD_BALANCE_EXEC	\
--				| SD_BALANCE_NEWIDLE	\
--				| SD_SERIALIZE,		\
--	.last_balance		= jiffies,		\
--	.balance_interval	= 1,			\
--	.nr_balance_failed	= 0,			\
--}
--
- #define cpu_to_node(cpu)	((void)(cpu),0)
- #define parent_node(node)	((void)(node),0)
- 
-diff --git a/arch/sparc/include/asm/topology_64.h b/arch/sparc/include/asm/topology_64.h
-index 8b9c556..1754390 100644
---- a/arch/sparc/include/asm/topology_64.h
-+++ b/arch/sparc/include/asm/topology_64.h
-@@ -31,25 +31,6 @@ static inline int pcibus_to_node(struct pci_bus *pbus)
- 	 cpu_all_mask : \
- 	 cpumask_of_node(pcibus_to_node(bus)))
- 
--#define SD_NODE_INIT (struct sched_domain) {		\
--	.min_interval		= 8,			\
--	.max_interval		= 32,			\
--	.busy_factor		= 32,			\
--	.imbalance_pct		= 125,			\
--	.cache_nice_tries	= 2,			\
--	.busy_idx		= 3,			\
--	.idle_idx		= 2,			\
--	.newidle_idx		= 0, 			\
--	.wake_idx		= 0,			\
--	.forkexec_idx		= 0,			\
--	.flags			= SD_LOAD_BALANCE	\
--				| SD_BALANCE_FORK	\
--				| SD_BALANCE_EXEC	\
--				| SD_SERIALIZE,		\
--	.last_balance		= jiffies,		\
--	.balance_interval	= 1,			\
--}
--
- #else /* CONFIG_NUMA */
- 
- #include <asm-generic/topology.h>
-diff --git a/arch/tile/include/asm/topology.h b/arch/tile/include/asm/topology.h
-index 6fdd0c8..7a7ce39 100644
---- a/arch/tile/include/asm/topology.h
-+++ b/arch/tile/include/asm/topology.h
-@@ -78,32 +78,6 @@ static inline const struct cpumask *cpumask_of_node(int node)
- 	.balance_interval	= 32,					\
- }
- 
--/* sched_domains SD_NODE_INIT for TILE architecture */
--#define SD_NODE_INIT (struct sched_domain) {				\
--	.min_interval		= 16,					\
--	.max_interval		= 512,					\
--	.busy_factor		= 32,					\
--	.imbalance_pct		= 125,					\
--	.cache_nice_tries	= 1,					\
--	.busy_idx		= 3,					\
--	.idle_idx		= 1,					\
--	.newidle_idx		= 2,					\
--	.wake_idx		= 1,					\
--	.flags			= 1*SD_LOAD_BALANCE			\
--				| 1*SD_BALANCE_NEWIDLE			\
--				| 1*SD_BALANCE_EXEC			\
--				| 1*SD_BALANCE_FORK			\
--				| 0*SD_BALANCE_WAKE			\
--				| 0*SD_WAKE_AFFINE			\
--				| 0*SD_PREFER_LOCAL			\
--				| 0*SD_SHARE_CPUPOWER			\
--				| 0*SD_SHARE_PKG_RESOURCES		\
--				| 1*SD_SERIALIZE			\
--				,					\
--	.last_balance		= jiffies,				\
--	.balance_interval	= 128,					\
--}
--
- /* By definition, we create nodes based on online memory. */
- #define node_has_online_mem(nid) 1
- 
-diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
-index b9676ae..095b215 100644
---- a/arch/x86/include/asm/topology.h
-+++ b/arch/x86/include/asm/topology.h
-@@ -92,44 +92,6 @@ extern void setup_node_to_cpumask_map(void);
- 
- #define pcibus_to_node(bus) __pcibus_to_node(bus)
- 
--#ifdef CONFIG_X86_32
--# define SD_CACHE_NICE_TRIES	1
--# define SD_IDLE_IDX		1
--#else
--# define SD_CACHE_NICE_TRIES	2
--# define SD_IDLE_IDX		2
--#endif
--
--/* sched_domains SD_NODE_INIT for NUMA machines */
--#define SD_NODE_INIT (struct sched_domain) {				\
--	.min_interval		= 8,					\
--	.max_interval		= 32,					\
--	.busy_factor		= 32,					\
--	.imbalance_pct		= 125,					\
--	.cache_nice_tries	= SD_CACHE_NICE_TRIES,			\
--	.busy_idx		= 3,					\
--	.idle_idx		= SD_IDLE_IDX,				\
--	.newidle_idx		= 0,					\
--	.wake_idx		= 0,					\
--	.forkexec_idx		= 0,					\
--									\
--	.flags			= 1*SD_LOAD_BALANCE			\
--				| 1*SD_BALANCE_NEWIDLE			\
--				| 1*SD_BALANCE_EXEC			\
--				| 1*SD_BALANCE_FORK			\
--				| 0*SD_BALANCE_WAKE			\
--				| 1*SD_WAKE_AFFINE			\
--				| 0*SD_PREFER_LOCAL			\
--				| 0*SD_SHARE_CPUPOWER			\
--				| 0*SD_POWERSAVINGS_BALANCE		\
--				| 0*SD_SHARE_PKG_RESOURCES		\
--				| 1*SD_SERIALIZE			\
--				| 0*SD_PREFER_SIBLING			\
--				,					\
--	.last_balance		= jiffies,				\
--	.balance_interval	= 1,					\
--}
--
- extern int __node_distance(int, int);
- #define node_distance(a, b) __node_distance(a, b)
- 
-diff --git a/include/linux/topology.h b/include/linux/topology.h
-index e26db03..4f59bf3 100644
---- a/include/linux/topology.h
-+++ b/include/linux/topology.h
-@@ -70,7 +70,6 @@ int arch_update_cpu_topology(void);
-  * Below are the 3 major initializers used in building sched_domains:
-  * SD_SIBLING_INIT, for SMT domains
-  * SD_CPU_INIT, for SMP domains
-- * SD_NODE_INIT, for NUMA domains
-  *
-  * Any architecture that cares to do any tuning to these values should do so
-  * by defining their own arch-specific initializer in include/asm/topology.h.
-@@ -176,48 +175,12 @@ int arch_update_cpu_topology(void);
- }
- #endif
- 
--/* sched_domains SD_ALLNODES_INIT for NUMA machines */
--#define SD_ALLNODES_INIT (struct sched_domain) {			\
--	.min_interval		= 64,					\
--	.max_interval		= 64*num_online_cpus(),			\
--	.busy_factor		= 128,					\
--	.imbalance_pct		= 133,					\
--	.cache_nice_tries	= 1,					\
--	.busy_idx		= 3,					\
--	.idle_idx		= 3,					\
--	.flags			= 1*SD_LOAD_BALANCE			\
--				| 1*SD_BALANCE_NEWIDLE			\
--				| 0*SD_BALANCE_EXEC			\
--				| 0*SD_BALANCE_FORK			\
--				| 0*SD_BALANCE_WAKE			\
--				| 0*SD_WAKE_AFFINE			\
--				| 0*SD_SHARE_CPUPOWER			\
--				| 0*SD_POWERSAVINGS_BALANCE		\
--				| 0*SD_SHARE_PKG_RESOURCES		\
--				| 1*SD_SERIALIZE			\
--				| 0*SD_PREFER_SIBLING			\
--				,					\
--	.last_balance		= jiffies,				\
--	.balance_interval	= 64,					\
--}
--
--#ifndef SD_NODES_PER_DOMAIN
--#define SD_NODES_PER_DOMAIN 16
--#endif
--
- #ifdef CONFIG_SCHED_BOOK
- #ifndef SD_BOOK_INIT
- #error Please define an appropriate SD_BOOK_INIT in include/asm/topology.h!!!
- #endif
- #endif /* CONFIG_SCHED_BOOK */
- 
--#ifdef CONFIG_NUMA
--#ifndef SD_NODE_INIT
--#error Please define an appropriate SD_NODE_INIT in include/asm/topology.h!!!
--#endif
--
--#endif /* CONFIG_NUMA */
--
- #ifdef CONFIG_USE_PERCPU_NUMA_NODE_ID
- DECLARE_PER_CPU(int, numa_node);
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 6001e5c..b4f2096 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5560,7 +5560,8 @@ static int sched_domain_debug_one(struct sched_domain *sd, int cpu, int level,
+-	perf_sample_data_init(&data, 0);
+ 	for (j = 0; j < cpuc->n_events; j++) {
+ 		if (cpuc->current_idx[j] == idx)
  			break;
- 		}
+@@ -848,7 +847,7 @@ static void alpha_perf_event_irq_handler(unsigned long la_ptr,
  
--		if (cpumask_intersects(groupmask, sched_group_cpus(group))) {
-+		if (!(sd->flags & SD_OVERLAP) &&
-+		    cpumask_intersects(groupmask, sched_group_cpus(group))) {
- 			printk(KERN_CONT "\n");
- 			printk(KERN_ERR "ERROR: repeated CPUs\n");
- 			break;
-@@ -5898,92 +5899,6 @@ static int __init isolated_cpu_setup(char *str)
+ 	hwc = &event->hw;
+ 	alpha_perf_event_update(event, hwc, idx, alpha_pmu->pmc_max_period[idx]+1);
+-	data.period = event->hw.last_period;
++	perf_sample_data_init(&data, 0, hwc->last_period);
  
- __setup("isolcpus=", isolated_cpu_setup);
+ 	if (alpha_perf_event_set_period(event, hwc, idx)) {
+ 		if (perf_event_overflow(event, &data, regs)) {
+diff --git a/arch/arm/kernel/perf_event_v6.c b/arch/arm/kernel/perf_event_v6.c
+index b78af0c..ab627a7 100644
+--- a/arch/arm/kernel/perf_event_v6.c
++++ b/arch/arm/kernel/perf_event_v6.c
+@@ -489,8 +489,6 @@ armv6pmu_handle_irq(int irq_num,
+ 	 */
+ 	armv6_pmcr_write(pmcr);
  
--#ifdef CONFIG_NUMA
+-	perf_sample_data_init(&data, 0);
 -
--/**
-- * find_next_best_node - find the next node to include in a sched_domain
-- * @node: node whose sched_domain we're building
-- * @used_nodes: nodes already in the sched_domain
-- *
-- * Find the next node to include in a given scheduling domain. Simply
-- * finds the closest node not already in the @used_nodes map.
-- *
-- * Should use nodemask_t.
-- */
--static int find_next_best_node(int node, nodemask_t *used_nodes)
--{
--	int i, n, val, min_val, best_node = -1;
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
+ 		struct perf_event *event = cpuc->events[idx];
+@@ -509,7 +507,7 @@ armv6pmu_handle_irq(int irq_num,
+ 
+ 		hwc = &event->hw;
+ 		armpmu_event_update(event, hwc, idx);
+-		data.period = event->hw.last_period;
++		perf_sample_data_init(&data, 0, hwc->last_period);
+ 		if (!armpmu_event_set_period(event, hwc, idx))
+ 			continue;
+ 
+diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
+index 00755d8..d3c5360 100644
+--- a/arch/arm/kernel/perf_event_v7.c
++++ b/arch/arm/kernel/perf_event_v7.c
+@@ -1077,8 +1077,6 @@ static irqreturn_t armv7pmu_handle_irq(int irq_num, void *dev)
+ 	 */
+ 	regs = get_irq_regs();
+ 
+-	perf_sample_data_init(&data, 0);
 -
--	min_val = INT_MAX;
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
+ 		struct perf_event *event = cpuc->events[idx];
+@@ -1097,7 +1095,7 @@ static irqreturn_t armv7pmu_handle_irq(int irq_num, void *dev)
+ 
+ 		hwc = &event->hw;
+ 		armpmu_event_update(event, hwc, idx);
+-		data.period = event->hw.last_period;
++		perf_sample_data_init(&data, 0, hwc->last_period);
+ 		if (!armpmu_event_set_period(event, hwc, idx))
+ 			continue;
+ 
+diff --git a/arch/arm/kernel/perf_event_xscale.c b/arch/arm/kernel/perf_event_xscale.c
+index 71a21e6..e34e725 100644
+--- a/arch/arm/kernel/perf_event_xscale.c
++++ b/arch/arm/kernel/perf_event_xscale.c
+@@ -248,8 +248,6 @@ xscale1pmu_handle_irq(int irq_num, void *dev)
+ 
+ 	regs = get_irq_regs();
+ 
+-	perf_sample_data_init(&data, 0);
 -
--	for (i = 0; i < nr_node_ids; i++) {
--		/* Start at @node */
--		n = (node + i) % nr_node_ids;
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
+ 		struct perf_event *event = cpuc->events[idx];
+@@ -263,7 +261,7 @@ xscale1pmu_handle_irq(int irq_num, void *dev)
+ 
+ 		hwc = &event->hw;
+ 		armpmu_event_update(event, hwc, idx);
+-		data.period = event->hw.last_period;
++		perf_sample_data_init(&data, 0, hwc->last_period);
+ 		if (!armpmu_event_set_period(event, hwc, idx))
+ 			continue;
+ 
+@@ -588,8 +586,6 @@ xscale2pmu_handle_irq(int irq_num, void *dev)
+ 
+ 	regs = get_irq_regs();
+ 
+-	perf_sample_data_init(&data, 0);
 -
--		if (!nr_cpus_node(n))
--			continue;
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
+ 		struct perf_event *event = cpuc->events[idx];
+@@ -603,7 +599,7 @@ xscale2pmu_handle_irq(int irq_num, void *dev)
+ 
+ 		hwc = &event->hw;
+ 		armpmu_event_update(event, hwc, idx);
+-		data.period = event->hw.last_period;
++		perf_sample_data_init(&data, 0, hwc->last_period);
+ 		if (!armpmu_event_set_period(event, hwc, idx))
+ 			continue;
+ 
+diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
+index 811084f..ab73fa2 100644
+--- a/arch/mips/kernel/perf_event_mipsxx.c
++++ b/arch/mips/kernel/perf_event_mipsxx.c
+@@ -1325,7 +1325,7 @@ static int mipsxx_pmu_handle_shared_irq(void)
+ 
+ 	regs = get_irq_regs();
+ 
+-	perf_sample_data_init(&data, 0);
++	perf_sample_data_init(&data, 0, 0);
+ 
+ 	switch (counters) {
+ #define HANDLE_COUNTER(n)						\
+diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+index 02aee03..8f84bcb 100644
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -1299,8 +1299,7 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
+ 	if (record) {
+ 		struct perf_sample_data data;
+ 
+-		perf_sample_data_init(&data, ~0ULL);
+-		data.period = event->hw.last_period;
++		perf_sample_data_init(&data, ~0ULL, event->hw.last_period);
+ 
+ 		if (event->attr.sample_type & PERF_SAMPLE_ADDR)
+ 			perf_get_data_addr(regs, &data.addr);
+diff --git a/arch/powerpc/perf/core-fsl-emb.c b/arch/powerpc/perf/core-fsl-emb.c
+index 0a6d2a9..106c533 100644
+--- a/arch/powerpc/perf/core-fsl-emb.c
++++ b/arch/powerpc/perf/core-fsl-emb.c
+@@ -613,8 +613,7 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
+ 	if (record) {
+ 		struct perf_sample_data data;
+ 
+-		perf_sample_data_init(&data, 0);
+-		data.period = event->hw.last_period;
++		perf_sample_data_init(&data, 0, event->hw.last_period);
+ 
+ 		if (perf_event_overflow(event, &data, regs))
+ 			fsl_emb_pmu_stop(event, 0);
+diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
+index 28559ce..5713957 100644
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -1296,8 +1296,6 @@ static int __kprobes perf_event_nmi_handler(struct notifier_block *self,
+ 
+ 	regs = args->regs;
+ 
+-	perf_sample_data_init(&data, 0);
 -
--		/* Skip already used nodes */
--		if (node_isset(n, *used_nodes))
--			continue;
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+ 	/* If the PMU has the TOE IRQ enable bits, we need to do a
+@@ -1321,7 +1319,7 @@ static int __kprobes perf_event_nmi_handler(struct notifier_block *self,
+ 		if (val & (1ULL << 31))
+ 			continue;
+ 
+-		data.period = event->hw.last_period;
++		perf_sample_data_init(&data, 0, hwc->last_period);
+ 		if (!sparc_perf_event_set_period(event, hwc, idx))
+ 			continue;
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index e33e9cf..e049d6d 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1183,8 +1183,6 @@ int x86_pmu_handle_irq(struct pt_regs *regs)
+ 	int idx, handled = 0;
+ 	u64 val;
+ 
+-	perf_sample_data_init(&data, 0);
 -
--		/* Simple min distance search */
--		val = node_distance(node, n);
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+ 	/*
+@@ -1219,7 +1217,7 @@ int x86_pmu_handle_irq(struct pt_regs *regs)
+ 		 * event overflow
+ 		 */
+ 		handled++;
+-		data.period	= event->hw.last_period;
++		perf_sample_data_init(&data, 0, event->hw.last_period);
+ 
+ 		if (!x86_perf_event_set_period(event))
+ 			continue;
+diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+index c8f69be..2317228 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
++++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+@@ -398,8 +398,7 @@ static int perf_ibs_handle_irq(struct perf_ibs *perf_ibs, struct pt_regs *iregs)
+ 	}
+ 
+ 	perf_ibs_event_update(perf_ibs, event, config);
+-	perf_sample_data_init(&data, 0);
+-	data.period = event->hw.last_period;
++	perf_sample_data_init(&data, 0, hwc->last_period);
+ 
+ 	if (event->attr.sample_type & PERF_SAMPLE_RAW) {
+ 		ibs_data.caps = ibs_caps;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 26b3e2f..166546e 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1027,8 +1027,6 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	u64 status;
+ 	int handled;
+ 
+-	perf_sample_data_init(&data, 0);
 -
--		if (val < min_val) {
--			min_val = val;
--			best_node = n;
--		}
--	}
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+ 	/*
+@@ -1082,7 +1080,7 @@ again:
+ 		if (!intel_pmu_save_and_restart(event))
+ 			continue;
+ 
+-		data.period = event->hw.last_period;
++		perf_sample_data_init(&data, 0, event->hw.last_period);
+ 
+ 		if (has_branch_stack(event))
+ 			data.br_stack = &cpuc->lbr_stack;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 7f64df1..5a3edc2 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -316,8 +316,7 @@ int intel_pmu_drain_bts_buffer(void)
+ 
+ 	ds->bts_index = ds->bts_buffer_base;
+ 
+-	perf_sample_data_init(&data, 0);
+-	data.period = event->hw.last_period;
++	perf_sample_data_init(&data, 0, event->hw.last_period);
+ 	regs.ip     = 0;
+ 
+ 	/*
+@@ -564,8 +563,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	if (!intel_pmu_save_and_restart(event))
+ 		return;
+ 
+-	perf_sample_data_init(&data, 0);
+-	data.period = event->hw.last_period;
++	perf_sample_data_init(&data, 0, event->hw.last_period);
+ 
+ 	/*
+ 	 * We use the interrupt regs as a base because the PEBS record
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index a2dfacf..47124a7 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -1005,8 +1005,6 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 	int idx, handled = 0;
+ 	u64 val;
+ 
+-	perf_sample_data_init(&data, 0);
 -
--	if (best_node != -1)
--		node_set(best_node, *used_nodes);
--	return best_node;
--}
--
--/**
-- * sched_domain_node_span - get a cpumask for a node's sched_domain
-- * @node: node whose cpumask we're constructing
-- * @span: resulting cpumask
-- *
-- * Given a node, construct a good cpumask for its sched_domain to span. It
-- * should be one that prevents unnecessary balancing, but also spreads tasks
-- * out optimally.
-- */
--static void sched_domain_node_span(int node, struct cpumask *span)
--{
--	nodemask_t used_nodes;
--	int i;
--
--	cpumask_clear(span);
--	nodes_clear(used_nodes);
--
--	cpumask_or(span, span, cpumask_of_node(node));
--	node_set(node, used_nodes);
--
--	for (i = 1; i < SD_NODES_PER_DOMAIN; i++) {
--		int next_node = find_next_best_node(node, &used_nodes);
--		if (next_node < 0)
--			break;
--		cpumask_or(span, span, cpumask_of_node(next_node));
--	}
--}
--
--static const struct cpumask *cpu_node_mask(int cpu)
--{
--	lockdep_assert_held(&sched_domains_mutex);
--
--	sched_domain_node_span(cpu_to_node(cpu), sched_domains_tmpmask);
--
--	return sched_domains_tmpmask;
--}
--
--static const struct cpumask *cpu_allnodes_mask(int cpu)
--{
--	return cpu_possible_mask;
--}
--#endif /* CONFIG_NUMA */
--
- static const struct cpumask *cpu_cpu_mask(int cpu)
- {
- 	return cpumask_of_node(cpu_to_node(cpu));
-@@ -6020,6 +5935,7 @@ struct sched_domain_topology_level {
- 	sched_domain_init_f init;
- 	sched_domain_mask_f mask;
- 	int		    flags;
-+	int		    numa_level;
- 	struct sd_data      data;
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+@@ -1034,10 +1032,12 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 		handled += overflow;
+ 
+ 		/* event overflow for sure */
+-		data.period = event->hw.last_period;
++		perf_sample_data_init(&data, 0, hwc->last_period);
+ 
+ 		if (!x86_perf_event_set_period(event))
+ 			continue;
++
++
+ 		if (perf_event_overflow(event, &data, regs))
+ 			x86_pmu_stop(event, 0);
+ 	}
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index ddbb6a9..f325786 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1132,11 +1132,14 @@ struct perf_sample_data {
+ 	struct perf_branch_stack	*br_stack;
  };
  
-@@ -6213,10 +6129,6 @@ sd_init_##type(struct sched_domain_topology_level *tl, int cpu) 	\
+-static inline void perf_sample_data_init(struct perf_sample_data *data, u64 addr)
++static inline void perf_sample_data_init(struct perf_sample_data *data,
++					 u64 addr, u64 period)
+ {
++	/* remaining struct members initialized in perf_prepare_sample() */
+ 	data->addr = addr;
+ 	data->raw  = NULL;
+ 	data->br_stack = NULL;
++	data->period	= period;
  }
  
- SD_INIT_FUNC(CPU)
--#ifdef CONFIG_NUMA
-- SD_INIT_FUNC(ALLNODES)
-- SD_INIT_FUNC(NODE)
--#endif
- #ifdef CONFIG_SCHED_SMT
-  SD_INIT_FUNC(SIBLING)
- #endif
-@@ -6338,15 +6250,191 @@ static struct sched_domain_topology_level default_topology[] = {
- 	{ sd_init_BOOK, cpu_book_mask, },
- #endif
- 	{ sd_init_CPU, cpu_cpu_mask, },
--#ifdef CONFIG_NUMA
--	{ sd_init_NODE, cpu_node_mask, SDTL_OVERLAP, },
--	{ sd_init_ALLNODES, cpu_allnodes_mask, },
--#endif
- 	{ NULL, },
- };
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 9789a56..00c58df 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4957,7 +4957,7 @@ void __perf_sw_event(u32 event_id, u64 nr, struct pt_regs *regs, u64 addr)
+ 	if (rctx < 0)
+ 		return;
  
- static struct sched_domain_topology_level *sched_domain_topology = default_topology;
+-	perf_sample_data_init(&data, addr);
++	perf_sample_data_init(&data, addr, 0);
  
-+#ifdef CONFIG_NUMA
-+
-+static int sched_domains_numa_levels;
-+static int sched_domains_numa_scale;
-+static int *sched_domains_numa_distance;
-+static struct cpumask ***sched_domains_numa_masks;
-+static int sched_domains_curr_level;
-+
-+static inline unsigned long numa_scale(unsigned long x, int level)
-+{
-+	return x * sched_domains_numa_distance[level] / sched_domains_numa_scale;
-+}
-+
-+static inline int sd_local_flags(int level)
-+{
-+	if (sched_domains_numa_distance[level] > REMOTE_DISTANCE)
-+		return 0;
-+
-+	return SD_BALANCE_EXEC | SD_BALANCE_FORK | SD_WAKE_AFFINE;
-+}
-+
-+static struct sched_domain *
-+sd_numa_init(struct sched_domain_topology_level *tl, int cpu)
-+{
-+	struct sched_domain *sd = *per_cpu_ptr(tl->data.sd, cpu);
-+	int level = tl->numa_level;
-+	int sd_weight = cpumask_weight(
-+			sched_domains_numa_masks[level][cpu_to_node(cpu)]);
-+
-+	*sd = (struct sched_domain){
-+		.min_interval		= sd_weight,
-+		.max_interval		= 2*sd_weight,
-+		.busy_factor		= 32,
-+		.imbalance_pct		= 100 + numa_scale(25, level),
-+		.cache_nice_tries	= 2,
-+		.busy_idx		= 3,
-+		.idle_idx		= 2,
-+		.newidle_idx		= 0,
-+		.wake_idx		= 0,
-+		.forkexec_idx		= 0,
-+
-+		.flags			= 1*SD_LOAD_BALANCE
-+					| 1*SD_BALANCE_NEWIDLE
-+					| 0*SD_BALANCE_EXEC
-+					| 0*SD_BALANCE_FORK
-+					| 0*SD_BALANCE_WAKE
-+					| 0*SD_WAKE_AFFINE
-+					| 0*SD_PREFER_LOCAL
-+					| 0*SD_SHARE_CPUPOWER
-+					| 0*SD_POWERSAVINGS_BALANCE
-+					| 0*SD_SHARE_PKG_RESOURCES
-+					| 1*SD_SERIALIZE
-+					| 0*SD_PREFER_SIBLING
-+					| sd_local_flags(level)
-+					,
-+		.last_balance		= jiffies,
-+		.balance_interval	= sd_weight,
-+	};
-+	SD_INIT_NAME(sd, NUMA);
-+	sd->private = &tl->data;
-+
-+	/*
-+	 * Ugly hack to pass state to sd_numa_mask()...
-+	 */
-+	sched_domains_curr_level = tl->numa_level;
-+
-+	return sd;
-+}
-+
-+static const struct cpumask *sd_numa_mask(int cpu)
-+{
-+	return sched_domains_numa_masks[sched_domains_curr_level][cpu_to_node(cpu)];
-+}
-+
-+static void sched_init_numa(void)
-+{
-+	int next_distance, curr_distance = node_distance(0, 0);
-+	struct sched_domain_topology_level *tl;
-+	int level = 0;
-+	int i, j, k;
-+
-+	sched_domains_numa_scale = curr_distance;
-+	sched_domains_numa_distance = kzalloc(sizeof(int) * nr_node_ids, GFP_KERNEL);
-+	if (!sched_domains_numa_distance)
-+		return;
-+
-+	/*
-+	 * O(nr_nodes^2) deduplicating selection sort -- in order to find the
-+	 * unique distances in the node_distance() table.
-+	 *
-+	 * Assumes node_distance(0,j) includes all distances in
-+	 * node_distance(i,j) in order to avoid cubic time.
-+	 *
-+	 * XXX: could be optimized to O(n log n) by using sort()
-+	 */
-+	next_distance = curr_distance;
-+	for (i = 0; i < nr_node_ids; i++) {
-+		for (j = 0; j < nr_node_ids; j++) {
-+			int distance = node_distance(0, j);
-+			if (distance > curr_distance &&
-+					(distance < next_distance ||
-+					 next_distance == curr_distance))
-+				next_distance = distance;
-+		}
-+		if (next_distance != curr_distance) {
-+			sched_domains_numa_distance[level++] = next_distance;
-+			sched_domains_numa_levels = level;
-+			curr_distance = next_distance;
-+		} else break;
-+	}
-+	/*
-+	 * 'level' contains the number of unique distances, excluding the
-+	 * identity distance node_distance(i,i).
-+	 *
-+	 * The sched_domains_nume_distance[] array includes the actual distance
-+	 * numbers.
-+	 */
-+
-+	sched_domains_numa_masks = kzalloc(sizeof(void *) * level, GFP_KERNEL);
-+	if (!sched_domains_numa_masks)
-+		return;
-+
-+	/*
-+	 * Now for each level, construct a mask per node which contains all
-+	 * cpus of nodes that are that many hops away from us.
-+	 */
-+	for (i = 0; i < level; i++) {
-+		sched_domains_numa_masks[i] =
-+			kzalloc(nr_node_ids * sizeof(void *), GFP_KERNEL);
-+		if (!sched_domains_numa_masks[i])
-+			return;
-+
-+		for (j = 0; j < nr_node_ids; j++) {
-+			struct cpumask *mask = kzalloc_node(cpumask_size(), GFP_KERNEL, j);
-+			if (!mask)
-+				return;
-+
-+			sched_domains_numa_masks[i][j] = mask;
-+
-+			for (k = 0; k < nr_node_ids; k++) {
-+				if (node_distance(cpu_to_node(j), k) >
-+						sched_domains_numa_distance[i])
-+					continue;
-+
-+				cpumask_or(mask, mask, cpumask_of_node(k));
-+			}
-+		}
-+	}
-+
-+	tl = kzalloc((ARRAY_SIZE(default_topology) + level) *
-+			sizeof(struct sched_domain_topology_level), GFP_KERNEL);
-+	if (!tl)
-+		return;
-+
-+	/*
-+	 * Copy the default topology bits..
-+	 */
-+	for (i = 0; default_topology[i].init; i++)
-+		tl[i] = default_topology[i];
-+
-+	/*
-+	 * .. and append 'j' levels of NUMA goodness.
-+	 */
-+	for (j = 0; j < level; i++, j++) {
-+		tl[i] = (struct sched_domain_topology_level){
-+			.init = sd_numa_init,
-+			.mask = sd_numa_mask,
-+			.flags = SDTL_OVERLAP,
-+			.numa_level = j,
-+		};
-+	}
-+
-+	sched_domain_topology = tl;
-+}
-+#else
-+static inline void sched_init_numa(void)
-+{
-+}
-+#endif /* CONFIG_NUMA */
-+
- static int __sdt_alloc(const struct cpumask *cpu_map)
- {
- 	struct sched_domain_topology_level *tl;
-@@ -6840,6 +6928,8 @@ void __init sched_init_smp(void)
- 	alloc_cpumask_var(&non_isolated_cpus, GFP_KERNEL);
- 	alloc_cpumask_var(&fallback_doms, GFP_KERNEL);
+ 	do_perf_sw_event(PERF_TYPE_SOFTWARE, event_id, nr, &data, regs);
  
-+	sched_init_numa();
-+
- 	get_online_cpus();
- 	mutex_lock(&sched_domains_mutex);
- 	init_sched_domains(cpu_active_mask);
+@@ -5215,7 +5215,7 @@ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
+ 		.data = record,
+ 	};
+ 
+-	perf_sample_data_init(&data, addr);
++	perf_sample_data_init(&data, addr, 0);
+ 	data.raw = &raw;
+ 
+ 	hlist_for_each_entry_rcu(event, node, head, hlist_entry) {
+@@ -5318,7 +5318,7 @@ void perf_bp_event(struct perf_event *bp, void *data)
+ 	struct perf_sample_data sample;
+ 	struct pt_regs *regs = data;
+ 
+-	perf_sample_data_init(&sample, bp->attr.bp_addr);
++	perf_sample_data_init(&sample, bp->attr.bp_addr, 0);
+ 
+ 	if (!bp->hw.state && !perf_exclude_event(bp, regs))
+ 		perf_swevent_event(bp, 1, &sample, regs);
+@@ -5344,8 +5344,7 @@ static enum hrtimer_restart perf_swevent_hrtimer(struct hrtimer *hrtimer)
+ 
+ 	event->pmu->read(event);
+ 
+-	perf_sample_data_init(&data, 0);
+-	data.period = event->hw.last_period;
++	perf_sample_data_init(&data, 0, event->hw.last_period);
+ 	regs = get_irq_regs();
+ 
+ 	if (regs && !perf_exclude_event(event, regs)) {
