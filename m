@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759610Ab2EIRon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:44:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59430 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754386Ab2EIRol (ORCPT
+	id S1760617Ab2EIRpi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:45:38 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:35046 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758551Ab2EIRpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 13:44:41 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/1] perf stat: handle ENXIO error for perf_event_open
-Date: Wed,  9 May 2012 14:43:59 -0300
-Message-Id: <1336585439-32378-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1336585439-32378-1-git-send-email-acme@infradead.org>
-References: <1336585439-32378-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 9 May 2012 13:45:36 -0400
+Date: Wed, 9 May 2012 13:45:35 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+cc: linux-usb@vger.kernel.org, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <plagnioj@jcrosoft.com>,
+        <gregkh@linuxfoundation.org>, stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] USB: ohci-at91: add a reset function to fix race condition
+In-Reply-To: <1336553334-31058-1-git-send-email-nicolas.ferre@atmel.com>
+Message-ID: <Pine.LNX.4.44L0.1205091344550.1658-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+On Wed, 9 May 2012, Nicolas Ferre wrote:
 
-perf stat on PPC currently fails to run:
+> A possible race condition appears because we are not initializing
+> the ohci->regs before calling usb_hcd_request_irqs().
+> We move the call to ohci_init() in hcd->driver->reset() instead of
+> hcd->driver->start() to fix this.
+> This was experienced when we share the same IRQ line between OHCI and EHCI
+> controllers.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Tested-by: Christian Eggers <christian.eggers@kathrein.de>
+> Cc: stable <stable@vger.kernel.org>
 
-$ perf stat -- sleep 1
-  Error: open_counter returned with 6 (No such device or address). /bin/dmesg may provide additional information.
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-  Fatal: Not all events could be opened.
-
-The problem is that until 2.6.37 (behavior changed with commit b0a873e)
-perf on PPC returns ENXIO when hw_perf_event_init() fails. With this
-patch we get the expected behavior:
-
-$ perf stat -v -- sleep 1
-cycles event is not supported by the kernel.
-stalled-cycles-frontend event is not supported by the kernel.
-stalled-cycles-backend event is not supported by the kernel.
-instructions event is not supported by the kernel.
-branches event is not supported by the kernel.
-branch-misses event is not supported by the kernel.
-
-...
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1336490956-57145-1-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-stat.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 4532a78..1e5e9b2 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -488,8 +488,13 @@ static int run_perf_stat(int argc __used, const char **argv)
- 
- 	list_for_each_entry(counter, &evsel_list->entries, node) {
- 		if (create_perf_stat_counter(counter, first) < 0) {
-+			/*
-+			 * PPC returns ENXIO for HW counters until 2.6.37
-+			 * (behavior changed with commit b0a873e).
-+			 */
- 			if (errno == EINVAL || errno == ENOSYS ||
--			    errno == ENOENT || errno == EOPNOTSUPP) {
-+			    errno == ENOENT || errno == EOPNOTSUPP ||
-+			    errno == ENXIO) {
- 				if (verbose)
- 					ui__warning("%s event is not supported by the kernel.\n",
- 						    event_name(counter));
--- 
-1.7.9.2.358.g22243
+> ---
+>  drivers/usb/host/ohci-at91.c |   11 ++++++++++-
+>  1 file changed, 10 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
+> index 13ebeca..55d3d64 100644
+> --- a/drivers/usb/host/ohci-at91.c
+> +++ b/drivers/usb/host/ohci-at91.c
+> @@ -223,7 +223,7 @@ static void __devexit usb_hcd_at91_remove(struct usb_hcd *hcd,
+>  /*-------------------------------------------------------------------------*/
+>  
+>  static int __devinit
+> -ohci_at91_start (struct usb_hcd *hcd)
+> +ohci_at91_reset (struct usb_hcd *hcd)
+>  {
+>  	struct at91_usbh_data	*board = hcd->self.controller->platform_data;
+>  	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
+> @@ -233,6 +233,14 @@ ohci_at91_start (struct usb_hcd *hcd)
+>  		return ret;
+>  
+>  	ohci->num_ports = board->ports;
+> +	return 0;
+> +}
+> +
+> +static int __devinit
+> +ohci_at91_start (struct usb_hcd *hcd)
+> +{
+> +	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
+> +	int			ret;
+>  
+>  	if ((ret = ohci_run(ohci)) < 0) {
+>  		err("can't start %s", hcd->self.bus_name);
+> @@ -418,6 +426,7 @@ static const struct hc_driver ohci_at91_hc_driver = {
+>  	/*
+>  	 * basic lifecycle operations
+>  	 */
+> +	.reset =		ohci_at91_reset,
+>  	.start =		ohci_at91_start,
+>  	.stop =			ohci_stop,
+>  	.shutdown =		ohci_shutdown,
 
