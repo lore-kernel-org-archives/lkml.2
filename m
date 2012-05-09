@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758584Ab2EIGdv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:33:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38664 "EHLO
+	id S1755967Ab2EIGet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:34:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38648 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754867Ab2EIFwk (ORCPT
+	by vger.kernel.org with ESMTP id S1754714Ab2EIFwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:52:40 -0400
-Message-Id: <20120509055032.897593072@decadent.org.uk>
+	Wed, 9 May 2012 01:52:39 -0400
+Message-Id: <20120509055033.031140643@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:50:53 +0100
+Date: Wed, 09 May 2012 06:50:54 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
-        Jan Ceuleers <jan.ceuleers@computer.org>
-Subject: [ 024/167] [PATCH] md: dont call ->add_disk unless there is good reason.
+        Christoph Nelles <evilazrael@evilazrael.de>
+Subject: [ 025/167] [PATCH] md: fix possible corruption of array metadata on shutdown.
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,52 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: NeilBrown <neilb@suse.de>
 
-commit ed209584c38fb74b7eecc03e5b1bfe674e591bd8 upstream.
+commit 30b8aa9172dfeaac6d77897c67ee9f9fc574cdbb upstream.
 
-Commit 7bfec5f35c68121e7b18
+commit c744a65c1e2d59acc54333ce8
+  md: don't set md arrays to readonly on shutdown.
 
-   md/raid5: If there is a spare and a want_replacement device, start replacement.
+removed the possibility of a 'BUG' when data is written to an array
+that has just been switched to read-only, but also introduced the
+possibility that the array metadata could be corrupted.
 
-cause md_check_recovery to call ->add_disk much more often.
-Instead of only when the array is degraded, it is now called whenever
-md_check_recovery finds anything useful to do, which includes
-updating the metadata for clean<->dirty transition.
-This causes unnecessary work, and causes info messages from ->add_disk
-to be reported much too often.
+If, when md_notify_reboot gets the mddev lock, the array is
+in a state where it is assembled but hasn't been started (as can
+happen if the personality module is not available, or in other unusual
+situations), then incorrect metadata will be written out making it
+impossible to re-assemble the array.
 
-So refine md_check_recovery to only do any actual recovery checking
-(including ->add_disk) if MD_RECOVERY_NEEDED is set.
+So only call __md_stop_writes() if the array has actually been
+activated.
 
-This fix is suitable for 3.3.y:
+This patch is needed for any stable kernel which has had the above
+commit applied.
 
-Reported-by: Jan Ceuleers <jan.ceuleers@computer.org>
+Reported-by: Christoph Nelles <evilazrael@evilazrael.de>
 Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/md.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/md.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/md/md.c b/drivers/md/md.c
-index b572e1e..8beb19c 100644
+index 8beb19c..477eb2e 100644
 --- a/drivers/md/md.c
 +++ b/drivers/md/md.c
-@@ -7560,14 +7560,14 @@ void md_check_recovery(struct mddev *mddev)
- 		 * any transients in the value of "sync_action".
- 		 */
- 		set_bit(MD_RECOVERY_RUNNING, &mddev->recovery);
--		clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
- 		/* Clear some bits that don't mean anything, but
- 		 * might be left set
- 		 */
- 		clear_bit(MD_RECOVERY_INTR, &mddev->recovery);
- 		clear_bit(MD_RECOVERY_DONE, &mddev->recovery);
+@@ -8140,7 +8140,8 @@ static int md_notify_reboot(struct notifier_block *this,
  
--		if (test_bit(MD_RECOVERY_FROZEN, &mddev->recovery))
-+		if (!test_and_clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery) ||
-+		    test_bit(MD_RECOVERY_FROZEN, &mddev->recovery))
- 			goto unlock;
- 		/* no recovery is running.
- 		 * remove any failed drives, then
+ 	for_each_mddev(mddev, tmp) {
+ 		if (mddev_trylock(mddev)) {
+-			__md_stop_writes(mddev);
++			if (mddev->pers)
++				__md_stop_writes(mddev);
+ 			mddev->safemode = 2;
+ 			mddev_unlock(mddev);
+ 		}
 -- 
 1.7.10
 
