@@ -1,47 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759461Ab2EIOOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:14:14 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:21770 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751842Ab2EIOON (ORCPT
+	id S1759466Ab2EIOPf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:15:35 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43763 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756172Ab2EIOPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:14:13 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: ht.9GpcVM1kX4r1vas0HNoocPsetLpgGkDPX8xYHrKtYBWn
- Mx9_ZYEyfWZMjbBS9ewDzxPtOquODU4iKrhNX2db5PD6AkESZhbcwTz.PCnx
- Vy6rrUp9lCkjgXlSTbEuWNhqIB.1o_g6dEA94CoBTP7j9u9OMS778Y.LgSwr
- 6kbGDdD3JwTWZr_mZX5L671GlUR7ZDAycXLfYjFDQZLVfa2XEsdIBCpebXCR
- WvUjN4FyrUMyAK26q2y1UfSJgczWXiZp8JDCTVuo7VDNyoccqi7cgN0Qeitt
- EbUNkwUMOxB1itG4oze1Is9.n12_m9cNXQ6O8kMkrLYsOxeFzbX3Zyiu44oA
- HsM7MDCqMvEpPHMYJfNcJxc3C0egP3qelpnyQFUTgy0860QhFpwhVUmGGXMA
- bALWcu4BaM5vCmM.8WJa9IfDrHRZgnm5DbUAU
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 9 May 2012 09:14:10 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	Wed, 9 May 2012 10:15:34 -0400
+Date: Wed, 9 May 2012 16:15:28 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Igor Mammedov <imammedo@redhat.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-kernel@vger.kernel.org, pjt@google.com, tglx@linutronix.de,
+        seto.hidetoshi@jp.fujitsu.com,
         Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: BUG at mm/slub.c:374
-In-Reply-To: <CAFLxGvy0PHZHVL9rZx_0oFGobKftPBc0EN3VEyzNqvg13FUEfw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1205090907070.8171@router.home>
-References: <CAFLxGvy0PHZHVL9rZx_0oFGobKftPBc0EN3VEyzNqvg13FUEfw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
+Message-ID: <20120509141528.GA3623@gmail.com>
+References: <4FAA452A.1070909@gmail.com>
+ <4FAA588B.5010404@redhat.com>
+ <1336564330.2527.23.camel@twins>
+ <4FAA5BFB.40309@redhat.com>
+ <1336566096.2527.30.camel@twins>
+ <1336566644.2527.33.camel@twins>
+ <1336570043.2527.38.camel@twins>
+ <20120509133607.GA26124@gmail.com>
+ <1336571049.2527.43.camel@twins>
+ <1336571947.2527.47.camel@twins>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336571947.2527.47.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 May 2012, richard -rw- weinberger wrote:
 
-> A few minutes ago I saw this BUG within one of my KVM machines.
-> Config is attached.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-Interrupts on in __cmpxchg_double_slab called from __slab_alloc? Does KVM
-do some tricks with interrupt flags? I do not see how that can be
-otherwise since __slab_alloc disables interrupts on entry and reenables on
-exit.
+> On Wed, 2012-05-09 at 15:44 +0200, Peter Zijlstra wrote:
+> > On Wed, 2012-05-09 at 15:36 +0200, Ingo Molnar wrote:
+> > > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > > 
+> > > > @@ -857,15 +860,19 @@ int kptr_restrict __read_mostly;
+> > > >   *       correctness of the format string and va_list arguments.
+> > > >   * - 'K' For a kernel pointer that should be hidden from unprivileged users
+> > > >   * - 'NF' For a netdev_features_t
+> > > > + * - 'b' For a bitmap, consumes 2 args, second is int
+> > > 
+> > > hm, won't the second arg confuse gcc's printf format checker?
+> > 
+> > 
+> > Ah, yes, I suppose I could abuse something like %*pb. Let me try that.
+> 
+> I guess I should use %.*pb and keep the field_width in case someone
+> manages to actually make bitmap_scnlistprintf() conform to it. The
+> precision is unused anyway.
 
+That's a cute trick, and it's intuitive as well.
+
+> +	case 'b':
+> +		{
+> +			int bits, len;
+> +
+> +			switch (fmt[1]) {
+> +			case 'c':
+> +				bits = nr_cpumask_bits;
+> +				break;
+> +			case 'n':
+> +				bits = MAX_NUMNODES;
+> +				break;
+> +			default:
+> +				bits = spec->precision;
+> +				break;
+
+So, if someone specifies an incomplete "%pb" format - fmt[1] 
+will be 0 and we take precision as the length - presumably also 
+0. We stick that 0 into:
+
+> +			len = bitmap_scnlistprintf(buf, end - buf, ptr, bits);
+
+Will that work?
+
+Provided it all tests out fine for you it looks good to me.
+
+I'd probably write the switch statement as:
+
+			switch (fmt[1]) {
+			case 'c': bits = nr_cpumask_bits; break;
+			case 'n': bits = MAX_NUMNODES;    break;
+			default:  bits = spec->precision; break;
+			}
+
+... but that's a small detail and a matter of taste in any case.
+
+Thanks,
+
+	Ingo
