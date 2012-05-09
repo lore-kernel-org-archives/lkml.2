@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759077Ab2EIJX0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 05:23:26 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:35730
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759056Ab2EIJXY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 05:23:24 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz14ffIzz1202hzzz2dh2a8h668h839h8e2h8e3hd25hbe9i)
-From: Agarwal Nikhil-B38457 <B38457@freescale.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Memory exhaust issue with only IPsec policies configured on
- continuous traffic
-Thread-Topic: Memory exhaust issue with only IPsec policies configured on
- continuous traffic
-Thread-Index: Ac0tv28IM+yv7QjhQam8Yx0e57jygwAAbzFQAABj4VAAAAsIEAAAmXmA
-Date: Wed, 9 May 2012 09:23:16 +0000
-Message-ID: <F0B93D0554724543876B9A180DC988575B7430@039-SN1MPN1-001.039d.mgd.msft.net>
-References: <F0B93D0554724543876B9A180DC988575B70E7@039-SN1MPN1-001.039d.mgd.msft.net>
-In-Reply-To: <F0B93D0554724543876B9A180DC988575B70E7@039-SN1MPN1-001.039d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.134.142]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1759035Ab2EIJYj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 05:24:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:53315 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753869Ab2EIJYh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 05:24:37 -0400
+From: =?UTF-8?q?Steffen=20K=C3=BChn?= <sk@ammonit.com>
+To: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Steffen=20K=C3=BChn?= <sk@ammonit.com>
+Subject: [PATCH] mmc: atmel-mci: fix deadlock
+Date: Wed,  9 May 2012 11:23:36 +0200
+Message-Id: <1336555416-14640-1-git-send-email-sk@ammonit.com>
+X-Mailer: git-send-email 1.7.2.5
+X-OriginalArrivalTime: 09 May 2012 09:24:23.0295 (UTC) FILETIME=[855E00F0:01CD2DC5]
+X-Provags-ID: V02:K0:q75AUeCfGhmrIoaU5a/21ikjnYiBvTJK10PZWbXjo8Q
+ kbTkdEUSHq/kCBkWtEaOboQ+jkt2M931TgUiBgAl8CcEm+ZixL
+ 5ecOrzGog/snztah1i35EC36nSyWCUHTZIME1NA5gPyc0r7rRw
+ rj06rQJN6NxhH+DhiKd31d7++ZNf2DQ3Ngw+6IZFpNduJS1XyT
+ hbXgQS0SU9B2rRuOPfHUtIBU+hEQshSr7JOUvU4qJPr+APyMnR
+ cRq3ANJsh/PVULnqghYdY9ah0paH9UFkQBR70L2sKb7rDOvXoy
+ nPHmi87ogawGKcDq/xdpEG7dPYkvpusMK6IOWuVlFN1RuYQ3b8
+ jq9yZPaiYNiCyAMcbidlZlGmSOkTn1H+6ZkkhPrbIefkN5Fezh
+ ua2qNtY6DFnQg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-               In a typical scenario, when IPSEC policies are configured in the system but SA is not present or negotiation fails or IKE daemon is not running.  The current behavior of xfrm is to send those matching packets to blackhole route.  i.e. xfrm_bundle_lookup returns a bundle with null route and xfrm_lookup returns a blackhole route.
+solves a deadlock problem which appears when a mmc card is
+removing and a process is reading from the card at the same time.
+---
+ drivers/mmc/host/atmel-mci.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-For each of these packet a dst_alloc is called in ipv4_blackhole_route. However when these skbs get free and their dst's get discarded using dst_free and the garbage collector is scheduled using cancel_delayed_work and schedule_delayed_work.
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index e94476b..effdc36 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -1499,8 +1499,10 @@ static void atmci_tasklet_func(unsigned long priv)
+			}
 
-If the packets are coming continuously garbage collector may not get scheduled and large amount of memory is stuck to be freed causing the system to go into non-recoverable state.
+			if (!atmci_test_and_clear_pending(host,
+-						EVENT_XFER_COMPLETE))
++						EVENT_XFER_COMPLETE)) {
++				host->stop_transfer(host);
+				break;
++            }
 
-Any ideas? 
-
-Regards
-Nikhil
-
-
+			atmci_set_completed(host, EVENT_XFER_COMPLETE);
+			prev_state = state = STATE_DATA_BUSY;
+--
+1.7.2.5
