@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab2EIXVj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 19:21:39 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:51576 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758527Ab2EIXVi convert rfc822-to-8bit (ORCPT
+	id S932568Ab2EIXWG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 19:22:06 -0400
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:57008 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932501Ab2EIXWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 19:21:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120509145956.97b4ff63.akpm@linux-foundation.org>
-References: <20120504182114.24883.40748.stgit@beardog.cce.hp.com>
-	<20120509145956.97b4ff63.akpm@linux-foundation.org>
-Date: Wed, 9 May 2012 18:21:37 -0500
-Message-ID: <CADzpL0Qs_4SZeR-E_TCnagQQwNR3OC_ncOGZpGS62dNPtCwfdw@mail.gmail.com>
-Subject: Re: [PATCH] cciss: fix incorrect scsi status reporting
-From: Stephen Cameron <stephenmcameron@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>, axboe@kernel.dk,
-        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org,
-        thenzl@redhat.com, roel.vanmeer@bokxing.nl
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 May 2012 19:22:03 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: Colin Cross <ccross@android.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jesper Juhl <jj@chaosbits.net>,
+        Jiri Kosina <jkosina@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH] trace: power: add trace_clock_set_parent
+Date: Wed,  9 May 2012 16:21:30 -0700
+Message-Id: <1336605692-14509-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 4:59 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Fri, 04 May 2012 13:21:14 -0500
-> "Stephen M. Cameron" <scameron@beardog.cce.hp.com> wrote:
->
->> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
->>
->> Delete code which sets SCSI status incorrectly as it's already
->> been set correctly above this incorrect code.  Bug was introduced
->> by b0e15f6db1110319cb2e747e59e1200450a5ba3e
->> "cciss: fix typo that causes scsi status to be lost." in 2009.
->>
->> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
->> Reported-and-tested-by: Roel van Meer <roel.vanmeer@bokxing.nl>
->> Cc: stable@vger.kernel.org
->
-> If the bug is three years old, it presumably isn't a terribly serious
-> one.  Why was the -stable backport recommended?
+Adds a new trace event to be called from clk_set_parent.  Some
+cpufreq drivers, including Tegra, reparent the cpu clock to a
+slower clock while the main pll is relocking, tracing
+clk_set_parent allows traces to show how for long the cpu is
+running slower.
 
-(added roel.vanmeer@bokxing.nl to cc list)
+Uses a separate TRACE_EVENT instead of the clock event class to
+allow the event to contain string names for the child and the
+parent.
 
-Due to my subjective interpretation of stable_kernel_rules.txt,
-specifically this part:
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ include/trace/events/power.h |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
 
- - It must fix a problem that causes a build error (but not for things
-   marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
-   security issue, or some "oh, that's not good" issue.  In short, something
-   critical.
+diff --git a/include/trace/events/power.h b/include/trace/events/power.h
+index cae9a94..2b81df6 100644
+--- a/include/trace/events/power.h
++++ b/include/trace/events/power.h
+@@ -204,6 +204,25 @@ enum {
+ 	TP_ARGS(name, state, cpu_id)
+ );
+ 
++TRACE_EVENT(clock_set_parent,
++
++	TP_PROTO(const char *name, const char *parent_name),
++
++	TP_ARGS(name, parent_name),
++
++	TP_STRUCT__entry(
++		__string(       name,           name            )
++		__string(       parent_name,    parent_name     )
++	),
++
++	TP_fast_assign(
++		__assign_str(name, name);
++		__assign_str(name, parent_name);
++	),
++
++	TP_printk("%s parent=%s", __get_str(name), __get_str(parent_name))
++);
++
+ /*
+  * The power domain events are used for power domains transitions
+  */
+-- 
+1.7.7.3
 
-I thought it fell under the "oh, that's not good", in that, according
-to the tester, iirc, it made his tape drive not show up at all, which
-seemed bad (though not a symptom I observed directly), and it seemed
-like a trivial fix to something obviously incorrect, so thought stable
-might like to know about it.  But, maybe not.
-
--- steve
