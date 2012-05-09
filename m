@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758943Ab2EIJCu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 05:02:50 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:60940 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758893Ab2EIJCr (ORCPT
+	id S1758905Ab2EIJDn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 05:03:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60034 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755047Ab2EIJDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 05:02:47 -0400
-X-AuditID: b753bd60-9145cba000002c51-06-4faa32b4b0b2
-X-AuditID: b753bd60-9145cba000002c51-06-4faa32b4b0b2
-Message-ID: <4FAA32B3.3070806@hitachi.com>
-Date: Wed, 09 May 2012 18:02:43 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 9 May 2012 05:03:42 -0400
+Date: Wed, 9 May 2012 10:03:39 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] twl-regulator: make TWL4030_ALLOW_UNSUPPORTED more
+ configurable.
+Message-ID: <20120509090338.GC3955@opensource.wolfsonmicro.com>
+References: <20120501204259.27026.40156.stgit@notabene.brown>
+ <20120501204450.27026.40239.stgit@notabene.brown>
+ <20120508184048.GM15893@opensource.wolfsonmicro.com>
+ <20120509054751.7bc749c2@notabene.brown>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 6/9][RFC] kprobes: Allow probe on ftrace reserved text
- (but move it)
-References: <20120502192418.024103772@goodmis.org>    <20120502193237.321234712@goodmis.org> <y0mhavyl3kg.fsf@fche.csb>   <1336002032.14207.52.camel@gandalf.stny.rr.com>   <4FA7B410.1000804@hitachi.com>  <1336394603.14207.117.camel@gandalf.stny.rr.com>  <4FA88E1B.1020708@hitachi.com> <1336482295.14207.172.camel@gandalf.stny.rr.com> <4FAA0641.7070409@hitachi.com> <4FAA26DD.4050403@hitachi.com>
-In-Reply-To: <4FAA26DD.4050403@hitachi.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WfZ7S8PLGjBY9Voh"
+Content-Disposition: inline
+In-Reply-To: <20120509054751.7bc749c2@notabene.brown>
+X-Cookie: You are fairminded, just and loving.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/05/09 17:12), Masami Hiramatsu wrote:
-> (2012/05/09 14:53), Masami Hiramatsu wrote:
->> (2012/05/08 22:04), Steven Rostedt wrote:
->>> Note, the big difference with using ftrace optimization and normal
->>> kprobe jump optimization is that the ftrace one can be used on a preempt
->>> kernel. But this code is still under development. I want to get a
->>> solution for the current code (this patch set) now. It would be nice if
->>> it was ready for 3.5.
->>
->> I doubt that we can really do this. If this is possible, I can make
->> jump optimization work with preemptive kernel.
-> 
-> Now I'm clear that it can be done only with ftrace-nop.
-> What I concerned with is out-of-line execution buffer releasing
-> timing. but with the ftrace-nop, we don't need to do that.
-> 
-> Theoretically, that will be done in following steps;
-> 
-> 1. call mcount (w/ push call-site address+5)
-> 2. mcount calls ftrace handlers
-> 3. mcount makes pt_regs on the stack
->  - on x86-32, regs->cs should be the call-site address+5, since
->    regs->sp must be the top of original stack.
 
-Oops, no, %flags is stored on regs->cs and regs->flags is
-call-site address. So we have to fix it up in optprobe handler.
+--WfZ7S8PLGjBY9Voh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->  - on x86-64, it is enough that regs->sp points the top of original
->    stack.
-> 4. mcount store call-site address+5 to %ax
-> 5. mcount calls new-optprobe handler (which returns call-site address+5)
-> 6. mcount restores registers
-> 7. mcount returns to the call-site address+5.
-> 
-> Between 6 and 7, original opt-probe has to do out-of-line execution,
-> but this ftrace-based one doesn't need to do that. In that case,
-> we don't need to allocate nor to release out-of-line execution buffer
-> for this probe.
+On Wed, May 09, 2012 at 05:47:51AM +1000, NeilBrown wrote:
 
-And I got an concrete idea of kprobes call-optimization which
-uses call instead of jump. That will make ftrace-based optimization
-very easy. :)
+>  I've also fixed up the subject lines (I wonder if MAINTAINERS and
+>  checkpatch.pl need to learn about preferred subject lines :-) and added
+>  Samuel Ortez to the 'To:' list.
 
-Thank you,
+Joe seemed to think that was far too hard or something.  In general just
+look at the logs and follow the style there (in the same way one would
+do with code).
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+--WfZ7S8PLGjBY9Voh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPqjHRAAoJEBus8iNuMP3drbYP/RADoxOklNfLntUSzpJIwBK5
+sB6eLsyjY1zBb26ZSo6g+kzFiyJVzgFXFfakgOIm3QuOG9zSkD6IpPzkJvgINyHj
+/FvTVNKjsXxk6myLycoOuyoDBcPbr3T3CwPUmMa1woEbOi/Jr1VfO2nT8TXOGklu
+GMGGC23Vleh/yXibU/VD1ne1yxmvIJWJiBlubAXZ7Pceclz8oun1Na4REm+uIKwh
+AqaEl/rkzLXEAxONWZPFvoenzdslUybLSiqPSMkTZruB+faS8qYivgEMoPWwoKnA
+2EgQKD4LW0xEdNsSzOCPJTd7+0ONEqYhqimMGI0x6h8ZhQbOl6/M850vBowI7DDM
+w1Bf6T8yGdW0NO+5ihBvFGhzQLeTpabeiAxjfolSMwTuV6zalFHFhw7vuFrThaoA
+uU7/47vNCWbamm1VTP4TzB9NFeSYLF1+H4vZsAkl43IBqjcUOtMubnvIsJQ+hibY
+WcTfE8wkwVf9+rdWCL0qSdo3NBERVm8VFgICa1Ntyh4C7fHMnF4TvEtB2jT1fmaI
+CyyOUOTiG64REtbqHGdnhpj11Qznnx6NugLpGFA3NRKABHrhwWDasRz6xJqVWofo
+s1/SDz6MhL1ZBlVfswliJu1OfZ9UMkg/9RteATmD/BPagm0l52Dfgt1XmhPlgwc7
+/i+nzF8UE0OHjGp6Lsfk
+=LqB4
+-----END PGP SIGNATURE-----
+
+--WfZ7S8PLGjBY9Voh--
