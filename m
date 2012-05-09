@@ -1,174 +1,453 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758820Ab2EIIzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 04:55:13 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57076 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755250Ab2EIIzJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 04:55:09 -0400
-Date: Wed, 9 May 2012 10:56:13 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Hugh Dickins <hughd@google.com>
-Cc: Stephane Marchesin <marcheu@chromium.org>, linux-kernel@vger.kernel.org,
-        keithp@keithp.com, torvalds@linux-foundation.org,
-        seanpaul@chromium.org, olofj@chromium.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Clark <rob.clark@linaro.org>,
-        dri-devel@lists.freedesktop.org,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH] mm: Work around Intel SNB GTT bug with some physical
- pages.
-Message-ID: <20120509085427.GA4963@phenom.ffwll.local>
-Mail-Followup-To: Hugh Dickins <hughd@google.com>,
-	Stephane Marchesin <marcheu@chromium.org>,
-	linux-kernel@vger.kernel.org, keithp@keithp.com,
-	torvalds@linux-foundation.org, seanpaul@chromium.org,
-	olofj@chromium.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	Andi Kleen <andi@firstfloor.org>, Rob Clark <rob.clark@linaro.org>,
-	dri-devel@lists.freedesktop.org,
-	Chris Wilson <chris@chris-wilson.co.uk>
-References: <1336432421-17972-1-git-send-email-marcheu@chromium.org>
- <alpine.LSU.2.00.1205081340080.4287@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1205081340080.4287@eggly.anvils>
-X-Operating-System: Linux phenom 3.4.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758838Ab2EIIz3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 04:55:29 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:41873 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755250Ab2EIIz0 (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Wed, 9 May 2012 04:55:26 -0400
+Message-Id: <4FAA3CBA02000078000826DD@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 09 May 2012 08:45:30 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <a.p.zijlstra@chello.nl>, <mingo@elte.hu>, <acme@ghostprotocols.net>,
+        <paulus@samba.org>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] perf: generalize makefile
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="=__Part2709CF8A.4__="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 02:57:25PM -0700, Hugh Dickins wrote:
-> On Mon, 7 May 2012, Stephane Marchesin wrote:
-> 
-> > While investing some Sandy Bridge rendering corruption, I found out
-> > that all physical memory pages below 1MiB were returning garbage when
-> > read through the GTT. This has been causing graphics corruption (when
-> > it's used for textures, render targets and pixmaps) and GPU hangups
-> > (when it's used for GPU batch buffers).
-> > 
-> > I talked with some people at Intel and they confirmed my findings,
-> > and said that a couple of other random pages were also affected.
-> > 
-> > We could fix this problem by adding an e820 region preventing the
-> > memory below 1 MiB to be used, but that prevents at least my machine
-> > from booting. One could think that we should be able to fix it in
-> > i915, but since the allocation is done by the backing shmem this is
-> > not possible.
-> > 
-> > In the end, I came up with the ugly workaround of just leaking the
-> > offending pages in shmem.c. I do realize it's truly ugly, but I'm
-> > looking for a fix to the existing code, and am wondering if people on
-> > this list have a better idea, short of rewriting i915_gem.c to
-> > allocate its own pages directly.
-> > 
-> > Signed-off-by: Stephane Marchesin <marcheu@chromium.org>
-> 
-> Well done for discovering and pursuing this issue, but of course (as
-> you know: you're trying to provoke us to better) your patch is revolting.
-> 
-> And not even enough: swapin readahead and swapoff can read back
-> from swap into pages which the i915 will later turn out to dislike.
-> 
-> I do have a shmem.c patch coming up for gma500, which cannot use pages
-> over 4GB; but that fits more reasonably with memory allocation policies,
-> where we expect that anyone who can use a high page can use a lower as
-> well, and there's already __GFP_DMA32 to set the limit.
-> 
-> Your limitation is at the opposite end, so that patch won't help you at
-> all.  And I don't see how Andi's ZONE_DMA exclusion would work, without
-> equal hackery to enable private zonelists, avoiding that convention.
-> 
-> i915 is not the only user of shmem, and x86 not the only architecture:
-> we're not going to make everyone suffer for this.  Once the memory
-> allocator gets down to giving you the low 1MB, my guess is that it's
-> already short of memory, and liable to deadlock or OOM if you refuse
-> and soak up every page it then gives you.  Even if i915 has to live
-> with that possibility, we're not going to extend it to everyone else.
-> 
-> arch/x86/Kconfig has X86_RESERVE_LOW, default 64, range 4 640 (and
-> I think we reserve all the memory range from 640kB to 1MB anyway).
-> Would setting that to 640 allow you to boot, and avoid the i915
-> problem on all but the odd five pages?  I'm not pretending that's
-> an ideal solution at all (unless freeing initmem could release most
-> of it on non-SandyBridge and non-i915 machines), but it would be
-> useful to know if that does provide a stopgap solution.  If that
-> does work, maybe we just mark the odd five PageReserved at startup.
+This is a MIME message. If you are reading this text, you may want to 
+consider changing to a mail reader or gateway that understands how to 
+properly handle MIME multipart messages.
 
-Hm, as a stopgap measure to make Sandybridge gpus not die that sounds
-pretty good. But we still need a more generic solution for the long-term,
-see below
+--=__Part2709CF8A.4__=
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
 
-> Is there really no way this can be handled closer to the source of
-> the problem, in the i915 driver itself?  I do not know the flow of
-> control in i915 (and X) at all, but on the surface it seems that the
-> problem only comes when you map these problematic pages into the GTT
-> (if I'm even using the right terminology), and something (not shmem.c)
-> actively has to do that.
-> 
-> Can't you check the pfn at that point, and if it's an unsuitable page,
-> copy into a suitable page (perhaps allocated then, perhaps from a pool
-> you primed earlier) and map that suitable page into the GTT instead?
-> Maybe using page->private to link them if that helps.
-> 
-> So long as the page (or its shadow) is mapped into the GTT, I imagine
-> it would be pinned, and not liable to be swapped out or otherwise
-> interfered with by shmem.c.  And when you unmap it from GTT, copy
-> back to the unsuitable shmem object page before unpinning.
-> 
-> I fully accept that I have very little understanding of GPU DRM GTT
-> and i915, and this may be impossible or incoherent: but please, let's
-> try to keep the strangeness where it belongs.  If necessary, we'll
-> have add some kind of flag and callback from shmem.c to the driver;
-> but I'd so much prefer to avoid that.
+As indicated before, in order to be able to consistently build
+individual object, pre-processed, or assembly files under tools/perf/,
+the make logic needs to be adjusted: Commands should only come from
+pattern rules, and individual targets should merely override compiler
+flags. This requires the introduction of a single additional stub
+source file (so the pattern rules would cover the respective object or
+intermediate file generation).
 
-The copy stuff back&forth approach is pretty much what ttm uses atm: It
-allocates suitable pages with whatever means it has (usually through the
-dma api) and if the shrinker callback tells it that it's sitting on too
-much memory, it copies stuff out to the shmem backing storage used by gem.
+Further, adjust some dependencies to actually have the intended effect
+of re-building in case of them having got touched, also requiring some
+re-ordering within the file.
 
-There are quite a few issues with that approach:
-- We expose mmap to the shmem file directly to userspace in i915. We use
-  these extensively on Sandybridge because there direct cpu access is
-  coherent with what the gpu does. Original userspace would always tell
-  the kernel when it's done writing through cpu mappings so that the
-  kernel could ensure coherency (by clflushing + some magic memory
-  controller flush on older platforms), but because snb is coherent, we've
-  dropped that. So the kernel has no idea when it should copy stuff
-  around.
+Additionally omit the (redundant and confusing) $(OUTPUT)/ portion of
+the build progress messages (just like the normal kernel build does).
 
-- The problem that shmem allocates unsuitable pages ins't limited to hw
-  issues on snb: We have random dma limits (like the 4G limit for gma500),
-  newer intel gpus support large pages (64K), and they would be beneficial
-  for some (video encode/decode related) workloads, with have crazy arm
-  gpus that want to allocate pages from specific CMA pools (because it
-  needs to spread video date over 2 buffer objects, both contigious but on
-  different memory banks) and so on ...
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-- I don't like the copy stuff around, especially since that moves drm
-  drivers further away from shmem and the swapout decisions of the vm. Atm
-  it's ridiculously easy to oom a system when drm/i915 is sitting on too
-  much shmem memory. Despite that there's tons of free swap around. One
-  idea to fix that is to stop mlocking pages we use on the gpu and instead
-  wire up the drm drivers into the shmem swapout path. The current
-  shrinker approach we're using doesn't stand a chance against a busy gpu.
+---
+ tools/perf/Makefile      |  135 ++++++++++++++++++++++--------------------=
+-----
+ tools/perf/util/rbtree.c |    1=20
+ 2 files changed, 65 insertions(+), 71 deletions(-)
 
-- A related problem is that sitting on a few hundred meg to a few gig of
-  !GFP_MOVEABLE memory isn't really nice to nifty features like
-  transparent hugepages and other cool stuff that recently popped up
-  around page migration. Again I think we should work towards wiring up
-  drm drivers into the shmfs migrate_page callback so that this works
-  reliably.
+--- 3.4-rc6/tools/perf/Makefile
++++ 3.4-rc6-perf-makefile-generalize/tools/perf/Makefile
+@@ -189,7 +189,7 @@ BASIC_LDFLAGS =3D
+ BUILTIN_OBJS =3D
+ LIB_H =3D
+ LIB_OBJS =3D
+-PYRF_OBJS =3D
++PYRF_SRC =3D
+ SCRIPT_SH =3D
+=20
+ SCRIPT_SH +=3D perf-archive.sh
+@@ -200,16 +200,11 @@ strip-libs =3D $(filter-out -l%,$(1))
+ PYTHON_EXT_SRCS :=3D $(shell grep -v ^\# util/python-ext-sources)
+ PYTHON_EXT_DEPS :=3D util/python-ext-sources util/setup.py
+=20
+-$(OUTPUT)python/perf.so: $(PYRF_OBJS) $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS=
+)
+-	$(QUIET_GEN)CFLAGS=3D'$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py=
+ \
+-	  --quiet build_ext; \
+-	mkdir -p $(OUTPUT)python && \
+-	cp $(PYTHON_EXTBUILD_LIB)perf.so $(OUTPUT)python/
+ #
+ # No Perl scripts right now:
+ #
+=20
+-SCRIPTS =3D $(patsubst %.sh,%,$(SCRIPT_SH))
++SCRIPTS =3D $(patsubst %.sh,$(OUTPUT)%,$(SCRIPT_SH))
+=20
+ #
+ # Single 'perf' binary right now:
+@@ -436,14 +431,14 @@ PERFLIBS =3D $(LIB_FILE)
+ # This has to be in sync with what is in the 'sources' variable in
+ # tools/perf/util/setup.py
+=20
+-PYRF_OBJS +=3D $(OUTPUT)util/cpumap.o
+-PYRF_OBJS +=3D $(OUTPUT)util/ctype.o
+-PYRF_OBJS +=3D $(OUTPUT)util/evlist.o
+-PYRF_OBJS +=3D $(OUTPUT)util/evsel.o
+-PYRF_OBJS +=3D $(OUTPUT)util/python.o
+-PYRF_OBJS +=3D $(OUTPUT)util/thread_map.o
+-PYRF_OBJS +=3D $(OUTPUT)util/util.o
+-PYRF_OBJS +=3D $(OUTPUT)util/xyarray.o
++PYRF_SRC +=3D util/cpumap.c
++PYRF_SRC +=3D util/ctype.c
++PYRF_SRC +=3D util/evlist.c
++PYRF_SRC +=3D util/evsel.c
++PYRF_SRC +=3D util/python.c
++PYRF_SRC +=3D util/thread_map.c
++PYRF_SRC +=3D util/util.c
++PYRF_SRC +=3D util/xyarray.c
+=20
+ #
+ # Platform specific tweaks
+@@ -680,13 +675,13 @@ endif
+=20
+ ifneq ($(findstring $(MAKEFLAGS),s),s)
+ ifndef V
+-	QUIET_CC       =3D @echo '   ' CC $@;
+-	QUIET_AR       =3D @echo '   ' AR $@;
+-	QUIET_LINK     =3D @echo '   ' LINK $@;
+-	QUIET_MKDIR    =3D @echo '   ' MKDIR $@;
+-	QUIET_GEN      =3D @echo '   ' GEN $@;
+-	QUIET_FLEX     =3D @echo '   ' FLEX $@;
+-	QUIET_BISON    =3D @echo '   ' BISON $@;
++	QUIET_CC       =3D @echo '   ' CC $(patsubst $(OUTPUT)%,%,$@);
++	QUIET_AR       =3D @echo '   ' AR $(patsubst $(OUTPUT)%,%,$@);
++	QUIET_LINK     =3D @echo '   ' LINK $(patsubst $(OUTPUT)%,%,$@);
++	QUIET_MKDIR    =3D @echo '   ' MKDIR $(patsubst $(OUTPUT)%,%,$@);
++	QUIET_GEN      =3D @echo '   ' GEN $(patsubst $(OUTPUT)%,%,$@);
++	QUIET_FLEX     =3D @echo '   ' FLEX $(patsubst $(OUTPUT)%,%,$@);
++	QUIET_BISON    =3D @echo '   ' BISON $(patsubst $(OUTPUT)%,%,$@);
+ endif
+ endif
+=20
+@@ -733,39 +728,22 @@ shell_compatibility_test: please_set_SHE
+ strip: $(PROGRAMS) $(OUTPUT)perf
+ 	$(STRIP) $(STRIP_OPTS) $(PROGRAMS) $(OUTPUT)perf
+=20
+-$(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -DPERF_VERSION=3D'"$(PERF_VERSION)"' \
+-		'-DPERF_HTML_PATH=3D"$(htmldir_SQ)"' \
+-		$(ALL_CFLAGS) -c $(filter %.c,$^) -o $@
+-
+ $(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
+ 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) $(OUTPUT)perf.o \
+                $(BUILTIN_OBJS) $(LIBS) -o $@
+=20
+-$(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h $(OUTPUT)PE=
+RF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
+-		'-DPERF_HTML_PATH=3D"$(htmldir_SQ)"' \
+-		'-DPERF_MAN_PATH=3D"$(mandir_SQ)"' \
+-		'-DPERF_INFO_PATH=3D"$(infodir_SQ)"' $<
+-
+-$(OUTPUT)builtin-timechart.o: builtin-timechart.c $(OUTPUT)common-cmds.h =
+$(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
+-		'-DPERF_HTML_PATH=3D"$(htmldir_SQ)"' \
+-		'-DPERF_MAN_PATH=3D"$(mandir_SQ)"' \
+-		'-DPERF_INFO_PATH=3D"$(infodir_SQ)"' $<
++$(OUTPUT)python/perf.so: $(PYRF_SRC) $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)=
 
-ARM ppl with their crazy gpus suffer much more from this than x86/Intel,
-so Rob Clark from Linaro has volunteered himself to look into a gemfs
-(Chris Wilson from our team created such a beast for drm/i915 a while
-back, but that one bitrotted a bit).
++	$(QUIET_GEN)CFLAGS=3D'$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py=
+ \
++	  --$(if $(V),verbose,quiet) build_ext; \
++	mkdir -p $(@D) && mv $(PYTHON_EXTBUILD_LIB)perf.so $(@D)/
+=20
+ $(OUTPUT)common-cmds.h: util/generate-cmdlist.sh command-list.txt
+=20
+ $(OUTPUT)common-cmds.h: $(wildcard Documentation/perf-*.txt)
+ 	$(QUIET_GEN). util/generate-cmdlist.sh > $@+ && mv $@+ $@
+=20
+-$(SCRIPTS) : % : %.sh
+-	$(QUIET_GEN)$(INSTALL) '$@.sh' '$(OUTPUT)$@'
+-
+-# These can record PERF_VERSION
+-$(OUTPUT)perf.o perf.spec \
+-	$(SCRIPTS) \
+-	: $(OUTPUT)PERF-VERSION-FILE
++$(SCRIPTS) : $(OUTPUT)% : %.sh
++	$(QUIET_GEN)$(INSTALL) '$<' '$@'
+=20
+ .SUFFIXES:
+ .SUFFIXES: .o .c .S .s
+@@ -790,42 +768,57 @@ $(OUTPUT)%.o: %.S
+ $(OUTPUT)%.s: %.S
+ 	$(QUIET_CC)$(CC) -o $@ -E $(ALL_CFLAGS) $<
+=20
+-$(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
+-		'-DPERF_EXEC_PATH=3D"$(perfexecdir_SQ)"' \
+-		'-DBINDIR=3D"$(bindir_relative_SQ)"' \
+-		'-DPREFIX=3D"$(prefix_SQ)"' \
+-		$<
++ifneq ($(OUTPUT),)
++PHONY_ALL  :=3D $(filter (OUTPUT)%,$(ALL_PROGRAMS) $(LANG_BINDINGS))
++PHONY_OBJS :=3D $(patsubst $(OUTPUT)%,%,$(BUILTIN_OBJS) $(LIB_OBJS))
++PHONY_ASMS :=3D $(patsubst %.o,%.s,$(PHONY_OBJS))
++PHONY_CPPS :=3D $(patsubst %.o,%.i,$(PHONY_OBJS))
++PHONY_ALL  +=3D $(PHONY_OBJS) $(PHONY_ASMS) $(PHONY_CPPS)
++.PHONY: $(PHONY_ALL)
++$(PHONY_ALL): %: $(OUTPUT)%
++endif
++
++output =3D $(foreach ext,o i s,$(OUTPUT)$(1).$(ext))
++
++# These can record PERF_VERSION
++$(call output,perf) $(SCRIPTS): $(OUTPUT)PERF-VERSION-FILE
+=20
+-$(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG=3D'"$(ETC_=
+PERFCONFIG_SQ)"' $<
++$(call output,perf) $(call output,builtin-help): $(OUTPUT)common-cmds.h
+=20
+-$(OUTPUT)util/ui/browser.o: util/ui/browser.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
++$(call output,perf): ALL_CFLAGS +=3D '-DPERF_VERSION=3D"$(PERF_VERSION)"' =
+\
++		'-DPERF_HTML_PATH=3D"$(htmldir_SQ)"'
+=20
+-$(OUTPUT)util/ui/browsers/annotate.o: util/ui/browsers/annotate.c =
+$(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
++$(call output,builtin-help) $(call output,builtin-timechart): ALL_CFLAGS =
++=3D \
++		'-DPERF_HTML_PATH=3D"$(htmldir_SQ)"' \
++		'-DPERF_MAN_PATH=3D"$(mandir_SQ)"' \
++		'-DPERF_INFO_PATH=3D"$(infodir_SQ)"'
++
++$(call output,util/exec_cmd): ALL_CFLAGS +=3D \
++		'-DPERF_EXEC_PATH=3D"$(perfexecdir_SQ)"' \
++		'-DBINDIR=3D"$(bindir_relative_SQ)"' \
++		'-DPREFIX=3D"$(prefix_SQ)"'
+=20
+-$(OUTPUT)util/ui/browsers/hists.o: util/ui/browsers/hists.c $(OUTPUT)PERF-=
+CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
++$(call output,util/config) $(call output,util/rbtree): ALL_CFLAGS +=3D \
++		'-DETC_PERFCONFIG=3D"$(ETC_PERFCONFIG_SQ)"'
+=20
+-$(OUTPUT)util/ui/browsers/map.o: util/ui/browsers/map.c $(OUTPUT)PERF-CFLA=
+GS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
++$(call output,util/rbtree): ../../lib/rbtree.c
+=20
+-$(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG=3D'"$(ETC_=
+PERFCONFIG_SQ)"' $<
++$(call output,util/ui/browser) $(call output,util/ui/browsers/annotate) \
++	$(call output,util/ui/browsers/hists) \
++	$(call output,util/ui/browsers/map): ALL_CFLAGS +=3D \
++		-DENABLE_SLFUTURE_CONST
+=20
+-$(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines=
+/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) =
+-Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter =
+-Wno-shadow $<
++$(call output,util/scripting-engines/trace-event-perl): ALL_CFLAGS +=3D \
++	$(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes =
+-Wno-unused-parameter -Wno-shadow
+=20
+-$(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o: scripts/perl/Perf-Trace-U=
+til/Context.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) =
+-Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter =
+-Wno-nested-externs $<
++$(call output,scripts/perl/Perf-Trace-Util/Context): ALL_CFLAGS +=3D \
++	$(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes =
+-Wno-unused-parameter -Wno-nested-externs
+=20
+-$(OUTPUT)util/scripting-engines/trace-event-python.o: util/scripting-engin=
+es/trace-event-python.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PYTHON_EMBED_CCOPTS) =
+-Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter =
+-Wno-shadow $<
++$(call output,util/scripting-engines/trace-event-python): ALL_CFLAGS +=3D =
+\
++	$(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes =
+-Wno-unused-parameter -Wno-shadow
+=20
+-$(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Tra=
+ce-Util/Context.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PYTHON_EMBED_CCOPTS) =
+-Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter =
+-Wno-nested-externs $<
++$(call output,scripts/python/Perf-Trace-Util/Context): ALL_CFLAGS +=3D \
++	$(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes =
+-Wno-unused-parameter -Wno-nested-externs
+=20
+ $(OUTPUT)perf-%: %.o $(PERFLIBS)
+ 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter =
+%.o,$^) $(LIBS)
+--- /home/jbeulich/tmp/linux-3.4-rc6/tools/perf/util/rbtree.c	1970-01-01 =
+01:00:00.000000000 +0100
++++ 3.4-rc6-perf-makefile-generalize/tools/perf/util/rbtree.c
+@@ -0,0 +1 @@
++#include "../../../lib/rbtree.c"
 
-Cheers, Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+
+
+--=__Part2709CF8A.4__=
+Content-Type: text/plain; name="linux-3.4-rc6-perf-makefile-generalize.patch"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment; filename="linux-3.4-rc6-perf-makefile-generalize.patch"
+
+perf: generalize makefile=0A=0AAs indicated before, in order to be able to =
+consistently build=0Aindividual object, pre-processed, or assembly files =
+under tools/perf/,=0Athe make logic needs to be adjusted: Commands should =
+only come from=0Apattern rules, and individual targets should merely =
+override compiler=0Aflags. This requires the introduction of a single =
+additional stub=0Asource file (so the pattern rules would cover the =
+respective object or=0Aintermediate file generation).=0A=0AFurther, adjust =
+some dependencies to actually have the intended effect=0Aof re-building in =
+case of them having got touched, also requiring some=0Are-ordering within =
+the file.=0A=0AAdditionally omit the (redundant and confusing) $(OUTPUT)/ =
+portion of=0Athe build progress messages (just like the normal kernel =
+build does).=0A=0ASigned-off-by: Jan Beulich <jbeulich@suse.com>=0A=0A---=
+=0A tools/perf/Makefile      |  135 ++++++++++++++++++++++-----------------=
+--------=0A tools/perf/util/rbtree.c |    1 =0A 2 files changed, 65 =
+insertions(+), 71 deletions(-)=0A=0A--- 3.4-rc6/tools/perf/Makefile=0A+++ =
+3.4-rc6-perf-makefile-generalize/tools/perf/Makefile=0A@@ -189,7 +189,7 @@ =
+BASIC_LDFLAGS =3D=0A BUILTIN_OBJS =3D=0A LIB_H =3D=0A LIB_OBJS =3D=0A-PYRF_=
+OBJS =3D=0A+PYRF_SRC =3D=0A SCRIPT_SH =3D=0A =0A SCRIPT_SH +=3D perf-archiv=
+e.sh=0A@@ -200,16 +200,11 @@ strip-libs =3D $(filter-out -l%,$(1))=0A =
+PYTHON_EXT_SRCS :=3D $(shell grep -v ^\# util/python-ext-sources)=0A =
+PYTHON_EXT_DEPS :=3D util/python-ext-sources util/setup.py=0A =0A-$(OUTPUT)=
+python/perf.so: $(PYRF_OBJS) $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)=0A-	=
+$(QUIET_GEN)CFLAGS=3D'$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \=0A-	=
+  --quiet build_ext; \=0A-	mkdir -p $(OUTPUT)python && \=0A-	cp =
+$(PYTHON_EXTBUILD_LIB)perf.so $(OUTPUT)python/=0A #=0A # No Perl scripts =
+right now:=0A #=0A =0A-SCRIPTS =3D $(patsubst %.sh,%,$(SCRIPT_SH))=0A+SCRIP=
+TS =3D $(patsubst %.sh,$(OUTPUT)%,$(SCRIPT_SH))=0A =0A #=0A # Single =
+'perf' binary right now:=0A@@ -436,14 +431,14 @@ PERFLIBS =3D $(LIB_FILE)=
+=0A # This has to be in sync with what is in the 'sources' variable in=0A =
+# tools/perf/util/setup.py=0A =0A-PYRF_OBJS +=3D $(OUTPUT)util/cpumap.o=0A-=
+PYRF_OBJS +=3D $(OUTPUT)util/ctype.o=0A-PYRF_OBJS +=3D $(OUTPUT)util/evlist=
+.o=0A-PYRF_OBJS +=3D $(OUTPUT)util/evsel.o=0A-PYRF_OBJS +=3D $(OUTPUT)util/=
+python.o=0A-PYRF_OBJS +=3D $(OUTPUT)util/thread_map.o=0A-PYRF_OBJS +=3D =
+$(OUTPUT)util/util.o=0A-PYRF_OBJS +=3D $(OUTPUT)util/xyarray.o=0A+PYRF_SRC =
++=3D util/cpumap.c=0A+PYRF_SRC +=3D util/ctype.c=0A+PYRF_SRC +=3D =
+util/evlist.c=0A+PYRF_SRC +=3D util/evsel.c=0A+PYRF_SRC +=3D util/python.c=
+=0A+PYRF_SRC +=3D util/thread_map.c=0A+PYRF_SRC +=3D util/util.c=0A+PYRF_SR=
+C +=3D util/xyarray.c=0A =0A #=0A # Platform specific tweaks=0A@@ -680,13 =
++675,13 @@ endif=0A =0A ifneq ($(findstring $(MAKEFLAGS),s),s)=0A ifndef =
+V=0A-	QUIET_CC       =3D @echo '   ' CC $@;=0A-	QUIET_AR       =3D =
+@echo '   ' AR $@;=0A-	QUIET_LINK     =3D @echo '   ' LINK $@;=0A-	=
+QUIET_MKDIR    =3D @echo '   ' MKDIR $@;=0A-	QUIET_GEN      =3D @echo ' =
+  ' GEN $@;=0A-	QUIET_FLEX     =3D @echo '   ' FLEX $@;=0A-	QUIET_BISON=
+    =3D @echo '   ' BISON $@;=0A+	QUIET_CC       =3D @echo '   ' CC =
+$(patsubst $(OUTPUT)%,%,$@);=0A+	QUIET_AR       =3D @echo '   ' AR =
+$(patsubst $(OUTPUT)%,%,$@);=0A+	QUIET_LINK     =3D @echo '   ' =
+LINK $(patsubst $(OUTPUT)%,%,$@);=0A+	QUIET_MKDIR    =3D @echo '   ' =
+MKDIR $(patsubst $(OUTPUT)%,%,$@);=0A+	QUIET_GEN      =3D @echo '   ' GEN =
+$(patsubst $(OUTPUT)%,%,$@);=0A+	QUIET_FLEX     =3D @echo '   ' =
+FLEX $(patsubst $(OUTPUT)%,%,$@);=0A+	QUIET_BISON    =3D @echo '   ' =
+BISON $(patsubst $(OUTPUT)%,%,$@);=0A endif=0A endif=0A =0A@@ -733,39 =
++728,22 @@ shell_compatibility_test: please_set_SHE=0A strip: $(PROGRAMS) =
+$(OUTPUT)perf=0A 	$(STRIP) $(STRIP_OPTS) $(PROGRAMS) $(OUTPUT)perf=0A=
+ =0A-$(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS=0A=
+-	$(QUIET_CC)$(CC) -DPERF_VERSION=3D'"$(PERF_VERSION)"' \=0A-		=
+'-DPERF_HTML_PATH=3D"$(htmldir_SQ)"' \=0A-		$(ALL_CFLAGS) -c =
+$(filter %.c,$^) -o $@=0A-=0A $(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS=
+) $(PERFLIBS)=0A 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) =
+$(OUTPUT)perf.o \=0A                $(BUILTIN_OBJS) $(LIBS) -o $@=0A =
+=0A-$(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h =
+$(OUTPUT)PERF-CFLAGS=0A-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) =
+\=0A-		'-DPERF_HTML_PATH=3D"$(htmldir_SQ)"' \=0A-		=
+'-DPERF_MAN_PATH=3D"$(mandir_SQ)"' \=0A-		'-DPERF_INFO_PATH=
+=3D"$(infodir_SQ)"' $<=0A-=0A-$(OUTPUT)builtin-timechart.o: builtin-timecha=
+rt.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS=0A-	$(QUIET_CC)$(CC) =
+-o $@ -c $(ALL_CFLAGS) \=0A-		'-DPERF_HTML_PATH=3D"$(htmldir_SQ)"=
+' \=0A-		'-DPERF_MAN_PATH=3D"$(mandir_SQ)"' \=0A-		=
+'-DPERF_INFO_PATH=3D"$(infodir_SQ)"' $<=0A+$(OUTPUT)python/perf.so: =
+$(PYRF_SRC) $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)=0A+	$(QUIET_GEN)CFLAGS=
+=3D'$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \=0A+	  --$(if $(V),verbo=
+se,quiet) build_ext; \=0A+	mkdir -p $(@D) && mv $(PYTHON_EXTBUILD_LIB)=
+perf.so $(@D)/=0A =0A $(OUTPUT)common-cmds.h: util/generate-cmdlist.sh =
+command-list.txt=0A =0A $(OUTPUT)common-cmds.h: $(wildcard Documentation/pe=
+rf-*.txt)=0A 	$(QUIET_GEN). util/generate-cmdlist.sh > $@+ && mv $@+ =
+$@=0A =0A-$(SCRIPTS) : % : %.sh=0A-	$(QUIET_GEN)$(INSTALL) '$@.sh' =
+'$(OUTPUT)$@'=0A-=0A-# These can record PERF_VERSION=0A-$(OUTPUT)perf.o =
+perf.spec \=0A-	$(SCRIPTS) \=0A-	: $(OUTPUT)PERF-VERSION-FILE=0A+$(S=
+CRIPTS) : $(OUTPUT)% : %.sh=0A+	$(QUIET_GEN)$(INSTALL) '$<' '$@'=0A =0A =
+.SUFFIXES:=0A .SUFFIXES: .o .c .S .s=0A@@ -790,42 +768,57 @@ $(OUTPUT)%.o: =
+%.S=0A $(OUTPUT)%.s: %.S=0A 	$(QUIET_CC)$(CC) -o $@ -E $(ALL_CFLAGS) =
+$<=0A =0A-$(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS=0A=
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \=0A-		'-DPERF_EXE=
+C_PATH=3D"$(perfexecdir_SQ)"' \=0A-		'-DBINDIR=3D"$(bindir_relat=
+ive_SQ)"' \=0A-		'-DPREFIX=3D"$(prefix_SQ)"' \=0A-		=
+$<=0A+ifneq ($(OUTPUT),)=0A+PHONY_ALL  :=3D $(filter (OUTPUT)%,$(ALL_PROGRA=
+MS) $(LANG_BINDINGS))=0A+PHONY_OBJS :=3D $(patsubst $(OUTPUT)%,%,$(BUILTIN_=
+OBJS) $(LIB_OBJS))=0A+PHONY_ASMS :=3D $(patsubst %.o,%.s,$(PHONY_OBJS))=0A+=
+PHONY_CPPS :=3D $(patsubst %.o,%.i,$(PHONY_OBJS))=0A+PHONY_ALL  +=3D =
+$(PHONY_OBJS) $(PHONY_ASMS) $(PHONY_CPPS)=0A+.PHONY: $(PHONY_ALL)=0A+$(PHON=
+Y_ALL): %: $(OUTPUT)%=0A+endif=0A+=0A+output =3D $(foreach ext,o i =
+s,$(OUTPUT)$(1).$(ext))=0A+=0A+# These can record PERF_VERSION=0A+$(call =
+output,perf) $(SCRIPTS): $(OUTPUT)PERF-VERSION-FILE=0A =0A-$(OUTPUT)util/co=
+nfig.o: util/config.c $(OUTPUT)PERF-CFLAGS=0A-	$(QUIET_CC)$(CC) -o $@ -c =
+$(ALL_CFLAGS) -DETC_PERFCONFIG=3D'"$(ETC_PERFCONFIG_SQ)"' $<=0A+$(call =
+output,perf) $(call output,builtin-help): $(OUTPUT)common-cmds.h=0A =
+=0A-$(OUTPUT)util/ui/browser.o: util/ui/browser.c $(OUTPUT)PERF-CFLAGS=0A-	=
+$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<=0A+$(cal=
+l output,perf): ALL_CFLAGS +=3D '-DPERF_VERSION=3D"$(PERF_VERSION)"' \=0A+	=
+	'-DPERF_HTML_PATH=3D"$(htmldir_SQ)"'=0A =0A-$(OUTPUT)util/ui/browse=
+rs/annotate.o: util/ui/browsers/annotate.c $(OUTPUT)PERF-CFLAGS=0A-	=
+$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<=0A+$(cal=
+l output,builtin-help) $(call output,builtin-timechart): ALL_CFLAGS +=3D =
+\=0A+		'-DPERF_HTML_PATH=3D"$(htmldir_SQ)"' \=0A+		=
+'-DPERF_MAN_PATH=3D"$(mandir_SQ)"' \=0A+		'-DPERF_INFO_PATH=
+=3D"$(infodir_SQ)"'=0A+=0A+$(call output,util/exec_cmd): ALL_CFLAGS +=3D =
+\=0A+		'-DPERF_EXEC_PATH=3D"$(perfexecdir_SQ)"' \=0A+		=
+'-DBINDIR=3D"$(bindir_relative_SQ)"' \=0A+		'-DPREFIX=3D"$(pref=
+ix_SQ)"'=0A =0A-$(OUTPUT)util/ui/browsers/hists.o: util/ui/browsers/hists.c=
+ $(OUTPUT)PERF-CFLAGS=0A-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) =
+-DENABLE_SLFUTURE_CONST $<=0A+$(call output,util/config) $(call output,util=
+/rbtree): ALL_CFLAGS +=3D \=0A+		'-DETC_PERFCONFIG=3D"$(ETC_PERFCONF=
+IG_SQ)"'=0A =0A-$(OUTPUT)util/ui/browsers/map.o: util/ui/browsers/map.c =
+$(OUTPUT)PERF-CFLAGS=0A-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) =
+-DENABLE_SLFUTURE_CONST $<=0A+$(call output,util/rbtree): ../../lib/rbtree.=
+c=0A =0A-$(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS=0A=
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG=3D'"$(ETC_=
+PERFCONFIG_SQ)"' $<=0A+$(call output,util/ui/browser) $(call output,util/ui=
+/browsers/annotate) \=0A+	$(call output,util/ui/browsers/hists) =
+\=0A+	$(call output,util/ui/browsers/map): ALL_CFLAGS +=3D \=0A+		=
+-DENABLE_SLFUTURE_CONST=0A =0A-$(OUTPUT)util/scripting-engines/trace-event-=
+perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS=0A-	=
+$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant=
+-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<=0A+$(cal=
+l output,util/scripting-engines/trace-event-perl): ALL_CFLAGS +=3D \=0A+	=
+$(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unuse=
+d-parameter -Wno-shadow=0A =0A-$(OUTPUT)scripts/perl/Perf-Trace-Util/Contex=
+t.o: scripts/perl/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS=0A-	=
+$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant=
+-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs =
+$<=0A+$(call output,scripts/perl/Perf-Trace-Util/Context): ALL_CFLAGS +=3D =
+\=0A+	$(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes =
+-Wno-unused-parameter -Wno-nested-externs=0A =0A-$(OUTPUT)util/scripting-en=
+gines/trace-event-python.o: util/scripting-engines/trace-event-python.c =
+$(OUTPUT)PERF-CFLAGS=0A-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) =
+$(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes =
+-Wno-unused-parameter -Wno-shadow $<=0A+$(call output,util/scripting-engine=
+s/trace-event-python): ALL_CFLAGS +=3D \=0A+	$(PYTHON_EMBED_CCOPTS) =
+-Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter =
+-Wno-shadow=0A =0A-$(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: =
+scripts/python/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS=0A-	=
+$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redunda=
+nt-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs =
+$<=0A+$(call output,scripts/python/Perf-Trace-Util/Context): ALL_CFLAGS =
++=3D \=0A+	$(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-pro=
+totypes -Wno-unused-parameter -Wno-nested-externs=0A =0A $(OUTPUT)perf-%: =
+%.o $(PERFLIBS)=0A 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAG=
+S) $(filter %.o,$^) $(LIBS)=0A--- /home/jbeulich/tmp/linux-3.4-rc6/tools/pe=
+rf/util/rbtree.c	1970-01-01 01:00:00.000000000 +0100=0A+++ =
+3.4-rc6-perf-makefile-generalize/tools/perf/util/rbtree.c=0A@@ -0,0 +1 =
+@@=0A+#include "../../../lib/rbtree.c"=0A
+--=__Part2709CF8A.4__=--
