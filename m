@@ -1,257 +1,600 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab2EIMoz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 08:44:55 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60241 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752687Ab2EIMox convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 08:44:53 -0400
+	id S1759202Ab2EIMuf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 08:50:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30329 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756007Ab2EIMud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 08:50:33 -0400
+Message-ID: <4FAA6802.9070506@redhat.com>
+Date: Wed, 09 May 2012 09:50:10 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <744357E9AAD1214791ACBA4B0B90926310025F@SHSMSX101.ccr.corp.intel.com>
-References: <1336493898-7039-1-git-send-email-amit.kachhap@linaro.org>
-	<744357E9AAD1214791ACBA4B0B90926310025F@SHSMSX101.ccr.corp.intel.com>
-Date: Wed, 9 May 2012 18:14:51 +0530
-Message-ID: <CAK44p23=Xo2NC_XyCDxEDicQc0SuMm9DHCrpUXfU4pi_1i68Pg@mail.gmail.com>
-Subject: Re: [PATCH v3 0/6] thermal: exynos: Add kernel thermal support for
- exynos platform
-From: Amit Kachhap <amit.kachhap@linaro.org>
-To: "Zhang, Rui" <rui.zhang@intel.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "R, Durgadoss" <durgadoss.r@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>
+To: Borislav Petkov <bp@amd64.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [EDAC ABI v13 04/25] events/hw_event: Create a Hardware Events
+ Report Mecanism (HERM)
+References: <1334608729-30803-1-git-send-email-mchehab@redhat.com> <1334608729-30803-5-git-send-email-mchehab@redhat.com> <20120509121326.GA22737@aftab.osrc.amd.com>
+In-Reply-To: <20120509121326.GA22737@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 May 2012 01:36, Zhang, Rui <rui.zhang@intel.com> wrote:
-> Hi, Amit,
->
-> Sorry for the late response as I'm in a travel recently.
->
-> I think the generic cpufreq cooling patches are good.
->
-> But about the THERMAL_TRIP_STATE_INSTANCE patch, what I'd like to see is that
-> 1. from thermal zone point of view, when the temperature is higher than a trip point, either ACTIVE or PASSIVE, what we should do is to set device cooling state to cur_state+1, right?
->  The only difference is that if we should take passive cooling actions or active cooling actions based on the policy.
->  So my question would be if it is possible to combine these two kind of trip points together. Maybe something like this:
->
->  In thermal_zone_device_update(),
->
->  ...
->  case THERMAL_TRIP_PASSIVE:
->      if (passive cooling not allowed)
->           continue;
->      if (tc1)
->           thermal_zone_device_passive();
->      else
->           thermal_set_cooling_state();
->      break;
->  case THERMAL_TRIP_ACTIVE:
->     if (active cooling not allowed)
->          continue;
->     thermal_set_cooling_state();
->     break;
->  ...
->
-> and thermal_set_cooling_state() {
->   list_for_each_entry(instance, &tz->cooling_devices, node) {
->      if (instance->trip != count)
->         continue;
->
->      cdev = instance->cdev;
->
->      if (temp >= trip_temp)
->          cdev->ops->set_cur_state(cdev, 1);
->      else
->          cdev->ops->set_cur_state(cdev, 0);
->   }
-> }
->
-> 2. use only one cooling_device instance for a thermal_zone, and introduce cdev->trips which shows the trip points this cooling device is bind to.
->  And we may use multiple cooling devices states for one active trip point.
->
-> Then, thermal_set_cooling_state() would be look like
->
-> list_for_each_entry(instance, &tz->cooling_devices, node) {
->   cdev = instance->cdev;
->   /* check whether this cooling device is bind to the trip point */
->   if (!(cdev->trips & 1<<count))
->      continue;
->   cdev->ops->get_max_state(cdev, &max_state);
->   cdev->ops->get_cur_state(cdev, &cur_state);
->
->   if (temp >= trip_temp) {
->      if (cur_state++ <= max_state))
->        cdev->ops->set_cur_state(cdev, cur_state);
->   } else if ((temp < trip_temp) && (cur_state-- >= 0))
->      cdev->ops->set_cur_state(cdev, cur_state);
->                        }
-> }
+Em 09-05-2012 09:13, Borislav Petkov escreveu:
+> Inserting the latest version:
+> 
+>> From 4afb0250415e87b983f5937d456c83407fe96264 Mon Sep 17 00:00:00 2001
+>> From: Mauro Carvalho Chehab <mchehab@redhat.com>
+>> Date: Thu, 23 Feb 2012 08:10:34 -0300
+>> Subject: [PATCH] events/hw_event: Create a Hardware Events Report Mecanism
+>>  (HERM)
+> 
+> Ok, let's face it: this is just a single trace_mc_error tracepoint,
+> nothing else. Let's drop the HERM bullshit bingo and call the thing by
+> it's name: "Add yet another tracepoint to report DRAM ECC errors".
 
-Hi Rui,
+This name is nice and helps to distinguish this mechanism among others,
+and will help to distinguish between HARM-aware userspace tools from the
+existing ones.
 
-The above implementation  also cools instance based cooling devices
-like passive trip type. I need some changes on top of your
-implementation such as,
-thermal_set_cooling_state() {
-    list_for_each_entry(instance, &tz->cooling_devices,
-                                     node) {
-        cdev = instance->cdev;
-        if (!cdev->trips & 1<<count)
-                  continue;
+Anyway, I'll improve the subject.
 
-        inst_id = 0;
-        for_each_bit_set(i, cdev->trips, count)
-                   inst_id++;
-         cdev->ops->get_max_state(cdev, &max_state);
-         if ((temp >= trip_temp) && (inst_id <= max_state))
-              cdev->ops->set_cur_state(cdev, inst_id);
-         else if ((temp < trip_temp) && (--inst_id >= 0))
-               cdev->ops->set_cur_state(cdev, inst_id);
-     }
-}
+>> Adds a trace class for handle hardware events
+>>
+>> Part of the description bellow is shamelessly copied from Tony
+>> Luck's notes about the Hardware Error BoF during LPC 2010 [1].
+>> Tony, thanks for your notes and discussions to generate the
+>> h/w error reporting requirements.
+>>
+>> [1] http://lwn.net/Articles/416669/
+>>
+>>     We have several subsystems & methods for reporting hardware errors:
+>>
+>>     1) EDAC ("Error Detection and Correction").  In its original form
+>>     this consisted of a platform specific driver that read topology
+>>     information and error counts from chipset registers and reported
+>>     the results via a sysfs interface.
+>>
+>>     2) mcelog - x86 specific decoding of machine check bank registers
+>>     reporting in binary form via /dev/mcelog. Recent additions make use
+>>     of the APEI extensions that were documented in version 4.0a of the
+>>     ACPI specification to acquire more information about errors without
+>>     having to rely reading chipset registers directly. A user level
+>>     programs decodes into somewhat human readable format.
+>>
+>>     3) drivers/edac/mce_amd.c - this driver hooks into the mcelog path and
+>>     decodes errors reported via machine check bank registers in AMD
+>>     processors to the console log using printk();
+>>
+>>     Each of these mechanisms has a band of followers ... and none
+>>     of them appear to meet all the needs of all users.
+>>
+>> In order to provide a proper hardware event subsystem, let's
+> 
+> err no, this is not a proper hw event subsystem.
 
-I agree with you that the instance based trip types violates the
-concept like reading the cur_state and do cur_state++/cur_state--
-depending upon threshold increase or decrease because it needs the
-state_id/inst_id.
-I am actually thinking of dropping this new trip type and use the
-existing THERMAL_TRIP_ACTIVE because there is so much logic in
-calculating the state_id. The only flip side of using TRIP_ACTIVE is
-that I need to create so many cooling devices.
+This is part of it. Paragraph re-written.
 
-Thanks,
-Amit D
+> 
+>> encapsulate the memory error hardware events into a trace facility.
+>>
+>> As no agreement was reached so far for the MCA-based trace events, for
+>> now, let's add events only for memory errors. A latter patch can change
+>> the tracepoint, for events originated via MCA.
+> 
+> This last paragraph has nothing to do with the patch so it can go.
+
+The original patch had both mechanisms. I want to preserve here the reason
+why I've removed the MCA-based tracepont from this patch.
+
+I've re-written the paragraph as a note.
+
+> 
+>> Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+>> Cc: Doug Thompson <norsk5@yahoo.com>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+>> ---
+>>  drivers/edac/edac_core.h        |    2 +-
+>>  drivers/edac/edac_mc.c          |   26 +++++++---
+>>  include/trace/events/hw_event.h |  107 +++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 127 insertions(+), 8 deletions(-)
+>>  create mode 100644 include/trace/events/hw_event.h
+>>
+>> diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
+>> index f06ce9ab692c..eee73605c5a0 100644
+>> --- a/drivers/edac/edac_core.h
+>> +++ b/drivers/edac/edac_core.h
+>> @@ -468,7 +468,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+>>  			  const int layer2,
+>>  			  const char *msg,
+>>  			  const char *other_detail,
+>> -			  const void *mcelog);
+>> +			  const void *arch_log);
+>>  
+>>  /*
+>>   * edac_device APIs
+>> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+>> index e5b55632359f..c75774dcf434 100644
+>> --- a/drivers/edac/edac_mc.c
+>> +++ b/drivers/edac/edac_mc.c
+>> @@ -33,6 +33,9 @@
+>>  #include "edac_core.h"
+>>  #include "edac_module.h"
+>>  
+>> +#define CREATE_TRACE_POINTS
+>> +#include <trace/events/hw_event.h>
+>> +
+>>  /* lock to memory controller's control array */
+>>  static DEFINE_MUTEX(mem_ctls_mutex);
+>>  static LIST_HEAD(mc_devices);
+>> @@ -381,6 +384,9 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+>>  	 * which will perform kobj unregistration and the actual free
+>>  	 * will occur during the kobject callback operation
+>>  	 */
+>> +
+> 
+> superfluous newline.
+
+I prefer to keep the init event on a separate line, as this has nothing to do
+with the comment on the previous lines.
+> 
+>> +	trace_hw_event_init("edac", (unsigned)mc_num);
+>> +
+>>  	return mci;
+>>  }
+>>  EXPORT_SYMBOL_GPL(edac_mc_alloc);
+>> @@ -982,7 +988,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+>>  			  const int layer2,
+>>  			  const char *msg,
+>>  			  const char *other_detail,
+>> -			  const void *mcelog)
+>> +			  const void *arch_log)
+>>  {
+>>  	/* FIXME: too much for stack: move it to some pre-alocated area */
+>>  	char detail[80], location[80];
+>> @@ -1119,21 +1125,27 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+>>  	}
+>>  
+>>  	/* Memory type dependent details about the error */
+>> -	if (type == HW_EVENT_ERR_CORRECTED) {
+>> +	if (type == HW_EVENT_ERR_CORRECTED)
+>>  		snprintf(detail, sizeof(detail),
+>>  			"page:0x%lx offset:0x%lx grain:%d syndrome:0x%lx",
+>>  			page_frame_number, offset_in_page,
+>>  			grain, syndrome);
+>> -		edac_ce_error(mci, pos, msg, location, label, detail,
+>> -			      other_detail, enable_per_layer_report,
+>> -			      page_frame_number, offset_in_page, grain);
+>> -	} else {
+>> +	else
+>>  		snprintf(detail, sizeof(detail),
+>>  			"page:0x%lx offset:0x%lx grain:%d",
+>>  			page_frame_number, offset_in_page, grain);
+>>  
+>> +	/* Report the error via the trace interface */
+>> +	trace_mc_error(type, mci->mc_idx, msg, label, location,
+>> +		       detail, other_detail);
+>> +
+>> +	/* Report the error via the edac_mc_printk() interface */
+>> +	if (type == HW_EVENT_ERR_CORRECTED)
+>> +		edac_ce_error(mci, pos, msg, location, label, detail,
+>> +			      other_detail, enable_per_layer_report,
+>> +			      page_frame_number, offset_in_page, grain);
+>> +	else
+>>  		edac_ue_error(mci, pos, msg, location, label, detail,
+>>  			      other_detail, enable_per_layer_report);
+>> -	}
+>>  }
+>>  EXPORT_SYMBOL_GPL(edac_mc_handle_error);
+>> diff --git a/include/trace/events/hw_event.h b/include/trace/events/hw_event.h
+>> new file mode 100644
+>> index 000000000000..1fabfe21e29a
+>> --- /dev/null
+>> +++ b/include/trace/events/hw_event.h
+>> @@ -0,0 +1,107 @@
+>> +#undef TRACE_SYSTEM
+>> +#define TRACE_SYSTEM hw_event
+>> +
+>> +#if !defined(_TRACE_HW_EVENT_MC_H) || defined(TRACE_HEADER_MULTI_READ)
+>> +#define _TRACE_HW_EVENT_MC_H
+>> +
+>> +#include <linux/tracepoint.h>
+>> +#include <linux/edac.h>
+>> +#include <linux/ktime.h>
+>> +
+>> +/*
+>> + * Hardware Anomaly Report Mecanism (HARM) events
+>> + *
+>> + * Those events are generated when hardware detected a corrected or
+>> + * uncorrected event, and are meant to replace the current API to report
+>> + * errors defined on both EDAC and MCE subsystems.
+>> + *
+>> + * FIXME: Add events for handling memory errors originated from the
+>> + *        MCE subsystem.
+>> + */
+>> +
+>> +DECLARE_EVENT_CLASS(hw_event_class,
+> 
+> Ok, event classes are for sharing tracepoints which have the same
+> TP_PROTO, TP_ARGS.. etc arguments as Steven's (CCed) article on lwn
+> points out.
+
+Other trace mechanisms will be added. One of them is the MCA-based tracepoint,
+that got removed while no consensus is reached on that.
+
+> I don't see this here and besides, why in the hell would you need a
+> trace event which only announces that the mechanism starts?? A common,
+> run-of-the-mill printk is more than enough here.
+
+A daemon monitoring this trace may need to know when the trace mechanism
+started, in order to what might be lost before the event init.
+
+> 
+>> +	TP_PROTO(const char *type, unsigned int instance),
+>> +	TP_ARGS(type, instance),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__string(	type,		type			)
+>> +		__field(	unsigned int,	instance		)
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__assign_str(type, type);
+>> +		__entry->instance = instance;
+>> +	),
+>> +
+>> +	TP_printk("Initialized %s#%d\n",
+>> +		__get_str(type),
+>> +		__entry->instance)
+>> +);
+>> +
+>> +/*
+>> + * This event indicates that a hardware collection mechanism is started
+>> + */
+>> +DEFINE_EVENT(hw_event_class, hw_event_init,
+>> +
+>> +	TP_PROTO(const char *type, unsigned int instance),
+>> +
+>> +	TP_ARGS(type, instance)
+>> +);
+>> +
+>> +
+>> +/*
+>> + * Hardware-independent Memory Controller specific events
+>> + */
+>> +
+>> +/*
+>> + * Default error mechanisms for Memory Controller errors (CE and UE)
+> 
+> 				   DRAM ECC errors.
+
+No, the errors aren't limited to DRAM ECC errors.
+
+Some drivers report errors that aren't related to ECC and not even related to
+the DIMM. For example, all FB-DIMM controllers can report BUS errors at the
+channel that it is used to communicate with the Advanced Memory Buffer.
+
 >
-> With these two things, I think the WARN_ZONE AND MONITOR_ZONE can be registered as two PASSIVE trip points in the generic thermal layer, right?
-> Actually, this is one thing in my TODO list. And I'd glad to make it high priority if this solves the problem you have.
->
-> Thanks,
-> rui
->
-> -----Original Message-----
-> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Amit Daniel Kachhap
-> Sent: Tuesday, May 08, 2012 9:18 AM
-> To: akpm@linux-foundation.org; linux-pm@lists.linux-foundation.org
-> Cc: R, Durgadoss; linux-acpi@vger.kernel.org; lenb@kernel.org; Zhang, Rui; amit.kachhap@linaro.org; linaro-dev@lists.linaro.org; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-samsung-soc@vger.kernel.org; patches@linaro.org
-> Subject: [PATCH v3 0/6] thermal: exynos: Add kernel thermal support for exynos platform
-> Importance: High
->
-> Hi Andrew,
->
-> This patchset introduces a new generic cooling device based on cpufreq that can be used on non-ACPI platforms. As a proof of concept, we have drivers for the following platforms using this mechanism now:
->
->  * TI OMAP (git://git.linaro.org/people/amitdanielk/linux.git omap4460_thermal)
->  * Samsung Exynos (Exynos4 and Exynos5) in the current patchset.
->  * Freescale i.MX (git://git.linaro.org/people/amitdanielk/linux.git imx6q_thermal)
->
-> These patches have been reviewed by Rui Zhang (https://lkml.org/lkml/2012/4/9/448)
-> who seems to agree with them in principle, but I haven't had any luck getting them merged, perhaps a lack of maintainer bandwidth.
->
-> ACPI platforms currently have such a mechanism but it is wrapped in ACPI'isms that we don't have on ARM platforms. If this is accepted, I'm proposing to convert over the ACPI thermal driver to use this common code too.
->
-> Can you please merge these patches for 3.5?
->
-> Thanks,
-> Amit Daniel
->
->
-> Changes since V2:
-> *Added Exynos5 TMU sensor support by enhancing the exynos4 tmu driver. Exynos5 TMU  driver was internally developed by SangWook Ju <sw.ju@samsung.com>.
-> *Removed cpuhotplug cooling code in this patchset.
-> *Rebased the patches against 3.4-rc6 kernel.
->
-> Changes since V1:
-> *Moved the sensor driver to driver/thermal folder from driver/hwmon folder  as suggested by Mark Brown and Guenter Roeck *Added notifier support to notify the registered drivers of any cpu cooling  action. The driver can modify the default cooling behaviour(eg set different  max clip frequency).
-> *The percentage based frequency replaced with absolute clipped frequency.
-> *Some more conditional checks when setting max frequency.
-> *Renamed the new trip type THERMAL_TRIP_STATE_ACTIVE to  THERMAL_TRIP_STATE_INSTANCE *Many review comments from R, Durgadoss <durgadoss.r@intel.com> and  eduardo.valentin@ti.com implemented.
-> *Removed cooling stats through debugfs patch *The V1 based can be found here,
->  https://lkml.org/lkml/2012/2/22/123
->  http://lkml.org/lkml/2012/3/3/32
->
-> Changes since RFC:
-> *Changed the cpu cooling registration/unregistration API's to instance based *Changed the STATE_ACTIVE trip type to pass correct instance id *Adding support to restore back the policy->max_freq after doing frequency
->  clipping.
-> *Moved the trip cooling stats from sysfs node to debugfs node as suggested
->  by Greg KH greg@kroah.com
-> *Incorporated several review comments from eduardo.valentin@ti.com *Moved the Temperature sensor driver from driver/hwmon/ to driver/mfd  as discussed with Guenter Roeck <guenter.roeck@ericsson.com> and  Donggeun Kim <dg77.kim@samsung.com> (https://lkml.org/lkml/2012/1/5/7)
-> *Some changes according to the changes in common cpu cooling APIs *The RFC based patches can be found here,
->  https://lkml.org/lkml/2011/12/13/186
->  https://lkml.org/lkml/2011/12/21/169
->
->
-> Brief Description:
->
-> 1) The generic cooling devices code is placed inside driver/thermal/* as placing inside acpi folder will need un-necessary enabling of acpi code. This codes is architecture independent.
->
-> 2) This patchset adds a new trip type THERMAL_TRIP_STATE_INSTANCE which passes cooling device instance number and may be helpful for cpufreq cooling devices to take the correct cooling action. This trip type avoids the temperature comparision check again inside the cooling handler.
->
-> 3) This patchset adds generic cpu cooling low level implementation through frequency clipping and cpu hotplug. In future, other cpu related cooling devices may be added here. An ACPI version of this already exists (drivers/acpi/processor_thermal.c). But this will be useful for platforms like ARM using the generic thermal interface along with the generic cpu cooling devices. The cooling device registration API's return cooling device pointers which can be easily binded with the thermal zone trip points.
-> The important APIs exposed are,
->   a)struct thermal_cooling_device *cpufreq_cooling_register(
->        struct freq_clip_table *tab_ptr, unsigned int tab_size,
->        const struct cpumask *mask_val)
->   b)void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
->
-> 4) Samsung exynos platform thermal implementation is done using the generic cpu cooling APIs and the new trip type. The temperature sensor driver present in the hwmon folder(registered as hwmon driver) is moved to thermal folder and registered as a thermal driver.
->
-> All this patchset is based on Kernel version 3.4-rc6
->
-> A simple data/control flow diagrams is shown below,
->
-> Core Linux thermal <----->  Exynos thermal interface <----- Temperature Sensor
->          |                             |
->         \|/                            |
->  Cpufreq cooling device <---------------
->
-> TODO:
-> *Will send the DT enablement patches later after the driver is merged.
->
->
-> Amit Daniel Kachhap (6):
->  thermal: Add a new trip type to use cooling device instance number
->  thermal: Add generic cpufreq cooling implementation
->  hwmon: exynos4: Move thermal sensor driver to driver/thermal
->    directory
->  thermal: exynos5: Add exynos5 thermal sensor driver support
->  thermal: exynos: Register the tmu sensor with the kernel thermal
->    layer
->  ARM: exynos: Add thermal sensor driver platform data support
->
->  Documentation/hwmon/exynos4_tmu              |   81 ---
->  Documentation/thermal/cpu-cooling-api.txt    |   60 ++
->  Documentation/thermal/exynos_thermal         |   52 ++
->  Documentation/thermal/sysfs-api.txt          |    4 +-
->  drivers/hwmon/Kconfig                        |   10 -
->  drivers/hwmon/Makefile                       |    1 -
->  drivers/hwmon/exynos4_tmu.c                  |  514 --------------
->  drivers/thermal/Kconfig                      |   20 +
->  drivers/thermal/Makefile                     |    4 +-
->  drivers/thermal/cpu_cooling.c                |  359 ++++++++++
->  drivers/thermal/exynos_thermal.c             |  933 ++++++++++++++++++++++++++
->  drivers/thermal/thermal_sys.c                |   62 ++-
->  include/linux/cpu_cooling.h                  |   62 ++
->  include/linux/platform_data/exynos4_tmu.h    |   83 ---
->  include/linux/platform_data/exynos_thermal.h |  100 +++
->  include/linux/thermal.h                      |    1 +
->  16 files changed, 1651 insertions(+), 695 deletions(-)  delete mode 100644 Documentation/hwmon/exynos4_tmu  create mode 100644 Documentation/thermal/cpu-cooling-api.txt
->  create mode 100644 Documentation/thermal/exynos_thermal
->  delete mode 100644 drivers/hwmon/exynos4_tmu.c  create mode 100644 drivers/thermal/cpu_cooling.c  create mode 100644 drivers/thermal/exynos_thermal.c  create mode 100644 include/linux/cpu_cooling.h  delete mode 100644 include/linux/platform_data/exynos4_tmu.h
->  create mode 100644 include/linux/platform_data/exynos_thermal.h
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> + */
+>> +TRACE_EVENT(mc_error,
+>> +
+>> +	TP_PROTO(const unsigned int err_type,
+>> +		 const unsigned int mc_index,
+>> +		 const char *msg,
+>> +		 const char *label,
+>> +		 const char *location,
+>> +		 const char *detail,
+>> +		 const char *driver_detail),
+>> +
+>> +	TP_ARGS(err_type, mc_index, msg, label, location,
+>> +		detail, driver_detail),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field(	unsigned int,	err_type		)
+>> +		__field(	unsigned int,	mc_index		)
+>> +		__string(	msg,		msg			)
+>> +		__string(	label,		label			)
+>> +		__string(	detail,		detail			)
+>> +		__string(	location,	location		)
+>> +		__string(	driver_detail,	driver_detail		)
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->err_type		= err_type;
+>> +		__entry->mc_index		= mc_index;
+>> +		__assign_str(msg, msg);
+>> +		__assign_str(label, label);
+>> +		__assign_str(location, location);
+>> +		__assign_str(detail, detail);
+>> +		__assign_str(driver_detail, driver_detail);
+>> +	),
+>> +
+>> +	TP_printk(HW_ERR "mce#%d: %s error %s on label \"%s\" (%s %s %s)",
+> 
+> 						 memory stick/DIMM
+
+Fixed.
+
+> 
+>> +		  __entry->mc_index,
+>> +		  (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
+>> +			((__entry->err_type == HW_EVENT_ERR_FATAL) ?
+>> +			"Fatal" : "Uncorrected"),
+>> +		  __get_str(msg),
+>> +		  __get_str(label),
+>> +		  __get_str(location),
+>> +		  __get_str(detail),
+>> +		  __get_str(driver_detail))
+>> +);
+>> +
+>> +#endif /* _TRACE_HW_EVENT_MC_H */
+>> +
+>> +/* This part must be outside protection */
+>> +#include <trace/define_trace.h>
+>> -- 
+>> 1.7.9.3.362.g71319
+> 
+> 
+
+Reviewed patch enclosed.
+
+Regards,
+Mauro
+
+-
+
+events/hw_event: use a tracepoint-based Hardware Events Report Mecanism (HERM)
+
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+Adds a trace class for handle hardware events
+
+Part of the description bellow is shamelessly copied from Tony
+Luck's notes about the Hardware Error BoF during LPC 2010 [1].
+Tony, thanks for your notes and discussions to generate the
+h/w error reporting requirements.
+
+[1] http://lwn.net/Articles/416669/
+
+    We have several subsystems & methods for reporting hardware errors:
+
+    1) EDAC ("Error Detection and Correction").  In its original form
+    this consisted of a platform specific driver that read topology
+    information and error counts from chipset registers and reported
+    the results via a sysfs interface.
+
+    2) mcelog - x86 specific decoding of machine check bank registers
+    reporting in binary form via /dev/mcelog. Recent additions make use
+    of the APEI extensions that were documented in version 4.0a of the
+    ACPI specification to acquire more information about errors without
+    having to rely reading chipset registers directly. A user level
+    programs decodes into somewhat human readable format.
+
+    3) drivers/edac/mce_amd.c - this driver hooks into the mcelog path and
+    decodes errors reported via machine check bank registers in AMD
+    processors to the console log using printk();
+
+    Each of these mechanisms has a band of followers ... and none
+    of them appear to meet all the needs of all users.
+
+As part of a hardware event subsystem, let's encapsulate the memory
+error hardware events into a trace facility.
+
+NOTE: The original patch was providing an additional mechanism for
+MCA-based trace events that also contained MCA error register data.
+Hoever, as no agreement was reached so far for the MCA-based trace
+events, for now, let's add events only for memory errors.
+A latter patch is planned to change the tracepoint, for those types
+of event.
+
+Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+Cc: Doug Thompson <norsk5@yahoo.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
+index f06ce9a..eee7360 100644
+--- a/drivers/edac/edac_core.h
++++ b/drivers/edac/edac_core.h
+@@ -468,7 +468,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 			  const int layer2,
+ 			  const char *msg,
+ 			  const char *other_detail,
+-			  const void *mcelog);
++			  const void *arch_log);
+ 
+ /*
+  * edac_device APIs
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index e5b5563..c75774d 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -33,6 +33,9 @@
+ #include "edac_core.h"
+ #include "edac_module.h"
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/hw_event.h>
++
+ /* lock to memory controller's control array */
+ static DEFINE_MUTEX(mem_ctls_mutex);
+ static LIST_HEAD(mc_devices);
+@@ -381,6 +384,9 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+ 	 * which will perform kobj unregistration and the actual free
+ 	 * will occur during the kobject callback operation
+ 	 */
++
++	trace_hw_event_init("edac", (unsigned)mc_num);
++
+ 	return mci;
+ }
+ EXPORT_SYMBOL_GPL(edac_mc_alloc);
+@@ -982,7 +988,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 			  const int layer2,
+ 			  const char *msg,
+ 			  const char *other_detail,
+-			  const void *mcelog)
++			  const void *arch_log)
+ {
+ 	/* FIXME: too much for stack: move it to some pre-alocated area */
+ 	char detail[80], location[80];
+@@ -1119,21 +1125,27 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 	}
+ 
+ 	/* Memory type dependent details about the error */
+-	if (type == HW_EVENT_ERR_CORRECTED) {
++	if (type == HW_EVENT_ERR_CORRECTED)
+ 		snprintf(detail, sizeof(detail),
+ 			"page:0x%lx offset:0x%lx grain:%d syndrome:0x%lx",
+ 			page_frame_number, offset_in_page,
+ 			grain, syndrome);
+-		edac_ce_error(mci, pos, msg, location, label, detail,
+-			      other_detail, enable_per_layer_report,
+-			      page_frame_number, offset_in_page, grain);
+-	} else {
++	else
+ 		snprintf(detail, sizeof(detail),
+ 			"page:0x%lx offset:0x%lx grain:%d",
+ 			page_frame_number, offset_in_page, grain);
+ 
++	/* Report the error via the trace interface */
++	trace_mc_error(type, mci->mc_idx, msg, label, location,
++		       detail, other_detail);
++
++	/* Report the error via the edac_mc_printk() interface */
++	if (type == HW_EVENT_ERR_CORRECTED)
++		edac_ce_error(mci, pos, msg, location, label, detail,
++			      other_detail, enable_per_layer_report,
++			      page_frame_number, offset_in_page, grain);
++	else
+ 		edac_ue_error(mci, pos, msg, location, label, detail,
+ 			      other_detail, enable_per_layer_report);
+-	}
+ }
+ EXPORT_SYMBOL_GPL(edac_mc_handle_error);
+diff --git a/include/trace/events/hw_event.h b/include/trace/events/hw_event.h
+new file mode 100644
+index 0000000..27ccabd
+--- /dev/null
++++ b/include/trace/events/hw_event.h
+@@ -0,0 +1,107 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM hw_event
++
++#if !defined(_TRACE_HW_EVENT_MC_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_HW_EVENT_MC_H
++
++#include <linux/tracepoint.h>
++#include <linux/edac.h>
++#include <linux/ktime.h>
++
++/*
++ * Hardware Anomaly Report Mecanism (HARM) events
++ *
++ * Those events are generated when hardware detected a corrected or
++ * uncorrected event, and are meant to replace the current API to report
++ * errors defined on both EDAC and MCE subsystems.
++ *
++ * FIXME: Add events for handling memory errors originated from the
++ *        MCE subsystem.
++ */
++
++DECLARE_EVENT_CLASS(hw_event_class,
++	TP_PROTO(const char *type, unsigned int instance),
++	TP_ARGS(type, instance),
++
++	TP_STRUCT__entry(
++		__string(	type,		type			)
++		__field(	unsigned int,	instance		)
++	),
++
++	TP_fast_assign(
++		__assign_str(type, type);
++		__entry->instance = instance;
++	),
++
++	TP_printk("Initialized %s#%d\n",
++		__get_str(type),
++		__entry->instance)
++);
++
++/*
++ * This event indicates that a hardware collection mechanism is started
++ */
++DEFINE_EVENT(hw_event_class, hw_event_init,
++
++	TP_PROTO(const char *type, unsigned int instance),
++
++	TP_ARGS(type, instance)
++);
++
++
++/*
++ * Hardware-independent Memory Controller specific events
++ */
++
++/*
++ * Default error mechanisms for Memory Controller errors (CE and UE)
++ */
++TRACE_EVENT(mc_error,
++
++	TP_PROTO(const unsigned int err_type,
++		 const unsigned int mc_index,
++		 const char *msg,
++		 const char *label,
++		 const char *location,
++		 const char *detail,
++		 const char *driver_detail),
++
++	TP_ARGS(err_type, mc_index, msg, label, location,
++		detail, driver_detail),
++
++	TP_STRUCT__entry(
++		__field(	unsigned int,	err_type		)
++		__field(	unsigned int,	mc_index		)
++		__string(	msg,		msg			)
++		__string(	label,		label			)
++		__string(	detail,		detail			)
++		__string(	location,	location		)
++		__string(	driver_detail,	driver_detail		)
++	),
++
++	TP_fast_assign(
++		__entry->err_type		= err_type;
++		__entry->mc_index		= mc_index;
++		__assign_str(msg, msg);
++		__assign_str(label, label);
++		__assign_str(location, location);
++		__assign_str(detail, detail);
++		__assign_str(driver_detail, driver_detail);
++	),
++
++	TP_printk(HW_ERR "mce#%d: %s error %s on memory stick \"%s\" (%s %s %s)",
++		  __entry->mc_index,
++		  (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
++			((__entry->err_type == HW_EVENT_ERR_FATAL) ?
++			"Fatal" : "Uncorrected"),
++		  __get_str(msg),
++		  __get_str(label),
++		  __get_str(location),
++		  __get_str(detail),
++		  __get_str(driver_detail))
++);
++
++#endif /* _TRACE_HW_EVENT_MC_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
