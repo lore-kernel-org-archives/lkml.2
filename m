@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab2EIGHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:07:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39055 "EHLO
+	id S1756978Ab2EIGHy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:07:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39167 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756400Ab2EIFxf (ORCPT
+	by vger.kernel.org with ESMTP id S1756660Ab2EIFxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:35 -0400
-Message-Id: <20120509055045.305207338@decadent.org.uk>
+Message-Id: <20120509055051.649959068@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:22 +0100
+Date: Wed, 09 May 2012 06:53:09 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
-        Ben Greear <greearb@candelatech.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 113/167] nl80211: ensure interface is up in various APIs
+        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
+        Yanmin Zhang <yanmin.zhang@intel.com>, ShuoX Liu <shuox.liu@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 160/167] [PATCH] percpu, x86: dont use PMD_SIZE as embedded atom_size on
+ 32bit
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,151 +30,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Tejun Heo <tj@kernel.org>
 
-From: Johannes Berg <johannes.berg@intel.com>
+commit d5e28005a1d2e67833852f4c9ea8ec206ea3ff85 upstream.
 
-commit 2b5f8b0b44e17e625cfba1e7b88db44f4dcc0441 upstream.
-[backported by Ben Greear]
+With the embed percpu first chunk allocator, x86 uses either PAGE_SIZE
+or PMD_SIZE for atom_size.  PMD_SIZE is used when CPU supports PSE so
+that percpu areas are aligned to PMD mappings and possibly allow using
+PMD mappings in vmalloc areas in the future.  Using larger atom_size
+doesn't waste actual memory; however, it does require larger vmalloc
+space allocation later on for !first chunks.
 
-The nl80211 handling code should ensure as much as
-it can that the interface is in a valid state, it
-can certainly ensure the interface is running.
+With reasonably sized vmalloc area, PMD_SIZE shouldn't be a problem
+but x86_32 at this point is anything but reasonable in terms of
+address space and using larger atom_size reportedly leads to frequent
+percpu allocation failures on certain setups.
 
-Not doing so can cause calls through mac80211 into
-the driver that result in warnings and unspecified
-behaviour in the driver.
+As there is no reason to not use PMD_SIZE on x86_64 as vmalloc space
+is aplenty and most x86_64 configurations support PSE, fix the issue
+by always using PMD_SIZE on x86_64 and PAGE_SIZE on x86_32.
 
-Reported-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Ben Greear <greearb@candelatech.com>
+v2: drop cpu_has_pse test and make x86_64 always use PMD_SIZE and
+    x86_32 PAGE_SIZE as suggested by hpa.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Yanmin Zhang <yanmin.zhang@intel.com>
+Reported-by: ShuoX Liu <shuox.liu@intel.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+LKML-Reference: <4F97BA98.6010001@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/wireless/nl80211.c |   29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
+ arch/x86/kernel/setup_percpu.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -1181,6 +1181,11 @@ static int nl80211_set_wiphy(struct sk_b
- 			goto bad_res;
- 		}
+diff --git a/arch/x86/kernel/setup_percpu.c b/arch/x86/kernel/setup_percpu.c
+index 71f4727..5a98aa2 100644
+--- a/arch/x86/kernel/setup_percpu.c
++++ b/arch/x86/kernel/setup_percpu.c
+@@ -185,10 +185,22 @@ void __init setup_per_cpu_areas(void)
+ #endif
+ 	rc = -EINVAL;
+ 	if (pcpu_chosen_fc != PCPU_FC_PAGE) {
+-		const size_t atom_size = cpu_has_pse ? PMD_SIZE : PAGE_SIZE;
+ 		const size_t dyn_size = PERCPU_MODULE_RESERVE +
+ 			PERCPU_DYNAMIC_RESERVE - PERCPU_FIRST_CHUNK_RESERVE;
++		size_t atom_size;
  
-+		if (!netif_running(netdev)) {
-+			result = -ENETDOWN;
-+			goto bad_res;
-+		}
-+
- 		nla_for_each_nested(nl_txq_params,
- 				    info->attrs[NL80211_ATTR_WIPHY_TXQ_PARAMS],
- 				    rem_txq_params) {
-@@ -5432,7 +5437,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_get_key,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5464,7 +5469,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
- 		.doit = nl80211_addset_beacon,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5472,7 +5477,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
- 		.doit = nl80211_addset_beacon,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5496,7 +5501,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_set_station,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5512,7 +5517,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_del_station,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5545,7 +5550,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_del_mpath,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5553,7 +5558,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_set_bss,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5579,7 +5584,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_get_mesh_config,
- 		.policy = nl80211_policy,
- 		/* can be retrieved by unprivileged users */
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5711,7 +5716,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_setdel_pmksa,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5719,7 +5724,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_setdel_pmksa,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5727,7 +5732,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_flush_pmksa,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
-@@ -5815,7 +5820,7 @@ static struct genl_ops nl80211_ops[] = {
- 		.doit = nl80211_set_wds_peer,
- 		.policy = nl80211_policy,
- 		.flags = GENL_ADMIN_PERM,
--		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-+		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
- 				  NL80211_FLAG_NEED_RTNL,
- 	},
- 	{
++		/*
++		 * On 64bit, use PMD_SIZE for atom_size so that embedded
++		 * percpu areas are aligned to PMD.  This, in the future,
++		 * can also allow using PMD mappings in vmalloc area.  Use
++		 * PAGE_SIZE on 32bit as vmalloc space is highly contended
++		 * and large vmalloc area allocs can easily fail.
++		 */
++#ifdef CONFIG_X86_64
++		atom_size = PMD_SIZE;
++#else
++		atom_size = PAGE_SIZE;
++#endif
+ 		rc = pcpu_embed_first_chunk(PERCPU_FIRST_CHUNK_RESERVE,
+ 					    dyn_size, atom_size,
+ 					    pcpu_cpu_distance,
+-- 
+1.7.10
+
 
 
