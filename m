@@ -1,322 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758771Ab2EIMNn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 08:13:43 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:49456 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757155Ab2EIMNk (ORCPT
+	id S1758732Ab2EIMQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 08:16:59 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3153 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757209Ab2EIMQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 08:13:40 -0400
-Date: Wed, 9 May 2012 14:13:26 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [EDAC ABI v13 04/25] events/hw_event: Create a Hardware Events
- Report Mecanism (HERM)
-Message-ID: <20120509121326.GA22737@aftab.osrc.amd.com>
-References: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
- <1334608729-30803-5-git-send-email-mchehab@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334608729-30803-5-git-send-email-mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 May 2012 08:16:58 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 09 May 2012 05:16:58 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] regmap: fix possible memory corruption in regmap_bulk_read()
+Date: Wed,  9 May 2012 17:43:12 +0530
+Message-Id: <1336565592-17577-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inserting the latest version:
+The function regmap_bulk_read() calls the regmap_read() for
+each register if set of register has volatile and cache is
+enabled. In this case, last few register read makes the memory
+corruption if the register size is not the size of unsigned int.
+The regam_read() takes argument as unsigned int for returning
+value and it update the value as
+	*val = map->format.parse_val(map->work_buf);
+This causes complete 4 bytes (size of unsigned int) to get written.
+Now if client pass the memory pointer for value which is equal to the
+required size of register count in regmap_bulk_read() then last few
+register read actually update the memory beyond passed pointer size.
 
-> From 4afb0250415e87b983f5937d456c83407fe96264 Mon Sep 17 00:00:00 2001
-> From: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Date: Thu, 23 Feb 2012 08:10:34 -0300
-> Subject: [PATCH] events/hw_event: Create a Hardware Events Report Mecanism
->  (HERM)
+Avoid this by using local variable for read and then do memcpy()
+for actual byte copy to passed pointer based on register size.
 
-Ok, let's face it: this is just a single trace_mc_error tracepoint,
-nothing else. Let's drop the HERM bullshit bingo and call the thing by
-it's name: "Add yet another tracepoint to report DRAM ECC errors".
+I allocated one pointer ptr and take first 16 bytes dump of that
+pointer then call regmap_bulk_read() with pointer which is just
+on top of this allocated pointer and register count of 128. Here
+register size is 1 byte.
+The memory trace of last 5 register read are as follows:
 
-> Adds a trace class for handle hardware events
-> 
-> Part of the description bellow is shamelessly copied from Tony
-> Luck's notes about the Hardware Error BoF during LPC 2010 [1].
-> Tony, thanks for your notes and discussions to generate the
-> h/w error reporting requirements.
-> 
-> [1] http://lwn.net/Articles/416669/
-> 
->     We have several subsystems & methods for reporting hardware errors:
-> 
->     1) EDAC ("Error Detection and Correction").  In its original form
->     this consisted of a platform specific driver that read topology
->     information and error counts from chipset registers and reported
->     the results via a sysfs interface.
-> 
->     2) mcelog - x86 specific decoding of machine check bank registers
->     reporting in binary form via /dev/mcelog. Recent additions make use
->     of the APEI extensions that were documented in version 4.0a of the
->     ACPI specification to acquire more information about errors without
->     having to rely reading chipset registers directly. A user level
->     programs decodes into somewhat human readable format.
-> 
->     3) drivers/edac/mce_amd.c - this driver hooks into the mcelog path and
->     decodes errors reported via machine check bank registers in AMD
->     processors to the console log using printk();
-> 
->     Each of these mechanisms has a band of followers ... and none
->     of them appear to meet all the needs of all users.
-> 
-> In order to provide a proper hardware event subsystem, let's
+[    5.438589] regmap_bulk_read after regamp_read() for register 122
+[    5.447421] 0xef993c20 0xef993c00 0x00000000 0x00000001
+[    5.467535] regmap_bulk_read after regamp_read() for register 123
+[    5.476374] 0xef993c20 0xef993c00 0x00000000 0x00000001
+[    5.496425] regmap_bulk_read after regamp_read() for register 124
+[    5.505260] 0xef993c20 0xef993c00 0x00000000 0x00000001
+[    5.525372] regmap_bulk_read after regamp_read() for register 125
+[    5.534205] 0xef993c00 0xef993c00 0x00000000 0x00000001
+[    5.554258] regmap_bulk_read after regamp_read() for register 126
+[    5.563100] 0xef990000 0xef993c00 0x00000000 0x00000001
+[    5.554258] regmap_bulk_read after regamp_read() for register 127
+[    5.587108] 0xef000000 0xef993c00 0x00000000 0x00000001
 
-err no, this is not a proper hw event subsystem.
+Here it is observed that the memory content at first word started changing
+on last 3 regmap_read() and so corruption happened.
 
-> encapsulate the memory error hardware events into a trace facility.
-> 
-> As no agreement was reached so far for the MCA-based trace events, for
-> now, let's add events only for memory errors. A latter patch can change
-> the tracepoint, for events originated via MCA.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+This patch is against the linus' tree.
+Added tree as
+git remote add -t master -f linus
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
 
-This last paragraph has nothing to do with the patch so it can go.
+ drivers/base/regmap/regmap.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-> Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
-> Cc: Doug Thompson <norsk5@yahoo.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
->  drivers/edac/edac_core.h        |    2 +-
->  drivers/edac/edac_mc.c          |   26 +++++++---
->  include/trace/events/hw_event.h |  107 +++++++++++++++++++++++++++++++++++++++
->  3 files changed, 127 insertions(+), 8 deletions(-)
->  create mode 100644 include/trace/events/hw_event.h
-> 
-> diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-> index f06ce9ab692c..eee73605c5a0 100644
-> --- a/drivers/edac/edac_core.h
-> +++ b/drivers/edac/edac_core.h
-> @@ -468,7 +468,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
->  			  const int layer2,
->  			  const char *msg,
->  			  const char *other_detail,
-> -			  const void *mcelog);
-> +			  const void *arch_log);
->  
->  /*
->   * edac_device APIs
-> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-> index e5b55632359f..c75774dcf434 100644
-> --- a/drivers/edac/edac_mc.c
-> +++ b/drivers/edac/edac_mc.c
-> @@ -33,6 +33,9 @@
->  #include "edac_core.h"
->  #include "edac_module.h"
->  
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/hw_event.h>
-> +
->  /* lock to memory controller's control array */
->  static DEFINE_MUTEX(mem_ctls_mutex);
->  static LIST_HEAD(mc_devices);
-> @@ -381,6 +384,9 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
->  	 * which will perform kobj unregistration and the actual free
->  	 * will occur during the kobject callback operation
->  	 */
-> +
-
-superfluous newline.
-
-> +	trace_hw_event_init("edac", (unsigned)mc_num);
-> +
->  	return mci;
->  }
->  EXPORT_SYMBOL_GPL(edac_mc_alloc);
-> @@ -982,7 +988,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
->  			  const int layer2,
->  			  const char *msg,
->  			  const char *other_detail,
-> -			  const void *mcelog)
-> +			  const void *arch_log)
->  {
->  	/* FIXME: too much for stack: move it to some pre-alocated area */
->  	char detail[80], location[80];
-> @@ -1119,21 +1125,27 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
->  	}
->  
->  	/* Memory type dependent details about the error */
-> -	if (type == HW_EVENT_ERR_CORRECTED) {
-> +	if (type == HW_EVENT_ERR_CORRECTED)
->  		snprintf(detail, sizeof(detail),
->  			"page:0x%lx offset:0x%lx grain:%d syndrome:0x%lx",
->  			page_frame_number, offset_in_page,
->  			grain, syndrome);
-> -		edac_ce_error(mci, pos, msg, location, label, detail,
-> -			      other_detail, enable_per_layer_report,
-> -			      page_frame_number, offset_in_page, grain);
-> -	} else {
-> +	else
->  		snprintf(detail, sizeof(detail),
->  			"page:0x%lx offset:0x%lx grain:%d",
->  			page_frame_number, offset_in_page, grain);
->  
-> +	/* Report the error via the trace interface */
-> +	trace_mc_error(type, mci->mc_idx, msg, label, location,
-> +		       detail, other_detail);
-> +
-> +	/* Report the error via the edac_mc_printk() interface */
-> +	if (type == HW_EVENT_ERR_CORRECTED)
-> +		edac_ce_error(mci, pos, msg, location, label, detail,
-> +			      other_detail, enable_per_layer_report,
-> +			      page_frame_number, offset_in_page, grain);
-> +	else
->  		edac_ue_error(mci, pos, msg, location, label, detail,
->  			      other_detail, enable_per_layer_report);
-> -	}
->  }
->  EXPORT_SYMBOL_GPL(edac_mc_handle_error);
-> diff --git a/include/trace/events/hw_event.h b/include/trace/events/hw_event.h
-> new file mode 100644
-> index 000000000000..1fabfe21e29a
-> --- /dev/null
-> +++ b/include/trace/events/hw_event.h
-> @@ -0,0 +1,107 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM hw_event
-> +
-> +#if !defined(_TRACE_HW_EVENT_MC_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_HW_EVENT_MC_H
-> +
-> +#include <linux/tracepoint.h>
-> +#include <linux/edac.h>
-> +#include <linux/ktime.h>
-> +
-> +/*
-> + * Hardware Anomaly Report Mecanism (HARM) events
-> + *
-> + * Those events are generated when hardware detected a corrected or
-> + * uncorrected event, and are meant to replace the current API to report
-> + * errors defined on both EDAC and MCE subsystems.
-> + *
-> + * FIXME: Add events for handling memory errors originated from the
-> + *        MCE subsystem.
-> + */
-> +
-> +DECLARE_EVENT_CLASS(hw_event_class,
-
-Ok, event classes are for sharing tracepoints which have the same
-TP_PROTO, TP_ARGS.. etc arguments as Steven's (CCed) article on lwn
-points out.
-
-I don't see this here and besides, why in the hell would you need a
-trace event which only announces that the mechanism starts?? A common,
-run-of-the-mill printk is more than enough here.
-
-> +	TP_PROTO(const char *type, unsigned int instance),
-> +	TP_ARGS(type, instance),
-> +
-> +	TP_STRUCT__entry(
-> +		__string(	type,		type			)
-> +		__field(	unsigned int,	instance		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__assign_str(type, type);
-> +		__entry->instance = instance;
-> +	),
-> +
-> +	TP_printk("Initialized %s#%d\n",
-> +		__get_str(type),
-> +		__entry->instance)
-> +);
-> +
-> +/*
-> + * This event indicates that a hardware collection mechanism is started
-> + */
-> +DEFINE_EVENT(hw_event_class, hw_event_init,
-> +
-> +	TP_PROTO(const char *type, unsigned int instance),
-> +
-> +	TP_ARGS(type, instance)
-> +);
-> +
-> +
-> +/*
-> + * Hardware-independent Memory Controller specific events
-> + */
-> +
-> +/*
-> + * Default error mechanisms for Memory Controller errors (CE and UE)
-
-				   DRAM ECC errors.
-
-> + */
-> +TRACE_EVENT(mc_error,
-> +
-> +	TP_PROTO(const unsigned int err_type,
-> +		 const unsigned int mc_index,
-> +		 const char *msg,
-> +		 const char *label,
-> +		 const char *location,
-> +		 const char *detail,
-> +		 const char *driver_detail),
-> +
-> +	TP_ARGS(err_type, mc_index, msg, label, location,
-> +		detail, driver_detail),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	unsigned int,	err_type		)
-> +		__field(	unsigned int,	mc_index		)
-> +		__string(	msg,		msg			)
-> +		__string(	label,		label			)
-> +		__string(	detail,		detail			)
-> +		__string(	location,	location		)
-> +		__string(	driver_detail,	driver_detail		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->err_type		= err_type;
-> +		__entry->mc_index		= mc_index;
-> +		__assign_str(msg, msg);
-> +		__assign_str(label, label);
-> +		__assign_str(location, location);
-> +		__assign_str(detail, detail);
-> +		__assign_str(driver_detail, driver_detail);
-> +	),
-> +
-> +	TP_printk(HW_ERR "mce#%d: %s error %s on label \"%s\" (%s %s %s)",
-
-						 memory stick/DIMM
-
-> +		  __entry->mc_index,
-> +		  (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
-> +			((__entry->err_type == HW_EVENT_ERR_FATAL) ?
-> +			"Fatal" : "Uncorrected"),
-> +		  __get_str(msg),
-> +		  __get_str(label),
-> +		  __get_str(location),
-> +		  __get_str(detail),
-> +		  __get_str(driver_detail))
-> +);
-> +
-> +#endif /* _TRACE_HW_EVENT_MC_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
-> -- 
-> 1.7.9.3.362.g71319
-
-
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 7a3f535..bb80853 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -775,9 +775,11 @@ int regmap_bulk_read(struct regmap *map, unsigned int reg, void *val,
+ 			map->format.parse_val(val + i);
+ 	} else {
+ 		for (i = 0; i < val_count; i++) {
+-			ret = regmap_read(map, reg + i, val + (i * val_bytes));
++			unsigned int ival;
++			ret = regmap_read(map, reg + i, &ival);
+ 			if (ret != 0)
+ 				return ret;
++			memcpy(val + (i * val_bytes), &ival, val_bytes);
+ 		}
+ 	}
+ 
 -- 
-Regards/Gruss,
-Boris.
+1.7.1.1
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
