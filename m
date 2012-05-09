@@ -1,294 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759218Ab2EIMzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 08:55:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16138 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752931Ab2EIMza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 08:55:30 -0400
-Message-ID: <4FAA6938.4070602@redhat.com>
-Date: Wed, 09 May 2012 09:55:20 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1759225Ab2EIM62 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 08:58:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40177 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687Ab2EIM60 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 08:58:26 -0400
+Date: Wed, 9 May 2012 05:58:10 -0700
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-e1136ef7kdffj7yf9tjhydln@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, a.p.zijlstra@chello.nl, tj@kernel.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, a.p.zijlstra@chello.nl, tj@kernel.org,
+        tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] x86/numa: Allow specifying node_distance()
+  for numa=fake
+Git-Commit-ID: 94c0dd3278dd3eae52eabf0fb77d472d0dd3e373
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: Re: [EDAC ABI v13 08/25] edac: use Documentation-nano format for
- some data structs
-References: <1334608729-30803-1-git-send-email-mchehab@redhat.com> <1334608729-30803-9-git-send-email-mchehab@redhat.com> <20120509122344.GB22737@aftab.osrc.amd.com>
-In-Reply-To: <20120509122344.GB22737@aftab.osrc.amd.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 09 May 2012 05:58:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 09-05-2012 09:23, Borislav Petkov escreveu:
-> On Mon, Apr 16, 2012 at 05:38:32PM -0300, Mauro Carvalho Chehab wrote:
->> No functional changes. Just comment improvements.
->>
->> Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
->> Cc: Doug Thompson <norsk5@yahoo.com>
->> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
->> ---
->>  include/linux/edac.h |   80 +++++++++++++++++++++++++++++++++++--------------
->>  1 files changed, 57 insertions(+), 23 deletions(-)
->>
->> diff --git a/include/linux/edac.h b/include/linux/edac.h
->> index ffb189b..138b147 100644
->> --- a/include/linux/edac.h
->> +++ b/include/linux/edac.h
->> @@ -45,7 +45,19 @@ static inline void opstate_init(void)
->>  #define EDAC_MC_LABEL_LEN	31
->>  #define MC_PROC_NAME_MAX_LEN	7
->>  
->> -/* memory devices */
->> +/**
->> + * enum dev_type - describe the type of memory DRAM chips used at the stick
->> + * @DEV_UNKNOWN:	Can't be determined, or MC doesn't support detect it
->> + * @DEV_X1:		1 bit for data
->> + * @DEV_X2:		2 bits for data
->> + * @DEV_X4:		4 bits for data
->> + * @DEV_X8:		8 bits for data
->> + * @DEV_X16:		16 bits for data
->> + * @DEV_X32:		32 bits for data
->> + * @DEV_X64:		64 bits for data
->> + *
->> + * Typical values are x4 and x8.
->> + */
->>  enum dev_type {
->>  	DEV_UNKNOWN = 0,
->>  	DEV_X1,
->> @@ -163,18 +175,29 @@ enum mem_type {
->>  #define MEM_FLAG_DDR3		 BIT(MEM_DDR3)
->>  #define MEM_FLAG_RDDR3		 BIT(MEM_RDDR3)
->>  
->> -/* chipset Error Detection and Correction capabilities and mode */
->> +/** enum edac-type - Error Detection and Correction capabilities and mode
-> 
-> This probably needs to be
-> 
-> /**
->  * enum edac-type
-> 
-> with the text starting on the second line and leaving the "/**" marker
-> alone on the first line.
-> 
->> + * @EDAC_UNKNOWN:	Unknown if ECC is available
->> + * @EDAC_NONE:		Doesn't support ECC
->> + * @EDAC_RESERVED:	Reserved ECC type
->> + * @EDAC_PARITY:	Detects parity errors
->> + * @EDAC_EC:		Error Checking - no correction
->> + * @EDAC_SECDED:	Single bit error correction, Double detection
->> + * @EDAC_S2ECD2ED:	Chipkill x2 devices - do these exist?
->> + * @EDAC_S4ECD4ED:	Chipkill x4 devices
->> + * @EDAC_S8ECD8ED:	Chipkill x8 devices
->> + * @EDAC_S16ECD16ED:	Chipkill x16 devices
->> + */
->>  enum edac_type {
->> -	EDAC_UNKNOWN = 0,	/* Unknown if ECC is available */
->> -	EDAC_NONE,		/* Doesn't support ECC */
->> -	EDAC_RESERVED,		/* Reserved ECC type */
->> -	EDAC_PARITY,		/* Detects parity errors */
->> -	EDAC_EC,		/* Error Checking - no correction */
->> -	EDAC_SECDED,		/* Single bit error correction, Double detection */
->> -	EDAC_S2ECD2ED,		/* Chipkill x2 devices - do these exist? */
->> -	EDAC_S4ECD4ED,		/* Chipkill x4 devices */
->> -	EDAC_S8ECD8ED,		/* Chipkill x8 devices */
->> -	EDAC_S16ECD16ED,	/* Chipkill x16 devices */
->> +	EDAC_UNKNOWN =	0,
->> +	EDAC_NONE,
->> +	EDAC_RESERVED,
->> +	EDAC_PARITY,
->> +	EDAC_EC,
->> +	EDAC_SECDED,
->> +	EDAC_S2ECD2ED,
->> +	EDAC_S4ECD4ED,
->> +	EDAC_S8ECD8ED,
->> +	EDAC_S16ECD16ED,
->>  };
->>  
->>  #define EDAC_FLAG_UNKNOWN	BIT(EDAC_UNKNOWN)
->> @@ -187,18 +210,29 @@ enum edac_type {
->>  #define EDAC_FLAG_S8ECD8ED	BIT(EDAC_S8ECD8ED)
->>  #define EDAC_FLAG_S16ECD16ED	BIT(EDAC_S16ECD16ED)
->>  
->> -/* scrubbing capabilities */
->> +/** enum scrub_type - scrubbing capabilities
-> 
-> ditto.
-> 
->> + * @SCRUB_UNKNOWN		Unknown if scrubber is available
->> + * @SCRUB_NONE:			No scrubber
->> + * @SCRUB_SW_PROG:		SW progressive (sequential) scrubbing
->> + * @SCRUB_SW_SRC:		Software scrub only errors
->> + * @SCRUB_SW_PROG_SRC:		Progressive software scrub from an error
->> + * @SCRUB_SW_TUNABLE:		Software scrub frequency is tunable
->> + * @SCRUB_HW_PROG:		HW progressive (sequential) scrubbing
->> + * @SCRUB_HW_SRC:		Hardware scrub only errors
->> + * @SCRUB_HW_PROG_SRC:		Progressive hardware scrub from an error
->> + * SCRUB_HW_TUNABLE:		Hardware scrub frequency is tunable
->> + */
->>  enum scrub_type {
->> -	SCRUB_UNKNOWN = 0,	/* Unknown if scrubber is available */
->> -	SCRUB_NONE,		/* No scrubber */
->> -	SCRUB_SW_PROG,		/* SW progressive (sequential) scrubbing */
->> -	SCRUB_SW_SRC,		/* Software scrub only errors */
->> -	SCRUB_SW_PROG_SRC,	/* Progressive software scrub from an error */
->> -	SCRUB_SW_TUNABLE,	/* Software scrub frequency is tunable */
->> -	SCRUB_HW_PROG,		/* HW progressive (sequential) scrubbing */
->> -	SCRUB_HW_SRC,		/* Hardware scrub only errors */
->> -	SCRUB_HW_PROG_SRC,	/* Progressive hardware scrub from an error */
->> -	SCRUB_HW_TUNABLE	/* Hardware scrub frequency is tunable */
->> +	SCRUB_UNKNOWN =	0,
->> +	SCRUB_NONE,
->> +	SCRUB_SW_PROG,
->> +	SCRUB_SW_SRC,
->> +	SCRUB_SW_PROG_SRC,
->> +	SCRUB_SW_TUNABLE,
->> +	SCRUB_HW_PROG,
->> +	SCRUB_HW_SRC,
->> +	SCRUB_HW_PROG_SRC,
->> +	SCRUB_HW_TUNABLE
->>  };
->>  
->>  #define SCRUB_FLAG_SW_PROG	BIT(SCRUB_SW_PROG)
->> -- 
->> 1.7.8
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
+Commit-ID:  94c0dd3278dd3eae52eabf0fb77d472d0dd3e373
+Gitweb:     http://git.kernel.org/tip/94c0dd3278dd3eae52eabf0fb77d472d0dd3e373
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Wed, 18 Apr 2012 19:04:17 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 9 May 2012 13:28:59 +0200
 
-Fixed, thanks!
-Mauro
+x86/numa: Allow specifying node_distance() for numa=fake
 
--
+Allows emulating more interesting NUMA configurations like a quad
+socket AMD Magny-Cour:
 
+ "numa=fake=8:10,16,16,22,16,22,16,22,
+              16,10,22,16,22,16,22,16,
+              16,22,10,16,16,22,16,22,
+              22,16,16,10,22,16,22,16,
+              16,22,16,22,10,16,16,22,
+              22,16,22,16,16,10,22,16,
+              16,22,16,22,16,22,10,16,
+              22,16,22,16,22,16,16,10"
 
-edac: use Documentation-nano format for some data structs
+Which has a non-fully-connected topology.
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: x86@kernel.org
+Link: http://lkml.kernel.org/n/tip-e1136ef7kdffj7yf9tjhydln@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/mm/numa_emulation.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-No functional changes. Just comment improvements.
-
-Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
-Cc: Doug Thompson <norsk5@yahoo.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-diff --git a/include/linux/edac.h b/include/linux/edac.h
-index ff8f9d7..c8b8133 100644
---- a/include/linux/edac.h
-+++ b/include/linux/edac.h
-@@ -45,7 +45,19 @@ static inline void opstate_init(void)
- #define EDAC_MC_LABEL_LEN	31
- #define MC_PROC_NAME_MAX_LEN	7
+diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
+index 53489ff..871dd88 100644
+--- a/arch/x86/mm/numa_emulation.c
++++ b/arch/x86/mm/numa_emulation.c
+@@ -339,9 +339,11 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+ 	} else {
+ 		unsigned long n;
  
--/* memory devices */
-+/**
-+ * enum dev_type - describe the type of memory DRAM chips used at the stick
-+ * @DEV_UNKNOWN:	Can't be determined, or MC doesn't support detect it
-+ * @DEV_X1:		1 bit for data
-+ * @DEV_X2:		2 bits for data
-+ * @DEV_X4:		4 bits for data
-+ * @DEV_X8:		8 bits for data
-+ * @DEV_X16:		16 bits for data
-+ * @DEV_X32:		32 bits for data
-+ * @DEV_X64:		64 bits for data
-+ *
-+ * Typical values are x4 and x8.
-+ */
- enum dev_type {
- 	DEV_UNKNOWN = 0,
- 	DEV_X1,
-@@ -163,18 +175,30 @@ enum mem_type {
- #define MEM_FLAG_DDR3		 BIT(MEM_DDR3)
- #define MEM_FLAG_RDDR3		 BIT(MEM_RDDR3)
+-		n = simple_strtoul(emu_cmdline, NULL, 0);
++		n = simple_strtoul(emu_cmdline, &emu_cmdline, 0);
+ 		ret = split_nodes_interleave(&ei, &pi, 0, max_addr, n);
+ 	}
++	if (*emu_cmdline == ':')
++		emu_cmdline++;
  
--/* chipset Error Detection and Correction capabilities and mode */
-+/**
-+ * enum edac-type - Error Detection and Correction capabilities and mode
-+ * @EDAC_UNKNOWN:	Unknown if ECC is available
-+ * @EDAC_NONE:		Doesn't support ECC
-+ * @EDAC_RESERVED:	Reserved ECC type
-+ * @EDAC_PARITY:	Detects parity errors
-+ * @EDAC_EC:		Error Checking - no correction
-+ * @EDAC_SECDED:	Single bit error correction, Double detection
-+ * @EDAC_S2ECD2ED:	Chipkill x2 devices - do these exist?
-+ * @EDAC_S4ECD4ED:	Chipkill x4 devices
-+ * @EDAC_S8ECD8ED:	Chipkill x8 devices
-+ * @EDAC_S16ECD16ED:	Chipkill x16 devices
-+ */
- enum edac_type {
--	EDAC_UNKNOWN = 0,	/* Unknown if ECC is available */
--	EDAC_NONE,		/* Doesn't support ECC */
--	EDAC_RESERVED,		/* Reserved ECC type */
--	EDAC_PARITY,		/* Detects parity errors */
--	EDAC_EC,		/* Error Checking - no correction */
--	EDAC_SECDED,		/* Single bit error correction, Double detection */
--	EDAC_S2ECD2ED,		/* Chipkill x2 devices - do these exist? */
--	EDAC_S4ECD4ED,		/* Chipkill x4 devices */
--	EDAC_S8ECD8ED,		/* Chipkill x8 devices */
--	EDAC_S16ECD16ED,	/* Chipkill x16 devices */
-+	EDAC_UNKNOWN =	0,
-+	EDAC_NONE,
-+	EDAC_RESERVED,
-+	EDAC_PARITY,
-+	EDAC_EC,
-+	EDAC_SECDED,
-+	EDAC_S2ECD2ED,
-+	EDAC_S4ECD4ED,
-+	EDAC_S8ECD8ED,
-+	EDAC_S16ECD16ED,
- };
+ 	if (ret < 0)
+ 		goto no_emu;
+@@ -418,7 +420,9 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+ 			int physj = emu_nid_to_phys[j];
+ 			int dist;
  
- #define EDAC_FLAG_UNKNOWN	BIT(EDAC_UNKNOWN)
-@@ -187,18 +211,30 @@ enum edac_type {
- #define EDAC_FLAG_S8ECD8ED	BIT(EDAC_S8ECD8ED)
- #define EDAC_FLAG_S16ECD16ED	BIT(EDAC_S16ECD16ED)
- 
--/* scrubbing capabilities */
-+/**
-+ * enum scrub_type - scrubbing capabilities
-+ * @SCRUB_UNKNOWN		Unknown if scrubber is available
-+ * @SCRUB_NONE:			No scrubber
-+ * @SCRUB_SW_PROG:		SW progressive (sequential) scrubbing
-+ * @SCRUB_SW_SRC:		Software scrub only errors
-+ * @SCRUB_SW_PROG_SRC:		Progressive software scrub from an error
-+ * @SCRUB_SW_TUNABLE:		Software scrub frequency is tunable
-+ * @SCRUB_HW_PROG:		HW progressive (sequential) scrubbing
-+ * @SCRUB_HW_SRC:		Hardware scrub only errors
-+ * @SCRUB_HW_PROG_SRC:		Progressive hardware scrub from an error
-+ * SCRUB_HW_TUNABLE:		Hardware scrub frequency is tunable
-+ */
- enum scrub_type {
--	SCRUB_UNKNOWN = 0,	/* Unknown if scrubber is available */
--	SCRUB_NONE,		/* No scrubber */
--	SCRUB_SW_PROG,		/* SW progressive (sequential) scrubbing */
--	SCRUB_SW_SRC,		/* Software scrub only errors */
--	SCRUB_SW_PROG_SRC,	/* Progressive software scrub from an error */
--	SCRUB_SW_TUNABLE,	/* Software scrub frequency is tunable */
--	SCRUB_HW_PROG,		/* HW progressive (sequential) scrubbing */
--	SCRUB_HW_SRC,		/* Hardware scrub only errors */
--	SCRUB_HW_PROG_SRC,	/* Progressive hardware scrub from an error */
--	SCRUB_HW_TUNABLE	/* Hardware scrub frequency is tunable */
-+	SCRUB_UNKNOWN =	0,
-+	SCRUB_NONE,
-+	SCRUB_SW_PROG,
-+	SCRUB_SW_SRC,
-+	SCRUB_SW_PROG_SRC,
-+	SCRUB_SW_TUNABLE,
-+	SCRUB_HW_PROG,
-+	SCRUB_HW_SRC,
-+	SCRUB_HW_PROG_SRC,
-+	SCRUB_HW_TUNABLE
- };
- 
- #define SCRUB_FLAG_SW_PROG	BIT(SCRUB_SW_PROG)
-
+-			if (physi >= numa_dist_cnt || physj >= numa_dist_cnt)
++			if (get_option(&emu_cmdline, &dist) == 2)
++				;
++			else if (physi >= numa_dist_cnt || physj >= numa_dist_cnt)
+ 				dist = physi == physj ?
+ 					LOCAL_DISTANCE : REMOTE_DISTANCE;
+ 			else
