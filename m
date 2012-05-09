@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761298Ab2EIXr7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 19:47:59 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56969 "EHLO
+	id S1761309Ab2EIXsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 19:48:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56970 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760680Ab2EIXrz (ORCPT
+	by vger.kernel.org with ESMTP id S1761271Ab2EIXrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 19:47:55 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
@@ -13,170 +13,71 @@ Cc: Yadwinder Singh <yadi.brar@samsung.com>,
         Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
         patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/6] regulator: core: Allow regulators to provide a voltage to selector mapping
-Date: Thu, 10 May 2012 00:47:29 +0100
-Message-Id: <1336607255-4967-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 3/6] regulator: wm831x: Convert to regulator_list_voltage_linear()
+Date: Thu, 10 May 2012 00:47:31 +0100
+Message-Id: <1336607255-4967-3-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1336607255-4967-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1336607255-4967-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to allow more drivers to factor things out into data allow
-drivers to provide a mapping function to convert voltages into selectors.
-This allows any driver to use set_voltage_sel(). The existing mapping
-based on iterating over list_voltage() is provided as an operation which
-can be assigned to the new map_voltage() function though for ease of
-transition it is treated as the default.
+Only the alive LDOs can actually use this as all the other regulators have
+two linear ranges.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/regulator/core.c         |   82 +++++++++++++++++++++++++-------------
- include/linux/regulator/driver.h |    4 ++
- 2 files changed, 59 insertions(+), 27 deletions(-)
+ drivers/regulator/wm831x-ldo.c |   15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index f899af5..2633310 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1967,14 +1967,54 @@ int regulator_set_voltage_sel_regmap(struct regulator_dev *rdev, unsigned sel)
+diff --git a/drivers/regulator/wm831x-ldo.c b/drivers/regulator/wm831x-ldo.c
+index 5bf793d..74ee686 100644
+--- a/drivers/regulator/wm831x-ldo.c
++++ b/drivers/regulator/wm831x-ldo.c
+@@ -630,15 +630,6 @@ static struct platform_driver wm831x_aldo_driver = {
+ 
+ #define WM831X_ALIVE_LDO_MAX_SELECTOR 0xf
+ 
+-static int wm831x_alive_ldo_list_voltage(struct regulator_dev *rdev,
+-				      unsigned int selector)
+-{
+-	/* 0.8-1.55V in 50mV steps */
+-	if (selector <= WM831X_ALIVE_LDO_MAX_SELECTOR)
+-		return 800000 + (selector * 50000);
+-	return -EINVAL;
+-}
+-
+ static int wm831x_alive_ldo_set_voltage_int(struct regulator_dev *rdev,
+ 					    int reg,
+ 					    int min_uV, int max_uV,
+@@ -650,7 +641,7 @@ static int wm831x_alive_ldo_set_voltage_int(struct regulator_dev *rdev,
+ 
+ 	vsel = (min_uV - 800000) / 50000;
+ 
+-	ret = wm831x_alive_ldo_list_voltage(rdev, vsel);
++	ret = regulator_list_voltage_linear(rdev, vsel);
+ 	if (ret < 0)
+ 		return ret;
+ 	if (ret < min_uV || ret > max_uV)
+@@ -700,7 +691,7 @@ static int wm831x_alive_ldo_get_status(struct regulator_dev *rdev)
  }
- EXPORT_SYMBOL_GPL(regulator_set_voltage_sel_regmap);
  
-+/**
-+ * regulator_map_voltage_iterate - map_voltage() based on list_voltage()
-+ *
-+ * @rdev: Regulator to operate on
-+ * @min_uV: Lower bound for voltage
-+ * @max_uV: Upper bound for voltage
-+ *
-+ * Drivers implementing set_voltage_sel() and list_voltage() can use
-+ * this as their map_voltage() operation.  It will find a suitable
-+ * voltage by calling list_voltage() until it gets something in bounds
-+ * for the requested voltages.
-+ */
-+int regulator_map_voltage_iterate(struct regulator_dev *rdev,
-+				  int min_uV, int max_uV)
-+{
-+	int best_val = INT_MAX;
-+	int selector = 0;
-+	int i, ret;
-+
-+	/* Find the smallest voltage that falls within the specified
-+	 * range.
-+	 */
-+	for (i = 0; i < rdev->desc->n_voltages; i++) {
-+		ret = rdev->desc->ops->list_voltage(rdev, i);
-+		if (ret < 0)
-+			continue;
-+
-+		if (ret < best_val && ret >= min_uV && ret <= max_uV) {
-+			best_val = ret;
-+			selector = i;
-+		}
-+	}
-+
-+	if (best_val != INT_MAX)
-+		return selector;
-+	else
-+		return -EINVAL;
-+}
-+EXPORT_SYMBOL_GPL(regulator_map_voltage_iterate);
-+
- static int _regulator_do_set_voltage(struct regulator_dev *rdev,
- 				     int min_uV, int max_uV)
- {
- 	int ret;
- 	int delay = 0;
-+	int best_val;
- 	unsigned int selector;
- 	int old_selector = -1;
--	int best_val = INT_MAX;
+ static struct regulator_ops wm831x_alive_ldo_ops = {
+-	.list_voltage = wm831x_alive_ldo_list_voltage,
++	.list_voltage = regulator_list_voltage_linear,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+ 	.set_voltage = wm831x_alive_ldo_set_voltage,
+ 	.set_suspend_voltage = wm831x_alive_ldo_set_suspend_voltage,
+@@ -765,6 +756,8 @@ static __devinit int wm831x_alive_ldo_probe(struct platform_device *pdev)
+ 	ldo->desc.vsel_mask = WM831X_LDO11_ON_VSEL_MASK;
+ 	ldo->desc.enable_reg = WM831X_LDO_ENABLE;
+ 	ldo->desc.enable_mask = 1 << id;
++	ldo->desc.min_uV = 800000;
++	ldo->desc.uV_step = 50000;
  
- 	trace_regulator_set_voltage(rdev_get_name(rdev), min_uV, max_uV);
- 
-@@ -1995,39 +2035,27 @@ static int _regulator_do_set_voltage(struct regulator_dev *rdev,
- 	if (rdev->desc->ops->set_voltage) {
- 		ret = rdev->desc->ops->set_voltage(rdev, min_uV, max_uV,
- 						   &selector);
--
--		if (rdev->desc->ops->list_voltage)
--			best_val = rdev->desc->ops->list_voltage(rdev,
--								 selector);
--		else
--			best_val = -1;
- 	} else if (rdev->desc->ops->set_voltage_sel) {
--		int i;
--
--		selector = 0;
--
--		/* Find the smallest voltage that falls within the specified
--		 * range.
--		 */
--		for (i = 0; i < rdev->desc->n_voltages; i++) {
--			ret = rdev->desc->ops->list_voltage(rdev, i);
--			if (ret < 0)
--				continue;
-+		if (rdev->desc->ops->map_voltage)
-+			ret = rdev->desc->ops->map_voltage(rdev, min_uV,
-+							   max_uV);
-+		else
-+			ret = regulator_map_voltage_iterate(rdev, min_uV,
-+							    max_uV);
- 
--			if (ret < best_val && ret >= min_uV && ret <= max_uV) {
--				best_val = ret;
--				selector = i;
--			}
-+		if (ret >= 0) {
-+			selector = ret;
-+			ret = rdev->desc->ops->set_voltage_sel(rdev, ret);
- 		}
--
--		if (best_val != INT_MAX)
--			ret = rdev->desc->ops->set_voltage_sel(rdev, selector);
--		else
--			ret = -EINVAL;
- 	} else {
- 		ret = -EINVAL;
- 	}
- 
-+	if (rdev->desc->ops->list_voltage)
-+		best_val = rdev->desc->ops->list_voltage(rdev, selector);
-+	else
-+		best_val = -1;
-+
- 	/* Call set_voltage_time_sel if successfully obtained old_selector */
- 	if (ret == 0 && old_selector >= 0 &&
- 	    rdev->desc->ops->set_voltage_time_sel) {
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index 8160bc8..13aa852 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -46,6 +46,7 @@ enum regulator_status {
-  *               The driver should select the voltage closest to min_uV.
-  * @set_voltage_sel: Set the voltage for the regulator using the specified
-  *                   selector.
-+ * @map_voltage: Convert a voltage into a selector
-  * @get_voltage: Return the currently configured voltage for the regulator.
-  * @get_voltage_sel: Return the currently configured voltage selector for the
-  *                   regulator.
-@@ -91,6 +92,7 @@ struct regulator_ops {
- 	/* get/set regulator voltage */
- 	int (*set_voltage) (struct regulator_dev *, int min_uV, int max_uV,
- 			    unsigned *selector);
-+	int (*map_voltage)(struct regulator_dev *, int min_uV, int max_uV);
- 	int (*set_voltage_sel) (struct regulator_dev *, unsigned selector);
- 	int (*get_voltage) (struct regulator_dev *);
- 	int (*get_voltage_sel) (struct regulator_dev *);
-@@ -260,6 +262,8 @@ int rdev_get_id(struct regulator_dev *rdev);
- 
- int regulator_mode_to_status(unsigned int);
- 
-+int regulator_map_voltage_iterate(struct regulator_dev *rdev,
-+				  int min_uV, int max_uV);
- int regulator_get_voltage_sel_regmap(struct regulator_dev *rdev);
- int regulator_set_voltage_sel_regmap(struct regulator_dev *rdev, unsigned sel);
- int regulator_is_enabled_regmap(struct regulator_dev *rdev);
+ 	config.dev = pdev->dev.parent;
+ 	config.init_data = pdata->ldo[id];
 -- 
 1.7.10
 
