@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751076Ab2EIEHP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 00:07:15 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44203 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750903Ab2EIEHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 00:07:01 -0400
-Message-ID: <1336536416.13700.8.camel@joe2Laptop>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
- variable-length record buffer
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kay Sievers <kay@vrfy.org>, Sasha Levin <levinsasha928@gmail.com>,
-        Greg Kroah-Hartmann <greg@kroah.com>, Ingo Molnar <mingo@kernel.org>,
+	id S1751030Ab2EIEJM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 00:09:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34662 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab2EIEJK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 00:09:10 -0400
+Date: Wed, 9 May 2012 01:09:01 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Eldad Zack <eldad@fogrefinery.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 08 May 2012 21:06:56 -0700
-In-Reply-To: <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
-References: <1336004953.4240.9.camel@mop>
-	 <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
-	 <1336475689.1179.12.camel@mop>
-	 <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Subject: Re: [PATCH] net/bluetooth/bnep/core.c: use constant for ethertype
+Message-ID: <20120509040901.GC2362@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Eldad Zack <eldad@fogrefinery.com>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Johan Hedberg <johan.hedberg@gmail.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1336428575-28996-1-git-send-email-eldad@fogrefinery.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336428575-28996-1-git-send-email-eldad@fogrefinery.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-08 at 20:52 -0700, Linus Torvalds wrote:
-> On Tue, May 8, 2012 at 4:14 AM, Kay Sievers <kay@vrfy.org> wrote:
-> > Yeah, we need to make sure, we never merge the (always racy)
-> > continuation printk() users with (non-racy) non-continuation users.
-> > Therefore KERN_CONT is required to suppress the newline and to merge the
-> > content with the earlier non-newline-terminated printk() line.
+Hi Eldad,
+
+* Eldad Zack <eldad@fogrefinery.com> [2012-05-08 00:09:35 +0200]:
+
+> The dot1q ethertype number (0x8100) is embedded in the code, although
+> it is already defined in included headers.
 > 
-> Please don't go adding ugly KERN_CONT when
-> there really isn't any reason for it. Just fix the printk code you
-> broke.
+> Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+> ---
+>  net/bluetooth/bnep/core.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks for making that clear.
+Patch has been applied to bluetooth-next. Thanks.
 
+	Gustavo
