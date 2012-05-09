@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab2EIFxw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:53:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38864 "EHLO
+	id S1757290Ab2EIF5S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:57:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39102 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752412Ab2EIFxL (ORCPT
+	by vger.kernel.org with ESMTP id S1756915Ab2EIFxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:11 -0400
-Message-Id: <20120509055033.561837665@decadent.org.uk>
+	Wed, 9 May 2012 01:53:51 -0400
+Message-Id: <20120509055049.342511242@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:50:58 +0100
+Date: Wed, 09 May 2012 06:52:52 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 029/167] [PATCH] drivers/tty/amiserial.c: add missing tty_unlock
+        alan@lxorguk.ukuu.org.uk, Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 143/167] [PATCH] ipw2200: Fix race condition in the command completion
+ acknowledge
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,33 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
 
-commit d3a7b83f865b46bb7b5e1ed18a129ce1af349db4 upstream.
+commit dd447319895d0c0af423e483d9b63f84f3f8869a upstream.
 
-tty_unlock is used on all other exits from the function.
+Driver incorrectly validates command completion: instead of waiting
+for a command to be acknowledged it continues execution.  Most of the
+time driver gets acknowledge of the command completion in a tasklet
+before it executes the next one. But sometimes it sends the next
+command before it gets acknowledge for the previous one. In such a
+case one of the following error messages appear in the log:
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-Acked-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Failed to send SYSTEM_CONFIG: Already sending a command.
+Failed to send ASSOCIATE: Already sending a command.
+Failed to send TX_POWER: Already sending a command.
+
+After that you need to reload the driver to get it working again.
+
+This bug occurs during roaming (reported by Sam Varshavchik)
+https://bugzilla.redhat.com/show_bug.cgi?id=738508
+and machine booting (reported by Tom Gundersen and Mads Kiilerich)
+https://bugs.archlinux.org/task/28097
+https://bugzilla.redhat.com/show_bug.cgi?id=802106
+
+This patch doesn't fix the delay issue during firmware load.
+But at least device now works as usual after boot.
+
+Signed-off-by: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/amiserial.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ipw2x00/ipw2200.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/amiserial.c
-+++ b/drivers/tty/amiserial.c
-@@ -1113,8 +1113,10 @@ static int set_serial_info(struct async_
- 		    (new_serial.close_delay != state->close_delay) ||
- 		    (new_serial.xmit_fifo_size != state->xmit_fifo_size) ||
- 		    ((new_serial.flags & ~ASYNC_USR_MASK) !=
--		     (state->flags & ~ASYNC_USR_MASK)))
-+		     (state->flags & ~ASYNC_USR_MASK))) {
-+			tty_unlock();
- 			return -EPERM;
-+		}
- 		state->flags = ((state->flags & ~ASYNC_USR_MASK) |
- 			       (new_serial.flags & ASYNC_USR_MASK));
- 		info->flags = ((info->flags & ~ASYNC_USR_MASK) |
+diff --git a/drivers/net/wireless/ipw2x00/ipw2200.c b/drivers/net/wireless/ipw2x00/ipw2200.c
+index 2b02257..1779db3 100644
+--- a/drivers/net/wireless/ipw2x00/ipw2200.c
++++ b/drivers/net/wireless/ipw2x00/ipw2200.c
+@@ -2191,6 +2191,7 @@ static int __ipw_send_cmd(struct ipw_priv *priv, struct host_cmd *cmd)
+ {
+ 	int rc = 0;
+ 	unsigned long flags;
++	unsigned long now, end;
+ 
+ 	spin_lock_irqsave(&priv->lock, flags);
+ 	if (priv->status & STATUS_HCMD_ACTIVE) {
+@@ -2232,10 +2233,20 @@ static int __ipw_send_cmd(struct ipw_priv *priv, struct host_cmd *cmd)
+ 	}
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
++	now = jiffies;
++	end = now + HOST_COMPLETE_TIMEOUT;
++again:
+ 	rc = wait_event_interruptible_timeout(priv->wait_command_queue,
+ 					      !(priv->
+ 						status & STATUS_HCMD_ACTIVE),
+-					      HOST_COMPLETE_TIMEOUT);
++					      end - now);
++	if (rc < 0) {
++		now = jiffies;
++		if (time_before(now, end))
++			goto again;
++		rc = 0;
++	}
++
+ 	if (rc == 0) {
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 		if (priv->status & STATUS_HCMD_ACTIVE) {
+-- 
+1.7.10
+
 
 
