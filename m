@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760296Ab2EIQld (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 12:41:33 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:36248 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760279Ab2EIQlb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 12:41:31 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-132.messagelabs.com!1336581674!11096050!37
-X-Originating-IP: [216.166.12.98]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: Ian Abbott <abbotti@mev.co.uk>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 9 May 2012 11:41:26 -0500
-Subject: RE: [PATCH] staging: comedi: remove __user annotation inside of
- struct's
-Thread-Topic: [PATCH] staging: comedi: remove __user annotation inside of
- struct's
-Thread-Index: Ac0t/GAtf2wNRPr4SdW6+Rggu3C90wABcoGQ
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698A17888@AUSP01VMBX24.collaborationhost.net>
-References: <201205081641.00358.hartleys@visionengravers.com>
- <ADE657CA350FB648AAC2C43247A983F0020698A1774D@AUSP01VMBX24.collaborationhost.net>
- <4FAA44D7.1040209@mev.co.uk> <20120509142436.GC11695@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F0020698A17862@AUSP01VMBX24.collaborationhost.net>
- <20120509155653.GA23058@kroah.com>
-In-Reply-To: <20120509155653.GA23058@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1760250Ab2EIQp7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 12:45:59 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:38517 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758285Ab2EIQp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 12:45:57 -0400
+Date: Wed, 9 May 2012 18:45:49 +0200
+From: David Sterba <dave@jikos.cz>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Btrfs: use ALIGN macro instead of open-coded expression
+Message-ID: <20120509164549.GM19331@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+	chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1336464984-30746-1-git-send-email-yuanhan.liu@linux.intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336464984-30746-1-git-send-email-yuanhan.liu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 09, 2012 8:57 AM, gregkh@linuxfoundation.org wrote:
-> On Wed, May 09, 2012 at 10:52:34AM -0500, H Hartley Sweeten wrote:
->> Based on the discussion I assume this patch is ok then. Do you
->> want me to repost it?
->
-> Sure, I'll review it with the other patches you have sent later today.
+On Tue, May 08, 2012 at 04:16:24PM +0800, Yuanhan Liu wrote:
+> According to section 'Find open-coded helpers or macros' at
+> https://btrfs.wiki.kernel.org/index.php/Cleanup_ideas, here
+> in the patch we use ALIGN macro to do the alignment.
 
-Greg,
+Well, I wrote this section and some time later also the patches,
+http://www.spinics.net/lists/linux-btrfs/msg12747.html
 
-I have re-posted the patch with an updated commit message. I
-also posted a v2 patch for the sysfs change (cut-paste issue).
+but did not update the section with the status reflecting this, sorry
+that you duplicated work.
 
-I'll hold off on any other changes until you have had a chance to
-review all the others.
 
-Regards,
-Hartley
-
+david
