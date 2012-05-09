@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760166Ab2EIQQm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 12:16:42 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:55341 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760135Ab2EIQQg convert rfc822-to-8bit (ORCPT
+	id S1760138Ab2EIQUH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 12:20:07 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42884 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab2EIQUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 12:16:36 -0400
+	Wed, 9 May 2012 12:20:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120508121946.c20adb87.akpm@linux-foundation.org>
-References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
- <CAK5ve-J9uTJKC01XFTzU34MY4z_8yVRwTUVXP99Czu=oL-mqxQ@mail.gmail.com> <20120508121946.c20adb87.akpm@linux-foundation.org>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Thu, 10 May 2012 00:16:14 +0800
-X-Google-Sender-Auth: rK3GolzYry5zjaSdjPLnmIQrckY
-Message-ID: <CAK5ve-KSyvZSHw7csQ5M88q0008NSrs1kwuyUH3hFqxD0f7BQQ@mail.gmail.com>
-Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and
- consolidate LED driver in ARM
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux@arm.linux.org.uk, rpurdie@rpsys.net,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, arnd.bergmann@linaro.org,
-        nicolas.pitre@linaro.org, tim.gardner@canonical.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Date: Wed, 9 May 2012 18:20:03 +0200
+Message-ID: <CAMP44s2eVtquLoB6Zjbs4nGVKP6e=Dxse4uicL4s8vmrFeJdTQ@mail.gmail.com>
+Subject: Big I/O latencies, except when iotop is hooked
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 3:19 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed, 9 May 2012 01:45:43 +0800
-> Bryan Wu <bryan.wu@canonical.com> wrote:
->
->> Any comments and suggestions about my v9 patchset.
->
-> The drivers/leds/ changes look OK to me.
+Hi,
 
-Thanks a lot, Andrew.
-Richard, what about merging this driver firstly in drivers/leds/?
+I've been noticing big I/O latencies when doing operations with
+notmuch (xapian database), the operations are quite simple and
+probably should not need a lot of I/O, however, they seen to take a
+long time, sometimes even seconds. But when I hook iotop (-p pid), the
+latency goes away, and every operation is reliably instantaneous
+(basically).
 
-Best Regards,
+Do you have any ideas what might be causing this delay, and why is
+iotop making it go away?
+
+BTW. This is an ext4 encrypted partition on a USB stick, I tried
+different mount options without any noticeable change. I tried to copy
+the data to my SSD drive and do the same operations, while it was much
+faster, it still seemed to have some delays triggered randomly. This
+is with v3.3.5.
+
+Cheers.
+
 -- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Felipe Contreras
