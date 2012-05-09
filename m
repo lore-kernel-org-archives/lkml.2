@@ -1,105 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750853Ab2EIEG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 00:06:59 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49703 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab2EIEG6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 00:06:58 -0400
-X-AuditID: 9c93016f-b7c79ae0000006b3-96-4fa9ed60b1c6
-Message-ID: <4FA9ED64.4070909@kernel.org>
-Date: Wed, 09 May 2012 13:07:00 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cl@linux-foundation.org
-Subject: Re: [PATCH 4/4] zsmalloc: zsmalloc: align cache line size
-References: <1336027242-372-1-git-send-email-minchan@kernel.org> <1336027242-372-4-git-send-email-minchan@kernel.org> <4FA28EFD.5070002@vflare.org> <4FA33E89.6080206@kernel.org> <alpine.LFD.2.02.1205071038090.2851@tux.localdomain> <4FA7C2BC.2090400@vflare.org> <4FA87837.3050208@kernel.org> <731b6638-8c8c-4381-a00f-4ecd5a0e91ae@default> <4FA9C127.5020908@kernel.org> <8a42cbff-f7f2-400a-a9c1-c3b3d73ab979@default>
-In-Reply-To: <8a42cbff-f7f2-400a-a9c1-c3b3d73ab979@default>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751076Ab2EIEHP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 00:07:15 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44203 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750903Ab2EIEHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 00:07:01 -0400
+Message-ID: <1336536416.13700.8.camel@joe2Laptop>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
+ variable-length record buffer
+From: Joe Perches <joe@perches.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kay Sievers <kay@vrfy.org>, Sasha Levin <levinsasha928@gmail.com>,
+        Greg Kroah-Hartmann <greg@kroah.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 08 May 2012 21:06:56 -0700
+In-Reply-To: <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
+References: <1336004953.4240.9.camel@mop>
+	 <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+	 <1336475689.1179.12.camel@mop>
+	 <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2012 12:08 PM, Dan Magenheimer wrote:
-
->> From: Minchan Kim [mailto:minchan@kernel.org]
->> Subject: Re: [PATCH 4/4] zsmalloc: zsmalloc: align cache line size
->>
->> On 05/08/2012 11:00 PM, Dan Magenheimer wrote:
->>
->>>> From: Minchan Kim [mailto:minchan@kernel.org]
->>>>> zcache can potentially create a lot of pools, so the latter will save
->>>>> some memory.
->>>>
->>>>
->>>> Dumb question.
->>>> Why should we create pool per user?
->>>> What's the problem if there is only one pool in system?
->>>
->>> zcache doesn't use zsmalloc for cleancache pages today, but
->>> that's Seth's plan for the future.  Then if there is a
->>> separate pool for each cleancache pool, when a filesystem
->>> is umount'ed, it isn't necessary to walk through and delete
->>> all pages one-by-one, which could take quite awhile.
->>
->>> ramster needs one pool for each client (i.e. machine in the
->>> cluster) for frontswap pages for the same reason, and
->>> later, for cleancache pages, one per mounted filesystem
->>> per client
->>
->> Fair enough.
->>
->> Then, how about this interfaces like slab?
->>
->> 1. zs_handle zs_malloc(size_t size, gfp_t flags) - share a pool by many subsystem(like kmalloc)
->> 2. zs_handle zs_malloc_pool(struct zs_pool *pool, size_t size) - use own pool(like kmem_cache_alloc)
->>
->> Any thoughts?
+On Tue, 2012-05-08 at 20:52 -0700, Linus Torvalds wrote:
+> On Tue, May 8, 2012 at 4:14 AM, Kay Sievers <kay@vrfy.org> wrote:
+> > Yeah, we need to make sure, we never merge the (always racy)
+> > continuation printk() users with (non-racy) non-continuation users.
+> > Therefore KERN_CONT is required to suppress the newline and to merge the
+> > content with the earlier non-newline-terminated printk() line.
 > 
-> Seems fine to me.
-> 
->> But some subsystems can't want a own pool for not waste unnecessary memory.
-> 
-> Are you using zsmalloc for something else in the kernel?  I'm
-> wondering what other subsystem would have random size allocations
-> always less than a page.
+> Please don't go adding ugly KERN_CONT when
+> there really isn't any reason for it. Just fix the printk code you
+> broke.
 
+Thanks for making that clear.
 
-Nope. It's a just wondering during review the code about interface.
-I thought normal user can use zs_malloc without creating pool so that it's rather easy to use
-and simillar to normal allocator which can help availability of zsmalloc.
-
-And it will make space efficiency good.
-For example, some subsystem makes own pool and use a object in a class which consists of 4-pages once during her life.
-Other object unused in the class are just wasteful but if we can share a pool with others, we may reduce such inefficiency.
-
-I think zsmalloc's goal should be biased on space efficiency.
-
-> 
-> Thanks,
-> Dan
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=ilto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
-
-
--- 
-Kind regards,
-Minchan Kim
