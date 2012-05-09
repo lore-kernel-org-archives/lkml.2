@@ -1,151 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759237Ab2EIV0g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 17:26:36 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:34505 "EHLO ogre.sisk.pl"
+	id S932291Ab2EIV2c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 17:28:32 -0400
+Received: from mga14.intel.com ([143.182.124.37]:53226 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751720Ab2EIV0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 17:26:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Colin Cross <ccross@android.com>
-Subject: Re: [PATCHv4 4/4] cpuidle: coupled: add parallel barrier function
-Date: Wed, 9 May 2012 23:31:24 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@lists.linux-foundation.org, Kevin Hilman <khilman@ti.com>,
-        Len Brown <len.brown@intel.com>, Trinabh Gupta <g.trinabh@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-References: <1336438662-10484-1-git-send-email-ccross@android.com> <1336438662-10484-5-git-send-email-ccross@android.com>
-In-Reply-To: <1336438662-10484-5-git-send-email-ccross@android.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S932069Ab2EIV2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 17:28:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="98268634"
+Subject: Re: [PATCH 1/3] coredump: flush the fpu exit state for proper
+ multi-threaded core dump
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: torvalds@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, suresh@aristanetworks.com
+Date: Wed, 09 May 2012 14:32:03 -0700
+In-Reply-To: <20120509210551.GB334@redhat.com>
+References: <1336421341.19423.4.camel@sbsiddha-desk.sc.intel.com>
+	 <1336519085-27450-1-git-send-email-suresh.b.siddha@intel.com>
+	 <1336519085-27450-2-git-send-email-suresh.b.siddha@intel.com>
+	 <20120509210551.GB334@redhat.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205092331.24487.rjw@sisk.pl>
+Message-ID: <1336599123.4634.42.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 08, 2012, Colin Cross wrote:
-> Adds cpuidle_coupled_parallel_barrier, which can be used by coupled
-> cpuidle state enter functions to handle resynchronization after
-> determining if any cpu needs to abort.  The normal use case will
-> be:
+On Wed, 2012-05-09 at 23:05 +0200, Oleg Nesterov wrote:
+> On 05/08, Suresh Siddha wrote:
+> >
+> > --- a/kernel/exit.c
+> > +++ b/kernel/exit.c
+> > @@ -656,6 +656,11 @@ static void exit_mm(struct task_struct * tsk)
+> >  		struct core_thread self;
+> >  		up_read(&mm->mmap_sem);
+> >
+> > +		/*
+> > +		 * Flush the live extended register state to memory.
+> > +		 */
+> > +		prepare_to_copy(tsk);
 > 
-> static bool abort_flag;
-> static atomic_t abort_barrier;
+> This doesn't look very nice imho, but I guess you understand this...
 > 
-> int arch_cpuidle_enter(struct cpuidle_device *dev, ...)
-> {
-> 	if (arch_turn_off_irq_controller()) {
-> 	   	/* returns an error if an irq is pending and would be lost
-> 		   if idle continued and turned off power */
-> 		abort_flag = true;
-> 	}
+> Perhaps we need an arch-dependent helper which saves the FPU regs
+> if needed.
 > 
-> 	cpuidle_coupled_parallel_barrier(dev, &abort_barrier);
->
-> 	if (abort_flag) {
-> 	   	/* One of the cpus didn't turn off it's irq controller */
-> 	   	arch_turn_on_irq_controller();
-> 		return -EINTR;
-> 	}
+> I can be easily wrong, but I did the quick grep and I am not sure
+> we can rely on prepare_to_copy(). For example, it is a nop in
+> arch/sh/include/asm/processor_64.h. But at the same time it has
+> save_fpu().
 > 
-> 	/* continue with idle */
-> 	...
-> }
-> 
-> This will cause all cpus to abort idle together if one of them needs
-> to abort.
-> 
-> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Reviewed-by: Kevin Hilman <khilman@ti.com>
-> Tested-by: Kevin Hilman <khilman@ti.com>
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
->  drivers/cpuidle/coupled.c |   37 +++++++++++++++++++++++++++++++++++++
->  include/linux/cpuidle.h   |    4 ++++
->  2 files changed, 41 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
-> index 93101fb..3e65de1 100644
-> --- a/drivers/cpuidle/coupled.c
-> +++ b/drivers/cpuidle/coupled.c
-> @@ -130,6 +130,43 @@ struct cpuidle_coupled {
->  static cpumask_t cpuidle_coupled_poked_mask;
->  
->  /**
-> + * cpuidle_coupled_parallel_barrier - synchronize all online coupled cpus
-> + * @dev: cpuidle_device of the calling cpu
-> + * @a:   atomic variable to hold the barrier
-> + *
-> + * No caller to this function will return from this function until all online
-> + * cpus in the same coupled group have called this function.  Once any caller
-> + * has returned from this function, the barrier is immediately available for
-> + * reuse.
-> + *
-> + * The atomic variable a must be initialized to 0 before any cpu calls
-> + * this function, will be reset to 0 before any cpu returns from this function.
-> + *
-> + * Must only be called from within a coupled idle state handler
-> + * (state.enter when state.flags has CPUIDLE_FLAG_COUPLED set).
-> + *
-> + * Provides full smp barrier semantics before and after calling.
-> + */
-> +void cpuidle_coupled_parallel_barrier(struct cpuidle_device *dev, atomic_t *a)
-> +{
-> +	int n = dev->coupled->online_count;
-> +
-> +	smp_mb__before_atomic_inc();
-> +	atomic_inc(a);
-> +
-> +	while (atomic_read(a) < n)
-> +		cpu_relax();
-> +
-> +	if (atomic_inc_return(a) == n * 2) {
-> +		atomic_set(a, 0);
-> +		return;
-> +	}
-> +
-> +	while (atomic_read(a) > n)
-> +		cpu_relax();
-> +}
+> OTOH, I am not sure it is safe to use prepare_to_copy() in exit_mm(),
+> at least in theory. God knows what it can do...
 
-Well, this looks like "wait until all CPUs execute this code".  Don't we have
-anything like this already somewhere?
+There is an explicit schedule() just few lines below. And the schedule()
+also will do the same thing. The thing is we want the user-specific
+extended registers to be flushed to memory (used also in the fork path)
+before we notify the core dumping thread that we reached the serializing
+point, for the dumping thread to continue the dump process.
 
-> +
-> +/**
->   * cpuidle_state_is_coupled - check if a state is part of a coupled set
->   * @dev: struct cpuidle_device for the current cpu
->   * @drv: struct cpuidle_driver for the platform
-> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-> index 6038448..5ab7183 100644
-> --- a/include/linux/cpuidle.h
-> +++ b/include/linux/cpuidle.h
-> @@ -183,6 +183,10 @@ static inline int cpuidle_wrap_enter(struct cpuidle_device *dev,
->  
->  #endif
->  
-> +#ifdef CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED
-> +void cpuidle_coupled_parallel_barrier(struct cpuidle_device *dev, atomic_t *a);
-> +#endif
+And to make this coredump specific, I really need to move it there as I
+need to reliably find out if the core dump is in progress for this
+thread.
 
-Why exactly is the extra Kconfig option necessary?
+Linus/Peter/Ingo, any comments?
 
-> +
->  /******************************
->   * CPUIDLE GOVERNOR INTERFACE *
->   ******************************/
+thanks,
+suresh
 
-Rafael
