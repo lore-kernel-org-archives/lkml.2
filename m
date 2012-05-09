@@ -1,51 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759739Ab2EIXGx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 19:06:53 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42843 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759223Ab2EIXGv (ORCPT
+	id S1760272Ab2EIXT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 19:19:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38087 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758442Ab2EIXTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 19:06:51 -0400
-X-Sasl-enc: VdPIeiAnmbUKoia7GLjo+HdqN/gXd1ysPrgMWqwz3MN4 1336604810
-Date: Wed, 9 May 2012 16:06:49 -0700
-From: Greg Kroah-Hartmann <greg@kroah.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Kay Sievers <kay@vrfy.org>, Joe Perches <joe@perches.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
- variable-length record buffer
-Message-ID: <20120509230649.GA10695@kroah.com>
-References: <1336004953.4240.9.camel@mop>
- <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
- <1336475689.1179.12.camel@mop>
- <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
- <CAPXgP13-XQdn0wMP=coVqS=Eko1vWkOrjOtfq4JQLHFZ3JNbgg@mail.gmail.com>
- <1336571457.30189.29.camel@joe2Laptop>
- <CAPXgP11jt5u=wXs9Pe7QksZ25QTKCwNXgTHn+T6JXD6+2NzgBQ@mail.gmail.com>
- <CAE9FiQUzsu8CFNLXxUyZnu53YobdNdJfQQmPQd8s8r5rgJpcNg@mail.gmail.com>
+	Wed, 9 May 2012 19:19:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQUzsu8CFNLXxUyZnu53YobdNdJfQQmPQd8s8r5rgJpcNg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1336490660.1179.39.camel@mop>
+References: <1336490660.1179.39.camel@mop>
+Date: Wed, 9 May 2012 16:19:24 -0700
+X-Google-Sender-Auth: KV81pVr0BAXufcCfTSOg1mGD0G4
+Message-ID: <CAE9FiQU=LAA-B9e=YzvZ6sOA1HD8_vRW8_TeRXsF+wJH7L=nYQ@mail.gmail.com>
+Subject: Re: [PATCH] acpi: use KERN_CONT in printk() continuation lines
+From: Yinghai Lu <yinghai@kernel.org>
+To: Kay Sievers <kay@vrfy.org>, James Bottomley <jejb@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: Len Brown <lenb@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=e89a8ff1c3d0eb533604bfa2bb58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 04:02:40PM -0700, Yinghai Lu wrote:
-> On Wed, May 9, 2012 at 7:37 AM, Kay Sievers <kay@vrfy.org> wrote:
-> >
-> >> Changing printk semantics and trying to stabilize
-> >> printk message content are bad ideas though.
-> >
-> > Again, nobody talks about content of here.
-> 
-> printk_time=1 does not work anymore with this patch on serial console.
+--e89a8ff1c3d0eb533604bfa2bb58
+Content-Type: text/plain; charset=ISO-8859-1
 
-Known issue, I think Kay is working on the solution for this right
-now...
+also need attached ones for scsi/lsi mpt2sas and ioapic debug printout
 
-greg k-h
+you may search and fix them all.
+
+Thanks
+
+Yinghai
+
+--e89a8ff1c3d0eb533604bfa2bb58
+Content-Type: application/octet-stream; name="lsi_printk_fix.patch"
+Content-Disposition: attachment; filename="lsi_printk_fix.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h210bppz0
+
+LS0tCiBkcml2ZXJzL3Njc2kvbXB0MnNhcy9tcHQyc2FzX2Jhc2UuYyB8ICAgMzAgKysrKysrKysr
+KysrKysrLS0tLS0tLS0tLS0tLS0tCiAxIGZpbGUgY2hhbmdlZCwgMTUgaW5zZXJ0aW9ucygrKSwg
+MTUgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvc2NzaS9tcHQyc2FzL21w
+dDJzYXNfYmFzZS5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvc2NzaS9t
+cHQyc2FzL21wdDJzYXNfYmFzZS5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9zY3NpL21wdDJzYXMv
+bXB0MnNhc19iYXNlLmMKQEAgLTIwODUsNzkgKzIwODUsNzkgQEAgX2Jhc2VfZGlzcGxheV9pb2Nf
+Y2FwYWJpbGl0aWVzKHN0cnVjdCBNUAogCXByaW50ayhNUFQyU0FTX0lORk9fRk1UICJQcm90b2Nv
+bD0oIiwgaW9jLT5uYW1lKTsKIAogCWlmIChpb2MtPmZhY3RzLlByb3RvY29sRmxhZ3MgJiBNUEky
+X0lPQ0ZBQ1RTX1BST1RPQ09MX1NDU0lfSU5JVElBVE9SKSB7Ci0JCXByaW50aygiSW5pdGlhdG9y
+Iik7CisJCXByaW50ayhLRVJOX0NPTlQgIkluaXRpYXRvciIpOwogCQlpKys7CiAJfQogCiAJaWYg
+KGlvYy0+ZmFjdHMuUHJvdG9jb2xGbGFncyAmIE1QSTJfSU9DRkFDVFNfUFJPVE9DT0xfU0NTSV9U
+QVJHRVQpIHsKLQkJcHJpbnRrKCIlc1RhcmdldCIsIGkgPyAiLCIgOiAiIik7CisJCXByaW50ayhL
+RVJOX0NPTlQgIiVzVGFyZ2V0IiwgaSA/ICIsIiA6ICIiKTsKIAkJaSsrOwogCX0KIAogCWkgPSAw
+OwotCXByaW50aygiKSwgIik7Ci0JcHJpbnRrKCJDYXBhYmlsaXRpZXM9KCIpOworCXByaW50ayhL
+RVJOX0NPTlQgIiksICIpOworCXByaW50ayhLRVJOX0NPTlQgIkNhcGFiaWxpdGllcz0oIik7CiAK
+IAlpZiAoIWlvYy0+aGlkZV9pcl9tc2cpIHsKIAkJaWYgKGlvYy0+ZmFjdHMuSU9DQ2FwYWJpbGl0
+aWVzICYKIAkJICAgIE1QSTJfSU9DRkFDVFNfQ0FQQUJJTElUWV9JTlRFR1JBVEVEX1JBSUQpIHsK
+LQkJCXByaW50aygiUmFpZCIpOworCQkJcHJpbnRrKEtFUk5fQ09OVCAiUmFpZCIpOwogCQkJaSsr
+OwogCQl9CiAJfQogCiAJaWYgKGlvYy0+ZmFjdHMuSU9DQ2FwYWJpbGl0aWVzICYgTVBJMl9JT0NG
+QUNUU19DQVBBQklMSVRZX1RMUikgewotCQlwcmludGsoIiVzVExSIiwgaSA/ICIsIiA6ICIiKTsK
+KwkJcHJpbnRrKEtFUk5fQ09OVCAiJXNUTFIiLCBpID8gIiwiIDogIiIpOwogCQlpKys7CiAJfQog
+CiAJaWYgKGlvYy0+ZmFjdHMuSU9DQ2FwYWJpbGl0aWVzICYgTVBJMl9JT0NGQUNUU19DQVBBQklM
+SVRZX01VTFRJQ0FTVCkgewotCQlwcmludGsoIiVzTXVsdGljYXN0IiwgaSA/ICIsIiA6ICIiKTsK
+KwkJcHJpbnRrKEtFUk5fQ09OVCAiJXNNdWx0aWNhc3QiLCBpID8gIiwiIDogIiIpOwogCQlpKys7
+CiAJfQogCiAJaWYgKGlvYy0+ZmFjdHMuSU9DQ2FwYWJpbGl0aWVzICYKIAkgICAgTVBJMl9JT0NG
+QUNUU19DQVBBQklMSVRZX0JJRElSRUNUSU9OQUxfVEFSR0VUKSB7Ci0JCXByaW50aygiJXNCSURJ
+IFRhcmdldCIsIGkgPyAiLCIgOiAiIik7CisJCXByaW50ayhLRVJOX0NPTlQgIiVzQklESSBUYXJn
+ZXQiLCBpID8gIiwiIDogIiIpOwogCQlpKys7CiAJfQogCiAJaWYgKGlvYy0+ZmFjdHMuSU9DQ2Fw
+YWJpbGl0aWVzICYgTVBJMl9JT0NGQUNUU19DQVBBQklMSVRZX0VFRFApIHsKLQkJcHJpbnRrKCIl
+c0VFRFAiLCBpID8gIiwiIDogIiIpOworCQlwcmludGsoS0VSTl9DT05UICIlc0VFRFAiLCBpID8g
+IiwiIDogIiIpOwogCQlpKys7CiAJfQogCiAJaWYgKGlvYy0+ZmFjdHMuSU9DQ2FwYWJpbGl0aWVz
+ICYKIAkgICAgTVBJMl9JT0NGQUNUU19DQVBBQklMSVRZX1NOQVBTSE9UX0JVRkZFUikgewotCQlw
+cmludGsoIiVzU25hcHNob3QgQnVmZmVyIiwgaSA/ICIsIiA6ICIiKTsKKwkJcHJpbnRrKEtFUk5f
+Q09OVCAiJXNTbmFwc2hvdCBCdWZmZXIiLCBpID8gIiwiIDogIiIpOwogCQlpKys7CiAJfQogCiAJ
+aWYgKGlvYy0+ZmFjdHMuSU9DQ2FwYWJpbGl0aWVzICYKIAkgICAgTVBJMl9JT0NGQUNUU19DQVBB
+QklMSVRZX0RJQUdfVFJBQ0VfQlVGRkVSKSB7Ci0JCXByaW50aygiJXNEaWFnIFRyYWNlIEJ1ZmZl
+ciIsIGkgPyAiLCIgOiAiIik7CisJCXByaW50ayhLRVJOX0NPTlQgIiVzRGlhZyBUcmFjZSBCdWZm
+ZXIiLCBpID8gIiwiIDogIiIpOwogCQlpKys7CiAJfQogCiAJaWYgKGlvYy0+ZmFjdHMuSU9DQ2Fw
+YWJpbGl0aWVzICYKIAkgICAgTVBJMl9JT0NGQUNUU19DQVBBQklMSVRZX0VYVEVOREVEX0JVRkZF
+UikgewotCQlwcmludGsoS0VSTl9JTkZPICIlc0RpYWcgRXh0ZW5kZWQgQnVmZmVyIiwgaSA/ICIs
+IiA6ICIiKTsKKwkJcHJpbnRrKEtFUk5fQ09OVCAiJXNEaWFnIEV4dGVuZGVkIEJ1ZmZlciIsIGkg
+PyAiLCIgOiAiIik7CiAJCWkrKzsKIAl9CiAKIAlpZiAoaW9jLT5mYWN0cy5JT0NDYXBhYmlsaXRp
+ZXMgJgogCSAgICBNUEkyX0lPQ0ZBQ1RTX0NBUEFCSUxJVFlfVEFTS19TRVRfRlVMTF9IQU5ETElO
+RykgewotCQlwcmludGsoIiVzVGFzayBTZXQgRnVsbCIsIGkgPyAiLCIgOiAiIik7CisJCXByaW50
+ayhLRVJOX0NPTlQgIiVzVGFzayBTZXQgRnVsbCIsIGkgPyAiLCIgOiAiIik7CiAJCWkrKzsKIAl9
+CiAKIAlpb3VuaXRfcGcxX2ZsYWdzID0gbGUzMl90b19jcHUoaW9jLT5pb3VuaXRfcGcxLkZsYWdz
+KTsKIAlpZiAoIShpb3VuaXRfcGcxX2ZsYWdzICYgTVBJMl9JT1VOSVRQQUdFMV9OQVRJVkVfQ09N
+TUFORF9RX0RJU0FCTEUpKSB7Ci0JCXByaW50aygiJXNOQ1EiLCBpID8gIiwiIDogIiIpOworCQlw
+cmludGsoS0VSTl9DT05UICIlc05DUSIsIGkgPyAiLCIgOiAiIik7CiAJCWkrKzsKIAl9CiAKLQlw
+cmludGsoIilcbiIpOworCXByaW50ayhLRVJOX0NPTlQgIilcbiIpOwogfQogCiAvKioK
+--e89a8ff1c3d0eb533604bfa2bb58
+Content-Type: application/octet-stream; name="fix_ioapic_printk.patch"
+Content-Disposition: attachment; filename="fix_ioapic_printk.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h210c1zm1
+
+LS0tCiBhcmNoL3g4Ni9rZXJuZWwvYXBpYy9pb19hcGljLmMgfCAgICA4ICsrKystLS0tCiAxIGZp
+bGUgY2hhbmdlZCwgNCBpbnNlcnRpb25zKCspLCA0IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4
+LTIuNi9hcmNoL3g4Ni9rZXJuZWwvYXBpYy9pb19hcGljLmMKPT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgt
+Mi42Lm9yaWcvYXJjaC94ODYva2VybmVsL2FwaWMvaW9fYXBpYy5jCisrKyBsaW51eC0yLjYvYXJj
+aC94ODYva2VybmVsL2FwaWMvaW9fYXBpYy5jCkBAIC0xNzE5LDcgKzE3MTksNyBAQCBfX2FwaWNk
+ZWJ1Z2luaXQodm9pZCkgcHJpbnRfSU9fQVBJQyhpbnQKIAkJCQlpLAogCQkJCWlyX2VudHJ5LT5p
+bmRleAogCQkJKTsKLQkJCXByaW50aygiJTFkICAgJTFkICAgICUxZCAgICAlMWQgICAlMWQgICAi
+CisJCQlwcmludGsoS0VSTl9DT05UICIlMWQgICAlMWQgICAgJTFkICAgICUxZCAgICUxZCAgICIK
+IAkJCQkiJTFkICAgICUxZCAgICAgJVggICAgJTAyWFxuIiwKIAkJCQlpcl9lbnRyeS0+Zm9ybWF0
+LAogCQkJCWlyX2VudHJ5LT5tYXNrLApAQCAtMTczOSw3ICsxNzM5LDcgQEAgX19hcGljZGVidWdp
+bml0KHZvaWQpIHByaW50X0lPX0FQSUMoaW50CiAJCQkJaSwKIAkJCQllbnRyeS5kZXN0CiAJCQkp
+OwotCQkJcHJpbnRrKCIlMWQgICAgJTFkICAgICUxZCAgICUxZCAgICUxZCAgICAiCisJCQlwcmlu
+dGsoS0VSTl9DT05UICIlMWQgICAgJTFkICAgICUxZCAgICUxZCAgICUxZCAgICAiCiAJCQkJIiUx
+ZCAgICAlMWQgICAgJTAyWFxuIiwKIAkJCQllbnRyeS5tYXNrLAogCQkJCWVudHJ5LnRyaWdnZXIs
+CkBAIC0xNzkxLDggKzE3OTEsOCBAQCBfX2FwaWNkZWJ1Z2luaXQodm9pZCkgcHJpbnRfSU9fQVBJ
+Q3Modm9pCiAJCQljb250aW51ZTsKIAkJcHJpbnRrKEtFUk5fREVCVUcgIklSUSVkICIsIGlycSk7
+CiAJCWZvcl9lYWNoX2lycV9waW4oZW50cnksIGNmZy0+aXJxXzJfcGluKQotCQkJcHJpbnRrKCIt
+PiAlZDolZCIsIGVudHJ5LT5hcGljLCBlbnRyeS0+cGluKTsKLQkJcHJpbnRrKCJcbiIpOworCQkJ
+cHJpbnRrKEtFUk5fQ09OVCAiLT4gJWQ6JWQiLCBlbnRyeS0+YXBpYywgZW50cnktPnBpbik7CisJ
+CXByaW50ayhLRVJOX0NPTlQgIlxuIik7CiAJfQogCiAJcHJpbnRrKEtFUk5fSU5GTyAiLi4uLi4u
+Li4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uIGRvbmUuXG4iKTsK
+--e89a8ff1c3d0eb533604bfa2bb58--
