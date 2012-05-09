@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760004Ab2EIPeX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 11:34:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54651 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758501Ab2EIPeT (ORCPT
+	id S1759993Ab2EIPeN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 11:34:13 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:12008 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758501Ab2EIPeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 11:34:19 -0400
-Date: Wed, 9 May 2012 16:34:16 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] regmap fix for 3.4
-Message-ID: <20120509153416.GB3955@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="t8N2qprAjL+0GVly"
-Content-Disposition: inline
-X-Cookie: You are fairminded, just and loving.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 May 2012 11:34:11 -0400
+Message-ID: <1336577648.2498.9.camel@lorien2>
+Subject: Re: [PATCH 1/5] Fix soft-lookup in stop machine on secondary cpu
+ bring up
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: shuahkhan@gmail.com, linux-kernel@vger.kernel.org, rob@landley.net,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        luto@mit.edu, suresh.b.siddha@intel.com, avi@redhat.com,
+        a.p.zijlstra@chello.nl, johnstul@us.ibm.com, arjan@linux.intel.com,
+        linux-doc@vger.kernel.org
+Date: Wed, 09 May 2012 09:34:08 -0600
+In-Reply-To: <4FAA8BCC.5000704@redhat.com>
+References: <1336559102-28103-1-git-send-email-imammedo@redhat.com>
+	 <1336559102-28103-2-git-send-email-imammedo@redhat.com>
+	 <1336575858.2498.7.camel@lorien2> <4FAA8BCC.5000704@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-05-09 at 17:22 +0200, Igor Mammedov wrote:
+> On 05/09/2012 05:04 PM, Shuah Khan wrote:
+> > On Wed, 2012-05-09 at 12:24 +0200, Igor Mammedov wrote:
+> >> When bringing up cpuX1, it could stall in start_secondary
+> >> before setting cpu_callin_mask for more than 5 sec. That forces
+> >> do_boot_cpu() to give up on waiting and go to error return path
+> >> printing messages:
+> >>    pr_err("CPU%d: Stuck ??\n", cpuX1);
+> >
+> > I am seeing this with the linux-next May 7th build on my laptop HP
+> > EliteBook 8440p during boot. Could this problem be not specific to virt
+> > envs.? Anybody else seeing it?
+> 
+> I could only guess that on bare metal SMI or other firmware issue may interfere with AP boot.
+> Could you test if this patch-set fixes issue for you?
+> And do you see the same problem during suspend/resume (assuming that it's booted without problem)?
+> 
 
---t8N2qprAjL+0GVly
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I had to abandon the boot and go back to distro installed kernel - yes I
+will test with your patch set and see if the problem goes away. Might
+not happen until close to end of day today, but will report back.
 
-The following changes since commit d48b97b403d23f6df0b990cee652bdf9a52337a3:
+-- Shuah
 
-  Linux 3.4-rc6 (2012-05-06 15:07:32 -0700)
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-3.4
-
-for you to fetch changes up to 6560ffd1ccd688152393dc7c35dbdcc33140633b:
-
-  regmap: fix possible memory corruption in regmap_bulk_read() (2012-05-09 15:44:11 +0100)
-
-----------------------------------------------------------------
-regmap: Last minute bug fix for 3.4
-
-This is a last minute bug fix that was only just noticed since the code
-path that's being exercised here is one that is fairly rarely used.  The
-changelog for the change itself is extremely clear and the code itself
-is obvious to inspection so should be pretty safe.
-
-----------------------------------------------------------------
-Laxman Dewangan (1):
-      regmap: fix possible memory corruption in regmap_bulk_read()
-
- drivers/base/regmap/regmap.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
---t8N2qprAjL+0GVly
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPqo5xAAoJEBus8iNuMP3dcjwQAJpDZu/Sf0P/UWAltpWjx0UR
-K87ltyaGe3EsohC8ASy004A/DK41oObyeICrM04bEjkrs4SJoc3azOqGXjig4ya2
-DnzFi8vZYVkp0td5w62osODD45xOzzWcFl/VNVQLZYqVFvA8nhBCyCxvmy7djT8h
-Q5Thzuel24Cp6uilQCLliQGbFlnK0CHjZBFyeG5h21qqedJ3VmVLpCEjIAi7p/M+
-HXbWzylyotipBgmoE7V8cNJYI6o1PJgt1iwJ70oi0VBUb5ATtZFE0YPj0MMRDH6Q
-BIdUbmmRB6BpfPUIWEiLC96lomyZpCf/IuHWHefxkP6QAF8weqLdfaCrIz2AQQmc
-0ez9npD5kgTDP8RSNtaeD1HSaXcHCA/TArhjiwQR6Iqb1BiXqAMyDh0ZJDinoQwM
-IZcYtdWTkJECq6oeAOBZEghRR9H8E4O84SD3r3gCjMT3s32CUfCVLyDeaKgG4MJ2
-xs3RG0fv85GOOzz32zyKN+r9laJSSF+9wKmPtU9SJNsIwPMySF/5WvwaL61Syg1z
-PjdaFulbitYrOz7rvANA1hzkI8RctcxLpxEYhSqlxe+d47LPwne6JeW4zCM0PkTV
-cxLVXoOBpbxqdyQiYxGOfVALb7yUGo/wglDIWqU8wZ2p6LHFXL0gg4p+zwfXM2BO
-X6ksvkN9/YZwWD9UyYNj
-=agwn
------END PGP SIGNATURE-----
-
---t8N2qprAjL+0GVly--
