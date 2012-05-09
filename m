@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758610Ab2EIGdw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:33:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38663 "EHLO
+	id S1758584Ab2EIGdv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:33:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38664 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754562Ab2EIFwk (ORCPT
+	by vger.kernel.org with ESMTP id S1754867Ab2EIFwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:52:40 -0400
-Message-Id: <20120509055030.451103266@decadent.org.uk>
+Message-Id: <20120509055032.897593072@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:50:35 +0100
+Date: Wed, 09 May 2012 06:50:53 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Paul Walmsley <paul@pwsan.com>,
-        Tarun Kanti DebBarma <tarun.kanti@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [ 006/167] [PATCH] ARM: OMAP1: DMTIMER: fix broken timer clock source selection
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
+        Jan Ceuleers <jan.ceuleers@computer.org>
+Subject: [ 024/167] [PATCH] md: dont call ->add_disk unless there is good reason.
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,57 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Walmsley <paul@pwsan.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 6aaec67da1e41a0752a2b903b989e73b9f02e182 upstream.
+commit ed209584c38fb74b7eecc03e5b1bfe674e591bd8 upstream.
 
-DMTIMER source selection on OMAP1 is broken.  omap1_dm_timer_set_src()
-tries to use __raw_{read,write}l() to read from and write to physical
-addresses, but those functions take virtual addresses.
+Commit 7bfec5f35c68121e7b18
 
-sparse caught this:
+   md/raid5: If there is a spare and a want_replacement device, start replacement.
 
-arch/arm/mach-omap1/timer.c:50:13: warning: incorrect type in argument 1 (different base types)
-arch/arm/mach-omap1/timer.c:50:13:    expected void const volatile [noderef] <asn:2>*<noident>
-arch/arm/mach-omap1/timer.c:50:13:    got unsigned int
-arch/arm/mach-omap1/timer.c:52:9: warning: incorrect type in argument 1 (different base types)
-arch/arm/mach-omap1/timer.c:52:9:    expected void const volatile [noderef] <asn:2>*<noident>
-arch/arm/mach-omap1/timer.c:52:9:    got unsigned int
+cause md_check_recovery to call ->add_disk much more often.
+Instead of only when the array is degraded, it is now called whenever
+md_check_recovery finds anything useful to do, which includes
+updating the metadata for clean<->dirty transition.
+This causes unnecessary work, and causes info messages from ->add_disk
+to be reported much too often.
 
-Fix by using omap_{read,writel}(), just like the other users of the
-MOD_CONF_CTRL_1 register in the OMAP1 codebase.  Of course, in the long term,
-removing omap_{read,write}l() is the appropriate thing to do; but
-this will take some work to do this cleanly.
+So refine md_check_recovery to only do any actual recovery checking
+(including ->add_disk) if MD_RECOVERY_NEEDED is set.
 
-Looks like this was caused by 97933d6 (ARM: OMAP1: dmtimer: conversion
-to platform devices) that dangerously moved code and changed it in
-the same patch.
+This fix is suitable for 3.3.y:
 
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Cc: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-[tony@atomide.com: updated comments to include the breaking commit]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Reported-by: Jan Ceuleers <jan.ceuleers@computer.org>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mach-omap1/timer.c |    4 ++--
+ drivers/md/md.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap1/timer.c b/arch/arm/mach-omap1/timer.c
-index 6e90665..fb202af 100644
---- a/arch/arm/mach-omap1/timer.c
-+++ b/arch/arm/mach-omap1/timer.c
-@@ -47,9 +47,9 @@ static int omap1_dm_timer_set_src(struct platform_device *pdev,
- 	int n = (pdev->id - 1) << 1;
- 	u32 l;
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index b572e1e..8beb19c 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7560,14 +7560,14 @@ void md_check_recovery(struct mddev *mddev)
+ 		 * any transients in the value of "sync_action".
+ 		 */
+ 		set_bit(MD_RECOVERY_RUNNING, &mddev->recovery);
+-		clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
+ 		/* Clear some bits that don't mean anything, but
+ 		 * might be left set
+ 		 */
+ 		clear_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 		clear_bit(MD_RECOVERY_DONE, &mddev->recovery);
  
--	l = __raw_readl(MOD_CONF_CTRL_1) & ~(0x03 << n);
-+	l = omap_readl(MOD_CONF_CTRL_1) & ~(0x03 << n);
- 	l |= source << n;
--	__raw_writel(l, MOD_CONF_CTRL_1);
-+	omap_writel(l, MOD_CONF_CTRL_1);
- 
- 	return 0;
- }
+-		if (test_bit(MD_RECOVERY_FROZEN, &mddev->recovery))
++		if (!test_and_clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery) ||
++		    test_bit(MD_RECOVERY_FROZEN, &mddev->recovery))
+ 			goto unlock;
+ 		/* no recovery is running.
+ 		 * remove any failed drives, then
 -- 
 1.7.10
 
