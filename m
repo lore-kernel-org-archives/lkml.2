@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab2EIN2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 09:28:42 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:37374 "EHLO
+	id S932176Ab2EIN2z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 09:28:55 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:32345 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932118Ab2EIN2h (ORCPT
+	with ESMTP id S932138Ab2EIN2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 09:28:37 -0400
+	Wed, 9 May 2012 09:28:38 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAEZwqk9bdWOb/2dsb2JhbABEs1WBB4INAQUaAQxAEhBRVwYTiBK7ZosMhhIElX2QQYJr
+X-IronPort-Anti-Spam-Result: Av0EAEZwqk9bdWOb/2dsb2JhbABEs1WBB4INAQUaAQxAEhBRVwYThhKCALtmiwyGEgSVfYERjzCCa4Fc
 X-IronPort-AV: E=Sophos;i="4.75,558,1330902000"; 
-   d="scan'208";a="988584110"
+   d="scan'208";a="988584112"
 From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Manohar Vanga <manohar.vanga@cern.ch>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH v4 2/3] Staging: ipack: added support for the TEWS TPCI-200 carrier board
-Date: Wed,  9 May 2012 15:27:20 +0200
-Message-Id: <1336570041-32724-2-git-send-email-siglesias@igalia.com>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH v4 3/3] Staging: ipack: add support for IP-OCTAL mezzanine board
+Date: Wed,  9 May 2012 15:27:21 +0200
+Message-Id: <1336570041-32724-3-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1336570041-32724-1-git-send-email-siglesias@igalia.com>
 References: <1336570041-32724-1-git-send-email-siglesias@igalia.com>
@@ -27,98 +28,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver for the carrier board TEWS TPCI-200, a bridge between PCIe bus and
-IndustryPack bus.
+IP-OCTAL is a 8-channels serial port device. There are several models one per
+each standard: RS-232, RS-422, RS-485.
+
+This driver can manage all of them.
 
 Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 ---
- drivers/staging/ipack/Kconfig           |    5 +
+ drivers/staging/ipack/Kconfig           |    2 +
  drivers/staging/ipack/Makefile          |    1 +
- drivers/staging/ipack/TODO              |   10 +
- drivers/staging/ipack/bridges/Kconfig   |    8 +
- drivers/staging/ipack/bridges/Makefile  |    1 +
- drivers/staging/ipack/bridges/tpci200.c | 1183 +++++++++++++++++++++++++++++++
- drivers/staging/ipack/bridges/tpci200.h |  165 +++++
- 7 files changed, 1373 insertions(+)
- create mode 100644 drivers/staging/ipack/bridges/Kconfig
- create mode 100644 drivers/staging/ipack/bridges/Makefile
- create mode 100644 drivers/staging/ipack/bridges/tpci200.c
- create mode 100644 drivers/staging/ipack/bridges/tpci200.h
+ drivers/staging/ipack/TODO              |    9 +
+ drivers/staging/ipack/devices/Kconfig   |    7 +
+ drivers/staging/ipack/devices/Makefile  |    1 +
+ drivers/staging/ipack/devices/ipoctal.c |  893 +++++++++++++++++++++++++++++++
+ drivers/staging/ipack/devices/ipoctal.h |   81 +++
+ drivers/staging/ipack/devices/scc2698.h |  229 ++++++++
+ 8 files changed, 1223 insertions(+)
+ create mode 100644 drivers/staging/ipack/devices/Kconfig
+ create mode 100644 drivers/staging/ipack/devices/Makefile
+ create mode 100644 drivers/staging/ipack/devices/ipoctal.c
+ create mode 100644 drivers/staging/ipack/devices/ipoctal.h
+ create mode 100644 drivers/staging/ipack/devices/scc2698.h
 
 diff --git a/drivers/staging/ipack/Kconfig b/drivers/staging/ipack/Kconfig
-index e20187f..30b28fe 100644
+index 30b28fe..619c149 100644
 --- a/drivers/staging/ipack/Kconfig
 +++ b/drivers/staging/ipack/Kconfig
-@@ -7,3 +7,8 @@ menuconfig IPACK_BUS
- 	---help---
- 	  If you say Y here you get support for the IndustryPack Framework.
+@@ -9,6 +9,8 @@ menuconfig IPACK_BUS
  
-+if IPACK_BUS
+ if IPACK_BUS
+ 
++source "drivers/staging/ipack/devices/Kconfig"
 +
-+source "drivers/staging/ipack/bridges/Kconfig"
-+
-+endif # IPACK
+ source "drivers/staging/ipack/bridges/Kconfig"
+ 
+ endif # IPACK
 diff --git a/drivers/staging/ipack/Makefile b/drivers/staging/ipack/Makefile
-index 56e2340..59b8762 100644
+index 59b8762..85ff223 100644
 --- a/drivers/staging/ipack/Makefile
 +++ b/drivers/staging/ipack/Makefile
-@@ -2,3 +2,4 @@
+@@ -2,4 +2,5 @@
  # Makefile for the IPACK bridge device drivers.
  #
  obj-$(CONFIG_IPACK_BUS)		+= ipack.o
-+obj-y				+= bridges/
++obj-y				+= devices/
+ obj-y				+= bridges/
 diff --git a/drivers/staging/ipack/TODO b/drivers/staging/ipack/TODO
-index 167ae4d..d5a5735 100644
+index d5a5735..11828ed 100644
 --- a/drivers/staging/ipack/TODO
 +++ b/drivers/staging/ipack/TODO
-@@ -12,6 +12,16 @@ operations between the two kind of boards.
- TODO
- ====
+@@ -22,6 +22,15 @@ TPCI-200
+ * It has a linked list with the tpci200 devices it is managing. Get rid of it
+   and use driver_for_each_device() instead.
  
-+TPCI-200
++IP-OCTAL
 +--------
 +
-+* It receives the name of the mezzanine plugged in each slot by SYSFS.
-+  No autodetection supported yet, because the mezzanine driver could not be
-+  loaded at the time that the tpci200 driver loads.
-+
-+* It has a linked list with the tpci200 devices it is managing. Get rid of it
-+  and use driver_for_each_device() instead.
++* It has a linked list which saves the devices it is currently
++  managing. It should use the driver_for_each_device() function. It is not there
++  due to the impossibility of using container_of macro to recover the
++  corresponding "struct ipoctal" because the attribute "struct ipack_device" is
++  a pointer. This code should be refactored.
 +
  Ipack
  -----
  
-diff --git a/drivers/staging/ipack/bridges/Kconfig b/drivers/staging/ipack/bridges/Kconfig
+diff --git a/drivers/staging/ipack/devices/Kconfig b/drivers/staging/ipack/devices/Kconfig
 new file mode 100644
-index 0000000..97c837e
+index 0000000..39f7188
 --- /dev/null
-+++ b/drivers/staging/ipack/bridges/Kconfig
-@@ -0,0 +1,8 @@
-+config BOARD_TPCI200
-+	tristate "TEWS TPCI-200 support for IndustryPack bus"
++++ b/drivers/staging/ipack/devices/Kconfig
+@@ -0,0 +1,7 @@
++config SERIAL_IPOCTAL
++	tristate "IndustryPack IP-OCTAL uart support"
 +	depends on IPACK_BUS
-+	depends on PCI
 +	help
-+	  This driver supports the TEWS TPCI200 device for the IndustryPack bus.
++	  This driver supports the IPOCTAL serial port device for the IndustryPack bus.
 +	default n
 +
-diff --git a/drivers/staging/ipack/bridges/Makefile b/drivers/staging/ipack/bridges/Makefile
+diff --git a/drivers/staging/ipack/devices/Makefile b/drivers/staging/ipack/devices/Makefile
 new file mode 100644
-index 0000000..d8b7645
+index 0000000..6de18bd
 --- /dev/null
-+++ b/drivers/staging/ipack/bridges/Makefile
++++ b/drivers/staging/ipack/devices/Makefile
 @@ -0,0 +1 @@
-+obj-$(CONFIG_BOARD_TPCI200) += tpci200.o
-diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
++obj-$(CONFIG_SERIAL_IPOCTAL) += ipoctal.o
+diff --git a/drivers/staging/ipack/devices/ipoctal.c b/drivers/staging/ipack/devices/ipoctal.c
 new file mode 100644
-index 0000000..6aeb660
+index 0000000..15c0c6b
 --- /dev/null
-+++ b/drivers/staging/ipack/bridges/tpci200.c
-@@ -0,0 +1,1183 @@
++++ b/drivers/staging/ipack/devices/ipoctal.c
+@@ -0,0 +1,893 @@
 +/**
-+ * tpci200.c
++ * ipoctal.c
 + *
-+ * driver for the TEWS TPCI-200 device
++ * driver for the GE IP-OCTAL boards
 + * Copyright (c) 2009 Nicolas Serafini, EIC2 SA
 + * Copyright (c) 2010,2011 Samuel Iglesias Gonsalvez <siglesia@cern.ch>, CERN
 + * Copyright (c) 2012 Samuel Iglesias Gonsalvez <siglesias@igalia.com>, Igalia
@@ -131,1183 +135,893 @@ index 0000000..6aeb660
 +
 +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 +
++#include <linux/device.h>
 +#include <linux/module.h>
-+#include "tpci200.h"
++#include <linux/moduleparam.h>
++#include <linux/interrupt.h>
++#include <linux/fs.h>
++#include <linux/delay.h>
++#include <linux/sched.h>
++#include <linux/tty.h>
++#include <linux/serial.h>
++#include <linux/tty_flip.h>
++#include <linux/slab.h>
++#include <linux/uaccess.h>
++#include <linux/atomic.h>
++#include "../ipack.h"
++#include "ipoctal.h"
++#include "scc2698.h"
 +
-+struct ipack_bus_ops tpci200_bus_ops;
++#define IP_OCTAL_MANUFACTURER_ID    0xF0
++#define IP_OCTAL_232_ID             0x22
++#define IP_OCTAL_422_ID             0x2A
++#define IP_OCTAL_485_ID             0x48
 +
-+/* TPCI200 controls registers */
-+static int control_reg[] = {
-+	TPCI200_CONTROL_A_REG,
-+	TPCI200_CONTROL_B_REG,
-+	TPCI200_CONTROL_C_REG,
-+	TPCI200_CONTROL_D_REG
++#define IP_OCTAL_ID_SPACE_VECTOR    0x41
++#define IP_OCTAL_NB_BLOCKS          4
++
++static struct ipack_driver driver;
++static const struct tty_operations ipoctal_fops;
++
++struct ipoctal {
++	struct list_head		list;
++	struct ipack_device		*dev;
++	unsigned int			board_id;
++	struct scc2698_channel		*chan_regs;
++	struct scc2698_block		*block_regs;
++	struct ipoctal_stats		chan_stats[NR_CHANNELS];
++	char				*buffer[NR_CHANNELS];
++	unsigned int			nb_bytes[NR_CHANNELS];
++	unsigned int			count_wr[NR_CHANNELS];
++	struct ipoctal_config		chan_config[NR_CHANNELS];
++	wait_queue_head_t		queue[NR_CHANNELS];
++	unsigned short			error_flag[NR_CHANNELS];
++	spinlock_t			lock[NR_CHANNELS];
++	unsigned int			pointer_read[NR_CHANNELS];
++	unsigned int			pointer_write[NR_CHANNELS];
++	atomic_t			open[NR_CHANNELS];
++	unsigned char			write;
++	struct tty_port			tty_port[NR_CHANNELS];
++	struct tty_driver		*tty_drv;
 +};
 +
 +/* Linked list to save the registered devices */
-+static LIST_HEAD(tpci200_list);
++static LIST_HEAD(ipoctal_list);
 +
-+static int tpci200_slot_unregister(struct ipack_device *dev);
-+
-+static struct tpci200_board *check_slot(struct ipack_device *dev)
++static inline void ipoctal_write_io_reg(struct ipoctal *ipoctal,
++					unsigned char *dest,
++					unsigned char value)
 +{
-+	struct tpci200_board *tpci200;
-+	int found = 0;
++	unsigned long offset;
 +
-+	if (dev == NULL) {
-+		pr_info("Slot doesn't exist.\n");
-+		return NULL;
-+	}
-+
-+	list_for_each_entry(tpci200, &tpci200_list, list) {
-+		if (tpci200->number == dev->bus_nr) {
-+			found = 1;
-+			break;
-+		}
-+	}
-+
-+	if (!found) {
-+		pr_err("Carrier not found\n");
-+		return NULL;
-+	}
-+
-+	if (dev->slot >= TPCI200_NB_SLOT) {
-+		pr_info("Slot [%s %d:%d] doesn't exist! Last tpci200 slot is %d.\n",
-+			TPCI200_SHORTNAME, dev->bus_nr, dev->slot,
-+			TPCI200_NB_SLOT-1);
-+		return NULL;
-+	}
-+
-+	BUG_ON(tpci200->slots == NULL);
-+	if (tpci200->slots[dev->slot].dev == NULL) {
-+		pr_info("Slot [%s %d:%d] is not registered !\n",
-+			TPCI200_SHORTNAME, dev->bus_nr, dev->slot);
-+		return NULL;
-+	}
-+
-+	return tpci200;
++	offset = ((void *) dest) - ipoctal->dev->io_space.address;
++	ipoctal->dev->ops->write8(ipoctal->dev, IPACK_IO_SPACE, offset, value);
 +}
 +
-+static inline unsigned char __tpci200_read8(void *address, unsigned long offset)
++static inline void ipoctal_write_cr_cmd(struct ipoctal *ipoctal,
++					unsigned char *dest,
++					unsigned char value)
 +{
-+	return ioread8(address + (offset^1));
++	ipoctal_write_io_reg(ipoctal, dest, value);
 +}
 +
-+static inline unsigned short __tpci200_read16(void *address,
-+					      unsigned long offset)
++static inline unsigned char ipoctal_read_io_reg(struct ipoctal *ipoctal,
++						unsigned char *src)
 +{
-+	return ioread16(address + offset);
++	unsigned long offset;
++	unsigned char value;
++
++	offset = ((void *) src) - ipoctal->dev->io_space.address;
++	ipoctal->dev->ops->read8(ipoctal->dev, IPACK_IO_SPACE, offset, &value);
++	return value;
 +}
 +
-+static inline unsigned int __tpci200_read32(void *address, unsigned long offset)
++static struct ipoctal *ipoctal_find_board(struct tty_struct *tty)
 +{
-+	return swahw32(ioread32(address + offset));
-+}
++	struct ipoctal *p;
 +
-+static inline void __tpci200_write8(unsigned char value,
-+				    void *address, unsigned long offset)
-+{
-+	iowrite8(value, address+(offset^1));
-+}
-+
-+static inline void __tpci200_write16(unsigned short value, void *address,
-+				     unsigned long offset)
-+{
-+	iowrite16(value, address+offset);
-+}
-+
-+static inline void __tpci200_write32(unsigned int value, void *address,
-+				     unsigned long offset)
-+{
-+	iowrite32(swahw32(value), address+offset);
-+}
-+
-+static struct ipack_addr_space *get_slot_address_space(struct ipack_device *dev,
-+						       int space)
-+{
-+	struct ipack_addr_space *addr;
-+
-+	switch (space) {
-+	case IPACK_IO_SPACE:
-+		addr = &dev->io_space;
-+		break;
-+	case IPACK_ID_SPACE:
-+		addr = &dev->id_space;
-+		break;
-+	case IPACK_MEM_SPACE:
-+		addr = &dev->mem_space;
-+		break;
-+	default:
-+		pr_err("Slot [%s %d:%d] space number %d doesn't exist !\n",
-+		       TPCI200_SHORTNAME, dev->bus_nr, dev->slot, space);
-+		return NULL;
-+		break;
++	list_for_each_entry(p, &ipoctal_list, list) {
++		if (tty->driver->major == p->tty_drv->major)
++			return p;
 +	}
 +
-+	if ((addr->size == 0) || (addr->address == NULL)) {
-+		pr_err("Error, slot space not mapped !\n");
-+		return NULL;
-+	}
-+
-+	return addr;
++	return NULL;
 +}
 +
-+static int tpci200_read8(struct ipack_device *dev, int space,
-+			 unsigned long offset, unsigned char *value)
++static int ipoctal_port_activate(struct tty_port *port, struct tty_struct *tty)
 +{
-+	struct ipack_addr_space *addr;
-+	struct tpci200_board *tpci200;
++	struct ipoctal *ipoctal;
++	int channel = tty->index;
 +
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
++	ipoctal = ipoctal_find_board(tty);
 +
-+	addr = get_slot_address_space(dev, space);
-+	if (addr == NULL)
-+		return -EINVAL;
-+
-+	if (offset >= addr->size) {
-+		pr_err("Error, slot space offset error !\n");
-+		return -EFAULT;
++	if (ipoctal == NULL) {
++		pr_err("Device not found. Major %d\n", tty->driver->major);
++		return -ENODEV;
 +	}
 +
-+	*value = __tpci200_read8(addr->address, offset);
++	ipoctal_write_io_reg(ipoctal, &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_ENABLE_RX);
++	tty->driver_data = ipoctal;
 +
 +	return 0;
 +}
 +
-+static int tpci200_read16(struct ipack_device *dev, int space,
-+			  unsigned long offset, unsigned short *value)
++static int ipoctal_open(struct tty_struct *tty, struct file *file)
 +{
-+	struct ipack_addr_space *addr;
-+	struct tpci200_board *tpci200;
++	int channel = tty->index;
++	int res;
++	struct ipoctal *ipoctal;
 +
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
++	ipoctal = ipoctal_find_board(tty);
 +
-+	addr = get_slot_address_space(dev, space);
-+	if (addr == NULL)
-+		return -EINVAL;
-+
-+	if ((offset+2) >= addr->size) {
-+		pr_err("Error, slot space offset error !\n");
-+		return -EFAULT;
-+	}
-+	*value = __tpci200_read16(addr->address, offset);
-+
-+	return 0;
-+}
-+
-+static int tpci200_read32(struct ipack_device *dev, int space,
-+			  unsigned long offset, unsigned int *value)
-+{
-+	struct ipack_addr_space *addr;
-+	struct tpci200_board *tpci200;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
-+
-+	addr = get_slot_address_space(dev, space);
-+	if (addr == NULL)
-+		return -EINVAL;
-+
-+	if ((offset+4) >= addr->size) {
-+		pr_err("Error, slot space offset error !\n");
-+		return -EFAULT;
++	if (ipoctal == NULL) {
++		pr_err("Device not found. Major %d\n", tty->driver->major);
++		return -ENODEV;
 +	}
 +
-+	*value = __tpci200_read32(addr->address, offset);
-+
-+	return 0;
-+}
-+
-+static int tpci200_write8(struct ipack_device *dev, int space,
-+			  unsigned long offset, unsigned char value)
-+{
-+	struct ipack_addr_space *addr;
-+	struct tpci200_board *tpci200;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
-+
-+	addr = get_slot_address_space(dev, space);
-+	if (addr == NULL)
-+		return -EINVAL;
-+
-+	if (offset >= addr->size) {
-+		pr_err("Error, slot space offset error !\n");
-+		return -EFAULT;
-+	}
-+
-+	__tpci200_write8(value, addr->address, offset);
-+
-+	return 0;
-+}
-+
-+static int tpci200_write16(struct ipack_device *dev, int space,
-+			   unsigned long offset, unsigned short value)
-+{
-+	struct ipack_addr_space *addr;
-+	struct tpci200_board *tpci200;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
-+
-+	addr = get_slot_address_space(dev, space);
-+	if (addr == NULL)
-+		return -EINVAL;
-+
-+	if ((offset+2) >= addr->size) {
-+		pr_err("Error, slot space offset error !\n");
-+		return -EFAULT;
-+	}
-+
-+	__tpci200_write16(value, addr->address, offset);
-+
-+	return 0;
-+}
-+
-+static int tpci200_write32(struct ipack_device *dev, int space,
-+			   unsigned long offset, unsigned int value)
-+{
-+	struct ipack_addr_space *addr;
-+	struct tpci200_board *tpci200;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
-+
-+	addr = get_slot_address_space(dev, space);
-+	if (addr == NULL)
-+		return -EINVAL;
-+
-+	if ((offset+4) >= addr->size) {
-+		pr_err("Error, slot space offset error !\n");
-+		return -EFAULT;
-+	}
-+
-+	__tpci200_write32(value, addr->address, offset);
-+
-+	return 0;
-+}
-+
-+static void tpci200_unregister(struct tpci200_board *tpci200)
-+{
-+	int i;
-+
-+	free_irq(tpci200->info->pdev->irq, (void *) tpci200);
-+
-+	pci_iounmap(tpci200->info->pdev, tpci200->info->interface_regs);
-+	pci_iounmap(tpci200->info->pdev, tpci200->info->ioidint_space);
-+	pci_iounmap(tpci200->info->pdev, tpci200->info->mem8_space);
-+
-+	pci_release_region(tpci200->info->pdev, TPCI200_IP_INTERFACE_BAR);
-+	pci_release_region(tpci200->info->pdev, TPCI200_IO_ID_INT_SPACES_BAR);
-+	pci_release_region(tpci200->info->pdev, TPCI200_MEM8_SPACE_BAR);
-+
-+	pci_disable_device(tpci200->info->pdev);
-+	pci_dev_put(tpci200->info->pdev);
-+
-+	kfree(tpci200->info);
-+
-+	for (i = 0; i < TPCI200_NB_SLOT; i++) {
-+		tpci200->slots[i].io_phys.address = NULL;
-+		tpci200->slots[i].io_phys.size = 0;
-+		tpci200->slots[i].id_phys.address = NULL;
-+		tpci200->slots[i].id_phys.size = 0;
-+		tpci200->slots[i].mem_phys.address = NULL;
-+		tpci200->slots[i].mem_phys.size = 0;
-+	}
-+}
-+
-+static irqreturn_t tpci200_interrupt(int irq, void *dev_id)
-+{
-+	struct tpci200_board *tpci200 = (struct tpci200_board *) dev_id;
-+	int i;
-+	unsigned long flags;
-+	unsigned short status_reg, reg_value;
-+	unsigned short unhandled_ints = 0;
-+	irqreturn_t ret = IRQ_NONE;
-+
-+	spin_lock_irqsave(&tpci200->info->access_lock, flags);
-+
-+	/* Read status register */
-+	status_reg = readw((unsigned short *) (tpci200->info->interface_regs +
-+					       TPCI200_STATUS_REG));
-+
-+	if (status_reg & TPCI200_SLOT_INT_MASK) {
-+		unhandled_ints = status_reg & TPCI200_SLOT_INT_MASK;
-+		/* callback to the IRQ handler for the corresponding slot */
-+		for (i = 0; i < TPCI200_NB_SLOT; i++) {
-+			if ((tpci200->slots[i].irq != NULL) &&
-+			    (status_reg & ((TPCI200_A_INT0 | TPCI200_A_INT1) << (2*i)))) {
-+
-+				ret = tpci200->slots[i].irq->handler(tpci200->slots[i].irq->arg);
-+
-+				/* Dummy reads */
-+				readw((unsigned short *)
-+				      (tpci200->slots[i].dev->io_space.address +
-+				       0xC0));
-+				readw((unsigned short *)
-+				      (tpci200->slots[i].dev->io_space.address +
-+				       0xC2));
-+
-+				unhandled_ints &= ~(((TPCI200_A_INT0 | TPCI200_A_INT1) << (2*i)));
-+			}
-+		}
-+	}
-+	/* Interrupt not handled are disabled */
-+	if (unhandled_ints) {
-+		for (i = 0; i < TPCI200_NB_SLOT; i++) {
-+			if (unhandled_ints & ((TPCI200_INT0_EN | TPCI200_INT1_EN) << (2*i))) {
-+				pr_info("No registered ISR for slot [%s %d:%d]!. IRQ will be disabled.\n",
-+					TPCI200_SHORTNAME,
-+					tpci200->number, i);
-+				reg_value = readw((unsigned short *)(tpci200->info->interface_regs +
-+								     control_reg[i]));
-+				reg_value &=
-+					~(TPCI200_INT0_EN | TPCI200_INT1_EN);
-+				writew(reg_value, (unsigned short *)(tpci200->info->interface_regs +
-+								     control_reg[i]));
-+			}
-+		}
-+	}
-+
-+	spin_unlock_irqrestore(&tpci200->info->access_lock, flags);
-+	return ret;
-+}
-+
-+#ifdef CONFIG_SYSFS
-+
-+static struct ipack_device *tpci200_slot_register(const char *board_name,
-+						  int size,
-+						  unsigned int tpci200_number,
-+						  unsigned int slot_position)
-+{
-+	int found = 0;
-+	struct ipack_device  *dev = NULL;
-+	struct tpci200_board *tpci200;
-+
-+	list_for_each_entry(tpci200, &tpci200_list, list) {
-+		if (tpci200->number == tpci200_number) {
-+			found = 1;
-+			break;
-+		}
-+	}
-+
-+	if (!found) {
-+		pr_err("carrier board not found for the device\n");
-+		return NULL;
-+	}
-+
-+	if (slot_position >= TPCI200_NB_SLOT) {
-+		pr_info("Slot [%s %d:%d] doesn't exist!\n",
-+			TPCI200_SHORTNAME, tpci200_number, slot_position);
-+		goto out;
-+	}
-+
-+	if (mutex_lock_interruptible(&tpci200->mutex))
-+		goto out;
-+
-+	if (tpci200->slots[slot_position].dev != NULL) {
-+		pr_err("Slot [%s %d:%d] already installed !\n",
-+		       TPCI200_SHORTNAME, tpci200_number, slot_position);
-+		goto out_unlock;
-+	}
-+
-+	dev = kzalloc(sizeof(struct ipack_device), GFP_KERNEL);
-+	if (dev == NULL) {
-+		pr_info("Slot [%s %d:%d] Unable to allocate memory for new slot !\n",
-+			TPCI200_SHORTNAME,
-+			tpci200_number, slot_position);
-+		goto out_unlock;
-+	}
-+
-+	if (size > IPACK_BOARD_NAME_SIZE) {
-+		pr_warning("Slot [%s %d:%d] name (%s) too long (%d > %d). Will be truncated!\n",
-+			   TPCI200_SHORTNAME, tpci200_number, slot_position,
-+			   board_name, (int)strlen(board_name),
-+			   IPACK_BOARD_NAME_SIZE);
-+
-+		size = IPACK_BOARD_NAME_SIZE;
-+	}
-+
-+	strncpy(dev->board_name, board_name, size-1);
-+	dev->board_name[size-1] = '\0';
-+	dev->bus_nr = tpci200->info->drv.bus_nr;
-+	dev->slot = slot_position;
-+	/*
-+	 * Give the same IRQ number as the slot number.
-+	 * The TPCI200 has assigned his own two IRQ by PCI bus driver
-+	 */
-+	dev->irq = slot_position;
-+
-+	dev->id_space.address = NULL;
-+	dev->id_space.size = 0;
-+	dev->io_space.address = NULL;
-+	dev->io_space.size = 0;
-+	dev->mem_space.address = NULL;
-+	dev->mem_space.size = 0;
-+
-+	/* Give the operations structure */
-+	dev->ops = &tpci200_bus_ops;
-+	tpci200->slots[slot_position].dev = dev;
-+
-+	if (ipack_device_register(dev) < 0) {
-+		tpci200_slot_unregister(dev);
-+		kfree(dev);
-+	}
-+
-+out_unlock:
-+	mutex_unlock(&tpci200->mutex);
-+out:
-+	return dev;
-+}
-+
-+static ssize_t tpci200_store_board(struct device *pdev, const char *buf,
-+				   size_t count, int slot)
-+{
-+	struct tpci200_board *card = dev_get_drvdata(pdev);
-+	struct ipack_device *dev = card->slots[slot].dev;
-+
-+	if (dev != NULL)
++	if (atomic_read(&ipoctal->open[channel]))
 +		return -EBUSY;
 +
-+	dev = tpci200_slot_register(buf, count, card->number, slot);
-+	if (dev == NULL)
++	res = tty_port_open(&ipoctal->tty_port[channel], tty, file);
++	if (res)
++		return res;
++
++	atomic_inc(&ipoctal->open[channel]);
++	return 0;
++}
++
++static void ipoctal_reset_stats(struct ipoctal_stats *stats)
++{
++	stats->tx = 0;
++	stats->rx = 0;
++	stats->rcv_break = 0;
++	stats->framing_err = 0;
++	stats->overrun_err = 0;
++	stats->parity_err = 0;
++}
++
++static void ipoctal_free_channel(struct tty_struct *tty)
++{
++	int channel = tty->index;
++	struct ipoctal *ipoctal = tty->driver_data;
++
++	if (ipoctal == NULL)
++		return;
++
++	ipoctal_reset_stats(&ipoctal->chan_stats[channel]);
++	ipoctal->pointer_read[channel] = 0;
++	ipoctal->pointer_write[channel] = 0;
++	ipoctal->nb_bytes[channel] = 0;
++}
++
++static void ipoctal_close(struct tty_struct *tty, struct file *filp)
++{
++	int channel = tty->index;
++	struct ipoctal *ipoctal = tty->driver_data;
++
++	tty_port_close(&ipoctal->tty_port[channel], tty, filp);
++
++	if (atomic_dec_and_test(&ipoctal->open[channel]))
++		ipoctal_free_channel(tty);
++}
++
++static int ipoctal_get_icount(struct tty_struct *tty,
++			      struct serial_icounter_struct *icount)
++{
++	struct ipoctal *ipoctal = tty->driver_data;
++	int channel = tty->index;
++
++	icount->cts = 0;
++	icount->dsr = 0;
++	icount->rng = 0;
++	icount->dcd = 0;
++	icount->rx = ipoctal->chan_stats[channel].rx;
++	icount->tx = ipoctal->chan_stats[channel].tx;
++	icount->frame = ipoctal->chan_stats[channel].framing_err;
++	icount->parity = ipoctal->chan_stats[channel].parity_err;
++	icount->brk = ipoctal->chan_stats[channel].rcv_break;
++	return 0;
++}
++
++static int ipoctal_irq_handler(void *arg)
++{
++	unsigned int channel;
++	unsigned int block;
++	unsigned char isr;
++	unsigned char sr;
++	unsigned char isr_tx_rdy, isr_rx_rdy;
++	unsigned char value;
++	unsigned char flag;
++	struct tty_struct *tty;
++	struct ipoctal *ipoctal = (struct ipoctal *) arg;
++
++	/* Check all channels */
++	for (channel = 0; channel < NR_CHANNELS; channel++) {
++		/* If there is no client, skip the check */
++		if (!atomic_read(&ipoctal->open[channel]))
++			continue;
++
++		tty = tty_port_tty_get(&ipoctal->tty_port[channel]);
++		if (!tty)
++			continue;
++
++		/*
++		 * The HW is organized in pair of channels.
++		 * See which register we need to read from
++		 */
++		block = channel / 2;
++		isr = ipoctal_read_io_reg(ipoctal,
++					  &ipoctal->block_regs[block].u.r.isr);
++		sr = ipoctal_read_io_reg(ipoctal,
++					 &ipoctal->chan_regs[channel].u.r.sr);
++
++		if ((channel % 2) == 1) {
++			isr_tx_rdy = isr & ISR_TxRDY_B;
++			isr_rx_rdy = isr & ISR_RxRDY_FFULL_B;
++		} else {
++			isr_tx_rdy = isr & ISR_TxRDY_A;
++			isr_rx_rdy = isr & ISR_RxRDY_FFULL_A;
++		}
++
++		/* In case of RS-485, change from TX to RX when finishing TX.
++		 * Half-duplex.
++		 */
++		if ((ipoctal->board_id == IP_OCTAL_485_ID) &&
++		    (sr & SR_TX_EMPTY) &&
++		    (ipoctal->nb_bytes[channel] == 0)) {
++			ipoctal_write_io_reg(ipoctal,
++					     &ipoctal->chan_regs[channel].u.w.cr,
++					     CR_DISABLE_TX);
++			ipoctal_write_cr_cmd(ipoctal,
++					     &ipoctal->chan_regs[channel].u.w.cr,
++					     CR_CMD_NEGATE_RTSN);
++			ipoctal_write_io_reg(ipoctal,
++					     &ipoctal->chan_regs[channel].u.w.cr,
++					     CR_ENABLE_RX);
++			ipoctal->write = 1;
++			wake_up_interruptible(&ipoctal->queue[channel]);
++		}
++
++		/* RX data */
++		if (isr_rx_rdy && (sr & SR_RX_READY)) {
++			value = ipoctal_read_io_reg(ipoctal,
++						    &ipoctal->chan_regs[channel].u.r.rhr);
++			flag = TTY_NORMAL;
++
++			/* Error: count statistics */
++			if (sr & SR_ERROR) {
++				ipoctal_write_cr_cmd(ipoctal,
++						     &ipoctal->chan_regs[channel].u.w.cr,
++						     CR_CMD_RESET_ERR_STATUS);
++
++				if (sr & SR_OVERRUN_ERROR) {
++					ipoctal->error_flag[channel] |= UART_OVERRUN;
++					ipoctal->chan_stats[channel].overrun_err++;
++					/* Overrun doesn't affect the current character*/
++					tty_insert_flip_char(tty, 0, TTY_OVERRUN);
++				}
++				if (sr & SR_PARITY_ERROR) {
++					ipoctal->error_flag[channel] |= UART_PARITY;
++					ipoctal->chan_stats[channel].parity_err++;
++					flag = TTY_PARITY;
++				}
++				if (sr & SR_FRAMING_ERROR) {
++					ipoctal->error_flag[channel] |= UART_FRAMING;
++					ipoctal->chan_stats[channel].framing_err++;
++					flag = TTY_FRAME;
++				}
++				if (sr & SR_RECEIVED_BREAK) {
++					ipoctal->error_flag[channel] |= UART_BREAK;
++					ipoctal->chan_stats[channel].rcv_break++;
++					flag = TTY_BREAK;
++				}
++			}
++
++			tty_insert_flip_char(tty, value, flag);
++		}
++
++		/* TX of each character */
++		if (isr_tx_rdy && (sr & SR_TX_READY)) {
++			unsigned int *pointer_write =
++				&ipoctal->pointer_write[channel];
++
++			if (ipoctal->nb_bytes[channel] <= 0) {
++				ipoctal->nb_bytes[channel] = 0;
++				continue;
++			}
++			spin_lock(&ipoctal->lock[channel]);
++			value = ipoctal->buffer[channel][*pointer_write];
++			ipoctal_write_io_reg(ipoctal,
++					     &ipoctal->chan_regs[channel].u.w.thr,
++					     value);
++			ipoctal->chan_stats[channel].tx++;
++			ipoctal->count_wr[channel]++;
++			(*pointer_write)++;
++			*pointer_write = *pointer_write % PAGE_SIZE;
++			ipoctal->nb_bytes[channel]--;
++			spin_unlock(&ipoctal->lock[channel]);
++
++			if ((ipoctal->nb_bytes[channel] == 0) &&
++			    (waitqueue_active(&ipoctal->queue[channel]))) {
++
++				if (ipoctal->board_id != IP_OCTAL_485_ID) {
++					ipoctal->write = 1;
++					wake_up_interruptible(&ipoctal->queue[channel]);
++				}
++			}
++		}
++
++		tty_flip_buffer_push(tty);
++		tty_kref_put(tty);
++	}
++	return IRQ_HANDLED;
++}
++
++static int ipoctal_check_model(struct ipack_device *dev, unsigned char *id)
++{
++	unsigned char manufacturerID;
++	unsigned char board_id;
++
++	dev->ops->read8(dev, IPACK_ID_SPACE,
++			IPACK_IDPROM_OFFSET_MANUFACTURER_ID, &manufacturerID);
++	if (manufacturerID != IP_OCTAL_MANUFACTURER_ID)
 +		return -ENODEV;
 +
-+	return count;
-+}
++	dev->ops->read8(dev, IPACK_ID_SPACE,
++			IPACK_IDPROM_OFFSET_MODEL, (unsigned char *)&board_id);
 +
-+static ssize_t tpci200_show_board(struct device *pdev, char *buf, int slot)
-+{
-+	struct tpci200_board *card = dev_get_drvdata(pdev);
-+	struct ipack_device *dev = card->slots[slot].dev;
-+
-+	if (dev != NULL)
-+		return snprintf(buf, PAGE_SIZE, "%s\n", dev->board_name);
-+	else
-+		return snprintf(buf, PAGE_SIZE, "none\n");
-+}
-+
-+static ssize_t tpci200_show_description(struct device *pdev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	return snprintf(buf, PAGE_SIZE,
-+			"TEWS tpci200 carrier PCI for Industry-pack mezzanines.\n");
-+}
-+
-+static ssize_t tpci200_show_board_slot0(struct device *pdev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	return tpci200_show_board(pdev, buf, 0);
-+}
-+
-+static ssize_t tpci200_store_board_slot0(struct device *pdev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count)
-+{
-+	return tpci200_store_board(pdev, buf, count, 0);
-+}
-+
-+static ssize_t tpci200_show_board_slot1(struct device *pdev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	return tpci200_show_board(pdev, buf, 1);
-+}
-+
-+static ssize_t tpci200_store_board_slot1(struct device *pdev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count)
-+{
-+	return tpci200_store_board(pdev, buf, count, 1);
-+}
-+
-+static ssize_t tpci200_show_board_slot2(struct device *pdev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	return tpci200_show_board(pdev, buf, 2);
-+}
-+
-+static ssize_t tpci200_store_board_slot2(struct device *pdev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count)
-+{
-+	return tpci200_store_board(pdev, buf, count, 2);
-+}
-+
-+
-+static ssize_t tpci200_show_board_slot3(struct device *pdev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	return tpci200_show_board(pdev, buf, 3);
-+}
-+
-+static ssize_t tpci200_store_board_slot3(struct device *pdev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count)
-+{
-+	return tpci200_store_board(pdev, buf, count, 3);
-+}
-+
-+/* Declaration of the device attributes for the TPCI200 */
-+static DEVICE_ATTR(description, S_IRUGO,
-+		   tpci200_show_description, NULL);
-+static DEVICE_ATTR(board_slot0, S_IRUGO | S_IWUSR,
-+		   tpci200_show_board_slot0, tpci200_store_board_slot0);
-+static DEVICE_ATTR(board_slot1, S_IRUGO | S_IWUSR,
-+		   tpci200_show_board_slot1, tpci200_store_board_slot1);
-+static DEVICE_ATTR(board_slot2, S_IRUGO | S_IWUSR,
-+		   tpci200_show_board_slot2, tpci200_store_board_slot2);
-+static DEVICE_ATTR(board_slot3, S_IRUGO | S_IWUSR,
-+		   tpci200_show_board_slot3, tpci200_store_board_slot3);
-+
-+static struct attribute *tpci200_attrs[] = {
-+	&dev_attr_description.attr,
-+	&dev_attr_board_slot0.attr,
-+	&dev_attr_board_slot1.attr,
-+	&dev_attr_board_slot2.attr,
-+	&dev_attr_board_slot3.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group tpci200_attr_group = {
-+	.attrs = tpci200_attrs,
-+};
-+
-+static int tpci200_create_sysfs_files(struct tpci200_board *card)
-+{
-+	return sysfs_create_group(&card->info->pdev->dev.kobj,
-+				  &tpci200_attr_group);
-+}
-+
-+static void tpci200_remove_sysfs_files(struct tpci200_board *card)
-+{
-+	sysfs_remove_group(&card->info->pdev->dev.kobj, &tpci200_attr_group);
-+}
-+
-+#else
-+
-+static int tpci200_create_sysfs_files(struct tpci200_board *card)
-+{
-+	return 0;
-+}
-+
-+static void tpci200_remove_sysfs_files(struct tpci200_board *card)
-+{
-+}
-+
-+#endif /* CONFIG_SYSFS */
-+
-+static int tpci200_register(struct tpci200_board *tpci200)
-+{
-+	int  i;
-+	int res;
-+	unsigned long ioidint_base;
-+	unsigned long mem_base;
-+	unsigned short slot_ctrl;
-+
-+	if (pci_enable_device(tpci200->info->pdev) < 0)
-+		return -ENODEV;
-+
-+	if (tpci200_create_sysfs_files(tpci200) < 0) {
-+		pr_err("failed creating sysfs files\n");
-+		res = -EFAULT;
-+		goto out_disable_pci;
-+	}
-+
-+	/* Request IP interface register (Bar 2) */
-+	res = pci_request_region(tpci200->info->pdev, TPCI200_IP_INTERFACE_BAR,
-+				 "Carrier IP interface registers");
-+	if (res) {
-+		pr_err("(bn 0x%X, sn 0x%X) failed to allocate PCI resource for BAR 2 !",
-+		       tpci200->info->pdev->bus->number,
-+		       tpci200->info->pdev->devfn);
-+		goto out_remove_sysfs;
-+	}
-+
-+	/* Request IO ID INT space (Bar 3) */
-+	res = pci_request_region(tpci200->info->pdev,
-+				 TPCI200_IO_ID_INT_SPACES_BAR,
-+				 "Carrier IO ID INT space");
-+	if (res) {
-+		pr_err("(bn 0x%X, sn 0x%X) failed to allocate PCI resource for BAR 3 !",
-+		       tpci200->info->pdev->bus->number,
-+		       tpci200->info->pdev->devfn);
-+		goto out_release_ip_space;
-+	}
-+
-+	/* Request MEM space (Bar 4) */
-+	res = pci_request_region(tpci200->info->pdev, TPCI200_MEM8_SPACE_BAR,
-+				 "Carrier MEM space");
-+	if (res) {
-+		pr_err("(bn 0x%X, sn 0x%X) failed to allocate PCI resource for BAR 4!",
-+		       tpci200->info->pdev->bus->number,
-+		       tpci200->info->pdev->devfn);
-+		goto out_release_ioid_int_space;
-+	}
-+
-+	/* Map internal tpci200 driver user space */
-+	tpci200->info->interface_regs =
-+		ioremap(pci_resource_start(tpci200->info->pdev,
-+					   TPCI200_IP_INTERFACE_BAR),
-+			TPCI200_IFACE_SIZE);
-+	tpci200->info->ioidint_space =
-+		ioremap(pci_resource_start(tpci200->info->pdev,
-+					   TPCI200_IO_ID_INT_SPACES_BAR),
-+			TPCI200_IOIDINT_SIZE);
-+	tpci200->info->mem8_space =
-+		ioremap(pci_resource_start(tpci200->info->pdev,
-+					   TPCI200_MEM8_SPACE_BAR),
-+			TPCI200_MEM8_SIZE);
-+
-+	spin_lock_init(&tpci200->info->access_lock);
-+	ioidint_base = pci_resource_start(tpci200->info->pdev,
-+					  TPCI200_IO_ID_INT_SPACES_BAR);
-+	mem_base = pci_resource_start(tpci200->info->pdev,
-+				      TPCI200_MEM8_SPACE_BAR);
-+
-+	/* Set the default parameters of the slot
-+	 * INT0 disabled, level sensitive
-+	 * INT1 disabled, level sensitive
-+	 * error interrupt disabled
-+	 * timeout interrupt disabled
-+	 * recover time disabled
-+	 * clock rate 8 MHz
-+	 */
-+	slot_ctrl = 0;
-+
-+	/* Set all slot physical address space */
-+	for (i = 0; i < TPCI200_NB_SLOT; i++) {
-+		tpci200->slots[i].io_phys.address =
-+			(void *)ioidint_base +
-+			TPCI200_IO_SPACE_OFF + TPCI200_IO_SPACE_GAP*i;
-+		tpci200->slots[i].io_phys.size = TPCI200_IO_SPACE_SIZE;
-+
-+		tpci200->slots[i].id_phys.address =
-+			(void *)ioidint_base +
-+			TPCI200_ID_SPACE_OFF + TPCI200_ID_SPACE_GAP*i;
-+		tpci200->slots[i].id_phys.size = TPCI200_ID_SPACE_SIZE;
-+
-+		tpci200->slots[i].mem_phys.address =
-+			(void *)mem_base + TPCI200_MEM8_GAP*i;
-+		tpci200->slots[i].mem_phys.size = TPCI200_MEM8_SIZE;
-+
-+		writew(slot_ctrl,
-+		       (unsigned short *)(tpci200->info->interface_regs +
-+					  control_reg[i]));
-+	}
-+
-+	res = request_irq(tpci200->info->pdev->irq,
-+			  tpci200_interrupt, IRQF_SHARED,
-+			  TPCI200_SHORTNAME, (void *) tpci200);
-+	if (res) {
-+		pr_err("(bn 0x%X, sn 0x%X) unable to register IRQ !",
-+		       tpci200->info->pdev->bus->number,
-+		       tpci200->info->pdev->devfn);
-+		tpci200_unregister(tpci200);
-+		goto out_err;
-+	}
-+
-+	return 0;
-+
-+out_release_ioid_int_space:
-+	pci_release_region(tpci200->info->pdev, TPCI200_IO_ID_INT_SPACES_BAR);
-+out_release_ip_space:
-+	pci_release_region(tpci200->info->pdev, TPCI200_IP_INTERFACE_BAR);
-+out_remove_sysfs:
-+	tpci200_remove_sysfs_files(tpci200);
-+out_disable_pci:
-+	pci_disable_device(tpci200->info->pdev);
-+out_err:
-+	return res;
-+}
-+
-+static int __tpci200_request_irq(struct tpci200_board *tpci200,
-+				 struct ipack_device *dev)
-+{
-+	unsigned short slot_ctrl;
-+
-+	/* Set the default parameters of the slot
-+	 * INT0 enabled, level sensitive
-+	 * INT1 enabled, level sensitive
-+	 * error interrupt disabled
-+	 * timeout interrupt disabled
-+	 * recover time disabled
-+	 * clock rate 8 MHz
-+	 */
-+	slot_ctrl = TPCI200_INT0_EN | TPCI200_INT1_EN;
-+	writew(slot_ctrl, (unsigned short *)(tpci200->info->interface_regs +
-+					     control_reg[dev->slot]));
-+
-+	return 0;
-+}
-+
-+static void __tpci200_free_irq(struct tpci200_board *tpci200,
-+			       struct ipack_device *dev)
-+{
-+	unsigned short slot_ctrl;
-+
-+	/* Set the default parameters of the slot
-+	 * INT0 disabled, level sensitive
-+	 * INT1 disabled, level sensitive
-+	 * error interrupt disabled
-+	 * timeout interrupt disabled
-+	 * recover time disabled
-+	 * clock rate 8 MHz
-+	 */
-+	slot_ctrl = 0;
-+	writew(slot_ctrl, (unsigned short *)(tpci200->info->interface_regs +
-+					     control_reg[dev->slot]));
-+}
-+
-+static int tpci200_free_irq(struct ipack_device *dev)
-+{
-+	int res;
-+	struct slot_irq *slot_irq;
-+	struct tpci200_board *tpci200;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL) {
-+		res = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (mutex_lock_interruptible(&tpci200->mutex)) {
-+		res = -ERESTARTSYS;
-+		goto out;
-+	}
-+
-+	if (tpci200->slots[dev->slot].irq == NULL) {
-+		res = -EINVAL;
-+		goto out_unlock;
-+	}
-+
-+	__tpci200_free_irq(tpci200, dev);
-+	slot_irq = tpci200->slots[dev->slot].irq;
-+	tpci200->slots[dev->slot].irq = NULL;
-+	kfree(slot_irq);
-+
-+out_unlock:
-+	mutex_unlock(&tpci200->mutex);
-+out:
-+	return res;
-+}
-+
-+static int tpci200_slot_unmap_space(struct ipack_device *dev, int space)
-+{
-+	int res;
-+	struct ipack_addr_space *virt_addr_space;
-+	struct tpci200_board *tpci200;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL) {
-+		res = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (mutex_lock_interruptible(&tpci200->mutex)) {
-+		res = -ERESTARTSYS;
-+		goto out;
-+	}
-+
-+	switch (space) {
-+	case IPACK_IO_SPACE:
-+		if (dev->io_space.address == NULL) {
-+			pr_info("Slot [%s %d:%d] IO space not mapped !\n",
-+				TPCI200_SHORTNAME, dev->bus_nr, dev->slot);
-+			goto out_unlock;
-+		}
-+		virt_addr_space = &dev->io_space;
-+		break;
-+	case IPACK_ID_SPACE:
-+		if (dev->id_space.address == NULL) {
-+			pr_info("Slot [%s %d:%d] ID space not mapped !\n",
-+				TPCI200_SHORTNAME, dev->bus_nr, dev->slot);
-+			goto out_unlock;
-+		}
-+		virt_addr_space = &dev->id_space;
-+		break;
-+	case IPACK_MEM_SPACE:
-+		if (dev->mem_space.address == NULL) {
-+			pr_info("Slot [%s %d:%d] MEM space not mapped !\n",
-+				TPCI200_SHORTNAME, dev->bus_nr, dev->slot);
-+		goto out_unlock;
-+		}
-+		virt_addr_space = &dev->mem_space;
++	switch (board_id) {
++	case IP_OCTAL_232_ID:
++	case IP_OCTAL_422_ID:
++	case IP_OCTAL_485_ID:
++		*id = board_id;
 +		break;
 +	default:
-+		pr_err("Slot [%s %d:%d] space number %d doesn't exist !\n",
-+		       TPCI200_SHORTNAME, dev->bus_nr, dev->slot, space);
-+		res = -EINVAL;
-+		goto out_unlock;
-+		break;
-+	}
-+
-+	iounmap(virt_addr_space->address);
-+
-+	virt_addr_space->address = NULL;
-+	virt_addr_space->size = 0;
-+out_unlock:
-+	mutex_unlock(&tpci200->mutex);
-+out:
-+	return res;
-+}
-+
-+static int tpci200_slot_unregister(struct ipack_device *dev)
-+{
-+	struct tpci200_board *tpci200;
-+
-+	if (dev == NULL)
 +		return -ENODEV;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL)
-+		return -EINVAL;
-+
-+	tpci200_free_irq(dev);
-+
-+	if (mutex_lock_interruptible(&tpci200->mutex))
-+		return -ERESTARTSYS;
-+
-+	ipack_device_unregister(dev);
-+	kfree(dev);
-+	tpci200->slots[dev->slot].dev = NULL;
-+	mutex_unlock(&tpci200->mutex);
++	}
 +
 +	return 0;
 +}
 +
-+static int tpci200_slot_map_space(struct ipack_device *dev,
-+				  unsigned int memory_size, int space)
++static const struct tty_port_operations ipoctal_tty_port_ops = {
++	.dtr_rts = NULL,
++	.activate = ipoctal_port_activate,
++};
++
++static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
++			     unsigned int slot, unsigned int vector)
 +{
-+	int res;
-+	unsigned int size_to_map;
-+	void *phys_address;
-+	struct ipack_addr_space *virt_addr_space;
-+	struct tpci200_board *tpci200;
++	int res = 0;
++	int i;
++	struct tty_driver *tty;
++	char name[20];
++	unsigned char board_id;
 +
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL) {
-+		res = -EINVAL;
-+		goto out;
++	res = ipoctal->dev->ops->map_space(ipoctal->dev, 0, IPACK_ID_SPACE);
++	if (res) {
++		pr_err("Unable to map slot [%d:%d] ID space!\n", bus_nr, slot);
++		return res;
 +	}
 +
-+	if (mutex_lock_interruptible(&tpci200->mutex)) {
-+		res = -ERESTARTSYS;
-+		goto out;
++	res = ipoctal_check_model(ipoctal->dev, &board_id);
++	if (res) {
++		ipoctal->dev->ops->unmap_space(ipoctal->dev, IPACK_ID_SPACE);
++		goto out_unregister_id_space;
++	}
++	ipoctal->board_id = board_id;
++
++	res = ipoctal->dev->ops->map_space(ipoctal->dev, 0, IPACK_IO_SPACE);
++	if (res) {
++		pr_err("Unable to map slot [%d:%d] IO space!\n", bus_nr, slot);
++		goto out_unregister_id_space;
 +	}
 +
-+	switch (space) {
-+	case IPACK_IO_SPACE:
-+		if (dev->io_space.address != NULL) {
-+			pr_err("Slot [%s %d:%d] IO space already mapped !\n",
-+			       TPCI200_SHORTNAME, tpci200->number, dev->slot);
-+			res = -EINVAL;
-+			goto out_unlock;
-+		}
-+		virt_addr_space = &dev->io_space;
-+
-+		phys_address = tpci200->slots[dev->slot].io_phys.address;
-+		size_to_map = tpci200->slots[dev->slot].io_phys.size;
-+		break;
-+	case IPACK_ID_SPACE:
-+		if (dev->id_space.address != NULL) {
-+			pr_err("Slot [%s %d:%d] ID space already mapped !\n",
-+			       TPCI200_SHORTNAME, tpci200->number, dev->slot);
-+			res = -EINVAL;
-+			goto out_unlock;
-+		}
-+		virt_addr_space = &dev->id_space;
-+
-+		phys_address = tpci200->slots[dev->slot].id_phys.address;
-+		size_to_map = tpci200->slots[dev->slot].id_phys.size;
-+		break;
-+	case IPACK_MEM_SPACE:
-+		if (dev->mem_space.address != NULL) {
-+			pr_err("Slot [%s %d:%d] MEM space already mapped !\n",
-+			       TPCI200_SHORTNAME,
-+			       tpci200->number, dev->slot);
-+			res = -EINVAL;
-+			goto out_unlock;
-+		}
-+		virt_addr_space = &dev->mem_space;
-+
-+		if (memory_size > tpci200->slots[dev->slot].mem_phys.size) {
-+			pr_err("Slot [%s %d:%d] request is 0x%X memory, only 0x%X available !\n",
-+			       TPCI200_SHORTNAME, dev->bus_nr, dev->slot,
-+			       memory_size, tpci200->slots[dev->slot].mem_phys.size);
-+			res = -EINVAL;
-+			goto out_unlock;
-+		}
-+
-+		phys_address = tpci200->slots[dev->slot].mem_phys.address;
-+		size_to_map = memory_size;
-+		break;
-+	default:
-+		pr_err("Slot [%s %d:%d] space %d doesn't exist !\n",
-+		       TPCI200_SHORTNAME,
-+		       tpci200->number, dev->slot, space);
-+		res = -EINVAL;
-+		goto out_unlock;
-+		break;
++	res = ipoctal->dev->ops->map_space(ipoctal->dev,
++					   0x8000, IPACK_MEM_SPACE);
++	if (res) {
++		pr_err("Unable to map slot [%d:%d] MEM space!\n", bus_nr, slot);
++		goto out_unregister_io_space;
 +	}
 +
-+	virt_addr_space->size = size_to_map;
-+	virt_addr_space->address =
-+		ioremap((unsigned long)phys_address, size_to_map);
++	/* Save the virtual address to access the registers easily */
++	ipoctal->chan_regs =
++		(struct scc2698_channel *) ipoctal->dev->io_space.address;
++	ipoctal->block_regs =
++		(struct scc2698_block *) ipoctal->dev->io_space.address;
 +
-+out_unlock:
-+	mutex_unlock(&tpci200->mutex);
-+out:
-+	return res;
-+}
-+
-+static int tpci200_request_irq(struct ipack_device *dev, int vector,
-+			       int (*handler)(void *), void *arg)
-+{
-+	int res;
-+	struct slot_irq *slot_irq;
-+	struct tpci200_board *tpci200;
-+
-+	tpci200 = check_slot(dev);
-+	if (tpci200 == NULL) {
-+		res = -EINVAL;
-+		goto out;
++	/* Disable RX and TX before touching anything */
++	for (i = 0; i < NR_CHANNELS ; i++) {
++		ipoctal_write_io_reg(ipoctal, &ipoctal->chan_regs[i].u.w.cr,
++				     CR_DISABLE_RX | CR_DISABLE_TX);
 +	}
 +
-+	if (mutex_lock_interruptible(&tpci200->mutex)) {
-+		res = -ERESTARTSYS;
-+		goto out;
-+	}
-+
-+	if (tpci200->slots[dev->slot].irq != NULL) {
-+		pr_err("Slot [%s %d:%d] IRQ already registered !\n",
-+		       TPCI200_SHORTNAME, dev->bus_nr, dev->slot);
-+		res = -EINVAL;
-+		goto out_unlock;
-+	}
-+
-+	slot_irq = kzalloc(sizeof(struct slot_irq), GFP_KERNEL);
-+	if (slot_irq == NULL) {
-+		pr_err("Slot [%s %d:%d] unable to allocate memory for IRQ !\n",
-+		       TPCI200_SHORTNAME, dev->bus_nr, dev->slot);
-+		res = -ENOMEM;
-+		goto out_unlock;
++	for (i = 0; i < IP_OCTAL_NB_BLOCKS; i++) {
++		ipoctal_write_io_reg(ipoctal,
++				     &ipoctal->block_regs[i].u.w.acr,
++				     ACR_BRG_SET2);
++		ipoctal_write_io_reg(ipoctal,
++				     &ipoctal->block_regs[i].u.w.opcr,
++				     OPCR_MPP_OUTPUT | OPCR_MPOa_RTSN |
++				     OPCR_MPOb_RTSN);
++		ipoctal_write_io_reg(ipoctal,
++				     &ipoctal->block_regs[i].u.w.imr,
++				     IMR_TxRDY_A | IMR_RxRDY_FFULL_A |
++				     IMR_DELTA_BREAK_A | IMR_TxRDY_B |
++				     IMR_RxRDY_FFULL_B | IMR_DELTA_BREAK_B);
 +	}
 +
 +	/*
-+	 * WARNING: Setup Interrupt Vector in the IndustryPack device
-+	 * before an IRQ request.
-+	 * Read the User Manual of your IndustryPack device to know
-+	 * where to write the vector in memory.
++	 * IP-OCTAL has different addresses to copy its IRQ vector.
++	 * Depending of the carrier these addresses are accesible or not.
++	 * More info in the datasheet.
 +	 */
-+	slot_irq->vector = vector;
-+	slot_irq->handler = handler;
-+	slot_irq->arg = arg;
-+	if (dev->board_name) {
-+		if (strlen(dev->board_name) > IPACK_IRQ_NAME_SIZE) {
-+			pr_warning("Slot [%s %d:%d] IRQ name too long (%d char > %d char MAX). Will be truncated!\n",
-+				   TPCI200_SHORTNAME, dev->bus_nr, dev->slot,
-+				   (int)strlen(dev->board_name),
-+				   IPACK_IRQ_NAME_SIZE);
-+		}
-+		strncpy(slot_irq->name, dev->board_name, IPACK_IRQ_NAME_SIZE-1);
-+	} else {
-+		strcpy(slot_irq->name, "Unknown");
-+	}
++	ipoctal->dev->ops->request_irq(ipoctal->dev, vector,
++				       ipoctal_irq_handler, ipoctal);
++	ipoctal->dev->ops->write8(ipoctal->dev, IPACK_ID_SPACE, 0, vector);
 +
-+	tpci200->slots[dev->slot].irq = slot_irq;
-+	res = __tpci200_request_irq(tpci200, dev);
++	/* Register the TTY device */
 +
-+out_unlock:
-+	mutex_unlock(&tpci200->mutex);
-+out:
-+	return res;
-+}
++	/* Each IP-OCTAL channel is a TTY port */
++	tty = alloc_tty_driver(NR_CHANNELS);
 +
-+static void tpci200_slot_remove(struct tpci200_slot *slot)
-+{
-+	if ((slot->dev == NULL) ||
-+	    (slot->dev->driver->ops->remove == NULL))
-+		return;
-+
-+	slot->dev->driver->ops->remove(slot->dev);
-+}
-+
-+static void tpci200_uninstall(struct tpci200_board *tpci200)
-+{
-+	int i;
-+
-+	for (i = 0; i < TPCI200_NB_SLOT; i++)
-+		tpci200_slot_remove(&tpci200->slots[i]);
-+
-+	tpci200_unregister(tpci200);
-+	kfree(tpci200->slots);
-+}
-+
-+struct ipack_bus_ops tpci200_bus_ops = {
-+	.map_space = tpci200_slot_map_space,
-+	.unmap_space = tpci200_slot_unmap_space,
-+	.request_irq = tpci200_request_irq,
-+	.free_irq = tpci200_free_irq,
-+	.read8 = tpci200_read8,
-+	.read16 = tpci200_read16,
-+	.read32 = tpci200_read32,
-+	.write8 = tpci200_write8,
-+	.write16 = tpci200_write16,
-+	.write32 = tpci200_write32,
-+	.remove_device = tpci200_slot_unregister,
-+};
-+
-+static int tpci200_install(struct tpci200_board *tpci200)
-+{
-+	int res;
-+
-+	tpci200->slots = kzalloc(
-+		TPCI200_NB_SLOT * sizeof(struct tpci200_slot), GFP_KERNEL);
-+	if (tpci200->slots == NULL) {
++	if (!tty) {
 +		res = -ENOMEM;
-+		goto out_err;
++		goto out_unregister_slot_unmap;
 +	}
 +
-+	res = tpci200_register(tpci200);
-+	if (res)
-+		goto out_free;
++	/* Fill struct tty_driver with ipoctal data */
++	tty->owner = THIS_MODULE;
++	tty->driver_name = "ipoctal";
++	sprintf(name, "ipoctal.%d.%d.", bus_nr, slot);
++	tty->name = name;
++	tty->major = 0;
 +
-+	mutex_init(&tpci200->mutex);
++	tty->minor_start = 0;
++	tty->type = TTY_DRIVER_TYPE_SERIAL;
++	tty->subtype = SERIAL_TYPE_NORMAL;
++	tty->flags = TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
++	tty->init_termios = tty_std_termios;
++	tty->init_termios.c_cflag = B9600 | CS8 | CREAD | HUPCL | CLOCAL;
++	tty->init_termios.c_ispeed = 9600;
++	tty->init_termios.c_ospeed = 9600;
++
++	tty_set_operations(tty, &ipoctal_fops);
++	res = tty_register_driver(tty);
++	if (res) {
++		pr_err("Can't register tty driver.\n");
++		put_tty_driver(tty);
++		goto out_unregister_slot_unmap;
++	}
++
++	/* Save struct tty_driver for use it when uninstalling the device */
++	ipoctal->tty_drv = tty;
++
++	for (i = 0; i < NR_CHANNELS; i++) {
++		tty_port_init(&ipoctal->tty_port[i]);
++		tty_port_alloc_xmit_buf(&ipoctal->tty_port[i]);
++		ipoctal->tty_port[i].ops = &ipoctal_tty_port_ops;
++
++		ipoctal_reset_stats(&ipoctal->chan_stats[i]);
++		ipoctal->nb_bytes[i] = 0;
++		init_waitqueue_head(&ipoctal->queue[i]);
++		ipoctal->error_flag[i] = UART_NOERROR;
++
++		spin_lock_init(&ipoctal->lock[i]);
++		ipoctal->pointer_read[i] = 0;
++		ipoctal->pointer_write[i] = 0;
++		ipoctal->nb_bytes[i] = 0;
++		tty_register_device(tty, i, NULL);
++
++		/*
++		 * Enable again the RX. TX will be enabled when
++		 * there is something to send
++		 */
++		ipoctal_write_io_reg(ipoctal, &ipoctal->chan_regs[i].u.w.cr,
++				     CR_ENABLE_RX);
++	}
++
 +	return 0;
 +
-+out_free:
-+	kfree(tpci200->slots);
-+	tpci200->slots = NULL;
-+out_err:
++out_unregister_slot_unmap:
++	ipoctal->dev->ops->unmap_space(ipoctal->dev, IPACK_ID_SPACE);
++out_unregister_io_space:
++	ipoctal->dev->ops->unmap_space(ipoctal->dev, IPACK_IO_SPACE);
++out_unregister_id_space:
++	ipoctal->dev->ops->unmap_space(ipoctal->dev, IPACK_MEM_SPACE);
 +	return res;
 +}
 +
-+static int tpci200_pciprobe(struct pci_dev *pdev,
-+			    const struct pci_device_id *id)
++static inline int ipoctal_copy_write_buffer(struct ipoctal *ipoctal,
++					    unsigned int channel,
++					    const unsigned char *buf,
++					    int count)
 +{
-+	int ret;
-+	struct tpci200_board *tpci200;
++	unsigned long flags;
++	int i;
++	unsigned int *pointer_read = &ipoctal->pointer_read[channel];
 +
-+	tpci200 = kzalloc(sizeof(struct tpci200_board), GFP_KERNEL);
-+	if (!tpci200)
-+		return -ENOMEM;
-+
-+	tpci200->info = kzalloc(sizeof(struct tpci200_infos), GFP_KERNEL);
-+	if (!tpci200->info) {
-+		kfree(tpci200);
-+		return -ENOMEM;
-+	}
-+
-+	/* Save struct pci_dev pointer */
-+	tpci200->info->pdev = pdev;
-+	tpci200->info->id_table = (struct pci_device_id *)id;
-+
-+	/* register the device and initialize it */
-+	ret = tpci200_install(tpci200);
-+	if (ret) {
-+		pr_err("Error during tpci200 install !\n");
-+		kfree(tpci200->info);
-+		kfree(tpci200);
-+		return -ENODEV;
-+	}
-+
-+	tpci200->info->drv.dev = &pdev->dev;
-+	tpci200->info->drv.slots = TPCI200_NB_SLOT;
-+
-+	/* Register the bus in the industry pack driver */
-+	ret = ipack_bus_register(&tpci200->info->drv);
-+	if (ret < 0) {
-+		pr_err("error registering the carrier on ipack driver\n");
-+		tpci200_uninstall(tpci200);
-+		kfree(tpci200->info);
-+		kfree(tpci200);
-+		return -EFAULT;
-+	}
-+	/* save the bus number given by ipack to logging purpose */
-+	tpci200->number = tpci200->info->drv.bus_nr;
-+	dev_set_drvdata(&pdev->dev, tpci200);
-+	/* add the registered device in an internal linked list */
-+	list_add_tail(&tpci200->list, &tpci200_list);
-+	return ret;
-+}
-+
-+static void __tpci200_pci_remove(struct tpci200_board *tpci200)
-+{
-+	tpci200_uninstall(tpci200);
-+	tpci200_remove_sysfs_files(tpci200);
-+	list_del(&tpci200->list);
-+	ipack_bus_unregister(&tpci200->info->drv);
-+	kfree(tpci200);
-+}
-+
-+static void __devexit tpci200_pci_remove(struct pci_dev *dev)
-+{
-+	struct tpci200_board *tpci200, *next;
-+
-+	/* Search the registered device to uninstall it */
-+	list_for_each_entry_safe(tpci200, next, &tpci200_list, list) {
-+		if (tpci200->info->pdev == dev) {
-+			__tpci200_pci_remove(tpci200);
++	/* Copy the bytes from the user buffer to the internal one */
++	for (i = 0; i < count; i++) {
++		if (i <= (PAGE_SIZE - ipoctal->nb_bytes[channel])) {
++			spin_lock_irqsave(&ipoctal->lock[channel], flags);
++			ipoctal->tty_port[channel].xmit_buf[*pointer_read] = buf[i];
++			*pointer_read = (*pointer_read + 1) % PAGE_SIZE;
++			ipoctal->nb_bytes[channel]++;
++			spin_unlock_irqrestore(&ipoctal->lock[channel], flags);
++		} else {
 +			break;
 +		}
 +	}
++	return i;
 +}
 +
-+static struct pci_device_id tpci200_idtable[2] = {
-+	{ TPCI200_VENDOR_ID, TPCI200_DEVICE_ID, TPCI200_SUBVENDOR_ID,
-+	  TPCI200_SUBDEVICE_ID },
-+	{ 0, },
++static int ipoctal_write(struct ipoctal *ipoctal, unsigned int channel,
++			 const unsigned char *buf, int count)
++{
++	ipoctal->nb_bytes[channel] = 0;
++	ipoctal->count_wr[channel] = 0;
++
++	ipoctal_copy_write_buffer(ipoctal, channel, buf, count);
++
++	ipoctal->error_flag[channel] = UART_NOERROR;
++
++	/* As the IP-OCTAL 485 only supports half duplex, do it manually */
++	if (ipoctal->board_id == IP_OCTAL_485_ID) {
++		ipoctal_write_io_reg(ipoctal,
++				     &ipoctal->chan_regs[channel].u.w.cr,
++				     CR_DISABLE_RX);
++		ipoctal_write_cr_cmd(ipoctal,
++				     &ipoctal->chan_regs[channel].u.w.cr,
++				     CR_CMD_ASSERT_RTSN);
++	}
++
++	/*
++	 * Send a packet and then disable TX to avoid failure after several send
++	 * operations
++	 */
++	ipoctal_write_io_reg(ipoctal,
++			     &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_ENABLE_TX);
++	wait_event_interruptible(ipoctal->queue[channel], ipoctal->write);
++	ipoctal_write_io_reg(ipoctal,
++			     &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_DISABLE_TX);
++
++	ipoctal->write = 0;
++	return ipoctal->count_wr[channel];
++}
++
++static int ipoctal_write_tty(struct tty_struct *tty,
++			     const unsigned char *buf, int count)
++{
++	unsigned int channel = tty->index;
++	struct ipoctal *ipoctal = tty->driver_data;
++
++	return ipoctal_write(ipoctal, channel, buf, count);
++}
++
++static int ipoctal_write_room(struct tty_struct *tty)
++{
++	int channel = tty->index;
++	struct ipoctal *ipoctal = tty->driver_data;
++
++	return PAGE_SIZE - ipoctal->nb_bytes[channel];
++}
++
++static int ipoctal_chars_in_buffer(struct tty_struct *tty)
++{
++	int channel = tty->index;
++	struct ipoctal *ipoctal = tty->driver_data;
++
++	return ipoctal->nb_bytes[channel];
++}
++
++static void ipoctal_set_termios(struct tty_struct *tty,
++				struct ktermios *old_termios)
++{
++	unsigned int cflag;
++	unsigned char mr1 = 0;
++	unsigned char mr2 = 0;
++	unsigned char csr = 0;
++	unsigned int channel = tty->index;
++	struct ipoctal *ipoctal = tty->driver_data;
++	speed_t baud;
++
++	cflag = tty->termios->c_cflag;
++
++	/* Disable and reset everything before change the setup */
++	ipoctal_write_io_reg(ipoctal, &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_DISABLE_RX | CR_DISABLE_TX);
++	ipoctal_write_cr_cmd(ipoctal, &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_CMD_RESET_RX);
++	ipoctal_write_cr_cmd(ipoctal, &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_CMD_RESET_TX);
++	ipoctal_write_cr_cmd(ipoctal, &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_CMD_RESET_ERR_STATUS);
++	ipoctal_write_cr_cmd(ipoctal, &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_CMD_RESET_MR);
++
++	/* Set Bits per chars */
++	switch (cflag & CSIZE) {
++	case CS6:
++		mr1 |= MR1_CHRL_6_BITS;
++		break;
++	case CS7:
++		mr1 |= MR1_CHRL_7_BITS;
++		break;
++	case CS8:
++	default:
++		mr1 |= MR1_CHRL_8_BITS;
++		/* By default, select CS8 */
++		tty->termios->c_cflag = (cflag & ~CSIZE) | CS8;
++		break;
++	}
++
++	/* Set Parity */
++	if (cflag & PARENB)
++		if (cflag & PARODD)
++			mr1 |= MR1_PARITY_ON | MR1_PARITY_ODD;
++		else
++			mr1 |= MR1_PARITY_ON | MR1_PARITY_EVEN;
++	else
++		mr1 |= MR1_PARITY_OFF;
++
++	/* Mark or space parity is not supported */
++	tty->termios->c_cflag &= ~CMSPAR;
++
++	/* Set stop bits */
++	if (cflag & CSTOPB)
++		mr2 |= MR2_STOP_BITS_LENGTH_2;
++	else
++		mr2 |= MR2_STOP_BITS_LENGTH_1;
++
++	/* Set the flow control */
++	switch (ipoctal->board_id) {
++	case IP_OCTAL_232_ID:
++		if (cflag & CRTSCTS) {
++			mr1 |= MR1_RxRTS_CONTROL_ON;
++			mr2 |= MR2_TxRTS_CONTROL_OFF | MR2_CTS_ENABLE_TX_ON;
++			ipoctal->chan_config[channel].flow_control = 1;
++		} else {
++			mr1 |= MR1_RxRTS_CONTROL_OFF;
++			mr2 |= MR2_TxRTS_CONTROL_OFF | MR2_CTS_ENABLE_TX_OFF;
++			ipoctal->chan_config[channel].flow_control = 0;
++		}
++		break;
++	case IP_OCTAL_422_ID:
++		mr1 |= MR1_RxRTS_CONTROL_OFF;
++		mr2 |= MR2_TxRTS_CONTROL_OFF | MR2_CTS_ENABLE_TX_OFF;
++		ipoctal->chan_config[channel].flow_control = 0;
++		break;
++	case IP_OCTAL_485_ID:
++		mr1 |= MR1_RxRTS_CONTROL_OFF;
++		mr2 |= MR2_TxRTS_CONTROL_ON | MR2_CTS_ENABLE_TX_OFF;
++		ipoctal->chan_config[channel].flow_control = 0;
++		break;
++	default:
++		return;
++		break;
++	}
++
++	baud = tty_get_baud_rate(tty);
++	tty_termios_encode_baud_rate(tty->termios, baud, baud);
++
++	/* Set baud rate */
++	switch (tty->termios->c_ospeed) {
++	case 75:
++		csr |= TX_CLK_75 | RX_CLK_75;
++		break;
++	case 110:
++		csr |= TX_CLK_110 | RX_CLK_110;
++		break;
++	case 150:
++		csr |= TX_CLK_150 | RX_CLK_150;
++		break;
++	case 300:
++		csr |= TX_CLK_300 | RX_CLK_300;
++		break;
++	case 600:
++		csr |= TX_CLK_600 | RX_CLK_600;
++		break;
++	case 1200:
++		csr |= TX_CLK_1200 | RX_CLK_1200;
++		break;
++	case 1800:
++		csr |= TX_CLK_1800 | RX_CLK_1800;
++		break;
++	case 2000:
++		csr |= TX_CLK_2000 | RX_CLK_2000;
++		break;
++	case 2400:
++		csr |= TX_CLK_2400 | RX_CLK_2400;
++		break;
++	case 4800:
++		csr |= TX_CLK_4800  | RX_CLK_4800;
++		break;
++	case 9600:
++		csr |= TX_CLK_9600  | RX_CLK_9600;
++		break;
++	case 19200:
++		csr |= TX_CLK_19200 | RX_CLK_19200;
++		break;
++	case 38400:
++	default:
++		csr |= TX_CLK_38400 | RX_CLK_38400;
++		/* In case of default, we establish 38400 bps */
++		tty_termios_encode_baud_rate(tty->termios, 38400, 38400);
++		break;
++	}
++
++	mr1 |= MR1_ERROR_CHAR;
++	mr1 |= MR1_RxINT_RxRDY;
++
++	/* Write the control registers */
++	ipoctal_write_io_reg(ipoctal, &ipoctal->chan_regs[channel].u.w.mr, mr1);
++	ipoctal_write_io_reg(ipoctal, &ipoctal->chan_regs[channel].u.w.mr, mr2);
++	ipoctal_write_io_reg(ipoctal, &ipoctal->chan_regs[channel].u.w.csr, csr);
++
++	/* save the setup in the structure */
++	ipoctal->chan_config[channel].baud = tty_get_baud_rate(tty);
++	ipoctal->chan_config[channel].bits_per_char = cflag & CSIZE;
++	ipoctal->chan_config[channel].parity = cflag & PARENB;
++	ipoctal->chan_config[channel].stop_bits = cflag & CSTOPB;
++
++	/* Enable again the RX */
++	ipoctal_write_io_reg(ipoctal, &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_ENABLE_RX);
++}
++
++static void ipoctal_hangup(struct tty_struct *tty)
++{
++	unsigned long flags;
++	int channel = tty->index;
++	struct ipoctal *ipoctal = tty->driver_data;
++
++	if (ipoctal == NULL)
++		return;
++
++	spin_lock_irqsave(&ipoctal->lock[channel], flags);
++	ipoctal->nb_bytes[channel] = 0;
++	ipoctal->pointer_read[channel] = 0;
++	ipoctal->pointer_write[channel] = 0;
++	spin_unlock_irqrestore(&ipoctal->lock[channel], flags);
++
++	tty_port_hangup(&ipoctal->tty_port[channel]);
++
++	ipoctal_write_io_reg(ipoctal, &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_DISABLE_RX | CR_DISABLE_TX);
++	ipoctal_write_cr_cmd(ipoctal, &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_CMD_RESET_RX);
++	ipoctal_write_cr_cmd(ipoctal, &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_CMD_RESET_TX);
++	ipoctal_write_cr_cmd(ipoctal, &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_CMD_RESET_ERR_STATUS);
++	ipoctal_write_cr_cmd(ipoctal, &ipoctal->chan_regs[channel].u.w.cr,
++			     CR_CMD_RESET_MR);
++
++	clear_bit(ASYNCB_INITIALIZED, &ipoctal->tty_port[channel].flags);
++	wake_up_interruptible(&ipoctal->tty_port[channel].open_wait);
++}
++
++static const struct tty_operations ipoctal_fops = {
++	.ioctl =		NULL,
++	.open =			ipoctal_open,
++	.close =		ipoctal_close,
++	.write =		ipoctal_write_tty,
++	.set_termios =		ipoctal_set_termios,
++	.write_room =		ipoctal_write_room,
++	.chars_in_buffer =	ipoctal_chars_in_buffer,
++	.get_icount =		ipoctal_get_icount,
++	.hangup =		ipoctal_hangup,
 +};
 +
-+static struct pci_driver tpci200_pci_drv = {
-+	.name = "tpci200",
-+	.id_table = tpci200_idtable,
-+	.probe = tpci200_pciprobe,
-+	.remove = __devexit_p(tpci200_pci_remove),
++static int ipoctal_match(struct ipack_device *dev)
++{
++	int res;
++	unsigned char board_id;
++
++	res = dev->ops->map_space(dev, 0, IPACK_ID_SPACE);
++	if (res)
++		return res;
++
++	res = ipoctal_check_model(dev, &board_id);
++	dev->ops->unmap_space(dev, IPACK_ID_SPACE);
++	return res;
++}
++
++static int ipoctal_probe(struct ipack_device *dev)
++{
++	int res;
++	struct ipoctal *ipoctal;
++
++	ipoctal = kzalloc(sizeof(struct ipoctal), GFP_KERNEL);
++	if (ipoctal == NULL)
++		return -ENOMEM;
++
++	ipoctal->dev = dev;
++	res = ipoctal_inst_slot(ipoctal, dev->bus_nr, dev->slot, dev->irq);
++	if (res)
++		goto out_uninst;
++
++	list_add_tail(&ipoctal->list, &ipoctal_list);
++	return 0;
++
++out_uninst:
++	kfree(ipoctal);
++	return res;
++}
++
++static void __ipoctal_remove(struct ipoctal *ipoctal)
++{
++	int i;
++
++	for (i = 0; i < NR_CHANNELS; i++) {
++		tty_unregister_device(ipoctal->tty_drv, i);
++		tty_port_free_xmit_buf(&ipoctal->tty_port[i]);
++	}
++
++	tty_unregister_driver(ipoctal->tty_drv);
++	put_tty_driver(ipoctal->tty_drv);
++
++	/* Tell the carrier board to free all the resources for this device */
++	if (ipoctal->dev->ops->remove_device != NULL)
++		ipoctal->dev->ops->remove_device(ipoctal->dev);
++
++	list_del(&ipoctal->list);
++	kfree(ipoctal);
++}
++
++static void ipoctal_remove(struct ipack_device *device)
++{
++	struct ipoctal *ipoctal, *next;
++
++	list_for_each_entry_safe(ipoctal, next, &ipoctal_list, list) {
++		if (ipoctal->dev == device)
++			__ipoctal_remove(ipoctal);
++	}
++}
++
++static struct ipack_driver_ops ipoctal_drv_ops = {
++	.match = ipoctal_match,
++	.probe = ipoctal_probe,
++	.remove = ipoctal_remove,
 +};
 +
-+static int __init tpci200_drvr_init_module(void)
++static int __init ipoctal_init(void)
 +{
-+	return pci_register_driver(&tpci200_pci_drv);
++	driver.owner = THIS_MODULE;
++	driver.ops = &ipoctal_drv_ops;
++	driver.driver.name = KBUILD_MODNAME;
++	ipack_driver_register(&driver);
++	return 0;
 +}
 +
-+static void __exit tpci200_drvr_exit_module(void)
++static void __exit ipoctal_exit(void)
 +{
-+	struct tpci200_board *tpci200, *next;
++	struct ipoctal *p, *next;
 +
-+	list_for_each_entry_safe(tpci200, next, &tpci200_list, list)
-+		__tpci200_pci_remove(tpci200);
++	list_for_each_entry_safe(p, next, &ipoctal_list, list)
++		__ipoctal_remove(p);
 +
-+	pci_unregister_driver(&tpci200_pci_drv);
++	ipack_driver_unregister(&driver);
 +}
 +
-+MODULE_DESCRIPTION("TEWS TPCI-200 device driver");
++MODULE_DESCRIPTION("IP-Octal 232, 422 and 485 device driver");
 +MODULE_LICENSE("GPL");
-+module_init(tpci200_drvr_init_module);
-+module_exit(tpci200_drvr_exit_module);
-diff --git a/drivers/staging/ipack/bridges/tpci200.h b/drivers/staging/ipack/bridges/tpci200.h
++
++module_init(ipoctal_init);
++module_exit(ipoctal_exit);
+diff --git a/drivers/staging/ipack/devices/ipoctal.h b/drivers/staging/ipack/devices/ipoctal.h
 new file mode 100644
-index 0000000..e452da2
+index 0000000..7c5d211
 --- /dev/null
-+++ b/drivers/staging/ipack/bridges/tpci200.h
-@@ -0,0 +1,165 @@
++++ b/drivers/staging/ipack/devices/ipoctal.h
+@@ -0,0 +1,81 @@
 +/**
-+ * tpci200.h
++ * ipoctal.h
 + *
-+ * driver for the carrier TEWS TPCI-200
++ * driver for the IPOCTAL boards
 + * Copyright (c) 2009 Nicolas Serafini, EIC2 SA
 + * Copyright (c) 2010,2011 Samuel Iglesias Gonsalvez <siglesia@cern.ch>, CERN
 + * Copyright (c) 2012 Samuel Iglesias Gonsalvez <siglesias@igalia.com>, Igalia
@@ -1318,157 +1032,308 @@ index 0000000..e452da2
 + * any later version.
 + */
 +
-+#ifndef _TPCI200_H_
-+#define _TPCI200_H_
++#ifndef _IPOCTAL_H
++#define _IPOCTAL_H_
 +
-+#include <linux/version.h>
-+#include <linux/limits.h>
-+#include <linux/pci.h>
-+#include <linux/spinlock.h>
-+#include <linux/interrupt.h>
-+#include <linux/swab.h>
-+#include <linux/io.h>
-+
-+#include "../ipack.h"
-+
-+#define TPCI200_SHORTNAME "TPCI200"
-+
-+#define TPCI200_NB_SLOT               0x4
-+#define TPCI200_NB_BAR                0x6
-+
-+#define TPCI200_VENDOR_ID             0x1498
-+#define TPCI200_DEVICE_ID             0x30C8
-+#define TPCI200_SUBVENDOR_ID          0x1498
-+#define TPCI200_SUBDEVICE_ID          0x300A
-+
-+#define TPCI200_IP_INTERFACE_BAR      2
-+#define TPCI200_IO_ID_INT_SPACES_BAR  3
-+#define TPCI200_MEM16_SPACE_BAR       4
-+#define TPCI200_MEM8_SPACE_BAR        5
-+
-+#define TPCI200_REVISION_REG          0x00
-+#define TPCI200_CONTROL_A_REG         0x02
-+#define TPCI200_CONTROL_B_REG         0x04
-+#define TPCI200_CONTROL_C_REG         0x06
-+#define TPCI200_CONTROL_D_REG         0x08
-+#define TPCI200_RESET_REG             0x0A
-+#define TPCI200_STATUS_REG            0x0C
-+
-+#define TPCI200_IFACE_SIZE            0x100
-+
-+#define TPCI200_IO_SPACE_OFF          0x0000
-+#define TPCI200_IO_SPACE_GAP          0x0100
-+#define TPCI200_IO_SPACE_SIZE         0x0080
-+#define TPCI200_ID_SPACE_OFF          0x0080
-+#define TPCI200_ID_SPACE_GAP          0x0100
-+#define TPCI200_ID_SPACE_SIZE         0x0040
-+#define TPCI200_INT_SPACE_OFF         0x00C0
-+#define TPCI200_INT_SPACE_GAP         0x0100
-+#define TPCI200_INT_SPACE_SIZE        0x0040
-+#define TPCI200_IOIDINT_SIZE          0x0400
-+
-+#define TPCI200_MEM8_GAP              0x00400000
-+#define TPCI200_MEM8_SIZE             0x00400000
-+#define TPCI200_MEM16_GAP             0x00800000
-+#define TPCI200_MEM16_SIZE            0x00800000
-+
-+#define TPCI200_INT0_EN               0x0040
-+#define TPCI200_INT1_EN               0x0080
-+#define TPCI200_INT0_EDGE             0x0010
-+#define TPCI200_INT1_EDGE             0x0020
-+#define TPCI200_ERR_INT_EN            0x0008
-+#define TPCI200_TIME_INT_EN           0x0004
-+#define TPCI200_RECOVER_EN            0x0002
-+#define TPCI200_CLK32                 0x0001
-+
-+#define TPCI200_A_RESET               0x0001
-+#define TPCI200_B_RESET               0x0002
-+#define TPCI200_C_RESET               0x0004
-+#define TPCI200_D_RESET               0x0008
-+
-+#define TPCI200_A_TIMEOUT             0x1000
-+#define TPCI200_B_TIMEOUT             0x2000
-+#define TPCI200_C_TIMEOUT             0x4000
-+#define TPCI200_D_TIMEOUT             0x8000
-+
-+#define TPCI200_A_ERROR               0x0100
-+#define TPCI200_B_ERROR               0x0200
-+#define TPCI200_C_ERROR               0x0400
-+#define TPCI200_D_ERROR               0x0800
-+
-+#define TPCI200_A_INT0                0x0001
-+#define TPCI200_A_INT1                0x0002
-+#define TPCI200_B_INT0                0x0004
-+#define TPCI200_B_INT1                0x0008
-+#define TPCI200_C_INT0                0x0010
-+#define TPCI200_C_INT1                0x0020
-+#define TPCI200_D_INT0                0x0040
-+#define TPCI200_D_INT1                0x0080
-+
-+#define TPCI200_SLOT_INT_MASK         0x00FF
-+
-+#define VME_IOID_SPACE  "IOID"
-+#define VME_MEM_SPACE  "MEM"
++#define NR_CHANNELS		8
++#define IPOCTAL_MAX_BOARDS	16
++#define MAX_DEVICES		(NR_CHANNELS * IPOCTAL_MAX_BOARDS)
++#define RELEVANT_IFLAG(iflag) ((iflag) & (IGNBRK|BRKINT|IGNPAR|PARMRK|INPCK))
 +
 +/**
-+ * struct slot_irq - slot IRQ definition.
-+ * @vector	Vector number
-+ * @handler	Handler called when IRQ arrives
-+ * @arg		Handler argument
-+ * @name	IRQ name
-+ *
++ * enum uart_parity_e - UART supported parity.
 + */
-+struct slot_irq {
-+	int          vector;
-+	int         (*handler)(void *);
-+	void         *arg;
-+	char         name[IPACK_IRQ_NAME_SIZE];
++enum uart_parity_e {
++	UART_NONE  = 0,
++	UART_ODD   = 1,
++	UART_EVEN  = 2,
 +};
 +
 +/**
-+ * struct tpci200_slot - data specific to the tpci200 slot.
-+ * @slot_id	Slot identification gived to external interface
-+ * @irq		Slot IRQ infos
-+ * @io_phys	IO physical base address register of the slot
-+ * @id_phys	ID physical base address register of the slot
-+ * @mem_phys	MEM physical base address register of the slot
++ * enum uart_error - UART error type
 + *
 + */
-+struct tpci200_slot {
-+	struct ipack_device	*dev;
-+	struct slot_irq		*irq;
-+	struct ipack_addr_space io_phys;
-+	struct ipack_addr_space id_phys;
-+	struct ipack_addr_space mem_phys;
++enum uart_error	{
++	UART_NOERROR = 0,      /* No error during transmission */
++	UART_TIMEOUT = 1 << 0, /* Timeout error */
++	UART_OVERRUN = 1 << 1, /* Overrun error */
++	UART_PARITY  = 1 << 2, /* Parity error */
++	UART_FRAMING = 1 << 3, /* Framing error */
++	UART_BREAK   = 1 << 4, /* Received break */
 +};
 +
 +/**
-+ * struct tpci200_infos - informations specific of the TPCI200 tpci200.
-+ * @pci_dev		PCI device
-+ * @interface_regs	Pointer to IP interface space (Bar 2)
-+ * @ioidint_space	Pointer to IP ID, IO and INT space (Bar 3)
-+ * @mem8_space		Pointer to MEM space (Bar 4)
-+ * @access_lock		Mutex lock for simultaneous access
++ * struct ipoctal_config - Serial configuration
 + *
++ * @baud: Baud rate
++ * @stop_bits: Stop bits (1 or 2)
++ * @bits_per_char: data size in bits
++ * @parity
++ * @flow_control: Flow control management (RTS/CTS) (0 disabled, 1 enabled)
 + */
-+struct tpci200_infos {
-+	struct pci_dev			*pdev;
-+	struct pci_device_id		*id_table;
-+	void				*interface_regs;
-+	void				*ioidint_space;
-+	void				*mem8_space;
-+	spinlock_t			access_lock;
-+	struct ipack_bus_device		drv;
-+};
-+struct tpci200_board {
-+	struct list_head	list;
-+	unsigned int		number;
-+	struct mutex		mutex;
-+	struct tpci200_slot	*slots;
-+	struct tpci200_infos	*info;
++struct ipoctal_config {
++	unsigned int baud;
++	unsigned int stop_bits;
++	unsigned int bits_per_char;
++	unsigned short parity;
++	unsigned int flow_control;
 +};
 +
-+#endif /* _TPCI200_H_ */
++/**
++ * struct ipoctal_stats -- Stats since last reset
++ *
++ * @tx: Number of transmitted bytes
++ * @rx: Number of received bytes
++ * @overrun: Number of overrun errors
++ * @parity_err: Number of parity errors
++ * @framing_err: Number of framing errors
++ * @rcv_break: Number of break received
++ */
++struct ipoctal_stats {
++	unsigned long tx;
++	unsigned long rx;
++	unsigned long overrun_err;
++	unsigned long parity_err;
++	unsigned long framing_err;
++	unsigned long rcv_break;
++};
++
++#endif /* _IPOCTAL_H_ */
+diff --git a/drivers/staging/ipack/devices/scc2698.h b/drivers/staging/ipack/devices/scc2698.h
+new file mode 100644
+index 0000000..e683019
+--- /dev/null
++++ b/drivers/staging/ipack/devices/scc2698.h
+@@ -0,0 +1,229 @@
++/*
++ * scc2698.h
++ *
++ * driver for the IPOCTAL boards
++ * Copyright (c) 2009 Nicolas Serafini, EIC2 SA
++ * Copyright (c) 2010,2011 Samuel Iglesias Gonsalvez <siglesia@cern.ch>, CERN
++ * Copyright (c) 2012 Samuel Iglesias Gonsalvez <siglesias@igalia.com>, Igalia
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
++
++#ifndef SCC2698_H_
++#define SCC2698_H_
++
++/*
++ * struct scc2698_channel - Channel access to scc2698 IO
++ *
++ * dn value are only spacer.
++ *
++ */
++struct scc2698_channel {
++	union {
++		struct {
++			unsigned char d0, mr;  /* Mode register 1/2*/
++			unsigned char d1, sr;  /* Status register */
++			unsigned char d2, r1;  /* reserved */
++			unsigned char d3, rhr; /* Receive holding register (R) */
++			unsigned char junk[8]; /* other crap for block control */
++		} r; /* Read access */
++		struct {
++			unsigned char d0, mr;  /* Mode register 1/2 */
++			unsigned char d1, csr; /* Clock select register */
++			unsigned char d2, cr;  /* Command register */
++			unsigned char d3, thr; /* Transmit holding register */
++			unsigned char junk[8]; /* other crap for block control */
++		} w; /* Write access */
++	} u;
++};
++
++/*
++ * struct scc2698_block - Block access to scc2698 IO
++ *
++ * The scc2698 contain 4 block.
++ * Each block containt two channel a and b.
++ * dn value are only spacer.
++ *
++ */
++struct scc2698_block {
++	union {
++		struct {
++			unsigned char d0, mra;  /* Mode register 1/2 (a) */
++			unsigned char d1, sra;  /* Status register (a) */
++			unsigned char d2, r1;   /* reserved */
++			unsigned char d3, rhra; /* Receive holding register (a) */
++			unsigned char d4, ipcr; /* Input port change register of block */
++			unsigned char d5, isr;  /* Interrupt status register of block */
++			unsigned char d6, ctur; /* Counter timer upper register of block */
++			unsigned char d7, ctlr; /* Counter timer lower register of block */
++			unsigned char d8, mrb;  /* Mode register 1/2 (b) */
++			unsigned char d9, srb;  /* Status register (b) */
++			unsigned char da, r2;   /* reserved */
++			unsigned char db, rhrb; /* Receive holding register (b) */
++			unsigned char dc, r3;   /* reserved */
++			unsigned char dd, ip;   /* Input port register of block */
++			unsigned char de, ctg;  /* Start counter timer of block */
++			unsigned char df, cts;  /* Stop counter timer of block */
++		} r; /* Read access */
++		struct {
++			unsigned char d0, mra;  /* Mode register 1/2 (a) */
++			unsigned char d1, csra; /* Clock select register (a) */
++			unsigned char d2, cra;  /* Command register (a) */
++			unsigned char d3, thra; /* Transmit holding register (a) */
++			unsigned char d4, acr;  /* Auxiliary control register of block */
++			unsigned char d5, imr;  /* Interrupt mask register of block  */
++			unsigned char d6, ctu;  /* Counter timer upper register of block */
++			unsigned char d7, ctl;  /* Counter timer lower register of block */
++			unsigned char d8, mrb;  /* Mode register 1/2 (b) */
++			unsigned char d9, csrb; /* Clock select register (a) */
++			unsigned char da, crb;  /* Command register (b) */
++			unsigned char db, thrb; /* Transmit holding register (b) */
++			unsigned char dc, r1;   /* reserved */
++			unsigned char dd, opcr; /* Output port configuration register of block */
++			unsigned char de, r2;   /* reserved */
++			unsigned char df, r3;   /* reserved */
++		} w; /* Write access */
++	} u;
++} ;
++
++#define MR1_CHRL_5_BITS             (0x0 << 0)
++#define MR1_CHRL_6_BITS             (0x1 << 0)
++#define MR1_CHRL_7_BITS             (0x2 << 0)
++#define MR1_CHRL_8_BITS             (0x3 << 0)
++#define MR1_PARITY_EVEN             (0x1 << 2)
++#define MR1_PARITY_ODD              (0x0 << 2)
++#define MR1_PARITY_ON               (0x0 << 3)
++#define MR1_PARITY_FORCE            (0x1 << 3)
++#define MR1_PARITY_OFF              (0x2 << 3)
++#define MR1_PARITY_SPECIAL          (0x3 << 3)
++#define MR1_ERROR_CHAR              (0x0 << 5)
++#define MR1_ERROR_BLOCK             (0x1 << 5)
++#define MR1_RxINT_RxRDY             (0x0 << 6)
++#define MR1_RxINT_FFULL             (0x1 << 6)
++#define MR1_RxRTS_CONTROL_ON        (0x1 << 7)
++#define MR1_RxRTS_CONTROL_OFF       (0x0 << 7)
++
++#define MR2_STOP_BITS_LENGTH_1      (0x7 << 0)
++#define MR2_STOP_BITS_LENGTH_2      (0xF << 0)
++#define MR2_CTS_ENABLE_TX_ON        (0x1 << 4)
++#define MR2_CTS_ENABLE_TX_OFF       (0x0 << 4)
++#define MR2_TxRTS_CONTROL_ON        (0x1 << 5)
++#define MR2_TxRTS_CONTROL_OFF       (0x0 << 5)
++#define MR2_CH_MODE_NORMAL          (0x0 << 6)
++#define MR2_CH_MODE_ECHO            (0x1 << 6)
++#define MR2_CH_MODE_LOCAL           (0x2 << 6)
++#define MR2_CH_MODE_REMOTE          (0x3 << 6)
++
++#define CR_ENABLE_RX                (0x1 << 0)
++#define CR_DISABLE_RX               (0x1 << 1)
++#define CR_ENABLE_TX                (0x1 << 2)
++#define CR_DISABLE_TX               (0x1 << 3)
++#define CR_CMD_RESET_MR             (0x1 << 4)
++#define CR_CMD_RESET_RX             (0x2 << 4)
++#define CR_CMD_RESET_TX             (0x3 << 4)
++#define CR_CMD_RESET_ERR_STATUS     (0x4 << 4)
++#define CR_CMD_RESET_BREAK_CHANGE   (0x5 << 4)
++#define CR_CMD_START_BREAK          (0x6 << 4)
++#define CR_CMD_STOP_BREAK           (0x7 << 4)
++#define CR_CMD_ASSERT_RTSN          (0x8 << 4)
++#define CR_CMD_NEGATE_RTSN          (0x9 << 4)
++#define CR_CMD_SET_TIMEOUT_MODE     (0xA << 4)
++#define CR_CMD_DISABLE_TIMEOUT_MODE (0xC << 4)
++
++#define SR_RX_READY                 (0x1 << 0)
++#define SR_FIFO_FULL                (0x1 << 1)
++#define SR_TX_READY                 (0x1 << 2)
++#define SR_TX_EMPTY                 (0x1 << 3)
++#define SR_OVERRUN_ERROR            (0x1 << 4)
++#define SR_PARITY_ERROR             (0x1 << 5)
++#define SR_FRAMING_ERROR            (0x1 << 6)
++#define SR_RECEIVED_BREAK           (0x1 << 7)
++
++#define SR_ERROR                    (0xF0)
++
++#define ACR_DELTA_IP0_IRQ_EN        (0x1 << 0)
++#define ACR_DELTA_IP1_IRQ_EN        (0x1 << 1)
++#define ACR_DELTA_IP2_IRQ_EN        (0x1 << 2)
++#define ACR_DELTA_IP3_IRQ_EN        (0x1 << 3)
++#define ACR_CT_Mask                 (0x7 << 4)
++#define ACR_CExt                    (0x0 << 4)
++#define ACR_CTxCA                   (0x1 << 4)
++#define ACR_CTxCB                   (0x2 << 4)
++#define ACR_CClk16                  (0x3 << 4)
++#define ACR_TExt                    (0x4 << 4)
++#define ACR_TExt16                  (0x5 << 4)
++#define ACR_TClk                    (0x6 << 4)
++#define ACR_TClk16                  (0x7 << 4)
++#define ACR_BRG_SET1                (0x0 << 7)
++#define ACR_BRG_SET2                (0x1 << 7)
++
++#define TX_CLK_75                   (0x0 << 0)
++#define TX_CLK_110                  (0x1 << 0)
++#define TX_CLK_38400                (0x2 << 0)
++#define TX_CLK_150                  (0x3 << 0)
++#define TX_CLK_300                  (0x4 << 0)
++#define TX_CLK_600                  (0x5 << 0)
++#define TX_CLK_1200                 (0x6 << 0)
++#define TX_CLK_2000                 (0x7 << 0)
++#define TX_CLK_2400                 (0x8 << 0)
++#define TX_CLK_4800                 (0x9 << 0)
++#define TX_CLK_1800                 (0xA << 0)
++#define TX_CLK_9600                 (0xB << 0)
++#define TX_CLK_19200                (0xC << 0)
++#define RX_CLK_75                   (0x0 << 4)
++#define RX_CLK_110                  (0x1 << 4)
++#define RX_CLK_38400                (0x2 << 4)
++#define RX_CLK_150                  (0x3 << 4)
++#define RX_CLK_300                  (0x4 << 4)
++#define RX_CLK_600                  (0x5 << 4)
++#define RX_CLK_1200                 (0x6 << 4)
++#define RX_CLK_2000                 (0x7 << 4)
++#define RX_CLK_2400                 (0x8 << 4)
++#define RX_CLK_4800                 (0x9 << 4)
++#define RX_CLK_1800                 (0xA << 4)
++#define RX_CLK_9600                 (0xB << 4)
++#define RX_CLK_19200                (0xC << 4)
++
++#define OPCR_MPOa_RTSN              (0x0 << 0)
++#define OPCR_MPOa_C_TO              (0x1 << 0)
++#define OPCR_MPOa_TxC1X             (0x2 << 0)
++#define OPCR_MPOa_TxC16X            (0x3 << 0)
++#define OPCR_MPOa_RxC1X             (0x4 << 0)
++#define OPCR_MPOa_RxC16X            (0x5 << 0)
++#define OPCR_MPOa_TxRDY             (0x6 << 0)
++#define OPCR_MPOa_RxRDY_FF          (0x7 << 0)
++
++#define OPCR_MPOb_RTSN              (0x0 << 4)
++#define OPCR_MPOb_C_TO              (0x1 << 4)
++#define OPCR_MPOb_TxC1X             (0x2 << 4)
++#define OPCR_MPOb_TxC16X            (0x3 << 4)
++#define OPCR_MPOb_RxC1X             (0x4 << 4)
++#define OPCR_MPOb_RxC16X            (0x5 << 4)
++#define OPCR_MPOb_TxRDY             (0x6 << 4)
++#define OPCR_MPOb_RxRDY_FF          (0x7 << 4)
++
++#define OPCR_MPP_INPUT              (0x0 << 7)
++#define OPCR_MPP_OUTPUT             (0x1 << 7)
++
++#define IMR_TxRDY_A                 (0x1 << 0)
++#define IMR_RxRDY_FFULL_A           (0x1 << 1)
++#define IMR_DELTA_BREAK_A           (0x1 << 2)
++#define IMR_COUNTER_READY           (0x1 << 3)
++#define IMR_TxRDY_B                 (0x1 << 4)
++#define IMR_RxRDY_FFULL_B           (0x1 << 5)
++#define IMR_DELTA_BREAK_B           (0x1 << 6)
++#define IMR_INPUT_PORT_CHANGE       (0x1 << 7)
++
++#define ISR_TxRDY_A                 (0x1 << 0)
++#define ISR_RxRDY_FFULL_A           (0x1 << 1)
++#define ISR_DELTA_BREAK_A           (0x1 << 2)
++#define ISR_COUNTER_READY           (0x1 << 3)
++#define ISR_TxRDY_B                 (0x1 << 4)
++#define ISR_RxRDY_FFULL_B           (0x1 << 5)
++#define ISR_DELTA_BREAK_B           (0x1 << 6)
++#define ISR_INPUT_PORT_CHANGE       (0x1 << 7)
++
++#endif /* SCC2698_H_ */
 -- 
 1.7.10
 
