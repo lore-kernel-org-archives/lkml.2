@@ -1,149 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab2EIFCI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:02:08 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41309 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753779Ab2EIFCF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:02:05 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FA9F9CF.8050706@jp.fujitsu.com>
-Date: Wed, 09 May 2012 13:59:59 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Sasha Levin <levinsasha928@gmail.com>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, yinghan@google.com,
-        kosaki.motohiro@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: rcu: BUG on exit_group
-References: <CA+1xoqd_z8Zavzraq1oXVRpwkJRoac57tojBYf7x=Kzs+cbJ_w@mail.gmail.com> <20120503154140.GA2592@linux.vnet.ibm.com> <CA+1xoqepggR4YRzDXFz=Hk9EeXACMRyeXorQm7rE3r5MQyY6Fw@mail.gmail.com> <20120503170101.GF2592@linux.vnet.ibm.com> <CA+1xoqcXMVG0J4r8XhtzcxxDqLuyR30x5a3o8BsrBqDakDdHgg@mail.gmail.com> <20120504053331.GA16836@linux.vnet.ibm.com>
-In-Reply-To: <20120504053331.GA16836@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755165Ab2EIFC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:02:29 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40678 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752457Ab2EIE6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 00:58:12 -0400
+From: Joe Perches <joe@perches.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Cc: bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 05/13] bridge: Convert compare_ether_addr to ether_addr_equal
+Date: Tue,  8 May 2012 21:56:49 -0700
+Message-Id: <06c7fe9d635e717918c9acccb765e5d16856a8d9.1336538938.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
+In-Reply-To: <cover.1336538937.git.joe@perches.com>
+References: <cover.1336538937.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/05/04 14:33), Paul E. McKenney wrote:
+Use the new bool function ether_addr_equal to add
+some clarity and reduce the likelihood for misuse
+of compare_ether_addr for sorting.
 
-> On Fri, May 04, 2012 at 06:08:34AM +0200, Sasha Levin wrote:
->> On Thu, May 3, 2012 at 7:01 PM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->>> On Thu, May 03, 2012 at 05:55:14PM +0200, Sasha Levin wrote:
->>>> On Thu, May 3, 2012 at 5:41 PM, Paul E. McKenney
->>>> <paulmck@linux.vnet.ibm.com> wrote:
->>>>> On Thu, May 03, 2012 at 10:57:19AM +0200, Sasha Levin wrote:
->>>>>> Hi Paul,
->>>>>>
->>>>>> I've hit a BUG similar to the schedule_tail() one when. It happened
->>>>>> when I've started fuzzing exit_group() syscalls, and all of the traces
->>>>>> are starting with exit_group() (there's a flood of them).
->>>>>>
->>>>>> I've verified that it indeed BUGs due to the rcu preempt count.
->>>>>
->>>>> Hello, Sasha,
->>>>>
->>>>> Which version of -next are you using?  I did some surgery on this
->>>>> yesterday based on some bugs Hugh Dickins tracked down, so if you
->>>>> are using something older, please move to the current -next.
->>>>
->>>> I'm using -next from today (3.4.0-rc5-next-20120503-sasha-00002-g09f55ae-dirty).
->>>
->>> Hmmm...  Looking at this more closely, it looks like there really is
->>> an attempt to acquire a mutex within an RCU read-side critical section,
->>> which is illegal.  Could you please bisect this?
->>
->> Right, the issue is as you described, taking a mutex inside rcu_read_lock().
->>
->> The offending commit is (I've cc'ed all parties from it):
->>
->> commit adf79cc03092ee4aec70da10e91b05fb8116ac7b
->> Author: Ying Han <yinghan@google.com>
->> Date:   Thu May 3 15:44:01 2012 +1000
->>
->>     memcg: add mlock statistic in memory.stat
->>
->> With the issue there being is that in munlock_vma_page(), it now does
->> a mem_cgroup_begin_update_page_stat() which takes the rcu_read_lock(),
->> so when the older code that was there previously will try taking a
->> mutex you'll get a BUG.
-> 
-> Hmmm...  One approach would be to switch from rcu_read_lock() to
-> srcu_read_lock(), though this means carrying the index returned from
-> the srcu_read_lock() to the matching srcu_read_unlock() -- and making
-> the update side use synchronize_srcu() rather than synchronize_rcu().
-> Alternatively, it might be possible to defer acquiring the lock until
-> after exiting the RCU read-side critical section, but I don't know enough
-> about mm to even guess whether this might be possible.
-> 
-> There are probably other approaches as well...
+Done via cocci script:
 
+$ cat compare_ether_addr.cocci
+@@
+expression a,b;
+@@
+-	!compare_ether_addr(a, b)
++	ether_addr_equal(a, b)
 
-How about this ?
-==
-[PATCH] memcg: fix taking mutex under rcu at munlock
+@@
+expression a,b;
+@@
+-	compare_ether_addr(a, b)
++	!ether_addr_equal(a, b)
 
-Following bug was reported because mutex is held under rcu_read_lock().
+@@
+expression a,b;
+@@
+-	!ether_addr_equal(a, b) == 0
++	ether_addr_equal(a, b)
 
-[   83.820976] BUG: sleeping function called from invalid context at
-kernel/mutex.c:269
-[   83.827870] in_atomic(): 0, irqs_disabled(): 0, pid: 4506, name: trinity
-[   83.832154] 1 lock held by trinity/4506:
-[   83.834224]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff811a7d87>]
-munlock_vma_page+0x197/0x200
-[   83.839310] Pid: 4506, comm: trinity Tainted: G        W
-3.4.0-rc5-next-20120503-sasha-00002-g09f55ae-dirty #108
-[   83.849418] Call Trace:
-[   83.851182]  [<ffffffff810e7218>] __might_sleep+0x1f8/0x210
-[   83.854076]  [<ffffffff82d9540a>] mutex_lock_nested+0x2a/0x50
-[   83.857120]  [<ffffffff811b0830>] try_to_unmap_file+0x40/0x2f0
-[   83.860242]  [<ffffffff82d984bb>] ? _raw_spin_unlock_irq+0x2b/0x80
-[   83.863423]  [<ffffffff810e7ffe>] ? sub_preempt_count+0xae/0xf0
-[   83.866347]  [<ffffffff82d984e9>] ? _raw_spin_unlock_irq+0x59/0x80
-[   83.869570]  [<ffffffff811b0caa>] try_to_munlock+0x6a/0x80
-[   83.872667]  [<ffffffff811a7cc6>] munlock_vma_page+0xd6/0x200
-[   83.875646]  [<ffffffff811a7d87>] ? munlock_vma_page+0x197/0x200
-[   83.878798]  [<ffffffff811a7e7f>] munlock_vma_pages_range+0x8f/0xd0
-[   83.882235]  [<ffffffff811a8b8a>] exit_mmap+0x5a/0x160
+@@
+expression a,b;
+@@
+-	!ether_addr_equal(a, b) != 0
++	!ether_addr_equal(a, b)
 
-This bug was introduced by mem_cgroup_begin/end_update_page_stat()
-which uses rcu_read_lock(). This patch fixes the bug by modifying
-the range of rcu_read_lock().
+@@
+expression a,b;
+@@
+-	ether_addr_equal(a, b) == 0
++	!ether_addr_equal(a, b)
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+@@
+expression a,b;
+@@
+-	ether_addr_equal(a, b) != 0
++	ether_addr_equal(a, b)
+
+@@
+expression a,b;
+@@
+-	!!ether_addr_equal(a, b)
++	ether_addr_equal(a, b)
+
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- mm/mlock.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ net/bridge/br_device.c   |    2 +-
+ net/bridge/br_fdb.c      |   14 +++++++-------
+ net/bridge/br_input.c    |    2 +-
+ net/bridge/br_stp_bpdu.c |    2 +-
+ net/bridge/br_stp_if.c   |   11 +++++------
+ 5 files changed, 15 insertions(+), 16 deletions(-)
 
-diff --git a/mm/mlock.c b/mm/mlock.c
-index 2fd967a..05ac10d1 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -123,6 +123,7 @@ void munlock_vma_page(struct page *page)
- 	if (TestClearPageMlocked(page)) {
- 		dec_zone_page_state(page, NR_MLOCK);
- 		mem_cgroup_dec_page_stat(page, MEMCG_NR_MLOCK);
-+		mem_cgroup_end_update_page_stat(page, &locked, &flags);
- 		if (!isolate_lru_page(page)) {
- 			int ret = SWAP_AGAIN;
+diff --git a/net/bridge/br_device.c b/net/bridge/br_device.c
+index d6e5929..929e48aed 100644
+--- a/net/bridge/br_device.c
++++ b/net/bridge/br_device.c
+@@ -170,7 +170,7 @@ static int br_set_mac_address(struct net_device *dev, void *p)
+ 		return -EADDRNOTAVAIL;
  
-@@ -154,8 +155,8 @@ void munlock_vma_page(struct page *page)
- 			else
- 				count_vm_event(UNEVICTABLE_PGMUNLOCKED);
+ 	spin_lock_bh(&br->lock);
+-	if (compare_ether_addr(dev->dev_addr, addr->sa_data)) {
++	if (!ether_addr_equal(dev->dev_addr, addr->sa_data)) {
+ 		dev->addr_assign_type &= ~NET_ADDR_RANDOM;
+ 		memcpy(dev->dev_addr, addr->sa_data, ETH_ALEN);
+ 		br_fdb_change_mac_address(br, addr->sa_data);
+diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
+index 5945c54..d21f323 100644
+--- a/net/bridge/br_fdb.c
++++ b/net/bridge/br_fdb.c
+@@ -107,8 +107,8 @@ void br_fdb_changeaddr(struct net_bridge_port *p, const unsigned char *newaddr)
+ 				struct net_bridge_port *op;
+ 				list_for_each_entry(op, &br->port_list, list) {
+ 					if (op != p &&
+-					    !compare_ether_addr(op->dev->dev_addr,
+-								f->addr.addr)) {
++					    ether_addr_equal(op->dev->dev_addr,
++							     f->addr.addr)) {
+ 						f->dst = op;
+ 						goto insert;
+ 					}
+@@ -214,8 +214,8 @@ void br_fdb_delete_by_port(struct net_bridge *br,
+ 				struct net_bridge_port *op;
+ 				list_for_each_entry(op, &br->port_list, list) {
+ 					if (op != p &&
+-					    !compare_ether_addr(op->dev->dev_addr,
+-								f->addr.addr)) {
++					    ether_addr_equal(op->dev->dev_addr,
++							     f->addr.addr)) {
+ 						f->dst = op;
+ 						goto skip_delete;
+ 					}
+@@ -237,7 +237,7 @@ struct net_bridge_fdb_entry *__br_fdb_get(struct net_bridge *br,
+ 	struct net_bridge_fdb_entry *fdb;
+ 
+ 	hlist_for_each_entry_rcu(fdb, h, &br->hash[br_mac_hash(addr)], hlist) {
+-		if (!compare_ether_addr(fdb->addr.addr, addr)) {
++		if (ether_addr_equal(fdb->addr.addr, addr)) {
+ 			if (unlikely(has_expired(br, fdb)))
+ 				break;
+ 			return fdb;
+@@ -331,7 +331,7 @@ static struct net_bridge_fdb_entry *fdb_find(struct hlist_head *head,
+ 	struct net_bridge_fdb_entry *fdb;
+ 
+ 	hlist_for_each_entry(fdb, h, head, hlist) {
+-		if (!compare_ether_addr(fdb->addr.addr, addr))
++		if (ether_addr_equal(fdb->addr.addr, addr))
+ 			return fdb;
+ 	}
+ 	return NULL;
+@@ -344,7 +344,7 @@ static struct net_bridge_fdb_entry *fdb_find_rcu(struct hlist_head *head,
+ 	struct net_bridge_fdb_entry *fdb;
+ 
+ 	hlist_for_each_entry_rcu(fdb, h, head, hlist) {
+-		if (!compare_ether_addr(fdb->addr.addr, addr))
++		if (ether_addr_equal(fdb->addr.addr, addr))
+ 			return fdb;
+ 	}
+ 	return NULL;
+diff --git a/net/bridge/br_input.c b/net/bridge/br_input.c
+index 5a31731..76f15fd 100644
+--- a/net/bridge/br_input.c
++++ b/net/bridge/br_input.c
+@@ -216,7 +216,7 @@ forward:
  		}
--	}
--	mem_cgroup_end_update_page_stat(page, &locked, &flags);
-+	} else
-+		mem_cgroup_end_update_page_stat(page, &locked, &flags);
+ 		/* fall through */
+ 	case BR_STATE_LEARNING:
+-		if (!compare_ether_addr(p->br->dev->dev_addr, dest))
++		if (ether_addr_equal(p->br->dev->dev_addr, dest))
+ 			skb->pkt_type = PACKET_HOST;
+ 
+ 		NF_HOOK(NFPROTO_BRIDGE, NF_BR_PRE_ROUTING, skb, skb->dev, NULL,
+diff --git a/net/bridge/br_stp_bpdu.c b/net/bridge/br_stp_bpdu.c
+index e16aade..fd30a60 100644
+--- a/net/bridge/br_stp_bpdu.c
++++ b/net/bridge/br_stp_bpdu.c
+@@ -167,7 +167,7 @@ void br_stp_rcv(const struct stp_proto *proto, struct sk_buff *skb,
+ 	if (p->state == BR_STATE_DISABLED)
+ 		goto out;
+ 
+-	if (compare_ether_addr(dest, br->group_addr) != 0)
++	if (!ether_addr_equal(dest, br->group_addr))
+ 		goto out;
+ 
+ 	buf = skb_pull(skb, 3);
+diff --git a/net/bridge/br_stp_if.c b/net/bridge/br_stp_if.c
+index f494496..9d5a414 100644
+--- a/net/bridge/br_stp_if.c
++++ b/net/bridge/br_stp_if.c
+@@ -178,7 +178,7 @@ void br_stp_set_enabled(struct net_bridge *br, unsigned long val)
+ /* called under bridge lock */
+ void br_stp_change_bridge_id(struct net_bridge *br, const unsigned char *addr)
+ {
+-	/* should be aligned on 2 bytes for compare_ether_addr() */
++	/* should be aligned on 2 bytes for ether_addr_equal() */
+ 	unsigned short oldaddr_aligned[ETH_ALEN >> 1];
+ 	unsigned char *oldaddr = (unsigned char *)oldaddr_aligned;
+ 	struct net_bridge_port *p;
+@@ -191,12 +191,11 @@ void br_stp_change_bridge_id(struct net_bridge *br, const unsigned char *addr)
+ 	memcpy(br->dev->dev_addr, addr, ETH_ALEN);
+ 
+ 	list_for_each_entry(p, &br->port_list, list) {
+-		if (!compare_ether_addr(p->designated_bridge.addr, oldaddr))
++		if (ether_addr_equal(p->designated_bridge.addr, oldaddr))
+ 			memcpy(p->designated_bridge.addr, addr, ETH_ALEN);
+ 
+-		if (!compare_ether_addr(p->designated_root.addr, oldaddr))
++		if (ether_addr_equal(p->designated_root.addr, oldaddr))
+ 			memcpy(p->designated_root.addr, addr, ETH_ALEN);
+-
+ 	}
+ 
+ 	br_configuration_update(br);
+@@ -205,7 +204,7 @@ void br_stp_change_bridge_id(struct net_bridge *br, const unsigned char *addr)
+ 		br_become_root_bridge(br);
  }
  
- /**
+-/* should be aligned on 2 bytes for compare_ether_addr() */
++/* should be aligned on 2 bytes for ether_addr_equal() */
+ static const unsigned short br_mac_zero_aligned[ETH_ALEN >> 1];
+ 
+ /* called under bridge lock */
+@@ -227,7 +226,7 @@ bool br_stp_recalculate_bridge_id(struct net_bridge *br)
+ 
+ 	}
+ 
+-	if (compare_ether_addr(br->bridge_id.addr, addr) == 0)
++	if (ether_addr_equal(br->bridge_id.addr, addr))
+ 		return false;	/* no change */
+ 
+ 	br_stp_change_bridge_id(br, addr);
 -- 
-1.7.4.1
-
-
+1.7.8.111.gad25c.dirty
 
