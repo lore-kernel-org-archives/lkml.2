@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761330Ab2EIXsy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 19:48:54 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56986 "EHLO
+	id S1761357Ab2EIXtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 19:49:16 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56975 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761278Ab2EIXr5 (ORCPT
+	by vger.kernel.org with ESMTP id S1761273Ab2EIXrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 19:47:57 -0400
+	Wed, 9 May 2012 19:47:55 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Liam Girdwood <lrg@ti.com>
 Cc: Yadwinder Singh <yadi.brar@samsung.com>,
         Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
         patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 6/6] regulator: wm8400: Modernise driver
-Date: Thu, 10 May 2012 00:47:34 +0100
-Message-Id: <1336607255-4967-6-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 4/6] regulator: wm8350: Convert DCDCs to set_voltage_sel() and linear voltages
+Date: Thu, 10 May 2012 00:47:32 +0100
+Message-Id: <1336607255-4967-4-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1336607255-4967-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <1336607255-4967-1-git-send-email-broonie@opensource.wolfsonmicro.com>
@@ -23,277 +23,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the driver to use all the regmap based helpers, saving a nice chunk
-of code (especially for the DCDCs).
+The WM8350 DCDCs have a simple linear mapping from selectors to voltages
+so can be converted very simply to use the new infrastructure for a nice
+reduction in code size.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/regulator/wm8400-regulator.c |  169 +++++++++-------------------------
- 1 file changed, 44 insertions(+), 125 deletions(-)
+ drivers/regulator/wm8350-regulator.c |   64 +++++-----------------------------
+ 1 file changed, 8 insertions(+), 56 deletions(-)
 
-diff --git a/drivers/regulator/wm8400-regulator.c b/drivers/regulator/wm8400-regulator.c
-index 4408b78..69a2b7c 100644
---- a/drivers/regulator/wm8400-regulator.c
-+++ b/drivers/regulator/wm8400-regulator.c
-@@ -19,31 +19,6 @@
- #include <linux/regulator/driver.h>
- #include <linux/mfd/wm8400-private.h>
- 
--static int wm8400_ldo_is_enabled(struct regulator_dev *dev)
--{
--	struct wm8400 *wm8400 = rdev_get_drvdata(dev);
--	u16 val;
--
--	val = wm8400_reg_read(wm8400, WM8400_LDO1_CONTROL + rdev_get_id(dev));
--	return (val & WM8400_LDO1_ENA) != 0;
--}
--
--static int wm8400_ldo_enable(struct regulator_dev *dev)
--{
--	struct wm8400 *wm8400 = rdev_get_drvdata(dev);
--
--	return wm8400_set_bits(wm8400, WM8400_LDO1_CONTROL + rdev_get_id(dev),
--			       WM8400_LDO1_ENA, WM8400_LDO1_ENA);
--}
--
--static int wm8400_ldo_disable(struct regulator_dev *dev)
--{
--	struct wm8400 *wm8400 = rdev_get_drvdata(dev);
--
--	return wm8400_set_bits(wm8400, WM8400_LDO1_CONTROL + rdev_get_id(dev),
--			       WM8400_LDO1_ENA, 0);
--}
--
- static int wm8400_ldo_list_voltage(struct regulator_dev *dev,
- 				   unsigned selector)
- {
-@@ -56,21 +31,9 @@ static int wm8400_ldo_list_voltage(struct regulator_dev *dev,
- 		return 1600000 + ((selector - 14) * 100000);
+diff --git a/drivers/regulator/wm8350-regulator.c b/drivers/regulator/wm8350-regulator.c
+index 12ecaec..a618284 100644
+--- a/drivers/regulator/wm8350-regulator.c
++++ b/drivers/regulator/wm8350-regulator.c
+@@ -359,60 +359,6 @@ int wm8350_isink_set_flash(struct wm8350 *wm8350, int isink, u16 mode,
  }
+ EXPORT_SYMBOL_GPL(wm8350_isink_set_flash);
  
--static int wm8400_ldo_get_voltage_sel(struct regulator_dev *dev)
-+static int wm8400_ldo_map_voltage(struct regulator_dev *dev,
-+				  int min_uV, int max_uV)
- {
--	struct wm8400 *wm8400 = rdev_get_drvdata(dev);
+-static int wm8350_dcdc_set_voltage(struct regulator_dev *rdev, int min_uV,
+-				   int max_uV, unsigned *selector)
+-{
+-	struct wm8350 *wm8350 = rdev_get_drvdata(rdev);
+-	int volt_reg, dcdc = rdev_get_id(rdev), mV,
+-		min_mV = min_uV / 1000, max_mV = max_uV / 1000;
 -	u16 val;
 -
--	val = wm8400_reg_read(wm8400, WM8400_LDO1_CONTROL + rdev_get_id(dev));
--	val &= WM8400_LDO1_VSEL_MASK;
+-	if (min_mV < 850 || min_mV > 4025)
+-		return -EINVAL;
+-	if (max_mV < 850 || max_mV > 4025)
+-		return -EINVAL;
 -
--	return val;
+-	/* step size is 25mV */
+-	mV = (min_mV - 826) / 25;
+-	if (wm8350_dcdc_val_to_mvolts(mV) > max_mV)
+-		return -EINVAL;
+-	BUG_ON(wm8350_dcdc_val_to_mvolts(mV) < min_mV);
+-
+-	switch (dcdc) {
+-	case WM8350_DCDC_1:
+-		volt_reg = WM8350_DCDC1_CONTROL;
+-		break;
+-	case WM8350_DCDC_3:
+-		volt_reg = WM8350_DCDC3_CONTROL;
+-		break;
+-	case WM8350_DCDC_4:
+-		volt_reg = WM8350_DCDC4_CONTROL;
+-		break;
+-	case WM8350_DCDC_6:
+-		volt_reg = WM8350_DCDC6_CONTROL;
+-		break;
+-	case WM8350_DCDC_2:
+-	case WM8350_DCDC_5:
+-	default:
+-		return -EINVAL;
+-	}
+-
+-	*selector = mV;
+-
+-	/* all DCDCs have same mV bits */
+-	val = wm8350_reg_read(wm8350, volt_reg) & ~WM8350_DC1_VSEL_MASK;
+-	wm8350_reg_write(wm8350, volt_reg, val | mV);
+-	return 0;
 -}
 -
--static int wm8400_ldo_set_voltage(struct regulator_dev *dev,
--				  int min_uV, int max_uV, unsigned *selector)
--{
--	struct wm8400 *wm8400 = rdev_get_drvdata(dev);
- 	u16 val;
- 
- 	if (min_uV < 900000 || min_uV > 3300000)
-@@ -94,92 +57,19 @@ static int wm8400_ldo_set_voltage(struct regulator_dev *dev,
- 		val += 0xf;
- 	}
- 
--	*selector = val;
--
--	return wm8400_set_bits(wm8400, WM8400_LDO1_CONTROL + rdev_get_id(dev),
--			       WM8400_LDO1_VSEL_MASK, val);
-+	return val;
- }
- 
- static struct regulator_ops wm8400_ldo_ops = {
--	.is_enabled = wm8400_ldo_is_enabled,
--	.enable = wm8400_ldo_enable,
--	.disable = wm8400_ldo_disable,
-+	.is_enabled = regulator_is_enabled_regmap,
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
- 	.list_voltage = wm8400_ldo_list_voltage,
--	.get_voltage_sel = wm8400_ldo_get_voltage_sel,
--	.set_voltage = wm8400_ldo_set_voltage,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+	.map_voltage = wm8400_ldo_map_voltage,
- };
- 
--static int wm8400_dcdc_is_enabled(struct regulator_dev *dev)
--{
--	struct wm8400 *wm8400 = rdev_get_drvdata(dev);
--	int offset = (rdev_get_id(dev) - WM8400_DCDC1) * 2;
--	u16 val;
--
--	val = wm8400_reg_read(wm8400, WM8400_DCDC1_CONTROL_1 + offset);
--	return (val & WM8400_DC1_ENA) != 0;
--}
--
--static int wm8400_dcdc_enable(struct regulator_dev *dev)
--{
--	struct wm8400 *wm8400 = rdev_get_drvdata(dev);
--	int offset = (rdev_get_id(dev) - WM8400_DCDC1) * 2;
--
--	return wm8400_set_bits(wm8400, WM8400_DCDC1_CONTROL_1 + offset,
--			       WM8400_DC1_ENA, WM8400_DC1_ENA);
--}
--
--static int wm8400_dcdc_disable(struct regulator_dev *dev)
--{
--	struct wm8400 *wm8400 = rdev_get_drvdata(dev);
--	int offset = (rdev_get_id(dev) - WM8400_DCDC1) * 2;
--
--	return wm8400_set_bits(wm8400, WM8400_DCDC1_CONTROL_1 + offset,
--			       WM8400_DC1_ENA, 0);
--}
--
--static int wm8400_dcdc_list_voltage(struct regulator_dev *dev,
+-static int wm8350_dcdc_list_voltage(struct regulator_dev *rdev,
 -				    unsigned selector)
 -{
--	if (selector > WM8400_DC1_VSEL_MASK)
+-	if (selector > WM8350_DCDC_MAX_VSEL)
 -		return -EINVAL;
--
--	return 850000 + (selector * 25000);
+-	return wm8350_dcdc_val_to_mvolts(selector) * 1000;
 -}
 -
--static int wm8400_dcdc_get_voltage_sel(struct regulator_dev *dev)
--{
--	struct wm8400 *wm8400 = rdev_get_drvdata(dev);
--	u16 val;
--	int offset = (rdev_get_id(dev) - WM8400_DCDC1) * 2;
--
--	val = wm8400_reg_read(wm8400, WM8400_DCDC1_CONTROL_1 + offset);
--	val &= WM8400_DC1_VSEL_MASK;
--
--	return val;
--}
--
--static int wm8400_dcdc_set_voltage(struct regulator_dev *dev,
--				   int min_uV, int max_uV, unsigned *selector)
--{
--	struct wm8400 *wm8400 = rdev_get_drvdata(dev);
--	u16 val;
--	int offset = (rdev_get_id(dev) - WM8400_DCDC1) * 2;
--
--	if (min_uV < 850000)
--		return -EINVAL;
--
--	val = DIV_ROUND_UP(min_uV - 850000, 25000);
--
--	if (850000 + (25000 * val) > max_uV)
--		return -EINVAL;
--	BUG_ON(850000 + (25000 * val) < min_uV);
--
--	*selector = val;
--
--	return wm8400_set_bits(wm8400, WM8400_DCDC1_CONTROL_1 + offset,
--			       WM8400_DC1_VSEL_MASK, val);
--}
--
- static unsigned int wm8400_dcdc_get_mode(struct regulator_dev *dev)
+ static int wm8350_dcdc_set_suspend_voltage(struct regulator_dev *rdev, int uV)
  {
- 	struct wm8400 *wm8400 = rdev_get_drvdata(dev);
-@@ -258,12 +148,12 @@ static unsigned int wm8400_dcdc_get_optimum_mode(struct regulator_dev *dev,
+ 	struct wm8350 *wm8350 = rdev_get_drvdata(rdev);
+@@ -1087,9 +1033,9 @@ static unsigned int wm8350_dcdc_get_optimum_mode(struct regulator_dev *rdev,
  }
  
- static struct regulator_ops wm8400_dcdc_ops = {
--	.is_enabled = wm8400_dcdc_is_enabled,
--	.enable = wm8400_dcdc_enable,
--	.disable = wm8400_dcdc_disable,
--	.list_voltage = wm8400_dcdc_list_voltage,
--	.get_voltage_sel = wm8400_dcdc_get_voltage_sel,
--	.set_voltage = wm8400_dcdc_set_voltage,
-+	.is_enabled = regulator_is_enabled_regmap,
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.list_voltage = regulator_list_voltage_linear,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+ static struct regulator_ops wm8350_dcdc_ops = {
+-	.set_voltage = wm8350_dcdc_set_voltage,
 +	.set_voltage_sel = regulator_set_voltage_sel_regmap,
- 	.get_mode = wm8400_dcdc_get_mode,
- 	.set_mode = wm8400_dcdc_set_mode,
- 	.get_optimum_mode = wm8400_dcdc_get_optimum_mode,
-@@ -274,7 +164,11 @@ static struct regulator_desc regulators[] = {
- 		.name = "LDO1",
- 		.id = WM8400_LDO1,
- 		.ops = &wm8400_ldo_ops,
-+		.enable_reg = WM8400_LDO1_CONTROL,
-+		.enable_mask = WM8400_LDO1_ENA,
- 		.n_voltages = WM8400_LDO1_VSEL_MASK + 1,
-+		.vsel_reg = WM8400_LDO1_CONTROL,
-+		.vsel_mask = WM8400_LDO1_VSEL_MASK,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+-	.list_voltage = wm8350_dcdc_list_voltage,
++	.list_voltage = regulator_list_voltage_linear,
+ 	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+ 	.is_enabled = regulator_is_enabled_regmap,
+@@ -1140,6 +1086,8 @@ static const struct regulator_desc wm8350_reg[NUM_WM8350_REGULATORS] = {
+ 		.irq = WM8350_IRQ_UV_DC1,
  		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 	},
-@@ -282,15 +176,23 @@ static struct regulator_desc regulators[] = {
- 		.name = "LDO2",
- 		.id = WM8400_LDO2,
- 		.ops = &wm8400_ldo_ops,
-+		.enable_reg = WM8400_LDO2_CONTROL,
-+		.enable_mask = WM8400_LDO2_ENA,
- 		.n_voltages = WM8400_LDO2_VSEL_MASK + 1,
- 		.type = REGULATOR_VOLTAGE,
-+		.vsel_reg = WM8400_LDO2_CONTROL,
-+		.vsel_mask = WM8400_LDO2_VSEL_MASK,
- 		.owner = THIS_MODULE,
- 	},
- 	{
- 		.name = "LDO3",
- 		.id = WM8400_LDO3,
- 		.ops = &wm8400_ldo_ops,
-+		.enable_reg = WM8400_LDO3_CONTROL,
-+		.enable_mask = WM8400_LDO3_ENA,
- 		.n_voltages = WM8400_LDO3_VSEL_MASK + 1,
-+		.vsel_reg = WM8400_LDO3_CONTROL,
-+		.vsel_mask = WM8400_LDO3_VSEL_MASK,
- 		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 	},
-@@ -298,7 +200,11 @@ static struct regulator_desc regulators[] = {
- 		.name = "LDO4",
- 		.id = WM8400_LDO4,
- 		.ops = &wm8400_ldo_ops,
-+		.enable_reg = WM8400_LDO4_CONTROL,
-+		.enable_mask = WM8400_LDO4_ENA,
- 		.n_voltages = WM8400_LDO4_VSEL_MASK + 1,
-+		.vsel_reg = WM8400_LDO4_CONTROL,
-+		.vsel_mask = WM8400_LDO4_VSEL_MASK,
- 		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 	},
-@@ -306,7 +212,13 @@ static struct regulator_desc regulators[] = {
- 		.name = "DCDC1",
- 		.id = WM8400_DCDC1,
- 		.ops = &wm8400_dcdc_ops,
-+		.enable_reg = WM8400_DCDC1_CONTROL_1,
-+		.enable_mask = WM8400_DC1_ENA_MASK,
- 		.n_voltages = WM8400_DC1_VSEL_MASK + 1,
-+		.vsel_reg = WM8400_DCDC1_CONTROL_1,
-+		.vsel_mask = WM8400_DC1_VSEL_MASK,
+ 		.n_voltages = WM8350_DCDC_MAX_VSEL + 1,
 +		.min_uV = 850000,
 +		.uV_step = 25000,
+ 		.vsel_reg = WM8350_DCDC1_CONTROL,
+ 		.vsel_mask = WM8350_DC1_VSEL_MASK,
+ 		.enable_reg = WM8350_DCDC_LDO_REQUESTED,
+@@ -1163,6 +1111,8 @@ static const struct regulator_desc wm8350_reg[NUM_WM8350_REGULATORS] = {
+ 		.irq = WM8350_IRQ_UV_DC3,
  		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 	},
-@@ -314,7 +226,13 @@ static struct regulator_desc regulators[] = {
- 		.name = "DCDC2",
- 		.id = WM8400_DCDC2,
- 		.ops = &wm8400_dcdc_ops,
-+		.enable_reg = WM8400_DCDC2_CONTROL_1,
-+		.enable_mask = WM8400_DC1_ENA_MASK,
- 		.n_voltages = WM8400_DC2_VSEL_MASK + 1,
-+		.vsel_reg = WM8400_DCDC2_CONTROL_1,
-+		.vsel_mask = WM8400_DC2_VSEL_MASK,
+ 		.n_voltages = WM8350_DCDC_MAX_VSEL + 1,
 +		.min_uV = 850000,
 +		.uV_step = 25000,
+ 		.vsel_reg = WM8350_DCDC3_CONTROL,
+ 		.vsel_mask = WM8350_DC3_VSEL_MASK,
+ 		.enable_reg = WM8350_DCDC_LDO_REQUESTED,
+@@ -1199,6 +1149,8 @@ static const struct regulator_desc wm8350_reg[NUM_WM8350_REGULATORS] = {
+ 		.irq = WM8350_IRQ_UV_DC6,
  		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 	},
-@@ -329,6 +247,7 @@ static int __devinit wm8400_regulator_probe(struct platform_device *pdev)
- 	config.dev = &pdev->dev;
- 	config.init_data = pdev->dev.platform_data;
- 	config.driver_data = wm8400;
-+	config.regmap = wm8400->regmap;
- 
- 	rdev = regulator_register(&regulators[pdev->id], &config);
- 	if (IS_ERR(rdev))
+ 		.n_voltages = WM8350_DCDC_MAX_VSEL + 1,
++		.min_uV = 850000,
++		.uV_step = 25000,
+ 		.vsel_reg = WM8350_DCDC6_CONTROL,
+ 		.vsel_mask = WM8350_DC6_VSEL_MASK,
+ 		.enable_reg = WM8350_DCDC_LDO_REQUESTED,
 -- 
 1.7.10
 
