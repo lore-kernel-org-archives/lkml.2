@@ -1,92 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab2EIVPL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 17:15:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:63057 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932405Ab2EIVPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 17:15:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="141068815"
-Subject: Re: [PATCH 2/3] x86, xsave: remove thread_has_fpu() bug check in
- __sanitize_i387_state()
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: torvalds@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, suresh@aristanetworks.com
-Date: Wed, 09 May 2012 14:18:37 -0700
-In-Reply-To: <20120509203047.GA334@redhat.com>
-References: <1336421341.19423.4.camel@sbsiddha-desk.sc.intel.com>
-	 <1336519085-27450-1-git-send-email-suresh.b.siddha@intel.com>
-	 <1336519085-27450-3-git-send-email-suresh.b.siddha@intel.com>
-	 <20120509203047.GA334@redhat.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1336598317.4634.34.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S932446Ab2EIVPV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 17:15:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47330 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932405Ab2EIVPP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 17:15:15 -0400
+Date: Wed, 9 May 2012 14:15:11 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Manohar Vanga <manohar.vanga@cern.ch>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH v4 2/3] Staging: ipack: added support for the TEWS
+ TPCI-200 carrier board
+Message-ID: <20120509211511.GA23372@kroah.com>
+References: <1336570041-32724-1-git-send-email-siglesias@igalia.com>
+ <1336570041-32724-2-git-send-email-siglesias@igalia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336570041-32724-2-git-send-email-siglesias@igalia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 22:30 +0200, Oleg Nesterov wrote:
-> On 05/08, Suresh Siddha wrote:
-> >
-> > BUG_ON() in __sanitize_i387_state() is checking that the fpu state
-> > is not live any more. But for preempt kernels, task can be scheduled
-> > out and in at any place and the preload_fpu logic during context switch
-> > can make the fpu registers live again.
+On Wed, May 09, 2012 at 03:27:20PM +0200, Samuel Iglesias Gonsalvez wrote:
+> Driver for the carrier board TEWS TPCI-200, a bridge between PCIe bus and
+> IndustryPack bus.
 > 
-> And? Do you see any particular scenario when this BUG_ON() is wrong?
-> 
-> Afaics, __sanitize_i387_state() should not be called if the task can
-> be scheduled in with ->fpu_counter != 0.
+> Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 
-It is not easy, that is why we haven't seen any issues for so long. I
-can give an example with 64-bit kernel with preempt enabled.
+Please fix up all of the sparse warnings in this file, there are a bunch
+:(
 
-Task-A which uses fpu frequently and as such you will find its
-fpu_counter mostly non-zero. During its time slice, kernel used fpu by
-doing kernel_fpu_begin/kernel_fpu_end(). After this, in the same
-scheduling slice, task-A got a signal to handle. Then during the signal
-setup path we got preempted when we are just before the
-sanitize_i387_state() call in
-arch/x86/kernel/xsave.c:save_i387_xstate(). And when we come back we
-will have the fpu registers live that can hit the bug_on.
-
-This doesn't happen with 32-bit kernel because they do clear_used_math()
-before doing sanitize_i387_state() and any preempt shouldn't preload the
-fpu state.
-
-64-bit kernel didn't do this earlier because they do an optimization of
-copying the live fpu registers on to the stack directly (see
-xsave_user() in the same file) etc.
-
-I am planning to remove this 64-bit specific signal handling
-optimization and share the same signal handling code between 32bit/64bit
-kernels (infact someone posted those patches before and I am planning to
-dust them off soon and repost).
-
-Also, in future because of some xstate that can't be handled in lazy
-manner (for example AMD's LWP state), we will always pre-load during
-context-switch. But that is a different story.
-
-> > Similarly during core dump, thread dumping the core can schedule out
-> > and in for page-allocations etc in non-preempt case.
-> 
-> Again, can't understand. The core-dumping thread does init_fpu()
-> before it calls sanitize_i387_state().
-
-Here I actually meant other threads context-switching in and out, while
-the main thread dumps the core. For example, other threads can
-context-switch in and out (because of preempt or the explicit schedule()
-in kernel/exit.c:exit_mm()) and the main thread dumping core can run
-into this bug when it finds some other thread with its fpu registers
-live on some other cpu.
+And again, be sure of the "any later version" on your licensing.
 
 thanks,
-suresh
 
+greg k-h
