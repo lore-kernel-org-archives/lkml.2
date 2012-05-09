@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756932Ab2EIFxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:53:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38859 "EHLO
+	id S1757933Ab2EIGKQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:10:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39028 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750877Ab2EIFxK (ORCPT
+	by vger.kernel.org with ESMTP id S1756531Ab2EIFxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:10 -0400
-Message-Id: <20120509055029.917954110@decadent.org.uk>
+	Wed, 9 May 2012 01:53:33 -0400
+Message-Id: <20120509055048.669105359@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:50:31 +0100
+Date: Wed, 09 May 2012 06:52:47 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Kent Yoder <key@linux.vnet.ibm.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 002/167] [PATCH] crypto: sha512 - Fix byte counter overflow in SHA-512
+        alan@lxorguk.ukuu.org.uk, Dave Airlie <airlied@redhat.com>
+Subject: [ 138/167] [PATCH] nouveau: initialise has_optimus variable.
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,36 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Yoder <key@linux.vnet.ibm.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 25c3d30c918207556ae1d6e663150ebdf902186b upstream.
+commit addde4ec31456c5f1e9b61aae3edcfeb0f338f87 upstream.
 
-The current code only increments the upper 64 bits of the SHA-512 byte
-counter when the number of bytes hashed happens to hit 2^64 exactly.
+We should initialise this to 0 really to avoid getting false positives.
 
-This patch increments the upper 64 bits whenever the lower 64 bits
-overflows.
-
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- crypto/sha512_generic.c |    2 +-
+ drivers/gpu/drm/nouveau/nouveau_acpi.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/crypto/sha512_generic.c b/crypto/sha512_generic.c
-index 107f6f7..dd30f40 100644
---- a/crypto/sha512_generic.c
-+++ b/crypto/sha512_generic.c
-@@ -174,7 +174,7 @@ sha512_update(struct shash_desc *desc, const u8 *data, unsigned int len)
- 	index = sctx->count[0] & 0x7f;
- 
- 	/* Update number of bytes */
--	if (!(sctx->count[0] += len))
-+	if ((sctx->count[0] += len) < len)
- 		sctx->count[1]++;
- 
-         part_len = 128 - index;
+diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+index 7814a76..284bd25 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
++++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+@@ -270,7 +270,7 @@ static bool nouveau_dsm_detect(void)
+ 	struct acpi_buffer buffer = {sizeof(acpi_method_name), acpi_method_name};
+ 	struct pci_dev *pdev = NULL;
+ 	int has_dsm = 0;
+-	int has_optimus;
++	int has_optimus = 0;
+ 	int vga_count = 0;
+ 	bool guid_valid;
+ 	int retval;
 -- 
 1.7.10
 
