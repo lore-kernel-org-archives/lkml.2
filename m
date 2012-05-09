@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759997Ab2EIXaN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 19:30:13 -0400
-Received: from mail.siteground.com ([67.19.240.234]:35311 "EHLO
-	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759093Ab2EIXaI (ORCPT
+	id S1759169Ab2EIXlf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 19:41:35 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:48940 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765Ab2EIXle convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 19:30:08 -0400
-X-Greylist: delayed 2371 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 May 2012 19:30:08 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=simple; s=mtadk; d=siteground.com;
-	h=Received:Message-ID:Date:From:Reply-To:Organization:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:X-Enigmail-Version:Content-Type:Content-Transfer-Encoding;
-	b=HfQCnjs/PzyuB0SNSfk8cJZRHxdFvzEkazi9oD79OqBwAvybe9fBIY7DQsNUEqZAftv5IAvZzwLqYIknrveqLtpr9DtKTkqpmV5BFFZkWSS7GMUv1dMbIwkMvCbvOJup5J8SEN3nc1MYbbzERmPoi0bcIi6pJfsouWWLHT8jCxs=;
-Message-ID: <4FAAF4B6.4030507@siteground.com>
-Date: Thu, 10 May 2012 01:50:30 +0300
-From: Marian Marinov <mm@siteground.com>
-Reply-To: mm@siteground.com
-Organization: Siteground.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Wed, 9 May 2012 19:41:34 -0400
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: vaLentin chernoZemski <valentin@siteground.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: 3.2.14 - Sporadic HARD lockups/__slab_free/intel_pmu_handle_irq->perf_event_overflow
-References: <4FA8D8A7.8020704@siteground.com> <20120509224411.GA8872@kroah.com>
-In-Reply-To: <20120509224411.GA8872@kroah.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=windows-1251
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - mail.siteground.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - siteground.com
+In-Reply-To: <201205092038.16722.arnd.bergmann@linaro.org>
+References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
+ <CAK5ve-KSyvZSHw7csQ5M88q0008NSrs1kwuyUH3hFqxD0f7BQQ@mail.gmail.com>
+ <20120509122436.1b612004.akpm@linux-foundation.org> <201205092038.16722.arnd.bergmann@linaro.org>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Thu, 10 May 2012 07:41:12 +0800
+X-Google-Sender-Auth: _ffcYwqtKhGghWlXP8jPRqzU7SY
+Message-ID: <CAK5ve-Ko6EjZsJBW++ofL0eHxiR5W+wafb3T99Rm9a1L8pHLBQ@mail.gmail.com>
+Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and
+ consolidate LED driver in ARM
+To: Arnd Bergmann <arnd.bergmann@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux@arm.linux.org.uk,
+        rpurdie@rpsys.net, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
+        nicolas.pitre@linaro.org, tim.gardner@canonical.com,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Thu, May 10, 2012 at 4:38 AM, Arnd Bergmann <arnd.bergmann@linaro.org> wrote:
+> On Wednesday 09 May 2012, Andrew Morton wrote:
+>> I'm the LEDs patchmonkey at present.  I can merge the drivers/leds
+>> change if you like, but there doesn't seem much point in that unless
+>> all the other patches get merged.
+>>
+>> So my preferred approach would be for the patch series to get merged
+>> via some ARM tree.
+>
+> I'm fine with taking it through arm-soc if that helps.
 
-On 05/10/2012 01:44 AM, Greg KH wrote:
-> On Tue, May 08, 2012 at 11:26:15AM +0300, vaLentin chernoZemski wrote:
->>> Kindly Note that kernel is patched against grsec but grsec is not enabled inside the kernel configuration.
+That would be great to merge from arm-soc tree, thanks a lot, Arnd and Andrew.
 
-Yes, we can.
-Unfortunately it is very hard to reproduce the bug. It happens randomly within a month.
+> In the long run,
+> it would be nice to have a proper maintainer for this again after Richard
+> more or less stepped down from that position. Given that Bryan has shown
+> that he's persistent enough to get this patch series to v9, how about
+> making him the primary maintainer for the entire subsystem? He should
+> know a lot about it already. Bryan?
+>
 
-Marian
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+I do love to start to do more contribution and maintain the
+drivers/leds subsystem with Richard's help, if Richard is fine with
+this, I can send out patch to add a MAINTAINER entry.
 
-iEYEARECAAYFAk+q9LMACgkQ4mt9JeIbjJSo6gCeKeS5E0rRfrDaP7mMuKyktDTo
-IEQAoKeEVSKXgZUhm/rgOGrGn/x5EvxD
-=zOZM
------END PGP SIGNATURE-----
+Best Regards,
+-Bryan
