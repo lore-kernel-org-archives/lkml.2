@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046Ab2EIGQz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:16:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39117 "EHLO
+	id S1757328Ab2EIGR6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:17:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38991 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756594Ab2EIFx3 (ORCPT
+	by vger.kernel.org with ESMTP id S1756341Ab2EIFx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:29 -0400
-Message-Id: <20120509055049.873944883@decadent.org.uk>
+	Wed, 9 May 2012 01:53:27 -0400
+Message-Id: <20120509055046.652004232@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:56 +0100
+Date: Wed, 09 May 2012 06:52:32 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Grazvydas Ignotas <notasas@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 147/167] [PATCH] wl1251: fix crash on remove due to leftover work item
+        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 123/167] [PATCH] ARM: 7397/1: l2x0: only apply workaround for erratum #753970
+ on PL310
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,36 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grazvydas Ignotas <notasas@gmail.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 4c1bcdb5a3354b250b82a67549f57ac27a3bb85f upstream.
+commit f154fe9b806574437b47f08e924ad10c0e240b23 upstream.
 
-This driver currently leaves elp_work behind when stopping, which
-occasionally results in data corruption because work function ends
-up accessing freed memory, typical symptoms of this are various
-worker_thread crashes. Fix it by cancelling elp_work.
+The workaround for PL310 erratum #753970 can lead to deadlock on systems
+with an L220 cache controller.
 
-Signed-off-by: Grazvydas Ignotas <notasas@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch makes the workaround effective only when the cache controller
+is identified as a PL310 at probe time.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/wl1251/main.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mm/cache-l2x0.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/wireless/wl1251/main.c b/drivers/net/wireless/wl1251/main.c
-index 41302c7..d1afb8e 100644
---- a/drivers/net/wireless/wl1251/main.c
-+++ b/drivers/net/wireless/wl1251/main.c
-@@ -479,6 +479,7 @@ static void wl1251_op_stop(struct ieee80211_hw *hw)
- 	cancel_work_sync(&wl->irq_work);
- 	cancel_work_sync(&wl->tx_work);
- 	cancel_work_sync(&wl->filter_work);
-+	cancel_delayed_work_sync(&wl->elp_work);
+--- linux.orig/arch/arm/mm/cache-l2x0.c
++++ linux/arch/arm/mm/cache-l2x0.c
+@@ -32,6 +32,7 @@
+ static DEFINE_RAW_SPINLOCK(l2x0_lock);
+ static uint32_t l2x0_way_mask;	/* Bitmask of active ways */
+ static uint32_t l2x0_size;
++static unsigned long sync_reg_offset = L2X0_CACHE_SYNC;
  
- 	mutex_lock(&wl->mutex);
+ struct l2x0_regs l2x0_saved_regs;
  
--- 
-1.7.10
-
+@@ -61,12 +62,7 @@
+ {
+ 	void __iomem *base = l2x0_base;
+ 
+-#ifdef CONFIG_PL310_ERRATA_753970
+-	/* write to an unmmapped register */
+-	writel_relaxed(0, base + L2X0_DUMMY_REG);
+-#else
+-	writel_relaxed(0, base + L2X0_CACHE_SYNC);
+-#endif
++	writel_relaxed(0, base + sync_reg_offset);
+ 	cache_wait(base + L2X0_CACHE_SYNC, 1);
+ }
+ 
+@@ -331,6 +327,10 @@
+ 		else
+ 			ways = 8;
+ 		type = "L310";
++#ifdef CONFIG_PL310_ERRATA_753970
++		/* Unmapped register. */
++		sync_reg_offset = L2X0_DUMMY_REG;
++#endif
+ 		break;
+ 	case L2X0_CACHE_ID_PART_L210:
+ 		ways = (aux >> 13) & 0xf;
 
 
