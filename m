@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759609Ab2EIO0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:26:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40940 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757995Ab2EIO0n (ORCPT
+	id S932100Ab2EIO0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:26:50 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:61077 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757995Ab2EIO0r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:26:43 -0400
-Date: Wed, 9 May 2012 07:26:31 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-v8zlrmgmkne3bkcy9dej1fvm@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/fair:
-  Let minimally loaded cpu balance the group
-Git-Commit-ID: c22402a2f76e88b04b7a8b6c0597ad9ba6fd71de
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 9 May 2012 10:26:47 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 09 May 2012 07:26:37 -0700 (PDT)
+X-Originating-IP: [109.64.13.136]
+In-Reply-To: <20120507171725.GB19417@google.com>
+References: <1336056962-10465-1-git-send-email-gilad@benyossef.com>
+	<1336056962-10465-4-git-send-email-gilad@benyossef.com>
+	<20120503153941.GA5528@google.com>
+	<CAOtvUMcJurhAKB5pbq91WCsSM7cELNOdUbANzx4gF0Cf8x4cTg@mail.gmail.com>
+	<20120507171725.GB19417@google.com>
+Date: Wed, 9 May 2012 17:26:46 +0300
+Message-ID: <CAOtvUMcrymsv3_sN8mTmAmf1fbJYNq-k4wD4i_wBMuojGiRLRQ@mail.gmail.com>
+Subject: Re: [PATCH v1 3/6] workqueue: introduce schedule_on_each_cpu_cond
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c22402a2f76e88b04b7a8b6c0597ad9ba6fd71de
-Gitweb:     http://git.kernel.org/tip/c22402a2f76e88b04b7a8b6c0597ad9ba6fd71de
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Fri, 20 Apr 2012 16:57:22 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 May 2012 15:00:51 +0200
+On Mon, May 7, 2012 at 8:17 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On Sun, May 06, 2012 at 04:15:30PM +0300, Gilad Ben-Yossef wrote:
+>> A single helper function called schedule_on_each_cpu_cond() is very
+>> obvious to find to someone reading the source or documentation. On
+>> the other hand figuring out that the helper functions that handle
+>> cpu hotplug and cpumask allocation are there for that purpose is a
+>> bit more involved.
+>>
+>> That was my thinking at least.
+>
+> Yeah, having common mechanism is nice, but I just prefer iterators /
+> helpers which can be embedded in the caller to interface which takes a
+> callback unless the execution context is actually asynchronous to the
+> caller.  We don't use nested functions / scopes in kernel which makes
+> those callbacks (higher order functions, lambdas, gammas, zetas
+> whatever) painful to use and follow.
+>
+>> The way i see it, I can either obliterate on_each_cpu_cond() and out
+>> its code in place in the LRU path, or fix the callback to get an
+>> extra private data parameter -
+>
+> Unless we can code up something pretty, I vote for just open coding it
+> for now.  If we grow more usages like this, maybe we'll be able to see
+> the pattern better and come up with better abstraction.
 
-sched/fair: Let minimally loaded cpu balance the group
+Got you. Will do.
 
-Currently we let the leftmost (or first idle) cpu ascend the
-sched_domain tree and perform load-balancing. The result is that the
-busiest cpu in the group might be performing this function and pull
-more load to itself. The next load balance pass will then try to
-equalize this again.
+Thanks.
+Gilad
 
-Change this to pick the least loaded cpu to perform higher domain
-balancing.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-v8zlrmgmkne3bkcy9dej1fvm@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+> --
+> tejun
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 678966c..968ffee 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3781,7 +3781,8 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
- {
- 	unsigned long load, max_cpu_load, min_cpu_load, max_nr_running;
- 	int i;
--	unsigned int balance_cpu = -1, first_idle_cpu = 0;
-+	unsigned int balance_cpu = -1;
-+	unsigned long balance_load = ~0UL;
- 	unsigned long avg_load_per_task = 0;
- 
- 	if (local_group)
-@@ -3797,12 +3798,11 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
- 
- 		/* Bias balancing toward cpus of our domain */
- 		if (local_group) {
--			if (idle_cpu(i) && !first_idle_cpu) {
--				first_idle_cpu = 1;
-+			load = target_load(i, load_idx);
-+			if (load < balance_load || idle_cpu(i)) {
-+				balance_load = load;
- 				balance_cpu = i;
- 			}
--
--			load = target_load(i, load_idx);
- 		} else {
- 			load = source_load(i, load_idx);
- 			if (load > max_cpu_load) {
+
+
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
