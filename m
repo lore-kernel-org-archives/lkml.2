@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab2EIGSO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:18:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38985 "EHLO
+	id S1758135Ab2EIGSv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:18:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39060 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756444Ab2EIFx0 (ORCPT
+	by vger.kernel.org with ESMTP id S1756416Ab2EIFxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:26 -0400
-Message-Id: <20120509055040.634831025@decadent.org.uk>
+	Wed, 9 May 2012 01:53:25 -0400
+Message-Id: <20120509055046.116035794@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:47 +0100
+Date: Wed, 09 May 2012 06:52:28 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 078/167] [PATCH 18/26] net: smsc911x: fix skb handling in receive path
+        alan@lxorguk.ukuu.org.uk,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Fernandez Gonzalo <gfernandez@copreci.es>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 119/167] [PATCH] usb gadget: uvc: uvc_request_data::length field must be
+ signed
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,78 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-[ Upstream commit 3c5e979bd037888dd7d722da22da4b43659af485 ]
+commit 6f6543f53f9ce136e01d7114bf6f0818ca54fb41 upstream.
 
-The SMSC911x driver resets the ->head, ->data and ->tail pointers in the
-skb on the reset path in order to avoid buffer overflow due to packet
-padding performed by the hardware.
+The field is used to pass the UVC request data length, but can also be
+used to signal an error when setting it to a negative value. Switch from
+unsigned int to __s32.
 
-This patch fixes the receive path so that the skb pointers are fixed up
-after the data has been read from the device, The error path is also
-fixed to use number of words consistently and prevent erroneous FIFO
-fastforwarding when skipping over bad data.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Fernandez Gonzalo <gfernandez@copreci.es>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/smsc/smsc911x.c |   14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
+ drivers/usb/gadget/uvc.h      |    2 +-
+ drivers/usb/gadget/uvc_v4l2.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/smsc/smsc911x.c b/drivers/net/ethernet/smsc/smsc911x.c
-index 8843071..8c7dd21 100644
---- a/drivers/net/ethernet/smsc/smsc911x.c
-+++ b/drivers/net/ethernet/smsc/smsc911x.c
-@@ -1089,10 +1089,8 @@ smsc911x_rx_counterrors(struct net_device *dev, unsigned int rxstat)
+diff --git a/drivers/usb/gadget/uvc.h b/drivers/usb/gadget/uvc.h
+index bc78c60..ca4e03a 100644
+--- a/drivers/usb/gadget/uvc.h
++++ b/drivers/usb/gadget/uvc.h
+@@ -28,7 +28,7 @@
  
- /* Quickly dumps bad packets */
- static void
--smsc911x_rx_fastforward(struct smsc911x_data *pdata, unsigned int pktbytes)
-+smsc911x_rx_fastforward(struct smsc911x_data *pdata, unsigned int pktwords)
+ struct uvc_request_data
  {
--	unsigned int pktwords = (pktbytes + NET_IP_ALIGN + 3) >> 2;
--
- 	if (likely(pktwords >= 4)) {
- 		unsigned int timeout = 500;
- 		unsigned int val;
-@@ -1156,7 +1154,7 @@ static int smsc911x_poll(struct napi_struct *napi, int budget)
- 			continue;
- 		}
+-	unsigned int length;
++	__s32 length;
+ 	__u8 data[60];
+ };
  
--		skb = netdev_alloc_skb(dev, pktlength + NET_IP_ALIGN);
-+		skb = netdev_alloc_skb(dev, pktwords << 2);
- 		if (unlikely(!skb)) {
- 			SMSC_WARN(pdata, rx_err,
- 				  "Unable to allocate skb for rx packet");
-@@ -1166,14 +1164,12 @@ static int smsc911x_poll(struct napi_struct *napi, int budget)
- 			break;
- 		}
+diff --git a/drivers/usb/gadget/uvc_v4l2.c b/drivers/usb/gadget/uvc_v4l2.c
+index f6e083b..54d7ca5 100644
+--- a/drivers/usb/gadget/uvc_v4l2.c
++++ b/drivers/usb/gadget/uvc_v4l2.c
+@@ -39,7 +39,7 @@ uvc_send_response(struct uvc_device *uvc, struct uvc_request_data *data)
+ 	if (data->length < 0)
+ 		return usb_ep_set_halt(cdev->gadget->ep0);
  
--		skb->data = skb->head;
--		skb_reset_tail_pointer(skb);
-+		pdata->ops->rx_readfifo(pdata,
-+				 (unsigned int *)skb->data, pktwords);
+-	req->length = min(uvc->event_length, data->length);
++	req->length = min_t(unsigned int, uvc->event_length, data->length);
+ 	req->zero = data->length < uvc->event_length;
+ 	req->dma = DMA_ADDR_INVALID;
  
- 		/* Align IP on 16B boundary */
- 		skb_reserve(skb, NET_IP_ALIGN);
- 		skb_put(skb, pktlength - 4);
--		pdata->ops->rx_readfifo(pdata,
--				 (unsigned int *)skb->head, pktwords);
- 		skb->protocol = eth_type_trans(skb, dev);
- 		skb_checksum_none_assert(skb);
- 		netif_receive_skb(skb);
-@@ -1396,7 +1392,7 @@ static int smsc911x_open(struct net_device *dev)
- 	smsc911x_reg_write(pdata, FIFO_INT, temp);
- 
- 	/* set RX Data offset to 2 bytes for alignment */
--	smsc911x_reg_write(pdata, RX_CFG, (2 << 8));
-+	smsc911x_reg_write(pdata, RX_CFG, (NET_IP_ALIGN << 8));
- 
- 	/* enable NAPI polling before enabling RX interrupts */
- 	napi_enable(&pdata->napi);
 -- 
 1.7.10
 
