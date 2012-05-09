@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760966Ab2EIUOC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 16:14:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43658 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756460Ab2EIUOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 16:14:00 -0400
-Date: Wed, 9 May 2012 22:12:19 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Pedro Alves <palves@redhat.com>
-Cc: Mike Frysinger <vapier@gentoo.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        pacman@kosh.dhis.org, linux-man <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>
-Subject: Re: ptrace.2: PTRACE_KILL needs a stopped process too
-Message-ID: <20120509201219.GA32051@redhat.com>
-References: <20091216004533.22261.qmail@kosh.dhis.org> <CAKgNAkhtu8d0NKcTwWyCA8qWgz8Lag+GcpEE1=YMVe_Nh8XJ9Q@mail.gmail.com> <20120422200459.GA7519@redhat.com> <201205091109.35637.vapier@gentoo.org> <4FAAC706.6000808@redhat.com>
+	id S1757973Ab2EIUO5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 16:14:57 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50158 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641Ab2EIUO4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 16:14:56 -0400
+Message-ID: <4FAACF55.5070809@gmail.com>
+Date: Wed, 09 May 2012 22:11:01 +0200
+From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
+	<phcoder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FAAC706.6000808@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] fix minixfs block limit check
+X-Enigmail-Version: 1.4.1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enigE19A38006A126D8B59881D05"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09, Pedro Alves wrote:
->
-> On 05/09/2012 04:09 PM, Mike Frysinger wrote:
->
-> > probably not that big of a deal, but the reason i like using
-> > ptrace(PTRACE_KILL) over a raw kill() is that you are less likely to kill the
-> > wrong process by accident.  maybe not that big of a deal in practice though.
->
->
-> And you can do tgkill instead.  It was specifically invented to handle the
-> reuse case.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigE19A38006A126D8B59881D05
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-tgkill() can kill the wrong process/thread too, although it lessens the risk.
+Hello, all. On minix2 and minix3 usually max_size is 7fffffff and the
+check in question prohibits creation of last block spanning right before
+7fffffff. Here is a fix:
 
-But I don't really understand the problem. The traced thread can't go away
-until the tracer does wait/detach, and thus its pid can't be reused?
+--- fs/minix/itree_v2.c    2011-04-23 01:34:36.363725380 +0200
++++ /home/phcoder/projects/fs/minix/itree_v2.c    2012-05-09
+21:47:52.335621065 +0200
+@@ -32,7 +32,8 @@
+     if (block < 0) {
+         printk("MINIX-fs: block_to_path: block %ld < 0 on dev %s\n",
+             block, bdevname(sb->s_bdev, b));
+-    } else if (block >=3D
+(minix_sb(inode->i_sb)->s_max_size/sb->s_blocksize)) {
++    } else if ((u64) block * (u64) sb->s_blocksize
++           >=3D minix_sb(inode->i_sb)->s_max_size) {
+         if (printk_ratelimit())
+             printk("MINIX-fs: block_to_path: "
 
-May be, "by accident" above means something else, not pid reuse...
+--=20
+Regards
+Vladimir '=CF=86-coder/phcoder' Serbinenko
 
-Oleg.
 
+
+--------------enigE19A38006A126D8B59881D05
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iF4EAREKAAYFAk+q0DkACgkQNak7dOguQglhJwD/USv5OIeKQU3M5MN6WcMeKujL
+Tk3pZh0RoJr6QPQK+FoA/iUbihhRRsl0vl9NF8gFlLCPLjArCqXzS5whQMhuZlL+
+=hRAZ
+-----END PGP SIGNATURE-----
+
+--------------enigE19A38006A126D8B59881D05--
