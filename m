@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759948Ab2EIPLa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 11:11:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:55056 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759750Ab2EIPJa (ORCPT
+	id S1759957Ab2EIPLi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 11:11:38 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48731 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759564Ab2EIPLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 11:09:30 -0400
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org
-Subject: [PATCH 2/9 v3] dma: shdma: prepare for conversion to the shdma base library
-Date: Wed,  9 May 2012 17:09:14 +0200
-Message-Id: <1336576161-27082-3-git-send-email-g.liakhovetski@gmx.de>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de>
-References: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:RWGfuc8ereYRdFMhEoElXPKElUNCG0PY9O+6EulUWU+
- UBwsQGinL4nklkgR/wBPZa4fIlwtlCdCUU7/9pR6C7DADizKcX
- vKIjB8Bp5PPCKpv9nwvY0yKTT6v9gEwlryYzkuwTf/utN2IT3h
- Ld1+SZcLxn9ISCDOa1HmGLyqx0hDkD9lU2v70CSiGGbQsvotWr
- 2RG4PI1J5dVri9irazUpu0qJbuc5HusIuJCz5xBiFbRsd+g2t4
- p4iq1/AEE/T26/JIAOJlGgQDAm2Sjcv0TzvbKO9j+FiwcyjTgT
- VWJNvrO6428dID2VB6TSF8V996DT6zU7XhPatX+0Ya27GGHFHK
- hWkA7PDYCQeQ0cVN0YKPrGRXvQmeYLI3DZXH631alJ2bp8B6i0
- viLlYzodKCxng==
+	Wed, 9 May 2012 11:11:36 -0400
+Date: Wed, 9 May 2012 16:11:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
+        sameo@linux.intel.com, jedu@slimlogic.co.uk, lrg@slimlogic.co.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] mfd: tps65910: convert all allocation to devm_*
+Message-ID: <20120509151131.GZ3955@opensource.wolfsonmicro.com>
+References: <1336569057-3890-1-git-send-email-ldewangan@nvidia.com>
+ <1336569057-3890-3-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oRWDw5wXQ3uCJU7V"
+Content-Disposition: inline
+In-Reply-To: <1336569057-3890-3-git-send-email-ldewangan@nvidia.com>
+X-Cookie: You are fairminded, just and loving.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By placing an anonymous union at the top of struct sh_dmae_slave we can
-transparently prepare all device and client drivers for the upcoming
-shdma-base conversion.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
----
- include/linux/sh_dma.h |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+--oRWDw5wXQ3uCJU7V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/include/linux/sh_dma.h b/include/linux/sh_dma.h
-index 425450b..e081e8e 100644
---- a/include/linux/sh_dma.h
-+++ b/include/linux/sh_dma.h
-@@ -10,12 +10,16 @@
- #ifndef SH_DMA_H
- #define SH_DMA_H
- 
--#include <linux/list.h>
- #include <linux/dmaengine.h>
-+#include <linux/list.h>
-+#include <linux/shdma-base.h>
- 
- /* Used by slave DMA clients to request DMA to/from a specific peripheral */
- struct sh_dmae_slave {
--	unsigned int			slave_id; /* Set by the platform */
-+	union {
-+		unsigned int		slave_id; /* Set by the platform */
-+		struct shdma_slave	shdma_slave;
-+	};
- 	struct device			*dma_dev; /* Set by the platform */
- 	const struct sh_dmae_slave_config	*config;  /* Set by the driver */
- };
--- 
-1.7.2.5
+On Wed, May 09, 2012 at 06:40:55PM +0530, Laxman Dewangan wrote:
+> Convert memory allocation and regmap initialization to
+> use devm_* functions.
 
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+--oRWDw5wXQ3uCJU7V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPqoVoAAoJEBus8iNuMP3d4XIP/iK78QZUPoaNJ15MiLHPrkEd
+3Y/adGgRpKl0JcF2xTkFa8TU6E60lkjbqeF1K+c0+JPFnlcHRe8Us7ow/sFS7hA2
+YQpbi9rT4U2TdWq3/XrL7CstYg+QD3ODfFVho5BBLbmn6HcdGoterBW0XWHnTT+c
+NJ8AXMKnFsF5BQev4r+JkqpQjqeurj5KEYAghIDiXRKsOuWhNlBS6Y3cpC4HZcZL
+JMoVzt9OFqd3anVEoeUaqq1Q6vjluqsYkhN28QakWzQu2bGV51KqDOuBb9LG6h3I
+RnMDnsC7ta+UyIoBHcKZLBoyREs8I2fDHgI0Mgrq4L5IVzDjQTAzPQl1J4atorW4
+n/AXU4luFwydxsXGWMJBVX+jGg+PwMSVC3j5//A7okMB3kv4usXAfOgF/mrOEkbd
+nPPQ9hcF4Z9HrtvPkrIOq/e+uGmCqLtKnDChCNOgVjOJHACOvspsxt/t41MG6DaM
+DA9GgbvryJjYJQh9fiWdtbvd5DqS/2HILcW8uU5FrlKjORnhAPqVnn96AfCVaBXQ
+uz5T1tW2gDi4IPf6ot/Sjc3Uou3qFvEI/zPUTRXN8yJ/4jtVwDyf/IHCA5t752jN
+siLdEBgIRypaMK67xfmVJb0aG9ePoxSl5W/2QpClG6E9G8ifaJ+270crY01yVc5L
+pwum+PWT/Y0t8h39WhNd
+=vQQE
+-----END PGP SIGNATURE-----
+
+--oRWDw5wXQ3uCJU7V--
