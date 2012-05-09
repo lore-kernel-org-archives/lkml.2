@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759500Ab2EIOQd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:16:33 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:33471 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759422Ab2EIOQL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:16:11 -0400
-Date: Wed, 9 May 2012 17:19:20 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>
-Subject: Re: [PATCH] staging: comedi: remove __user annotation inside of
- struct's
-Message-ID: <20120509141920.GT22134@mwanda>
-References: <201205081641.00358.hartleys@visionengravers.com>
- <ADE657CA350FB648AAC2C43247A983F0020698A1774D@AUSP01VMBX24.collaborationhost.net>
- <4FAA44D7.1040209@mev.co.uk>
- <20120509103111.GR22134@mwanda>
- <4FAA4E85.6020305@mev.co.uk>
+	id S1759485Ab2EIOR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:17:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51525 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757213Ab2EIORy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 10:17:54 -0400
+Message-ID: <4FAA7C71.3040501@redhat.com>
+Date: Wed, 09 May 2012 17:17:21 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FAA4E85.6020305@mev.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] bitops: add _local bitops
+References: <20120509134528.GA18044@redhat.com>
+In-Reply-To: <20120509134528.GA18044@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 12:01:25PM +0100, Ian Abbott wrote:
-> Are there any handy macros for casting pointers to __user pointers,
-> something like
-> 
-> #define _user(p) ((typeof(*(p)) __user *)(p))
-> 
-> but preferably without the repeated expansion of 'p' in case of
-> side-effects?
+On 05/09/2012 04:45 PM, Michael S. Tsirkin wrote:
+>  
+> +Local versions of the bitmask operations are also provided.  They are used in
+> +contexts where the operations need to be performed atomically with respect to
+> +the local CPU, but no other CPU accesses the bitmask.  This assumption makes it
+> +possible to avoid the need for SMP protection and use less expensive atomic
+> +operations in the implementation.
+> +They have names similar to the above bitmask operation interfaces,
+> +except that _local is sufficed to the interface name.
 
-typeof() doesn't have side effects.
+suffixed (better: appended)
 
-#include <stdio.h>
+-- 
+error compiling committee.c: too many arguments to function
 
-int main(void)
-{
-	int x = 0;
-	typeof(x++) y;
-
-	printf("%d\n", x);
-
-	return 0;
-}
-
-regards,
-dan carpenter
