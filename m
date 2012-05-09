@@ -1,176 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758886Ab2EIMX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 08:23:59 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:49491 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756301Ab2EIMX5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 08:23:57 -0400
-Date: Wed, 9 May 2012 14:23:44 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: Re: [EDAC ABI v13 08/25] edac: use Documentation-nano format for
- some data structs
-Message-ID: <20120509122344.GB22737@aftab.osrc.amd.com>
-References: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
- <1334608729-30803-9-git-send-email-mchehab@redhat.com>
+	id S1758937Ab2EIM3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 08:29:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22297 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757155Ab2EIM3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 08:29:43 -0400
+Message-ID: <4FAA630F.2000909@redhat.com>
+Date: Wed, 09 May 2012 14:29:03 +0200
+From: Igor Mammedov <imammedo@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334608729-30803-9-git-send-email-mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: linux-kernel@vger.kernel.org, rob@landley.net, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, luto@mit.edu,
+        suresh.b.siddha@intel.com, avi@redhat.com, johnstul@us.ibm.com,
+        arjan@linux.intel.com, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 0/5] [x86]: Improve secondary CPU bring-up process robustness
+References: <1336559102-28103-1-git-send-email-imammedo@redhat.com> <1336555184.2527.6.camel@twins>
+In-Reply-To: <1336555184.2527.6.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 16, 2012 at 05:38:32PM -0300, Mauro Carvalho Chehab wrote:
-> No functional changes. Just comment improvements.
-> 
-> Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
-> Cc: Doug Thompson <norsk5@yahoo.com>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
->  include/linux/edac.h |   80 +++++++++++++++++++++++++++++++++++--------------
->  1 files changed, 57 insertions(+), 23 deletions(-)
-> 
-> diff --git a/include/linux/edac.h b/include/linux/edac.h
-> index ffb189b..138b147 100644
-> --- a/include/linux/edac.h
-> +++ b/include/linux/edac.h
-> @@ -45,7 +45,19 @@ static inline void opstate_init(void)
->  #define EDAC_MC_LABEL_LEN	31
->  #define MC_PROC_NAME_MAX_LEN	7
->  
-> -/* memory devices */
-> +/**
-> + * enum dev_type - describe the type of memory DRAM chips used at the stick
-> + * @DEV_UNKNOWN:	Can't be determined, or MC doesn't support detect it
-> + * @DEV_X1:		1 bit for data
-> + * @DEV_X2:		2 bits for data
-> + * @DEV_X4:		4 bits for data
-> + * @DEV_X8:		8 bits for data
-> + * @DEV_X16:		16 bits for data
-> + * @DEV_X32:		32 bits for data
-> + * @DEV_X64:		64 bits for data
-> + *
-> + * Typical values are x4 and x8.
-> + */
->  enum dev_type {
->  	DEV_UNKNOWN = 0,
->  	DEV_X1,
-> @@ -163,18 +175,29 @@ enum mem_type {
->  #define MEM_FLAG_DDR3		 BIT(MEM_DDR3)
->  #define MEM_FLAG_RDDR3		 BIT(MEM_RDDR3)
->  
-> -/* chipset Error Detection and Correction capabilities and mode */
-> +/** enum edac-type - Error Detection and Correction capabilities and mode
+On 05/09/2012 11:19 AM, Peter Zijlstra wrote:
+> On Wed, 2012-05-09 at 12:24 +0200, Igor Mammedov wrote:
+>> Target audience for this patches is mostly virt. environments, where
+>> physical CPUs are shared beetween many guests and on overcommited
+>> host it can uncover different race conditions during secondary CPU
+>> bring-up.
+>
+> The good news is that you're working on this, the bad news is that all
+> this code is slated for the scrap heap :-)
+>
+> Thomas is currently in the process of doing a massive overhaul of the
+> hotplug code, included in that would be the stuff you're touching.
 
-This probably needs to be
+If Thomas' rewrite is progressed well and could be completed for 3.5 then
+there is no big harm in throwing this patches away. However if it's not,
+it might have sense to apply these patches in 3.5 devel cycle.
 
-/**
- * enum edac-type
+Also massive rewrite would be unlikely backport candidate to stable 3.x trees,
+and some of these patches might be considered as such ones.
 
-with the text starting on the second line and leaving the "/**" marker
-alone on the first line.
+> Every architecture does this hand-shake differently and probably buggy,
+> all that needs to move into generic code. The only bits needed in the
+> arch code are the cpu wakeup and initial trampoline, the rest should be
+> generic.
+>
+> I'm not quite sure how far along he is, but it would be awesome if you
+> could help him out somehow.
 
-> + * @EDAC_UNKNOWN:	Unknown if ECC is available
-> + * @EDAC_NONE:		Doesn't support ECC
-> + * @EDAC_RESERVED:	Reserved ECC type
-> + * @EDAC_PARITY:	Detects parity errors
-> + * @EDAC_EC:		Error Checking - no correction
-> + * @EDAC_SECDED:	Single bit error correction, Double detection
-> + * @EDAC_S2ECD2ED:	Chipkill x2 devices - do these exist?
-> + * @EDAC_S4ECD4ED:	Chipkill x4 devices
-> + * @EDAC_S8ECD8ED:	Chipkill x8 devices
-> + * @EDAC_S16ECD16ED:	Chipkill x16 devices
-> + */
->  enum edac_type {
-> -	EDAC_UNKNOWN = 0,	/* Unknown if ECC is available */
-> -	EDAC_NONE,		/* Doesn't support ECC */
-> -	EDAC_RESERVED,		/* Reserved ECC type */
-> -	EDAC_PARITY,		/* Detects parity errors */
-> -	EDAC_EC,		/* Error Checking - no correction */
-> -	EDAC_SECDED,		/* Single bit error correction, Double detection */
-> -	EDAC_S2ECD2ED,		/* Chipkill x2 devices - do these exist? */
-> -	EDAC_S4ECD4ED,		/* Chipkill x4 devices */
-> -	EDAC_S8ECD8ED,		/* Chipkill x8 devices */
-> -	EDAC_S16ECD16ED,	/* Chipkill x16 devices */
-> +	EDAC_UNKNOWN =	0,
-> +	EDAC_NONE,
-> +	EDAC_RESERVED,
-> +	EDAC_PARITY,
-> +	EDAC_EC,
-> +	EDAC_SECDED,
-> +	EDAC_S2ECD2ED,
-> +	EDAC_S4ECD4ED,
-> +	EDAC_S8ECD8ED,
-> +	EDAC_S16ECD16ED,
->  };
->  
->  #define EDAC_FLAG_UNKNOWN	BIT(EDAC_UNKNOWN)
-> @@ -187,18 +210,29 @@ enum edac_type {
->  #define EDAC_FLAG_S8ECD8ED	BIT(EDAC_S8ECD8ED)
->  #define EDAC_FLAG_S16ECD16ED	BIT(EDAC_S16ECD16ED)
->  
-> -/* scrubbing capabilities */
-> +/** enum scrub_type - scrubbing capabilities
+Sure, I could lend a hand as minimum in testing and maybe some rewriting
+too if Thomas can give some part if so that we do not conflict on this.
 
-ditto.
+PS:
+There is still a couple hangs in 3.4-rc4+:
 
-> + * @SCRUB_UNKNOWN		Unknown if scrubber is available
-> + * @SCRUB_NONE:			No scrubber
-> + * @SCRUB_SW_PROG:		SW progressive (sequential) scrubbing
-> + * @SCRUB_SW_SRC:		Software scrub only errors
-> + * @SCRUB_SW_PROG_SRC:		Progressive software scrub from an error
-> + * @SCRUB_SW_TUNABLE:		Software scrub frequency is tunable
-> + * @SCRUB_HW_PROG:		HW progressive (sequential) scrubbing
-> + * @SCRUB_HW_SRC:		Hardware scrub only errors
-> + * @SCRUB_HW_PROG_SRC:		Progressive hardware scrub from an error
-> + * SCRUB_HW_TUNABLE:		Hardware scrub frequency is tunable
-> + */
->  enum scrub_type {
-> -	SCRUB_UNKNOWN = 0,	/* Unknown if scrubber is available */
-> -	SCRUB_NONE,		/* No scrubber */
-> -	SCRUB_SW_PROG,		/* SW progressive (sequential) scrubbing */
-> -	SCRUB_SW_SRC,		/* Software scrub only errors */
-> -	SCRUB_SW_PROG_SRC,	/* Progressive software scrub from an error */
-> -	SCRUB_SW_TUNABLE,	/* Software scrub frequency is tunable */
-> -	SCRUB_HW_PROG,		/* HW progressive (sequential) scrubbing */
-> -	SCRUB_HW_SRC,		/* Hardware scrub only errors */
-> -	SCRUB_HW_PROG_SRC,	/* Progressive hardware scrub from an error */
-> -	SCRUB_HW_TUNABLE	/* Hardware scrub frequency is tunable */
-> +	SCRUB_UNKNOWN =	0,
-> +	SCRUB_NONE,
-> +	SCRUB_SW_PROG,
-> +	SCRUB_SW_SRC,
-> +	SCRUB_SW_PROG_SRC,
-> +	SCRUB_SW_TUNABLE,
-> +	SCRUB_HW_PROG,
-> +	SCRUB_HW_SRC,
-> +	SCRUB_HW_PROG_SRC,
-> +	SCRUB_HW_TUNABLE
->  };
->  
->  #define SCRUB_FLAG_SW_PROG	BIT(SCRUB_SW_PROG)
-> -- 
-> 1.7.8
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+one looks like kvm host related, hangs when writing into apic register:
+#0  native_apic_mem_write (reg=768, v=<value optimized out>) at /builds/imammedo/linux-2.6/arch/x86/include/asm/apic.h:107
+#1  0xffffffff81034749 in apic_write (low=50432, id=<value optimized out>) at /builds/imammedo/linux-2.6/arch/x86/include/asm/apic.h:426
+#2  native_apic_icr_write (low=50432, id=<value optimized out>) at arch/x86/kernel/apic/apic.c:273
+#3  0xffffffff815a78fb in apic_icr_write (apicid=2, cpu=2) at /builds/imammedo/linux-2.6/arch/x86/include/asm/apic.h:436
+#4  wakeup_secondary_cpu_via_init (apicid=2, cpu=2) at arch/x86/kernel/smpboot.c:563
+#5  do_boot_cpu (apicid=2, cpu=2) at arch/x86/kernel/smpboot.c:782
+
+
+And another one cannot be helped: RHBZ 816899 comment 7
+https://bugzilla.redhat.com/show_bug.cgi?id=816899#c7
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+-----
+  Igor
