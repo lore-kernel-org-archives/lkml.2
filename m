@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab2EIG27 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:28:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38747 "EHLO
+	id S1758495Ab2EIG25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:28:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38752 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755628Ab2EIFwy (ORCPT
+	by vger.kernel.org with ESMTP id S1755658Ab2EIFwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:52:54 -0400
-Message-Id: <20120509055037.339599419@decadent.org.uk>
+Message-Id: <20120509055034.039563429@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:24 +0100
+Date: Wed, 09 May 2012 06:51:01 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 055/167] [PATCH 2/4] ocfs: ->rl_used breakage on big-endian
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 032/167] [PATCH] EHCI: always clear the STS_FLR status bit
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,58 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit e1bf4cc620fd143766ddfcee3b004a1d1bb34fd0 upstream.
+commit 2fbe2bf1fd37f9d99950bd8d8093623cf22cf08b upstream.
 
-it's le16, not le32 or le64...
+This patch (as1544) fixes a problem affecting some EHCI controllers.
+They can generate interrupts whenever the STS_FLR status bit is turned
+on, even though that bit is masked out in the Interrupt Enable
+register.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Since the driver doesn't use STS_FLR anyway, the patch changes the
+interrupt routine to clear that bit whenever it is set, rather than
+leaving it alone.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ocfs2/refcounttree.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/usb/host/ehci-hcd.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ocfs2/refcounttree.c b/fs/ocfs2/refcounttree.c
-index a7b7217..bc90ebc 100644
---- a/fs/ocfs2/refcounttree.c
-+++ b/fs/ocfs2/refcounttree.c
-@@ -1468,7 +1468,7 @@ static int ocfs2_divide_leaf_refcount_block(struct buffer_head *ref_leaf_bh,
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 95ca07a..4a3bc5b 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -858,8 +858,13 @@ static irqreturn_t ehci_irq (struct usb_hcd *hcd)
+ 		goto dead;
+ 	}
  
- 	trace_ocfs2_divide_leaf_refcount_block(
- 		(unsigned long long)ref_leaf_bh->b_blocknr,
--		le32_to_cpu(rl->rl_count), le32_to_cpu(rl->rl_used));
-+		le32_to_cpu(rl->rl_count), le16_to_cpu(rl->rl_used));
- 
- 	/*
- 	 * XXX: Improvement later.
-@@ -2411,7 +2411,7 @@ static int ocfs2_calc_refcount_meta_credits(struct super_block *sb,
- 				rb = (struct ocfs2_refcount_block *)
- 							prev_bh->b_data;
- 
--				if (le64_to_cpu(rb->rf_records.rl_used) +
-+				if (le16_to_cpu(rb->rf_records.rl_used) +
- 				    recs_add >
- 				    le16_to_cpu(rb->rf_records.rl_count))
- 					ref_blocks++;
-@@ -2476,7 +2476,7 @@ static int ocfs2_calc_refcount_meta_credits(struct super_block *sb,
- 	if (prev_bh) {
- 		rb = (struct ocfs2_refcount_block *)prev_bh->b_data;
- 
--		if (le64_to_cpu(rb->rf_records.rl_used) + recs_add >
-+		if (le16_to_cpu(rb->rf_records.rl_used) + recs_add >
- 		    le16_to_cpu(rb->rf_records.rl_count))
- 			ref_blocks++;
- 
-@@ -3629,7 +3629,7 @@ int ocfs2_refcounted_xattr_delete_need(struct inode *inode,
- 			 * one will split a refcount rec, so totally we need
- 			 * clusters * 2 new refcount rec.
- 			 */
--			if (le64_to_cpu(rb->rf_records.rl_used) + clusters * 2 >
-+			if (le16_to_cpu(rb->rf_records.rl_used) + clusters * 2 >
- 			    le16_to_cpu(rb->rf_records.rl_count))
- 				ref_blocks++;
- 
++	/*
++	 * We don't use STS_FLR, but some controllers don't like it to
++	 * remain on, so mask it out along with the other status bits.
++	 */
++	masked_status = status & (INTR_MASK | STS_FLR);
++
+ 	/* Shared IRQ? */
+-	masked_status = status & INTR_MASK;
+ 	if (!masked_status || unlikely(ehci->rh_state == EHCI_RH_HALTED)) {
+ 		spin_unlock(&ehci->lock);
+ 		return IRQ_NONE;
 -- 
 1.7.10
 
