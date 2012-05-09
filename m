@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758698Ab2EIIej (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 04:34:39 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:39532 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab2EIIeg (ORCPT
+	id S1758736Ab2EIIfI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 04:35:08 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:8799 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab2EIIfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 04:34:36 -0400
-Message-ID: <4FAA216D.1080909@linux.vnet.ibm.com>
-Date: Wed, 09 May 2012 15:49:01 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Wed, 9 May 2012 04:35:01 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6705"; a="188909109"
+Message-ID: <3f7a217a08fd2c508576cbac8d26b017.squirrel@www.codeaurora.org>
+In-Reply-To: <1336054995-22988-15-git-send-email-svenkatr@ti.com>
+References: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
+    <1336054995-22988-15-git-send-email-svenkatr@ti.com>
+Date: Wed, 9 May 2012 01:35:00 -0700 (PDT)
+Subject: Re: [PATCH v2 14/16] mmc: block: Implement HPI invocation and 
+     handling logic.
+From: kdorfman@codeaurora.org
+To: "Venkatraman S" <svenkatr@ti.com>
+Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org,
+        alex.lemberg@sandisk.com, ilan.smith@sandisk.com, lporzio@micron.com,
+        rmk+kernel@arm.linux.org.uk, "Venkatraman S" <svenkatr@ti.com>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-To: Diwakar Tundlam <dtundlam@nvidia.com>
-CC: "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'Ingo Molnar'" <mingo@kernel.org>,
-        "'David Rientjes'" <rientjes@google.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Subject: Re: [PATCH] sched: Make nr_uninterruptible count a signed value
-References: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF10C@HQMAIL04.nvidia.com> <1336514192.8226.52.camel@twins> <1DD7BFEDD3147247B1355BEFEFE46652379C3DF10D@HQMAIL04.nvidia.com> <1336516020.8226.57.camel@twins> <1336516174.8226.59.camel@twins> <1DD7BFEDD3147247B1355BEFEFE46652379C3DF10E@HQMAIL04.nvidia.com>
-In-Reply-To: <1DD7BFEDD3147247B1355BEFEFE46652379C3DF10E@HQMAIL04.nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12050821-9264-0000-0000-000001704737
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2012 06:46 AM, Diwakar Tundlam wrote:
 
->> No that's right. nr_uninterruptible counts the number of tasks in 
->> uninterruptible sleep, so deactivate_task puts a task to sleep, so we 
->> need to increment the number of sleeping tasks, activate_task wakes a 
->> task up so we need to decrement the number of sleeping tasks.
-> 
-> Yep, I looked at the code for task_contributes_to_load() and I understand what it is all about.
-> The ++ and -- are correct, I see it now.
-> 
-> On the -ve values, strangely inspite of %Ld in the print statement, in my kernel, I see high unsigned values instead of -ve values for nr_uninterruptible.
-> 
-> But the sum is always 0, though.
-> 
-> Maybe it is an artifact of 32-bit machine displaying 64-bit print format.
-> An (unsigned long)(-24) promoted to (signed long long) ends up as 4294967272.
-> As seen in my output of sched_debug.
+> +static bool mmc_can_do_foreground_hpi(struct mmc_queue *mq,
+> +			struct request *req, unsigned int thpi)
+> +{
+> +
+> +	/*
+> +	 * If some time has elapsed since the issuing of previous write
+> +	 * command, or if the size of the request was too small, there's
+> +	 * no point in preempting it. Check if it's worthwhile to preempt
+> +	 */
+> +	int time_elapsed = jiffies_to_msecs(jiffies -
+> +			mq->mqrq_cur->mmc_active.mrq->cmd->started_time);
+> +
+> +	if (time_elapsed <= thpi)
+> +			return true;
+Some host controllers (or DMA) has possibility to get the byte count of
+current transaction. It may be implemented as host api (similar to abort
+ops). Then you have more accurate estimation of worthiness.
 
+> +
+> +	return false;
+> +}
 
-This may do some help.
-
-Regards,
-Michael Wang
----
- kernel/sched/debug.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 09acaa1..ab9d53f 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -270,7 +270,7 @@ static void print_cpu(struct seq_file *m, int cpu)
-                   rq->load.weight);
-        P(nr_switches);
-        P(nr_load_updates);
--       P(nr_uninterruptible);
-+       P((signed long)nr_uninterruptible);
-        PN(next_balance);
-        P(curr->pid);
-        PN(clock);
--- 
-1.7.4.1
+Thanks, Kostya
 
