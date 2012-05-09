@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab2EIE6Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 00:58:25 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59947 "EHLO
+	id S1754867Ab2EIE66 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 00:58:58 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:49134 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751232Ab2EIE6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 00:58:21 -0400
+	id S1751425Ab2EIE6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 00:58:55 -0400
 From: Joe Perches <joe@perches.com>
-To: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Subject: [PATCH 06/13] atm: Convert compare_ether_addr to ether_addr_equal
-Date: Tue,  8 May 2012 21:56:50 -0700
-Message-Id: <c113ba8aac3d761556f7322aecccb080a1d3bbce.1336538938.git.joe@perches.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 09/13] mac80211: Convert compare_ether_addr to ether_addr_equal by hand
+Date: Tue,  8 May 2012 21:56:53 -0700
+Message-Id: <95ab271a19bf0fc4c4fa007e95b76edc8d6b5611.1336538938.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 In-Reply-To: <cover.1336538937.git.joe@perches.com>
 References: <cover.1336538937.git.joe@perches.com>
@@ -19,106 +22,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new bool function ether_addr_equal to add
-some clarity and reduce the likelihood for misuse
-of compare_ether_addr for sorting.
+spatch/coccinelle isn't perfect.  It doesn't understand
+__aligned(x) and doesn't convert functions it can't parse.
 
-Done via cocci script:
-
-$ cat compare_ether_addr.cocci
-@@
-expression a,b;
-@@
--	!compare_ether_addr(a, b)
-+	ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	compare_ether_addr(a, b)
-+	!ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	!ether_addr_equal(a, b) == 0
-+	ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	!ether_addr_equal(a, b) != 0
-+	!ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	ether_addr_equal(a, b) == 0
-+	!ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	ether_addr_equal(a, b) != 0
-+	ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	!!ether_addr_equal(a, b)
-+	ether_addr_equal(a, b)
+Convert the remaining compare_ether_addr uses.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/atm/lec.c |    6 +++---
- net/atm/mpc.c |    3 +--
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ net/mac80211/rx.c       |    4 ++--
+ net/mac80211/sta_info.h |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/atm/lec.c b/net/atm/lec.c
-index f1964ca..bb35cb7 100644
---- a/net/atm/lec.c
-+++ b/net/atm/lec.c
-@@ -1255,7 +1255,7 @@ static int lane2_associate_req(struct net_device *dev, const u8 *lan_dst,
- 	struct sk_buff *skb;
- 	struct lec_priv *priv = netdev_priv(dev);
+diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
+index 26bfd6f..d722c40 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1714,8 +1714,8 @@ static bool ieee80211_frame_allowed(struct ieee80211_rx_data *rx, __le16 fc)
+ 	 * of whether the frame was encrypted or not.
+ 	 */
+ 	if (ehdr->h_proto == rx->sdata->control_port_protocol &&
+-	    (compare_ether_addr(ehdr->h_dest, rx->sdata->vif.addr) == 0 ||
+-	     compare_ether_addr(ehdr->h_dest, pae_group_addr) == 0))
++	    (ether_addr_equal(ehdr->h_dest, rx->sdata->vif.addr) ||
++	     ether_addr_equal(ehdr->h_dest, pae_group_addr)))
+ 		return true;
  
--	if (compare_ether_addr(lan_dst, dev->dev_addr))
-+	if (!ether_addr_equal(lan_dst, dev->dev_addr))
- 		return 0;	/* not our mac address */
+ 	if (ieee80211_802_1x_port_control(rx) ||
+diff --git a/net/mac80211/sta_info.h b/net/mac80211/sta_info.h
+index f75f5d9..e920b22 100644
+--- a/net/mac80211/sta_info.h
++++ b/net/mac80211/sta_info.h
+@@ -501,7 +501,7 @@ void for_each_sta_info_type_check(struct ieee80211_local *local,
+ 		nxt = _sta ? rcu_dereference(_sta->hnext) : NULL	\
+ 	     )								\
+ 	/* compare address and run code only if it matches */		\
+-	if (compare_ether_addr(_sta->sta.addr, (_addr)) == 0)
++	if (ether_addr_equal(_sta->sta.addr, (_addr)))
  
- 	kfree(priv->tlvs);	/* NULL if there was no previous association */
-@@ -1662,7 +1662,7 @@ static struct lec_arp_table *lec_arp_find(struct lec_priv *priv,
- 
- 	head = &priv->lec_arp_tables[HASH(mac_addr[ETH_ALEN - 1])];
- 	hlist_for_each_entry(entry, node, head, next) {
--		if (!compare_ether_addr(mac_addr, entry->mac_addr))
-+		if (ether_addr_equal(mac_addr, entry->mac_addr))
- 			return entry;
- 	}
- 	return NULL;
-@@ -1849,7 +1849,7 @@ static struct atm_vcc *lec_arp_resolve(struct lec_priv *priv,
- 		case 1:
- 			return priv->mcast_vcc;
- 		case 2:	/* LANE2 wants arp for multicast addresses */
--			if (!compare_ether_addr(mac_to_find, bus_mac))
-+			if (ether_addr_equal(mac_to_find, bus_mac))
- 				return priv->mcast_vcc;
- 			break;
- 		default:
-diff --git a/net/atm/mpc.c b/net/atm/mpc.c
-index aa97240..d4cc1be 100644
---- a/net/atm/mpc.c
-+++ b/net/atm/mpc.c
-@@ -592,8 +592,7 @@ static netdev_tx_t mpc_send_packet(struct sk_buff *skb,
- 		goto non_ip;
- 
- 	while (i < mpc->number_of_mps_macs) {
--		if (!compare_ether_addr(eth->h_dest,
--					(mpc->mps_macs + i*ETH_ALEN)))
-+		if (ether_addr_equal(eth->h_dest, mpc->mps_macs + i * ETH_ALEN))
- 			if (send_via_shortcut(skb, mpc) == 0) /* try shortcut */
- 				return NETDEV_TX_OK;
- 		i++;
+ /*
+  * Get STA info by index, BROKEN!
 -- 
 1.7.8.111.gad25c.dirty
 
