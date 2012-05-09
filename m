@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab2EIFxa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:53:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38847 "EHLO
+	id S1757376Ab2EIFx7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:53:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38894 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756058Ab2EIFxJ (ORCPT
+	by vger.kernel.org with ESMTP id S1756141Ab2EIFxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:09 -0400
-Message-Id: <20120509055030.585061570@decadent.org.uk>
+	Wed, 9 May 2012 01:53:14 -0400
+Message-Id: <20120509055038.051604000@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:50:36 +0100
+Date: Wed, 09 May 2012 06:51:28 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Adrian Hunter <adrian.hunter@intel.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>
-Subject: [ 007/167] [PATCH] mmc: fixes for eMMC v4.5 discard operation
+        alan@lxorguk.ukuu.org.uk, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 059/167] [PATCH] usb: dwc3: ep0: increment "actual" on bounced ep0 case
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,74 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 7194efb8f063ee3aa0cb50d9002348887e68ec10 upstream.
+commit cd423dd3634a5232a3019eb372b144619a61cd16 upstream.
 
-eMMC v4.5 discard operation is significantly different from the
-existing trim operation because it is not guaranteed to work with
-the new sanitize operation.  Consequently mmc_can_trim() is
-separated from mmc_can_discard().
+due to a HW limitation we have a bounce buffer for ep0
+out transfers which are not aligned with MaxPacketSize.
 
-Also the new discard operation does not result in the sectors being
-set to all-zeros, so discard_zeroes_data must not be set.
+On such case we were not increment r->actual as we should.
 
-In addition, the new discard has the same timeout as trim, but from
-v4.5 trim is defined to use the hc timeout.  The timeout calculation
-is adjusted accordingly.
+This patch fixes that mistake.
 
-Fixes apply to linux 3.2 on.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mmc/card/queue.c |    2 +-
- drivers/mmc/core/core.c  |    7 ++++---
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/usb/dwc3/ep0.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-index 2517547..996f8e3 100644
---- a/drivers/mmc/card/queue.c
-+++ b/drivers/mmc/card/queue.c
-@@ -139,7 +139,7 @@ static void mmc_queue_setup_discard(struct request_queue *q,
+--- a/drivers/usb/dwc3/ep0.c
++++ b/drivers/usb/dwc3/ep0.c
+@@ -583,9 +583,10 @@ static void dwc3_ep0_complete_data(struc
+ 		dwc->ep0_bounced = false;
+ 	} else {
+ 		transferred = ur->length - trb.length;
+-		ur->actual += transferred;
+ 	}
  
- 	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, q);
- 	q->limits.max_discard_sectors = max_discard;
--	if (card->erased_byte == 0)
-+	if (card->erased_byte == 0 && !mmc_can_discard(card))
- 		q->limits.discard_zeroes_data = 1;
- 	q->limits.discard_granularity = card->pref_erase << 9;
- 	/* granularity must not be greater than max. discard */
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 7474c47..83db5ef 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1409,7 +1409,10 @@ static unsigned int mmc_mmc_erase_timeout(struct mmc_card *card,
- {
- 	unsigned int erase_timeout;
++	ur->actual += transferred;
++
+ 	if ((epnum & 1) && ur->actual < ur->length) {
+ 		/* for some reason we did not get everything out */
  
--	if (card->ext_csd.erase_group_def & 1) {
-+	if (arg == MMC_DISCARD_ARG ||
-+	    (arg == MMC_TRIM_ARG && card->ext_csd.rev >= 6)) {
-+		erase_timeout = card->ext_csd.trim_timeout;
-+	} else if (card->ext_csd.erase_group_def & 1) {
- 		/* High Capacity Erase Group Size uses HC timeouts */
- 		if (arg == MMC_TRIM_ARG)
- 			erase_timeout = card->ext_csd.trim_timeout;
-@@ -1681,8 +1684,6 @@ int mmc_can_trim(struct mmc_card *card)
- {
- 	if (card->ext_csd.sec_feature_support & EXT_CSD_SEC_GB_CL_EN)
- 		return 1;
--	if (mmc_can_discard(card))
--		return 1;
- 	return 0;
- }
- EXPORT_SYMBOL(mmc_can_trim);
--- 
-1.7.10
-
 
 
