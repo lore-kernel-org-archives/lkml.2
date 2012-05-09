@@ -1,82 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab2EILBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 07:01:33 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:49682 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756711Ab2EILBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 07:01:31 -0400
-Message-ID: <4FAA4E85.6020305@mev.co.uk>
-Date: Wed, 9 May 2012 12:01:25 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120414 Thunderbird/11.0.1
+	id S1757389Ab2EILCe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 07:02:34 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57291 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752533Ab2EILCc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 07:02:32 -0400
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] staging: comedi: remove __user annotation inside of struct's
-References: <201205081641.00358.hartleys@visionengravers.com> <ADE657CA350FB648AAC2C43247A983F0020698A1774D@AUSP01VMBX24.collaborationhost.net> <4FAA44D7.1040209@mev.co.uk> <20120509103111.GR22134@mwanda>
-In-Reply-To: <20120509103111.GR22134@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1336537289.7365.62.camel@marge.simpson.net>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+	<1335830115-14335-8-git-send-email-fweisbec@gmail.com>
+	<alpine.DEB.2.00.1205071053070.1060@router.home>
+	<CAFTL4hymuHZOGssX2UShg0kL-XkCKQYtG6X=Vt9PmKj4EwtAgA@mail.gmail.com>
+	<1336488626.16236.41.camel@twins>
+	<alpine.DEB.2.00.1205081016370.27713@router.home>
+	<1336490832.8226.5.camel@twins>
+	<alpine.DEB.2.00.1205081035550.27713@router.home>
+	<1336492081.8226.13.camel@twins>
+	<alpine.DEB.2.00.1205081054310.27713@router.home>
+	<1336493768.8226.29.camel@twins>
+	<1336506601.7400.21.camel@marge.simpson.net>
+	<alpine.DEB.2.00.1205081541010.1391@router.home>
+	<1336537289.7365.62.camel@marge.simpson.net>
+Date: Wed, 9 May 2012 13:02:30 +0200
+Message-ID: <CAFTL4hzrTXsVucJDHrirDTxM7NwxD5DKuGjRW3fkiWmHyHUOpg@mail.gmail.com>
+Subject: Re: [PATCH 07/41] cpuset: Set up interface for nohz flag
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Christoph Lameter <cl@linux.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-05-09 11:31, Dan Carpenter wrote:
-> On Wed, May 09, 2012 at 11:20:07AM +0100, Ian Abbott wrote:
->> On 2012-05-09 00:55, H Hartley Sweeten wrote:
->>> On Tuesday, May 08, 2012 4:41 PM, H Hartley Sweeten wrote:
->>>>
->>>> The structs' comedi_insn, coomedi_insnlist, comedi_cmd,
->>>> comedi_chaninfo, and comedi_rangeinfo are all passed to
->>>> the kernel from user space using ioctl commands. They
->>>> are then copied to kernel space using copy_from_user()
->>>> before the data is passed to the drivers.
->>>>
->>>> The __user annotation should not be used with variables
->>>> inside the struct. This produces a lot of sparse warnings
->>>> like:
->>>>
->>>> warning: dereference of noderef expression
->>>>
->>>> Note: This patch exposes some new warnings about different
->>>> address space. These will be addressed.
->>>
->>> Please ignore this patch.
->>>
->>> It appears the annotations in the struct definitions are correct.
+2012/5/9 Mike Galbraith <efault@gmx.de>:
+> On Tue, 2012-05-08 at 15:45 -0500, Christoph Lameter wrote:
+>> On Tue, 8 May 2012, Mike Galbraith wrote:
 >>
->> Personally, I think you were on the mark with the patch.  It's
->> better to avoid using __user in comedi.h so it can be used as-is in
->> user-space.
+>> > On Tue, 2012-05-08 at 18:16 +0200, Peter Zijlstra wrote:
+>> > > On Tue, 2012-05-08 at 10:57 -0500, Christoph Lameter wrote:
+>> >
+>> > > isolcpus is a very limited hack that adds more pain that its worth. Its
+>> > > yet another mask to check and its functionality is completely available
+>> > > through cpusets.
+>> >
+>> > Agreed.
+>>
+>> How would that work? By creating cpusets that only have a single cpu in
+>> them?
 >
-> Sparse is useful so we shouldn't break it.  I always run sparse over
-> my patches before submission and look at the warnings.  Except if
-> they scroll off the page.  In that case, I just figure that the
-> author deserves the bugs.
+> No, just turn load balancing off for exclusive set, domains go poof.
+
+I don't think it's
+
+>> > > You cannot cree multi-cpu partitions using isolcpus, you cannot
+>> > > dynamically reconfigure it.
+>> >
+>> > Big plus for cpusets.
+>>
+>> Why would you want to do anything like it? cpusets are confusing. You can
+>> have a cpu be part of multiple cpusets. Which nohz setting applies for a
+>> particular cpu then? If any of the cpusets have nohz set then it applies
+>> to the cpu? And thus someone in a cpuset that does not has nohz set will
+>> find that a cpu will have nohz functionality?
 >
-> We could just do some ifdeferry to fix it for userspace.
-
-That doesn't help in cases such as 'struct comedi_insn' where the 'data' 
-pointer is a user-space pointer in the user-space copy of the object and 
-a kernel-space pointer in the kernel-space copy of the object.  The only 
-fix for that is to have separate "k" versions of the struct or to do a 
-load of casting, which is slightly error-prone and makes the code less 
-readable.
-
-Are there any handy macros for casting pointers to __user pointers, 
-something like
-
-#define _user(p) ((typeof(*(p)) __user *)(p))
-
-but preferably without the repeated expansion of 'p' in case of 
-side-effects?
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+> nohz has to be at least an exclusive set property.
+>
+>> Its not a good match for this. You would want a per cpu attribute for
+>> nohz.
+>
+> Or per cpuset, which can be the same thing as per cpu if you want.
+>
+>> > > And on the scheduler side cpusets doesn't add runtime overhead to normal
+>> > > things, only sched_setaffinity() and a few other rare operations get
+>> > > slightly more expensive. And it allows to reduce runtime overhead by
+>> > > making the load-balancer domains smaller.
+>> >
+>> > Very big deal if you have a load that doesn't do all the performance 'i'
+>> > dotting and 't' crossing it maybe could have, but ends up on a big box.
+>>
+>> isolcpus are not part of load balancer domains.
+>
+> Yup, so if you have an application with an RT component, somewhat
+> sensitive, needs isolation from rest of a big box, but app also has
+> SCHED_OTHER components.  isolcpus is a pain, everything has to be static
+> and nailed to the floor.  Load just works when plugged into a cpuset.
+>
+> -Mike
+>
