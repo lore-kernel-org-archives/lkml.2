@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759440Ab2EIOHX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:07:23 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:44401 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758296Ab2EIOHU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:07:20 -0400
+	id S1758790Ab2EIOIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:08:21 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:11150
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757918Ab2EIOIU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 10:08:20 -0400
+X-IronPort-AV: E=Sophos;i="4.75,557,1330902000"; 
+   d="scan'208";a="143204670"
+Message-ID: <4FAA7A51.6050504@inria.fr>
+Date: Wed, 09 May 2012 16:08:17 +0200
+From: Brice Goglin <Brice.Goglin@inria.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-In-Reply-To: <3f7a217a08fd2c508576cbac8d26b017.squirrel@www.codeaurora.org>
-References: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
- <1336054995-22988-15-git-send-email-svenkatr@ti.com> <3f7a217a08fd2c508576cbac8d26b017.squirrel@www.codeaurora.org>
-From: "S, Venkatraman" <svenkatr@ti.com>
-Date: Wed, 9 May 2012 19:36:57 +0530
-Message-ID: <CANfBPZ-ZAJjDcy6cR7q+n7SKGc+2dMYfFREg-6ovh+E1eNbGWg@mail.gmail.com>
-Subject: Re: [PATCH v2 14/16] mmc: block: Implement HPI invocation and
- handling logic.
-To: kdorfman@codeaurora.org
-Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org,
-        alex.lemberg@sandisk.com, ilan.smith@sandisk.com, lporzio@micron.com,
-        rmk+kernel@arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Zhouping Liu <zliu@redhat.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: mm: move_pages syscall can't return ENOENT when pages are not
+ present
+References: <85e08d38-234a-4bc6-8c4f-6c92b50dc9b1@zmail13.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <85e08d38-234a-4bc6-8c4f-6c92b50dc9b1@zmail13.collab.prod.int.phx2.redhat.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 2:05 PM,  <kdorfman@codeaurora.org> wrote:
+Le 09/05/2012 10:58, Zhouping Liu a Ã©crit :
+> hi, all
 >
->> +static bool mmc_can_do_foreground_hpi(struct mmc_queue *mq,
->> +                     struct request *req, unsigned int thpi)
->> +{
->> +
->> +     /*
->> +      * If some time has elapsed since the issuing of previous write
->> +      * command, or if the size of the request was too small, there's
->> +      * no point in preempting it. Check if it's worthwhile to preempt
->> +      */
->> +     int time_elapsed = jiffies_to_msecs(jiffies -
->> +                     mq->mqrq_cur->mmc_active.mrq->cmd->started_time);
->> +
->> +     if (time_elapsed <= thpi)
->> +                     return true;
-> Some host controllers (or DMA) has possibility to get the byte count of
-> current transaction. It may be implemented as host api (similar to abort
-> ops). Then you have more accurate estimation of worthiness.
+> Recently, I found an error in move_pages syscall:
+>
+> depending on move_pages(2), when page is not present,
+> it should fail with ENOENT, in fact, it's ok without
+> any errno.
+>
+> the following reproducer can easily reproduce
+> the issue, suggest you get more details by strace.
+> inside reproducer, I try to move a non-exist page from
+> node 1 to node 0.
 >
 
-Byte count returned by DMA or the HC doesn't mean that the data has
-actually been
-burnt into the device (due to internal buffering). This is one of the
-reasons for
-defining the CORRECTLY_PRG_SECTORS_NUM register in the standard which
-can be queried to find how much was correctly written.
- Unfortunately it can only be queried after the abort has been issued.
+If I understand correctly, 3 pages should migrate properly but the last
+one cannot migrate because it's not present. In this case, move_pages
+returns success. -ENOENT is set in the status array, not in the return
+value/errno.
 
->> +
->> +     return false;
->> +}
->
-> Thanks, Kostya
->
+In the past, if *all* pages failed to migrate, move_pages would return
+ENOENT instead of success, but the behavior was inconsistent so I
+changed that in commit e78bbfa8262424417a29349a8064a535053912b9 as
+Wanlong Gao said. But that should not matter here since 3 pages out of 4
+are successfully migrated from what I understand.
+
+The manpage should be updated (remove ENOENT from the ERRORS section,
+but keep it in the "Page states in the status array" section).
+
+Brice
+
