@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410Ab2EILLi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 07:11:38 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:35103 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab2EILLf (ORCPT
+	id S1758053Ab2EILMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 07:12:49 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:37831
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757745Ab2EILMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 07:11:35 -0400
-References: <1336515735.2097.23.camel@shrek.rexursive.com> <4FAA2673.50007@linux.vnet.ibm.com> <1336560579.2097.32.camel@shrek.rexursive.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1336560579.2097.32.camel@shrek.rexursive.com>
+	Wed, 9 May 2012 07:12:46 -0400
+Date: Wed, 9 May 2012 07:12:43 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Christoph Hellwig <hch@infradead.org>,
+        Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Jeff Garzik <jeff@garzik.org>, Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [RFC][PATCH] libata: enable SATA disk fua detection on default
+Message-ID: <20120509111243.GB29593@infradead.org>
+References: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com>
+ <4FAA02DA.3000201@gmail.com>
+ <20120509061956.GA12329@gmail.com>
+ <20120509082527.GA10674@infradead.org>
+ <20120509093016.GA12754@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-From: Bojan Smojver <bojan@rexursive.com>
-Date: Wed, 09 May 2012 21:11:30 +1000
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        bp@alien8.de
-Message-ID: <aba7b996-df0e-420c-b2eb-d32881660fe8@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120509093016.GA12754@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bojan Smojver <bojan@rexursive.com> wrote:
+On Wed, May 09, 2012 at 05:30:16PM +0800, Zheng Liu wrote:
+> IMHO, FUA provides a solution that we can get better performance in write
+> cache mode when we do many flush operations.  If I set the disk to write
+> through mode, I won't get this benefit.  Am I missing something?
 
->Honest answer - I have absolutely no idea. I've seen the code of
->suspend-utils (i.e. user mode stuff) and it seems to me that it does
->exactly this. Could be wrong of course, just like many times before.
+If you set the disk to write through mode you never have to flush the
+cache.  So as soonas your number of flushes gets close to the number of
+writes it tends to be a clear win - for ATA the tradeoff is even more in
+favour of write through because the flush command can't be queued yetin
+commonly available standards versions.  So if you have a workload that
+basically needs to flush out every write you win - if you have workloads
+where you have a lot more writes than cache flushes write back mode
+wins.
 
-What makes me think that this may not be that bad is the fact that post-resume, it will actually be hibernation code that will be unwinding things. So like this: prepare for hibernation, create image, suspend to memory (equivalent to hibernation failure of some kind, really), resume from memory, unwind from unsuccessful hibernation.
+> Currently, the key issue is that we disable FUA detection for SATA disk.
+> We almost have no chance to change it because it is too complicated to
+> set libata_fua variable when this module is loaded.  So why not give
+> SATA disk an opportunity to enable this feature?  After all, there is a
+> lot of SATA disks that support this feature.
 
-No?
-
--- 
-Bojan
+I'm all in favour of your patch, I just wanted to point out that the
+argument in the description wasn't quite correct.
