@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760581Ab2EIRoo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:44:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59431 "EHLO
+	id S1759610Ab2EIRon (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:44:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59430 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754432Ab2EIRol (ORCPT
+	with ESMTP id S1754386Ab2EIRol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 13:44:41 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: [GIT PULL 0/1] perf/urgent fix
-Date: Wed,  9 May 2012 14:43:58 -0300
-Message-Id: <1336585439-32378-1-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/1] perf stat: handle ENXIO error for perf_event_open
+Date: Wed,  9 May 2012 14:43:59 -0300
+Message-Id: <1336585439-32378-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1336585439-32378-1-git-send-email-acme@infradead.org>
+References: <1336585439-32378-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -22,36 +25,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: David Ahern <dsahern@gmail.com>
 
-Hi Ingo,
+perf stat on PPC currently fails to run:
 
-	Please consider pulling,
+$ perf stat -- sleep 1
+  Error: open_counter returned with 6 (No such device or address). /bin/dmesg may provide additional information.
 
-- Arnaldo
+  Fatal: Not all events could be opened.
 
-The following changes since commit 09c0211c0bb0e40231e6ee9a35041d467ed72f16:
+The problem is that until 2.6.37 (behavior changed with commit b0a873e)
+perf on PPC returns ENXIO when hw_perf_event_init() fails. With this
+patch we get the expected behavior:
 
-  perf: Turn off compiler warnings for flex and bison generated files (2012-05-07 10:03:01 +0200)
+$ perf stat -v -- sleep 1
+cycles event is not supported by the kernel.
+stalled-cycles-frontend event is not supported by the kernel.
+stalled-cycles-backend event is not supported by the kernel.
+instructions event is not supported by the kernel.
+branches event is not supported by the kernel.
+branch-misses event is not supported by the kernel.
 
-are available in the git repository at:
+...
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/urgent
-
-for you to fetch changes up to 20d23aaa31da295378abff4272716e3dfc72baf0:
-
-  perf stat: handle ENXIO error for perf_event_open (2012-05-09 14:14:41 -0300)
-
-----------------------------------------------------------------
-Fix for perf/urgent:
-
-. Fix handling of older kernels on PPC, from David Ahern.
-
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1336490956-57145-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-----------------------------------------------------------------
-David Ahern (1):
-      perf stat: handle ENXIO error for perf_event_open
-
+---
  tools/perf/builtin-stat.c |    7 ++++++-
  1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 4532a78..1e5e9b2 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -488,8 +488,13 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 
+ 	list_for_each_entry(counter, &evsel_list->entries, node) {
+ 		if (create_perf_stat_counter(counter, first) < 0) {
++			/*
++			 * PPC returns ENXIO for HW counters until 2.6.37
++			 * (behavior changed with commit b0a873e).
++			 */
+ 			if (errno == EINVAL || errno == ENOSYS ||
+-			    errno == ENOENT || errno == EOPNOTSUPP) {
++			    errno == ENOENT || errno == EOPNOTSUPP ||
++			    errno == ENXIO) {
+ 				if (verbose)
+ 					ui__warning("%s event is not supported by the kernel.\n",
+ 						    event_name(counter));
+-- 
+1.7.9.2.358.g22243
+
