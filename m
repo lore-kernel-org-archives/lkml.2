@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758983Ab2EIJKe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 05:10:34 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:30183
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751834Ab2EIJKc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 05:10:32 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zz14ffIzz1202hzzz2dh2a8h668h839h8e2h8e3hd25hbe9i)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Agarwal Nikhil-B38457 <B38457@freescale.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "linux-netdev@vger.kernel.org" <linux-netdev@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Memory exhaust issue with only IPsec policies configured on
- continuous traffic
-Thread-Topic: Memory exhaust issue with only IPsec policies configured on
- continuous traffic
-Thread-Index: Ac0tv28IM+yv7QjhQam8Yx0e57jygwAAbzFQAABj4VAAAAsIEA==
-Date: Wed, 9 May 2012 09:10:14 +0000
-Message-ID: <F0B93D0554724543876B9A180DC988575B70E7@039-SN1MPN1-001.039d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.134.142]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1758995Ab2EIJM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 05:12:26 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62677 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758891Ab2EIJMY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 05:12:24 -0400
+Date: Wed, 9 May 2012 11:12:12 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Ido Yariv <ido@wizery.com>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, shai@scalemp.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/platform] vsmp: Fix number of CPUs when vsmp is disabled
+Message-ID: <20120509091212.GA8585@gmail.com>
+References: <1336462455-22544-1-git-send-email-ido@wizery.com>
+ <tip-824a6ae65f085255464155760cb9628a2f0deb29@git.kernel.org>
+ <20120508122548.GA5741@gmail.com>
+ <20120509080335.GA5556@NoteStation.colubris.lan>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120509080335.GA5556@NoteStation.colubris.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-               In a typical scenario, when IPSEC policies are configured in the system but SA is not present or negotiation fails or IKE daemon is not running.  The current behavior of xfrm is to send those matching packets to blackhole route.  i.e. xfrm_bundle_lookup returns a bundle with null route and xfrm_lookup returns a blackhole route.
 
-For each of these packet a dst_alloc is called in ipv4_blackhole_route. However when these skbs get free and their dst's get discarded using dst_free and the garbage collector is scheduled using cancel_delayed_work and schedule_delayed_work.
+* Ido Yariv <ido@wizery.com> wrote:
 
-If the packets are coming continuously garbage collector may not get scheduled and large amount of memory is stuck to be freed causing the system to go into non-recoverable state.
+> Hi Ingo,
+> 
+> On Tue, May 08, 2012 at 02:25:49PM +0200, Ingo Molnar wrote:
+> > 
+> > On !CONFIG_SMP this produces the following build failure:
+> > 
+> >  arch/x86/kernel/vsmp_64.c:171:6: error: â€˜setup_max_cpusâ€™ undeclared (first use in this function)
+> > 
+> > Do you want to keep vSMP on UP? If not then you could add a 
+> > 'depends on SMP' to the vSMP Kconfig entry, avoiding the whole 
+> > UP problem space.
+> 
+> Oops, sorry for that.
+> 
+> vsmp_64.c is built even if CONFIG_X86_VSMP is not set, so even 
+> if we set this dependency, it will not fix this issue.
 
-Any ideas? 
+Well, then fix the Makefile rule as well. Is there any point to 
+using vSMP specific glue on UP kernels?
 
-Regards
-Nikhil
+> How about the following CONFIG_SMP check instead?
 
+Looks pretty ugly, because it just increases the config jungle 
+instead of reducing it.
+
+Thanks,
+
+	Ingo
