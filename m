@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760460Ab2EIRQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:16:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55885 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756764Ab2EIRQq (ORCPT
+	id S1760487Ab2EIRW1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:22:27 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41389 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755283Ab2EIRW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 13:16:46 -0400
-Date: Wed, 9 May 2012 10:16:42 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Sami Liedes <sami.liedes@iki.fi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: kmemleak: Cannot insert 0xffff880007fedd28 into the object
- search tree (already existing)
-Message-ID: <20120509171642.GC24636@google.com>
-References: <20120506160828.GE13332@sli.dy.fi>
- <20120509155519.GL11099@arm.com>
+	Wed, 9 May 2012 13:22:26 -0400
+Date: Wed, 9 May 2012 19:22:20 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Joe Perches <joe@perches.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Igor Mammedov <imammedo@redhat.com>,
+        Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
+        pjt@google.com, tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
+Message-ID: <20120509172220.GA8135@gmail.com>
+References: <1336566644.2527.33.camel@twins>
+ <1336570043.2527.38.camel@twins>
+ <20120509133607.GA26124@gmail.com>
+ <1336571049.2527.43.camel@twins>
+ <1336571947.2527.47.camel@twins>
+ <20120509141528.GA3623@gmail.com>
+ <1336577562.2527.58.camel@twins>
+ <20120509154116.GC2653@gmail.com>
+ <1336579592.2527.60.camel@twins>
+ <1336581561.1905.3.camel@joe2Laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120509155519.GL11099@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1336581561.1905.3.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 04:55:19PM +0100, Catalin Marinas wrote:
-> ----------------8<---------------------------------------------
 
-git-am doesn't handle patches submitted this way.  Can you please put
-the patch title as $SUBJ and put patch description in the body
-followed by '---' for non-description comments?  Or is there some tool
-that I should be using instead?
+* Joe Perches <joe@perches.com> wrote:
 
-> commit 631d16e6284ddecd9d261f929582244f6757b678
-> Author: Catalin Marinas <catalin.marinas@arm.com>
-> Date:   Wed May 9 16:45:46 2012 +0100
+> On Wed, 2012-05-09 at 18:06 +0200, Peter Zijlstra wrote:
+> > On Wed, 2012-05-09 at 17:41 +0200, Ingo Molnar wrote:
+> > > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > > 
+> > > > On Wed, 2012-05-09 at 16:15 +0200, Ingo Molnar wrote:
+> > > > > > I guess I should use %.*pb and keep the field_width in case someone
+> > > > > > manages to actually make bitmap_scnlistprintf() conform to it. The
+> > > > > > precision is unused anyway.
+> > > > > 
+> > > > > That's a cute trick, and it's intuitive as well. 
+> > > > 
+> > > > kernel/sched/core.c:5570:3: warning: precision used with ‘%p’ gnu_printf format [-Wformat]
+> > > > 
+> > > > /me curses a bit.. anybody?
+> > > 
+> > > Yeah, that's a floating point precision thing (or for strings, 
+> > > right-align) - could you use %30pb, etc?
+> > 
+> > %*pb you mean? Yeah that works, field width is allowed for %p. It does
+> > mean we cannot ever make bitmaps respect field width though.
 > 
->     kmemleak: Fix the kmemleak tracking of the percpu areas with !SMP
->     
->     Kmemleak tracks the percpu allocations via a specific API and the
->     originally allocated areas must be removed from kmemleak (via
->     kmemleak_free). The code was already doing this for SMP systems.
->     
->     Reported-by: Sami Liedes <sami.liedes@iki.fi>
->     Cc: Tejun Heo <tj@kernel.org>
->     Cc: Christoph Lameter <cl@linux-foundation.org>
->     Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> You could also fill a new struct with info
+> about the bitmap and pass a pointer to that.
 > 
-> diff --git a/mm/percpu.c b/mm/percpu.c
-> index f47af91..2daf6d5 100644
-> --- a/mm/percpu.c
-> +++ b/mm/percpu.c
-> @@ -1885,6 +1885,8 @@ void __init setup_per_cpu_areas(void)
->  	fc = __alloc_bootmem(unit_size, PAGE_SIZE, __pa(MAX_DMA_ADDRESS));
->  	if (!ai || !fc)
->  		panic("Failed to allocate memory for percpu areas.");
-> +	/* kmemleak tracks the percpu allocations separately */
-> +	kmemleak_free(fc);
->  
->  	ai->dyn_size = unit_size;
->  	ai->unit_size = unit_size;
+> struct print_bitmap_info {
+> 	int foo;
+> 	int precision;
+> 	int width;
+> 	void *bitmap;
+> };
+> ...
+> 	struct print_bitmap_info bi;
+> 	bi.foo = bar;
+> 	...
+> 	bi.bitmap = &bitmap;
+> ...
+> 	printk("%pb", &bi);
 
-Applied to percpu/for-3.4-fixes.  Thanks.
+That defeats the whole purpose of avoiding extra complexity and 
+preparation - just passing in the bitmap pointer is the most 
+natural, most intuitive type to use.
 
--- 
-tejun
+Thanks,
+
+	Ingo
