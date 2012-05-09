@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab2EIV2c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 17:28:32 -0400
-Received: from mga14.intel.com ([143.182.124.37]:53226 "EHLO mga14.intel.com"
+	id S932356Ab2EIVeH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 17:34:07 -0400
+Received: from fieldses.org ([174.143.236.118]:34271 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932069Ab2EIV2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 17:28:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="98268634"
-Subject: Re: [PATCH 1/3] coredump: flush the fpu exit state for proper
- multi-threaded core dump
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: torvalds@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, suresh@aristanetworks.com
-Date: Wed, 09 May 2012 14:32:03 -0700
-In-Reply-To: <20120509210551.GB334@redhat.com>
-References: <1336421341.19423.4.camel@sbsiddha-desk.sc.intel.com>
-	 <1336519085-27450-1-git-send-email-suresh.b.siddha@intel.com>
-	 <1336519085-27450-2-git-send-email-suresh.b.siddha@intel.com>
-	 <20120509210551.GB334@redhat.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1336599123.4634.42.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1758667Ab2EIVeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 17:34:05 -0400
+Date: Wed, 9 May 2012 17:34:02 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, swhiteho@redhat.com
+Subject: Re: [PATCH 0/6] Get rid of I_MUTEX_QUOTA use
+Message-ID: <20120509213402.GA28719@fieldses.org>
+References: <1335387467-4928-1-git-send-email-jack@suse.cz>
+ <20120425212532.GB3251@fieldses.org>
+ <20120426132608.GA10368@quack.suse.cz>
+ <20120427134752.GD14973@fieldses.org>
+ <20120430135434.GB5239@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120430135434.GB5239@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 23:05 +0200, Oleg Nesterov wrote:
-> On 05/08, Suresh Siddha wrote:
-> >
-> > --- a/kernel/exit.c
-> > +++ b/kernel/exit.c
-> > @@ -656,6 +656,11 @@ static void exit_mm(struct task_struct * tsk)
-> >  		struct core_thread self;
-> >  		up_read(&mm->mmap_sem);
-> >
-> > +		/*
-> > +		 * Flush the live extended register state to memory.
-> > +		 */
-> > +		prepare_to_copy(tsk);
-> 
-> This doesn't look very nice imho, but I guess you understand this...
-> 
-> Perhaps we need an arch-dependent helper which saves the FPU regs
-> if needed.
-> 
-> I can be easily wrong, but I did the quick grep and I am not sure
-> we can rely on prepare_to_copy(). For example, it is a nop in
-> arch/sh/include/asm/processor_64.h. But at the same time it has
-> save_fpu().
-> 
-> OTOH, I am not sure it is safe to use prepare_to_copy() in exit_mm(),
-> at least in theory. God knows what it can do...
+On Mon, Apr 30, 2012 at 03:54:34PM +0200, Jan Kara wrote:
+> On Fri 27-04-12 09:47:52, J. Bruce Fields wrote:
+> > On Thu, Apr 26, 2012 at 03:26:08PM +0200, Jan Kara wrote:
+> > > On Wed 25-04-12 17:25:32, J. Bruce Fields wrote:
+> > > > On Wed, Apr 25, 2012 at 10:57:41PM +0200, Jan Kara wrote:
+> > > > > 
+> > > > >   Hello,
+> > > > > 
+> > > > >   this patch set changes generic quota code (and filesystems relying on it)
+> > > > > so that they don't use special locking class I_MUTEX_QUOTA. The only remaining
+> > > > > user of I_MUTEX_QUOTA is GFS2. If noone has objections, I can merge these
+> > > > > patches through my tree or Bruce, you can take them as your work depends
+> > > > > on these changes.
+> > > > 
+> > > > My changes will likely need to go through Al, and depend on GFS2 being
+> > > > fixed as well.
+> > > > 
+> > > > So it's up to Al.  Best might be to just merge it through your tree and
+> > > > let us sort it out in the next merge window?
+> > >   OK, I've added patches to my tree for now. I also sent a patch for GFS2
+> > > but after some investigation that's mostly a cleanup grade and Steven can
+> > > merge it independently. Quota inode in GFS2 is hidden system file so there
+> > > should be no locking problems with it wrt your patches.
+> > 
+> > OK.  In that case I suppose I'd like Al to take patches 1-4 of the 5 I
+> > posted most recently (followups to
+> > http://mid.gmane.org/20120425152041.GA751@fieldses.org), probably after
+> > your fixes go in.  I'll resend if necessary after they go in.
+>   Yeah. But also please rename I_MUTEX_QUOTA to something better describing
+> what's going on...
 
-There is an explicit schedule() just few lines below. And the schedule()
-also will do the same thing. The thing is we want the user-specific
-extended registers to be flushed to memory (used also in the fork path)
-before we notify the core dumping thread that we reached the serializing
-point, for the dumping thread to continue the dump process.
+Yes.  My uncreative replacement is I_MUTEX_NONDIR2 ("a second
+non-directory object"), but I'd welcome any more elegant suggestion.
 
-And to make this coredump specific, I really need to move it there as I
-need to reliably find out if the core dump is in progress for this
-thread.
-
-Linus/Peter/Ingo, any comments?
-
-thanks,
-suresh
-
+--b.
