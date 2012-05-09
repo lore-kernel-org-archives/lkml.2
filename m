@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758135Ab2EIGSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:18:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39060 "EHLO
+	id S1758115Ab2EIGSt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:18:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39051 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756416Ab2EIFxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1751951Ab2EIFxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:25 -0400
-Message-Id: <20120509055046.116035794@decadent.org.uk>
+Message-Id: <20120509055041.966952590@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:28 +0100
+Date: Wed, 09 May 2012 06:51:57 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Fernandez Gonzalo <gfernandez@copreci.es>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 119/167] [PATCH] usb gadget: uvc: uvc_request_data::length field must be
- signed
+        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>,
+        Josh Boyer <jwboyer@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 088/167] [PATCH] nfs: Enclose hostname in brackets when needed in
+ nfs_do_root_mount
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,49 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 6f6543f53f9ce136e01d7114bf6f0818ca54fb41 upstream.
+commit 98a2139f4f4d7b5fcc3a54c7fddbe88612abed20 upstream.
 
-The field is used to pass the UVC request data length, but can also be
-used to signal an error when setting it to a negative value. Switch from
-unsigned int to __s32.
+When hostname contains colon (e.g. when it is an IPv6 address) it needs
+to be enclosed in brackets to make parsing of NFS device string possible.
+Fix nfs_do_root_mount() to enclose hostname properly when needed. NFS code
+actually does not need this as it does not parse the string passed by
+nfs_do_root_mount() but the device string is exposed to userspace in
+/proc/mounts.
 
-Reported-by: Fernandez Gonzalo <gfernandez@copreci.es>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Josh Boyer <jwboyer@redhat.com>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/gadget/uvc.h      |    2 +-
- drivers/usb/gadget/uvc_v4l2.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/nfs/super.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/gadget/uvc.h b/drivers/usb/gadget/uvc.h
-index bc78c60..ca4e03a 100644
---- a/drivers/usb/gadget/uvc.h
-+++ b/drivers/usb/gadget/uvc.h
-@@ -28,7 +28,7 @@
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index 37412f7..1e6715f 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -2767,11 +2767,15 @@ static struct vfsmount *nfs_do_root_mount(struct file_system_type *fs_type,
+ 	char *root_devname;
+ 	size_t len;
  
- struct uvc_request_data
- {
--	unsigned int length;
-+	__s32 length;
- 	__u8 data[60];
- };
- 
-diff --git a/drivers/usb/gadget/uvc_v4l2.c b/drivers/usb/gadget/uvc_v4l2.c
-index f6e083b..54d7ca5 100644
---- a/drivers/usb/gadget/uvc_v4l2.c
-+++ b/drivers/usb/gadget/uvc_v4l2.c
-@@ -39,7 +39,7 @@ uvc_send_response(struct uvc_device *uvc, struct uvc_request_data *data)
- 	if (data->length < 0)
- 		return usb_ep_set_halt(cdev->gadget->ep0);
- 
--	req->length = min(uvc->event_length, data->length);
-+	req->length = min_t(unsigned int, uvc->event_length, data->length);
- 	req->zero = data->length < uvc->event_length;
- 	req->dma = DMA_ADDR_INVALID;
- 
+-	len = strlen(hostname) + 3;
++	len = strlen(hostname) + 5;
+ 	root_devname = kmalloc(len, GFP_KERNEL);
+ 	if (root_devname == NULL)
+ 		return ERR_PTR(-ENOMEM);
+-	snprintf(root_devname, len, "%s:/", hostname);
++	/* Does hostname needs to be enclosed in brackets? */
++	if (strchr(hostname, ':'))
++		snprintf(root_devname, len, "[%s]:/", hostname);
++	else
++		snprintf(root_devname, len, "%s:/", hostname);
+ 	root_mnt = vfs_kern_mount(fs_type, flags, root_devname, data);
+ 	kfree(root_devname);
+ 	return root_mnt;
 -- 
 1.7.10
 
