@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759466Ab2EIOPf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:15:35 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43763 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756172Ab2EIOPe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:15:34 -0400
-Date: Wed, 9 May 2012 16:15:28 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Igor Mammedov <imammedo@redhat.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, pjt@google.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
-Message-ID: <20120509141528.GA3623@gmail.com>
-References: <4FAA452A.1070909@gmail.com>
- <4FAA588B.5010404@redhat.com>
- <1336564330.2527.23.camel@twins>
- <4FAA5BFB.40309@redhat.com>
- <1336566096.2527.30.camel@twins>
- <1336566644.2527.33.camel@twins>
- <1336570043.2527.38.camel@twins>
- <20120509133607.GA26124@gmail.com>
- <1336571049.2527.43.camel@twins>
- <1336571947.2527.47.camel@twins>
+	id S1759491Ab2EIOQO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:16:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49285 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758294Ab2EIOQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 10:16:10 -0400
+Message-ID: <4FAA7C06.1060209@redhat.com>
+Date: Wed, 09 May 2012 16:15:34 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120425 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336571947.2527.47.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Jarkko Sakkinen <jarkko.sakkinen@intel.com>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Joseph Cihula <joseph.cihula@intel.com>,
+        Shane Wang <shane.wang@intel.com>
+Subject: Re: [PATCH 04/23] x86, realmode: Move reboot_32.S to unified realmode
+ code
+References: <1336501366-28617-1-git-send-email-jarkko.sakkinen@intel.com> <1336501366-28617-5-git-send-email-jarkko.sakkinen@intel.com> <4FAA18F1.6080508@redhat.com> <alpine.DEB.2.02.1205091525100.6943@jsakkine-mobl2.(null)> <4FAA76E7.1070807@linux.intel.com>
+In-Reply-To: <4FAA76E7.1070807@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 09/05/2012 15:53, H. Peter Anvin ha scritto:
+>> > It's true that it doesn't matter much but still it is a
+>> > regression. And it doesn't cause any kind of overhead
+>> > or bloat to fix this.
+>> > 
+> However, the big thing is that we jump to the BIOS with caches off.  I
+> personally think it is the wrong thing to do (we don't jump to the real
+> reset vector anyway) but it is what has been tested for a long time.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+I'm not sure I understand.  The code has
 
-> On Wed, 2012-05-09 at 15:44 +0200, Peter Zijlstra wrote:
-> > On Wed, 2012-05-09 at 15:36 +0200, Ingo Molnar wrote:
-> > > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > > 
-> > > > @@ -857,15 +860,19 @@ int kptr_restrict __read_mostly;
-> > > >   *       correctness of the format string and va_list arguments.
-> > > >   * - 'K' For a kernel pointer that should be hidden from unprivileged users
-> > > >   * - 'NF' For a netdev_features_t
-> > > > + * - 'b' For a bitmap, consumes 2 args, second is int
-> > > 
-> > > hm, won't the second arg confuse gcc's printf format checker?
-> > 
-> > 
-> > Ah, yes, I suppose I could abuse something like %*pb. Let me try that.
-> 
-> I guess I should use %.*pb and keep the field_width in case someone
-> manages to actually make bitmap_scnlistprintf() conform to it. The
-> precision is unused anyway.
+	andl	$0x60000000, %edx	; clear ET/PE
+	jz	2f
+	...
+2:
+	andb	$0x10, %dl		; clear CD/WT, %edx is always 0
 
-That's a cute trick, and it's intuitive as well.
 
-> +	case 'b':
-> +		{
-> +			int bits, len;
-> +
-> +			switch (fmt[1]) {
-> +			case 'c':
-> +				bits = nr_cpumask_bits;
-> +				break;
-> +			case 'n':
-> +				bits = MAX_NUMNODES;
-> +				break;
-> +			default:
-> +				bits = spec->precision;
-> +				break;
+What I've suggested is:
 
-So, if someone specifies an incomplete "%pb" format - fmt[1] 
-will be 0 and we take precision as the length - presumably also 
-0. We stick that 0 into:
+	testl	$0x60000000, %edx
+	jz	2f
+	...
+2:
+	andb	$0x10, %dl		; clear PE only
 
-> +			len = bitmap_scnlistprintf(buf, end - buf, ptr, bits);
 
-Will that work?
+What would jump to the BIOS with caches on is:
 
-Provided it all tests out fine for you it looks good to me.
+	testl	$0x60000000, %edx
+	jz	2f
+	...
+2:
+	andl	$0x10, %edx		; Clear CD/WT/PE
 
-I'd probably write the switch statement as:
 
-			switch (fmt[1]) {
-			case 'c': bits = nr_cpumask_bits; break;
-			case 'n': bits = MAX_NUMNODES;    break;
-			default:  bits = spec->precision; break;
-			}
+Am I missing something?
 
-... but that's a small detail and a matter of taste in any case.
-
-Thanks,
-
-	Ingo
+Paolo
