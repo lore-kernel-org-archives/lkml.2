@@ -1,125 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273Ab2EIE7h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 00:59:37 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41961 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751855Ab2EIE7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 00:59:35 -0400
-From: Joe Perches <joe@perches.com>
-To: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Subject: [PATCH 13/13] dsa: Convert compare_ether_addr to ether_addr_equal
-Date: Tue,  8 May 2012 21:56:57 -0700
-Message-Id: <8c3464767ed2cecfdd02753824459a41b48d89b2.1336538938.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
-In-Reply-To: <cover.1336538937.git.joe@perches.com>
-References: <cover.1336538937.git.joe@perches.com>
+	id S1755280Ab2EIFAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:00:01 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41917 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab2EIE76 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 00:59:58 -0400
+Date: Tue, 8 May 2012 21:59:56 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, penberg@kernel.org, cl@linux.com
+Subject: Re: [PATCH] slab/mempolicy: always use local policy from interrupt
+ context v3
+In-Reply-To: <CAHGf_=p7JbWW8jgzWGHX+xwU8JWzpSMZS0kn-rmP=eg_Uqrgow@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1205082158570.10766@chino.kir.corp.google.com>
+References: <1336431315-29736-1-git-send-email-andi@firstfloor.org> <CAHGf_=p7JbWW8jgzWGHX+xwU8JWzpSMZS0kn-rmP=eg_Uqrgow@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-236837664-1336539597=:10766"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new bool function ether_addr_equal to add
-some clarity and reduce the likelihood for misuse
-of compare_ether_addr for sorting.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Done via cocci script:
+--397155492-236837664-1336539597=:10766
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-$ cat compare_ether_addr.cocci
-@@
-expression a,b;
-@@
--	!compare_ether_addr(a, b)
-+	ether_addr_equal(a, b)
+On Mon, 7 May 2012, KOSAKI Motohiro wrote:
 
-@@
-expression a,b;
-@@
--	compare_ether_addr(a, b)
-+	!ether_addr_equal(a, b)
+> > diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+> > index 7c727a9..7106786 100644
+> > --- a/include/linux/mempolicy.h
+> > +++ b/include/linux/mempolicy.h
+> > @@ -215,7 +215,7 @@ extern struct zonelist *huge_zonelist(struct vm_area_struct *vma,
+> >  extern bool init_nodemask_of_mempolicy(nodemask_t *mask);
+> >  extern bool mempolicy_nodemask_intersects(struct task_struct *tsk,
+> >                                const nodemask_t *mask);
+> > -extern unsigned slab_node(struct mempolicy *policy);
+> > +extern unsigned slab_node(void);
+> >
+> >  extern enum zone_type policy_zone;
+> >
+> > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> > index cfb6c86..e05e007 100644
+> > --- a/mm/mempolicy.c
+> > +++ b/mm/mempolicy.c
+> > @@ -1586,9 +1586,11 @@ static unsigned interleave_nodes(struct mempolicy *policy)
+> >  * task can change it's policy.  The system default policy requires no
+> >  * such protection.
+> >  */
+> > -unsigned slab_node(struct mempolicy *policy)
+> > +unsigned slab_node(void)
+> >  {
+> > -       if (!policy || policy->flags & MPOL_F_LOCAL)
+> > +       struct mempolicy *policy = current->mempolicy;
+> > +
+> > +       if (!in_interrupt() || !policy || policy->flags & MPOL_F_LOCAL)
+> >                return numa_node_id();
+> 
+> I think your patch is correct. but I don't like interrupt context
+> dereference current task.
+> It would be nice if we only see current->mempolicy when !in_interrupt.
+> 
+> But this doesn't mean NAK anyway.
+> 
+>  Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-@@
-expression a,b;
-@@
--	!ether_addr_equal(a, b) == 0
-+	ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	!ether_addr_equal(a, b) != 0
-+	!ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	ether_addr_equal(a, b) == 0
-+	!ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	ether_addr_equal(a, b) != 0
-+	ether_addr_equal(a, b)
-
-@@
-expression a,b;
-@@
--	!!ether_addr_equal(a, b)
-+	ether_addr_equal(a, b)
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/dsa/slave.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/net/dsa/slave.c b/net/dsa/slave.c
-index 56cf9b8..e32083d 100644
---- a/net/dsa/slave.c
-+++ b/net/dsa/slave.c
-@@ -66,7 +66,7 @@ static int dsa_slave_open(struct net_device *dev)
- 	if (!(master->flags & IFF_UP))
- 		return -ENETDOWN;
- 
--	if (compare_ether_addr(dev->dev_addr, master->dev_addr)) {
-+	if (!ether_addr_equal(dev->dev_addr, master->dev_addr)) {
- 		err = dev_uc_add(master, dev->dev_addr);
- 		if (err < 0)
- 			goto out;
-@@ -89,7 +89,7 @@ clear_allmulti:
- 	if (dev->flags & IFF_ALLMULTI)
- 		dev_set_allmulti(master, -1);
- del_unicast:
--	if (compare_ether_addr(dev->dev_addr, master->dev_addr))
-+	if (!ether_addr_equal(dev->dev_addr, master->dev_addr))
- 		dev_uc_del(master, dev->dev_addr);
- out:
- 	return err;
-@@ -107,7 +107,7 @@ static int dsa_slave_close(struct net_device *dev)
- 	if (dev->flags & IFF_PROMISC)
- 		dev_set_promiscuity(master, -1);
- 
--	if (compare_ether_addr(dev->dev_addr, master->dev_addr))
-+	if (!ether_addr_equal(dev->dev_addr, master->dev_addr))
- 		dev_uc_del(master, dev->dev_addr);
- 
- 	return 0;
-@@ -146,13 +146,13 @@ static int dsa_slave_set_mac_address(struct net_device *dev, void *a)
- 	if (!(dev->flags & IFF_UP))
- 		goto out;
- 
--	if (compare_ether_addr(addr->sa_data, master->dev_addr)) {
-+	if (!ether_addr_equal(addr->sa_data, master->dev_addr)) {
- 		err = dev_uc_add(master, addr->sa_data);
- 		if (err < 0)
- 			return err;
- 	}
- 
--	if (compare_ether_addr(dev->dev_addr, master->dev_addr))
-+	if (!ether_addr_equal(dev->dev_addr, master->dev_addr))
- 		dev_uc_del(master, dev->dev_addr);
- 
- out:
--- 
-1.7.8.111.gad25c.dirty
-
+Sigh, this was acked by Christoph and KOSAKI when the logic is reversed 
+and does the exact opposite of what's intended?
+--397155492-236837664-1336539597=:10766--
