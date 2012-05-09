@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208Ab2EIGV1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:21:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38990 "EHLO
+	id S1758190Ab2EIGV0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:21:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38948 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756320Ab2EIFxU (ORCPT
+	by vger.kernel.org with ESMTP id S1756249Ab2EIFxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:20 -0400
-Message-Id: <20120509055046.786220811@decadent.org.uk>
+Message-Id: <20120509055043.841582599@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:33 +0100
+Date: Wed, 09 May 2012 06:52:11 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 124/167] [PATCH] ARM: 7398/1: l2x0: only write to debug registers on PL310
+        alan@lxorguk.ukuu.org.uk, Steven Rostedt <srostedt@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 102/167] [PATCH] tracing: Fix stacktrace of latency tracers (irqsoff and
+ friends)
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,68 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit ab4d536890853ab6675ede65db40e2c0980cb0ea upstream.
+commit db4c75cbebd7e5910cd3bcb6790272fcc3042857 upstream.
 
-PL310 errata #588369 and #727915 require writes to the debug registers
-of the cache controller to work around known problems. Writing these
-registers on L220 may cause deadlock, so ensure that we only perform
-this operation when we identify a PL310 at probe time.
+While debugging a latency with someone on IRC (mirage335) on #linux-rt (OFTC),
+we discovered that the stacktrace output of the latency tracers
+(preemptirqsoff) was empty.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+This bug was caused by the creation of the dynamic length stack trace
+again (like commit 12b5da3 "tracing: Fix ent_size in trace output" was).
+
+This bug is caused by the latency tracers requiring the next event
+to determine the time between the current event and the next. But by
+grabbing the next event, the iter->ent_size is set to the next event
+instead of the current one. As the stacktrace event is the last event,
+this makes the ent_size zero and causes nothing to be printed for
+the stack trace. The dynamic stacktrace uses the ent_size to determine
+how much of the stack can be printed. The ent_size of zero means
+no stack.
+
+The simple fix is to save the iter->ent_size before finding the next event.
+
+Note, mirage335 asked to remain anonymous from LKML and git, so I will
+not add the Reported-by and Tested-by tags, even though he did report
+the issue and tested the fix.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mm/cache-l2x0.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ kernel/trace/trace_output.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index a8d02c0..2a8e380 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -81,10 +81,13 @@ static inline void l2x0_inv_line(unsigned long addr)
- }
- 
- #if defined(CONFIG_PL310_ERRATA_588369) || defined(CONFIG_PL310_ERRATA_727915)
-+static inline void debug_writel(unsigned long val)
-+{
-+	if (outer_cache.set_debug)
-+		outer_cache.set_debug(val);
-+}
- 
--#define debug_writel(val)	outer_cache.set_debug(val)
--
--static void l2x0_set_debug(unsigned long val)
-+static void pl310_set_debug(unsigned long val)
+diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+index 859fae6..df611a0 100644
+--- a/kernel/trace/trace_output.c
++++ b/kernel/trace/trace_output.c
+@@ -652,6 +652,8 @@ int trace_print_lat_context(struct trace_iterator *iter)
  {
- 	writel_relaxed(val, l2x0_base + L2X0_DEBUG_CTRL);
- }
-@@ -94,7 +97,7 @@ static inline void debug_writel(unsigned long val)
- {
- }
+ 	u64 next_ts;
+ 	int ret;
++	/* trace_find_next_entry will reset ent_size */
++	int ent_size = iter->ent_size;
+ 	struct trace_seq *s = &iter->seq;
+ 	struct trace_entry *entry = iter->ent,
+ 			   *next_entry = trace_find_next_entry(iter, NULL,
+@@ -660,6 +662,9 @@ int trace_print_lat_context(struct trace_iterator *iter)
+ 	unsigned long abs_usecs = ns2usecs(iter->ts - iter->tr->time_start);
+ 	unsigned long rel_usecs;
  
--#define l2x0_set_debug	NULL
-+#define pl310_set_debug	NULL
- #endif
- 
- #ifdef CONFIG_PL310_ERRATA_588369
-@@ -331,6 +334,7 @@ void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
- 		/* Unmapped register. */
- 		sync_reg_offset = L2X0_DUMMY_REG;
- #endif
-+		outer_cache.set_debug = pl310_set_debug;
- 		break;
- 	case L2X0_CACHE_ID_PART_L210:
- 		ways = (aux >> 13) & 0xf;
-@@ -379,7 +383,6 @@ void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
- 	outer_cache.flush_all = l2x0_flush_all;
- 	outer_cache.inv_all = l2x0_inv_all;
- 	outer_cache.disable = l2x0_disable;
--	outer_cache.set_debug = l2x0_set_debug;
- 
- 	printk(KERN_INFO "%s cache controller enabled\n", type);
- 	printk(KERN_INFO "l2x0: %d ways, CACHE_ID 0x%08x, AUX_CTRL 0x%08x, Cache size: %d B\n",
++	/* Restore the original ent_size */
++	iter->ent_size = ent_size;
++
+ 	if (!next_entry)
+ 		next_ts = iter->ts;
+ 	rel_usecs = ns2usecs(next_ts - iter->ts);
 -- 
 1.7.10
 
