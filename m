@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760630Ab2EIRqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:46:53 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49012 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755594Ab2EIRqu (ORCPT
+	id S1760638Ab2EIRrg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:47:36 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:35053 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754924Ab2EIRrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 13:46:50 -0400
+	Wed, 9 May 2012 13:47:35 -0400
+Date: Wed, 9 May 2012 13:47:34 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tejun Heo <tj@kernel.org>
+cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Lockdep false positive in sysfs
+In-Reply-To: <20120509174114.GE24636@google.com>
+Message-ID: <Pine.LNX.4.44L0.1205091346070.1658-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1336573788.14207.208.camel@gandalf.stny.rr.com>
-References: <1335388704-26790-1-git-send-email-vnagarnaik@google.com>
- <1336096792-25373-1-git-send-email-vnagarnaik@google.com> <1336534682.14207.197.camel@gandalf.stny.rr.com>
- <CAL26m8J9j9oqGRte80Kp7zH8DQr5RuHPS88w7+2hry2E-N7VYg@mail.gmail.com> <1336573788.14207.208.camel@gandalf.stny.rr.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Wed, 9 May 2012 10:46:20 -0700
-Message-ID: <CAL26m8KdY3KYO6_TEsuZxQUC6nn3tFzt8y7f6zBymM-pYHZtYw@mail.gmail.com>
-Subject: Re: [PATCH v7 1/3] trace: Make removal of ring buffer pages atomic
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Laurent Chavey <chavey@google.com>,
-        Justin Teravest <teravest@google.com>,
-        David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 7:29 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> This is far from a hot path. In fact, it's quite slow. Lets not uglify
-> code just to optimize something that's not time critical.
->
-> Please combine these two into a single loop. The wait for completion is
-> fine as a separate loop.
->
+On Wed, 9 May 2012, Tejun Heo wrote:
 
-Sure, I will update the patch with that change. Have you found any
-other issues in testing the patch?
+> Hello,
+> 
+> On Tue, May 08, 2012 at 02:53:11PM -0400, Alan Stern wrote:
+> > On Mon, 7 May 2012, Tejun Heo wrote:
+> > 
+> > > On Mon, May 07, 2012 at 05:51:52PM -0400, Alan Stern wrote:
+> > > > I guess in the end it's a question of balance.  Which has more 
+> > > > overhead, adding a few function calls here and there, or adding a new 
+> > > > flags field to every struct attribute?
+> > > 
+> > > Yes, and there are different types of overheads.  I'm happy to trade
+> > > some runtime memory overhead under debugging mode for lower code
+> > > complexity.  Lock proving is pretty expensive anyway.  I don't think
+> > > there's much point in trying to optimize some bytes from struct
+> > > attributes.
+> > 
+> > Okay, then what do you think about this approach?  It does seem smaller 
+> > and simpler than the previous attempt.
+> > 
+> > And I did try to avoid unnecessary bloat; if lockdep isn't being used
+> > then the extra attribute flag isn't present.
+> 
+> Yeap, looks good to me.
 
-Vaibhav Nagarnaik
+Unless there are any objections from Eric or Peter in the next few
+days, I'll submit it.  Can I add your Acked-by?
+
+Alan Stern
+
