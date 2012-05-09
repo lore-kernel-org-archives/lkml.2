@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757039Ab2EIFzZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:55:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39041 "EHLO
+	id S1757300Ab2EIFx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:53:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38887 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756891Ab2EIFx5 (ORCPT
+	by vger.kernel.org with ESMTP id S1756120Ab2EIFxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:57 -0400
-Message-Id: <20120509055043.039869687@decadent.org.uk>
+	Wed, 9 May 2012 01:53:13 -0400
+Message-Id: <20120509055038.451596834@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:05 +0100
+Date: Wed, 09 May 2012 06:51:31 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 096/167] [PATCH] xen: correctly check for pending events when restoring irq
- flags
+        alan@lxorguk.ukuu.org.uk, David Woodhouse <David.Woodhouse@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 062/167] [PATCH 02/26] ppp: Dont stop and restart queue on every TX packet
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,46 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: David Woodhouse <David.Woodhouse@intel.com>
 
-commit 7eb7ce4d2e8991aff4ecb71a81949a907ca755ac upstream.
+[ This combines upstream commit
+  e675f0cc9a872fd152edc0c77acfed19bf28b81e and follow-on bug fix
+  commit 9a5d2bd99e0dfe9a31b3c160073ac445ba3d773f ]
 
-In xen_restore_fl_direct(), xen_force_evtchn_callback() was being
-called even if no events were pending.  This resulted in (depending on
-workload) about a 100 times as many xen_version hypercalls as
-necessary.
+For every transmitted packet, ppp_start_xmit() will stop the netdev
+queue and then, if appropriate, restart it. This causes the TX softirq
+to run, entirely gratuitously.
 
-Fix this by correcting the sense of the conditional jump.
+This is "only" a waste of CPU time in the normal case, but it's actively
+harmful when the PPP device is a TEQL slave — the wakeup will cause the
+offending device to receive the next TX packet from the TEQL queue, when
+it *should* have gone to the next slave in the list. We end up seeing
+large bursts of packets on just *one* slave device, rather than using
+the full available bandwidth over all slaves.
 
-This seems to give a significant performance benefit for some
-workloads.
+This patch fixes the problem by *not* unconditionally stopping the queue
+in ppp_start_xmit(). It adds a return value from ppp_xmit_process()
+which indicates whether the queue should be stopped or not.
 
-There is some subtle tricksy "..since the check here is trying to
-check both pending and masked in a single cmpw, but I think this is
-correct. It will call check_events now only when the combined
-mask+pending word is 0x0001 (aka unmasked, pending)." (Ian)
+It *doesn't* remove the call to netif_wake_queue() from
+ppp_xmit_process(), because other code paths (especially from
+ppp_output_wakeup()) need it there and it's messy to push it out to the
+other callers to do it based on the return value. So we leave it in
+place — it's a no-op in the case where the queue wasn't stopped, so it's
+harmless in the TX path.
 
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/xen/xen-asm.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ppp/ppp_generic.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/xen/xen-asm.S b/arch/x86/xen/xen-asm.S
-index 79d7362..3e45aa0 100644
---- a/arch/x86/xen/xen-asm.S
-+++ b/arch/x86/xen/xen-asm.S
-@@ -96,7 +96,7 @@ ENTRY(xen_restore_fl_direct)
+diff --git a/drivers/net/ppp/ppp_generic.c b/drivers/net/ppp/ppp_generic.c
+index 486b404..3ed983c 100644
+--- a/drivers/net/ppp/ppp_generic.c
++++ b/drivers/net/ppp/ppp_generic.c
+@@ -968,7 +968,6 @@ ppp_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	proto = npindex_to_proto[npi];
+ 	put_unaligned_be16(proto, pp);
  
- 	/* check for unmasked and pending */
- 	cmpw $0x0001, PER_CPU_VAR(xen_vcpu_info) + XEN_vcpu_info_pending
--	jz 1f
-+	jnz 1f
- 2:	call check_events
- 1:
- ENDPATCH(xen_restore_fl_direct)
+-	netif_stop_queue(dev);
+ 	skb_queue_tail(&ppp->file.xq, skb);
+ 	ppp_xmit_process(ppp);
+ 	return NETDEV_TX_OK;
+@@ -1063,6 +1062,8 @@ ppp_xmit_process(struct ppp *ppp)
+ 		   code that we can accept some more. */
+ 		if (!ppp->xmit_pending && !skb_peek(&ppp->file.xq))
+ 			netif_wake_queue(ppp->dev);
++		else
++			netif_stop_queue(ppp->dev);
+ 	}
+ 	ppp_xmit_unlock(ppp);
+ }
 -- 
 1.7.10
 
