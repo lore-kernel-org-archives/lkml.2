@@ -1,31 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab2EIDDk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 May 2012 23:03:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37509 "EHLO
+	id S1753389Ab2EIDHP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 May 2012 23:07:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37541 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752789Ab2EIDDj (ORCPT
+	by vger.kernel.org with ESMTP id S1752521Ab2EIDHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 May 2012 23:03:39 -0400
-Message-ID: <1336532605.8274.339.camel@deadeye>
-Subject: RE: [ 73/75] iwlwifi: use correct released ucode version
+	Tue, 8 May 2012 23:07:13 -0400
+Message-ID: <1336532828.8274.340.camel@deadeye>
+Subject: Re: [ 57/75] exit_signal: simplify the "we have changed execution
+ domain" logic
 From: Ben Hutchings <ben@decadent.org.uk>
-To: "Venkataraman, Meenakshi" <meenakshi.venkataraman@intel.com>
-Cc: "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Date: Wed, 09 May 2012 04:03:25 +0100
-In-Reply-To: <4595B4D22AB93C4FABBA84AAD5AA37FD1531EC@ORSMSX103.amr.corp.intel.com>
-References: <20120504204230.580609792@linuxfoundation.org>
-	 <1336401714.8274.320.camel@deadeye>
-	 <4595B4D22AB93C4FABBA84AAD5AA37FD1531EC@ORSMSX103.amr.corp.intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Date: Wed, 09 May 2012 04:07:08 +0100
+In-Reply-To: <20120508003125.GC4150@kroah.com>
+References: <20120504204229.240075699@linuxfoundation.org>
+	 <1336355835.8274.262.camel@deadeye> <20120508003125.GC4150@kroah.com>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-FNDakiU0liqQ2h65/zWo"
+	protocol="application/pgp-signature"; boundary="=-bPU5R06eLfopLPa/CTCZ"
 X-Mailer: Evolution 3.2.2-1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 192.168.4.185
@@ -36,40 +31,30 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-FNDakiU0liqQ2h65/zWo
+--=-bPU5R06eLfopLPa/CTCZ
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2012-05-07 at 19:24 +0000, Venkataraman, Meenakshi wrote:
-> Hi Ben,
+On Mon, 2012-05-07 at 17:31 -0700, Greg KH wrote:
+> On Mon, May 07, 2012 at 02:57:15AM +0100, Ben Hutchings wrote:
+> > On Fri, 2012-05-04 at 13:43 -0700, Greg KH wrote:
+> > > 3.3-stable review patch.  If anyone has any objections, please let me=
+ know.
+> > >=20
+> > > ------------------
+> > >=20
+> > > From: Oleg Nesterov <oleg@redhat.com>
+> > >=20
+> > > commit e636825346b36a07ccfc8e30946d52855e21f681 upstream.
+> > [...]
+> >=20
+> > This and the following commit b6e238dceed36891cc633167afe7151f1f3d83c5
+> > ('exit_signal: fix the "parent has changed security domain" logic')
+> > appear to be applicable to 3.2.y as well.  Should I queue them up?
 >=20
-> >On Fri, 2012-05-04 at 13:43 -0700, Greg KH wrote:
-> >> 3.3-stable review patch.  If anyone has any objections, please let me =
-know.
-> >>
-> >> ------------------
-> >>
-> >> From: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
-> >>
-> >> commit 78cbcf2b9dbe0565820dc7721316f9c401000a68 upstream.
-> >>
-> >> Report correctly the latest released version of the iwlwifi firmware
-> >> for all iwlwifi-supported devices.
-> >[...]
-> >
-> >Isn't this also applicable to 3.2.y?
->=20
-> [MV] Just checked -- it is indeed applicable to 3.2 stable kernels as
-> well.  Do I need to modify the patch to get it into 3.2 as well?
+> Yes, that would be good to do.
 
-No, it was easy enough to fix up the context.  I have now queued up:
-
-b914811524fbe9e91fe50845f5d7bd4316b8a6ee iwlagn: allow up to uCode API 6 fo=
-r 6000 devices
-78cbcf2b9dbe0565820dc7721316f9c401000a68 iwlwifi: use correct released ucod=
-e version
-1ed2ec37b44e86eaa8e0a03b908a39c80f65ee45 iwlwifi: use 6000G2B for 6030 devi=
-ce series
+Done.
 
 Ben.
 
@@ -79,26 +64,26 @@ Life is what happens to you while you're busy making other plans.
                                                                - John Lenno=
 n
 
---=-FNDakiU0liqQ2h65/zWo
+--=-bPU5R06eLfopLPa/CTCZ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAT6nefee/yOyVhhEJAQqqXhAAuOBj+YbGiJxVZzNG5Rlc432yh1I2SBa7
-nRwGwHD0ibBsNrOrwTyRbSKhSQ7Mbt/T5chL76Ee3K23pfZctqcqD86i7c64FYKE
-e0m1MUTpW35nylUJShUWtadAoCJ8VH6k7PuIp/wKyNHYpjp8sVB28Se8PkE7nuwp
-1Ktl1fycwCl/ztQr9DhF4beTay6pPrUPcbXBv1hG4AMp28CXJEXVrt7E0y+sztXm
-V+Ve1RRNK3Wu3ixidMRnE6LLrVCfqKJtTnOcUJieAzOke1Ci3e12jHyogKUJr6h3
-fR7CnpIwbWOuHNhlyj6COliIo+ntaQalYJNQnc0FobctP0tyb4kl3M4SgZDt7MVi
-Z8MPuhYFKPC5PG0dheppyYQFkzdGMYX5hqRTOrYEfIYi0IvjGvXt+jHg0hjoWY7Y
-TcuwB1vv2pNgdExRO2Qe4AaDSckqPwlvgrS6mkeRMYAxWUC524x6N2WPuAqBy0N/
-CqMfKJnPxcOna2fLncm7hyy7hWChh3p1QWyribmFqtLvUlZe6FMC++NLLUwLk+iM
-VQtgOBtWBPpEAcqIT4Dd978kGpTXrFY5f1x/NXbydaE8IyfeMLpB7XoOJvohUTGI
-NNP8qcmPUejxqFNqYVjhoi3sAYFtlcdPSbO/yqPOJvYyObDdfQTbg6H5ngoSgp+i
-zohER/Cnkcc=
-=lJKe
+iQIVAwUAT6nfXee/yOyVhhEJAQqiNQ//QniB2/BaAyYVGyDaVbJZRxX+3mPST7iw
+RwoaU0PoBtZ66z7H6X/7xB14MoXA3ocfy2v8Z4LaO3BG65MDw8H+ujdH9RQsWPqy
+j+Q7yht2H2eDrRxPr7VyviEpkgt1T+PPKC6TV8My+mnawQlQ6aU0DDosz7AmfSdq
+x1I4bppVjKbZX9VAr71KFDMc3jHCsZa30M+v8CAhG2kLtpAXPncrbkuVSRB5h7yl
+7vorEuw/iB869XrRa2xvCHEy4KCc6sQKuXvLwT8DD96qXPOI0ZZxeaFPj2GLPXh1
+7zzhtXZlnJAmHDijuwKuUU39UDhd2VX4YrpFapEsLb52lCtEWvXH6zwjrVIvp3Zj
+51TLBR2YVhSkNLxlzUdIuREgXFdVEmjAihksbvzUMS7ZMEt8iNfgIflcJVZvUGfX
+ZxGgTe+3STQtWfZb4KW0FNdzw9HuvabWZ3DgUUpNEzTbEGd0Y/+cCycJlhUyKyOZ
+FoUgUjGhPMsEP8DuuMpI1OdNVF5XNnynvq8HeOiS1x5uadKBvMB9KV/i15eTd+cB
+SVDKLeKmPt/63OAgPuuH2Xl+6UZa5EKOnn/qIjJQExNtFuSrWShfc6NIjIguVLjL
+Y4mnmAgMQC7A9zz7YdtlRH3pKcZZMPDWpAq9jkCPpEL5acjFtuggqgtMC2E3QjpA
++9Y/UwQm6AQ=
+=DqWW
 -----END PGP SIGNATURE-----
 
---=-FNDakiU0liqQ2h65/zWo--
+--=-bPU5R06eLfopLPa/CTCZ--
