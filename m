@@ -1,137 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759469Ab2EIOTR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:19:17 -0400
-Received: from relay.sigmatic.fi ([80.69.161.51]:52904 "EHLO relay.sigmatic.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757919Ab2EIOTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:19:15 -0400
-From: Hannu Heikkinen <hannuxx@iki.fi>
-To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com
-Cc: a.zummo@towertech.it, swarren@wwwdotorg.org
-Subject: [PATCH RESEND] rtc: tegra: cleanup probe/remove routines
-Date: Wed,  9 May 2012 17:19:11 +0300
-Message-Id: <1336573151-8984-1-git-send-email-hannuxx@iki.fi>
-X-Mailer: git-send-email 1.7.10
-Content-Type: text/plain; charset="us-ascii"
+	id S1759513Ab2EIOTY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:19:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23170 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757919Ab2EIOTU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 10:19:20 -0400
+X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=aHbdvXMWeFoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=UnPqMEeQ6OuWPSe21tsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1336573158.14207.206.camel@gandalf.stny.rr.com>
+Subject: Re: [EDAC ABI v13 04/25] events/hw_event: Create a Hardware Events
+ Report Mecanism (HERM)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Tony Luck <tony.luck@intel.com>
+Date: Wed, 09 May 2012 10:19:18 -0400
+In-Reply-To: <4FAA7649.5080606@redhat.com>
+References: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
+	 <1334608729-30803-5-git-send-email-mchehab@redhat.com>
+	 <20120509121326.GA22737@aftab.osrc.amd.com> <4FAA6802.9070506@redhat.com>
+	 <20120509132237.GD22737@aftab.osrc.amd.com> <4FAA7649.5080606@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hannu Heikkinen <ext-hannu.m.heikkinen@nokia.com>
+On Wed, 2012-05-09 at 10:51 -0300, Mauro Carvalho Chehab wrote:
+> Em 09-05-2012 10:22, Borislav Petkov escreveu:
+> > + Tony.
+> 
+> C/C Steven.
 
-Use the devres managed resource functions in the probe routine.
-Affects also in remove routine where previously used free and release
-functions are not needed.
+Hehe, I was already Cc'd ;-)
 
-The devm_* functions eliminate the need for manual resource releasing
-and simplify error handling. Resources allocated by devm_* are freed
-automatically on driver detach.
+> One other option would be to call it as "include/trace/events/ras.h".
+> 
+> Steven,
+> 
+> Would it be possible/recommendable to move this trace header
+> to include/linux/ras/hw_event.h?
 
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
-Signed-off-by: Hannu Heikkinen <ext-hannu.m.heikkinen@nokia.com>
----
- drivers/rtc/rtc-tegra.c |   50 ++++++++++++-----------------------------------
- 1 file changed, 13 insertions(+), 37 deletions(-)
+Yeah, it's not hard. In fact, it's documented in
+samples/trace_events/trace-events-sample.h:
 
-diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
-index 75259fe..c006025 100644
---- a/drivers/rtc/rtc-tegra.c
-+++ b/drivers/rtc/rtc-tegra.c
-@@ -309,7 +309,8 @@ static int __devinit tegra_rtc_probe(struct platform_device *pdev)
- 	struct resource *res;
- 	int ret;
- 
--	info = kzalloc(sizeof(struct tegra_rtc_info), GFP_KERNEL);
-+	info = devm_kzalloc(&pdev->dev, sizeof(struct tegra_rtc_info),
-+		GFP_KERNEL);
- 	if (!info)
- 		return -ENOMEM;
- 
-@@ -317,29 +318,18 @@ static int __devinit tegra_rtc_probe(struct platform_device *pdev)
- 	if (!res) {
- 		dev_err(&pdev->dev,
- 			"Unable to allocate resources for device.\n");
--		ret = -EBUSY;
--		goto err_free_info;
-+		return -EBUSY;
- 	}
- 
--	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
--		dev_err(&pdev->dev,
--			"Unable to request mem region for device.\n");
--		ret = -EBUSY;
--		goto err_free_info;
-+	info->rtc_base = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!info->rtc_base) {
-+		dev_err(&pdev->dev, "Unable to request mem region and grab IOs for device.\n");
-+		return -EBUSY;
- 	}
- 
- 	info->tegra_rtc_irq = platform_get_irq(pdev, 0);
--	if (info->tegra_rtc_irq <= 0) {
--		ret = -EBUSY;
--		goto err_release_mem_region;
--	}
--
--	info->rtc_base = ioremap_nocache(res->start, resource_size(res));
--	if (!info->rtc_base) {
--		dev_err(&pdev->dev, "Unable to grab IOs for device.\n");
--		ret = -EBUSY;
--		goto err_release_mem_region;
--	}
-+	if (info->tegra_rtc_irq <= 0)
-+		return -EBUSY;
- 
- 	/* set context info. */
- 	info->pdev = pdev;
-@@ -362,11 +352,12 @@ static int __devinit tegra_rtc_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev,
- 			"Unable to register device (err=%d).\n",
- 			ret);
--		goto err_iounmap;
-+		return ret;
- 	}
- 
--	ret = request_irq(info->tegra_rtc_irq, tegra_rtc_irq_handler,
--		IRQF_TRIGGER_HIGH, "rtc alarm", &pdev->dev);
-+	ret = devm_request_irq(&pdev->dev, info->tegra_rtc_irq,
-+			tegra_rtc_irq_handler, IRQF_TRIGGER_HIGH,
-+			"rtc alarm", &pdev->dev);
- 	if (ret) {
- 		dev_err(&pdev->dev,
- 			"Unable to request interrupt for device (err=%d).\n",
-@@ -380,12 +371,6 @@ static int __devinit tegra_rtc_probe(struct platform_device *pdev)
- 
- err_dev_unreg:
- 	rtc_device_unregister(info->rtc_dev);
--err_iounmap:
--	iounmap(info->rtc_base);
--err_release_mem_region:
--	release_mem_region(res->start, resource_size(res));
--err_free_info:
--	kfree(info);
- 
- 	return ret;
- }
-@@ -393,17 +378,8 @@ err_free_info:
- static int __devexit tegra_rtc_remove(struct platform_device *pdev)
- {
- 	struct tegra_rtc_info *info = platform_get_drvdata(pdev);
--	struct resource *res;
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -EBUSY;
- 
--	free_irq(info->tegra_rtc_irq, &pdev->dev);
- 	rtc_device_unregister(info->rtc_dev);
--	iounmap(info->rtc_base);
--	release_mem_region(res->start, resource_size(res));
--	kfree(info);
- 
- 	platform_set_drvdata(pdev, NULL);
- 
--- 
-1.7.10
+/*
+ * There are several ways I could have done this. If I left out the
+ * TRACE_INCLUDE_PATH, then it would default to the kernel source
+ * include/trace/events directory.
+ *
+ * I could specify a path from the define_trace.h file back to this
+ * file.
+ *
+ * #define TRACE_INCLUDE_PATH ../../samples/trace_events
+ *
+ * But the safest and easiest way to simply make it use the directory
+ * that the file is in is to add in the Makefile:
+ *
+ * CFLAGS_trace-events-sample.o := -I$(src)
+ *
+ * This will make sure the current path is part of the include
+ * structure for our file so that define_trace.h can find it.
+ *
+ * I could have made only the top level directory the include:
+ *
+ * CFLAGS_trace-events-sample.o := -I$(PWD)
+ *
+ * And then let the path to this directory be the TRACE_INCLUDE_PATH:
+ *
+ * #define TRACE_INCLUDE_PATH samples/trace_events
+ *
+ * But then if something defines "samples" or "trace_events" as a macro
+ * then we could risk that being converted too, and give us an unexpected
+ * result.
+ */
+
+But usually the header would go where the code is:
+
+drivers/edac/hw_event.h
+
+Or rename it. The XFS tracepoints do this:
+
+fs/xfs/xfs_trace.h
+
+-- Steve
+
 
