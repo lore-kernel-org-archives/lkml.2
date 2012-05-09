@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab2EIFxI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:53:08 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38805 "EHLO
+	id S1756492Ab2EIFxW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:53:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38844 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755869Ab2EIFxA (ORCPT
+	by vger.kernel.org with ESMTP id S1756039Ab2EIFxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:00 -0400
-Message-Id: <20120509055036.064659639@decadent.org.uk>
+	Wed, 9 May 2012 01:53:08 -0400
+Message-Id: <20120509055036.384990807@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:15 +0100
+Date: Wed, 09 May 2012 06:51:17 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [ 046/167] [PATCH] spi: Fix device unregistration when unregistering the bus
- master
+        alan@lxorguk.ukuu.org.uk, Gertjan van Wingerde <gwingerde@gmail.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 048/167] [PATCH] rt2x00: Identify rt2800usb chipsets.
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,39 +29,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Gertjan van Wingerde <gwingerde@gmail.com>
 
-commit 178db7d30f94707efca1a189753c105ef69942ed upstream.
+commit bc93eda7e903ff75cefcb6e247ed9b8e9f8e9783 upstream.
 
-Device are added as children of the bus master's parent device, but
-spi_unregister_master() looks for devices to unregister in the bus
-master's children. This results in the child devices not being
-unregistered.
+According to the latest USB ID database these are all RT2770 / RT2870 / RT307x
+devices.
 
-Fix this by registering devices as direct children of the bus master.
-
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2: adjust context for previously cherry-picked
+ commit d42a179b941a9e4cc6cf41d0f3cbadd75fc48a89 'rt2x00: Add support
+ for D-Link DWA-127 to rt2800usb']
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/spi/spi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2800usb.c |   26 ++++++++++++--------------
+ 1 file changed, 12 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 77eae99..b2ccdea 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -319,7 +319,7 @@ struct spi_device *spi_alloc_device(struct spi_master *master)
- 	}
- 
- 	spi->master = master;
--	spi->dev.parent = dev;
-+	spi->dev.parent = &master->dev;
- 	spi->dev.bus = &spi_bus_type;
- 	spi->dev.release = spidev_release;
- 	device_initialize(&spi->dev);
--- 
-1.7.10
-
+--- linux.orig/drivers/net/wireless/rt2x00/rt2800usb.c
++++ linux/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -914,12 +914,14 @@
+ 	{ USB_DEVICE(0x050d, 0x8053) },
+ 	{ USB_DEVICE(0x050d, 0x805c) },
+ 	{ USB_DEVICE(0x050d, 0x815c) },
++	{ USB_DEVICE(0x050d, 0x825a) },
+ 	{ USB_DEVICE(0x050d, 0x825b) },
+ 	{ USB_DEVICE(0x050d, 0x935a) },
+ 	{ USB_DEVICE(0x050d, 0x935b) },
+ 	/* Buffalo */
+ 	{ USB_DEVICE(0x0411, 0x00e8) },
+ 	{ USB_DEVICE(0x0411, 0x0158) },
++	{ USB_DEVICE(0x0411, 0x015d) },
+ 	{ USB_DEVICE(0x0411, 0x016f) },
+ 	{ USB_DEVICE(0x0411, 0x01a2) },
+ 	/* Corega */
+@@ -934,6 +936,8 @@
+ 	{ USB_DEVICE(0x07d1, 0x3c0e) },
+ 	{ USB_DEVICE(0x07d1, 0x3c0f) },
+ 	{ USB_DEVICE(0x07d1, 0x3c11) },
++	{ USB_DEVICE(0x07d1, 0x3c13) },
++	{ USB_DEVICE(0x07d1, 0x3c15) },
+ 	{ USB_DEVICE(0x07d1, 0x3c16) },
+ 	{ USB_DEVICE(0x2001, 0x3c1b) },
+ 	/* Draytek */
+@@ -944,6 +948,7 @@
+ 	{ USB_DEVICE(0x7392, 0x7711) },
+ 	{ USB_DEVICE(0x7392, 0x7717) },
+ 	{ USB_DEVICE(0x7392, 0x7718) },
++	{ USB_DEVICE(0x7392, 0x7722) },
+ 	/* Encore */
+ 	{ USB_DEVICE(0x203d, 0x1480) },
+ 	{ USB_DEVICE(0x203d, 0x14a9) },
+@@ -978,6 +983,7 @@
+ 	{ USB_DEVICE(0x1737, 0x0070) },
+ 	{ USB_DEVICE(0x1737, 0x0071) },
+ 	{ USB_DEVICE(0x1737, 0x0077) },
++	{ USB_DEVICE(0x1737, 0x0078) },
+ 	/* Logitec */
+ 	{ USB_DEVICE(0x0789, 0x0162) },
+ 	{ USB_DEVICE(0x0789, 0x0163) },
+@@ -1001,9 +1007,13 @@
+ 	{ USB_DEVICE(0x0db0, 0x871b) },
+ 	{ USB_DEVICE(0x0db0, 0x871c) },
+ 	{ USB_DEVICE(0x0db0, 0x899a) },
++	/* Ovislink */
++	{ USB_DEVICE(0x1b75, 0x3071) },
++	{ USB_DEVICE(0x1b75, 0x3072) },
+ 	/* Para */
+ 	{ USB_DEVICE(0x20b8, 0x8888) },
+ 	/* Pegatron */
++	{ USB_DEVICE(0x1d4d, 0x0002) },
+ 	{ USB_DEVICE(0x1d4d, 0x000c) },
+ 	{ USB_DEVICE(0x1d4d, 0x000e) },
+ 	{ USB_DEVICE(0x1d4d, 0x0011) },
+@@ -1056,7 +1066,9 @@
+ 	/* Sparklan */
+ 	{ USB_DEVICE(0x15a9, 0x0006) },
+ 	/* Sweex */
++	{ USB_DEVICE(0x177f, 0x0153) },
+ 	{ USB_DEVICE(0x177f, 0x0302) },
++	{ USB_DEVICE(0x177f, 0x0313) },
+ 	/* U-Media */
+ 	{ USB_DEVICE(0x157e, 0x300e) },
+ 	{ USB_DEVICE(0x157e, 0x3013) },
+@@ -1140,25 +1152,20 @@
+ 	{ USB_DEVICE(0x13d3, 0x3322) },
+ 	/* Belkin */
+ 	{ USB_DEVICE(0x050d, 0x1003) },
+-	{ USB_DEVICE(0x050d, 0x825a) },
+ 	/* Buffalo */
+ 	{ USB_DEVICE(0x0411, 0x012e) },
+ 	{ USB_DEVICE(0x0411, 0x0148) },
+ 	{ USB_DEVICE(0x0411, 0x0150) },
+-	{ USB_DEVICE(0x0411, 0x015d) },
+ 	/* Corega */
+ 	{ USB_DEVICE(0x07aa, 0x0041) },
+ 	{ USB_DEVICE(0x07aa, 0x0042) },
+ 	{ USB_DEVICE(0x18c5, 0x0008) },
+ 	/* D-Link */
+ 	{ USB_DEVICE(0x07d1, 0x3c0b) },
+-	{ USB_DEVICE(0x07d1, 0x3c13) },
+-	{ USB_DEVICE(0x07d1, 0x3c15) },
+ 	{ USB_DEVICE(0x07d1, 0x3c17) },
+ 	{ USB_DEVICE(0x2001, 0x3c17) },
+ 	/* Edimax */
+ 	{ USB_DEVICE(0x7392, 0x4085) },
+-	{ USB_DEVICE(0x7392, 0x7722) },
+ 	/* Encore */
+ 	{ USB_DEVICE(0x203d, 0x14a1) },
+ 	/* Fujitsu Stylistic 550 */
+@@ -1174,19 +1181,13 @@
+ 	/* LevelOne */
+ 	{ USB_DEVICE(0x1740, 0x0605) },
+ 	{ USB_DEVICE(0x1740, 0x0615) },
+-	/* Linksys */
+-	{ USB_DEVICE(0x1737, 0x0078) },
+ 	/* Logitec */
+ 	{ USB_DEVICE(0x0789, 0x0168) },
+ 	{ USB_DEVICE(0x0789, 0x0169) },
+ 	/* Motorola */
+ 	{ USB_DEVICE(0x100d, 0x9032) },
+-	/* Ovislink */
+-	{ USB_DEVICE(0x1b75, 0x3071) },
+-	{ USB_DEVICE(0x1b75, 0x3072) },
+ 	/* Pegatron */
+ 	{ USB_DEVICE(0x05a6, 0x0101) },
+-	{ USB_DEVICE(0x1d4d, 0x0002) },
+ 	{ USB_DEVICE(0x1d4d, 0x0010) },
+ 	/* Planex */
+ 	{ USB_DEVICE(0x2019, 0x5201) },
+@@ -1205,9 +1206,6 @@
+ 	{ USB_DEVICE(0x083a, 0xc522) },
+ 	{ USB_DEVICE(0x083a, 0xd522) },
+ 	{ USB_DEVICE(0x083a, 0xf511) },
+-	/* Sweex */
+-	{ USB_DEVICE(0x177f, 0x0153) },
+-	{ USB_DEVICE(0x177f, 0x0313) },
+ 	/* Zyxel */
+ 	{ USB_DEVICE(0x0586, 0x341a) },
+ #endif
 
 
