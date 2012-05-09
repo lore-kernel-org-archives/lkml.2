@@ -1,71 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab2EIS3e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 14:29:34 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:34752 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760673Ab2EIS3a (ORCPT
+	id S932156Ab2EISby (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 14:31:54 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58055 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab2EISbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 14:29:30 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "Woodruff\, Richard" <r-woodruff2@ti.com>
-Cc: "J\, KEERTHY" <j-keerthy@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "AnilKumar\, Chimata" <anilkumar@ti.com>,
-        "linux-pm\@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Pihet-XID\, Jean" <j-pihet@ti.com>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [linux-pm] [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
-Organization: Texas Instruments, Inc.
-References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
-	<20120426191159.GA9415@sirena.org.uk>
-	<CAJ6a13a6WN9h1QZynpEOf-R6RXwWBZ2eOPkTeNc15JX_YfAz_w@mail.gmail.com>
-	<20120427175657.GP18260@opensource.wolfsonmicro.com>
-	<87397o3n4y.fsf@ti.com>
-	<331ABD5ECB02734CA317220B2BBEABC13E9B1A67@DBDE01.ent.ti.com>
-	<87mx5jy2li.fsf@ti.com>
-	<331ABD5ECB02734CA317220B2BBEABC13E9B6681@DBDE01.ent.ti.com>
-	<EF62F09C0797D947AD4180A1043C0DF73C40BCE1@DLEE10.ent.ti.com>
-	<87lil2jp2z.fsf@ti.com>
-	<EF62F09C0797D947AD4180A1043C0DF73C40C247@DLEE10.ent.ti.com>
-Date: Wed, 09 May 2012 11:29:26 -0700
-In-Reply-To: <EF62F09C0797D947AD4180A1043C0DF73C40C247@DLEE10.ent.ti.com>
-	(Richard Woodruff's message of "Wed, 9 May 2012 00:39:31 +0000")
-Message-ID: <87pqadgqd5.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Wed, 9 May 2012 14:31:52 -0400
+Message-ID: <4FAAB815.5040001@wwwdotorg.org>
+Date: Wed, 09 May 2012 12:31:49 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Kay Sievers <kay@vrfy.org>
+CC: William Douglas <william.douglas@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-next@vger.kernel.org
+Subject: Regression due to 7ff9554 "printk: convert byte-buffer to variable-length
+ record buffer"
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Woodruff, Richard" <r-woodruff2@ti.com> writes:
+For me, next-20120508 prints nothing when booted, and I think also
+hangs. To solve this, I reverted:
 
->> From: Hilman, Kevin
->> Sent: Tuesday, May 08, 2012 5:17 PM
->
->> A basic OMAP AVS driver has been in mainline for a long time, yet we
->> have not seen support submitted for all of these features.
->
-> 1.5/3.5 is a feature.
+7ff9554 printk: convert byte-buffer to variable-length record buffer
 
-And I'm still waiting for it to be submitted upstream.
+In order to build, I also had to revert:
 
-> ABB is requirement for a production useable driver. Higher speed rated
-> OMAP4 and all OMAP5 added these to be useable. 
+c4e00da driver-core: extend dev_printk() to pass structured data
 
-ditto
-
-> Yes this is effort. Point of mentioning is to raise awareness of need.
-
-I'm well aware of the need.
-
-> Yet to be added feature has different meaning than functional gap.
-
-And both need to be submitted upstream.
-
-Kevin
+Note: I'm running on an ARM system using a serial console, with
+earlyprintk enabled.
