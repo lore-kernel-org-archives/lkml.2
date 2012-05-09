@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758736Ab2EIIfI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 04:35:08 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:8799 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720Ab2EIIfB (ORCPT
+	id S1758672Ab2EIIiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 04:38:09 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37095 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754542Ab2EIIiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 04:35:01 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6705"; a="188909109"
-Message-ID: <3f7a217a08fd2c508576cbac8d26b017.squirrel@www.codeaurora.org>
-In-Reply-To: <1336054995-22988-15-git-send-email-svenkatr@ti.com>
-References: <1336054995-22988-1-git-send-email-svenkatr@ti.com>
-    <1336054995-22988-15-git-send-email-svenkatr@ti.com>
-Date: Wed, 9 May 2012 01:35:00 -0700 (PDT)
-Subject: Re: [PATCH v2 14/16] mmc: block: Implement HPI invocation and 
-     handling logic.
-From: kdorfman@codeaurora.org
-To: "Venkatraman S" <svenkatr@ti.com>
-Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org,
-        alex.lemberg@sandisk.com, ilan.smith@sandisk.com, lporzio@micron.com,
-        rmk+kernel@arm.linux.org.uk, "Venkatraman S" <svenkatr@ti.com>
-User-Agent: SquirrelMail/1.4.17
+	Wed, 9 May 2012 04:38:07 -0400
+Date: Wed, 9 May 2012 09:22:49 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Anbu Manikandan <canbumanikandan@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Kmemleak feature
+Message-ID: <20120509082248.GA11099@arm.com>
+References: <CAAGB47OajENL-g-CvdAgp1k2XKU4dOWbHz=mDy79mPOvi-eEmQ@mail.gmail.com>
+ <CAAGB47PiZ0cveWvObEjS8OPB++M3s1dENybnjoxyhQ8K_T4SpA@mail.gmail.com>
+ <CAAGB47PmB8o=mrnSoU1jYt_ecjH2WBLEzGRFqZWhWZXWQkTHaA@mail.gmail.com>
+ <CAAGB47PpTx9-eFz6ppbCYshA5yp293Tm1X-cAaBkZ+xX05_UUg@mail.gmail.com>
+ <CAAGB47N3oPkK1WhwzB7q4_6rvzKbnx3Ugwdr+aUuwTqiNX2oog@mail.gmail.com>
+ <alpine.LFD.2.02.1205090925420.1879@tux.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1205090925420.1879@tux.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 09, 2012 at 07:27:28AM +0100, Pekka Enberg wrote:
+> On Tue, 8 May 2012, Anbu Manikandan wrote:
+> > I am very much interested in learning about kmemleak feature in linux
+> > 3.0-RT kernel.
+> > I have already read the kmemleak document (Documentation/kmemleak.txt)
+> > provided in the kernel source.
+> > 
+> > Furthermore, I would like to understand the internal functionality of
+> > kmemleak source code.
+> > Could you please share some documents, links or presentations to
+> > understand the kmemleak internal functionality?
+> 
+> Catalin is the main author of kmemleak. I'm not aware of such 
+> presentations.
 
-> +static bool mmc_can_do_foreground_hpi(struct mmc_queue *mq,
-> +			struct request *req, unsigned int thpi)
-> +{
-> +
-> +	/*
-> +	 * If some time has elapsed since the issuing of previous write
-> +	 * command, or if the size of the request was too small, there's
-> +	 * no point in preempting it. Check if it's worthwhile to preempt
-> +	 */
-> +	int time_elapsed = jiffies_to_msecs(jiffies -
-> +			mq->mqrq_cur->mmc_active.mrq->cmd->started_time);
-> +
-> +	if (time_elapsed <= thpi)
-> +			return true;
-Some host controllers (or DMA) has possibility to get the byte count of
-current transaction. It may be implemented as host api (similar to abort
-ops). Then you have more accurate estimation of worthiness.
+There was one last year at LinuxCon in Prague:
 
-> +
-> +	return false;
-> +}
+https://events.linuxfoundation.org/images/stories/pdf/lceu11_marinas.pdf
 
-Thanks, Kostya
-
+-- 
+Catalin
