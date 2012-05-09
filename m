@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365Ab2EIEgj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 00:36:39 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:41336 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab2EIEgi (ORCPT
+	id S1751548Ab2EIEhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 00:37:46 -0400
+Received: from mail.palosanto.com ([200.93.199.101]:44018 "EHLO
+	pbx.palosanto.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab2EIEhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 00:36:38 -0400
+	Wed, 9 May 2012 00:37:45 -0400
+X-Greylist: delayed 1494 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 May 2012 00:37:44 EDT
+Message-ID: <4FA9EEAC.7010201@palosanto.com>
+Date: Tue, 08 May 2012 23:12:28 -0500
+From: =?ISO-8859-1?Q?Alex_Villac=EDs_Lasso?= <a_villacis@palosanto.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
-References: <1336004953.4240.9.camel@mop> <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
- <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
- <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com> <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 8 May 2012 21:36:16 -0700
-X-Google-Sender-Auth: whiFlXyCd6RuxYKaHwcFlajT9rk
-Message-ID: <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
- record buffer
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Kay Sievers <kay@vrfy.org>, Greg Kroah-Hartmann <greg@kroah.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Francois Romieu <romieu@fr.zoreil.com>
+CC: Thomas Pilarski <thomas.pi@arcor.de>,
+        Julien Ducourthial <jducourt@free.fr>,
+        Realtek linux nic maintainers <nic_swsd@realtek.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] r8169: fix problem with TSO (TX_BUFFS_AVAIL negative
+ value)
+References: <1336430367.11363.38.camel@blackbone.local> <20120507234205.GA2230@electric-eye.fr.zoreil.com>
+In-Reply-To: <20120507234205.GA2230@electric-eye.fr.zoreil.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 8, 2012 at 9:27 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+El 07/05/12 18:42, Francois Romieu escribió:
+> Julien Ducourthial<jducourt@free.fr>  :
+>> The r8169 may get stuck or show bad behaviour after activating TSO :
+>> the net_device is not stopped when it has no more TX descriptors.
+>> This problem comes from TX_BUFS_AVAIL which may reach -1 when all
+>> transmit descriptors are in use. The patch simply tries to keep positive
+>> values.
+> It seems more than good.
 >
-> So think of KERN_CONT as a "quoting safety" thing. And in 99% of all
-> cases it is obviously not actually needed. So in general, KERN_CONT is
-> useless and should not be used, but that doesn't mean that it can be
-> removed as a _concept_.
-
-Btw, KERN_DEFAULT is the exact same thing for the "I start a new line,
-but I don't really have a special priority level".
-
-And it's *way* overused. At one point we used to have the policy that
-all new printk()'s should have a priority level, presumably so that we
-at some point could have just made it a real argument instead (ie
-'printk(prio, "fmt", arg)').
-
-However, that turned out to be just stupid (the same way encouraging
-people to always use KERN_CONT was/is stupid). It turns out that a lot
-of printk's really don't have a good priority level, there's no reason
-to force them to use KERN_DEFAULT, and it doesn't actually add *any*
-value what-so-ever.
-
-But again, it can be useful for the special case where you start a new
-printk() with a string that could be mistaken for the priority marker.
-So exactly like KERN_CONT, KERN_DEFAULT can be used for "quoting"
-purposes.
-
-Of course, if you print out random strings with odd random crap in the
-first few characters, you're probably doing something really really
-wrong. So 99% of the time, you should never need KERN_DEFAULT or
-KERN_CONT. They exist for the rare exceptional case, and they do
-*need* to exist, but they should not generally need to be *used*.
-
-So it's like a defibrillator: it is good to *have* one, but it's
-really bad to have to *use* one.
-
-                       Linus
+> Alex, Thomas, can you check if Julien's patch below fixes your broken
+> kernels as well ?
+>
+No luck. The backtrace still appears after using the patched driver.
