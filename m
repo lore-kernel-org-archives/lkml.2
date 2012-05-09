@@ -1,89 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758732Ab2EIMQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 08:16:59 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3153 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757209Ab2EIMQ6 (ORCPT
+	id S1758749Ab2EIMVx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 08:21:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51875 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754527Ab2EIMVw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 08:16:58 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 09 May 2012 05:16:58 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] regmap: fix possible memory corruption in regmap_bulk_read()
-Date: Wed,  9 May 2012 17:43:12 +0530
-Message-Id: <1336565592-17577-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 9 May 2012 08:21:52 -0400
+Message-ID: <1336566096.2527.30.camel@twins>
+Subject: Re: [PATCH] sched_groups are expected to be circular linked list,
+ make it so right after allocation
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, pjt@google.com, tglx@linutronix.de,
+        seto.hidetoshi@jp.fujitsu.com
+Date: Wed, 09 May 2012 14:21:36 +0200
+In-Reply-To: <4FAA5BFB.40309@redhat.com>
+References: <1336559908-32533-1-git-send-email-imammedo@redhat.com>
+	  <4FAA452A.1070909@gmail.com> <4FAA588B.5010404@redhat.com>
+	 <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function regmap_bulk_read() calls the regmap_read() for
-each register if set of register has volatile and cache is
-enabled. In this case, last few register read makes the memory
-corruption if the register size is not the size of unsigned int.
-The regam_read() takes argument as unsigned int for returning
-value and it update the value as
-	*val = map->format.parse_val(map->work_buf);
-This causes complete 4 bytes (size of unsigned int) to get written.
-Now if client pass the memory pointer for value which is equal to the
-required size of register count in regmap_bulk_read() then last few
-register read actually update the memory beyond passed pointer size.
+On Wed, 2012-05-09 at 13:58 +0200, Igor Mammedov wrote:
+> On 05/09/2012 01:52 PM, Peter Zijlstra wrote:
+> > On Wed, 2012-05-09 at 13:44 +0200, Igor Mammedov wrote:
+> >> This patch fixes only build_sched_groups path, but there is another fail path
+> >> that results in below OOPS.
+> >> build_overlap_sched_groups() may exit without setting groups and later it will crash
+> >> init_sched_groups_power as well.
+> >
+> > if that allocation fails? Or is there another fail path?
+> 
+> build_overlap_sched_groups(struct sched_domain *sd, int cpu)
+> ...
+>                  if (cpumask_test_cpu(cpu, sg_span))
+>                          groups = sg;
+> ...
+> 
+> above test fails and leaves local var groups set to NULL
+> and before exit there is:
+> 
+>    sd->groups = groups;
+> 
+> which resets sd->groups to NULL 
 
-Avoid this by using local variable for read and then do memcpy()
-for actual byte copy to passed pointer based on register size.
+Cute! So we're building groups for @cpu, for a domain on the same @cpu,
+but none of the groups actually span this @cpu. This would imply the
+domain doesn't actually contain @cpu.
 
-I allocated one pointer ptr and take first 16 bytes dump of that
-pointer then call regmap_bulk_read() with pointer which is just
-on top of this allocated pointer and register count of 128. Here
-register size is 1 byte.
-The memory trace of last 5 register read are as follows:
+> and I'm not sure if it is correct at all to skip this
+> assignment if groups == NULL. 
 
-[    5.438589] regmap_bulk_read after regamp_read() for register 122
-[    5.447421] 0xef993c20 0xef993c00 0x00000000 0x00000001
-[    5.467535] regmap_bulk_read after regamp_read() for register 123
-[    5.476374] 0xef993c20 0xef993c00 0x00000000 0x00000001
-[    5.496425] regmap_bulk_read after regamp_read() for register 124
-[    5.505260] 0xef993c20 0xef993c00 0x00000000 0x00000001
-[    5.525372] regmap_bulk_read after regamp_read() for register 125
-[    5.534205] 0xef993c00 0xef993c00 0x00000000 0x00000001
-[    5.554258] regmap_bulk_read after regamp_read() for register 126
-[    5.563100] 0xef990000 0xef993c00 0x00000000 0x00000001
-[    5.554258] regmap_bulk_read after regamp_read() for register 127
-[    5.587108] 0xef000000 0xef993c00 0x00000000 0x00000001
+It would avoid exploding, but nothing in the above situation is anywhere
+near correct.
 
-Here it is observed that the memory content at first word started changing
-on last 3 regmap_read() and so corruption happened.
+Does something like the below give any clues as to how we got there?
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
-This patch is against the linus' tree.
-Added tree as
-git remote add -t master -f linus
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-
- drivers/base/regmap/regmap.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 7a3f535..bb80853 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -775,9 +775,11 @@ int regmap_bulk_read(struct regmap *map, unsigned int reg, void *val,
- 			map->format.parse_val(val + i);
- 	} else {
- 		for (i = 0; i < val_count; i++) {
--			ret = regmap_read(map, reg + i, val + (i * val_bytes));
-+			unsigned int ival;
-+			ret = regmap_read(map, reg + i, &ival);
- 			if (ret != 0)
- 				return ret;
-+			memcpy(val + (i * val_bytes), &ival, val_bytes);
- 		}
- 	}
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1043,6 +1043,15 @@ struct sched_domain {
+ 	unsigned long span[0];
+ };
  
--- 
-1.7.1.1
++static inline char *sched_domain_name(struct sched_domain *sd)
++{
++#ifdef CONFIG_SCHED_DEBUG
++	return sd->name;
++#else
++	return "";
++#endif
++}
++
+ static inline struct cpumask *sched_domain_span(struct sched_domain *sd)
+ {
+ 	return to_cpumask(sd->span);
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5993,6 +5993,22 @@ build_overlap_sched_groups(struct sched_
+ 		last = sg;
+ 		last->next = first;
+ 	}
++	if (!groups) {
++		char str[256];
++
++		printk(KERN_ERR "sched: Topology is hosed for CPU-%d!!\n", cpu);
++		cpulist_scnprintf(str, sizeof(str), sched_domain_span(sd));
++		printk(KERN_ERR "sched: domain: %s %s\n", sched_domain_name(sd), str);
++		
++		sg = first;
++		if (sg) do {
++			cpulist_scnprintf(str, sizeof(str), sched_group_cpus(sg));
++			printk(KERN_ERR "sched:  group: %s\n", str);
++			sg = sg->next;
++		} while (sg != first);
++
++		BUG();
++	}
+ 	sd->groups = groups;
+ 
+ 	return 0;
 
