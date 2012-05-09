@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760317Ab2EIWWc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 18:22:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58259 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757441Ab2EIWWa convert rfc822-to-8bit (ORCPT
+	id S1761250Ab2EIWYO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 18:24:14 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34979 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753538Ab2EIWYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 18:22:30 -0400
+	Wed, 9 May 2012 18:24:13 -0400
+X-Sasl-enc: nQztIbMfzZeE6lL3wljE3J5YnAZZ4oBuJIZC7esW2e67 1336602252
+Date: Wed, 9 May 2012 15:24:11 -0700
+From: Greg KH <greg@kroah.com>
+To: Markus Franke <markus.franke@s2002.tu-chemnitz.de>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] w1: Add 1-wire slave device driver for DS28E04-100
+Message-ID: <20120509222411.GA24302@kroah.com>
+References: <20120430021300.GA18148@kroah.com>
+ <4FA1953B.40008@hrz.tu-chemnitz.de>
+ <20120502202134.GB26628@kroah.com>
+ <20120503180056.GB13988@ioremap.net>
+ <4FAAD584.70102@hrz.tu-chemnitz.de>
+ <20120509220636.GA27659@kroah.com>
+ <4FAAECB7.8070904@hrz.tu-chemnitz.de>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1205091818430.1272@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1205091758310.1272@file.rdu.redhat.com>
- <Pine.LNX.4.64.1205091816470.1272@file.rdu.redhat.com> <Pine.LNX.4.64.1205091817170.1272@file.rdu.redhat.com>
- <Pine.LNX.4.64.1205091818160.1272@file.rdu.redhat.com> <Pine.LNX.4.64.1205091818430.1272@file.rdu.redhat.com>
-From: Matt Turner <mattst88@gmail.com>
-Date: Wed, 9 May 2012 18:22:09 -0400
-Message-ID: <CAEdQ38H4MjAGKYW3jbcRs98qKnikPwgN_0k2KWbK8wLmJa8xxQ@mail.gmail.com>
-Subject: Re: [PATCH 5/5] PA-RISC: fix compile errors
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: torvalds@linux-foundation.org, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FAAECB7.8070904@hrz.tu-chemnitz.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 6:19 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
-> From: Rolf Eike Beer <eike-kernel@sf-tec.de>
->
-> This was defined in asm/pdc.h which needs to include asm/page.h for
-> __PAGE_OFFSET. This leads to an include loop so that page.h eventually will
-> include pdc.h again. While this is no problem because of header guards, it is
-> a problem because some symbols may be undefined. Such an error is this:
->
-> In file included from /home/buildbot/repos/linux/include/linux/bitops.h:35:0,
->                 from /home/buildbot/repos/linux/include/asm-generic/getorder.h:7,
->                 from /home/buildbot/repos/linux/arch/parisc/include/asm/page.h:162,
->                 from /home/buildbot/repos/linux/arch/parisc/include/asm/pdc.h:346,
->                 from /home/buildbot/repos/linux/arch/parisc/include/asm/processor.h:16,
->                 from /home/buildbot/repos/linux/arch/parisc/include/asm/spinlock.h:6,
->                 from /home/buildbot/repos/linux/arch/parisc/include/asm/atomic.h:20,
->                 from /home/buildbot/repos/linux/include/linux/atomic.h:4,
->                 from /home/buildbot/repos/linux/include/linux/sysfs.h:20,
->                 from /home/buildbot/repos/linux/include/linux/kobject.h:21,
->                 from /home/buildbot/repos/linux/include/linux/device.h:17,
->                 from /home/buildbot/repos/linux/include/linux/eisa.h:5,
->                 from /home/buildbot/repos/linux/arch/parisc/kernel/pci.c:11:
-> /home/buildbot/repos/linux/arch/parisc/include/asm/bitops.h: In function "set_bit":
-> /home/buildbot/repos/linux/arch/parisc/include/asm/bitops.h:82:2: error: implicit declaration of function "_atomic_spin_lock_irqsave" [-Werror=implicit-function-declaration]
-> /home/buildbot/repos/linux/arch/parisc/include/asm/bitops.h:84:2: error: implicit declaration of function "_atomic_spin_unlock_irqrestore" [-Werror=implicit-function-declaration]
->
-> Signed-off-by: Rolf Eike Beer <eike-kernel@xxxxxxxxx>
 
-Email address got eaten?
+A: No.
+Q: Should I include quotations after my reply?
 
-> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+http://daringfireball.net/2007/07/on_top
+
+On Thu, May 10, 2012 at 12:16:23AM +0200, Markus Franke wrote:
+> Dear Greg,
+> 
+> the file "pio" is used for reading the current PIO state of the
+> DS28E04-100.
+
+Why is this a binary file?  That seems like it should not be, as a
+binary sysfs file should be "pass-through" only.
+
+> The "eeprom" file is for reading/writing the EEPROM memory of the same
+> device.
+
+That seems ok.
+
+> As already mentioned before this is exactly the way how other w1 slave
+> drivers are handling stuff like this.
+
+Then those drivers are wrong as well, sorry :(
+
+thanks,
+
+greg k-h
