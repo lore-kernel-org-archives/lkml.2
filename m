@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757518Ab2EIGJJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:09:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39135 "EHLO
+	id S1756932Ab2EIFxd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:53:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38859 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756636Ab2EIFxe (ORCPT
+	by vger.kernel.org with ESMTP id S1750877Ab2EIFxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:53:34 -0400
-Message-Id: <20120509055049.208740392@decadent.org.uk>
+	Wed, 9 May 2012 01:53:10 -0400
+Message-Id: <20120509055029.917954110@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:51 +0100
+Date: Wed, 09 May 2012 06:50:31 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Stigge <stigge@antcom.de>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
-Subject: [ 142/167] [PATCH] i2c: pnx: Disable clk in suspend
+        alan@lxorguk.ukuu.org.uk, Kent Yoder <key@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 002/167] [PATCH] crypto: sha512 - Fix byte counter overflow in SHA-512
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,38 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Stigge <stigge@antcom.de>
+From: Kent Yoder <key@linux.vnet.ibm.com>
 
-commit 6c557cfee08751d22aed34840f389b846f0f4508 upstream.
+commit 25c3d30c918207556ae1d6e663150ebdf902186b upstream.
 
-In the driver's suspend function, clk_enable() was used instead of
-clk_disable(). This is corrected with this patch.
+The current code only increments the upper 64 bits of the SHA-512 byte
+counter when the number of bytes hashed happens to hit 2^64 exactly.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+This patch increments the upper 64 bits whenever the lower 64 bits
+overflows.
 
-[wsa: reworded commit header slightly]
-
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/i2c/busses/i2c-pnx.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ crypto/sha512_generic.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/i2c-pnx.c b/drivers/i2c/busses/i2c-pnx.c
-index 04be9f8..eb8ad53 100644
---- a/drivers/i2c/busses/i2c-pnx.c
-+++ b/drivers/i2c/busses/i2c-pnx.c
-@@ -546,8 +546,7 @@ static int i2c_pnx_controller_suspend(struct platform_device *pdev,
- {
- 	struct i2c_pnx_algo_data *alg_data = platform_get_drvdata(pdev);
+diff --git a/crypto/sha512_generic.c b/crypto/sha512_generic.c
+index 107f6f7..dd30f40 100644
+--- a/crypto/sha512_generic.c
++++ b/crypto/sha512_generic.c
+@@ -174,7 +174,7 @@ sha512_update(struct shash_desc *desc, const u8 *data, unsigned int len)
+ 	index = sctx->count[0] & 0x7f;
  
--	/* FIXME: shouldn't this be clk_disable? */
--	clk_enable(alg_data->clk);
-+	clk_disable(alg_data->clk);
+ 	/* Update number of bytes */
+-	if (!(sctx->count[0] += len))
++	if ((sctx->count[0] += len) < len)
+ 		sctx->count[1]++;
  
- 	return 0;
- }
+         part_len = 128 - index;
 -- 
 1.7.10
 
