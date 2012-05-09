@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab2EIF2t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:28:49 -0400
-Received: from exprod5og108.obsmtp.com ([64.18.0.186]:56814 "HELO
-	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750986Ab2EIF2r convert rfc822-to-8bit (ORCPT
+	id S1752875Ab2EIF3w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:29:52 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:52315 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab2EIF3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 01:28:47 -0400
+	Wed, 9 May 2012 01:29:50 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtSfAPj/qU9V5qg+PGdsb2JhbABEijWneAMBgR0ZAQEBATc0gg0BBTocIxAIA0YUJQoaiCW7JROLM4FrgwFjBJV9hgaNKA
+X-IronPort-AV: E=Sophos;i="4.75,556,1330902000"; 
+   d="scan'208";a="331410928"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 9 May 2012 07:35:02 +0200
+To: Peter Hutterer <peter.hutterer@who-t.net>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, chatty@enac.fr, chasedouglas@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Input: MT - Include win8 support
+Message-ID: <20120509053502.GA30063@polaris.bitmath.org>
+References: <1336230499-1450-1-git-send-email-rydberg@euromail.se>
+ <CAN+gG=HqGmf77P6=7RMFT_Ez7Ysp4ZVJ6skfAoDcZ7JN1JtYnw@mail.gmail.com>
+ <20120506182835.GA12221@polaris.bitmath.org>
+ <20120508060221.GA15925@yabbi.bne.redhat.com>
+ <20120508184052.GA23748@polaris.bitmath.org>
+ <20120508235219.GA4067@yabbi.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA4HGVGRbnLCMOAbO1mYnFCgHhh1_ErLdKq5YhMdV0VhQw@mail.gmail.com>
-References: <1333956052-25319-1-git-send-email-tinamdar@apm.com>
-	<1333956052-25319-2-git-send-email-tinamdar@apm.com>
-	<CA+5PVA4HGVGRbnLCMOAbO1mYnFCgHhh1_ErLdKq5YhMdV0VhQw@mail.gmail.com>
-Date: Wed, 9 May 2012 10:58:46 +0530
-Message-ID: <CACoXjcn1H_Jov86a5fmonY-5CtKCcGgBHMwzUf-i-66-VatqJw@mail.gmail.com>
-Subject: Re: [V2 2/5] powerpc: 40x: Add AHB, APB of_device_ids
-From: Tanmay Inamdar <tinamdar@apm.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: benh@kernel.crashing.org, grant.likely@secretlab.ca,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120508235219.GA4067@yabbi.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 2, 2012 at 7:11 PM, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Mon, Apr 9, 2012 at 3:20 AM, Tanmay Inamdar <tinamdar@apm.com> wrote:
->> Adding of_device_id's for AHB and APB buses used in klondike (APM8018X) in
->> platforms/40x/ppc40x_simple.c file
->>
->> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
->
-> You should probably combine the first 3 patches in this series into one
-> patch.  Otherwise you run the risk of changing the DTS to something the
-> kernel can't support.  At the least, this change should be patch 1 in
-> the series, and you can probably combine the two DTS changes.
->
+> > > > Looking at the figure, it is clear that the MT model has two centers,
+> > > > one for each ellipse. Thus, center is not discriminating
+> > > > enough. Perhaps ABS_MT_OUTER_X/Y is more appropriate, then?
+> > > 
+> > > ABS_MT_OUTER_CENTER
+> > 
+> > I appreciate the suggestion, but along two-word combinations,
+> > ABS_MT_OUTER_POSITION would integrate better with existing names. Both
+> > seem awfully long, though.
+> 
+> problem I see with "outer position" is that I'd associate it with the
+> top/left position of whatever "outer" is, not with the center of said
+> envelope. that's why I'd argue that "center" should be somewhere in the
+> name.
 
-I will do it in next version of patches.
+Top-left does not apply to an ellipse, so that argument makes little
+sense for someone looking only at the MT protocol. Given that position
+is the actual protocol name for the center of the touching ellipse,
+there is hardly any doubt what it means in this context.
 
-> josh
+How about ABS_MT_TOOL_X/Y?
 
-Thanks,
-Tanmay
-CONFIDENTIALITY NOTICE: This e-mail message, including any attachments, 
-is for the sole use of the intended recipient(s) and contains information 
-that is confidential and proprietary to AppliedMicro Corporation or its subsidiaries. 
-It is to be used solely for the purpose of furthering the parties' business relationship. 
-All unauthorized review, use, disclosure or distribution is prohibited. 
-If you are not the intended recipient, please contact the sender by reply e-mail 
-and destroy all copies of the original message.
-
-
+Henrik
