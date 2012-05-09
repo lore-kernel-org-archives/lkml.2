@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378Ab2EIUxy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 16:53:54 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54839 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755458Ab2EIUxw (ORCPT
+	id S1759980Ab2EIU65 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 16:58:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53632 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932395Ab2EIU6x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 16:53:52 -0400
-Message-ID: <4FAAD95D.9010108@wwwdotorg.org>
-Date: Wed, 09 May 2012 14:53:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ola Lilja <ola.o.lilja@stericsson.com>
-Subject: Re: [PATCH 12/12] ARM: ux500: switch MSP to using pinctrl for pins
-References: <1336470347-23886-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1336470347-23886-1-git-send-email-linus.walleij@stericsson.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 9 May 2012 16:58:53 -0400
+Message-ID: <1336597121.2527.74.camel@twins>
+Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Igor Mammedov <imammedo@redhat.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
+        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 09 May 2012 22:58:41 +0200
+In-Reply-To: <20120509120745.042e86c6.akpm@linux-foundation.org>
+References: <1336559908-32533-1-git-send-email-imammedo@redhat.com>
+	 <4FAA452A.1070909@gmail.com> <4FAA588B.5010404@redhat.com>
+	 <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
+	 <1336566096.2527.30.camel@twins> <1336566644.2527.33.camel@twins>
+	 <1336570043.2527.38.camel@twins>
+	 <20120509120745.042e86c6.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2012 03:45 AM, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+On Wed, 2012-05-09 at 12:07 -0700, Andrew Morton wrote:
+> On Wed, 09 May 2012 15:27:23 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> The MSP platform data callbacks use the old custom callbacks to
-> set the state of the pins, switch over to using pinctrl.
+> > + * - 'b' For a bitmap, consumes 2 args, second is int
+> 
+> There's a pretty widespread convention that %b is used to print in
+> binary: printf("%b", 10) -> 1010.  Regrettably it isn't part of
+> standard C, but it's often supported anyway.  Perl's printf does this
+> as well.  Perl uses %B also.
+> 
+> If we later want to add binary printing to kernel print(), we'd presumably
+> use %pb, to match this precedent.
 
-Aside from the comments I've already made, I guess you can consider the
-whole series:
+I'd expect something like %ub, %p would take a pointer to a value.
 
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+Too bad both %b and %B generate a warning, it would be rather trivial to
+add base 2 number stuff.
 
-I'm not at all familiar with this HW, and didn't look at every detail,
-but at least I see no particular reason not to ack it.
+> So perhaps it would be better to avoid consuming `b' for bitmaps?
+
+With %.*pb not actually working I could use %pC to mean a cpumask and
+skip the generic bitmap stuff.
