@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758751Ab2EIIpK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 04:45:10 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55602 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863Ab2EIIpD (ORCPT
+	id S1758723Ab2EIItg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 04:49:36 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:46038 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641Ab2EIItd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 04:45:03 -0400
-Date: Wed, 9 May 2012 10:44:53 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, anton@samba.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mike Travis <travis@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PULL] cpumask: finally make them variable size w/
- CPUMASK_OFFSTACK.
-Message-ID: <20120509084453.GA6429@gmail.com>
-References: <87ipg5c2bk.fsf@rustcorp.com.au>
+	Wed, 9 May 2012 04:49:33 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <stern@rowland.harvard.edu>, <linux-usb@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <plagnioj@jcrosoft.com>, <gregkh@linuxfoundation.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        stable <stable@vger.kernel.org>
+Subject: [PATCH] USB: ohci-at91: add a reset function to fix race condition
+Date: Wed, 9 May 2012 10:48:54 +0200
+Message-ID: <1336553334-31058-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ipg5c2bk.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.159.245.203]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A possible race condition appears because we are not initializing
+the ohci->regs before calling usb_hcd_request_irqs().
+We move the call to ohci_init() in hcd->driver->reset() instead of
+hcd->driver->start() to fix this.
+This was experienced when we share the same IRQ line between OHCI and EHCI
+controllers.
 
-* Rusty Russell <rusty@rustcorp.com.au> wrote:
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Tested-by: Christian Eggers <christian.eggers@kathrein.de>
+Cc: stable <stable@vger.kernel.org>
+---
+ drivers/usb/host/ohci-at91.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-> Hi Ingo,
-> 
->         I finally rebased this on top of your tip tree, and tested it
-> locally.  Some more old-style cpumask usages have crept in, but it's a
-> fairly simple series.
+diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
+index 13ebeca..55d3d64 100644
+--- a/drivers/usb/host/ohci-at91.c
++++ b/drivers/usb/host/ohci-at91.c
+@@ -223,7 +223,7 @@ static void __devexit usb_hcd_at91_remove(struct usb_hcd *hcd,
+ /*-------------------------------------------------------------------------*/
+ 
+ static int __devinit
+-ohci_at91_start (struct usb_hcd *hcd)
++ohci_at91_reset (struct usb_hcd *hcd)
+ {
+ 	struct at91_usbh_data	*board = hcd->self.controller->platform_data;
+ 	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
+@@ -233,6 +233,14 @@ ohci_at91_start (struct usb_hcd *hcd)
+ 		return ret;
+ 
+ 	ohci->num_ports = board->ports;
++	return 0;
++}
++
++static int __devinit
++ohci_at91_start (struct usb_hcd *hcd)
++{
++	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
++	int			ret;
+ 
+ 	if ((ret = ohci_run(ohci)) < 0) {
+ 		err("can't start %s", hcd->self.bus_name);
+@@ -418,6 +426,7 @@ static const struct hc_driver ohci_at91_hc_driver = {
+ 	/*
+ 	 * basic lifecycle operations
+ 	 */
++	.reset =		ohci_at91_reset,
+ 	.start =		ohci_at91_start,
+ 	.stop =			ohci_stop,
+ 	.shutdown =		ohci_shutdown,
+-- 
+1.7.10
 
-Cool! Most of it looks pretty sane. I have a question about the 
-gist of the series:
-
-> commit 898eb73305e2277be91b931c5a75484f8c87ae36
-> Author: Rusty Russell <rusty@rustcorp.com.au>
-> Date:   Wed May 9 15:01:15 2012 +0930
-> 
->     cpumask: remove struct cpumask definition when CONFIG_CPUMASK_OFFSTACK=y
->     
->     We're about to change CONFIG_CPUMASK_OFFSTACK so it only allocate
->     nr_cpu_ids bits for all cpumasks.  We need to make sure that when
->     CONFIG_CPUMASK_OFFSTACK is set:
->     
->     1) Noone uses the old bitmap ops, which use NR_CPUS bits (use cpumask_*)
->     2) Noone uses assignment of struct cpumask (use cpumask_copy)
->     3) Noone passes a struct cpumask (pass a pointer)
->     4) Noone declares them on the stack (use cpumask_var_t)
->     
->     So we finally remove the definition of struct cpumask when
->     CONFIG_CPUMASK_OFFSTACK=y.  This means that these usages will hit a compile
->     error the moment that config option is turned on.
->     
->     Note that it also means you can't declare a static cpumask.  You
->     should avoid this anyway (use cpumask_var_t), but there's a
->     deliberately-ugly workaround for special cases, using DECLARE_BITMAP()
->     and to_cpumask().
->     
->     Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
->     Cc: Arnd Bergmann <arnd@arndb.de>
->     Cc: anton@samba.org
->     Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->     Cc: Mike Travis <travis@sgi.com>
-
-Is there any good reason to not remove it altogether, regardless 
-of whether the OFFSTACK config is set? I mean, triggering build 
-failures for a relatively rarely turned on config option is 
-asking for constant maintenance trouble.
-
-Thanks,
-
-	Ingo
