@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758115Ab2EIGSt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:18:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39051 "EHLO
+	id S1758089Ab2EIGSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:18:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38980 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751951Ab2EIFxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1756455Ab2EIFxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:25 -0400
-Message-Id: <20120509055041.966952590@decadent.org.uk>
+Message-Id: <20120509055033.164719500@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:57 +0100
+Date: Wed, 09 May 2012 06:50:55 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>,
-        Josh Boyer <jwboyer@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 088/167] [PATCH] nfs: Enclose hostname in brackets when needed in
- nfs_do_root_mount
+        alan@lxorguk.ukuu.org.uk, Shaohua Li <shli@kernel.org>,
+        Shaohua Li <shli@fusionio.com>, Theodore Tso <tytso@mit.edu>,
+        Jan Kara <jack@suse.cz>
+Subject: [ 026/167] [PATCH] jbd2: use GFP_NOFS for blkdev_issue_flush
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,48 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Shaohua Li <shli@kernel.org>
 
-commit 98a2139f4f4d7b5fcc3a54c7fddbe88612abed20 upstream.
+commit 99aa78466777083255b876293e9e83dec7cd809a upstream.
 
-When hostname contains colon (e.g. when it is an IPv6 address) it needs
-to be enclosed in brackets to make parsing of NFS device string possible.
-Fix nfs_do_root_mount() to enclose hostname properly when needed. NFS code
-actually does not need this as it does not parse the string passed by
-nfs_do_root_mount() but the device string is exposed to userspace in
-/proc/mounts.
+flush request is issued in transaction commit code path, so looks using
+GFP_KERNEL to allocate memory for flush request bio falls into the classic
+deadlock issue.  I saw btrfs and dm get it right, but ext4, xfs and md are
+using GFP.
 
-CC: Josh Boyer <jwboyer@redhat.com>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/super.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/jbd2/commit.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index 37412f7..1e6715f 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2767,11 +2767,15 @@ static struct vfsmount *nfs_do_root_mount(struct file_system_type *fs_type,
- 	char *root_devname;
- 	size_t len;
+diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+index 806525a..840f70f 100644
+--- a/fs/jbd2/commit.c
++++ b/fs/jbd2/commit.c
+@@ -723,7 +723,7 @@ start_journal_io:
+ 	if (commit_transaction->t_need_data_flush &&
+ 	    (journal->j_fs_dev != journal->j_dev) &&
+ 	    (journal->j_flags & JBD2_BARRIER))
+-		blkdev_issue_flush(journal->j_fs_dev, GFP_KERNEL, NULL);
++		blkdev_issue_flush(journal->j_fs_dev, GFP_NOFS, NULL);
  
--	len = strlen(hostname) + 3;
-+	len = strlen(hostname) + 5;
- 	root_devname = kmalloc(len, GFP_KERNEL);
- 	if (root_devname == NULL)
- 		return ERR_PTR(-ENOMEM);
--	snprintf(root_devname, len, "%s:/", hostname);
-+	/* Does hostname needs to be enclosed in brackets? */
-+	if (strchr(hostname, ':'))
-+		snprintf(root_devname, len, "[%s]:/", hostname);
-+	else
-+		snprintf(root_devname, len, "%s:/", hostname);
- 	root_mnt = vfs_kern_mount(fs_type, flags, root_devname, data);
- 	kfree(root_devname);
- 	return root_mnt;
+ 	/* Done it all: now write the commit record asynchronously. */
+ 	if (JBD2_HAS_INCOMPAT_FEATURE(journal,
+@@ -859,7 +859,7 @@ wait_for_iobuf:
+ 	if (JBD2_HAS_INCOMPAT_FEATURE(journal,
+ 				      JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT) &&
+ 	    journal->j_flags & JBD2_BARRIER) {
+-		blkdev_issue_flush(journal->j_dev, GFP_KERNEL, NULL);
++		blkdev_issue_flush(journal->j_dev, GFP_NOFS, NULL);
+ 	}
+ 
+ 	if (err)
 -- 
 1.7.10
 
