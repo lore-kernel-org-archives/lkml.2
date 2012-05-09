@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab2EIHBF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 03:01:05 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57689 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751800Ab2EIHBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 03:01:03 -0400
-Date: Wed, 9 May 2012 09:00:58 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "H. Peter Anvin" <hpa@zytor.com>, Shuah Khan <shuahkhan@gmail.com>,
-        mingo@redhat.com, tglx@linutronix.de, tigran@aivazian.fsnet.co.uk,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] x86: kernel/microcode_core.c simple_strtoul
- cleanup
-Message-ID: <20120509070058.GA19853@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ingo Molnar <mingo@kernel.org>,
-	Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-	"H. Peter Anvin" <hpa@zytor.com>, Shuah Khan <shuahkhan@gmail.com>,
-	mingo@redhat.com, tglx@linutronix.de, tigran@aivazian.fsnet.co.uk,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1336324264.2897.9.camel@lorien2>
- <20120507104943.GA3896@x1.osrc.amd.com>
- <4FA815E3.1030101@zytor.com>
- <20120507211612.GA19700@liondog.tnic>
- <20120508012341.GA27000@khazad-dum.debian.net>
- <20120508040009.GB30652@gmail.com>
+	id S1755542Ab2EIHBo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 03:01:44 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35355 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755204Ab2EIHBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 03:01:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120508040009.GB30652@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKgNAkh5TkwSzFVKVo5JUvkDWkzY8EaQNxJSQnv3fTHTdj0+FQ@mail.gmail.com>
+References: <CAHGf_=qdE3yNw=htuRssfav2pECO1Q0+gWMRTuNROd_3tVrd6Q@mail.gmail.com>
+	<CAHGf_=ojhwPUWJR0r+jVgjNd5h_sRrppzJntSpHzxyv+OuBueg@mail.gmail.com>
+	<x49ehr4lyw1.fsf@segfault.boston.devel.redhat.com>
+	<CAHGf_=rzcfo3OnwT-YsW2iZLchHs3eBKncobvbhTm7B5PE=L-w@mail.gmail.com>
+	<x491un3nc7a.fsf@segfault.boston.devel.redhat.com>
+	<CAPa8GCCgLUt1EDAy7-O-mo0qir6Bf5Pi3Va1EsQ3ZW5UU=+37g@mail.gmail.com>
+	<20120502081705.GB16976@quack.suse.cz>
+	<CAPa8GCCnvvaj0Do7sdrdfsvbcAf0zBe3ssXn45gMfDKCcvJWxA@mail.gmail.com>
+	<20120502091837.GC16976@quack.suse.cz>
+	<CAHGf_=qfuRZzb91ELEcArNaNHsfO4BBMPO8a-QRBzFNaT2ev_w@mail.gmail.com>
+	<20120502192325.GA18339@quack.suse.cz>
+	<CAHGf_=oOx1qPFEboQeuaeMKtveM2==BSDG=xdfRHz+gFx1GAfw@mail.gmail.com>
+	<CAKgNAkjybL_hmVfONUHtCbBe_VxQHNHOrmWQErGWDUqHiczkFg@mail.gmail.com>
+	<CAHGf_=p4py5m1Pe1xon=9FcEEyf6AxW+Pc9Yy9gCvNtbXM_40A@mail.gmail.com>
+	<CAPa8GCCh-RrjsQKzh9+Sxx-joRZw4qkpxR9n4svo+QopxAj_XQ@mail.gmail.com>
+	<CAKgNAkh5TkwSzFVKVo5JUvkDWkzY8EaQNxJSQnv3fTHTdj0+FQ@mail.gmail.com>
+Date: Wed, 9 May 2012 17:01:40 +1000
+Message-ID: <CAPa8GCCaGQdOZoWCCLBLNtOV5_VS+sNvdC_PzrWauF0gSyizYg@mail.gmail.com>
+Subject: Re: [PATCH] Describe race of direct read and fork for unaligned buffers
+From: Nick Piggin <npiggin@gmail.com>
+To: mtk.manpages@gmail.com
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, Jan Kara <jack@suse.cz>,
+        Jeff Moyer <jmoyer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-man@vger.kernel.org, linux-mm@kvack.org, mgorman@suse.de,
+        Andrea Arcangeli <aarcange@redhat.com>, Woodman <lwoodman@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 06:00:10AM +0200, Ingo Molnar wrote:
-> 
-> * Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
-> 
-> > > Of course, one can iterate over each core in a shell-loop 
-> > > and write into the reload file to reload ucode after having 
-> > > updated the ucode image in /lib/firmware but removing and 
-> > > then modprobing the module is shorter :-)
-> > 
-> > Can we PLEASE fix it properly by adding a new node (which is 
-> > _not_ per-cpu) that requests the microcode core to refresh all 
-> > cpus?
+On 9 May 2012 15:35, Michael Kerrisk (man-pages) <mtk.manpages@gmail.com> wrote:
+> On Wed, May 9, 2012 at 11:10 AM, Nick Piggin <npiggin@gmail.com> wrote:
+>> On 6 May 2012 01:29, KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
+>>>> So, am I correct to assume that right text to add to the page is as below?
+>>>>
+>>>> Nick, can you clarify what you mean by "quiesced"?
+>>>
+>>> finished?
+>>
+>> Yes exactly. That might be a simpler word. Thanks!
+>
+> Thanks.
+>
+> But see below. I realize the text is still ambiguous.
+>
+>>>> [[
+>>>> O_DIRECT IOs should never be run concurrently with fork(2) system call,
+>>>> when the memory buffer is anonymous memory, or comes from mmap(2)
+>>>> with MAP_PRIVATE.
+>>>>
+>>>> Any such IOs, whether submitted with asynchronous IO interface or from
+>>>> another thread in the process, should be quiesced before fork(2) is called.
+>>>> Failure to do so can result in data corruption and undefined behavior in
+>>>> parent and child processes.
+>>>>
+>>>> This restriction does not apply when the memory buffer for the O_DIRECT
+>>>> IOs comes from mmap(2) with MAP_SHARED or from shmat(2).
+>>>> Nor does this restriction apply when the memory buffer has been advised
+>>>> as MADV_DONTFORK with madvise(2), ensuring that it will not be available
+>>>> to the child after fork(2).
+>>>> ]]
+>
+> In the above, the status of a MAP_SHARED MAP_ANONYMOUS buffer is
+> unclear. The first paragraph implies that such a buffer is unsafe,
+> while the third paragraph implies that it *is* safe, thus
+> contradicting the first paragraph. Which is correct?
 
-Ok, where do you want to have it:
+Yes I see. It's because MAP_SHARED | MAP_ANONYMOUS isn't *really*
+anonymous from the virtual memory subsystem's point of view. But that
+just serves to confuse userspace I guess.
 
-$ find /sys -iname "microcode"
-/sys/bus/platform/devices/microcode
-/sys/devices/system/cpu/cpu0/microcode
-/sys/devices/system/cpu/cpu1/microcode
-/sys/devices/virtual/misc/microcode
-/sys/devices/platform/microcode
-/sys/class/misc/microcode
-/sys/module/microcode
+Anything with MAP_SHARED, shmat, or MADV_DONTFORK is OK.
 
-I'm all for the level at
-
-/sys/devices/system/cpu/
-
-where CPU-related stuff can go in - not per-CPU but per whole system.
-Ingo?
-
-> > Preferably by invalidating the microcode cache, THEN fetching each
-> > required microcode just once for the first core that needs it, and
-> > caching it for use the other cores.
-
-That should be easy, the most part is already there.
-
-> > You can leave the (IMHO mostly useless) per-cpu sysfs nodes alone,
-> > so as to not break ABI, or deprecate them for an year or something.
-
-Yeah, about that, what is not breaking the ABI? Having the sysfs node but
-reading/writing it returns -E<something>, having the sysfs node and
-reading/writing it does nothing, or...?
-
-> > I *do NOT* want to rmmod crap in a production server to update
-> > microcode. And I want to be able to support static-compiled
-> > microcode.
-
-I'd need this more explained, why?
-
-If by "static-compiled microcode" you mean the microcode.ko module
-should be built-in that can't fly because for request_firmware we need
-userspace to actually find the ucode image.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+Anything else (MAP_PRIVATE, brk, without MADV_DONTFORK) is
+dangerous. These type are used by standard heap allocators malloc,
+new, etc.
