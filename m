@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761201Ab2EIUnQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 16:43:16 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59393 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761092Ab2EIUnO (ORCPT
+	id S1761207Ab2EIUoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 16:44:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37962 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761165Ab2EIUoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 16:43:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Subject: Re: Big I/O latencies, except when iotop is hooked
-Date: Wed, 9 May 2012 20:43:11 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <CAMP44s2eVtquLoB6Zjbs4nGVKP6e=Dxse4uicL4s8vmrFeJdTQ@mail.gmail.com> <201205091756.16050.arnd@arndb.de> <CAMP44s2eKgTzn9q1CN1X-8P+m0bcTw+UCz7FGQ1ekjzRe8j0SQ@mail.gmail.com>
-In-Reply-To: <CAMP44s2eKgTzn9q1CN1X-8P+m0bcTw+UCz7FGQ1ekjzRe8j0SQ@mail.gmail.com>
+	Wed, 9 May 2012 16:44:21 -0400
+Message-ID: <4FAAD721.3070101@wwwdotorg.org>
+Date: Wed, 09 May 2012 14:44:17 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 06/12] pinctrl/nomadik: implement pin configuration
+References: <1336470302-23670-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1336470302-23670-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205092043.11544.arnd@arndb.de>
-X-Provags-ID: V02:K0:OwxTQdwRWJOpV30nH8caxv0lg2rml4CQ7qsLJhwQQym
- 7iNvHH6ANVLMJigDhJd4gv6Ll5Hp0qxE/fU3jejRAmimAWButl
- dRjvUVQ3C015/tvJEZ+27TGLA+AYvvqwgwkLAOU/FCDK5YKkJ4
- 3wDcXEFk6AD7PDwSOjaecKGEb9DizCW543+/xU5L8zndCeAj+G
- no+rOt3ro7MnhzeBc1vH0g5ZFKgZRTCqVBOqcZ1YcMuui1EOIG
- gaM2kPuBlkdnOwup5oZCjGkupCH7cFeTk3fXMlNMKFp/5QhKAv
- 5SHhcV2CIDS4TmzkfPO14/OAUI88dDQBMgyFCmTWnrMN3vV0Da
- TY+dxi5KSV9C3+zPwuuc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 May 2012, Felipe Contreras wrote:
-> And it doesn't tell me why I see the issue on my SSD as well; albeit
-> with much less delay.
+On 05/08/2012 03:45 AM, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> I'll try what you suggest, maybe I will get better performance by
-> aligning the partitions, but the real issue seems to lie elsewhere,
-> right?
+> This implements the pin configuration interface for the
+> Nomadik pin controller.
+> 
+> As part of the exercise we add a bit in the pin_cfg_t for
+> the Nomadik pinctrl driver that indicates if the pin should
+> be forced into GPIO mode. This is not done to go behind the
+> back of the GPIO subsystem, but to ensure that default modes
+> can be set by hogs on boot and system suspend/resume states.
+> It was used implicitly by the old code defining all config
+> settings and modes in a single config word but we now have
+> a split between pinmux and pinconf leading to the need to
+> have this.
 
-For anything but the absolute worst devices, misaligning the partition
-should cause a linear increase in latency (maybe factor 2 in the worst
-case), so it doesn't explain the entire thing. However, you can use
-flashbench to find out the erase block size. If it's larger than 4MB,
-you definitely have a problem even with ext4 or btrfs. The latencies
-you get from garbage collection for a single write are roughly the time
-it takes to write one erase block, and that can be up to a second in the
-worst case (slow media with large erase blocks).
+Yes, I have wondered if we should have always represented the
+GPIO/pinctrl interaction as a pinctrl "function" of "GPIO. There are a
+few gotchas that prevented me moving forward with this though:
 
-	Arnd
+1) On Tegra at least, GPIO-vs-pinmux is actually a bit in the GPIO
+controller, so that mux is after the pinmux's output mux
+
+2) I'm not sure how it'd work when you could mux "GPIO controller A GPIO
+x" or "GPIO controller B pin y" onto the same pinctrl pin
+
+3) On Tegra at least, special-function muxing is at a per-pingroup
+level, but GPIO muxing is at a per-pin level. So much for regular HW:-(
+
+> @@ -1561,7 +1562,8 @@ int nmk_gpio_request_enable(struct pinctrl_dev *pctldev,
+>  
+>  	clk_enable(nmk_chip->clk);
+>  	bit = offset % NMK_GPIO_PER_CHIP;
+> -	__nmk_gpio_set_mode_safe(nmk_chip, bit, NMK_GPIO_ALT_GPIO, false);
+> +	/* There is no glitch when converting any pin to GPIO */
+> +	__nmk_gpio_set_mode(nmk_chip, bit, NMK_GPIO_ALT_GPIO);
+
+Was that meant to be squashed into some other earlier change?
