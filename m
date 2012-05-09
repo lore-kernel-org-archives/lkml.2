@@ -1,86 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757764Ab2EIOAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:00:16 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:59320 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757182Ab2EIOAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:00:11 -0400
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v2 01/16] FS: Added demand paging markers to filesystem
-Date: Wed, 9 May 2012 13:59:40 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: "S, Venkatraman" <svenkatr@ti.com>, linux-mmc@vger.kernel.org,
-        cjb@laptop.org, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alex.lemberg@sandisk.com, ilan.smith@sandisk.com, lporzio@micron.com,
-        rmk+kernel@arm.linux.org.uk
-References: <1336054995-22988-1-git-send-email-svenkatr@ti.com> <CANfBPZ_2JeWUu7ti97CVc=ODeEi65ke9EKV6Uje0JHcCM8gYqQ@mail.gmail.com> <20120509003348.GM5091@dastard>
-In-Reply-To: <20120509003348.GM5091@dastard>
+	id S1758086Ab2EIOA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:00:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21228 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754383Ab2EIOA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 10:00:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="138646757"
+Date: Wed, 9 May 2012 16:10:36 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: linux-arm-kernel@lists.infradead.org,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: da9052: fix of_match_node() arguments
+Message-ID: <20120509141036.GF1794@sortiz-mobl>
+References: <1336258968-6423-1-git-send-email-olof@lixom.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205091359.40554.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:WTjuwwrqY6qs5R8yKyMuxkMyusXA+tuxezfXRWnxw8N
- 0wiTW2aAmdJ4bqh6si49AdphsZ7IfIKFS/uGOc9bb2qyNhmuGb
- e4dYE9K9aiYJK2pA3FcA6jnUk+jGEipasy1YcesFFMWj8Br63z
- wlLmvQbXjre7fSlUPczSaOeBjrlcHMjOZD15nASBB/KlAigVVt
- C59ui+oq7j+fgXaZg6gCWim2Bqe+Bb0DSbzP8f1Ks66qWAVfXd
- Lyqm9M3lqjK3cVnTVoqL7YPkXmUdJUrzAp+29mzSsjpynBNoqc
- W9g3vxN+jrZOQltNDhB5NYIhrY+L0+gU1KESHR4fWOO5df6ktl
- P9meTHs4i4jjp56GwBqRcpmZu8A5bntiv3sb3h7Ml
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336258968-6423-1-git-send-email-olof@lixom.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 May 2012, Dave Chinner wrote:
-> > In low end flash devices, some requests might take too long than normal
-> > due to background device maintenance (i.e flash erase / reclaim procedure)
-> > kicking in in the context of an ongoing write, stalling them by several
-> > orders of magnitude.
-> 
-> And thereby stalling what might be writes critical to operation.
-> Indeed, how does this affect the system when it starts swapping
-> heavily? If you keep stalling writes, the system won't be able to
-> swap and free memory...
+Hi Olof,
 
-The point here is that reads have a consistent latency, e.g. 500
-microseconds for a small access, while writes have a latency
-that can easily become 1000x the read latency (e.g. 500 ms of
-blocking the device) depending on the state of the device. Most
-of the time, writes are fast as well, but sometimes (when garbage
-collection happens in the device), they are extremely slow and
-block everything else.
-This is the only time we ever want to interrupt a write: keeping
-the system running interactively while eventually getting to do
-the writeback. There is a small penalty for interrupting the garbage
-collection, but the device should be able to pick up its work
-at the point where we interrupt it, so we can still make forward
-progress.
+On Sat, May 05, 2012 at 04:02:48PM -0700, Olof Johansson wrote:
+> The driver calls of_match_node() with the arguments swapped.
+Thanks, patch applied to my for-next branch.
 
-> > > This really seems like functionality that belongs in an IO
-> > > scheduler so that write starvation can be avoided, not in high-level
-> > > data read paths where we have no clue about anything else going on
-> > > in the IO subsystem....
-> > 
-> > Indeed, the feature is built mostly in the low level device driver and
-> > minor changes in the elevator. Changes above the block layer are only
-> > about setting
-> > attributes and transparent to their operation.
-> 
-> The problem is that the attribute you are setting covers every
-> single data read that is done by all users. If that's what you want
-> to have happen, then why do you even need a new flag at this layer?
-> Just treat every non-REQ_META read request as a demand paged IO and
-> you've got exactly the same behaviour without needing to tag at the
-> higher layer....
+Cheers,
+Samuel.
 
-My feeling is that we should just treat every (REQ_SYNC | REQ_READ)
-request the same and let them interrupt long-running writes,
-independent of whether it's REQ_META or demand paging.
-
-	Arnd
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
