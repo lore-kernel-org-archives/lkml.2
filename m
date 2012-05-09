@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757038Ab2EIF74 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 01:59:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38973 "EHLO
+	id S1757617Ab2EIF76 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 01:59:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39017 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756288Ab2EIFxp (ORCPT
+	by vger.kernel.org with ESMTP id S1756354Ab2EIFxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:45 -0400
-Message-Id: <20120509055040.232524491@decadent.org.uk>
+Message-Id: <20120509055042.631394070@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:51:44 +0100
+Date: Wed, 09 May 2012 06:52:02 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-        Marc MERLIN <marc@merlins.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 075/167] [PATCH 15/26] tcp: avoid order-1 allocations on wifi and tx path
+        alan@lxorguk.ukuu.org.uk, Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [ 093/167] [PATCH] x86, microcode: Fix sysfs warning during module unload on
+ unsupported CPUs
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,136 +31,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-[ This combines upstream commit
-  a21d45726acacc963d8baddf74607d9b74e2b723 and the follow-on bug fix
-  commit 22b4a4f22da4b39c6f7f679fd35f3d35c91bf851 ]
+commit a956bd6f8583326b18348ab1452b4686778f785d upstream.
 
-Marc Merlin reported many order-1 allocations failures in TX path on its
-wireless setup, that dont make any sense with MTU=1500 network, and non
-SG capable hardware.
+Loading the microcode driver on an unsupported CPU and subsequently
+unloading the driver causes
 
-After investigation, it turns out TCP uses sk_stream_alloc_skb() and
-used as a convention skb_tailroom(skb) to know how many bytes of data
-payload could be put in this skb (for non SG capable devices)
+ WARNING: at fs/sysfs/group.c:138 mc_device_remove+0x5f/0x70 [microcode]()
+ Hardware name: 01972NG
+ sysfs group ffffffffa00013d0 not found for kobject 'cpu0'
+ Modules linked in: snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel btusb snd_hda_codec bluetooth thinkpad_acpi rfkill microcode(-) [last unloaded: cfg80211]
+ Pid: 4560, comm: modprobe Not tainted 3.4.0-rc2-00002-g258f742 #5
+ Call Trace:
+  [<ffffffff8103113b>] ? warn_slowpath_common+0x7b/0xc0
+  [<ffffffff81031235>] ? warn_slowpath_fmt+0x45/0x50
+  [<ffffffff81120e74>] ? sysfs_remove_group+0x34/0x120
+  [<ffffffffa00000ef>] ? mc_device_remove+0x5f/0x70 [microcode]
+  [<ffffffff81331eb9>] ? subsys_interface_unregister+0x69/0xa0
+  [<ffffffff81563526>] ? mutex_lock+0x16/0x40
+  [<ffffffffa0000c3e>] ? microcode_exit+0x50/0x92 [microcode]
+  [<ffffffff8107051d>] ? sys_delete_module+0x16d/0x260
+  [<ffffffff810a0065>] ? wait_iff_congested+0x45/0x110
+  [<ffffffff815656af>] ? page_fault+0x1f/0x30
+  [<ffffffff81565ba2>] ? system_call_fastpath+0x16/0x1b
 
-Note : these skb used kmalloc-4096 (MTU=1500 + MAX_HEADER +
-sizeof(struct skb_shared_info) being above 2048)
+on recent kernels.
 
-Later, mac80211 layer need to add some bytes at the tail of skb
-(IEEE80211_ENCRYPT_TAILROOM = 18 bytes) and since no more tailroom is
-available has to call pskb_expand_head() and request order-1
-allocations.
+This is due to commit 8a25a2fd126c ("cpu: convert 'cpu' and
+'machinecheck' sysdev_class to a regular subsystem") which renders
+commit 6c53cbfced04 ("x86, microcode: Correct sysdev_add error path")
+useless.
 
-This patch changes sk_stream_alloc_skb() so that only
-sk->sk_prot->max_header bytes of headroom are reserved, and use a new
-skb field, avail_size to hold the data payload limit.
+See http://marc.info/?l=linux-kernel&m=133416246406478
 
-This way, order-0 allocations done by TCP stack can leave more than 2 KB
-of tailroom and no more allocation is performed in mac80211 layer (or
-any layer needing some tailroom)
+Avoid above warning by restoring the old driver behaviour before
+6c53cbfced04 ("x86, microcode: Correct sysdev_add error path").
 
-avail_size is unioned with mark/dropcount, since mark will be set later
-in IP stack for output packets. Therefore, skb size is unchanged.
-
-Reported-by: Marc MERLIN <marc@merlins.org>
-Tested-by: Marc MERLIN <marc@merlins.org>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Correct commit hash for follow-on bug fix]
+Cc: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Link: http://lkml.kernel.org/r/20120411163849.GE4794@alberich.amd.com
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+[bwh: Backported to 3.2: deleted line uses sys_dev, not dev]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/skbuff.h |   13 +++++++++++++
- net/ipv4/tcp.c         |    8 ++++----
- net/ipv4/tcp_output.c  |    3 ++-
- 3 files changed, 19 insertions(+), 5 deletions(-)
+ arch/x86/kernel/microcode_core.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 6cf8b53..e689b47 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -458,6 +458,7 @@ struct sk_buff {
- 	union {
- 		__u32		mark;
- 		__u32		dropcount;
-+		__u32		avail_size;
- 	};
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -419,10 +419,8 @@ static int mc_device_add(struct device *dev, struct subsys_interface *sif)
+ 	if (err)
+ 		return err;
  
- 	__u16			vlan_tci;
-@@ -1326,6 +1327,18 @@ static inline int skb_tailroom(const struct sk_buff *skb)
+-	if (microcode_init_cpu(cpu) == UCODE_ERROR) {
+-		sysfs_remove_group(&sys_dev->kobj, &mc_attr_group);
++	if (microcode_init_cpu(cpu) == UCODE_ERROR)
+ 		return -EINVAL;
+-	}
+ 
+ 	return err;
  }
- 
- /**
-+ *	skb_availroom - bytes at buffer end
-+ *	@skb: buffer to check
-+ *
-+ *	Return the number of bytes of free space at the tail of an sk_buff
-+ *	allocated by sk_stream_alloc()
-+ */
-+static inline int skb_availroom(const struct sk_buff *skb)
-+{
-+	return skb_is_nonlinear(skb) ? 0 : skb->avail_size - skb->len;
-+}
-+
-+/**
-  *	skb_reserve - adjust headroom
-  *	@skb: buffer to alter
-  *	@len: bytes to move
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 36611ab..7904db4 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -701,11 +701,12 @@ struct sk_buff *sk_stream_alloc_skb(struct sock *sk, int size, gfp_t gfp)
- 	skb = alloc_skb_fclone(size + sk->sk_prot->max_header, gfp);
- 	if (skb) {
- 		if (sk_wmem_schedule(sk, skb->truesize)) {
-+			skb_reserve(skb, sk->sk_prot->max_header);
- 			/*
- 			 * Make sure that we have exactly size bytes
- 			 * available to the caller, no more, no less.
- 			 */
--			skb_reserve(skb, skb_tailroom(skb) - size);
-+			skb->avail_size = size;
- 			return skb;
- 		}
- 		__kfree_skb(skb);
-@@ -995,10 +996,9 @@ new_segment:
- 				copy = seglen;
- 
- 			/* Where to copy to? */
--			if (skb_tailroom(skb) > 0) {
-+			if (skb_availroom(skb) > 0) {
- 				/* We have some space in skb head. Superb! */
--				if (copy > skb_tailroom(skb))
--					copy = skb_tailroom(skb);
-+				copy = min_t(int, copy, skb_availroom(skb));
- 				err = skb_add_data_nocache(sk, skb, from, copy);
- 				if (err)
- 					goto do_fault;
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 7413437..c51dd5b 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1096,6 +1096,7 @@ static void __pskb_trim_head(struct sk_buff *skb, int len)
- 	eat = min_t(int, len, skb_headlen(skb));
- 	if (eat) {
- 		__skb_pull(skb, eat);
-+		skb->avail_size -= eat;
- 		len -= eat;
- 		if (!len)
- 			return;
-@@ -2060,7 +2061,7 @@ static void tcp_retrans_try_collapse(struct sock *sk, struct sk_buff *to,
- 		/* Punt if not enough space exists in the first SKB for
- 		 * the data in the second
- 		 */
--		if (skb->len > skb_tailroom(to))
-+		if (skb->len > skb_availroom(to))
- 			break;
- 
- 		if (after(TCP_SKB_CB(skb)->end_seq, tcp_wnd_end(tp)))
--- 
-1.7.10
-
 
 
