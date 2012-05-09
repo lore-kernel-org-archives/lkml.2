@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760431Ab2EIRPf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 13:15:35 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43665 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab2EIRPd (ORCPT
+	id S1760460Ab2EIRQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 13:16:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55885 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756764Ab2EIRQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 13:15:33 -0400
+	Wed, 9 May 2012 13:16:46 -0400
+Date: Wed, 9 May 2012 10:16:42 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Sami Liedes <sami.liedes@iki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: kmemleak: Cannot insert 0xffff880007fedd28 into the object
+ search tree (already existing)
+Message-ID: <20120509171642.GC24636@google.com>
+References: <20120506160828.GE13332@sli.dy.fi>
+ <20120509155519.GL11099@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <1336570043.2527.38.camel@twins>
-References: <1336559908-32533-1-git-send-email-imammedo@redhat.com>
- <4FAA452A.1070909@gmail.com> <4FAA588B.5010404@redhat.com>
- <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
- <1336566096.2527.30.camel@twins> <1336566644.2527.33.camel@twins> <1336570043.2527.38.camel@twins>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 9 May 2012 10:15:11 -0700
-X-Google-Sender-Auth: zSP40UuKE2agWM_y8kkyDre17UM
-Message-ID: <CA+55aFyjGZ=PLOBfyFub4kS3r2vJ0SFD58rTf21koPodFTSARQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Igor Mammedov <imammedo@redhat.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
-        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120509155519.GL11099@arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 6:27 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> + * - 'b' For a bitmap, consumes 2 args, second is int
-> + * - 'bc' For a cpumask
-> + * - 'bn' For a nodemask
+On Wed, May 09, 2012 at 04:55:19PM +0100, Catalin Marinas wrote:
+> ----------------8<---------------------------------------------
 
-Hard NAK.
+git-am doesn't handle patches submitted this way.  Can you please put
+the patch title as $SUBJ and put patch description in the body
+followed by '---' for non-description comments?  Or is there some tool
+that I should be using instead?
 
-No way. The "consumes 2 args" is fundamentally idiotic, since it
-forces compiler warnings. The whole idea of %pXX was that you can give
-it any pointer, because all that the compiler cares about is the "%p"
-part, so random pointers to stuff won't break.
+> commit 631d16e6284ddecd9d261f929582244f6757b678
+> Author: Catalin Marinas <catalin.marinas@arm.com>
+> Date:   Wed May 9 16:45:46 2012 +0100
+> 
+>     kmemleak: Fix the kmemleak tracking of the percpu areas with !SMP
+>     
+>     Kmemleak tracks the percpu allocations via a specific API and the
+>     originally allocated areas must be removed from kmemleak (via
+>     kmemleak_free). The code was already doing this for SMP systems.
+>     
+>     Reported-by: Sami Liedes <sami.liedes@iki.fi>
+>     Cc: Tejun Heo <tj@kernel.org>
+>     Cc: Christoph Lameter <cl@linux-foundation.org>
+>     Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> 
+> diff --git a/mm/percpu.c b/mm/percpu.c
+> index f47af91..2daf6d5 100644
+> --- a/mm/percpu.c
+> +++ b/mm/percpu.c
+> @@ -1885,6 +1885,8 @@ void __init setup_per_cpu_areas(void)
+>  	fc = __alloc_bootmem(unit_size, PAGE_SIZE, __pa(MAX_DMA_ADDRESS));
+>  	if (!ai || !fc)
+>  		panic("Failed to allocate memory for percpu areas.");
+> +	/* kmemleak tracks the percpu allocations separately */
+> +	kmemleak_free(fc);
+>  
+>  	ai->dyn_size = unit_size;
+>  	ai->unit_size = unit_size;
 
-Your patch breaks the whole point of the extension.
+Applied to percpu/for-3.4-fixes.  Thanks.
 
-The "bc" and "bn" would work, except for the fact that I doubt they
-are printed out enough to matter.
-
-A "%.*pb" is the only interface that can work for a "sized" bitmap
-(with obviously fixed-length ones being possible with a "%.32bp" like
-thing)
-
-But the whole va_args games you play are not acceptable. %p *will*
-continue to take a void *, and nothing else.
-
-                 Linus
+-- 
+tejun
