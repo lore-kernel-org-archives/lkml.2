@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab2EIK2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 06:28:05 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:21003 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab2EIK2E (ORCPT
+	id S1755148Ab2EIKbY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 06:31:24 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14176 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951Ab2EIKbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 06:28:04 -0400
-Date: Wed, 9 May 2012 13:31:11 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] staging: comedi: remove __user annotation inside of
- struct's
-Message-ID: <20120509103111.GR22134@mwanda>
-References: <201205081641.00358.hartleys@visionengravers.com>
- <ADE657CA350FB648AAC2C43247A983F0020698A1774D@AUSP01VMBX24.collaborationhost.net>
- <4FAA44D7.1040209@mev.co.uk>
+	Wed, 9 May 2012 06:31:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 09 May 2012 03:31:22 -0700
+Message-ID: <4FAA46A6.4090003@nvidia.com>
+Date: Wed, 9 May 2012 15:57:50 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FAA44D7.1040209@mev.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Vinod Koul <vinod.koul@linux.intel.com>
+CC: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V2 1/2] dma: dmaengine: add slave req id in slave_config
+References: <1336030889-32269-1-git-send-email-ldewangan@nvidia.com>	 <1336030889-32269-2-git-send-email-ldewangan@nvidia.com> <1336553358.1540.169.camel@vkoul-udesk3>
+In-Reply-To: <1336553358.1540.169.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 11:20:07AM +0100, Ian Abbott wrote:
-> On 2012-05-09 00:55, H Hartley Sweeten wrote:
-> >On Tuesday, May 08, 2012 4:41 PM, H Hartley Sweeten wrote:
-> >>
-> >>The structs' comedi_insn, coomedi_insnlist, comedi_cmd,
-> >>comedi_chaninfo, and comedi_rangeinfo are all passed to
-> >>the kernel from user space using ioctl commands. They
-> >>are then copied to kernel space using copy_from_user()
-> >>before the data is passed to the drivers.
-> >>
-> >>The __user annotation should not be used with variables
-> >>inside the struct. This produces a lot of sparse warnings
-> >>like:
-> >>
-> >>warning: dereference of noderef expression
-> >>
-> >>Signed-off-by: H Hartley Sweeten<hsweeten@visionengravers.com>
-> >>Cc: Ian Abbott<abbotti@mev.co.uk>
-> >>Cc: Mori Hess<fmhess@users.sourceforge.net>
-> >>Cc: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
-> >>
-> >>---
-> >>
-> >>Note: This patch exposes some new warnings about different
-> >>address space. These will be addressed.
-> >
-> >Please ignore this patch.
-> >
-> >It appears the annotations in the struct definitions are correct.
-> 
-> Personally, I think you were on the mark with the patch.  It's
-> better to avoid using __user in comedi.h so it can be used as-is in
-> user-space.
 
-Sparse is useful so we shouldn't break it.  I always run sparse over
-my patches before submission and look at the warnings.  Except if
-they scroll off the page.  In that case, I just figure that the
-author deserves the bugs.
+Thanks for review.
 
-We could just do some ifdeferry to fix it for userspace.
+On Wednesday 09 May 2012 02:19 PM, Vinod Koul wrote:
+> On Thu, 2012-05-03 at 13:11 +0530, Laxman Dewangan wrote:
+>> The dma controller like Nvidia's Tegra Dma controller
+>> supports the different slave requestor id from different slave.
+>> This need to be configure in dma controller to handle the request
+>> properly.
+>>
+>> Adding the slave-id in the slave configuration so that information
+>> can be passed from client when configuring for slave.
+>>
+>>   	u32 dst_maxburst;
+>>   	bool device_fc;
+>> +	int slave_id;
+> This wont be negative, so perhaps an unsigned value?
 
-regards,
-dan carpenter
+Fine, I will make it unsigned int in my next patch.
 
