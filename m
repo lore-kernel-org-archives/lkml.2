@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761363Ab2EJAC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 20:02:58 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:22495 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755602Ab2EJAC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 20:02:57 -0400
-X-AuditID: cbfee61a-b7b97ae000004342-e7-4fab05b0dda2
-Message-id: <4FAB05B0.2030906@samsung.com>
-Date: Thu, 10 May 2012 09:02:56 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: I have question for supporting irq_domain of MAX8997
-References: <4FA9F16D.9090106@samsung.com>
- <CAJuYYwRDe_KyXnPxZq_fGyHuYAB=e76AaRZwoe9UjUer=QX3YA@mail.gmail.com>
-In-reply-to: <CAJuYYwRDe_KyXnPxZq_fGyHuYAB=e76AaRZwoe9UjUer=QX3YA@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	id S1761392Ab2EJAG0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 20:06:26 -0400
+Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:54753 "EHLO
+	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754159Ab2EJAGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 20:06:24 -0400
+X-Greylist: delayed 807 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 May 2012 20:06:24 EDT
+Message-ID: <1336607530.2494.111.camel@ted>
+Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and
+ consolidate LED driver in ARM
+From: Richard Purdie <rpurdie@rpsys.net>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, nicolas.pitre@linaro.org,
+        tim.gardner@canonical.com, Olof Johansson <olof@lixom.net>
+Date: Thu, 10 May 2012 00:52:10 +0100
+In-Reply-To: <CAK5ve-Ko6EjZsJBW++ofL0eHxiR5W+wafb3T99Rm9a1L8pHLBQ@mail.gmail.com>
+References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
+	 <CAK5ve-KSyvZSHw7csQ5M88q0008NSrs1kwuyUH3hFqxD0f7BQQ@mail.gmail.com>
+	 <20120509122436.1b612004.akpm@linux-foundation.org>
+	 <201205092038.16722.arnd.bergmann@linaro.org>
+	 <CAK5ve-Ko6EjZsJBW++ofL0eHxiR5W+wafb3T99Rm9a1L8pHLBQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Thomas,
+On Thu, 2012-05-10 at 07:41 +0800, Bryan Wu wrote:
+> On Thu, May 10, 2012 at 4:38 AM, Arnd Bergmann <arnd.bergmann@linaro.org> wrote:
+> > On Wednesday 09 May 2012, Andrew Morton wrote:
+> >> I'm the LEDs patchmonkey at present.  I can merge the drivers/leds
+> >> change if you like, but there doesn't seem much point in that unless
+> >> all the other patches get merged.
+> >>
+> >> So my preferred approach would be for the patch series to get merged
+> >> via some ARM tree.
+> >
+> > I'm fine with taking it through arm-soc if that helps.
+> 
+> That would be great to merge from arm-soc tree, thanks a lot, Arnd and Andrew.
+> 
+> > In the long run,
+> > it would be nice to have a proper maintainer for this again after Richard
+> > more or less stepped down from that position. Given that Bryan has shown
+> > that he's persistent enough to get this patch series to v9, how about
+> > making him the primary maintainer for the entire subsystem? He should
+> > know a lot about it already. Bryan?
+> >
+> 
+> I do love to start to do more contribution and maintain the
+> drivers/leds subsystem with Richard's help, if Richard is fine with
+> this, I can send out patch to add a MAINTAINER entry.
 
-On 05/09/2012 11:27 PM, Thomas Abraham wrote:
+I'm ok with that, I'm also happy to stay involved at a distance. I do
+read emails and try and help where I can :). I'm just not doing day to
+day rebuilds of cutting edge kernels so the patch work isn't something
+I've been able to find time for and the Yocto Project is where my main
+focus appears best placed at the moment.
 
-> The irq domain support for max8997 irq is already posted. I am yet to
-> address some of the review comments for those patches and hence the
-> max8997 dt (+ irqdomain) patches are still work in progress. But the
-> irq domain support for max8997 is complete.
+Cheers,
 
-I did see your patch for irq_domain support for max8997 in below git repository.
+Richard
 
-http://git.kernel.org/?p=linux/kernel/git/broonie/regulator.git;a=shortlog;h=refs/heads/for-next
-
-But, I checked that your patch was reverted because it breaks the build
-of the muic driver
-reported by Stephen Rothwell. You can check this following url.
-http://git.kernel.org/?p=linux/kernel/git/broonie/regulator.git;a=commit;h=82b719b11fd750188c125078ad6a6c0d23219dfb
-
-Also, Do you test irq domain of MAX8997 with max8997-muic driver or others?
-While looking through the drivers/mfd/max8997-irq.c, I could not find
-initialization code
-of max8997->irq_domain(field of 'struct max8997_dev'). When tested your
-patch with
-max8997-muic driver, max8997->irq_domain variable is NULL. I think that
-you set only
-local variable(struct irq_domain *domain) in max8997_irq_init().
-
-Thank you,
-Chanwoo Choi
