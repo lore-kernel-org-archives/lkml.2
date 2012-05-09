@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab2EIGI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 02:08:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39134 "EHLO
+	id S1757202Ab2EIGIY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 02:08:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39014 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756805Ab2EIFxf (ORCPT
+	by vger.kernel.org with ESMTP id S1756325Ab2EIFxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 May 2012 01:53:35 -0400
-Message-Id: <20120509055047.840592599@decadent.org.uk>
+Message-Id: <20120509055040.763953802@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Wed, 09 May 2012 06:52:41 +0100
+Date: Wed, 09 May 2012 06:51:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Yang Guang <guang.a.yang@intel.com>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 132/167] [PATCH] drm/i915: enable dip before writing data on gen4
+        alan@lxorguk.ukuu.org.uk, Davide Ciminaghi <ciminaghi@gnudd.com>,
+        Raffaele Recalcati <raffaele.recalcati@bticino.it>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 079/167] [PATCH 19/26] net/ethernet: ks8851_mll fix rx frame buffer overflow
 In-Reply-To: <20120509055029.588587017@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,50 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paulo Zanoni <paulo.r.zanoni@intel.com>
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
 
-commit c1230df7e19e0f27655c0eb9d966c7e03be7cc50 upstream.
+[ Upstream commit 8a9a0ea6032186e3030419262678d652b88bf6a8 ]
 
-While testing with the intel_infoframes tool on gen4, I see that when
-video DIP is disabled, what we write to the DATA memory is not exactly
-what we read back later.
+At the beginning of ks_rcv(), a for loop retrieves the
+header information relevant to all the frames stored
+in the mac's internal buffers. The number of pending
+frames is stored as an 8 bits field in KS_RXFCTR.
+If interrupts are disabled long enough to allow for more than
+32 frames to accumulate in the MAC's internal buffers, a buffer
+overflow occurs.
+This patch fixes the problem by making the
+driver's frame_head_info buffer big enough.
+Well actually, since the chip appears to have 12K of
+internal rx buffers and the shortest ethernet frame should
+be 64 bytes long, maybe the limit could be set to
+12*1024/64 = 192 frames, but 255 should be safer.
 
-This regression has been introduce in
-
-commit 64a8fc0145a1d0fdc25fc9367c2e6c621955fb3b
-Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date:   Thu Sep 22 11:16:00 2011 +0530
-
-    drm/i915: fix ILK+ infoframe support
-
-That commit was setting VIDEO_DIP_CTL to 0 when initializing, which
-caused the problem.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=43947
-Tested-by: Yang Guang <guang.a.yang@intel.com>
-Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-[danvet: Pimped commit message by using the usual commit citation
-layout.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
+Signed-off-by: Raffaele Recalcati <raffaele.recalcati@bticino.it>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_hdmi.c |    2 +-
+ drivers/net/ethernet/micrel/ks8851_mll.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_hdmi.c b/drivers/gpu/drm/i915/intel_hdmi.c
-index cae3e5f..2d7f47b 100644
---- a/drivers/gpu/drm/i915/intel_hdmi.c
-+++ b/drivers/gpu/drm/i915/intel_hdmi.c
-@@ -136,7 +136,7 @@ static void i9xx_write_infoframe(struct drm_encoder *encoder,
+diff --git a/drivers/net/ethernet/micrel/ks8851_mll.c b/drivers/net/ethernet/micrel/ks8851_mll.c
+index d19c849..77241b6 100644
+--- a/drivers/net/ethernet/micrel/ks8851_mll.c
++++ b/drivers/net/ethernet/micrel/ks8851_mll.c
+@@ -40,7 +40,7 @@
+ #define	DRV_NAME	"ks8851_mll"
  
- 	val &= ~VIDEO_DIP_SELECT_MASK;
- 
--	I915_WRITE(VIDEO_DIP_CTL, val | port | flags);
-+	I915_WRITE(VIDEO_DIP_CTL, VIDEO_DIP_ENABLE | val | port | flags);
- 
- 	for (i = 0; i < len; i += 4) {
- 		I915_WRITE(VIDEO_DIP_DATA, *data);
+ static u8 KS_DEFAULT_MAC_ADDRESS[] = { 0x00, 0x10, 0xA1, 0x86, 0x95, 0x11 };
+-#define MAX_RECV_FRAMES			32
++#define MAX_RECV_FRAMES			255
+ #define MAX_BUF_SIZE			2048
+ #define TX_BUF_SIZE			2000
+ #define RX_BUF_SIZE			2000
 -- 
 1.7.10
 
