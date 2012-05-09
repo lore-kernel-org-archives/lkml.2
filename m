@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759519Ab2EIOY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:24:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38105 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755874Ab2EIOYZ convert rfc822-to-8bit (ORCPT
+	id S1759543Ab2EIOYm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:24:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41237 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758108Ab2EIOYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:24:25 -0400
-Message-ID: <1336573457.2527.50.camel@twins>
-Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Igor Mammedov <imammedo@redhat.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, pjt@google.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 09 May 2012 16:24:17 +0200
-In-Reply-To: <20120509141528.GA3623@gmail.com>
-References: <4FAA452A.1070909@gmail.com> <4FAA588B.5010404@redhat.com>
-	 <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
-	 <1336566096.2527.30.camel@twins> <1336566644.2527.33.camel@twins>
-	 <1336570043.2527.38.camel@twins> <20120509133607.GA26124@gmail.com>
-	 <1336571049.2527.43.camel@twins> <1336571947.2527.47.camel@twins>
-	 <20120509141528.GA3623@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 9 May 2012 10:24:41 -0400
+Date: Wed, 9 May 2012 07:24:36 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: comedi: remove __user annotation inside of
+ struct's
+Message-ID: <20120509142436.GC11695@kroah.com>
+References: <201205081641.00358.hartleys@visionengravers.com>
+ <ADE657CA350FB648AAC2C43247A983F0020698A1774D@AUSP01VMBX24.collaborationhost.net>
+ <4FAA44D7.1040209@mev.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FAA44D7.1040209@mev.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 16:15 +0200, Ingo Molnar wrote:
-> So, if someone specifies an incomplete "%pb" format - fmt[1] 
-> will be 0 and we take precision as the length - presumably also 
-> 0. 
-
-yes, printf_spec is initialized to 0s.
-
-> We stick that 0 into:
+On Wed, May 09, 2012 at 11:20:07AM +0100, Ian Abbott wrote:
+> On 2012-05-09 00:55, H Hartley Sweeten wrote:
+> >On Tuesday, May 08, 2012 4:41 PM, H Hartley Sweeten wrote:
+> >>
+> >>The structs' comedi_insn, coomedi_insnlist, comedi_cmd,
+> >>comedi_chaninfo, and comedi_rangeinfo are all passed to
+> >>the kernel from user space using ioctl commands. They
+> >>are then copied to kernel space using copy_from_user()
+> >>before the data is passed to the drivers.
+> >>
+> >>The __user annotation should not be used with variables
+> >>inside the struct. This produces a lot of sparse warnings
+> >>like:
+> >>
+> >>warning: dereference of noderef expression
+> >>
+> >>Signed-off-by: H Hartley Sweeten<hsweeten@visionengravers.com>
+> >>Cc: Ian Abbott<abbotti@mev.co.uk>
+> >>Cc: Mori Hess<fmhess@users.sourceforge.net>
+> >>Cc: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+> >>
+> >>---
+> >>
+> >>Note: This patch exposes some new warnings about different
+> >>address space. These will be addressed.
+> >
+> >Please ignore this patch.
+> >
+> >It appears the annotations in the struct definitions are correct.
 > 
-> > +                     len = bitmap_scnlistprintf(buf, end - buf, ptr, bits);
-> 
-> Will that work? 
+> Personally, I think you were on the mark with the patch.  It's
+> better to avoid using __user in comedi.h so it can be used as-is in
+> user-space. All of the structures in comedi.h are used in user-space
+> (although Comedilib uses its own version of comedi.h without all the
+> typedef eliminations that have been done in "staging") and some of
+> them are also deep-copied into kernel-space objects of the same
+> type, where the pointers in the structs would no longer be
+> user-space pointers.
 
-Yes, bitmap_scnlistprintf() will only set buf[0] = 0 (which will be
-overwritten by a possible next printf token) and return 0 length not
-advancing the ptr.
+When the kernel exports .h files, stuff like this should work
+"automatically", so there is no need to not put __user markings.
 
+So please, yes, continue to work to get this correct, it is very
+essencial to ensure we don't mess stuff up.
 
+thanks,
+
+greg k-h
