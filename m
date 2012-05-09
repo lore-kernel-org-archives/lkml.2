@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758762Ab2EIIlM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 04:41:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43633 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754330Ab2EIIlJ convert rfc822-to-8bit (ORCPT
+	id S1758751Ab2EIIpK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 04:45:10 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55602 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754863Ab2EIIpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 04:41:09 -0400
+	Wed, 9 May 2012 04:45:03 -0400
+Date: Wed, 9 May 2012 10:44:53 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, anton@samba.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PULL] cpumask: finally make them variable size w/
+ CPUMASK_OFFSTACK.
+Message-ID: <20120509084453.GA6429@gmail.com>
+References: <87ipg5c2bk.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20120507215828.GA21748@codeaurora.org>
-References: <20120507215828.GA21748@codeaurora.org>
-Date: Wed, 9 May 2012 01:41:08 -0700
-Message-ID: <CAOesGMgMTOSzzystxyaTNVFX6=z6ijsSThYrVx1XnARyLxrTeA@mail.gmail.com>
-Subject: Re: [GIT PULL] msm-core changes for v3.5.
-From: Olof Johansson <olof@lixom.net>
-To: David Brown <davidb@codeaurora.org>
-Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ipg5c2bk.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Mon, May 7, 2012 at 2:58 PM, David Brown <davidb@codeaurora.org> wrote:
-> These are some minor fixes, and Daniel's fixup of the sapphire target
-> support.
->
-> The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
->
->  Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
->
-> are available in the git repository at:
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git msm-core
->
-> for you to fetch changes up to 2935b1facdfb77d5f03d9036cc0da8c889f59a02:
->
->  ARM: msm: fix compilation flags for MSM_SCM (part 2) (2012-05-01 16:44:11 -0700)
->
-> ----------------------------------------------------------------
-> Daniel Walker (1):
->      arm: msm: fix up very basic HTC Sapphire support
+* Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-See separate email on comments for the sapphire patch, I'll hold off
-pulling this until that's revisited.
+> Hi Ingo,
+> 
+>         I finally rebased this on top of your tip tree, and tested it
+> locally.  Some more old-style cpumask usages have crept in, but it's a
+> fairly simple series.
 
+Cool! Most of it looks pretty sane. I have a question about the 
+gist of the series:
+
+> commit 898eb73305e2277be91b931c5a75484f8c87ae36
+> Author: Rusty Russell <rusty@rustcorp.com.au>
+> Date:   Wed May 9 15:01:15 2012 +0930
+> 
+>     cpumask: remove struct cpumask definition when CONFIG_CPUMASK_OFFSTACK=y
+>     
+>     We're about to change CONFIG_CPUMASK_OFFSTACK so it only allocate
+>     nr_cpu_ids bits for all cpumasks.  We need to make sure that when
+>     CONFIG_CPUMASK_OFFSTACK is set:
+>     
+>     1) Noone uses the old bitmap ops, which use NR_CPUS bits (use cpumask_*)
+>     2) Noone uses assignment of struct cpumask (use cpumask_copy)
+>     3) Noone passes a struct cpumask (pass a pointer)
+>     4) Noone declares them on the stack (use cpumask_var_t)
+>     
+>     So we finally remove the definition of struct cpumask when
+>     CONFIG_CPUMASK_OFFSTACK=y.  This means that these usages will hit a compile
+>     error the moment that config option is turned on.
+>     
+>     Note that it also means you can't declare a static cpumask.  You
+>     should avoid this anyway (use cpumask_var_t), but there's a
+>     deliberately-ugly workaround for special cases, using DECLARE_BITMAP()
+>     and to_cpumask().
+>     
+>     Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+>     Cc: Arnd Bergmann <arnd@arndb.de>
+>     Cc: anton@samba.org
+>     Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>     Cc: Mike Travis <travis@sgi.com>
+
+Is there any good reason to not remove it altogether, regardless 
+of whether the OFFSTACK config is set? I mean, triggering build 
+failures for a relatively rarely turned on config option is 
+asking for constant maintenance trouble.
 
 Thanks,
 
-
--Olof
+	Ingo
