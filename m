@@ -1,175 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab2EIOkM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:40:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41195 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab2EIOkJ (ORCPT
+	id S1757145Ab2EIOpN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:45:13 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:51835 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753082Ab2EIOpL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:40:09 -0400
-Date: Wed, 9 May 2012 07:39:52 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-o56ajxp1edwqg6x9d31wb805@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] sched, perf:
-  Use a single callback into the scheduler
-Git-Commit-ID: cb04ff9ac424d0e689d9b612e9f73cb443ab4b7e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 9 May 2012 10:45:11 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 09 May 2012 07:39:58 -0700 (PDT)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] pch_gbe: Adding read memory barriers
+Date: Wed, 9 May 2012 15:44:47 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F602CD848A@saturn3.aculab.com>
+In-Reply-To: <CAL2JzuxirjAnmbcV+R=MJFAi1+ayrRnM6i0Dz5poqMuG7Cxwxg@mail.gmail.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] pch_gbe: Adding read memory barriers
+Thread-Index: Ac0t6dnBBIjcNgVNSzGpNrTmSx0OAQAA+KfQ
+References: <4FA822C4.60809@gmail.com><AE90C24D6B3A694183C094C60CF0A2F602CD83CB@saturn3.aculab.com><1336569510.8274.360.camel@deadeye> <CAL2JzuxirjAnmbcV+R=MJFAi1+ayrRnM6i0Dz5poqMuG7Cxwxg@mail.gmail.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Erwan Velu" <erwanaliasr1@gmail.com>,
+        "Ben Hutchings" <bhutchings@solarflare.com>
+Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tshimizu818@gmail.com>
+X-OriginalArrivalTime: 09 May 2012 14:44:48.0683 (UTC) FILETIME=[489767B0:01CD2DF2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cb04ff9ac424d0e689d9b612e9f73cb443ab4b7e
-Gitweb:     http://git.kernel.org/tip/cb04ff9ac424d0e689d9b612e9f73cb443ab4b7e
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 8 May 2012 18:56:04 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 May 2012 15:23:17 +0200
+ 
+> So I've been reading how does others drivers are working regarding
+this type of message.
+> While reading many drivers, I found that many does rmb() calls at this
+points.
+> As I'm not a linux kernel expert, I did mimic them to the result
+> and it was good since the errors disappeared.
 
-sched, perf: Use a single callback into the scheduler
+> So do you mean the patch is wrong or shall I rework only the comments
+?
 
-We can easily use a single callback for both sched-in and sched-out. This
-reduces the code footprint in the scheduler path as well as removes
-the PMU black spot otherwise present between the out and in callback.
+The problem is that barriers are not understood at all well
+by most driver writers - so a lot of code is sub-optimal.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-o56ajxp1edwqg6x9d31wb805@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/perf_event.h |   24 ++++++------------------
- kernel/events/core.c       |   14 ++++++++++----
- kernel/sched/core.c        |    9 +--------
- 3 files changed, 17 insertions(+), 30 deletions(-)
+It isn't helped by the readability of the cpu documentation,
+never mind some old docs that described something that an
+engineer thought they might want to allow - rather than
+describing what any cpus actually did/do.
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index f325786..8adf70e 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1084,10 +1084,8 @@ extern void perf_pmu_unregister(struct pmu *pmu);
- 
- extern int perf_num_counters(void);
- extern const char *perf_pmu_name(void);
--extern void __perf_event_task_sched_in(struct task_struct *prev,
--				       struct task_struct *task);
--extern void __perf_event_task_sched_out(struct task_struct *prev,
--					struct task_struct *next);
-+extern void __perf_event_task_sched(struct task_struct *prev,
-+				    struct task_struct *next);
- extern int perf_event_init_task(struct task_struct *child);
- extern void perf_event_exit_task(struct task_struct *child);
- extern void perf_event_free_task(struct task_struct *task);
-@@ -1207,20 +1205,13 @@ perf_sw_event(u32 event_id, u64 nr, struct pt_regs *regs, u64 addr)
- 
- extern struct static_key_deferred perf_sched_events;
- 
--static inline void perf_event_task_sched_in(struct task_struct *prev,
-+static inline void perf_event_task_sched(struct task_struct *prev,
- 					    struct task_struct *task)
- {
--	if (static_key_false(&perf_sched_events.key))
--		__perf_event_task_sched_in(prev, task);
--}
--
--static inline void perf_event_task_sched_out(struct task_struct *prev,
--					     struct task_struct *next)
--{
- 	perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, NULL, 0);
- 
- 	if (static_key_false(&perf_sched_events.key))
--		__perf_event_task_sched_out(prev, next);
-+		__perf_event_task_sched(prev, task);
- }
- 
- extern void perf_event_mmap(struct vm_area_struct *vma);
-@@ -1295,11 +1286,8 @@ extern void perf_event_disable(struct perf_event *event);
- extern void perf_event_task_tick(void);
- #else
- static inline void
--perf_event_task_sched_in(struct task_struct *prev,
--			 struct task_struct *task)			{ }
--static inline void
--perf_event_task_sched_out(struct task_struct *prev,
--			  struct task_struct *next)			{ }
-+perf_event_task_sched(struct task_struct *prev,
-+		      struct task_struct *task)				{ }
- static inline int perf_event_init_task(struct task_struct *child)	{ return 0; }
- static inline void perf_event_exit_task(struct task_struct *child)	{ }
- static inline void perf_event_free_task(struct task_struct *task)	{ }
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 00c58df..e82c7a1 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2039,8 +2039,8 @@ static void perf_event_context_sched_out(struct task_struct *task, int ctxn,
-  * accessing the event control register. If a NMI hits, then it will
-  * not restart the event.
-  */
--void __perf_event_task_sched_out(struct task_struct *task,
--				 struct task_struct *next)
-+static void __perf_event_task_sched_out(struct task_struct *task,
-+					struct task_struct *next)
- {
- 	int ctxn;
- 
-@@ -2279,8 +2279,8 @@ static void perf_branch_stack_sched_in(struct task_struct *prev,
-  * accessing the event control register. If a NMI hits, then it will
-  * keep the event running.
-  */
--void __perf_event_task_sched_in(struct task_struct *prev,
--				struct task_struct *task)
-+static void __perf_event_task_sched_in(struct task_struct *prev,
-+				       struct task_struct *task)
- {
- 	struct perf_event_context *ctx;
- 	int ctxn;
-@@ -2305,6 +2305,12 @@ void __perf_event_task_sched_in(struct task_struct *prev,
- 		perf_branch_stack_sched_in(prev, task);
- }
- 
-+void __perf_event_task_sched(struct task_struct *prev, struct task_struct *next)
-+{
-+	__perf_event_task_sched_out(prev, next);
-+	__perf_event_task_sched_in(prev, next);
-+}
-+
- static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
- {
- 	u64 frequency = event->attr.sample_freq;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4603b9d..5c692a0 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1913,7 +1913,7 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
- 		    struct task_struct *next)
- {
- 	sched_info_switch(prev, next);
--	perf_event_task_sched_out(prev, next);
-+	perf_event_task_sched(prev, next);
- 	fire_sched_out_preempt_notifiers(prev, next);
- 	prepare_lock_switch(rq, next);
- 	prepare_arch_switch(next);
-@@ -1956,13 +1956,6 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
- 	 */
- 	prev_state = prev->state;
- 	finish_arch_switch(prev);
--#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
--	local_irq_disable();
--#endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
--	perf_event_task_sched_in(prev, current);
--#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
--	local_irq_enable();
--#endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
- 	finish_lock_switch(rq, prev);
- 	finish_arch_post_lock_switch();
- 
+For x86 cpus (amd and intel at least) reads and writes to
+uncached memory and io are guaranteed to happen in instruction
+order. For other cpus (sparc and ppc) such reads can
+overtake writes - requiring something to force the write to
+complete (eg a synchronising instruction, or maybe a readeback).
+
+One problem is that the barrier instructions are generally
+slow - so you don't want to use them where unnecessary,
+however whether you need them is somewhat hardware specific
+and the typical OS lists of barriers doesn't cover all the
+cases - even for things that are actually compile time knowable.
+Eg: what you need between a write to 'dma coherent' memory
+and a write to a control register depends on whether 'dma
+coherency' is implemented by disabling the cache.
+
+For SMP there may be additional synchronisation, especially
+for cached data, but for most drivers that is handled by
+mutex/lock operations.
+
+The other, and separate, issue is making sure that the compiler
+itself doesn't reorder of optimise away memory cycles.
+By far the best way is to mark the data (not the pointer to the
+data) 'volatile', this forces the compiler to generate object
+code for every variable reference in the source, and in the right
+order.
+Sometimes that is inappropiate, gcc's asm volatile (:::"memory")
+tells the compiler that this asm statement might modify all
+of memory (even though there are actually no instructions!).
+This forces it to avoid having anything in a register that is
+a copy of something in memory - thus enforcing the order of
+memory accesses.
+It can also be used to reduce register pressure within the
+compiler.
+
+In your case I suspect that the compiler has re-ordered the
+reads - adding almost anything between them will change the
+order.
+
+	David
+
+
