@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760269Ab2EIQjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 12:39:32 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41719 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756989Ab2EIQja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 12:39:30 -0400
-Message-ID: <1336581561.1905.3.camel@joe2Laptop>
-Subject: Re: [RFC][PATCH] printk: Add %pb to print bitmaps
-From: Joe Perches <joe@perches.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Igor Mammedov <imammedo@redhat.com>,
-        Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
-        pjt@google.com, tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 09 May 2012 09:39:21 -0700
-In-Reply-To: <1336579592.2527.60.camel@twins>
-References: <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
-	 <1336566096.2527.30.camel@twins> <1336566644.2527.33.camel@twins>
-	 <1336570043.2527.38.camel@twins> <20120509133607.GA26124@gmail.com>
-	 <1336571049.2527.43.camel@twins> <1336571947.2527.47.camel@twins>
-	 <20120509141528.GA3623@gmail.com> <1336577562.2527.58.camel@twins>
-	 <20120509154116.GC2653@gmail.com> <1336579592.2527.60.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1760259Ab2EIQlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 12:41:09 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:45216 "HELO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756989Ab2EIQlH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 12:41:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1205081417120.27713@router.home>
+References: <1336503339-18722-1-git-send-email-pshelar@nicira.com>
+	<1336504276.3752.2600.camel@edumazet-glaptop>
+	<alpine.DEB.2.00.1205081417120.27713@router.home>
+Date: Wed, 9 May 2012 09:41:05 -0700
+Message-ID: <CALnjE+pExzAS4bk89RD4XJtHtSyB2g0qMsqdrGWPuD27axiNBw@mail.gmail.com>
+Subject: Re: [PATCH] mm: sl[auo]b: Use atomic bit operations to update page-flags.
+From: Pravin Shelar <pshelar@nicira.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, penberg@kernel.org, mpm@selenic.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, jesse@nicira.com,
+        abhide@nicira.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 18:06 +0200, Peter Zijlstra wrote:
-> On Wed, 2012-05-09 at 17:41 +0200, Ingo Molnar wrote:
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > On Wed, 2012-05-09 at 16:15 +0200, Ingo Molnar wrote:
-> > > > > I guess I should use %.*pb and keep the field_width in case someone
-> > > > > manages to actually make bitmap_scnlistprintf() conform to it. The
-> > > > > precision is unused anyway.
-> > > > 
-> > > > That's a cute trick, and it's intuitive as well. 
-> > > 
-> > > kernel/sched/core.c:5570:3: warning: precision used with ‘%p’ gnu_printf format [-Wformat]
-> > > 
-> > > /me curses a bit.. anybody?
-> > 
-> > Yeah, that's a floating point precision thing (or for strings, 
-> > right-align) - could you use %30pb, etc?
-> 
-> %*pb you mean? Yeah that works, field width is allowed for %p. It does
-> mean we cannot ever make bitmaps respect field width though.
+On Tue, May 8, 2012 at 12:22 PM, Christoph Lameter <cl@linux.com> wrote:
+> On Tue, 8 May 2012, Eric Dumazet wrote:
+>
+>> On Tue, 2012-05-08 at 11:55 -0700, Pravin B Shelar wrote:
+>> > Transparent huge pages can change page->flags (PG_compound_lock)
+>> > without taking Slab lock. So sl[auo]b need to use atomic bit
+>> > operation while changing page->flags.
+>> > Specificly this patch fixes race between compound_unlock and slab
+>> > functions which does page-flags update. This can occur when
+>> > get_page/put_page is called on page from slab object.
+>>
+>>
+>> But should get_page()/put_page() be called on a page own by slub ?
+>
+> Can occur in slab allocators if the slab memory is used for DMA. I dont
+> like the performance impact of the atomics. In particular slab_unlock() in
+> slub is or used to be a hot path item. It is still hot on arches that do
+> not support this_cpu_cmpxchg_double. With the cmpxchg_double only the
+> debug mode is affected.
+>
 
-You could also fill a new struct with info
-about the bitmap and pass a pointer to that.
-
-struct print_bitmap_info {
-	int foo;
-	int precision;
-	int width;
-	void *bitmap;
-};
-...
-	struct print_bitmap_info bi;
-	bi.foo = bar;
-	...
-	bi.bitmap = &bitmap;
-...
-	printk("%pb", &bi);
-
-
+I agree this would impact performance. I am not sure how else we can
+fix this issue. As far as slab_unlock in hot path case is concerned,
+it is more likely to corrupt page->flags in that case.
