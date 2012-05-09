@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab2EIOi3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 10:38:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41165 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759792Ab2EIOi0 (ORCPT
+	id S932210Ab2EIOig (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 10:38:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65199 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932197Ab2EIOib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 10:38:26 -0400
-Date: Wed, 9 May 2012 07:38:12 -0700
-From: tip-bot for Robert Richter <robert.richter@amd.com>
-Message-ID: <tip-fc5fb2b5e1874e5894e2ac503bfb744220db89a1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
-In-Reply-To: <1333390758-10893-12-git-send-email-robert.richter@amd.com>
-References: <1333390758-10893-12-git-send-email-robert.richter@amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86-ibs:
-  Catch spurious interrupts after stopping IBS
-Git-Commit-ID: fc5fb2b5e1874e5894e2ac503bfb744220db89a1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 09 May 2012 07:38:17 -0700 (PDT)
+	Wed, 9 May 2012 10:38:31 -0400
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: horms@verge.net.au, arnd@arndb.de, linux-sh@vger.kernel.org,
+        johnstul@us.ibm.com, rjw@sisk.pl, lethal@linux-sh.org,
+        gregkh@linuxfoundation.org, olof@lixom.net,
+        Magnus Damm <magnus.damm@gmail.com>, tglx@linutronix.de
+Date: Wed, 09 May 2012 23:39:26 +0900
+Message-Id: <20120509143926.27521.20342.sendpatchset@w520>
+Subject: [PATCH 00/03] clocksource: Emma Mobile STI V2 patches
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fc5fb2b5e1874e5894e2ac503bfb744220db89a1
-Gitweb:     http://git.kernel.org/tip/fc5fb2b5e1874e5894e2ac503bfb744220db89a1
-Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Mon, 2 Apr 2012 20:19:17 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 9 May 2012 15:23:16 +0200
+clocksource: Emma Mobile STI V2 patches
 
-perf/x86-ibs: Catch spurious interrupts after stopping IBS
+[PATCH 01/03] clockevents: Make clockevents_config() a global symbol
+[PATCH 02/03] clocksource: em_sti: Emma Mobile STI driver V2
+[PATCH 03/03] clocksource: em_sti: Add DT support
 
-After disabling IBS there could be still incomming NMIs with samples
-that even have the valid bit cleared. Mark all this NMIs as handled to
-avoid spurious interrupt messages.
+This is the second version of Emma Mobile STI driver. Now with
+significantly cleaner clockevent intergration and DT support.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1333390758-10893-12-git-send-email-robert.richter@amd.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+The driver is implemented as a regular platform device which makes
+use of the STI hardware and provides both clocksource and clockevent
+interfaces with a single 48-bit hardware counter.
+
+It is worth mentioning that the driver makes use of clockevents_config()
+to update the timer frequency after registration time. This is done to
+save power by making sure that unused timer hardware is stopped whenever
+possible.
+
+The reason behind allowing the driver to use clockevents_config() is in
+detail as follows. The clock associated with the timer gets enabled when
+starting the clocksource/clockevent and it gets disabled when the
+clocksource or clockevent gets stopped. Due to the design of the clock
+framework the rate of the clock is only known after the clock has been
+enabled. And to save power the clock is only enabled when it is known
+that it will be used - and to know that the clocksource/clockevent needs
+to be registered first. This in turn means that we are unaware of the
+frequency at registration time. Which leads to that it is not sufficient
+to use a fixed frequency at registration time but we must instead make
+sure the frequency is updated after each clk_enable().
+
+Many thanks to Thomas Gleixner for very useful V1 feedback.
+
+Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
- arch/x86/kernel/cpu/perf_event_amd_ibs.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-index b14e711..5a9f95b 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -473,11 +473,13 @@ static int perf_ibs_handle_irq(struct perf_ibs *perf_ibs, struct pt_regs *iregs)
- 	u64 *buf, *config, period;
+ arch/arm/mach-shmobile/Kconfig |   12 
+ drivers/clocksource/Makefile   |    2 
+ drivers/clocksource/em_sti.c   |  843 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/clockchips.h     |    1 
+ kernel/time/clockevents.c      |    3 
+ 5 files changed, 859 insertions(+), 2 deletions(-)
+
  
- 	if (!test_bit(IBS_STARTED, pcpu->state)) {
--		/* Catch spurious interrupts after stopping IBS: */
--		if (!test_and_clear_bit(IBS_STOPPING, pcpu->state))
--			return 0;
--		rdmsrl(perf_ibs->msr, *ibs_data.regs);
--		return (*ibs_data.regs & perf_ibs->valid_mask) ? 1 : 0;
-+		/*
-+		 * Catch spurious interrupts after stopping IBS: After
-+		 * disabling IBS there could be still incomming NMIs
-+		 * with samples that even have the valid bit cleared.
-+		 * Mark all this NMIs as handled.
-+		 */
-+		return test_and_clear_bit(IBS_STOPPING, pcpu->state) ? 1 : 0;
- 	}
- 
- 	msr = hwc->config_base;
