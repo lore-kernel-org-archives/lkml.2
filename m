@@ -1,119 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236Ab2EIP5c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 11:57:32 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:41041 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108Ab2EIP52 convert rfc822-to-8bit (ORCPT
+	id S932302Ab2EIQBc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 12:01:32 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:64457 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932204Ab2EIQBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 11:57:28 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-4.tower-131.messagelabs.com!1336578951!21913514!74
-X-Originating-IP: [216.166.12.178]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Wed, 9 May 2012 10:56:54 -0500
-Subject: RE: [PATCH] staging: comedi: refactor sysfs files in comedi_fops.c
-Thread-Topic: [PATCH] staging: comedi: refactor sysfs files in comedi_fops.c
-Thread-Index: Ac0tieoyDogQyEn0Rzu48ChUVouXswAcfrrg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698A1786A@AUSP01VMBX24.collaborationhost.net>
-References: <201205081916.51659.hartleys@visionengravers.com>
-In-Reply-To: <201205081916.51659.hartleys@visionengravers.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 May 2012 12:01:30 -0400
 MIME-Version: 1.0
+From: Jason Garrett-Glaser <jason@x264.com>
+Date: Wed, 9 May 2012 09:00:48 -0700
+X-Google-Sender-Auth: lopbNpW0rTEqWpZT51bcMZ4lDYE
+Message-ID: <CABS55+A_ZbJT4Tz-XfacbURpgfx2WuXqvPnn1_XkAfhxJMP6eA@mail.gmail.com>
+Subject: Scheduler still seems awful with x264, worse with patches
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 08, 2012 7:17 PM, H Hartley Sweeten wrote:
->
-> Refactor the sysfs attributes and functions to remove
-> the need for the forward declarations and use the
-> DEVICE_ATTR macro to define them.
->
-> Instead of individually creating sysfs device attribute
-> files, wrap them in an attribute_group and use the
-> sysfs_create_group function to create them.
->
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Ian Abbott <abbotti@mev.co.uk>
-> Cc: Mori Hess <fmhess@users.sourceforge.net>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
-> ---
+Many months ago, the topic of CFS's inefficiencies with x264 came up
+and some improvements were made, but BFS and Windows still stayed a
+little bit in the lead.  This seemed to be because of a mix of two
+issues.  Firstly, a combination of relatively short-lived jobs (x264
+uses a thread pool, so the actual threads are long-lived).  Secondly,
+in frame threads, heavy dependencies between threads, benefiting
+greatly from a dumb scheduler.  Thirdly, in sliced threads -- the
+focus of this post -- the best scheduling approach is to simply spread
+them throughout the cores and do nothing, so again, a dumb scheduler
+will do the right thing.
 
-Oops... spotted a copy-paste error after I posted this.
+Recently I tried multithreading x264's lookahead for a customer.  The
+lookahead previously wasn't threaded, causing bottlenecks with many
+cores and threads.  I do my development mainly on Windows, and the
+patch looked to be quite a success, with nice performance boosts for
+many target use-cases.
 
-<snip>
+And then I ran it on Linux and it choked horribly.
 
-> @@ -2367,42 +2620,15 @@ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
->  	if (!IS_ERR(csdev))
->  		s->class_dev = csdev;
->  	dev_set_drvdata(csdev, info);
-> -	retval = device_create_file(csdev, &dev_attr_max_read_buffer_kb);
-> +
-> +	retval = sysfs_create_group(&csdev->kobj, &comedi_sysfs_files);
->  	if (retval) {
->  		printk(KERN_ERR
-> -		       "comedi: "
-> -		       "failed to create sysfs attribute file \"%s\".\n",
-> -		       dev_attr_max_read_buffer_kb.attr.name);
-> -		comedi_free_subdevice_minor(s);
-> -		return retval;
-> -	}
-> -	retval = device_create_file(csdev, &dev_attr_read_buffer_kb);
-> -	if (retval) {
-> -		printk(KERN_ERR
-> -		       "comedi: "
-> -		       "failed to create sysfs attribute file \"%s\".\n",
-> -		       dev_attr_read_buffer_kb.attr.name);
-> -		comedi_free_subdevice_minor(s);
-> -		return retval;
-> -	}
-> -	retval = device_create_file(csdev, &dev_attr_max_write_buffer_kb);
-> -	if (retval) {
-> -		printk(KERN_ERR
-> -		       "comedi: "
-> -		       "failed to create sysfs attribute file \"%s\".\n",
-> -		       dev_attr_max_write_buffer_kb.attr.name);
-> -		comedi_free_subdevice_minor(s);
-> -		return retval;
-> -	}
-> -	retval = device_create_file(csdev, &dev_attr_write_buffer_kb);
-> -	if (retval) {
-> -		printk(KERN_ERR
-> -		       "comedi: "
-> -		       "failed to create sysfs attribute file \"%s\".\n",
-> -		       dev_attr_write_buffer_kb.attr.name);
-> -		comedi_free_subdevice_minor(s);
-> +		       "comedi: failed to create sysfs attribute files\n");
-> +		comedi_free_board_minor(i);
+The patch is here:
+https://github.com/DarkShikari/x264-devel/commit/99e830f1581eac3cf30f07b1d6c6c32bae1725c8
+.  To replicate the test, simply test that version against the
+previous version.  My guess is the reason it chokes is that it
+involves spawning even *shorter*-lived jobs than x264 typically does,
+something that CFS seems to simply collapse on.
 
-This should still be:
+Here's some stats from a recent kernel:
 
-		comedi_free_subdevice_minor(s);
+SD encoding (before -> after patch):
+CFS: 325.49 +/- 1.22 fps -> 251.68 +/- 2.32 fps
+BFS: 334.94 +/- 0.59 fps -> 344.47 +/- 0.68 fps
 
-I'll fix it and re-post.
+HD encoding (before -> after patch):
+CFS: 39.05 +/- 0.22 fps -> 40.56 +/- 0.23 fps
+BFS: 40.15 +/- 0.05 fps -> 44.89 +/- 0.05 fps
 
->  		return retval;
->  	}
-> +
->  	return i;
->  }
+As can be seen, the longer the threads live (the lower the fps), the
+less horrific the penalty is.  Furthermore, though I don't have
+numbers, using schedtool -R -p 1 does basically as well as BFS in
+eliminating the problem.  Naturally, this is not really a solution as
+it requires root.
 
-Regards,
-Hartley
+To replicate this test, a commandline like this should work on any
+cached raw input file (a collection of free raw videos can be found
+here if you don't like making your own:
+http://media.xiph.org/video/derf/ ):
 
- 
+./x264 --preset superfast --tune zerolatency --threads X input -o /dev/null
+
+Most of my testing was done with X = 4 or 8 on quad-core or
+quad-core-with-HT machines.  Though I don't have numbers, I should
+note that the absolute worst results are on a Core i7 machine where I
+set taskset 0xf and used threads 4; the patch literally cut the
+framerate in half, despite giving a performance boost when SCHED_RR
+was used.
+
+Jason
+
+P.S.  Here is the structure of low-latency sliced threading with the
+patch, for anyone curious.
+
+To encode a frame with X threads:
+1.  The previous frame's X threads are still going -- they're
+finishing up hpel and deblock calculation, which can be done after the
+encoder returns, but before the next frame is encoded.
+2.  Serially, copy in the input frame and preprocess it, running
+various not-yet-parallelized tasks while those threads finish up.
+3.  In parallel, do lookahead analysis of the input frame -- split it
+into X slices and analyze them simultaneously.  Then wait on the jobs
+and merge the results.
+4.  If any of the previous frame's threads are still going, wait on them now.
+5.  Split the main encode into X slices and do them simultaneously.
+Once they've all finished encoding -- after they've signaled the main
+thread with a condition variable -- serially finish up a few minor
+tasks and return to the caller.  These threads will continue until
+step 4) of the next frame.
+
+When encoding at ~300fps, the encode jobs will typically run for about
+~3ms each, and the lookahead threads likely for around 0.5ms, very
+roughly.  For a low-latency encoder, there is no way to make these
+threads last longer while still getting parallelism, and it must be
+doable because Windows handles it just fine.
+
+Jason
