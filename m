@@ -1,47 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759299Ab2EJRTf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:19:35 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:36672 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758687Ab2EJRSr (ORCPT
+	id S1759670Ab2EJRTx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:19:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60495 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757383Ab2EJRR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:18:47 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Richard Purdie <rpurdie@rpsys.net>, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 0/2] mfd: lm3533: update max-current interface
-Date: Thu, 10 May 2012 19:18:27 +0200
-Message-Id: <1336670309-20858-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.7.8.5
-In-Reply-To: <20120510120742.GA29437@localhost>
-References: <20120510120742.GA29437@localhost>
+	Thu, 10 May 2012 13:17:59 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 07/16] perf target: Consolidate target task/cpu checking
+Date: Thu, 10 May 2012 14:17:36 -0300
+Message-Id: <1336670265-20401-8-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1336670265-20401-1-git-send-email-acme@infradead.org>
+References: <1336670265-20401-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel, 
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Here are the final two changes needed to lm3533 core to reflect changes that
-have been decided for the subdriver interfaces.
+There are places that check whether target task/cpu is given or not and
+some of them didn't check newly introduced uid or cpu list. Add and use
+three of helper functions to treat them properly.
 
-Sorry I didn't have time to submit a v3 with this included before you applied
-the patch.
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1336367344-28071-7-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c |    4 +---
+ tools/perf/builtin-stat.c   |   12 ++++++------
+ tools/perf/builtin-top.c    |    2 +-
+ tools/perf/util/evlist.c    |   10 ++++------
+ tools/perf/util/evsel.c     |    8 ++++----
+ tools/perf/util/target.h    |   15 +++++++++++++++
+ 6 files changed, 31 insertions(+), 20 deletions(-)
 
-Thanks,
-Johan
-
-
-Johan Hovold (2):
-  mfd: lm3533: remove unused max-current function
-  mfd: lm3533: use SI-units for max-current interface
-
- drivers/mfd/lm3533-ctrlbank.c |   44 +++++++++++++++++++++++++++--------------
- include/linux/mfd/lm3533.h    |    9 +++----
- 2 files changed, 33 insertions(+), 20 deletions(-)
-
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index c8bf6ea..42e2414 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -843,9 +843,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 
+ 	argc = parse_options(argc, argv, record_options, record_usage,
+ 			    PARSE_OPT_STOP_AT_NON_OPTION);
+-	if (!argc && !rec->opts.target.pid && !rec->opts.target.tid &&
+-	    !rec->opts.target.system_wide && !rec->opts.target.cpu_list &&
+-	    !rec->opts.target.uid_str)
++	if (!argc && perf_target__none(&rec->opts.target))
+ 		usage_with_options(record_usage, record_options);
+ 
+ 	if (rec->force && rec->append_file) {
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index bb77232..d9ff246 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -290,10 +290,10 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
+ 
+ 	attr->inherit = !no_inherit;
+ 
+-	if (target.system_wide)
++	if (!perf_target__no_cpu(&target))
+ 		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
+ 						group, group_fd);
+-	if (!target.pid && !target.tid && (!group || evsel == first)) {
++	if (perf_target__no_task(&target) && (!group || evsel == first)) {
+ 		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
+ 	}
+@@ -443,7 +443,7 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 			exit(-1);
+ 		}
+ 
+-		if (!target.tid && !target.pid && !target.system_wide)
++		if (perf_target__none(&target))
+ 			evsel_list->threads->map[0] = child_pid;
+ 
+ 		/*
+@@ -965,7 +965,7 @@ static void print_stat(int argc, const char **argv)
+ 	if (!csv_output) {
+ 		fprintf(output, "\n");
+ 		fprintf(output, " Performance counter stats for ");
+-		if (!target.pid && !target.tid) {
++		if (perf_target__no_task(&target)) {
+ 			fprintf(output, "\'%s", argv[0]);
+ 			for (i = 1; i < argc; i++)
+ 				fprintf(output, " %s", argv[i]);
+@@ -1187,13 +1187,13 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	} else if (big_num_opt == 0) /* User passed --no-big-num */
+ 		big_num = false;
+ 
+-	if (!argc && !target.pid && !target.tid)
++	if (!argc && perf_target__no_task(&target))
+ 		usage_with_options(stat_usage, options);
+ 	if (run_count <= 0)
+ 		usage_with_options(stat_usage, options);
+ 
+ 	/* no_aggr, cgroup are for system-wide only */
+-	if ((no_aggr || nr_cgroups) && !target.system_wide) {
++	if ((no_aggr || nr_cgroups) && perf_target__no_cpu(&target)) {
+ 		fprintf(stderr, "both cgroup and no-aggregation "
+ 			"modes only available in system-wide mode\n");
+ 
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 7ba0f03..e4ca827 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1016,7 +1016,7 @@ static int __cmd_top(struct perf_top *top)
+ 	if (ret)
+ 		goto out_delete;
+ 
+-	if (top->target.tid || top->target.uid != UINT_MAX)
++	if (!perf_target__no_task(&top->target))
+ 		perf_event__synthesize_thread_map(&top->tool, top->evlist->threads,
+ 						  perf_event__process,
+ 						  &top->session->host_machine);
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 183b199..1201daf 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -609,12 +609,10 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
+ 	if (evlist->threads == NULL)
+ 		return -1;
+ 
+-	if (target->uid != UINT_MAX || target->tid)
+-		evlist->cpus = cpu_map__dummy_new();
+-	else if (!target->system_wide && target->cpu_list == NULL)
+-		evlist->cpus = cpu_map__dummy_new();
+-	else
++	if (!perf_target__no_cpu(target))
+ 		evlist->cpus = cpu_map__new(target->cpu_list);
++	else
++		evlist->cpus = cpu_map__dummy_new();
+ 
+ 	if (evlist->cpus == NULL)
+ 		goto out_delete_threads;
+@@ -831,7 +829,7 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
+ 		exit(-1);
+ 	}
+ 
+-	if (!opts->target.system_wide && !opts->target.tid && !opts->target.pid)
++	if (perf_target__none(&opts->target))
+ 		evlist->threads->map[0] = evlist->workload.pid;
+ 
+ 	close(child_ready_pipe[1]);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index bb785a0..21eaab2 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -114,8 +114,8 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 		attr->sample_type	|= PERF_SAMPLE_PERIOD;
+ 
+ 	if (!opts->sample_id_all_missing &&
+-	    (opts->sample_time || opts->target.system_wide ||
+-	     !opts->no_inherit || opts->target.cpu_list))
++	    (opts->sample_time || !opts->no_inherit ||
++	     !perf_target__no_cpu(&opts->target)))
+ 		attr->sample_type	|= PERF_SAMPLE_TIME;
+ 
+ 	if (opts->raw_samples) {
+@@ -136,8 +136,8 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 	attr->mmap = track;
+ 	attr->comm = track;
+ 
+-	if (!opts->target.pid && !opts->target.tid &&
+-	    !opts->target.system_wide && (!opts->group || evsel == first)) {
++	if (perf_target__none(&opts->target) &&
++	    (!opts->group || evsel == first)) {
+ 		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
+ 	}
+diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
+index 6fcd01c..127cff3 100644
+--- a/tools/perf/util/target.h
++++ b/tools/perf/util/target.h
+@@ -46,4 +46,19 @@ enum perf_target_errno perf_target__parse_uid(struct perf_target *target);
+ int perf_target__strerror(struct perf_target *target, int errnum, char *buf,
+ 			  size_t buflen);
+ 
++static inline bool perf_target__no_task(struct perf_target *target)
++{
++	return !target->pid && !target->tid && !target->uid_str;
++}
++
++static inline bool perf_target__no_cpu(struct perf_target *target)
++{
++	return !target->system_wide && !target->cpu_list;
++}
++
++static inline bool perf_target__none(struct perf_target *target)
++{
++	return perf_target__no_task(target) && perf_target__no_cpu(target);
++}
++
+ #endif /* _PERF_TARGET_H */
 -- 
-1.7.8.5
+1.7.9.2.358.g22243
 
