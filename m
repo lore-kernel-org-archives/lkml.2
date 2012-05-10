@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758773Ab2EJNoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 09:44:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38281 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab2EJNoM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 09:44:12 -0400
-Date: Thu, 10 May 2012 14:43:42 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: James Hogan <james@albanarts.com>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        linux-samsung-soc@vger.kernel.org, patches@linaro.org,
-        devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, kgene.kim@samsung.com, cjb@laptop.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/7] mmc: dw_mmc: lookup for optional biu and ciu clocks
-Message-ID: <20120510134342.GA12727@n2100.arm.linux.org.uk>
-References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org> <1335935266-25289-2-git-send-email-thomas.abraham@linaro.org> <CAAG0J9-NDM9wLKpq04ofPkvFqiWxjmP84ojsP9Hfs0SJ_0FaXg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAAG0J9-NDM9wLKpq04ofPkvFqiWxjmP84ojsP9Hfs0SJ_0FaXg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S932409Ab2EJNp0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 09:45:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37226 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753414Ab2EJNpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 09:45:22 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 07/17] mm: Ignore mempolicies when using ALLOC_NO_WATERMARK
+Date: Thu, 10 May 2012 14:45:00 +0100
+Message-Id: <1336657510-24378-8-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1336657510-24378-1-git-send-email-mgorman@suse.de>
+References: <1336657510-24378-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 03:53:53PM +0100, James Hogan wrote:
-> Hi
-> 
-> On 2 May 2012 06:07, Thomas Abraham <thomas.abraham@linaro.org> wrote:
-> > +       if (IS_ERR(host->biu_clk))
-> > +               dev_info(&host->dev, "biu clock not available\n");
-> 
-> In this case, should it set host->biu_clk to NULL or are clk_disable
-> and clk_put guaranteed to handle an IS_ERR value?
+The reserve is proportionally distributed over all !highmem zones
+in the system. So we need to allow an emergency allocation access to
+all zones.  In order to do that we need to break out of any mempolicy
+boundaries we might have.
 
-I keep saying this.  NULL must be treated as a valid reutrn value from
-clk_get() and must not use this as a sentinel.  The clk namespace is
-that errors are indicated with IS_ERR(clk) returning true.  Everything
-else must be assumed to be valid by drivers.
+In my opinion that does not break mempolicies as those are user
+oriented and not system oriented. That is, system allocations are
+not guaranteed to be within mempolicy boundaries. For instance IRQs
+do not even have a mempolicy.
+
+So breaking out of mempolicy boundaries for 'rare' emergency
+allocations, which are always system allocations (as opposed to user)
+is ok.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/page_alloc.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 363ca90..e225a7c 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2293,6 +2293,13 @@ rebalance:
+ 
+ 	/* Allocate without watermarks if the context allows */
+ 	if (alloc_flags & ALLOC_NO_WATERMARKS) {
++		/*
++		 * Ignore mempolicies if ALLOC_NO_WATERMARKS on the grounds
++		 * the allocation is high priority and these type of
++		 * allocations are system rather than user orientated
++		 */
++		zonelist = node_zonelist(numa_node_id(), gfp_mask);
++
+ 		page = __alloc_pages_high_priority(gfp_mask, order,
+ 				zonelist, high_zoneidx, nodemask,
+ 				preferred_zone, migratetype);
+-- 
+1.7.9.2
+
