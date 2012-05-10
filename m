@@ -1,116 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761041Ab2EJSTY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 14:19:24 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:43182 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756214Ab2EJSTW convert rfc822-to-8bit (ORCPT
+	id S1761103Ab2EJSUA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 14:20:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53512 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760793Ab2EJST7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 14:19:22 -0400
-Subject: gpio: pca953x: interrupt feature unreliable (re-re-send, Grant please acknowledge!!)
-Content-Transfer-Encoding: 8BIT
-From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-Content-Type: text/plain; charset=us-ascii
-Message-Id: <8495990E-0B78-4B47-A00D-36D45DC3450F@gmail.com>
-Date: Thu, 10 May 2012 14:19:17 -0400
-Cc: torvalds@linux-foundation.org, open list <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, eric.miao@marvell.com,
-        maz@misterjones.org
-To: Grant Likely <grant.likely@secretlab.ca>, linus.walleij@stericsson.com
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
+	Thu, 10 May 2012 14:19:59 -0400
+Date: Thu, 10 May 2012 11:19:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: rpurdie@rpsys.net, linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org
+Subject: Re: [PATCH] MAINTAINERS: Add maintainer for LED subsystem
+Message-Id: <20120510111958.7cb00da9.akpm@linux-foundation.org>
+In-Reply-To: <1336609592-3825-1-git-send-email-bryan.wu@canonical.com>
+References: <1336609592-3825-1-git-send-email-bryan.wu@canonical.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thu, 10 May 2012 08:26:32 +0800
+Bryan Wu <bryan.wu@canonical.com> wrote:
 
-Here's a fun, yet potentially dangerous problem.
+> Add Bryan Wu as the primary maintainer for drivers/leds
+> 
+> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+> ---
+>  MAINTAINERS |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 7071633..de4e280 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -4034,6 +4034,7 @@ F:	Documentation/scsi/53c700.txt
+>  F:	drivers/scsi/53c700*
+>  
+>  LED SUBSYSTEM
+> +M:	Bryan Wu <bryan.wu@canonical.com>
+>  M:	Richard Purdie <rpurdie@rpsys.net>
+>  S:	Maintained
+>  F:	drivers/leds/
 
-I've sent this twice already, without any feedback. I'm just trying to get more 
-visibility on this because I believe it to be a serious issue depending where 
-this chip may be used. Interrupts could be missed in what could be very tough 
-conditions to replicate. In my setup I could reproduce the problem easily and 
-took great care in analysing and documenting it.
-===============Re-Re-Send (with edits)==================
-Hi all,
-(Using 3.1.0-rc4, didn't change since)
+Please set up a git tree based on Linus mainline, get that tree
+included in linux-next (by emailing Stephen) and include its git
+URL in this MAINTAINERS record.
 
-I have detected a flaw in the interrupt support of the gpio-pca953x driver. 
-This is how I discovered the issue:
+Once that is all set up I'll send over the current leds queue -
+currently 17 patches.
 
-I have a interrupt client device which has it's interrupt signal connected to 
-one of the GPIOs of the pca9555. The client is an ad714x device. It's interrupt 
-routine is falling edge triggered (so says the driver, but according to the 
-AD714x specs, it should be level,low, however this is another topic). The 
-pca9555 is interrupting the CPU through INTA of an ethernet PCI card for which 
-I have blacklisted the driver module and only done "echo 1 > 
-/bus/pci/devices/00xyz/enable". It is "(level, low)" which matches the pca953x 
-request_threaded_isr call (IRQF_TRIGGER_LOW | IRQF_ONESHOT). I used two GPOs on 
-some other device to get the !ISR signals shown below. These show the nested 
-nature of the cli ISR called from the pca953x's ISR.
-ASCII art of my probing (use a monospace font, "!ISR"==low, mean ISR running)
+We don't presently have a leds mailing list.  I generally find stuff by
+reading linux-kernel.  You'll now need to do that ;) Even if we did
+have a leds mailing list, one would still need to follow lkml to avoid
+losing stuff.
 
-Events(lined-up):1  2 3 4 5  6    7       8    9
-             ____          _______
-client !INT      |________|       |________(lost)___
-             ___________                   _________
-cli !ISR                |____|____________|
-             ____      ___         _________________
-pca953x !INT     |____|   |_______|
-             ______                             ____
-pca953x !ISR       |___________________________|
-(note: the little spike in the cli !ISR marks the end of reading the client's 
-status registers, the rest of the ISR is updating driver state machines, etc.)
-
-Summary: The client enters interrupt(1), which immediately puts the pca953x in 
-interrupt as well(1). When the pca953x enters it's isr thread(2), it reads the 
-input status register, this immediately clears the pca953x interrupt(3). The 
-pca953x ISR then figure's out it should invoke the nested ISR for the client. 
-The client ISR starts (4) by reading the client chip's status register, which 
-clears the client interrupt(5). This immediately puts the pca953x back into 
-interrupt (5) since it's a different state than what was last read in the 
-pca953x ISR(3). Since pca953x registered it's interrupt with IRQF_ONESHOT, this 
-new IRQ state is masked and goes un-noticed. The pca953x chips' FLAW IS THEN 
-REVEILED if/when the client chip goes back in interrupt before (7) the client 
-ISR (and the pca053x's ISR with the current code) even has time to finish(8 and 
-9). At that moment, the pca953x's input are back to the way they where when the 
-pca953x ISR last read the input status register. So when all of the ISR 
-routines are done (9...), the client has it's INT line asserted and no more 
-interrupt will come from the pca953x because of this.
-
-pca953x specs quote: "Resetting the interrupt circuit is achieved when data on 
-the port is CHANGED TO THE ORIGINAL SETTING, data is read from the port that 
-generated the interrupt or in a Stop event. [...] Interrupts that occur during 
-the ACK or NACK clock pulse CAN BE LOST (or be very short) due to the resetting 
-of the interrupt during this pulse."
-
-So in essence, although the pca953x.c's design and doc says only edges are 
-detected and supported, the chip design makes it IMPOSSIBLE to guarantee that 
-all edges will be caught.
-
-The IRQ function SHOULD BE REMOVED from the driver since the chip cannot honor 
-the driver's promise. At the very least, for system integrators that want to 
-use level base interrupts implemented by the pca953x, changes to the driver 
-should be made to correctly handle the lack of LATCHING INTERRUPT STATUS 
-register...
-
-I would propose a patch, but I am missing knowledge on the internals of the 
-kernel's irq code, so here's a simple suggestion description, hoping to get 
-some feedback.
-
-First of all, I propose pca953x_irq_set_type should only support 
-IRQ_TYPE_LEVEL_HIGH and IRQ_TYPE_LEVEL_LOW. pca953x_irq_handler should be 
-adjusted accordingly.
-
-To make sure we catch as many transitions of pca953x chips INT as possible 
-(yikes), we make pca953x_irq_setup() request it's own interrupt as both rising 
-and falling (IRQF_TRIGGER_RISING|IRQF_TRIGGER_FALLING, is that even possible?) 
-without IRQF_ONESHOT, so that pca953x_irq_handler is rescheduled for running 
-even when it's already running.
-
-Any thoughts? Maybe there are more/less fancy, or better yet, "correct" ways of 
-doing this? Will this even work?
-
-/jfd
+Or you can not bother - I read lkml and shall grab stray leds patches and
+will send them on to yourself.
 
