@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758539Ab2EJQcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 12:32:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3905 "EHLO mga09.intel.com"
+	id S1758395Ab2EJQcF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 12:32:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:5033 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754413Ab2EJQ2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754453Ab2EJQ2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 May 2012 12:28:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="142389134"
+   d="scan'208";a="142389138"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "H Peter Anvin" <hpa@zytor.com>,
@@ -25,9 +25,9 @@ To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v6 04/12] x86/smpboot.c: Don't offline CPU0 if any irq can not be migrated out of it and remove CPU0 check in smp_callin()
-Date: Thu, 10 May 2012 09:16:46 -0700
-Message-Id: <1336666614-21090-5-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v6 05/12] x86/power/cpu.c: Don't hibernate/suspend if CPU0 is offline
+Date: Thu, 10 May 2012 09:16:47 -0700
+Message-Id: <1336666614-21090-6-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
 References: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
@@ -37,92 +37,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-Don't offline CPU0 if any irq can not be migrated out of it.
-
-Call identify_boot_cpu_online() for CPU0 in smp_callin() and continue to online
-CPU0 in native_cpu_up().
+Because x86 BIOS requires CPU0 to resume from sleep, suspend or hibernate
+can't be executed if CPU0 is detected offline. To make suspend or hibernate and
+further resume succeed, CPU0 must be online.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/kernel/smpboot.c |   42 +++++++++++++++++++++++++++++++++++-------
- 1 files changed, 35 insertions(+), 7 deletions(-)
+ arch/x86/power/cpu.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 44 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index e543e02..fa3822e 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -121,8 +121,8 @@ EXPORT_PER_CPU_SYMBOL(cpu_info);
- atomic_t init_deasserted;
- 
- /*
-- * Report back to the Boot Processor.
-- * Running on AP.
-+ * Report back to the Boot Processor during boot time or to the caller processor
-+ * during CPU online.
-  */
- static void __cpuinit smp_callin(void)
- {
-@@ -210,6 +210,13 @@ static void __cpuinit smp_callin(void)
- 	pr_debug("Stack at about %p\n", &cpuid);
- 
- 	/*
-+	 * This function won't run on the BSP during boot time. It run
-+	 * on BSP only when BSP is offlined and onlined again.
-+	 */
-+	if (cpuid == 0)
-+		identify_boot_cpu_online();
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index 218cdb1..3338609 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -237,3 +237,47 @@ void restore_processor_state(void)
+ #ifdef CONFIG_X86_32
+ EXPORT_SYMBOL(restore_processor_state);
+ #endif
 +
-+	/*
- 	 * This must be done before setting cpu_online_mask
- 	 * or calling notify_cpu_starting.
- 	 */
-@@ -778,7 +785,7 @@ int __cpuinit native_cpu_up(unsigned int cpu, struct task_struct *tidle)
- 
- 	pr_debug("++++++++++++++++++++=_---CPU UP  %u\n", cpu);
- 
--	if (apicid == BAD_APICID || apicid == boot_cpu_physical_apicid ||
-+	if (apicid == BAD_APICID ||
- 	    !physid_isset(apicid, phys_cpu_present_map) ||
- 	    !apic->apic_id_valid(apicid)) {
- 		printk(KERN_ERR "%s: bad cpu %d\n", __func__, cpu);
-@@ -1224,12 +1231,33 @@ int native_cpu_disable(void)
- 	 * Perhaps use cpufreq to drop frequency, but that could go
- 	 * into generic code.
- 	 *
--	 * We won't take down the boot processor on i386 due to some
-+	 * We won't take down the boot processor on x86 if some
- 	 * interrupts only being able to be serviced by the BSP.
--	 * Especially so if we're not using an IOAPIC	-zwane
-+	 * Especially so if we're not using an IOAPIC
- 	 */
--	if (cpu == 0)
--		return -EBUSY;
-+	if (cpu == 0) {
-+		int irq;
-+		struct irq_desc *desc;
-+		struct irq_data *data;
-+		struct irq_chip *chip;
-+
-+		for_each_irq_desc(irq, desc) {
-+			raw_spin_lock(&desc->lock);
-+			if (!irq_has_action(irq)) {
-+				raw_spin_unlock(&desc->lock);
-+				continue;
-+			}
-+
-+			data = irq_desc_get_irq_data(desc);
-+			chip = irq_data_get_irq_chip(data);
-+			if (!chip->irq_set_affinity) {
-+				pr_debug("irq%d can't move out of BSP\n", irq);
-+				raw_spin_unlock(&desc->lock);
-+				return -EBUSY;
-+			}
-+			raw_spin_unlock(&desc->lock);
-+		}
++/*
++ * When bsp_check() is called in hibernate and suspend, cpu hotplug
++ * is disabled already. So it's unnessary to handle race condition between
++ * cpumask query and cpu hotplug.
++ */
++static int bsp_check(void)
++{
++	if (cpumask_first(cpu_online_mask) != 0) {
++		printk(KERN_WARNING "CPU0 is offline.\n");
++		return -ENODEV;
 +	}
- 
- 	clear_local_APIC();
- 
++
++	return 0;
++}
++
++static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
++			   void *ptr)
++{
++	int ret = 0;
++
++	switch (action) {
++	case PM_SUSPEND_PREPARE:
++	case PM_HIBERNATION_PREPARE:
++		ret = bsp_check();
++		break;
++	default:
++		break;
++	}
++	return notifier_from_errno(ret);
++}
++
++static int __init bsp_pm_check_init(void)
++{
++	/*
++	 * Set this bsp_pm_callback as lower priority than
++	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
++	 * earlier to disable cpu hotplug before bsp online check.
++	 */
++	pm_notifier(bsp_pm_callback, -INT_MAX);
++	return 0;
++}
++
++core_initcall(bsp_pm_check_init);
 -- 
 1.6.0.3
 
