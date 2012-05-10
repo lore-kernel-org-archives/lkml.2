@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761549Ab2EJT2m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 15:28:42 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:44903 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760688Ab2EJT2l (ORCPT
+	id S1761561Ab2EJTf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 15:35:27 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41395 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760719Ab2EJTf0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 15:28:41 -0400
-Date: Thu, 10 May 2012 21:28:36 +0200
-From: Julian Andres Klode <jak@jak-linux.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
-        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com
-Subject: Re: [PATCH] ramster: switch over to zsmalloc and crypto interface
-Message-ID: <20120510192836.GA17750@jak-linux.org>
-References: <1336676781-8571-1-git-send-email-dan.magenheimer@oracle.com>
+	Thu, 10 May 2012 15:35:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336676781-8571-1-git-send-email-dan.magenheimer@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <c3f0ca2a499f532253d4c16a30837d43e237266a.1336619038.git.koverstreet@google.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+	<c3f0ca2a499f532253d4c16a30837d43e237266a.1336619038.git.koverstreet@google.com>
+Date: Thu, 10 May 2012 12:35:25 -0700
+X-Google-Sender-Auth: 1Hhimd-LeNVwns_ajw_LAXIB4-0
+Message-ID: <CAA9_cmcT0Jiz8pfj2MS+Sv55DqLrMMd=GaPMopRDCObiO5+waQ@mail.gmail.com>
+Subject: Re: [Bcache v13 09/16] Bcache: generic utility code
+From: Dan Williams <dan.j.williams@intel.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tejun@google.com, agk@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 12:06:21PM -0700, Dan Magenheimer wrote:
-> RAMster does many zcache-like things.  In order to avoid major
-> merge conflicts at 3.4, ramster used lzo1x directly for compression
-> and retained a local copy of xvmalloc, while zcache moved to the
-> new zsmalloc allocator and the crypto API.
-> 
-> This patch moves ramster forward to use zsmalloc and crypto.
-> 
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com
+On Wed, May 9, 2012 at 8:10 PM, Kent Overstreet <koverstreet@google.com> wrote:
+> Much of this code should be moved out of drivers/block/bcache, but it
+> was originally written for bcache.
+>
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> ---
 
-Nothing important, but the right ">" is missing here.
+[..]
+> +#include <linux/dynamic_fault.h>
+[..]
+> +#define bio_alloc_pages(...)                                           \
+> +       (dynamic_fault() ? -ENOMEM      : bio_alloc_pages(__VA_ARGS__))
+> +
 
--- 
-Julian Andres Klode  - Debian Developer, Ubuntu Member
-
-See http://wiki.debian.org/JulianAndresKlode and http://jak-linux.org/.
+...these missed the removal of the dynamic_fault bits.
