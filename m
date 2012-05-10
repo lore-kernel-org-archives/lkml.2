@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761566Ab2EJTrQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 15:47:16 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:51226 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755445Ab2EJTrO (ORCPT
+	id S1757613Ab2EJTyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 15:54:55 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55750 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab2EJTyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 15:47:14 -0400
-Date: Thu, 10 May 2012 14:46:58 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: alexander.h.duyck@intel.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, stephen.s.ko@intel.com,
-        jeffrey.t.kirsher@intel.com
-Subject: Re: [ 33/52] net: Fix issue with netdev_tx_reset_queue not resetting
- queue from XOFF state
-Message-ID: <20120510194658.GA9858@burratino>
-References: <20120510173135.772550373@linuxfoundation.org>
- <4FAC0EA7.3000100@intel.com>
- <20120510.145510.1040533529305157641.davem@davemloft.net>
+	Thu, 10 May 2012 15:54:54 -0400
+Message-ID: <4FAC1D09.1070004@wwwdotorg.org>
+Date: Thu, 10 May 2012 13:54:49 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120510.145510.1040533529305157641.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kay Sievers <kay@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: William Douglas <william.douglas@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-next@vger.kernel.org
+Subject: Re: Regression due to 7ff9554 "printk: convert byte-buffer to variable-length
+ record buffer"
+References: <4FAAB815.5040001@wwwdotorg.org>
+In-Reply-To: <4FAAB815.5040001@wwwdotorg.org>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller wrote:
-> From: Alexander Duyck <alexander.h.duyck@intel.com>
+On 05/09/2012 12:31 PM, Stephen Warren wrote:
+> For me, next-20120508 prints nothing when booted, and I think also
+> hangs. To solve this, I reverted:
+> 
+> 7ff9554 printk: convert byte-buffer to variable-length record buffer
+> 
+> In order to build, I also had to revert:
+> 
+> c4e00da driver-core: extend dev_printk() to pass structured data
+> 
+> Note: I'm running on an ARM system using a serial console, with
+> earlyprintk enabled.
 
->> All of the changes in igb are unnecessary.  I think they can be dropped
->> from the patch as they have already been reverted from the latest
->> net-next.  The only change that is really needed is the piece in
->> netdevice.h below.
->
-> Does it hurt?  If not, just let it be.
+This issue still occurs in next-20120510.
 
-Based on the commit description for dad8a3b3eaa0 ("igb, ixgbe:
-netdev_tx_reset_queue incorrectly called from tx init path"), yes, it
-hurts.  I don't know if it hurts enough to justify holding up this
-patch until dad8a3b3eaa0 hits mainline.
+I've tracked it down to the assignment of msg->ts_nsec near the end of
+log_store(). If I comment this out, everything works. The problem is the
+assignment, not the call to local_clock():
 
-|                            this sort of works in most cases except
-| when the number of real tx queues changes. When the number of real
-| tx queues changes netdev_tx_reset_queue() only gets called on the
-| new number of queues so when we reduce the number of queues we risk
-| triggering the watchdog timer and repeated device resets.
-|
-| So this is not only a cosmetic issue but causes real bugs. For
-| example enabling/disabling DCB or FCoE in ixgbe will trigger this.
+fails:
+	msg->ts_nsec = local_clock();
+fails:
+	msg->ts_nsec = 0;//local_clock();
+works:
+	//msg->ts_nsec = local_clock();
+
+I guess that msg isn't pointing at what it's supposed to. I'll keep
+trying to track this down, but if you could think about why this might
+happen (or even revert the changes until this is isolated), it'd be great.
