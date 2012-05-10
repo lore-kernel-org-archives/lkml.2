@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759056Ab2EJVKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 17:10:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1783 "EHLO mga09.intel.com"
+	id S1759562Ab2EJVLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 17:11:06 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:55189 "EHLO mail.sf-mail.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758582Ab2EJVKj convert rfc822-to-8bit (ORCPT
+	id S1758243Ab2EJVJ4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 17:10:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="139247506"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: RE: [PATCH v22] edac, ras/hw_event.h: use events to handle hw issues
-Thread-Topic: [PATCH v22] edac, ras/hw_event.h: use events to handle hw
- issues
-Thread-Index: AQHNLucGAM9WTwKCAkugBSt4/JhDM5bD8d8A//+OUNA=
-Date: Thu, 10 May 2012 21:10:37 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F192EC1A2@ORSMSX104.amr.corp.intel.com>
-References: <1336679788-4982-1-git-send-email-mchehab@redhat.com>
- <20120510204042.GA4598@aftab.osrc.amd.com>
-In-Reply-To: <20120510204042.GA4598@aftab.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 May 2012 17:09:56 -0400
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: linux-parisc@vger.kernel.org
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org
+Subject: [PATCH 1/5] parisc: add missing includes in asm/spinlock.h
+Date: Thu, 10 May 2012 22:57:11 +0200
+Message-ID: <1723943.8iulFKmgJs@donald.sf-tec.de>
+User-Agent: KMail/4.8.3 (Linux/3.2.9-13-desktop; KDE/4.8.3; i686; ; )
+In-Reply-To: <4430485.xEvkeJU8MB@donald.sf-tec.de>
+References: <4430485.xEvkeJU8MB@donald.sf-tec.de>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +	TP_printk(HW_ERR "mce#%d: %s error %s on memory stick \"%s\" (%s %s %s)",
->
-> This still says "mce" and it should say "MC" or "mem_ctl" or similar.
+This leads to this errors:
 
-I'm trying to look at how this will look to an end user who is not intimately
-acquainted with the internals of how memory subsystems work.
+In file included from /home/buildbot/repos/linux/arch/parisc/include/asm/atomic.h:20:0,
+                 from /home/buildbot/repos/linux/include/linux/atomic.h:4,
+                 from /home/buildbot/repos/linux/arch/parisc/include/asm/bitops.h:56,
+                 from /home/buildbot/repos/linux/include/linux/bitops.h:22,
+                 from /home/buildbot/repos/linux/include/linux/kernel.h:19,
+                 from /home/buildbot/repos/linux/include/linux/sched.h:55,
+                 from /home/buildbot/repos/linux/arch/parisc/kernel/asm-offsets.c:31:
+/home/buildbot/repos/linux/arch/parisc/include/asm/spinlock.h: In function ‘arch_spin_is_locked’:
+/home/buildbot/repos/linux/arch/parisc/include/asm/spinlock.h:9:2: error: implicit declaration of function ‘__ldcw_align’ [-Werror=implicit-function-declaration]
+/home/buildbot/repos/linux/arch/parisc/include/asm/spinlock.h:9:29: warning: initialization makes pointer from integer without a cast [enabled by default]
+/home/buildbot/repos/linux/arch/parisc/include/asm/spinlock.h: In function ‘arch_spin_lock_flags’:
+/home/buildbot/repos/linux/arch/parisc/include/asm/spinlock.h:22:2: error: implicit declaration of function ‘mb’ [-Werror=implicit-function-declaration]
+/home/buildbot/repos/linux/arch/parisc/include/asm/spinlock.h:23:4: warning: assignment makes pointer from integer without a cast [enabled by default]
+/home/buildbot/repos/linux/arch/parisc/include/asm/spinlock.h:24:2: error: implicit declaration of function ‘__ldcw’ [-Werror=implicit-function-declaration]
 
-Whether the string starts with "mce" or "MC" or whatever ... what will the
-user do with the mc_index that is printed with that first %d?  I don't think
-it helps them find the DIMM when they open the box.  I suppose it is useful
-if there are multiple messages ... and they see that the same memory controller
-is mentioned in each. But I almost think it belongs inside the parentheses at
-the end as the "low level details that most users won't need to care about.
+Signed-off-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
+---
+ arch/parisc/include/asm/spinlock.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Next %s is "Corrected" or "Fatal" or "Uncorrected" ... that's good.
+diff --git a/arch/parisc/include/asm/spinlock.h b/arch/parisc/include/asm/spinlock.h
+index 804aa28..3516e0b 100644
+--- a/arch/parisc/include/asm/spinlock.h
++++ b/arch/parisc/include/asm/spinlock.h
+@@ -1,6 +1,8 @@
+ #ifndef __ASM_SPINLOCK_H
+ #define __ASM_SPINLOCK_H
+ 
++#include <asm/barrier.h>
++#include <asm/ldcw.h>
+ #include <asm/processor.h>
+ #include <asm/spinlock_types.h>
+ 
+-- 
+1.7.9.2
 
-What are the options for the next "%s" (msg)?
 
-"memory stick"?? I suppose "DIMM" is a bit implementation dependent (SIMMs
-are long gone ... but perhaps there will be some new acronym for stacked
-memory ... STIMS :-) )
-
-Then label (from SMBIOS) ... then the internal details. Good.
-
--Tony
