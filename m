@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319Ab2EJEaE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 00:30:04 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60454 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750750Ab2EJEaC (ORCPT
+	id S1751475Ab2EJEdj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 00:33:39 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38556 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab2EJEdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 00:30:02 -0400
-Message-ID: <1336624000.1936.22.camel@brekeke>
-Subject: Re: [RFC v2] UBI: UBIVIS (aka checkpointing) support
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, tim.bird@am.sony.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de
-Date: Thu, 10 May 2012 07:26:40 +0300
-In-Reply-To: <1336585125-127220-1-git-send-email-richard@nod.at>
-References: <1336585125-127220-1-git-send-email-richard@nod.at>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-n3JmxVr6mvvenQM0f3Cj"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Thu, 10 May 2012 00:33:37 -0400
+Date: Thu, 10 May 2012 14:33:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20120510143329.4cef3cd78ce5ea55416b1d93@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__10_May_2012_14_33_29_+1000_bUBnHGrz8OGXHH3I"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-n3JmxVr6mvvenQM0f3Cj
-Content-Type: text/plain; charset="UTF-8"
+--Signature=_Thu__10_May_2012_14_33_29_+1000_bUBnHGrz8OGXHH3I
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2012-05-09 at 19:38 +0200, Richard Weinberger wrote:
-> The following patch set implements UBIVIS (checkpointing) support for
-> UBI.
+Hi all,
 
-Hi Richard, I would like to complain about the names again. I though I
-better give this feed back as soon as possible...
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Firs of all, thanks for doing this, I will look closer, and I am very
-keen of merging this stuff once we are sure its design is good, allows
-for future extensions and is backward-compatible.
+In file included from sound/soc/ux500/ux500_msp_dai.c:21:0:
+include/linux/mfd/dbx500-prcmu.h:614:19: error: redefinition of 'prcmu_abb_=
+read'
+include/linux/mfd/db8500-prcmu.h:673:19: note: previous definition of 'prcm=
+u_abb_read' was here
+include/linux/mfd/dbx500-prcmu.h:619:19: error: redefinition of 'prcmu_abb_=
+write'
+include/linux/mfd/db8500-prcmu.h:678:19: note: previous definition of 'prcm=
+u_abb_write' was here
+include/linux/mfd/dbx500-prcmu.h:630:19: error: redefinition of 'prcmu_conf=
+ig_clkout'
+include/linux/mfd/db8500-prcmu.h:643:19: note: previous definition of 'prcm=
+u_config_clkout' was here
+include/linux/mfd/dbx500-prcmu.h:692:20: error: redefinition of 'prcmu_ac_w=
+ake_req'
+include/linux/mfd/db8500-prcmu.h:683:20: note: previous definition of 'prcm=
+u_ac_wake_req' was here
+include/linux/mfd/dbx500-prcmu.h:694:20: error: redefinition of 'prcmu_ac_s=
+leep_req'
+include/linux/mfd/db8500-prcmu.h:685:20: note: previous definition of 'prcm=
+u_ac_sleep_req' was here
+sound/soc/ux500/ux500_msp_dai.c:23:27: fatal error: mach/hardware.h: No suc=
+h file or directory
+sound/soc/ux500/ux500_msp_i2s.c:21:27: fatal error: mach/hardware.h: No suc=
+h file or directory
 
-Then naming :-) We discussed checkpoints in this list long time ago I
-think. If you ask a random UBI user what would be UBI with
-checkpointing, I am sure most people would tell you that this would mean
-an ability to checkpoint a volume at any point of time, then do
-arbitrary volume changes (e.g., upgrade the system, re-flash it), and
-then be able to return to any of the old checkpoints.
+Possibly caused by commit 3592b7f69a54 ("ASoC: Ux500: Add MSP I2S-driver").
 
-This name is rally reserved to semantics like that. Btrfs implements
-checkpoints. UBIFS could, in theory do as well. And UBI could do in
-theory - you just need a large pool of unused PEBs and then you do COW.
-
-Please, do not use word "checkpoint" for what you do at all - this is
-asking for troubles - people will be confused.
-
-Also, I think this new feature should be always compiled in. I do not
-think we need this ifdef forest at all. You can detect run-time the
-on-flash format version.
-
-How about calling this "summary" as in JFFS2, or fastmap/fmap ?
-
-Sorry for being pedantic, but clear terminology is really important, I
-think.
-
-Also the naming logic and the internal layout should allow us to add
-more features. E.g., if someone comes up with real journal.
-
-So may be just naming your stuff UBI2, having terms like "UBI2 format",
-would be the easiest? Then someone could make this to be UBI3. A
-documentation section could describe what UBI2 is and how it is
-different from UBI1 or just UBI.
-
-Thanks!
-
+I have used the version of the sound-asoc tree from next-20120508 for today.
 --=20
-Best Regards,
-Artem Bityutskiy
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---=-n3JmxVr6mvvenQM0f3Cj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+--Signature=_Thu__10_May_2012_14_33_29_+1000_bUBnHGrz8OGXHH3I
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJPq0OAAAoJECmIfjd9wqK0q3QP/3d8k9yQIOZyknGQJ4t6rhtx
-7dkpSnp+mQ0uUYPKjnPLQ1HkEVS80rfQ1226j0j+rGIWMsmHvujHDFZLnT/cvxJ5
-3JiLVhXoCsa1i8Tuvz1Z97sEmr/fc5r145kxX8BIISJNXkIm8Moq2OKCnQoV4bCR
-QYJwXh6wiliQv7bSCx00C8J2i5wLwbd6LdNljef/rUc6h9vKwqgj1f1iDMlNOhPo
-ZVjMUeuWqhSqRMzPp3bM4ECZbSraSV8eZcEOlctKVooKDIWAy30eCOQfuLzRqmpG
-r6QCLN9E9ufSl8TqEOIY1B8K6cmuDSxJG0bZp4bWfCoUs9J7iztraHGy5+1Bzq/A
-4RJHjSxhBAxYKaHd9DD5+btXusKBEbHzHH+1DEstVnophDksPtJbLle444wui+DQ
-d29ReqgaiApyrlXxFDLOqk8uW8QRWkqzYqlxoyOB+Gs9Tw3WKfhbTN1YzvbNpfHd
-jG5R3KDqW2/eDXpW5H8NV7gyboth9ikBAQv/GwKqAR/hZWlciOrzFvZ2oF/oJ3U+
-NLL5JCt1KbcdPr3E8MotC+pWmKOP6a824oQqLgxnwOq4LNQyCw7wU/n9rp5Im032
-Fce0qnNUWmxGhmLqPwm2qxpCZFiuVb31FbWZ9KDzJEBBaY8v9ICIj6nsrzXcB+eM
-IPSEDRSdvecyY9EIS8mZ
-=syx1
+iQIcBAEBCAAGBQJPq0UZAAoJEECxmPOUX5FE+rYP/1Osxlem2GbPXObr7ZaUN5mE
+Xzu4r764bBa1Zj3V3z/4970SKZR9OytZNsK12c9dMGcOWxQKZ1dWkc46wOFkWiPz
+oDtUFYvYLXgJyEQNyW8dhgxF4ufguKk9eiCdaZ2fyBu154Xl0dF1aV2wgXDJ6+Sl
+Ckwe59K+a5lZpTd04yBD0oeCkPUDFKgUvGzVz2JrgqBgqg2mfaCs7bEkIKnwrwCb
+yccqndIsM88k1IY95flsxdSvBculR38Q4CKuV4/chN/XTlBmBT6lHm4ohj6oq25o
+jzCJ2BYyXKS6i/Y77mLRLs7CmVECRi235sVlJ/xIiWTT390aZidHU1C5zMUH9pvb
+MdoWdjgR2ETl/zjq2ygbneIWrmOb+2bjjYlxr5VgblDLndB45nab4/P9ryPw6hG0
+hhQ0yHLArsyfRZOvpOfFG9RQpF4Jhf0aYd/8FUiBgAG2G0JtalRoT8Mv2I5hNw43
+FABCdSsCLb94yzz0KTuVi2yzu9D3zL+MbjZN9KTJ+jxBtrrrRMGhw0QIgMIOfi/2
+nFwtHkbh/LIsYPeb5arro5ih7whnuFCNxqQpU/0+HG1UEhAeJOaAFdAkossyJSwH
+0wdF9122oD6C3zPUlWbKGD0Qq6TjpUgveO+q2fFnS5KWmBu+gZiQ+WrwySoVL315
+l3dffq598slT57ildI8w
+=EL9j
 -----END PGP SIGNATURE-----
 
---=-n3JmxVr6mvvenQM0f3Cj--
-
+--Signature=_Thu__10_May_2012_14_33_29_+1000_bUBnHGrz8OGXHH3I--
