@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760878Ab2EJRiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:38:20 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:34996 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760837Ab2EJRiL (ORCPT
+	id S1760893Ab2EJRin (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:38:43 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34496 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760649Ab2EJRih convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:38:11 -0400
-Message-ID: <4FABFCFE.8010307@landley.net>
-Date: Thu, 10 May 2012 12:38:06 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Thu, 10 May 2012 13:38:37 -0400
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] bitops: add _local bitops
-References: <20120509134528.GA18044@redhat.com>
-In-Reply-To: <20120509134528.GA18044@redhat.com>
+In-Reply-To: <alpine.LFD.2.02.1205092122140.21030@xanadu.home>
+References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
+ <CAK5ve-KSyvZSHw7csQ5M88q0008NSrs1kwuyUH3hFqxD0f7BQQ@mail.gmail.com>
+ <20120509122436.1b612004.akpm@linux-foundation.org> <201205092038.16722.arnd.bergmann@linaro.org>
+ <CAK5ve-Ko6EjZsJBW++ofL0eHxiR5W+wafb3T99Rm9a1L8pHLBQ@mail.gmail.com>
+ <CAOesGMhioLshtsYiHCdQxtx7+3GJsCyhgd7c7nDiZC3=3axb6w@mail.gmail.com>
+ <CAK5ve-+rCv3s+K6Laie=QaPqqZ4Vk1+irYU6S4MBZSquKrMWtw@mail.gmail.com> <alpine.LFD.2.02.1205092122140.21030@xanadu.home>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Fri, 11 May 2012 01:38:16 +0800
+X-Google-Sender-Auth: 8NgJvNzeueD3WUO9_1KMitUDHaM
+Message-ID: <CAK5ve-JC61jFX7+GV9VoZKExbtdxX03jmpkzu5zxHg+Lehy7VQ@mail.gmail.com>
+Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and
+ consolidate LED driver in ARM
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, rpurdie@rpsys.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, tim.gardner@canonical.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2012 08:45 AM, Michael S. Tsirkin wrote:
-> diff --git a/Documentation/atomic_ops.txt b/Documentation/atomic_ops.txt
-> index 27f2b21..b7e3b67 100644
-> --- a/Documentation/atomic_ops.txt
-> +++ b/Documentation/atomic_ops.txt
-> @@ -520,6 +520,25 @@ The __clear_bit_unlock version is non-atomic, however it still implements
->  unlock barrier semantics. This can be useful if the lock itself is protecting
->  the other bits in the word.
->  
-> +Local versions of the bitmask operations are also provided.  They are used in
-> +contexts where the operations need to be performed atomically with respect to
-> +the local CPU, but no other CPU accesses the bitmask.  This assumption makes it
-> +possible to avoid the need for SMP protection and use less expensive atomic
-> +operations in the implementation.
-> +They have names similar to the above bitmask operation interfaces,
-> +except that _local is sufficed to the interface name.
-> +
-> +	void set_bit_local(unsigned long nr, volatile unsigned long *addr);
-> +	void clear_bit_local(unsigned long nr, volatile unsigned long *addr);
-> +	void change_bit_local(unsigned long nr, volatile unsigned long *addr);
-> +	int test_and_set_bit_local(unsigned long nr, volatile unsigned long *addr);
-> +	int test_and_clear_bit_local(unsigned long nr, volatile unsigned long *addr);
-> +	int test_and_change_bit_local(unsigned long nr, volatile unsigned long *addr);
-> +
-> +These local variants are useful for example if the bitmask may be accessed from
-> +a local intrerrupt, or from a hypervisor on the same CPU if running in a VM.
-> +These local variants also do not have any special memory barrier semantics.
-> +
->  Finally, there are non-atomic versions of the bitmask operations
->  provided.  They are used in contexts where some other higher-level SMP
->  locking scheme is being used to protect the bitmask, and thus less
+On Thu, May 10, 2012 at 9:25 AM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Thu, 10 May 2012, Bryan Wu wrote:
+>
+>> On Thu, May 10, 2012 at 7:47 AM, Olof Johansson <olof@lixom.net> wrote:
+>> > On Wed, May 9, 2012 at 4:41 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
+>> >> On Thu, May 10, 2012 at 4:38 AM, Arnd Bergmann <arnd.bergmann@linaro.org> wrote:
+>> >>> On Wednesday 09 May 2012, Andrew Morton wrote:
+>> >>>> I'm the LEDs patchmonkey at present.  I can merge the drivers/leds
+>> >>>> change if you like, but there doesn't seem much point in that unless
+>> >>>> all the other patches get merged.
+>> >>>>
+>> >>>> So my preferred approach would be for the patch series to get merged
+>> >>>> via some ARM tree.
+>> >>>
+>> >>> I'm fine with taking it through arm-soc if that helps.
+>> >>
+>> >> That would be great to merge from arm-soc tree, thanks a lot, Arnd and Andrew.
+>> >
+>> > Ok, cool. Do you want to stage a branch in a git repo that we pull, or
+>> > do you prefer that we pick up the patches as posted? It's easier for
+>> > us to just do a pull but either way is fine.
+>> >
+>>
+>> Great, I've already put in my kernel tree
+>>
+>> Please find these patches here:
+>>       git://kernel.ubuntu.com/roc/linux-2.6/.git leds
+>
+> You applied your patches on top of linux-next.  This can't be merged
+> upstream until you rebase your patches on something stable such as pure
+> v3.4-rc6 for example.
+>
 
-For this bit:
+Got it, Nico. As I'm still in US for our Ubuntu Developer Summit, I
+plan to rebase and test on my hardware after I'm back to home next
+week.
 
-Acked-by: Rob Landley <rob@landley.net>
+Thanks,
+-Bryan
 
-Rob
+
+
 -- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
