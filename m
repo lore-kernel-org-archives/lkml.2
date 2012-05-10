@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761424Ab2EJV3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 17:29:12 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:1816
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758956Ab2EJV3K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 17:29:10 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zzbb2dI9371I1432N98dKzz1202hzz84d07hz2fh2a8h668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:160.33.194.230;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail03v.am.sony.com;RD:mail03.sonyusa.com;EFVD:NLI
-Message-ID: <4FAC3336.3010609@am.sony.com>
-Date: Thu, 10 May 2012 14:29:26 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1760690Ab2EJVc0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 17:32:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49163 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756839Ab2EJVcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 17:32:24 -0400
+Date: Thu, 10 May 2012 17:32:17 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tejun@google.com, agk@redhat.com
+Subject: Re: [dm-devel] [Bcache v13 02/16] Bio pool freeing
+Message-ID: <20120510213217.GN23768@redhat.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+ <ba8ce9fcca87f192ff5f5d3a436eb8f4d0bcb006.1336619038.git.koverstreet@google.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Brian Swetland <swetland@google.com>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] staging: android: logger: Allocate logs dynamically
- at boot (v2)
-References: <4FAC302F.2090004@am.sony.com> <20120510212122.GA16432@kroah.com>
-In-Reply-To: <20120510212122.GA16432@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ba8ce9fcca87f192ff5f5d3a436eb8f4d0bcb006.1336619038.git.koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2012 02:21 PM, Greg KH wrote:
-> On Thu, May 10, 2012 at 02:16:31PM -0700, Tim Bird wrote:
->> +	log->misc.minor = MISC_DYNAMIC_MINOR;
->> +	log->misc.name = kstrdup(log_name, GFP_KERNEL);
->> +	if (log->misc.name == NULL) {
->> +		ret = -1;
->> +		goto out_free_log;
+On Wed, May 09, 2012 at 11:08:34PM -0400, Kent Overstreet wrote:
+> When you allocate a bio from a bio pool, to free it you have to know
+> where it came from; this adds a flag which, if set, means bi_destructor
+> is the pointer to the pool and bio_put() can do the right thing.
 > 
-> Please return a "real" error number, not just -1.  You do this a few
-> times in this function, -EINVAL perhaps?  -1 is -EPERM, which is not
-> what you want to be saying here, right?
+> This is used in bcache, so we can cleanly use per device bio pools.
 
-You're right.  This is only called by init code now, which doesn't
-look at the return value (only checks for non-zero), but the intent
-is to change this going forward, so a real error number is called for.
+Ok, that will explain BIO_HAS_POOL flag.  Why to replace
+bio_has_allocated_vec() with BIO_HAS_VEC flag?
 
-These are all memory allocation failures, so I'm thinking of using
--ENOMEM.  Would that be right?
- -- Tim
+Thanks
+Vivek
 
-=============================
-Tim Bird
-Architecture Group Chair, CE Workgroup of the Linux Foundation
-Senior Staff Engineer, Sony Network Entertainment
-=============================
-
+> 
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> ---
+>  fs/bio.c                  |    9 +++++++--
+>  include/linux/blk_types.h |    2 ++
+>  2 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/bio.c b/fs/bio.c
+> index a965b89..6a967fc 100644
+> --- a/fs/bio.c
+> +++ b/fs/bio.c
+> @@ -235,7 +235,7 @@ void bio_free(struct bio *bio, struct bio_set *bs)
+>  {
+>  	void *p;
+>  
+> -	if (bio_has_allocated_vec(bio))
+> +	if (bio_flagged(bio, BIO_HAS_VEC))
+>  		bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
+>  
+>  	if (bio_integrity(bio))
+> @@ -301,6 +301,7 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
+>  			goto err_free;
+>  
+>  		nr_iovecs = bvec_nr_vecs(idx);
+> +		bio->bi_flags |= 1 << BIO_HAS_VEC;
+>  	}
+>  out_set:
+>  	bio->bi_flags |= idx << BIO_POOL_OFFSET;
+> @@ -417,7 +418,11 @@ void bio_put(struct bio *bio)
+>  	 */
+>  	if (atomic_dec_and_test(&bio->bi_cnt)) {
+>  		bio->bi_next = NULL;
+> -		bio->bi_destructor(bio);
+> +
+> +		if (bio_flagged(bio, BIO_HAS_POOL))
+> +			bio_free(bio, (void *) bio->bi_destructor);
+> +		else
+> +			bio->bi_destructor(bio);
+>  	}
+>  }
+>  EXPORT_SYMBOL(bio_put);
+> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+> index 4053cbd..a0be8b3 100644
+> --- a/include/linux/blk_types.h
+> +++ b/include/linux/blk_types.h
+> @@ -95,6 +95,8 @@ struct bio {
+>  #define BIO_FS_INTEGRITY 9	/* fs owns integrity data, not block layer */
+>  #define BIO_QUIET	10	/* Make BIO Quiet */
+>  #define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
+> +#define BIO_HAS_POOL	12	/* bi_destructor points to bio_pool */
+> +#define BIO_HAS_VEC	13	/* bio_free() should free bvec */
+>  #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+>  
+>  /*
+> -- 
+> 1.7.9.rc2
+> 
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
