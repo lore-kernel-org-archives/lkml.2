@@ -1,54 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759827Ab2EJPCZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 11:02:25 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:56289 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757333Ab2EJPCX (ORCPT
+	id S1759790Ab2EJPD4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 11:03:56 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:45910 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757216Ab2EJPDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 11:02:23 -0400
-Date: Thu, 10 May 2012 17:02:10 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Tony Luck <tony.luck@intel.com>
-Subject: Re: [EDAC ABI v13 04/25] events/hw_event: Create a Hardware Events
- Report Mecanism (HERM)
-Message-ID: <20120510150210.GB32700@aftab.osrc.amd.com>
-References: <20120509121326.GA22737@aftab.osrc.amd.com>
- <4FAA6802.9070506@redhat.com>
- <20120509132237.GD22737@aftab.osrc.amd.com>
- <4FAA7649.5080606@redhat.com>
- <20120509140632.GG22737@aftab.osrc.amd.com>
- <4FAA7C1A.3020406@redhat.com>
- <20120509142456.GH22737@aftab.osrc.amd.com>
- <4FABBFAF.20809@redhat.com>
- <20120510134136.GC31257@aftab.osrc.amd.com>
- <4FABD653.7060401@redhat.com>
+	Thu, 10 May 2012 11:03:54 -0400
+Date: Thu, 10 May 2012 10:57:45 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] Xen physical cpus interface
+Message-ID: <20120510145745.GO26152@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC8292335154F3E@SHSMSX101.ccr.corp.intel.com>
+ <20120420192439.GA32170@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351B5807@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FABD653.7060401@redhat.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351B5807@SHSMSX101.ccr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 11:53:07AM -0300, Mauro Carvalho Chehab wrote:
-> Technical reasons were provided already: before this patch series,
-> EDAC is *broken*.
+On Thu, May 10, 2012 at 02:54:07PM +0000, Liu, Jinsong wrote:
+> Konrad,
+> 
+> Thanks for help me review!
 
-Calling it "HERM" doesn't fix it.
+Sure thing.
+> Update according to your suggestion. 
+> Add some comments below.
+> 
+> >> 
+> >> Manage physical cpus in dom0, get physical cpus info and provide sys
+> >> interface. 
+> > 
+> > Anything that exposes SysFS attributes needs documentation in
+> > Documentation/ABI
+> 
+> Yes, added.
+> 
+> > 
+> > Can you explain what this solves? And if there are any
+> > userland applications that use this?
+> > 
+> 
+> It provide cpu online/offline interface to user. User can use it for their own purpose, like power saving - by offlining some cpus when light workload it save power greatly.
 
--- 
-Regards/Gruss,
-Boris.
+OK, please include that in the descritpion.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+> 
+> > 
+> > 
+> >> +	switch (buf[0]) {
+> > 
+> > Use strict_strtoull pls.
+> 
+> kernel suggest:
+> WARNING: strict_strtoull is obsolete, use kstrtoull instead :)
+
+Ah yes.
+.. snip..
+> > And then here dev->release = &pcpu_release;
+> > 
+> 
+> Hmm, it's good if it's convenient to do it automatically via dev->release.
+> However, dev container (pcpu) would be free at some other error cases, so I prefer do it 'manually'.
+
+You could also call pcpu_release(..) to do it manually.
+
+> 
+> > 
+> >> +	/* Not open pcpu0 online access to user */
+> > 
+> > Huh? You mean "Nobody can touch PCPU0" ?
+> 
+> Add comments:
+>         /*
+>          * Xen never offline cpu0 due to several restrictions
+>          * and assumptions. This basically doesn't add a sys control
+>          * to user, one cannot attempt to offline BSP.
+>          */
+> 
+> > 
+> > Why? Why can they touch the other ones? And better yet,
+> > what happens if one boots without "dom0_max_vcpus=X"
+> > and powers of some of the CPUs?
+> > 
+> 
+> Only those at cpu present map has its sys interface.
+
+OK, put that in the file so folks are aware of the limitations.
+
+> 
+> >> +static int __init xen_pcpu_init(void)
+> >> +{
+> >> +	int ret;
+> >> +
+> >> +	if (!xen_initial_domain())
+> >> +		return -ENODEV;
+> >> +
+> >> +	ret = subsys_system_register(&xen_pcpu_subsys, NULL); +	if (ret) {
+> >> +		pr_warning(XEN_PCPU "Failed to register pcpu subsys\n");
+> >> +		return ret; +	}
+> >> +
+> >> +	INIT_LIST_HEAD(&xen_pcpus.list);
+> >> +
+> >> +	ret = xen_sync_pcpus();
+> >> +	if (ret) {
+> >> +		pr_warning(XEN_PCPU "Failed to sync pcpu info\n"); +		return ret;
+> >> +	}
+> >> +
+> >> +	ret = bind_virq_to_irqhandler(VIRQ_PCPU_STATE, 0,
+> >> +				      xen_pcpu_interrupt, 0,
+> >> +				      "pcpu", NULL);
+> > 
+> > "xen-pcpu"
+> > 
+> >> +	if (ret < 0) {
+> >> +		pr_warning(XEN_PCPU "Failed to bind pcpu virq\n");
+> > 
+> > Shouldn't you delete what 'xen_sync_pcpus' did?
+> 
+> yes, add error handling.
+> 
+> > Or is it OK to still work without the interrupts? What is the purpose
+> > of that interrupt? How does it actually work - the hypervisor
+> > decides when/where to turn off CPUs?
+> > 
+> 
+> user online/offline cpu via sys interface --> xen implement --> inject virq back to dom0 --> sync cpu status.
+
+Add that in the file so the workflow is explained.
+> 
+> Thanks,
+> Jinsong
