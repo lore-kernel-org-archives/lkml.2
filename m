@@ -1,179 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758123Ab2EJNyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 09:54:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56445 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754122Ab2EJNyX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 09:54:23 -0400
-Message-ID: <1336658058.2527.119.camel@twins>
-Subject: Re: [tip:sched/core] x86/numa: Check for nonsensical topologies on
- real hw as well
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tj@kernel.org, tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Date: Thu, 10 May 2012 15:54:18 +0200
-In-Reply-To: <1336651704.27020.100.camel@laptop>
-References: <tip-re15l0jqjtpz709oxozt2zoh@git.kernel.org>
-	 <CAE9FiQVu7KP=rabe5_jYZyEGpW7sv6wkK9wumJfW1vk2=+cYKA@mail.gmail.com>
-	 <1336650578.27020.94.camel@laptop> <1336651704.27020.100.camel@laptop>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S932393Ab2EJNyc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 09:54:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37982 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754122Ab2EJNy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 09:54:28 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 00/12] Swap-over-NFS without deadlocking V4
+Date: Thu, 10 May 2012 14:54:13 +0100
+Message-Id: <1336658065-24851-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changelog since V3
+  o Rebase to 3.4-rc5
+  o kmap pages for writing to swap				(akpm)
+  o Move forward declaration to reduce chance of duplication	(akpm)
 
-OK here's one that compiles and boots without silly warnings on a WSM-EP
+Changelog since V2
+  o Nothing significant, just rebases. A radix tree lookup is replaced with
+    a linear search would be the biggest rebase artifact
 
+This patch series is based on top of "Swap-over-NBD without deadlocking v9"
+as it depends on the same reservation of PF_MEMALLOC reserves logic.
 
----
- arch/x86/kernel/smpboot.c |  112 ++++++++++++++++++++++++++-------------------
- 1 file changed, 66 insertions(+), 46 deletions(-)
+When a user or administrator requires swap for their application, they
+create a swap partition and file, format it with mkswap and activate it with
+swapon. In diskless systems this is not an option so if swap if required
+then swapping over the network is considered.  The two likely scenarios
+are when blade servers are used as part of a cluster where the form factor
+or maintenance costs do not allow the use of disks and thin clients.
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index e543e02..e8bf636 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -299,70 +299,90 @@ void __cpuinit smp_store_cpu_info(int id)
- 		identify_secondary_cpu(c);
- }
- 
--static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
-+static bool __cpuinit 
-+topology_sane(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o, const char *name)
- {
--	cpumask_set_cpu(cpu1, cpu_sibling_mask(cpu2));
--	cpumask_set_cpu(cpu2, cpu_sibling_mask(cpu1));
--	cpumask_set_cpu(cpu1, cpu_core_mask(cpu2));
--	cpumask_set_cpu(cpu2, cpu_core_mask(cpu1));
--	cpumask_set_cpu(cpu1, cpu_llc_shared_mask(cpu2));
--	cpumask_set_cpu(cpu2, cpu_llc_shared_mask(cpu1));
-+	int cpu1 = c->cpu_index, cpu2 = o->cpu_index;
-+
-+	return !WARN(cpu_to_node(cpu1) != cpu_to_node(cpu2),
-+		"sched: CPU #%d's %s-sibling CPU #%d is not on the same node! "
-+		"[node: %d != %d]. Ignoring dependency.\n",
-+		cpu1, name, cpu2, cpu_to_node(cpu1), cpu_to_node(cpu2));
- }
- 
-+#define link_mask(_m, c1, c2)						\
-+do {									\
-+	cpumask_set_cpu((c1), cpu_##_m##_mask(c2));			\
-+	cpumask_set_cpu((c2), cpu_##_m##_mask(c1));			\
-+} while (0)
- 
--void __cpuinit set_cpu_sibling_map(int cpu)
-+static bool __cpuinit match_smt(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
- {
--	int i;
--	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+	if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
-+		int cpu1 = c->cpu_index, cpu2 = o->cpu_index;
- 
--	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
-+		if (c->phys_proc_id == o->phys_proc_id &&
-+		    per_cpu(cpu_llc_id, cpu1) == per_cpu(cpu_llc_id, cpu2) &&
-+		    c->compute_unit_id == o->compute_unit_id)
-+			return topology_sane(c, o, "smt");
- 
--	if (smp_num_siblings > 1) {
--		for_each_cpu(i, cpu_sibling_setup_mask) {
--			struct cpuinfo_x86 *o = &cpu_data(i);
-+	} else if (c->phys_proc_id == o->phys_proc_id &&
-+		   c->cpu_core_id == o->cpu_core_id) {
-+		return topology_sane(c, o, "smt");
-+	}
- 
--			if (cpu_to_node(cpu) != cpu_to_node(i)) {
--				WARN_ONCE(1, "sched: CPU #%d's thread-sibling CPU #%d not on the same node! [node %d != %d]. Ignoring sibling dependency.\n", cpu, i, cpu_to_node(cpu), cpu_to_node(i));
--				continue;
--			}
-+	return false;
-+}
- 
--			if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
--				if (c->phys_proc_id == o->phys_proc_id &&
--				    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i) &&
--				    c->compute_unit_id == o->compute_unit_id)
--					link_thread_siblings(cpu, i);
--			} else if (c->phys_proc_id == o->phys_proc_id &&
--				   c->cpu_core_id == o->cpu_core_id) {
--				link_thread_siblings(cpu, i);
--			}
--		}
--	} else {
--		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
--	}
-+static bool __cpuinit match_llc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
-+{
-+	int cpu1 = c->cpu_index, cpu2 = o->cpu_index;
-+
-+	if (per_cpu(cpu_llc_id, cpu1) != BAD_APICID &&
-+	    per_cpu(cpu_llc_id, cpu1) == per_cpu(cpu_llc_id, cpu2))
-+		return topology_sane(c, o, "llc");
-+
-+	return false;
-+}
-+
-+static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
-+{
-+	if (c->phys_proc_id == o->phys_proc_id)
-+		return topology_sane(c, o, "mc");
-+
-+	return false;
-+}
-+
-+void __cpuinit set_cpu_sibling_map(int cpu)
-+{
-+	bool has_mc = boot_cpu_data.x86_max_cores > 1;
-+	bool has_smt = smp_num_siblings > 1;
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+	struct cpuinfo_x86 *o;
-+	int i;
- 
--	cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
-+	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
- 
--	if (__this_cpu_read(cpu_info.x86_max_cores) == 1) {
--		cpumask_copy(cpu_core_mask(cpu), cpu_sibling_mask(cpu));
-+	if (!has_smt && !has_mc) {
-+		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
-+		cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
-+		cpumask_set_cpu(cpu, cpu_core_mask(cpu));
- 		c->booted_cores = 1;
- 		return;
- 	}
- 
- 	for_each_cpu(i, cpu_sibling_setup_mask) {
--		if (cpu_to_node(cpu) != cpu_to_node(i)) {
--			WARN_ONCE(1, "sched: CPU #%d's core-sibling CPU #%d not on the same node! [node %d != %d]. Ignoring sibling dependency.\n", cpu, i, cpu_to_node(cpu), cpu_to_node(i));
--			continue;
--		}
-+		o = &cpu_data(i);
- 
--		if (per_cpu(cpu_llc_id, cpu) != BAD_APICID &&
--		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
--			cpumask_set_cpu(i, cpu_llc_shared_mask(cpu));
--			cpumask_set_cpu(cpu, cpu_llc_shared_mask(i));
--		}
-+		if ((i == cpu) || (has_smt && match_smt(c, o)))
-+			link_mask(sibling, cpu, i);
-+
-+		if ((i == cpu) || (has_mc && match_llc(c, o)))
-+			link_mask(llc_shared, cpu, i);
-+
-+		if ((i == cpu) || (has_mc && match_mc(c, o))) {
-+			link_mask(core, cpu, i);
- 
--		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
--			cpumask_set_cpu(i, cpu_core_mask(cpu));
--			cpumask_set_cpu(cpu, cpu_core_mask(i));
- 			/*
- 			 *  Does this new cpu bringup a new core?
- 			 */
+The Linux Terminal Server Project recommends the use of the Network
+Block Device (NBD) for swap but this is not always an option.  There is
+no guarantee that the network attached storage (NAS) device is running
+Linux or supports NBD. However, it is likely that it supports NFS so there
+are users that want support for swapping over NFS despite any performance
+concern. Some distributions currently carry patches that support swapping
+over NFS but it would be preferable to support it in the mainline kernel.
+
+Patch 1 avoids a stream-specific deadlock that potentially affects TCP.
+
+Patch 2 is a small modification to SELinux to avoid using PFMEMALLOC
+	reserves.
+
+Patch 3 adds three helpers for filesystems to handle swap cache pages.
+	For example, page_file_mapping() returns page->mapping for
+	file-backed pages and the address_space of the underlying
+	swap file for swap cache pages.
+
+Patch 4 adds two address_space_operations to allow a filesystem
+	to pin all metadata relevant to a swapfile in memory. Upon
+	successful activation, the swapfile is marked SWP_FILE and
+	the address space operation ->direct_IO is used for writing
+	and ->readpage for reading in swap pages.
+
+Patch 5 notes that patch 3 is bolting
+	filesystem-specific-swapfile-support onto the side and that
+	the default handlers have different information to what
+	is available to the filesystem. This patch refactors the
+	code so that there are generic handlers for each of the new
+	address_space operations.
+
+Patch 6 adds an API to allow a vector of kernel addresses to be
+	translated to struct pages and pinned for IO.
+
+Patch 7 adds support for using highmem pages for swap by kmapping
+	the pages before calling the direct_IO handler.
+
+Patch 8 updates NFS to use the helpers from patch 3 where necessary.
+
+Patch 9 avoids setting PF_private on PG_swapcache pages within NFS.
+
+Patch 10 implements the new swapfile-related address_space operations
+	for NFS and teaches the direct IO handler how to manage
+	kernel addresses.
+
+Patch 11 prevents page allocator recursions in NFS by using GFP_NOIO
+	where appropriate.
+
+Patch 12 fixes a NULL pointer dereference that occurs when using
+	swap-over-NFS.
+
+With the patches applied, it is possible to mount a swapfile that is on an
+NFS filesystem. Swap performance is not great with a swap stress test taking
+roughly twice as long to complete than if the swap device was backed by NBD.
+
+ Documentation/filesystems/Locking |   13 ++++
+ Documentation/filesystems/vfs.txt |   12 +++
+ fs/nfs/Kconfig                    |    8 ++
+ fs/nfs/direct.c                   |   94 ++++++++++++++++--------
+ fs/nfs/file.c                     |   28 +++++--
+ fs/nfs/inode.c                    |    6 ++
+ fs/nfs/internal.h                 |    7 +-
+ fs/nfs/pagelist.c                 |    6 +-
+ fs/nfs/read.c                     |    6 +-
+ fs/nfs/write.c                    |   96 +++++++++++++++---------
+ include/linux/blk_types.h         |    2 +
+ include/linux/fs.h                |    8 ++
+ include/linux/highmem.h           |    7 ++
+ include/linux/mm.h                |   29 ++++++++
+ include/linux/nfs_fs.h            |    4 +-
+ include/linux/pagemap.h           |    5 ++
+ include/linux/sunrpc/xprt.h       |    3 +
+ include/linux/swap.h              |    8 ++
+ include/net/sock.h                |    7 +-
+ mm/highmem.c                      |   12 +++
+ mm/memory.c                       |   52 +++++++++++++
+ mm/page_io.c                      |  145 +++++++++++++++++++++++++++++++++++++
+ mm/swap_state.c                   |    2 +-
+ mm/swapfile.c                     |  141 ++++++++++++++----------------------
+ net/caif/caif_socket.c            |    2 +-
+ net/core/sock.c                   |    2 +-
+ net/ipv4/tcp_input.c              |   12 +--
+ net/sctp/ulpevent.c               |    2 +-
+ net/sunrpc/Kconfig                |    5 ++
+ net/sunrpc/clnt.c                 |    2 +
+ net/sunrpc/sched.c                |    7 +-
+ net/sunrpc/xprtsock.c             |   53 ++++++++++++++
+ security/selinux/avc.c            |    2 +-
+ 33 files changed, 601 insertions(+), 187 deletions(-)
+
+-- 
+1.7.9.2
 
