@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759351Ab2EJLyk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 07:54:40 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:33297 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757736Ab2EJLyi (ORCPT
+	id S1759188Ab2EJMFn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 08:05:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54483 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756275Ab2EJMFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 07:54:38 -0400
-Date: Thu, 10 May 2012 13:54:11 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: w.sang@pengutronix.de, ben-linux@fluff.org, swarren@wwwdotorg.org,
-        olof@lixom.net, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V1 2/2] i2c: tegra: support for I2C_M_NOSTART protocol 
- mangling
-Message-ID: <20120510135411.3ba5bb6d@endymion.delvare>
-In-Reply-To: <4FABA585.7090600@nvidia.com>
-References: <1335251976-31925-1-git-send-email-ldewangan@nvidia.com>
-	<1335251976-31925-3-git-send-email-ldewangan@nvidia.com>
-	<4FABA585.7090600@nvidia.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	Thu, 10 May 2012 08:05:42 -0400
+Subject: Re: [PATCH] sched: set TAINT_UNSAFE_SMP after sleep-in-atomic bug
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <4FAB9EC0.8090905@openvz.org>
+References: <20120510075403.21849.5109.stgit@zurg>
+	 <1336644104.2527.93.camel@twins>  <4FAB9EC0.8090905@openvz.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 May 2012 13:46:38 +0200
+Message-ID: <1336650398.27020.91.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laxman,
-
-On Thu, 10 May 2012 16:54:53 +0530, Laxman Dewangan wrote:
-> Jean,
-> On Tuesday 24 April 2012 12:49 PM, Laxman Dewangan wrote:
-> > Adding support for protocol mangling I2C_M_NOSTART.
-> > When multiple message transfer request made through i2c
-> > and if any message is flagged with I2C_M_NOSTART then
-> > it will not send the start/repeat start/address of that
-> > message i.e. send the data directly.
+On Thu, 2012-05-10 at 14:56 +0400, Konstantin Khlebnikov wrote:
+> Peter Zijlstra wrote:
+> > On Thu, 2012-05-10 at 11:54 +0400, Konstantin Khlebnikov wrote:
+> >> Usually sleep-in-atomic bugs are followed by dozens other warnings.
+> >> This patch should help to figure out original source of problem.
+> >> This taint flag also turns off lockdep, because it can go mad after that.
+> >
+> > There's already TAINT_WARN any output with that set should be ignored.
 > 
-> Now the framework/core changes for making M_NOSTART as a separate flag 
-> is already part of your tree.
-> So do I need to re-send the patch for having that change?
-> 1/1 is already part of Wolfram's tree and so not sure that how do I go 
-> i.e. from where I take the base i2c-tegra driver.
-> It may create the problem in integration on main if they are not sync.
-> Also I have some couple of changes which will be on top of this.
+> Where? I do not see here anything which might set TAINT_WARN.
+> 
+> Or you suggest to use TAINT_WARN instead of TAINT_UNSAFE_SMP?
 
-I'm not sure I read you correctly so, for clarity: the patch
-introducing I2C_FUNC_NOSTART finally landed in my tree [1], not
-Wolfram's. It will be merged in kernel 3.5.
+Gargh, yeah it doesn't use WARN and related infrastructure to print that
+msg so it missed out on the whole TAINT_WARN stuff.
 
-[1] http://khali.linux-fr.org/devel/linux-3/jdelvare-i2c/
+Yeah, make it set TAINT_WARN or possibly convert the thing to use WARN.
 
-If you don't want to depend on that, then just use
-I2C_FUNC_PROTOCOL_MANGLING for now and you can switch to
-I2C_FUNC_NOSTART later.
-
--- 
-Jean Delvare
