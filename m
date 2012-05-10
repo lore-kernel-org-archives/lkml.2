@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab2EJGml (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 02:42:41 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:39905 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755925Ab2EJGmk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 02:42:40 -0400
-Message-ID: <4FAB6363.4080808@gmail.com>
-Date: Thu, 10 May 2012 02:42:43 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1756089Ab2EJGpA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 02:45:00 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:47347 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751954Ab2EJGo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 02:44:58 -0400
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: torvalds@linux-foundation.org, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Grant Grundler <grantgrundler@gmail.com>
+Subject: Re: [PATCH 1/5] PA-RISC: fix compile errors
+Date: Thu, 10 May 2012 08:44:56 +0200
+Message-ID: <1975991.XFDT7t2eTm@donald.sf-tec.de>
+User-Agent: KMail/4.8.3 (Linux/3.2.9-13-desktop; KDE/4.8.3; i686; ; )
+In-Reply-To: <Pine.LNX.4.64.1205091758310.1272@file.rdu.redhat.com>
+References: <Pine.LNX.4.64.1205091758310.1272@file.rdu.redhat.com>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, anton@samba.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mike Travis <travis@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PULL] cpumask: finally make them variable size w/ CPUMASK_OFFSTACK.
-References: <87ipg5c2bk.fsf@rustcorp.com.au> <4FAB1AC9.1050306@gmail.com> <871umsdbm0.fsf@rustcorp.com.au> <4FAB2B5B.4020902@gmail.com> <87vck4bppw.fsf@rustcorp.com.au>
-In-Reply-To: <87vck4bppw.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="nextPart1608326.3k8qLAub6K"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(5/10/12 12:54 AM), Rusty Russell wrote:
-> On Wed, 09 May 2012 22:43:39 -0400, KOSAKI Motohiro<kosaki.motohiro@gmail.com>  wrote:
->>> Or is there a reason we shouldn't even try to allocate here?
->>
->> 1) your code always use GFP_KERNEL. it is trouble maker when alloc_pages w/ GFP_ATOMIC.
->
-> Oh :(
->
-> How about the below instead?
 
-This code still slow than original. when calling reclaim path, new allocation is almost always
-fail. then, your code almost always invoke all cpu batch invalidation. i.e. many ipi.
+--nextPart1608326.3k8qLAub6K
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="US-ASCII"
 
+Mikulas Patocka wrote:
+> From: Rolf Eike Beer <eike-kernel@sf-tec.de>
 
->> 2) When CONFIG_CPUMASK_OFFSTACK=n and NR_CPUS is relatively large, cpumask on stack may
->> cause stack overflow. because of, alloc_pages() can be called from
->> very deep call stack.
->
-> You can't have large NR_CPUS without CONFIG_CPUMASK_OFFSTACK=y,
-> otherwise you'll get many other stack overflows, too.
+Thanks Mikulas for picking this up, but you have lost the patch subjects. I'll 
+resend the whole series tonight.
 
-Original code put cpumask bss instead stack then. :-)
+Grant, may I transform your comment on #3 (that's #4/6) on the original series 
+to an Acked-By or Reviewed-By?
 
+Eike
+--nextPart1608326.3k8qLAub6K
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iEYEABECAAYFAk+rY+kACgkQXKSJPmm5/E57KwCfT/PgCpOwIDhf77uFqwJr4PtL
+w1AAoJcrbN0uTJTsSd/ffPoG8uA/cdHN
+=wkrN
+-----END PGP SIGNATURE-----
+
+--nextPart1608326.3k8qLAub6K--
 
