@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255Ab2EJQoY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 12:44:24 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65217 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab2EJQoX (ORCPT
+	id S1756361Ab2EJQrq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 12:47:46 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60922 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab2EJQrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 12:44:23 -0400
-Date: Thu, 10 May 2012 09:44:18 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
-Message-ID: <20120510164418.GC13964@kroah.com>
-References: <4FA28907.9020300@vflare.org>
- <4FA2A2F0.3030509@linux.vnet.ibm.com>
- <4FA33DF6.8060107@kernel.org>
- <20120509201918.GA7288@kroah.com>
- <4FAB21E7.7020703@kernel.org>
- <20120510140215.GC26152@phenom.dumpdata.com>
- <4FABD503.4030808@vflare.org>
- <4FABDA9F.1000105@linux.vnet.ibm.com>
- <20120510151941.GA18302@kroah.com>
- <4FABECF5.8040602@vflare.org>
+	Thu, 10 May 2012 12:47:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FABECF5.8040602@vflare.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1336667984.947.24.camel@mop>
+References: <1336004953.4240.9.camel@mop> <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+ <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
+ <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
+ <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
+ <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com>
+ <20120509070710.GA29981@gmail.com> <CAPXgP11evyQQKNDaa00R7qsOFy5Xk-utN1w9OgB4y6NxLZG=UA@mail.gmail.com>
+ <1336611278.728.9.camel@mop> <CA+55aFyrrH0jJV--L=ugt0YK7pT+jmhjvt_WRWyenyiroN97zg@mail.gmail.com>
+ <1336667984.947.24.camel@mop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 10 May 2012 09:47:23 -0700
+X-Google-Sender-Auth: Iu-MfQb3wxL2gTyZPiRyPeKJG6Q
+Message-ID: <CA+55aFxUaNC4SGEodrdddkDN6t=Sbx=P4XyaHkj7eTQBQOeLeA@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
+ record buffer
+To: Kay Sievers <kay@vrfy.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 12:29:41PM -0400, Nitin Gupta wrote:
-> On 5/10/12 11:19 AM, Greg Kroah-Hartman wrote:
-> >On Thu, May 10, 2012 at 10:11:27AM -0500, Seth Jennings wrote:
-> >>On 05/10/2012 09:47 AM, Nitin Gupta wrote:
-> >>
-> >>>On 5/10/12 10:02 AM, Konrad Rzeszutek Wilk wrote:
-> >>>>struct zs {
-> >>>>     void *ptr;
-> >>>>};
-> >>>>
-> >>>>And pass that structure around?
-> >>>>
-> >>>
-> >>>A minor problem is that we store this handle value in a radix tree node.
-> >>>If we wrap it as a struct, then we will not be able to store it directly
-> >>>in the node -- the node will have to point to a 'struct zs'. This will
-> >>>unnecessarily waste sizeof(void *) for every object stored.
-> >>
-> >>
-> >>I don't think so. You can use the fact that for a struct zs var,&var
-> >>and&var->ptr are the same.
-> >>
-> >>For the structure above:
-> >>
-> >>void * zs_to_void(struct zs *p) { return p->ptr; }
-> >>struct zs * void_to_zs(void *p) { return (struct zs *)p; }
-> >
-> >Do like what the rest of the kernel does and pass around *ptr and use
-> >container_of to get 'struct zs'.  Yes, they resolve to the same pointer
-> >right now, but you shouldn't "expect" to to be the same.
-> >
-> >
-> 
-> I think we can just use unsigned long as zs handle type since all we
-> have to do is tell the user that the returned value is not a
-> pointer. This will be less pretty than a typedef but still better
-> than a single entry struct + container_of stuff.
+On Thu, May 10, 2012 at 9:39 AM, Kay Sievers <kay@vrfy.org> wrote:
+>
+> All the special rules are gone. KERN_CONT is the same as KERN_DEFAULT
+> now.
 
-But then you are casting the thing all around just as much as you were
-with the void *, right?
+That's wrong.
 
-Making this a "real" structure ensures type safety and lets the compiler
-find the problems you accidentally create at times :)
+Key, KERN_CONT and KERN_DEFAULT really are different and have
+fundamentally different semantics. The fact that you think they aren't
+shows that you don't understand it.
 
-thanks,
+Your "current" check doesn't change anything.
 
-greg k-h
+There are two main and important differences:
+
+ - people can avoid using '\n' if they know the next printk will have
+a KERN_xxx marker (xxx != CONT).
+
+   This is often useful for having loops that print out individual
+entries all on the same line - print all of them without the '\n'.
+
+   The printk afterwards will automatically start a new line if it has
+KERN_DEFAULT.
+
+   If you make KERN_CONT and KERN_DEFAULT the same, it is a BUG. Don't do it.
+
+ - You don't seem to realize that interrupts are threaded events too,
+but they will happen with the same task-struct.
+
+   An interrupt that prints out with KERN_DEFAULT had better not act
+the same way as KERN_CONT.
+
+So dammit, just stop trying to get rid of KERN_CONT or KERN_DEFAULT.
+They are both real, and they are both *different*. If you think they
+are the same, you are WRONG.
+
+Don't try to change the rules because you think you are "clever".
+You're only making things worse.
+
+                       Linus
