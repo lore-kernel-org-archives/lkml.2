@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab2EJREX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:04:23 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:51910 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751279Ab2EJREW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:04:22 -0400
-X-IronPort-AV: E=Sophos;i="4.75,565,1330934400"; 
-   d="asc'?scan'208";a="646785713"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        "Linux NFS mailing list" <linux-nfs@vger.kernel.org>
-Subject: [GIT PULL] Please pull one bugfix for the NFS client
-Thread-Topic: [GIT PULL] Please pull one bugfix for the NFS client
-Thread-Index: AQHNLs7w9f6BmKhtnUO8fH9oJp3aiA==
-Date: Thu, 10 May 2012 17:04:20 +0000
-Message-ID: <1336669458.3962.8.camel@lade.trondhjem.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-FwuHNlfYtb9Ko+nP81I5"
+	id S1754401Ab2EJRFT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:05:19 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:63144 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436Ab2EJRFR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 13:05:17 -0400
 MIME-Version: 1.0
+In-Reply-To: <20120510165538.GA20931@redhat.com>
+References: <1336421341.19423.4.camel@sbsiddha-desk.sc.intel.com>
+ <1336519085-27450-1-git-send-email-suresh.b.siddha@intel.com>
+ <1336519085-27450-2-git-send-email-suresh.b.siddha@intel.com>
+ <20120509210551.GB334@redhat.com> <1336599123.4634.42.camel@sbsiddha-desk.sc.intel.com>
+ <20120510165538.GA20931@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 10 May 2012 10:04:56 -0700
+X-Google-Sender-Auth: 54mGBuC-TVwZoMbeBO7_u6UvccA
+Message-ID: <CA+55aFwNST_Lhou1h9JWkg348BET7CbqNX50XYPOFNbXioXdxg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] coredump: flush the fpu exit state for proper
+ multi-threaded core dump
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, hpa@zytor.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, suresh@aristanetworks.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-FwuHNlfYtb9Ko+nP81I5
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 10, 2012 at 9:55 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> My point was, there is no any guarantee prepare_to_copy() does the flush.
+> An architecture can do this in copy_thread() or arch_dup_task_struct(),
+> for example. In fact I do not understand why x86 doesn't do this.
 
-Hi Linus,
+I agree that it would actually make more sense to do in
+arch_dup_task_struct(). I had trouble finding where the heck the
+fork() code did the FPU fixes back when I was fighting the FPU
+corruption thing.
 
-Please pull from the signed tag "nfs-for-3.4-5" in the repository at
+The prepare_to_copy() thing is, I think, purely historical, and I
+think we should in fact get rid of it. Everybody else makes it a
+no-op, I think, with a *few* exceptions that seem to have copied the
+x86 model of flushing the FPU there.
 
-   git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs=
--for-3.4-5
+So if somebody sends me a patch to remove that thing, and move the few
+existing users to arch_dup_task_struct(), I'd take it.
 
-This will update the following files through the appended changesets.
+I think it would be a mistake to use it in the exit path. Make an
+explicit "drop_thread_state()" or similar macro, which can undo FPU
+state and possibly other architecture state.
 
-  Cheers,
-    Trond
-
-----
- net/sunrpc/auth_gss/gss_mech_switch.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
-
-commit 7bdf7415a6b8ec31f86b3ad3eaa241257ecb7c4c
-Author: Steve Dickson <steved@redhat.com>
-Date:   Thu May 3 11:47:08 2012 -0400
-
-    auth_gss: the list of pseudoflavors not being parsed correctly
-   =20
-    gss_mech_list_pseudoflavors() parses a list of registered mechanisms.
-    On that list contains a list of pseudo flavors which was not being
-    parsed correctly, causing only the first pseudo flavor to be found.
-   =20
-    Signed-off-by: Steve Dickson <steved@redhat.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-
---=20
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-
---=-FwuHNlfYtb9Ko+nP81I5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPq/USAAoJEGcL54qWCgDy8H0P/jBkHFM6gC8nJOoIzH0aogaZ
-Mn3vNRFDvDtO4o5YvBN1olf5XBHwupkNHXNljjrw4w1Rpjr/Dnykh28axZYOOXmR
-3tTC4XYeoAAcra+j5I9l8nNmTzt5C55BaUA7cgv04xJhvywcdusgKMzc59GoBcFz
-vrNmDsnuy4EV8Mj5fL8acCHaGZKc3wpTNE1jdbrmXIQUE9JYV6p4NoyThLc3aRj2
-3Q8KIC+P/a+O7xDBw6YsK3qzzoSQDtoZuajP0lieolGCnITZiZ18KhmNQaC4OEDy
-PYBmlIoy+raAA4HAqelFsddd8h/mRQA5pxm/OqzDYqvOpbpOPX4UMZDZn9scALZq
-5oy3CUA8t5rtrI5tgd+dhBQmKrJNE6BJVVBmfDYxrGk4Vvfrn2U1YKaMGM86+znI
-x4ZNvVLfywfZh4E9QT4sj/c5E/PMN9L1QUD5uWfcaxZ73ABfSq2LqOJbpCYET9V9
-GMfuHECpT4ENicZbzYGMccdeOiKphy+DmsKFy8yy3pmr3XD5XU79xCF94Kgcjum+
-rCAuD7QZjb47x1K5mOlaX8k/bFgblt050WwTCGXSrh4p89/qpMmK+762UcuEgUYo
-YaJ87SLi9E3h84CbLGdxQ9Ql9jRR8SGSC+BQg/t47Vzw5UGw0at2k8yyJs6jkQRE
-0KX3PI2vRP1sgzksqFZf
-=zX6E
------END PGP SIGNATURE-----
-
---=-FwuHNlfYtb9Ko+nP81I5--
+                       Linus
