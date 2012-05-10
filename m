@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759990Ab2EJRWI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:22:08 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46503 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759420Ab2EJRVj (ORCPT
+	id S1760009Ab2EJRWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:22:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60472 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756728Ab2EJRRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:21:39 -0400
-Date: Thu, 10 May 2012 18:21:16 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Anbu Manikandan <canbumanikandan@gmail.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Kmemleak feature
-Message-ID: <20120510172116.GB20860@arm.com>
-References: <CAAGB47OajENL-g-CvdAgp1k2XKU4dOWbHz=mDy79mPOvi-eEmQ@mail.gmail.com>
- <CAAGB47PiZ0cveWvObEjS8OPB++M3s1dENybnjoxyhQ8K_T4SpA@mail.gmail.com>
- <CAAGB47PmB8o=mrnSoU1jYt_ecjH2WBLEzGRFqZWhWZXWQkTHaA@mail.gmail.com>
- <CAAGB47PpTx9-eFz6ppbCYshA5yp293Tm1X-cAaBkZ+xX05_UUg@mail.gmail.com>
- <CAAGB47N3oPkK1WhwzB7q4_6rvzKbnx3Ugwdr+aUuwTqiNX2oog@mail.gmail.com>
- <alpine.LFD.2.02.1205090925420.1879@tux.localdomain>
- <20120509082248.GA11099@arm.com>
- <CAAGB47NxugPZbV2ma-G7Aok5Xky=6AuyBGtis9U3hzNw8LDT0w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAGB47NxugPZbV2ma-G7Aok5Xky=6AuyBGtis9U3hzNw8LDT0w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 10 May 2012 13:17:55 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 15/16] perf annotate: shorten helpline so it fits in visible space
+Date: Thu, 10 May 2012 14:17:44 -0300
+Message-Id: <1336670265-20401-16-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1336670265-20401-1-git-send-email-acme@infradead.org>
+References: <1336670265-20401-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 05:42:35PM +0100, Anbu Manikandan wrote:
-> As suggested by you, I have executed Kmemleak on 2.6.35-kernel and 3.0-RT
-> kernel.
-> I have noticed that Kmemleak behavior is little different between 2.6.35 and
-> 3.0-RT kernel for vmalloc allocation memory leak. There is no entry for vmalloc
-> allocation memory leak in 3.0-RT kernel.
-...
-> I tried modifying min_count value for vmalloc allocation from "3" to "4" as
-> below in 3.0-RT kernel:
+From: David Ahern <dsahern@gmail.com>
 
-I can reproduce the missing vmalloc report on a non-rt 3.4-rc3 kernel as
-well, so something must have changed in the vmalloc code in the past
-months. A suspecting commit is f5252e00 but I need to investigate
-whether a third reference to the vmalloc'ed pointer is stored in the
-generic code somewhere before we decide to bump the min_count to 4.
+Additional toggles have pushed the help line out of view on a modestly
+sized terminal (120 columns wide). Shorten it to just reminders.
 
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1336510879-64610-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/ui/browsers/annotate.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index 4db5186..a299290 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -491,9 +491,9 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 	struct map_symbol *ms = self->b.priv;
+ 	struct symbol *sym = ms->sym;
+ 	const char *help = "<-/ESC: Exit, TAB/shift+TAB: Cycle hot lines, "
+-			   "H: Go to hottest line, ->/ENTER: Line action, "
+-			   "O: Toggle offset view, "
+-			   "S: Toggle source code view";
++			   "H: Hottest line, ->/ENTER: Line action, "
++			   "O: Offset view, "
++			   "S: Source view";
+ 	int key;
+ 
+ 	if (ui_browser__show(&self->b, sym->name, help) < 0)
 -- 
-Catalin
+1.7.9.2.358.g22243
+
