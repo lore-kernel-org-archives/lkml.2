@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935Ab2EJRYC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:24:02 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39717 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab2EJRX7 (ORCPT
+	id S1757462Ab2EJRYk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:24:40 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:57140 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755988Ab2EJRYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:23:59 -0400
-Message-ID: <4FABF9AB.6020902@wwwdotorg.org>
-Date: Thu, 10 May 2012 11:23:55 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 10 May 2012 13:24:38 -0400
+Message-ID: <4FABF9D4.8080303@vflare.org>
+Date: Thu, 10 May 2012 13:24:36 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Hiroshi DOYU <hdoyu@nvidia.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, Aneesh V <aneesh@ti.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/4] ARM: tegra20: Add Tegra Memory Controller(MC) driver
-References: <1336635764-30597-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1336635764-30597-1-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+References: <4FA28907.9020300@vflare.org> <4FA2A2F0.3030509@linux.vnet.ibm.com> <4FA33DF6.8060107@kernel.org> <20120509201918.GA7288@kroah.com> <4FAB21E7.7020703@kernel.org> <20120510140215.GC26152@phenom.dumpdata.com> <4FABD503.4030808@vflare.org> <4FABDA9F.1000105@linux.vnet.ibm.com> <20120510151941.GA18302@kroah.com> <4FABECF5.8040602@vflare.org> <20120510164418.GC13964@kroah.com>
+In-Reply-To: <20120510164418.GC13964@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2012 01:42 AM, Hiroshi DOYU wrote:
-> Tegra Memory Controller(MC) driver for Tegra20
-> Added to support MC General interrupts, mainly for IOMMU(GART).
+On 5/10/12 12:44 PM, Greg Kroah-Hartman wrote:
+> On Thu, May 10, 2012 at 12:29:41PM -0400, Nitin Gupta wrote:
+>> On 5/10/12 11:19 AM, Greg Kroah-Hartman wrote:
+>>> On Thu, May 10, 2012 at 10:11:27AM -0500, Seth Jennings wrote:
+>>>> On 05/10/2012 09:47 AM, Nitin Gupta wrote:
+>>>>
+>>>>> On 5/10/12 10:02 AM, Konrad Rzeszutek Wilk wrote:
+>>>>>> struct zs {
+>>>>>>      void *ptr;
+>>>>>> };
+>>>>>>
+>>>>>> And pass that structure around?
+>>>>>>
+>>>>>
+>>>>> A minor problem is that we store this handle value in a radix tree node.
+>>>>> If we wrap it as a struct, then we will not be able to store it directly
+>>>>> in the node -- the node will have to point to a 'struct zs'. This will
+>>>>> unnecessarily waste sizeof(void *) for every object stored.
+>>>>
+>>>>
+>>>> I don't think so. You can use the fact that for a struct zs var,&var
+>>>> and&var->ptr are the same.
+>>>>
+>>>> For the structure above:
+>>>>
+>>>> void * zs_to_void(struct zs *p) { return p->ptr; }
+>>>> struct zs * void_to_zs(void *p) { return (struct zs *)p; }
+>>>
+>>> Do like what the rest of the kernel does and pass around *ptr and use
+>>> container_of to get 'struct zs'.  Yes, they resolve to the same pointer
+>>> right now, but you shouldn't "expect" to to be the same.
+>>>
+>>>
+>>
+>> I think we can just use unsigned long as zs handle type since all we
+>> have to do is tell the user that the returned value is not a
+>> pointer. This will be less pretty than a typedef but still better
+>> than a single entry struct + container_of stuff.
+>
+> But then you are casting the thing all around just as much as you were
+> with the void *, right?
+>
+> Making this a "real" structure ensures type safety and lets the compiler
+> find the problems you accidentally create at times :)
+>
 
-Greg, you appear to have been commiting all of drivers/memory. I assume
-you'll take patches 1 and 3 in this series, and I will take 2 and 4
-through the Tegra tree? I can take them all through the Tegra tree if
-you want. Taking the .dts patches through your tree might cause
-conflicts in 3.6, since I anticipate some DT-wide cleanup in 3.6.
+If we return a 'struct zs' from zs_malloc then I cannot see how we are 
+solving the original problem of storing the handle directly in a radix 
+node. If we pass a struct zs we will require pointing radix node to this 
+struct, wasting sizeof(void *) for every object.   If we pass unsigned 
+long, then this problem is solved and it also makes it clear that the 
+passed value is not a pointer.
 
-Hiroshi, one question below (same for patch 3)
+Its true that making it a real struct would prevent accidental casts to 
+void * but due to the above problem, I think we have to stick with 
+unsigned long.
 
-> diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+Thanks,
+Nitin
 
-> @@ -20,6 +20,8 @@ config ARCH_TEGRA_2x_SOC
->  	select PL310_ERRATA_727915 if CACHE_L2X0
->  	select PL310_ERRATA_769419 if CACHE_L2X0
->  	select CPU_FREQ_TABLE if CPU_FREQ
-> +	select MEMORY
-> +	select TEGRA20_MC
-
-Does ARCH_TEGRA_2x_SOC /have/ to select these?
-
-I'd be inclined to drop the change to mach-tegra/Kconfig. As rationale,
-the code works fine without the driver right now. You'd need to make
-config TEGRA*_MC user-visible/selectable though.
-
-You could replace this change with a patch to tegra_defconfig which
-enables MEMORY and TEGRA*_MC, or perhaps make config TEGRA20_MC default y.
-
-What are people's thoughts here?
-
-Aside from this, the series looks fine to me.
