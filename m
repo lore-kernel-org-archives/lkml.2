@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab2EJQ21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 12:28:27 -0400
+	id S1757543Ab2EJQ3F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 12:29:05 -0400
 Received: from mga09.intel.com ([134.134.136.24]:27165 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753244Ab2EJQ2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 12:28:23 -0400
+	id S1755305Ab2EJQ20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 12:28:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="142389119"
+   d="scan'208";a="142389158"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "H Peter Anvin" <hpa@zytor.com>,
@@ -25,9 +25,9 @@ To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v6 01/12] Documentations/cpu-hotplug.tx, kernel-parameters.txt: Add x86 CPU0 online/offline feature
-Date: Thu, 10 May 2012 09:16:43 -0700
-Message-Id: <1336666614-21090-2-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v6 09/12] x86/common.c: Init CPU0 data during CPU0 online
+Date: Thu, 10 May 2012 09:16:51 -0700
+Message-Id: <1336666614-21090-10-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
 References: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
@@ -37,86 +37,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-If CONFIG_BOOTPARAM_HOTPLUG_CPU0 is turned on, CPU0 is hotpluggable. Otherwise,
-by default CPU0 is not hotpluggable and kernel parameter cpu0_hotplug enables
-CPU0 online/offline feature.
-
-The documentations point out two known CPU0 dependencies. First, resume from
-hibernate or suspend always starts from CPU0. So hibernate and suspend are
-prevented if CPU0 is offline. Another dependency is PIC interrupts always go
-to CPU0.
-
-It's said that some machines may depend on CPU0 to poweroff/reboot. But I
-haven't seen such dependency on a few tested machines.
-
-Please let me know if you see any CPU0 dependencies on your machine.
+During CPU0 online, enable x2apic, re-init mcheck, set_numa_node, add numa mask,
+and enable sep cpu for CPU0.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- Documentation/cpu-hotplug.txt       |   24 ++++++++++++++++++++++++
- Documentation/kernel-parameters.txt |   14 ++++++++++++++
- 2 files changed, 38 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/processor.h |    1 +
+ arch/x86/kernel/cpu/common.c     |   17 ++++++++++++++---
+ 2 files changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
-index 66ef8f3..9f40135 100644
---- a/Documentation/cpu-hotplug.txt
-+++ b/Documentation/cpu-hotplug.txt
-@@ -207,6 +207,30 @@ by making it not-removable.
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index ccbb1ea..81d6993 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -169,6 +169,7 @@ extern struct pt_regs *idle_regs(struct pt_regs *);
  
- In such cases you will also notice that the online file is missing under cpu0.
+ extern void early_cpu_init(void);
+ extern void identify_boot_cpu(void);
++extern void identify_boot_cpu_online(void);
+ extern void identify_secondary_cpu(struct cpuinfo_x86 *);
+ extern void print_cpu_info(struct cpuinfo_x86 *);
+ void print_cpu_msr(struct cpuinfo_x86 *);
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index cf79302..7f9f481 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -913,6 +913,18 @@ void __init identify_boot_cpu(void)
+ #endif
+ }
  
-+Q: Is CPU0 removable on X86?
-+A: Yes. If kernel is compiled with CONFIG_BOOTPARAM_HOTPLUG_CPU0=y, CPU0 is
-+removable by default. Otherwise, CPU0 is also removable by kernel option
-+cpu0_hotplug.
++void __cpuinit identify_boot_cpu_online(void)
++{
++	mcheck_cpu_init(&boot_cpu_data);
 +
-+But some features depend on CPU0. Two known dependencies are:
++#ifdef CONFIG_NUMA
++	numa_add_cpu(smp_processor_id());
++#endif
++#ifdef CONFIG_X86_32
++	enable_sep_cpu();
++#endif
++}
 +
-+1. Resume from hibernate/suspend depends on CPU0. Hibernate/suspend will fail if
-+CPU0 is offline and you need to online CPU0 before hibernate/suspend can
-+continue.
-+2. PIC interrupts also depend on CPU0. CPU0 can't be removed if a PIC interrupt
-+is detected.
-+
-+It's said poweroff/reboot may depend on CPU0 on some machines although I haven't
-+seen any poweroff/reboot failure so far after CPU0 is offline on a few tested
-+machines.
-+
-+Please let me know if you know or see any other dependencies of CPU0.
-+
-+If the dependencies are under your control, you can turn on CPU0 hotplug feature
-+either by CONFIG_BOOTPARAM_HOTPLUG_CPU0 or by kernel parameter cpu0_hotplug.
-+
-+--Fenghua Yu <fenghua.yu@intel.com>
-+
- Q: How do i find out if a particular CPU is not removable?
- A: Depending on the implementation, some architectures may show this by the
- absence of the "online" file. This is done if it can be determined ahead of
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index c1601e5..1dc732f 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1923,6 +1923,20 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ void __cpuinit identify_secondary_cpu(struct cpuinfo_x86 *c)
+ {
+ 	BUG_ON(c == &boot_cpu_data);
+@@ -1185,7 +1197,7 @@ void __cpuinit cpu_init(void)
+ 	oist = &per_cpu(orig_ist, cpu);
  
- 	nox2apic	[X86-64,APIC] Do not enable x2APIC mode.
+ #ifdef CONFIG_NUMA
+-	if (cpu != 0 && percpu_read(numa_node) == 0 &&
++	if (percpu_read(numa_node) == 0 &&
+ 	    early_cpu_to_node(cpu) != NUMA_NO_NODE)
+ 		set_numa_node(early_cpu_to_node(cpu));
+ #endif
+@@ -1217,8 +1229,7 @@ void __cpuinit cpu_init(void)
+ 	barrier();
  
-+	cpu0_hotplug	[X86] Turn on CPU0 hotplug feature when
-+			CONFIG_BOOTPARAM_HOTPLUG_CPU0 is off.
-+			Some features depend on CPU0. Known dependencies are:
-+			1. Resume from suspend/hibernate depends on CPU0.
-+			Suspend/hibernate will fail if CPU0 is offline and you
-+			need to online CPU0 before suspend/hibernate.
-+			2. PIC interrupts also depend on CPU0. CPU0 can't be
-+			removed if a PIC interrupt is detected.
-+			It's said poweroff/reboot may depend on CPU0 on some
-+			machines although I haven't seen such issues so far
-+			after CPU0 is offline on a few tested machines.
-+			If the dependencies are under your control, you can
-+			turn on cpu0_hotplug.
-+
- 	nptcg=		[IA-64] Override max number of concurrent global TLB
- 			purges which is reported from either PAL_VM_SUMMARY or
- 			SAL PALO.
+ 	x86_configure_nx();
+-	if (cpu != 0)
+-		enable_x2apic();
++	enable_x2apic();
+ 
+ 	/*
+ 	 * set up and load the per-CPU TSS
 -- 
 1.6.0.3
 
