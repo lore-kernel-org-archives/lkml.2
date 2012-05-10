@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab2EJQI7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 12:08:59 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34017 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab2EJQI6 convert rfc822-to-8bit (ORCPT
+	id S1756206Ab2EJQLM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 12:11:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39301 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab2EJQLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 12:08:58 -0400
+	Thu, 10 May 2012 12:11:09 -0400
+Message-ID: <4FABE899.9040602@wwwdotorg.org>
+Date: Thu, 10 May 2012 10:11:05 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120508155726.d02d6600.akpm@linux-foundation.org>
-References: <1336229772-3488-1-git-send-email-levinsasha928@gmail.com> <20120508155726.d02d6600.akpm@linux-foundation.org>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Thu, 10 May 2012 18:08:36 +0200
-Message-ID: <CA+1xoqfTTrMMybaFTE-GUpMd9SRq9Kdgp5JBem--tqRKAocLBg@mail.gmail.com>
-Subject: Re: [PATCH] kmsg: limit message size
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: arnd@arndb.de, gregkh@linuxfoundation.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
+To: Ben Dooks <ben@trinity.fluff.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-embedded@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Igor Grinberg <grinberg@compulab.co.il>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@ardb.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Handling of modular boards
+References: <20120504185850.GO14230@opensource.wolfsonmicro.com> <4FA432E9.9050606@wwwdotorg.org> <20120510104311.GB30103@trinity.fluff.org>
+In-Reply-To: <20120510104311.GB30103@trinity.fluff.org>
+X-Enigmail-Version: 1.5pre
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 12:57 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sat,  5 May 2012 16:56:12 +0200
-> Sasha Levin <levinsasha928@gmail.com> wrote:
->
->> There are no size checks in kmsg_write(), and we try allocating enough
->> memory to store everything userspace gave us, which may be too much for
->> kmalloc to allocate.
+On 05/10/2012 04:43 AM, Ben Dooks wrote:
+> On Fri, May 04, 2012 at 01:50:01PM -0600, Stephen Warren wrote:
+>> On 05/04/2012 12:58 PM, Mark Brown wrote:
+>>> Quite a few reference platforms (including Wolfson ones, which is why
+>>> I'm particularly interested) use replaceable modules to allow
+>>> configuration changes.  Since we can often identify the configuration at
+>>> runtime we should ideally do that but currently there's no infrastructure 
+>>> to help with that...
 >>
->> Furthermore, we can have an integer overflow if len==INT_MAX, in that case
->> we'll corrupt kernel memory.
+>> So, I'll respond within the context of device tree, although perhaps you
+>> were looking for something more general?
 >>
->> This was tested with several userspace programs that write to kmsg, and haven't
->> found a case where the program attempts to write more than PAGE_SIZE.
+>> I was just asked basically the same question internally to NVIDIA. One
+>> option that was floated was to store the device tree in chunks and have
+>> the bootloader piece them together. You'd start with the DT for the
+>> basic CPU board, probe what HW was available, and then graft in the
+>> content of additional DT chunks and pass the final result to the kernel.
+>> The advantages here are:
 >>
->> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
->> ---
->>  drivers/char/mem.c |    3 +++
->>  1 files changed, 3 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/char/mem.c b/drivers/char/mem.c
->> index d6e9d08..c90964b 100644
->> --- a/drivers/char/mem.c
->> +++ b/drivers/char/mem.c
->> @@ -815,6 +815,9 @@ static ssize_t kmsg_writev(struct kiocb *iocb, const struct iovec *iv,
->>       ssize_t ret = -EFAULT;
->>       size_t len = iov_length(iv, count);
->>
->> +     if (len > PAGE_SIZE)
->> +             return -E2BIG;
->> +
->>       line = kmalloc(len + 1, GFP_KERNEL);
->>       if (line == NULL)
->>               return -ENOMEM;
->
-> Well, this is a write(), and write() is permitted to return
-> less-than-asked-for.  So what we could do here is to write the first N
-> bytes and then return N to userspace.  Well-behaved userspace will
-> notice this and then do some more writing from offset N.
->
-> Could I ask that you try this and test it a bit, see whether there is
-> any well-behaved userspace out there?  Things like cat and echo
-> _should_ dtrt.
+>> a) The DT is stored in chunks for each plugin board, so there's no bloat
+>> in the DT that gets passed to the kernel; it contains exactly what's on
+>> the board.
+> 
+> Interesting, but how does it sort ofu things like mapping GPIO lines from
+> the add-in board's view to the rest of the system?
 
-Yup, cat and echo do dtrt. I'll resend a patch which limits the write
-instead of canceling it altogether.
+To be fully general, we'd need to have some kind of proxy GPIO object
+that always exists on the main board, for the plugin boards to provide
+GPIOs to, or consume GPIOs from.
+
+The simple case of a GPIO provider being on the main board and the
+consumer being on a plugin board doesn't need this. The case of the GPIO
+provider being on a plugin board, and the only GPIO consumer being on
+the main board might not need this.
+
+But if the GPIO provider is on one plugin board, and the GPIO consumer
+on another, we'd want to have the DT chunks for each plugin board be
+completely independent, so you'd need to route everything through
+something that always exists, in the motherboard's DT. I haven't really
+thought how that would look yet.
+
+I think this is probably true irrespective of whether the bootloader is
+merging the DT chunks, or the kernel did it during boot, or any other
+way of constructing the final complete DT.
