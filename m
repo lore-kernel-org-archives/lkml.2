@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759285Ab2EJK4w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 06:56:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53750 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759213Ab2EJK4t convert rfc822-to-8bit (ORCPT
+	id S932306Ab2EJLAP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 07:00:15 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37599 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932096Ab2EJLAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 06:56:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120510093442.GK3908@opensource.wolfsonmicro.com>
-References: <1336580695-1184-1-git-send-email-yadi.brar@samsung.com>
-	<1336580695-1184-3-git-send-email-yadi.brar@samsung.com>
-	<20120509184709.GC32037@sirena.org.uk>
-	<CAKew6eWEYBP1zXXwLL4eWOhOKZ-HwAfUX_kg8cnsaDyUXVKSkQ@mail.gmail.com>
-	<20120510093442.GK3908@opensource.wolfsonmicro.com>
-Date: Thu, 10 May 2012 16:26:48 +0530
-Message-ID: <CAKew6eWRFQMsPFhrA2g54VTTkV4ibMDTeFiz6nHDmZjOmVk__g@mail.gmail.com>
-Subject: Re: [PATCH 2/2] regulator: Add support for MAX77686.
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Yadwinder Singh <yadi.brar@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 May 2012 07:00:13 -0400
+Date: Thu, 10 May 2012 12:02:59 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ben Minerds <puzzleduck@gmail.com>
+Cc: gregkh@linuxfoundation.org, richard.weinberger@gmail.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/21] USB: serial: Changes to conform with
+ checkpatch.sh script.
+Message-ID: <20120510120259.6eae6e91@pyramind.ukuu.org.uk>
+In-Reply-To: <1336641447-23194-1-git-send-email-puzzleduck@gmail.com>
+References: <1336641447-23194-1-git-send-email-puzzleduck@gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Thu, 10 May 2012 19:17:06 +1000
+Ben Minerds <puzzleduck@gmail.com> wrote:
 
-On Thu, May 10, 2012 at 3:04 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, May 10, 2012 at 12:54:24PM +0530, Yadwinder Singh Brar wrote:
->> On Thu, May 10, 2012 at 12:17 AM, Mark Brown
->> > On Wed, May 09, 2012 at 09:54:55PM +0530, Yadwinder Singh wrote:
->
->> >> +     [MAX77686_EN32KHZ_AP] = NULL,
->> >> +     [MAX77686_EN32KHZ_CP] = NULL,
->
->> > Now that the generic clock API is in mainline these should be moved over
->> > to use it.
->
->> Sorry, I cann't get your point here. Please explain it little bit more.
->
-> These are not regulators, these are clocks.  They should use the clock
-> API.
->
+> Hi all,
+>    Patch series for drivers/usb/serial/keyspan.c to remove warnings and errors running checkpatch.sh
+>    Order should not be critical. 
 
-Ok. I got it.
+I'm happy with these but can you fold them all into one patch for final
+submission ?
 
->> >> +     if (pdata->ramp_delay) {
->> >> +             max77686->ramp_delay = pdata->ramp_delay;
->> >> +             max77686_update_reg(i2c, MAX77686_REG_BUCK2CTRL1,
->> >> +                     RAMP_VALUE, RAMP_MASK);
->
->> > This appears not to actually use the value passed in as platform_data.
->
->> It gets corresponding index of ramp_rate value in ramp_rate_value
->> table supported by hardware, from platform_data which we write to
->> ramp_rate control bits of control registers.
->
-> Why is the driver unconditionally writing these register values here
-> rather than setting the ramp delay that was passed in?
+Alan
 
-Here we are setting the max77686->ramp_delay and writing the same
-value(max77686->ramp_delay << 6) at register also.
-
-
-Thanks,
-Yadwinder.
