@@ -1,77 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab2EJQ4v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 12:56:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33272 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756224Ab2EJQ4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 12:56:50 -0400
-Date: Thu, 10 May 2012 18:55:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: torvalds@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, suresh@aristanetworks.com
-Subject: Re: [PATCH 1/3] coredump: flush the fpu exit state for proper
-	multi-threaded core dump
-Message-ID: <20120510165538.GA20931@redhat.com>
-References: <1336421341.19423.4.camel@sbsiddha-desk.sc.intel.com> <1336519085-27450-1-git-send-email-suresh.b.siddha@intel.com> <1336519085-27450-2-git-send-email-suresh.b.siddha@intel.com> <20120509210551.GB334@redhat.com> <1336599123.4634.42.camel@sbsiddha-desk.sc.intel.com>
+	id S1752584Ab2EJRCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:02:09 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:45704 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab2EJRCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 13:02:06 -0400
+Date: Thu, 10 May 2012 13:01:44 -0400 (EDT)
+From: Igor Mammedov <imammedo@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, pjt@google.com, tglx@linutronix.de,
+        seto hidetoshi <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH] sched_groups are expected to be circular linked list, make it so right after allocation
+Message-ID: <9d71ee11-b6c0-41e6-b4fb-75a72c27600e@zmail16.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <1336657544.2527.116.camel@twins>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336599123.4634.42.camel@sbsiddha-desk.sc.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Originating-IP: [10.3.228.113]
+X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09, Suresh Siddha wrote:
->
-> On Wed, 2012-05-09 at 23:05 +0200, Oleg Nesterov wrote:
-> > On 05/08, Suresh Siddha wrote:
-> > >
-> > > --- a/kernel/exit.c
-> > > +++ b/kernel/exit.c
-> > > @@ -656,6 +656,11 @@ static void exit_mm(struct task_struct * tsk)
-> > >  		struct core_thread self;
-> > >  		up_read(&mm->mmap_sem);
-> > >
-> > > +		/*
-> > > +		 * Flush the live extended register state to memory.
-> > > +		 */
-> > > +		prepare_to_copy(tsk);
-> >
-> > This doesn't look very nice imho, but I guess you understand this...
-> >
-> > Perhaps we need an arch-dependent helper which saves the FPU regs
-> > if needed.
-> >
-> > I can be easily wrong, but I did the quick grep and I am not sure
-> > we can rely on prepare_to_copy(). For example, it is a nop in
-> > arch/sh/include/asm/processor_64.h. But at the same time it has
-> > save_fpu().
-> >
-> > OTOH, I am not sure it is safe to use prepare_to_copy() in exit_mm(),
-> > at least in theory. God knows what it can do...
->
-> There is an explicit schedule() just few lines below. And the schedule()
-> also will do the same thing. The thing is we want the user-specific
-> extended registers to be flushed to memory (used also in the fork path)
-> before we notify the core dumping thread that we reached the serializing
-> point, for the dumping thread to continue the dump process.
+----- Original Message -----
+> From: "Peter Zijlstra" <peterz@infradead.org>
+> To: "Igor Mammedov" <imammedo@redhat.com>
+> Cc: "Jiang Liu" <liuj97@gmail.com>, linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
+> tglx@linutronix.de, "seto hidetoshi" <seto.hidetoshi@jp.fujitsu.com>
+> Sent: Thursday, May 10, 2012 3:45:44 PM
+> Subject: Re: [PATCH] sched_groups are expected to be circular linked list, make it so right after allocation
+> 
+> On Thu, 2012-05-10 at 15:26 +0200, Igor Mammedov wrote:
+> > [  141.699854] sched: Bonkers domain doesn't include its own cpu: 3
+> > 0-1,3
+> > [  141.725038] sched: Bonkers domain doesn't include its own cpu: 3
+> > 0-1
+> 
+> Whee!! so cpu_mask (active_mask) does include 3, but the tl->mask()
+> doesn't.
+> 
+> > [  141.775040] sched: Topology is hosed for CPU-3!!
+> > [  141.775596] sched: domain: NODE 0-1
+> > [  141.776004] sched:  group: 0-1
+> > 
+> This seems to suggest its the node topology being wrecked.
+> 
+> which with your code-base would be
+> cpu_node_mask()->sched_domain_node_span()..
+> 
+> Did you specify any node topology on the qemu command line? If not,
+> it
+> should all reduce to cpumask_of_node(0).
+> 
+> identify_secondary_cpu()->identify_cpu()->numa_add_cpu() should set
+> that
+> bit. which is well before the CPU_ONLINE->cpuset_update_active_cpus()
+> sched domain rebuild.
+> 
+> 
+> Most puzzling. Can you dig a little deeper as to why these masks
+> might
+> be wrong? Also, can you reproduce on actual hardware? The reason I
+probably not
 
-I understand.
+> never
+> use kvm or other virt for debugging is that I always end up spending
+> time chasing virt bugs, and I hate virt..
 
-My point was, there is no any guarantee prepare_to_copy() does the flush.
-An architecture can do this in copy_thread() or arch_dup_task_struct(),
-for example. In fact I do not understand why x86 doesn't do this.
+qemu started with -smp 4,sockets=4,cores=1,threads=1
 
-prepare_to_copy() doesn't have any documented semantics, it looks "strange"
-in exit_mm().
+I can answer it right away. It happens when one of cpus failed
+to come online on time and boot cpu decided to abandon attempt and exit
+do_boot_cpu with error. While exiting with error it clears some masks:
 
-But let me repeat, I do not see a better solution for now.
+        if (boot_error) {
+                /* Try to put things back the way they were before ... */
+                numa_remove_cpu(cpu); /* was set by numa_add_cpu */
 
-may be we can add wait_task_inactive() in fill_thread_core_info() though,
-not sure.
+                /* was set by do_boot_cpu() */
+                cpumask_clear_cpu(cpu, cpu_callout_mask);
 
-Oleg.
+                /* was set by cpu_init() */
+                cpumask_clear_cpu(cpu, cpu_initialized_mask);
 
+                set_cpu_present(cpu, false);
+                per_cpu(x86_cpu_to_apicid, cpu) = BAD_APICID;
+        }
+
+However cpu that has been blissfully forgotten, continues to boot and sets
+cpu_active_mask. So causing all sorts of havoc in places that use this mask.
+Then when next cpu is being onlined/offlined it eventually calls 
+CPU_[ONLINE|DOWN]->cpuset_update_active_cpus()
+result is OOPS.
+
+That is why I've posted https://lkml.org/lkml/2012/5/9/125
+that prevent all of this from happening by 'gracefully' aborting boot
+process on failed cpu with necessary cleanup.
+
+Checked Ingo's git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git:master
+races, that patches 1, 2, 4 are fixing, are still there.
+If it is preferable for this patches to go into -tip, then I'll rebase them
+on top of it and repost. ???
+
+Please review them if you think it has a sense to fix races in mainline,
+before cpu-hotplug overhaul of this part is complete.
