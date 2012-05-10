@@ -1,95 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab2EJDgI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 23:36:08 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:53720 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755101Ab2EJDgE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 23:36:04 -0400
-Date: Thu, 10 May 2012 11:35:51 +0800
-From: Richard Yang <weiyang@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Richard Yang <weiyang@linux.vnet.ibm.com>,
-        Wei Yang <weiyang.kernel@gmail.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: One problem in reassign pci bus number?
-Message-ID: <20120510033551.GA25138@richard>
-Reply-To: Richard Yang <weiyang@linux.vnet.ibm.com>
-References: <CAE9FiQUz2w815gU5vY5b0BPf+1pz_pafgzqVKizJC++z27RTaQ@mail.gmail.com>
- <20120504045205.GA21624@richard>
- <CAE9FiQWM4OTFp5NN+KOXxNREQxNWipDjWbbPPiHHJsb6yFmuiQ@mail.gmail.com>
- <20120506151715.GA7773@richard>
- <CAE9FiQWsSWK-_zGe1ggaKuZu+RJ1kb1zuTEokdxqFSbE3UjNRw@mail.gmail.com>
- <CAE9FiQXKjxLDLeh8TXU_OCNwFt+UMv3qFjcPrKcPcorA1YmkdQ@mail.gmail.com>
- <20120507011722.GA8122@richard>
- <CAE9FiQUpcJdAvK=wisNc_zq5c9zDtgEM=MNugDcHN9h3=ZPUcA@mail.gmail.com>
- <20120508024612.GA11485@richard>
- <CAE9FiQUU+a4yQJTiud=aYx2xXcoQZpH2rJyVhj19TQKGN7=2BA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQUU+a4yQJTiud=aYx2xXcoQZpH2rJyVhj19TQKGN7=2BA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12051003-9574-0000-0000-0000029F0F97
+	id S1755768Ab2EJDkh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 23:40:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:26953 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754708Ab2EJDkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 23:40:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="164256674"
+Subject: Re: [PATCH V2 2/2] dmaengine: tegra: add dma driver
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+In-Reply-To: <4FAA4EA3.70001@nvidia.com>
+References: <1336030889-32269-1-git-send-email-ldewangan@nvidia.com>
+	 <1336030889-32269-3-git-send-email-ldewangan@nvidia.com>
+	 <1336558444.1540.243.camel@vkoul-udesk3>  <4FAA4EA3.70001@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 May 2012 09:04:04 +0530
+Message-ID: <1336620844.1540.269.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 at 08:42:59PM -0700, Yinghai Lu wrote:
->>>no, probe_resource will get from start if space is big enough.
->>>
->>>if not, it will try to extend top.
->>
->> Hmm... for example we still have this
->>               parent[70-160]
->> brother1[70-80]  res[90-150]  brother2[151-160]
->>                   ->child[105-140]
->>
->> if we call probe_resource(res, new_res, 16, par, 1, 0xff,
->> IORESOURCE_PCI_FIXED);
->>
->> I think this call is used to allocate a res of size 16 under res.
->> When there is no enough free space, it will expend res, and res->parent.
->>
->> While in this situation, res doesn't have enough free space. so it need
->> to expend itself.
->>
->> In the probe_resource() it tries to extend res on the right side.
->> So even there is enough space between brother1 and res, I think the
->> probe_resource() will not return 0.
->>
->> Do you think my analysis is correct?
->
->it will reduce needed size one by one. so at last it will return
->[91, 104]
-Yes, agree. This is the current behavior.
+On Wed, 2012-05-09 at 16:31 +0530, Laxman Dewangan wrote:
+> Thanks Vinod for reviewing code.
+> I am removing the code from this thread which  is not require. Only 
+> keeping code surrounding our discussion.
+> 
+> On Wednesday 09 May 2012 03:44 PM, Vinod Koul wrote:
+> > On Thu, 2012-05-03 at 13:11 +0530, Laxman Dewangan wrote:
+> >> + * Initial number of descriptors to allocate for each channel during
+> >> + * allocation. More descriptors will be allocated dynamically if
+> >> + * client needs it.
+> >> + */
+> >> +#define DMA_NR_DESCS_PER_CHANNEL     4
+> >> +#define DMA_NR_REQ_PER_DESC          8
+> > all of these should be namespaced.
+> > APB and AHB are fairly generic names.
+> Fine, then I will go as APB_DMA_NR_DESC_xxx and APB_DMA_NR_REQ_xxx
+NO. Many ppl use APB/AHB, so pls don't use or namespace them properly
+> 
+> >> +
+> >> +enum dma_transfer_mode {
+> >> +     DMA_MODE_NONE,
+> >> +     DMA_MODE_ONCE,
+> >> +     DMA_MODE_CYCLE,
+> >> +     DMA_MODE_CYCLE_HALF_NOTIFY,
+> >> +};
+> > I dont understand why you would need to keep track of these?
+> > You get a request for DMA. You have properties of transfer. You prepare
+> > you descriptors and then submit.
+> > Why would you need to create above modes and remember them?
+> I am allowing multiple desc requests in dma through prep_slave and 
+> prep_cyclic. So when dma channel does not have any request then it can 
+> set its mode as NONE.
+Again NO.
 
-While in this case.
-               70-160]
- brother1[70-80]  res[90-150]  brother151-160]
-                   ->child
+This is not how dmaengine API is supposed to work.
+Correct behavior would be:
+You prepare descriptors, as many as you want.
+You submit them. Dmaengine driver takes them and pushes them to pending
+list. Submit does not start.
+When .issue_pending is called, you start DMA by using first descriptor
+in pending list. One completed you start next one untill you exhaust the
+complete list.
+So use your pending list for this.
+> Once the desc is requested the mode is set based on request. 
+Again NO
+> This mode 
+> will not get change until all dma request done and if new request come 
+> to dma channel, it checks that it should not conflict with older mode. 
+> The engine is configured in these mode and will change only when all 
+> transfer completed.
+See above you absolutely dont need to track *modes*
 
-There is free space between 81-89, and 90-104. These two free range add
-up to 25, which is more than the required space, 16.
+> We are allocating memory also and that's why it is there.
+> But I can make it because I am callocating memory as GFP_ATOMIC.
+> However if the function call dma_async_tx_descriptor_init() can happen 
+> in atomic context i.e. calling spin_lock_init() call.
+> 
+> >> +                     }
+> >> +                     dma_cookie_complete(&dma_desc->txd);
+> > does this make sense. You are marking an aborted descriptor as complete.
+> If I dont call the the complete cookie of that channel will not get 
+> updated and on query, it will return as PROGRESS.
+> I need to update the dma channel completed cookie.
+No the transaction failed as it was aborted. So mark it as DMA_ERROR.
 
-If we have this resource tree. 
-          parent[70-180]
- brother1[70-80]  re[90-150]  brothr2[170-180]
-                 d[105-140]
-
-There are enough free space between res and brother2.
-Then probe_resource will return [141-156] with size 16. 
-And also expend res.
-
-So I mean this is the design decision to not count in the free space on
-the left? Even there is enough free space?
-
->
->Yinghai
-
+> >> +     /* Call callbacks if was pending before aborting requests */
+> >> +     while (!list_empty(&cb_dma_desc_list)) {
+> >> +             dma_desc  = list_first_entry(&cb_dma_desc_list,
+> >> +                             typeof(*dma_desc), cb_node);
+> >> +             list_del(&dma_desc->cb_node);
+> >> +             callback = dma_desc->txd.callback;
+> >> +             callback_param = dma_desc->txd.callback_param;
+> > again, callback would be called from tasklet, so why would it need to be
+> > called from here , and why would this be pending.
+> What happen if some callbacks are pending as tasklet does not get 
+> scheduled and meantime, the dma terminated (specially in multi-core system)?
+> Should we ignore all callbacks in this case?
+In termination case, client has already terminated and possibly in
+process of cleanup.
+So makes no sense in those cases to call the callback.
 -- 
-Richard Yang
-Help you, Help me
+~Vinod
 
