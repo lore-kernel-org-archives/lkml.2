@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761841Ab2EJWOm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 18:14:42 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44594 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761814Ab2EJWOk (ORCPT
+	id S1761866Ab2EJWYA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 18:24:00 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45270 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757177Ab2EJWX6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 18:14:40 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] printk: correctly align __log_buf
-Date: Thu, 10 May 2012 16:14:33 -0600
-Message-Id: <1336688073-10664-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Thu, 10 May 2012 18:23:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <4430485.xEvkeJU8MB@donald.sf-tec.de>
+References: <4430485.xEvkeJU8MB@donald.sf-tec.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 10 May 2012 15:23:37 -0700
+X-Google-Sender-Auth: 3xtIj_Lmx2PWrdkyD1cWTp6fKcU
+Message-ID: <CA+55aFwWrkmqFPW=hOPCiNDE9CGXrwk85W7-vt2Aeg5EC1MtJQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] PA-RISC: fix compile
+To: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Cc: linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Thu, May 10, 2012 at 1:50 PM, Rolf Eike Beer <eike-kernel@sf-tec.de> wrote:
+>
+>  arch/parisc/include/asm/hardware.h |    3 ++-
+>  arch/parisc/include/asm/page.h     |    6 ++++++
+>  arch/parisc/include/asm/pdc.h      |    7 -------
+>  arch/parisc/include/asm/pgtable.h  |    2 ++
+>  arch/parisc/include/asm/spinlock.h |    2 ++
+>  arch/parisc/kernel/pdc_cons.c      |    1 +
+>  arch/parisc/kernel/time.c          |    1 +
+>  drivers/parisc/sba_iommu.c         |    1 +
+>  drivers/video/console/sticore.c    |    2 ++
+>  include/asm-generic/getorder.h     |    2 +-
+>  10 files changed, 18 insertions(+), 9 deletions(-)
 
-__log_buf must be aligned, because a 64-bit value is written directly
-to it as part of struct log. Alignment of the log entries is typically
-handled by log_store(), but this only triggers for subsequent entries,
-not the very first (or wrapped) entries.
+The diffstat doesn't match the actual patches - there are no getorder.h changes.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- kernel/printk.c |   13 ++++++-------
- 1 files changed, 6 insertions(+), 7 deletions(-)
+Hmm?
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 7b43295..7e82fb7 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -227,8 +227,13 @@ static u32 clear_idx;
- #define LOG_LINE_MAX 1024
- 
- /* record buffer */
-+#if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-+#define LOG_ALIGN 4
-+#else
-+#define LOG_ALIGN 8
-+#endif
- #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
--static char __log_buf[__LOG_BUF_LEN];
-+static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
- static char *log_buf = __log_buf;
- static u32 log_buf_len = __LOG_BUF_LEN;
- 
-@@ -279,12 +284,6 @@ static u32 log_next(u32 idx)
- 	return idx + msg->len;
- }
- 
--#if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--#define LOG_ALIGN 4
--#else
--#define LOG_ALIGN 8
--#endif
--
- /* insert record into the buffer, discard old ones, update heads */
- static void log_store(int facility, int level,
- 		      const char *dict, u16 dict_len,
--- 
-1.7.0.4
-
+                  Linus
