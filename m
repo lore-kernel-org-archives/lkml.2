@@ -1,105 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761480Ab2EJATp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 20:19:45 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:42155 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1761450Ab2EJATm (ORCPT
+	id S1761463Ab2EJAZK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 20:25:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34950 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab2EJAZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 20:19:42 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+ql/BS4D+qx99208nbTUlGL2LNPeyPdZB4b9xT/j
-	1vVMYBzL7W9bCN
-Message-ID: <4FAB0996.5000405@gmx.de>
-Date: Thu, 10 May 2012 00:19:34 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Icedove/3.0.11
-MIME-Version: 1.0
-To: Peter Huewe <peterhuewe@gmx.de>
-CC: Alexey Dobriyan <adobriyan@gmail.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2] video/via: Convert to kstrtou8_from_user
-References: <CACVxJT96rXRqMoeabdDyNEjXCubuAnQ_fonisbopQvYL=Qhp2w@mail.gmail.com> <1336090997-23727-1-git-send-email-peterhuewe@gmx.de>
-In-Reply-To: <1336090997-23727-1-git-send-email-peterhuewe@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Wed, 9 May 2012 20:25:08 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] spi/topcliff: use correct __devexit_p annotation
+To: mathieu.poirier@linaro.org
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, mathieu.poirier@linaro.org
+In-Reply-To: <1336602923-5724-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1336602923-5724-1-git-send-email-mathieu.poirier@linaro.org>
+Date: Wed, 09 May 2012 18:25:05 -0600
+Message-Id: <20120510002505.172243E08F4@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2012 12:23 AM, Peter Huewe wrote:
-> This patch replaces the code for getting an number from a
-> userspace buffer by a simple call to kstrou8_from_user.
-> This makes it easier to read and less error prone.
+On Wed,  9 May 2012 16:35:23 -0600, mathieu.poirier@linaro.org wrote:
+> From: Arnd Bergmann <arnd@arndb.de>
 > 
-> v2:
-> removed initialization of reg_val and dropped check if count < 1
+> __devexit functions are discarded when CONFIG_HOTPLUG
+> is not set, so the symbol needs to be referenced carefully.
 > 
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-Applied.
+Applied, thanks.
 
-
-Thanks,
-
-Florian Tobias Schandinat
+g.
 
 > ---
-> @Alexey: Thanks for the review/feedback!
->  drivers/video/via/viafbdev.c |   34 ++++++++++++----------------------
->  1 files changed, 12 insertions(+), 22 deletions(-)
+>  drivers/spi/spi-topcliff-pch.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
-> index a13c258..88bf5ba 100644
-> --- a/drivers/video/via/viafbdev.c
-> +++ b/drivers/video/via/viafbdev.c
-> @@ -1279,17 +1279,12 @@ static int viafb_dfph_proc_open(struct inode *inode, struct file *file)
->  static ssize_t viafb_dfph_proc_write(struct file *file,
->  	const char __user *buffer, size_t count, loff_t *pos)
->  {
-> -	char buf[20];
-> -	u8 reg_val = 0;
-> -	unsigned long length;
-> -	if (count < 1)
-> -		return -EINVAL;
-> -	length = count > 20 ? 20 : count;
-> -	if (copy_from_user(&buf[0], buffer, length))
-> -		return -EFAULT;
-> -	buf[length - 1] = '\0';	/*Ensure end string */
-> -	if (kstrtou8(buf, 0, &reg_val) < 0)
-> -		return -EINVAL;
-> +	int err;
-> +	u8 reg_val;
-> +	err = kstrtou8_from_user(buffer, count, 0, &reg_val);
-> +	if (err)
-> +		return err;
-> +
->  	viafb_write_reg_mask(CR97, VIACR, reg_val, 0x0f);
->  	return count;
->  }
-> @@ -1319,17 +1314,12 @@ static int viafb_dfpl_proc_open(struct inode *inode, struct file *file)
->  static ssize_t viafb_dfpl_proc_write(struct file *file,
->  	const char __user *buffer, size_t count, loff_t *pos)
->  {
-> -	char buf[20];
-> -	u8 reg_val = 0;
-> -	unsigned long length;
-> -	if (count < 1)
-> -		return -EINVAL;
-> -	length = count > 20 ? 20 : count;
-> -	if (copy_from_user(&buf[0], buffer, length))
-> -		return -EFAULT;
-> -	buf[length - 1] = '\0';	/*Ensure end string */
-> -	if (kstrtou8(buf, 0, &reg_val) < 0)
-> -		return -EINVAL;
-> +	int err;
-> +	u8 reg_val;
-> +	err = kstrtou8_from_user(buffer, count, 0, &reg_val);
-> +	if (err)
-> +		return err;
-> +
->  	viafb_write_reg_mask(CR99, VIACR, reg_val, 0x0f);
->  	return count;
->  }
+> diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
+> index ec47d3b..77c4562 100644
+> --- a/drivers/spi/spi-topcliff-pch.c
+> +++ b/drivers/spi/spi-topcliff-pch.c
+> @@ -1779,7 +1779,7 @@ static struct pci_driver pch_spi_pcidev_driver = {
+>  	.name = "pch_spi",
+>  	.id_table = pch_spi_pcidev_id,
+>  	.probe = pch_spi_probe,
+> -	.remove = pch_spi_remove,
+> +	.remove = __devexit_p(pch_spi_remove),
+>  	.suspend = pch_spi_suspend,
+>  	.resume = pch_spi_resume,
+>  };
+> -- 
+> 1.7.5.4
+> 
 
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
