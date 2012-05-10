@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760194Ab2EJRd3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:33:29 -0400
+	id S1760214Ab2EJRde (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:33:34 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:45282 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760094Ab2EJRd1 (ORCPT
+	with ESMTP id S1760198Ab2EJRda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:33:27 -0400
-Message-Id: <20120510173133.084608494@linuxfoundation.org>
+	Thu, 10 May 2012 13:33:30 -0400
+Message-Id: <20120510173133.171469671@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:31:33 -0700
+Date: Thu, 10 May 2012 10:31:34 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yang Guang <guang.a.yang@intel.com>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 01/52] drm/i915: enable dip before writing data on gen4
+        alan@lxorguk.ukuu.org.uk, Paolo Pisati <paolo.pisati@canonical.com>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 02/52] smsc95xx: mark link down on startup and let PHY interrupt
+ deal with carrier changes
 In-Reply-To: <20120510173229.GA5678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,48 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paulo Zanoni <paulo.r.zanoni@intel.com>
+From: Paolo Pisati <paolo.pisati@canonical.com>
 
-commit c1230df7e19e0f27655c0eb9d966c7e03be7cc50 upstream.
+commit 07d69d4238418746a7b85c5d05ec17c658a2a390 upstream.
 
-While testing with the intel_infoframes tool on gen4, I see that when
-video DIP is disabled, what we write to the DATA memory is not exactly
-what we read back later.
+Without this patch sysfs reports the cable as present
 
-This regression has been introduce in
+flag@flag-desktop:~$ cat /sys/class/net/eth0/carrier
+1
 
-commit 64a8fc0145a1d0fdc25fc9367c2e6c621955fb3b
-Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date:   Thu Sep 22 11:16:00 2011 +0530
+while it's not:
 
-    drm/i915: fix ILK+ infoframe support
+flag@flag-desktop:~$ sudo mii-tool eth0
+eth0: no link
 
-That commit was setting VIDEO_DIP_CTL to 0 when initializing, which
-caused the problem.
+Tested on my Beagle XM.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=43947
-Tested-by: Yang Guang <guang.a.yang@intel.com>
-Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-[danvet: Pimped commit message by using the usual commit citation
-layout.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+v2: added mantainer to the list of recipient
+
+Signed-off-by: Paolo Pisati <paolo.pisati@canonical.com>
+Acked-by: Steve Glendinning <steve.glendinning@shawell.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_hdmi.c |    2 +-
+ drivers/net/usb/smsc95xx.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_hdmi.c
-+++ b/drivers/gpu/drm/i915/intel_hdmi.c
-@@ -136,7 +136,7 @@ static void i9xx_write_infoframe(struct
+--- a/drivers/net/usb/smsc95xx.c
++++ b/drivers/net/usb/smsc95xx.c
+@@ -1191,7 +1191,7 @@ static const struct driver_info smsc95xx
+ 	.rx_fixup	= smsc95xx_rx_fixup,
+ 	.tx_fixup	= smsc95xx_tx_fixup,
+ 	.status		= smsc95xx_status,
+-	.flags		= FLAG_ETHER | FLAG_SEND_ZLP,
++	.flags		= FLAG_ETHER | FLAG_SEND_ZLP | FLAG_LINK_INTR,
+ };
  
- 	val &= ~VIDEO_DIP_SELECT_MASK;
- 
--	I915_WRITE(VIDEO_DIP_CTL, val | port | flags);
-+	I915_WRITE(VIDEO_DIP_CTL, VIDEO_DIP_ENABLE | val | port | flags);
- 
- 	for (i = 0; i < len; i += 4) {
- 		I915_WRITE(VIDEO_DIP_DATA, *data);
+ static const struct usb_device_id products[] = {
 
 
