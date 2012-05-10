@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab2EJPpT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 11:45:19 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:51365 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab2EJPpR convert rfc822-to-8bit (ORCPT
+	id S1753622Ab2EJPt3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 11:49:29 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35118 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751599Ab2EJPt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 11:45:17 -0400
+	Thu, 10 May 2012 11:49:28 -0400
+Date: Thu, 10 May 2012 17:49:25 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH] mfd: lm3533-core: Fix calling regmap_update_bits() with
+ mask and val arguments swapped
+Message-ID: <20120510154925.GB29437@localhost>
+References: <1336664102.15392.1.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <4FABBCE4.3050503@siemens.com>
-References: <4FAAEB37.1080001@siemens.com> <CA+55aFz-z6F=ynvTZp2xrSyq+Ar7huT92_S9e8Wuxepyppq5ZQ@mail.gmail.com>
- <4FABBCE4.3050503@siemens.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 10 May 2012 08:44:51 -0700
-X-Google-Sender-Auth: RlWWoLclji0vAOMjktFaO8XJP90
-Message-ID: <CA+55aFyOsPY-RNwedb3NnbKbj=iAc7L6YuSSEZYy5_Sczmqd4A@mail.gmail.com>
-Subject: Re: [PATCH v2] compat: Fix RT signal mask corruption via sigprocmask
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Anthony Liguori <aliguori@us.ibm.com>, Kevin Wolf <kwolf@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336664102.15392.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 6:04 AM, Jan Kiszka <jan.kiszka@siemens.com> wrote:
-> +               case SIG_BLOCK:
-> +                       sigaddsetmask(&new_blocked, new_set);
-> +                       break;
-> +               case SIG_UNBLOCK:
-> +                       sigdelsetmask(&new_blocked, new_set);
-> +                       break;
+On Thu, May 10, 2012 at 11:35:02PM +0800, Axel Lin wrote:
+> Current code calls regmap_update_bits() with mask and val arguments swapped.
+> Fix it.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Ok, I think SIG_[UN]BLOCK are now clearly right. However:
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 
-> +               case SIG_SETMASK:
-> +                       new_blocked.sig[0] &=
-> +                               ~((old_sigset_t)(compat_old_sigset_t)-1);
-> +                       new_blocked.sig[0] |= new_set;
-> +                       break;
+> ---
 
-I don't think this is clear.
+Ouch, I was sure I'd fixed that in the submitted v2.
 
-The semantics for the *native* SIG_SETMASK has been to only change the
-lower word of the sigset_t.
+/Johan
 
-And that was actually defined in terms of "compat_sigset_word", not
-"compat_old_sigset_t".
 
-Now, they are both generally the same, and so I think your code does
-the right thing, but I have to say that I really had to look closely
-to make sure that yes, your code was right.
-
-Anyway, my *gut* feel is that it would be much clearer to write the above as
-
-    compat_sigset_word x = new_set;
-    memcpy(new_blocked.sig, &x, sizeof(x));
-
-together with a comment to the effect that sigprocmask(SIG_SETMASK..)
-only changes the first word of the structure.
-
-That said, I think your patch does look technically correct, so maybe
-it's just me who thinks it is very non-obvious and hard to read.
-
-The memcpy approach will also generate better code. This is the "mask-and-set":
-
-        movabsq $-4294967296, %rax      #, tmp89
-        andq    -32(%rbp), %rax # new_blocked.sig, tmp89
-        orq     %rdx, %rax      # new_set, tmp89
-        movq    %rax, -32(%rbp) # tmp89, new_blocked.sig
-
-and this is the memcpy:
-
-        movl    %edx, -32(%rbp) # new_set,
-
-ie it is done as a simple 32-bit store.
-
-I think I'll just edit your patch directly, no need to send me a new version.
-
-                               Linus
+>  drivers/mfd/lm3533-core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/mfd/lm3533-core.c b/drivers/mfd/lm3533-core.c
+> index 75f4b7f..4a006c2 100644
+> --- a/drivers/mfd/lm3533-core.c
+> +++ b/drivers/mfd/lm3533-core.c
+> @@ -128,7 +128,7 @@ int lm3533_update(struct lm3533 *lm3533, u8 reg, u8 val, u8 mask)
+>  
+>  	dev_dbg(lm3533->dev, "update [%02x]: %02x/%02x\n", reg, val, mask);
+>  
+> -	ret = regmap_update_bits(lm3533->regmap, reg, val, mask);
+> +	ret = regmap_update_bits(lm3533->regmap, reg, mask, val);
+>  	if (ret < 0) {
+>  		dev_err(lm3533->dev, "failed to update register %02x: %d\n",
+>  								reg, ret);
