@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932472Ab2EJVmu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 17:42:50 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37211 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932369Ab2EJVmp (ORCPT
+	id S932545Ab2EJVm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 17:42:57 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64854 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932369Ab2EJVmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 17:42:45 -0400
-Message-ID: <4FAC0D1E.3000403@landley.net>
-Date: Thu, 10 May 2012 13:46:54 -0500
+	Thu, 10 May 2012 17:42:51 -0400
+Message-ID: <4FAC3647.8020203@landley.net>
+Date: Thu, 10 May 2012 16:42:31 -0500
 From: Rob Landley <rob@landley.net>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
 To: Alex Shi <alex.shi@intel.com>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
-        gregkh@linuxfoundation.org, borislav.petkov@amd.com, riel@redhat.com,
+CC: Borislav Petkov <bp@amd64.org>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, gregkh@linuxfoundation.org, riel@redhat.com,
         luto@mit.edu, avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
         fenghua.yu@intel.com, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
         akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
@@ -24,25 +24,40 @@ CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
         tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
         a.p.zijlstra@chello.nl, kamezawa.hiroyu@jp.fujitsu.com,
         viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 1/7] x86/tlb: unify TLB_FLUSH_ALL definition
-References: <1336626013-28413-1-git-send-email-alex.shi@intel.com> <1336626013-28413-2-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1336626013-28413-2-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH v4 3/7] x86/flush_tlb: try flush_tlb_single one by one
+ in flush_tlb_range
+References: <1336626013-28413-1-git-send-email-alex.shi@intel.com> <1336626013-28413-4-git-send-email-alex.shi@intel.com> <20120510075325.GB30055@aftab.osrc.amd.com> <4FAB8169.7090809@intel.com>
+In-Reply-To: <4FAB8169.7090809@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2012 12:00 AM, Alex Shi wrote:
-> Since sizeof(long) is 4 in x86_32 mode, and it's 8 in x86_64 mode,
-> sizeof(long long) is also 8 byte in x86_64 mode.
-> use long mode can fit TLB_FLUSH_ALL defination here both in 32 or
-> 64 bits mode.
+On 05/10/2012 03:50 AM, Alex Shi wrote:
+>>
+> 
+>> Ok, question:
+>>
+>> we're comparing TLB size with the amount of pages mapped by this mm
+>> struct. AFAICT, that doesn't mean that all those mapped pages do have
+>> respective entries in the TLB, does it?
+>>
+>> If so, then the actual entries number is kinda inaccurate, no? We don't
+>> really know how many TLB entries actually belong to this mm struct. Or am I
+>> missing something?
+> 
+> No, we can not know the exactly TLB entires for. But usually, when you
+> process is doing the mprotect/munmap etc system call, your process has
+> taken much of memory and already filled lots of TLB entries.
 
-I.E. Linux follows the LP64 standad, as do the BSDs and MacOS X:
+$ strace true 2>&1 | grep mprotect
+mprotect(0x7f67a934b000, 2093056, PROT_NONE) = 0
+mprotect(0x7f67a954a000, 16384, PROT_READ) = 0
+mprotect(0x607000, 4096, PROT_READ)     = 0
+mprotect(0x7f67a9773000, 4096, PROT_READ) = 0
 
-http://www.unix.org/whitepapers/64bit.html
-http://www.unix.org/version2/whatsnew/lp64_wp.html
+This appears to be part of glibc process setup. Define "usually".
 
 Rob
 -- 
