@@ -1,103 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761803Ab2EJWIJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 18:08:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63867 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761790Ab2EJWIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 18:08:07 -0400
-Message-ID: <4FAC3C35.70101@redhat.com>
-Date: Thu, 10 May 2012 19:07:49 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+	id S1761827Ab2EJWLV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 18:11:21 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:55948 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761812Ab2EJWLU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 18:11:20 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bh84d07hz2fh2a8h668h839h93fhd25h)
+X-Forefront-Antispam-Report: CIP:160.33.194.230;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail03v.am.sony.com;RD:mail03.sonyusa.com;EFVD:NLI
+Message-ID: <4FAC3D18.203@am.sony.com>
+Date: Thu, 10 May 2012 15:11:36 -0700
+From: Tim Bird <tim.bird@am.sony.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: Borislav Petkov <bp@amd64.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v22] edac, ras/hw_event.h: use events to handle hw issues
-References: <1336679788-4982-1-git-send-email-mchehab@redhat.com> <20120510204042.GA4598@aftab.osrc.amd.com> <3908561D78D1C84285E8C5FCA982C28F192EC1A2@ORSMSX104.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192EC1A2@ORSMSX104.amr.corp.intel.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Brian Swetland <swetland@google.com>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] staging: android: logger: Allocate logs dynamically at
+ boot (v3)
+References: <4FAC302F.2090004@am.sony.com> <20120510212122.GA16432@kroah.com> <4FAC3336.3010609@am.sony.com> <20120510213920.GA31091@kroah.com>
+In-Reply-To: <20120510213920.GA31091@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 10-05-2012 18:10, Luck, Tony escreveu:
->>> +	TP_printk(HW_ERR "mce#%d: %s error %s on memory stick \"%s\" (%s %s %s)",
->>
->> This still says "mce" and it should say "MC" or "mem_ctl" or similar.
-> 
-> I'm trying to look at how this will look to an end user who is not intimately
-> acquainted with the internals of how memory subsystems work.
+This changes the log initialization to be dynamic, but still
+at boot time.  These changes are a predecessor to implementing
+runtime allocation and freeing of logs, to make the Android logger
+less hard-coded.
 
-This is what patch v23 prints on sb_edac:
+Change from a fixed set of static log structures, to allocation
+at init time into a list.  Return proper error numbers on log
+allocation failure.
 
-# cat /sys/kernel/debug/tracing/trace
-# tracer: nop
-#
-# entries-in-buffer/entries-written: 30/30   #P:32
-#
-#                              _-----=> irqs-off
-#                             / _----=> need-resched
-#                            | / _---=> hardirq/softirq
-#                            || / _--=> preempt-depth
-#                            ||| /     delay
-#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-#              | |       |   ||||       |         |
-     kworker/u:6-201   [007] .N..   186.197280: mc_error: [Hardware Error]: mem_ctl#0: Corrected error memory read error on memory stick "DIMM_A1" (channel:0 slot:1  page:0x2f1eb3 offset:0x446 grain:32 syndrome:0x0 1 error(s): Unknown: Err=0001:0090 socket=0 channel=0/mask=1 rank=5)
-     kworker/u:6-201   [007] .N..   186.239536: mc_error: [Hardware Error]: mem_ctl#1: Corrected error memory read error on memory stick "DIMM_E2" (channel:0 slot:0  page:0x93180b offset:0x927 grain:32 syndrome:0x0 1 error(s): Unknown: Err=0001:0090 socket=1 channel=2/mask=4 rank=0)
+Signed-off-by: Tim Bird <tim.bird@am.sony.com>
+---
+ drivers/staging/android/logger.c |  107 ++++++++++++++++++++++----------------
+ 1 file changed, 62 insertions(+), 45 deletions(-)
 
-There are still some space to improve the fields provided by the drivers.
+diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
+index ea69b6a..9ebcf42 100644
+--- a/drivers/staging/android/logger.c
++++ b/drivers/staging/android/logger.c
+@@ -25,6 +25,7 @@
+ #include <linux/poll.h>
+ #include <linux/slab.h>
+ #include <linux/time.h>
++#include <linux/vmalloc.h>
+ #include "logger.h"
 
-> Whether the string starts with "mce" or "MC" or whatever ... what will the
-> user do with the mc_index that is printed with that first %d?  I don't think
-> it helps them find the DIMM when they open the box.  
+ #include <asm/ioctls.h>
+@@ -45,8 +46,12 @@ struct logger_log {
+ 	size_t			w_off;	/* current write head offset */
+ 	size_t			head;	/* new readers start here */
+ 	size_t			size;	/* size of the log */
++	struct list_head	logs;	/* list of log channels (myself)*/
+ };
 
-Well, it helps to match the memory information on the trace with the sysfs nodes
-that are memory-controller based and with the dmesg info.
++static LIST_HEAD(log_list);
++
++
+ /*
+  * struct logger_reader - a logging device open for reading
+  *
+@@ -408,7 +413,15 @@ ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	return ret;
+ }
 
-Calling it as "mc" is more coherent with the dmesg prints.
+-static struct logger_log *get_log_from_minor(int);
++static struct logger_log *get_log_from_minor(int minor)
++{
++	struct logger_log *log;
++
++	list_for_each_entry(log, &log_list, logs)
++		if (log->misc.minor == minor)
++			return log;
++	return NULL;
++}
 
-> I suppose it is useful
-> if there are multiple messages ... and they see that the same memory controller
-> is mentioned in each. But I almost think it belongs inside the parentheses at
-> the end as the "low level details that most users won't need to care about.
+ /*
+  * logger_open - the log's open() file operation
+@@ -565,80 +578,84 @@ static const struct file_operations logger_fops = {
+ };
 
-I don't have a strong preference, although I think it is better to have it at
-the beginning.
- 
-> Next %s is "Corrected" or "Fatal" or "Uncorrected" ... that's good.
-> 
-> What are the options for the next "%s" (msg)?
+ /*
+- * Defines a log structure with name 'NAME' and a size of 'SIZE' bytes, which
+- * must be a power of two, greater than LOGGER_ENTRY_MAX_LEN, and less than
+- * LONG_MAX minus LOGGER_ENTRY_MAX_LEN.
++ * Log size must be a power of two, greater than LOGGER_ENTRY_MAX_LEN,
++ * and less than LONG_MAX minus LOGGER_ENTRY_MAX_LEN.
+  */
+-#define DEFINE_LOGGER_DEVICE(VAR, NAME, SIZE) \
+-static unsigned char _buf_ ## VAR[SIZE]; \
+-static struct logger_log VAR = { \
+-	.buffer = _buf_ ## VAR, \
+-	.misc = { \
+-		.minor = MISC_DYNAMIC_MINOR, \
+-		.name = NAME, \
+-		.fops = &logger_fops, \
+-		.parent = NULL, \
+-	}, \
+-	.wq = __WAIT_QUEUE_HEAD_INITIALIZER(VAR .wq), \
+-	.readers = LIST_HEAD_INIT(VAR .readers), \
+-	.mutex = __MUTEX_INITIALIZER(VAR .mutex), \
+-	.w_off = 0, \
+-	.head = 0, \
+-	.size = SIZE, \
+-};
++static int __init create_log(char *log_name, int size)
++{
++	int ret = 0;
++	struct logger_log *log;
++	unsigned char *buffer;
 
-The type of the error. In the above, it is "memory read error".
- 
-> "memory stick"?? I suppose "DIMM" is a bit implementation dependent (SIMMs
-> are long gone ... but perhaps there will be some new acronym for stacked
-> memory ... STIMS :-) )
+-DEFINE_LOGGER_DEVICE(log_main, LOGGER_LOG_MAIN, 256*1024)
+-DEFINE_LOGGER_DEVICE(log_events, LOGGER_LOG_EVENTS, 256*1024)
+-DEFINE_LOGGER_DEVICE(log_radio, LOGGER_LOG_RADIO, 256*1024)
+-DEFINE_LOGGER_DEVICE(log_system, LOGGER_LOG_SYSTEM, 256*1024)
++	buffer = vmalloc(size);
++	if (buffer == NULL)
++		return -ENOMEM;
 
-Memory stick is described at edac.h as:
+-static struct logger_log *get_log_from_minor(int minor)
+-{
+-	if (log_main.misc.minor == minor)
+-		return &log_main;
+-	if (log_events.misc.minor == minor)
+-		return &log_events;
+-	if (log_radio.misc.minor == minor)
+-		return &log_radio;
+-	if (log_system.misc.minor == minor)
+-		return &log_system;
+-	return NULL;
+-}
++	log = kzalloc(sizeof(struct logger_log), GFP_KERNEL);
++	if (log == NULL) {
++		ret = -ENOMEM;
++		goto out_free_buffer;
++	}
++	log->buffer = buffer;
 
- * Memory Stick:	A printed circuit board that aggregates multiple
- *			memory devices in parallel.  In general, this is the
- *			Field Replaceable Unit (FRU) which gets replaced, in
- *			the case of excessive errors. Most often it is also
- *			called DIMM (Dual Inline Memory Module).
- *
+-static int __init init_log(struct logger_log *log)
+-{
+-	int ret;
++	log->misc.minor = MISC_DYNAMIC_MINOR;
++	log->misc.name = kstrdup(log_name, GFP_KERNEL);
++	if (log->misc.name == NULL) {
++		ret = -ENOMEM;
++		goto out_free_log;
++	}
++
++	log->misc.fops = &logger_fops;
++	log->misc.parent = NULL;
 
-DIMM is implementation dependent. As EDAC is also used on non-x86 archs, calling
-it as DIMM on ARM is probably wrong.
++	init_waitqueue_head(&log->wq);
++	INIT_LIST_HEAD(&log->readers);
++	mutex_init(&log->mutex);
++	log->w_off = 0;
++	log->head = 0;
++	log->size = size;
++
++	INIT_LIST_HEAD(&log->logs);
++	list_add_tail(&log->logs, &log_list);
++
++	/* finally, initialize the misc device for this log */
+ 	ret = misc_register(&log->misc);
+ 	if (unlikely(ret)) {
+ 		printk(KERN_ERR "logger: failed to register misc "
+ 		       "device for log '%s'!\n", log->misc.name);
+-		return ret;
++		goto out_free_log;
+ 	}
 
-Calling it as "STIMS" (or any other unusual acronym) seems worse ;)
+ 	printk(KERN_INFO "logger: created %luK log '%s'\n",
+ 	       (unsigned long) log->size >> 10, log->misc.name);
 
-> 
-> Then label (from SMBIOS) ... then the internal details. Good.
+ 	return 0;
++
++out_free_log:
++	kfree(log);
++
++out_free_buffer:
++	vfree(buffer);
++	return ret;
+ }
 
-Regards,
-Mauro
+ static int __init logger_init(void)
+ {
+ 	int ret;
+
+-	ret = init_log(&log_main);
++	ret = create_log(LOGGER_LOG_MAIN, 256*1024);
+ 	if (unlikely(ret))
+ 		goto out;
+
+-	ret = init_log(&log_events);
++	ret = create_log(LOGGER_LOG_EVENTS, 256*1024);
+ 	if (unlikely(ret))
+ 		goto out;
+
+-	ret = init_log(&log_radio);
++	ret = create_log(LOGGER_LOG_RADIO, 256*1024);
+ 	if (unlikely(ret))
+ 		goto out;
+
+-	ret = init_log(&log_system);
++	ret = create_log(LOGGER_LOG_SYSTEM, 256*1024);
+ 	if (unlikely(ret))
+ 		goto out;
+
+-- 
+1.7.9.5
+
+
