@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758430Ab2EJOpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 10:45:53 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:57376 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756518Ab2EJOpv (ORCPT
+	id S1756735Ab2EJOq6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 10:46:58 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:56142 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab2EJOq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 10:45:51 -0400
-Date: Thu, 10 May 2012 10:45:50 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: NeilBrown <neilb@suse.de>
-cc: Peter Chen <peter.chen@freescale.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 0/6] twl4030: Various fixes for charing-from-USB
-In-Reply-To: <20120510123754.6a6d95b9@notabene.brown>
-Message-ID: <Pine.LNX.4.44L0.1205101041350.1831-100000@iolanthe.rowland.org>
+	Thu, 10 May 2012 10:46:57 -0400
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, KVM <kvm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: KVM: Softlockups in guests while running kernbench
+In-Reply-To: <87pqace4an.fsf@abhimanyu.in.ibm.com>
+References: <87wr4kjvtk.fsf@abhimanyu.in.ibm.com> <4FAB88B8.5060203@redhat.com> <87pqace4an.fsf@abhimanyu.in.ibm.com>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
+Date: Thu, 10 May 2012 20:16:26 +0530
+Message-ID: <87ipg4drgd.fsf@abhimanyu.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+x-cbid: 12051004-5140-0000-0000-0000014B58DD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 May 2012, NeilBrown wrote:
+On Thu, 10 May 2012 15:39:04 +0530, Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> wrote:
+> On Thu, 10 May 2012 12:22:00 +0300, Avi Kivity <avi@redhat.com> wrote:
+> > On 05/10/2012 11:15 AM, Nikunj A Dadhania wrote:
+> > > I am running a 3.4.0-rc4 based kernel(commit: af3a3ab2), guest config
+> > > attached.
+> > >
+> > > During my tests, I saw few softlockups inside the guests while running
+> > > kernbench inside the guest. I can reproduce this repeatedly.
+> > >
+> > > Test Setup:
+> > >
+> > > - Create 4 VMs (8vcpu, 1GB RAM)
+> > > - Run kernbench inside each guests (kernbench -f -M -H -o 16) in parallel
+> > >
+> > 
+> > How overcommitted are you?  
+> 8 Physical CPU and 32 vCPUs
+> 
+> > What does the host hardware look like?  
+> Machine : IBM xSeries with Intel(R) Xeon(R) x5570 2.93GHz CPU with 8 core , 64GB RAM
+> Threading is disabled.
+> 
+> > Is there any load on the host?
+> No
+> 
+> > 
+> > The traces themselves always point a couple of instructions after
+> > interrupts are enabled.  Can you post a few more?
+> > 
 
->  Maybe we need to not suspend the USB OTG interface when the device as a
->  whole enters suspend-to-RAM.  Maybe we need to register a dummy gadget to
->  the bus active while in suspend?
->  Does the gadget have to be responsive while-ever the bus is not suspended?
+I had a discussion with Avi on IRC, he suggested running a trace on the
+host for the sched: tracepoints
 
-Yes.
+So when I see the console of the guest, i can see the soft-lockup
+messages. When I start tracing, soft-lockups disappear. 
 
->  Maybe we can arrange for any USB activity to trigger a resume?
+Kernbench is started from the host; ps output:
+13359 pts/1    S+     0:00 perf stat -a -- ssh root@192.168.123.11 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
+13362 pts/1    S+     0:00 ssh root@192.168.123.11 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
+13373 pts/1    S+     0:00 perf stat -a -- ssh root@192.168.123.12 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
+13376 pts/1    S+     0:00 ssh root@192.168.123.12 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
+13387 pts/1    S+     0:00 perf stat -a -- ssh root@192.168.123.13 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
+13390 pts/1    S+     0:00 ssh root@192.168.123.13 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
+13401 pts/1    S+     0:00 perf stat -a -- ssh root@192.168.123.14 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
+13402 pts/1    S+     0:00 ssh root@192.168.123.14 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
 
-Probably not, at least, not fast enough.  The gadget is required to 
-respond to USB packets within a few microseconds.  At a minimum, the 
-USB device controller would have to remain fully powered.
+I have tried following commands trace-cmd:
+1) trace-cmd record -e kvm -e sched -b 100000  -p 13362
+2) trace-cmd record -e sched -b 100000  -p 13362
+3) trace-cmd record -e kvm -b 100000  -p 13362
 
->  Entering suspend while still charging really should be possible - at least
->  with a dump charger and hopefully from a host port as well.  I'll like to
->  find the best way to achieve that, and any help you can provide would be
->  greatly appreciated.
+I have tried trace-cmd on qemu pid as well, I see similar behaviour in
+that case.
 
-If the gadget is attached to a dumb charger rather than a host then 
-there's no problem.  But otherwise it's not so simple.
+Peterz/Ingo, Any clue on debugging this would help.
 
-Have you read the USB charger class specification?  (I haven't...)
-
-Alan Stern
+Regards
+Nikunj
 
