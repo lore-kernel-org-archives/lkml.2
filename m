@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761042Ab2EJRr5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:47:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58653 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760355Ab2EJReH (ORCPT
+	id S1760298Ab2EJRd5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:33:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34764 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760152Ab2EJRdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:34:07 -0400
-Message-Id: <20120510173134.263078008@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:31:47 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tim Bird <tim.bird@am.sony.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 15/52] ARM: 7410/1: Add extra clobber registers for assembly in kernel_execve
-In-Reply-To: <20120510173229.GA5678@kroah.com>
+	Thu, 10 May 2012 13:33:47 -0400
+Subject: Re: [PATCH] sched_groups are expected to be circular linked list,
+ make it so right after allocation
+From: Peter Zijlstra <peterz@infradead.org>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, pjt@google.com, tglx@linutronix.de,
+        seto hidetoshi <seto.hidetoshi@jp.fujitsu.com>
+In-Reply-To: <9d71ee11-b6c0-41e6-b4fb-75a72c27600e@zmail16.collab.prod.int.phx2.redhat.com>
+References: <9d71ee11-b6c0-41e6-b4fb-75a72c27600e@zmail16.collab.prod.int.phx2.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 May 2012 19:33:30 +0200
+Message-ID: <1336671210.27020.124.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 2012-05-10 at 13:01 -0400, Igor Mammedov wrote:
+> However cpu that has been blissfully forgotten, continues to boot and sets
+> cpu_active_mask. So causing all sorts of havoc in places that use this mask.
+> Then when next cpu is being onlined/offlined it eventually calls 
+> CPU_[ONLINE|DOWN]->cpuset_update_active_cpus()
+> result is OOPS.
+> 
+> That is why I've posted https://lkml.org/lkml/2012/5/9/125
+> that prevent all of this from happening by 'gracefully' aborting boot
+> process on failed cpu with necessary cleanup.
+> 
+> Checked Ingo's git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git:master
+> races, that patches 1, 2, 4 are fixing, are still there.
+> If it is preferable for this patches to go into -tip, then I'll rebase them
+> on top of it and repost. ??? 
 
-------------------
+Right, I'd hoped tglx would respond as he's got more stuff on his
+harddrive. But he's been rather quiet the past few days. This either
+means he's ignoring us all and working very hard to finish these patches
+so he can post them and delight us all with a new hotplug
+infrastructure. Or not and there's something else.. 
 
-From: Tim Bird <tim.bird@am.sony.com>
+Anyway, I think you're right in that fixing that bringup fail is
+important -- and you've done the work already, so yeah unless tglx shows
+up soon your patches ought to go on.
 
-commit e787ec1376e862fcea1bfd523feb7c5fb43ecdb9 upstream.
-
-The inline assembly in kernel_execve() uses r8 and r9.  Since this
-code sequence does not return, it usually doesn't matter if the
-register clobber list is accurate.  However, I saw a case where a
-particular version of gcc used r8 as an intermediate for the value
-eventually passed to r9.  Because r8 is used in the inline
-assembly, and not mentioned in the clobber list, r9 was set
-to an incorrect value.
-
-This resulted in a kernel panic on execution of the first user-space
-program in the system.  r9 is used in ret_to_user as the thread_info
-pointer, and if it's wrong, bad things happen.
-
-Signed-off-by: Tim Bird <tim.bird@am.sony.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/kernel/sys_arm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/arm/kernel/sys_arm.c
-+++ b/arch/arm/kernel/sys_arm.c
-@@ -115,7 +115,7 @@ int kernel_execve(const char *filename,
- 		  "Ir" (THREAD_START_SP - sizeof(regs)),
- 		  "r" (&regs),
- 		  "Ir" (sizeof(regs))
--		: "r0", "r1", "r2", "r3", "ip", "lr", "memory");
-+		: "r0", "r1", "r2", "r3", "r8", "r9", "ip", "lr", "memory");
- 
-  out:
- 	return ret;
-
+I'll try and have a peek at them soon.
 
