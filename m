@@ -1,76 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964870Ab2EJXpa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 19:45:30 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:37102 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964790Ab2EJXpZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 19:45:25 -0400
-X-AuditID: cbfee61a-b7bbeae000003a71-11-4fac5313bbe7
-Message-id: <4FAC5313.80909@samsung.com>
-Date: Fri, 11 May 2012 08:45:23 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: broonie@opensource.wolfsonmicro.com, thomas.abraham@linaro.org,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        jonghwa3.lee@samsung.com, linux-kernel@vger.kernel.org,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-Subject: Re: [PATCH 0/2] mfd: MAX8997: Support irq domain for Maxim MAX8997
-References: <1336647288-10858-1-git-send-email-cw00.choi@samsung.com>
- <20120510182015.GB17018@kroah.com>
-In-reply-to: <20120510182015.GB17018@kroah.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	id S933138Ab2EJXqy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 19:46:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46615 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933041Ab2EJXlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 19:41:12 -0400
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 11/29] PGPLIB: Basic packet parser [ver #4]
+To: rusty@rustcorp.com.au
+Cc: kyle@mcmartin.ca, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        David Howells <dhowells@redhat.com>
+Date: Fri, 11 May 2012 00:41:02 +0100
+Message-ID: <20120510234102.4137.45054.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120510233901.4137.19023.stgit@warthog.procyon.org.uk>
+References: <20120510233901.4137.19023.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 03:20 AM, Greg KH wrote:
+Provide a simple parser that extracts the packets from a PGP packet blob and
+passes the desirous ones to the given processor function:
 
-> On Thu, May 10, 2012 at 07:54:48PM +0900, Chanwoo Choi wrote:
->> This patchset add support irq domain for Maxim MAX8997 interrupts.
->>
->> The first patch is based on patch written by Thomas Abraham and fix
->> two bug which set max8997->irq_domain instead of NULL pointer and
->> correct wrong parameter by Chanwoo Choi.
->> - https://lkml.org/lkml/2012/4/18/145
->> The second patch use irq domain for MAX8997 muic interrupt instead
->> of irq_base in platform data of MAX8997 driver.
->>
->> But, I posted following patchset related to MAX8997 driver.
->> This patchset support Extcon framework in extcon-max8997 driver to
->> control external connector instead of max8997-muic driver. So, first
->> patch add MAX8997 extcon driver(drivers/extcon/extcon-max8997.c) and
->> last patch remove old MAX8997 muic driver(drivers/misc/max8997-muic.c).
->> - https://lkml.org/lkml/2012/5/8/98
->>
->> This patchset was applied in below git repository of Greg Kroah-Hartman.
->> - http://git.kernel.org/?p=linux/kernel/git/gregkh/driver-core.git;a=shortlog;h=refs/heads/driver-core-next
->>
->> I think that this patchset should be applied on the git repository
->> of Greg Kroah-Hartman to remove possible conflict issue when merged.
-> 
-> That's fine with me, should the MFD maintainer have been copied on this
-> to get his signed-off-by on it?
-> 
+	struct pgp_parse_context {
+		u64 types_of_interest;
+		int (*process_packet)(struct pgp_parse_context *context,
+				      enum pgp_packet_tag type,
+				      u8 headerlen,
+				      const u8 *data,
+				      size_t datalen);
+	};
 
-I knew that first patch written by Thomas Abraham has been already
-confirmed ack message from MFD maintainer(Samuel Ortiz
-<sameo@linux.intel.com>). You can check it on first patch and below git
-repository of Mark Brown.
+	int pgp_parse_packets(const u8 *data, size_t datalen,
+			      struct pgp_parse_context *ctx);
 
-The below patch has occurred build break, so it was reverted by Mark
-Brown. And then I did post this patchset with bug fix.
+This is configured on with CONFIG_PGP_LIBRARY.
 
-http://git.kernel.org/?p=linux/kernel/git/broonie/regulator.git;a=commit;h=98d8618af37728f6e18e84110ddb99987b47dd12
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-Best Regards,
-Chanwoo Choi
+ include/linux/pgp.h                |   25 ++++
+ security/keys/crypto/Kconfig       |    6 +
+ security/keys/crypto/Makefile      |    1 
+ security/keys/crypto/pgp_library.c |  254 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 286 insertions(+), 0 deletions(-)
+ create mode 100644 security/keys/crypto/pgp_library.c
 
+
+diff --git a/include/linux/pgp.h b/include/linux/pgp.h
+index 1359f64..235270a 100644
+--- a/include/linux/pgp.h
++++ b/include/linux/pgp.h
+@@ -203,4 +203,29 @@ struct pgp_key_v4_packet {
+ 	u8 key_material[0];
+ } __packed;
+ 
++/*
++ * PGP library packet parser
++ */
++struct pgp_parse_context {
++	u64 types_of_interest;
++	int (*process_packet)(struct pgp_parse_context *context,
++			      enum pgp_packet_tag type,
++			      u8 headerlen,
++			      const u8 *data,
++			      size_t datalen);
++};
++
++extern int pgp_parse_packets(const u8 *data, size_t datalen,
++			     struct pgp_parse_context *ctx);
++
++struct pgp_parse_pubkey {
++	enum pgp_key_version version : 8;
++	enum pgp_pubkey_algo pubkey_algo : 8;
++	time_t		creation_time;
++	time_t		expires_at;
++};
++
++extern int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
++				struct pgp_parse_pubkey *pk);
++
+ #endif /* _LINUX_PGP_H */
+diff --git a/security/keys/crypto/Kconfig b/security/keys/crypto/Kconfig
+index 4e3777e..88ce0e2 100644
+--- a/security/keys/crypto/Kconfig
++++ b/security/keys/crypto/Kconfig
+@@ -22,3 +22,9 @@ config CRYPTO_KEY_PKEY_ALGO_RSA
+ 	select MPILIB_EXTRA
+ 	help
+ 	  This option enables support for the RSA algorithm (PKCS#1, RFC3447).
++
++config PGP_LIBRARY
++	tristate "PGP parsing library"
++	help
++	  This option enables a library that provides a number of simple
++	  utility functions for parsing PGP (RFC 4880) packet-based messages.
+diff --git a/security/keys/crypto/Makefile b/security/keys/crypto/Makefile
+index b6b1a5a..5fbe54e 100644
+--- a/security/keys/crypto/Makefile
++++ b/security/keys/crypto/Makefile
+@@ -7,3 +7,4 @@ crypto_keys-y := crypto_type.o crypto_verify.o
+ 
+ obj-$(CONFIG_CRYPTO_KEY_PUBLIC_KEY_SUBTYPE) += public_key.o
+ obj-$(CONFIG_CRYPTO_KEY_PKEY_ALGO_RSA) += crypto_rsa.o
++obj-$(CONFIG_PGP_LIBRARY) += pgp_library.o
+diff --git a/security/keys/crypto/pgp_library.c b/security/keys/crypto/pgp_library.c
+new file mode 100644
+index 0000000..685660f
+--- /dev/null
++++ b/security/keys/crypto/pgp_library.c
+@@ -0,0 +1,254 @@
++/* PGP packet parser (RFC 4880)
++ *
++ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++#define pr_fmt(fmt) "PGP: "fmt
++#include <linux/pgp.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++
++MODULE_LICENSE("GPL");
++
++const char *const pgp_hash_algorithms[PGP_HASH__LAST] = {
++	[PGP_HASH_MD5]			= "md5",
++	[PGP_HASH_SHA1]			= "sha1",
++	[PGP_HASH_RIPE_MD_160]		= "rmd160",
++	[PGP_HASH_SHA256]		= "sha256",
++	[PGP_HASH_SHA384]		= "sha384",
++	[PGP_HASH_SHA512]		= "sha512",
++	[PGP_HASH_SHA224]		= "sha224",
++};
++EXPORT_SYMBOL_GPL(pgp_hash_algorithms);
++
++/**
++ * pgp_parse_packet_header - Parse a PGP packet header
++ * @_data: Start of the PGP packet (updated to PGP packet data)
++ * @_datalen: Amount of data remaining in buffer (decreased)
++ * @_type: Where the packet type will be returned
++ * @_headerlen: Where the header length will be returned
++ *
++ * Parse a set of PGP packet header [RFC 4880: 4.2].
++ *
++ * Returns packet data size on success; non-zero on error.  If successful,
++ * *_data and *_datalen will have been updated and *_headerlen will be set to
++ * hold the length of the packet header.
++ */
++ssize_t pgp_parse_packet_header(const u8 **_data, size_t *_datalen,
++				enum pgp_packet_tag *_type,
++				u8 *_headerlen)
++{
++	enum pgp_packet_tag type;
++	const u8 *data = *_data;
++	size_t size, datalen = *_datalen;
++
++	pr_devel("-->pgp_parse_packet_header(,%zu,,)", datalen);
++
++	if (datalen < 2)
++		goto short_packet;
++
++	pr_devel("pkthdr %02x, %02x\n", data[0], data[1]);
++
++	type = *data++;
++	datalen--;
++	if (!(type & 0x80)) {
++		pr_debug("Packet type does not have MSB set\n");
++		return -EBADMSG;
++	}
++	type &= ~0x80;
++
++	if (type & 0x40) {
++		/* New packet length format */
++		type &= ~0x40;
++		pr_devel("new format: t=%u\n", type);
++		switch (data[0]) {
++		case 0x00 ... 0xbf:
++			/* One-byte length */
++			size = data[0];
++			data++;
++			datalen--;
++			*_headerlen = 2;
++			break;
++		case 0xc0 ... 0xdf:
++			/* Two-byte length */
++			if (datalen < 2)
++				goto short_packet;
++			size = (data[0] - 192) * 256;
++			size += data[1] + 192;
++			data += 2;
++			datalen -= 2;
++			*_headerlen = 3;
++			break;
++		case 0xff:
++			pr_debug("Five-byte packet length not supported\n");
++			return -EBADMSG;
++		default:
++			pr_debug("Error parsing packet length\n");
++			return -EBADMSG;
++		}
++	} else {
++		/* Old packet length format */
++		u8 length_type = type & 0x03;
++		type >>= 2;
++		pr_devel("old format: t=%u lt=%u\n", type, length_type);
++
++		switch (length_type) {
++		case 0:
++			/* One-byte length */
++			size = data[0];
++			data++;
++			datalen--;
++			*_headerlen = 2;
++			break;
++		case 1:
++			/* Two-byte length */
++			if (datalen < 2)
++				goto short_packet;
++			size  = data[0] << 8;
++			size |= data[1];
++			data += 2;
++			datalen -= 2;
++			*_headerlen = 3;
++			break;
++		case 2:
++			/* Four-byte length */
++			if (datalen < 4)
++				goto short_packet;
++			size  = data[0] << 24;
++			size |= data[1] << 16;
++			size |= data[2] << 8;
++			size |= data[3];
++			data += 4;
++			datalen -= 4;
++			*_headerlen = 5;
++			break;
++		default:
++			pr_debug("Indefinite length packet not supported\n");
++			return -EBADMSG;
++		}
++	}
++
++	pr_devel("datalen=%zu size=%zu", datalen, size);
++	if (datalen < size)
++		goto short_packet;
++
++	*_data = data;
++	*_datalen = datalen;
++	*_type = type;
++	pr_devel("Found packet type=%u size=%zd\n", type, size);
++	return size;
++
++short_packet:
++	pr_debug("Attempt to parse short packet\n");
++	return -EBADMSG;
++}
++
++/**
++ * pgp_parse_packets - Parse a set of PGP packets
++ * @_data: Data to be parsed (updated)
++ * @_datalen: Amount of data (updated)
++ * @ctx: Parsing context
++ *
++ * Parse a set of PGP packets [RFC 4880: 4].
++ */
++int pgp_parse_packets(const u8 *data, size_t datalen,
++		      struct pgp_parse_context *ctx)
++{
++	enum pgp_packet_tag type;
++	ssize_t pktlen;
++	u8 headerlen;
++	int ret;
++
++	while (datalen > 2) {
++		pktlen = pgp_parse_packet_header(&data, &datalen, &type,
++						 &headerlen);
++		if (pktlen < 0)
++			return pktlen;
++
++		if ((ctx->types_of_interest >> type) & 1) {
++			ret = ctx->process_packet(ctx, type, headerlen,
++						  data, pktlen);
++			if (ret < 0)
++				return ret;
++		}
++		data += pktlen;
++		datalen -= pktlen;
++	}
++
++	if (datalen != 0) {
++		pr_debug("Excess octets in packet stream\n");
++		return -EBADMSG;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pgp_parse_packets);
++
++/**
++ * pgp_parse_public_key - Parse the common part of a PGP pubkey packet
++ * @_data: Content of packet (updated)
++ * @_datalen: Length of packet remaining (updated)
++ * @pk: Public key data
++ *
++ * Parse the common data struct for a PGP pubkey packet [RFC 4880: 5.5.2].
++ */
++int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
++			 struct pgp_parse_pubkey *pk)
++{
++	const u8 *data = *_data;
++	size_t datalen = *_datalen;
++	__be32 tmp;
++
++	if (datalen < 12) {
++		pr_debug("Public key packet too short\n");
++		return -EBADMSG;
++	}
++
++	pk->version = *data++;
++	switch (pk->version) {
++	case PGP_KEY_VERSION_2:
++	case PGP_KEY_VERSION_3:
++	case PGP_KEY_VERSION_4:
++		break;
++	default:
++		pr_debug("Public key packet with unhandled version %d\n",
++			   pk->version);
++		return -EBADMSG;
++	}
++
++	tmp  = *data++ << 24;
++	tmp |= *data++ << 16;
++	tmp |= *data++ << 8;
++	tmp |= *data++;
++	pk->creation_time = tmp;
++	if (pk->version == PGP_KEY_VERSION_4) {
++		pk->expires_at = 0; /* Have to get it from the selfsignature */
++	} else {
++		unsigned short ndays;
++		ndays  = *data++ << 8;
++		ndays |= *data++;
++		if (ndays)
++			pk->expires_at = pk->creation_time + ndays * 86400UL;
++		else
++			pk->expires_at = 0;
++		datalen -= 2;
++	}
++
++	pk->pubkey_algo = *data++;
++	datalen -= 6;
++
++	pr_devel("%x,%x,%lx,%lx",
++		 pk->version, pk->pubkey_algo, pk->creation_time,
++		 pk->expires_at);
++
++	*_data = data;
++	*_datalen = datalen;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pgp_parse_public_key);
 
