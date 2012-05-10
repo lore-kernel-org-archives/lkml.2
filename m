@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab2EJDKP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 23:10:15 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:59216 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754824Ab2EJDKI (ORCPT
+	id S1755588Ab2EJDKc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 23:10:32 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:38393 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824Ab2EJDKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 23:10:08 -0400
-Date: Wed, 9 May 2012 23:10:02 -0400
+	Wed, 9 May 2012 23:10:24 -0400
+Date: Wed, 9 May 2012 23:10:17 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: tejun@google.com, agk@redhat.com
-Subject: [Bcache v13 08/16] bcache: Documentation, and changes to generic code
-Message-ID: <7e8cf40a8f87eab56c9864928b27bf34a4e964c3.1336619038.git.koverstreet@google.com>
+Subject: [Bcache v13 09/16] Bcache: generic utility code
+Message-ID: <c3f0ca2a499f532253d4c16a30837d43e237266a.1336619038.git.koverstreet@google.com>
 References: <cover.1336619038.git.koverstreet@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,841 +24,1258 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Much of this code should be moved out of drivers/block/bcache, but it
+was originally written for bcache.
+
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- Documentation/ABI/testing/sysfs-block-bcache |  156 ++++++++++++++++
- Documentation/bcache.txt                     |  255 +++++++++++++++++++++++++
- drivers/block/Kconfig                        |    2 +
- drivers/block/Makefile                       |    1 +
- drivers/block/bcache/Kconfig                 |   42 +++++
- drivers/block/bcache/Makefile                |    8 +
- include/linux/cgroup_subsys.h                |    6 +
- include/linux/sched.h                        |    4 +
- include/trace/events/bcache.h                |  257 ++++++++++++++++++++++++++
- kernel/fork.c                                |    4 +
- 10 files changed, 735 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-block-bcache
- create mode 100644 Documentation/bcache.txt
- create mode 100644 drivers/block/bcache/Kconfig
- create mode 100644 drivers/block/bcache/Makefile
- create mode 100644 include/trace/events/bcache.h
+ drivers/block/bcache/util.c |  572 +++++++++++++++++++++++++++++++++++++
+ drivers/block/bcache/util.h |  657 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 1229 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/block/bcache/util.c
+ create mode 100644 drivers/block/bcache/util.h
 
-diff --git a/Documentation/ABI/testing/sysfs-block-bcache b/Documentation/ABI/testing/sysfs-block-bcache
+diff --git a/drivers/block/bcache/util.c b/drivers/block/bcache/util.c
 new file mode 100644
-index 0000000..9e4bbc5
+index 0000000..200c523
 --- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-block-bcache
-@@ -0,0 +1,156 @@
-+What:		/sys/block/<disk>/bcache/unregister
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		A write to this file causes the backing device or cache to be
-+		unregistered. If a backing device had dirty data in the cache,
-+		writeback mode is automatically disabled and all dirty data is
-+		flushed before the device is unregistered. Caches unregister
-+		all associated backing devices before unregistering themselves.
-+
-+What:		/sys/block/<disk>/bcache/clear_stats
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		Writing to this file resets all the statistics for the device.
-+
-+What:		/sys/block/<disk>/bcache/cache
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For a backing device that has cache, a symlink to
-+		the bcache/ dir of that cache.
-+
-+What:		/sys/block/<disk>/bcache/cache_hits
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For backing devices: integer number of full cache hits,
-+		counted per bio. A partial cache hit counts as a miss.
-+
-+What:		/sys/block/<disk>/bcache/cache_misses
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For backing devices: integer number of cache misses.
-+
-+What:		/sys/block/<disk>/bcache/cache_hit_ratio
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For backing devices: cache hits as a percentage.
-+
-+What:		/sys/block/<disk>/bcache/sequential_cutoff
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For backing devices: Threshold past which sequential IO will
-+		skip the cache. Read and written as bytes in human readable
-+		units (i.e. echo 10M > sequntial_cutoff).
-+
-+What:		/sys/block/<disk>/bcache/bypassed
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		Sum of all reads and writes that have bypassed the cache (due
-+		to the sequential cutoff).  Expressed as bytes in human
-+		readable units.
-+
-+What:		/sys/block/<disk>/bcache/writeback
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For backing devices: When on, writeback caching is enabled and
-+		writes will be buffered in the cache. When off, caching is in
-+		writethrough mode; reads and writes will be added to the
-+		cache but no write buffering will take place.
-+
-+What:		/sys/block/<disk>/bcache/writeback_running
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For backing devices: when off, dirty data will not be written
-+		from the cache to the backing device. The cache will still be
-+		used to buffer writes until it is mostly full, at which point
-+		writes transparently revert to writethrough mode. Intended only
-+		for benchmarking/testing.
-+
-+What:		/sys/block/<disk>/bcache/writeback_delay
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For backing devices: In writeback mode, when dirty data is
-+		written to the cache and the cache held no dirty data for that
-+		backing device, writeback from cache to backing device starts
-+		after this delay, expressed as an integer number of seconds.
-+
-+What:		/sys/block/<disk>/bcache/writeback_percent
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For backing devices: If nonzero, writeback from cache to
-+		backing device only takes place when more than this percentage
-+		of the cache is used, allowing more write coalescing to take
-+		place and reducing total number of writes sent to the backing
-+		device. Integer between 0 and 40.
-+
-+What:		/sys/block/<disk>/bcache/synchronous
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For a cache, a boolean that allows synchronous mode to be
-+		switched on and off. In synchronous mode all writes are ordered
-+		such that the cache can reliably recover from unclean shutdown;
-+		if disabled bcache will not generally wait for writes to
-+		complete but if the cache is not shut down cleanly all data
-+		will be discarded from the cache. Should not be turned off with
-+		writeback caching enabled.
-+
-+What:		/sys/block/<disk>/bcache/discard
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For a cache, a boolean allowing discard/TRIM to be turned off
-+		or back on if the device supports it.
-+
-+What:		/sys/block/<disk>/bcache/bucket_size
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For a cache, bucket size in human readable units, as set at
-+		cache creation time; should match the erase block size of the
-+		SSD for optimal performance.
-+
-+What:		/sys/block/<disk>/bcache/nbuckets
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For a cache, the number of usable buckets.
-+
-+What:		/sys/block/<disk>/bcache/tree_depth
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For a cache, height of the btree excluding leaf nodes (i.e. a
-+		one node tree will have a depth of 0).
-+
-+What:		/sys/block/<disk>/bcache/btree_cache_size
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		Number of btree buckets/nodes that are currently cached in
-+		memory; cache dynamically grows and shrinks in response to
-+		memory pressure from the rest of the system.
-+
-+What:		/sys/block/<disk>/bcache/written
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For a cache, total amount of data in human readable units
-+		written to the cache, excluding all metadata.
-+
-+What:		/sys/block/<disk>/bcache/btree_written
-+Date:		November 2010
-+Contact:	Kent Overstreet <kent.overstreet@gmail.com>
-+Description:
-+		For a cache, sum of all btree writes in human readable units.
-diff --git a/Documentation/bcache.txt b/Documentation/bcache.txt
-new file mode 100644
-index 0000000..270c734
---- /dev/null
-+++ b/Documentation/bcache.txt
-@@ -0,0 +1,255 @@
-+Say you've got a big slow raid 6, and an X-25E or three. Wouldn't it be
-+nice if you could use them as cache... Hence bcache.
-+
-+Userspace tools and a wiki are at:
-+  git://evilpiepirate.org/~kent/bcache-tools.git
-+  http://bcache.evilpiepirate.org
-+
-+It's designed around the performance characteristics of SSDs - it only allocates
-+in erase block sized buckets, and it uses a hybrid btree/log to track cached
-+extants (which can be anywhere from a single sector to the bucket size). It's
-+designed to avoid random writes at all costs; it fills up an erase block
-+sequentially, then issues a discard before reusing it.
-+
-+Both writethrough and writeback caching are supported. Writeback defaults to
-+off, but can be switched on and off arbitrarily at runtime. Bcache goes to
-+great lengths to protect your data - it reliably handles unclean shutdown. (It
-+doesn't even have a notion of a clean shutdown; bcache simply doesn't return
-+writes as completed until they're on stable storage).
-+
-+Writeback caching can use most of the cache for buffering writes - writing
-+dirty data to the backing device is always done sequentially, scanning from the
-+start to the end of the index.
-+
-+Since random IO is what SSDs excel at, there generally won't be much benefit
-+to caching large sequential IO. Bcache detects sequential IO and skips it;
-+it also keeps a rolling average of the IO sizes per task, and as long as the
-+average is above the cutoff it will skip all IO from that task - instead of
-+caching the first 512k after every seek. Backups and large file copies should
-+thus entirely bypass the cache.
-+
-+In the event of a data IO error on the flash it will try to recover by reading
-+from disk or invalidating cache entries.  For unrecoverable errors (meta data
-+or dirty data), caching is automatically disabled; if dirty data was present
-+in the cache it first disables writeback caching and waits for all dirty data
-+to be flushed.
-+
-+Getting started:
-+You'll need make-bcache from the bcache-tools repository. Both the cache device
-+and backing device must be formatted before use.
-+  make-bcache -B /dev/sdb
-+  make-bcache -C -w2k -b1M -j64 /dev/sdc
-+
-+To make bcache devices known to the kernel, echo them to /sys/fs/bcache/register:
-+  echo /dev/sdb > /sys/fs/bcache/register
-+  echo /dev/sdc > /sys/fs/bcache/register
-+
-+To register your bcache devices automatically, you could add something like
-+this to an init script:
-+  echo /dev/sd* > /sys/fs/bcache/register_quiet
-+
-+It'll look for bcache superblocks and ignore everything that doesn't have one.
-+
-+When you register a backing device, you'll get a new /dev/bcache# device:
-+  mkfs.ext4 /dev/bcache0
-+  mount /dev/bcache0 /mnt
-+
-+Cache devices are managed as sets; multiple caches per set isn't supported yet
-+but will allow for mirroring of metadata and dirty data in the future. Your new
-+cache set shows up as /sys/fs/bcache/<UUID>
-+
-+To enable caching, you need to attach the backing device to the cache set by
-+specifying the UUID:
-+  echo <UUID> > /sys/block/sdb/bcache/attach
-+
-+The cache set with that UUID need not be registered to attach to it - the UUID
-+will be saved to the backing device's superblock and it'll start being cached
-+when the cache set does show up.
-+
-+This only has to be done once. The next time you reboot, just reregister all
-+your bcache devices. If a backing device has data in a cache somewhere, the
-+/dev/bcache# device won't be created until the cache shows up - particularly
-+important if you have writeback caching turned on.
-+
-+If you're booting up and your cache device is gone and never coming back, you
-+can force run the backing device:
-+  echo 1 > /sys/block/sdb/bcache/running
-+
-+The backing device will still use that cache set if it shows up in the future,
-+but all the cached data will be invalidated. If there was dirty data in the
-+cache, don't expect the filesystem to be recoverable - you will have massive
-+filesystem corruption, though ext4's fsck does work miracles.
-+
-+
-+Other sysfs files for the backing device:
-+
-+  bypassed
-+    Sum of all IO, reads and writes, than have bypassed the cache
-+
-+  cache_hits
-+  cache_misses
-+  cache_hit_ratio
-+    Hits and misses are counted per individual IO as bcache sees them; a
-+    partial hit is counted as a miss.
-+
-+  cache_miss_collisions
-+    Count of times a read completes but the data is already in the cache and
-+    is therefore redundant.  This is usually caused by readahead while a
-+    read to the same location occurs.
-+
-+  cache_readaheads
-+    Count of times readahead occured.
-+
-+  clear_stats
-+    Writing to this file resets all the statistics.
-+
-+  flush_delay_ms
-+  flush_delay_ms_sync
-+    Optional delay for btree writes to allow for more coalescing of updates to
-+    the index. Default to 0.
-+
-+  label
-+    Name of underlying device.
-+
-+  readahead
-+    Size of readahead that should be performed.  Defaults to 0.  If set to e.g.
-+    1M, it will round cache miss reads up to that size, but without overlapping
-+    existing cache entries.
-+
-+  running
-+    1 if bcache is running.
-+
-+  sequential_cutoff
-+    A sequential IO will bypass the cache once it passes this threshhold; the
-+    most recent 128 IOs are tracked so sequential IO can be detected even when
-+    it isn't all done at once.
-+
-+  sequential_cutoff_average
-+    If the weighted average from a client is higher than this cutoff we bypass
-+    all IO.
-+
-+  unregister
-+    Writing to this file disables caching on that device
-+
-+  writeback
-+    Boolean, if off only writethrough caching is done
-+
-+  writeback_delay
-+    When dirty data is written to the cache and it previously did not contain
-+    any, waits some number of seconds before initiating writeback. Defaults to
-+    30.
-+
-+  writeback_percent
-+    To allow for more buffering of random writes, writeback only proceeds when
-+    more than this percentage of the cache is unavailable. Defaults to 0.
-+
-+  writeback_running
-+    If off, writeback of dirty data will not take place at all. Dirty data will
-+    still be added to the cache until it is mostly full; only meant for
-+    benchmarking. Defaults to on.
-+
-+For the cache set:
-+  active_journal_entries
-+    Number of journal entries that are newer than the index.
-+
-+  average_key_size
-+    Average data per key in the btree.
-+
-+  average_seconds_between_gc
-+    How often garbage collection is occuring.
-+
-+  block_size
-+    Block size of the virtual device.
-+
-+  btree_avg_keys_written
-+    Average number of keys per write to the btree when a node wasn't being
-+    rewritten - indicates how much coalescing is taking place.
-+
-+
-+  btree_cache_size
-+    Number of btree buckets currently cached in memory
-+
-+  btree_nodes
-+    Total nodes in the btree.
-+
-+  btree_used_percent
-+    Average fraction of btree in use.
-+
-+  bucket_size
-+    Size of Buckets
-+
-+  bypassed
-+    Sum of all IO, reads and writes, than have bypassed the cache
-+
-+  cache_available_percent
-+    Percentage of cache device free.
-+
-+  clear_stats
-+    Clears the statistics associated with this cache
-+
-+  dirty_data
-+    How much dirty data is in the cache.
-+
-+  gc_ms_max
-+    Longest garbage collection.
-+
-+  internal/bset_tree_stats
-+  internal/btree_cache_max_chain
-+    Internal.  Statistics about the bset tree and chain length.  Likely to be
-+    hidden soon.
-+
-+  io_error_halflife
-+  io_error_limit
-+    These determines how many errors we accept before disabling the cache.
-+    Each error is decayed by the half life (in # ios).  If the decaying count
-+    reaches io_error_limit dirty data is written out and the cache is disabled.
-+
-+  root_usage_percent
-+    Percentage of the root btree node in use.  If this gets too high the node
-+    will split, increasing the tree depth.
-+
-+  seconds_since_gc
-+    When was the last garbage collection.
-+
-+  synchronous
-+    Boolean; when on all writes to the cache are strictly ordered such that it
-+    can recover from unclean shutdown. If off it will not generally wait for
-+    writes to complete, but the entire cache contents will be invalidated on
-+    unclean shutdown. Not recommended that it be turned off when writeback is
-+    on.
-+
-+  tree_depth
-+    Depth of the btree.
-+
-+  trigger_gc
-+    Force garbage collection to run now.
-+
-+  unregister
-+    Closes the cache device and all devices being cached; if dirty data is
-+    present it will disable writeback caching and wait for it to be flushed.
-+
-+
-+For each cache within a cache set:
-+  btree_written
-+    Sum of all btree writes, in (kilo/mega/giga) bytes
-+
-+  discard
-+    Boolean; if on a discard/TRIM will be issued to each bucket before it is
-+    reused. Defaults to on if supported.
-+
-+  io_errors
-+    Number of errors that have occured, decayed by io_error_halflife.
-+
-+  metadata_written
-+    Total Metadata written (btree + other meta data).
-+
-+  nbuckets
-+    Total buckets in this cache
-+
-+  priority_stats
-+    Statistics about how recently data in the cache has been accessed.  This can
-+    reveal your working set size.
-+
-+  written
-+    Sum of all data that has been written to the cache; comparison with
-+    btree_written gives the amount of write inflation in bcache.
-diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
-index 4e4c8a4..d872600 100644
---- a/drivers/block/Kconfig
-+++ b/drivers/block/Kconfig
-@@ -526,6 +526,8 @@ config VIRTIO_BLK
- 	  This is the virtual block driver for virtio.  It can be used with
-           lguest or QEMU based VMMs (like KVM or Xen).  Say Y or M.
- 
-+source "drivers/block/bcache/Kconfig"
-+
- config BLK_DEV_HD
- 	bool "Very old hard disk (MFM/RLL/IDE) driver"
- 	depends on HAVE_IDE
-diff --git a/drivers/block/Makefile b/drivers/block/Makefile
-index 5b79505..19520e1 100644
---- a/drivers/block/Makefile
-+++ b/drivers/block/Makefile
-@@ -41,5 +41,6 @@ obj-$(CONFIG_XEN_BLKDEV_BACKEND)	+= xen-blkback/
- obj-$(CONFIG_BLK_DEV_DRBD)     += drbd/
- obj-$(CONFIG_BLK_DEV_RBD)     += rbd.o
- obj-$(CONFIG_BLK_DEV_PCIESSD_MTIP32XX)	+= mtip32xx/
-+obj-$(CONFIG_BCACHE)           += bcache/
- 
- swim_mod-y	:= swim.o swim_asm.o
-diff --git a/drivers/block/bcache/Kconfig b/drivers/block/bcache/Kconfig
-new file mode 100644
-index 0000000..019f133
---- /dev/null
-+++ b/drivers/block/bcache/Kconfig
-@@ -0,0 +1,42 @@
-+
-+config BCACHE
-+	tristate "Block device as cache"
-+	select COMPACTION
-+	select CLOSURES
-+	---help---
-+	Allows a block device to be used as cache for other devices; uses
-+	a btree for indexing and the layout is optimized for SSDs.
-+
-+	See Documentation/bcache.txt for details.
-+
-+config BCACHE_DEBUG
-+	bool "Bcache debugging"
-+	depends on BCACHE
-+	---help---
-+	Don't select this option unless you're a developer
-+
-+	Enables extra debugging tools (primarily a fuzz tester)
-+
-+config BCACHE_EDEBUG
-+	bool "Extended runtime checks"
-+	depends on BCACHE
-+	---help---
-+	Don't select this option unless you're a developer
-+
-+	Enables extra runtime checks which significantly affect performance
-+
-+config BCACHE_LATENCY_DEBUG
-+	bool "Latency tracing for bcache"
-+	depends on BCACHE
-+	---help---
-+	Hacky latency tracing that has nevertheless been useful in the past:
-+	adds a global variable accessible via /sys/fs/bcache/latency_warn_ms,
-+	which defaults to 0. If nonzero, any timed operation that takes longer
-+	emits a printk.
-+
-+config CGROUP_BCACHE
-+  bool "Cgroup controls for bcache"
-+  depends on BCACHE && BLK_CGROUP
-+  ---help---
-+  TODO
-+
-diff --git a/drivers/block/bcache/Makefile b/drivers/block/bcache/Makefile
-new file mode 100644
-index 0000000..84302f9
---- /dev/null
-+++ b/drivers/block/bcache/Makefile
-@@ -0,0 +1,8 @@
-+
-+ccflags-y		+= -std=gnu99
-+obj-$(CONFIG_BCACHE)	+= bcache.o
-+
-+bcache-y		:= alloc.o btree.o bset.o io.o journal.o\
-+	writeback.o request.o super.o debug.o util.o trace.o stats.o
-+
-+CFLAGS_request.o	+= -Iblock
-diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
-index 0bd390c..d698634 100644
---- a/include/linux/cgroup_subsys.h
-+++ b/include/linux/cgroup_subsys.h
-@@ -72,3 +72,9 @@ SUBSYS(net_prio)
- #endif
- 
- /* */
-+
-+#ifdef CONFIG_CGROUP_BCACHE
-+SUBSYS(bcache)
++++ b/drivers/block/bcache/util.c
+@@ -0,0 +1,572 @@
++#include <linux/bio.h>
++#include <linux/blkdev.h>
++#include <linux/ctype.h>
++#include <linux/debugfs.h>
++#include <linux/module.h>
++#include <linux/seq_file.h>
++#include <linux/types.h>
++
++#include <linux/dynamic_fault.h>
++
++#include "util.h"
++
++#define simple_strtoint(c, end, base)	simple_strtol(c, end, base)
++#define simple_strtouint(c, end, base)	simple_strtoul(c, end, base)
++
++#define STRTO_H(name, type)					\
++int name ## _h(const char *cp, type *res)		        \
++{								\
++	int u = 0;						\
++	char *e;						\
++	type i = simple_ ## name(cp, &e, 10);			\
++								\
++	switch (tolower(*e)) {					\
++	default:						\
++		return -EINVAL;					\
++	case 'y':						\
++	case 'z':						\
++		u++;						\
++	case 'e':						\
++		u++;						\
++	case 'p':						\
++		u++;						\
++	case 't':						\
++		u++;						\
++	case 'g':						\
++		u++;						\
++	case 'm':						\
++		u++;						\
++	case 'k':						\
++		u++;						\
++		if (e++ == cp)					\
++			return -EINVAL;				\
++	case '\n':						\
++	case '\0':						\
++		if (*e == '\n')					\
++			e++;					\
++	}							\
++								\
++	if (*e)							\
++		return -EINVAL;					\
++								\
++	while (u--) {						\
++		if ((type) ~0 > 0 &&				\
++		    (type) ~0 / 1024 <= i)			\
++			return -EINVAL;				\
++		if ((i > 0 && ANYSINT_MAX(type) / 1024 < i) ||	\
++		    (i < 0 && -ANYSINT_MAX(type) / 1024 > i))	\
++			return -EINVAL;				\
++		i *= 1024;					\
++	}							\
++								\
++	*res = i;						\
++	return 0;						\
++}								\
++EXPORT_SYMBOL_GPL(name ## _h);
++
++STRTO_H(strtoint, int)
++STRTO_H(strtouint, unsigned int)
++STRTO_H(strtoll, long long)
++STRTO_H(strtoull, unsigned long long)
++
++ssize_t hprint(char *buf, int64_t v)
++{
++	static const char units[] = "?kMGTPEZY";
++	char dec[3] = "";
++	int u, t = 0;
++
++	for (u = 0; v >= 1024 || v <= -1024; u++) {
++		t = v & ~(~0 << 10);
++		v >>= 10;
++	}
++
++	if (!u)
++		return sprintf(buf, "%llu", v);
++
++	if (v < 100 && v > -100)
++		sprintf(dec, ".%i", t / 100);
++
++	return sprintf(buf, "%lli%s%c", v, dec, units[u]);
++}
++EXPORT_SYMBOL_GPL(hprint);
++
++ssize_t sprint_string_list(char *buf, const char * const list[],
++			   size_t selected)
++{
++	char *out = buf;
++
++	for (size_t i = 0; list[i]; i++)
++		out += sprintf(out, i == selected ? "[%s] " : "%s ", list[i]);
++
++	out[-1] = '\n';
++	return out - buf;
++}
++EXPORT_SYMBOL_GPL(sprint_string_list);
++
++ssize_t read_string_list(const char *buf, const char * const list[])
++{
++	size_t i;
++	char *s, *d = kstrndup(buf, PAGE_SIZE - 1, GFP_KERNEL);
++	if (!d)
++		return -ENOMEM;
++
++	s = strim(d);
++
++	for (i = 0; list[i]; i++)
++		if (!strcmp(list[i], s))
++			break;
++
++	kfree(d);
++
++	if (!list[i])
++		return -EINVAL;
++
++	return i;
++}
++EXPORT_SYMBOL_GPL(read_string_list);
++
++bool is_zero(const char *p, size_t n)
++{
++	for (size_t i = 0; i < n; i++)
++		if (p[i])
++			return false;
++	return true;
++}
++EXPORT_SYMBOL_GPL(is_zero);
++
++int parse_uuid(const char *s, char *uuid)
++{
++	size_t i, j, x;
++	memset(uuid, 0, 16);
++
++	for (i = 0, j = 0;
++	     i < strspn(s, "-0123456789:ABCDEFabcdef") && j < 32;
++	     i++) {
++		x = s[i] | 32;
++
++		switch (x) {
++		case '0'...'9':
++			x -= '0';
++			break;
++		case 'a'...'f':
++			x -= 'a' - 10;
++			break;
++		default:
++			continue;
++		}
++
++		if (!(j & 1))
++			x <<= 4;
++		uuid[j++ >> 1] |= x;
++	}
++	return i;
++}
++EXPORT_SYMBOL_GPL(parse_uuid);
++
++void time_stats_update(struct time_stats *stats, uint64_t start_time)
++{
++	uint64_t now		= local_clock();
++	uint64_t duration	= time_after64(now, start_time)
++		? now - start_time : 0;
++	uint64_t last		= time_after64(now, stats->last)
++		? now - stats->last : 0;
++
++	stats->max_duration = max(stats->max_duration, duration);
++
++	if (stats->last) {
++		ewma_add(stats->average_duration, duration, 8, 8);
++
++		if (stats->average_frequency)
++			ewma_add(stats->average_frequency, last, 8, 8);
++		else
++			stats->average_frequency  = last << 8;
++	} else
++		stats->average_duration  = duration << 8;
++
++	stats->last = now ?: 1;
++}
++EXPORT_SYMBOL_GPL(time_stats_update);
++
++#ifdef CONFIG_BCACHE_LATENCY_DEBUG
++unsigned latency_warn_ms;
 +#endif
 +
-+/* */
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 0657368..63014ba 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1590,6 +1590,10 @@ struct task_struct {
- #ifdef CONFIG_HAVE_HW_BREAKPOINT
- 	atomic_t ptrace_bp_refcnt;
- #endif
-+#if defined(CONFIG_BCACHE) || defined(CONFIG_BCACHE_MODULE)
-+	unsigned int	sequential_io;
-+	unsigned int	sequential_io_avg;
++#ifdef CONFIG_BCACHE_EDEBUG
++
++static void check_bio(struct bio *bio)
++{
++	unsigned i, size = 0;
++	struct bio_vec *bv;
++	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
++	BUG_ON(!bio->bi_vcnt);
++	BUG_ON(!bio->bi_size);
++
++	bio_for_each_segment(bv, bio, i)
++		size += bv->bv_len;
++
++	BUG_ON(size != bio->bi_size);
++	BUG_ON(size > queue_max_sectors(q) << 9);
++
++	blk_recount_segments(q, bio);
++	BUG_ON(bio->bi_phys_segments > queue_max_segments(q));
++}
++
++#else /* EDEBUG */
++
++#define check_bio(bio)		do {} while (0)
++
 +#endif
- };
- 
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
-diff --git a/include/trace/events/bcache.h b/include/trace/events/bcache.h
++
++void bio_reset(struct bio *bio)
++{
++	struct bio_vec *bv = bio->bi_io_vec;
++	unsigned max_vecs = bio->bi_max_vecs;
++	bio_destructor_t *destructor = bio->bi_destructor;
++
++	bio_init(bio);
++	atomic_set(&bio->bi_cnt, 2);
++	bio->bi_max_vecs	= max_vecs;
++	bio->bi_io_vec		= bv;
++	bio->bi_destructor	= destructor;
++}
++EXPORT_SYMBOL_GPL(bio_reset);
++
++void bio_map(struct bio *bio, void *base)
++{
++	size_t size = bio->bi_size;
++	struct bio_vec *bv = bio->bi_inline_vecs;
++
++	BUG_ON(!bio->bi_size);
++	bio->bi_vcnt	= 0;
++	bio->bi_io_vec	= bv;
++
++	bv->bv_offset = base ? ((unsigned long) base) % PAGE_SIZE : 0;
++	goto start;
++
++	for (; size; bio->bi_vcnt++, bv++) {
++		bv->bv_offset	= 0;
++start:		bv->bv_len	= min_t(size_t, PAGE_SIZE - bv->bv_offset,
++					size);
++		if (base) {
++			bv->bv_page = is_vmalloc_addr(base)
++				? vmalloc_to_page(base)
++				: virt_to_page(base);
++
++			base += bv->bv_len;
++		}
++
++		size -= bv->bv_len;
++	}
++}
++EXPORT_SYMBOL_GPL(bio_map);
++
++#undef bio_alloc_pages
++int bio_alloc_pages(struct bio *bio, gfp_t gfp)
++{
++	int i;
++	struct bio_vec *bv;
++	bio_for_each_segment(bv, bio, i) {
++		bv->bv_page = alloc_page(gfp);
++		if (!bv->bv_page) {
++			while (bv-- != bio->bi_io_vec + bio->bi_idx)
++				__free_page(bv->bv_page);
++			return -ENOMEM;
++		}
++	}
++	return 0;
++}
++EXPORT_SYMBOL_GPL(bio_alloc_pages);
++
++struct bio *bio_split_front(struct bio *bio, int sectors, bio_alloc_fn *_alloc,
++			    gfp_t gfp, struct bio_set *bs)
++{
++	unsigned idx, vcnt = 0, nbytes = sectors << 9;
++	struct bio_vec *bv;
++	struct bio *ret = NULL;
++
++	struct bio *alloc(int n)
++	{
++		if (bs)
++			return bio_alloc_bioset(gfp, n, bs);
++		else if (_alloc)
++			return _alloc(gfp, n);
++		else
++			return bio_kmalloc(gfp, n);
++	}
++
++	if (current->bio_list)
++		bs = NULL;
++
++	BUG_ON(sectors <= 0);
++
++	if (nbytes >= bio->bi_size)
++		return bio;
++
++	bio_for_each_segment(bv, bio, idx) {
++		vcnt = idx - bio->bi_idx;
++
++		if (!nbytes) {
++			ret = alloc(0);
++			if (!ret)
++				return NULL;
++
++			ret->bi_io_vec = bio_iovec(bio);
++			ret->bi_flags |= 1 << BIO_CLONED;
++			break;
++		} else if (nbytes < bv->bv_len) {
++			ret = alloc(++vcnt);
++			if (!ret)
++				return NULL;
++
++			memcpy(ret->bi_io_vec, bio_iovec(bio),
++			       sizeof(struct bio_vec) * vcnt);
++
++			ret->bi_io_vec[vcnt - 1].bv_len = nbytes;
++			bv->bv_offset	+= nbytes;
++			bv->bv_len	-= nbytes;
++			break;
++		}
++
++		nbytes -= bv->bv_len;
++	}
++
++	ret->bi_bdev	= bio->bi_bdev;
++	ret->bi_sector	= bio->bi_sector;
++	ret->bi_size	= sectors << 9;
++	ret->bi_rw	= bio->bi_rw;
++	ret->bi_vcnt	= vcnt;
++	ret->bi_max_vecs = vcnt;
++	ret->bi_end_io	= bio->bi_end_io;
++	ret->bi_private	= bio->bi_private;
++
++	if (ret && ret != bio && bs) {
++		ret->bi_flags |= 1 << BIO_HAS_POOL;
++		ret->bi_destructor = (void *) bs;
++	}
++
++	bio->bi_sector	+= sectors;
++	bio->bi_size	-= sectors << 9;
++	bio->bi_idx	 = idx;
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(bio_split_front);
++
++unsigned __bio_max_sectors(struct bio *bio, struct block_device *bdev,
++			   sector_t sector)
++{
++	unsigned ret = bio_sectors(bio);
++	struct request_queue *q = bdev_get_queue(bdev);
++	struct bio_vec *end = bio_iovec(bio) +
++		min_t(int, bio_segments(bio), queue_max_segments(q));
++
++	struct bvec_merge_data bvm = {
++		.bi_bdev	= bdev,
++		.bi_sector	= sector,
++		.bi_size	= 0,
++		.bi_rw		= bio->bi_rw,
++	};
++
++	if (bio_segments(bio) > queue_max_segments(q) ||
++	    q->merge_bvec_fn) {
++		ret = 0;
++
++		for (struct bio_vec *bv = bio_iovec(bio); bv < end; bv++) {
++			if (q->merge_bvec_fn &&
++			    q->merge_bvec_fn(q, &bvm, bv) < (int) bv->bv_len)
++				break;
++
++			ret		+= bv->bv_len >> 9;
++			bvm.bi_size	+= bv->bv_len;
++		}
++	}
++
++	ret = min(ret, queue_max_sectors(q));
++
++	WARN_ON(!ret);
++	ret = max_t(int, ret, bio_iovec(bio)->bv_len >> 9);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(__bio_max_sectors);
++
++int bio_submit_split(struct bio *bio, atomic_t *i, struct bio_set *bs)
++{
++	struct bio *n;
++
++	do {
++		n = bio_split_front(bio, bio_max_sectors(bio),
++				    NULL, GFP_NOIO, bs);
++		if (!n)
++			return -ENOMEM;
++		else if (n != bio)
++			atomic_inc(i);
++
++		check_bio(n);
++		generic_make_request(n);
++	} while (n != bio);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(bio_submit_split);
++
++/*
++ * Portions Copyright (c) 1996-2001, PostgreSQL Global Development Group (Any
++ * use permitted, subject to terms of PostgreSQL license; see.)
++
++ * If we have a 64-bit integer type, then a 64-bit CRC looks just like the
++ * usual sort of implementation. (See Ross Williams' excellent introduction
++ * A PAINLESS GUIDE TO CRC ERROR DETECTION ALGORITHMS, available from
++ * ftp://ftp.rocksoft.com/papers/crc_v3.txt or several other net sites.)
++ * If we have no working 64-bit type, then fake it with two 32-bit registers.
++ *
++ * The present implementation is a normal (not "reflected", in Williams'
++ * terms) 64-bit CRC, using initial all-ones register contents and a final
++ * bit inversion. The chosen polynomial is borrowed from the DLT1 spec
++ * (ECMA-182, available from http://www.ecma.ch/ecma1/STAND/ECMA-182.HTM):
++ *
++ * x^64 + x^62 + x^57 + x^55 + x^54 + x^53 + x^52 + x^47 + x^46 + x^45 +
++ * x^40 + x^39 + x^38 + x^37 + x^35 + x^33 + x^32 + x^31 + x^29 + x^27 +
++ * x^24 + x^23 + x^22 + x^21 + x^19 + x^17 + x^13 + x^12 + x^10 + x^9 +
++ * x^7 + x^4 + x + 1
++*/
++
++static const uint64_t crc_table[256] = {
++	0x0000000000000000, 0x42F0E1EBA9EA3693, 0x85E1C3D753D46D26,
++	0xC711223CFA3E5BB5, 0x493366450E42ECDF, 0x0BC387AEA7A8DA4C,
++	0xCCD2A5925D9681F9, 0x8E224479F47CB76A, 0x9266CC8A1C85D9BE,
++	0xD0962D61B56FEF2D, 0x17870F5D4F51B498, 0x5577EEB6E6BB820B,
++	0xDB55AACF12C73561, 0x99A54B24BB2D03F2, 0x5EB4691841135847,
++	0x1C4488F3E8F96ED4, 0x663D78FF90E185EF, 0x24CD9914390BB37C,
++	0xE3DCBB28C335E8C9, 0xA12C5AC36ADFDE5A, 0x2F0E1EBA9EA36930,
++	0x6DFEFF5137495FA3, 0xAAEFDD6DCD770416, 0xE81F3C86649D3285,
++	0xF45BB4758C645C51, 0xB6AB559E258E6AC2, 0x71BA77A2DFB03177,
++	0x334A9649765A07E4, 0xBD68D2308226B08E, 0xFF9833DB2BCC861D,
++	0x388911E7D1F2DDA8, 0x7A79F00C7818EB3B, 0xCC7AF1FF21C30BDE,
++	0x8E8A101488293D4D, 0x499B3228721766F8, 0x0B6BD3C3DBFD506B,
++	0x854997BA2F81E701, 0xC7B97651866BD192, 0x00A8546D7C558A27,
++	0x4258B586D5BFBCB4, 0x5E1C3D753D46D260, 0x1CECDC9E94ACE4F3,
++	0xDBFDFEA26E92BF46, 0x990D1F49C77889D5, 0x172F5B3033043EBF,
++	0x55DFBADB9AEE082C, 0x92CE98E760D05399, 0xD03E790CC93A650A,
++	0xAA478900B1228E31, 0xE8B768EB18C8B8A2, 0x2FA64AD7E2F6E317,
++	0x6D56AB3C4B1CD584, 0xE374EF45BF6062EE, 0xA1840EAE168A547D,
++	0x66952C92ECB40FC8, 0x2465CD79455E395B, 0x3821458AADA7578F,
++	0x7AD1A461044D611C, 0xBDC0865DFE733AA9, 0xFF3067B657990C3A,
++	0x711223CFA3E5BB50, 0x33E2C2240A0F8DC3, 0xF4F3E018F031D676,
++	0xB60301F359DBE0E5, 0xDA050215EA6C212F, 0x98F5E3FE438617BC,
++	0x5FE4C1C2B9B84C09, 0x1D14202910527A9A, 0x93366450E42ECDF0,
++	0xD1C685BB4DC4FB63, 0x16D7A787B7FAA0D6, 0x5427466C1E109645,
++	0x4863CE9FF6E9F891, 0x0A932F745F03CE02, 0xCD820D48A53D95B7,
++	0x8F72ECA30CD7A324, 0x0150A8DAF8AB144E, 0x43A04931514122DD,
++	0x84B16B0DAB7F7968, 0xC6418AE602954FFB, 0xBC387AEA7A8DA4C0,
++	0xFEC89B01D3679253, 0x39D9B93D2959C9E6, 0x7B2958D680B3FF75,
++	0xF50B1CAF74CF481F, 0xB7FBFD44DD257E8C, 0x70EADF78271B2539,
++	0x321A3E938EF113AA, 0x2E5EB66066087D7E, 0x6CAE578BCFE24BED,
++	0xABBF75B735DC1058, 0xE94F945C9C3626CB, 0x676DD025684A91A1,
++	0x259D31CEC1A0A732, 0xE28C13F23B9EFC87, 0xA07CF2199274CA14,
++	0x167FF3EACBAF2AF1, 0x548F120162451C62, 0x939E303D987B47D7,
++	0xD16ED1D631917144, 0x5F4C95AFC5EDC62E, 0x1DBC74446C07F0BD,
++	0xDAAD56789639AB08, 0x985DB7933FD39D9B, 0x84193F60D72AF34F,
++	0xC6E9DE8B7EC0C5DC, 0x01F8FCB784FE9E69, 0x43081D5C2D14A8FA,
++	0xCD2A5925D9681F90, 0x8FDAB8CE70822903, 0x48CB9AF28ABC72B6,
++	0x0A3B7B1923564425, 0x70428B155B4EAF1E, 0x32B26AFEF2A4998D,
++	0xF5A348C2089AC238, 0xB753A929A170F4AB, 0x3971ED50550C43C1,
++	0x7B810CBBFCE67552, 0xBC902E8706D82EE7, 0xFE60CF6CAF321874,
++	0xE224479F47CB76A0, 0xA0D4A674EE214033, 0x67C58448141F1B86,
++	0x253565A3BDF52D15, 0xAB1721DA49899A7F, 0xE9E7C031E063ACEC,
++	0x2EF6E20D1A5DF759, 0x6C0603E6B3B7C1CA, 0xF6FAE5C07D3274CD,
++	0xB40A042BD4D8425E, 0x731B26172EE619EB, 0x31EBC7FC870C2F78,
++	0xBFC9838573709812, 0xFD39626EDA9AAE81, 0x3A28405220A4F534,
++	0x78D8A1B9894EC3A7, 0x649C294A61B7AD73, 0x266CC8A1C85D9BE0,
++	0xE17DEA9D3263C055, 0xA38D0B769B89F6C6, 0x2DAF4F0F6FF541AC,
++	0x6F5FAEE4C61F773F, 0xA84E8CD83C212C8A, 0xEABE6D3395CB1A19,
++	0x90C79D3FEDD3F122, 0xD2377CD44439C7B1, 0x15265EE8BE079C04,
++	0x57D6BF0317EDAA97, 0xD9F4FB7AE3911DFD, 0x9B041A914A7B2B6E,
++	0x5C1538ADB04570DB, 0x1EE5D94619AF4648, 0x02A151B5F156289C,
++	0x4051B05E58BC1E0F, 0x87409262A28245BA, 0xC5B073890B687329,
++	0x4B9237F0FF14C443, 0x0962D61B56FEF2D0, 0xCE73F427ACC0A965,
++	0x8C8315CC052A9FF6, 0x3A80143F5CF17F13, 0x7870F5D4F51B4980,
++	0xBF61D7E80F251235, 0xFD913603A6CF24A6, 0x73B3727A52B393CC,
++	0x31439391FB59A55F, 0xF652B1AD0167FEEA, 0xB4A25046A88DC879,
++	0xA8E6D8B54074A6AD, 0xEA16395EE99E903E, 0x2D071B6213A0CB8B,
++	0x6FF7FA89BA4AFD18, 0xE1D5BEF04E364A72, 0xA3255F1BE7DC7CE1,
++	0x64347D271DE22754, 0x26C49CCCB40811C7, 0x5CBD6CC0CC10FAFC,
++	0x1E4D8D2B65FACC6F, 0xD95CAF179FC497DA, 0x9BAC4EFC362EA149,
++	0x158E0A85C2521623, 0x577EEB6E6BB820B0, 0x906FC95291867B05,
++	0xD29F28B9386C4D96, 0xCEDBA04AD0952342, 0x8C2B41A1797F15D1,
++	0x4B3A639D83414E64, 0x09CA82762AAB78F7, 0x87E8C60FDED7CF9D,
++	0xC51827E4773DF90E, 0x020905D88D03A2BB, 0x40F9E43324E99428,
++	0x2CFFE7D5975E55E2, 0x6E0F063E3EB46371, 0xA91E2402C48A38C4,
++	0xEBEEC5E96D600E57, 0x65CC8190991CB93D, 0x273C607B30F68FAE,
++	0xE02D4247CAC8D41B, 0xA2DDA3AC6322E288, 0xBE992B5F8BDB8C5C,
++	0xFC69CAB42231BACF, 0x3B78E888D80FE17A, 0x7988096371E5D7E9,
++	0xF7AA4D1A85996083, 0xB55AACF12C735610, 0x724B8ECDD64D0DA5,
++	0x30BB6F267FA73B36, 0x4AC29F2A07BFD00D, 0x08327EC1AE55E69E,
++	0xCF235CFD546BBD2B, 0x8DD3BD16FD818BB8, 0x03F1F96F09FD3CD2,
++	0x41011884A0170A41, 0x86103AB85A2951F4, 0xC4E0DB53F3C36767,
++	0xD8A453A01B3A09B3, 0x9A54B24BB2D03F20, 0x5D45907748EE6495,
++	0x1FB5719CE1045206, 0x919735E51578E56C, 0xD367D40EBC92D3FF,
++	0x1476F63246AC884A, 0x568617D9EF46BED9, 0xE085162AB69D5E3C,
++	0xA275F7C11F7768AF, 0x6564D5FDE549331A, 0x279434164CA30589,
++	0xA9B6706FB8DFB2E3, 0xEB46918411358470, 0x2C57B3B8EB0BDFC5,
++	0x6EA7525342E1E956, 0x72E3DAA0AA188782, 0x30133B4B03F2B111,
++	0xF7021977F9CCEAA4, 0xB5F2F89C5026DC37, 0x3BD0BCE5A45A6B5D,
++	0x79205D0E0DB05DCE, 0xBE317F32F78E067B, 0xFCC19ED95E6430E8,
++	0x86B86ED5267CDBD3, 0xC4488F3E8F96ED40, 0x0359AD0275A8B6F5,
++	0x41A94CE9DC428066, 0xCF8B0890283E370C, 0x8D7BE97B81D4019F,
++	0x4A6ACB477BEA5A2A, 0x089A2AACD2006CB9, 0x14DEA25F3AF9026D,
++	0x562E43B4931334FE, 0x913F6188692D6F4B, 0xD3CF8063C0C759D8,
++	0x5DEDC41A34BBEEB2, 0x1F1D25F19D51D821, 0xD80C07CD676F8394,
++	0x9AFCE626CE85B507
++};
++
++uint64_t crc64_update(uint64_t crc, const void *_data, size_t len)
++{
++	const unsigned char *data = _data;
++
++	while (len--) {
++		int i = ((int) (crc >> 56) ^ *data++) & 0xFF;
++		crc = crc_table[i] ^ (crc << 8);
++	}
++
++	return crc;
++}
++EXPORT_SYMBOL(crc64_update);
++
++uint64_t crc64(const void *data, size_t len)
++{
++	uint64_t crc = 0xffffffffffffffff;
++
++	crc = crc64_update(crc, data, len);
++
++	return crc ^ 0xffffffffffffffff;
++}
++EXPORT_SYMBOL(crc64);
++
++unsigned popcount_64(uint64_t x)
++{
++	static const uint64_t m1  = 0x5555555555555555LLU;
++	static const uint64_t m2  = 0x3333333333333333LLU;
++	static const uint64_t m4  = 0x0f0f0f0f0f0f0f0fLLU;
++	static const uint64_t h01 = 0x0101010101010101LLU;
++
++	x -= (x >> 1) & m1;
++	x = (x & m2) + ((x >> 2) & m2);
++	x = (x + (x >> 4)) & m4;
++	return (x * h01) >> 56;
++}
++EXPORT_SYMBOL(popcount_64);
++
++unsigned popcount_32(uint32_t x)
++{
++	static const uint32_t m1  = 0x55555555;
++	static const uint32_t m2  = 0x33333333;
++	static const uint32_t m4  = 0x0f0f0f0f;
++	static const uint32_t h01 = 0x01010101;
++
++	x -= (x >> 1) & m1;
++	x = (x & m2) + ((x >> 2) & m2);
++	x = (x + (x >> 4)) & m4;
++	return (x * h01) >> 24;
++}
++EXPORT_SYMBOL(popcount_32);
+diff --git a/drivers/block/bcache/util.h b/drivers/block/bcache/util.h
 new file mode 100644
-index 0000000..229ffe1
+index 0000000..0c14cd7
 --- /dev/null
-+++ b/include/trace/events/bcache.h
-@@ -0,0 +1,257 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM bcache
-+
-+#if !defined(_TRACE_BCACHE_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_BCACHE_H
-+
-+#include <linux/tracepoint.h>
-+
-+struct btree_op;
-+
-+DECLARE_EVENT_CLASS(bcache_request,
-+
-+	TP_PROTO(struct btree_op *op, struct bio *bio),
-+
-+	TP_ARGS(op, bio),
-+
-+	TP_STRUCT__entry(
-+		__field(dev_t,		dev			)
-+		__field(unsigned int,	orig_major		)
-+		__field(unsigned int,	orig_minor		)
-+		__field(sector_t,	sector			)
-+		__field(dev_t,		orig_sector		)
-+		__field(unsigned int,	nr_sector		)
-+		__array(char,		rwbs,	6		)
-+		__array(char,		comm,	TASK_COMM_LEN	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev		= bio->bi_bdev->bd_dev;
-+		__entry->orig_major	= op->d->disk->major;
-+		__entry->orig_minor	= op->d->disk->first_minor;
-+		__entry->sector		= bio->bi_sector;
-+		__entry->orig_sector	= bio->bi_sector - 16;
-+		__entry->nr_sector	= bio->bi_size >> 9;
-+		blk_fill_rwbs(__entry->rwbs, bio->bi_rw, bio->bi_size);
-+		memcpy(__entry->comm, current->comm, TASK_COMM_LEN);
-+	),
-+
-+	TP_printk("%d,%d %s %llu + %u [%s] (from %d,%d @ %llu)",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  __entry->rwbs,
-+		  (unsigned long long)__entry->sector,
-+		  __entry->nr_sector, __entry->comm,
-+		  __entry->orig_major, __entry->orig_minor,
-+		  (unsigned long long)__entry->orig_sector)
-+);
-+
-+DEFINE_EVENT(bcache_request, bcache_request_start,
-+
-+	TP_PROTO(struct btree_op *op, struct bio* bio),
-+
-+	TP_ARGS(op, bio)
-+);
-+
-+DEFINE_EVENT(bcache_request, bcache_request_end,
-+
-+	TP_PROTO(struct btree_op *op, struct bio* bio),
-+
-+	TP_ARGS(op, bio)
-+);
-+
-+DECLARE_EVENT_CLASS(bcache_bio,
-+
-+	TP_PROTO(struct bio *bio),
-+
-+	TP_ARGS(bio),
-+
-+	TP_STRUCT__entry(
-+		__field(dev_t,		dev			)
-+		__field(sector_t,	sector			)
-+		__field(unsigned int,	nr_sector		)
-+		__array(char,		rwbs,	6		)
-+		__array(char,		comm,	TASK_COMM_LEN	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev		= bio->bi_bdev->bd_dev;
-+		__entry->sector		= bio->bi_sector;
-+		__entry->nr_sector	= bio->bi_size >> 9;
-+		blk_fill_rwbs(__entry->rwbs, bio->bi_rw, bio->bi_size);
-+		memcpy(__entry->comm, current->comm, TASK_COMM_LEN);
-+	),
-+
-+	TP_printk("%d,%d  %s %llu + %u [%s]",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  __entry->rwbs,
-+		  (unsigned long long)__entry->sector,
-+		  __entry->nr_sector, __entry->comm)
-+);
-+
-+
-+DEFINE_EVENT(bcache_bio, bcache_passthrough,
-+
-+	TP_PROTO(struct bio *bio),
-+
-+	TP_ARGS(bio)
-+);
-+
-+DEFINE_EVENT(bcache_bio, bcache_cache_hit,
-+
-+	TP_PROTO(struct bio *bio),
-+
-+	TP_ARGS(bio)
-+);
-+
-+DEFINE_EVENT(bcache_bio, bcache_cache_miss,
-+
-+	TP_PROTO(struct bio *bio),
-+
-+	TP_ARGS(bio)
-+);
-+
-+DEFINE_EVENT(bcache_bio, bcache_read_retry,
-+
-+	TP_PROTO(struct bio *bio),
-+
-+	TP_ARGS(bio)
-+);
-+
-+DEFINE_EVENT(bcache_bio, bcache_writethrough,
-+
-+	TP_PROTO(struct bio *bio),
-+
-+	TP_ARGS(bio)
-+);
-+
-+DEFINE_EVENT(bcache_bio, bcache_writeback,
-+
-+	TP_PROTO(struct bio *bio),
-+
-+	TP_ARGS(bio)
-+);
-+
-+DEFINE_EVENT(bcache_bio, bcache_write_skip,
-+
-+	TP_PROTO(struct bio *bio),
-+
-+	TP_ARGS(bio)
-+);
-+
-+DEFINE_EVENT(bcache_bio, bcache_btree_read,
-+
-+	TP_PROTO(struct bio *bio),
-+
-+	TP_ARGS(bio)
-+);
-+
-+DEFINE_EVENT(bcache_bio, bcache_btree_write,
-+
-+	TP_PROTO(struct bio *bio),
-+
-+	TP_ARGS(bio)
-+);
-+
-+DEFINE_EVENT(bcache_bio, bcache_write_dirty,
-+
-+	TP_PROTO(struct bio *bio),
-+
-+	TP_ARGS(bio)
-+);
-+
-+DEFINE_EVENT(bcache_bio, bcache_read_dirty,
-+
-+	TP_PROTO(struct bio *bio),
-+
-+	TP_ARGS(bio)
-+);
-+
-+DEFINE_EVENT(bcache_bio, bcache_journal_write,
-+
-+	TP_PROTO(struct bio *bio),
-+
-+	TP_ARGS(bio)
-+);
-+
-+DECLARE_EVENT_CLASS(bcache_cache_bio,
-+
-+	TP_PROTO(struct bio *bio,
-+		 sector_t orig_sector,
-+		 struct block_device* orig_bdev),
-+
-+	TP_ARGS(bio, orig_sector, orig_bdev),
-+
-+	TP_STRUCT__entry(
-+		__field(dev_t,		dev			)
-+		__field(dev_t,		orig_dev		)
-+		__field(sector_t,	sector			)
-+		__field(sector_t,	orig_sector		)
-+		__field(unsigned int,	nr_sector		)
-+		__array(char,		rwbs,	6		)
-+		__array(char,		comm,	TASK_COMM_LEN	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev		= bio->bi_bdev->bd_dev;
-+		__entry->orig_dev	= orig_bdev->bd_dev;
-+		__entry->sector		= bio->bi_sector;
-+		__entry->orig_sector	= orig_sector;
-+		__entry->nr_sector	= bio->bi_size >> 9;
-+		blk_fill_rwbs(__entry->rwbs, bio->bi_rw, bio->bi_size);
-+		memcpy(__entry->comm, current->comm, TASK_COMM_LEN);
-+	),
-+
-+	TP_printk("%d,%d  %s %llu + %u [%s] (from %d,%d %llu)",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  __entry->rwbs,
-+		  (unsigned long long)__entry->sector,
-+		  __entry->nr_sector, __entry->comm,
-+		  MAJOR(__entry->orig_dev), MINOR(__entry->orig_dev),
-+		  (unsigned long long)__entry->orig_sector)
-+);
-+
-+DEFINE_EVENT(bcache_cache_bio, bcache_cache_insert,
-+
-+	TP_PROTO(struct bio *bio,
-+		 sector_t orig_sector,
-+		 struct block_device *orig_bdev),
-+
-+	TP_ARGS(bio, orig_sector, orig_bdev)
-+);
-+
-+DECLARE_EVENT_CLASS(bcache_gc,
-+
-+	TP_PROTO(uint8_t *uuid),
-+
-+	TP_ARGS(uuid),
-+
-+	TP_STRUCT__entry(
-+		__field(uint8_t *,	uuid)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->uuid		= uuid;
-+	),
-+
-+	TP_printk("%pU", __entry->uuid)
-+);
-+
-+
-+DEFINE_EVENT(bcache_gc, bcache_gc_start,
-+
-+	     TP_PROTO(uint8_t *uuid),
-+
-+	     TP_ARGS(uuid)
-+);
-+
-+DEFINE_EVENT(bcache_gc, bcache_gc_end,
-+
-+	     TP_PROTO(uint8_t *uuid),
-+
-+	     TP_ARGS(uuid)
-+);
-+
-+#endif /* _TRACE_BCACHE_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 26a7a67..9b83c81 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1255,6 +1255,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	p->memcg_batch.do_batch = 0;
- 	p->memcg_batch.memcg = NULL;
- #endif
-+#ifdef CONFIG_BCACHE
-+	p->sequential_io	= 0;
-+	p->sequential_io_avg	= 0;
++++ b/drivers/block/bcache/util.h
+@@ -0,0 +1,657 @@
++
++#ifndef _BCACHE_UTIL_H
++#define _BCACHE_UTIL_H
++
++#include <linux/closure.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/llist.h>
++#include <linux/ratelimit.h>
++#include <linux/vmalloc.h>
++#include <linux/workqueue.h>
++
++#ifndef USHRT_MAX
++#define USHRT_MAX	((u16)(~0U))
++#define SHRT_MAX	((s16)(USHRT_MAX>>1))
 +#endif
- 
- 	/* Perform scheduler related setup. Assign this task to a CPU. */
- 	sched_fork(p);
++
++#ifndef REQ_WRITE
++
++#define REQ_WRITE		WRITE
++#define REQ_UNPLUG		(1U << BIO_RW_UNPLUG)
++#define REQ_SYNC		((1U << BIO_RW_SYNCIO)|REQ_UNPLUG)
++#define REQ_META		(1U << BIO_RW_META)
++#define REQ_RAHEAD		(1U << BIO_RW_AHEAD)
++#define REQ_FLUSH		(1U << BIO_RW_BARRIER)
++
++#define console_lock()		acquire_console_sem()
++#define console_unlock()	release_console_sem()
++
++#define blkdev_put(...)		close_bdev_exclusive(__VA_ARGS__)
++#define blkdev_get_by_path(...)	open_bdev_exclusive(__VA_ARGS__)
++
++#else
++
++#define REQ_UNPLUG		0U
++#define BIO_RW_DISCARD		__REQ_DISCARD
++#define current_is_writer(x)	true
++
++#endif
++
++extern struct workqueue_struct *system_wq;
++
++#define PAGE_SECTORS		(PAGE_SIZE / 512)
++
++struct closure;
++
++#include <trace/events/bcache.h>
++
++#ifdef CONFIG_BCACHE_EDEBUG
++
++#define atomic_dec_bug(v)	BUG_ON(atomic_dec_return(v) < 0)
++#define atomic_inc_bug(v, i)	BUG_ON(atomic_inc_return(v) <= i)
++
++#else /* EDEBUG */
++
++#define atomic_dec_bug(v)	atomic_dec(v)
++#define atomic_inc_bug(v, i)	atomic_inc(v)
++
++#endif
++
++#define BITMASK(name, type, field, offset, size)		\
++static inline uint64_t name(const type *k)			\
++{ return (k->field >> offset) & ~(((uint64_t) ~0) << size); }	\
++								\
++static inline void SET_##name(type *k, uint64_t v)		\
++{								\
++	k->field &= ~(~((uint64_t) ~0 << size) << offset);	\
++	k->field |= v << offset;				\
++}
++
++#define DECLARE_HEAP(type, name)					\
++	struct {							\
++		size_t size, used;					\
++		type *data;						\
++	} name
++
++#define init_heap(heap, _size, gfp)					\
++({									\
++	size_t _bytes;							\
++	(heap)->used = 0;						\
++	(heap)->size = (_size);						\
++	_bytes = (heap)->size * sizeof(*(heap)->data);			\
++	(heap)->data = NULL;						\
++	if (_bytes < KMALLOC_MAX_SIZE)					\
++		(heap)->data = kmalloc(_bytes, (gfp));			\
++	if ((!(heap)->data) && ((gfp) & GFP_KERNEL))			\
++		(heap)->data = vmalloc(_bytes);				\
++	(heap)->data;							\
++})
++
++#define free_heap(heap)							\
++do {									\
++	if (is_vmalloc_addr((heap)->data))				\
++		vfree((heap)->data);					\
++	else								\
++		kfree((heap)->data);					\
++	(heap)->data = NULL;						\
++} while (0)
++
++#define heap_swap(h, i, j)	swap((h)->data[i], (h)->data[j])
++
++#define heap_sift(h, i, cmp)						\
++do {									\
++	size_t _r, _j = i;						\
++									\
++	for (; _j * 2 + 1 < (h)->used; _j = _r) {			\
++		_r = _j * 2 + 1;					\
++		if (_r + 1 < (h)->used &&				\
++		    cmp((h)->data[_r], (h)->data[_r + 1]))		\
++			_r++;						\
++									\
++		if (cmp((h)->data[_r], (h)->data[_j]))			\
++			break;						\
++		heap_swap(h, _r, _j);					\
++	}								\
++} while (0)
++
++#define heap_sift_down(h, i, cmp)					\
++do {									\
++	while (i) {							\
++		size_t p = (i - 1) / 2;					\
++		if (cmp((h)->data[i], (h)->data[p]))			\
++			break;						\
++		heap_swap(h, i, p);					\
++		i = p;							\
++	}								\
++} while (0)
++
++#define heap_add(h, d, cmp)						\
++({									\
++	bool _r = !heap_full(h);					\
++	if (_r) {							\
++		size_t _i = (h)->used++;				\
++		(h)->data[_i] = d;					\
++									\
++		heap_sift_down(h, _i, cmp);				\
++		heap_sift(h, _i, cmp);					\
++	}								\
++	_r;								\
++})
++
++#define heap_pop(h, d, cmp)						\
++({									\
++	bool _r = (h)->used;						\
++	if (_r) {							\
++		(d) = (h)->data[0];					\
++		(h)->used--;						\
++		heap_swap(h, 0, (h)->used);				\
++		heap_sift(h, 0, cmp);					\
++	}								\
++	_r;								\
++})
++
++#define heap_peek(h)	((h)->size ? (h)->data[0] : NULL)
++
++#define heap_full(h)	((h)->used == (h)->size)
++
++#define DECLARE_FIFO(type, name)					\
++	struct {							\
++		size_t front, back, size, mask;				\
++		type *data;						\
++	} name
++
++#define fifo_for_each(c, fifo)						\
++	for (size_t _i = (fifo)->front;					\
++	     c = (fifo)->data[_i], _i != (fifo)->back;			\
++	     _i = (_i + 1) & (fifo)->mask)
++
++#define __init_fifo(fifo, gfp)						\
++({									\
++	size_t _allocated_size, _bytes;					\
++	BUG_ON(!(fifo)->size);						\
++									\
++	_allocated_size = roundup_pow_of_two((fifo)->size + 1);		\
++	_bytes = _allocated_size * sizeof(*(fifo)->data);		\
++									\
++	(fifo)->mask = _allocated_size - 1;				\
++	(fifo)->front = (fifo)->back = 0;				\
++	(fifo)->data = NULL;						\
++									\
++	if (_bytes < KMALLOC_MAX_SIZE)					\
++		(fifo)->data = kmalloc(_bytes, (gfp));			\
++	if ((!(fifo)->data) && ((gfp) & GFP_KERNEL))			\
++		(fifo)->data = vmalloc(_bytes);				\
++	(fifo)->data;							\
++})
++
++#define init_fifo_exact(fifo, _size, gfp)				\
++({									\
++	(fifo)->size = (_size);						\
++	__init_fifo(fifo, gfp);						\
++})
++
++#define init_fifo(fifo, _size, gfp)					\
++({									\
++	(fifo)->size = (_size);						\
++	if ((fifo)->size > 4)						\
++		(fifo)->size = roundup_pow_of_two((fifo)->size) - 1;	\
++	__init_fifo(fifo, gfp);						\
++})
++
++#define free_fifo(fifo)							\
++do {									\
++	if (is_vmalloc_addr((fifo)->data))				\
++		vfree((fifo)->data);					\
++	else								\
++		kfree((fifo)->data);					\
++	(fifo)->data = NULL;						\
++} while (0)
++
++#define fifo_used(fifo)		(((fifo)->back - (fifo)->front) & (fifo)->mask)
++#define fifo_free(fifo)		((fifo)->size - fifo_used(fifo))
++
++#define fifo_empty(fifo)	(!fifo_used(fifo))
++#define fifo_full(fifo)		(!fifo_free(fifo))
++
++#define fifo_front(fifo)	((fifo)->data[(fifo)->front])
++#define fifo_back(fifo)							\
++	((fifo)->data[((fifo)->back - 1) & (fifo)->mask])
++
++#define fifo_idx(fifo, p)	(((p) - &fifo_front(fifo)) & (fifo)->mask)
++
++#define fifo_push_back(fifo, i)						\
++({									\
++	bool _r = !fifo_full((fifo));					\
++	if (_r) {							\
++		(fifo)->data[(fifo)->back++] = (i);			\
++		(fifo)->back &= (fifo)->mask;				\
++	}								\
++	_r;								\
++})
++
++#define fifo_pop_front(fifo, i)						\
++({									\
++	bool _r = !fifo_empty((fifo));					\
++	if (_r) {							\
++		(i) = (fifo)->data[(fifo)->front++];			\
++		(fifo)->front &= (fifo)->mask;				\
++	}								\
++	_r;								\
++})
++
++#define fifo_push_front(fifo, i)					\
++({									\
++	bool _r = !fifo_full((fifo));					\
++	if (_r) {							\
++		--(fifo)->front;					\
++		(fifo)->front &= (fifo)->mask;				\
++		(fifo)->data[(fifo)->front] = (i);			\
++	}								\
++	_r;								\
++})
++
++#define fifo_pop_back(fifo, i)						\
++({									\
++	bool _r = !fifo_empty((fifo));					\
++	if (_r) {							\
++		--(fifo)->back;						\
++		(fifo)->back &= (fifo)->mask;				\
++		(i) = (fifo)->data[(fifo)->back]			\
++	}								\
++	_r;								\
++})
++
++#define fifo_push(fifo, i)	fifo_push_back(fifo, (i))
++#define fifo_pop(fifo, i)	fifo_pop_front(fifo, (i))
++
++#define fifo_swap(l, r)							\
++do {									\
++	swap((l)->front, (r)->front);					\
++	swap((l)->back, (r)->back);					\
++	swap((l)->size, (r)->size);					\
++	swap((l)->mask, (r)->mask);					\
++	swap((l)->data, (r)->data);					\
++} while (0)
++
++#define fifo_move(dest, src)						\
++do {									\
++	typeof(*((dest)->data)) _t;					\
++	while (!fifo_full(dest) &&					\
++	       fifo_pop(src, _t))					\
++		fifo_push(dest, _t);					\
++} while (0)
++
++/*
++ * Simple array based allocator - preallocates a number of elements and you can
++ * never allocate more than that, also has no locking.
++ *
++ * Handy because if you know you only need a fixed number of elements you don't
++ * have to worry about memory allocation failure, and sometimes a mempool isn't
++ * what you want.
++ *
++ * We treat the free elements as entries in a singly linked list, and the
++ * freelist as a stack - allocating and freeing push and pop off the freelist.
++ */
++
++#define DECLARE_ARRAY_ALLOCATOR(type, name, size)			\
++	struct {							\
++		type	*freelist;					\
++		type	data[size];					\
++	} name
++
++#define array_alloc(array)						\
++({									\
++	typeof((array)->freelist) _ret = (array)->freelist;		\
++									\
++	if (_ret)							\
++		(array)->freelist = *((typeof((array)->freelist) *) _ret);\
++									\
++	_ret;								\
++})
++
++#define array_free(array, ptr)						\
++do {									\
++	typeof((array)->freelist) _ptr = ptr;				\
++									\
++	*((typeof((array)->freelist) *) _ptr) = (array)->freelist;	\
++	(array)->freelist = _ptr;					\
++} while (0)
++
++#define array_allocator_init(array)					\
++do {									\
++	BUILD_BUG_ON(sizeof((array)->data[0]) < sizeof(void *));	\
++	(array)->freelist = NULL;					\
++									\
++	for (typeof((array)->freelist) _i = (array)->data;		\
++	     _i < (array)->data + ARRAY_SIZE((array)->data);		\
++	     _i++)							\
++		array_free(array, _i);					\
++} while (0)
++
++#define array_freelist_empty(array)	((array)->freelist == NULL)
++
++#define ANYSINT_MAX(t)							\
++	((((t) 1 << (sizeof(t) * 8 - 2)) - (t) 1) * (t) 2 + (t) 1)
++
++int strtoint_h(const char *, int *);
++int strtouint_h(const char *, unsigned int *);
++int strtoll_h(const char *, long long *);
++int strtoull_h(const char *, unsigned long long *);
++
++static inline int strtol_h(const char *cp, long *res)
++{
++#if BITS_PER_LONG == 32
++	return strtoint_h(cp, (int *) res);
++#else
++	return strtoll_h(cp, (long long *) res);
++#endif
++}
++
++static inline int strtoul_h(const char *cp, long *res)
++{
++#if BITS_PER_LONG == 32
++	return strtouint_h(cp, (unsigned int *) res);
++#else
++	return strtoull_h(cp, (unsigned long long *) res);
++#endif
++}
++
++#define strtoi_h(cp, res)						\
++	(__builtin_types_compatible_p(typeof(*res), int)		\
++	? strtoint_h(cp, (void *) res)					\
++	:__builtin_types_compatible_p(typeof(*res), long)		\
++	? strtol_h(cp, (void *) res)					\
++	: __builtin_types_compatible_p(typeof(*res), long long)		\
++	? strtoll_h(cp, (void *) res)					\
++	: __builtin_types_compatible_p(typeof(*res), unsigned int)	\
++	? strtouint_h(cp, (void *) res)					\
++	: __builtin_types_compatible_p(typeof(*res), unsigned long)	\
++	? strtoul_h(cp, (void *) res)					\
++	: __builtin_types_compatible_p(typeof(*res), unsigned long long)\
++	? strtoull_h(cp, (void *) res) : -EINVAL)
++
++#define strtoul_safe(cp, var)						\
++({									\
++	unsigned long _v;						\
++	int _r = strict_strtoul(cp, 10, &_v);				\
++	if (!_r)							\
++		var = _v;						\
++	_r;								\
++})
++
++#define strtoul_safe_clamp(cp, var, min, max)				\
++({									\
++	unsigned long _v;						\
++	int _r = strict_strtoul(cp, 10, &_v);				\
++	if (!_r)							\
++		var = clamp_t(typeof(var), _v, min, max);		\
++	_r;								\
++})
++
++#define snprint(buf, size, var)						\
++	snprintf(buf, size,						\
++		__builtin_types_compatible_p(typeof(var), int)		\
++		     ? "%i\n" :						\
++		__builtin_types_compatible_p(typeof(var), unsigned)	\
++		     ? "%u\n" :						\
++		__builtin_types_compatible_p(typeof(var), long)		\
++		     ? "%li\n" :					\
++		__builtin_types_compatible_p(typeof(var), unsigned long)\
++		     ? "%lu\n" :					\
++		__builtin_types_compatible_p(typeof(var), int64_t)	\
++		     ? "%lli\n" :					\
++		__builtin_types_compatible_p(typeof(var), uint64_t)	\
++		     ? "%llu\n" :					\
++		__builtin_types_compatible_p(typeof(var), const char *)	\
++		     ? "%s\n" : "%i\n", var)
++
++ssize_t hprint(char *buf, int64_t v);
++
++bool is_zero(const char *p, size_t n);
++int parse_uuid(const char *s, char *uuid);
++
++ssize_t sprint_string_list(char *buf, const char * const list[],
++			   size_t selected);
++
++ssize_t read_string_list(const char *buf, const char * const list[]);
++
++struct time_stats {
++	/*
++	 * all fields are in nanoseconds, averages are ewmas stored left shifted
++	 * by 8
++	 */
++	uint64_t	max_duration;
++	uint64_t	average_duration;
++	uint64_t	average_frequency;
++	uint64_t	last;
++};
++
++void time_stats_update(struct time_stats *stats, uint64_t time);
++
++#define NSEC_PER_ns			1L
++#define NSEC_PER_us			NSEC_PER_USEC
++#define NSEC_PER_ms			NSEC_PER_MSEC
++#define NSEC_PER_sec			NSEC_PER_SEC
++
++#define __print_time_stat(stats, name, stat, units)			\
++	sysfs_print(name ## _ ## stat ## _ ## units,			\
++		    div_u64((stats)->stat >> 8, NSEC_PER_ ## units))
++
++#define sysfs_print_time_stats(stats, name,				\
++			       frequency_units,				\
++			       duration_units)				\
++do {									\
++	__print_time_stat(stats, name,					\
++			  average_frequency,	frequency_units);	\
++	__print_time_stat(stats, name,					\
++			  average_duration,	duration_units);	\
++	__print_time_stat(stats, name,					\
++			  max_duration,		duration_units);	\
++									\
++	sysfs_print(name ## _last_ ## frequency_units, (stats)->last	\
++		    ? div_s64(local_clock() - (stats)->last,		\
++			      NSEC_PER_ ## frequency_units)		\
++		    : -1LL);						\
++} while (0)
++
++#define sysfs_time_stats_attribute(name,				\
++				   frequency_units,			\
++				   duration_units)			\
++read_attribute(name ## _average_frequency_ ## frequency_units);		\
++read_attribute(name ## _average_duration_ ## duration_units);		\
++read_attribute(name ## _max_duration_ ## duration_units);		\
++read_attribute(name ## _last_ ## frequency_units)
++
++#define sysfs_time_stats_attribute_list(name,				\
++					frequency_units,		\
++					duration_units)			\
++&sysfs_ ## name ## _average_frequency_ ## frequency_units,		\
++&sysfs_ ## name ## _average_duration_ ## duration_units,		\
++&sysfs_ ## name ## _max_duration_ ## duration_units,			\
++&sysfs_ ## name ## _last_ ## frequency_units,
++
++#define ewma_add(ewma, val, weight, factor)				\
++({									\
++	(ewma) *= (weight) - 1;						\
++	(ewma) += (val) << factor;					\
++	(ewma) /= (weight);						\
++	(ewma) >> factor;						\
++})
++
++#define __DIV_SAFE(n, d, zero)						\
++({									\
++	typeof(n) _n = (n);						\
++	typeof(d) _d = (d);						\
++	_d ? _n / _d : zero;						\
++})
++
++#define DIV_SAFE(n, d)	__DIV_SAFE(n, d, 0)
++
++#define container_of_or_null(ptr, type, member)				\
++({									\
++	typeof(ptr) _ptr = ptr;						\
++	_ptr ? container_of(_ptr, type, member) : NULL;			\
++})
++
++#define RB_INSERT(root, new, member, cmp)				\
++({									\
++	__label__ dup;							\
++	struct rb_node **n = &(root)->rb_node, *parent = NULL;		\
++	typeof(new) this;						\
++	int res, ret = -1;						\
++									\
++	while (*n) {							\
++		parent = *n;						\
++		this = container_of(*n, typeof(*(new)), member);	\
++		res = cmp(new, this);					\
++		if (!res)						\
++			goto dup;					\
++		n = res < 0						\
++			? &(*n)->rb_left				\
++			: &(*n)->rb_right;				\
++	}								\
++									\
++	rb_link_node(&(new)->member, parent, n);			\
++	rb_insert_color(&(new)->member, root);				\
++	ret = 0;							\
++dup:									\
++	ret;								\
++})
++
++#define RB_SEARCH(root, search, member, cmp)				\
++({									\
++	struct rb_node *n = (root)->rb_node;				\
++	typeof(&(search)) this, ret = NULL;				\
++	int res;							\
++									\
++	while (n) {							\
++		this = container_of(n, typeof(search), member);		\
++		res = cmp(&(search), this);				\
++		if (!res) {						\
++			ret = this;					\
++			break;						\
++		}							\
++		n = res < 0						\
++			? n->rb_left					\
++			: n->rb_right;					\
++	}								\
++	ret;								\
++})
++
++#define RB_GREATER(root, search, member, cmp)				\
++({									\
++	struct rb_node *n = (root)->rb_node;				\
++	typeof(&(search)) this, ret = NULL;				\
++	int res;							\
++									\
++	while (n) {							\
++		this = container_of(n, typeof(search), member);		\
++		res = cmp(&(search), this);				\
++		if (res < 0) {						\
++			ret = this;					\
++			n = n->rb_left;					\
++		} else							\
++			n = n->rb_right;				\
++	}								\
++	ret;								\
++})
++
++#define RB_FIRST(root, type, member)					\
++	container_of_or_null(rb_first(root), type, member)
++
++#define RB_LAST(root, type, member)					\
++	container_of_or_null(rb_last(root), type, member)
++
++#define RB_NEXT(ptr, member)						\
++	container_of_or_null(rb_next(&(ptr)->member), typeof(*ptr), member)
++
++#define RB_PREV(ptr, member)						\
++	container_of_or_null(rb_prev(&(ptr)->member), typeof(*ptr), member)
++
++/* Does linear interpolation between powers of two */
++static inline unsigned fract_exp_two(unsigned x, unsigned fract_bits)
++{
++	unsigned fract = x & ~(~0 << fract_bits);
++
++	x >>= fract_bits;
++	x   = 1 << x;
++	x  += (x * fract) >> fract_bits;
++
++	return x;
++}
++
++#define bio_end(bio)	((bio)->bi_sector + bio_sectors(bio))
++
++void bio_reset(struct bio *bio);
++void bio_map(struct bio *bio, void *base);
++
++typedef struct bio *(bio_alloc_fn)(gfp_t, int);
++
++struct bio *bio_split_front(struct bio *, int, bio_alloc_fn *,
++			    gfp_t, struct bio_set *);
++
++int bio_submit_split(struct bio *bio, atomic_t *i, struct bio_set *bs);
++unsigned __bio_max_sectors(struct bio *bio, struct block_device *bdev,
++			   sector_t sector);
++
++int bio_alloc_pages(struct bio *bio, gfp_t gfp);
++
++#define bio_alloc_pages(...)						\
++	(dynamic_fault() ? -ENOMEM	: bio_alloc_pages(__VA_ARGS__))
++
++static inline unsigned bio_max_sectors(struct bio *bio)
++{
++	return __bio_max_sectors(bio, bio->bi_bdev, bio->bi_sector);
++}
++
++static inline sector_t bdev_sectors(struct block_device *bdev)
++{
++	return bdev->bd_inode->i_size >> 9;
++}
++
++#ifdef CONFIG_BCACHE_LATENCY_DEBUG
++extern unsigned latency_warn_ms;
++
++#define latency_ms(j)		jiffies_to_msecs(jiffies - (j))
++
++#define pr_latency(j, fmt, ...)						\
++do {									\
++	int _ms = latency_ms(j);					\
++	if (j && latency_warn_ms && (_ms) > (int) latency_warn_ms)	\
++		printk_ratelimited(KERN_DEBUG "bcache: %i ms latency "	\
++			"called from %pf for " fmt "\n", _ms,		\
++		       __builtin_return_address(0), ##__VA_ARGS__);	\
++} while (0)
++
++#define set_wait(f)	((f)->wait_time = jiffies)
++
++#else
++#define latency_ms(j)	(0)
++#define pr_latency(...) do {} while (0)
++#define set_wait(j)	do {} while (0)
++#endif
++
++#define closure_bio_submit_put(bio, cl, bs)				\
++	bio_submit_split(bio, &(__to_internal_closure(cl))->remaining, bs)
++
++static inline int closure_bio_submit(struct bio *bio, struct closure *cl,
++				     struct bio_set *bs)
++{
++	int ret;
++
++	closure_get(cl);
++	ret = closure_bio_submit_put(bio, cl, bs);
++	if (ret)
++		closure_put(cl);
++
++	return ret;
++}
++
++uint64_t crc64_update(uint64_t, const void *, size_t);
++uint64_t crc64(const void *, size_t);
++
++unsigned popcount_64(uint64_t);
++unsigned popcount_32(uint32_t);
++
++#endif /* _BCACHE_UTIL_H */
 -- 
 1.7.9.rc2
 
