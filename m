@@ -1,104 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758580Ab2EJKKw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 06:10:52 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:36079 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758213Ab2EJKKu (ORCPT
+	id S1758332Ab2EJKMv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 06:12:51 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:47173 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757799Ab2EJKMs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 06:10:50 -0400
-Message-ID: <4FAB9412.5030102@ti.com>
-Date: Thu, 10 May 2012 15:40:26 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 10 May 2012 06:12:48 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Colin Cross <ccross@android.com>, Kevin Hilman <khilman@ti.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [RFC][PATCH 2/2] PM / Domains: Add preliminary cpuidle support
-References: <201205092340.26561.rjw@sisk.pl> <201205092343.11050.rjw@sisk.pl>
-In-Reply-To: <201205092343.11050.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAH9JG2W-KFH9bDkq14-KayJ30Q3Uj04mWUEXr7AdVa6CFbi6eA@mail.gmail.com>
+References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
+	<1335935266-25289-4-git-send-email-thomas.abraham@linaro.org>
+	<CAH9JG2XJk+CJNFiZu0C-TK_aj2gRPP5czUvTzEeDBXNejR6qvA@mail.gmail.com>
+	<CAJuYYwQqPEDP3ygkjOjeAwUr--M13KSB7JdYm8Tiok5BvJbruw@mail.gmail.com>
+	<CAH9JG2W-KFH9bDkq14-KayJ30Q3Uj04mWUEXr7AdVa6CFbi6eA@mail.gmail.com>
+Date: Thu, 10 May 2012 15:42:47 +0530
+Message-ID: <CAJuYYwRNUoiwJL5ADgSTAEyt0yx8bhwwz-BWSC+fSrN=xXh5Kw@mail.gmail.com>
+Subject: Re: [PATCH 3/7] mmc: dw_mmc: add device tree support
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-samsung-soc@vger.kernel.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kgene.kim@samsung.com, cjb@laptop.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael,
+On 10 May 2012 15:29, Kyungmin Park <kmpark@infradead.org> wrote:
+> On 5/10/12, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+>> Dear Mr. Park,
+>>
+>> On 2 May 2012 12:25, Kyungmin Park <kmpark@infradead.org> wrote:
+>>> Hi,
 
-On Thursday 10 May 2012 03:13 AM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> On some systems there are CPU cores located in the same power
-> domains as I/O devices.  Then, power can only be removed from the
-> domain if all I/O devices in it are not in use and the CPU core
-> is idle.  Add preliminary support for that to the generic PM domains
-> framework.
-> 
-I am just curious to know, what kind of IO devices, you are
-talking here? And also how those devices linked with CPU low power
-states apart from being part of same power domain. And is it
-the power domain or more of voltage domain, we are talking here.
+[...]
 
-> This assumes that there is only one CPU core in the system and it is
-> supposed to be set up in the following way.
-> 
-> First, the platform is expected to provide a cpuidle driver with one
-> extra state designated for the generic PM domains code to handle.
-> This state should be initially disabled and its exit_latency value
-> should be set to whatever time is needed to bring up the CPU core
-> itself after restoring power to it, not including the domain's
-> power on latency.  Its .enter() callback should point to a procedure
-> that will save the CPU core's state as appropriate before power
-> removal.  On success, it should return the same value as it has
-> been passed as its third argument, but it shouldn't put the CPU
-> core into a C-state.  If it is about to return the index of
-> a different cpuidle state, however, it should make sure that the CPU
-> be put into that state before it returns.
-> 
-> The remaining characteristics of the extra cpuidle state, referred to
-> as the "domain" cpuidle state below, (e.g. power usage, target
-> residency) should be populated in accordance with the properties of
-> the hardware.
-> 
-> Next, the platform should execute genpd_attach_cpuidle() on the PM
-> domain containing the CPU core.  That will cause the generic PM
-> domains framework to treat that domain in a special way such that:
-> 
->  * When all devices in the domain have been suspended and it is about
->    to be turned off, the states of the devices will be saved, but
->    power will not be removed from the domain.  Instead, the "domain"
->    cpuidle state will be enabled so that power can be removed from
->    the domain when the CPU core is idle and the state has been chosen
->    as the target by the cpuidle governor.  In that case, before
->    removing power from the domain, the framework will execute the
->    .enter() callback initially defined for the "domain" state.
-> 
->  * When the first I/O device in the domain is resumed and
->    __pm_genpd_poweron(() is called for the first time after
->    power has been removed from the domain, the "domain" cpuidle
->    state will be disabled to avoid subsequent surprise power removals
->    via cpuidle.
-> 
+>>> I googled the "Synopsis Designware Mobile Storage Host Controller" and
+>>> Synopsis released it as this name. but still I like the 'dw-mmc'
+>>> instead of'dw-mshc'.
+>>
+>> Ok. Synopsis abbreviates this controller as MSHC in their datasheets
+>> available online. Since device tree is more about describing the
+>> hardware, using MSHC as the abbreviation will help with correlating
+>> hardware specs with the dts file. So I would prefer to continue using
+>> mshc as the abbreviation.
+>
+> Then why author of this file uses "dw-mmc" instead of "dw-mshc"? and
+> it uses 'dw_mci' prefix at functions. I just worried and don't want to
+> give confusion to users who uses this device.
 
-If these are CPU cluster/package specific IO's like interrupt
-controller, cache controller, Coherency interconnect etc and
-if the intention is to ensure that these devices context
-is saved/restored in cpuidle entry/exit, it can be handled with
-CPU PM notifiers. We already do that for ARM SOCs.
+The device tree source files are independent of any OS specific
+implementations. The linux driver for this controller uses dw-mmc and
+dw_mci but drivers of this controller for other operating systems
+could choose use other names. Since Synopsis calls this controller as
+mshc, the dts file would be closer to hardware specs if 'mshc' is used
+to describe the controller.
 
->From the patch description it seems, they are general purpose
-peripherals. We had one thermal sensor on OMAP which
-wrongly clocked from the CPU clock source and needed
-some idle notifier infrastructure to prepare/resume
-this device for idle entry/exit.
+[...]
 
-Regards
-Santosh
+>>>> +/* Variations in the dw_mci controller */
+>>>> +#define DW_MCI_TYPE_SYNOPSIS         0
+>>>> +#define DW_MCI_TYPE_EXYNOS5250               1 /* Samsung Exynos5250
+>>>> Extensions */
+>>> Um. it's not good idea to add specific SOC version. And as you know,
+>>> exynos4 series has this controller.
+>>
+>> There are some differences between the Exynos4 and Exynos5 mshc
+>> controllers. For instance, the DIVRATIO field in the CLKSEL register
+>> is available only in Exynos5 and there are 8 phase shift values in
+>> Exynos5 when compared to 4 phase shift values in Exynos4. Likewise,
+>> there are some other differences. So to handle these specific
+>> implementations, we need to define types (or variants) of the
+>> controller. Using SoC names for the type would help in readability of
+>> the different types of implementations that are defined. So I would
+>> prefer to continue using SoC names for this.
+>
+> You mean if it supports the exynos4, then it should be add exynos4 type?
+>
 
+If the existing driver requires any Exynos4 specific extensions to
+operate the controller correctly on Exynos4, then yes we should add a
+Exynos4 type. The Exynos4 and Exynos5 implementations of this
+controller vary in certain aspects and so we might need a Exynos4 type
+as well.
 
+Thanks,
+Thomas.
 
-
+[...]
