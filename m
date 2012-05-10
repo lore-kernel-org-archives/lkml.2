@@ -1,372 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933138Ab2EJXqy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 19:46:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46615 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933041Ab2EJXlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 19:41:12 -0400
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 11/29] PGPLIB: Basic packet parser [ver #4]
-To: rusty@rustcorp.com.au
-Cc: kyle@mcmartin.ca, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        David Howells <dhowells@redhat.com>
-Date: Fri, 11 May 2012 00:41:02 +0100
-Message-ID: <20120510234102.4137.45054.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120510233901.4137.19023.stgit@warthog.procyon.org.uk>
-References: <20120510233901.4137.19023.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S933044Ab2EJXlN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 19:41:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35224 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933030Ab2EJXlE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 19:41:04 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH RESEND v8] gpio: Device tree support for LPC32xx
+To: Roland Stigge <stigge@antcom.de>, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, devicetree-discuss@lists.ozlabs.org,
+        rob.herring@calxeda.com
+Cc: Roland Stigge <stigge@antcom.de>
+In-Reply-To: <1336679838-30738-1-git-send-email-stigge@antcom.de>
+References: <1336679838-30738-1-git-send-email-stigge@antcom.de>
+Date: Thu, 10 May 2012 17:41:00 -0600
+Message-Id: <20120510234100.7F5463E04A6@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a simple parser that extracts the packets from a PGP packet blob and
-passes the desirous ones to the given processor function:
+On Thu, 10 May 2012 21:57:18 +0200, Roland Stigge <stigge@antcom.de> wrote:
+> This patch adds device tree support for gpio-lpc32xx.c.
+> 
+> The various GPIO groups correspond to the different irregular GPIO banks of the
+> LPC32xx hardware. Most importantly, there are the GPI(0-27), GPO(0-23) and
+> GPIO(0-5) banks. Each bank must be registered individually since they are
+> implemented with different functions. Registration is done via gpiochip_add()
+> which requires an individual gpio bank subnode in the device tree for each
+> call.
+> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> ---
+> 
+> Applies to v3.4-rc6
+> 
+> Changes since last version:
+> * Updated patch description (above)
+> 
+> Thanks to Jean-Christophe PLAGNIOL-VILLARD, Grant Likely, Arnd Bergmann, Jon
+> Smirl, Mark Brown for reviewing!
+> 
+> I can also provide a git branch to pull from. On top of which one should I
+> provide it, if not mainline rc?
+>  
+>  Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt |   65 ++++++++++++++++
+>  arch/arm/mach-lpc32xx/include/mach/gpio.h               |    9 +-
+>  drivers/gpio/gpio-lpc32xx.c                             |   56 +++++++++++++
+>  3 files changed, 127 insertions(+), 3 deletions(-)
+> 
+> --- /dev/null
+> +++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
+> @@ -0,0 +1,65 @@
+> +NXP LPC32xx SoC GPIO controller
+> +
+> +Required properties:
+> +- compatible: must be "nxp,lpc3220-gpio"
+> +- reg: Physical base address and length of the controller's registers.
+> +- #address-cells: Always 1, for indexing of the subnodes (GPIO groups of the
+> +  SoC)
+> +- #size-cells: Always 0
+> +
+> +Required properties of sub-nodes which describe the GPIO groups of LPC32xx:
+> +- gpio-controller: Marks the device node as a GPIO controller.
+> +- #gpio-cells: Should be two. The first cell is the pin number and the
+> +  second cell is used to specify optional parameters:
+> +  - bit 0 specifies polarity (0 for normal, 1 for inverted)
+> +- reg: Index of the GPIO group
+> +
+> +Optional properties of sub-nodes which describe the GPIO groups of LPC32xx:
+> +- status: Set to "disabled" if you don't use the respective GPIO group
+> +  of the LPC32xx SoC
+> +
+> +Example:
+> +
+> +	gpio: gpio@40028000 {
+> +		compatible = "nxp,lpc3220-gpio";
+> +		reg = <0x40028000 0x1000>;
+> +		/* create a private address space for enumeration */
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		gpio_p0: gpio-bank@0 {
+> +			gpio-controller;
+> +			#gpio-cells = <2>;
+> +			reg = <0>;
+> +		};
+> +
+> +		gpio_p1: gpio-bank@1 {
+> +			gpio-controller;
+> +			#gpio-cells = <2>;
+> +			reg = <1>;
+> +		};
+> +
+> +		gpio_p2: gpio-bank@2 {
+> +			gpio-controller;
+> +			#gpio-cells = <2>;
+> +			reg = <2>;
+> +		};
+> +
+> +		gpio_p3: gpio-bank@3 {
+> +			gpio-controller;
+> +			#gpio-cells = <2>;
+> +			reg = <3>;
+> +		};
+> +
+> +		gpi_p3: gpio-bank@4 {
+> +			gpio-controller;
+> +			#gpio-cells = <2>;
+> +			reg = <4>;
+> +		};
+> +
+> +		gpo_p3: gpio-bank@5 {
+> +			gpio-controller;
+> +			#gpio-cells = <2>;
+> +			reg = <5>;
+> +		};
+> +	};
 
-	struct pgp_parse_context {
-		u64 types_of_interest;
-		int (*process_packet)(struct pgp_parse_context *context,
-				      enum pgp_packet_tag type,
-				      u8 headerlen,
-				      const u8 *data,
-				      size_t datalen);
-	};
+Ugh.  I know this patch has been around for a while, but I can't help
+it, this binding is just really ugly.  It results in a big chunk of
+boilerplate for the gpio controller node just to enumerate the banks
+which will *always* be there.
 
-	int pgp_parse_packets(const u8 *data, size_t datalen,
-			      struct pgp_parse_context *ctx);
+The real problem is that one of_xlate function cannot currently be
+used for multiple banks, but there is no good reason why that should
+be so.
 
-This is configured on with CONFIG_PGP_LIBRARY.
+How about the following instead (very rough, there should be a cleaner
+way to update the gc pointer in of_xlate):
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+	gpio: gpio@40028000 {
+		compatible = "nxp,lpc3220-gpio";
+		reg = <0x40028000 0x1000>;
+		gpio-controller;
+		#gpio-cells = <3>; /* bank, pin, flags */
+	}
 
- include/linux/pgp.h                |   25 ++++
- security/keys/crypto/Kconfig       |    6 +
- security/keys/crypto/Makefile      |    1 
- security/keys/crypto/pgp_library.c |  254 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 286 insertions(+), 0 deletions(-)
- create mode 100644 security/keys/crypto/pgp_library.c
+Modify gpiolib-of to use:
+of_xlate(struct gpio_chip **gc, const struct of_phandle_args *gpiospec, u32 *flags);
+(so that the value of gc can be modified)
 
+And then in the driver:
 
-diff --git a/include/linux/pgp.h b/include/linux/pgp.h
-index 1359f64..235270a 100644
---- a/include/linux/pgp.h
-+++ b/include/linux/pgp.h
-@@ -203,4 +203,29 @@ struct pgp_key_v4_packet {
- 	u8 key_material[0];
- } __packed;
- 
-+/*
-+ * PGP library packet parser
-+ */
-+struct pgp_parse_context {
-+	u64 types_of_interest;
-+	int (*process_packet)(struct pgp_parse_context *context,
-+			      enum pgp_packet_tag type,
-+			      u8 headerlen,
-+			      const u8 *data,
-+			      size_t datalen);
-+};
-+
-+extern int pgp_parse_packets(const u8 *data, size_t datalen,
-+			     struct pgp_parse_context *ctx);
-+
-+struct pgp_parse_pubkey {
-+	enum pgp_key_version version : 8;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	time_t		creation_time;
-+	time_t		expires_at;
-+};
-+
-+extern int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
-+				struct pgp_parse_pubkey *pk);
-+
- #endif /* _LINUX_PGP_H */
-diff --git a/security/keys/crypto/Kconfig b/security/keys/crypto/Kconfig
-index 4e3777e..88ce0e2 100644
---- a/security/keys/crypto/Kconfig
-+++ b/security/keys/crypto/Kconfig
-@@ -22,3 +22,9 @@ config CRYPTO_KEY_PKEY_ALGO_RSA
- 	select MPILIB_EXTRA
- 	help
- 	  This option enables support for the RSA algorithm (PKCS#1, RFC3447).
-+
-+config PGP_LIBRARY
-+	tristate "PGP parsing library"
-+	help
-+	  This option enables a library that provides a number of simple
-+	  utility functions for parsing PGP (RFC 4880) packet-based messages.
-diff --git a/security/keys/crypto/Makefile b/security/keys/crypto/Makefile
-index b6b1a5a..5fbe54e 100644
---- a/security/keys/crypto/Makefile
-+++ b/security/keys/crypto/Makefile
-@@ -7,3 +7,4 @@ crypto_keys-y := crypto_type.o crypto_verify.o
- 
- obj-$(CONFIG_CRYPTO_KEY_PUBLIC_KEY_SUBTYPE) += public_key.o
- obj-$(CONFIG_CRYPTO_KEY_PKEY_ALGO_RSA) += crypto_rsa.o
-+obj-$(CONFIG_PGP_LIBRARY) += pgp_library.o
-diff --git a/security/keys/crypto/pgp_library.c b/security/keys/crypto/pgp_library.c
-new file mode 100644
-index 0000000..685660f
---- /dev/null
-+++ b/security/keys/crypto/pgp_library.c
-@@ -0,0 +1,254 @@
-+/* PGP packet parser (RFC 4880)
-+ *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+#define pr_fmt(fmt) "PGP: "fmt
-+#include <linux/pgp.h>
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+
-+MODULE_LICENSE("GPL");
-+
-+const char *const pgp_hash_algorithms[PGP_HASH__LAST] = {
-+	[PGP_HASH_MD5]			= "md5",
-+	[PGP_HASH_SHA1]			= "sha1",
-+	[PGP_HASH_RIPE_MD_160]		= "rmd160",
-+	[PGP_HASH_SHA256]		= "sha256",
-+	[PGP_HASH_SHA384]		= "sha384",
-+	[PGP_HASH_SHA512]		= "sha512",
-+	[PGP_HASH_SHA224]		= "sha224",
-+};
-+EXPORT_SYMBOL_GPL(pgp_hash_algorithms);
-+
-+/**
-+ * pgp_parse_packet_header - Parse a PGP packet header
-+ * @_data: Start of the PGP packet (updated to PGP packet data)
-+ * @_datalen: Amount of data remaining in buffer (decreased)
-+ * @_type: Where the packet type will be returned
-+ * @_headerlen: Where the header length will be returned
-+ *
-+ * Parse a set of PGP packet header [RFC 4880: 4.2].
-+ *
-+ * Returns packet data size on success; non-zero on error.  If successful,
-+ * *_data and *_datalen will have been updated and *_headerlen will be set to
-+ * hold the length of the packet header.
-+ */
-+ssize_t pgp_parse_packet_header(const u8 **_data, size_t *_datalen,
-+				enum pgp_packet_tag *_type,
-+				u8 *_headerlen)
-+{
-+	enum pgp_packet_tag type;
-+	const u8 *data = *_data;
-+	size_t size, datalen = *_datalen;
-+
-+	pr_devel("-->pgp_parse_packet_header(,%zu,,)", datalen);
-+
-+	if (datalen < 2)
-+		goto short_packet;
-+
-+	pr_devel("pkthdr %02x, %02x\n", data[0], data[1]);
-+
-+	type = *data++;
-+	datalen--;
-+	if (!(type & 0x80)) {
-+		pr_debug("Packet type does not have MSB set\n");
-+		return -EBADMSG;
-+	}
-+	type &= ~0x80;
-+
-+	if (type & 0x40) {
-+		/* New packet length format */
-+		type &= ~0x40;
-+		pr_devel("new format: t=%u\n", type);
-+		switch (data[0]) {
-+		case 0x00 ... 0xbf:
-+			/* One-byte length */
-+			size = data[0];
-+			data++;
-+			datalen--;
-+			*_headerlen = 2;
-+			break;
-+		case 0xc0 ... 0xdf:
-+			/* Two-byte length */
-+			if (datalen < 2)
-+				goto short_packet;
-+			size = (data[0] - 192) * 256;
-+			size += data[1] + 192;
-+			data += 2;
-+			datalen -= 2;
-+			*_headerlen = 3;
-+			break;
-+		case 0xff:
-+			pr_debug("Five-byte packet length not supported\n");
-+			return -EBADMSG;
-+		default:
-+			pr_debug("Error parsing packet length\n");
-+			return -EBADMSG;
-+		}
-+	} else {
-+		/* Old packet length format */
-+		u8 length_type = type & 0x03;
-+		type >>= 2;
-+		pr_devel("old format: t=%u lt=%u\n", type, length_type);
-+
-+		switch (length_type) {
-+		case 0:
-+			/* One-byte length */
-+			size = data[0];
-+			data++;
-+			datalen--;
-+			*_headerlen = 2;
-+			break;
-+		case 1:
-+			/* Two-byte length */
-+			if (datalen < 2)
-+				goto short_packet;
-+			size  = data[0] << 8;
-+			size |= data[1];
-+			data += 2;
-+			datalen -= 2;
-+			*_headerlen = 3;
-+			break;
-+		case 2:
-+			/* Four-byte length */
-+			if (datalen < 4)
-+				goto short_packet;
-+			size  = data[0] << 24;
-+			size |= data[1] << 16;
-+			size |= data[2] << 8;
-+			size |= data[3];
-+			data += 4;
-+			datalen -= 4;
-+			*_headerlen = 5;
-+			break;
-+		default:
-+			pr_debug("Indefinite length packet not supported\n");
-+			return -EBADMSG;
-+		}
-+	}
-+
-+	pr_devel("datalen=%zu size=%zu", datalen, size);
-+	if (datalen < size)
-+		goto short_packet;
-+
-+	*_data = data;
-+	*_datalen = datalen;
-+	*_type = type;
-+	pr_devel("Found packet type=%u size=%zd\n", type, size);
-+	return size;
-+
-+short_packet:
-+	pr_debug("Attempt to parse short packet\n");
-+	return -EBADMSG;
-+}
-+
-+/**
-+ * pgp_parse_packets - Parse a set of PGP packets
-+ * @_data: Data to be parsed (updated)
-+ * @_datalen: Amount of data (updated)
-+ * @ctx: Parsing context
-+ *
-+ * Parse a set of PGP packets [RFC 4880: 4].
-+ */
-+int pgp_parse_packets(const u8 *data, size_t datalen,
-+		      struct pgp_parse_context *ctx)
-+{
-+	enum pgp_packet_tag type;
-+	ssize_t pktlen;
-+	u8 headerlen;
-+	int ret;
-+
-+	while (datalen > 2) {
-+		pktlen = pgp_parse_packet_header(&data, &datalen, &type,
-+						 &headerlen);
-+		if (pktlen < 0)
-+			return pktlen;
-+
-+		if ((ctx->types_of_interest >> type) & 1) {
-+			ret = ctx->process_packet(ctx, type, headerlen,
-+						  data, pktlen);
-+			if (ret < 0)
-+				return ret;
-+		}
-+		data += pktlen;
-+		datalen -= pktlen;
-+	}
-+
-+	if (datalen != 0) {
-+		pr_debug("Excess octets in packet stream\n");
-+		return -EBADMSG;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(pgp_parse_packets);
-+
-+/**
-+ * pgp_parse_public_key - Parse the common part of a PGP pubkey packet
-+ * @_data: Content of packet (updated)
-+ * @_datalen: Length of packet remaining (updated)
-+ * @pk: Public key data
-+ *
-+ * Parse the common data struct for a PGP pubkey packet [RFC 4880: 5.5.2].
-+ */
-+int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
-+			 struct pgp_parse_pubkey *pk)
-+{
-+	const u8 *data = *_data;
-+	size_t datalen = *_datalen;
-+	__be32 tmp;
-+
-+	if (datalen < 12) {
-+		pr_debug("Public key packet too short\n");
-+		return -EBADMSG;
-+	}
-+
-+	pk->version = *data++;
-+	switch (pk->version) {
-+	case PGP_KEY_VERSION_2:
-+	case PGP_KEY_VERSION_3:
-+	case PGP_KEY_VERSION_4:
-+		break;
-+	default:
-+		pr_debug("Public key packet with unhandled version %d\n",
-+			   pk->version);
-+		return -EBADMSG;
-+	}
-+
-+	tmp  = *data++ << 24;
-+	tmp |= *data++ << 16;
-+	tmp |= *data++ << 8;
-+	tmp |= *data++;
-+	pk->creation_time = tmp;
-+	if (pk->version == PGP_KEY_VERSION_4) {
-+		pk->expires_at = 0; /* Have to get it from the selfsignature */
-+	} else {
-+		unsigned short ndays;
-+		ndays  = *data++ << 8;
-+		ndays |= *data++;
-+		if (ndays)
-+			pk->expires_at = pk->creation_time + ndays * 86400UL;
-+		else
-+			pk->expires_at = 0;
-+		datalen -= 2;
-+	}
-+
-+	pk->pubkey_algo = *data++;
-+	datalen -= 6;
-+
-+	pr_devel("%x,%x,%lx,%lx",
-+		 pk->version, pk->pubkey_algo, pk->creation_time,
-+		 pk->expires_at);
-+
-+	*_data = data;
-+	*_datalen = datalen;
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(pgp_parse_public_key);
+static int lpc32xx_of_xlate(struct gpio_chip **gc, const struct
+                            of_phandle_args *gpiospec, u32 *flags)
+{
+	if (WARN_ON(gpiospec->args_count < 3))
+		return -EINVAL;
+
+	*gc = &lpc32xx_gpiochip[gpiospec->args[0]].chip;
+	if (flags)
+		*flags = gpiospec->args[2];
+	return gpiospec->args[1];
+}
+
+Make all the gpiochips use the same of_xlate function and of_node
+pointer so that it doesn't matter which one gets matched because the
+xlate always completely resolves the gpio_chip.
+
+Another way to do it would be to split the of_xlate functions out of
+gpio_chip entirely and have a separate registry for gpio device_nodes
+and their xlate functions.
+
+g.
 
