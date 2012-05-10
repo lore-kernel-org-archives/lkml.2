@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab2EJJPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 05:15:35 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54742 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758069Ab2EJJPb (ORCPT
+	id S932326Ab2EJJXa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 05:23:30 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:34560 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932265Ab2EJJXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 05:15:31 -0400
-From: Ben Minerds <puzzleduck@gmail.com>
-To: alan@lxorguk.ukuu.org.uk
-Cc: gregkh@linuxfoundation.org, richard.weinberger@gmail.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Minerds <puzzleduck@gmail.com>
-Subject: [PATCH 05/21] USB: serial: Changes to conform with checkpatch.sh script. space before tabs.
-Date: Thu, 10 May 2012 19:17:11 +1000
-Message-Id: <1336641447-23194-6-git-send-email-puzzleduck@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1336641447-23194-1-git-send-email-puzzleduck@gmail.com>
-References: <1336641447-23194-1-git-send-email-puzzleduck@gmail.com>
+	Thu, 10 May 2012 05:23:25 -0400
+Message-ID: <1336641789.8605.2.camel@odin>
+Subject: Re: [PATCH 1/6] regulator: core: Allow regulators to provide a
+ voltage to selector mapping
+From: Liam Girdwood <lrg@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Yadwinder Singh <yadi.brar@samsung.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Date: Thu, 10 May 2012 10:23:09 +0100
+In-Reply-To: <1336607255-4967-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1336607255-4967-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed 2 checkpatch.sh warnings.
+On Thu, 2012-05-10 at 00:47 +0100, Mark Brown wrote:
+> In order to allow more drivers to factor things out into data allow
+> drivers to provide a mapping function to convert voltages into selectors.
+> This allows any driver to use set_voltage_sel(). The existing mapping
+> based on iterating over list_voltage() is provided as an operation which
+> can be assigned to the new map_voltage() function though for ease of
+> transition it is treated as the default.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
 
-Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
----
- drivers/usb/serial/keyspan.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+All
 
-diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
-index 0243477..a6fc2be 100644
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -526,11 +526,11 @@ static void	usa28_outcont_callback(struct urb *urb)
- static void	usa28_instat_callback(struct urb *urb)
- {
- 	int					err;
--	unsigned char 				*data = urb->transfer_buffer;
-+	unsigned char				*data = urb->transfer_buffer;
- 	struct keyspan_usa28_portStatusMessage	*msg;
- 	struct usb_serial			*serial;
- 	struct usb_serial_port			*port;
--	struct keyspan_port_private	 	*p_priv;
-+	struct keyspan_port_private		*p_priv;
- 	struct tty_struct			*tty;
- 	int old_dcd_state;
- 	int status = urb->status;
--- 
-1.7.2.5
+Acked-by: Liam Girdwood <lrg@ti.com>
 
