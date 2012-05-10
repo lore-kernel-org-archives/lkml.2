@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab2EJIyB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 04:54:01 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43865 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756428Ab2EJIx6 (ORCPT
+	id S1757581Ab2EJIzn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 04:55:43 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36056 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757481Ab2EJIzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 04:53:58 -0400
-Date: Thu, 10 May 2012 09:53:55 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lrg@ti.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: linux-next: manual merge of the sound-asoc tree with the regmap
- tree
-Message-ID: <20120510085355.GC3908@opensource.wolfsonmicro.com>
-References: <20120510142552.35f8e15042053707a2086905@canb.auug.org.au>
+	Thu, 10 May 2012 04:55:37 -0400
+Date: Thu, 10 May 2012 10:55:31 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [GIT PULL 0/1] perf/urgent fix
+Message-ID: <20120510085531.GA8186@gmail.com>
+References: <1336585439-32378-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="adJ1OR3c6QgCpb/j"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120510142552.35f8e15042053707a2086905@canb.auug.org.au>
-X-Cookie: Your domestic life may be harmonious.
+In-Reply-To: <1336585439-32378-1-git-send-email-acme@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---adJ1OR3c6QgCpb/j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-On Thu, May 10, 2012 at 02:25:52PM +1000, Stephen Rothwell wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 09c0211c0bb0e40231e6ee9a35041d467ed72f16:
+> 
+>   perf: Turn off compiler warnings for flex and bison generated files (2012-05-07 10:03:01 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/urgent
+> 
+> for you to fetch changes up to 20d23aaa31da295378abff4272716e3dfc72baf0:
+> 
+>   perf stat: handle ENXIO error for perf_event_open (2012-05-09 14:14:41 -0300)
+> 
+> ----------------------------------------------------------------
+> Fix for perf/urgent:
+> 
+> . Fix handling of older kernels on PPC, from David Ahern.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> David Ahern (1):
+>       perf stat: handle ENXIO error for perf_event_open
+> 
+>  tools/perf/builtin-stat.c |    7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
 
-> Today's linux-next merge of the sound-asoc tree got a conflict in
-> drivers/base/regmap/regmap.c between commit 6560ffd1ccd6 ("regmap: fix
-> possible memory corruption in regmap_bulk_read()") from the regmap tree
-> and commit edc9ae420f98 ("regmap: implement register striding") from the
-> sound-asoc tree.
+Pulled, thanks!
 
-That's the right fix - it's already included in the regmap tree itself.
-
---adJ1OR3c6QgCpb/j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPq4IYAAoJEBus8iNuMP3dyS0P/3XrFuG/PUVjRN8ZZ+C0TPno
-Y01mek8qftz+wfgoPOmlKh+oK1vIedPww0yoNd6kjEgJm4IftPSD4uxP4yaSqw3o
-9muDsxBRNjppeLZNa2kd0SaSUSU5tnpWPD6Oo34CCtSVqEXEhqiZ70IHeKS0mCOd
-/vv76StzACvaeEVEsDulPT329Jj4rWaHbA7tomBV0kcj92quspDSmlZKZEiv/Iru
-57Gzw3QzB5Zlgn9df2QnWonoTrP7oFKAjb/Xf3bUh3yLbKtohY1Vmtn7/kKrJIps
-RF8fLj2a0YUwjMbKpbuppsfBDIixORPh3wWd7vL24wgKiArAfYeF2nbSXkVskqyl
-faJYbH8bWIFdKULgy/4oxup9xouHaqjVM+bw2zVa/e+i81dj9oGrDvVwQr4QGRuS
-wfJ0eAPywxjVU7IbRpLdhY0SumUHXoaVvMTWzWIgQipmlHqwf+yzcC3WFCGhi4we
-SRWUi3hxl319x8XYkWd60p06G4VxBOJQ5sSsF0cShnuROVP++s+yCqmqiPP58MzN
-h2EB8kB6pLhI2T8AVAFapGrd/JjjJUWTpCsUPI/7Iq2nySpBiWxzvPNOtA0UUOYt
-Ff9fOMkf9qfpjdGFO1wBgRLsKED2qOS5f0nf92te31vTeMFH+QffU/x3JqCbJBo7
-4lHk8RudfYPz0cgcAHMO
-=o3L8
------END PGP SIGNATURE-----
-
---adJ1OR3c6QgCpb/j--
+	Ingo
