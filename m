@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab2EJOxZ (ORCPT <rfc822;w@1wt.eu>);
+	id S1759331Ab2EJOxj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 10:53:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3374 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757103Ab2EJOxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 May 2012 10:53:25 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39390 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756439Ab2EJOxY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 10:53:24 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: inki.dae@samsung.com, jy0922.shim@samsung.com, sw0312.kim@samsung.com,
-        kyungmin.park@samsung.com, airlied@linux.ie
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] drm/exynos: Include missing linux/types.h in header
-Date: Thu, 10 May 2012 16:53:20 +0200
-Message-Id: <1336661600-2409-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10
+Message-ID: <4FABD653.7060401@redhat.com>
+Date: Thu, 10 May 2012 11:53:07 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [EDAC ABI v13 04/25] events/hw_event: Create a Hardware Events
+ Report Mecanism (HERM)
+References: <1334608729-30803-1-git-send-email-mchehab@redhat.com> <1334608729-30803-5-git-send-email-mchehab@redhat.com> <20120509121326.GA22737@aftab.osrc.amd.com> <4FAA6802.9070506@redhat.com> <20120509132237.GD22737@aftab.osrc.amd.com> <4FAA7649.5080606@redhat.com> <20120509140632.GG22737@aftab.osrc.amd.com> <4FAA7C1A.3020406@redhat.com> <20120509142456.GH22737@aftab.osrc.amd.com> <4FABBFAF.20809@redhat.com> <20120510134136.GC31257@aftab.osrc.amd.com>
+In-Reply-To: <20120510134136.GC31257@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include the linux/types.h file where used types are declared.
+Em 10-05-2012 10:41, Borislav Petkov escreveu:
+> On Thu, May 10, 2012 at 10:16:31AM -0300, Mauro Carvalho Chehab wrote:
+>> Nah, this is not marketing speak. HERM is not a trademark. amd64_edac,
+>> on the other hand, is using a trademark on his name. If we use your
+>> logic, this would need to be renamed to something else, to avoid using
+>> a "marketing speak".
+> 
+> I'm not even going to dignify that with an answer because it is a bunch
+> of bullshit and you know it.
+> 
+>> We need some name to differentiate between the broken EDAC core where
+>> modern memory controllers are not properly represented and reports
+>> errors on fake csrows/channels from the EDAC+HERM core that will
+>> properly provide the error information to where it really belongs.
+> 
+> A kernel version or a commit id is not enough here I guess.
+> 
+>> In other words, HERM is just an acronym[1] to the version to point to
+>> where EDAC starts to work fine with modern memory controllers.
+> 
+> Seems to me you're desperately trying to prove your point for having
+> this HERM thing by coming up with a bunch of bogus arguments.
+> 
+> And I'm still waiting for a real, technical reason which legitimizes
+> calling a tracepoint something special.
 
-Sparse gives the following warning:
-/usr/include/drm/exynos_drm.h:92:
-	found __[us]{8,16,32,64} type without
-	#include <linux/types.h>
+Technical reasons were provided already: before this patch series, EDAC
+is *broken*.
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- include/drm/exynos_drm.h |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/include/drm/exynos_drm.h b/include/drm/exynos_drm.h
-index e478de4..7eb7ae7 100644
---- a/include/drm/exynos_drm.h
-+++ b/include/drm/exynos_drm.h
-@@ -29,6 +29,8 @@
- #ifndef _EXYNOS_DRM_H_
- #define _EXYNOS_DRM_H_
- 
-+#include <linux/types.h>
-+
- /**
-  * User-desired buffer creation information structure.
-  *
--- 
-1.7.10
-
+Mauro.
