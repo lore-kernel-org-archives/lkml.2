@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964895Ab2EJXot (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 19:44:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8819 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964877Ab2EJXob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 19:44:31 -0400
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 29/29] MODSIGN: Suppress some redundant ELF checks [ver #4]
-To: rusty@rustcorp.com.au
-Cc: kyle@mcmartin.ca, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        David Howells <dhowells@redhat.com>
-Date: Fri, 11 May 2012 00:44:22 +0100
-Message-ID: <20120510234422.4137.92830.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120510233901.4137.19023.stgit@warthog.procyon.org.uk>
-References: <20120510233901.4137.19023.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S964870Ab2EJXpa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 19:45:30 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:37102 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964790Ab2EJXpZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 19:45:25 -0400
+X-AuditID: cbfee61a-b7bbeae000003a71-11-4fac5313bbe7
+Message-id: <4FAC5313.80909@samsung.com>
+Date: Fri, 11 May 2012 08:45:23 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: broonie@opensource.wolfsonmicro.com, thomas.abraham@linaro.org,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        jonghwa3.lee@samsung.com, linux-kernel@vger.kernel.org,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+Subject: Re: [PATCH 0/2] mfd: MAX8997: Support irq domain for Maxim MAX8997
+References: <1336647288-10858-1-git-send-email-cw00.choi@samsung.com>
+ <20120510182015.GB17018@kroah.com>
+In-reply-to: <20120510182015.GB17018@kroah.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suppress some redundant ELF checks in module_verify_elf() that are also done
-by copy_and_check() in the core module loader code prior to calling
-module_verify().
+On 05/11/2012 03:20 AM, Greg KH wrote:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+> On Thu, May 10, 2012 at 07:54:48PM +0900, Chanwoo Choi wrote:
+>> This patchset add support irq domain for Maxim MAX8997 interrupts.
+>>
+>> The first patch is based on patch written by Thomas Abraham and fix
+>> two bug which set max8997->irq_domain instead of NULL pointer and
+>> correct wrong parameter by Chanwoo Choi.
+>> - https://lkml.org/lkml/2012/4/18/145
+>> The second patch use irq domain for MAX8997 muic interrupt instead
+>> of irq_base in platform data of MAX8997 driver.
+>>
+>> But, I posted following patchset related to MAX8997 driver.
+>> This patchset support Extcon framework in extcon-max8997 driver to
+>> control external connector instead of max8997-muic driver. So, first
+>> patch add MAX8997 extcon driver(drivers/extcon/extcon-max8997.c) and
+>> last patch remove old MAX8997 muic driver(drivers/misc/max8997-muic.c).
+>> - https://lkml.org/lkml/2012/5/8/98
+>>
+>> This patchset was applied in below git repository of Greg Kroah-Hartman.
+>> - http://git.kernel.org/?p=linux/kernel/git/gregkh/driver-core.git;a=shortlog;h=refs/heads/driver-core-next
+>>
+>> I think that this patchset should be applied on the git repository
+>> of Greg Kroah-Hartman to remove possible conflict issue when merged.
+> 
+> That's fine with me, should the MFD maintainer have been copied on this
+> to get his signed-off-by on it?
+> 
 
- kernel/module-verify.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+I knew that first patch written by Thomas Abraham has been already
+confirmed ack message from MFD maintainer(Samuel Ortiz
+<sameo@linux.intel.com>). You can check it on first patch and below git
+repository of Mark Brown.
 
+The below patch has occurred build break, so it was reverted by Mark
+Brown. And then I did post this patchset with bug fix.
 
-diff --git a/kernel/module-verify.c b/kernel/module-verify.c
-index a31b39c..e1bfd28 100644
---- a/kernel/module-verify.c
-+++ b/kernel/module-verify.c
-@@ -76,7 +76,7 @@ static noinline int module_verify_elf(struct module_verify_data *mvdata)
- 	const Elf_Shdr *section, *secstop;
- 	const Elf_Sym *symbols, *symbol, *symstop;
- 	const char *strtab;
--	size_t size, secsize, secstrsize, strsize, notesize, notemetasize;
-+	size_t size, secstrsize, strsize, notesize, notemetasize;
- 	unsigned line;
- 
- 	size = mvdata->size;
-@@ -96,11 +96,11 @@ do { if (unlikely(!(X))) { line = __LINE__; goto symcheck_error; } } while(0)
- 
- 	elfcheck(hdr->e_shnum < SHN_LORESERVE);
- 	elfcheck(hdr->e_shstrndx < hdr->e_shnum);
--	elfcheck(hdr->e_shentsize == sizeof(Elf_Shdr));
--	elfcheck(hdr->e_shoff < size);
-+	/* elfcheck(hdr->e_shentsize == sizeof(Elf_Shdr)); */
-+	/* elfcheck(hdr->e_shoff < size); */
- 	elfcheck(hdr->e_shoff >= hdr->e_ehsize);
- 	elfcheck(hdr->e_shoff % sizeof(long) == 0);
--	elfcheck(hdr->e_shnum * sizeof(Elf_Shdr) <= size - hdr->e_shoff);
-+	/* elfcheck(hdr->e_shnum * sizeof(Elf_Shdr) <= size - hdr->e_shoff); */
- 
- 	/* Validate the section table contents */
- 	mvdata->nsects = hdr->e_shnum;
+http://git.kernel.org/?p=linux/kernel/git/broonie/regulator.git;a=commit;h=98d8618af37728f6e18e84110ddb99987b47dd12
+
+Best Regards,
+Chanwoo Choi
+
 
