@@ -1,94 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757760Ab2EJJLC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 05:11:02 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48527 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754113Ab2EJJK7 (ORCPT
+	id S1757833Ab2EJJLO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 05:11:14 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:48198 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757797Ab2EJJLI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 05:10:59 -0400
-Date: Thu, 10 May 2012 02:10:27 -0700
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-20d23aaa31da295378abff4272716e3dfc72baf0@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, peterz@infradead.org, dsahern@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <1336490956-57145-1-git-send-email-dsahern@gmail.com>
-References: <1336490956-57145-1-git-send-email-dsahern@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf stat:
-  handle ENXIO error for perf_event_open
-Git-Commit-ID: 20d23aaa31da295378abff4272716e3dfc72baf0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 10 May 2012 05:11:08 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 02:10:40 -0700 (PDT)
+In-Reply-To: <CAFbHwiTZOOP1HwZQPPKBei3aGhbBjFyJ4QLJ+Ea465L6r6vEYg@mail.gmail.com>
+References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
+	<1335935266-25289-2-git-send-email-thomas.abraham@linaro.org>
+	<CAFbHwiTZOOP1HwZQPPKBei3aGhbBjFyJ4QLJ+Ea465L6r6vEYg@mail.gmail.com>
+Date: Thu, 10 May 2012 14:41:07 +0530
+Message-ID: <CAJuYYwSn9kMEW8nPiPe9o+OHR0D00oBNNfuFq6ZaXw1jwx+oeA@mail.gmail.com>
+Subject: Re: [PATCH 1/7] mmc: dw_mmc: lookup for optional biu and ciu clocks
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Will Newton <will.newton@gmail.com>
+Cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  20d23aaa31da295378abff4272716e3dfc72baf0
-Gitweb:     http://git.kernel.org/tip/20d23aaa31da295378abff4272716e3dfc72baf0
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Tue, 8 May 2012 09:29:16 -0600
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 9 May 2012 14:14:41 -0300
+On 2 May 2012 14:47, Will Newton <will.newton@gmail.com> wrote:
+> On Wed, May 2, 2012 at 6:07 AM, Thomas Abraham
+> <thomas.abraham@linaro.org> wrote:
+>> Some platforms allow for clock gating and control of bus interface unit clock
+>> and card interface unit clock. Add support for clock lookup of optional biu
+>> and ciu clocks for clock gating and clock speed determination.
+>>
+>> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+>> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+>> ---
+>>  drivers/mmc/host/dw_mmc.c  |   35 +++++++++++++++++++++++++++++++----
+>>  include/linux/mmc/dw_mmc.h |    4 ++++
+>>  2 files changed, 35 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+>> index 1532357..036846f 100644
+>> --- a/drivers/mmc/host/dw_mmc.c
+>> +++ b/drivers/mmc/host/dw_mmc.c
+>> @@ -1938,19 +1938,35 @@ int dw_mci_probe(struct dw_mci *host)
+>>                return -ENODEV;
+>>        }
+>>
+>> -       if (!host->pdata->bus_hz) {
+>> +       host->biu_clk = clk_get(&host->dev, "biu");
+>> +       if (IS_ERR(host->biu_clk))
+>> +               dev_info(&host->dev, "biu clock not available\n");
+>> +       else
+>> +               clk_enable(host->biu_clk);
+>> +
+>> +       host->ciu_clk = clk_get(&host->dev, "ciu");
+>> +       if (IS_ERR(host->ciu_clk))
+>> +               dev_info(&host->dev, "ciu clock not available\n");
+>
+> Should these printks be at debug level? I'm not 100% sure either way
+> but it could be a little noisy on systems that do not use these
+> clocks.
 
-perf stat: handle ENXIO error for perf_event_open
+Right. I will change dev_info to dev_dbg.
 
-perf stat on PPC currently fails to run:
+>
+>> +       else
+>> +               clk_enable(host->ciu_clk);
+>> +
+>> +       if (IS_ERR(host->ciu_clk))
+>> +               host->bus_hz = host->pdata->bus_hz;
+>> +       else
+>> +               host->bus_hz = clk_get_rate(host->ciu_clk);
+>> +
+>> +       if (!host->bus_hz) {
+>>                dev_err(&host->dev,
+>>                        "Platform data must supply bus speed\n");
+>> -               return -ENODEV;
+>> +               ret = -ENODEV;
+>> +               goto err_clk;
+>>        }
+>>
+>> -       host->bus_hz = host->pdata->bus_hz;
+>>        host->quirks = host->pdata->quirks;
+>>
+>>        spin_lock_init(&host->lock);
+>>        INIT_LIST_HEAD(&host->queue);
+>>
+>> -
+>>        host->dma_ops = host->pdata->dma_ops;
+>>        dw_mci_init_dma(host);
+>>
+>> @@ -2095,6 +2111,13 @@ err_dmaunmap:
+>>                regulator_disable(host->vmmc);
+>>                regulator_put(host->vmmc);
+>>        }
+>> +       kfree(host);
+>> +
+>> +err_clk:
+>> +       clk_disable(host->ciu_clk);
+>> +       clk_disable(host->biu_clk);
+>> +       clk_put(host->ciu_clk);
+>> +       clk_put(host->biu_clk);
+>
+> Are these calls safe, or do we need to check IS_ERR as above?
 
-$ perf stat -- sleep 1
-  Error: open_counter returned with 6 (No such device or address). /bin/dmesg may provide additional information.
+The clk_disable is safe on Samsung platforms but it cannot be assumed
+for other platforms. So, the IS_ERR check will be added before
+clk_disable. clk_put will not need the IS_ERR check. Thanks for
+pointing this out.
 
-  Fatal: Not all events could be opened.
+>
+>>        return ret;
+>>  }
+>>  EXPORT_SYMBOL(dw_mci_probe);
+>> @@ -2128,6 +2151,10 @@ void dw_mci_remove(struct dw_mci *host)
+>>                regulator_put(host->vmmc);
+>>        }
+>>
+>> +       clk_disable(host->ciu_clk);
+>> +       clk_disable(host->biu_clk);
+>> +       clk_put(host->ciu_clk);
+>> +       clk_put(host->biu_clk);
+>
+> Likewise.
 
-The problem is that until 2.6.37 (behavior changed with commit b0a873e)
-perf on PPC returns ENXIO when hw_perf_event_init() fails. With this
-patch we get the expected behavior:
+Yes, will be fixed.
 
-$ perf stat -v -- sleep 1
-cycles event is not supported by the kernel.
-stalled-cycles-frontend event is not supported by the kernel.
-stalled-cycles-backend event is not supported by the kernel.
-instructions event is not supported by the kernel.
-branches event is not supported by the kernel.
-branch-misses event is not supported by the kernel.
+Thanks,
+Thomas.
 
-...
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1336490956-57145-1-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-stat.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 4532a78..1e5e9b2 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -488,8 +488,13 @@ static int run_perf_stat(int argc __used, const char **argv)
- 
- 	list_for_each_entry(counter, &evsel_list->entries, node) {
- 		if (create_perf_stat_counter(counter, first) < 0) {
-+			/*
-+			 * PPC returns ENXIO for HW counters until 2.6.37
-+			 * (behavior changed with commit b0a873e).
-+			 */
- 			if (errno == EINVAL || errno == ENOSYS ||
--			    errno == ENOENT || errno == EOPNOTSUPP) {
-+			    errno == ENOENT || errno == EOPNOTSUPP ||
-+			    errno == ENXIO) {
- 				if (verbose)
- 					ui__warning("%s event is not supported by the kernel.\n",
- 						    event_name(counter));
+[...]
