@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab2EJIcB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 04:32:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34259 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753518Ab2EJIb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 04:31:58 -0400
-Date: Thu, 10 May 2012 10:31:50 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] HID: hid-multitouch: fix wrong protocol detection
-In-Reply-To: <20120509195632.GA12406@polaris.bitmath.org>
-Message-ID: <alpine.LNX.2.00.1205101026010.31253@pobox.suse.cz>
-References: <1336136030-18503-1-git-send-email-benjamin.tissoires@gmail.com> <1336136030-18503-2-git-send-email-benjamin.tissoires@gmail.com> <20120506190146.GA12571@polaris.bitmath.org> <CAN+gG=G9y_0Le-Mja2z68r76nBmz0De95Lc6671EkrrMZRSEHw@mail.gmail.com>
- <20120509195632.GA12406@polaris.bitmath.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+	id S1757448Ab2EJIde (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 04:33:34 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39627 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757401Ab2EJIdb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 04:33:31 -0400
+Message-ID: <1336638422.2527.78.camel@twins>
+Subject: Re: [PATCH v4 6/7] x86/tlb: optimizing flush_tlb_mm
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Alex Shi <alex.shi@intel.com>
+Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, gregkh@linuxfoundation.org, borislav.petkov@amd.com,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
+        oleg@redhat.com, axboe@kernel.dk, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Date: Thu, 10 May 2012 10:27:02 +0200
+In-Reply-To: <1336626013-28413-7-git-send-email-alex.shi@intel.com>
+References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
+	 <1336626013-28413-7-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 May 2012, Henrik Rydberg wrote:
-
-> > well, the idea was to keep the memory footprint low. As these values
-> > are only needed at init, then I freed them once I finished using them.
-> > I can of course skip the pointer, but in that case, wouldn't the
-> > struct declaration be worthless?
+On Thu, 2012-05-10 at 13:00 +0800, Alex Shi wrote:
+> Not every flush_tlb_mm execution moment is really need to evacuate all
+> TLB entries, like in munmap, just few 'invlpg' is better for whole
+> process performance, since it leaves most of TLB entries for later
+> accessing.
 > 
-> My bad, I misread the placement of the free() statement. I was also
-> concerned about memory, since HID is big enough a memory hog as it
-> is. Barring the added complexity of this patch, it now makes more
-> sense.
-> 
->     Acked-by: Henrik Rydberg <rydberg@euromail.se>
+> This patch is changing flush_tlb_mm(mm) to flush_tlb_mm(mm, start, end)
+> in cases.
 
-drivers/hid/hid-multitouch.c: In function ¡mt_post_parse¢:
-drivers/hid/hid-multitouch.c:673: error: invalid type argument of ¡->¢ (have ¡unsigned int¢)
-make[1]: *** [drivers/hid/hid-multitouch.o] Error 1
+No I thoroughly hate this patch. Please do something like:
 
-I believe that
+ http://marc.info/?l=linux-arch&m=129952026504268&w=2
 
-	td->last_slot_field = f->usages[field_count_per_touch - 1]->hid;
-
-should be
-
-	td->last_slot_field = f->usages[field_count_per_touch - 1];
-
-but I leave this up to you guys to fix.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+Afaict it achieves the same, doesn't mangle the tlb flush interfaces and
+allows more arch to use generic code.
