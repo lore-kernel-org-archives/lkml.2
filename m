@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab2EJGFe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 02:05:34 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39255 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab2EJGFc convert rfc822-to-8bit (ORCPT
+	id S1755393Ab2EJGTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 02:19:48 -0400
+Received: from mailgw02.mediatek.com ([210.61.82.184]:36461 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752843Ab2EJGTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 02:05:32 -0400
+	Thu, 10 May 2012 02:19:47 -0400
+From: =?utf-8?B?U3RldmVuIExpdSAo5YqJ5Lq66LGqKQ==?= 
+	<steven.liu@mediatek.com>
+To: "davem@davemloft.net" <davem@davemloft.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 10 May 2012 14:19:43 +0800
+Subject: [PATCH] inet_lro: fix VLAN LRO issue
+Thread-Topic: [PATCH] inet_lro: fix VLAN LRO issue
+Thread-Index: Ac0uc/iH5Ar6A+4tRsycZTnFutlC0w==
+Message-ID: <599E416D1C5C994980C45977191D726906AB2FE9AC@MTKMBS03.mediatek.inc>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-TW
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-TW, en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20120509185608.GA13435@merkur.ravnborg.org>
-References: <20120509093001.GD8585@gmail.com>
-	<1336589196-14498-1-git-send-email-suresh.b.siddha@intel.com>
-	<20120509185608.GA13435@merkur.ravnborg.org>
-Date: Thu, 10 May 2012 08:05:31 +0200
-X-Google-Sender-Auth: KxlWQ8JKUd-RmZ00aoC9fFP88rI
-Message-ID: <CAMuHMdVbWNC0=qFTfwoP-_N6b-MfOX63v0931HOpLcnfBRMt2Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] kconfig: change config_enabled() to accept X instead
- of CONFIG_X
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, mingo@kernel.org,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, joerg.roedel@amd.com,
-        paul.gortmaker@windriver.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4A6KY5x008590
 
-On Wed, May 9, 2012 at 8:56 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> On Wed, May 09, 2012 at 11:46:35AM -0700, Suresh Siddha wrote:
->> change config_enabled() to use it as config_enabled(SMP) instead of
->> config_enabled(CONFIG_SMP).
->
-> You are breaking all existing users.
-> And CONFIG_ was included to allow better grepability.
+Hi Sir,
 
-Indeed.
+From: Steven Liu <steven_liu@mediatek.com>
 
-> If you insist on having a CONFIG less variant
-> introduce a new variant for this.
+Current LRO implementation cannot handle VLAN tagged packets correctly.
+It uses correct packet length when creating new LRO session, but uses wrong packet length when putting following packets into exist LRO session.
 
-It's already bad enough that you have to use
-`git grep -w FOO $(git ls-files "*Kconf*")` [*] to find the non-prefixed
-symbols in the Kconfig logic, followed by `git grep -w CONFIG_FOO`
-for the rest.
+Signed-off-by: Steven Liu <steven_liu@mediatek.com>
+---
+Linux-3.4-rc3 and below version have such issue
+--- net/ipv4/inet_lro.orig      2012-05-08 20:09:44.810366089 +0800
++++ net/ipv4/inet_lro.c 2012-05-08 20:09:33.331679419 +0800
+@@ -353,7 +353,7 @@ static int __lro_proc_skb(struct net_lro
+        if (lro_desc->tcp_next_seq != ntohl(tcph->seq))
+                goto out2;
 
-[*] Doh, recently I discovered that `git grep -w FOO -- "*Kconf*"' also
-works, but my fingers are not yet used to it...
+-       if (lro_tcp_ip_check(iph, tcph, skb->len, lro_desc))
++       if (lro_tcp_ip_check(iph, tcph, skb->len - vlan_hdr_len, lro_desc))
+                goto out2;
 
-Gr{oetje,eeting}s,
+        lro_add_packet(lro_desc, skb, iph, tcph);
 
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Regards,
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Â  Â Â  -- Linus Torvalds
+Steven
+
+************* Email Confidentiality Notice ********************
+The information contained in this e-mail message (including any 
+attachments) may be confidential, proprietary, privileged, or otherwise
+exempt from disclosure under applicable laws. It is intended to be 
+conveyed only to the designated recipient(s). Any use, dissemination, 
+distribution, printing, retaining or copying of this e-mail (including its 
+attachments) by unintended recipient(s) is strictly prohibited and may 
+be unlawful. If you are not an intended recipient of this e-mail, or believe 
+that you have received this e-mail in error, please notify the sender 
+immediately (by replying to this e-mail), delete any and all copies of 
+this e-mail (including any attachments) from your system, and do not
+disclose the content of this e-mail to any other person. Thank you!ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
