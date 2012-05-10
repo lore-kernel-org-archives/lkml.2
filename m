@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab2EJDIz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 23:08:55 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:47002 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754825Ab2EJDIx (ORCPT
+	id S1755355Ab2EJDJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 23:09:09 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:37677 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754793Ab2EJDJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 23:08:53 -0400
-From: zwu.kernel@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: axboe@kernel.dk, wuzhy@linux.vnet.ibm.com, stefanha@linux.vnet.ibm.com,
-        trbecker@trbecker.org
-Subject: [PATCH v2] block: Remove some unnecessary codes
-Date: Thu, 10 May 2012 11:06:33 +0800
-Message-Id: <1336619193-4808-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051003-5518-0000-0000-00000449E949
+	Wed, 9 May 2012 23:09:05 -0400
+Date: Wed, 9 May 2012 23:09:00 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Cc: tejun@google.com, agk@redhat.com
+Subject: [Bcache v13 04/16] Fix ratelimit macro to compile in c99 mode
+Message-ID: <d7cfd6b70316efc3fe2ce575203d906a610e3670.1336619038.git.koverstreet@google.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1336619038.git.koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- block/partition-generic.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ include/linux/ratelimit.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/block/partition-generic.c b/block/partition-generic.c
-index 6df5d69..b6a9d5b 100644
---- a/block/partition-generic.c
-+++ b/block/partition-generic.c
-@@ -473,7 +473,6 @@ rescan:
- 	/* add partitions */
- 	for (p = 1; p < state->limit; p++) {
- 		sector_t size, from;
--		struct partition_meta_info *info = NULL;
- 
- 		size = state->parts[p].size;
- 		if (!size)
-@@ -508,8 +507,6 @@ rescan:
- 			}
- 		}
- 
--		if (state->parts[p].has_info)
--			info = &state->parts[p].info;
- 		part = add_partition(disk, p, from, size,
- 				     state->parts[p].flags,
- 				     &state->parts[p].info);
+diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
+index e11ccb4..9ad57d3 100644
+--- a/include/linux/ratelimit.h
++++ b/include/linux/ratelimit.h
+@@ -20,7 +20,7 @@ struct ratelimit_state {
+ #define DEFINE_RATELIMIT_STATE(name, interval_init, burst_init)		\
+ 									\
+ 	struct ratelimit_state name = {					\
+-		.lock		= __RAW_SPIN_LOCK_UNLOCKED(name.lock),	\
++		.lock		= __RAW_SPIN_LOCK_INITIALIZER(name.lock),\
+ 		.interval	= interval_init,			\
+ 		.burst		= burst_init,				\
+ 	}
 -- 
-1.7.6
+1.7.9.rc2
 
