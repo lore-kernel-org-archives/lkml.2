@@ -1,171 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872Ab2EJXYd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 19:24:33 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44575 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab2EJXYb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 19:24:31 -0400
-X-AuditID: 9c93016f-b7cecae000000e00-90-4fac4e2d0130
-Message-ID: <4FAC4E3B.3030909@kernel.org>
-Date: Fri, 11 May 2012 08:24:43 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Nitin Gupta <ngupta@vflare.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
-References: <4FA33DF6.8060107@kernel.org> <20120509201918.GA7288@kroah.com> <4FAB21E7.7020703@kernel.org> <20120510140215.GC26152@phenom.dumpdata.com> <4FABD503.4030808@vflare.org> <4FABDA9F.1000105@linux.vnet.ibm.com> <20120510151941.GA18302@kroah.com> <4FABECF5.8040602@vflare.org> <20120510164418.GC13964@kroah.com> <4FABF9D4.8080303@vflare.org> <20120510173322.GA30481@phenom.dumpdata.com>
-In-Reply-To: <20120510173322.GA30481@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	id S932814Ab2EJXa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 19:30:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18333 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932879Ab2EJXad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 19:30:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="164690668"
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+To: torvalds@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
+        oleg@redhat.com
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
+        suresh@aristanetworks.com
+Subject: [PATCH v2 4/4] x86, fpu: drop the fpu state during thread exit
+Date: Thu, 10 May 2012 16:33:31 -0700
+Message-Id: <1336692811-30576-4-git-send-email-suresh.b.siddha@intel.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1336692811-30576-1-git-send-email-suresh.b.siddha@intel.com>
+References: <CA+55aFwNST_Lhou1h9JWkg348BET7CbqNX50XYPOFNbXioXdxg@mail.gmail.com>
+ <1336692811-30576-1-git-send-email-suresh.b.siddha@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 02:33 AM, Konrad Rzeszutek Wilk wrote:
+There is no need to save any active fpu state to the task structure
+memory if the task is dead. Just drop the state instead.
 
-> On Thu, May 10, 2012 at 01:24:36PM -0400, Nitin Gupta wrote:
->> On 5/10/12 12:44 PM, Greg Kroah-Hartman wrote:
->>> On Thu, May 10, 2012 at 12:29:41PM -0400, Nitin Gupta wrote:
->>>> On 5/10/12 11:19 AM, Greg Kroah-Hartman wrote:
->>>>> On Thu, May 10, 2012 at 10:11:27AM -0500, Seth Jennings wrote:
->>>>>> On 05/10/2012 09:47 AM, Nitin Gupta wrote:
->>>>>>
->>>>>>> On 5/10/12 10:02 AM, Konrad Rzeszutek Wilk wrote:
->>>>>>>> struct zs {
->>>>>>>>     void *ptr;
->>>>>>>> };
->>>>>>>>
->>>>>>>> And pass that structure around?
->>>>>>>>
->>>>>>>
->>>>>>> A minor problem is that we store this handle value in a radix tree node.
->>>>>>> If we wrap it as a struct, then we will not be able to store it directly
->>>>>>> in the node -- the node will have to point to a 'struct zs'. This will
->>>>>>> unnecessarily waste sizeof(void *) for every object stored.
->>>>>>
->>>>>>
->>>>>> I don't think so. You can use the fact that for a struct zs var,&var
->>>>>> and&var->ptr are the same.
->>>>>>
->>>>>> For the structure above:
->>>>>>
->>>>>> void * zs_to_void(struct zs *p) { return p->ptr; }
->>>>>> struct zs * void_to_zs(void *p) { return (struct zs *)p; }
->>>>>
->>>>> Do like what the rest of the kernel does and pass around *ptr and use
->>>>> container_of to get 'struct zs'.  Yes, they resolve to the same pointer
->>>>> right now, but you shouldn't "expect" to to be the same.
->>>>>
->>>>>
->>>>
->>>> I think we can just use unsigned long as zs handle type since all we
->>>> have to do is tell the user that the returned value is not a
->>>> pointer. This will be less pretty than a typedef but still better
->>>> than a single entry struct + container_of stuff.
->>>
->>> But then you are casting the thing all around just as much as you were
->>> with the void *, right?
->>>
->>> Making this a "real" structure ensures type safety and lets the compiler
->>> find the problems you accidentally create at times :)
->>>
->>
->> If we return a 'struct zs' from zs_malloc then I cannot see how we
->> are solving the original problem of storing the handle directly in a
->> radix node. If we pass a struct zs we will require pointing radix
->> node to this struct, wasting sizeof(void *) for every object.   If
->> we pass unsigned long, then this problem is solved and it also makes
->> it clear that the passed value is not a pointer.
-> 
-> It is the same size: sizeof(struct zs) == sizeof(void *).
-> When you return the 'struct zs' it will be as if you are returning 
-> a void * pointer.
-> 
+For example, this saved some 1770 xsave's during the system boot
+of a two socket Xeon system.
 
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ arch/x86/kernel/process.c |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
 
-Please look.
-
-struct zs_handle {
-	void *handle
-};
-
-1)
-
-static struct zv_hdr *zv_create(..)
-{
-	struct zs_handle handle;
-	..
-	handle = zs_malloc(pool, size);
-	..
-	return handle;
-}
-
-handle is on stack so it can't be used by index for slot of radix tree.
-
-2)
-
-static struct zv_hdr *zv_create(..)
-{
-	struct zs_handle handle;
-	..
-	handle = zs_malloc(pool, size);
-	..
-	return handle.handle;
-}
-
-Okay. Now it works but zcache coupled with zsmalloc tightly.
-User of zsmalloc should never know internal of zs_handle.
-
-3)
-
-- zsmalloc.h
-void *zs_handle_to_ptr(struct zs_handle handle)
-{
-	return handle.hanle;
-}
-
-static struct zv_hdr *zv_create(..)
-{
-	struct zs_handle handle;
-	..
-	handle = zs_malloc(pool, size);
-	..
-	return zs_handle_to_ptr(handle);
-}
-
-Why should zsmalloc support such interface?
-It's a zcache problem so it's desriable to solve it in zcache internal.
-And in future, if we can add/remove zs_handle's fields, we can't make
-sure such API.
-
-
->> Its true that making it a real struct would prevent accidental casts
->> to void * but due to the above problem, I think we have to stick
->> with unsigned long.
->>
->> Thanks,
->> Nitin
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
-
-
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index b7e1e0e..1219fe2 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -87,6 +87,16 @@ void arch_task_cache_init(void)
+ 				  SLAB_PANIC | SLAB_NOTRACK, NULL);
+ }
+ 
++static inline void drop_fpu(struct task_struct *tsk)
++{
++	/*
++	 * Forget coprocessor state..
++	 */
++	tsk->fpu_counter = 0;
++	clear_fpu(tsk);
++	clear_used_math();
++}
++
+ /*
+  * Free current thread data structures etc..
+  */
+@@ -109,6 +119,8 @@ void exit_thread(void)
+ 		put_cpu();
+ 		kfree(bp);
+ 	}
++
++	drop_fpu(me);
+ }
+ 
+ void show_regs(struct pt_regs *regs)
+@@ -149,12 +161,7 @@ void flush_thread(void)
+ 
+ 	flush_ptrace_hw_breakpoint(tsk);
+ 	memset(tsk->thread.tls_array, 0, sizeof(tsk->thread.tls_array));
+-	/*
+-	 * Forget coprocessor state..
+-	 */
+-	tsk->fpu_counter = 0;
+-	clear_fpu(tsk);
+-	clear_used_math();
++	drop_fpu(tsk);
+ }
+ 
+ static void hard_disable_TSC(void)
 -- 
-Kind regards,
-Minchan Kim
+1.7.6.5
+
