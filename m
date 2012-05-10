@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760666Ab2EJRfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:35:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52483 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760616Ab2EJRe5 (ORCPT
+	id S1760601Ab2EJRex (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:34:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45282 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760582Ab2EJRes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:34:57 -0400
-Message-Id: <20120510173135.275424939@linuxfoundation.org>
+	Thu, 10 May 2012 13:34:48 -0400
+Message-Id: <20120510173135.355621744@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:31:59 -0700
+Date: Thu, 10 May 2012 10:32:00 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mirko Lindner <mlindner@marvell.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
+        alan@lxorguk.ukuu.org.uk, Gerard Lledo <gerard.lledo@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 27/52] sky2: fix receive length error in mixed non-VLAN/VLAN traffic
+Subject: [ 28/52] sungem: Fix WakeOnLan
 In-Reply-To: <20120510173229.GA5678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,130 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: stephen hemminger <shemminger@vyatta.com>
+From: Gerard Lledo <gerard.lledo@gmail.com>
 
-[ Upstream commit e072b3fad5f3915102c94628b4971f52ff99dd05 ]
+[ Upstream commit 5a8887d39e1ba5ee2d4ccb94b14d6f2dce5ddfca ]
 
-Bug: The VLAN bit of the MAC RX Status Word is unreliable in several older
-supported chips. Sometimes the VLAN bit is not set for valid VLAN packets
-and also sometimes the VLAN bit is set for non-VLAN packets that came after
-a VLAN packet. This results in a receive length error when VLAN hardware
-tagging is enabled.
+WakeOnLan was broken in this driver because gp->asleep_wol is a 1-bit
+bitfield and it was being assigned WAKE_MAGIC, which is (1 << 5).
+gp->asleep_wol remains 0 and the machine never wakes up.  Fixed by casting
+gp->wake_on_lan to bool.  Tested on an iBook G4.
 
-Fix: Variation on original fix proposed by Mirko.
-The VLAN information is decoded in the status loop, and can be
-applied to the received SKB there. This eliminates the need for the
-separate tag field in the interface data structure. The tag has to
-be copied and cleared if packet is copied. This version checked out
-with vlan and normal traffic.
-
-Note: vlan_tx_tag_present should be renamed vlan_tag_present, but that
-is outside scope of this.
-
-Reported-by: Mirko Lindner <mlindner@marvell.com>
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Gerard Lledo <gerard.lledo@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/marvell/sky2.c |   28 +++++++++++++++++-----------
- drivers/net/ethernet/marvell/sky2.h |    1 -
- 2 files changed, 17 insertions(+), 12 deletions(-)
+ drivers/net/ethernet/sun/sungem.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -2484,9 +2484,11 @@ static struct sk_buff *receive_copy(stru
- 		skb->ip_summed = re->skb->ip_summed;
- 		skb->csum = re->skb->csum;
- 		skb->rxhash = re->skb->rxhash;
-+		skb->vlan_tci = re->skb->vlan_tci;
+--- a/drivers/net/ethernet/sun/sungem.c
++++ b/drivers/net/ethernet/sun/sungem.c
+@@ -2340,7 +2340,7 @@ static int gem_suspend(struct pci_dev *p
+ 	netif_device_detach(dev);
  
- 		pci_dma_sync_single_for_device(sky2->hw->pdev, re->data_addr,
- 					       length, PCI_DMA_FROMDEVICE);
-+		re->skb->vlan_tci = 0;
- 		re->skb->rxhash = 0;
- 		re->skb->ip_summed = CHECKSUM_NONE;
- 		skb_put(skb, length);
-@@ -2572,9 +2574,6 @@ static struct sk_buff *sky2_receive(stru
- 	struct sk_buff *skb = NULL;
- 	u16 count = (status & GMR_FS_LEN) >> 16;
+ 	/* Switch off chip, remember WOL setting */
+-	gp->asleep_wol = gp->wake_on_lan;
++	gp->asleep_wol = !!gp->wake_on_lan;
+ 	gem_do_stop(dev, gp->asleep_wol);
  
--	if (status & GMR_FS_VLAN)
--		count -= VLAN_HLEN;	/* Account for vlan tag */
--
- 	netif_printk(sky2, rx_status, KERN_DEBUG, dev,
- 		     "rx slot %u status 0x%x len %d\n",
- 		     sky2->rx_next, status, length);
-@@ -2582,6 +2581,9 @@ static struct sk_buff *sky2_receive(stru
- 	sky2->rx_next = (sky2->rx_next + 1) % sky2->rx_pending;
- 	prefetch(sky2->rx_ring + sky2->rx_next);
- 
-+	if (vlan_tx_tag_present(re->skb))
-+		count -= VLAN_HLEN;	/* Account for vlan tag */
-+
- 	/* This chip has hardware problems that generates bogus status.
- 	 * So do only marginal checking and expect higher level protocols
- 	 * to handle crap frames.
-@@ -2639,11 +2641,8 @@ static inline void sky2_tx_done(struct n
- }
- 
- static inline void sky2_skb_rx(const struct sky2_port *sky2,
--			       u32 status, struct sk_buff *skb)
-+			       struct sk_buff *skb)
- {
--	if (status & GMR_FS_VLAN)
--		__vlan_hwaccel_put_tag(skb, be16_to_cpu(sky2->rx_tag));
--
- 	if (skb->ip_summed == CHECKSUM_NONE)
- 		netif_receive_skb(skb);
- 	else
-@@ -2697,6 +2696,14 @@ static void sky2_rx_checksum(struct sky2
- 	}
- }
- 
-+static void sky2_rx_tag(struct sky2_port *sky2, u16 length)
-+{
-+	struct sk_buff *skb;
-+
-+	skb = sky2->rx_ring[sky2->rx_next].skb;
-+	__vlan_hwaccel_put_tag(skb, be16_to_cpu(length));
-+}
-+
- static void sky2_rx_hash(struct sky2_port *sky2, u32 status)
- {
- 	struct sk_buff *skb;
-@@ -2755,8 +2762,7 @@ static int sky2_status_intr(struct sky2_
- 			}
- 
- 			skb->protocol = eth_type_trans(skb, dev);
--
--			sky2_skb_rx(sky2, status, skb);
-+			sky2_skb_rx(sky2, skb);
- 
- 			/* Stop after net poll weight */
- 			if (++work_done >= to_do)
-@@ -2764,11 +2770,11 @@ static int sky2_status_intr(struct sky2_
- 			break;
- 
- 		case OP_RXVLAN:
--			sky2->rx_tag = length;
-+			sky2_rx_tag(sky2, length);
- 			break;
- 
- 		case OP_RXCHKSVLAN:
--			sky2->rx_tag = length;
-+			sky2_rx_tag(sky2, length);
- 			/* fall through */
- 		case OP_RXCHKS:
- 			if (likely(dev->features & NETIF_F_RXCSUM))
---- a/drivers/net/ethernet/marvell/sky2.h
-+++ b/drivers/net/ethernet/marvell/sky2.h
-@@ -2241,7 +2241,6 @@ struct sky2_port {
- 	u16		     rx_pending;
- 	u16		     rx_data_size;
- 	u16		     rx_nfrags;
--	u16		     rx_tag;
- 
- 	struct {
- 		unsigned long last;
+ 	/* Unlock the network stack */
 
 
