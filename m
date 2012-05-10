@@ -1,62 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759482Ab2EJNvJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 09:51:09 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48101 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932386Ab2EJNvE (ORCPT
+	id S1758123Ab2EJNyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 09:54:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56445 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122Ab2EJNyX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 09:51:04 -0400
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <spi-devel-general@lists.sourceforge.net>
-CC: <linux-kernel@vger.kernel.org>, <andrew@lunn.ch>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH RFC] spi: Dont call prepare/unprepare transfer if not populated
-Date: Thu, 10 May 2012 19:20:41 +0530
-Message-ID: <1336657841-2306-1-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 10 May 2012 09:54:23 -0400
+Message-ID: <1336658058.2527.119.camel@twins>
+Subject: Re: [tip:sched/core] x86/numa: Check for nonsensical topologies on
+ real hw as well
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tj@kernel.org, tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Date: Thu, 10 May 2012 15:54:18 +0200
+In-Reply-To: <1336651704.27020.100.camel@laptop>
+References: <tip-re15l0jqjtpz709oxozt2zoh@git.kernel.org>
+	 <CAE9FiQVu7KP=rabe5_jYZyEGpW7sv6wkK9wumJfW1vk2=+cYKA@mail.gmail.com>
+	 <1336650578.27020.94.camel@laptop> <1336651704.27020.100.camel@laptop>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the prepare/unprepare transfer are called unconditionally.
-The assumption is that every driver using the spi core queue infrastructure
-has to populate the prepare and unprepare functions. This encourages
-drivers to populate empty functions to prevent crashing.
-This patch prevents the call to prepare/unprepare if not populated.
 
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+OK here's one that compiles and boots without silly warnings on a WSM-EP
+
+
 ---
+ arch/x86/kernel/smpboot.c |  112 ++++++++++++++++++++++++++-------------------
+ 1 file changed, 66 insertions(+), 46 deletions(-)
 
- drivers/spi/spi.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 37c555e..30e114c 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -532,7 +532,7 @@ static void spi_pump_messages(struct kthread_work *work)
- 	/* Lock queue and check for queue work */
- 	spin_lock_irqsave(&master->queue_lock, flags);
- 	if (list_empty(&master->queue) || !master->running) {
--		if (master->busy) {
-+		if (master->busy &&  master->unprepare_transfer_hardware) {
- 			ret = master->unprepare_transfer_hardware(master);
- 			if (ret) {
- 				spin_unlock_irqrestore(&master->queue_lock, flags);
-@@ -562,7 +562,7 @@ static void spi_pump_messages(struct kthread_work *work)
- 		master->busy = true;
- 	spin_unlock_irqrestore(&master->queue_lock, flags);
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index e543e02..e8bf636 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -299,70 +299,90 @@ void __cpuinit smp_store_cpu_info(int id)
+ 		identify_secondary_cpu(c);
+ }
  
--	if (!was_busy) {
-+	if (!was_busy && master->prepare_transfer_hardware) {
- 		ret = master->prepare_transfer_hardware(master);
- 		if (ret) {
- 			dev_err(&master->dev,
--- 
-1.7.5.4
+-static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
++static bool __cpuinit 
++topology_sane(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o, const char *name)
+ {
+-	cpumask_set_cpu(cpu1, cpu_sibling_mask(cpu2));
+-	cpumask_set_cpu(cpu2, cpu_sibling_mask(cpu1));
+-	cpumask_set_cpu(cpu1, cpu_core_mask(cpu2));
+-	cpumask_set_cpu(cpu2, cpu_core_mask(cpu1));
+-	cpumask_set_cpu(cpu1, cpu_llc_shared_mask(cpu2));
+-	cpumask_set_cpu(cpu2, cpu_llc_shared_mask(cpu1));
++	int cpu1 = c->cpu_index, cpu2 = o->cpu_index;
++
++	return !WARN(cpu_to_node(cpu1) != cpu_to_node(cpu2),
++		"sched: CPU #%d's %s-sibling CPU #%d is not on the same node! "
++		"[node: %d != %d]. Ignoring dependency.\n",
++		cpu1, name, cpu2, cpu_to_node(cpu1), cpu_to_node(cpu2));
+ }
+ 
++#define link_mask(_m, c1, c2)						\
++do {									\
++	cpumask_set_cpu((c1), cpu_##_m##_mask(c2));			\
++	cpumask_set_cpu((c2), cpu_##_m##_mask(c1));			\
++} while (0)
+ 
+-void __cpuinit set_cpu_sibling_map(int cpu)
++static bool __cpuinit match_smt(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+ {
+-	int i;
+-	struct cpuinfo_x86 *c = &cpu_data(cpu);
++	if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
++		int cpu1 = c->cpu_index, cpu2 = o->cpu_index;
+ 
+-	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
++		if (c->phys_proc_id == o->phys_proc_id &&
++		    per_cpu(cpu_llc_id, cpu1) == per_cpu(cpu_llc_id, cpu2) &&
++		    c->compute_unit_id == o->compute_unit_id)
++			return topology_sane(c, o, "smt");
+ 
+-	if (smp_num_siblings > 1) {
+-		for_each_cpu(i, cpu_sibling_setup_mask) {
+-			struct cpuinfo_x86 *o = &cpu_data(i);
++	} else if (c->phys_proc_id == o->phys_proc_id &&
++		   c->cpu_core_id == o->cpu_core_id) {
++		return topology_sane(c, o, "smt");
++	}
+ 
+-			if (cpu_to_node(cpu) != cpu_to_node(i)) {
+-				WARN_ONCE(1, "sched: CPU #%d's thread-sibling CPU #%d not on the same node! [node %d != %d]. Ignoring sibling dependency.\n", cpu, i, cpu_to_node(cpu), cpu_to_node(i));
+-				continue;
+-			}
++	return false;
++}
+ 
+-			if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
+-				if (c->phys_proc_id == o->phys_proc_id &&
+-				    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i) &&
+-				    c->compute_unit_id == o->compute_unit_id)
+-					link_thread_siblings(cpu, i);
+-			} else if (c->phys_proc_id == o->phys_proc_id &&
+-				   c->cpu_core_id == o->cpu_core_id) {
+-				link_thread_siblings(cpu, i);
+-			}
+-		}
+-	} else {
+-		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
+-	}
++static bool __cpuinit match_llc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
++{
++	int cpu1 = c->cpu_index, cpu2 = o->cpu_index;
++
++	if (per_cpu(cpu_llc_id, cpu1) != BAD_APICID &&
++	    per_cpu(cpu_llc_id, cpu1) == per_cpu(cpu_llc_id, cpu2))
++		return topology_sane(c, o, "llc");
++
++	return false;
++}
++
++static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
++{
++	if (c->phys_proc_id == o->phys_proc_id)
++		return topology_sane(c, o, "mc");
++
++	return false;
++}
++
++void __cpuinit set_cpu_sibling_map(int cpu)
++{
++	bool has_mc = boot_cpu_data.x86_max_cores > 1;
++	bool has_smt = smp_num_siblings > 1;
++	struct cpuinfo_x86 *c = &cpu_data(cpu);
++	struct cpuinfo_x86 *o;
++	int i;
+ 
+-	cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
++	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
+ 
+-	if (__this_cpu_read(cpu_info.x86_max_cores) == 1) {
+-		cpumask_copy(cpu_core_mask(cpu), cpu_sibling_mask(cpu));
++	if (!has_smt && !has_mc) {
++		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
++		cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
++		cpumask_set_cpu(cpu, cpu_core_mask(cpu));
+ 		c->booted_cores = 1;
+ 		return;
+ 	}
+ 
+ 	for_each_cpu(i, cpu_sibling_setup_mask) {
+-		if (cpu_to_node(cpu) != cpu_to_node(i)) {
+-			WARN_ONCE(1, "sched: CPU #%d's core-sibling CPU #%d not on the same node! [node %d != %d]. Ignoring sibling dependency.\n", cpu, i, cpu_to_node(cpu), cpu_to_node(i));
+-			continue;
+-		}
++		o = &cpu_data(i);
+ 
+-		if (per_cpu(cpu_llc_id, cpu) != BAD_APICID &&
+-		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
+-			cpumask_set_cpu(i, cpu_llc_shared_mask(cpu));
+-			cpumask_set_cpu(cpu, cpu_llc_shared_mask(i));
+-		}
++		if ((i == cpu) || (has_smt && match_smt(c, o)))
++			link_mask(sibling, cpu, i);
++
++		if ((i == cpu) || (has_mc && match_llc(c, o)))
++			link_mask(llc_shared, cpu, i);
++
++		if ((i == cpu) || (has_mc && match_mc(c, o))) {
++			link_mask(core, cpu, i);
+ 
+-		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
+-			cpumask_set_cpu(i, cpu_core_mask(cpu));
+-			cpumask_set_cpu(cpu, cpu_core_mask(i));
+ 			/*
+ 			 *  Does this new cpu bringup a new core?
+ 			 */
 
