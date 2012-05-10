@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760149Ab2EJPjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 11:39:08 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:58508 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932334Ab2EJPjG convert rfc822-to-8bit (ORCPT
+	id S1751968Ab2EJPkb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 11:40:31 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:23260 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab2EJPka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 11:39:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FABD6BE.1060401@redhat.com>
-References: <1336066477-3964-1-git-send-email-rajman.mekaco@gmail.com>
-	<4FA2C946.60006@redhat.com>
-	<4FA2EA4A.6040703@redhat.com>
-	<CAMYGaxosaVXmpQQqpq+bGV9F7-i8APTpDq=ErWdhw2EHGEzmKg@mail.gmail.com>
-	<CAMYGaxruZbhvtZg76_zo6-BjChObpCAE8-MTA=xbBOavct+XNw@mail.gmail.com>
-	<4FABD6BE.1060401@redhat.com>
-Date: Thu, 10 May 2012 21:09:05 +0530
-Message-ID: <CAMYGaxqxb=XR8R26h4e2URA2hG2M3j9V4u0DLJ9ifmkZKJa+eg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] mlock: split the shmlock_user_lock spinlock into per
- user_struct spinlock
-From: rajman mekaco <rajman.mekaco@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@gentwo.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 May 2012 11:40:30 -0400
+Message-ID: <1336664428.2581.21.camel@lorien2>
+Subject: Re: [PATCH v2 3/7] ACPI: Add _OST support for sysfs eject
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: shuahkhan@gmail.com, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        bhelgaas@google.com, linux-kernel@vger.kernel.org
+Date: Thu, 10 May 2012 09:40:28 -0600
+In-Reply-To: <1336587377.16730.150.camel@misato.fc.hp.com>
+References: <1336507944-10219-1-git-send-email-toshi.kani@hp.com>
+	 <1336507944-10219-4-git-send-email-toshi.kani@hp.com>
+	 <1336581973.2498.15.camel@lorien2>
+	 <1336587377.16730.150.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 8:24 PM, Rik van Riel <riel@redhat.com> wrote:
-> On 05/10/2012 09:34 AM, rajman mekaco wrote:
->
->> Any updates on this ?
->
->
-> There is still no usecase to demonstrate a problem, so no real
-> justification to merge the patch.  Coming up with such a usecase
-> is up to the submitter of the patch.
+On Wed, 2012-05-09 at 12:16 -0600, Toshi Kani wrote:
 
-Maybe you didn't read my last email:
-If 2 different user-mode processes executing on 2 CPUs under 2 different
-users want to access the same shared memory through the
-shmctl(SHM_LOCK) / shmget(SHM_HUGETLB) / usr_shm_lock
-primitives, they could compete/spin even though their user_structs
-are different.
+> > > 
+> > > Added macro definitions of _OST source events and status codes.
+> > > Also renamed OSC_SB_CPUHP_OST_SUPPORT to OSC_SB_HOTPLUG_OST_SUPPORT
+> > > since this _OSC bit is not specific to CPU hotplug. This bit is
+> > > defined in Table 6-147 of ACPI 5.0 as follows.
 
-Can you please correct me if I am missing some crucial point of understanding ?
+Sorry. Missed that. It was in patch 7. Any reason why this feature is
+split across 7 patches? Might be better to combine patches 1, 2, and 7
+as it contains the infrastructure type code for _OST. Something to
+consider.
 
-Or did you mean that I should update the ChangeLog with this kind of
-description ?
+There is no functional change with this patch set in the sense that _OST
+doesn't get evaluated on platforms that don't support _OST, however
+there is run-time change on all architectures with patches 3, 4, and 5.
+There are couple of new kfree() calls introduced. Something to take a
+closer to make sure it is safe in that path.
 
->
-> --
-> All rights reversed
+Also, what missing functionality does evaluating _OST add to the kernel?
+What happens if OS continues to not evaluate _OST? It is an optional
+method, looking for what is the value add?
+
+-- Shuah
+
