@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759539Ab2EJNtf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 09:49:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37212 "EHLO mx2.suse.de"
+	id S932282Ab2EJNpT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 09:45:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37166 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753090Ab2EJNpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 09:45:20 -0400
+	id S1753090Ab2EJNpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 09:45:15 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -14,106 +14,193 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 05/17] mm: allow PF_MEMALLOC from softirq context
-Date: Thu, 10 May 2012 14:44:58 +0100
-Message-Id: <1336657510-24378-6-git-send-email-mgorman@suse.de>
+Subject: [PATCH 00/17] Swap-over-NBD without deadlocking V10
+Date: Thu, 10 May 2012 14:44:53 +0100
+Message-Id: <1336657510-24378-1-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1336657510-24378-1-git-send-email-mgorman@suse.de>
-References: <1336657510-24378-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed to allow network softirq packet processing to make
-use of PF_MEMALLOC.
+Changelog since V9
+  o Rebase to 3.4-rc5
+  o Clarify comment on why PF_MEMALLOC is cleared in softirq handling (akpm)
+  o Only set page->pfmemalloc if ALLOC_NO_WATERMARKS was required     (rientjes)
 
-Currently softirq context cannot use PF_MEMALLOC due to it not being
-associated with a task, and therefore not having task flags to fiddle
-with - thus the gfp to alloc flag mapping ignores the task flags when
-in interrupts (hard or soft) context.
+Changelog since V8
+  o Rebase to 3.4-rc2
+  o Use page flag instead of slab fields to keep structures the same size
+  o Properly detect allocations from softirq context that use PF_MEMALLOC
+  o Ensure kswapd does not sleep while processes are throttled
+  o Do not accidentally throttle !_GFP_FS processes indefinitely
 
-Allowing softirqs to make use of PF_MEMALLOC therefore requires some
-trickery.  We basically borrow the task flags from whatever process
-happens to be preempted by the softirq.
+Changelog since V7
+  o Rebase to 3.3-rc2
+  o Take greater care propagating page->pfmemalloc to skb
+  o Propagate pfmemalloc from netdev_alloc_page to skb where possible
+  o Release RCU lock properly on preempt kernel
 
-So we modify the gfp to alloc flags mapping to not exclude task flags
-in softirq context, and modify the softirq code to save, clear and
-restore the PF_MEMALLOC flag.
+Changelog since V6
+  o Rebase to 3.1-rc8
+  o Use wake_up instead of wake_up_interruptible()
+  o Do not throttle kernel threads
+  o Avoid a potential race between kswapd going to sleep and processes being
+    throttled
 
-The save and clear, ensures the preempted task's PF_MEMALLOC flag
-doesn't leak into the softirq. The restore ensures a softirq's
-PF_MEMALLOC flag cannot leak back into the preempted process.
+Changelog since V5
+  o Rebase to 3.1-rc5
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/sched.h |    7 +++++++
- kernel/softirq.c      |    9 +++++++++
- mm/page_alloc.c       |    6 +++++-
- 3 files changed, 21 insertions(+), 1 deletion(-)
+Changelog since V4
+  o Update comment clarifying what protocols can be used		(Michal)
+  o Rebase to 3.0-rc3
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 81a173c..b5efaf4 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1913,6 +1913,13 @@ static inline void rcu_copy_process(struct task_struct *p)
- 
- #endif
- 
-+static inline void tsk_restore_flags(struct task_struct *task,
-+				unsigned long orig_flags, unsigned long flags)
-+{
-+	task->flags &= ~flags;
-+	task->flags |= orig_flags & flags;
-+}
-+
- #ifdef CONFIG_SMP
- extern void do_set_cpus_allowed(struct task_struct *p,
- 			       const struct cpumask *new_mask);
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 671f959..b73e681 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -210,6 +210,14 @@ asmlinkage void __do_softirq(void)
- 	__u32 pending;
- 	int max_restart = MAX_SOFTIRQ_RESTART;
- 	int cpu;
-+	unsigned long old_flags = current->flags;
-+
-+	/*
-+	 * Mask out PF_MEMALLOC s current task context is borrowed for the
-+	 * softirq. A softirq handled such as network RX might set PF_MEMALLOC
-+	 * again if the socket is related to swap
-+	 */
-+	current->flags &= ~PF_MEMALLOC;
- 
- 	pending = local_softirq_pending();
- 	account_system_vtime(current);
-@@ -265,6 +273,7 @@ restart:
- 
- 	account_system_vtime(current);
- 	__local_bh_enable(SOFTIRQ_OFFSET);
-+	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
- }
- 
- #ifndef __ARCH_HAS_DO_SOFTIRQ
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6040520..3738596 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2211,7 +2211,11 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
- 		if (gfp_mask & __GFP_MEMALLOC)
- 			alloc_flags |= ALLOC_NO_WATERMARKS;
--		else if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
-+		else if (in_serving_softirq() && (current->flags & PF_MEMALLOC))
-+			alloc_flags |= ALLOC_NO_WATERMARKS;
-+		else if (!in_interrupt() &&
-+				((current->flags & PF_MEMALLOC) ||
-+				 unlikely(test_thread_flag(TIF_MEMDIE))))
- 			alloc_flags |= ALLOC_NO_WATERMARKS;
- 	}
- 
+Changelog since V3
+  o Propogate pfmemalloc from packet fragment pages to skb		(Neil)
+  o Rebase to 3.0-rc2
+
+Changelog since V2
+  o Document that __GFP_NOMEMALLOC overrides __GFP_MEMALLOC		(Neil)
+  o Use wait_event_interruptible					(Neil)
+  o Use !! when casting to bool to avoid any possibilitity of type
+    truncation								(Neil)
+  o Nicer logic when using skb_pfmemalloc_protocol			(Neil)
+
+Changelog since V1
+  o Rebase on top of mmotm
+  o Use atomic_t for memalloc_socks		(David Miller)
+  o Remove use of sk_memalloc_socks in vmscan	(Neil Brown)
+  o Check throttle within prepare_to_wait	(Neil Brown)
+  o Add statistics on throttling instead of printk
+
+When a user or administrator requires swap for their application, they
+create a swap partition and file, format it with mkswap and activate it
+with swapon. Swap over the network is considered as an option in diskless
+systems. The two likely scenarios are when blade servers are used as part
+of a cluster where the form factor or maintenance costs do not allow the
+use of disks and thin clients.
+
+The Linux Terminal Server Project recommends the use of the
+Network Block Device (NBD) for swap according to the manual at
+https://sourceforge.net/projects/ltsp/files/Docs-Admin-Guide/LTSPManual.pdf/download
+There is also documentation and tutorials on how to setup swap over NBD
+at places like https://help.ubuntu.com/community/UbuntuLTSP/EnableNBDSWAP
+The nbd-client also documents the use of NBD as swap. Despite this, the
+fact is that a machine using NBD for swap can deadlock within minutes if
+swap is used intensively. This patch series addresses the problem.
+
+The core issue is that network block devices do not use mempools like
+normal block devices do. As the host cannot control where they receive
+packets from, they cannot reliably work out in advance how much memory
+they might need. Some years ago, Peter Ziljstra developed a series of
+patches that supported swap over an NFS that at least one distribution
+is carrying within their kernels. This patch series borrows very heavily
+from Peter's work to support swapping over NBD as a pre-requisite to
+supporting swap-over-NFS. The bulk of the complexity is concerned with
+preserving memory that is allocated from the PFMEMALLOC reserves for use
+by the network layer which is needed for both NBD and NFS.
+
+Patch 1 serialises access to min_free_kbytes. It's not strictly needed
+	by this series but as the series cares about watermarks in
+	general, it's a harmless fix. It could be merged independently
+	and may be if CMA is merged in advance.
+
+Patch 2 adds knowledge of the PFMEMALLOC reserves to SLAB and SLUB to
+	preserve access to pages allocated under low memory situations
+	to callers that are freeing memory.
+
+Patch 3 introduces __GFP_MEMALLOC to allow access to the PFMEMALLOC
+	reserves without setting PFMEMALLOC.
+
+Patch 4 opens the possibility for softirqs to use PFMEMALLOC reserves
+	for later use by network packet processing.
+
+Patch 6 ignores memory policies when ALLOC_NO_WATERMARKS is set.
+
+Patch 7 only sets page->pfmemalloc when ALLOC_NO_WATERMARKS was required
+
+Patches 8-14 allows network processing to use PFMEMALLOC reserves when
+	the socket has been marked as being used by the VM to clean pages. If
+	packets are received and stored in pages that were allocated under
+	low-memory situations and are unrelated to the VM, the packets
+	are dropped.
+
+	Patch 11 reintroduces __netdev_alloc_page which the networking
+	folk may object to but is needed in some cases to propogate
+	pfmemalloc from a newly allocated page to an skb. If there is a
+	strong objection, this patch can be dropped with the impact being
+	that swap-over-network will be slower in some cases but it should
+	not fail.
+
+Patch 14 is a micro-optimisation to avoid a function call in the
+	common case.
+
+Patch 15 tags NBD sockets as being SOCK_MEMALLOC so they can use
+	PFMEMALLOC if necessary.
+
+Patch 16 notes that it is still possible for the PFMEMALLOC reserve
+	to be depleted. To prevent this, direct reclaimers get throttled on
+	a waitqueue if 50% of the PFMEMALLOC reserves are depleted.  It is
+	expected that kswapd and the direct reclaimers already running
+	will clean enough pages for the low watermark to be reached and
+	the throttled processes are woken up.
+
+Patch 17 adds a statistic to track how often processes get throttled
+
+Some basic performance testing was run using kernel builds, netperf
+on loopback for UDP and TCP, hackbench (pipes and sockets), iozone
+and sysbench. Each of them were expected to use the sl*b allocators
+reasonably heavily but there did not appear to be significant
+performance variances.
+
+For testing swap-over-NBD, a machine was booted with 2G of RAM with a
+swapfile backed by NBD. 8*NUM_CPU processes were started that create
+anonymous memory mappings and read them linearly in a loop. The total
+size of the mappings were 4*PHYSICAL_MEMORY to use swap heavily under
+memory pressure.
+
+Without the patches and using SLUB, the machine locks up within minutes and
+runs to completion with them applied. With SLAB, the story is different
+as an unpatched kernel run to completion. However, the patched kernel
+completed the test 40% faster.
+
+                                         3.4.0-rc2     3.4.0-rc2
+                                      vanilla-slab     swapnbd
+Sys Time Running Test (seconds)              87.90     73.45
+User+Sys Time Running Test (seconds)         91.93     76.91
+Total Elapsed Time (seconds)               4174.37   2953.96
+
+ drivers/block/nbd.c                               |    6 +-
+ drivers/net/ethernet/chelsio/cxgb4/sge.c          |    2 +-
+ drivers/net/ethernet/chelsio/cxgb4vf/sge.c        |    2 +-
+ drivers/net/ethernet/intel/igb/igb_main.c         |    2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |    2 +-
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    3 +-
+ drivers/net/usb/cdc-phonet.c                      |    2 +-
+ drivers/usb/gadget/f_phonet.c                     |    2 +-
+ include/linux/gfp.h                               |   13 +-
+ include/linux/mm_types.h                          |    9 +
+ include/linux/mmzone.h                            |    1 +
+ include/linux/page-flags.h                        |   28 +++
+ include/linux/sched.h                             |    7 +
+ include/linux/skbuff.h                            |   83 +++++++-
+ include/linux/vm_event_item.h                     |    1 +
+ include/net/sock.h                                |   19 ++
+ include/trace/events/gfpflags.h                   |    1 +
+ kernel/softirq.c                                  |    9 +
+ mm/page_alloc.c                                   |   69 +++++--
+ mm/slab.c                                         |  212 +++++++++++++++++++--
+ mm/slub.c                                         |   28 ++-
+ mm/vmscan.c                                       |  131 ++++++++++++-
+ mm/vmstat.c                                       |    1 +
+ net/core/dev.c                                    |   52 ++++-
+ net/core/filter.c                                 |    8 +
+ net/core/skbuff.c                                 |   94 +++++++--
+ net/core/sock.c                                   |   42 ++++
+ net/ipv4/tcp.c                                    |    3 +-
+ net/ipv4/tcp_output.c                             |   16 +-
+ net/ipv6/tcp_ipv6.c                               |    8 +-
+ 30 files changed, 765 insertions(+), 91 deletions(-)
+
 -- 
 1.7.9.2
 
