@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab2EJQFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 12:05:33 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:39129 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756822Ab2EJQFb convert rfc822-to-8bit (ORCPT
+	id S1757413Ab2EJQI7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 12:08:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34017 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab2EJQI6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 12:05:31 -0400
+	Thu, 10 May 2012 12:08:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120510114520.GA10111@mwanda>
-References: <1336004981.4240.10.camel@mop> <20120510114520.GA10111@mwanda>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 10 May 2012 09:05:09 -0700
-X-Google-Sender-Auth: 0Fi9_QNqeFv7FEGqqaAOqt5u5Rs
-Message-ID: <CA+55aFyg7z5Fn04aY6Kczru5ZnwXeHNV8EZU=J4p4wGxZVChJw@mail.gmail.com>
-Subject: Re: [PATCH RESEND 2/3] kmsg: export printk records to the /dev/kmsg interface
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Kay Sievers <kay@vrfy.org>, Greg Kroah-Hartmann <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+In-Reply-To: <20120508155726.d02d6600.akpm@linux-foundation.org>
+References: <1336229772-3488-1-git-send-email-levinsasha928@gmail.com> <20120508155726.d02d6600.akpm@linux-foundation.org>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 10 May 2012 18:08:36 +0200
+Message-ID: <CA+1xoqfTTrMMybaFTE-GUpMd9SRq9Kdgp5JBem--tqRKAocLBg@mail.gmail.com>
+Subject: Re: [PATCH] kmsg: limit message size
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 4:45 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Thu, May 03, 2012 at 02:29:41AM +0200, Kay Sievers wrote:
->> +     /* escape non-printable characters */
->> +     for (i = 0; i < msg->text_len; i++) {
->> +             char c = log_text(msg)[i];
->> +
->> +             if (c < ' ' || c >= 128)
+On Wed, May 9, 2012 at 12:57 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Sat,  5 May 2012 16:56:12 +0200
+> Sasha Levin <levinsasha928@gmail.com> wrote:
 >
-> Signed char type is never larger than 127.
+>> There are no size checks in kmsg_write(), and we try allocating enough
+>> memory to store everything userspace gave us, which may be too much for
+>> kmalloc to allocate.
+>>
+>> Furthermore, we can have an integer overflow if len==INT_MAX, in that case
+>> we'll corrupt kernel memory.
+>>
+>> This was tested with several userspace programs that write to kmsg, and haven't
+>> found a case where the program attempts to write more than PAGE_SIZE.
+>>
+>> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+>> ---
+>>  drivers/char/mem.c |    3 +++
+>>  1 files changed, 3 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+>> index d6e9d08..c90964b 100644
+>> --- a/drivers/char/mem.c
+>> +++ b/drivers/char/mem.c
+>> @@ -815,6 +815,9 @@ static ssize_t kmsg_writev(struct kiocb *iocb, const struct iovec *iv,
+>>       ssize_t ret = -EFAULT;
+>>       size_t len = iov_length(iv, count);
+>>
+>> +     if (len > PAGE_SIZE)
+>> +             return -E2BIG;
+>> +
+>>       line = kmalloc(len + 1, GFP_KERNEL);
+>>       if (line == NULL)
+>>               return -ENOMEM;
+>
+> Well, this is a write(), and write() is permitted to return
+> less-than-asked-for.  So what we could do here is to write the first N
+> bytes and then return N to userspace.  Well-behaved userspace will
+> notice this and then do some more writing from offset N.
+>
+> Could I ask that you try this and test it a bit, see whether there is
+> any well-behaved userspace out there?  Things like cat and echo
+> _should_ dtrt.
 
-You don't know that it's signed.
-
-The sign of "char" is implementation-defined, and there are indeed
-architectures that Linux supports where it is unsigned (I think ARM is
-one example).
-
-So that comparison against 128 is actually required.
-
-Or, better yet, the code should make 'c' *explicitly* signed (or
-unsigned) so that this particular C language definition oddity is
-avoided entirely.
-
-               Linus
+Yup, cat and echo do dtrt. I'll resend a patch which limits the write
+instead of canceling it altogether.
