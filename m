@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760146Ab2EJRcG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:32:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52242 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757455Ab2EJRcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:32:02 -0400
-References: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com> <1336666614-21090-8-git-send-email-fenghua.yu@intel.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1336666614-21090-8-git-send-email-fenghua.yu@intel.com>
+	id S1760190Ab2EJRcf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:32:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33072 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759932Ab2EJRcd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 13:32:33 -0400
+Date: Thu, 10 May 2012 10:32:29 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 00/52] 3.3.6-stable review
+Message-ID: <20120510173229.GA5678@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v6 07/12] x86/head_32.S: Define start_cpu0
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 10 May 2012 10:31:08 -0700
-To: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Message-ID: <878ae68a-72cf-40cb-a654-a2c1cb3df0c3@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you check how this interacts with tip:x86/realmode?
+This is the start of the stable review cycle for the 3.3.6 release.
+There are 52 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-Fenghua Yu <fenghua.yu@intel.com> wrote:
+Responses should be made by Sat May 12 17:31:31 UTC 2012.
+Anything received after that time might be too late.
 
->From: Fenghua Yu <fenghua.yu@intel.com>
->
->start_cpu0() is defined in head_32.S for 32-bit. The function sets up
->stack and
->jumps to start_secondary() for CPU0 wake up.
->
->Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
->---
-> arch/x86/kernel/head_32.S |   12 ++++++++++++
-> 1 files changed, 12 insertions(+), 0 deletions(-)
->
->diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
->index 463c979..a441303 100644
->--- a/arch/x86/kernel/head_32.S
->+++ b/arch/x86/kernel/head_32.S
->@@ -266,6 +266,18 @@ num_subarch_entries = (. - subarch_entries) / 4
-> 	jmp default_entry
-> #endif /* CONFIG_PARAVIRT */
-> 
->+#ifdef CONFIG_HOTPLUG_CPU
->+/*
->+ * Boot CPU0 entry point. It's called from play_dead(). Everything has
->been set
->+ * up already except stack. We just set up stack here. Then call
->+ * start_secondary().
->+ */
->+ENTRY(start_cpu0)
->+	movl stack_start, %ecx
->+	movl %ecx, %esp
->+	jmp  *(initial_code)
->+#endif
->+
-> /*
->  * Non-boot CPU entry point; entered from trampoline.S
->  * We can't lgdt here, because lgdt itself uses a data segment, but
->-- 
->1.6.0.3
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.3.6-rc1.gz
+and the diffstat can be found below.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+thanks,
+
+greg k-h
+
+-------------
+ Documentation/networking/ip-sysctl.txt             |    4 +-
+ Makefile                                           |    4 +-
+ arch/arm/kernel/ptrace.c                           |   24 ++--
+ arch/arm/kernel/smp.c                              |    4 +-
+ arch/arm/kernel/sys_arm.c                          |    2 +-
+ .../include/mach/ctrl_module_pad_core_44xx.h       |    8 +-
+ arch/arm/mach-orion5x/mpp.h                        |    4 +-
+ arch/arm/mm/cache-l2x0.c                           |   25 ++--
+ arch/ia64/kvm/kvm-ia64.c                           |    5 +
+ arch/s390/kvm/intercept.c                          |   20 +--
+ arch/s390/kvm/kvm-s390.c                           |    2 +-
+ arch/x86/boot/compressed/relocs.c                  |    2 -
+ arch/x86/kernel/setup_percpu.c                     |   14 +-
+ arch/x86/kvm/pmu.c                                 |    2 +-
+ arch/x86/kvm/vmx.c                                 |   10 +-
+ arch/x86/kvm/x86.c                                 |   19 ++-
+ arch/x86/xen/enlighten.c                           |    7 +-
+ arch/x86/xen/mmu.c                                 |    7 +-
+ drivers/block/mtip32xx/Kconfig                     |    2 +-
+ drivers/block/mtip32xx/mtip32xx.c                  |   34 ++---
+ drivers/gpu/drm/i915/intel_hdmi.c                  |    2 +-
+ drivers/gpu/drm/i915/intel_ringbuffer.c            |    9 +-
+ drivers/gpu/drm/i915/intel_sdvo.c                  |    6 +
+ drivers/net/ethernet/broadcom/tg3.c                |   18 ++-
+ drivers/net/ethernet/intel/e1000/e1000_main.c      |   35 +++--
+ drivers/net/ethernet/intel/igb/igb_main.c          |    3 +-
+ drivers/net/ethernet/marvell/sky2.c                |   31 +++--
+ drivers/net/ethernet/marvell/sky2.h                |    1 -
+ drivers/net/ethernet/sun/sungem.c                  |    2 +-
+ drivers/net/usb/asix.c                             |    4 +-
+ drivers/net/usb/smsc95xx.c                         |    2 +-
+ drivers/platform/x86/sony-laptop.c                 |    2 +-
+ drivers/regulator/max8997.c                        |    2 +-
+ fs/cifs/cifssmb.c                                  |    6 +-
+ fs/hugetlbfs/inode.c                               |   54 +++-----
+ fs/nfsd/nfs4proc.c                                 |    8 +-
+ fs/nfsd/vfs.c                                      |    2 +-
+ include/asm-generic/statfs.h                       |    2 +-
+ include/linux/hugetlb.h                            |   14 +-
+ include/linux/kvm_host.h                           |    7 +
+ include/linux/netdevice.h                          |   50 +++++---
+ include/linux/seqlock.h                            |    2 +-
+ mm/hugetlb.c                                       |  135 ++++++++++++++++----
+ net/core/dev.c                                     |   20 +++
+ net/ipv4/tcp.c                                     |    9 +-
+ net/ipv4/tcp_input.c                               |   11 +-
+ net/l2tp/l2tp_ip.c                                 |    3 +-
+ net/sched/sch_netem.c                              |    6 +-
+ sound/soc/codecs/tlv320aic23.c                     |    4 +-
+ sound/soc/soc-core.c                               |    6 +-
+ virt/kvm/iommu.c                                   |   23 ++--
+ virt/kvm/kvm_main.c                                |   23 ++--
+ 52 files changed, 462 insertions(+), 239 deletions(-)
+
