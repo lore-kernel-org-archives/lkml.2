@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138Ab2EJJhs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 05:37:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52288 "EHLO
+	id S1758071Ab2EJJiv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 05:38:51 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52320 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117Ab2EJJhq convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754117Ab2EJJiu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 05:37:46 -0400
-Message-ID: <1336642648.2527.83.camel@twins>
+	Thu, 10 May 2012 05:38:50 -0400
+Message-ID: <1336642715.2527.84.camel@twins>
 Subject: Re: [PATCH v4 5/7] x86/tlb: add tlb flush all factor for specific
  CPU
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -23,7 +23,7 @@ Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
         oleg@redhat.com, axboe@kernel.dk, kamezawa.hiroyu@jp.fujitsu.com,
         viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Date: Thu, 10 May 2012 11:37:28 +0200
+Date: Thu, 10 May 2012 11:38:35 +0200
 In-Reply-To: <1336626013-28413-6-git-send-email-alex.shi@intel.com>
 References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
 	 <1336626013-28413-6-git-send-email-alex.shi@intel.com>
@@ -36,15 +36,21 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 2012-05-10 at 13:00 +0800, Alex Shi wrote:
-> +       case 0x62a: /* SandyBridge */
-> +       case 0x62d: /* SandyBridge, "Romely-EP" */
-> +               tlb_flushall_factor = 5;
-> +               break;
-
-One would expect some IVB stuff here.. surely you have some.
-
-> +       default:
-> +               tlb_flushall_factor = 6;
-> +       } 
 
 
+> +void intel_tlb_flushall_factor_set(struct cpuinfo_x86 *c)
+> +{
+> +       if (!cpu_has_invlpg) {
+> +               tlb_flushall_factor = -1;
+> +               return;
+> +       }
+
+...
+
+> +       if (!cpu_has_invlpg || vma->vm_flags & VM_HUGETLB
+> +                       || tlb_flushall_factor == (u16)TLB_FLUSH_ALL)
+> {
+>  flush_all: 
+
+Since you set tlb_flushall_factor (I'd have called it _shift) to -1
+when !invlpg there's a redundant check in there.
