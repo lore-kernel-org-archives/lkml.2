@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab2EJUNJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 16:13:09 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33026 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab2EJUNH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 16:13:07 -0400
-Message-ID: <4FAC2150.2060804@wwwdotorg.org>
-Date: Thu, 10 May 2012 14:13:04 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
+	id S1755670Ab2EJUOT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 16:14:19 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:59941 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753140Ab2EJUOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 16:14:17 -0400
+Date: Thu, 10 May 2012 16:14:09 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
 To: Kay Sievers <kay@vrfy.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        William Douglas <william.douglas@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-next@vger.kernel.org
-Subject: Re: Regression due to 7ff9554 "printk: convert byte-buffer to variable-length
- record buffer"
-References: <4FAAB815.5040001@wwwdotorg.org> <4FAC1D09.1070004@wwwdotorg.org> <CAPXgP11UqAZgfWXUrxi7VsYr_hoDgi=cP4yn5UJ5rdPU8i5_sA@mail.gmail.com> <4FAC2085.7030002@wwwdotorg.org>
-In-Reply-To: <4FAC2085.7030002@wwwdotorg.org>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
+ variable-length record buffer
+Message-ID: <20120510201409.GA6467@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Kay Sievers <kay@vrfy.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Ingo Molnar <mingo@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
+	Sasha Levin <levinsasha928@gmail.com>,
+	Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
+References: <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
+ <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
+ <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com>
+ <20120509070710.GA29981@gmail.com>
+ <CAPXgP11evyQQKNDaa00R7qsOFy5Xk-utN1w9OgB4y6NxLZG=UA@mail.gmail.com>
+ <1336611278.728.9.camel@mop>
+ <CA+55aFyrrH0jJV--L=ugt0YK7pT+jmhjvt_WRWyenyiroN97zg@mail.gmail.com>
+ <1336667984.947.24.camel@mop>
+ <CA+55aFxUaNC4SGEodrdddkDN6t=Sbx=P4XyaHkj7eTQBQOeLeA@mail.gmail.com>
+ <1336676986.947.47.camel@mop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336676986.947.47.camel@mop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2012 02:09 PM, Stephen Warren wrote:
-> On 05/10/2012 02:06 PM, Kay Sievers wrote:
->> On Thu, May 10, 2012 at 9:54 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>> On 05/09/2012 12:31 PM, Stephen Warren wrote:
->>>> For me, next-20120508 prints nothing when booted, and I think also
->>>> hangs. To solve this, I reverted:
->>>>
->>>> 7ff9554 printk: convert byte-buffer to variable-length record buffer
->>>>
->>>> In order to build, I also had to revert:
->>>>
->>>> c4e00da driver-core: extend dev_printk() to pass structured data
->>>>
->>>> Note: I'm running on an ARM system using a serial console, with
->>>> earlyprintk enabled.
->>>
->>> This issue still occurs in next-20120510.
->>>
->>> I've tracked it down to the assignment of msg->ts_nsec near the end of
->>> log_store(). If I comment this out, everything works. The problem is the
->>> assignment, not the call to local_clock():
->>>
->>> fails:
->>>        msg->ts_nsec = local_clock();
->>> fails:
->>>        msg->ts_nsec = 0;//local_clock();
->>> works:
->>>        //msg->ts_nsec = local_clock();
->>
->> Weird.
->>
->> What happens if you change it to:
->>   cpu_clock(logbuf_cpu);
->> ?
->>
->> If it works, the timestamps look ok?
-> 
-> I doubt that would work - after all, assigning 0 fails, but not
-> performing the assignment at all works. But, I'll go try it...
+On Thu, May 10, 2012 at 09:09:46PM +0200, Kay Sievers wrote:
+> We fully isolate continuation users from non-continuation users. If a
+> continuation user gets interrupted by an ordinary non-continuation
+> user, we will not touch the continuation buffer, we just emit the
+> ordinary message. When the same thread comes back and continues its
+> printing, we still append to the earlier buffer we stored.
 
-Calling cpu_clock() instead of local_clock() fails in the same way.
+It's not necessarily a matter of "thread comes back", although that
+situation can happen too.  You can get this situation quite simply if
+you have two processes in foreground kernel mode on two different
+CPU's sending continuation printk's at the same time.
+
+> We will also never wrongly merge two racing continuation users into one
+> line.
+
+I'm not sure how you guarantee this?  The only way you *could*
+guarantee this is if you used a continuation buffer in the task_struct
+for foreground kernel code, and a per-CPU continuation buffer for
+interrupt code.
+
+> Buffered line will be joined, when the same thread emits a printk()
+> without any KERN_* or with KERN_CONT.
+
+Is there any difference in any of the cases in terms of how printk's
+that are prefixed with KERN_CONT versus a printk that does not have
+any KERN_* prefix?  If so, is there value in keeping KERN_CONT?
+
+    	   	       	      	    	     - Ted
