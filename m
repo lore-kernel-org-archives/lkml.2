@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677Ab2EJCRI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 22:17:08 -0400
-Received: from ozlabs.org ([203.10.76.45]:33829 "EHLO ozlabs.org"
+	id S1753406Ab2EJCYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 22:24:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:5705 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753129Ab2EJCRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 22:17:06 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, anton@samba.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mike Travis <travis@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, kosaki.motohiro@gmail.com
-Subject: Re: [PULL] cpumask: finally make them variable size w/ CPUMASK_OFFSTACK.
-In-Reply-To: <4FAB1AC9.1050306@gmail.com>
-References: <87ipg5c2bk.fsf@rustcorp.com.au> <4FAB1AC9.1050306@gmail.com>
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 10 May 2012 11:46:23 +0930
-Message-ID: <871umsdbm0.fsf@rustcorp.com.au>
+	id S1751668Ab2EJCYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 22:24:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="98349583"
+Message-ID: <4FAB26A1.3080605@intel.com>
+Date: Thu, 10 May 2012 10:23:29 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: clean up TLB_FLUSH_ALL definition?
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 May 2012 21:32:57 -0400, KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
-> (5/9/12 2:10 AM), Rusty Russell wrote:
-> > Hi Ingo,
-> >
-> >          I finally rebased this on top of your tip tree, and tested it
-> > locally.  Some more old-style cpumask usages have crept in, but it's a
-> > fairly simple series.
-> >
-> > The final result is that if you enable CONFIG_CPUMASK_OFFSTACK, then
-> > 'struct cpumask' becomes an undefined type.  You can't accidentally take
-> > the size of it, assign it, or pass it by value.  And thus it's safe for
-> > us to make it smaller if nr_cpu_ids<  NR_CPUS, as the final patch does.
-> >
-> > It unfortunately requires the lglock cleanup patch, which Al already has
-> > queued, so I've included it here.
-> 
-> Hi
-> 
-> Thanks this effort. This is very cleaner than I expected.
-> However I should NAK following one patch. sorry. because of, lru-drain is
-> called from memory reclaim context. It mean, additional allocation may not
-> work. Please just use bare NR_CPUS bitmap instead. space wasting is minor
-> issue than that.
 
-But if it fails the allocation, that's fine: we just send a few more
-IPIs to every CPU:
+why we need the different definition for TLB_FLUSH_ALL in 32 or 64 bits mode in commit d291cf83639? 
 
-+	if (!zalloc_cpumask_var(&cpus_with_pcps, GFP_KERNEL)) {
-+		on_each_cpu(drain_local_pages, NULL, 1);
-+		return;
-+	}
 
-We can do it the other way, but it sets a bad example, and after we get
-rid of cpumask, it becomes:
+ #ifdef CONFIG_X86_32
+-# include "tlbflush_32.h"
++# define TLB_FLUSH_ALL 0xffffffff
+ #else
+-# include "tlbflush_64.h"
++# define TLB_FLUSH_ALL -1ULL
++#endif
 
-        static DECLARE_BITMAP(cpus_with_pcps, NR_CPUS);
+If it's possible to unify it as following?
 
-        ......
+#define TLB_FLUSH_ALL -1UL 
 
- 		if (has_pcps)
-			cpumask_set_cpu(cpu, to_cpumask(cpus_with_pcps));
-		else
-			cpumask_clear_cpu(cpu, to_cpumask(cpus_with_pcps));
- 	}
-	on_each_cpu_mask(to_cpumask(cpus_with_pcps), drain_local_pages, NULL, 1);
+-----------------
 
-Or is there a reason we shouldn't even try to allocate here?
+>From 928db8019f7f66470a6a6188f870ec9a6f108a8c Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Thu, 10 May 2012 18:01:59 +0800
+Subject: [PATCH] x86/tlb: clean up and unify TLB_FLUSH_ALL definition
 
-Thanks,
-Rusty.
+Since sizeof(long) is 4 in x86_32 mode, and it's 8 in x86_64 mode,
+sizeof(long long) is also 8 byte in x86_64 mode.
+use long mode can fit TLB_FLUSH_ALL defination here both in 32 or
+64 bits mode.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ arch/x86/include/asm/tlbflush.h |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index c0e108e..7e8a096 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -62,11 +62,7 @@ static inline void __flush_tlb_one(unsigned long addr)
+ 		__flush_tlb();
+ }
+ 
+-#ifdef CONFIG_X86_32
+-# define TLB_FLUSH_ALL	0xffffffff
+-#else
+-# define TLB_FLUSH_ALL	-1ULL
+-#endif
++#define TLB_FLUSH_ALL	-1UL
+ 
+ /*
+  * TLB flushing:
+-- 
+1.7.0.1
+
