@@ -1,94 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761456Ab2EJAS6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 20:18:58 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55878 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755043Ab2EJAS4 (ORCPT
+	id S1761466Ab2EJAT2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 20:19:28 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:57185 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1761360Ab2EJAT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 20:18:56 -0400
-Date: Wed, 9 May 2012 19:18:42 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chuck Lever <chuck.lever@oracle.com>,
-        Rik Theys <Rik.Theys@esat.kuleuven.be>,
-        David Flyn <davidf@rd.bbc.co.uk>, Jeff Layton <jlayton@redhat.com>
-Subject: Re: [PATCH v2] NFSv4: Save the owner/group name string when doing
- open
-Message-ID: <20120510001842.GB8228@burratino>
-References: <1325956115-21767-1-git-send-email-Trond.Myklebust@netapp.com>
- <1325960863-31742-1-git-send-email-Trond.Myklebust@netapp.com>
- <20120302050813.GA32761@burratino>
+	Wed, 9 May 2012 20:19:26 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/O76cMkHTOvyqSqzsGiurGipkVxqRbGoCfXkAj/D
+	MxNGekyqtuLsS6
+Message-ID: <4FAB0986.6090006@gmx.de>
+Date: Thu, 10 May 2012 00:19:18 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120302050813.GA32761@burratino>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Huewe <peterhuewe@gmx.de>
+CC: Thomas Winischhofer <thomas@winischhofer.net>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video/sis: Annotate SiS_DRAMType as __devinitconst
+References: <4FA2FD10.6090306@gmx.de> <1336083295-7327-1-git-send-email-peterhuewe@gmx.de>
+In-Reply-To: <1336083295-7327-1-git-send-email-peterhuewe@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonathan Nieder wrote:
+On 05/03/2012 10:14 PM, Peter Huewe wrote:
+> SiS_DRAMType is const and only used by sisfb_post_300_rwtest which is
+> marked __devinit we can annotate SiS_DRAMType with __devinitconst and
+> move it into the file scope in order to not have it created on the
+> stack.
+> This patch decreases the compiled module size by about 100bytes.
+> 
+> And since hardcoded values are bad we use ARRAY_SIZE for determining
+> the size of SiS_DRAMType ;)
+> 
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 
-[...]
-> | and then log into machine B and do:
-> |
-> | vim
-> | :q
-> |
-> | I get E137: Viminfo file is not writable: /users/system/rtheys/.viminfo
-> |
-> | Every invocation of 'vim and :q' will trigger this.
-> |
-> | Explicitely doing a stat of the file fixes this.
->
-> Rik Theys bisected and found the bug reproducible after and not before
-> v2.6.32-rc1~412^2~48^2~15 (NFSv4: Don't do idmapper upcalls for
-> asynchronous RPC calls, 2009-08-09).
->
-> [...]
->>  6 files changed, 162 insertions(+), 64 deletions(-)
->
-> Now I am wondering what, if anything, can be done to fix this in the
-> 2.6.32.y, 3.0.y, and 3.2.y stable kernels.  The patch looks too big
-> for inclusion under the usual stable_kernel_rules:
+Good that you did this one, it was more to be done than I expected. I
+ignored the checkpatch errors as you didn't introduce them but maybe it
+wouldn't be a bad idea to fix things up if you touch them. Applied.
 
-Trond had a neat idea for fixing this.  Let's see how easy it is for a
-novice like me to understand.
 
-As explained at [1], the problem is that after the OPEN call .viminfo
-has the default values for st_uid and st_gid cached (i.e., 0xfffffffe)
-because it does not want to let rpciod wait during an idmapper upcall
-to fill them in.  The fix used in mainline is to save the owner and
-group as strings and perform the upcall in _nfs4_proc_open outside the
-rpciod context.
+Thanks,
 
-The fix for stable kernels that Trond suggests is to notice when
-st_uid and st_gid have not been filled in and perform a separate
-GETATTR call.  The patch is nice and small.  My (ignorant) worry: does
-nfs4_open_reclaim need the same fix?
+Florian Tobias Schandinat
 
-[1] http://thread.gmane.org/gmane.linux.nfs/37230/focus=37250
----
-Rik, results from testing would be interesting if you have a chance to
-try it.  Thanks again for your help, all.
+> ---
+>  drivers/video/sis/sis_main.c |   41 +++++++++++++++++++++--------------------
+>  1 files changed, 21 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
+> index 078ca21..a7a48db 100644
+> --- a/drivers/video/sis/sis_main.c
+> +++ b/drivers/video/sis/sis_main.c
+> @@ -4222,6 +4222,26 @@ sisfb_post_300_buswidth(struct sis_video_info *ivideo)
+>  	return 1;			/* 32bit */
+>  }
+>  
+> +static const unsigned short __devinitconst SiS_DRAMType[17][5] = {
+> +	{0x0C,0x0A,0x02,0x40,0x39},
+> +	{0x0D,0x0A,0x01,0x40,0x48},
+> +	{0x0C,0x09,0x02,0x20,0x35},
+> +	{0x0D,0x09,0x01,0x20,0x44},
+> +	{0x0C,0x08,0x02,0x10,0x31},
+> +	{0x0D,0x08,0x01,0x10,0x40},
+> +	{0x0C,0x0A,0x01,0x20,0x34},
+> +	{0x0C,0x09,0x01,0x08,0x32},
+> +	{0x0B,0x08,0x02,0x08,0x21},
+> +	{0x0C,0x08,0x01,0x08,0x30},
+> +	{0x0A,0x08,0x02,0x04,0x11},
+> +	{0x0B,0x0A,0x01,0x10,0x28},
+> +	{0x09,0x08,0x02,0x02,0x01},
+> +	{0x0B,0x09,0x01,0x08,0x24},
+> +	{0x0B,0x08,0x01,0x04,0x20},
+> +	{0x0A,0x08,0x01,0x02,0x10},
+> +	{0x09,0x08,0x01,0x01,0x00}
+> +};
+> +
+>  static int __devinit
+>  sisfb_post_300_rwtest(struct sis_video_info *ivideo, int iteration, int buswidth,
+>  			int PseudoRankCapacity, int PseudoAdrPinCount,
+> @@ -4231,27 +4251,8 @@ sisfb_post_300_rwtest(struct sis_video_info *ivideo, int iteration, int buswidth
+>  	unsigned short sr14;
+>  	unsigned int k, RankCapacity, PageCapacity, BankNumHigh, BankNumMid;
+>  	unsigned int PhysicalAdrOtherPage, PhysicalAdrHigh, PhysicalAdrHalfPage;
+> -	static const unsigned short SiS_DRAMType[17][5] = {
+> -		{0x0C,0x0A,0x02,0x40,0x39},
+> -		{0x0D,0x0A,0x01,0x40,0x48},
+> -		{0x0C,0x09,0x02,0x20,0x35},
+> -		{0x0D,0x09,0x01,0x20,0x44},
+> -		{0x0C,0x08,0x02,0x10,0x31},
+> -		{0x0D,0x08,0x01,0x10,0x40},
+> -		{0x0C,0x0A,0x01,0x20,0x34},
+> -		{0x0C,0x09,0x01,0x08,0x32},
+> -		{0x0B,0x08,0x02,0x08,0x21},
+> -		{0x0C,0x08,0x01,0x08,0x30},
+> -		{0x0A,0x08,0x02,0x04,0x11},
+> -		{0x0B,0x0A,0x01,0x10,0x28},
+> -		{0x09,0x08,0x02,0x02,0x01},
+> -		{0x0B,0x09,0x01,0x08,0x24},
+> -		{0x0B,0x08,0x01,0x04,0x20},
+> -		{0x0A,0x08,0x01,0x02,0x10},
+> -		{0x09,0x08,0x01,0x01,0x00}
+> -	};
+>  
+> -	 for(k = 0; k <= 16; k++) {
+> +	 for(k = 0; k < ARRAY_SIZE(SiS_DRAMType); k++) {
+>  
+>  		RankCapacity = buswidth * SiS_DRAMType[k][3];
+>  
 
-Jonathan
-
- fs/nfs/nfs4proc.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git i/fs/nfs/nfs4proc.c w/fs/nfs/nfs4proc.c
-index 3d6730213f9d..30f6548f2b99 100644
---- i/fs/nfs/nfs4proc.c
-+++ w/fs/nfs/nfs4proc.c
-@@ -1771,6 +1771,7 @@ static int _nfs4_do_open(struct inode *dir, struct path *path, fmode_t fmode, in
- 			nfs_setattr_update_inode(state->inode, sattr);
- 		nfs_post_op_update_inode(state->inode, opendata->o_res.f_attr);
- 	}
-+	nfs_revalidate_inode(server, state->inode);
- 	nfs4_opendata_put(opendata);
- 	nfs4_put_state_owner(sp);
- 	*res = state;
--- 
