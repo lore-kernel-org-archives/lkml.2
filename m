@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761639Ab2EJVol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 17:44:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54570 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761528Ab2EJVok (ORCPT
+	id S1761651Ab2EJVqL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 17:46:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56997 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761528Ab2EJVqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 17:44:40 -0400
-Date: Thu, 10 May 2012 14:44:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>, David Miller <davem@davemloft.net>,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 10/10] mm: remove sparsemem allocation details from the
- bootmem allocator
-Message-Id: <20120510144439.eba9c486.akpm@linux-foundation.org>
-In-Reply-To: <1336390672-14421-11-git-send-email-hannes@cmpxchg.org>
-References: <1336390672-14421-1-git-send-email-hannes@cmpxchg.org>
-	<1336390672-14421-11-git-send-email-hannes@cmpxchg.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 10 May 2012 17:46:08 -0400
+Date: Thu, 10 May 2012 14:46:04 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Hiroshi DOYU <hdoyu@nvidia.com>
+Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, Aneesh V <aneesh@ti.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] ARM: tegra30: Add Tegra Memory Controller(MC) driver
+Message-ID: <20120510214604.GA3525@kroah.com>
+References: <1336635764-30597-1-git-send-email-hdoyu@nvidia.com>
+ <1336635764-30597-3-git-send-email-hdoyu@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336635764-30597-3-git-send-email-hdoyu@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  7 May 2012 13:37:52 +0200
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+On Thu, May 10, 2012 at 10:42:32AM +0300, Hiroshi DOYU wrote:
+> Tegra Memory Controller(MC) driver for Tegra30
+> Added to support MC General interrupts, mainly for IOMMU(SMMU).
 
-> alloc_bootmem_section() derives allocation area constraints from the
-> specified sparsemem section.  This is a bit specific for a generic
-> memory allocator like bootmem, though, so move it over to sparsemem.
-> 
-> As __alloc_bootmem_node_nopanic() already retries failed allocations
-> with relaxed area constraints, the fallback code in sparsemem.c can be
-> removed and the code becomes a bit more compact overall.
-> 
-> ...
->
-> @@ -332,9 +334,9 @@ static void __init check_usemap_section_nr(int nid, unsigned long *usemap)
->  #else
->  static unsigned long * __init
->  sparse_early_usemaps_alloc_pgdat_section(struct pglist_data *pgdat,
-> -					 unsigned long count)
-> +					 unsigned long size)
->  {
-> -	return NULL;
-> +	return alloc_bootmem_node_nopanic(pgdat, size)
+I'll apply this, but:
 
-You've been bad.   Your penance is to runtime test this code with
-CONFIG_MEMORY_HOTREMOVE=n!
+> +static inline u32 mc_readl(struct tegra30_mc *mc, u32 offs)
+> +{
+> +	if (offs < 0x10)
+> +		return readl(mc->regs[0] + offs);
+> +	BUG_ON(offs < 0x3c);
+> +	if (offs < 0x1f0)
+> +		return readl(mc->regs[1] + offs - 0x3c);
+> +	BUG_ON(offs < 0x200);
+> +	if (offs < 0x228)
+> +		return readl(mc->regs[2] + offs - 0x200);
+> +	BUG_ON(offs < 0x284);
+> +	if (offs < 0x400)
+> +		return readl(mc->regs[3] + offs - 0x284);
+> +	BUG();
+> +}
+
+That's a lot of BUG* calls.  Same thing with the 1/4 patch in this
+series.
+
+We really should not have a BUG call in any driver, as you just stopped
+the whole system.  I can understand this being there for debugging when
+you create the code originally, but as these are things no one should
+ever be able to hit now, you should remove them, right?
+
+Care to write a follow-on patch removing all of these BUG_ON and BUG
+calls in this and the drivers/memory/tegra20-mc.c driver?
+
+thanks,
+
+greg k-h
