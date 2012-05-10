@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757477Ab2EJUws (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 16:52:48 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:54281 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757062Ab2EJUwr (ORCPT
+	id S932069Ab2EJUxE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 16:53:04 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59439 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757062Ab2EJUxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 16:52:47 -0400
-Date: Thu, 10 May 2012 16:52:44 -0400 (EDT)
-Message-Id: <20120510.165244.1634080676100822022.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 10 May 2012 13:52:46 -0700 (PDT)
+	Thu, 10 May 2012 16:53:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <1336682772.29763.6.camel@joe2Laptop>
+References: <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
+ <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
+ <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com>
+ <20120509070710.GA29981@gmail.com> <CAPXgP11evyQQKNDaa00R7qsOFy5Xk-utN1w9OgB4y6NxLZG=UA@mail.gmail.com>
+ <1336611278.728.9.camel@mop> <CA+55aFyrrH0jJV--L=ugt0YK7pT+jmhjvt_WRWyenyiroN97zg@mail.gmail.com>
+ <1336667984.947.24.camel@mop> <CA+55aFxUaNC4SGEodrdddkDN6t=Sbx=P4XyaHkj7eTQBQOeLeA@mail.gmail.com>
+ <1336676986.947.47.camel@mop> <20120510201409.GA6467@thunk.org>
+ <1336682226.29763.2.camel@joe2Laptop> <CAPXgP11T7vjBBFaE5jne0hntZ2J-MoVxwJ2C9TNsRzme9DmLuQ@mail.gmail.com>
+ <1336682772.29763.6.camel@joe2Laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 10 May 2012 13:52:39 -0700
+X-Google-Sender-Auth: KKafajoijUsGgbprNIcNDXNep3Y
+Message-ID: <CA+55aFwJgtVr9ZndEU-yhJW3wi-5Omga51pjun+J213awQwJZA@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
+ record buffer
+To: Joe Perches <joe@perches.com>
+Cc: Kay Sievers <kay@vrfy.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Ingo Molnar <mingo@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 10, 2012 at 1:46 PM, Joe Perches <joe@perches.com> wrote:
+>
+> That's where I think you're still a bit
+> uncertain how the _current_ printk system
+> works.
 
-Please pull to get this sparc64 bug fix, thanks!
+No, you are. Read my answer from two days ago in this thread.
 
-The following changes since commit bc46f9375a286d05f84a9464efc2b7f1f5614ff4:
+KERN_CONT is *not* the same as "". Not now, not ever. If you make it
+the same, you're broken.
 
-  Merge tag 'nfs-for-3.4-5' of git://git.linux-nfs.org/projects/trondmy/linux-nfs (2012-05-10 10:05:19 -0700)
+The reason is simple: KERN_CONT "<3>" should print out the string
+"<3>". If you make KERN_CONT be "", it will do the wrong thing, and
+think that the <3> is a priority marker.
 
-are available in the git repository at:
+Please people, this is subtle, and current code does things RIGHT. Any
+code that changes it to do something else is almost certainly buggy.
+The new semantics had better be the same as the old one.
 
+The change to verify that 'current' matches the previous printout is
+so far the *only* sane semantic change I've seen in this thread.
+Everything else has been pure garbage.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
-
-for you to fetch changes up to a5a737e090e25981e99d69f01400e3a80356581c:
-
-  sparc64: Do not clobber %g2 in xcall_fetch_glob_regs(). (2012-05-10 11:00:46 -0700)
-
-----------------------------------------------------------------
-David S. Miller (1):
-      sparc64: Do not clobber %g2 in xcall_fetch_glob_regs().
-
- arch/sparc/kernel/central.c |    2 +-
- arch/sparc/mm/ultra.S       |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+                    Linus
