@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761281Ab2EJVWI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 17:22:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64696 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758956Ab2EJVWF (ORCPT
+	id S932237Ab2EJVWq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 17:22:46 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:1155
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758954Ab2EJVWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 17:22:05 -0400
-Date: Thu, 10 May 2012 14:21:58 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>,
-        "Pavel V. Panteleev" <pp_84@mail.ru>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [GIT PULL] percpu fixes for 3.4-rc6
-Message-ID: <20120510212158.GH24636@google.com>
+	Thu, 10 May 2012 17:22:45 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2fh2a8h668h839h93fhd25h)
+X-Forefront-Antispam-Report: CIP:160.33.194.231;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail04v.am.sony.com;RD:mail04.sonyusa.com;EFVD:NLI
+Message-ID: <4FAC31B3.7050806@am.sony.com>
+Date: Thu, 10 May 2012 14:22:59 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <gregkh@linuxfoundation.org>, Brian Swetland <swetland@google.com>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] staging: android: logger: Fix some sparse and whitespace
+ issues
+References: <4FAC302F.2090004@am.sony.com>
+In-Reply-To: <4FAC302F.2090004@am.sony.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+Fix a few sparse warnings, and improve whitespace.
 
-This pull request contains two patches.  One is kmemleak annotation
-fix which isn't critical.  The other is kinda serious.  Depending on
-NUMA topology, percpu allocator may end up assigning overlapping
-regions for the static percpu areas for different CPUs.  While
-critical, the bug has been there for a very long time and only few
-configurations seem to be affected (NUMA configurations w/ no memory
-nodes for example) - so, while it's critical, it isn't exactly urgent.
+Signed-off-by: Tim Bird <tim.bird@am.sony.com>
+---
+ drivers/staging/android/logger.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-If there isn't gonna be another rcX, I think it would be better to
-pull the fix as part of the next merge window and backport through
--stable.
+diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
+index 9ebcf42..3e8865f 100644
+--- a/drivers/staging/android/logger.c
++++ b/drivers/staging/android/logger.c
+@@ -65,9 +65,9 @@ struct logger_reader {
+ };
 
-So, depending on release schedule, please consider pulling from the
-following branch.
+ /* logger_offset - returns index 'n' into the log via (optimized) modulus */
+-size_t logger_offset(struct logger_log *log, size_t n)
++static size_t logger_offset(struct logger_log *log, size_t n)
+ {
+-	return n & (log->size-1);
++	return n & (log->size - 1);
+ }
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.4-fixes
 
-Catalin Marinas (1):
-      kmemleak: Fix the kmemleak tracking of the percpu areas with !SMP
+@@ -353,7 +353,7 @@ static ssize_t do_write_log_from_user(struct logger_log *log,
+  * writev(), and aio_write(). Writes are our fast path, and we try to optimize
+  * them above all else.
+  */
+-ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
++static ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 			 unsigned long nr_segs, loff_t ppos)
+ {
+ 	struct logger_log *log = file_get_log(iocb->ki_filp);
+-- 
+1.7.9.5
 
-Tejun Heo (1):
-      percpu: pcpu_embed_first_chunk() should free unused parts after all allocs are complete
 
- mm/percpu.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
-
-Thanks.
-
---
-tejun
