@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074Ab2EJBsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 21:48:09 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49192 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751030Ab2EJBsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 21:48:06 -0400
-Message-ID: <1336614484.1905.19.camel@joe2Laptop>
-Subject: Re: [PATCH 00/13] net: Add and use ether_addr_equal
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>, Julia Lawall <julia.lawall@lip6.fr>
-Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Date: Wed, 09 May 2012 18:48:04 -0700
-In-Reply-To: <20120509.212110.437114897180819434.davem@davemloft.net>
-References: <cover.1336538937.git.joe@perches.com>
-	 <20120509.212110.437114897180819434.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1752345Ab2EJBtj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 21:49:39 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:56090 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897Ab2EJBth (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 21:49:37 -0400
+Message-ID: <4FAB1EAF.2090305@gmail.com>
+Date: Thu, 10 May 2012 11:49:35 +1000
+From: Francois Rigaut <frigaut@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Jiang Liu <liuj97@gmail.com>,
+        Nico Schottelius <nico-linux-20120419@schottelius.org>,
+        Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Linux Support for Thunderbolt using Apple Monitor
+References: <CAMVeQ8q3PMMGmFSgrnqbW2HVdfmN+LgatX3TSfv5_2Ebuuj=QQ@mail.gmail.com> <20120503233858.GA13453@kroah.com> <4FA358ED.1080705@gmail.com> <20120504184851.GB11223@kroah.com> <CAE9FiQWuePNRWV=ncJkF57aQZ0ZT91xxZ0sZMexq8HgN9NcAfA@mail.gmail.com> <CAE9FiQWcyRfLKB+YivOfa-GydbhoaMx06n6a4VMDWoTOMkj7ig@mail.gmail.com> <4FA4AA3E.1070903@gmail.com> <4FA544B1.3070705@gmail.com> <20120505164819.GA21599@schottelius.org> <4FA5EE63.1050208@gmail.com> <20120509160555.GA13437@kroah.com>
+In-Reply-To: <20120509160555.GA13437@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 21:21 -0400, David Miller wrote:
-> From: Joe Perches <joe@perches.com>
-> Date: Tue,  8 May 2012 21:56:44 -0700
-> 
-> > Add a boolean function to test 2 ethernet addresses for equality
-> > Convert compare_ether_addr uses to ether_addr_equal
-> 
-> This series looks great, I'll apply all of it.
+Greg,
 
-coccinelle is a nifty, better sed, tool.  Thanks Julia et al.
+I went ahead and contacted John Ronciak at intel.
+He gave a presentation on thunderbolt at the 2011 linux plumber conference.
+Here is his answer:
 
-> That case you didn't convert in mac80211 is probably the
-> bug Johannes was talking about which started this whole
-> discussion.
+"You are correct that most if not all issues related to Thunderbolt on 
+Linux is due to BIOS problems. We have not seen anything other BIOS 
+issues regarding Thunderbolt issues on Linux. When the BIOS is working 
+correctly the hot-plug PCIe works fine wrt the kernel. These are things 
+that cannot be fixed in the drivers or in kernel infrastructure. So 
+newer systems are going to be better than older ones due to these BIOS 
+issues."
 
-Looks like it.
+Francois
 
-Do you want a similar patch/patches for drivers/net?
-
-If I break it out by nominal driver/maintainer,
-it'll be a highish number of low density patches.
-
-$ git grep -w compare_ether_addr drivers/net | wc -l
-59
-$ git grep -w -l compare_ether_addr drivers/net | wc -l
-31
-
-Maybe just a single patch?
-
-Also the compare_ether_addr_64bits function is
-still used a couple dozen times.  Maybe another
-patch for those?  ether_addr_equal_64bits?
-
-
+On 10/05/12 02:05, Greg KH wrote:
+> On Sun, May 06, 2012 at 11:22:11AM +0800, Jiang Liu wrote:
+>> I'm afraid it won't work by just changing the OSDW() return value.
+>> After analysis the ACPI table, I guess the BIOS ACPI implementation doesn't
+>> confirm to the ACPI specification for hotplug, it needs special support in
+>> OS to enable Thunderbolt cable hotplug on that system. Maybe that's the
+>> reason why it's only enabled on Apple's OSes, not sure it's due to technical
+>> or business considerations.
+>>
+>> This PCIe device "05:00.0 System peripheral: Intel Corporation Device 151a
+>> (rev 01)" may play a role in the Thunderbolt cable hotplug operations, but
+>> haven't figured it out yet.
+> Thanks for looking at this.
+>
+> So either we need a BIOS update for this platform so that other
+> operating systems can work properly (i.e. full ACPI hotplug support), or
+> we write a new hotplug driver to handle this hardware properly.
+>
+> Intel was rumored to have this working in their labs, I'll poke some
+> people to see if they have anything they can release...
+>
+> thanks,
+>
+> greg k-h
