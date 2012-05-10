@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761103Ab2EJSUA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 14:20:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53512 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760793Ab2EJST7 (ORCPT
+	id S1761126Ab2EJSUV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 14:20:21 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64451 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761109Ab2EJSUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 14:19:59 -0400
-Date: Thu, 10 May 2012 11:19:58 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: rpurdie@rpsys.net, linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org
-Subject: Re: [PATCH] MAINTAINERS: Add maintainer for LED subsystem
-Message-Id: <20120510111958.7cb00da9.akpm@linux-foundation.org>
-In-Reply-To: <1336609592-3825-1-git-send-email-bryan.wu@canonical.com>
-References: <1336609592-3825-1-git-send-email-bryan.wu@canonical.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 10 May 2012 14:20:19 -0400
+Date: Thu, 10 May 2012 11:20:15 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: broonie@opensource.wolfsonmicro.com, thomas.abraham@linaro.org,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        jonghwa3.lee@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] mfd: MAX8997: Support irq domain for Maxim MAX8997
+Message-ID: <20120510182015.GB17018@kroah.com>
+References: <1336647288-10858-1-git-send-email-cw00.choi@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336647288-10858-1-git-send-email-cw00.choi@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 May 2012 08:26:32 +0800
-Bryan Wu <bryan.wu@canonical.com> wrote:
-
-> Add Bryan Wu as the primary maintainer for drivers/leds
+On Thu, May 10, 2012 at 07:54:48PM +0900, Chanwoo Choi wrote:
+> This patchset add support irq domain for Maxim MAX8997 interrupts.
 > 
-> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-> ---
->  MAINTAINERS |    1 +
->  1 file changed, 1 insertion(+)
+> The first patch is based on patch written by Thomas Abraham and fix
+> two bug which set max8997->irq_domain instead of NULL pointer and
+> correct wrong parameter by Chanwoo Choi.
+> - https://lkml.org/lkml/2012/4/18/145
+> The second patch use irq domain for MAX8997 muic interrupt instead
+> of irq_base in platform data of MAX8997 driver.
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 7071633..de4e280 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -4034,6 +4034,7 @@ F:	Documentation/scsi/53c700.txt
->  F:	drivers/scsi/53c700*
->  
->  LED SUBSYSTEM
-> +M:	Bryan Wu <bryan.wu@canonical.com>
->  M:	Richard Purdie <rpurdie@rpsys.net>
->  S:	Maintained
->  F:	drivers/leds/
+> But, I posted following patchset related to MAX8997 driver.
+> This patchset support Extcon framework in extcon-max8997 driver to
+> control external connector instead of max8997-muic driver. So, first
+> patch add MAX8997 extcon driver(drivers/extcon/extcon-max8997.c) and
+> last patch remove old MAX8997 muic driver(drivers/misc/max8997-muic.c).
+> - https://lkml.org/lkml/2012/5/8/98
+> 
+> This patchset was applied in below git repository of Greg Kroah-Hartman.
+> - http://git.kernel.org/?p=linux/kernel/git/gregkh/driver-core.git;a=shortlog;h=refs/heads/driver-core-next
+> 
+> I think that this patchset should be applied on the git repository
+> of Greg Kroah-Hartman to remove possible conflict issue when merged.
 
-Please set up a git tree based on Linus mainline, get that tree
-included in linux-next (by emailing Stephen) and include its git
-URL in this MAINTAINERS record.
+That's fine with me, should the MFD maintainer have been copied on this
+to get his signed-off-by on it?
 
-Once that is all set up I'll send over the current leds queue -
-currently 17 patches.
+thanks,
 
-We don't presently have a leds mailing list.  I generally find stuff by
-reading linux-kernel.  You'll now need to do that ;) Even if we did
-have a leds mailing list, one would still need to follow lkml to avoid
-losing stuff.
-
-Or you can not bother - I read lkml and shall grab stray leds patches and
-will send them on to yourself.
-
+greg k-h
