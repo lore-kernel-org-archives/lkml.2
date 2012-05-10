@@ -1,311 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034Ab2EJDFL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 23:05:11 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60834 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754943Ab2EJDFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 23:05:07 -0400
-From: Joe Perches <joe@perches.com>
-To: "David S. Miller" <davem@davemloft.net>, Jay Vosburgh <fubar@us.ibm.com>,
-        Andy Gospodarek <andy@greyhouse.net>,
-        Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] net,drivers/net: Convert compare_ether_addr_64bits to ether_addr_equal_64bits
-Date: Wed,  9 May 2012 20:04:04 -0700
-Message-Id: <acb363688c8ed729cc61e288605cdb4aa4089149.1336618708.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
-In-Reply-To: <cover.1336618707.git.joe@perches.com>
-References: <cover.1336618707.git.joe@perches.com>
+	id S1754999Ab2EJDHi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 23:07:38 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:32974 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754535Ab2EJDHf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 23:07:35 -0400
+Date: Wed, 9 May 2012 23:07:29 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Cc: tejun@google.com, agk@redhat.com
+Subject: [Bcache v13 00/16]
+Message-ID: <cover.1336619038.git.koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new bool function ether_addr_equal_64bits to add
-some clarity and reduce the likelihood for misuse of
-compare_ether_addr_64bits for sorting.
+bcache: a cache for arbitrary block devices using an SSD.
 
-Done via cocci script:
+Short overview:
+Bcache does both writethrough and writeback caching. It presents itself as a
+new block device, a bit like say md. You can cache an arbitrary number of
+block devices with a single cache device, and attach and detach things at
+runtime - it's quite flexible.
 
-$ cat compare_ether_addr_64bits.cocci
-@@
-expression a,b;
-@@
--	!compare_ether_addr_64bits(a, b)
-+	ether_addr_equal_64bits(a, b)
+It's very fast. It uses a b+ tree for the index, along with a journal to
+coalesce index updates, and a bunch of other cool tricks like auxiliary binary
+search trees with software floating point keys for searching within btree
+nodes.
 
-@@
-expression a,b;
-@@
--	compare_ether_addr_64bits(a, b)
-+	!ether_addr_equal_64bits(a, b)
+Bcache is solid, production ready code. There are still bugs being found that
+affect specific configurations, but there haven't been any major issues found
+in awhile - it's well past time I started working on getting it into mainline.
 
-@@
-expression a,b;
-@@
--	!ether_addr_equal_64bits(a, b) == 0
-+	ether_addr_equal_64bits(a, b)
+It's a lot of code - I tried to split it out so that it'd make some sort of
+sense for reviewing. Let me know if there's anything else I can do to make
+review easier.
 
-@@
-expression a,b;
-@@
--	!ether_addr_equal_64bits(a, b) != 0
-+	!ether_addr_equal_64bits(a, b)
+TODO/known issues:
 
-@@
-expression a,b;
-@@
--	ether_addr_equal_64bits(a, b) == 0
-+	!ether_addr_equal_64bits(a, b)
+__up_write() needs to be exported for bcache to compile as a module - it's
+used for bypassing lockdep when traversing the btree during garbage
+collection. If someone else knows a better solution, please let me know.
 
-@@
-expression a,b;
-@@
--	ether_addr_equal_64bits(a, b) != 0
-+	ether_addr_equal_64bits(a, b)
+The userspace interface is going to change before it goes in. The general
+consensus at LSF was that we don't want yet another interface for
+probing/managing block devices, and dm exists so we may as well use that. I
+don't think anyone's started on that yet, though.
 
-@@
-expression a,b;
-@@
--	!!ether_addr_equal_64bits(a, b)
-+	ether_addr_equal_64bits(a, b)
+Documentation needs to be updated. That's being actively worked on, though.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/bonding/bond_alb.c |   58 ++++++++++++++++++++--------------------
- drivers/net/macvlan.c          |    7 ++---
- net/ethernet/eth.c             |    5 ++-
- 3 files changed, 35 insertions(+), 35 deletions(-)
+Kent Overstreet (16):
+  Only clone bio vecs that are in use
+  Bio pool freeing
+  Revert "rw_semaphore: remove up/down_read_non_owner"
+  Fix ratelimit macro to compile in c99 mode
+  Export get_random_int()
+  Export blk_fill_rwbs()
+  Closures
+  bcache: Documentation, and changes to generic code
+  Bcache: generic utility code
+  bcache: Superblock/initialization/sysfs code
+  bcache: Core btree code
+  bcache: Bset code (lookups within a btree node)
+  bcache: Journalling
+  bcache: Request, io and allocation code
+  bcache: Writeback
+  bcache: Debug and tracing code
 
-diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
-index 9abfde4..b4f1b4a 100644
---- a/drivers/net/bonding/bond_alb.c
-+++ b/drivers/net/bonding/bond_alb.c
-@@ -332,7 +332,7 @@ static void rlb_update_entry_from_arp(struct bonding *bond, struct arp_pkt *arp)
- 	if ((client_info->assigned) &&
- 	    (client_info->ip_src == arp->ip_dst) &&
- 	    (client_info->ip_dst == arp->ip_src) &&
--	    (compare_ether_addr_64bits(client_info->mac_dst, arp->mac_src))) {
-+	    (!ether_addr_equal_64bits(client_info->mac_dst, arp->mac_src))) {
- 		/* update the clients MAC address */
- 		memcpy(client_info->mac_dst, arp->mac_src, ETH_ALEN);
- 		client_info->ntt = 1;
-@@ -448,8 +448,8 @@ static void rlb_clear_slave(struct bonding *bond, struct slave *slave)
- 
- 			if (assigned_slave) {
- 				rx_hash_table[index].slave = assigned_slave;
--				if (compare_ether_addr_64bits(rx_hash_table[index].mac_dst,
--							      mac_bcast)) {
-+				if (!ether_addr_equal_64bits(rx_hash_table[index].mac_dst,
-+							     mac_bcast)) {
- 					bond_info->rx_hashtbl[index].ntt = 1;
- 					bond_info->rx_ntt = 1;
- 					/* A slave has been removed from the
-@@ -561,7 +561,7 @@ static void rlb_req_update_slave_clients(struct bonding *bond, struct slave *sla
- 		client_info = &(bond_info->rx_hashtbl[hash_index]);
- 
- 		if ((client_info->slave == slave) &&
--		    compare_ether_addr_64bits(client_info->mac_dst, mac_bcast)) {
-+		    !ether_addr_equal_64bits(client_info->mac_dst, mac_bcast)) {
- 			client_info->ntt = 1;
- 			ntt = 1;
- 		}
-@@ -600,9 +600,9 @@ static void rlb_req_update_subnet_clients(struct bonding *bond, __be32 src_ip)
- 		 * unicast mac address.
- 		 */
- 		if ((client_info->ip_src == src_ip) &&
--		    compare_ether_addr_64bits(client_info->slave->dev->dev_addr,
--			   bond->dev->dev_addr) &&
--		    compare_ether_addr_64bits(client_info->mac_dst, mac_bcast)) {
-+		    !ether_addr_equal_64bits(client_info->slave->dev->dev_addr,
-+					     bond->dev->dev_addr) &&
-+		    !ether_addr_equal_64bits(client_info->mac_dst, mac_bcast)) {
- 			client_info->ntt = 1;
- 			bond_info->rx_ntt = 1;
- 		}
-@@ -629,7 +629,7 @@ static struct slave *rlb_choose_channel(struct sk_buff *skb, struct bonding *bon
- 		if ((client_info->ip_src == arp->ip_src) &&
- 		    (client_info->ip_dst == arp->ip_dst)) {
- 			/* the entry is already assigned to this client */
--			if (compare_ether_addr_64bits(arp->mac_dst, mac_bcast)) {
-+			if (!ether_addr_equal_64bits(arp->mac_dst, mac_bcast)) {
- 				/* update mac address from arp */
- 				memcpy(client_info->mac_dst, arp->mac_dst, ETH_ALEN);
- 			}
-@@ -664,7 +664,7 @@ static struct slave *rlb_choose_channel(struct sk_buff *skb, struct bonding *bon
- 		memcpy(client_info->mac_dst, arp->mac_dst, ETH_ALEN);
- 		client_info->slave = assigned_slave;
- 
--		if (compare_ether_addr_64bits(client_info->mac_dst, mac_bcast)) {
-+		if (!ether_addr_equal_64bits(client_info->mac_dst, mac_bcast)) {
- 			client_info->ntt = 1;
- 			bond->alb_info.rx_ntt = 1;
- 		} else {
-@@ -1009,18 +1009,18 @@ static void alb_change_hw_addr_on_detach(struct bonding *bond, struct slave *sla
- 	int perm_curr_diff;
- 	int perm_bond_diff;
- 
--	perm_curr_diff = compare_ether_addr_64bits(slave->perm_hwaddr,
--						   slave->dev->dev_addr);
--	perm_bond_diff = compare_ether_addr_64bits(slave->perm_hwaddr,
--						   bond->dev->dev_addr);
-+	perm_curr_diff = !ether_addr_equal_64bits(slave->perm_hwaddr,
-+						  slave->dev->dev_addr);
-+	perm_bond_diff = !ether_addr_equal_64bits(slave->perm_hwaddr,
-+						  bond->dev->dev_addr);
- 
- 	if (perm_curr_diff && perm_bond_diff) {
- 		struct slave *tmp_slave;
- 		int i, found = 0;
- 
- 		bond_for_each_slave(bond, tmp_slave, i) {
--			if (!compare_ether_addr_64bits(slave->perm_hwaddr,
--						       tmp_slave->dev->dev_addr)) {
-+			if (ether_addr_equal_64bits(slave->perm_hwaddr,
-+						    tmp_slave->dev->dev_addr)) {
- 				found = 1;
- 				break;
- 			}
-@@ -1074,10 +1074,10 @@ static int alb_handle_addr_collision_on_attach(struct bonding *bond, struct slav
- 	 * check uniqueness of slave's mac address against the other
- 	 * slaves in the bond.
- 	 */
--	if (compare_ether_addr_64bits(slave->perm_hwaddr, bond->dev->dev_addr)) {
-+	if (!ether_addr_equal_64bits(slave->perm_hwaddr, bond->dev->dev_addr)) {
- 		bond_for_each_slave(bond, tmp_slave1, i) {
--			if (!compare_ether_addr_64bits(tmp_slave1->dev->dev_addr,
--						       slave->dev->dev_addr)) {
-+			if (ether_addr_equal_64bits(tmp_slave1->dev->dev_addr,
-+						    slave->dev->dev_addr)) {
- 				found = 1;
- 				break;
- 			}
-@@ -1099,8 +1099,8 @@ static int alb_handle_addr_collision_on_attach(struct bonding *bond, struct slav
- 	bond_for_each_slave(bond, tmp_slave1, i) {
- 		found = 0;
- 		bond_for_each_slave(bond, tmp_slave2, j) {
--			if (!compare_ether_addr_64bits(tmp_slave1->perm_hwaddr,
--						       tmp_slave2->dev->dev_addr)) {
-+			if (ether_addr_equal_64bits(tmp_slave1->perm_hwaddr,
-+						    tmp_slave2->dev->dev_addr)) {
- 				found = 1;
- 				break;
- 			}
-@@ -1115,8 +1115,8 @@ static int alb_handle_addr_collision_on_attach(struct bonding *bond, struct slav
- 		}
- 
- 		if (!has_bond_addr) {
--			if (!compare_ether_addr_64bits(tmp_slave1->dev->dev_addr,
--						       bond->dev->dev_addr)) {
-+			if (ether_addr_equal_64bits(tmp_slave1->dev->dev_addr,
-+						    bond->dev->dev_addr)) {
- 
- 				has_bond_addr = tmp_slave1;
- 			}
-@@ -1257,7 +1257,7 @@ int bond_alb_xmit(struct sk_buff *skb, struct net_device *bond_dev)
- 	case ETH_P_IP: {
- 		const struct iphdr *iph = ip_hdr(skb);
- 
--		if (!compare_ether_addr_64bits(eth_data->h_dest, mac_bcast) ||
-+		if (ether_addr_equal_64bits(eth_data->h_dest, mac_bcast) ||
- 		    (iph->daddr == ip_bcast) ||
- 		    (iph->protocol == IPPROTO_IGMP)) {
- 			do_tx_balance = 0;
-@@ -1271,7 +1271,7 @@ int bond_alb_xmit(struct sk_buff *skb, struct net_device *bond_dev)
- 		/* IPv6 doesn't really use broadcast mac address, but leave
- 		 * that here just in case.
- 		 */
--		if (!compare_ether_addr_64bits(eth_data->h_dest, mac_bcast)) {
-+		if (ether_addr_equal_64bits(eth_data->h_dest, mac_bcast)) {
- 			do_tx_balance = 0;
- 			break;
- 		}
-@@ -1279,7 +1279,7 @@ int bond_alb_xmit(struct sk_buff *skb, struct net_device *bond_dev)
- 		/* IPv6 uses all-nodes multicast as an equivalent to
- 		 * broadcasts in IPv4.
- 		 */
--		if (!compare_ether_addr_64bits(eth_data->h_dest, mac_v6_allmcast)) {
-+		if (ether_addr_equal_64bits(eth_data->h_dest, mac_v6_allmcast)) {
- 			do_tx_balance = 0;
- 			break;
- 		}
-@@ -1603,8 +1603,8 @@ void bond_alb_handle_active_change(struct bonding *bond, struct slave *new_slave
- 		struct slave *tmp_slave;
- 		/* find slave that is holding the bond's mac address */
- 		bond_for_each_slave(bond, tmp_slave, i) {
--			if (!compare_ether_addr_64bits(tmp_slave->dev->dev_addr,
--						       bond->dev->dev_addr)) {
-+			if (ether_addr_equal_64bits(tmp_slave->dev->dev_addr,
-+						    bond->dev->dev_addr)) {
- 				swap_slave = tmp_slave;
- 				break;
- 			}
-@@ -1681,8 +1681,8 @@ int bond_alb_set_mac_address(struct net_device *bond_dev, void *addr)
- 	swap_slave = NULL;
- 
- 	bond_for_each_slave(bond, slave, i) {
--		if (!compare_ether_addr_64bits(slave->dev->dev_addr,
--					       bond_dev->dev_addr)) {
-+		if (ether_addr_equal_64bits(slave->dev->dev_addr,
-+					    bond_dev->dev_addr)) {
- 			swap_slave = slave;
- 			break;
- 		}
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index 9653ed6..ebacec1 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -57,7 +57,7 @@ static struct macvlan_dev *macvlan_hash_lookup(const struct macvlan_port *port,
- 	struct hlist_node *n;
- 
- 	hlist_for_each_entry_rcu(vlan, n, &port->vlan_hash[addr[5]], hlist) {
--		if (!compare_ether_addr_64bits(vlan->dev->dev_addr, addr))
-+		if (ether_addr_equal_64bits(vlan->dev->dev_addr, addr))
- 			return vlan;
- 	}
- 	return NULL;
-@@ -96,7 +96,7 @@ static int macvlan_addr_busy(const struct macvlan_port *port,
- 	 * currently in use by the underlying device or
- 	 * another macvlan.
- 	 */
--	if (!compare_ether_addr_64bits(port->dev->dev_addr, addr))
-+	if (ether_addr_equal_64bits(port->dev->dev_addr, addr))
- 		return 1;
- 
- 	if (macvlan_hash_lookup(port, addr))
-@@ -118,8 +118,7 @@ static int macvlan_broadcast_one(struct sk_buff *skb,
- 		return vlan->forward(dev, skb);
- 
- 	skb->dev = dev;
--	if (!compare_ether_addr_64bits(eth->h_dest,
--				       dev->broadcast))
-+	if (ether_addr_equal_64bits(eth->h_dest, dev->broadcast))
- 		skb->pkt_type = PACKET_BROADCAST;
- 	else
- 		skb->pkt_type = PACKET_MULTICAST;
-diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
-index 5889a6c..36e5880 100644
---- a/net/ethernet/eth.c
-+++ b/net/ethernet/eth.c
-@@ -164,7 +164,7 @@ __be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev)
- 	eth = eth_hdr(skb);
- 
- 	if (unlikely(is_multicast_ether_addr(eth->h_dest))) {
--		if (!compare_ether_addr_64bits(eth->h_dest, dev->broadcast))
-+		if (ether_addr_equal_64bits(eth->h_dest, dev->broadcast))
- 			skb->pkt_type = PACKET_BROADCAST;
- 		else
- 			skb->pkt_type = PACKET_MULTICAST;
-@@ -179,7 +179,8 @@ __be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev)
- 	 */
- 
- 	else if (1 /*dev->flags&IFF_PROMISC */ ) {
--		if (unlikely(compare_ether_addr_64bits(eth->h_dest, dev->dev_addr)))
-+		if (unlikely(!ether_addr_equal_64bits(eth->h_dest,
-+						      dev->dev_addr)))
- 			skb->pkt_type = PACKET_OTHERHOST;
- 	}
- 
+ Documentation/ABI/testing/sysfs-block-bcache |  156 ++
+ Documentation/bcache.txt                     |  255 +++
+ block/blk-core.c                             |    2 +-
+ drivers/block/Kconfig                        |    2 +
+ drivers/block/Makefile                       |    1 +
+ drivers/block/bcache/Kconfig                 |   42 +
+ drivers/block/bcache/Makefile                |    8 +
+ drivers/block/bcache/alloc.c                 |  591 +++++++
+ drivers/block/bcache/bcache.h                |  839 ++++++++++
+ drivers/block/bcache/bset.c                  | 1149 +++++++++++++
+ drivers/block/bcache/bset.h                  |  218 +++
+ drivers/block/bcache/btree.c                 | 2249 ++++++++++++++++++++++++++
+ drivers/block/bcache/btree.h                 |  272 ++++
+ drivers/block/bcache/debug.c                 |  574 +++++++
+ drivers/block/bcache/debug.h                 |   53 +
+ drivers/block/bcache/io.c                    |  198 +++
+ drivers/block/bcache/journal.c               |  722 +++++++++
+ drivers/block/bcache/journal.h               |  113 ++
+ drivers/block/bcache/request.c               | 1470 +++++++++++++++++
+ drivers/block/bcache/request.h               |   58 +
+ drivers/block/bcache/stats.c                 |  243 +++
+ drivers/block/bcache/stats.h                 |   58 +
+ drivers/block/bcache/super.c                 | 2000 +++++++++++++++++++++++
+ drivers/block/bcache/sysfs.c                 |  802 +++++++++
+ drivers/block/bcache/sysfs.h                 |   99 ++
+ drivers/block/bcache/trace.c                 |   26 +
+ drivers/block/bcache/util.c                  |  572 +++++++
+ drivers/block/bcache/util.h                  |  657 ++++++++
+ drivers/block/bcache/writeback.c             |  518 ++++++
+ drivers/block/rbd.c                          |    2 +-
+ drivers/char/random.c                        |    1 +
+ drivers/md/dm.c                              |   27 +-
+ drivers/md/md.c                              |    3 +-
+ fs/bio.c                                     |   55 +-
+ include/linux/bio.h                          |    7 +-
+ include/linux/blk_types.h                    |    2 +
+ include/linux/cgroup_subsys.h                |    6 +
+ include/linux/closure.h                      |  614 +++++++
+ include/linux/ratelimit.h                    |    2 +-
+ include/linux/rwsem.h                        |   10 +
+ include/linux/sched.h                        |    4 +
+ include/trace/events/bcache.h                |  257 +++
+ kernel/fork.c                                |    4 +
+ kernel/rwsem.c                               |   16 +
+ kernel/trace/blktrace.c                      |    1 +
+ lib/Kconfig                                  |    3 +
+ lib/Kconfig.debug                            |    9 +
+ lib/Makefile                                 |    2 +
+ lib/closure.c                                |  363 +++++
+ 49 files changed, 15288 insertions(+), 47 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-block-bcache
+ create mode 100644 Documentation/bcache.txt
+ create mode 100644 drivers/block/bcache/Kconfig
+ create mode 100644 drivers/block/bcache/Makefile
+ create mode 100644 drivers/block/bcache/alloc.c
+ create mode 100644 drivers/block/bcache/bcache.h
+ create mode 100644 drivers/block/bcache/bset.c
+ create mode 100644 drivers/block/bcache/bset.h
+ create mode 100644 drivers/block/bcache/btree.c
+ create mode 100644 drivers/block/bcache/btree.h
+ create mode 100644 drivers/block/bcache/debug.c
+ create mode 100644 drivers/block/bcache/debug.h
+ create mode 100644 drivers/block/bcache/io.c
+ create mode 100644 drivers/block/bcache/journal.c
+ create mode 100644 drivers/block/bcache/journal.h
+ create mode 100644 drivers/block/bcache/request.c
+ create mode 100644 drivers/block/bcache/request.h
+ create mode 100644 drivers/block/bcache/stats.c
+ create mode 100644 drivers/block/bcache/stats.h
+ create mode 100644 drivers/block/bcache/super.c
+ create mode 100644 drivers/block/bcache/sysfs.c
+ create mode 100644 drivers/block/bcache/sysfs.h
+ create mode 100644 drivers/block/bcache/trace.c
+ create mode 100644 drivers/block/bcache/util.c
+ create mode 100644 drivers/block/bcache/util.h
+ create mode 100644 drivers/block/bcache/writeback.c
+ create mode 100644 include/linux/closure.h
+ create mode 100644 include/trace/events/bcache.h
+ create mode 100644 lib/closure.c
+
 -- 
-1.7.8.111.gad25c.dirty
+1.7.9.rc2
 
