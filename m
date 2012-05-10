@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab2EJDLr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 23:11:47 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:38393 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755911Ab2EJDLn (ORCPT
+	id S1756014Ab2EJDL5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 23:11:57 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:33111 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755732Ab2EJDLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 23:11:43 -0400
-Date: Wed, 9 May 2012 23:11:37 -0400
+	Wed, 9 May 2012 23:11:53 -0400
+Date: Wed, 9 May 2012 23:11:48 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: tejun@google.com, agk@redhat.com
-Subject: [Bcache v13 15/16] bcache: Writeback
-Message-ID: <743f8ef404023c6745f46a27ce91a5c3d9be97b1.1336619038.git.koverstreet@google.com>
+Subject: [Bcache v13 16/16] bcache: Debug and tracing code
+Message-ID: <ea3807bc74b1e17e2550ac3bf96e6a64c3e653f1.1336619038.git.koverstreet@google.com>
 References: <cover.1336619038.git.koverstreet@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,534 +26,685 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- drivers/block/bcache/writeback.c |  518 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 518 insertions(+), 0 deletions(-)
- create mode 100644 drivers/block/bcache/writeback.c
+ drivers/block/bcache/debug.c |  574 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/block/bcache/debug.h |   53 ++++
+ drivers/block/bcache/trace.c |   26 ++
+ 3 files changed, 653 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/block/bcache/debug.c
+ create mode 100644 drivers/block/bcache/debug.h
+ create mode 100644 drivers/block/bcache/trace.c
 
-diff --git a/drivers/block/bcache/writeback.c b/drivers/block/bcache/writeback.c
+diff --git a/drivers/block/bcache/debug.c b/drivers/block/bcache/debug.c
 new file mode 100644
-index 0000000..cfcfe52
+index 0000000..a9a8369
 --- /dev/null
-+++ b/drivers/block/bcache/writeback.c
-@@ -0,0 +1,518 @@
++++ b/drivers/block/bcache/debug.c
+@@ -0,0 +1,574 @@
++
 +#include "bcache.h"
 +#include "btree.h"
 +#include "debug.h"
++#include "request.h"
 +
-+static struct workqueue_struct *dirty_wq;
++#include <linux/console.h>
++#include <linux/debugfs.h>
++#include <linux/module.h>
++#include <linux/random.h>
++#include <linux/seq_file.h>
 +
-+static void read_dirty(struct cached_dev *);
++static struct dentry *debug;
 +
-+/* Background writeback */
++/* Various debug code */
 +
-+static void dirty_init(struct dirty *w)
++const char *ptr_status(struct cache_set *c, const struct bkey *k)
 +{
-+	struct bio *bio = &w->io->bio;
++	for (unsigned i = 0; i < KEY_PTRS(k); i++)
++		if (ptr_available(c, k, i)) {
++			struct cache *ca = PTR_CACHE(c, k, i);
++			size_t bucket = PTR_BUCKET_NR(c, k, i);
++			size_t r = bucket_remainder(c, PTR_OFFSET(k, i));
 +
-+	bio_init(bio);
-+	bio_get(bio);
-+	if (!w->io->d->writeback_percent)
-+		bio_set_prio(bio, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_IDLE, 0));
-+
-+	bio->bi_size		= KEY_SIZE(&w->key) << 9;
-+	bio->bi_max_vecs	= DIV_ROUND_UP(KEY_SIZE(&w->key), PAGE_SECTORS);
-+	bio->bi_private		= w;
-+	bio_map(bio, NULL);
-+}
-+
-+static int dirty_cmp(struct dirty *r, struct dirty *l)
-+{
-+	/* Overlapping keys must compare equal */
-+	if (KEY_START(&r->key) >= l->key.key)
-+		return 1;
-+	if (KEY_START(&l->key) >= r->key.key)
-+		return -1;
-+	return 0;
-+}
-+
-+static int btree_refill_dirty_leaf(struct btree *b, struct btree_op *op,
-+				   struct cached_dev *dc)
-+{
-+	struct dirty *w;
-+	struct btree_iter iter;
-+	btree_iter_init(b, &iter, &KEY(op->d->id, dc->last_found, 0));
-+
-+	/* To protect rb tree access vs. read_dirty() */
-+	spin_lock(&dc->dirty_lock);
-+
-+	while (!array_freelist_empty(&dc->dirty_freelist)) {
-+		struct bkey *k = btree_iter_next(&iter);
-+		if (!k || KEY_DEV(k) != op->d->id)
-+			break;
-+
-+		if (ptr_bad(b, k))
-+			continue;
-+
-+		if (KEY_DIRTY(k)) {
-+			w = array_alloc(&dc->dirty_freelist);
-+
-+			dc->last_found = k->key;
-+			pr_debug("%s", pkey(k));
-+			w->io = NULL;
-+			bkey_copy(&w->key, k);
-+			SET_KEY_DIRTY(&w->key, false);
-+
-+			if (RB_INSERT(&dc->dirty, w, node, dirty_cmp))
-+				array_free(&dc->dirty_freelist, w);
++			if (KEY_SIZE(k) + r > c->sb.bucket_size)
++				return "bad, length too big";
++			if (bucket <  ca->sb.first_bucket)
++				return "bad, short offset";
++			if (bucket >= ca->sb.nbuckets)
++				return "bad, offset past end of device";
++			if (ptr_stale(c, k, i))
++				return "stale";
 +		}
++
++	if (!bkey_cmp(k, &ZERO_KEY))
++		return "bad, null key";
++	if (!KEY_PTRS(k))
++		return "bad, no pointers";
++	if (!KEY_SIZE(k))
++		return "zeroed key";
++	return "";
++}
++
++static bool skipped_backwards(struct btree *b, struct bkey *k)
++{
++	return bkey_cmp(k, (!b->level) ? &START_KEY(next(k)) : next(k)) > 0;
++}
++
++static void dump_bset(struct btree *b, struct bset *i)
++{
++	for (struct bkey *k = i->start; k < end(i); k = next(k)) {
++		printk(KERN_ERR "block %zu key %zu/%i: %s", index(i, b),
++		       (uint64_t *) k - i->d, i->keys, pkey(k));
++
++		for (unsigned j = 0; j < KEY_PTRS(k); j++) {
++			size_t n = PTR_BUCKET_NR(b->c, k, j);
++			printk(" bucket %zu", n);
++
++			if (n >= b->c->sb.first_bucket && n < b->c->sb.nbuckets)
++				printk(" prio %i",
++				       PTR_BUCKET(b->c, k, j)->prio);
++		}
++
++		printk(" %s\n", ptr_status(b->c, k));
++
++		if (next(k) < end(i) &&
++		    skipped_backwards(b, k))
++			printk(KERN_ERR "Key skipped backwards\n");
++	}
++}
++
++static void vdump_bucket_and_panic(struct btree *b, const char *m, va_list args)
++{
++	struct bset *i;
++
++	console_lock();
++
++	for_each_sorted_set(b, i)
++		dump_bset(b, i);
++
++	vprintk(m, args);
++
++	console_unlock();
++
++	panic("at %s\n", pbtree(b));
++}
++
++static void dump_bucket_and_panic(struct btree *b, const char *m, ...)
++{
++	va_list args;
++	va_start(args, m);
++	vdump_bucket_and_panic(b, m, args);
++	va_end(args);
++}
++
++static void __maybe_unused
++dump_key_and_panic(struct btree *b, struct bset *i, int j)
++{
++	long bucket = PTR_BUCKET_NR(b->c, node(i, j), 0);
++	long r = PTR_OFFSET(node(i, j), 0) & ~(~0 << b->c->bucket_bits);
++
++	printk(KERN_ERR "level %i block %zu key %i/%i: %s "
++	       "bucket %llu offset %li into bucket\n",
++	       b->level, index(i, b), j, i->keys, pkey(node(i, j)),
++	       (uint64_t) bucket, r);
++	dump_bucket_and_panic(b, "");
++}
++
++struct keyprint_hack bcache_pkey(const struct bkey *k)
++{
++	unsigned i = 0;
++	struct keyprint_hack r;
++	char *out = r.s, *end = r.s + KEYHACK_SIZE;
++
++#define p(...)	(out += scnprintf(out, end - out, __VA_ARGS__))
++
++	p("%llu:%llu len %llu -> [", KEY_DEV(k), k->key, KEY_SIZE(k));
++
++	if (KEY_PTRS(k))
++		while (1) {
++			p("%llu:%llu gen %llu",
++			  PTR_DEV(k, i), PTR_OFFSET(k, i), PTR_GEN(k, i));
++
++			if (++i == KEY_PTRS(k))
++				break;
++
++			p(", ");
++		}
++
++	p("]");
++
++	if (KEY_DIRTY(k))
++		p(" dirty");
++	if (KEY_CSUM(k))
++		p(" cs%llu %llx", KEY_CSUM(k), k->ptr[1]);
++#undef p
++	return r;
++}
++
++struct keyprint_hack bcache_pbtree(const struct btree *b)
++{
++	struct keyprint_hack r;
++
++	snprintf(r.s, 40, "%li level %i/%i", PTR_BUCKET_NR(b->c, &b->key, 0),
++		 b->level, b->c->root ? b->c->root->level : -1);
++	return r;
++}
++
++#ifdef CONFIG_BCACHE_DEBUG
++
++void btree_verify(struct btree *b, struct bset *new)
++{
++	struct btree *v = b->c->verify_data;
++	struct closure cl;
++	closure_init_stack(&cl);
++
++	if (!b->c->verify)
++		return;
++
++	closure_wait_event(&b->io.wait, &cl,
++			   atomic_read(&b->io.cl.remaining) == -1);
++
++	mutex_lock(&b->c->verify_lock);
++
++	bkey_copy(&v->key, &b->key);
++	v->written = 0;
++	v->level = b->level;
++
++	btree_read(v);
++	closure_wait_event(&v->io.wait, &cl,
++			   atomic_read(&b->io.cl.remaining) == -1);
++
++	if (new->keys != v->sets[0].data->keys ||
++	    memcmp(new->start,
++		   v->sets[0].data->start,
++		   (void *) end(new) - (void *) new->start)) {
++		struct bset *i;
++		unsigned j;
++
++		console_lock();
++
++		printk(KERN_ERR "*** original memory node:\n");
++		for_each_sorted_set(b, i)
++			dump_bset(b, i);
++
++		printk(KERN_ERR "*** sorted memory node:\n");
++		dump_bset(b, new);
++
++		printk(KERN_ERR "*** on disk node:\n");
++		dump_bset(v, v->sets[0].data);
++
++		for (j = 0; j < new->keys; j++)
++			if (new->d[j] != v->sets[0].data->d[j])
++				break;
++
++		console_unlock();
++		panic("verify failed at %u\n", j);
 +	}
 +
-+	spin_unlock(&dc->dirty_lock);
-+
-+	return 0;
++	mutex_unlock(&b->c->verify_lock);
 +}
 +
-+static int btree_refill_dirty(struct btree *b, struct btree_op *op,
-+			      struct cached_dev *dc)
++static void data_verify_endio(struct bio *bio, int error)
 +{
-+	int r;
-+	struct btree_iter iter;
-+	btree_iter_init(b, &iter, &KEY(op->d->id, dc->last_found, 0));
++	struct closure *cl = bio->bi_private;
++	closure_put(cl);
++}
++
++void data_verify(struct search *s)
++{
++	char name[BDEVNAME_SIZE];
++	struct cached_dev *dc = container_of(s->op.d, struct cached_dev, disk);
++	struct closure *cl = &s->cl;
++	struct bio *check;
++	struct bio_vec *bv;
++	int i;
++
++	if (!s->unaligned_bvec)
++		bio_for_each_segment(bv, s->orig_bio, i)
++			bv->bv_offset = 0, bv->bv_len = PAGE_SIZE;
++
++	check = bio_clone(s->orig_bio, GFP_NOIO);
++	if (!check)
++		return;
++
++	if (bio_alloc_pages(check, GFP_NOIO))
++		goto out_put;
++
++	check->bi_rw		= READ_SYNC;
++	check->bi_private	= cl;
++	check->bi_end_io	= data_verify_endio;
++
++	closure_bio_submit(check, cl, s->op.d->c->bio_split);
++	closure_sync(cl);
++
++	bio_for_each_segment(bv, s->orig_bio, i) {
++		void *p1 = kmap(bv->bv_page);
++		void *p2 = kmap(check->bi_io_vec[i].bv_page);
++
++		if (memcmp(p1 + bv->bv_offset,
++			   p2 + bv->bv_offset,
++			   bv->bv_len))
++			printk(KERN_ERR "bcache (%s): verify failed"
++			       " at sector %llu\n",
++			       bdevname(dc->bdev, name),
++			       (uint64_t) s->orig_bio->bi_sector);
++
++		kunmap(bv->bv_page);
++		kunmap(check->bi_io_vec[i].bv_page);
++	}
++
++	__bio_for_each_segment(bv, check, i, 0)
++		__free_page(bv->bv_page);
++out_put:
++	bio_put(check);
++}
++
++#endif
++
++#ifdef CONFIG_BCACHE_EDEBUG
++
++unsigned count_data(struct btree *b)
++{
++	unsigned ret = 0;
++	struct bkey *k;
 +
 +	if (!b->level)
-+		return btree_refill_dirty_leaf(b, op, dc);
++		for_each_key(b, k)
++			ret += KEY_SIZE(k);
++	return ret;
++}
 +
-+	while (!array_freelist_empty(&dc->dirty_freelist)) {
-+		struct bkey *k = btree_iter_next(&iter);
-+		if (!k)
-+			break;
++void check_key_order_msg(struct btree *b, struct bset *i, const char *m, ...)
++{
++	if (!i->keys)
++		return;
 +
-+		if (ptr_bad(b, k))
-+			continue;
++	for (struct bkey *k = i->start; next(k) < end(i); k = next(k))
++		if (skipped_backwards(b, k)) {
++			va_list args;
++			va_start(args, m);
 +
-+		r = btree(refill_dirty, k, b, op, dc);
-+		if (r) {
-+			char buf[BDEVNAME_SIZE];
-+			bdevname(dc->bdev, buf);
++			vdump_bucket_and_panic(b, m, args);
++			va_end(args);
++		}
++}
 +
-+			printk(KERN_WARNING "Error trying to read the btree "
-+			       "for background writeback on %s: "
-+			       "dirty data may have been lost!\n", buf);
++void check_keys(struct btree *b, const char *m, ...)
++{
++	va_list args;
++	struct bkey *k, *p;
++	struct btree_iter iter;
++
++	if (b->level)
++		return;
++
++	btree_iter_init(b, &iter, NULL);
++
++	do
++		p = btree_iter_next(&iter);
++	while (p && ptr_invalid(b, p));
++
++	while ((k = btree_iter_next(&iter))) {
++		if (bkey_cmp(&START_KEY(p), &START_KEY(k)) > 0) {
++			printk(KERN_ERR "Keys out of order:\n");
++			goto bug;
 +		}
 +
-+		if (KEY_DEV(k) != op->d->id)
-+			break;
++		if (ptr_invalid(b, k))
++			continue;
 +
-+		cond_resched();
++		if (bkey_cmp(p, &START_KEY(k)) > 0) {
++			printk(KERN_ERR "Overlapping keys:\n");
++			goto bug;
++		}
++		p = k;
 +	}
++	return;
++bug:
++	va_start(args, m);
++	vdump_bucket_and_panic(b, m, args);
++	va_end(args);
++}
++
++#endif
++
++#ifdef CONFIG_DEBUG_FS
++
++static int btree_dump(struct btree *b, struct btree_op *op, struct seq_file *f,
++		      const char *tabs, uint64_t *prev, uint64_t *sectors)
++{
++	struct bkey *k;
++	char buf[30];
++	uint64_t last, biggest = 0;
++
++	for_each_key(b, k) {
++		int j = (uint64_t *) k - _t->data->d;
++		if (!j)
++			last = *prev;
++
++		if (last > k->key)
++			seq_printf(f, "Key skipped backwards\n");
++
++		if (!b->level && j &&
++		    last != KEY_START(k))
++			seq_printf(f, "<hole>\n");
++		else if (b->level && !ptr_bad(b, k))
++			btree(dump, k, b, op, f, tabs - 1, &last, sectors);
++
++		seq_printf(f, "%s%zi %4i: %s %s\n",
++			   tabs, _t - b->sets, j, pkey(k), buf);
++
++		if (!b->level && !buf[0])
++			*sectors += KEY_SIZE(k);
++
++		last = k->key;
++		biggest = max(biggest, last);
++	}
++	*prev = biggest;
 +
 +	return 0;
 +}
 +
-+static void refill_dirty(struct work_struct *work)
++static int debug_seq_show(struct seq_file *f, void *data)
 +{
-+	struct cached_dev *dc = container_of(to_delayed_work(work),
-+					     struct cached_dev, refill_dirty);
-+	uint64_t start;
++	static const char *tabs = "\t\t\t\t\t";
++	uint64_t last = 0, sectors = 0;
++	struct cache *ca = f->private;
++	struct cache_set *c = ca->set;
 +
 +	struct btree_op op;
 +	btree_op_init_stack(&op);
-+	op.d = &dc->disk;
 +
-+	if (!atomic_read(&dc->disk.detaching) &&
-+	    !dc->writeback_running)
-+		return;
++	btree_root(dump, c, &op, f, &tabs[4], &last, &sectors);
 +
-+	down_write(&dc->writeback_lock);
-+	start = dc->last_found;
++	seq_printf(f, "%s\n" "%llu Mb found\n",
++		   pkey(&c->root->key), sectors / 2048);
 +
-+	if (!atomic_read(&dc->has_dirty)) {
-+		SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
-+		write_bdev_super(dc, NULL);
-+		up_write(&dc->writeback_lock);
-+		return;
-+	}
-+
-+	btree_root(refill_dirty, dc->disk.c, &op, dc);
 +	closure_sync(&op.cl);
-+
-+	pr_debug("found %s keys on %i from %llu to %llu, %i%% used",
-+		 RB_EMPTY_ROOT(&dc->dirty) ? "no" :
-+		 array_freelist_empty(&dc->dirty_freelist) ? "some" : "a few",
-+		 dc->disk.id, start, (uint64_t) dc->last_found,
-+		 dc->disk.c->gc_stats.in_use);
-+
-+	/* Got to the end of the btree */
-+	if (!array_freelist_empty(&dc->dirty_freelist))
-+		dc->last_found = 0;
-+
-+	/* Searched the entire btree - delay for awhile */
-+	if (!array_freelist_empty(&dc->dirty_freelist) && !start)
-+		queue_delayed_work(dirty_wq, &dc->refill_dirty,
-+				   dc->writeback_delay * HZ);
-+
-+	spin_lock(&dc->dirty_lock);
-+
-+	if (!RB_EMPTY_ROOT(&dc->dirty)) {
-+		struct dirty *w;
-+		w = RB_FIRST(&dc->dirty, struct dirty, node);
-+		dc->writeback_start	= KEY_START(&w->key);
-+
-+		w = RB_LAST(&dc->dirty, struct dirty, node);
-+		dc->writeback_end	= w->key.key;
-+	} else {
-+		dc->writeback_start	= 0;
-+		dc->writeback_end	= 0;
-+
-+		if (!start) {
-+			atomic_set(&dc->has_dirty, 0);
-+			cached_dev_put(dc);
-+		}
-+	}
-+
-+	up_write(&dc->writeback_lock);
-+
-+	dc->next_writeback_io = local_clock();
-+	read_dirty(dc);
-+}
-+
-+bool bcache_in_writeback(struct cached_dev *dc, sector_t offset, unsigned len)
-+{
-+	struct dirty *w, s;
-+	s.key = KEY(dc->disk.id, offset + len, len);
-+
-+	if (offset	 >= dc->writeback_end ||
-+	    offset + len <= dc->writeback_start)
-+		return false;
-+
-+	spin_lock(&dc->dirty_lock);
-+	w = RB_SEARCH(&dc->dirty, s, node, dirty_cmp);
-+	if (w && !w->io) {
-+		rb_erase(&w->node, &dc->dirty);
-+		array_free(&dc->dirty_freelist, w);
-+		w = NULL;
-+	}
-+
-+	spin_unlock(&dc->dirty_lock);
-+	return w != NULL;
-+}
-+
-+void bcache_writeback_queue(struct cached_dev *d)
-+{
-+	queue_delayed_work(dirty_wq, &d->refill_dirty, 0);
-+}
-+
-+void bcache_writeback_add(struct cached_dev *d, unsigned sectors)
-+{
-+	atomic_long_add(sectors, &d->disk.sectors_dirty);
-+
-+	if (!atomic_read(&d->has_dirty) &&
-+	    !atomic_xchg(&d->has_dirty, 1)) {
-+		if (BDEV_STATE(&d->sb) != BDEV_STATE_DIRTY) {
-+			SET_BDEV_STATE(&d->sb, BDEV_STATE_DIRTY);
-+			/* XXX: should do this synchronously */
-+			write_bdev_super(d, NULL);
-+		}
-+
-+		atomic_inc(&d->count);
-+		queue_delayed_work(dirty_wq, &d->refill_dirty,
-+				   d->writeback_delay * HZ);
-+
-+		if (d->writeback_percent)
-+			schedule_delayed_work(&d->writeback_rate_update,
-+				      d->writeback_rate_update_seconds * HZ);
-+	}
-+}
-+
-+static void __update_writeback_rate(struct cached_dev *dc)
-+{
-+	struct cache_set *c = dc->disk.c;
-+	uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size;
-+	uint64_t cache_dirty_target =
-+		div_u64(cache_sectors * dc->writeback_percent, 100);
-+
-+	int64_t target = div64_u64(cache_dirty_target * bdev_sectors(dc->bdev),
-+				   c->cached_dev_sectors);
-+
-+	/* PD controller */
-+
-+	int change = 0;
-+	int64_t error;
-+	int64_t dirty = atomic_long_read(&dc->disk.sectors_dirty);
-+	int64_t derivative = dirty - dc->disk.sectors_dirty_last;
-+
-+	dc->disk.sectors_dirty_last = dirty;
-+
-+	derivative *= dc->writeback_rate_d_term;
-+	derivative = clamp(derivative, -dirty, dirty);
-+
-+	derivative = ewma_add(dc->disk.sectors_dirty_derivative, derivative,
-+			      dc->writeback_rate_d_smooth, 0);
-+
-+	/* Avoid divide by zero */
-+	if (!target)
-+		goto out;
-+
-+	error = div64_s64((dirty + derivative - target) << 8, target);
-+
-+	change = div_s64((dc->writeback_rate * error) >> 8,
-+			 dc->writeback_rate_p_term_inverse);
-+
-+	/* Don't increase writeback rate if the device isn't keeping up */
-+	if (change > 0 &&
-+	    time_after64(local_clock(),
-+			 dc->next_writeback_io + 10 * NSEC_PER_MSEC))
-+		change = 0;
-+
-+	dc->writeback_rate = clamp_t(int64_t, dc->writeback_rate + change,
-+				     1, NSEC_PER_MSEC);
-+out:
-+	dc->writeback_rate_derivative = derivative;
-+	dc->writeback_rate_change = change;
-+	dc->writeback_rate_target = target;
-+
-+	schedule_delayed_work(&dc->writeback_rate_update,
-+			      dc->writeback_rate_update_seconds * HZ);
-+}
-+
-+static void update_writeback_rate(struct work_struct *work)
-+{
-+	struct cached_dev *dc = container_of(to_delayed_work(work),
-+					     struct cached_dev,
-+					     writeback_rate_update);
-+
-+	down_read(&dc->writeback_lock);
-+
-+	if (atomic_read(&dc->has_dirty) &&
-+	    dc->writeback_percent)
-+		__update_writeback_rate(dc);
-+
-+	up_read(&dc->writeback_lock);
-+}
-+
-+static unsigned writeback_delay(struct cached_dev *dc, unsigned sectors)
-+{
-+	uint64_t now = local_clock();
-+
-+	if (atomic_read(&dc->disk.detaching) ||
-+	    !dc->writeback_percent)
-+		return 0;
-+
-+	/* writeback_rate = sectors per 10 ms */
-+	dc->next_writeback_io += div_u64(sectors * 10000000ULL,
-+					 dc->writeback_rate);
-+
-+	return time_after64(dc->next_writeback_io, now)
-+		? div_u64(dc->next_writeback_io - now, NSEC_PER_SEC / HZ)
-+		: 0;
-+}
-+
-+/* Background writeback - IO loop */
-+
-+static void write_dirty_finish(struct closure *cl)
-+{
-+	struct dirty_io *io = container_of(cl, struct dirty_io, cl);
-+	struct dirty *w = io->bio.bi_private;
-+	struct cached_dev *dc = io->d;
-+	struct bio_vec *bv = bio_iovec_idx(&io->bio, io->bio.bi_vcnt);
-+
-+	while (bv-- != w->io->bio.bi_io_vec)
-+		__free_page(bv->bv_page);
-+
-+	closure_debug_destroy(cl);
-+	kfree(io);
-+
-+	/* This is kind of a dumb way of signalling errors. */
-+	if (!KEY_DIRTY(&w->key)) {
-+		struct btree_op op;
-+		btree_op_init_stack(&op);
-+
-+		op.type = BTREE_REPLACE;
-+		bkey_copy(&op.replace, &w->key);
-+		SET_KEY_DIRTY(&op.replace, true);
-+
-+		keylist_add(&op.keys, &w->key);
-+
-+		for (unsigned i = 0; i < KEY_PTRS(&w->key); i++)
-+			atomic_inc(&PTR_BUCKET(dc->disk.c, &w->key, i)->pin);
-+
-+		pr_debug("clearing %s", pkey(&w->key));
-+		bcache_btree_insert(&op, dc->disk.c);
-+		closure_sync(&op.cl);
-+
-+		atomic_long_inc(op.insert_collision
-+				? &dc->disk.c->writeback_keys_failed
-+				: &dc->disk.c->writeback_keys_done);
-+	}
-+
-+	spin_lock(&dc->dirty_lock);
-+	rb_erase(&w->node, &dc->dirty);
-+	array_free(&dc->dirty_freelist, w);
-+	atomic_dec_bug(&dc->in_flight);
-+
-+	read_dirty(dc);
-+}
-+
-+static void dirty_endio(struct bio *bio, int error)
-+{
-+	struct dirty *w = bio->bi_private;
-+
-+	if (error)
-+		SET_KEY_DIRTY(&w->key, true);
-+
-+	bio_put(bio);
-+	closure_put(&w->io->cl);
-+}
-+
-+static void write_dirty(struct closure *cl)
-+{
-+	struct dirty_io *io = container_of(cl, struct dirty_io, cl);
-+	struct dirty *w = io->bio.bi_private;
-+
-+	dirty_init(w);
-+	io->bio.bi_rw		= WRITE|REQ_UNPLUG;
-+	io->bio.bi_sector	= KEY_START(&w->key);
-+	io->bio.bi_bdev		= io->d->bdev;
-+	io->bio.bi_end_io	= dirty_endio;
-+
-+	trace_bcache_write_dirty(&w->io->bio);
-+	closure_bio_submit(&w->io->bio, cl, io->d->disk.bio_split);
-+
-+	continue_at(&io->cl, write_dirty_finish, dirty_wq);
-+}
-+
-+static void read_dirty_endio(struct bio *bio, int error)
-+{
-+	struct dirty *w = bio->bi_private;
-+
-+	count_io_errors(PTR_CACHE(w->io->d->disk.c, &w->key, 0),
-+			error, "reading dirty data from cache");
-+
-+	dirty_endio(bio, error);
-+}
-+
-+static void read_dirty(struct cached_dev *dc)
-+{
-+	unsigned delay = writeback_delay(dc, 0);
-+	struct dirty *w;
-+	struct dirty_io *io;
-+
-+	/* XXX: if we error, background writeback could stall indefinitely */
-+
-+	while (1) {
-+		w = RB_FIRST(&dc->dirty, struct dirty, node);
-+
-+		while (w && w->io)
-+			w = RB_NEXT(w, node);
-+
-+		if (!w)
-+			break;
-+
-+		BUG_ON(ptr_stale(dc->disk.c, &w->key, 0));
-+
-+		if (delay > 0 &&
-+		    (KEY_START(&w->key) != dc->last_read ||
-+		     jiffies_to_msecs(delay) > 50)) {
-+			queue_delayed_work(dirty_wq, &dc->read_dirty, delay);
-+			break;
-+		}
-+
-+		dc->last_read	= w->key.key;
-+		w->io		= ERR_PTR(-EINTR);
-+		spin_unlock(&dc->dirty_lock);
-+
-+		io = kzalloc(sizeof(struct dirty_io) + sizeof(struct bio_vec)
-+			     * DIV_ROUND_UP(KEY_SIZE(&w->key), PAGE_SECTORS),
-+			     GFP_KERNEL);
-+		if (!io)
-+			goto err;
-+
-+		w->io = io;
-+		w->io->d		= dc;
-+
-+		dirty_init(w);
-+		w->io->bio.bi_sector	= PTR_OFFSET(&w->key, 0);
-+		w->io->bio.bi_bdev	= PTR_CACHE(dc->disk.c,
-+						    &w->key, 0)->bdev;
-+		w->io->bio.bi_rw	= READ|REQ_UNPLUG;
-+		w->io->bio.bi_end_io	= read_dirty_endio;
-+
-+		if (bio_alloc_pages(&w->io->bio, GFP_KERNEL))
-+			goto err;
-+
-+		pr_debug("%s", pkey(&w->key));
-+
-+		closure_init(&w->io->cl, NULL);
-+		set_closure_fn(&w->io->cl, write_dirty, dirty_wq);
-+		closure_set_stopped(&w->io->cl);
-+
-+		trace_bcache_read_dirty(&w->io->bio);
-+		closure_bio_submit_put(&w->io->bio, &w->io->cl,
-+				       dc->disk.bio_split);
-+
-+		delay = writeback_delay(dc, KEY_SIZE(&w->key));
-+
-+		if (atomic_inc_return(&dc->in_flight) >= 128)
-+			return;
-+
-+		spin_lock(&dc->dirty_lock);
-+	}
-+
-+	if (0) {
-+err:		spin_lock(&dc->dirty_lock);
-+		if (!IS_ERR_OR_NULL(w->io))
-+			kfree(w->io);
-+		rb_erase(&w->node, &dc->dirty);
-+		array_free(&dc->dirty_freelist, w);
-+	}
-+
-+	if (RB_EMPTY_ROOT(&dc->dirty))
-+		queue_delayed_work(dirty_wq, &dc->refill_dirty, 0);
-+
-+	spin_unlock(&dc->dirty_lock);
-+}
-+
-+static void read_dirty_work(struct work_struct *work)
-+{
-+	struct cached_dev *dc = container_of(to_delayed_work(work),
-+					     struct cached_dev, read_dirty);
-+
-+	spin_lock(&dc->dirty_lock);
-+	read_dirty(dc);
-+}
-+
-+void bcache_writeback_init_cached_dev(struct cached_dev *d)
-+{
-+	INIT_DELAYED_WORK(&d->refill_dirty, refill_dirty);
-+	INIT_DELAYED_WORK(&d->read_dirty, read_dirty_work);
-+	init_rwsem(&d->writeback_lock);
-+	array_allocator_init(&d->dirty_freelist);
-+
-+	d->dirty			= RB_ROOT;
-+	d->writeback_metadata		= true;
-+	d->writeback_running		= true;
-+	d->writeback_delay		= 30;
-+	d->writeback_rate		= 1024;
-+
-+	d->writeback_rate_update_seconds = 30;
-+	d->writeback_rate_d_term	= 16;
-+	d->writeback_rate_p_term_inverse = 64;
-+	d->writeback_rate_d_smooth	= 8;
-+
-+	INIT_DELAYED_WORK(&d->writeback_rate_update, update_writeback_rate);
-+	schedule_delayed_work(&d->writeback_rate_update,
-+			      d->writeback_rate_update_seconds * HZ);
-+}
-+
-+void bcache_writeback_exit(void)
-+{
-+	if (dirty_wq)
-+		destroy_workqueue(dirty_wq);
-+}
-+
-+int __init bcache_writeback_init(void)
-+{
-+	dirty_wq = create_singlethread_workqueue("bcache_writeback");
-+	if (!dirty_wq)
-+		return -ENOMEM;
-+
 +	return 0;
 +}
++
++static int debug_seq_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, debug_seq_show, inode->i_private);
++}
++
++static const struct file_operations cache_debug_ops = {
++	.owner		= THIS_MODULE,
++	.open		= debug_seq_open,
++	.read		= seq_read,
++	.release	= single_release
++};
++
++void bcache_debug_init_cache(struct cache *c)
++{
++	if (!IS_ERR_OR_NULL(debug)) {
++		char b[BDEVNAME_SIZE];
++		bdevname(c->bdev, b);
++
++		c->debug = debugfs_create_file(b, 0400, debug, c,
++					       &cache_debug_ops);
++	}
++}
++
++#endif
++
++#ifdef CONFIG_BCACHE_DEBUG
++static ssize_t btree_fuzz(struct kobject *k, struct kobj_attribute *a,
++		      const char *buffer, size_t size)
++{
++	void dump(struct btree *b)
++	{
++		for (struct bset *i = b->sets[0].data;
++		     index(i, b) < btree_blocks(b) &&
++		     i->seq == b->sets[0].data->seq;
++		     i = ((void *) i) + set_blocks(i, b->c) * block_bytes(b->c))
++			dump_bset(b, i);
++	}
++
++	struct cache_sb *sb;
++	struct cache_set *c;
++	struct btree *all[3], *b, *fill, *orig;
++
++	struct btree_op op;
++	btree_op_init_stack(&op);
++
++	sb = kzalloc(sizeof(struct cache_sb), GFP_KERNEL);
++	if (!sb)
++		return -ENOMEM;
++
++	sb->bucket_size = 128;
++	sb->block_size = 4;
++
++	c = cache_set_alloc(sb);
++	if (!c)
++		return -ENOMEM;
++
++	for (int i = 0; i < 3; i++) {
++		BUG_ON(list_empty(&c->btree_cache));
++		all[i] = list_first_entry(&c->btree_cache, struct btree, list);
++		list_del_init(&all[i]->list);
++
++		all[i]->key = KEY(0, 0, c->sb.bucket_size);
++		bkey_copy_key(&all[i]->key, &MAX_KEY);
++	}
++
++	b = all[0];
++	fill = all[1];
++	orig = all[2];
++
++	while (1) {
++		for (int i = 0; i < 3; i++)
++			all[i]->written = all[i]->nsets = 0;
++
++		bset_init_next(b);
++
++		while (1) {
++			struct bset *i = write_block(b);
++			struct bkey *k = op.keys.top;
++
++			k->key = get_random_int();
++
++			op.type = k->key & 1
++				? BTREE_INSERT
++				: BTREE_REPLACE;
++			k->key >>= 1;
++
++			k->header = KEY_HEADER(bucket_remainder(c, k->key), 0);
++			k->key >>= c->bucket_bits;
++			k->key &= 1024 * 512 - 1;
++			k->key += c->sb.bucket_size;
++#if 0
++			SET_KEY_PTRS(k, 1);
++#endif
++			keylist_push(&op.keys);
++			bcache_btree_insert_keys(b, &op);
++
++			if (should_split(b) ||
++			    set_blocks(i, b->c) !=
++			    __set_blocks(i, i->keys + 15, b->c)) {
++				i->csum = csum_set(i);
++
++				memcpy(write_block(fill),
++				       i, set_bytes(i));
++
++				b->written += set_blocks(i, b->c);
++				fill->written = b->written;
++				if (b->written == btree_blocks(b))
++					break;
++
++				btree_sort_lazy(b);
++				bset_init_next(b);
++			}
++		}
++
++		memcpy(orig->sets[0].data,
++		       fill->sets[0].data,
++		       btree_bytes(c));
++
++		btree_sort(b);
++		fill->written = 0;
++		btree_read_done(&fill->io.cl);
++
++		if (b->sets[0].data->keys != fill->sets[0].data->keys ||
++		    memcmp(b->sets[0].data->start,
++			   fill->sets[0].data->start,
++			   b->sets[0].data->keys * sizeof(uint64_t))) {
++			struct bset *i = b->sets[0].data;
++
++			for (struct bkey *k = i->start,
++			     *j = fill->sets[0].data->start;
++			     k < end(i);
++			     k = next(k), j = next(j))
++				if (bkey_cmp(k, j) ||
++				    KEY_SIZE(k) != KEY_SIZE(j))
++					printk(KERN_ERR "key %zi differs: %s "
++					       "!= %s\n", (uint64_t *) k - i->d,
++					       pkey(k), pkey(j));
++
++			for (int i = 0; i < 3; i++) {
++				printk(KERN_ERR "**** Set %i ****\n", i);
++				dump(all[i]);
++			}
++			panic("\n");
++		}
++
++		printk(KERN_DEBUG "bcache: fuzz complete: %i keys\n",
++		       b->sets[0].data->keys);
++	}
++}
++
++kobj_attribute_write(fuzz, btree_fuzz);
++#endif
++
++#ifdef CONFIG_BCACHE_LATENCY_DEBUG
++static ssize_t show(struct kobject *k, struct kobj_attribute *attr, char *buf)
++{
++	return snprintf(buf, PAGE_SIZE, "%i\n", latency_warn_ms);
++}
++
++static ssize_t store(struct kobject *k, struct kobj_attribute *attr,
++		     const char *buffer, size_t size)
++{
++	return strtoul_safe(buffer, latency_warn_ms) ?: (ssize_t) size;
++}
++
++kobj_attribute_rw(latency_warn_ms, show, store);
++#endif
++
++void bcache_debug_exit(void)
++{
++	if (!IS_ERR_OR_NULL(debug))
++		debugfs_remove_recursive(debug);
++}
++
++int __init bcache_debug_init(struct kobject *kobj)
++{
++	int ret = 0;
++#ifdef CONFIG_BCACHE_DEBUG
++	ret = sysfs_create_file(kobj, &ksysfs_fuzz.attr);
++	if (ret)
++		return ret;
++#endif
++
++#ifdef CONFIG_BCACHE_LATENCY_DEBUG
++	ret = sysfs_create_file(kobj, &ksysfs_latency_warn_ms.attr);
++	if (ret)
++		return ret;
++#endif
++
++	debug = debugfs_create_dir("bcache", NULL);
++	return ret;
++}
+diff --git a/drivers/block/bcache/debug.h b/drivers/block/bcache/debug.h
+new file mode 100644
+index 0000000..9f91a2a
+--- /dev/null
++++ b/drivers/block/bcache/debug.h
+@@ -0,0 +1,53 @@
++#ifndef _BCACHE_DEBUG_H
++#define _BCACHE_DEBUG_H
++
++/* Btree/bkey debug printing */
++
++#define KEYHACK_SIZE 80
++struct keyprint_hack {
++	char s[KEYHACK_SIZE];
++};
++
++struct keyprint_hack bcache_pkey(const struct bkey *k);
++struct keyprint_hack bcache_pbtree(const struct btree *b);
++#define pkey(k)		(bcache_pkey(k).s)
++#define pbtree(b)	(bcache_pbtree(b).s)
++
++#ifdef CONFIG_BCACHE_EDEBUG
++
++unsigned count_data(struct btree *);
++void check_key_order_msg(struct btree *, struct bset *, const char *, ...);
++void check_keys(struct btree *, const char *, ...);
++
++#define check_key_order(b, i)	check_key_order_msg(b, i, "keys out of order")
++#define EBUG_ON(cond)		BUG_ON(cond)
++
++#else /* EDEBUG */
++
++#define count_data(b)					0
++#define check_key_order(b, i)				do {} while (0)
++#define check_key_order_msg(b, i, ...)			do {} while (0)
++#define check_keys(b, ...)				do {} while (0)
++#define EBUG_ON(cond)		do {} while (0)
++
++#endif
++
++#ifdef CONFIG_BCACHE_DEBUG
++
++void btree_verify(struct btree *, struct bset *);
++void data_verify(struct search *);
++
++#else /* DEBUG */
++
++static inline void btree_verify(struct btree *b, struct bset *i) {}
++static inline void data_verify(struct search *s) {};
++
++#endif
++
++#ifdef CONFIG_DEBUG_FS
++void bcache_debug_init_cache(struct cache *);
++#else
++static inline void bcache_debug_init_cache(struct cache *c) {}
++#endif
++
++#endif
+diff --git a/drivers/block/bcache/trace.c b/drivers/block/bcache/trace.c
+new file mode 100644
+index 0000000..983f9bb
+--- /dev/null
++++ b/drivers/block/bcache/trace.c
+@@ -0,0 +1,26 @@
++#include "bcache.h"
++#include "btree.h"
++#include "request.h"
++
++#include <linux/module.h>
++
++#define CREATE_TRACE_POINTS
++#include <trace/events/bcache.h>
++
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_request_start);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_request_end);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_passthrough);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_cache_hit);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_cache_miss);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_read_retry);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_writethrough);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_writeback);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_write_skip);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_btree_read);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_btree_write);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_write_dirty);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_read_dirty);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_journal_write);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_cache_insert);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_gc_start);
++EXPORT_TRACEPOINT_SYMBOL_GPL(bcache_gc_end);
 -- 
 1.7.9.rc2
 
