@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530Ab2EJCN2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 22:13:28 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:32947 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547Ab2EJCN1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 22:13:27 -0400
-From: zwu.kernel@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: axboe@kernel.dk, wuzhy@linux.vnet.ibm.com, stefanha@linux.vnet.ibm.com
-Subject: [PATCH] block: remove some unnecessary codes
-Date: Thu, 10 May 2012 10:13:15 +0800
-Message-Id: <1336615995-3813-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051002-5518-0000-0000-00000449B4E7
+	id S1753677Ab2EJCRI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 22:17:08 -0400
+Received: from ozlabs.org ([203.10.76.45]:33829 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753129Ab2EJCRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 22:17:06 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, anton@samba.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, kosaki.motohiro@gmail.com
+Subject: Re: [PULL] cpumask: finally make them variable size w/ CPUMASK_OFFSTACK.
+In-Reply-To: <4FAB1AC9.1050306@gmail.com>
+References: <87ipg5c2bk.fsf@rustcorp.com.au> <4FAB1AC9.1050306@gmail.com>
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 10 May 2012 11:46:23 +0930
+Message-ID: <871umsdbm0.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Wed, 09 May 2012 21:32:57 -0400, KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
+> (5/9/12 2:10 AM), Rusty Russell wrote:
+> > Hi Ingo,
+> >
+> >          I finally rebased this on top of your tip tree, and tested it
+> > locally.  Some more old-style cpumask usages have crept in, but it's a
+> > fairly simple series.
+> >
+> > The final result is that if you enable CONFIG_CPUMASK_OFFSTACK, then
+> > 'struct cpumask' becomes an undefined type.  You can't accidentally take
+> > the size of it, assign it, or pass it by value.  And thus it's safe for
+> > us to make it smaller if nr_cpu_ids<  NR_CPUS, as the final patch does.
+> >
+> > It unfortunately requires the lglock cleanup patch, which Al already has
+> > queued, so I've included it here.
+> 
+> Hi
+> 
+> Thanks this effort. This is very cleaner than I expected.
+> However I should NAK following one patch. sorry. because of, lru-drain is
+> called from memory reclaim context. It mean, additional allocation may not
+> work. Please just use bare NR_CPUS bitmap instead. space wasting is minor
+> issue than that.
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- block/partition-generic.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+But if it fails the allocation, that's fine: we just send a few more
+IPIs to every CPU:
 
-diff --git a/block/partition-generic.c b/block/partition-generic.c
-index 6df5d69..4c03880 100644
---- a/block/partition-generic.c
-+++ b/block/partition-generic.c
-@@ -473,7 +473,6 @@ rescan:
- 	/* add partitions */
- 	for (p = 1; p < state->limit; p++) {
- 		sector_t size, from;
--		struct partition_meta_info *info = NULL;
- 
- 		size = state->parts[p].size;
- 		if (!size)
-@@ -509,7 +508,6 @@ rescan:
- 		}
- 
- 		if (state->parts[p].has_info)
--			info = &state->parts[p].info;
- 		part = add_partition(disk, p, from, size,
- 				     state->parts[p].flags,
- 				     &state->parts[p].info);
--- 
-1.7.6
++	if (!zalloc_cpumask_var(&cpus_with_pcps, GFP_KERNEL)) {
++		on_each_cpu(drain_local_pages, NULL, 1);
++		return;
++	}
 
+We can do it the other way, but it sets a bad example, and after we get
+rid of cpumask, it becomes:
+
+        static DECLARE_BITMAP(cpus_with_pcps, NR_CPUS);
+
+        ......
+
+ 		if (has_pcps)
+			cpumask_set_cpu(cpu, to_cpumask(cpus_with_pcps));
+		else
+			cpumask_clear_cpu(cpu, to_cpumask(cpus_with_pcps));
+ 	}
+	on_each_cpu_mask(to_cpumask(cpus_with_pcps), drain_local_pages, NULL, 1);
+
+Or is there a reason we shouldn't even try to allocate here?
+
+Thanks,
+Rusty.
