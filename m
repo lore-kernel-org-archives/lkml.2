@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760797Ab2EJRhH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:37:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46175 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760762Ab2EJRg6 (ORCPT
+	id S1760827Ab2EJRhV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:37:21 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37922 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760680Ab2EJRhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:36:58 -0400
-Message-Id: <20120510173137.073215791@linuxfoundation.org>
+	Thu, 10 May 2012 13:37:10 -0400
+Message-Id: <20120510173136.631086068@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:32:20 -0700
+Date: Thu, 10 May 2012 10:32:15 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ryosuke Saito <raitosyo@gmail.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 48/52] mtip32xx: fix error handling in mtip_init()
+        alan@lxorguk.ukuu.org.uk, Dave Jones <davej@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [ 43/52] KVM: VMX: Fix kvm_set_shared_msr() called in preemptible context
 In-Reply-To: <20120510173229.GA5678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ryosuke Saito <raitosyo@gmail.com>
+From: Avi Kivity <avi@redhat.com>
 
-commit 6d27f09a6398ee086b11804aa3a16609876f0c7c upstream.
+(cherry picked from commit 2225fd56049643c1a7d645c0ce9d499d43c7974e)
 
-Ensure that block device is properly unregistered, if
-pci_register_driver() fails.
+kvm_set_shared_msr() may not be called in preemptible context,
+but vmx_set_msr() does so:
 
-Signed-off-by: Ryosuke Saito <raitosyo@gmail.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+  BUG: using smp_processor_id() in preemptible [00000000] code: qemu-kvm/22713
+  caller is kvm_set_shared_msr+0x32/0xa0 [kvm]
+  Pid: 22713, comm: qemu-kvm Not tainted 3.4.0-rc3+ #39
+  Call Trace:
+   [<ffffffff8131fa82>] debug_smp_processor_id+0xe2/0x100
+   [<ffffffffa0328ae2>] kvm_set_shared_msr+0x32/0xa0 [kvm]
+   [<ffffffffa03a103b>] vmx_set_msr+0x28b/0x2d0 [kvm_intel]
+   ...
+
+Making kvm_set_shared_msr() work in preemptible is cleaner, but
+it's used in the fast path.  Making two variants is overkill, so
+this patch just disables preemption around the call.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/block/mtip32xx/mtip32xx.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ arch/x86/kvm/vmx.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -3605,18 +3605,25 @@ MODULE_DEVICE_TABLE(pci, mtip_pci_tbl);
-  */
- static int __init mtip_init(void)
- {
-+	int error;
-+
- 	printk(KERN_INFO MTIP_DRV_NAME " Version " MTIP_DRV_VERSION "\n");
- 
- 	/* Allocate a major block device number to use with this driver. */
--	mtip_major = register_blkdev(0, MTIP_DRV_NAME);
--	if (mtip_major < 0) {
-+	error = register_blkdev(0, MTIP_DRV_NAME);
-+	if (error <= 0) {
- 		printk(KERN_ERR "Unable to register block device (%d)\n",
--		mtip_major);
-+		error);
- 		return -EBUSY;
- 	}
-+	mtip_major = error;
- 
- 	/* Register our PCI operations. */
--	return pci_register_driver(&mtip_pci_driver);
-+	error = pci_register_driver(&mtip_pci_driver);
-+	if (error)
-+		unregister_blkdev(mtip_major, MTIP_DRV_NAME);
-+
-+	return error;
- }
- 
- /*
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -2219,9 +2219,12 @@ static int vmx_set_msr(struct kvm_vcpu *
+ 		msr = find_msr_entry(vmx, msr_index);
+ 		if (msr) {
+ 			msr->data = data;
+-			if (msr - vmx->guest_msrs < vmx->save_nmsrs)
++			if (msr - vmx->guest_msrs < vmx->save_nmsrs) {
++				preempt_disable();
+ 				kvm_set_shared_msr(msr->index, msr->data,
+ 						   msr->mask);
++				preempt_enable();
++			}
+ 			break;
+ 		}
+ 		ret = kvm_set_msr_common(vcpu, msr_index, data);
 
 
