@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab2EJCnp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 22:43:45 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:56256 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754108Ab2EJCnn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 22:43:43 -0400
-Message-ID: <4FAB2B5B.4020902@gmail.com>
-Date: Wed, 09 May 2012 22:43:39 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, anton@samba.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mike Travis <travis@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PULL] cpumask: finally make them variable size w/ CPUMASK_OFFSTACK.
-References: <87ipg5c2bk.fsf@rustcorp.com.au> <4FAB1AC9.1050306@gmail.com> <871umsdbm0.fsf@rustcorp.com.au>
-In-Reply-To: <871umsdbm0.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754434Ab2EJCqO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 22:46:14 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:53350 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754179Ab2EJCqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 22:46:13 -0400
+Message-ID: <1336617972.1905.22.camel@joe2Laptop>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
+ variable-length record buffer
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
+Date: Wed, 09 May 2012 19:46:12 -0700
+In-Reply-To: <1336617173.25027.4.camel@mop>
+References: <1336004953.4240.9.camel@mop>
+	 <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+	 <1336475689.1179.12.camel@mop>
+	 <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
+	 <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
+	 <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
+	 <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com>
+	 <20120509070710.GA29981@gmail.com>
+	 <CAPXgP11evyQQKNDaa00R7qsOFy5Xk-utN1w9OgB4y6NxLZG=UA@mail.gmail.com>
+	 <1336611278.728.9.camel@mop>
+	 <CA+55aFyrrH0jJV--L=ugt0YK7pT+jmhjvt_WRWyenyiroN97zg@mail.gmail.com>
+	 <1336617173.25027.4.camel@mop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(5/9/12 10:16 PM), Rusty Russell wrote:
-> On Wed, 09 May 2012 21:32:57 -0400, KOSAKI Motohiro<kosaki.motohiro@gmail.com>  wrote:
->> (5/9/12 2:10 AM), Rusty Russell wrote:
->>> Hi Ingo,
->>>
->>>           I finally rebased this on top of your tip tree, and tested it
->>> locally.  Some more old-style cpumask usages have crept in, but it's a
->>> fairly simple series.
->>>
->>> The final result is that if you enable CONFIG_CPUMASK_OFFSTACK, then
->>> 'struct cpumask' becomes an undefined type.  You can't accidentally take
->>> the size of it, assign it, or pass it by value.  And thus it's safe for
->>> us to make it smaller if nr_cpu_ids<   NR_CPUS, as the final patch does.
->>>
->>> It unfortunately requires the lglock cleanup patch, which Al already has
->>> queued, so I've included it here.
->>
->> Hi
->>
->> Thanks this effort. This is very cleaner than I expected.
->> However I should NAK following one patch. sorry. because of, lru-drain is
->> called from memory reclaim context. It mean, additional allocation may not
->> work. Please just use bare NR_CPUS bitmap instead. space wasting is minor
->> issue than that.
->
-> But if it fails the allocation, that's fine: we just send a few more
-> IPIs to every CPU:
->
-> +	if (!zalloc_cpumask_var(&cpus_with_pcps, GFP_KERNEL)) {
-> +		on_each_cpu(drain_local_pages, NULL, 1);
-> +		return;
-> +	}
->
-> We can do it the other way, but it sets a bad example, and after we get
-> rid of cpumask, it becomes:
->
->          static DECLARE_BITMAP(cpus_with_pcps, NR_CPUS);
->
->          ......
->
->   		if (has_pcps)
-> 			cpumask_set_cpu(cpu, to_cpumask(cpus_with_pcps));
-> 		else
-> 			cpumask_clear_cpu(cpu, to_cpumask(cpus_with_pcps));
->   	}
-> 	on_each_cpu_mask(to_cpumask(cpus_with_pcps), drain_local_pages, NULL, 1);
->
-> Or is there a reason we shouldn't even try to allocate here?
+On Thu, 2012-05-10 at 04:32 +0200, Kay Sievers wrote:
+> --- a/kernel/printk.c
+[]
+> @@ -1295,20 +1296,16 @@ asmlinkage int vprintk_emit(int facility
+>  		case '0' ... '7':
+>  			if (level == -1)
+>  				level = text[1] - '0';
+> -			text += 3;
+> -			textlen -= 3;
+> -			break;
+> -		case 'c':	/* KERN_CONT */
+> -			cont = true;
+>  		case 'd':	/* KERN_DEFAULT */
+> +			prefix = true;
+> +		case 'c':	/* KERN_CONT */
 
-1) your code always use GFP_KERNEL. it is trouble maker when alloc_pages w/ GFP_ATOMIC.
-2) When CONFIG_CPUMASK_OFFSTACK=n and NR_CPUS is relatively large, cpumask on stack may
-cause stack overflow. because of, alloc_pages() can be called from very deep call stack.
+trivia:
 
-Thought?
+Please add /* fallthrough */ comment lines
+so it shows the "missing" breaks are intentional.
 
 
