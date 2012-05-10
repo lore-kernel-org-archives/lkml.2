@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761575Ab2EJVhS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 17:37:18 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:60380 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759365Ab2EJVhP (ORCPT
+	id S1761579Ab2EJVj0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 17:39:26 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40591 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759365Ab2EJVjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 17:37:15 -0400
-Message-ID: <4FAC3518.6050107@xenotime.net>
-Date: Thu, 10 May 2012 14:37:28 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Thu, 10 May 2012 17:39:24 -0400
+Date: Thu, 10 May 2012 14:39:20 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: Brian Swetland <swetland@google.com>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] staging: android: logger: Allocate logs dynamically
+ at boot (v2)
+Message-ID: <20120510213920.GA31091@kroah.com>
+References: <4FAC302F.2090004@am.sony.com>
+ <20120510212122.GA16432@kroah.com>
+ <4FAC3336.3010609@am.sony.com>
 MIME-Version: 1.0
-To: Luciano Coelho <coelho@ti.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [PATCH -next] wireless: TI wlxxx depends on MAC80211
-References: <20120416161121.261ba4e7e38989173accfb16@canb.auug.org.au>		 <4F8C784B.2040402@xenotime.net>	 <1336049755.12189.30.camel@cumari.coelho.fi>	 <4FAC3249.3060107@xenotime.net> <1336685777.12189.142.camel@cumari.coelho.fi>
-In-Reply-To: <1336685777.12189.142.camel@cumari.coelho.fi>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FAC3336.3010609@am.sony.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2012 02:36 PM, Luciano Coelho wrote:
-
-> Hey Randy,
+On Thu, May 10, 2012 at 02:29:26PM -0700, Tim Bird wrote:
+> On 05/10/2012 02:21 PM, Greg KH wrote:
+> > On Thu, May 10, 2012 at 02:16:31PM -0700, Tim Bird wrote:
+> >> +	log->misc.minor = MISC_DYNAMIC_MINOR;
+> >> +	log->misc.name = kstrdup(log_name, GFP_KERNEL);
+> >> +	if (log->misc.name == NULL) {
+> >> +		ret = -1;
+> >> +		goto out_free_log;
+> > 
+> > Please return a "real" error number, not just -1.  You do this a few
+> > times in this function, -EINVAL perhaps?  -1 is -EPERM, which is not
+> > what you want to be saying here, right?
 > 
-> On Thu, 2012-05-10 at 14:25 -0700, Randy Dunlap wrote:
->> On 05/03/2012 05:55 AM, Luciano Coelho wrote:
->>
->>> On Mon, 2012-04-16 at 12:51 -0700, Randy Dunlap wrote:
->>>> From: Randy Dunlap <rdunlap@xenotime.net>
->>>>
->>>> wl12xx build fails with many undefined symbol errors when MAC80211
->>>> and CFG80211 are not enabled, so make WLCORE and WL12XX depend
->>>> on MAC80211 (which already depends on CFG80211).
->>>>
->>>> Here are a few of the many build errors:
+> You're right.  This is only called by init code now, which doesn't
+> look at the return value (only checks for non-zero), but the intent
+> is to change this going forward, so a real error number is called for.
 > 
-> [...]
-> 
->>>> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
->>>> Cc:	Luciano Coelho <coelho@ti.com>
->>>> Cc:	linux-wireless@vger.kernel.org
->>>> Cc:	"John W. Linville" <linville@tuxdriver.com>
->>>> ---
->>>
->>> Applied! Thanks Randy, and sorry for the delay in pushing this through
->>> my tree.
->>
->>
->>
->> Ping.
->>
->> This patch is still needed in linux-next of 20120510.
-> 
-> I already applied this patch and sent a pull-request to Linville, but he
-> hasn't pulled from my tree into wireless-next yet.
-> 
-> Would it make sense for you to pull directly from my tree into
-> linux-next?
+> These are all memory allocation failures, so I'm thinking of using
+> -ENOMEM.  Would that be right?
 
+Yes, sorry, I missed that, -ENOMEM is correct
 
-No, I'm just testing/reporting on linux-next.
+I was looking at the place where the lookup failed to find the log
+specified, you should return a proper error for that as well.
 
-Thanks.
+thanks,
 
--- 
-~Randy
+greg k-h
