@@ -1,119 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757746Ab2EJNFP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 09:05:15 -0400
-Received: from david.siemens.de ([192.35.17.14]:30348 "EHLO david.siemens.de"
+	id S1754858Ab2EJNQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 09:16:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47070 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753090Ab2EJNFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 09:05:13 -0400
-Message-ID: <4FABBCE4.3050503@siemens.com>
-Date: Thu, 10 May 2012 10:04:36 -0300
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1753340Ab2EJNQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 09:16:47 -0400
+Message-ID: <4FABBFAF.20809@redhat.com>
+Date: Thu, 10 May 2012 10:16:31 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
+To: Borislav Petkov <bp@amd64.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Anthony Liguori <aliguori@us.ibm.com>, Kevin Wolf <kwolf@redhat.com>
-Subject: [PATCH v2] compat: Fix RT signal mask corruption via sigprocmask
-References: <4FAAEB37.1080001@siemens.com> <CA+55aFz-z6F=ynvTZp2xrSyq+Ar7huT92_S9e8Wuxepyppq5ZQ@mail.gmail.com>
-In-Reply-To: <CA+55aFz-z6F=ynvTZp2xrSyq+Ar7huT92_S9e8Wuxepyppq5ZQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [EDAC ABI v13 04/25] events/hw_event: Create a Hardware Events
+ Report Mecanism (HERM)
+References: <1334608729-30803-1-git-send-email-mchehab@redhat.com> <1334608729-30803-5-git-send-email-mchehab@redhat.com> <20120509121326.GA22737@aftab.osrc.amd.com> <4FAA6802.9070506@redhat.com> <20120509132237.GD22737@aftab.osrc.amd.com> <4FAA7649.5080606@redhat.com> <20120509140632.GG22737@aftab.osrc.amd.com> <4FAA7C1A.3020406@redhat.com> <20120509142456.GH22737@aftab.osrc.amd.com>
+In-Reply-To: <20120509142456.GH22737@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-compat_sys_sigprocmask reads a smaller signal mask from userspace than
-sigprogmask accepts for setting. So the high word of blocked.sig[0] will
-be cleared, releasing any potentially blocked RT signal.
+Em 09-05-2012 11:24, Borislav Petkov escreveu:
+> On Wed, May 09, 2012 at 11:15:54AM -0300, Mauro Carvalho Chehab wrote:
+>> Em 09-05-2012 11:06, Borislav Petkov escreveu:
+>>> On Wed, May 09, 2012 at 10:51:05AM -0300, Mauro Carvalho Chehab wrote:
+>>>>> Now, if you really want to have a generic mechanism for RAS, used
+>>>>> by all the kernel, then I don't have a problem with you adding it
+>>>>> to include/ras/hw_event.h or somewhere in that vicinity along with
+>>>>> making it generic enough for other users and then taking care of it and
+>>>>> developing it to address users' needs.
+>>>>
+>>>> I'm ok to move it to include/ras, but, if I remember well from my initial
+>>>> tests when I wrote this, several kernel versions ago, there is/was
+>>>> a limitation that required that all trace events should be under
+>>>> include/trace/events/.
+>>>>
+>>>> One other option would be to call it as "include/trace/events/ras.h".
+>>>>
+>>>> Steven,
+>>>>
+>>>> Would it be possible/recommendable to move this trace header
+>>>> to include/linux/ras/hw_event.h?
+>>>
+>>> Oh, yeah, I remember vaguely something like that. Lets wait what Steven
+>>> has to say.
+> 
+> btw, http://lwn.net/Articles/383362/ explains how to define tracepoints outside
+> of include/trace/events.
+> 
+> [ … ]
+> 
+>>> and above says "Hardware Events Report Method (HERM)" The fact that you
+>>> yourself are not exactly sure about what this abbreviation is supposed
+>>> to be/mean/etc, simply should tell you that it is causing only confusion
+>>> with no benefit what-so-ever, even to you!
+>>
+>> Fixed.
+> 
+> No, you haven't. It still says HERM below. Please drop the marketing speak!
 
-This was discovered via userspace code that relies on get/setcontext.
-glibc's i386 versions of those functions use sigprogmask instead of
-rt_sigprogmask to save/restore signal mask and caused RT signal
-unblocking this way.
+Nah, this is not marketing speak. HERM is not a trademark. amd64_edac, on the other
+hand, is using a trademark on his name. If we use your logic, this would need to
+be renamed to something else, to avoid using a "marketing speak".
 
-As suggested by Linus, this replaces the sys_sigprocmask based compat
-version with one that open-codes the required logic, including the merge
-of the existing blocked set with the new one provided on SIG_SETMASK.
+We need some name to differentiate between the broken EDAC core where modern
+memory controllers are not properly represented and reports errors on 
+fake csrows/channels from the EDAC+HERM core that will properly provide the
+error information to where it really belongs.
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- kernel/compat.c |   56 ++++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 39 insertions(+), 17 deletions(-)
+In other words, HERM is just an acronym[1] to the version to point to where 
+EDAC starts to work fine with modern memory controllers.
 
-diff --git a/kernel/compat.c b/kernel/compat.c
-index 74ff849..39c164e 100644
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -372,25 +372,47 @@ asmlinkage long compat_sys_sigpending(compat_old_sigset_t __user *set)
- 
- #ifdef __ARCH_WANT_SYS_SIGPROCMASK
- 
--asmlinkage long compat_sys_sigprocmask(int how, compat_old_sigset_t __user *set,
--		compat_old_sigset_t __user *oset)
-+asmlinkage long compat_sys_sigprocmask(int how,
-+				       compat_old_sigset_t __user *nset,
-+				       compat_old_sigset_t __user *oset)
- {
--	old_sigset_t s;
--	long ret;
--	mm_segment_t old_fs;
-+	old_sigset_t old_set, new_set;
-+	sigset_t new_blocked;
- 
--	if (set && get_user(s, set))
--		return -EFAULT;
--	old_fs = get_fs();
--	set_fs(KERNEL_DS);
--	ret = sys_sigprocmask(how,
--			      set ? (old_sigset_t __user *) &s : NULL,
--			      oset ? (old_sigset_t __user *) &s : NULL);
--	set_fs(old_fs);
--	if (ret == 0)
--		if (oset)
--			ret = put_user(s, oset);
--	return ret;
-+	old_set = current->blocked.sig[0];
-+
-+	if (nset) {
-+		if (get_user(new_set, nset))
-+			return -EFAULT;
-+		new_set &= ~(sigmask(SIGKILL) | sigmask(SIGSTOP));
-+
-+		new_blocked = current->blocked;
-+
-+		switch (how) {
-+		case SIG_BLOCK:
-+			sigaddsetmask(&new_blocked, new_set);
-+			break;
-+		case SIG_UNBLOCK:
-+			sigdelsetmask(&new_blocked, new_set);
-+			break;
-+		case SIG_SETMASK:
-+			new_blocked.sig[0] &=
-+				~((old_sigset_t)(compat_old_sigset_t)-1);
-+			new_blocked.sig[0] |= new_set;
-+			break;
-+		default:
-+			return -EINVAL;
-+		}
-+
-+		set_current_blocked(&new_blocked);
-+	}
-+
-+	if (oset) {
-+		if (put_user(old_set, oset))
-+			return -EFAULT;
-+	}
-+
-+	return 0;
- }
- 
- #endif
--- 
-1.7.3.4
+[1] Btw, EDAC is also an acronym for Error Detection And Correction.
+
+Regards,
+Mauro
