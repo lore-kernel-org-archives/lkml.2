@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760318Ab2EJRd7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:33:59 -0400
+	id S1760260Ab2EJRdp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:33:45 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:58653 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760265Ab2EJRdu (ORCPT
+	with ESMTP id S1760230Ab2EJRdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:33:50 -0400
-Message-Id: <20120510173133.584262248@linuxfoundation.org>
+	Thu, 10 May 2012 13:33:40 -0400
+Message-Id: <20120510173133.420776202@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:31:39 -0700
+Date: Thu, 10 May 2012 10:31:37 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dave Airlie <airlied@redhat.com>,
-        Kenneth Graunke <kenneth@whitecape.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 07/52] drm/i915: Do no set Stencil Cache eviction LRA w/a on gen7+
+        alan@lxorguk.ukuu.org.uk, Jan Beulich <jbeulich@suse.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 05/52] xen/pci: dont use PCI BIOS service for configuration space accesses
 In-Reply-To: <20120510173229.GA5678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 2e7a44814d802c8ba479164b8924070cd908d6b5 upstream.
+commit 76a8df7b49168509df02461f83fab117a4a86e08 upstream.
 
-I've flagged this while reviewing the first version and Ken Graunke
-fixed it up in v2, but unfortunately Dave Airlie picked up the wrong
-version.
+The accessing PCI configuration space with the PCI BIOS32 service does
+not work in PV guests.
 
-Cc: Dave Airlie <airlied@redhat.com>
-Cc: Kenneth Graunke <kenneth@whitecape.org>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+On systems without MMCONFIG or where the BIOS hasn't marked the
+MMCONFIG region as reserved in the e820 map, the BIOS service is
+probed (even though direct access is preferred) and this hangs.
+
+Acked-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+[v1: Fixed compile error when CONFIG_PCI is not set]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_ringbuffer.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ arch/x86/xen/enlighten.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -414,10 +414,8 @@ static int init_render_ring(struct intel
- 			return ret;
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -62,6 +62,7 @@
+ #include <asm/reboot.h>
+ #include <asm/stackprotector.h>
+ #include <asm/hypervisor.h>
++#include <asm/pci_x86.h>
+ 
+ #include "xen-ops.h"
+ #include "mmu.h"
+@@ -1274,8 +1275,10 @@ asmlinkage void __init xen_start_kernel(
+ 		/* Make sure ACS will be enabled */
+ 		pci_request_acs();
  	}
+-		
+-
++#ifdef CONFIG_PCI
++	/* PCI BIOS service won't work from a PV guest. */
++	pci_probe &= ~PCI_PROBE_BIOS;
++#endif
+ 	xen_raw_console_write("about to get started...\n");
  
--	if (INTEL_INFO(dev)->gen >= 6) {
--		I915_WRITE(INSTPM,
--			   INSTPM_FORCE_ORDERING << 16 | INSTPM_FORCE_ORDERING);
- 
-+	if (IS_GEN6(dev)) {
- 		/* From the Sandybridge PRM, volume 1 part 3, page 24:
- 		 * "If this bit is set, STCunit will have LRA as replacement
- 		 *  policy. [...] This bit must be reset.  LRA replacement
-@@ -427,6 +425,11 @@ static int init_render_ring(struct intel
- 			   CM0_STC_EVICT_DISABLE_LRA_SNB << CM0_MASK_SHIFT);
- 	}
- 
-+	if (INTEL_INFO(dev)->gen >= 6) {
-+		I915_WRITE(INSTPM,
-+			   INSTPM_FORCE_ORDERING << 16 | INSTPM_FORCE_ORDERING);
-+	}
-+
- 	return ret;
- }
- 
+ 	xen_setup_runstate_info(0);
 
 
