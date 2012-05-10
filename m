@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758818Ab2EJMll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 08:41:41 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47368 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596Ab2EJMli (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 08:41:38 -0400
-Date: Thu, 10 May 2012 14:41:30 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Rob Lee <rob.lee@linaro.org>
-Cc: kernel@pengutronix.de, shawn.guo@linaro.org, amit.kucheria@linaro.org,
-        daniel.lezcano@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, jj@chaosbits.net
-Subject: Re: [PATCH v3 2/3] ARM: imx: Add imx5 cpuidle driver
-Message-ID: <20120510124130.GS27341@pengutronix.de>
-References: <1336425407-20308-1-git-send-email-rob.lee@linaro.org>
- <1336425407-20308-3-git-send-email-rob.lee@linaro.org>
- <20120509080214.GJ27341@pengutronix.de>
- <CAMXH7KF7eznzF7AzM_JzwJ1jOm-1J4biqd=PvKMSa=ex8YFQrA@mail.gmail.com>
+	id S1756959Ab2EJMo1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 08:44:27 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:58442 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133Ab2EJMoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 08:44:25 -0400
+X-Greylist: delayed 1521 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 May 2012 08:44:25 EDT
+Date: Thu, 10 May 2012 14:18:57 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Benjamin Poirier <bpoirier@suse.de>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xfrm: take iphdr size into account for esp payload
+ size calculation
+Message-ID: <20120510121857.GJ1021@secunet.com>
+References: <1336602952-10479-1-git-send-email-bpoirier@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMXH7KF7eznzF7AzM_JzwJ1jOm-1J4biqd=PvKMSa=ex8YFQrA@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 14:33:10 up 179 days, 20:20, 97 users,  load average: 0.05, 0.06,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1336602952-10479-1-git-send-email-bpoirier@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 10 May 2012 12:18:57.0303 (UTC) FILETIME=[12C68A70:01CD2EA7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 09:27:02AM -0500, Rob Lee wrote:
-> Sascha,
+On Wed, May 09, 2012 at 06:35:52PM -0400, Benjamin Poirier wrote:
 > 
-> >
-> > This clk_get should go away here and be moved somewhere to
-> > initialization. Also, if getting this clock fails we can still
-> > do regular cpu_do_idle. Additionally, if clk_get fails, we'll
-> > have a ERR_PTR value in gpc_dvfs_clk in which case the
-> > gpc_dvfs_clk == NULL won't trigger next time you are here and
-> > then you'll enable a nonexisting clock below.
-> >
-> 
-> Agree.  I'd prefer to enable this clock during intialization and just
-> leave it running.  It is supposed to be a very low power clock and I
-> couldn't measuring any power difference with and without it being
-> enabled
+> According to what is done, mainly in esp_output(), net_header_len aka
+> sizeof(struct iphdr) must be taken into account before doing the alignment
+> calculation.
 
-Ok, even better.
+Why do you need to take the ip header into account here? Your patch breaks
+pmtu discovery, at least on tunnel mode with aes-sha1 (aes blocksize 16 bytes).
 
-> >
-> > I wonder why you don't add the default ARM_CPUIDLE_WFI_STATE_PWR state.
-> > The above is something different, right? It has a greater exit latency
-> > than ARM_CPUIDLE_WFI_STATE_PWR, so why don't we add it here aswell?
-> 
-> Yes and no.  Yes this is a different state but no, it doesn't have a
-> significantly greater exit latency, or at least a large enough exit
-> latency to warrant an extra state in my opinion.  According to the
-> i.MX5 documentation, the extra exit time beyond basic WFI required for
-> the  "WAIT_UNCLOCKED_POWER_OFF" state is 500ns (this is due to a
-> difference in i.MX5 hardware implementation compared to all other ARM
-> platforms).  In reality, it did require a few more microseconds to
-> perform in my testing just based on the extra register writes in
-> mx5_cpu_lp_set().  I'd like to clean up mx5_cpu_lp_set() and add a
-> global variable to track the previous state and to just exit out if
-> the new state is the same as the old.
+With your patch applied:
 
-Do you think it's worth it? You buy skipping the read with an additional
-test.
+tracepath -n 192.168.1.2
+ 1?: [LOCALHOST]     pmtu 1442
+ 1:  send failed
+ 1:  send failed
+     Resume: pmtu 1442
 
-> I could do this cleanup as part of this patchset if you prefer that.
+Without your patch:
 
-Yes please. Cleanups before adding new features is always a good reason
-to apply a patch series ;)
+tracepath -n 192.168.1.2
+ 1?: [LOCALHOST]     pmtu 1438
+ 1:  192.168.1.2       0.736ms reached
+ 1:  192.168.1.2       0.390ms reached
+     Resume: pmtu 1438 hops 1 back 64 
 
-Sascha
+Your patch increases the mtu by 4 bytes. Be aware that adding
+one byte of payload may increase the packet size up to 16 bytes
+in the case of aes, as we have to pad the encryption payload
+always to a multiple of the cipher blocksize.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> -
+> -	switch (x->props.mode) {
+> -	case XFRM_MODE_TUNNEL:
+> -		break;
+> -	default:
+> -	case XFRM_MODE_TRANSPORT:
+> -		/* The worst case */
+> -		mtu -= blksize - 4;
+> -		mtu += min_t(u32, blksize - 4, rem);
+> -		break;
+
+Btw. why we are doing the calculation above for transport mode?
