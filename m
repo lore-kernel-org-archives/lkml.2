@@ -1,255 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761140Ab2EJSYY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 14:24:24 -0400
-Received: from stats.peacock.arvixe.com ([174.122.104.67]:55823 "EHLO
-	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755548Ab2EJSYV (ORCPT
+	id S1761171Ab2EJSZM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 14:25:12 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:33729 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1760086Ab2EJSZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 14:24:21 -0400
-From: Przemo Firszt <przemo@firszt.eu>
-To: pinglinux@gmail.com, jkosina@suse.cz
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linuxwacom-devel@lists.sourceforge.net,
-        Przemo Firszt <przemo@firszt.eu>
-Subject: [PATCH] HID: wacom: Add LED selector control for Wacom Intuos4 WL
-Date: Thu, 10 May 2012 19:23:52 +0100
-Message-Id: <1336674232-5410-1-git-send-email-przemo@firszt.eu>
-X-Mailer: git-send-email 1.7.10
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - peacock.arvixe.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - firszt.eu
+	Thu, 10 May 2012 14:25:10 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX198F4Ncs8J8O3TuE/HUDhElQn+We+TA2y4lGcMBXs
+	Jyw5o2yeQjt6hq
+Message-ID: <1336674306.7334.18.camel@marge.simpson.net>
+Subject: Re: Scheduler still seems awful with x264, worse with patches
+From: Mike Galbraith <efault@gmx.de>
+To: Jason Garrett-Glaser <jason@x264.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 10 May 2012 20:25:06 +0200
+In-Reply-To: <CABS55+DrvJ3QByW6i9gnYCq+ayD3r7oVkRVW73Hj4-zGBKFoKw@mail.gmail.com>
+References: <CABS55+A_ZbJT4Tz-XfacbURpgfx2WuXqvPnn1_XkAfhxJMP6eA@mail.gmail.com>
+	 <1336645785.25483.3.camel@marge.simpson.net>
+	 <CABS55+DrvJ3QByW6i9gnYCq+ayD3r7oVkRVW73Hj4-zGBKFoKw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add sysfs attribute to control LED selector on Wacom Intuos4. There are 4
-different LEDs on the tablet and they can be turned on by something like:
+On Thu, 2012-05-10 at 09:22 -0700, Jason Garrett-Glaser wrote: 
+> On Thu, May 10, 2012 at 3:29 AM, Mike Galbraith <efault@gmx.de> wrote:
+> > On Wed, 2012-05-09 at 09:00 -0700, Jason Garrett-Glaser wrote:
+> >> Many months ago, the topic of CFS's inefficiencies with x264 came up
+> >> and some improvements were made, but BFS and Windows still stayed a
+> >> little bit in the lead.  This seemed to be because of a mix of two
+> >> issues.  Firstly, a combination of relatively short-lived jobs (x264
+> >> uses a thread pool, so the actual threads are long-lived).  Secondly,
+> >> in frame threads, heavy dependencies between threads, benefiting
+> >> greatly from a dumb scheduler.  Thirdly, in sliced threads -- the
+> >> focus of this post -- the best scheduling approach is to simply spread
+> >> them throughout the cores and do nothing, so again, a dumb scheduler
+> >> will do the right thing.
+> >>
+> >> Recently I tried multithreading x264's lookahead for a customer.  The
+> >> lookahead previously wasn't threaded, causing bottlenecks with many
+> >> cores and threads.  I do my development mainly on Windows, and the
+> >> patch looked to be quite a success, with nice performance boosts for
+> >> many target use-cases.
+> >>
+> >> And then I ran it on Linux and it choked horribly.
+> >>
+> >> The patch is here:
+> >> https://github.com/DarkShikari/x264-devel/commit/99e830f1581eac3cf30f07b1d6c6c32bae1725c8
+> >> .  To replicate the test, simply test that version against the
+> >> previous version.  My guess is the reason it chokes is that it
+> >> involves spawning even *shorter*-lived jobs than x264 typically does,
+> >> something that CFS seems to simply collapse on.
+> >>
+> >> Here's some stats from a recent kernel:
+> >>
+> >> SD encoding (before -> after patch):
+> >> CFS: 325.49 +/- 1.22 fps -> 251.68 +/- 2.32 fps
+> >> BFS: 334.94 +/- 0.59 fps -> 344.47 +/- 0.68 fps
+> >>
+> >> HD encoding (before -> after patch):
+> >> CFS: 39.05 +/- 0.22 fps -> 40.56 +/- 0.23 fps
+> >> BFS: 40.15 +/- 0.05 fps -> 44.89 +/- 0.05 fps
+> >>
+> >> As can be seen, the longer the threads live (the lower the fps), the
+> >> less horrific the penalty is.  Furthermore, though I don't have
+> >> numbers, using schedtool -R -p 1 does basically as well as BFS in
+> >> eliminating the problem.  Naturally, this is not really a solution as
+> >> it requires root.
+> >>
+> >> To replicate this test, a commandline like this should work on any
+> >> cached raw input file (a collection of free raw videos can be found
+> >> here if you don't like making your own:
+> >> http://media.xiph.org/video/derf/ ):
+> >>
+> >> ./x264 --preset superfast --tune zerolatency --threads X input -o /dev/null
+> >
+> > On my Q6600 box, neither scheduler (identical configs) seems to like
+> > --tune zerolatency much.
+> 
+> Sliced-threads (zero latency mode) should probably never be run with
+> more threads than cores -- virtual cores, at the very least.  8
+> threads on a quad-core is definitely not the best idea.
 
-echo 50 > /sys/class/leds/(device # here)\:selector\:1/brightness
+Ok.
 
-Only one can be lit at a time. The brightness range is 0 to 127. This patch
-also contains short ABI description.
+> Your tests are very very short so I suspect the standard deviation of
+> those tests is so high as to obscure any actual results; please always
+> remember to post error bars.  A test that only lasts for 2 seconds can
+> easily have +/- 50fps of error.
 
-Signed-off-by: Przemo Firszt <przemo@firszt.eu>
----
- Documentation/ABI/testing/sysfs-driver-wacom |    8 ++
- drivers/hid/Kconfig                          |    1 +
- drivers/hid/hid-wacom.c                      |  126 ++++++++++++++++++++++++++
- 3 files changed, 135 insertions(+)
+No.  Results are plenty repeatable enough that 'problem' sticks out far
+above s/n.  No idea what to do with this, but 'tree' seems significant.
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-wacom b/Documentation/ABI/testing/sysfs-driver-wacom
-index 0130d66..56c5455 100644
---- a/Documentation/ABI/testing/sysfs-driver-wacom
-+++ b/Documentation/ABI/testing/sysfs-driver-wacom
-@@ -9,6 +9,14 @@ Description:
- 		or 0 otherwise. Writing to this file one of these values
- 		switches reporting speed.
- 
-+What:		/sys/class/leds/0005\:056A\:00BD.0001\:selector\:*/
-+Date:		May 2012
-+Kernel Version:	3.5
-+Contact:	linux-bluetooth@vger.kernel.org
-+Description:
-+		LED selector for Intuos4 WL. There are 4 leds, but only one LED
-+		can be lit at a time. Max brightness is 127.
-+
- What:		/sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/led
- Date:		August 2011
- Contact:	linux-input@vger.kernel.org
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 9092ae1..a9647dd 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -596,6 +596,7 @@ config HID_WACOM
- 	tristate "Wacom Bluetooth devices support"
- 	depends on BT_HIDP
- 	select POWER_SUPPLY
-+	select LEDS_CLASS
- 	---help---
- 	Support for Wacom Graphire Bluetooth and Intuos4 WL tablets.
- 
-diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
-index a66e1aa..29372ed 100644
---- a/drivers/hid/hid-wacom.c
-+++ b/drivers/hid/hid-wacom.c
-@@ -24,6 +24,7 @@
- #include <linux/device.h>
- #include <linux/hid.h>
- #include <linux/module.h>
-+#include <linux/leds.h>
- #include <linux/slab.h>
- #include <linux/power_supply.h>
- 
-@@ -31,6 +32,8 @@
- 
- #define PAD_DEVICE_ID	0x0F
- 
-+#define WAC_CMD_LED_CONTROL     0x20
-+
- struct wacom_data {
- 	__u16 tool;
- 	__u16 butstate;
-@@ -44,6 +47,8 @@ struct wacom_data {
- 	__u8 ps_connected;
- 	struct power_supply battery;
- 	struct power_supply ac;
-+	__u8 led_selector;
-+	struct led_classdev *leds[4];
- };
- 
- /*percent of battery capacity for Graphire
-@@ -64,6 +69,117 @@ static enum power_supply_property wacom_ac_props[] = {
- 	POWER_SUPPLY_PROP_SCOPE,
- };
- 
-+static void wacom_leds_set_brightness(struct led_classdev *led_dev,
-+						enum led_brightness value)
-+{
-+	struct device *dev = led_dev->dev->parent;
-+	struct hid_device *hdev;
-+	struct wacom_data *wdata;
-+	unsigned char *buf;
-+	__u8 led = 0;
-+	int i;
-+
-+	hdev = container_of(dev, struct hid_device, dev);
-+	wdata = hid_get_drvdata(hdev);
-+	for (i = 0; i < 4; ++i) {
-+		if (wdata->leds[i] == led_dev)
-+			wdata->led_selector = i;
-+	}
-+
-+	led = wdata->led_selector | 0x04;
-+	buf = kzalloc(9, GFP_KERNEL);
-+	if (buf) {
-+		buf[0] = WAC_CMD_LED_CONTROL;
-+		buf[1] = led;
-+		buf[2] = value;
-+		hdev->hid_output_raw_report(hdev, buf, 9, HID_FEATURE_REPORT);
-+		kfree(buf);
-+	}
-+
-+	return;
-+}
-+
-+static enum led_brightness wacom_leds_get_brightness(struct led_classdev *led_dev)
-+{
-+	struct wacom_data *wdata;
-+	struct device *dev = led_dev->dev->parent;
-+	int value = 0;
-+	int i;
-+
-+	wdata = hid_get_drvdata(container_of(dev, struct hid_device, dev));
-+
-+	for (i = 0; i < 4; ++i) {
-+		if (wdata->leds[i] == led_dev) {
-+			value = wdata->leds[i]->brightness;
-+			break;
-+		}
-+	}
-+
-+	return value;
-+}
-+
-+
-+static int wacom_initialize_leds(struct hid_device *hdev)
-+{
-+	struct wacom_data *wdata = hid_get_drvdata(hdev);
-+	struct led_classdev *led;
-+	struct device *dev = &hdev->dev;
-+	size_t namesz = strlen(dev_name(dev)) + 12;
-+	char *name;
-+	int i, ret;
-+
-+	wdata->led_selector = 0;
-+
-+	for (i = 0; i < 4; i++) {
-+		led = kzalloc(sizeof(struct led_classdev) + namesz, GFP_KERNEL);
-+		if (!led) {
-+			hid_warn(hdev,
-+				 "can't allocate memory for LED selector\n");
-+			ret = -ENOMEM;
-+			goto err;
-+		}
-+
-+		name = (void *)&led[1];
-+		snprintf(name, namesz, "%s:selector:%d", dev_name(dev), i);
-+		led->name = name;
-+		led->brightness = 0;
-+		led->max_brightness = 127;
-+		led->brightness_get = wacom_leds_get_brightness;
-+		led->brightness_set = wacom_leds_set_brightness;
-+
-+		wdata->leds[i] = led;
-+
-+		ret = led_classdev_register(dev, wdata->leds[i]);
-+
-+		if (ret) {
-+			wdata->leds[i] = NULL;
-+			kfree(led);
-+			hid_warn(hdev, "can't register LED\n");
-+			goto err;
-+		}
-+	}
-+
-+err:
-+	return ret;
-+}
-+
-+static void wacom_destroy_leds(struct hid_device *hdev)
-+{
-+	struct wacom_data *wdata = hid_get_drvdata(hdev);
-+	struct led_classdev *led;
-+	int i;
-+
-+	for (i = 0; i < 4; ++i) {
-+		if (wdata->leds[i]) {
-+			led = wdata->leds[i];
-+			wdata->leds[i] = NULL;
-+			led_classdev_unregister(led);
-+			kfree(led);
-+		}
-+	}
-+
-+}
-+
- static int wacom_battery_get_property(struct power_supply *psy,
- 				enum power_supply_property psp,
- 				union power_supply_propval *val)
-@@ -602,6 +718,12 @@ static int wacom_probe(struct hid_device *hdev,
- 		sprintf(hdev->name, "%s", "Wacom Intuos4 WL");
- 		wdata->features = 0;
- 		wacom_set_features(hdev);
-+		ret = wacom_initialize_leds(hdev);
-+		if (ret) {
-+			hid_warn(hdev,
-+				 "can't create led attribute, err: %d\n", ret);
-+			goto destroy_leds;
-+		}
- 		break;
- 	}
- 
-@@ -644,6 +766,8 @@ err_ac:
- err_battery:
- 	device_remove_file(&hdev->dev, &dev_attr_speed);
- 	hid_hw_stop(hdev);
-+destroy_leds:
-+	wacom_destroy_leds(hdev);
- err_free:
- 	kfree(wdata);
- 	return ret;
-@@ -652,6 +776,8 @@ err_free:
- static void wacom_remove(struct hid_device *hdev)
- {
- 	struct wacom_data *wdata = hid_get_drvdata(hdev);
-+
-+	wacom_destroy_leds(hdev);
- 	device_remove_file(&hdev->dev, &dev_attr_speed);
- 	hid_hw_stop(hdev);
- 
--- 
-1.7.10
+-Mike
+
+
+-Mike
 
