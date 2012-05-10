@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759243Ab2EJK4S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 06:56:18 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:41114 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932196Ab2EJK4D (ORCPT
+	id S932266Ab2EJK4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 06:56:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50861 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759260Ab2EJK4k convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 06:56:03 -0400
-Message-ID: <4FAB9EC0.8090905@openvz.org>
-Date: Thu, 10 May 2012 14:56:00 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] sched: set TAINT_UNSAFE_SMP after sleep-in-atomic bug
-References: <20120510075403.21849.5109.stgit@zurg> <1336644104.2527.93.camel@twins>
-In-Reply-To: <1336644104.2527.93.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 10 May 2012 06:56:40 -0400
+Message-ID: <1336647368.2527.104.camel@twins>
+Subject: Re: [PATCH 2/9] perf: Allow pmu to choose cpu on which to install
+ event
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, mingo@elte.hu, andi@firstfloor.org,
+        eranian@google.com, jolsa@redhat.com, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 10 May 2012 12:56:08 +0200
+In-Reply-To: <4FAB38FF.4050203@linux.vnet.ibm.com>
+References: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com>
+	 <1335924440-11242-3-git-send-email-zheng.z.yan@intel.com>
+	 <4FAA10FB.1030008@linux.vnet.ibm.com> <4FAB1548.6050806@intel.com>
+	 <4FAB38FF.4050203@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra wrote:
-> On Thu, 2012-05-10 at 11:54 +0400, Konstantin Khlebnikov wrote:
->> Usually sleep-in-atomic bugs are followed by dozens other warnings.
->> This patch should help to figure out original source of problem.
->> This taint flag also turns off lockdep, because it can go mad after that.
->
-> There's already TAINT_WARN any output with that set should be ignored.
+On Thu, 2012-05-10 at 09:11 +0530, Anshuman Khandual wrote:
+> 
+> Agreed. So here the get_online_cpus()/put_online_cpus() pair solves an
+> existing problem. Could you please
+> put an additional statement explaining this in the patch
+> documentation. Thank you. 
 
-Where? I do not see here anything which might set TAINT_WARN.
-
-Or you suggest to use TAINT_WARN instead of TAINT_UNSAFE_SMP?
+No, make it a separate patch. If a patch does two separate things its
+doing it wrong ;-)
