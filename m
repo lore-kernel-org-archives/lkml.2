@@ -1,185 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759359Ab2EJMF4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 08:05:56 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49393 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759295Ab2EJMFq (ORCPT
+	id S1759336Ab2EJMHx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 08:07:53 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:61859 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756301Ab2EJMHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 08:05:46 -0400
-Subject: Re: [tip:sched/core] x86/numa: Check for nonsensical topologies on
- real hw as well
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tj@kernel.org, tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-In-Reply-To: <CAE9FiQVu7KP=rabe5_jYZyEGpW7sv6wkK9wumJfW1vk2=+cYKA@mail.gmail.com>
-References: <tip-re15l0jqjtpz709oxozt2zoh@git.kernel.org>
-	 <CAE9FiQVu7KP=rabe5_jYZyEGpW7sv6wkK9wumJfW1vk2=+cYKA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 May 2012 13:49:38 +0200
-Message-ID: <1336650578.27020.94.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 10 May 2012 08:07:50 -0400
+Date: Thu, 10 May 2012 14:07:42 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] mfd: add LM3533 lighting-power core driver
+Message-ID: <20120510120742.GA29437@localhost>
+References: <1334935826-12527-1-git-send-email-jhovold@gmail.com>
+ <1336040799-18433-1-git-send-email-jhovold@gmail.com>
+ <1336040799-18433-2-git-send-email-jhovold@gmail.com>
+ <20120509144218.GI1794@sortiz-mobl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120509144218.GI1794@sortiz-mobl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 15:48 -0700, Yinghai Lu wrote:
-> get wrong warning on system without using numa emu.
+On Wed, May 09, 2012 at 04:42:18PM +0200, Samuel Ortiz wrote:
+> Hi Johan
+> 
+> On Thu, May 03, 2012 at 12:26:36PM +0200, Johan Hovold wrote:
+> > Add support for National Semiconductor / TI LM3533 lighting power chips.
+> > 
+> > This is the core driver which provides register access over I2C and
+> > registers the ambient-light-sensor, LED and backlight sub-drivers.
+> > 
+> > Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> > ---
+> > 
+> > v2:
+> >  - add sysfs-ABI documentation
+> >  - merge i2c implementation with core
+> >  - use regmap and kill custom debugfs interface
+> > 
+> > 
+> >  .../ABI/testing/sysfs-bus-i2c-devices-lm3533       |   38 +
+> >  drivers/mfd/Kconfig                                |   13 +
+> >  drivers/mfd/Makefile                               |    1 +
+> >  drivers/mfd/lm3533-core.c                          |  717 ++++++++++++++++++++
+> >  drivers/mfd/lm3533-ctrlbank.c                      |  134 ++++
+> >  include/linux/mfd/lm3533.h                         |   89 +++
+> >  6 files changed, 992 insertions(+), 0 deletions(-)
+> >  create mode 100644 Documentation/ABI/testing/sysfs-bus-i2c-devices-lm3533
+> >  create mode 100644 drivers/mfd/lm3533-core.c
+> >  create mode 100644 drivers/mfd/lm3533-ctrlbank.c
+> >  create mode 100644 include/linux/mfd/lm3533.h
+> Patch applied to my for-next branch, thanks.
 
-Oops yeah, that condition is quite possible to hit, its just that with a
-sane topology the end result doesn't change..
+I've been travelling for a few days and didn't have time to submit a
+discussed change to move two attributes to the platform data before I
+left.
 
-How about we do something like this
+Could you please apply the following two patches on top of this one?
 
----
- arch/x86/kernel/smpboot.c |  114 +++++++++++++++++++++++++++------------------
- 1 file changed, 68 insertions(+), 46 deletions(-)
+ mfd: lm3533: add boost frequency and ovp to platform data
+ mfd: lm3533: remove boost attributes
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index e543e02..2552463 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -299,70 +299,92 @@ void __cpuinit smp_store_cpu_info(int id)
- 		identify_secondary_cpu(c);
- }
- 
--static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
-+static bool __cpuinit topology_sane(int cpu1, int cpu2, const char *name)
- {
--	cpumask_set_cpu(cpu1, cpu_sibling_mask(cpu2));
--	cpumask_set_cpu(cpu2, cpu_sibling_mask(cpu1));
--	cpumask_set_cpu(cpu1, cpu_core_mask(cpu2));
--	cpumask_set_cpu(cpu2, cpu_core_mask(cpu1));
--	cpumask_set_cpu(cpu1, cpu_llc_shared_mask(cpu2));
--	cpumask_set_cpu(cpu2, cpu_llc_shared_mask(cpu1));
-+	return WARN(cpu_to_node(cpu1) != cpu_to_node(cpu2),
-+		"sched: CPU #%d's %s-sibling CPU #%d is not on the same node! "
-+		"[node: %d != %d]. Ignoring siblings dependency.\n",
-+		cpu1, name, cpu2, cpu_to_node(cpu1), cpu_to_node(cpu2));
- }
- 
-+#define link_mask(_m, c1, c2)						\
-+do {									\
-+	cpumask_set_cpu((c1), cpu_##_m##_mask(c2));			\
-+	cpumask_set_cpu((c2), cpu_##_m##_mask(c1));			\
-+} while (0)
- 
--void __cpuinit set_cpu_sibling_map(int cpu)
-+static bool __cpuinit match_smt(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
- {
--	int i;
--	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+	if (!topology_sane(c->cpu_index, o->cpu_index, "smt"))
-+		return false;
-+
-+	if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
-+		if (c->phys_proc_id == o->phys_proc_id &&
-+		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i) &&
-+		    c->compute_unit_id == o->compute_unit_id)
-+			return true;
-+
-+	} else if (c->phys_proc_id == o->phys_proc_id &&
-+		   c->cpu_core_id == o->cpu_core_id) {
-+		return true;
-+	}
- 
--	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
-+	return false;
-+}
- 
--	if (smp_num_siblings > 1) {
--		for_each_cpu(i, cpu_sibling_setup_mask) {
--			struct cpuinfo_x86 *o = &cpu_data(i);
-+static bool __cpuinit match_llc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
-+{
-+	if (!topology_sane(c->cpu_index, o->cpu_index, "llc"))
-+		return false;
- 
--			if (cpu_to_node(cpu) != cpu_to_node(i)) {
--				WARN_ONCE(1, "sched: CPU #%d's thread-sibling CPU #%d not on the same node! [node %d != %d]. Ignoring sibling dependency.\n", cpu, i, cpu_to_node(cpu), cpu_to_node(i));
--				continue;
--			}
-+	if (per_cpu(cpu_llc_id, cpu) != BAD_APICID &&
-+	    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i))
-+		return true;
- 
--			if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
--				if (c->phys_proc_id == o->phys_proc_id &&
--				    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i) &&
--				    c->compute_unit_id == o->compute_unit_id)
--					link_thread_siblings(cpu, i);
--			} else if (c->phys_proc_id == o->phys_proc_id &&
--				   c->cpu_core_id == o->cpu_core_id) {
--				link_thread_siblings(cpu, i);
--			}
--		}
--	} else {
--		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
--	}
-+	return false;
-+}
-+
-+static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
-+{
-+	if (!topology_sane(c->cpu_index, o->cpu_index, "mc"))
-+		return false;
-+
-+	if (c->phys_proc_id == cpu_data(i).phys_proc_id)
-+		return true;
-+
-+	return false;
-+}
- 
--	cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
-+void __cpuinit set_cpu_sibling_map(int cpu)
-+{
-+	bool has_mc = boot_cpu_data.x86_max_cores > 1;
-+	bool has_smt = smp_num_siblings > 1;
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+	struct cpuinfo_x86 *o;
-+	int i;
- 
--	if (__this_cpu_read(cpu_info.x86_max_cores) == 1) {
--		cpumask_copy(cpu_core_mask(cpu), cpu_sibling_mask(cpu));
-+	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
-+
-+	if (!has_smt && !has_mc) {
-+		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
-+		cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
-+		cpumask_set_cpu(cpu, cpu_core_mask(cpu));
- 		c->booted_cores = 1;
- 		return;
- 	}
- 
- 	for_each_cpu(i, cpu_sibling_setup_mask) {
--		if (cpu_to_node(cpu) != cpu_to_node(i)) {
--			WARN_ONCE(1, "sched: CPU #%d's core-sibling CPU #%d not on the same node! [node %d != %d]. Ignoring sibling dependency.\n", cpu, i, cpu_to_node(cpu), cpu_to_node(i));
--			continue;
--		}
-+		o = &cpu_data(i);
- 
--		if (per_cpu(cpu_llc_id, cpu) != BAD_APICID &&
--		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
--			cpumask_set_cpu(i, cpu_llc_shared_mask(cpu));
--			cpumask_set_cpu(cpu, cpu_llc_shared_mask(i));
--		}
-+		if ((i == cpu) || (has_smt && match_smt(c, o)))
-+			link_mask(siblings, cpu, i);
-+
-+		if ((i == cpu) || (has_mc && match_llc(c, o)))
-+			link_mask(llc_shared, cpu, i);
-+
-+		if ((i == cpu) || (has_mc && match_cpu(c, o))) {
-+			link_mask(core, cpu, i);
- 
--		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
--			cpumask_set_cpu(i, cpu_core_mask(cpu));
--			cpumask_set_cpu(cpu, cpu_core_mask(i));
- 			/*
- 			 *  Does this new cpu bringup a new core?
- 			 */
-
-
+Thanks,
+Johan
