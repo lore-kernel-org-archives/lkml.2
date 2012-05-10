@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759924Ab2EJPQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 11:16:42 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37880 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755449Ab2EJPQk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 11:16:40 -0400
-X-Sasl-enc: pi/+Kkh1uZ+dg3d3bxO9t8C7W+ZcJg2nFqfOSVHCZelf 1336663000
-Date: Thu, 10 May 2012 08:16:39 -0700
-From: Greg KH <greg@kroah.com>
-To: Markus Franke <markus.franke@s2002.tu-chemnitz.de>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] w1: Add 1-wire slave device driver for DS28E04-100
-Message-ID: <20120510151639.GE17472@kroah.com>
-References: <20120503180056.GB13988@ioremap.net>
- <4FAAD584.70102@hrz.tu-chemnitz.de>
- <20120509220636.GA27659@kroah.com>
- <4FAAECB7.8070904@hrz.tu-chemnitz.de>
- <20120509222411.GA24302@kroah.com>
- <4FAAF1C4.2050500@hrz.tu-chemnitz.de>
- <20120509235723.GA7404@ioremap.net>
- <20120510000126.GA2357@kroah.com>
- <20120510004350.GA8362@ioremap.net>
- <4FAB4A4D.8080901@hrz.tu-chemnitz.de>
+	id S1760001Ab2EJPRO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 11:17:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56837 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759900Ab2EJPRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 11:17:12 -0400
+Message-ID: <4FABDBE6.3060901@redhat.com>
+Date: Thu, 10 May 2012 12:16:54 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FAB4A4D.8080901@hrz.tu-chemnitz.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@amd64.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        gregkh <gregkh@linuxfoundation.org>
+Subject: Re: [EDAC ABI v13 04/25] events/hw_event: Create a Hardware Events
+ Report Mecanism (HERM)
+References: <4FAA6802.9070506@redhat.com> <20120509132237.GD22737@aftab.osrc.amd.com> <4FAA7649.5080606@redhat.com> <20120509140632.GG22737@aftab.osrc.amd.com> <4FAA7C1A.3020406@redhat.com> <20120509142456.GH22737@aftab.osrc.amd.com> <4FABBFAF.20809@redhat.com> <20120510134136.GC31257@aftab.osrc.amd.com> <4FABD653.7060401@redhat.com> <4FABD9F0.6050008@redhat.com> <20120510151254.GD32700@aftab.osrc.amd.com>
+In-Reply-To: <20120510151254.GD32700@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 06:55:41AM +0200, Markus Franke wrote:
-> Dear Evgeniy,
+Em 10-05-2012 12:12, Borislav Petkov escreveu:
+> On Thu, May 10, 2012 at 12:08:32PM -0300, Mauro Carvalho Chehab wrote:
+>> There's also another technical reason to give an acronym to the EDAC
+>> version that actually works: changeset numbers are not consistent
+>> within distributions (or other trees, like -stable - although this 60+
+>> patch series probably won't fit on -stable merging criteria).
+>>
+>> Also, this EDAC changeset 60+ patch series can't be represented by a
+>> single changeset, and requires userspace changes in order to get a
+>> proper representation model for memories.
+>>
+>> Tagging the EDAC core version with a name helps a lot when dealing
+>> with all the unsolved bugzillas that will be closed by backporting
+>> this patch series in order to fix the serious EDAC core bug that
+>> were providing fake information to the end user for all Intel memory
+>> controllers manufactured after 2005.
 > 
-> Am 10.05.2012 02:43, schrieb Evgeniy Polyakov:
+> edac_module.c:18:#define EDAC_VERSION "Ver: 2.1.0"
 > 
-> > be used? Also, Markus, does DS28E04 change written/read data when doing
-> > IO?
-> 
-> 
-> Apart from masking the upper 6 bits within w1_f1C_write_pio() the data
-> is directly being passed down to the DS28E04. So actually there is no
-> other processing done within the driver. Furthermore, I added a new
-> Documentation file to Documentation/w1/slaves directory which describes
-> the interface of this driver.
-> 
-> @Greg: Is the "pio" binary file now legitimate or do I have to change it
-> to a regular sysfs attribute?
+> Increment that in the last patch.
 
-I don't remember anything anymore, you will have to send the patch for
-me to be able to properly review it and determine this.
+Ok, I'll do that.
 
-greg k-h
+Mauro.
+
+
