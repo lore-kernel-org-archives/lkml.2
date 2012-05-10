@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759627Ab2EJOM6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 10:12:58 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64910 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136Ab2EJOM4 (ORCPT
+	id S1759691Ab2EJOOl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 10:14:41 -0400
+Received: from nm15.access.bullet.mail.mud.yahoo.com ([66.94.237.216]:21668
+	"HELO nm15.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751187Ab2EJOOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 10:12:56 -0400
-Date: Thu, 10 May 2012 07:12:51 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
-Message-ID: <20120510141251.GA20471@kroah.com>
-References: <1336027242-372-1-git-send-email-minchan@kernel.org>
- <1336027242-372-3-git-send-email-minchan@kernel.org>
- <4FA28907.9020300@vflare.org>
- <4FA2A2F0.3030509@linux.vnet.ibm.com>
- <4FA33DF6.8060107@kernel.org>
- <20120509201918.GA7288@kroah.com>
- <4FAB21E7.7020703@kernel.org>
- <20120510140215.GC26152@phenom.dumpdata.com>
+	Thu, 10 May 2012 10:14:39 -0400
+X-Yahoo-Newman-Id: 174853.43242.bm@smtp103.biz.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Ma2xpjsVM1m1QN5YRIsvMRzhut.XE9FZGPW5AduEIudPAtI
+ heuFpx4zZW1Qq5mSOax_YAR6LD_ZdZMgilkwMJ012NIIdtPowCep2xsPi2eP
+ 58Aj9fgoiePSte3yGQ3wh.hC232HXYRuCBG6slQZymtWIj9VBWbBLfJxSkQd
+ TWbf1VwDl2xVmfUdj3D9FZEbUxe19Xw0fW4Yl45MgAxLaUexqW7LjecAJpab
+ q2O4sEGMZtSHaZSDL.Ry0Bht.VK7R1wGwTVwOmWGHXRoiFICY7fkqI7DQtby
+ aFs.k2JJ463BolUUfaYdBa0bs_lzT2xQOyI4.xF5EMeKZHaXRsgwtAUlELiz
+ CjAlUdwbBG8QhIPIB94Ftu8hgQI5jLrRqF8tDrz_IFttbzzmCedKaCxrTkFo
+ QbcZaZ10MI7WihDgBqyK9yhJywEGSnnjTuBua5Zcbhs8r0IQ-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <4FABCD55.9000504@schaufler-ca.com>
+Date: Thu, 10 May 2012 07:14:45 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120510140215.GC26152@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        LSM <linux-security-module@vger.kernel.org>,
+        SE Linux <selinux@tycho.nsa.gov>
+Subject: Re: [PATCH 02/12] selinux: tag avc cache alloc as non-critical
+References: <1336658065-24851-1-git-send-email-mgorman@suse.de> <1336658065-24851-3-git-send-email-mgorman@suse.de>
+In-Reply-To: <1336658065-24851-3-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 10:02:15AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Thu, May 10, 2012 at 11:03:19AM +0900, Minchan Kim wrote:
-> > On 05/10/2012 05:19 AM, Greg Kroah-Hartman wrote:
-> > 
-> > > On Fri, May 04, 2012 at 11:24:54AM +0900, Minchan Kim wrote:
-> > >> On 05/04/2012 12:23 AM, Seth Jennings wrote:
-> > >>
-> > >>> On 05/03/2012 08:32 AM, Nitin Gupta wrote:
-> > >>>
-> > >>>> On 5/3/12 2:40 AM, Minchan Kim wrote:
-> > >>>>> We should use zs_handle instead of void * to avoid any
-> > >>>>> confusion. Without this, users may just treat zs_malloc return value as
-> > >>>>> a pointer and try to deference it.
-> > >>>>>
-> > >>>>> Cc: Dan Magenheimer<dan.magenheimer@oracle.com>
-> > >>>>> Cc: Konrad Rzeszutek Wilk<konrad.wilk@oracle.com>
-> > >>>>> Signed-off-by: Minchan Kim<minchan@kernel.org>
-> > >>>>> ---
-> > >>>>>   drivers/staging/zcache/zcache-main.c     |    8 ++++----
-> > >>>>>   drivers/staging/zram/zram_drv.c          |    8 ++++----
-> > >>>>>   drivers/staging/zram/zram_drv.h          |    2 +-
-> > >>>>>   drivers/staging/zsmalloc/zsmalloc-main.c |   28
-> > >>>>> ++++++++++++++--------------
-> > >>>>>   drivers/staging/zsmalloc/zsmalloc.h      |   15 +++++++++++----
-> > >>>>>   5 files changed, 34 insertions(+), 27 deletions(-)
-> > >>>>
-> > >>>> This was a long pending change. Thanks!
-> > >>>
-> > >>>
-> > >>> The reason I hadn't done it before is that it introduces a checkpatch
-> > >>> warning:
-> > >>>
-> > >>> WARNING: do not add new typedefs
-> > >>> #303: FILE: drivers/staging/zsmalloc/zsmalloc.h:19:
-> > >>> +typedef void * zs_handle;
-> > >>>
-> > >>
-> > >>
-> > >> Yes. I did it but I think we are (a) of chapter 5: Typedefs in Documentation/CodingStyle.
-> > >>
-> > >>  (a) totally opaque objects (where the typedef is actively used to _hide_
-> > >>      what the object is).
-> > >>
-> > >> No?
-> > > 
-> > > No.
-> > > 
-> > > Don't add new typedefs to the kernel.  Just use a structure if you need
-> > > to.
-> > 
-> > 
-> > I tried it but failed because there were already tightly coupling between [zcache|zram]
-> > and zsmalloc. 
-> > They already knows handle's internal well so they used it as pointer, even zcache keeps
-> > handle's value as some key in tmem_put and tmem_get
-> > AFAIK, ramster also will use zsmalloc sooner or later and add more coupling codes. Sigh.
-> > Please fix it as soon as possible.
-> > 
-> > Dan, Seth
-> > Any ideas?
-> 
-> struct zs {
-> 	void *ptr;
-> };
-> 
-> And pass that structure around?
+On 5/10/2012 6:54 AM, Mel Gorman wrote:
+> Failing to allocate a cache entry will only harm performance not
+> correctness.  Do not consume valuable reserve pages for something
+> like that.
 
-With a better name, that would be fine.
+Copying to the LSM and SELinux lists.
+ 
+>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  security/selinux/avc.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+> index 8ee42b2..75c2977 100644
+> --- a/security/selinux/avc.c
+> +++ b/security/selinux/avc.c
+> @@ -280,7 +280,7 @@ static struct avc_node *avc_alloc_node(void)
+>  {
+>  	struct avc_node *node;
+>  
+> -	node = kmem_cache_zalloc(avc_node_cachep, GFP_ATOMIC);
+> +	node = kmem_cache_zalloc(avc_node_cachep, GFP_ATOMIC|__GFP_NOMEMALLOC);
+>  	if (!node)
+>  		goto out;
+>  
 
-greg k-h
