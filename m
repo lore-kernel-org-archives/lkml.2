@@ -1,69 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759928Ab2EJVLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 17:11:21 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:33237 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758442Ab2EJVLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 17:11:18 -0400
-Message-ID: <1336684277.29763.12.camel@joe2Laptop>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
- variable-length record buffer
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kay Sievers <kay@vrfy.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Ingo Molnar <mingo@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
-Date: Thu, 10 May 2012 14:11:18 -0700
-In-Reply-To: <CA+55aFwJgtVr9ZndEU-yhJW3wi-5Omga51pjun+J213awQwJZA@mail.gmail.com>
-References: <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
-	 <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
-	 <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com>
-	 <20120509070710.GA29981@gmail.com>
-	 <CAPXgP11evyQQKNDaa00R7qsOFy5Xk-utN1w9OgB4y6NxLZG=UA@mail.gmail.com>
-	 <1336611278.728.9.camel@mop>
-	 <CA+55aFyrrH0jJV--L=ugt0YK7pT+jmhjvt_WRWyenyiroN97zg@mail.gmail.com>
-	 <1336667984.947.24.camel@mop>
-	 <CA+55aFxUaNC4SGEodrdddkDN6t=Sbx=P4XyaHkj7eTQBQOeLeA@mail.gmail.com>
-	 <1336676986.947.47.camel@mop> <20120510201409.GA6467@thunk.org>
-	 <1336682226.29763.2.camel@joe2Laptop>
-	 <CAPXgP11T7vjBBFaE5jne0hntZ2J-MoVxwJ2C9TNsRzme9DmLuQ@mail.gmail.com>
-	 <1336682772.29763.6.camel@joe2Laptop>
-	 <CA+55aFwJgtVr9ZndEU-yhJW3wi-5Omga51pjun+J213awQwJZA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758375Ab2EJVJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 17:09:56 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:53480 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757447Ab2EJVJx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 17:09:53 -0400
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: linux-parisc@vger.kernel.org
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org
+Subject: [PATCH 5/5] parisc: move definition of PAGE0 to asm/page.h
+Date: Thu, 10 May 2012 23:08:17 +0200
+Message-ID: <9994244.7dMrtT61Uk@donald.sf-tec.de>
+User-Agent: KMail/4.8.3 (Linux/3.2.9-13-desktop; KDE/4.8.3; i686; ; )
+In-Reply-To: <4430485.xEvkeJU8MB@donald.sf-tec.de>
+References: <4430485.xEvkeJU8MB@donald.sf-tec.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-10 at 13:52 -0700, Linus Torvalds wrote:
-> On Thu, May 10, 2012 at 1:46 PM, Joe Perches <joe@perches.com> wrote:
-> >
-> > That's where I think you're still a bit
-> > uncertain how the _current_ printk system
-> > works.
-> 
-> No, you are. Read my answer from two days ago in this thread.
-> 
-> KERN_CONT is *not* the same as "". Not now, not ever. If you make it
-> the same, you're broken.
-> 
-> The reason is simple: KERN_CONT "<3>" should print out the string
-> "<3>".
+This was defined in asm/pdc.h which needs to include asm/page.h for
+__PAGE_OFFSET. This leads to an include loop so that page.h eventually will
+include pdc.h again. While this is no problem because of header guards, it is
+a problem because some symbols may be undefined. Such an error is this:
 
-I think it's a distinction without a difference for,
-as fas as I know, that's a case that doesn't exist
-in the current kernel.
+In file included from /home/buildbot/repos/linux/include/linux/bitops.h:35:0,
+                 from /home/buildbot/repos/linux/include/asm-generic/getorder.h:7,
+                 from /home/buildbot/repos/linux/arch/parisc/include/asm/page.h:162,
+                 from /home/buildbot/repos/linux/arch/parisc/include/asm/pdc.h:346,
+                 from /home/buildbot/repos/linux/arch/parisc/include/asm/processor.h:16,
+                 from /home/buildbot/repos/linux/arch/parisc/include/asm/spinlock.h:6,
+                 from /home/buildbot/repos/linux/arch/parisc/include/asm/atomic.h:20,
+                 from /home/buildbot/repos/linux/include/linux/atomic.h:4,
+                 from /home/buildbot/repos/linux/include/linux/sysfs.h:20,
+                 from /home/buildbot/repos/linux/include/linux/kobject.h:21,
+                 from /home/buildbot/repos/linux/include/linux/device.h:17,
+                 from /home/buildbot/repos/linux/include/linux/eisa.h:5,
+                 from /home/buildbot/repos/linux/arch/parisc/kernel/pci.c:11:
+/home/buildbot/repos/linux/arch/parisc/include/asm/bitops.h: In function ‘set_bit’:
+/home/buildbot/repos/linux/arch/parisc/include/asm/bitops.h:82:2: error: implicit declaration of function ‘_atomic_spin_lock_irqsave’ [-Werror=implicit-function-declaration]
+/home/buildbot/repos/linux/arch/parisc/include/asm/bitops.h:84:2: error: implicit declaration of function ‘_atomic_spin_unlock_irqrestore’ [-Werror=implicit-function-declaration]
 
-$ grep -rP --include=*.[ch] "\bpr_cont\s*\(\s*\"<" *
-$ grep -rP --include=*.[ch] "\bprintk\s*\(\s*KERN_CONT\s*\"<" *
-arch/x86/kernel/dumpstack_32.c:				printk(KERN_CONT "<%02x> ", c);
-arch/x86/kernel/dumpstack_64.c:				printk(KERN_CONT "<%02x> ", c);
-arch/powerpc/kernel/process.c:				printk(KERN_CONT "<%08x> ", instr);
-drivers/media/video/tm6000/tm6000-core.c:			printk(KERN_CONT "<<< ");
-drivers/media/video/cx231xx/cx231xx-core.c:			printk(KERN_CONT "<<<");
+Signed-off-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
+---
+ arch/parisc/include/asm/page.h  |    6 ++++++
+ arch/parisc/include/asm/pdc.h   |    7 -------
+ arch/parisc/kernel/pdc_cons.c   |    1 +
+ arch/parisc/kernel/time.c       |    1 +
+ drivers/parisc/sba_iommu.c      |    1 +
+ drivers/video/console/sticore.c |    2 ++
+ 6 files changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/arch/parisc/include/asm/page.h b/arch/parisc/include/asm/page.h
+index a84cc1f..4e0e7db 100644
+--- a/arch/parisc/include/asm/page.h
++++ b/arch/parisc/include/asm/page.h
+@@ -160,5 +160,11 @@ extern int npmem_ranges;
+ 
+ #include <asm-generic/memory_model.h>
+ #include <asm-generic/getorder.h>
++#include <asm/pdc.h>
++
++#define PAGE0   ((struct zeropage *)__PAGE_OFFSET)
++
++/* DEFINITION OF THE ZERO-PAGE (PAG0) */
++/* based on work by Jason Eckhardt (jason@equator.com) */
+ 
+ #endif /* _PARISC_PAGE_H */
+diff --git a/arch/parisc/include/asm/pdc.h b/arch/parisc/include/asm/pdc.h
+index 4ca510b..7f0f2d2 100644
+--- a/arch/parisc/include/asm/pdc.h
++++ b/arch/parisc/include/asm/pdc.h
+@@ -343,8 +343,6 @@
+ 
+ #ifdef __KERNEL__
+ 
+-#include <asm/page.h> /* for __PAGE_OFFSET */
+-
+ extern int pdc_type;
+ 
+ /* Values for pdc_type */
+@@ -677,11 +675,6 @@ static inline char * os_id_to_string(u16 os_id) {
+ 
+ #endif /* __KERNEL__ */
+ 
+-#define PAGE0   ((struct zeropage *)__PAGE_OFFSET)
+-
+-/* DEFINITION OF THE ZERO-PAGE (PAG0) */
+-/* based on work by Jason Eckhardt (jason@equator.com) */
+-
+ /* flags of the device_path */
+ #define	PF_AUTOBOOT	0x80
+ #define	PF_AUTOSEARCH	0x40
+diff --git a/arch/parisc/kernel/pdc_cons.c b/arch/parisc/kernel/pdc_cons.c
+index 4f00459..9bbd2a5 100644
+--- a/arch/parisc/kernel/pdc_cons.c
++++ b/arch/parisc/kernel/pdc_cons.c
+@@ -50,6 +50,7 @@
+ #include <linux/init.h>
+ #include <linux/major.h>
+ #include <linux/tty.h>
++#include <asm/page.h>		/* for PAGE0 */
+ #include <asm/pdc.h>		/* for iodc_call() proto and friends */
+ 
+ static DEFINE_SPINLOCK(pdc_console_lock);
+diff --git a/arch/parisc/kernel/time.c b/arch/parisc/kernel/time.c
+index 7c07743..70e105d 100644
+--- a/arch/parisc/kernel/time.c
++++ b/arch/parisc/kernel/time.c
+@@ -29,6 +29,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+ #include <asm/irq.h>
++#include <asm/page.h>
+ #include <asm/param.h>
+ #include <asm/pdc.h>
+ #include <asm/led.h>
+diff --git a/drivers/parisc/sba_iommu.c b/drivers/parisc/sba_iommu.c
+index 8644d53..42cfcd9 100644
+--- a/drivers/parisc/sba_iommu.c
++++ b/drivers/parisc/sba_iommu.c
+@@ -44,6 +44,7 @@
+ #include <asm/ropes.h>
+ #include <asm/mckinley.h>	/* for proc_mckinley_root */
+ #include <asm/runway.h>		/* for proc_runway_root */
++#include <asm/page.h>		/* for PAGE0 */
+ #include <asm/pdc.h>		/* for PDC_MODEL_* */
+ #include <asm/pdcpat.h>		/* for is_pdc_pat() */
+ #include <asm/parisc-device.h>
+diff --git a/drivers/video/console/sticore.c b/drivers/video/console/sticore.c
+index 6468a29..39571f9 100644
+--- a/drivers/video/console/sticore.c
++++ b/drivers/video/console/sticore.c
+@@ -22,7 +22,9 @@
+ #include <linux/font.h>
+ 
+ #include <asm/hardware.h>
++#include <asm/page.h>
+ #include <asm/parisc-device.h>
++#include <asm/pdc.h>
+ #include <asm/cacheflush.h>
+ #include <asm/grfioctl.h>
+ 
+-- 
+1.7.9.2
 
 
