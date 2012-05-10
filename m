@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760613Ab2EJRmQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:42:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53504 "EHLO
+	id S1760927Ab2EJRmk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:42:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46175 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760712Ab2EJRg2 (ORCPT
+	with ESMTP id S1760702Ab2EJRg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:36:28 -0400
-Message-Id: <20120510173136.455551655@linuxfoundation.org>
+	Thu, 10 May 2012 13:36:26 -0400
+Message-Id: <20120510173136.374401782@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:32:13 -0700
+Date: Thu, 10 May 2012 10:32:12 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nadav HarEl <nyh@il.ibm.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, Avi Kivity <avi@redhat.com>
-Subject: [ 41/52] KVM: nVMX: Fix erroneous exception bitmap check
+        alan@lxorguk.ukuu.org.uk, Avi Kivity <avi@redhat.com>
+Subject: [ 40/52] KVM: VMX: Fix delayed load of shared MSRs
 In-Reply-To: <20120510173229.GA5678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +24,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Avi Kivity <avi@redhat.com>
 
-From: Nadav Har'El <nyh@math.technion.ac.il>
+(cherry picked from commit 9ee73970c03edb68146ceb1ba2a7033c99a5e017)
 
-(cherry picked from commit 9587190107d0c0cbaccbf7bf6b0245d29095a9ae)
+Shared MSRs (MSR_*STAR and related) are stored in both vmx->guest_msrs
+and in the CPU registers, but vmx_set_msr() only updated memory. Prior
+to 46199f33c2953, this didn't matter, since we called vmx_load_host_state(),
+which scheduled a vmx_save_host_state(), which re-synchronized the CPU
+state, but now we don't, so the CPU state will not be synchronized until
+the next exit to host userspace.  This mostly affects nested vmx workloads,
+which play with these MSRs a lot.
 
-The code which checks whether to inject a pagefault to L1 or L2 (in
-nested VMX) was wrong, incorrect in how it checked the PF_VECTOR bit.
-Thanks to Dan Carpenter for spotting this.
+Fix by loading the MSR eagerly.
 
-Signed-off-by: Nadav Har'El <nyh@il.ibm.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/x86/kvm/vmx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/vmx.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
 --- a/arch/x86/kvm/vmx.c
 +++ b/arch/x86/kvm/vmx.c
-@@ -1678,7 +1678,7 @@ static int nested_pf_handled(struct kvm_
- 	struct vmcs12 *vmcs12 = get_vmcs12(vcpu);
- 
- 	/* TODO: also check PFEC_MATCH/MASK, not just EB.PF. */
--	if (!(vmcs12->exception_bitmap & PF_VECTOR))
-+	if (!(vmcs12->exception_bitmap & (1u << PF_VECTOR)))
- 		return 0;
- 
- 	nested_vmx_vmexit(vcpu);
+@@ -2219,6 +2219,9 @@ static int vmx_set_msr(struct kvm_vcpu *
+ 		msr = find_msr_entry(vmx, msr_index);
+ 		if (msr) {
+ 			msr->data = data;
++			if (msr - vmx->guest_msrs < vmx->save_nmsrs)
++				kvm_set_shared_msr(msr->index, msr->data,
++						   msr->mask);
+ 			break;
+ 		}
+ 		ret = kvm_set_msr_common(vcpu, msr_index, data);
 
 
