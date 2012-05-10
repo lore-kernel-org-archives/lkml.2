@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760990Ab2EJRqs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:46:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45282 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760429Ab2EJReW (ORCPT
+	id S1760408Ab2EJReT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:34:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58653 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760384Ab2EJReN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:34:22 -0400
-Message-Id: <20120510173134.675578467@linuxfoundation.org>
+	Thu, 10 May 2012 13:34:13 -0400
+Message-Id: <20120510173134.438866619@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:31:52 -0700
+Date: Thu, 10 May 2012 10:31:49 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Henry von Tresckow <hvontres@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [ 20/52] ARM: orion5x: Fix GPIO enable bits for MPP9
+        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 17/52] ARM: 7412/1: audit: use only AUDIT_ARCH_ARM regardless of endianness
 In-Reply-To: <20120510173229.GA5678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 48d99f47a81a66bdd61a348c7fe8df5a7afdf5f3 upstream.
+commit 2f978366984a418f38fcf44137be1fbc5a89cfd9 upstream.
 
-Commit 554cdaefd1cf7bb54b209c4e68c7cec87ce442a9 ('ARM: orion5x: Refactor
-mpp code to use common orion platform mpp.') seems to have accidentally
-inverted the GPIO valid bits for MPP9 (only).  For the mv2120 platform
-which uses MPP9 as a GPIO LED device, this results in the error:
+The machine endianness has no direct correspondence to the syscall ABI,
+so use only AUDIT_ARCH_ARM when identifying the ABI to the audit tools
+in userspace.
 
-[   12.711476] leds-gpio: probe of leds-gpio failed with error -22
-
-Reported-by: Henry von Tresckow <hvontres@gmail.com>
-References: http://bugs.debian.org/667446
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Tested-by: Hans Henry von Tresckow <hvontres@gmail.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-orion5x/mpp.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/kernel/ptrace.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
---- a/arch/arm/mach-orion5x/mpp.h
-+++ b/arch/arm/mach-orion5x/mpp.h
-@@ -65,8 +65,8 @@
- #define MPP8_GIGE               MPP(8,  0x1, 0, 0, 1,   1,   1)
+--- a/arch/arm/kernel/ptrace.c
++++ b/arch/arm/kernel/ptrace.c
+@@ -905,12 +905,6 @@ long arch_ptrace(struct task_struct *chi
+ 	return ret;
+ }
  
- #define MPP9_UNUSED		MPP(9,  0x0, 0, 0, 1,   1,   1)
--#define MPP9_GPIO		MPP(9,  0x0, 0, 0, 1,   1,   1)
--#define MPP9_GIGE               MPP(9,  0x1, 1, 1, 1,   1,   1)
-+#define MPP9_GPIO		MPP(9,  0x0, 1, 1, 1,   1,   1)
-+#define MPP9_GIGE               MPP(9,  0x1, 0, 0, 1,   1,   1)
+-#ifdef __ARMEB__
+-#define AUDIT_ARCH_NR AUDIT_ARCH_ARMEB
+-#else
+-#define AUDIT_ARCH_NR AUDIT_ARCH_ARM
+-#endif
+-
+ asmlinkage int syscall_trace(int why, struct pt_regs *regs, int scno)
+ {
+ 	unsigned long ip;
+@@ -918,7 +912,7 @@ asmlinkage int syscall_trace(int why, st
+ 	if (why)
+ 		audit_syscall_exit(regs);
+ 	else
+-		audit_syscall_entry(AUDIT_ARCH_NR, scno, regs->ARM_r0,
++		audit_syscall_entry(AUDIT_ARCH_ARM, scno, regs->ARM_r0,
+ 				    regs->ARM_r1, regs->ARM_r2, regs->ARM_r3);
  
- #define MPP10_UNUSED		MPP(10, 0x0, 0, 0, 1,   1,   1)
- #define MPP10_GPIO		MPP(10, 0x0, 1, 1, 1,   1,   1)
+ 	if (!test_thread_flag(TIF_SYSCALL_TRACE))
 
 
