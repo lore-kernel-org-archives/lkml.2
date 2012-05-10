@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760260Ab2EJRdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:33:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58653 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760230Ab2EJRdk (ORCPT
+	id S1760378Ab2EJReM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:34:12 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45282 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760337Ab2EJReD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:33:40 -0400
-Message-Id: <20120510173133.420776202@linuxfoundation.org>
+	Thu, 10 May 2012 13:34:03 -0400
+Message-Id: <20120510173134.175065271@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:31:37 -0700
+Date: Thu, 10 May 2012 10:31:46 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Beulich <jbeulich@suse.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 05/52] xen/pci: dont use PCI BIOS service for configuration space accesses
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 14/52] Fix __read_seqcount_begin() to use ACCESS_ONCE for sequence value read
 In-Reply-To: <20120510173229.GA5678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +24,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 76a8df7b49168509df02461f83fab117a4a86e08 upstream.
+commit 2f624278626677bfaf73fef97f86b37981621f5c upstream.
 
-The accessing PCI configuration space with the PCI BIOS32 service does
-not work in PV guests.
+We really need to use a ACCESS_ONCE() on the sequence value read in
+__read_seqcount_begin(), because otherwise the compiler might end up
+reloading the value in between the test and the return of it.  As a
+result, it might end up returning an odd value (which means that a write
+is in progress).
 
-On systems without MMCONFIG or where the BIOS hasn't marked the
-MMCONFIG region as reserved in the e820 map, the BIOS service is
-probed (even though direct access is preferred) and this hangs.
+If the reader is then fast enough that that odd value is still the
+current one when the read_seqcount_retry() is done, we might end up with
+a "successful" read sequence, even despite the concurrent write being
+active.
 
-Acked-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-[v1: Fixed compile error when CONFIG_PCI is not set]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+In practice this probably never really happens - there just isn't
+anything else going on around the read of the sequence count, and the
+common case is that we end up having a read barrier immediately
+afterwards.
+
+So the code sequence in which gcc might decide to reaload from memory is
+small, and there's no reason to believe it would ever actually do the
+reload.  But if the compiler ever were to decide to do so, it would be
+incredibly annoying to debug.  Let's just make sure.
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/enlighten.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ include/linux/seqlock.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -62,6 +62,7 @@
- #include <asm/reboot.h>
- #include <asm/stackprotector.h>
- #include <asm/hypervisor.h>
-+#include <asm/pci_x86.h>
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -141,7 +141,7 @@ static inline unsigned __read_seqcount_b
+ 	unsigned ret;
  
- #include "xen-ops.h"
- #include "mmu.h"
-@@ -1274,8 +1275,10 @@ asmlinkage void __init xen_start_kernel(
- 		/* Make sure ACS will be enabled */
- 		pci_request_acs();
- 	}
--		
--
-+#ifdef CONFIG_PCI
-+	/* PCI BIOS service won't work from a PV guest. */
-+	pci_probe &= ~PCI_PROBE_BIOS;
-+#endif
- 	xen_raw_console_write("about to get started...\n");
- 
- 	xen_setup_runstate_info(0);
+ repeat:
+-	ret = s->sequence;
++	ret = ACCESS_ONCE(s->sequence);
+ 	if (unlikely(ret & 1)) {
+ 		cpu_relax();
+ 		goto repeat;
 
 
