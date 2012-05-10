@@ -1,220 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761827Ab2EJWLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 18:11:21 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:55948 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761812Ab2EJWLU (ORCPT
+	id S1761841Ab2EJWOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 18:14:42 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44594 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761814Ab2EJWOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 18:11:20 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bh84d07hz2fh2a8h668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:160.33.194.230;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail03v.am.sony.com;RD:mail03.sonyusa.com;EFVD:NLI
-Message-ID: <4FAC3D18.203@am.sony.com>
-Date: Thu, 10 May 2012 15:11:36 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Brian Swetland <swetland@google.com>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] staging: android: logger: Allocate logs dynamically at
- boot (v3)
-References: <4FAC302F.2090004@am.sony.com> <20120510212122.GA16432@kroah.com> <4FAC3336.3010609@am.sony.com> <20120510213920.GA31091@kroah.com>
-In-Reply-To: <20120510213920.GA31091@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+	Thu, 10 May 2012 18:14:40 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] printk: correctly align __log_buf
+Date: Thu, 10 May 2012 16:14:33 -0600
+Message-Id: <1336688073-10664-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This changes the log initialization to be dynamic, but still
-at boot time.  These changes are a predecessor to implementing
-runtime allocation and freeing of logs, to make the Android logger
-less hard-coded.
+From: Stephen Warren <swarren@nvidia.com>
 
-Change from a fixed set of static log structures, to allocation
-at init time into a list.  Return proper error numbers on log
-allocation failure.
+__log_buf must be aligned, because a 64-bit value is written directly
+to it as part of struct log. Alignment of the log entries is typically
+handled by log_store(), but this only triggers for subsequent entries,
+not the very first (or wrapped) entries.
 
-Signed-off-by: Tim Bird <tim.bird@am.sony.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- drivers/staging/android/logger.c |  107 ++++++++++++++++++++++----------------
- 1 file changed, 62 insertions(+), 45 deletions(-)
+ kernel/printk.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
-index ea69b6a..9ebcf42 100644
---- a/drivers/staging/android/logger.c
-+++ b/drivers/staging/android/logger.c
-@@ -25,6 +25,7 @@
- #include <linux/poll.h>
- #include <linux/slab.h>
- #include <linux/time.h>
-+#include <linux/vmalloc.h>
- #include "logger.h"
-
- #include <asm/ioctls.h>
-@@ -45,8 +46,12 @@ struct logger_log {
- 	size_t			w_off;	/* current write head offset */
- 	size_t			head;	/* new readers start here */
- 	size_t			size;	/* size of the log */
-+	struct list_head	logs;	/* list of log channels (myself)*/
- };
-
-+static LIST_HEAD(log_list);
-+
-+
- /*
-  * struct logger_reader - a logging device open for reading
-  *
-@@ -408,7 +413,15 @@ ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	return ret;
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 7b43295..7e82fb7 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -227,8 +227,13 @@ static u32 clear_idx;
+ #define LOG_LINE_MAX 1024
+ 
+ /* record buffer */
++#if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
++#define LOG_ALIGN 4
++#else
++#define LOG_ALIGN 8
++#endif
+ #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
+-static char __log_buf[__LOG_BUF_LEN];
++static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
+ static char *log_buf = __log_buf;
+ static u32 log_buf_len = __LOG_BUF_LEN;
+ 
+@@ -279,12 +284,6 @@ static u32 log_next(u32 idx)
+ 	return idx + msg->len;
  }
-
--static struct logger_log *get_log_from_minor(int);
-+static struct logger_log *get_log_from_minor(int minor)
-+{
-+	struct logger_log *log;
-+
-+	list_for_each_entry(log, &log_list, logs)
-+		if (log->misc.minor == minor)
-+			return log;
-+	return NULL;
-+}
-
- /*
-  * logger_open - the log's open() file operation
-@@ -565,80 +578,84 @@ static const struct file_operations logger_fops = {
- };
-
- /*
-- * Defines a log structure with name 'NAME' and a size of 'SIZE' bytes, which
-- * must be a power of two, greater than LOGGER_ENTRY_MAX_LEN, and less than
-- * LONG_MAX minus LOGGER_ENTRY_MAX_LEN.
-+ * Log size must be a power of two, greater than LOGGER_ENTRY_MAX_LEN,
-+ * and less than LONG_MAX minus LOGGER_ENTRY_MAX_LEN.
-  */
--#define DEFINE_LOGGER_DEVICE(VAR, NAME, SIZE) \
--static unsigned char _buf_ ## VAR[SIZE]; \
--static struct logger_log VAR = { \
--	.buffer = _buf_ ## VAR, \
--	.misc = { \
--		.minor = MISC_DYNAMIC_MINOR, \
--		.name = NAME, \
--		.fops = &logger_fops, \
--		.parent = NULL, \
--	}, \
--	.wq = __WAIT_QUEUE_HEAD_INITIALIZER(VAR .wq), \
--	.readers = LIST_HEAD_INIT(VAR .readers), \
--	.mutex = __MUTEX_INITIALIZER(VAR .mutex), \
--	.w_off = 0, \
--	.head = 0, \
--	.size = SIZE, \
--};
-+static int __init create_log(char *log_name, int size)
-+{
-+	int ret = 0;
-+	struct logger_log *log;
-+	unsigned char *buffer;
-
--DEFINE_LOGGER_DEVICE(log_main, LOGGER_LOG_MAIN, 256*1024)
--DEFINE_LOGGER_DEVICE(log_events, LOGGER_LOG_EVENTS, 256*1024)
--DEFINE_LOGGER_DEVICE(log_radio, LOGGER_LOG_RADIO, 256*1024)
--DEFINE_LOGGER_DEVICE(log_system, LOGGER_LOG_SYSTEM, 256*1024)
-+	buffer = vmalloc(size);
-+	if (buffer == NULL)
-+		return -ENOMEM;
-
--static struct logger_log *get_log_from_minor(int minor)
--{
--	if (log_main.misc.minor == minor)
--		return &log_main;
--	if (log_events.misc.minor == minor)
--		return &log_events;
--	if (log_radio.misc.minor == minor)
--		return &log_radio;
--	if (log_system.misc.minor == minor)
--		return &log_system;
--	return NULL;
--}
-+	log = kzalloc(sizeof(struct logger_log), GFP_KERNEL);
-+	if (log == NULL) {
-+		ret = -ENOMEM;
-+		goto out_free_buffer;
-+	}
-+	log->buffer = buffer;
-
--static int __init init_log(struct logger_log *log)
--{
--	int ret;
-+	log->misc.minor = MISC_DYNAMIC_MINOR;
-+	log->misc.name = kstrdup(log_name, GFP_KERNEL);
-+	if (log->misc.name == NULL) {
-+		ret = -ENOMEM;
-+		goto out_free_log;
-+	}
-+
-+	log->misc.fops = &logger_fops;
-+	log->misc.parent = NULL;
-
-+	init_waitqueue_head(&log->wq);
-+	INIT_LIST_HEAD(&log->readers);
-+	mutex_init(&log->mutex);
-+	log->w_off = 0;
-+	log->head = 0;
-+	log->size = size;
-+
-+	INIT_LIST_HEAD(&log->logs);
-+	list_add_tail(&log->logs, &log_list);
-+
-+	/* finally, initialize the misc device for this log */
- 	ret = misc_register(&log->misc);
- 	if (unlikely(ret)) {
- 		printk(KERN_ERR "logger: failed to register misc "
- 		       "device for log '%s'!\n", log->misc.name);
--		return ret;
-+		goto out_free_log;
- 	}
-
- 	printk(KERN_INFO "logger: created %luK log '%s'\n",
- 	       (unsigned long) log->size >> 10, log->misc.name);
-
- 	return 0;
-+
-+out_free_log:
-+	kfree(log);
-+
-+out_free_buffer:
-+	vfree(buffer);
-+	return ret;
- }
-
- static int __init logger_init(void)
- {
- 	int ret;
-
--	ret = init_log(&log_main);
-+	ret = create_log(LOGGER_LOG_MAIN, 256*1024);
- 	if (unlikely(ret))
- 		goto out;
-
--	ret = init_log(&log_events);
-+	ret = create_log(LOGGER_LOG_EVENTS, 256*1024);
- 	if (unlikely(ret))
- 		goto out;
-
--	ret = init_log(&log_radio);
-+	ret = create_log(LOGGER_LOG_RADIO, 256*1024);
- 	if (unlikely(ret))
- 		goto out;
-
--	ret = init_log(&log_system);
-+	ret = create_log(LOGGER_LOG_SYSTEM, 256*1024);
- 	if (unlikely(ret))
- 		goto out;
-
+ 
+-#if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-#define LOG_ALIGN 4
+-#else
+-#define LOG_ALIGN 8
+-#endif
+-
+ /* insert record into the buffer, discard old ones, update heads */
+ static void log_store(int facility, int level,
+ 		      const char *dict, u16 dict_len,
 -- 
-1.7.9.5
-
+1.7.0.4
 
