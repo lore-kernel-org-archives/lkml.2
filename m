@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761739Ab2EJWDL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 18:03:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61112 "EHLO
+	id S1761774Ab2EJWEG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 18:04:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43607 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756988Ab2EJWDJ (ORCPT
+	with ESMTP id S1761711Ab2EJWEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 18:03:09 -0400
-Date: Thu, 10 May 2012 15:03:04 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: alexander.h.duyck@intel.com, jrnieder@gmail.com,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, stephen.s.ko@intel.com,
-        jeffrey.t.kirsher@intel.com
-Subject: Re: [ 33/52] net: Fix issue with netdev_tx_reset_queue not resetting
- queue from XOFF state
-Message-ID: <20120510220304.GA10166@kroah.com>
-References: <20120510.145510.1040533529305157641.davem@davemloft.net>
- <20120510194658.GA9858@burratino>
- <4FAC26A5.3050606@intel.com>
- <20120510.165120.1054985033661946116.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120510.165120.1054985033661946116.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 10 May 2012 18:04:02 -0400
+Date: Fri, 11 May 2012 07:03:57 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        kvm@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
+        yoshikawa.takuya@oss.ntt.co.jp
+Subject: Re: [RFC] sched: make callers check lock contention for
+ cond_resched_lock()
+Message-Id: <20120511070357.9bf8f9b6636a12927f26bfed@gmail.com>
+In-Reply-To: <1336060050.22523.23.camel@twins>
+References: <20120503171244.2debdd80931ccf35f387c5fe@gmail.com>
+	<1336034127.13683.197.camel@twins>
+	<20120503212244.6abbfa8bc3f46a7f7a932bb7@gmail.com>
+	<1336048150.22523.17.camel@twins>
+	<20120503220050.e91938418f882b4075526e08@gmail.com>
+	<1336060050.22523.23.camel@twins>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 04:51:20PM -0400, David Miller wrote:
-> From: Alexander Duyck <alexander.h.duyck@intel.com>
-> Date: Thu, 10 May 2012 13:35:49 -0700
-> 
-> > On 05/10/2012 12:46 PM, Jonathan Nieder wrote:
-> >> David Miller wrote:
-> >>> From: Alexander Duyck <alexander.h.duyck@intel.com>
-> >>>> All of the changes in igb are unnecessary.  I think they can be dropped
-> >>>> from the patch as they have already been reverted from the latest
-> >>>> net-next.  The only change that is really needed is the piece in
-> >>>> netdevice.h below.
-> >>> Does it hurt?  If not, just let it be.
-> >> Based on the commit description for dad8a3b3eaa0 ("igb, ixgbe:
-> >> netdev_tx_reset_queue incorrectly called from tx init path"), yes, it
-> >> hurts.  I don't know if it hurts enough to justify holding up this
-> >> patch until dad8a3b3eaa0 hits mainline.
-> >>
-> >> |                            this sort of works in most cases except
-> >> | when the number of real tx queues changes. When the number of real
-> >> | tx queues changes netdev_tx_reset_queue() only gets called on the
-> >> | new number of queues so when we reduce the number of queues we risk
-> >> | triggering the watchdog timer and repeated device resets.
-> >> |
-> >> | So this is not only a cosmetic issue but causes real bugs. For
-> >> | example enabling/disabling DCB or FCoE in ixgbe will trigger this.
-> > I'm fairly certain we really shouldn't make the changes to igb.  I would
-> > say to just modify the existing patch by just dropping the igb portion
-> > of it and it would be fine.
-> 
-> Ok, Greg, could you do me a huge favor and simply trim the IGB driver
-> changes from this patch and just keep the linux/netdevice.h part?
+Replaced Ingo's address with kernel.org one,
 
-Now done, thanks for letting me know.
+On Thu, 03 May 2012 17:47:30 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-greg k-h
+> On Thu, 2012-05-03 at 22:00 +0900, Takuya Yoshikawa wrote:
+> > But as I could not see why spin_needbreak() was differently
+> > implemented
+> > depending on CONFIG_PREEMPT, I wanted to understand the meaning. 
+> 
+> Its been that way since before voluntary preemption was introduced, so
+> its possible Ingo simply missed that spot and nobody noticed until now.
+> 
+> Ingo, do you have any recollections from back when?
+
+ping
+
+	Takuya
