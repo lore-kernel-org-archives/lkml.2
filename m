@@ -1,103 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757964Ab2EJKJy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 06:09:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42523 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755144Ab2EJKJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 06:09:53 -0400
-Date: Thu, 10 May 2012 12:09:45 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Przemo Firszt <przemo@firszt.eu>
-Cc: pinglinux@gmail.com, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, linuxwacom-devel@lists.sourceforge.net
-Subject: Re: [PATCH] HID: wacom: Add LED selector control for Wacom Intuos4
- WL
-In-Reply-To: <1336419611-10372-1-git-send-email-przemo@firszt.eu>
-Message-ID: <alpine.LNX.2.00.1205101205430.31253@pobox.suse.cz>
-References: <1336419611-10372-1-git-send-email-przemo@firszt.eu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758121Ab2EJKKl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 06:10:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45073 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757911Ab2EJKKj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 06:10:39 -0400
+Message-ID: <1336644337.2527.95.camel@twins>
+Subject: Re: [PATCH 4/9] perf: Generic intel uncore support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: mingo@elte.hu, andi@firstfloor.org, eranian@google.com, jolsa@redhat.com,
+        ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        hpa <hpa@zytor.com>
+Date: Thu, 10 May 2012 12:05:37 +0200
+In-Reply-To: <4FAB6F99.6010408@intel.com>
+References: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com>
+	  <1335924440-11242-5-git-send-email-zheng.z.yan@intel.com>
+	 <1336065156.22523.34.camel@twins> <4FAB6F99.6010408@intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 May 2012, Przemo Firszt wrote:
-
-> Add sysfs attribute to control LED selector on Wacom Intuos4. There are 4
-> different LEDs on the tablet and they can be turned on by something like:
+On Thu, 2012-05-10 at 15:34 +0800, Yan, Zheng wrote:
 > 
-> echo 50 > /sys/class/leds/(device # here)\:selector\:1/brightness
-> 
-> Only one can be lit at a time. The brightness range is 0 to 127. This patch
-> also contains short ABI description.
-> 
-> Signed-off-by: Przemo Firszt <przemo@firszt.eu>
-[ ... snip ... ]
-> @@ -44,6 +47,8 @@ struct wacom_data {
->  	__u8 ps_connected;
->  	struct power_supply battery;
->  	struct power_supply ac;
-> +	__u8 led_selector;
-> +	struct led_classdev *leds[3];
+> This code doesn't work for PCI uncore device if there are offline CPUs,
+> because topology_physical_package_id() always return 0 for offline CPUs.
 
-Here you define the leds[] array to have 3 members.
+Hmm, that sounds wrong.. one would expect something like BAD_APICID, -1
+or the correct number. hpa should we fix that?
 
->  /*percent of battery capacity for Graphire
-> @@ -64,6 +69,117 @@ static enum power_supply_property wacom_ac_props[] = {
->  	POWER_SUPPLY_PROP_SCOPE,
->  };
->  
-> +static void wacom_leds_set_brightness(struct led_classdev *led_dev,
-> +						enum led_brightness value)
-> +{
-> +	struct device *dev = led_dev->dev->parent;
-> +	struct hid_device *hdev;
-> +	struct wacom_data *wdata;
-> +	unsigned char *buf;
-> +	__u8 led = 0;
-> +	int i;
-> +
-> +	hdev = container_of(dev, struct hid_device, dev);
-> +	wdata = hid_get_drvdata(hdev);
-> +	for (i = 0; i < 4; ++i) {
+Anyway,
 
-And here you are going off-by-one.
+> So besides the per CPU variable, we still need another data structure
+> to track the uncore boxes. Do you still want to use per CPU variable?
 
-> +		if (wdata->leds[i] == led_dev)
-> +			wdata->led_selector = i;
-> +	}
-> +
-> +	led = wdata->led_selector | 0x04;
-> +	buf = kzalloc(9, GFP_KERNEL);
-> +	if (buf) {
-> +		buf[0] = WAC_CMD_LED_CONTROL;
-> +		buf[1] = led;
-> +		buf[2] = value;
-> +		hdev->hid_output_raw_report(hdev, buf, 9, HID_FEATURE_REPORT);
-> +		kfree(buf);
-> +	}
-> +
-> +	return;
-> +}
-> +
-> +static enum led_brightness wacom_leds_get_brightness(struct led_classdev *led_dev)
-> +{
-> +	struct wacom_data *wdata;
-> +	struct device *dev = led_dev->dev->parent;
-> +	int value = 0;
-> +	int i;
-> +
-> +	wdata = hid_get_drvdata(container_of(dev, struct hid_device, dev));
-> +
-> +	for (i = 0; i < 4; ++i) {
-
-And here as well.
-
-Otherwise the patch looks fine, and once you fix this, I will apply it. 
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+Well you don't really need the value for offline CPUs, until they're
+online right? So all you need to do is iterate all the box muck in a
+hotplug handler and set the right pointer, no? (I suspect this would
+need to be done in CPU_STARTING).
