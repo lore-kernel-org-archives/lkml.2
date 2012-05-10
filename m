@@ -1,367 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933012Ab2EJXku (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 19:40:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32202 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932891Ab2EJXkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 19:40:40 -0400
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 08/29] KEYS: RSA signature verification algorithm [ver #4]
-To: rusty@rustcorp.com.au
-Cc: kyle@mcmartin.ca, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        David Howells <dhowells@redhat.com>
-Date: Fri, 11 May 2012 00:40:29 +0100
-Message-ID: <20120510234029.4137.20346.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120510233901.4137.19023.stgit@warthog.procyon.org.uk>
-References: <20120510233901.4137.19023.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S932941Ab2EJXvE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 19:51:04 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:37786 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932879Ab2EJXvB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 19:51:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Message-ID: <8473859b-42f3-4354-b5ba-fd5b8cbac22f@default>
+Date: Thu, 10 May 2012 16:50:30 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Minchan Kim <minchan@kernel.org>, Konrad Wilk <konrad.wilk@oracle.com>
+Cc: Nitin Gupta <ngupta@vflare.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: RE: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+References: <4FA33DF6.8060107@kernel.org> <20120509201918.GA7288@kroah.com>
+ <4FAB21E7.7020703@kernel.org> <20120510140215.GC26152@phenom.dumpdata.com>
+ <4FABD503.4030808@vflare.org> <4FABDA9F.1000105@linux.vnet.ibm.com>
+ <20120510151941.GA18302@kroah.com> <4FABECF5.8040602@vflare.org>
+ <20120510164418.GC13964@kroah.com> <4FABF9D4.8080303@vflare.org>
+ <20120510173322.GA30481@phenom.dumpdata.com> <4FAC4E3B.3030909@kernel.org>
+In-Reply-To: <4FAC4E3B.3030909@kernel.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the RSA algorithm (PKCS#1 / RFC3447).  At this time, only signature
-verification is supported.  This uses the asymmetric public key subtype to hold
-its key data.
+> From: Minchan Kim [mailto:minchan@kernel.org]
+> 
+> Okay. Now it works but zcache coupled with zsmalloc tightly.
+> User of zsmalloc should never know internal of zs_handle.
+> 
+> 3)
+> 
+> - zsmalloc.h
+> void *zs_handle_to_ptr(struct zs_handle handle)
+> {
+> 	return handle.hanle;
+> }
+> 
+> static struct zv_hdr *zv_create(..)
+> {
+> 	struct zs_handle handle;
+> 	..
+> 	handle = zs_malloc(pool, size);
+> 	..
+> 	return zs_handle_to_ptr(handle);
+> }
+> 
+> Why should zsmalloc support such interface?
+> It's a zcache problem so it's desriable to solve it in zcache internal.
+> And in future, if we can add/remove zs_handle's fields, we can't make
+> sure such API.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Hi Minchan --
 
- security/keys/crypto/Kconfig      |    7 +
- security/keys/crypto/Makefile     |    1 
- security/keys/crypto/crypto_rsa.c |  282 +++++++++++++++++++++++++++++++++++++
- security/keys/crypto/public_key.h |    2 
- 4 files changed, 292 insertions(+), 0 deletions(-)
- create mode 100644 security/keys/crypto/crypto_rsa.c
+I'm confused so maybe I am misunderstanding or you can
+explain further.  It seems like you are trying to redesign
+zsmalloc so that it can be a pure abstraction in a library.
+While I understand and value abstractions in software
+designs, the primary use now of zsmalloc is in zcache.  If
+there are other users that require a different interface
+or a more precise abstract API, zsmalloc could then
+evolve to meet the needs of multiple users.  But I think
+zcache is going to need more access to the internals
+of its allocator, not less.  Zsmalloc is currently missing
+some important functionality that (I believe) will be
+necessary to turn zcache into an enterprise-ready,
+always-on kernel feature.  If it evolves to add that
+functionality, then it may no longer be able to provide
+generic abstract access... in which case generic zsmalloc
+may then have zero users in the kernel.
 
+So I'd suggest we hold off on trying to make zsmalloc
+"pretty" until we better understand how it will be used
+by zcache (and ramster) and, if there are any, any future
+users.
 
-diff --git a/security/keys/crypto/Kconfig b/security/keys/crypto/Kconfig
-index 5f2b8ac..4e3777e 100644
---- a/security/keys/crypto/Kconfig
-+++ b/security/keys/crypto/Kconfig
-@@ -15,3 +15,10 @@ config CRYPTO_KEY_PUBLIC_KEY_SUBTYPE
- 	  If signature generation and/or verification are to be used,
- 	  appropriate hash algorithms (such as SHA-1) must be available.
- 	  ENOPKG will be reported if the requisite algorithm is unavailable.
-+
-+config CRYPTO_KEY_PKEY_ALGO_RSA
-+	tristate "RSA public-key algorithm"
-+	depends on CRYPTO_KEY_PUBLIC_KEY_SUBTYPE
-+	select MPILIB_EXTRA
-+	help
-+	  This option enables support for the RSA algorithm (PKCS#1, RFC3447).
-diff --git a/security/keys/crypto/Makefile b/security/keys/crypto/Makefile
-index 6384306..b6b1a5a 100644
---- a/security/keys/crypto/Makefile
-+++ b/security/keys/crypto/Makefile
-@@ -6,3 +6,4 @@ obj-$(CONFIG_CRYPTO_KEY_TYPE) += crypto_keys.o
- crypto_keys-y := crypto_type.o crypto_verify.o
- 
- obj-$(CONFIG_CRYPTO_KEY_PUBLIC_KEY_SUBTYPE) += public_key.o
-+obj-$(CONFIG_CRYPTO_KEY_PKEY_ALGO_RSA) += crypto_rsa.o
-diff --git a/security/keys/crypto/crypto_rsa.c b/security/keys/crypto/crypto_rsa.c
-new file mode 100644
-index 0000000..beb5181
---- /dev/null
-+++ b/security/keys/crypto/crypto_rsa.c
-@@ -0,0 +1,282 @@
-+/* RSA asymmetric public-key algorithm [RFC3447]
-+ *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+#define pr_fmt(fmt) "RSA: "fmt
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include "public_key.h"
-+
-+MODULE_LICENSE("GPL");
-+
-+#define kenter(FMT, ...) \
-+	pr_devel("==> %s("FMT")\n", __func__, ##__VA_ARGS__)
-+#define kleave(FMT, ...) \
-+	pr_devel("<== %s()"FMT"\n", __func__, ##__VA_ARGS__)
-+
-+/*
-+ * Hash algorithm OIDs plus ASN.1 DER wrappings [RFC4880 sec 5.2.2].
-+ */
-+static const u8 RSA_digest_info_MD5[] = {
-+	0x30, 0x20, 0x30, 0x0C, 0x06, 0x08,
-+	0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05, /* OID */
-+	0x05, 0x00, 0x04, 0x10
-+};
-+
-+static const u8 RSA_digest_info_SHA1[] = {
-+	0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
-+	0x2B, 0x0E, 0x03, 0x02, 0x1A,
-+	0x05, 0x00, 0x04, 0x14
-+};
-+
-+static const u8 RSA_digest_info_RIPE_MD_160[] = {
-+	0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
-+	0x2B, 0x24, 0x03, 0x02, 0x01,
-+	0x05, 0x00, 0x04, 0x14
-+};
-+
-+static const u8 RSA_digest_info_SHA224[] = {
-+	0x30, 0x2d, 0x30, 0x0d, 0x06, 0x09,
-+	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04,
-+	0x05, 0x00, 0x04, 0x1C
-+};
-+
-+static const u8 RSA_digest_info_SHA256[] = {
-+	0x30, 0x31, 0x30, 0x0d, 0x06, 0x09,
-+	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
-+	0x05, 0x00, 0x04, 0x20
-+};
-+
-+static const u8 RSA_digest_info_SHA384[] = {
-+	0x30, 0x41, 0x30, 0x0d, 0x06, 0x09,
-+	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02,
-+	0x05, 0x00, 0x04, 0x30
-+};
-+
-+static const u8 RSA_digest_info_SHA512[] = {
-+	0x30, 0x51, 0x30, 0x0d, 0x06, 0x09,
-+	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03,
-+	0x05, 0x00, 0x04, 0x40
-+};
-+
-+static const struct {
-+	const u8 const *data;
-+	size_t size;
-+} RSA_ASN1_templates[PKEY_HASH__LAST] = {
-+#define _(X) { RSA_digest_info_##X, sizeof(RSA_digest_info_##X) }
-+	[PKEY_HASH_MD5]		= _(MD5),
-+	[PKEY_HASH_SHA1]	= _(SHA1),
-+	[PKEY_HASH_RIPE_MD_160]	= _(RIPE_MD_160),
-+	[PKEY_HASH_SHA256]	= _(SHA256),
-+	[PKEY_HASH_SHA384]	= _(SHA384),
-+	[PKEY_HASH_SHA512]	= _(SHA512),
-+	[PKEY_HASH_SHA224]	= _(SHA224),
-+#undef _
-+};
-+
-+/*
-+ * RSAVP1() function [RFC3447 sec 5.2.2]
-+ */
-+static int RSAVP1(const struct public_key *key, MPI s, MPI *_m)
-+{
-+	MPI m;
-+	int ret;
-+
-+	/* (1) Validate 0 <= s < n */
-+	if (mpi_cmp_ui(s, 0) < 0) {
-+		kleave(" = -EBADMSG [s < 0]");
-+		return -EBADMSG;
-+	}
-+	if (mpi_cmp(s, key->rsa.n) >= 0) {
-+		kleave(" = -EBADMSG [s >= n]");
-+		return -EBADMSG;
-+	}
-+
-+	m = mpi_alloc(0);
-+	if (!m)
-+		return -ENOMEM;
-+
-+	/* (2) m = s^e mod n */
-+	ret = mpi_powm(m, s, key->rsa.e, key->rsa.n);
-+	if (ret < 0) {
-+		mpi_free(m);
-+		return ret;
-+	}
-+
-+	*_m = m;
-+	return 0;
-+}
-+
-+/*
-+ * Integer to Octet String conversion [RFC3447 sec 4.1]
-+ */
-+static int RSA_I2OSP(MPI x, size_t xLen, u8 **_X)
-+{
-+	unsigned X_size, x_size;
-+	int X_sign;
-+	u8 *X;
-+
-+	/* Make sure the string is the right length.  The number should begin
-+	 * with { 0x00, 0x01, ... } so we have to account for 15 leading zero
-+	 * bits not being reported by MPI.
-+	 */
-+	x_size = mpi_get_nbits(x);
-+	pr_devel("size(x)=%u xLen*8=%zu\n", x_size, xLen * 8);
-+	if (x_size != xLen * 8 - 15)
-+		return -ERANGE;
-+
-+	X = mpi_get_buffer(x, &X_size, &X_sign);
-+	if (!X)
-+		return -ENOMEM;
-+	if (X_sign < 0) {
-+		kfree(X);
-+		return -EBADMSG;
-+	}
-+	if (X_size != xLen - 1) {
-+		kfree(X);
-+		return -EBADMSG;
-+	}
-+
-+	*_X = X;
-+	return 0;
-+}
-+
-+/*
-+ * Perform the RSA signature verification.
-+ * @H: Value of hash of data and metadata
-+ * @EM: The computed signature value
-+ * @k: The size of EM (EM[0] is an invalid location but should hold 0x00)
-+ * @hash_size: The size of H
-+ * @asn1_template: The DigestInfo ASN.1 template
-+ * @asn1_size: Size of asm1_template[]
-+ */
-+static int RSA_verify(const u8 *H, const u8 *EM, size_t k, size_t hash_size,
-+		      const u8 *asn1_template, size_t asn1_size)
-+{
-+	unsigned PS_end, T_offset, i;
-+
-+	kenter(",,%zu,%zu,%zu", k, hash_size, asn1_size);
-+
-+	if (k < 2 + 1 + asn1_size + hash_size)
-+		return -EBADMSG;
-+
-+	/* Decode the EMSA-PKCS1-v1_5 */
-+	if (EM[1] != 0x01) {
-+		kleave(" = -EBADMSG [EM[1] == %02u]", EM[1]);
-+		return -EBADMSG;
-+	}
-+
-+	T_offset = k - (asn1_size + hash_size);
-+	PS_end = T_offset - 1;
-+	if (EM[PS_end] != 0x00) {
-+		kleave(" = -EBADMSG [EM[T-1] == %02u]", EM[PS_end]);
-+		return -EBADMSG;
-+	}
-+
-+	for (i = 2; i < PS_end; i++) {
-+		if (EM[i] != 0xff) {
-+			kleave(" = -EBADMSG [EM[PS%x] == %02u]", i - 2, EM[i]);
-+			return -EBADMSG;
-+		}
-+	}
-+
-+	if (memcmp(asn1_template, EM + T_offset, asn1_size) != 0) {
-+		kleave(" = -EBADMSG [EM[T] ASN.1 mismatch]");
-+		return -EBADMSG;
-+	}
-+
-+	if (memcmp(H, EM + T_offset + asn1_size, hash_size) != 0) {
-+		kleave(" = -EKEYREJECTED [EM[T] hash mismatch]");
-+		return -EKEYREJECTED;
-+	}
-+
-+	kleave(" = 0");
-+	return 0;
-+}
-+
-+/*
-+ * Perform the verification step [RFC3447 sec 8.2.2].
-+ */
-+static int RSA_verify_signature(const struct public_key *key,
-+				const struct public_key_signature *sig)
-+{
-+	size_t tsize;
-+	int ret;
-+
-+	/* Variables as per RFC3447 sec 8.2.2 */
-+	const u8 *H = sig->digest;
-+	u8 *EM = NULL;
-+	MPI m = NULL;
-+	size_t k;
-+
-+	kenter("");
-+
-+	/* (1) Check the signature size against the public key modulus size */
-+	k = (mpi_get_nbits(key->rsa.n) + 7) / 8;
-+
-+	tsize = (mpi_get_nbits(sig->rsa.s) + 7) / 8;
-+	pr_devel("step 1: k=%zu size(S)=%zu\n", k, tsize);
-+	if (tsize != k) {
-+		ret = -EBADMSG;
-+		goto error;
-+	}
-+
-+	/* (2b) Apply the RSAVP1 verification primitive to the public key */
-+	ret = RSAVP1(key, sig->rsa.s, &m);
-+	if (ret < 0)
-+		goto error;
-+
-+	/* (2c) Convert the message representative (m) to an encoded message
-+	 *      (EM) of length k octets.
-+	 *
-+	 *      NOTE!  The leading zero byte is suppressed by MPI, so we pass a
-+	 *      pointer to the _preceding_ byte to RSA_verify()!
-+	 */
-+	ret = RSA_I2OSP(m, k, &EM);
-+	if (ret < 0)
-+		goto error;
-+
-+#if 0
-+	{
-+		int i;
-+		printk("H:  ");
-+		for (i = 0; i < sig->digest_size; i++)
-+			printk("%02x", H[i]);
-+		printk("\n");
-+	}
-+
-+	{
-+		int i;
-+		printk("EM: 00");
-+		for (i = 0; i < k - 1; i++)
-+			printk("%02x", EM[i]);
-+		printk("\n");
-+	}
-+#endif
-+
-+	ret = RSA_verify(H, EM - 1, k, sig->digest_size,
-+			 RSA_ASN1_templates[sig->pkey_hash_algo].data,
-+			 RSA_ASN1_templates[sig->pkey_hash_algo].size);
-+
-+error:
-+	kfree(EM);
-+	mpi_free(m);
-+	kleave(" = %d", ret);
-+	return ret;
-+}
-+
-+const struct public_key_algorithm RSA_public_key_algorithm = {
-+	.name		= "RSA",
-+	.n_pub_mpi	= 2,
-+	.n_sec_mpi	= 3,
-+	.n_sig_mpi	= 1,
-+	.verify		= RSA_verify_signature,
-+};
-+EXPORT_SYMBOL_GPL(RSA_public_key_algorithm);
-diff --git a/security/keys/crypto/public_key.h b/security/keys/crypto/public_key.h
-index 81ed603..7913615 100644
---- a/security/keys/crypto/public_key.h
-+++ b/security/keys/crypto/public_key.h
-@@ -42,6 +42,8 @@ struct public_key_algorithm {
- 		      const struct public_key_signature *sig);
- };
- 
-+extern const struct public_key_algorithm RSA_public_key_algorithm;
-+
- /*
-  * Asymmetric public key data
-  */
-
+That's just my opinion...
+Dan
