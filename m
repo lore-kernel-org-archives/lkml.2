@@ -1,227 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761519Ab2EJTKW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 15:10:22 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:34018 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756447Ab2EJTKU (ORCPT
+	id S1761532Ab2EJTLu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 15:11:50 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39213 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756447Ab2EJTLs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 15:10:20 -0400
-Message-ID: <1336676986.947.47.camel@mop>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
- variable-length record buffer
-From: Kay Sievers <kay@vrfy.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
-Date: Thu, 10 May 2012 21:09:46 +0200
-In-Reply-To: <CA+55aFxUaNC4SGEodrdddkDN6t=Sbx=P4XyaHkj7eTQBQOeLeA@mail.gmail.com>
-References: <1336004953.4240.9.camel@mop>
-	 <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
-	 <1336475689.1179.12.camel@mop>
-	 <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
-	 <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
-	 <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
-	 <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com>
-	 <20120509070710.GA29981@gmail.com>
-	 <CAPXgP11evyQQKNDaa00R7qsOFy5Xk-utN1w9OgB4y6NxLZG=UA@mail.gmail.com>
-	 <1336611278.728.9.camel@mop>
-	 <CA+55aFyrrH0jJV--L=ugt0YK7pT+jmhjvt_WRWyenyiroN97zg@mail.gmail.com>
-	 <1336667984.947.24.camel@mop>
-	 <CA+55aFxUaNC4SGEodrdddkDN6t=Sbx=P4XyaHkj7eTQBQOeLeA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 10 May 2012 15:11:48 -0400
+From: "Guyotte, Greg" <gguyotte@ti.com>
+To: "J, KEERTHY" <j-keerthy@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Hilman, Kevin" <khilman@ti.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+CC: "Pihet-XID, Jean" <j-pihet@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        "Gopinath, Thara" <thara@ti.com>, "Menon, Nishanth" <nm@ti.com>
+Subject: RE: [PATCH V3 07/10] ARM: OMAP2+: SmartReflex: Use per-OPP data
+ structure
+Thread-Topic: [PATCH V3 07/10] ARM: OMAP2+: SmartReflex: Use per-OPP data
+ structure
+Thread-Index: AQHNI9QR5F4qdfOsWk+E1NVsPf+qqJbDePYg
+Date: Thu, 10 May 2012 19:11:39 +0000
+Message-ID: <44C9A5C2B412554B8C50A260EB4EF32703971E34@DFLE32.ent.ti.com>
+References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
+ <1335462041-4949-8-git-send-email-j-keerthy@ti.com>
+In-Reply-To: <1335462041-4949-8-git-send-email-j-keerthy@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-10 at 09:47 -0700, Linus Torvalds wrote:
-> On Thu, May 10, 2012 at 9:39 AM, Kay Sievers <kay@vrfy.org> wrote:
+Hi Jean,
 
->  An interrupt that prints out with KERN_DEFAULT had better not act
->  the same way as KERN_CONT.
+> -----Original Message-----
+> From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
+> owner@vger.kernel.org] On Behalf Of J, KEERTHY
+> Sent: Thursday, April 26, 2012 12:41 PM
+> To: linux-omap@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+> Hilman, Kevin; rjw@sisk.pl; linux-kernel@vger.kernel.org; linux-
+> pm@lists.linux-foundation.org
+> Cc: Pihet-XID, Jean; J, KEERTHY; Paul Walmsley; Gopinath, Thara; Menon,
+> Nishanth
+> Subject: [PATCH V3 07/10] ARM: OMAP2+: SmartReflex: Use per-OPP data
+> structure
+> 
+> From: Jean Pihet <j-pihet@ti.com>
+> 
+> The SmartReflex driver incorrectly treats some per-OPP data as data
+> common to all OPPs (e.g., ERRMINLIMIT).  Move this data into a per-OPP
+> data structure.
+> 
+> Furthermore, in order to make the SmartReflex implementation ready for
+> the move to drivers/, remove the dependency from the SR driver code
+> to the voltage layer by querying the data tables only from the SR device
+> init code.
+> 
+> Based on Paul's original code for the SmartReflex driver conversion.
+> 
+> Signed-off-by: Jean Pihet <j-pihet@ti.com>
+> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> Cc: Paul Walmsley <paul@pwsan.com>
+> Cc: Thara Gopinath <thara@ti.com>
+> Cc: Nishanth Menon <nm@ti.com>
+> Cc: Kevin Hilman <khilman@ti.com>
+> ---
+>  arch/arm/mach-omap2/smartreflex.c |   38 +++++++++++++++++---------------
+> ----
+>  arch/arm/mach-omap2/sr_device.c   |   36 +++++++++++++++++++++++++++++---
+> --
+>  include/linux/power/smartreflex.h |    8 +++++-
+>  3 files changed, 54 insertions(+), 28 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-
+> omap2/smartreflex.c
+> index acef08d..20075de 100644
+> --- a/arch/arm/mach-omap2/smartreflex.c
+> +++ b/arch/arm/mach-omap2/smartreflex.c
+> @@ -347,22 +347,23 @@ static void sr_v2_disable(struct omap_sr *sr)
+>  	sr_write_reg(sr, IRQSTATUS, IRQSTATUS_MCUDISABLEACKINT);
+>  }
+> 
+> -static u32 sr_retrieve_nvalue(struct omap_sr *sr, u32 efuse_offs)
+> +static struct omap_sr_nvalue_table *sr_retrieve_nvalue_row(
+> +				struct omap_sr *sr, u32 efuse_offs)
+>  {
+>  	int i;
+> 
+>  	if (!sr->nvalue_table) {
+>  		dev_warn(&sr->pdev->dev, "%s: Missing ntarget value table\n",
+>  			__func__);
+> -		return 0;
+> +		return NULL;
+>  	}
+> 
+>  	for (i = 0; i < sr->nvalue_count; i++) {
+>  		if (sr->nvalue_table[i].efuse_offs == efuse_offs)
+> -			return sr->nvalue_table[i].nvalue;
+> +			return &sr->nvalue_table[i];
+>  	}
+> 
+> -	return 0;
+> +	return NULL;
+>  }
+> 
+>  /* Public Functions */
+> @@ -586,7 +587,7 @@ int sr_enable(struct voltagedomain *voltdm, unsigned
+> long volt)
+>  {
+>  	struct omap_volt_data *volt_data;
+>  	struct omap_sr *sr = _sr_lookup(voltdm);
+> -	u32 nvalue_reciprocal;
+> +	struct omap_sr_nvalue_table *nvalue_row;
+>  	int ret;
+> 
+>  	if (IS_ERR(sr)) {
+> @@ -602,16 +603,16 @@ int sr_enable(struct voltagedomain *voltdm, unsigned
+> long volt)
+>  		return PTR_ERR(volt_data);
+>  	}
+> 
+> -	nvalue_reciprocal = sr_retrieve_nvalue(sr, volt_data-
+> >sr_efuse_offs);
+> +	nvalue_row = sr_retrieve_nvalue_row(sr, volt_data->sr_efuse_offs);
+> 
+> -	if (!nvalue_reciprocal) {
+> -		dev_warn(&sr->pdev->dev, "%s: NVALUE = 0 at voltage %ld\n",
+> -			__func__, volt);
+> +	if (!nvalue_row) {
+> +		dev_warn(&sr->pdev->dev, "%s: failure getting SR data for this
+> voltage %ld\n",
+> +			 __func__, volt);
+>  		return -ENODATA;
+>  	}
+> 
+>  	/* errminlimit is opp dependent and hence linked to voltage */
+> -	sr->err_minlimit = volt_data->sr_errminlimit;
+> +	sr->err_minlimit = nvalue_row->errminlimit;
+> 
+>  	pm_runtime_get_sync(&sr->pdev->dev);
+> 
+> @@ -624,7 +625,7 @@ int sr_enable(struct voltagedomain *voltdm, unsigned
+> long volt)
+>  	if (ret)
+>  		return ret;
+> 
+> -	sr_write_reg(sr, NVALUERECIPROCAL, nvalue_reciprocal);
+> +	sr_write_reg(sr, NVALUERECIPROCAL, nvalue_row->nvalue);
+> 
+>  	/* SRCONFIG - enable SR */
+>  	sr_modify_reg(sr, SRCONFIG, SRCONFIG_SRENABLE, SRCONFIG_SRENABLE);
+> @@ -872,7 +873,6 @@ static int __init omap_sr_probe(struct platform_device
+> *pdev)
+>  	struct omap_sr_data *pdata = pdev->dev.platform_data;
+>  	struct resource *mem, *irq;
+>  	struct dentry *nvalue_dir;
+> -	struct omap_volt_data *volt_data;
+>  	int i, ret = 0;
+> 
+>  	sr_info = kzalloc(sizeof(struct omap_sr), GFP_KERNEL);
+> @@ -990,12 +990,10 @@ static int __init omap_sr_probe(struct
+> platform_device *pdev)
+>  		goto err_debugfs;
+>  	}
+> 
+> -	omap_voltage_get_volttable(sr_info->voltdm, &volt_data);
+> -	if (!volt_data) {
+> -		dev_warn(&pdev->dev, "%s: %s: No Voltage table for the"
+> -			" corresponding vdd. Cannot create debugfs"
+> -			"entries for n-values\n",
+> -			__func__, sr_info->name);
+> +	if (sr_info->nvalue_count == 0 || !sr_info->nvalue_table) {
+> +		dev_warn(&pdev->dev, "%s: %s: No Voltage table for the
+> corresponding vdd. Cannot create debugfs entries for n-values\n",
+> +			 __func__, sr_info->name);
+> +
+>  		ret = -ENODATA;
+>  		goto err_debugfs;
+>  	}
+> @@ -1003,8 +1001,8 @@ static int __init omap_sr_probe(struct
+> platform_device *pdev)
+>  	for (i = 0; i < sr_info->nvalue_count; i++) {
+>  		char name[NVALUE_NAME_LEN + 1];
+> 
+> -		snprintf(name, sizeof(name), "volt_%d",
+> -			 volt_data[i].volt_nominal);
+> +		snprintf(name, sizeof(name), "volt_%lu",
+> +				sr_info->nvalue_table[i].volt_nominal);
+>  		(void) debugfs_create_x32(name, S_IRUGO | S_IWUSR, nvalue_dir,
+>  				&(sr_info->nvalue_table[i].nvalue));
+>  	}
+> diff --git a/arch/arm/mach-omap2/sr_device.c b/arch/arm/mach-
+> omap2/sr_device.c
+> index e081174..e107e39 100644
+> --- a/arch/arm/mach-omap2/sr_device.c
+> +++ b/arch/arm/mach-omap2/sr_device.c
+> @@ -36,7 +36,10 @@ static void __init sr_set_nvalues(struct omap_volt_data
+> *volt_data,
+>  				struct omap_sr_data *sr_data)
+>  {
+>  	struct omap_sr_nvalue_table *nvalue_table;
+> -	int i, count = 0;
+> +	int i, j, count = 0;
+> +
+> +	sr_data->nvalue_count = 0;
+> +	sr_data->nvalue_table = NULL;
+> 
+>  	while (volt_data[count].volt_nominal)
+>  		count++;
+> @@ -44,8 +47,14 @@ static void __init sr_set_nvalues(struct omap_volt_data
+> *volt_data,
+>  	nvalue_table = kzalloc(sizeof(struct omap_sr_nvalue_table)*count,
+>  			GFP_KERNEL);
+> 
+> -	for (i = 0; i < count; i++) {
+> +	if (!nvalue_table) {
+> +		pr_err("OMAP: SmartReflex: cannot allocate memory for n-value
+> table\n");
+> +		return;
+> +	}
+> +
+> +	for (i = 0, j = 0; i < count; i++) {
+>  		u32 v;
+> +
+>  		/*
+>  		 * In OMAP4 the efuse registers are 24 bit aligned.
+>  		 * A __raw_readl will fail for non-32 bit aligned address
+> @@ -58,15 +67,30 @@ static void __init sr_set_nvalues(struct
+> omap_volt_data *volt_data,
+>  				omap_ctrl_readb(offset + 1) << 8 |
+>  				omap_ctrl_readb(offset + 2) << 16;
+>  		} else {
+> -			 v = omap_ctrl_readl(volt_data[i].sr_efuse_offs);
+> +			v = omap_ctrl_readl(volt_data[i].sr_efuse_offs);
+>  		}
+> 
+> -		nvalue_table[i].efuse_offs = volt_data[i].sr_efuse_offs;
+> -		nvalue_table[i].nvalue = v;
+> +		/*
+> +		 * Many OMAP SoCs don't have the eFuse values set.
+> +		 * For example, pretty much all OMAP3xxx before
+> +		 * ES3.something.
+> +		 *
+> +		 * XXX There needs to be some way for board files or
+> +		 * userspace to add these in.
+> +		 */
+> +		if (v == 0)
+> +			continue;
+> +
+> +		nvalue_table[j].nvalue = v;
+> +		nvalue_table[j].efuse_offs = volt_data[i].sr_efuse_offs;
+> +		nvalue_table[j].errminlimit = volt_data[i].sr_errminlimit;
+> +		nvalue_table[j].volt_nominal = volt_data[i].volt_nominal;
+> +
+> +		j++;
+>  	}
+> 
+>  	sr_data->nvalue_table = nvalue_table;
+> -	sr_data->nvalue_count = count;
+> +	sr_data->nvalue_count = j;
+>  }
+> 
+>  static int __init sr_dev_init(struct omap_hwmod *oh, void *user)
+> diff --git a/include/linux/power/smartreflex.h
+> b/include/linux/power/smartreflex.h
+> index 78b795e..222f901 100644
+> --- a/include/linux/power/smartreflex.h
+> +++ b/include/linux/power/smartreflex.h
+> @@ -243,12 +243,16 @@ struct omap_sr_class_data {
+>  /**
+>   * struct omap_sr_nvalue_table	- Smartreflex n-target value info
+>   *
+> - * @efuse_offs:	The offset of the efuse where n-target values are stored.
+> - * @nvalue:	The n-target value.
+> + * @efuse_offs:	  The offset of the efuse where n-target values are
+> stored.
+> + * @nvalue:	  The n-target value.
+> + * @errminlimit:  The value of the ERRMINLIMIT bitfield for this n-target
+> + * @volt_nominal: microvolts DC that the VDD is initially programmed to
+>   */
+>  struct omap_sr_nvalue_table {
+>  	u32 efuse_offs;
+>  	u32 nvalue;
+> +	u32 errminlimit;
+> +	unsigned long volt_nominal;
 
-Good point, understood, and adapted to the new logic.
+[GG] I would suggest that we also need to add errmaxlimit and errweight fields to this structure.  These are very much possible to change per OPP, though it hasn't been common in implementations up to now.
 
-
-Here is a new RFC version. I think it's slightly better than the
-currently implemented logic in Greg's tree:
-
-We fully isolate continuation users from non-continuation users. If a
-continuation user gets interrupted by an ordinary non-continuation
-user, we will not touch the continuation buffer, we just emit the
-ordinary message. When the same thread comes back and continues its
-printing, we still append to the earlier buffer we stored.
-
-The only case where printk() still gets messed up now, is when multiple
-threads (or interrupts) race against each other.
-
-We will also never wrongly merge two racing continuation users into one
-line.
-
-
-Current intended behavior, and general rules:
-printk() starting with KERN_* (not KERN_CONT) and ending with '\n' will
-*always* logged as single line, *never* be merged with anything else. 
-
-printk() not starting with any KERN_* might get merged with an earlier
-line buffered by the *same* thread.
-
-printk() not ending with '\n' will be buffered.
-
-Buffered lines will be flushed when a different thread emits a printk()
-that needs to be buffered --> race.
-
-Buffered line will be flushed, when the same thread emits a printk()
-with a KERN_* (not KERN_CONT) --> newline missing.
-
-Buffered line will be joined, when the same thread emits a printk()
-without any KERN_* or with KERN_CONT.
-
-Does that sounds correct? Anything to add or adjust?
-
-Thanks,
-Kay
-
----
-
-  printk.c |   97 +++++++++++++++++++++++++++++++++++----------------------------
-  1 file changed, 54 insertions(+), 43 deletions(-)
-
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1232,13 +1232,13 @@ asmlinkage int vprintk_emit(int facility, int level,
- 			    const char *fmt, va_list args)
- {
- 	static int recursion_bug;
--	static char buf[LOG_LINE_MAX];
--	static size_t buflen;
--	static int buflevel;
-+	static char cont_buf[LOG_LINE_MAX];
-+	static size_t cont_len;
-+	static int cont_level;
-+	static struct task_struct *cont_task;
- 	static char textbuf[LOG_LINE_MAX];
--	static struct task_struct *cont;
- 	char *text = textbuf;
--	size_t textlen;
-+	size_t text_len;
- 	unsigned long flags;
- 	int this_cpu;
- 	bool newline = false;
-@@ -1288,11 +1288,11 @@ asmlinkage int vprintk_emit(int facility, int level,
- 	 * The printf needs to come first; we need the syslog
- 	 * prefix which might be passed-in as a parameter.
- 	 */
--	textlen = vscnprintf(text, sizeof(textbuf), fmt, args);
-+	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
- 
- 	/* mark and strip a trailing newline */
--	if (textlen && text[textlen-1] == '\n') {
--		textlen--;
-+	if (text_len && text[text_len-1] == '\n') {
-+		text_len--;
- 		newline = true;
- 	}
- 
-@@ -1306,49 +1306,60 @@ asmlinkage int vprintk_emit(int facility, int level,
- 			prefix = true;
- 		case 'c':	/* KERN_CONT */
- 			text += 3;
--			textlen -= 3;
-+			text_len -= 3;
- 		}
- 	}
- 
--	if (buflen && (prefix || dict || cont != current)) {
--		/* flush existing buffer */
--		log_store(facility, buflevel, NULL, 0, buf, buflen);
--		printed_len += buflen;
--		buflen = 0;
--	}
-+	if (level == -1)
-+		level = default_message_loglevel;
- 
--	if (buflen == 0) {
--		/* remember level for first message in the buffer */
--		if (level == -1)
--			buflevel = default_message_loglevel;
--		else
--			buflevel = level;
--	}
-+	if (!newline) {
-+		if (cont_len && (prefix || cont_task != current)) {
-+			/*
-+			 * Flush earlier buffer, either from a different
-+			 * thread, or when we've seen a new prefix.
-+			 */
-+			log_store(facility, cont_level, NULL, 0, cont_buf, cont_len);
-+			cont_len = 0;
-+		}
- 
--	if (buflen || !newline) {
--		/* append to existing buffer, or buffer until next message */
--		if (buflen + textlen > sizeof(buf))
--			textlen = sizeof(buf) - buflen;
--		memcpy(buf + buflen, text, textlen);
--		buflen += textlen;
--	}
-+		if (!cont_len) {
-+			cont_level = level;
-+			cont_task = current;
-+		}
-+
-+		/* buffer/append to earlier buffer from same thread */
-+		if (cont_len + text_len > sizeof(cont_buf))
-+			text_len = sizeof(cont_buf) - cont_len;
-+		memcpy(cont_buf + cont_len, text, text_len);
-+		cont_len += text_len;
-+	} else {
-+		if (cont_len && cont_task == current) {
-+			if (prefix) {
-+				/*
-+				 * New prefix in same thread; flush. Either
-+				 * no earlier newline, or in an interrupt.
-+				 */
-+				log_store(facility, cont_level,
-+					  NULL, 0, cont_buf, cont_len);
-+				cont_len = 0;
-+			}
- 
--	if (newline) {
--		/* end of line; flush buffer */
--		if (buflen) {
--			log_store(facility, buflevel,
--				  dict, dictlen, buf, buflen);
--			printed_len += buflen;
--			buflen = 0;
-+			/* append to earlier buffer and flush */
-+			if (cont_len + text_len > sizeof(cont_buf))
-+				text_len = sizeof(cont_buf) - cont_len;
-+			memcpy(cont_buf + cont_len, text, text_len);
-+			cont_len += text_len;
-+			log_store(facility, cont_level,
-+				  NULL, 0, cont_buf, cont_len);
-+			cont_len = 0;
-+			cont_task = NULL;
-+			printed_len = cont_len;
- 		} else {
--			log_store(facility, buflevel,
--				  dict, dictlen, text, textlen);
--			printed_len += textlen;
-+			log_store(facility, level,
-+				  dict, dictlen, text, text_len);
-+			printed_len = text_len;
- 		}
--		cont = NULL;
--	} else {
--		/* remember thread which filled the buffer */
--		cont = current;
- 	}
- 
- 	/*
-
-
+>  };
+> 
+>  /**
+> --
+> 1.7.5.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
