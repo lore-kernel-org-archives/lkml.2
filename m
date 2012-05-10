@@ -1,69 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab2EJLO4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 07:14:56 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:39328 "EHLO trinity.fluff.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753121Ab2EJLOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 07:14:17 -0400
-Date: Thu, 10 May 2012 11:41:36 +0100
-From: Ben Dooks <ben-linux@fluff.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Wolfgang Denk <wd@denx.de>, linux-embedded@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Igor Grinberg <grinberg@compulab.co.il>,
-        Olof Johansson <olof@lixom.net>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@ardb.de>, linux-arm-kernel@lists.infradead.org
-Subject: Re: Handling of modular boards
-Message-ID: <20120510104136.GA30103@trinity.fluff.org>
-References: <20120504185850.GO14230@opensource.wolfsonmicro.com>
- <201205041934.08830.arnd@arndb.de>
- <20120504203357.6B79B206451@gemini.denx.de>
- <20120504220944.GT14230@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120504220944.GT14230@opensource.wolfsonmicro.com>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+	id S1759057Ab2EJLRv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 07:17:51 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:13399 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145Ab2EJLRr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 07:17:47 -0400
+X-AuditID: cbfee61a-b7b97ae000004342-39-4faba3d95ce9
+Message-id: <4FABA3C3.9070300@samsung.com>
+Date: Thu, 10 May 2012 20:17:23 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412
+ Thunderbird/11.0.1
+MIME-version: 1.0
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>,
+        Kyungmin Park <kmpark@infradead.org>, linux-mmc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        kgene.kim@samsung.com, cjb@laptop.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/7] mmc: dw_mmc: add samsung exynos5250 specific extentions
+References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
+ <1335935266-25289-5-git-send-email-thomas.abraham@linaro.org>
+ <CAH9JG2XBinh=XAVnt3EnWrEqeTKz34d9yB6wfiuF-J-Se_Q__Q@mail.gmail.com>
+ <4FA0E706.8060700@samsung.com>
+ <CAJuYYwS=qExrAjG1kgd=tPYL0pQeP+7xE1SuMaP+do-Eg3D7eQ@mail.gmail.com>
+In-reply-to: <CAJuYYwS=qExrAjG1kgd=tPYL0pQeP+7xE1SuMaP+do-Eg3D7eQ@mail.gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 04, 2012 at 11:09:45PM +0100, Mark Brown wrote:
-> On Fri, May 04, 2012 at 10:33:57PM +0200, Wolfgang Denk wrote:
+On 05/10/2012 07:55 PM, Thomas Abraham wrote:
+
+> On 2 May 2012 13:19, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+>> On 05/02/2012 04:01 PM, Kyungmin Park wrote:
+>>
+>>> Hi,
+>>>
+>>> On 5/2/12, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+>>>> The instantiation of the Synopsis Designware controller on Exynos5250
+>>>> include extension for SDR and DDR specific tx/rx phase shift timing
+>>>> and CIU internal divider. In addition to that, the option to skip the
+>>>> command hold stage is also introduced. Add support for these Exynos5250
+>>>> specfic extenstions.
 > 
-> > On the other hand, some of the issues we're trying to solve here
-> > for the kernel are also present in the boot loader, so this needs to
-> > do this anyway - whether by inserting new or modifying (enabling or
-> > disabling) existing properties in the DT is not really relevant here.
+> [...]
 > 
-> FWIW if the bootloader can usefully handle this stuff I think that's a
-> good approach but there is substantial variation in quality of
-> implementation between bootloaders and even when the bootloader is a
-> good one it's not always practical to update it or the data it relies
-> on.
+>>>> @@ -265,6 +266,10 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc,
+>>>> struct mmc_command *cmd)
+>>>>                      cmdr |= SDMMC_CMD_DAT_WR;
+>>>>      }
+>>>>
+>>>> +    if (slot->host->drv_data->ctrl_type == DW_MCI_TYPE_EXYNOS5250)
+>>>> +            if (SDMMC_CLKSEL_GET_SELCLK_DRV(mci_readl(slot->host, CLKSEL)))
+>>>> +                    cmdr |= SDMMC_USE_HOLD_REG;
+>>> Some other board, custom SOC also can use this HOLD register. So it's
+>>> not EXYNOS5250 specific one. I think we introduce the more generic
+>>> quirks for this instead of SOC specific.
+>>
+>> One more, I think that also need to check the IMPLEMENT_HOLD_REG bit in HCON register.
+>> It has dependency with that.
+> 
+> The above code is specific to Exynos5250 and hence it is not required
+> to check the IMPLEMENT_HOLD_REG bit in HCON register. On Exynos5250,
+> the hold register is implemented and available.
 
-I agree, the list of devices should be in the device-tree handed to
-whatever OS is being booted. It isn't a Linux specific problem that
-we're looking at here.
+Right, the above code is specific for Exynos5250.
+But HOLD_REG should be used in other SoC. it's not only Exynos5250 specific.
+I want more generic code than specific code for Exynos5250.
 
-Any operating system, pre-OS test suite, etc. is going going to need
-this information, and in my view the bootloader should be doing whatever
-is needed to create a device-tree to passed through to the next loaded
-system.
+Best Regards,
+Jaehoon Chung
 
-Also, having the information available to $bootloader means the user
-can verify the presence of the peripherals before the OS is loaded.
+> 
+> 
+>> As Mr.Park is mentioned, this register is clock phasing.
+>> In spec, card is enumerated in SDR12 or SDR25 mode, the application must program the use_hold_reg.
+> 
+> Exynos5250 hardware manual specifies additional restrictions on the
+> use of hold register. The above code checks for those restrictions and
+> programs the USE_HOLD_REG accordingly. Please let me know if there is
+> any condition that is not handled by the above code.
+> 
+> Thanks,
+> Thomas.
+> 
+>>
+>> Best Regards,
+>> Jaehoon Chung
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
--- 
-Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
-
-Large Hadron Colada: A large Pina Colada that makes the universe disappear.
 
