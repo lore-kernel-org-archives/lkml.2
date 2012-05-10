@@ -1,196 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932672Ab2EJML5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 08:11:57 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35649 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932093Ab2EJMLs (ORCPT
+	id S1759385Ab2EJMMx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 08:12:53 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:36392 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756730Ab2EJMMv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 08:11:48 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 2/2] mfd: lm3533: remove boost attributes
-Date: Thu, 10 May 2012 14:11:29 +0200
-Message-Id: <1336651889-6425-2-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.7.8.5
-In-Reply-To: <1336651889-6425-1-git-send-email-jhovold@gmail.com>
-References: <20120510120742.GA29437@localhost>
- <1336651889-6425-1-git-send-email-jhovold@gmail.com>
+	Thu, 10 May 2012 08:12:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120510090910.GD3908@opensource.wolfsonmicro.com>
+References: <20120510143329.4cef3cd78ce5ea55416b1d93@canb.auug.org.au>
+	<CACRpkdYsHXnWHvBw6Pt1atvwKP6KYjfu-PwQnL_L7-yW1-4_FA@mail.gmail.com>
+	<20120510090910.GD3908@opensource.wolfsonmicro.com>
+Date: Thu, 10 May 2012 14:12:51 +0200
+Message-ID: <CACRpkdbc3dWpTvsojUvjCitdBMJ6F9U+uhSoJLt3-zFc=azhxw@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the sound-asoc tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Ola Lilja <ola.o.lilja@stericsson.com>, Liam Girdwood <lrg@ti.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove boost-frequency and ovp attributes, which can be set through
-platform data, from sysfs.
+On Thu, May 10, 2012 at 11:09 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, May 10, 2012 at 10:30:50AM +0200, Linus Walleij wrote:
+>
+>>  menuconfig SND_SOC_UX500
+>>         tristate "SoC Audio support for Ux500 platform"
+>>         depends on SND_SOC
+>> +       depends on MFD_DB8500_PRCMU
+>>         help
+>>                 Say Y if you want to enable ASoC-support for
+>>                 any of the Ux500 platforms (e.g. U8500).
+>
+> I applied this (without your signoff as you didn't supply one so it'll
+> show up as my patch,
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- .../ABI/testing/sysfs-bus-i2c-devices-lm3533       |   23 -----
- drivers/mfd/lm3533-core.c                          |   88 --------------------
- 2 files changed, 0 insertions(+), 111 deletions(-)
+Sorry, Acked-by :-)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-i2c-devices-lm3533 b/Documentation/ABI/testing/sysfs-bus-i2c-devices-lm3533
-index 5700721..1b62230 100644
---- a/Documentation/ABI/testing/sysfs-bus-i2c-devices-lm3533
-+++ b/Documentation/ABI/testing/sysfs-bus-i2c-devices-lm3533
-@@ -1,26 +1,3 @@
--What:		/sys/bus/i2c/devices/.../boost_freq
--Date:		April 2012
--KernelVersion:	3.5
--Contact:	Johan Hovold <jhovold@gmail.com>
--Description:
--		Set the boost converter switching frequency (0, 1), where
--
--		0 -  500Hz
--		1 - 1000Hz
--
--What:		/sys/bus/i2c/devices/.../boost_ovp
--Date:		April 2012
--KernelVersion:	3.5
--Contact:	Johan Hovold <jhovold@gmail.com>
--Description:
--		Set the boost converter over-voltage protection threshold
--		(0..3), where
--
--		0 - 16V
--		1 - 24V
--		2 - 32V
--		3 - 40V
--
- What:		/sys/bus/i2c/devices/.../output_hvled[n]
- Date:		April 2012
- KernelVersion:	3.5
-diff --git a/drivers/mfd/lm3533-core.c b/drivers/mfd/lm3533-core.c
-index 053438c..d670543 100644
---- a/drivers/mfd/lm3533-core.c
-+++ b/drivers/mfd/lm3533-core.c
-@@ -26,11 +26,9 @@
- #include <linux/mfd/lm3533.h>
- 
- 
--#define LM3533_BOOST_OVP_MAX		0x03
- #define LM3533_BOOST_OVP_MASK		0x06
- #define LM3533_BOOST_OVP_SHIFT		1
- 
--#define LM3533_BOOST_FREQ_MAX		0x01
- #define LM3533_BOOST_FREQ_MASK		0x01
- #define LM3533_BOOST_FREQ_SHIFT		0
- 
-@@ -253,96 +251,12 @@ struct lm3533_device_attribute {
- 		struct {
- 			u8 id;
- 		} output;
--		struct {
--			u8 reg;
--			u8 shift;
--			u8 mask;
--			u8 max;
--		} generic;
- 	} u;
- };
- 
- #define to_lm3533_dev_attr(_attr) \
- 	container_of(_attr, struct lm3533_device_attribute, dev_attr)
- 
--static ssize_t show_lm3533_reg(struct device *dev,
--				struct device_attribute *attr, char *buf)
--{
--	struct lm3533 *lm3533 = dev_get_drvdata(dev);
--	struct lm3533_device_attribute *lattr = to_lm3533_dev_attr(attr);
--	u8 val;
--	int ret;
--
--	ret = lm3533_read(lm3533, lattr->u.generic.reg, &val);
--	if (ret)
--		return ret;
--
--	val = (val & lattr->u.generic.mask) >> lattr->u.generic.shift;
--
--	return scnprintf(buf, PAGE_SIZE, "%u\n", val);
--}
--
--static ssize_t store_lm3533_reg(struct device *dev,
--						struct device_attribute *attr,
--						const char *buf, size_t len)
--{
--	struct lm3533 *lm3533 = dev_get_drvdata(dev);
--	struct lm3533_device_attribute *lattr = to_lm3533_dev_attr(attr);
--	u8 val;
--	int ret;
--
--	if (kstrtou8(buf, 0, &val) || val > lattr->u.generic.max)
--		return -EINVAL;
--
--	val = val << lattr->u.generic.shift;
--	ret = lm3533_update(lm3533, lattr->u.generic.reg, val,
--							lattr->u.generic.mask);
--	if (ret)
--		return ret;
--
--	return len;
--}
--
--#define GENERIC_ATTR(_reg, _max, _mask, _shift) \
--	{ .reg		= _reg, \
--	  .max		= _max, \
--	  .mask		= _mask, \
--	  .shift	= _shift }
--
--#define LM3533_GENERIC_ATTR(_name, _mode, _show, _store, _type,	\
--						_reg, _max, _mask, _shift) \
--	struct lm3533_device_attribute lm3533_dev_attr_##_name = { \
--		.dev_attr	= __ATTR(_name, _mode, _show, _store), \
--		.type		= _type, \
--		.u.generic	= GENERIC_ATTR(_reg, _max, _mask, _shift) }
--
--#define LM3533_GENERIC_ATTR_RW(_name, _type, _reg, _max, _mask, _shift) \
--	LM3533_GENERIC_ATTR(_name, S_IRUGO | S_IWUSR, \
--					show_lm3533_reg, store_lm3533_reg, \
--					_type, _reg, _max, _mask, _shift)
--
--#define LM3533_BOOST_ATTR_RW(_name, _NAME) \
--	LM3533_GENERIC_ATTR_RW(_name, LM3533_ATTR_TYPE_BACKLIGHT, \
--				LM3533_REG_BOOST_PWM, LM3533_##_NAME##_MAX, \
--				LM3533_##_NAME##_MASK, LM3533_##_NAME##_SHIFT)
--/*
-- * Boost Over Voltage Protection Select
-- *
-- *   0 - 16 V (default)
-- *   1 - 24 V
-- *   2 - 32 V
-- *   3 - 40 V
-- */
--static LM3533_BOOST_ATTR_RW(boost_ovp, BOOST_OVP);
--
--/*
-- * Boost Frequency Select
-- *
-- *   0 - 500 kHz (default)
-- *   1 - 1 MHz
-- */
--static LM3533_BOOST_ATTR_RW(boost_freq, BOOST_FREQ);
--
- static ssize_t show_output(struct device *dev,
- 				struct device_attribute *attr, char *buf)
- {
-@@ -432,8 +346,6 @@ static LM3533_OUTPUT_LVLED_ATTR_RW(4);
- static LM3533_OUTPUT_LVLED_ATTR_RW(5);
- 
- static struct attribute *lm3533_attributes[] = {
--	&lm3533_dev_attr_boost_freq.dev_attr.attr,
--	&lm3533_dev_attr_boost_ovp.dev_attr.attr,
- 	&lm3533_dev_attr_output_hvled1.dev_attr.attr,
- 	&lm3533_dev_attr_output_hvled2.dev_attr.attr,
- 	&lm3533_dev_attr_output_lvled1.dev_attr.attr,
--- 
-1.7.8.5
+>> But it seems it has a wider dependency on some MOP500 board
+>> stuff being merged first, which is more of a problem I think, part
+>> of that is pending in the Ux500 tree.
+>
+> If this has a dependency on a particular board the driver is badly
+> broken, this is the driver for the SoC I2S controller so it should work
+> with any board.
+>
+> That said in terms of applying the change the arch/arm stuff shouldn't
+> be an issue - it was just registering devices and clocks.  The driver
+> won't load until the two trees are merged but that's not an issue, it's
+> not going to run anyway if we delay applying it.
 
+Yeah let's see if it works, if it breaks again we can just pull it out
+and defer it.
+
+Yours,
+Linus Walleij
