@@ -1,78 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761318Ab2EJSgU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 14:36:20 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:36728 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1760669Ab2EJSgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 14:36:18 -0400
-Message-ID: <4FAC0A9E.3020909@sgi.com>
-Date: Thu, 10 May 2012 13:36:14 -0500
-From: Mark Tinguely <tinguely@sgi.com>
-User-Agent: Mozilla/5.0 (X11; FreeBSD amd64; rv:9.0) Gecko/20120122 Thunderbird/9.0
+	id S1761352Ab2EJSgy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 14:36:54 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:36661 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761329Ab2EJSgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 14:36:51 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [RFC][PATCH 2/2] PM / Domains: Add preliminary cpuidle support
+Date: Thu, 10 May 2012 20:41:42 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Colin Cross <ccross@android.com>, Kevin Hilman <khilman@ti.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+References: <201205092340.26561.rjw@sisk.pl> <201205092343.11050.rjw@sisk.pl> <4FAB9412.5030102@ti.com>
+In-Reply-To: <4FAB9412.5030102@ti.com>
 MIME-Version: 1.0
-To: Ben Myers <bpm@sgi.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: linux-next: build failure after merge of the xfs tree
-References: <20120510130134.0efffc5ba1f3a80c614e8f29@canb.auug.org.au> <20120510183245.GL3963@sgi.com>
-In-Reply-To: <20120510183245.GL3963@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201205102041.42473.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/12 13:32, Ben Myers wrote:
+On Thursday, May 10, 2012, Santosh Shilimkar wrote:
+> Rafael,
+> 
+> On Thursday 10 May 2012 03:13 AM, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> > On some systems there are CPU cores located in the same power
+> > domains as I/O devices.  Then, power can only be removed from the
+> > domain if all I/O devices in it are not in use and the CPU core
+> > is idle.  Add preliminary support for that to the generic PM domains
+> > framework.
+> > 
+> I am just curious to know, what kind of IO devices, you are
+> talking here?
 
-> Signed-off-by: Ben Myers<bpm@sgi.com>
->
-> Index: xfs/fs/xfs/xfs_alloc.c
-> ===================================================================
-> --- xfs.orig/fs/xfs/xfs_alloc.c
-> +++ xfs/fs/xfs/xfs_alloc.c
-> @@ -47,8 +47,6 @@ STATIC int xfs_alloc_ag_vextent_near(xfs
->   STATIC int xfs_alloc_ag_vextent_size(xfs_alloc_arg_t *);
->   STATIC int xfs_alloc_ag_vextent_small(xfs_alloc_arg_t *,
->   		xfs_btree_cur_t *, xfs_agblock_t *, xfs_extlen_t *, int *);
-> -STATIC void xfs_extent_busy_trim(struct xfs_alloc_arg *,
-> -		xfs_agblock_t, xfs_extlen_t, xfs_agblock_t *, xfs_extlen_t *);
->
->   /*
->    * Lookup the record equal to [bno, len] in the btree given by cur.
-> Index: xfs/fs/xfs/xfs_extent_busy.c
-> ===================================================================
-> --- xfs.orig/fs/xfs/xfs_extent_busy.c
-> +++ xfs/fs/xfs/xfs_extent_busy.c
-> @@ -345,7 +345,7 @@ restart:
->    * args->minlen no suitable extent could be found, and the higher level
->    * code needs to force out the log and retry the allocation.
->    */
-> -STATIC void
-> +void
->   xfs_extent_busy_trim(
->   	struct xfs_alloc_arg	*args,
->   	xfs_agblock_t		bno,
-> Index: xfs/fs/xfs/xfs_extent_busy.h
-> ===================================================================
-> --- xfs.orig/fs/xfs/xfs_extent_busy.h
-> +++ xfs/fs/xfs/xfs_extent_busy.h
-> @@ -54,6 +54,10 @@ void
->   xfs_extent_busy_reuse(struct xfs_mount *mp, xfs_agnumber_t agno,
->   	xfs_agblock_t fbno, xfs_extlen_t flen, bool userdata);
->
-> +void
-> +xfs_extent_busy_trim(struct xfs_alloc_arg *args, xfs_agblock_t bno,
-> +	xfs_extlen_t len, xfs_agblock_t *rbno, xfs_extlen_t *rlen);
-> +
->   int
->   xfs_extent_busy_ag_cmp(void *priv, struct list_head *a, struct list_head *b);
->
->
+Nothing specific, really.  It can be any kind of I/O devices that happen
+to be in the same power domain.  This includes USB, SDHI, MMCIF controllers
+on the SoC I have in mind in particular.
 
-Hmmm, I saw that before. I have been hand patching that to test.
+> And also how those devices linked with CPU low power
+> states apart from being part of same power domain. And is it
+> the power domain or more of voltage domain, we are talking here.
 
-Looks good.
+Depending on the definitions I guess.  How do you define a power domain and
+a voltage domain?
 
-Reviewed-by: Mark Tinguely <tinguely@sgi.com>
+> > This assumes that there is only one CPU core in the system and it is
+> > supposed to be set up in the following way.
+> > 
+> > First, the platform is expected to provide a cpuidle driver with one
+> > extra state designated for the generic PM domains code to handle.
+> > This state should be initially disabled and its exit_latency value
+> > should be set to whatever time is needed to bring up the CPU core
+> > itself after restoring power to it, not including the domain's
+> > power on latency.  Its .enter() callback should point to a procedure
+> > that will save the CPU core's state as appropriate before power
+> > removal.  On success, it should return the same value as it has
+> > been passed as its third argument, but it shouldn't put the CPU
+> > core into a C-state.  If it is about to return the index of
+> > a different cpuidle state, however, it should make sure that the CPU
+> > be put into that state before it returns.
+> > 
+> > The remaining characteristics of the extra cpuidle state, referred to
+> > as the "domain" cpuidle state below, (e.g. power usage, target
+> > residency) should be populated in accordance with the properties of
+> > the hardware.
+> > 
+> > Next, the platform should execute genpd_attach_cpuidle() on the PM
+> > domain containing the CPU core.  That will cause the generic PM
+> > domains framework to treat that domain in a special way such that:
+> > 
+> >  * When all devices in the domain have been suspended and it is about
+> >    to be turned off, the states of the devices will be saved, but
+> >    power will not be removed from the domain.  Instead, the "domain"
+> >    cpuidle state will be enabled so that power can be removed from
+> >    the domain when the CPU core is idle and the state has been chosen
+> >    as the target by the cpuidle governor.  In that case, before
+> >    removing power from the domain, the framework will execute the
+> >    .enter() callback initially defined for the "domain" state.
+> > 
+> >  * When the first I/O device in the domain is resumed and
+> >    __pm_genpd_poweron(() is called for the first time after
+> >    power has been removed from the domain, the "domain" cpuidle
+> >    state will be disabled to avoid subsequent surprise power removals
+> >    via cpuidle.
+> > 
+> 
+> If these are CPU cluster/package specific IO's like interrupt
+> controller, cache controller, Coherency interconnect etc and
+> if the intention is to ensure that these devices context
+> is saved/restored in cpuidle entry/exit, it can be handled with
+> CPU PM notifiers.
 
+Maybe it can, but I'm not so sure of that in general.
+
+> We already do that for ARM SOCs.
+
+Surely not all of them?  I know of a few at least where this isn't done.
+
+> From the patch description it seems, they are general purpose
+> peripherals.
+
+Yes, they are.
+
+> We had one thermal sensor on OMAP which
+> wrongly clocked from the CPU clock source and needed
+> some idle notifier infrastructure to prepare/resume
+> this device for idle entry/exit.
+
+The system I have in mind is designed in such a way that there is a power
+domain with three subdomains, one of which contains the CPU core and the
+remaining two contain I/O devices of various kinds.  General purpose as well
+as "core".
+
+Thanks,
+Rafael
