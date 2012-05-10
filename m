@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab2EJJJr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 05:09:47 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38504 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753457Ab2EJJJp (ORCPT
+	id S1757760Ab2EJJLC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 05:11:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48527 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754113Ab2EJJK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 05:09:45 -0400
-Date: Thu, 10 May 2012 19:09:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay@vrfy.org>, Greg KH <greg@kroah.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: linux-next: manual merge of the scsi-post-merge tree with the
- driver-core tree
-Message-Id: <20120510190939.27b673b74bc8ba187ba6f552@canb.auug.org.au>
-In-Reply-To: <20120510185746.1b7b8e582c0c968633b6e2f1@canb.auug.org.au>
-References: <20120510185746.1b7b8e582c0c968633b6e2f1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__10_May_2012_19_09_39_+1000_kv3EMBnItKjnoLFR"
+	Thu, 10 May 2012 05:10:59 -0400
+Date: Thu, 10 May 2012 02:10:27 -0700
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-20d23aaa31da295378abff4272716e3dfc72baf0@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, peterz@infradead.org, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1336490956-57145-1-git-send-email-dsahern@gmail.com>
+References: <1336490956-57145-1-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf stat:
+  handle ENXIO error for perf_event_open
+Git-Commit-ID: 20d23aaa31da295378abff4272716e3dfc72baf0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 02:10:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__10_May_2012_19_09_39_+1000_kv3EMBnItKjnoLFR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  20d23aaa31da295378abff4272716e3dfc72baf0
+Gitweb:     http://git.kernel.org/tip/20d23aaa31da295378abff4272716e3dfc72baf0
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Tue, 8 May 2012 09:29:16 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 9 May 2012 14:14:41 -0300
 
-This should have said "akpm tree" in the subject.
+perf stat: handle ENXIO error for perf_event_open
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+perf stat on PPC currently fails to run:
 
---Signature=_Thu__10_May_2012_19_09_39_+1000_kv3EMBnItKjnoLFR
-Content-Type: application/pgp-signature
+$ perf stat -- sleep 1
+  Error: open_counter returned with 6 (No such device or address). /bin/dmesg may provide additional information.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+  Fatal: Not all events could be opened.
 
-iQIcBAEBCAAGBQJPq4XTAAoJEECxmPOUX5FEb7IP/RduICp5o8ovkbNXcc5OszSJ
-ONAT9WRSrU5oDEuyULQ7s3YTTPGekNPiBj3f768BbgXfz4xswLfU6dQnsSLkVff6
-aVPlZ2WRAtBoAGg8mZyehUdzmZyg4gxhBGUD3xSFU8gSDwWwmqAyIQgF7D6Tl4WE
-+wTtW6+Lkf8eQDxv1vzu0nwQMp/KM3BaA9kO+srpVX36U/SAGBOegf+ocfEOD4o6
-J6RhjqZ0eVVN4Qkr9iCSTbIhcCeJsUbK0hvc0TzwBvM0lpZqLhZqqnOY/+YCk4V+
-FRhRlweoQL0F+EJTi+qEgxakKetv+0sjG4oBqpwSSXYq4LeGapCgb0vltOH4ZX0a
-u4rVk9KvSwfjM5wWCiAnaWL/UYW5f5NewugegHGcI0aACj7R9iv9C59g65T/hu5W
-/+QRvHo+zdMG9JovKL2Hr6GdXpkHgRBN7IZrSY4qsEOiNiCaDvIq4SIZe5oB48N/
-XFC9MSjMlqNmBQ32dDUnHZDZLcO3XEGeVxh+alWWkxXquLdrsdVWSIn0bZhRWnuy
-c7E3QiwgtfCSPzMMfm4ZIaKd2OTuQw/gIIHPVwVeN3eSulZvZl4AYbffeVJs7x/a
-4+uFvLygUs4YZJ7gzpXaagUiGwZXTdN3vTGrpQQ90FlH3Q4qkTmpF81HPhyoD+pA
-zDP1123eH1vv1aK9SRS1
-=4zak
------END PGP SIGNATURE-----
+The problem is that until 2.6.37 (behavior changed with commit b0a873e)
+perf on PPC returns ENXIO when hw_perf_event_init() fails. With this
+patch we get the expected behavior:
 
---Signature=_Thu__10_May_2012_19_09_39_+1000_kv3EMBnItKjnoLFR--
+$ perf stat -v -- sleep 1
+cycles event is not supported by the kernel.
+stalled-cycles-frontend event is not supported by the kernel.
+stalled-cycles-backend event is not supported by the kernel.
+instructions event is not supported by the kernel.
+branches event is not supported by the kernel.
+branch-misses event is not supported by the kernel.
+
+...
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1336490956-57145-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-stat.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 4532a78..1e5e9b2 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -488,8 +488,13 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 
+ 	list_for_each_entry(counter, &evsel_list->entries, node) {
+ 		if (create_perf_stat_counter(counter, first) < 0) {
++			/*
++			 * PPC returns ENXIO for HW counters until 2.6.37
++			 * (behavior changed with commit b0a873e).
++			 */
+ 			if (errno == EINVAL || errno == ENOSYS ||
+-			    errno == ENOENT || errno == EOPNOTSUPP) {
++			    errno == ENOENT || errno == EOPNOTSUPP ||
++			    errno == ENXIO) {
+ 				if (verbose)
+ 					ui__warning("%s event is not supported by the kernel.\n",
+ 						    event_name(counter));
