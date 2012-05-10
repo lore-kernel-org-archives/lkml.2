@@ -1,140 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394Ab2EJI1u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 04:27:50 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:54107 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757077Ab2EJI1r (ORCPT
+	id S1757422Ab2EJIaz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 04:30:55 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40535 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753518Ab2EJIav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 04:27:47 -0400
-Date: Thu, 10 May 2012 10:27:31 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, gregkh@linuxfoundation.org, riel@redhat.com,
-        luto@mit.edu, avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
-        fenghua.yu@intel.com, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
-        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
-        a.p.zijlstra@chello.nl, kamezawa.hiroyu@jp.fujitsu.com,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 7/7] x86/tlb: add tlb_flushall_factor into sysfs for
- user testing/tuning
-Message-ID: <20120510082731.GC30055@aftab.osrc.amd.com>
-References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
- <1336626013-28413-8-git-send-email-alex.shi@intel.com>
+	Thu, 10 May 2012 04:30:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336626013-28413-8-git-send-email-alex.shi@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120510143329.4cef3cd78ce5ea55416b1d93@canb.auug.org.au>
+References: <20120510143329.4cef3cd78ce5ea55416b1d93@canb.auug.org.au>
+Date: Thu, 10 May 2012 10:30:50 +0200
+Message-ID: <CACRpkdYsHXnWHvBw6Pt1atvwKP6KYjfu-PwQnL_L7-yW1-4_FA@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the sound-asoc tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 01:00:13PM +0800, Alex Shi wrote:
-> kernel will replace cr3 rewrite with invlpg when
->   tlb_flush_entries <= active_tlb_entries / 2^tlb_flushall_factor
-> if tlb_flushall_factor is -1, kernel won't do this replacement.
-> 
-> User can modify its value according to specific applications.
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
+On Thu, May 10, 2012 at 6:33 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Just minor nitpicks below.
+> After merging the sound-asoc tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>
+> In file included from sound/soc/ux500/ux500_msp_dai.c:21:0:
+> include/linux/mfd/dbx500-prcmu.h:614:19: error: redefinition of 'prcmu_abb_read'
+> include/linux/mfd/db8500-prcmu.h:673:19: note: previous definition of 'prcmu_abb_read' was here
+> include/linux/mfd/dbx500-prcmu.h:619:19: error: redefinition of 'prcmu_abb_write'
+> include/linux/mfd/db8500-prcmu.h:678:19: note: previous definition of 'prcmu_abb_write' was here
+> include/linux/mfd/dbx500-prcmu.h:630:19: error: redefinition of 'prcmu_config_clkout'
+> include/linux/mfd/db8500-prcmu.h:643:19: note: previous definition of 'prcmu_config_clkout' was here
+> include/linux/mfd/dbx500-prcmu.h:692:20: error: redefinition of 'prcmu_ac_wake_req'
+> include/linux/mfd/db8500-prcmu.h:683:20: note: previous definition of 'prcmu_ac_wake_req' was here
+> include/linux/mfd/dbx500-prcmu.h:694:20: error: redefinition of 'prcmu_ac_sleep_req'
+> include/linux/mfd/db8500-prcmu.h:685:20: note: previous definition of 'prcmu_ac_sleep_req' was here
+> sound/soc/ux500/ux500_msp_dai.c:23:27: fatal error: mach/hardware.h: No such file or directory
+> sound/soc/ux500/ux500_msp_i2s.c:21:27: fatal error: mach/hardware.h: No such file or directory
+>
+> Possibly caused by commit 3592b7f69a54 ("ASoC: Ux500: Add MSP I2S-driver").
+>
+> I have used the version of the sound-asoc tree from next-20120508 for today.
 
-> ---
->  Documentation/ABI/testing/sysfs-devices-system-cpu |   12 ++++++
->  arch/x86/Kconfig.debug                             |   11 ++++++
->  arch/x86/kernel/cpu/common.c                       |   37 ++++++++++++++++++++
->  drivers/base/cpu.c                                 |    4 ++
->  include/linux/cpu.h                                |    4 ++
->  5 files changed, 68 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
-> index e7be75b..05f8eb7 100644
-> --- a/Documentation/ABI/testing/sysfs-devices-system-cpu
-> +++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
-> @@ -78,6 +78,18 @@ Description:	Dynamic addition and removal of CPU's.  This is not hotplug
->  		the system.  Information writtento the file to remove CPU's
->  		is architecture specific.
->  
-> +What:		/sys/devices/system/cpu/tlb_flushall_factor
-> +Date:		May 2012
-> +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-> +Description:	tlb_flushall_factor show and setting interface
-> +		tlb_flushall_factor shows the balance point in replacing cr3
-> +		writting with multiple 'invlpg'. It will do this replacement
-> +		when flush_tlb_lines <= active_lines/2^tlb_flushall_factor
-> +		If tlb_flushall_factor is -1, means the replacement will be
-> +		disabled.
-> +
-> +		User can set this for the specific CPU or application.
-> +
->  What:		/sys/devices/system/cpu/cpu#/node
->  Date:		October 2009
->  Contact:	Linux memory management mailing list <linux-mm@kvack.org>
-> diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-> index e46c214..5b87493 100644
-> --- a/arch/x86/Kconfig.debug
-> +++ b/arch/x86/Kconfig.debug
-> @@ -129,6 +129,17 @@ config DOUBLEFAULT
->  	  option saves about 4k and might cause you much additional grey
->  	  hair.
->  
-> +config DEBUG_TLBFLUSH
-> +	bool "Enable user level tlb flush all setting"
+The PRCMU driver is only available on the UX500 platforms so building
+on x86_64 does not make sense.
 
-	bool "Set top limit of TLB entries to flush one-by-one"
+Ola/Mark: a simple patch like this should solve the issue I think?
 
-> +	depends on DEBUG_KERNEL && (X86_64 || X86_INVLPG)
-> +	---help---
-> +	  This option allows user tune tlb_flushall_factor knob that under
+diff --git a/sound/soc/ux500/Kconfig b/sound/soc/ux500/Kconfig
+index 9b0ae4e..f454f06 100644
+--- a/sound/soc/ux500/Kconfig
++++ b/sound/soc/ux500/Kconfig
+@@ -4,6 +4,7 @@
+ menuconfig SND_SOC_UX500
+        tristate "SoC Audio support for Ux500 platform"
+        depends on SND_SOC
++       depends on MFD_DB8500_PRCMU
+        help
+                Say Y if you want to enable ASoC-support for
+                any of the Ux500 platforms (e.g. U8500).
 
-			allows the user to tune the	... (remove "that")
 
-> +	  /sys/devices/system/cpu, set to -1 means do tlb flush all for any
+But it seems it has a wider dependency on some MOP500 board
+stuff being merged first, which is more of a problem I think, part
+of that is pending in the Ux500 tree.
 
-				 . Set to -1 means to flush the whole TLB for any
-
-> +	  multiple tlb lines evacuation demand. Otherwise kernel will use
-> +	  multiple 'invlpg' for the demand when
-> +	      flush_lines <= active_tlb_lines / 2^tlb_flushall_factor
-> +	  If in doubt, say "N"
-> +
->  config IOMMU_DEBUG
->  	bool "Enable IOMMU debugging"
->  	depends on GART_IOMMU && DEBUG_KERNEL
-> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-> index 8879d20..d1986c6 100644
-> --- a/arch/x86/kernel/cpu/common.c
-> +++ b/arch/x86/kernel/cpu/common.c
-> @@ -481,6 +481,43 @@ void __cpuinit cpu_detect_tlb(struct cpuinfo_x86 *c)
->  		tlb_flushall_factor);
->  }
->  
-> +#ifdef CONFIG_DEBUG_TLBFLUSH
-> +static ssize_t __tlb_flushall_factor_store(const char *buf,
-> +					size_t count, int smt)
-> +{
-> +	short factor = 0;
-> +
-> +	if (sscanf(buf, "%hd", &factor) != 1)
-> +		return -EINVAL;
-
-This means only single-digit factors, right?
-
-Why not use kstrtoul?
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Yours,
+Linus Walleij
