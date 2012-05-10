@@ -1,76 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab2EJWrB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 18:47:01 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24907 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761692Ab2EJWq7 (ORCPT
+	id S932796Ab2EJWrZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 18:47:25 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38621 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761728Ab2EJWrX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 18:46:59 -0400
-X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=g_LhDMiRcOYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=vhi3HUfkGJom_eI5vo8A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1336690016.14207.240.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH v22] edac, ras/hw_event.h: use events to handle hw issues
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Tony Luck <tony.luck@intel.com>
-Date: Thu, 10 May 2012 18:46:56 -0400
-In-Reply-To: <4FAC2B3E.8000105@redhat.com>
-References: <1336679788-4982-1-git-send-email-mchehab@redhat.com>
-	 <20120510204042.GA4598@aftab.osrc.amd.com> <4FAC2B3E.8000105@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Thu, 10 May 2012 18:47:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <201205092331.24487.rjw@sisk.pl>
+References: <1336438662-10484-1-git-send-email-ccross@android.com>
+	<1336438662-10484-5-git-send-email-ccross@android.com>
+	<201205092331.24487.rjw@sisk.pl>
+Date: Thu, 10 May 2012 15:47:21 -0700
+X-Google-Sender-Auth: 4vw3UbEWGcA_KHxqzd4bXOGVq58
+Message-ID: <CAMbhsRRzc9hPYLZvuwqsOP3RrF1dZVmzM_qfy_xHNL6mhtJzDA@mail.gmail.com>
+Subject: Re: [PATCHv4 4/4] cpuidle: coupled: add parallel barrier function
+From: Colin Cross <ccross@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@lists.linux-foundation.org, Kevin Hilman <khilman@ti.com>,
+        Len Brown <len.brown@intel.com>, Trinabh Gupta <g.trinabh@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-10 at 17:55 -0300, Mauro Carvalho Chehab wrote:
+On Wed, May 9, 2012 at 2:31 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Tuesday, May 08, 2012, Colin Cross wrote:
+>> Adds cpuidle_coupled_parallel_barrier, which can be used by coupled
+>> cpuidle state enter functions to handle resynchronization after
+>> determining if any cpu needs to abort.  The normal use case will
+>> be:
+>>
+>> static bool abort_flag;
+>> static atomic_t abort_barrier;
+>>
+>> int arch_cpuidle_enter(struct cpuidle_device *dev, ...)
+>> {
+>>       if (arch_turn_off_irq_controller()) {
+>>               /* returns an error if an irq is pending and would be lost
+>>                  if idle continued and turned off power */
+>>               abort_flag = true;
+>>       }
+>>
+>>       cpuidle_coupled_parallel_barrier(dev, &abort_barrier);
+>>
+>>       if (abort_flag) {
+>>               /* One of the cpus didn't turn off it's irq controller */
+>>               arch_turn_on_irq_controller();
+>>               return -EINTR;
+>>       }
+>>
+>>       /* continue with idle */
+>>       ...
+>> }
+>>
+>> This will cause all cpus to abort idle together if one of them needs
+>> to abort.
+>>
+>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Reviewed-by: Kevin Hilman <khilman@ti.com>
+>> Tested-by: Kevin Hilman <khilman@ti.com>
+>> Signed-off-by: Colin Cross <ccross@android.com>
+>> ---
+>>  drivers/cpuidle/coupled.c |   37 +++++++++++++++++++++++++++++++++++++
+>>  include/linux/cpuidle.h   |    4 ++++
+>>  2 files changed, 41 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+>> index 93101fb..3e65de1 100644
+>> --- a/drivers/cpuidle/coupled.c
+>> +++ b/drivers/cpuidle/coupled.c
+>> @@ -130,6 +130,43 @@ struct cpuidle_coupled {
+>>  static cpumask_t cpuidle_coupled_poked_mask;
+>>
+>>  /**
+>> + * cpuidle_coupled_parallel_barrier - synchronize all online coupled cpus
+>> + * @dev: cpuidle_device of the calling cpu
+>> + * @a:   atomic variable to hold the barrier
+>> + *
+>> + * No caller to this function will return from this function until all online
+>> + * cpus in the same coupled group have called this function.  Once any caller
+>> + * has returned from this function, the barrier is immediately available for
+>> + * reuse.
+>> + *
+>> + * The atomic variable a must be initialized to 0 before any cpu calls
+>> + * this function, will be reset to 0 before any cpu returns from this function.
+>> + *
+>> + * Must only be called from within a coupled idle state handler
+>> + * (state.enter when state.flags has CPUIDLE_FLAG_COUPLED set).
+>> + *
+>> + * Provides full smp barrier semantics before and after calling.
+>> + */
+>> +void cpuidle_coupled_parallel_barrier(struct cpuidle_device *dev, atomic_t *a)
+>> +{
+>> +     int n = dev->coupled->online_count;
+>> +
+>> +     smp_mb__before_atomic_inc();
+>> +     atomic_inc(a);
+>> +
+>> +     while (atomic_read(a) < n)
+>> +             cpu_relax();
+>> +
+>> +     if (atomic_inc_return(a) == n * 2) {
+>> +             atomic_set(a, 0);
+>> +             return;
+>> +     }
+>> +
+>> +     while (atomic_read(a) > n)
+>> +             cpu_relax();
+>> +}
+>
+> Well, this looks like "wait until all CPUs execute this code".  Don't we have
+> anything like this already somewhere?
+>
+>> +
+>> +/**
+>>   * cpuidle_state_is_coupled - check if a state is part of a coupled set
+>>   * @dev: struct cpuidle_device for the current cpu
+>>   * @drv: struct cpuidle_driver for the platform
+>> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+>> index 6038448..5ab7183 100644
+>> --- a/include/linux/cpuidle.h
+>> +++ b/include/linux/cpuidle.h
+>> @@ -183,6 +183,10 @@ static inline int cpuidle_wrap_enter(struct cpuidle_device *dev,
+>>
+>>  #endif
+>>
+>> +#ifdef CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED
+>> +void cpuidle_coupled_parallel_barrier(struct cpuidle_device *dev, atomic_t *a);
+>> +#endif
+>
+> Why exactly is the extra Kconfig option necessary?
 
-> >>  EXPORT_SYMBOL_GPL(edac_mc_handle_error);
-> >> diff --git a/include/ras/hw_event.h b/include/ras/hw_event.h
-> >> new file mode 100644
-> >> index 0000000..66981ef
-> >> --- /dev/null
-> >> +++ b/include/ras/hw_event.h
-> >> @@ -0,0 +1,77 @@
-> >> +#undef TRACE_SYSTEM
-> >> +#define TRACE_SYSTEM hw_event
-> > 
-> > 			ras
-> 
-> Then, the header name should be called as "ras.h", otherwise an error happens:
-> 
-> In file included from include/ras/hw_event.h:77:0,
->                  from drivers/edac/edac_mc.c:38:
-> include/trace/define_trace.h:79:43: fatal error: ../../include/ras/ras.h: Arquivo ou diretório não encontrado
-
->From samples/trace_events/trace-events-sample.h:
-
-/*
- * TRACE_INCLUDE_FILE is not needed if the filename and TRACE_SYSTEM are equal
- */
-#define TRACE_INCLUDE_FILE trace-events-sample
-
-Thus, you could do:
-
-+++ b/include/ras/hw_event.h
-
-+undef TRACE_SYSTEM
-+define TRACE_SYSTEM ras
-
-[...]
-
-#define TRACE_INCLUDE_FILE hw_event
-
-
--- Steve
-
-
+It prevents compiling in coupled.o (2k text section) on the majority
+of kernels that will never use it.
