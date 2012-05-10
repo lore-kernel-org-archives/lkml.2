@@ -1,38 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764Ab2EJWjg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 18:39:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36863 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761728Ab2EJWje (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 18:39:34 -0400
-Date: Thu, 10 May 2012 15:39:31 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] printk: correctly align __log_buf
-Message-ID: <20120510223931.GA30257@kroah.com>
-References: <1336688073-10664-1-git-send-email-swarren@wwwdotorg.org>
+	id S932771Ab2EJWoW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 18:44:22 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:40358 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761692Ab2EJWoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 18:44:20 -0400
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] PA-RISC: fix compile
+Date: Fri, 11 May 2012 00:44 +0200
+Message-ID: <24772505.xKFVoyPWuj@donald.sf-tec.de>
+User-Agent: KMail/4.8.3 (Linux/3.2.9-13-desktop; KDE/4.8.3; i686; ; )
+In-Reply-To: <CA+55aFwWrkmqFPW=hOPCiNDE9CGXrwk85W7-vt2Aeg5EC1MtJQ@mail.gmail.com>
+References: <4430485.xEvkeJU8MB@donald.sf-tec.de> <CA+55aFwWrkmqFPW=hOPCiNDE9CGXrwk85W7-vt2Aeg5EC1MtJQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336688073-10664-1-git-send-email-swarren@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="nextPart2476140.ODqGFRtFtZ"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 04:14:33PM -0600, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
+
+--nextPart2476140.ODqGFRtFtZ
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="ISO-8859-1"
+
+Linus Torvalds wrote:
+> On Thu, May 10, 2012 at 1:50 PM, Rolf Eike Beer <eike-kernel@sf-tec.de> 
+wrote:
+> >  arch/parisc/include/asm/hardware.h |    3 ++-
+> >  arch/parisc/include/asm/page.h     |    6 ++++++
+> >  arch/parisc/include/asm/pdc.h      |    7 -------
+> >  arch/parisc/include/asm/pgtable.h  |    2 ++
+> >  arch/parisc/include/asm/spinlock.h |    2 ++
+> >  arch/parisc/kernel/pdc_cons.c      |    1 +
+> >  arch/parisc/kernel/time.c          |    1 +
+> >  drivers/parisc/sba_iommu.c         |    1 +
+> >  drivers/video/console/sticore.c    |    2 ++
+> >  include/asm-generic/getorder.h     |    2 +-
+> >  10 files changed, 18 insertions(+), 9 deletions(-)
 > 
-> __log_buf must be aligned, because a 64-bit value is written directly
-> to it as part of struct log. Alignment of the log entries is typically
-> handled by log_store(), but this only triggers for subsequent entries,
-> not the very first (or wrapped) entries.
+> The diffstat doesn't match the actual patches - there are no getorder.h
+> changes.
+> 
+> Hmm?
 
-Thanks for tracking this down and fixing it, much appreciated.  I've
-applied your patch now.
+Yes, sorry. That diffstat is of the old patch series that included the 
+getorder.h patch I now sent to you seperately as it doesn't have to do with 
+the compile breakage itself.
 
-greg k-h
+Eike
+--nextPart2476140.ODqGFRtFtZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iEYEABECAAYFAk+sRLoACgkQXKSJPmm5/E4UtwCfSmH1eJ9pCsa/pPaQnGx3Tder
+amwAoJ8y0oEj7uKnnJGgqPtVRJZsSB+v
+=pV3S
+-----END PGP SIGNATURE-----
+
+--nextPart2476140.ODqGFRtFtZ--
+
