@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab2EJAny (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 20:43:54 -0400
-Received: from genesysrack.ru ([195.178.208.66]:45342 "EHLO tservice.net.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756907Ab2EJAnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 20:43:52 -0400
-Date: Thu, 10 May 2012 04:43:50 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Greg KH <greg@kroah.com>
-Cc: Markus Franke <markus.franke@s2002.tu-chemnitz.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] w1: Add 1-wire slave device driver for DS28E04-100
-Message-ID: <20120510004350.GA8362@ioremap.net>
-References: <4FA1953B.40008@hrz.tu-chemnitz.de>
- <20120502202134.GB26628@kroah.com>
- <20120503180056.GB13988@ioremap.net>
- <4FAAD584.70102@hrz.tu-chemnitz.de>
- <20120509220636.GA27659@kroah.com>
- <4FAAECB7.8070904@hrz.tu-chemnitz.de>
- <20120509222411.GA24302@kroah.com>
- <4FAAF1C4.2050500@hrz.tu-chemnitz.de>
- <20120509235723.GA7404@ioremap.net>
- <20120510000126.GA2357@kroah.com>
+	id S1761493Ab2EJAtb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 20:49:31 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53531 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754507Ab2EJAt3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 20:49:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120510000126.GA2357@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+55aFyXP8PRusYYrpAnFfV=eL69ktfQfiGxAH1B-Ds8HH+bJQ@mail.gmail.com>
+References: <CAHo-OoxRj-sP1Tcy3oJ7DE3BOGSTnsWHZ5Q3hdmnK8A5jfjFcQ@mail.gmail.com>
+	<CA+55aFzY+W3ECUnyvqU_Su8_2TFqYj-K7U40KZaoe61oDUGdxw@mail.gmail.com>
+	<CAHo-OoxwSNFVCvdBxnMruKMebMW37NLX7eOKkLx=R7cSkhknGw@mail.gmail.com>
+	<CA+55aFyrSNTh3B7L=Lq1L_Hz=0NEPC95TWmo2-W9odKi+80XJg@mail.gmail.com>
+	<CAHo-OowjvXat8dZOpp50GO_KSTYBy_Wa96wvFUfTXmua3oBrUw@mail.gmail.com>
+	<CA+55aFyXP8PRusYYrpAnFfV=eL69ktfQfiGxAH1B-Ds8HH+bJQ@mail.gmail.com>
+Date: Wed, 9 May 2012 17:49:28 -0700
+Message-ID: <CAHo-Ooxj1u3Qyjxrk4yWRG_65_sMB1f4L-bJGPPPS=2tzpNqRg@mail.gmail.com>
+Subject: Re: setuid and RLIMIT_NPROC and 3.1+
+From: =?UTF-8?Q?Maciej_=C5=BBenczykowski?= <zenczykowski@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Neil Brown <neilb@suse.de>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 05:01:26PM -0700, Greg KH (greg@kroah.com) wrote:
-> Binary sysfs files should be "pass through" only, the kernel should not
-> touch the data involved in them at all, it is a pipe directly from the
-> kernel to userspace for binary blob data, like firmware images.  You
-> should never do any processing of any binary file data at all in the
-> kernel.
+> Well, those bggy apps have to be really *odd* buggy apps now. IOW,
+> they need to do setuid(), and then not execve(). At that point, they
+> really do have to check the error return, since there is no execve()
+> for them to check.
+>
+> In the end, we can do only so much to counter buggy apps. I think my
+> patch is a reasonable "we can try to give the error at execve() time,
+> but if somebody does tons of setuid() without ever doing the execve(),
+> at some point they do have to check the error return of setuid()
+> itself".
+>
+> I suspect most users of setuid() are good and check the error return.
 
-And if some of the data should be somehow changed, what interfact should
-be used? Also, Markus, does DS28E04 change written/read data when doing
-IO?
+If you return EAGAIN from setuid, because we've run into the hard
+limit, and userspace doesn't check it, then the exec will still
+succeed, and we'll end up running the exec'ed code as root.
+Which re-introduces the same bug this was trying to fix.  At that
+point we might as well just revert the 3.1 commit.
 
-I must admit, I never heared that binary sysfs files have to follow this
-constraint.
+(what if soft and hard nproc limits are the same? then it's always
+EAGAIN, so the bug is always reintroduced)
 
--- 
-	Evgeniy Polyakov
+In my opinion the buggy apps should be fixed and the 3.1 commit should
+be reverted both in upcoming 3.4 and in stable 3.1/3.2/3.3.
