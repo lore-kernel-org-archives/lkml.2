@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758726Ab2EJVKA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 17:10:00 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:57524 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758497Ab2EJVJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758532Ab2EJVJ5 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 10 May 2012 17:09:57 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:41815 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757552Ab2EJVJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 17:09:54 -0400
 From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, torvalds@linux-foundation.org
-Subject: [PATCH] use linux/bitops.h instead of linux/log2.h to get fls()
-Date: Thu, 10 May 2012 22:49:11 +0200
-Message-ID: <1953408.KQLKiNB2bP@donald.sf-tec.de>
+To: linux-parisc@vger.kernel.org
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org
+Subject: [PATCH 4/5] parisc: add missing include of asm/page.h to asm/pgtable.h
+Date: Thu, 10 May 2012 23:07:16 +0200
+Message-ID: <4289546.1CNkXRDMmz@donald.sf-tec.de>
 User-Agent: KMail/4.8.3 (Linux/3.2.9-13-desktop; KDE/4.8.3; i686; ; )
-In-Reply-To: <3154414.psmJh6J2U2@donald.sf-tec.de>
-References: <3154414.psmJh6J2U2@donald.sf-tec.de>
+In-Reply-To: <4430485.xEvkeJU8MB@donald.sf-tec.de>
+References: <4430485.xEvkeJU8MB@donald.sf-tec.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="ISO-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since d66acc39c7cee323733c8503b9de1821a56dff7e (bitops: Optimise get_order())
-getorder.h includes log2.h to get fls() and fls64(). They are not defined in
-log2.h, but in bitops.h. This works since log2.h includes bitops.h, but we
-should do it properly to not get any bad surprises if log2.h changes.
+Fixes these errors:
+
+In file included from /home/buildbot/repos/linux/arch/parisc/include/asm/io.h:5:0,
+                 from /home/buildbot/repos/linux/include/linux/io.h:22,
+                 from /home/buildbot/repos/linux/include/linux/pci.h:54,
+                 from /home/buildbot/repos/linux/arch/parisc/kernel/setup.c:35:
+/home/buildbot/repos/linux/arch/parisc/include/asm/pgtable.h:92:6: warning: "PAGE_SHIFT" is not defined [-Wundef]
+/home/buildbot/repos/linux/arch/parisc/include/asm/pgtable.h:92:6: warning: "PAGE_SHIFT" is not defined [-Wundef]
+/home/buildbot/repos/linux/arch/parisc/include/asm/pgtable.h:92:6: warning: "BITS_PER_PTE_ENTRY" is not defined [-Wundef]
 
 Signed-off-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
 ---
- include/asm-generic/getorder.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/parisc/include/asm/pgtable.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/asm-generic/getorder.h b/include/asm-generic/getorder.h
-index 65e4468..563114f 100644
---- a/include/asm-generic/getorder.h
-+++ b/include/asm-generic/getorder.h
-@@ -4,7 +4,7 @@
- #ifndef __ASSEMBLY__
+diff --git a/arch/parisc/include/asm/pgtable.h b/arch/parisc/include/asm/pgtable.h
+index 22dadeb..ee99f23 100644
+--- a/arch/parisc/include/asm/pgtable.h
++++ b/arch/parisc/include/asm/pgtable.h
+@@ -44,6 +44,8 @@ struct vm_area_struct;
  
- #include <linux/compiler.h>
--#include <linux/log2.h>
-+#include <linux/bitops.h>
+ #endif /* !__ASSEMBLY__ */
  
- /*
-  * Runtime evaluation of get_order()
++#include <asm/page.h>
++
+ #define pte_ERROR(e) \
+ 	printk("%s:%d: bad pte %08lx.\n", __FILE__, __LINE__, pte_val(e))
+ #define pmd_ERROR(e) \
 -- 
 1.7.9.2
 
---
-To unsubscribe from this list: send the line "unsubscribe linux-parisc" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
