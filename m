@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760626Ab2EJRe7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:34:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52483 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760605Ab2EJRey (ORCPT
+	id S1760643Ab2EJRfH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:35:07 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52779 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760605Ab2EJRfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:34:54 -0400
-Message-Id: <20120510173135.526757723@linuxfoundation.org>
+	Thu, 10 May 2012 13:35:00 -0400
+Message-Id: <20120510173135.615265392@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:32:02 -0700
+Date: Thu, 10 May 2012 10:32:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yuchung Cheng <ycheng@google.com>,
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
         Neal Cardwell <ncardwell@google.com>,
+        Tom Herbert <therbert@google.com>, Yuchung Cheng <ycheng@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 30/52] tcp: fix infinite cwnd in tcp_complete_cwr()
+Subject: [ 31/52] tcp: change tcp_adv_win_scale and tcp_rmem[2]
 In-Reply-To: <20120510173229.GA5678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Yuchung Cheng <ycheng@google.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 1cebce36d660c83bd1353e41f3e66abd4686f215 ]
+[ Upstream commit b49960a05e32121d29316cfdf653894b88ac9190 ]
 
-When the cwnd reduction is done, ssthresh may be infinite
-if TCP enters CWR via ECN or F-RTO. If cwnd is not undone, i.e.,
-undo_marker is set, tcp_complete_cwr() falsely set cwnd to the
-infinite ssthresh value. The correct operation is to keep cwnd
-intact because it has been updated in ECN or F-RTO.
+tcp_adv_win_scale default value is 2, meaning we expect a good citizen
+skb to have skb->len / skb->truesize ratio of 75% (3/4)
 
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
+In 2.6 kernels we (mis)accounted for typical MSS=1460 frame :
+1536 + 64 + 256 = 1856 'estimated truesize', and 1856 * 3/4 = 1392.
+So these skbs were considered as not bloated.
+
+With recent truesize fixes, a typical MSS=1460 frame truesize is now the
+more precise :
+2048 + 256 = 2304. But 2304 * 3/4 = 1728.
+So these skb are not good citizen anymore, because 1460 < 1728
+
+(GRO can escape this problem because it build skbs with a too low
+truesize.)
+
+This also means tcp advertises a too optimistic window for a given
+allocated rcvspace : When receiving frames, sk_rmem_alloc can hit
+sk_rcvbuf limit and we call tcp_prune_queue()/tcp_collapse() too often,
+especially when application is slow to drain its receive queue or in
+case of losses (netperf is fast, scp is slow). This is a major latency
+source.
+
+We should adjust the len/truesize ratio to 50% instead of 75%
+
+This patch :
+
+1) changes tcp_adv_win_scale default to 1 instead of 2
+
+2) increase tcp_rmem[2] limit from 4MB to 6MB to take into account
+better truesize tracking and to allow autotuning tcp receive window to
+reach same value than before. Note that same amount of kernel memory is
+consumed compared to 2.6 kernels.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Tom Herbert <therbert@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
 Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ Documentation/networking/ip-sysctl.txt |    4 ++--
+ net/ipv4/tcp.c                         |    9 +++++----
+ net/ipv4/tcp_input.c                   |    2 +-
+ 3 files changed, 8 insertions(+), 7 deletions(-)
 
+--- a/Documentation/networking/ip-sysctl.txt
++++ b/Documentation/networking/ip-sysctl.txt
+@@ -147,7 +147,7 @@ tcp_adv_win_scale - INTEGER
+ 	(if tcp_adv_win_scale > 0) or bytes-bytes/2^(-tcp_adv_win_scale),
+ 	if it is <= 0.
+ 	Possible values are [-31, 31], inclusive.
+-	Default: 2
++	Default: 1
+ 
+ tcp_allowed_congestion_control - STRING
+ 	Show/set the congestion control choices available to non-privileged
+@@ -410,7 +410,7 @@ tcp_rmem - vector of 3 INTEGERs: min, de
+ 	net.core.rmem_max.  Calling setsockopt() with SO_RCVBUF disables
+ 	automatic tuning of that socket's receive buffer size, in which
+ 	case this value is ignored.
+-	Default: between 87380B and 4MB, depending on RAM size.
++	Default: between 87380B and 6MB, depending on RAM size.
+ 
+ tcp_sack - BOOLEAN
+ 	Enable select acknowledgments (SACKS).
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -3240,7 +3240,7 @@ void __init tcp_init(void)
+ {
+ 	struct sk_buff *skb = NULL;
+ 	unsigned long limit;
+-	int max_share, cnt;
++	int max_rshare, max_wshare, cnt;
+ 	unsigned int i;
+ 	unsigned long jiffy = jiffies;
+ 
+@@ -3300,15 +3300,16 @@ void __init tcp_init(void)
+ 	tcp_init_mem(&init_net);
+ 	/* Set per-socket limits to no more than 1/128 the pressure threshold */
+ 	limit = nr_free_buffer_pages() << (PAGE_SHIFT - 7);
+-	max_share = min(4UL*1024*1024, limit);
++	max_wshare = min(4UL*1024*1024, limit);
++	max_rshare = min(6UL*1024*1024, limit);
+ 
+ 	sysctl_tcp_wmem[0] = SK_MEM_QUANTUM;
+ 	sysctl_tcp_wmem[1] = 16*1024;
+-	sysctl_tcp_wmem[2] = max(64*1024, max_share);
++	sysctl_tcp_wmem[2] = max(64*1024, max_wshare);
+ 
+ 	sysctl_tcp_rmem[0] = SK_MEM_QUANTUM;
+ 	sysctl_tcp_rmem[1] = 87380;
+-	sysctl_tcp_rmem[2] = max(87380, max_share);
++	sysctl_tcp_rmem[2] = max(87380, max_rshare);
+ 
+ 	printk(KERN_INFO "TCP: Hash tables configured "
+ 	       "(established %u bind %u)\n",
 --- a/net/ipv4/tcp_input.c
 +++ b/net/ipv4/tcp_input.c
-@@ -2866,11 +2866,14 @@ static inline void tcp_complete_cwr(stru
+@@ -83,7 +83,7 @@ int sysctl_tcp_ecn __read_mostly = 2;
+ EXPORT_SYMBOL(sysctl_tcp_ecn);
+ int sysctl_tcp_dsack __read_mostly = 1;
+ int sysctl_tcp_app_win __read_mostly = 31;
+-int sysctl_tcp_adv_win_scale __read_mostly = 2;
++int sysctl_tcp_adv_win_scale __read_mostly = 1;
+ EXPORT_SYMBOL(sysctl_tcp_adv_win_scale);
  
- 	/* Do not moderate cwnd if it's already undone in cwr or recovery. */
- 	if (tp->undo_marker) {
--		if (inet_csk(sk)->icsk_ca_state == TCP_CA_CWR)
-+		if (inet_csk(sk)->icsk_ca_state == TCP_CA_CWR) {
- 			tp->snd_cwnd = min(tp->snd_cwnd, tp->snd_ssthresh);
--		else /* PRR */
-+			tp->snd_cwnd_stamp = tcp_time_stamp;
-+		} else if (tp->snd_ssthresh < TCP_INFINITE_SSTHRESH) {
-+			/* PRR algorithm. */
- 			tp->snd_cwnd = tp->snd_ssthresh;
--		tp->snd_cwnd_stamp = tcp_time_stamp;
-+			tp->snd_cwnd_stamp = tcp_time_stamp;
-+		}
- 	}
- 	tcp_ca_event(sk, CA_EVENT_COMPLETE_CWR);
- }
+ int sysctl_tcp_stdurg __read_mostly;
 
 
