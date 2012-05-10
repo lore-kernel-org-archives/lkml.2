@@ -1,68 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab2EJWbm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 18:31:42 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:36464 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757485Ab2EJWbk convert rfc822-to-8bit (ORCPT
+	id S1761858Ab2EJWcj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 18:32:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39287 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761612Ab2EJWch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 18:31:40 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-127.messagelabs.com!1336689079!5169428!21
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
-Date: Thu, 10 May 2012 17:31:36 -0500
-Subject: RE: [PATCH v2] staging: comedi: refactor sysfs files in
- comedi_fops.c
-Thread-Topic: [PATCH v2] staging: comedi: refactor sysfs files in
- comedi_fops.c
-Thread-Index: Ac0uI9FZjsoNw5CHTpOqptGcSgWmhAA2KMuw
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698A17CD0@AUSP01VMBX24.collaborationhost.net>
-References: <201205090920.09769.hartleys@visionengravers.com>
- <20120509203916.GA16972@kroah.com>
-In-Reply-To: <20120509203916.GA16972@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 10 May 2012 18:32:37 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH V2 2/4] regulator: tps62360: add dt support
+To: Laxman Dewangan <ldewangan@nvidia.com>, rob.herring@calxeda.com,
+        linux@arm.linux.org.uk, lrg@ti.com,
+        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
+        olof@lixom.net
+Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>
+In-Reply-To: <1336682979-11810-3-git-send-email-ldewangan@nvidia.com>
+References: <1336682979-11810-1-git-send-email-ldewangan@nvidia.com> <1336682979-11810-3-git-send-email-ldewangan@nvidia.com>
+Date: Thu, 10 May 2012 16:32:34 -0600
+Message-Id: <20120510223234.687863E04A6@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 09, 2012 1:39 PM, Greg KH wrote:
-> On Wed, May 09, 2012 at 09:20:08AM -0700, H Hartley Sweeten wrote:
->> Refactor the sysfs attributes and functions to remove
->> the need for the forward declarations and use the
->> DEVICE_ATTR macro to define them.
->> 
->> Instead of individually creating sysfs device attribute
->> files, wrap them in an attribute_group and use the
->> sysfs_create_group function to create them.
->
-> This is great, and needed to be done, but you need to take this one step
-> further.  This attribute group needs to be registered by the driver
-> core, not the comedi core, so userspace doesn't get an add event before
-> the files are created.  To do that, assign this attribute group to the
-> class and the core will handle it for you.
->
-> I've taken this patch, but will you make a follow-on patch that makes
-> this change, which will remove this race?  It should be a net removal of
-> code in the comedi core overall.
->
-I think I worked this out. Compile testing it now and will post the patch
-shortly.
+On Fri, 11 May 2012 02:19:37 +0530, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+> Add dt support for the pmu device tps62360 and
+> Add binding documentation with example.
+> With this patch driver will support both device-tree and
+> non-device tree registration.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+> Changes from V1:
+> Fixed possible build error in non devicetree.
 
-Regards,
-Hartley
+Minor comments below...
+
+> 
+>  .../bindings/regulator/tps62360-regulator.txt      |   45 ++++++++++++
+>  drivers/regulator/tps62360-regulator.c             |   74 +++++++++++++++++++-
+>  2 files changed, 118 insertions(+), 1 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt b/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
+> new file mode 100644
+> index 0000000..e337cd6
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
+> @@ -0,0 +1,45 @@
+> +TPS62360 Voltage regulators
+> +
+> +Required properties:
+> +- compatible: Must be one of the following.
+> +	"ti,tps62360"
+> +	"ti,tps62361",
+> +	"ti,tps62362",
+> +	"ti,tps62363",
+> +- reg: I2C slave address
+> +
+> +Optional properties:
+> +- ti,enable-force-pwm: Enable fore PWM mode. This is boolean value.
+typo ----------------------------^^^^
+
+> +- ti,enable-vout-discharge: Enable output discharge. This is boolean value.
+> +- ti,enable-pull-down: Enable pull down. This is boolean value.
+> +- ti,vsel0-gpio: GPIO for controlling VSEL0 line.
+> +  If this property is missing, then assume that there is no GPIO
+> +  for vsel0 control.
+> +- ti,vsel1-gpio: Gpio for controlling VSEL1 line.
+> +  If this property is missing, then assume that there is no GPIO
+> +  for vsel1 control.
+> +- ti,vsel0-state-high: Inital state of vsel0 input is high.
+> +  If this property is missing, then assume the state as low (0).
+> +- ti,vsel1-state-high: Inital state of vsel1 input is high.
+> +  If this property is missing, then assume the state as low (0).
+> +
+> +Any property defined as part of the core regulator binding, defined in
+> +regulator.txt, can also be used.
+> +
+> +Example:
+> +
+> +	abc: tps62360 {
+> +		compatible = "ti,tps62361";
+> +		reg =  <0x60>;
+> +		regulator-name = "tps62361-vout";
+> +		regulator-min-microvolt = <500000>;
+> +		regulator-max-microvolt = <1500000>;
+> +		regulator-boot-on
+> +		ti,vsel0-gpio = <&gpio1 16 0>;
+> +		ti,vsel1-gpio = <&gpio1 17 0>;
+> +		ti,vsel0-state-high;
+> +		ti,vsel1-state-high;
+> +		ti,enable-pull-down;
+> +		ti,enable-force-pwm;
+> +		ti,enable-vout-discharge;
+> +	};
+> diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
+> index 3506900..9985303 100644
+> --- a/drivers/regulator/tps62360-regulator.c
+> +++ b/drivers/regulator/tps62360-regulator.c
+> @@ -26,6 +26,10 @@
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/err.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+> +#include <linux/of_gpio.h>
+> +#include <linux/regulator/of_regulator.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/regulator/driver.h>
+>  #include <linux/regulator/machine.h>
+> @@ -297,6 +301,58 @@ static const struct regmap_config tps62360_regmap_config = {
+>  	.cache_type		= REGCACHE_RBTREE,
+>  };
+>  
+> +static struct tps62360_regulator_platform_data *
+> +	of_get_tps62360_platform_data(struct device *dev)
+> +{
+> +	struct tps62360_regulator_platform_data *pdata;
+> +	struct device_node *np = dev->of_node;
+> +
+> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> +	if (!pdata) {
+> +		dev_err(dev, "Memory alloc failed for platform data\n");
+> +		return NULL;
+> +	}
+> +
+> +	pdata->reg_init_data = of_get_regulator_init_data(dev, dev->of_node);
+> +	if (!pdata->reg_init_data) {
+> +		dev_err(dev, "Not able to get OF regulator init data\n");
+> +		return NULL;
+> +	}
+> +
+> +	pdata->vsel0_gpio = of_get_named_gpio(np, "vsel0-gpio", 0);
+> +	pdata->vsel1_gpio = of_get_named_gpio(np, "vsel1_gpio", 0);
+typo --------------------------------------------------^^^
+
+Otherwise looks good to me.
+
+g.
 
