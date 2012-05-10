@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211Ab2EJQQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 12:16:05 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60238 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752131Ab2EJQQC (ORCPT
+	id S1753064Ab2EJQTy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 12:19:54 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:24195 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab2EJQTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 12:16:02 -0400
-Message-ID: <4FABE9BE.2010108@wwwdotorg.org>
-Date: Thu, 10 May 2012 10:15:58 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 10 May 2012 12:19:53 -0400
+Date: Thu, 10 May 2012 12:12:40 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH v3] xen-blkfront: set pages are FOREIGN_FRAME
+ when sharing them
+Message-ID: <20120510161240.GA3215@phenom.dumpdata.com>
+References: <1334075119-25102-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20120416195258.GA14982@phenom.dumpdata.com>
+ <alpine.DEB.2.00.1204171138020.26786@kaball-desktop>
+ <20120507212536.GA24344@andromeda.dapyr.net>
+ <alpine.DEB.2.00.1205081826300.26786@kaball-desktop>
+ <alpine.DEB.2.00.1205091849580.26786@kaball-desktop>
 MIME-Version: 1.0
-To: Igor Grinberg <grinberg@compulab.co.il>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Wolfgang Denk <wd@denx.de>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@ardb.de>,
-        Olof Johansson <olof@lixom.net>, linux-embedded@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: Handling of modular boards
-References: <20120504185850.GO14230@opensource.wolfsonmicro.com> <201205041934.08830.arnd@arndb.de> <20120504203357.6B79B206451@gemini.denx.de> <20120504220944.GT14230@opensource.wolfsonmicro.com> <4FABB758.7000702@compulab.co.il>
-In-Reply-To: <4FABB758.7000702@compulab.co.il>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1205091849580.26786@kaball-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2012 06:40 AM, Igor Grinberg wrote:
-> On 05/05/12 01:09, Mark Brown wrote:
->> On Fri, May 04, 2012 at 10:33:57PM +0200, Wolfgang Denk wrote:
+On Wed, May 09, 2012 at 07:42:33PM +0100, Stefano Stabellini wrote:
+> On Tue, 8 May 2012, Stefano Stabellini wrote:
+> > I have been unable to reproduce this problem (I haven't given up yet)
+> > but I bet that the following patch fixes it:
+> > 
+> > 
+> > diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> > index e3a9945..88e9304 100644
+> > --- a/drivers/block/xen-blkfront.c
+> > +++ b/drivers/block/xen-blkfront.c
+> > @@ -333,7 +333,7 @@ static int blkif_queue_request(struct request *req)
+> >  					buffer_mfn,
+> >  					rq_data_dir(req));
+> >  
+> > -			info->shadow[id].frame[i] = mfn_to_pfn(buffer_mfn);
+> > +			info->shadow[id].frame[i] = buffer_pfn;
+> >  			ring_req->u.rw.seg[i] =
+> >  					(struct blkif_request_segment) {
+> >  						.gref       = ref,
+> > 
+> > 
+> > The idea is that the request contains a page for which
+> > 
+> > pfn->mfn->pfn == 0xffffffffffffffff
+> > 
+> > I am not sure exactly how it could be possible to get into this state in
+> > blkfront, I hope that some more tracing and code reading will be able to
+> > shed some lights on the issue.
 > 
->>> On the other hand, some of the issues we're trying to solve
->>> here for the kernel are also present in the boot loader, so
->>> this needs to do this anyway - whether by inserting new or
->>> modifying (enabling or disabling) existing properties in the DT
->>> is not really relevant here.
+> The one line patch fixes the issue: when using LVM in the guest the same
+> page can be used in two different requests (in blkif_queue_request)
+> before being unmapped.
+> The second time mfn_to_pfn is going to return ~0 because buffer_mfn has
+> the FOREIGN_FRAME_BIT set.
+> But actually we don't need to call mfn_to_pfn at all because we already
+> know the pfn value, that is stored in buffer_pfn.
 > 
->> FWIW if the bootloader can usefully handle this stuff I think
->> that's a good approach but there is substantial variation in
->> quality of implementation between bootloaders and even when the
->> bootloader is a good one it's not always practical to update it
->> or the data it relies on.
+> However the real problem remains at the time of blkif_completion: we
+> will remove the FOREIGN_FRAME_BIT before the other requests have been
+> completed.
 > 
-> I agree on this (and also with Ben), all our boards/extensions/base
-> boards/etc can be discovered in the boot loader and we will use the
-> DT to pass the relevant information on the attached extensions and
-> used base board.
+> If sharing the same page twice (or more) is a normal condition then I
+> might have to revisit this patch completely and choose another
+> strategy...
+
+Ok, will wait for that and in the meantime drop the patch so I can
+send a git pull to Jens.
 > 
-> Also, most (if not all) of our boards/extensions have I2C EEPROM
-> which describes the devices on that board/extension which is useful
-> for building/extending the DT in the bootloader.
-
-I believe that's true for all/many NVIDIA boards too.
-
-But, duplicating all this in every bootloader might not make sense.
-Sure there are some cases where the bootloader needs this information
-(e.g. to load the kernel from an SD card that's on 1 of N plugin
-boards), but there may be much information the bootloader doesn't care
-about.
-
-Would it make sense to write a DT-identifying-and-merging shim that
-can be executed by the bootloader, create the final DT, and then jump
-to the kernel?
-
-Hmmm. That's probably a bad idea, since then it means needing e.g. I2C
-drivers to read the ID EEPROMs, pinmux drivers, ... in the shim.
-
-Perhaps the common shim idea makes sense, but we need a standardized
-API it can use that all bootloaders provide for it to operate.
-
-This is beginning to sound a lot like a UEFI byte code module (I
-assume; I know little about them)
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
