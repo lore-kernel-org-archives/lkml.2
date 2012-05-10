@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757705Ab2EJJG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 05:06:29 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1552 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756552Ab2EJJGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 05:06:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="151328124"
-Message-ID: <4FAB84B6.7060706@intel.com>
-Date: Thu, 10 May 2012 17:04:54 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, gregkh@linuxfoundation.org, borislav.petkov@amd.com,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
-        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
-        penberg@kernel.org, hughd@google.com, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
-        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
-        oleg@redhat.com, axboe@kernel.dk, a.p.zijlstra@chello.nl,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/7] x86/flush_tlb: try flush_tlb_single one by one
- in flush_tlb_range
-References: <1336626013-28413-1-git-send-email-alex.shi@intel.com> <1336626013-28413-4-git-send-email-alex.shi@intel.com> <20120510084213.GD30055@aftab.osrc.amd.com>
-In-Reply-To: <20120510084213.GD30055@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757648Ab2EJJGZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 05:06:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41992 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756474Ab2EJJGL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 05:06:11 -0400
+Date: Thu, 10 May 2012 19:05:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: linux-next: manual merge of the sound-asoc tree with the regmap
+ tree
+Message-Id: <20120510190554.6055315139a68ef0b1c48261@canb.auug.org.au>
+In-Reply-To: <20120510085355.GC3908@opensource.wolfsonmicro.com>
+References: <20120510142552.35f8e15042053707a2086905@canb.auug.org.au>
+	<20120510085355.GC3908@opensource.wolfsonmicro.com>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__10_May_2012_19_05_54_+1000_UFqacnDV5ed4u7YA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__10_May_2012_19_05_54_+1000_UFqacnDV5ed4u7YA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> +
->> +#define FLUSHALL_BAR	16
->> +
-> 
-> Btw, you can save a bunch of indenting on this function, let me add
-> the final version here from the whole patchset so I can comment on it
-> easier:
-> 
->> void __flush_tlb_range(struct mm_struct *mm, unsigned long start,
->>                                 unsigned long end, unsigned long vmflag)
->> {
->>         preempt_disable();
->>         if (current->active_mm == mm) {
-> 
-> 	if (current->active_mm != mm)
-> 		goto flush_all;
-> 
-> Now this whole piece below can move one indentation level to the left.
-> 
-> Then you can do:
-> 
-> 	if (!current->mm)
-> 		goto leave;
-> 
-> and add the "leave" label below.
-> 
-> Now you're saving yet another indentation level, bringing the meat of
-> the function at 1st indentation level, which is cool and gives you much
-> more room so that you don't have to linebreak longer statements.
-> 
+On Thu, 10 May 2012 09:53:55 +0100 Mark Brown <broonie@opensource.wolfsonmi=
+cro.com> wrote:
+>
+> On Thu, May 10, 2012 at 02:25:52PM +1000, Stephen Rothwell wrote:
+>=20
+> > Today's linux-next merge of the sound-asoc tree got a conflict in
+> > drivers/base/regmap/regmap.c between commit 6560ffd1ccd6 ("regmap: fix
+> > possible memory corruption in regmap_bulk_read()") from the regmap tree
+> > and commit edc9ae420f98 ("regmap: implement register striding") from the
+> > sound-asoc tree.
+>=20
+> That's the right fix - it's already included in the regmap tree itself.
 
+Yeah, this conflict arises because there a set of patches in the
+sound-asoc tree that are also in the regmap tree.   They really should
+have been in a stable branch of the regmap tree that both trees could
+merge.
 
-sure, thanks! :)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__10_May_2012_19_05_54_+1000_UFqacnDV5ed4u7YA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPq4TyAAoJEECxmPOUX5FEnjwP/AupQP52lpEQwmNVGT7qI21+
+/VARBWK79GOf3I39PiDZhKipzHezFl4ussy6X2niWjUb/koahm2liYMoajoDAfAA
+pm2f/c+bGeZWMkv94EZMZ7j+HfFCYYeb/5Q7uFqgKmu7S2KI8I63oswEnG0QTPqh
+Nn0Y48saVoSYm4Ds8/Zy7tFVaTI9xYikZxLRg5gxQBUsHQ8n0DrFZepSeD7S7oFh
+e+Fm+euuLBlnf8t3f/jTL8EjxC9nyHQIcY8IdLSM0FK7ySqF3N/nsHsmL1l88kwq
+nGPHchQOU7KAm4QhD1kE/VzYPOc2zH7deGKj6JbslXeRbYZrrMoz0kFKI+ahiZmj
+OhlXntMg2HSkMd9Ii1dJhyiNZevW8oX5LvfKg+U/heTBP/hxM3SKVMhTElDAGmm4
+TTwxD6Y5ci6weVJImWiDll7UFiOX44DrtjxjYLe87RmhJR7AOF9IXZKqDUClVNiL
+s6kOaXM+rRsJ/jfKRbW+S6sRvW/b/S6OQcgHkloKXPxJwWb0LjTsp9HOPHH13OTT
+YyFP0t3bYCQ0Rx73rwf/rGFblIi0HcJYa0XVXtR5EHqBwDGPEUHyiTEgoy08beTZ
+g2+DQMHbOypIvWc6YATTumgYog4fh9xayo+ii0uYYv/aqOQdsj6R9RhV+ONPGbII
+66kGZ/LQ7eFLVHE3kKwb
+=gzNz
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__10_May_2012_19_05_54_+1000_UFqacnDV5ed4u7YA--
