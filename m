@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab2EJHmX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 03:42:23 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:48840 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756066Ab2EJHmV (ORCPT
+	id S1756949Ab2EJHnJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 03:43:09 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8260 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756747Ab2EJHnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 03:42:21 -0400
-Date: Thu, 10 May 2012 09:42:15 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, anton@samba.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mike Travis <travis@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PULL] cpumask: finally make them variable size w/
- CPUMASK_OFFSTACK.
-Message-ID: <20120510074215.GA28395@gmail.com>
-References: <87ipg5c2bk.fsf@rustcorp.com.au>
- <20120509084453.GA6429@gmail.com>
- <87fwb8dgkn.fsf@rustcorp.com.au>
+	Thu, 10 May 2012 03:43:06 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 10 May 2012 00:43:03 -0700
+From: Hiroshi DOYU <hdoyu@nvidia.com>
+To: <hdoyu@nvidia.com>
+CC: <linux-tegra@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Simon Glass <sjg@chromium.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/4] ARM: dt: tegra20.dtsi: Add Memory Controller(MC) nodes
+Date: Thu, 10 May 2012 10:42:31 +0300
+Message-ID: <1336635764-30597-2-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1336635764-30597-1-git-send-email-hdoyu@nvidia.com>
+References: <1336635764-30597-1-git-send-email-hdoyu@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fwb8dgkn.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add Tegra MC(Memory Controller) nodes for tegra20.dtsi.
 
-* Rusty Russell <rusty@rustcorp.com.au> wrote:
+Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+---
+ arch/arm/boot/dts/tegra20.dtsi |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-> Mainly because I didn't want to disturb the archs which don't 
-> care at all about large cpumasks.  After all, putting a struct 
-> cpumask on the stack is pretty convenient.
+diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+index 24129fb..548b42e 100644
+--- a/arch/arm/boot/dts/tegra20.dtsi
++++ b/arch/arm/boot/dts/tegra20.dtsi
+@@ -211,5 +211,12 @@
+ 		compatible = "nvidia,tegra20-ahb";
+ 		reg = <0x6000c004 0x10c>; /* AHB Arbitration + Gizmo Controller */
+ 	};
++
++	mc {
++		compatible = "nvidia,tegra20-mc";
++		reg = <0x7000f000 0x024
++		       0x7000f03c 0x3c4>;
++		interrupts = <0 77 0x04>;
++	};
+ };
+ 
+-- 
+1.7.5.4
 
-Yes.
-
-> But we could add a new arch config which removes it, and set 
-> it from x86.
-
-Could we just use a single cpumask type, cpumask_t or so, which 
-would be the *only* generic method to use cpumasks?
-
-(Current cpumask_t would move to cpumask_full_t.)
-
-This would be the 'final' destiation for the cpumask code: the 
-natural type to use in new code is cpumask_t, while in special 
-cases we could use cpumask_full_t - but the name signals that 
-it's a potentially large structure.
-
-On architectures that don't worry about large cpumasks (yet ...) 
-cpumask_t and cpumask_full_t maps to the same thing, so there's 
-no difference.
-
-This would make things more natural IMO.
-
-There would be no 'struct cpumask'. (and 'cpumask_var_t' would 
-disappear too due to the rename.)
-
-Thoughts?
-
-	Ingo
