@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759956Ab2EJPMH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 11:12:07 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:65283 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758757Ab2EJPMC convert rfc822-to-8bit (ORCPT
+	id S1759937Ab2EJPMF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 11:12:05 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:50884 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758283Ab2EJPMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 May 2012 11:12:02 -0400
+Message-ID: <4FABDA9F.1000105@linux.vnet.ibm.com>
+Date: Thu, 10 May 2012 10:11:27 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdaiTsaBT=20UUOx2mYsK4r5rArVqXfU9LMObFVb3iEA9w@mail.gmail.com>
-References: <1336470270-23518-1-git-send-email-linus.walleij@stericsson.com>
-	<4FAAD4EB.4010007@wwwdotorg.org>
-	<CACRpkdaiTsaBT=20UUOx2mYsK4r5rArVqXfU9LMObFVb3iEA9w@mail.gmail.com>
-Date: Thu, 10 May 2012 17:12:02 +0200
-Message-ID: <CACRpkdZ+8n-E_8nyq-kO=Y+GYekkjiNXd3nzTqFnxLszpuKKPg@mail.gmail.com>
-Subject: Re: [PATCH 02/12] pinctrl: basic Nomadik pinctrl interface
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
+To: Nitin Gupta <ngupta@vflare.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+References: <1336027242-372-1-git-send-email-minchan@kernel.org> <1336027242-372-3-git-send-email-minchan@kernel.org> <4FA28907.9020300@vflare.org> <4FA2A2F0.3030509@linux.vnet.ibm.com> <4FA33DF6.8060107@kernel.org> <20120509201918.GA7288@kroah.com> <4FAB21E7.7020703@kernel.org> <20120510140215.GC26152@phenom.dumpdata.com> <4FABD503.4030808@vflare.org>
+In-Reply-To: <4FABD503.4030808@vflare.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051015-2398-0000-0000-0000068782E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Then it's probably a good idea to actually loop in Arnd too...
-sorry for missing it!
+On 05/10/2012 09:47 AM, Nitin Gupta wrote:
 
-On Thu, May 10, 2012 at 5:10 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, May 9, 2012 at 10:34 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-
->>> +static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
+> On 5/10/12 10:02 AM, Konrad Rzeszutek Wilk wrote:
+>> struct zs {
+>>     void *ptr;
+>> };
 >>
->>> +     /* Poke in other ASIC variants here */
->>> +     if (platid->driver_data == PINCTRL_NMK_DB8500)
->>> +             nmk_pinctrl_db8500_init(&npct->soc);
+>> And pass that structure around?
 >>
->> Other platforms have a unique top-level driver for each variant, with
->> the probe() function for each variant calling into a utility function.
->> That way, the common/utility code doesn't need to contain a
->> table/list/... of all the variants. Can the same approach be used here?
->
-> Of course I could do it that way, but it's not using this feature
-> of the driver base to have a string identifier telling which version
-> it is.
->
-> Since I'm unsure, let's ask Arnd.
->
-> Arnd, what is your preferred design pattern of:
->
-> A) sub-drivers that register one struct platform_driver per
->  variant, then calls into a shared core driver, or
->
-> B) a shared core driver registering one platform_driver
->  with several struct platform_device_id that then call
->  sub-drivers depending on which one is found
->
-> Either way is actually OK for me, but I was thinking if one
-> is preferred over the other.
->
-> Yours,
-> Linus Walleij
+> 
+> A minor problem is that we store this handle value in a radix tree node.
+> If we wrap it as a struct, then we will not be able to store it directly
+> in the node -- the node will have to point to a 'struct zs'. This will
+> unnecessarily waste sizeof(void *) for every object stored.
 
-Linus Walleij
+
+I don't think so. You can use the fact that for a struct zs var, &var
+and &var->ptr are the same.
+
+For the structure above:
+
+void * zs_to_void(struct zs *p) { return p->ptr; }
+struct zs * void_to_zs(void *p) { return (struct zs *)p; }
+
+Right?
+
+--
+Seth
+
