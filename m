@@ -1,86 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab2EJOq6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 10:46:58 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:56142 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218Ab2EJOq5 (ORCPT
+	id S1759544Ab2EJOrg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 10:47:36 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:50244 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755661Ab2EJOre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 10:46:57 -0400
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, KVM <kvm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: KVM: Softlockups in guests while running kernbench
-In-Reply-To: <87pqace4an.fsf@abhimanyu.in.ibm.com>
-References: <87wr4kjvtk.fsf@abhimanyu.in.ibm.com> <4FAB88B8.5060203@redhat.com> <87pqace4an.fsf@abhimanyu.in.ibm.com>
-User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
-Date: Thu, 10 May 2012 20:16:26 +0530
-Message-ID: <87ipg4drgd.fsf@abhimanyu.in.ibm.com>
+	Thu, 10 May 2012 10:47:34 -0400
+Message-ID: <4FABD503.4030808@vflare.org>
+Date: Thu, 10 May 2012 10:47:31 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-x-cbid: 12051004-5140-0000-0000-0000014B58DD
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+References: <1336027242-372-1-git-send-email-minchan@kernel.org> <1336027242-372-3-git-send-email-minchan@kernel.org> <4FA28907.9020300@vflare.org> <4FA2A2F0.3030509@linux.vnet.ibm.com> <4FA33DF6.8060107@kernel.org> <20120509201918.GA7288@kroah.com> <4FAB21E7.7020703@kernel.org> <20120510140215.GC26152@phenom.dumpdata.com>
+In-Reply-To: <20120510140215.GC26152@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 May 2012 15:39:04 +0530, Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> wrote:
-> On Thu, 10 May 2012 12:22:00 +0300, Avi Kivity <avi@redhat.com> wrote:
-> > On 05/10/2012 11:15 AM, Nikunj A Dadhania wrote:
-> > > I am running a 3.4.0-rc4 based kernel(commit: af3a3ab2), guest config
-> > > attached.
-> > >
-> > > During my tests, I saw few softlockups inside the guests while running
-> > > kernbench inside the guest. I can reproduce this repeatedly.
-> > >
-> > > Test Setup:
-> > >
-> > > - Create 4 VMs (8vcpu, 1GB RAM)
-> > > - Run kernbench inside each guests (kernbench -f -M -H -o 16) in parallel
-> > >
-> > 
-> > How overcommitted are you?  
-> 8 Physical CPU and 32 vCPUs
-> 
-> > What does the host hardware look like?  
-> Machine : IBM xSeries with Intel(R) Xeon(R) x5570 2.93GHz CPU with 8 core , 64GB RAM
-> Threading is disabled.
-> 
-> > Is there any load on the host?
-> No
-> 
-> > 
-> > The traces themselves always point a couple of instructions after
-> > interrupts are enabled.  Can you post a few more?
-> > 
+On 5/10/12 10:02 AM, Konrad Rzeszutek Wilk wrote:
+> On Thu, May 10, 2012 at 11:03:19AM +0900, Minchan Kim wrote:
+>> On 05/10/2012 05:19 AM, Greg Kroah-Hartman wrote:
+>>
+>>> On Fri, May 04, 2012 at 11:24:54AM +0900, Minchan Kim wrote:
+>>>> On 05/04/2012 12:23 AM, Seth Jennings wrote:
+>>>>
+>>>>> On 05/03/2012 08:32 AM, Nitin Gupta wrote:
+>>>>>
+>>>>>> On 5/3/12 2:40 AM, Minchan Kim wrote:
+>>>>>>> We should use zs_handle instead of void * to avoid any
+>>>>>>> confusion. Without this, users may just treat zs_malloc return value as
+>>>>>>> a pointer and try to deference it.
+>>>>>>>
+>>>>>>> Cc: Dan Magenheimer<dan.magenheimer@oracle.com>
+>>>>>>> Cc: Konrad Rzeszutek Wilk<konrad.wilk@oracle.com>
+>>>>>>> Signed-off-by: Minchan Kim<minchan@kernel.org>
+>>>>>>> ---
+>>>>>>>    drivers/staging/zcache/zcache-main.c     |    8 ++++----
+>>>>>>>    drivers/staging/zram/zram_drv.c          |    8 ++++----
+>>>>>>>    drivers/staging/zram/zram_drv.h          |    2 +-
+>>>>>>>    drivers/staging/zsmalloc/zsmalloc-main.c |   28
+>>>>>>> ++++++++++++++--------------
+>>>>>>>    drivers/staging/zsmalloc/zsmalloc.h      |   15 +++++++++++----
+>>>>>>>    5 files changed, 34 insertions(+), 27 deletions(-)
+>>>>>>
+>>>>>> This was a long pending change. Thanks!
+>>>>>
+>>>>>
+>>>>> The reason I hadn't done it before is that it introduces a checkpatch
+>>>>> warning:
+>>>>>
+>>>>> WARNING: do not add new typedefs
+>>>>> #303: FILE: drivers/staging/zsmalloc/zsmalloc.h:19:
+>>>>> +typedef void * zs_handle;
+>>>>>
+>>>>
+>>>>
+>>>> Yes. I did it but I think we are (a) of chapter 5: Typedefs in Documentation/CodingStyle.
+>>>>
+>>>>   (a) totally opaque objects (where the typedef is actively used to _hide_
+>>>>       what the object is).
+>>>>
+>>>> No?
+>>>
+>>> No.
+>>>
+>>> Don't add new typedefs to the kernel.  Just use a structure if you need
+>>> to.
+>>
+>>
+>> I tried it but failed because there were already tightly coupling between [zcache|zram]
+>> and zsmalloc.
+>> They already knows handle's internal well so they used it as pointer, even zcache keeps
+>> handle's value as some key in tmem_put and tmem_get
+>> AFAIK, ramster also will use zsmalloc sooner or later and add more coupling codes. Sigh.
+>> Please fix it as soon as possible.
+>>
+>> Dan, Seth
+>> Any ideas?
+>
+> struct zs {
+> 	void *ptr;
+> };
+>
+> And pass that structure around?
+>
 
-I had a discussion with Avi on IRC, he suggested running a trace on the
-host for the sched: tracepoints
+A minor problem is that we store this handle value in a radix tree node. 
+If we wrap it as a struct, then we will not be able to store it directly 
+in the node -- the node will have to point to a 'struct zs'. This will 
+unnecessarily waste sizeof(void *) for every object stored.
 
-So when I see the console of the guest, i can see the soft-lockup
-messages. When I start tracing, soft-lockups disappear. 
+We could 'memcpy' struct zs to a void * and then store that directly in 
+the radix node but not sure if that would be less ugly than just 
+returning the handle as a void * as is done currently.
 
-Kernbench is started from the host; ps output:
-13359 pts/1    S+     0:00 perf stat -a -- ssh root@192.168.123.11 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
-13362 pts/1    S+     0:00 ssh root@192.168.123.11 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
-13373 pts/1    S+     0:00 perf stat -a -- ssh root@192.168.123.12 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
-13376 pts/1    S+     0:00 ssh root@192.168.123.12 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
-13387 pts/1    S+     0:00 perf stat -a -- ssh root@192.168.123.13 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
-13390 pts/1    S+     0:00 ssh root@192.168.123.13 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
-13401 pts/1    S+     0:00 perf stat -a -- ssh root@192.168.123.14 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
-13402 pts/1    S+     0:00 ssh root@192.168.123.14 cd /root/linux-src; kernbench -f -M -H -o 16 > /root/kbench.log
-
-I have tried following commands trace-cmd:
-1) trace-cmd record -e kvm -e sched -b 100000  -p 13362
-2) trace-cmd record -e sched -b 100000  -p 13362
-3) trace-cmd record -e kvm -b 100000  -p 13362
-
-I have tried trace-cmd on qemu pid as well, I see similar behaviour in
-that case.
-
-Peterz/Ingo, Any clue on debugging this would help.
-
-Regards
-Nikunj
-
+Thanks,
+Nitin
