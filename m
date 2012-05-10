@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760643Ab2EJRfH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:35:07 -0400
+	id S1760629Ab2EJRfY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:35:24 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:52779 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760605Ab2EJRfA (ORCPT
+	with ESMTP id S1760631Ab2EJRfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:35:00 -0400
-Message-Id: <20120510173135.615265392@linuxfoundation.org>
+	Thu, 10 May 2012 13:35:04 -0400
+Message-Id: <20120510173135.689856095@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:32:03 -0700
+Date: Thu, 10 May 2012 10:32:04 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        Tom Herbert <therbert@google.com>, Yuchung Cheng <ycheng@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 31/52] tcp: change tcp_adv_win_scale and tcp_rmem[2]
+        alan@lxorguk.ukuu.org.uk,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Stephen Ko <stephen.s.ko@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [ 32/52] net: Add memory barriers to prevent possible race in byte queue limits
 In-Reply-To: <20120510173229.GA5678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,117 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Alexander Duyck <alexander.h.duyck@intel.com>
 
-[ Upstream commit b49960a05e32121d29316cfdf653894b88ac9190 ]
+[ Upstream commit b37c0fbe3f6dfba1f8ad2aed47fb40578a254635 ]
 
-tcp_adv_win_scale default value is 2, meaning we expect a good citizen
-skb to have skb->len / skb->truesize ratio of 75% (3/4)
+This change adds a memory barrier to the byte queue limit code to address a
+possible race as has been seen in the past with the
+netif_stop_queue/netif_wake_queue logic.
 
-In 2.6 kernels we (mis)accounted for typical MSS=1460 frame :
-1536 + 64 + 256 = 1856 'estimated truesize', and 1856 * 3/4 = 1392.
-So these skbs were considered as not bloated.
-
-With recent truesize fixes, a typical MSS=1460 frame truesize is now the
-more precise :
-2048 + 256 = 2304. But 2304 * 3/4 = 1728.
-So these skb are not good citizen anymore, because 1460 < 1728
-
-(GRO can escape this problem because it build skbs with a too low
-truesize.)
-
-This also means tcp advertises a too optimistic window for a given
-allocated rcvspace : When receiving frames, sk_rmem_alloc can hit
-sk_rcvbuf limit and we call tcp_prune_queue()/tcp_collapse() too often,
-especially when application is slow to drain its receive queue or in
-case of losses (netperf is fast, scp is slow). This is a major latency
-source.
-
-We should adjust the len/truesize ratio to 50% instead of 75%
-
-This patch :
-
-1) changes tcp_adv_win_scale default to 1 instead of 2
-
-2) increase tcp_rmem[2] limit from 4MB to 6MB to take into account
-better truesize tracking and to allow autotuning tcp receive window to
-reach same value than before. Note that same amount of kernel memory is
-consumed compared to 2.6 kernels.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Tested-by: Stephen Ko <stephen.s.ko@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- Documentation/networking/ip-sysctl.txt |    4 ++--
- net/ipv4/tcp.c                         |    9 +++++----
- net/ipv4/tcp_input.c                   |    2 +-
- 3 files changed, 8 insertions(+), 7 deletions(-)
+ include/linux/netdevice.h |   49 ++++++++++++++++++++++++++++++----------------
+ 1 file changed, 33 insertions(+), 16 deletions(-)
 
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -147,7 +147,7 @@ tcp_adv_win_scale - INTEGER
- 	(if tcp_adv_win_scale > 0) or bytes-bytes/2^(-tcp_adv_win_scale),
- 	if it is <= 0.
- 	Possible values are [-31, 31], inclusive.
--	Default: 2
-+	Default: 1
- 
- tcp_allowed_congestion_control - STRING
- 	Show/set the congestion control choices available to non-privileged
-@@ -410,7 +410,7 @@ tcp_rmem - vector of 3 INTEGERs: min, de
- 	net.core.rmem_max.  Calling setsockopt() with SO_RCVBUF disables
- 	automatic tuning of that socket's receive buffer size, in which
- 	case this value is ignored.
--	Default: between 87380B and 4MB, depending on RAM size.
-+	Default: between 87380B and 6MB, depending on RAM size.
- 
- tcp_sack - BOOLEAN
- 	Enable select acknowledgments (SACKS).
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -3240,7 +3240,7 @@ void __init tcp_init(void)
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1898,12 +1898,22 @@ static inline void netdev_tx_sent_queue(
  {
- 	struct sk_buff *skb = NULL;
- 	unsigned long limit;
--	int max_share, cnt;
-+	int max_rshare, max_wshare, cnt;
- 	unsigned int i;
- 	unsigned long jiffy = jiffies;
+ #ifdef CONFIG_BQL
+ 	dql_queued(&dev_queue->dql, bytes);
+-	if (unlikely(dql_avail(&dev_queue->dql) < 0)) {
+-		set_bit(__QUEUE_STATE_STACK_XOFF, &dev_queue->state);
+-		if (unlikely(dql_avail(&dev_queue->dql) >= 0))
+-			clear_bit(__QUEUE_STATE_STACK_XOFF,
+-			    &dev_queue->state);
+-	}
++
++	if (likely(dql_avail(&dev_queue->dql) >= 0))
++		return;
++
++	set_bit(__QUEUE_STATE_STACK_XOFF, &dev_queue->state);
++
++	/*
++	 * The XOFF flag must be set before checking the dql_avail below,
++	 * because in netdev_tx_completed_queue we update the dql_completed
++	 * before checking the XOFF flag.
++	 */
++	smp_mb();
++
++	/* check again in case another CPU has just made room avail */
++	if (unlikely(dql_avail(&dev_queue->dql) >= 0))
++		clear_bit(__QUEUE_STATE_STACK_XOFF, &dev_queue->state);
+ #endif
+ }
  
-@@ -3300,15 +3300,16 @@ void __init tcp_init(void)
- 	tcp_init_mem(&init_net);
- 	/* Set per-socket limits to no more than 1/128 the pressure threshold */
- 	limit = nr_free_buffer_pages() << (PAGE_SHIFT - 7);
--	max_share = min(4UL*1024*1024, limit);
-+	max_wshare = min(4UL*1024*1024, limit);
-+	max_rshare = min(6UL*1024*1024, limit);
+@@ -1916,16 +1926,23 @@ static inline void netdev_tx_completed_q
+ 					     unsigned pkts, unsigned bytes)
+ {
+ #ifdef CONFIG_BQL
+-	if (likely(bytes)) {
+-		dql_completed(&dev_queue->dql, bytes);
+-		if (unlikely(test_bit(__QUEUE_STATE_STACK_XOFF,
+-		    &dev_queue->state) &&
+-		    dql_avail(&dev_queue->dql) >= 0)) {
+-			if (test_and_clear_bit(__QUEUE_STATE_STACK_XOFF,
+-			     &dev_queue->state))
+-				netif_schedule_queue(dev_queue);
+-		}
+-	}
++	if (unlikely(!bytes))
++		return;
++
++	dql_completed(&dev_queue->dql, bytes);
++
++	/*
++	 * Without the memory barrier there is a small possiblity that
++	 * netdev_tx_sent_queue will miss the update and cause the queue to
++	 * be stopped forever
++	 */
++	smp_mb();
++
++	if (dql_avail(&dev_queue->dql) < 0)
++		return;
++
++	if (test_and_clear_bit(__QUEUE_STATE_STACK_XOFF, &dev_queue->state))
++		netif_schedule_queue(dev_queue);
+ #endif
+ }
  
- 	sysctl_tcp_wmem[0] = SK_MEM_QUANTUM;
- 	sysctl_tcp_wmem[1] = 16*1024;
--	sysctl_tcp_wmem[2] = max(64*1024, max_share);
-+	sysctl_tcp_wmem[2] = max(64*1024, max_wshare);
- 
- 	sysctl_tcp_rmem[0] = SK_MEM_QUANTUM;
- 	sysctl_tcp_rmem[1] = 87380;
--	sysctl_tcp_rmem[2] = max(87380, max_share);
-+	sysctl_tcp_rmem[2] = max(87380, max_rshare);
- 
- 	printk(KERN_INFO "TCP: Hash tables configured "
- 	       "(established %u bind %u)\n",
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -83,7 +83,7 @@ int sysctl_tcp_ecn __read_mostly = 2;
- EXPORT_SYMBOL(sysctl_tcp_ecn);
- int sysctl_tcp_dsack __read_mostly = 1;
- int sysctl_tcp_app_win __read_mostly = 31;
--int sysctl_tcp_adv_win_scale __read_mostly = 2;
-+int sysctl_tcp_adv_win_scale __read_mostly = 1;
- EXPORT_SYMBOL(sysctl_tcp_adv_win_scale);
- 
- int sysctl_tcp_stdurg __read_mostly;
 
 
