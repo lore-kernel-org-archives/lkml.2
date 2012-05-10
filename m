@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757854Ab2EJJQD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 05:16:03 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54742 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757822Ab2EJJP6 (ORCPT
+	id S932219Ab2EJJVV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 05:21:21 -0400
+Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:33092 "EHLO
+	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932172Ab2EJJVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 05:15:58 -0400
-From: Ben Minerds <puzzleduck@gmail.com>
-To: alan@lxorguk.ukuu.org.uk
-Cc: gregkh@linuxfoundation.org, richard.weinberger@gmail.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Minerds <puzzleduck@gmail.com>
-Subject: [PATCH 09/21] USB: serial: Changes to conform with checkpatch.sh script. spaces required around '?' and ':'.
-Date: Thu, 10 May 2012 19:17:15 +1000
-Message-Id: <1336641447-23194-10-git-send-email-puzzleduck@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1336641447-23194-1-git-send-email-puzzleduck@gmail.com>
-References: <1336641447-23194-1-git-send-email-puzzleduck@gmail.com>
+	Thu, 10 May 2012 05:21:18 -0400
+Message-ID: <1336641674.8605.1.camel@odin>
+Subject: Re: [PATCH 1/2] regulator: dummy: Specify a struct device
+From: Liam Girdwood <lrg@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 10 May 2012 10:21:14 +0100
+In-Reply-To: <1336497380-8341-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1336497380-8341-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed 2 checkpatch.sh errors.
+On Tue, 2012-05-08 at 18:16 +0100, Mark Brown wrote:
+> This will be becoming mandatory.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/regulator/dummy.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/regulator/dummy.c b/drivers/regulator/dummy.c
+> index 1571bee..86f655c 100644
+> --- a/drivers/regulator/dummy.c
+> +++ b/drivers/regulator/dummy.c
+> @@ -42,6 +42,7 @@ static int __devinit dummy_regulator_probe(struct platform_device *pdev)
+>  	struct regulator_config config = { };
+>  	int ret;
+>  
+> +	config.dev = &pdev->dev;
+>  	config.init_data = &dummy_initdata;
+>  
+>  	dummy_regulator_rdev = regulator_register(&dummy_desc, &config);
 
-Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
----
- drivers/usb/serial/keyspan.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Both
 
-diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
-index 6e9d8a6..0c952eb 100644
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -1134,7 +1134,7 @@ static int keyspan_open(struct tty_struct *tty, struct usb_serial_port *port)
- 	}
- 	/* set CTS/RTS handshake etc. */
- 	p_priv->cflag = cflag;
--	p_priv->flow_control = (cflag & CRTSCTS)? flow_cts: flow_none;
-+	p_priv->flow_control = (cflag & CRTSCTS) ? flow_cts : flow_none;
- 
- 	keyspan_send_setup(port, 1);
- 	/* mdelay(100); */
--- 
-1.7.2.5
+Acked-by: Liam Girdwood <lrg@ti.com>
 
