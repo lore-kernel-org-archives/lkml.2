@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758532Ab2EJVJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 17:09:57 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:41815 "EHLO mail.sf-mail.de"
+	id S1758828Ab2EJVKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 17:10:22 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:51392 "EHLO mail.sf-mail.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757552Ab2EJVJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 17:09:54 -0400
+	id S1758399Ab2EJVJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 17:09:57 -0400
 From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: linux-parisc@vger.kernel.org
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        torvalds@linux-foundation.org
-Subject: [PATCH 4/5] parisc: add missing include of asm/page.h to asm/pgtable.h
-Date: Thu, 10 May 2012 23:07:16 +0200
-Message-ID: <4289546.1CNkXRDMmz@donald.sf-tec.de>
+To: linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org
+Subject: [PATCH 0/5] PA-RISC: fix compile
+Date: Thu, 10 May 2012 22:50:37 +0200
+Message-ID: <4430485.xEvkeJU8MB@donald.sf-tec.de>
 User-Agent: KMail/4.8.3 (Linux/3.2.9-13-desktop; KDE/4.8.3; i686; ; )
-In-Reply-To: <4430485.xEvkeJU8MB@donald.sf-tec.de>
-References: <4430485.xEvkeJU8MB@donald.sf-tec.de>
 MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="nextPart1852574.nSzBGjLzTC"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes these errors:
 
-In file included from /home/buildbot/repos/linux/arch/parisc/include/asm/io.h:5:0,
-                 from /home/buildbot/repos/linux/include/linux/io.h:22,
-                 from /home/buildbot/repos/linux/include/linux/pci.h:54,
-                 from /home/buildbot/repos/linux/arch/parisc/kernel/setup.c:35:
-/home/buildbot/repos/linux/arch/parisc/include/asm/pgtable.h:92:6: warning: "PAGE_SHIFT" is not defined [-Wundef]
-/home/buildbot/repos/linux/arch/parisc/include/asm/pgtable.h:92:6: warning: "PAGE_SHIFT" is not defined [-Wundef]
-/home/buildbot/repos/linux/arch/parisc/include/asm/pgtable.h:92:6: warning: "BITS_PER_PTE_ENTRY" is not defined [-Wundef]
+--nextPart1852574.nSzBGjLzTC
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-Signed-off-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
----
- arch/parisc/include/asm/pgtable.h |    2 ++
- 1 file changed, 2 insertions(+)
+Since d66acc39c7cee323733c8503b9de1821a56dff7e (bitops: Optimise get_order())
+getorder.h includes log2.h which leads to an include loop on PA-RISC, bringing 
+a bunch of other breakage to light. This patchset fixes the compilation of the 
+current state of 3.4 on HPPA.
 
-diff --git a/arch/parisc/include/asm/pgtable.h b/arch/parisc/include/asm/pgtable.h
-index 22dadeb..ee99f23 100644
---- a/arch/parisc/include/asm/pgtable.h
-+++ b/arch/parisc/include/asm/pgtable.h
-@@ -44,6 +44,8 @@ struct vm_area_struct;
- 
- #endif /* !__ASSEMBLY__ */
- 
-+#include <asm/page.h>
-+
- #define pte_ERROR(e) \
- 	printk("%s:%d: bad pte %08lx.\n", __FILE__, __LINE__, pte_val(e))
- #define pmd_ERROR(e) \
+Unchanged against the first version, just added an Ack by Grant.
+
+Rolf Eike Beer (5):
+  parisc: add missing includes in asm/spinlock.h
+  parisc: add missing forward declarations in asm/hardware.h
+  parisc: drop include of asm/pdc.h from asm/hardware.h
+  parisc: add missing include of asm/page.h to asm/pgtable.h
+  parisc: move definition of PAGE0 to asm/page.h
+
+ arch/parisc/include/asm/hardware.h |    3 ++-
+ arch/parisc/include/asm/page.h     |    6 ++++++
+ arch/parisc/include/asm/pdc.h      |    7 -------
+ arch/parisc/include/asm/pgtable.h  |    2 ++
+ arch/parisc/include/asm/spinlock.h |    2 ++
+ arch/parisc/kernel/pdc_cons.c      |    1 +
+ arch/parisc/kernel/time.c          |    1 +
+ drivers/parisc/sba_iommu.c         |    1 +
+ drivers/video/console/sticore.c    |    2 ++
+ include/asm-generic/getorder.h     |    2 +-
+ 10 files changed, 18 insertions(+), 9 deletions(-)
+
 -- 
 1.7.9.2
+--nextPart1852574.nSzBGjLzTC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iEYEABECAAYFAk+sKh0ACgkQXKSJPmm5/E79qgCfV3D189F4JFb0G5yMbB9dwJeD
+F4QAnRj6D6Erc16wL2MHeJQY4oId9Au1
+=kfbA
+-----END PGP SIGNATURE-----
+
+--nextPart1852574.nSzBGjLzTC--
 
