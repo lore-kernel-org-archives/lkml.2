@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab2EJUqO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 16:46:14 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:36258 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755526Ab2EJUqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 16:46:12 -0400
-Message-ID: <1336682772.29763.6.camel@joe2Laptop>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
- variable-length record buffer
-From: Joe Perches <joe@perches.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
-Date: Thu, 10 May 2012 13:46:12 -0700
-In-Reply-To: <CAPXgP11T7vjBBFaE5jne0hntZ2J-MoVxwJ2C9TNsRzme9DmLuQ@mail.gmail.com>
-References: <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
-	 <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
-	 <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com>
-	 <20120509070710.GA29981@gmail.com>
-	 <CAPXgP11evyQQKNDaa00R7qsOFy5Xk-utN1w9OgB4y6NxLZG=UA@mail.gmail.com>
-	 <1336611278.728.9.camel@mop>
-	 <CA+55aFyrrH0jJV--L=ugt0YK7pT+jmhjvt_WRWyenyiroN97zg@mail.gmail.com>
-	 <1336667984.947.24.camel@mop>
-	 <CA+55aFxUaNC4SGEodrdddkDN6t=Sbx=P4XyaHkj7eTQBQOeLeA@mail.gmail.com>
-	 <1336676986.947.47.camel@mop> <20120510201409.GA6467@thunk.org>
-	 <1336682226.29763.2.camel@joe2Laptop>
-	 <CAPXgP11T7vjBBFaE5jne0hntZ2J-MoVxwJ2C9TNsRzme9DmLuQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757266Ab2EJUsm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 16:48:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:1632 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756938Ab2EJUsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 16:48:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="151569350"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: RE: [PATCH v6 07/12] x86/head_32.S: Define start_cpu0
+Thread-Topic: [PATCH v6 07/12] x86/head_32.S: Define start_cpu0
+Thread-Index: AQHNLsntvr1l3h/gokGh24+5F7dfwZbDvSMA//+mgrA=
+Date: Thu, 10 May 2012 20:48:38 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C7122007715B10@ORSMSX105.amr.corp.intel.com>
+References: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
+ <1336666614-21090-8-git-send-email-fenghua.yu@intel.com>
+ <878ae68a-72cf-40cb-a654-a2c1cb3df0c3@email.android.com>
+In-Reply-To: <878ae68a-72cf-40cb-a654-a2c1cb3df0c3@email.android.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4AKmlZD014323
 
-On Thu, 2012-05-10 at 22:39 +0200, Kay Sievers wrote:
-> On Thu, May 10, 2012 at 10:37 PM, Joe Perches <joe@perches.com> wrote:
-> > On Thu, 2012-05-10 at 16:14 -0400, Ted Ts'o wrote:
-> >> Is there any difference in any of the cases in terms of how printk's
-> >> that are prefixed with KERN_CONT versus a printk that does not have
-> >> any KERN_* prefix?  If so, is there value in keeping KERN_CONT?
-> >
-> > As far as I know, no.
-> >
-> > It is a useful marker to show where prints
-> > are actually continued.
-> >
-> > #define KERN_CONT ""
-> >
-> > would save a small amount of text.
+> -----Original Message-----
+> From: H. Peter Anvin [mailto:hpa@zytor.com]
+> Sent: Thursday, May 10, 2012 10:31 AM
+> To: Yu, Fenghua; Ingo Molnar; Thomas Gleixner; Linus Torvalds; Andrew
+> Morton; Mallick, Asit K; Luck, Tony; Arjan Dan De Ven; Siddha, Suresh B;
+> Brown, Len; Srivatssa S. Bhat; Randy Dunlap; Chen Gong; linux-kernel;
+> linux-pm; x86
+> Subject: Re: [PATCH v6 07/12] x86/head_32.S: Define start_cpu0
 > 
-> Nah, we can't do that. We need it to tell "here is your non-prefix to
-> parse, leave the data behind alone".
+> Can you check how this interacts with tip:x86/realmode?
 
-That's where I think you're still a bit
-uncertain how the _current_ printk system
-works.  Your _new_ printk system should
-have identical behavior.  Though if you
-manage to use the call tree and current to
-coalesce complete messages more correctly,
-that'd be great.
+When CPU0 is waken up by NMI, it's in protect mode and jumps to start_cpu0() which only sets up stack and goes to initial_code. CPU0 wake up doesn't go through trampline and starts from real mode. This is different from waking up AP when AP goes through INIT/STARTUP sequence and starts from real mode.
 
+Thanks.
 
+-Fenghua
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
