@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527Ab2EJIwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 04:52:09 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:35121 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754436Ab2EJIwD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 04:52:03 -0400
-Date: Thu, 10 May 2012 18:51:55 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Rusty Russell <rusty@rustcorp.com.au>
-Subject: linux-next: manual merge of the akpm tree with the rr tree
-Message-Id: <20120510185155.47d24f37951786b64af97868@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__10_May_2012_18_51_55_+1000_ExuL0YBohF4c4v+r"
+	id S1757557Ab2EJIwY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 04:52:24 -0400
+Received: from mga14.intel.com ([143.182.124.37]:55771 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757539Ab2EJIwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 04:52:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="98445243"
+Message-ID: <4FAB8169.7090809@intel.com>
+Date: Thu, 10 May 2012 16:50:49 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, gregkh@linuxfoundation.org, riel@redhat.com,
+        luto@mit.edu, avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
+        fenghua.yu@intel.com, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
+        a.p.zijlstra@chello.nl, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/7] x86/flush_tlb: try flush_tlb_single one by one
+ in flush_tlb_range
+References: <1336626013-28413-1-git-send-email-alex.shi@intel.com> <1336626013-28413-4-git-send-email-alex.shi@intel.com> <20120510075325.GB30055@aftab.osrc.amd.com>
+In-Reply-To: <20120510075325.GB30055@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__10_May_2012_18_51_55_+1000_ExuL0YBohF4c4v+r
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>
 
-Hi Andrew,
+> Ok, question:
+> 
+> we're comparing TLB size with the amount of pages mapped by this mm
+> struct. AFAICT, that doesn't mean that all those mapped pages do have
+> respective entries in the TLB, does it?
+> 
+> If so, then the actual entries number is kinda inaccurate, no? We don't
+> really know how many TLB entries actually belong to this mm struct. Or am I
+> missing something?
 
-Today's linux-next merge of the akpm tree got conflicts in
-kernel/lglock.c, include/linux/lglock.h, fs/namespace.c and fs/internal.h
-between various commits from the rr tree and commit "brlocks/lglocks:
-cleanups" from the akpm tree.
 
-The akpm tree patch seems to be a merge of the rr tree commits, so I
-dropped the akpm tree patch.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+No, we can not know the exactly TLB entires for. But usually, when you
+process is doing the mprotect/munmap etc system call, your process has
+taken much of memory and already filled lots of TLB entries.
 
---Signature=_Thu__10_May_2012_18_51_55_+1000_ExuL0YBohF4c4v+r
-Content-Type: application/pgp-signature
+This point is considered imply in the balance point calculation.
+checking following equation
+	(512 - X) * 100ns(assumed TLB refill cost) =
+		X(TLB flush entries) * 100ns(assumed invlpg cost)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+The X value we got is far lower then theory value. That means remain TLB
+entries is may not so much, or TLB refill cost is much lower due to
+hardware pre-fetcher.
 
-iQIcBAEBCAAGBQJPq4GrAAoJEECxmPOUX5FE9IcP/RV1InN3UIPk9dfHdm0W+dWl
-t+oHZfY0+I2pdinfeR6/wpva9tD6Pl/y2NowNjIPbNO1iqTIimV6yHH5hbeDrLIw
-Xih5k7G894wrgF0+P/7I7F7JzyyNoWHWMKB1JynCXTOY1NjySrwwDqHYuCbXn4E7
-SKVizz814Uzmril01HXuHZVg88q/52O2C5/1JeaUDUzg/WdhoMuRU5SliTDlQeVi
-xdHJOwM0qqq1FdUOTeGjI3Kp2zN0yBeZteUSV7khlr9nWfVJqBipAajUqm2rJA81
-ty60/pDm6+JeeUAYxxmHnDMPC5jatrSRRNcBq4L/zdxENj28MAkF5WZ2OCUGTglo
-ki/gLfl4zK9Znh2tjGvFATcRM67hjPZ0BA4Nr0rUJsCoVkk09ZzG7VRGD/Gj6X4k
-pwlsqCMq9g3qus05E5eZBr2r7hhd2WYeSPHabjrbk+F8X5Sa4ze/KP5ZtoAlaKci
-fYXZ+RWAqLXSlZJpJIwTgoVvbUUu4rzazEczkKm0QO6l36nOb9Hsgy1ofvr0J612
-2tztYvmeipvKF3qKWkChjThrfbTaD2BlmHCPvPMP3td+SsibkP3s+qcSFagHSHv8
-AmH21oqt65P2g6PWFk/HQ8LfiJJrwFRqmINTx2siLxVu6jToW/867LxoQUgxURXH
-sMJXZv7OKkD8X9BBWym8
-=gMGS
------END PGP SIGNATURE-----
+>
 
---Signature=_Thu__10_May_2012_18_51_55_+1000_ExuL0YBohF4c4v+r--
+>> +			if ((end - start)/PAGE_SIZE > act_entries/FLUSHALL_BAR)
+> 
+> Oh, in a later patch you do this:
+> 
+> +                       if ((end - start) >> PAGE_SHIFT >
+> +                                       act_entries >> tlb_flushall_factor)
+> 
+> and the tlb_flushall_factor factor is 5 or 6 but the division by 16
+> (FLUSHALL_BAR) was a >> 4. So, is this to assume that it is not 16 but
+> actually more than 32 or even 64 TLB entries where a full TLB flush
+> makes sense and one-by-one if less?
+
+
+Yes, the FLUSHALL_BAR is just a guessing value here. And take your
+advice, I modify the macro benchmark a little and get the more sensible
+value in later patch.
+
+BTW, I found 8% performance increase on kbuild on SNB EP from the
+average multiple testing, while result variation is up to 15%.
