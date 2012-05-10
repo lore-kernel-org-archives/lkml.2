@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761335Ab2EJSj1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 14:39:27 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:32892 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757463Ab2EJSjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 14:39:24 -0400
-Date: Thu, 10 May 2012 13:43:23 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Mark Tinguely <tinguely@sgi.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: linux-next: build failure after merge of the xfs tree
-Message-ID: <20120510184323.GM3963@sgi.com>
-References: <20120510130134.0efffc5ba1f3a80c614e8f29@canb.auug.org.au>
- <20120510183245.GL3963@sgi.com>
- <4FAC0A9E.3020909@sgi.com>
+	id S1761380Ab2EJSjl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 14:39:41 -0400
+Received: from mga14.intel.com ([143.182.124.37]:65515 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761358Ab2EJSjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 14:39:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="141530124"
+Message-Id: <cover.1336674796.git.tony.luck@intel.com>
+From: Tony Luck <tony.luck@intel.com>
+Date: Thu, 10 May 2012 11:33:16 -0700
+Subject: [PATCH 0/2] Add machine check recovery for instruction fetch
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FAC0A9E.3020909@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 01:36:14PM -0500, Mark Tinguely wrote:
-> On 05/10/12 13:32, Ben Myers wrote:
-> 
-> >Signed-off-by: Ben Myers<bpm@sgi.com>
-> >
-> >Index: xfs/fs/xfs/xfs_alloc.c
-> >===================================================================
-> >--- xfs.orig/fs/xfs/xfs_alloc.c
-> >+++ xfs/fs/xfs/xfs_alloc.c
-> >@@ -47,8 +47,6 @@ STATIC int xfs_alloc_ag_vextent_near(xfs
-> >  STATIC int xfs_alloc_ag_vextent_size(xfs_alloc_arg_t *);
-> >  STATIC int xfs_alloc_ag_vextent_small(xfs_alloc_arg_t *,
-> >  		xfs_btree_cur_t *, xfs_agblock_t *, xfs_extlen_t *, int *);
-> >-STATIC void xfs_extent_busy_trim(struct xfs_alloc_arg *,
-> >-		xfs_agblock_t, xfs_extlen_t, xfs_agblock_t *, xfs_extlen_t *);
-> >
-> >  /*
-> >   * Lookup the record equal to [bno, len] in the btree given by cur.
-> >Index: xfs/fs/xfs/xfs_extent_busy.c
-> >===================================================================
-> >--- xfs.orig/fs/xfs/xfs_extent_busy.c
-> >+++ xfs/fs/xfs/xfs_extent_busy.c
-> >@@ -345,7 +345,7 @@ restart:
-> >   * args->minlen no suitable extent could be found, and the higher level
-> >   * code needs to force out the log and retry the allocation.
-> >   */
-> >-STATIC void
-> >+void
-> >  xfs_extent_busy_trim(
-> >  	struct xfs_alloc_arg	*args,
-> >  	xfs_agblock_t		bno,
-> >Index: xfs/fs/xfs/xfs_extent_busy.h
-> >===================================================================
-> >--- xfs.orig/fs/xfs/xfs_extent_busy.h
-> >+++ xfs/fs/xfs/xfs_extent_busy.h
-> >@@ -54,6 +54,10 @@ void
-> >  xfs_extent_busy_reuse(struct xfs_mount *mp, xfs_agnumber_t agno,
-> >  	xfs_agblock_t fbno, xfs_extlen_t flen, bool userdata);
-> >
-> >+void
-> >+xfs_extent_busy_trim(struct xfs_alloc_arg *args, xfs_agblock_t bno,
-> >+	xfs_extlen_t len, xfs_agblock_t *rbno, xfs_extlen_t *rlen);
-> >+
-> >  int
-> >  xfs_extent_busy_ag_cmp(void *priv, struct list_head *a, struct list_head *b);
-> >
-> >
-> 
-> Hmmm, I saw that before. I have been hand patching that to test.
-> 
-> Looks good.
-> 
-> Reviewed-by: Mark Tinguely <tinguely@sgi.com>
+Part 1 fixes an oversight in the existing code that didn't show
+up while I was testing the data recovery case (because I never tried
+injecting an error into a clean LRU data page ... only to dirty pages
+where "memory_failure()" says we have to SIGBUS the process).
 
-CONFIG_XFS_DEBUG clears the #define of STATIC.  That's where this went off the
-rails.
+Part simply adds the right entries to the severity table so that we
+will recognise instruction fetch faults.
 
-Thanks,
-	Ben
+Tony Luck (2):
+  x86/mce: Only restart instruction after machine check recovery if it
+    is safe
+  x86/mce: Add instruction recovery signatures to mce-severity table
+
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   10 ++++++++++
+ arch/x86/kernel/cpu/mcheck/mce.c          |    9 ++++++---
+ 2 files changed, 16 insertions(+), 3 deletions(-)
+
+-- 
+1.7.9.rc2.1.g69204
+
