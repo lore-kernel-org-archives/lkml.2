@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759050Ab2EJRSw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:18:52 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40538 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758813Ab2EJRSs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758893Ab2EJRSs (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 10 May 2012 13:18:48 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Richard Purdie <rpurdie@rpsys.net>, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 1/2] mfd: lm3533: remove unused max-current function
-Date: Thu, 10 May 2012 19:18:28 +0200
-Message-Id: <1336670309-20858-2-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.7.8.5
-In-Reply-To: <1336670309-20858-1-git-send-email-jhovold@gmail.com>
-References: <20120510120742.GA29437@localhost>
- <1336670309-20858-1-git-send-email-jhovold@gmail.com>
+Received: from merlin.infradead.org ([205.233.59.134]:55891 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757682Ab2EJRSA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 13:18:00 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 01/16] perf session: Fail on processing event with unknown size
+Date: Thu, 10 May 2012 14:17:30 -0300
+Message-Id: <1336670265-20401-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1336670265-20401-1-git-send-email-acme@infradead.org>
+References: <1336670265-20401-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The max-current attributes of the subdrivers have been dropped so
-remove the no longer used lm3533_ctrlbank_get_max_current function.
+From: Jiri Olsa <jolsa@redhat.com>
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Currently if we cannot decide the size of the event, we guess next
+event possition by:
+  "... check alignment, and increment a single u64 in the hope
+  to catch on again 'soon'"
+
+This usually ends up with segfault or endless loop. It's better
+to admit the failure right away, then pretend nothing happened.
+It makes the life easier ;)
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20120416184251.GA11503@m.brq.redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/mfd/lm3533-ctrlbank.c |    1 -
- include/linux/mfd/lm3533.h    |    2 --
- 2 files changed, 0 insertions(+), 3 deletions(-)
+ tools/perf/util/session.c |   30 +++++++++---------------------
+ 1 file changed, 9 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/mfd/lm3533-ctrlbank.c b/drivers/mfd/lm3533-ctrlbank.c
-index c2732a3..adf4c1a 100644
---- a/drivers/mfd/lm3533-ctrlbank.c
-+++ b/drivers/mfd/lm3533-ctrlbank.c
-@@ -113,7 +113,6 @@ lm3533_ctrlbank_get(brightness, BRIGHTNESS);
-  *   31 - 29.8 mA
-  */
- lm3533_ctrlbank_set(max_current, MAX_CURRENT);
--lm3533_ctrlbank_get(max_current, MAX_CURRENT);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 9412e3b..f992ae3 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1100,16 +1100,10 @@ more:
+ 	}
  
- /*
-  * PWM-input control mask:
-diff --git a/include/linux/mfd/lm3533.h b/include/linux/mfd/lm3533.h
-index 3361137..7cfef9e 100644
---- a/include/linux/mfd/lm3533.h
-+++ b/include/linux/mfd/lm3533.h
-@@ -92,8 +92,6 @@ extern int lm3533_ctrlbank_disable(struct lm3533_ctrlbank *cb);
- extern int lm3533_ctrlbank_set_brightness(struct lm3533_ctrlbank *cb, u8 val);
- extern int lm3533_ctrlbank_get_brightness(struct lm3533_ctrlbank *cb, u8 *val);
- extern int lm3533_ctrlbank_set_max_current(struct lm3533_ctrlbank *cb, u8 val);
--extern int lm3533_ctrlbank_get_max_current(struct lm3533_ctrlbank *cb,
--								u8 *val);
- extern int lm3533_ctrlbank_set_pwm(struct lm3533_ctrlbank *cb, u8 val);
- extern int lm3533_ctrlbank_get_pwm(struct lm3533_ctrlbank *cb, u8 *val);
+ 	if ((skip = perf_session__process_event(self, &event, tool, head)) < 0) {
+-		dump_printf("%#" PRIx64 " [%#x]: skipping unknown header type: %d\n",
+-			    head, event.header.size, event.header.type);
+-		/*
+-		 * assume we lost track of the stream, check alignment, and
+-		 * increment a single u64 in the hope to catch on again 'soon'.
+-		 */
+-		if (unlikely(head & 7))
+-			head &= ~7ULL;
+-
+-		size = 8;
++		pr_err("%#" PRIx64 " [%#x]: failed to process type: %d\n",
++		       head, event.header.size, event.header.type);
++		err = -EINVAL;
++		goto out_err;
+ 	}
  
+ 	head += size;
+@@ -1218,17 +1212,11 @@ more:
+ 
+ 	if (size == 0 ||
+ 	    perf_session__process_event(session, event, tool, file_pos) < 0) {
+-		dump_printf("%#" PRIx64 " [%#x]: skipping unknown header type: %d\n",
+-			    file_offset + head, event->header.size,
+-			    event->header.type);
+-		/*
+-		 * assume we lost track of the stream, check alignment, and
+-		 * increment a single u64 in the hope to catch on again 'soon'.
+-		 */
+-		if (unlikely(head & 7))
+-			head &= ~7ULL;
+-
+-		size = 8;
++		pr_err("%#" PRIx64 " [%#x]: failed to process type: %d\n",
++		       file_offset + head, event->header.size,
++		       event->header.type);
++		err = -EINVAL;
++		goto out_err;
+ 	}
+ 
+ 	head += size;
 -- 
-1.7.8.5
+1.7.9.2.358.g22243
 
