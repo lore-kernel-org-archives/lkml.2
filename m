@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575Ab2EJFDR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 01:03:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21455 "EHLO mga09.intel.com"
+	id S1752503Ab2EJFCo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 01:02:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38196 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751865Ab2EJFCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 01:02:45 -0400
+	id S1751865Ab2EJFCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 01:02:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="142177438"
+   d="scan'208";a="142177350"
 From: Alex Shi <alex.shi@intel.com>
 To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com
@@ -22,9 +22,9 @@ Cc: jeremy@goop.org, gregkh@linuxfoundation.org, borislav.petkov@amd.com,
         tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
         a.p.zijlstra@chello.nl, kamezawa.hiroyu@jp.fujitsu.com,
         viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 7/7] x86/tlb: add tlb_flushall_factor into sysfs for user testing/tuning
-Date: Thu, 10 May 2012 13:00:13 +0800
-Message-Id: <1336626013-28413-8-git-send-email-alex.shi@intel.com>
+Subject: [PATCH v4 2/7] x86/tlb_info: get last level TLB entry number of CPU
+Date: Thu, 10 May 2012 13:00:08 +0800
+Message-Id: <1336626013-28413-3-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
 References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
@@ -32,144 +32,268 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernel will replace cr3 rewrite with invlpg when
-  tlb_flush_entries <= active_tlb_entries / 2^tlb_flushall_factor
-if tlb_flushall_factor is -1, kernel won't do this replacement.
+For 4KB pages, x86 CPU has 2 or 1 level TLB, first level is data TLB and
+instruction TLB, second level is shared TLB for both data and instructions.
 
-User can modify its value according to specific applications.
+For hupe page TLB, usually there is just one level and seperated by 2MB/4MB
+and 1GB.
+
+Although each levels TLB size is important for performance tuning, but for
+genernal and rude optimizing, last level TLB entry number is suitable. And
+in fact, last level TLB always has the biggest entry number.
+
+This patch will get the biggest TLB entry number and use it in furture TLB
+optimizing.
+
+For all kinds of x86 vendor friendly, vendor specific code was moved to its
+specific files.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- Documentation/ABI/testing/sysfs-devices-system-cpu |   12 ++++++
- arch/x86/Kconfig.debug                             |   11 ++++++
- arch/x86/kernel/cpu/common.c                       |   37 ++++++++++++++++++++
- drivers/base/cpu.c                                 |    4 ++
- include/linux/cpu.h                                |    4 ++
- 5 files changed, 68 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/processor.h |   11 +++
+ arch/x86/kernel/cpu/common.c     |   21 ++++++
+ arch/x86/kernel/cpu/cpu.h        |    9 +++
+ arch/x86/kernel/cpu/intel.c      |  141 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 182 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
-index e7be75b..05f8eb7 100644
---- a/Documentation/ABI/testing/sysfs-devices-system-cpu
-+++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
-@@ -78,6 +78,18 @@ Description:	Dynamic addition and removal of CPU's.  This is not hotplug
- 		the system.  Information writtento the file to remove CPU's
- 		is architecture specific.
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 4fa7dcc..797faca 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -61,6 +61,17 @@ static inline void *current_text_addr(void)
+ # define ARCH_MIN_MMSTRUCT_ALIGN	0
+ #endif
  
-+What:		/sys/devices/system/cpu/tlb_flushall_factor
-+Date:		May 2012
-+Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-+Description:	tlb_flushall_factor show and setting interface
-+		tlb_flushall_factor shows the balance point in replacing cr3
-+		writting with multiple 'invlpg'. It will do this replacement
-+		when flush_tlb_lines <= active_lines/2^tlb_flushall_factor
-+		If tlb_flushall_factor is -1, means the replacement will be
-+		disabled.
++enum tlb_infos {
++	ENTRIES,
++	NR_INFO
++};
 +
-+		User can set this for the specific CPU or application.
-+
- What:		/sys/devices/system/cpu/cpu#/node
- Date:		October 2009
- Contact:	Linux memory management mailing list <linux-mm@kvack.org>
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index e46c214..5b87493 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -129,6 +129,17 @@ config DOUBLEFAULT
- 	  option saves about 4k and might cause you much additional grey
- 	  hair.
- 
-+config DEBUG_TLBFLUSH
-+	bool "Enable user level tlb flush all setting"
-+	depends on DEBUG_KERNEL && (X86_64 || X86_INVLPG)
-+	---help---
-+	  This option allows user tune tlb_flushall_factor knob that under
-+	  /sys/devices/system/cpu, set to -1 means do tlb flush all for any
-+	  multiple tlb lines evacuation demand. Otherwise kernel will use
-+	  multiple 'invlpg' for the demand when
-+	      flush_lines <= active_tlb_lines / 2^tlb_flushall_factor
-+	  If in doubt, say "N"
-+
- config IOMMU_DEBUG
- 	bool "Enable IOMMU debugging"
- 	depends on GART_IOMMU && DEBUG_KERNEL
++extern u16 __read_mostly tlb_lli_4k[NR_INFO];
++extern u16 __read_mostly tlb_lli_2m[NR_INFO];
++extern u16 __read_mostly tlb_lli_4m[NR_INFO];
++extern u16 __read_mostly tlb_lld_4k[NR_INFO];
++extern u16 __read_mostly tlb_lld_2m[NR_INFO];
++extern u16 __read_mostly tlb_lld_4m[NR_INFO];
+ /*
+  *  CPU type and hardware bug flags. Kept separately for each CPU.
+  *  Members of this structure are referenced in head.S, so think twice
 diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 8879d20..d1986c6 100644
+index cf79302..0152082 100644
 --- a/arch/x86/kernel/cpu/common.c
 +++ b/arch/x86/kernel/cpu/common.c
-@@ -481,6 +481,43 @@ void __cpuinit cpu_detect_tlb(struct cpuinfo_x86 *c)
- 		tlb_flushall_factor);
+@@ -452,6 +452,25 @@ void __cpuinit cpu_detect_cache_sizes(struct cpuinfo_x86 *c)
+ 	c->x86_cache_size = l2size;
  }
  
-+#ifdef CONFIG_DEBUG_TLBFLUSH
-+static ssize_t __tlb_flushall_factor_store(const char *buf,
-+					size_t count, int smt)
++u16 __read_mostly tlb_lli_4k[NR_INFO];
++u16 __read_mostly tlb_lli_2m[NR_INFO];
++u16 __read_mostly tlb_lli_4m[NR_INFO];
++u16 __read_mostly tlb_lld_4k[NR_INFO];
++u16 __read_mostly tlb_lld_2m[NR_INFO];
++u16 __read_mostly tlb_lld_4m[NR_INFO];
++
++void __cpuinit cpu_detect_tlb(struct cpuinfo_x86 *c)
 +{
-+	short factor = 0;
++	if (c->x86_vendor == X86_VENDOR_INTEL)
++		intel_cpu_detect_tlb(c);
 +
-+	if (sscanf(buf, "%hd", &factor) != 1)
-+		return -EINVAL;
-+
-+	tlb_flushall_factor = factor;
-+
-+	return count;
++	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n" \
++		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d\n",
++		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
++		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
++		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES]);
 +}
-+
-+static ssize_t tlb_flushall_factor_show(struct device *dev,
-+					   struct device_attribute *attr,
-+					   char *buf)
-+{
-+	return sprintf(buf, "%hd\n", tlb_flushall_factor);
-+}
-+static ssize_t tlb_flushall_factor_store(struct device *dev,
-+					    struct device_attribute *attr,
-+					    const char *buf, size_t count)
-+{
-+	return __tlb_flushall_factor_store(buf, count, 0);
-+}
-+
-+static DEVICE_ATTR(tlb_flushall_factor, 0644,
-+		   tlb_flushall_factor_show,
-+		   tlb_flushall_factor_store);
-+
-+int __init create_sysfs_tlb_flushall_factor(struct device *dev)
-+{
-+	return device_create_file(dev, &dev_attr_tlb_flushall_factor);
-+}
-+#endif
 +
  void __cpuinit detect_ht(struct cpuinfo_x86 *c)
  {
  #ifdef CONFIG_X86_HT
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index adf937b..dc0f77b 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -331,6 +331,10 @@ void __init cpu_dev_init(void)
- 
- 	cpu_dev_register_generic();
- 
-+#ifdef CONFIG_DEBUG_TLBFLUSH
-+	create_sysfs_tlb_flushall_factor(cpu_subsys.dev_root);
-+#endif
-+
- #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
- 	sched_create_sysfs_power_savings_entries(cpu_subsys.dev_root);
+@@ -911,6 +930,8 @@ void __init identify_boot_cpu(void)
+ #else
+ 	vgetcpu_set_mode();
  #endif
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index ee28844..3eb85a5 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -36,6 +36,10 @@ extern void cpu_remove_dev_attr(struct device_attribute *attr);
- extern int cpu_add_dev_attr_group(struct attribute_group *attrs);
- extern void cpu_remove_dev_attr_group(struct attribute_group *attrs);
++	if (boot_cpu_data.cpuid_level >= 2)
++		cpu_detect_tlb(&boot_cpu_data);
+ }
  
-+#ifdef CONFIG_DEBUG_TLBFLUSH
-+extern int create_sysfs_tlb_flushall_factor(struct device *dev);
-+#endif
+ void __cpuinit identify_secondary_cpu(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/cpu.h b/arch/x86/kernel/cpu/cpu.h
+index 8bacc78..c8dc726 100644
+--- a/arch/x86/kernel/cpu/cpu.h
++++ b/arch/x86/kernel/cpu/cpu.h
+@@ -24,6 +24,14 @@ struct cpu_dev {
+ 	int		c_x86_vendor;
+ };
+ 
++struct _tlb_table {
++	unsigned char descriptor;
++	char tlb_type;
++	unsigned int entries;
++	/* unsigned int ways; */
++	char info[128];
++};
 +
- extern int sched_create_sysfs_power_savings_entries(struct device *dev);
+ #define cpu_dev_register(cpu_devX) \
+ 	static const struct cpu_dev *const __cpu_dev_##cpu_devX __used \
+ 	__attribute__((__section__(".x86_cpu_dev.init"))) = \
+@@ -34,4 +42,5 @@ extern const struct cpu_dev *const __x86_cpu_dev_start[],
  
- #ifdef CONFIG_HOTPLUG_CPU
+ extern void get_cpu_cap(struct cpuinfo_x86 *c);
+ extern void cpu_detect_cache_sizes(struct cpuinfo_x86 *c);
++extern void intel_cpu_detect_tlb(struct cpuinfo_x86 *c);
+ #endif /* ARCH_X86_CPU_H */
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 3e6ff6c..86e6131 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -491,6 +491,147 @@ static unsigned int __cpuinit intel_size_cache(struct cpuinfo_x86 *c, unsigned i
+ }
+ #endif
+ 
++#define TLB_INST_4K	0x01
++#define TLB_INST_4M	0x02
++#define TLB_INST_2M_4M	0x03
++
++#define TLB_INST_ALL	0x05
++#define TLB_INST_1G	0x06
++
++#define TLB_DATA_4K	0x11
++#define TLB_DATA_4M	0x12
++#define TLB_DATA_2M_4M	0x13
++#define TLB_DATA_4K_4M	0x14
++
++#define TLB_DATA_1G	0x16
++
++#define TLB_DATA0_4K	0x21
++#define TLB_DATA0_4M	0x22
++#define TLB_DATA0_2M_4M	0x23
++
++#define STLB_4K		0x41
++
++static const struct _tlb_table intel_tlb_table[] = {
++	{ 0x01, TLB_INST_4K,		32,	" TLB_INST 4 KByte pages, 4-way set associative" },
++	{ 0x02, TLB_INST_4M,		2,	" TLB_INST 4 MByte pages, full associative" },
++	{ 0x03, TLB_DATA_4K,		64,	" TLB_DATA 4 KByte pages, 4-way set associative" },
++	{ 0x04, TLB_DATA_4M,		8,	" TLB_DATA 4 MByte pages, 4-way set associative" },
++	{ 0x05, TLB_DATA_4M,		32,	" TLB_DATA 4 MByte pages, 4-way set associative" },
++	{ 0x0b, TLB_INST_4M,		4,	" TLB_INST 4 MByte pages, 4-way set associative" },
++	{ 0x4f, TLB_INST_4K,		32, 	" TLB_INST 4 KByte pages */" },
++	{ 0x50, TLB_INST_ALL,		64, 	" TLB_INST 4 KByte and 2-MByte or 4-MByte pages" },
++	{ 0x51, TLB_INST_ALL,		128,	" TLB_INST 4 KByte and 2-MByte or 4-MByte pages" },
++	{ 0x52, TLB_INST_ALL,		256,	" TLB_INST 4 KByte and 2-MByte or 4-MByte pages" },
++	{ 0x55, TLB_INST_2M_4M,		7, 	" TLB_INST 2-MByte or 4-MByte pages, fully associative" },
++	{ 0x56, TLB_DATA0_4M,		16,	" TLB_DATA0 4 MByte pages, 4-way set associative" },
++	{ 0x57, TLB_DATA0_4K,		16,	" TLB_DATA0 4 KByte pages, 4-way associative" },
++	{ 0x59, TLB_DATA0_4K,		16,	" TLB_DATA0 4 KByte pages, fully associative" },
++	{ 0x5a, TLB_DATA0_2M_4M,	32,	" TLB_DATA0 2-MByte or 4 MByte pages, 4-way set associative" },
++	{ 0x5b, TLB_DATA_4K_4M,		64,	" TLB_DATA 4 KByte and 4 MByte pages" },
++	{ 0x5c, TLB_DATA_4K_4M,		128,	" TLB_DATA 4 KByte and 4 MByte pages" },
++	{ 0x5d, TLB_DATA_4K_4M,		256,	" TLB_DATA 4 KByte and 4 MByte pages" },
++	{ 0xb0, TLB_INST_4K,		128,	" TLB_INST 4 KByte pages, 4-way set associative" },
++	{ 0xb1, TLB_INST_2M_4M,		4,	" TLB_INST 2M pages, 4-way, 8 entries or 4M pages, 4-way entries" },
++	{ 0xb2, TLB_INST_4K,		64,	" TLB_INST 4KByte pages, 4-way set associative" },
++	{ 0xb3, TLB_DATA_4K,		128,	" TLB_DATA 4 KByte pages, 4-way set associative" },
++	{ 0xb4, TLB_DATA_4K,		256,	" TLB_DATA 4 KByte pages, 4-way associative" },
++	{ 0xba, TLB_DATA_4K,		64,	" TLB_DATA 4 KByte pages, 4-way associative" },
++	{ 0xc0, TLB_DATA_4K_4M,		8,	" TLB_DATA 4 KByte and 4 MByte pages, 4-way associative" },
++	{ 0xca, STLB_4K,		512,	" STLB 4 KByte pages, 4-way associative" },
++	{ 0x00, 0, 0 }
++};
++
++void intel_tlb_lookup(const unsigned char desc)
++{
++	unsigned char k;
++	if (desc == 0)
++		return;
++
++	/* look up this descriptor in the table */
++	for (k = 0; intel_tlb_table[k].descriptor != desc && \
++			intel_tlb_table[k].descriptor != 0; k++)
++		;
++
++	if (intel_tlb_table[k].tlb_type == 0)
++		return;
++
++	switch (intel_tlb_table[k].tlb_type) {
++	case STLB_4K:
++		if (tlb_lli_4k[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lli_4k[ENTRIES] = intel_tlb_table[k].entries;
++		if (tlb_lld_4k[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lld_4k[ENTRIES] = intel_tlb_table[k].entries;
++		break;
++	case TLB_INST_ALL:
++		if (tlb_lli_4k[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lli_4k[ENTRIES] = intel_tlb_table[k].entries;
++		if (tlb_lli_2m[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lli_2m[ENTRIES] = intel_tlb_table[k].entries;
++		if (tlb_lli_4m[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lli_4m[ENTRIES] = intel_tlb_table[k].entries;
++		break;
++	case TLB_INST_4K:
++		if (tlb_lli_4k[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lli_4k[ENTRIES] = intel_tlb_table[k].entries;
++		break;
++	case TLB_INST_4M:
++		if (tlb_lli_4m[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lli_4m[ENTRIES] = intel_tlb_table[k].entries;
++		break;
++	case TLB_INST_2M_4M:
++		if (tlb_lli_2m[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lli_2m[ENTRIES] = intel_tlb_table[k].entries;
++		if (tlb_lli_4m[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lli_4m[ENTRIES] = intel_tlb_table[k].entries;
++		break;
++	case TLB_DATA_4K:
++	case TLB_DATA0_4K:
++		if (tlb_lld_4k[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lld_4k[ENTRIES] = intel_tlb_table[k].entries;
++		break;
++	case TLB_DATA_4M:
++	case TLB_DATA0_4M:
++		if (tlb_lld_4m[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lld_4m[ENTRIES] = intel_tlb_table[k].entries;
++		break;
++	case TLB_DATA_2M_4M:
++	case TLB_DATA0_2M_4M:
++		if (tlb_lld_2m[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lld_2m[ENTRIES] = intel_tlb_table[k].entries;
++		if (tlb_lld_4m[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lld_4m[ENTRIES] = intel_tlb_table[k].entries;
++		break;
++	case TLB_DATA_4K_4M:
++		if (tlb_lld_4k[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lld_4k[ENTRIES] = intel_tlb_table[k].entries;
++		if (tlb_lld_4m[ENTRIES] < intel_tlb_table[k].entries)
++			tlb_lld_4m[ENTRIES] = intel_tlb_table[k].entries;
++		break;
++	}
++}
++
++void intel_cpu_detect_tlb(struct cpuinfo_x86 *c)
++{
++	int i, j, n;
++	unsigned int regs[4];
++	unsigned char *desc = (unsigned char *)regs;
++	/* Number of times to iterate */
++	n = cpuid_eax(2) & 0xFF;
++
++	for (i = 0 ; i < n ; i++) {
++		cpuid(2, &regs[0], &regs[1], &regs[2], &regs[3]);
++
++		/* If bit 31 is set, this is an unknown format */
++		for (j = 0 ; j < 3 ; j++)
++			if (regs[j] & (1 << 31))
++				regs[j] = 0;
++
++		/* Byte 0 is level count, not a descriptor */
++		for (j = 1 ; j < 16 ; j++)
++			intel_tlb_lookup(desc[j]);
++	}
++}
++
+ static const struct cpu_dev __cpuinitconst intel_cpu_dev = {
+ 	.c_vendor	= "Intel",
+ 	.c_ident	= { "GenuineIntel" },
 -- 
 1.7.5.4
 
