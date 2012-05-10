@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289Ab2EJLD3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 07:03:29 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39006 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757877Ab2EJLD2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 07:03:28 -0400
-Date: Thu, 10 May 2012 12:02:42 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Kukjin Kim <kgene.kim@samsung.com>,
-        linaro-dev@lists.linaro.org, Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>, shawn.guo@linaro.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Making ARM multiplatform kernels DT-only?
-Message-ID: <20120510110242.GE3190@n2100.arm.linux.org.uk>
-References: <201205031350.35476.arnd@arndb.de> <20120503141853.GC897@n2100.arm.linux.org.uk> <20120510105515.GC30103@trinity.fluff.org>
+	id S932495Ab2EJLFc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 07:05:32 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:51410 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932096Ab2EJLFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 07:05:31 -0400
+Message-ID: <4FABA0F6.6090401@mev.co.uk>
+Date: Thu, 10 May 2012 12:05:26 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120414 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120510105515.GC30103@trinity.fluff.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>
+Subject: Re: [PATCH] staging: comedi: remove __user annotation inside of struct's
+References: <201205081641.00358.hartleys@visionengravers.com> <ADE657CA350FB648AAC2C43247A983F0020698A1774D@AUSP01VMBX24.collaborationhost.net> <4FAA44D7.1040209@mev.co.uk> <20120509103111.GR22134@mwanda> <4FAA4E85.6020305@mev.co.uk> <20120509141920.GT22134@mwanda>
+In-Reply-To: <20120509141920.GT22134@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 11:55:15AM +0100, Ben Dooks wrote:
-> On Thu, May 03, 2012 at 03:18:53PM +0100, Russell King - ARM Linux wrote:
-> > I think what you're proposing is a totally artificial restriction.
-> > There's no problem with a kernel supporting DT and non-DT together.
-> > We've proven that many many times.  I prove it _every_ night that my
-> > build and boot system runs - the OMAP LDP boots a multiplatform kernel
-> > just fine without DT.
-> 
-> We could have had the same for Samsung's entire range if a bit of work
-> had been applied to do things like PAGE_OFFSET and replaceable IRQ
-> controllers.
+On 2012-05-09 15:19, Dan Carpenter wrote:
+> On Wed, May 09, 2012 at 12:01:25PM +0100, Ian Abbott wrote:
+>> Are there any handy macros for casting pointers to __user pointers,
+>> something like
+>>
+>> #define _user(p) ((typeof(*(p)) __user *)(p))
+>>
+>> but preferably without the repeated expansion of 'p' in case of
+>> side-effects?
+>
+> typeof() doesn't have side effects.
+>
+> #include<stdio.h>
+>
+> int main(void)
+> {
+> 	int x = 0;
+> 	typeof(x++) y;
+>
+> 	printf("%d\n", x);
+>
+> 	return 0;
+> }
+>
+> regards,
+> dan carpenter
 
-We never did dynamic PAGE_OFFSET because we _had_ taken the decision with
-the inclusion of XIP support that we weren't going to have self-modifying
-code in the kernel - and loading the offset for every page table walk
-would have been very expensive.
+Yes, you're correct of course.  I was unnecessarily worried about the 
+double-expansion of the macro parameter but it's safe in this case.
 
-The self-modifying code viewpoint seems to have changed as a result of
-Nicolas moving jobs, from an employer who wanted XIP to one who wants a
-single kernel image, which in itself isn't surprising.
+BTW, the intention of this macro is so you can write things like:
+
+   copy_from_user(data, _user(insn.data), insn.n * sizeof(insn.data[0]));
+
+instead of:
+
+   copy_from_user(data, (unsigned int __user *)insn.data, insn.n * 
+sizeof(insn.data[0]));
+
+where the member insn.data is a 'unsigned int *' but is used for both 
+__user pointers and kernel pointers.
+
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
