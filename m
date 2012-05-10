@@ -1,91 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759890Ab2EJPKt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 11:10:49 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60508 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757948Ab2EJPKr convert rfc822-to-8bit (ORCPT
+	id S1759915Ab2EJPK4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 11:10:56 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40085 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757948Ab2EJPKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 11:10:47 -0400
+	Thu, 10 May 2012 11:10:53 -0400
+X-Sasl-enc: W/H+oY6/okC9c6FCz5VaV+La+gb8/txX5RlSN0JloLYt 1336662652
+Date: Thu, 10 May 2012 08:10:51 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: manual merge of the staging tree with the
+ driver-core tree
+Message-ID: <20120510151051.GC17472@kroah.com>
+References: <20120510173401.263f10f33f918bfc9e0bec88@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <4FAAD4EB.4010007@wwwdotorg.org>
-References: <1336470270-23518-1-git-send-email-linus.walleij@stericsson.com>
-	<4FAAD4EB.4010007@wwwdotorg.org>
-Date: Thu, 10 May 2012 17:10:46 +0200
-Message-ID: <CACRpkdaiTsaBT=20UUOx2mYsK4r5rArVqXfU9LMObFVb3iEA9w@mail.gmail.com>
-Subject: Re: [PATCH 02/12] pinctrl: basic Nomadik pinctrl interface
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120510173401.263f10f33f918bfc9e0bec88@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 10:34 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 05/08/2012 03:44 AM, Linus Walleij wrote:
->> From: Linus Walleij <linus.walleij@linaro.org>
->>
->> This adds a scratch pin control interface to the Nomadik pinctrl
->> driver, and defines the pins and groups in the DB8500 ASIC. We
->> define GPIO ranges to cover the pins exposed. The DB8500 has
->> more pins than this but we restrict the driver to the pins that
->> can be controlled from the combined GPIO and pin control hardware
->> to begin with.
->
->> diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
->
->> +static int nmk_list_groups(struct pinctrl_dev *pctldev, unsigned selector)
->> +{
->> +     struct nmk_pinctrl *npct = pinctrl_dev_get_drvdata(pctldev);
->> +
->> +     if (selector >= npct->soc->ngroups)
->> +             return -EINVAL;
->
-> I think all the other drivers removed this error-checking from functions
-> called by the pinctrl core, assuming that the core would error-check any
-> user-supplied data and respect limits in the pinctrl device descriptor.
+On Thu, May 10, 2012 at 05:34:01PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/misc/Makefile between commit 6a7e2618b3db ("misc: MAX8997: Remove
+> max8997-muic driver") from the driver-core tree and commit ffc2825c2942
+> ("Staging: mei: move the mei code out of staging") from the staging tree.
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
-Oh yeah that's because I based it off 3.4-rc:s simply, I should just merge
-in the pinctrl-mergebase tag and be happy like everyone else, sorry
-will fix.
+Looks good to me, thanks for this.
 
->> +static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
->
->> +     /* Poke in other ASIC variants here */
->> +     if (platid->driver_data == PINCTRL_NMK_DB8500)
->> +             nmk_pinctrl_db8500_init(&npct->soc);
->
-> Other platforms have a unique top-level driver for each variant, with
-> the probe() function for each variant calling into a utility function.
-> That way, the common/utility code doesn't need to contain a
-> table/list/... of all the variants. Can the same approach be used here?
-
-Of course I could do it that way, but it's not using this feature
-of the driver base to have a string identifier telling which version
-it is.
-
-Since I'm unsure, let's ask Arnd.
-
-Arnd, what is your preferred design pattern of:
-
-A) sub-drivers that register one struct platform_driver per
-  variant, then calls into a shared core driver, or
-
-B) a shared core driver registering one platform_driver
-  with several struct platform_device_id that then call
-  sub-drivers depending on which one is found
-
-Either way is actually OK for me, but I was thinking if one
-is preferred over the other.
-
-Yours,
-Linus Walleij
+greg k-h
