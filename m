@@ -1,51 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758197Ab2EJQch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 12:32:37 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:51881 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756145Ab2EJQcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 12:32:33 -0400
-Date: Thu, 10 May 2012 12:30:24 -0400 (EDT)
-Message-Id: <20120510.123024.2157290550457495698.davem@davemloft.net>
-To: jussi.kivilinna@mbnet.fi
-Cc: joe@perches.com, fubar@us.ibm.com, andy@greyhouse.net, benve@cisco.com,
-        roprabhu@cisco.com, neepatel@cisco.com, nistrive@cisco.com,
-        grundler@parisc-linux.org, anirban.chakraborty@qlogic.com,
-        sony.chacko@qlogic.com, linux-driver@qlogic.com,
-        linux-net-drivers@solarflare.com, bhutchings@solarflare.com,
-        cmetcalf@tilera.com, linville@tuxdriver.com, jirislaby@gmail.com,
-        mickflemm@gmail.com, mcgrof@qca.qualcomm.com, jouni@qca.qualcomm.com,
-        vthiagar@qca.qualcomm.com, senthilb@qca.qualcomm.com,
-        chunkeey@googlemail.com, stas.yakovlev@gmail.com, sgruszka@redhat.com,
-        johannes.berg@intel.com, wey-yi.w.guy@intel.com, ilw@linux.intel.com,
-        buytenh@wantstofly.org, Larry.Finger@lwfinger.net,
-        chaoming_li@realsil.com.cn, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        ath5k-devel@venema.h4ckr.net, ath9k-devel@venema.h4ckr.net
-Subject: Re: [PATCH 1/3] drivers/net: Convert compare_ether_addr to
- ether_addr_equal
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120510173201.16131du3cg90nybo@www.81.fi>
-References: <cover.1336618707.git.joe@perches.com>
-	<7c9881a67c52c2f218480b6742155b6d6928122d.1336618708.git.joe@perches.com>
-	<20120510173201.16131du3cg90nybo@www.81.fi>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 10 May 2012 09:30:30 -0700 (PDT)
+	id S1758636Ab2EJQdF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 12:33:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3905 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754054Ab2EJQ2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 12:28:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="142389122"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "H Peter Anvin" <hpa@zytor.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>,
+        "Tony Luck" <tony.luck@intel.com>,
+        "Arjan Dan De Ven" <arjan@linux.intel.com>,
+        "Suresh B Siddha" <suresh.b.siddha@intel.com>,
+        "Len Brown" <len.brown@intel.com>,
+        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Randy Dunlap" <rdunlap@xenotime.net>,
+        "Chen Gong" <gong.chen@linux.intel.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
+Cc: "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH v6 02/12] x86/Kconfig: Add config switch for CPU0 hotplug
+Date: Thu, 10 May 2012 09:16:44 -0700
+Message-Id: <1336666614-21090-3-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
+In-Reply-To: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
+References: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-Never, EVER, quote an entire large patch just to make a comment
-on one small hunk.
+New config switch CONFIG_BOOTPARAM_HOTPLUG_CPU0 sets default state of whether
+the CPU0 hotplug is on or off.
 
-I very nearly missed what you had to say because when scrolling
-through it it appeared as if you made no comments at all.
+If the switch is off, CPU0 is not hotpluggable by default. But the CPU0 hotplug
+feature can still be turned on by kernel parameter cpu0_hotplug at boot.
 
-Again, NEVER, EVER, do this.  It's extremely anti-social.  Edit out
-the irrelevant quoted content when replying to people, always.
+If the switch is on, CPU0 is always hotpluggable. The default value of
+the switch is off.
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/Kconfig |   29 +++++++++++++++++++++++++++++
+ 1 files changed, 29 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 5e99fa6..b48bd21 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1719,6 +1719,35 @@ config HOTPLUG_CPU
+ 	    automatically on SMP systems. )
+ 	  Say N if you want to disable CPU hotplug.
+ 
++config BOOTPARAM_HOTPLUG_CPU0
++	bool "Set default setting of cpu0_hotpluggable"
++	default n
++	depends on HOTPLUG_CPU && EXPERIMENTAL
++	---help---
++	  Set whether default state of cpu0_hotpluggable is on or off.
++
++	  Say Y here to enable CPU0 hotplug by default. If this switch
++	  is turned on, there is no need to give cpu0_hotplug kernel
++	  parameter and the CPU0 hotplug feature is enabled by default.
++
++	  Please note: there are two known CPU0 dependencies if you want
++	  to enable the CPU0 hotplug feature either by this switch or by
++	  cpu0_hotplug kernel parameter.
++
++	  First, resume from hibernate or suspend always starts from CPU0.
++	  So hibernate and suspend are prevented if CPU0 is offline.
++
++	  Second dependency is PIC interrupts always go to CPU0. CPU0 can not
++	  offline if any interrupt can not migrate out of CPU0. There may
++	  be other CPU0 dependencies.
++
++	  Please make sure the dependencies are under your control before
++	  you enable this feature.
++
++	  Say N if you don't want to enable CPU0 hotplug feature by default.
++	  You still can enable the CPU0 hotplug feature at boot by kernel
++	  parameter cpu0_hotplug.
++
+ config COMPAT_VDSO
+ 	def_bool y
+ 	prompt "Compat VDSO support"
+-- 
+1.6.0.3
+
