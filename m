@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760841Ab2EJRhp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:37:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49544 "EHLO
+	id S1760812Ab2EJRhR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:37:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46175 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760792Ab2EJRhS (ORCPT
+	with ESMTP id S1760792Ab2EJRhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:37:18 -0400
-Message-Id: <20120510173135.772550373@linuxfoundation.org>
+	Thu, 10 May 2012 13:37:07 -0400
+Message-Id: <20120510173137.329852019@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:32:05 -0700
+Date: Thu, 10 May 2012 10:32:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Stephen Ko <stephen.s.ko@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [ 33/52] net: Fix issue with netdev_tx_reset_queue not resetting queue from XOFF state
+        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 51/52] ARM: 7397/1: l2x0: only apply workaround for erratum #753970 on PL310
 In-Reply-To: <20120510173229.GA5678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,58 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Will Deacon <will.deacon@arm.com>
 
-From: Alexander Duyck <alexander.h.duyck@intel.com>
+commit f154fe9b806574437b47f08e924ad10c0e240b23 upstream.
 
-[ Upstream commit 5c4903549c05bbb373479e0ce2992573c120654a ]
+The workaround for PL310 erratum #753970 can lead to deadlock on systems
+with an L220 cache controller.
 
-We are seeing dev_watchdog hangs on several drivers.  I suspect this is due
-to the __QUEUE_STATE_STACK_XOFF bit being set prior to a reset for link
-change, and then not being cleared by netdev_tx_reset_queue.  This change
-corrects that.
+This patch makes the workaround effective only when the cache controller
+is identified as a PL310 at probe time.
 
-In addition we were seeing dev_watchdog hangs on igb after running the
-ethtool tests.  We found this to be due to the fact that the ethtool test
-runs the same logic as ndo_start_xmit, but we were never clearing the XOFF
-flag since the loopback test in ethtool does not do byte queue accounting.
-
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Tested-by: Stephen Ko <stephen.s.ko@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/intel/igb/igb_main.c |    3 ++-
- include/linux/netdevice.h                 |    1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -2750,6 +2750,8 @@ void igb_configure_tx_ring(struct igb_ad
+---
+ arch/arm/mm/cache-l2x0.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -32,6 +32,7 @@ static void __iomem *l2x0_base;
+ static DEFINE_RAW_SPINLOCK(l2x0_lock);
+ static uint32_t l2x0_way_mask;	/* Bitmask of active ways */
+ static uint32_t l2x0_size;
++static unsigned long sync_reg_offset = L2X0_CACHE_SYNC;
  
- 	txdctl |= E1000_TXDCTL_QUEUE_ENABLE;
- 	wr32(E1000_TXDCTL(reg_idx), txdctl);
-+
-+	netdev_tx_reset_queue(txring_txq(ring));
- }
+ struct l2x0_regs l2x0_saved_regs;
  
- /**
-@@ -3242,7 +3244,6 @@ static void igb_clean_tx_ring(struct igb
- 		buffer_info = &tx_ring->tx_buffer_info[i];
- 		igb_unmap_and_free_tx_resource(tx_ring, buffer_info);
- 	}
--	netdev_tx_reset_queue(txring_txq(tx_ring));
- 
- 	size = sizeof(struct igb_tx_buffer) * tx_ring->count;
- 	memset(tx_ring->tx_buffer_info, 0, size);
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1955,6 +1955,7 @@ static inline void netdev_completed_queu
- static inline void netdev_tx_reset_queue(struct netdev_queue *q)
+@@ -61,12 +62,7 @@ static inline void cache_sync(void)
  {
- #ifdef CONFIG_BQL
-+	clear_bit(__QUEUE_STATE_STACK_XOFF, &q->state);
- 	dql_reset(&q->dql);
- #endif
+ 	void __iomem *base = l2x0_base;
+ 
+-#ifdef CONFIG_PL310_ERRATA_753970
+-	/* write to an unmmapped register */
+-	writel_relaxed(0, base + L2X0_DUMMY_REG);
+-#else
+-	writel_relaxed(0, base + L2X0_CACHE_SYNC);
+-#endif
++	writel_relaxed(0, base + sync_reg_offset);
+ 	cache_wait(base + L2X0_CACHE_SYNC, 1);
  }
+ 
+@@ -331,6 +327,10 @@ void __init l2x0_init(void __iomem *base
+ 		else
+ 			ways = 8;
+ 		type = "L310";
++#ifdef CONFIG_PL310_ERRATA_753970
++		/* Unmapped register. */
++		sync_reg_offset = L2X0_DUMMY_REG;
++#endif
+ 		break;
+ 	case L2X0_CACHE_ID_PART_L210:
+ 		ways = (aux >> 13) & 0xf;
 
 
