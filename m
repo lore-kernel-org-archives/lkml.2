@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756459Ab2EJUe5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 16:34:57 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:61655
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753655Ab2EJUe4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 16:34:56 -0400
-X-IronPort-AV: E=Sophos;i="4.75,566,1330902000"; 
-   d="scan'208";a="143391291"
-Date: Thu, 10 May 2012 22:34:53 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Linus Walleij <linus.walleij@linaro.org>
-cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linus.walleij@stericsson.com
-Subject: Re: [PATCH] gpio/langwell: re-read the IRQ status register after
- each iteration
-In-Reply-To: <CACRpkdbA58UiNLZRPWe1yGckGFrXqtJ3ddqjLLzLntC6+Cin3g@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1205102211060.1957@localhost6.localdomain6>
-References: <1336644082-14137-1-git-send-email-mika.westerberg@linux.intel.com> <CACRpkdbA58UiNLZRPWe1yGckGFrXqtJ3ddqjLLzLntC6+Cin3g@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756954Ab2EJUfv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 16:35:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50804 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752872Ab2EJUfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 16:35:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="139237180"
+Message-ID: <4FAC26A5.3050606@intel.com>
+Date: Thu, 10 May 2012 13:35:49 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+To: Jonathan Nieder <jrnieder@gmail.com>
+CC: David Miller <davem@davemloft.net>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, stephen.s.ko@intel.com,
+        jeffrey.t.kirsher@intel.com
+Subject: Re: [ 33/52] net: Fix issue with netdev_tx_reset_queue not resetting
+ queue from XOFF state
+References: <20120510173135.772550373@linuxfoundation.org> <4FAC0EA7.3000100@intel.com> <20120510.145510.1040533529305157641.davem@davemloft.net> <20120510194658.GA9858@burratino>
+In-Reply-To: <20120510194658.GA9858@burratino>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 May 2012, Linus Walleij wrote:
-
-> On Thu, May 10, 2012 at 12:01 PM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
+On 05/10/2012 12:46 PM, Jonathan Nieder wrote:
+> David Miller wrote:
+>> From: Alexander Duyck <alexander.h.duyck@intel.com>
+>>> All of the changes in igb are unnecessary.  I think they can be dropped
+>>> from the patch as they have already been reverted from the latest
+>>> net-next.  The only change that is really needed is the piece in
+>>> netdevice.h below.
+>> Does it hurt?  If not, just let it be.
+> Based on the commit description for dad8a3b3eaa0 ("igb, ixgbe:
+> netdev_tx_reset_queue incorrectly called from tx init path"), yes, it
+> hurts.  I don't know if it hurts enough to justify holding up this
+> patch until dad8a3b3eaa0 hits mainline.
 >
->> Spotted by Grant Likely. The IRQ status register should be re-read after
->> each iteration. Otherwise the loop misses the interrupt if it gets raised
->> immediately after handled.
->>
->> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->> ---
->> This patch applies on top of my previous patch ("gpio: langwell: convert to
->> use irq_domain").
->
-> Oh yeah that thing I recognize!
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->
-> If someone has  time I think it would be a good idea to
-> conjure a cocienelle sematic patch to catch this pattern, because
-> I suspect it might exist in more IRQ handlers.
->
-> -               pending = readl(gedr);
-> -               while (pending) {
-> +               while ((pending = readl(gedr))) {
->                       gpio = __ffs(pending);
->                       mask = BIT(gpio);
-> -                       pending &= ~mask;
+> |                            this sort of works in most cases except
+> | when the number of real tx queues changes. When the number of real
+> | tx queues changes netdev_tx_reset_queue() only gets called on the
+> | new number of queues so when we reduce the number of queues we risk
+> | triggering the watchdog timer and repeated device resets.
+> |
+> | So this is not only a cosmetic issue but causes real bugs. For
+> | example enabling/disabling DCB or FCoE in ixgbe will trigger this.
+I'm fairly certain we really shouldn't make the changes to igb.  I would
+say to just modify the existing patch by just dropping the igb portion
+of it and it would be fine.
 
-I tried the following:
+Thanks,
 
-@@
-expression pending,gedr,e1;
-statement S;
-@@
-
-*pending = readl(gedr);
-... when != pending = e1
-while (pending) S
-
-That is, a readl call followed by a while loop with no reassignment of 
-pending.
-
-Perhaps the following are suspicious:
-
-arch/arm/mach-msm/dma.c, function msm_datamover_irq_handler
-drivers/gpio/gpio-msm-v1.c, function msm_gpio_irq_handler
-
-But I am not completely sure to understand what is wanted (or not wanted).
-
-julia
+Alex
