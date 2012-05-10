@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab2EJDKA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 23:10:00 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:49882 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab2EJDJx (ORCPT
+	id S1755270Ab2EJDKP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 23:10:15 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:59216 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824Ab2EJDKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 23:09:53 -0400
-Date: Wed, 9 May 2012 23:09:46 -0400
+	Wed, 9 May 2012 23:10:08 -0400
+Date: Wed, 9 May 2012 23:10:02 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: tejun@google.com, agk@redhat.com
-Subject: [Bcache v13 07/16] Closures
-Message-ID: <82f00ebb4ee0404788c5bd7fbfa1fe4969f28ba1.1336619038.git.koverstreet@google.com>
+Subject: [Bcache v13 08/16] bcache: Documentation, and changes to generic code
+Message-ID: <7e8cf40a8f87eab56c9864928b27bf34a4e964c3.1336619038.git.koverstreet@google.com>
 References: <cover.1336619038.git.koverstreet@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,1054 +24,841 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Closures are asynchronous refcounty things based on workqueues, used
-extensively in bcache.
-
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- include/linux/closure.h |  614 +++++++++++++++++++++++++++++++++++++++++++++++
- lib/Kconfig             |    3 +
- lib/Kconfig.debug       |    9 +
- lib/Makefile            |    2 +
- lib/closure.c           |  363 ++++++++++++++++++++++++++++
- 5 files changed, 991 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/closure.h
- create mode 100644 lib/closure.c
+ Documentation/ABI/testing/sysfs-block-bcache |  156 ++++++++++++++++
+ Documentation/bcache.txt                     |  255 +++++++++++++++++++++++++
+ drivers/block/Kconfig                        |    2 +
+ drivers/block/Makefile                       |    1 +
+ drivers/block/bcache/Kconfig                 |   42 +++++
+ drivers/block/bcache/Makefile                |    8 +
+ include/linux/cgroup_subsys.h                |    6 +
+ include/linux/sched.h                        |    4 +
+ include/trace/events/bcache.h                |  257 ++++++++++++++++++++++++++
+ kernel/fork.c                                |    4 +
+ 10 files changed, 735 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-block-bcache
+ create mode 100644 Documentation/bcache.txt
+ create mode 100644 drivers/block/bcache/Kconfig
+ create mode 100644 drivers/block/bcache/Makefile
+ create mode 100644 include/trace/events/bcache.h
 
-diff --git a/include/linux/closure.h b/include/linux/closure.h
+diff --git a/Documentation/ABI/testing/sysfs-block-bcache b/Documentation/ABI/testing/sysfs-block-bcache
 new file mode 100644
-index 0000000..c55116e
+index 0000000..9e4bbc5
 --- /dev/null
-+++ b/include/linux/closure.h
-@@ -0,0 +1,614 @@
-+#ifndef _LINUX_CLOSURE_H
-+#define _LINUX_CLOSURE_H
++++ b/Documentation/ABI/testing/sysfs-block-bcache
+@@ -0,0 +1,156 @@
++What:		/sys/block/<disk>/bcache/unregister
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		A write to this file causes the backing device or cache to be
++		unregistered. If a backing device had dirty data in the cache,
++		writeback mode is automatically disabled and all dirty data is
++		flushed before the device is unregistered. Caches unregister
++		all associated backing devices before unregistering themselves.
 +
-+#include <linux/llist.h>
-+#include <linux/sched.h>
-+#include <linux/workqueue.h>
++What:		/sys/block/<disk>/bcache/clear_stats
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		Writing to this file resets all the statistics for the device.
 +
-+/*
-+ * Closure is perhaps the most overused and abused term in computer science, but
-+ * since I've been unable to come up with anything better you're stuck with it
-+ * again.
-+ *
-+ * What are closures?
-+ *
-+ * They embed a refcount. The basic idea is they count "things that are in
-+ * progress" - in flight bios, some other thread that's doing something else -
-+ * anything you might want to wait on.
-+ *
-+ * The refcount may be manipulated with closure_get() and closure_put().
-+ * closure_put() is where many of the interesting things happen, when it causes
-+ * the refcount to go to 0.
-+ *
-+ * Closures can be used to wait on things both synchronously and asynchronously,
-+ * and synchronous and asynchronous use can be mixed without restriction. To
-+ * wait synchronously, use closure_sync() - you will sleep until your closure's
-+ * refcount hits 1.
-+ *
-+ * To wait asynchronously, use
-+ *   continue_at(cl, next_function, workqueue);
-+ *
-+ * passing it, as you might expect, the function to run when nothing is pending
-+ * and the workqueue to run that function out of.
-+ *
-+ * continue_at() also, critically, is a macro that returns the calling function.
-+ * There's good reason for this.
-+ *
-+ * To use safely closures asynchronously, they must always have a refcount while
-+ * they are running owned by the thread that is running them. Otherwise, suppose
-+ * you submit some bios and wish to have a function run when they all complete:
-+ *
-+ * foo_endio(struct bio *bio, int error)
-+ * {
-+ *	closure_put(cl);
-+ * }
-+ *
-+ * closure_init(cl);
-+ *
-+ * do_stuff();
-+ * closure_get(cl);
-+ * bio1->bi_endio = foo_endio;
-+ * bio_submit(bio1);
-+ *
-+ * do_more_stuff();
-+ * closure_get(cl);
-+ * bio2->bi_endio = foo_endio;
-+ * bio_submit(bio2);
-+ *
-+ * continue_at(cl, complete_some_read, system_wq);
-+ *
-+ * If closure's refcount started at 0, complete_some_read() could run before the
-+ * second bio was submitted - which is almost always not what you want! More
-+ * importantly, it wouldn't be possible to say whether the original thread or
-+ * complete_some_read()'s thread owned the closure - and whatever state it was
-+ * associated with!
-+ *
-+ * So, closure_init() initializes a closure's refcount to 1 - and when a
-+ * closure_fn is run, the refcount will be reset to 1 first.
-+ *
-+ * Then, the rule is - if you got the refcount with closure_get(), release it
-+ * with closure_put() (i.e, in a bio->bi_endio function). If you have a refcount
-+ * on a closure because you called closure_init() or you were run out of a
-+ * closure - _always_ use continue_at(). Doing so consistently will help
-+ * eliminate an entire class of particularly pernicious races.
-+ *
-+ * For a closure to wait on an arbitrary event, we need to introduce waitlists:
-+ *
-+ * closure_list_t list;
-+ * closure_wait_event(list, cl, condition);
-+ * closure_wake_up(wait_list);
-+ *
-+ * These work analagously to wait_event() and wake_up() - except that instead of
-+ * operating on the current thread (for wait_event()) and lists of threads, they
-+ * operate on an explicit closure and lists of closures.
-+ *
-+ * Because it's a closure we can now wait either synchronously or
-+ * asynchronously. closure_wait_event() returns the current value of the
-+ * condition, and if it returned false continue_at() or closure_sync() can be
-+ * used to wait for it to become true.
-+ *
-+ * It's useful for waiting on things when you can't sleep in the context in
-+ * which you must check the condition (perhaps a spinlock held, or you might be
-+ * beneath generic_make_request() - in which case you can't sleep on IO).
-+ *
-+ * closure_wait_event() will wait either synchronously or asynchronously,
-+ * depending on whether the closure is in blocking mode or not. You can pick a
-+ * mode explicitly with closure_wait_event_sync() and
-+ * closure_wait_event_async(), which do just what you might expect.
-+ *
-+ * Lastly, you might have a wait list dedicated to a specific event, and have no
-+ * need for specifying the condition - you just want to wait until someone runs
-+ * closure_wake_up() on the appropriate wait list. In that case, just use
-+ * closure_wait(). It will return either true or false, depending on whether the
-+ * closure was already on a wait list or not - a closure can only be on one wait
-+ * list at a time.
-+ *
-+ * Parents:
-+ *
-+ * closure_init() takes two arguments - it takes the closure to initialize, and
-+ * a (possibly null) parent.
-+ *
-+ * If parent is non null, the new closure will have a refcount for its lifetime;
-+ * a closure is considered to be "finished" when its refcount hits 0 and the
-+ * function to run is null. Hence
-+ *
-+ * continue_at(cl, NULL, NULL);
-+ *
-+ * returns up the (spaghetti) stack of closures, precisely like normal return
-+ * returns up the C stack. continue_at() with non null fn is better thought of
-+ * as doing a tail call.
-+ *
-+ * All this implies that a closure should typically be embedded in a particular
-+ * struct (which its refcount will normally control the lifetime of), and that
-+ * struct can very much be thought of as a stack frame.
-+ *
-+ * Locking:
-+ *
-+ * Closures are based on work items but they can be thought of as more like
-+ * threads - in that like threads and unlike work items they have a well
-+ * defined lifetime; they are created (with closure_init()) and eventually
-+ * complete after a continue_at(cl, NULL, NULL).
-+ *
-+ * Suppose you've got some larger structure with a closure embedded in it that's
-+ * used for periodically doing garbage collection. You only want one garbage
-+ * collection happening at a time, so the natural thing to do is protect it with
-+ * a lock. However, it's difficult to use a lock protecting a closure correctly
-+ * because the unlock should come after the last continue_to() (additionally, if
-+ * you're using the closure asynchronously a mutex won't work since a mutex has
-+ * to be unlocked by the same process that locked it).
-+ *
-+ * So to make it less error prone and more efficient, we also have the ability
-+ * to use closures as locks:
-+ *
-+ * closure_init_unlocked();
-+ * closure_trylock();
-+ *
-+ * That's all we need for trylock() - the last closure_put() implicitly unlocks
-+ * it for you.  But for closure_lock(), we also need a wait list:
-+ *
-+ * struct closure_with_waitlist frobnicator_cl;
-+ *
-+ * closure_init_unlocked(&frobnicator_cl);
-+ * closure_lock(&frobnicator_cl);
-+ *
-+ * A closure_with_waitlist embeds a closure and a wait list - much like struct
-+ * delayed_work embeds a work item and a timer_list. The important thing is, use
-+ * it exactly like you would a regular closure and closure_put() will magically
-+ * handle everything for you.
-+ *
-+ * We've got closures that embed timers, too. They're called, appropriately
-+ * enough:
-+ * struct closure_with_timer;
-+ *
-+ * This gives you access to closure_sleep(). It takes a refcount for a specified
-+ * number of jiffies - you could then call closure_sync() (for a slightly
-+ * convoluted version of msleep()) or continue_at() - which gives you the same
-+ * effect as using a delayed work item, except you can reuse the work_struct
-+ * already embedded in struct closure.
-+ *
-+ * Lastly, there's struct closure_with_waitlist_and_timer. It does what you
-+ * probably expect, if you happen to need the features of both. (You don't
-+ * really want to know how all this is implemented, but if I've done my job
-+ * right you shouldn't have to care).
-+ */
++What:		/sys/block/<disk>/bcache/cache
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For a backing device that has cache, a symlink to
++		the bcache/ dir of that cache.
 +
-+struct closure;
-+typedef void (closure_fn) (struct closure *);
++What:		/sys/block/<disk>/bcache/cache_hits
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For backing devices: integer number of full cache hits,
++		counted per bio. A partial cache hit counts as a miss.
 +
-+typedef struct llist_head	closure_list_t;
++What:		/sys/block/<disk>/bcache/cache_misses
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For backing devices: integer number of cache misses.
 +
-+struct closure {
-+	union {
-+		struct {
-+			struct workqueue_struct *wq;
-+			struct task_struct	*task;
-+			struct llist_node	list;
-+			closure_fn		*fn;
-+		};
-+		struct work_struct	work;
-+	};
++What:		/sys/block/<disk>/bcache/cache_hit_ratio
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For backing devices: cache hits as a percentage.
 +
-+	struct closure		*parent;
++What:		/sys/block/<disk>/bcache/sequential_cutoff
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For backing devices: Threshold past which sequential IO will
++		skip the cache. Read and written as bytes in human readable
++		units (i.e. echo 10M > sequntial_cutoff).
 +
-+#define CLOSURE_REMAINING_MASK	(~(~0 << 20))
-+#define CLOSURE_GUARD_MASK					\
-+	((1 << 20)|(1 << 22)|(1 << 24)|(1 << 26)|(1 << 28)|(1 << 30))
++What:		/sys/block/<disk>/bcache/bypassed
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		Sum of all reads and writes that have bypassed the cache (due
++		to the sequential cutoff).  Expressed as bytes in human
++		readable units.
 +
-+	/*
-+	 * CLOSURE_RUNNING: Set when a closure is running (i.e. by
-+	 * closure_init() and when closure_put() runs then next function), and
-+	 * must be cleared before remaining hits 0. Primarily to help guard
-+	 * against incorrect usage and accidently transferring references.
-+	 * continue_at() and closure_return() clear it for you, if you're doing
-+	 * something unusual you can use closure_set_dead() which also helps
-+	 * annotate where references are being transferred.
-+	 *
-+	 * CLOSURE_BLOCKING: Causes closure_wait_event() to block, instead of
-+	 * waiting asynchronously
-+	 *
-+	 * CLOSURE_STACK: Sanity check - remaining should never hit 0 on a
-+	 * closure with this flag set
-+	 *
-+	 * CLOSURE_WAITING: Set iff the closure is on a waitlist. Must be set by
-+	 * the thread that owns the closure, and cleared by the thread that's
-+	 * waking up the closure.
-+	 *
-+	 * CLOSURE_SLEEPING: Must be set before a thread uses a closure to sleep
-+	 * - indicates that cl->task is valid and closure_put() may wake it up.
-+	 * Only set or cleared by the thread that owns the closure.
-+	 *
-+	 * CLOSURE_TIMER: Analagous to CLOSURE_WAITING, indicates that a closure
-+	 * has an outstanding timer. Must be set by the thread that owns the
-+	 * closure, and cleared by the timer function when the timer goes off.
-+	 */
++What:		/sys/block/<disk>/bcache/writeback
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For backing devices: When on, writeback caching is enabled and
++		writes will be buffered in the cache. When off, caching is in
++		writethrough mode; reads and writes will be added to the
++		cache but no write buffering will take place.
 +
-+#define	CLOSURE_RUNNING		(1 << 21)
-+#define	CLOSURE_BLOCKING	(1 << 23)
-+#define CLOSURE_STACK		(1 << 25)
-+#define	CLOSURE_WAITING		(1 << 27)
-+#define	CLOSURE_SLEEPING	(1 << 29)
-+#define	CLOSURE_TIMER		(1 << 31)
-+	atomic_t		remaining;
++What:		/sys/block/<disk>/bcache/writeback_running
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For backing devices: when off, dirty data will not be written
++		from the cache to the backing device. The cache will still be
++		used to buffer writes until it is mostly full, at which point
++		writes transparently revert to writethrough mode. Intended only
++		for benchmarking/testing.
 +
-+#define CLOSURE_REMAINING_INITIALIZER (1|CLOSURE_RUNNING)
++What:		/sys/block/<disk>/bcache/writeback_delay
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For backing devices: In writeback mode, when dirty data is
++		written to the cache and the cache held no dirty data for that
++		backing device, writeback from cache to backing device starts
++		after this delay, expressed as an integer number of seconds.
 +
-+#define TYPE_closure			0U
-+#define TYPE_closure_with_waitlist	1U
-+#define TYPE_closure_with_timer		2U
-+#define TYPE_closure_with_waitlist_and_timer 3U
-+#define MAX_CLOSURE_TYPE		3U
-+	unsigned		type;
++What:		/sys/block/<disk>/bcache/writeback_percent
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For backing devices: If nonzero, writeback from cache to
++		backing device only takes place when more than this percentage
++		of the cache is used, allowing more write coalescing to take
++		place and reducing total number of writes sent to the backing
++		device. Integer between 0 and 40.
 +
-+#ifdef CONFIG_DEBUG_CLOSURES
-+#define CLOSURE_MAGIC_DEAD	0xc1054e0dead
-+#define CLOSURE_MAGIC_ALIVE	0xc1054e0a11e
++What:		/sys/block/<disk>/bcache/synchronous
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For a cache, a boolean that allows synchronous mode to be
++		switched on and off. In synchronous mode all writes are ordered
++		such that the cache can reliably recover from unclean shutdown;
++		if disabled bcache will not generally wait for writes to
++		complete but if the cache is not shut down cleanly all data
++		will be discarded from the cache. Should not be turned off with
++		writeback caching enabled.
 +
-+	unsigned long		magic;
-+	struct list_head	all;
-+	unsigned long		ip;
-+	unsigned long		waiting_on;
-+#endif
-+};
++What:		/sys/block/<disk>/bcache/discard
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For a cache, a boolean allowing discard/TRIM to be turned off
++		or back on if the device supports it.
 +
-+struct closure_with_waitlist {
-+	struct closure	cl;
-+	closure_list_t	wait;
-+};
++What:		/sys/block/<disk>/bcache/bucket_size
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For a cache, bucket size in human readable units, as set at
++		cache creation time; should match the erase block size of the
++		SSD for optimal performance.
 +
-+struct closure_with_timer {
-+	struct closure	cl;
-+	struct timer_list timer;
-+};
++What:		/sys/block/<disk>/bcache/nbuckets
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For a cache, the number of usable buckets.
 +
-+struct closure_with_waitlist_and_timer {
-+	struct closure	cl;
-+	closure_list_t	wait;
-+	struct timer_list timer;
-+};
++What:		/sys/block/<disk>/bcache/tree_depth
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For a cache, height of the btree excluding leaf nodes (i.e. a
++		one node tree will have a depth of 0).
 +
-+extern unsigned invalid_closure_type(void);
++What:		/sys/block/<disk>/bcache/btree_cache_size
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		Number of btree buckets/nodes that are currently cached in
++		memory; cache dynamically grows and shrinks in response to
++		memory pressure from the rest of the system.
 +
-+#define __CL_TYPE(cl, _t)						\
-+	  __builtin_types_compatible_p(typeof(cl), struct _t)		\
-+		? TYPE_ ## _t :						\
++What:		/sys/block/<disk>/bcache/written
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For a cache, total amount of data in human readable units
++		written to the cache, excluding all metadata.
 +
-+#define __closure_type(cl)						\
-+(									\
-+	__CL_TYPE(cl, closure)						\
-+	__CL_TYPE(cl, closure_with_waitlist)				\
-+	__CL_TYPE(cl, closure_with_timer)				\
-+	__CL_TYPE(cl, closure_with_waitlist_and_timer)			\
-+	invalid_closure_type()						\
-+)
++What:		/sys/block/<disk>/bcache/btree_written
++Date:		November 2010
++Contact:	Kent Overstreet <kent.overstreet@gmail.com>
++Description:
++		For a cache, sum of all btree writes in human readable units.
+diff --git a/Documentation/bcache.txt b/Documentation/bcache.txt
+new file mode 100644
+index 0000000..270c734
+--- /dev/null
++++ b/Documentation/bcache.txt
+@@ -0,0 +1,255 @@
++Say you've got a big slow raid 6, and an X-25E or three. Wouldn't it be
++nice if you could use them as cache... Hence bcache.
 +
-+void closure_sub(struct closure *cl, int v);
-+void closure_put(struct closure *cl);
-+void closure_queue(struct closure *cl);
-+void __closure_wake_up(closure_list_t *list);
-+bool closure_wait(closure_list_t *list, struct closure *cl);
-+void closure_sync(struct closure *cl);
++Userspace tools and a wiki are at:
++  git://evilpiepirate.org/~kent/bcache-tools.git
++  http://bcache.evilpiepirate.org
 +
-+bool closure_trylock(struct closure *cl, struct closure *parent);
-+void __closure_lock(struct closure *cl, struct closure *parent,
-+		    closure_list_t *wait_list);
++It's designed around the performance characteristics of SSDs - it only allocates
++in erase block sized buckets, and it uses a hybrid btree/log to track cached
++extants (which can be anywhere from a single sector to the bucket size). It's
++designed to avoid random writes at all costs; it fills up an erase block
++sequentially, then issues a discard before reusing it.
 +
-+void do_closure_timer_init(struct closure *cl);
-+bool __closure_sleep(struct closure *cl, unsigned long delay,
-+		     struct timer_list *timer);
-+void __closure_flush(struct closure *cl, struct timer_list *timer);
-+void __closure_flush_sync(struct closure *cl, struct timer_list *timer);
++Both writethrough and writeback caching are supported. Writeback defaults to
++off, but can be switched on and off arbitrarily at runtime. Bcache goes to
++great lengths to protect your data - it reliably handles unclean shutdown. (It
++doesn't even have a notion of a clean shutdown; bcache simply doesn't return
++writes as completed until they're on stable storage).
 +
-+#ifdef CONFIG_DEBUG_CLOSURES
++Writeback caching can use most of the cache for buffering writes - writing
++dirty data to the backing device is always done sequentially, scanning from the
++start to the end of the index.
 +
-+void closure_debug_create(struct closure *cl);
-+void closure_debug_destroy(struct closure *cl);
++Since random IO is what SSDs excel at, there generally won't be much benefit
++to caching large sequential IO. Bcache detects sequential IO and skips it;
++it also keeps a rolling average of the IO sizes per task, and as long as the
++average is above the cutoff it will skip all IO from that task - instead of
++caching the first 512k after every seek. Backups and large file copies should
++thus entirely bypass the cache.
 +
-+#else
++In the event of a data IO error on the flash it will try to recover by reading
++from disk or invalidating cache entries.  For unrecoverable errors (meta data
++or dirty data), caching is automatically disabled; if dirty data was present
++in the cache it first disables writeback caching and waits for all dirty data
++to be flushed.
 +
-+static inline void closure_debug_create(struct closure *cl) {}
-+static inline void closure_debug_destroy(struct closure *cl) {}
++Getting started:
++You'll need make-bcache from the bcache-tools repository. Both the cache device
++and backing device must be formatted before use.
++  make-bcache -B /dev/sdb
++  make-bcache -C -w2k -b1M -j64 /dev/sdc
 +
-+#endif
++To make bcache devices known to the kernel, echo them to /sys/fs/bcache/register:
++  echo /dev/sdb > /sys/fs/bcache/register
++  echo /dev/sdc > /sys/fs/bcache/register
 +
-+static inline void closure_set_ip(struct closure *cl)
-+{
-+#ifdef CONFIG_DEBUG_CLOSURES
-+	cl->ip = _THIS_IP_;
-+#endif
-+}
++To register your bcache devices automatically, you could add something like
++this to an init script:
++  echo /dev/sd* > /sys/fs/bcache/register_quiet
 +
-+static inline void closure_set_ret_ip(struct closure *cl)
-+{
-+#ifdef CONFIG_DEBUG_CLOSURES
-+	cl->ip = _RET_IP_;
-+#endif
-+}
++It'll look for bcache superblocks and ignore everything that doesn't have one.
 +
-+static inline void closure_get(struct closure *cl)
-+{
-+#ifdef CONFIG_DEBUG_CLOSURES
-+	BUG_ON((atomic_inc_return(&cl->remaining) &
-+		CLOSURE_REMAINING_MASK) <= 1);
-+#else
-+	atomic_inc(&cl->remaining);
-+#endif
-+}
++When you register a backing device, you'll get a new /dev/bcache# device:
++  mkfs.ext4 /dev/bcache0
++  mount /dev/bcache0 /mnt
 +
-+static inline void closure_set_stopped(struct closure *cl)
-+{
-+	atomic_sub(CLOSURE_RUNNING, &cl->remaining);
-+}
++Cache devices are managed as sets; multiple caches per set isn't supported yet
++but will allow for mirroring of metadata and dirty data in the future. Your new
++cache set shows up as /sys/fs/bcache/<UUID>
 +
-+static inline bool closure_is_stopped(struct closure *cl)
-+{
-+	return !(atomic_read(&cl->remaining) & CLOSURE_RUNNING);
-+}
++To enable caching, you need to attach the backing device to the cache set by
++specifying the UUID:
++  echo <UUID> > /sys/block/sdb/bcache/attach
 +
-+static inline bool closure_is_unlocked(struct closure *cl)
-+{
-+	return atomic_read(&cl->remaining) == -1;
-+}
++The cache set with that UUID need not be registered to attach to it - the UUID
++will be saved to the backing device's superblock and it'll start being cached
++when the cache set does show up.
 +
-+static inline void do_closure_init(struct closure *cl, struct closure *parent,
-+				   bool running)
-+{
-+	switch (cl->type) {
-+	case TYPE_closure_with_timer:
-+	case TYPE_closure_with_waitlist_and_timer:
-+		do_closure_timer_init(cl);
-+	}
++This only has to be done once. The next time you reboot, just reregister all
++your bcache devices. If a backing device has data in a cache somewhere, the
++/dev/bcache# device won't be created until the cache shows up - particularly
++important if you have writeback caching turned on.
 +
-+#if defined(CONFIG_LOCKDEP) || defined(CONFIG_DEBUG_OBJECTS_WORK)
-+	INIT_WORK(&cl->work, NULL);
-+#endif
-+	cl->parent = parent;
-+	if (parent)
-+		closure_get(parent);
++If you're booting up and your cache device is gone and never coming back, you
++can force run the backing device:
++  echo 1 > /sys/block/sdb/bcache/running
 +
-+	if (running) {
-+		closure_debug_create(cl);
-+		atomic_set(&cl->remaining, CLOSURE_REMAINING_INITIALIZER);
-+	} else
-+		atomic_set(&cl->remaining, -1);
-+}
++The backing device will still use that cache set if it shows up in the future,
++but all the cached data will be invalidated. If there was dirty data in the
++cache, don't expect the filesystem to be recoverable - you will have massive
++filesystem corruption, though ext4's fsck does work miracles.
 +
-+/*
-+ * Hack to get at the embedded closure if there is one, by doing an unsafe cast:
-+ * the result of __closure_type() is thrown away, it's used merely for type
-+ * checking.
-+ */
-+#define __to_internal_closure(cl)				\
-+({								\
-+	BUILD_BUG_ON(__closure_type(*cl) > MAX_CLOSURE_TYPE);	\
-+	(struct closure *) cl;					\
-+})
 +
-+#define closure_init_type(cl, parent, running, memset)		\
-+do {								\
-+	struct closure *_cl = __to_internal_closure(cl);	\
-+	_cl->type = __closure_type(*(cl));			\
-+	closure_set_ip(_cl);					\
-+	do_closure_init(_cl, parent, running);			\
-+} while (0)
++Other sysfs files for the backing device:
 +
-+/**
-+ * __closure_init() - Initialize a closure, skipping the memset()
-+ *
-+ * May be used instead of closure_init() when memory has already been zeroed.
-+ */
-+#define __closure_init(cl, parent)				\
-+	closure_init_type(cl, parent, true, false)
++  bypassed
++    Sum of all IO, reads and writes, than have bypassed the cache
 +
-+/**
-+ * closure_init() - Initialize a closure, setting the refcount to 1
-+ * @cl:		closure to initialize
-+ * @parent:	parent of the new closure. cl will take a refcount on it for its
-+ *		lifetime; may be NULL.
-+ */
-+#define closure_init(cl, parent)				\
-+	closure_init_type(cl, parent, true, true)
++  cache_hits
++  cache_misses
++  cache_hit_ratio
++    Hits and misses are counted per individual IO as bcache sees them; a
++    partial hit is counted as a miss.
 +
-+static inline void closure_init_stack(struct closure *cl)
-+{
-+	memset(cl, 0, sizeof(struct closure));
-+	atomic_set(&cl->remaining, CLOSURE_REMAINING_INITIALIZER|
-+		   CLOSURE_BLOCKING|CLOSURE_STACK);
-+}
++  cache_miss_collisions
++    Count of times a read completes but the data is already in the cache and
++    is therefore redundant.  This is usually caused by readahead while a
++    read to the same location occurs.
 +
-+/**
-+ * closure_init_unlocked() - Initialize a closure but leave it unlocked.
-+ * @cl:		closure to initialize
-+ *
-+ * For when the closure will be used as a lock. The closure may not be used
-+ * until after a closure_lock() or closure_trylock().
-+ */
-+#define closure_init_unlocked(cl)				\
-+	closure_init_type(cl, NULL, false, true)
++  cache_readaheads
++    Count of times readahead occured.
 +
-+/**
-+ * closure_lock() - lock and initialize a closure.
-+ * @cl:		the closure to lock
-+ * @parent:	the new parent for this closure
-+ *
-+ * The closure must be of one of the types that has a waitlist (otherwise we
-+ * wouldn't be able to sleep on contention).
-+ *
-+ * @parent has exactly the same meaning as in closure_init(); if non null, the
-+ * closure will take a reference on @parent which will be released when it is
-+ * unlocked.
-+ */
-+#define closure_lock(cl, parent)				\
-+	__closure_lock(__to_internal_closure(cl), parent, &(cl)->wait)
++  clear_stats
++    Writing to this file resets all the statistics.
 +
-+/**
-+ * closure_sleep() - asynchronous sleep
-+ * @cl:		the closure that will sleep
-+ * @delay:	the delay in jiffies
-+ *
-+ * Takes a refcount on @cl which will be released after @delay jiffies; this may
-+ * be used to have a function run after a delay with continue_at(), or
-+ * closure_sync() may be used for a convoluted version of msleep().
-+ */
-+#define closure_sleep(cl, delay)				\
-+	__closure_sleep(__to_internal_closure(cl), delay, &(cl)->timer)
++  flush_delay_ms
++  flush_delay_ms_sync
++    Optional delay for btree writes to allow for more coalescing of updates to
++    the index. Default to 0.
 +
-+#define closure_flush(cl)				\
-+	__closure_flush(__to_internal_closure(cl), &(cl)->timer)
++  label
++    Name of underlying device.
 +
-+#define closure_flush_sync(cl)				\
-+	__closure_flush_sync(__to_internal_closure(cl), &(cl)->timer)
++  readahead
++    Size of readahead that should be performed.  Defaults to 0.  If set to e.g.
++    1M, it will round cache miss reads up to that size, but without overlapping
++    existing cache entries.
 +
-+static inline void __closure_end_sleep(struct closure *cl)
-+{
-+	__set_current_state(TASK_RUNNING);
++  running
++    1 if bcache is running.
 +
-+	if (atomic_read(&cl->remaining) & CLOSURE_SLEEPING)
-+		atomic_sub(CLOSURE_SLEEPING, &cl->remaining);
-+}
++  sequential_cutoff
++    A sequential IO will bypass the cache once it passes this threshhold; the
++    most recent 128 IOs are tracked so sequential IO can be detected even when
++    it isn't all done at once.
 +
-+static inline void __closure_start_sleep(struct closure *cl)
-+{
-+	closure_set_ip(cl);
-+	cl->task = current;
-+	set_current_state(TASK_UNINTERRUPTIBLE);
++  sequential_cutoff_average
++    If the weighted average from a client is higher than this cutoff we bypass
++    all IO.
 +
-+	if (!(atomic_read(&cl->remaining) & CLOSURE_SLEEPING))
-+		atomic_add(CLOSURE_SLEEPING, &cl->remaining);
-+}
++  unregister
++    Writing to this file disables caching on that device
 +
-+/**
-+ * closure_blocking() - returns true if the closure is in blocking mode.
-+ *
-+ * If a closure is in blocking mode, closure_wait_event() will sleep until the
-+ * condition is true instead of waiting asynchronously.
-+ */
-+static inline bool closure_blocking(struct closure *cl)
-+{
-+	return atomic_read(&cl->remaining) & CLOSURE_BLOCKING;
-+}
++  writeback
++    Boolean, if off only writethrough caching is done
 +
-+/**
-+ * set_closure_blocking() - put a closure in blocking mode.
-+ *
-+ * If a closure is in blocking mode, closure_wait_event() will sleep until the
-+ * condition is true instead of waiting asynchronously.
-+ *
-+ * Not thread safe - can only be called by the thread running the closure.
-+ */
-+static inline void set_closure_blocking(struct closure *cl)
-+{
-+	if (!closure_blocking(cl))
-+		atomic_add(CLOSURE_BLOCKING, &cl->remaining);
-+}
++  writeback_delay
++    When dirty data is written to the cache and it previously did not contain
++    any, waits some number of seconds before initiating writeback. Defaults to
++    30.
 +
-+/*
-+ * Not thread safe - can only be called by the thread running the closure.
-+ */
-+static inline void clear_closure_blocking(struct closure *cl)
-+{
-+	if (closure_blocking(cl))
-+		atomic_sub(CLOSURE_BLOCKING, &cl->remaining);
-+}
++  writeback_percent
++    To allow for more buffering of random writes, writeback only proceeds when
++    more than this percentage of the cache is unavailable. Defaults to 0.
 +
-+/**
-+ * closure_wake_up() - wake up all closures on a wait list.
-+ */
-+static inline void closure_wake_up(closure_list_t *list)
-+{
-+	smp_mb();
-+	__closure_wake_up(list);
-+}
++  writeback_running
++    If off, writeback of dirty data will not take place at all. Dirty data will
++    still be added to the cache until it is mostly full; only meant for
++    benchmarking. Defaults to on.
 +
-+/*
-+ * Wait on an event, synchronously or asynchronously - analagous to wait_event()
-+ * but for closures.
-+ *
-+ * The loop is oddly structured so as to avoid a race; we must check the
-+ * condition again after we've added ourself to the waitlist. We know if we were
-+ * already on the waitlist because closure_wait() returns false; thus, we only
-+ * schedule or break if closure_wait() returns false. If it returns true, we
-+ * just loop again - rechecking the condition.
-+ *
-+ * The __closure_wake_up() is necessary because we may race with the event
-+ * becoming true; i.e. we see event false -> wait -> recheck condition, but the
-+ * thread that made the event true may have called closure_wake_up() before we
-+ * added ourself to the wait list.
-+ *
-+ * We have to call closure_sync() at the end instead of just
-+ * __closure_end_sleep() because a different thread might've called
-+ * closure_wake_up() before us and gotten preempted before they dropped the
-+ * refcount on our closure. If this was a stack allocated closure, that would be
-+ * bad.
-+ */
-+#define __closure_wait_event(list, cl, condition, _block)		\
-+({									\
-+	__label__ out;							\
-+	bool block = _block;						\
-+	typeof(condition) ret;						\
-+									\
-+	while (!(ret = (condition))) {					\
-+		if (block)						\
-+			__closure_start_sleep(cl);			\
-+		if (!closure_wait(list, cl)) {				\
-+			if (!block)					\
-+				goto out;				\
-+			schedule();					\
-+		}							\
-+	}								\
-+	__closure_wake_up(list);					\
-+	if (block)							\
-+		closure_sync(cl);					\
-+out:									\
-+	ret;								\
-+})
++For the cache set:
++  active_journal_entries
++    Number of journal entries that are newer than the index.
 +
-+/**
-+ * closure_wait_event() - wait on a condition, synchronously or asynchronously.
-+ * @list:	the wait list to wait on
-+ * @cl:		the closure that is doing the waiting
-+ * @condition:	a C expression for the event to wait for
-+ *
-+ * If the closure is in blocking mode, sleeps until the @condition evaluates to
-+ * true - exactly like wait_event().
-+ *
-+ * If the closure is not in blocking mode, waits asynchronously; if the
-+ * condition is currently false the @cl is put onto @list and returns. @list
-+ * owns a refcount on @cl; closure_sync() or continue_at() may be used later to
-+ * wait for another thread to wake up @list, which drops the refcount on @cl.
-+ *
-+ * Returns the value of @condition; @cl will be on @list iff @condition was
-+ * false.
-+ *
-+ * closure_wake_up(@list) must be called after changing any variable that could
-+ * cause @condition to become true.
-+ */
-+#define closure_wait_event(list, cl, condition)				\
-+	__closure_wait_event(list, cl, condition, closure_blocking(cl))
++  average_key_size
++    Average data per key in the btree.
 +
-+#define closure_wait_event_async(list, cl, condition)			\
-+	__closure_wait_event(list, cl, condition, false)
++  average_seconds_between_gc
++    How often garbage collection is occuring.
 +
-+#define closure_wait_event_sync(list, cl, condition)			\
-+	__closure_wait_event(list, cl, condition, true)
++  block_size
++    Block size of the virtual device.
 +
-+static inline void set_closure_fn(struct closure *cl, closure_fn *fn,
-+				  struct workqueue_struct *wq)
-+{
-+	cl->fn = fn;
-+	cl->wq = wq;
-+	/* between atomic_dec() in closure_put() */
-+	smp_mb__before_atomic_dec();
-+}
++  btree_avg_keys_written
++    Average number of keys per write to the btree when a node wasn't being
++    rewritten - indicates how much coalescing is taking place.
 +
-+#define continue_at(_cl, _fn, _wq, ...)					\
-+do {									\
-+	BUG_ON(!(_cl) || object_is_on_stack(_cl));			\
-+	closure_set_ip(_cl);						\
-+	set_closure_fn(_cl, _fn, _wq);					\
-+	closure_sub(_cl, CLOSURE_RUNNING + 1);				\
-+	return __VA_ARGS__;						\
-+} while (0)
 +
-+#define closure_return(_cl)	continue_at((_cl), NULL, NULL)
++  btree_cache_size
++    Number of btree buckets currently cached in memory
 +
-+#endif /* _LINUX_CLOSURE_H */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 028aba9..87abaef 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -316,4 +316,7 @@ config SIGNATURE
- 	  Digital signature verification. Currently only RSA is supported.
- 	  Implementation is done using GnuPG MPI library
++  btree_nodes
++    Total nodes in the btree.
++
++  btree_used_percent
++    Average fraction of btree in use.
++
++  bucket_size
++    Size of Buckets
++
++  bypassed
++    Sum of all IO, reads and writes, than have bypassed the cache
++
++  cache_available_percent
++    Percentage of cache device free.
++
++  clear_stats
++    Clears the statistics associated with this cache
++
++  dirty_data
++    How much dirty data is in the cache.
++
++  gc_ms_max
++    Longest garbage collection.
++
++  internal/bset_tree_stats
++  internal/btree_cache_max_chain
++    Internal.  Statistics about the bset tree and chain length.  Likely to be
++    hidden soon.
++
++  io_error_halflife
++  io_error_limit
++    These determines how many errors we accept before disabling the cache.
++    Each error is decayed by the half life (in # ios).  If the decaying count
++    reaches io_error_limit dirty data is written out and the cache is disabled.
++
++  root_usage_percent
++    Percentage of the root btree node in use.  If this gets too high the node
++    will split, increasing the tree depth.
++
++  seconds_since_gc
++    When was the last garbage collection.
++
++  synchronous
++    Boolean; when on all writes to the cache are strictly ordered such that it
++    can recover from unclean shutdown. If off it will not generally wait for
++    writes to complete, but the entire cache contents will be invalidated on
++    unclean shutdown. Not recommended that it be turned off when writeback is
++    on.
++
++  tree_depth
++    Depth of the btree.
++
++  trigger_gc
++    Force garbage collection to run now.
++
++  unregister
++    Closes the cache device and all devices being cached; if dirty data is
++    present it will disable writeback caching and wait for it to be flushed.
++
++
++For each cache within a cache set:
++  btree_written
++    Sum of all btree writes, in (kilo/mega/giga) bytes
++
++  discard
++    Boolean; if on a discard/TRIM will be issued to each bucket before it is
++    reused. Defaults to on if supported.
++
++  io_errors
++    Number of errors that have occured, decayed by io_error_halflife.
++
++  metadata_written
++    Total Metadata written (btree + other meta data).
++
++  nbuckets
++    Total buckets in this cache
++
++  priority_stats
++    Statistics about how recently data in the cache has been accessed.  This can
++    reveal your working set size.
++
++  written
++    Sum of all data that has been written to the cache; comparison with
++    btree_written gives the amount of write inflation in bcache.
+diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+index 4e4c8a4..d872600 100644
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -526,6 +526,8 @@ config VIRTIO_BLK
+ 	  This is the virtual block driver for virtio.  It can be used with
+           lguest or QEMU based VMMs (like KVM or Xen).  Say Y or M.
  
-+config CLOSURES
-+	bool
++source "drivers/block/bcache/Kconfig"
 +
- endmenu
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 8745ac7..ba9ede8 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -374,6 +374,15 @@ config DEBUG_OBJECTS_ENABLE_DEFAULT
-         help
-           Debug objects boot parameter default value
+ config BLK_DEV_HD
+ 	bool "Very old hard disk (MFM/RLL/IDE) driver"
+ 	depends on HAVE_IDE
+diff --git a/drivers/block/Makefile b/drivers/block/Makefile
+index 5b79505..19520e1 100644
+--- a/drivers/block/Makefile
++++ b/drivers/block/Makefile
+@@ -41,5 +41,6 @@ obj-$(CONFIG_XEN_BLKDEV_BACKEND)	+= xen-blkback/
+ obj-$(CONFIG_BLK_DEV_DRBD)     += drbd/
+ obj-$(CONFIG_BLK_DEV_RBD)     += rbd.o
+ obj-$(CONFIG_BLK_DEV_PCIESSD_MTIP32XX)	+= mtip32xx/
++obj-$(CONFIG_BCACHE)           += bcache/
  
-+config DEBUG_CLOSURES
-+	bool "Debug closures"
-+	depends on CLOSURES
-+	select DEBUG_FS
+ swim_mod-y	:= swim.o swim_asm.o
+diff --git a/drivers/block/bcache/Kconfig b/drivers/block/bcache/Kconfig
+new file mode 100644
+index 0000000..019f133
+--- /dev/null
++++ b/drivers/block/bcache/Kconfig
+@@ -0,0 +1,42 @@
++
++config BCACHE
++	tristate "Block device as cache"
++	select COMPACTION
++	select CLOSURES
 +	---help---
-+	Keeps all active closures in a linked list and provides a debugfs
-+	interface to list them, which makes it possible to see asynchronous
-+	operations that get stuck.
++	Allows a block device to be used as cache for other devices; uses
++	a btree for indexing and the layout is optimized for SSDs.
 +
- config DEBUG_SLAB
- 	bool "Debug slab memory allocations"
- 	depends on DEBUG_KERNEL && SLAB && !KMEMCHECK
-diff --git a/lib/Makefile b/lib/Makefile
-index 18515f0..1e9354e 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -123,6 +123,8 @@ obj-$(CONFIG_SIGNATURE) += digsig.o
- 
- obj-$(CONFIG_CLZ_TAB) += clz_tab.o
- 
-+obj-$(CONFIG_CLOSURES) += closure.o
++	See Documentation/bcache.txt for details.
 +
- hostprogs-y	:= gen_crc32table
- clean-files	:= crc32table.h
- 
-diff --git a/lib/closure.c b/lib/closure.c
++config BCACHE_DEBUG
++	bool "Bcache debugging"
++	depends on BCACHE
++	---help---
++	Don't select this option unless you're a developer
++
++	Enables extra debugging tools (primarily a fuzz tester)
++
++config BCACHE_EDEBUG
++	bool "Extended runtime checks"
++	depends on BCACHE
++	---help---
++	Don't select this option unless you're a developer
++
++	Enables extra runtime checks which significantly affect performance
++
++config BCACHE_LATENCY_DEBUG
++	bool "Latency tracing for bcache"
++	depends on BCACHE
++	---help---
++	Hacky latency tracing that has nevertheless been useful in the past:
++	adds a global variable accessible via /sys/fs/bcache/latency_warn_ms,
++	which defaults to 0. If nonzero, any timed operation that takes longer
++	emits a printk.
++
++config CGROUP_BCACHE
++  bool "Cgroup controls for bcache"
++  depends on BCACHE && BLK_CGROUP
++  ---help---
++  TODO
++
+diff --git a/drivers/block/bcache/Makefile b/drivers/block/bcache/Makefile
 new file mode 100644
-index 0000000..5e9fd98
+index 0000000..84302f9
 --- /dev/null
-+++ b/lib/closure.c
-@@ -0,0 +1,363 @@
-+
-+#include <linux/closure.h>
-+#include <linux/debugfs.h>
-+#include <linux/module.h>
-+#include <linux/seq_file.h>
-+
-+/*
-+ * Closure like things
-+ * See include/linux/closure.h for full documentation
-+ */
-+
-+void closure_queue(struct closure *cl)
-+{
-+	struct workqueue_struct *wq = cl->wq;
-+	if (wq) {
-+		cl->work.data = (atomic_long_t) WORK_DATA_INIT();
-+		INIT_LIST_HEAD(&cl->work.entry);
-+		BUG_ON(!queue_work(wq, &cl->work));
-+	} else
-+		cl->fn(cl);
-+}
-+EXPORT_SYMBOL_GPL(closure_queue);
-+
-+static void closure_wake_up_after_xchg(struct llist_node *);
-+
-+#define CL_FIELD(type, field)					\
-+	case TYPE_ ## type:					\
-+	return &container_of(cl, struct type, cl)->field
-+
-+static closure_list_t *closure_waitlist(struct closure *cl)
-+{
-+	switch (cl->type) {
-+		CL_FIELD(closure_with_waitlist, wait);
-+		CL_FIELD(closure_with_waitlist_and_timer, wait);
-+	}
-+	return NULL;
-+}
-+
-+static struct timer_list *closure_timer(struct closure *cl)
-+{
-+	switch (cl->type) {
-+		CL_FIELD(closure_with_timer, timer);
-+		CL_FIELD(closure_with_waitlist_and_timer, timer);
-+	}
-+	return NULL;
-+}
-+
-+static void closure_put_after_sub(struct closure *cl, int r)
-+{
-+	BUG_ON(r & CLOSURE_GUARD_MASK);
-+	/* CLOSURE_BLOCK is the only flag that's allowed when r hits 0 */
-+	BUG_ON((r & CLOSURE_REMAINING_MASK) == 0 &&
-+	       (r & ~CLOSURE_BLOCKING));
-+
-+	/* Must deliver precisely one wakeup */
-+	if ((r & CLOSURE_REMAINING_MASK) == 1 &&
-+	    (r & CLOSURE_SLEEPING)) {
-+		smp_mb__after_atomic_dec();
-+		wake_up_process(cl->task);
-+	}
-+
-+	if ((r & CLOSURE_REMAINING_MASK) == 0) {
-+		smp_mb__after_atomic_dec();
-+
-+		if (cl->fn) {
-+			/* CLOSURE_BLOCKING might be set - clear it */
-+			atomic_set(&cl->remaining,
-+				   CLOSURE_REMAINING_INITIALIZER);
-+			closure_queue(cl);
-+		} else {
-+			struct closure *parent = cl->parent;
-+			closure_list_t *wait = closure_waitlist(cl);
-+
-+			closure_debug_destroy(cl);
-+
-+			smp_wmb();
-+			/* mb between last use of closure and unlocking it */
-+			atomic_set(&cl->remaining, -1);
-+
-+			if (wait)
-+				closure_wake_up(wait);
-+
-+			if (parent)
-+				closure_put(parent);
-+		}
-+	}
-+}
-+
-+/* For clearing flags with the same atomic op as a put */
-+void closure_sub(struct closure *cl, int v)
-+{
-+	closure_put_after_sub(cl, atomic_sub_return(v, &cl->remaining));
-+}
-+EXPORT_SYMBOL_GPL(closure_sub);
-+
-+void closure_put(struct closure *cl)
-+{
-+	closure_put_after_sub(cl, atomic_dec_return(&cl->remaining));
-+}
-+EXPORT_SYMBOL_GPL(closure_put);
-+
-+static void set_waiting(struct closure *cl, unsigned long f)
-+{
-+#ifdef CONFIG_DEBUG_CLOSURES
-+	cl->waiting_on = f;
-+#endif
-+}
-+
-+/*
-+ * Broken up because closure_put() has to do the xchg() and grab the wait list
-+ * before unlocking the closure, but the wakeup has to come after unlocking the
-+ * closure.
-+ */
-+static void closure_wake_up_after_xchg(struct llist_node *list)
-+{
-+	struct closure *cl;
-+	struct llist_node *reverse = NULL;
-+
-+	while (list) {
-+		struct llist_node *t = list;
-+		list = llist_next(list);
-+
-+		t->next = reverse;
-+		reverse = t;
-+	}
-+
-+	while (reverse) {
-+		cl = container_of(reverse, struct closure, list);
-+		reverse = llist_next(reverse);
-+
-+		set_waiting(cl, 0);
-+		closure_sub(cl, CLOSURE_WAITING + 1);
-+	}
-+}
-+
-+void __closure_wake_up(closure_list_t *list)
-+{
-+	closure_wake_up_after_xchg(llist_del_all(list));
-+}
-+EXPORT_SYMBOL_GPL(__closure_wake_up);
-+
-+bool closure_wait(closure_list_t *list, struct closure *cl)
-+{
-+	if (atomic_read(&cl->remaining) & CLOSURE_WAITING)
-+		return false;
-+
-+	set_waiting(cl, _RET_IP_);
-+	atomic_add(CLOSURE_WAITING + 1, &cl->remaining);
-+	llist_add(&cl->list, list);
-+
-+	return true;
-+}
-+EXPORT_SYMBOL_GPL(closure_wait);
-+
-+/**
-+ * closure_sync() - sleep until a closure a closure has nothing left to wait on
-+ *
-+ * Sleeps until the refcount hits 1 - the thread that's running the closure owns
-+ * the last refcount.
-+ */
-+void closure_sync(struct closure *cl)
-+{
-+	while (1) {
-+		__closure_start_sleep(cl);
-+		closure_set_ret_ip(cl);
-+
-+		if ((atomic_read(&cl->remaining) &
-+		     CLOSURE_REMAINING_MASK) == 1)
-+			break;
-+
-+		schedule();
-+	}
-+
-+	__closure_end_sleep(cl);
-+}
-+EXPORT_SYMBOL_GPL(closure_sync);
-+
-+/**
-+ * closure_trylock() - try to acquire the closure, without waiting
-+ * @cl:		closure to lock
-+ *
-+ * Returns true if the closure was succesfully locked.
-+ */
-+bool closure_trylock(struct closure *cl, struct closure *parent)
-+{
-+	if (atomic_cmpxchg(&cl->remaining, -1,
-+			   CLOSURE_REMAINING_INITIALIZER) != -1)
-+		return false;
-+
-+	closure_set_ret_ip(cl);
-+
-+	smp_mb();
-+	cl->parent = parent;
-+	if (parent)
-+		closure_get(parent);
-+
-+	closure_debug_create(cl);
-+	return true;
-+}
-+EXPORT_SYMBOL_GPL(closure_trylock);
-+
-+void __closure_lock(struct closure *cl, struct closure *parent,
-+		    closure_list_t *wait_list)
-+{
-+	struct closure wait;
-+	closure_init_stack(&wait);
-+
-+	while (1) {
-+		if (closure_trylock(cl, parent))
-+			return;
-+
-+		closure_wait_event_sync(wait_list, &wait,
-+					atomic_read(&cl->remaining) == -1);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(__closure_lock);
-+
-+static void closure_sleep_timer_fn(unsigned long data)
-+{
-+	struct closure *cl = (struct closure *) data;
-+	closure_sub(cl, CLOSURE_TIMER + 1);
-+}
-+
-+void do_closure_timer_init(struct closure *cl)
-+{
-+	struct timer_list *timer = closure_timer(cl);
-+
-+	init_timer(timer);
-+	timer->data	= (unsigned long) cl;
-+	timer->function = closure_sleep_timer_fn;
-+}
-+EXPORT_SYMBOL_GPL(do_closure_timer_init);
-+
-+bool __closure_sleep(struct closure *cl, unsigned long delay,
-+		     struct timer_list *timer)
-+{
-+	if (atomic_read(&cl->remaining) & CLOSURE_TIMER)
-+		return false;
-+
-+	BUG_ON(timer_pending(timer));
-+
-+	timer->expires	= jiffies + delay;
-+
-+	atomic_add(CLOSURE_TIMER + 1, &cl->remaining);
-+	add_timer(timer);
-+	return true;
-+}
-+EXPORT_SYMBOL_GPL(__closure_sleep);
-+
-+void __closure_flush(struct closure *cl, struct timer_list *timer)
-+{
-+	if (del_timer(timer))
-+		closure_sub(cl, CLOSURE_TIMER + 1);
-+}
-+EXPORT_SYMBOL_GPL(__closure_flush);
-+
-+void __closure_flush_sync(struct closure *cl, struct timer_list *timer)
-+{
-+	if (del_timer_sync(timer))
-+		closure_sub(cl, CLOSURE_TIMER + 1);
-+}
-+EXPORT_SYMBOL_GPL(__closure_flush_sync);
-+
-+#ifdef CONFIG_DEBUG_CLOSURES
-+
-+static LIST_HEAD(closure_list);
-+static DEFINE_SPINLOCK(closure_list_lock);
-+
-+void closure_debug_create(struct closure *cl)
-+{
-+	unsigned long flags;
-+
-+	BUG_ON(cl->magic == CLOSURE_MAGIC_ALIVE);
-+	cl->magic = CLOSURE_MAGIC_ALIVE;
-+
-+	spin_lock_irqsave(&closure_list_lock, flags);
-+	list_add(&cl->all, &closure_list);
-+	spin_unlock_irqrestore(&closure_list_lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(closure_debug_create);
-+
-+void closure_debug_destroy(struct closure *cl)
-+{
-+	unsigned long flags;
-+
-+	BUG_ON(cl->magic != CLOSURE_MAGIC_ALIVE);
-+	cl->magic = CLOSURE_MAGIC_DEAD;
-+
-+	spin_lock_irqsave(&closure_list_lock, flags);
-+	list_del(&cl->all);
-+	spin_unlock_irqrestore(&closure_list_lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(closure_debug_destroy);
-+
-+static struct dentry *debug;
-+
-+#define work_data_bits(work) ((unsigned long *)(&(work)->data))
-+
-+static int debug_seq_show(struct seq_file *f, void *data)
-+{
-+	struct closure *cl;
-+	spin_lock_irq(&closure_list_lock);
-+
-+	list_for_each_entry(cl, &closure_list, all) {
-+		int r = atomic_read(&cl->remaining);
-+
-+		seq_printf(f, "%p: %pF -> %pf p %p r %i ",
-+			   cl, (void *) cl->ip, cl->fn, cl->parent,
-+			   r & CLOSURE_REMAINING_MASK);
-+
-+		if (test_bit(WORK_STRUCT_PENDING, work_data_bits(&cl->work)))
-+			seq_printf(f, "Q");
-+
-+		if (r & CLOSURE_RUNNING)
-+			seq_printf(f, "R");
-+
-+		if (r & CLOSURE_BLOCKING)
-+			seq_printf(f, "B");
-+
-+		if (r & CLOSURE_STACK)
-+			seq_printf(f, "S");
-+
-+		if (r & CLOSURE_SLEEPING)
-+			seq_printf(f, "Sl");
-+
-+		if (r & CLOSURE_TIMER)
-+			seq_printf(f, "T");
-+
-+		if (r & CLOSURE_WAITING)
-+			seq_printf(f, " W %pF\n",
-+				   (void *) cl->waiting_on);
-+
-+		seq_printf(f, "\n");
-+	}
-+
-+	spin_unlock_irq(&closure_list_lock);
-+	return 0;
-+}
-+
-+static int debug_seq_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, debug_seq_show, NULL);
-+}
-+
-+static const struct file_operations debug_ops = {
-+	.owner		= THIS_MODULE,
-+	.open		= debug_seq_open,
-+	.read		= seq_read,
-+	.release	= single_release
-+};
-+
-+int __init closure_debug_init(void)
-+{
-+	debug = debugfs_create_file("closures", 0400, NULL, NULL, &debug_ops);
-+	return 0;
-+}
-+
-+module_init(closure_debug_init);
-+
++++ b/drivers/block/bcache/Makefile
+@@ -0,0 +1,8 @@
++
++ccflags-y		+= -std=gnu99
++obj-$(CONFIG_BCACHE)	+= bcache.o
++
++bcache-y		:= alloc.o btree.o bset.o io.o journal.o\
++	writeback.o request.o super.o debug.o util.o trace.o stats.o
++
++CFLAGS_request.o	+= -Iblock
+diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+index 0bd390c..d698634 100644
+--- a/include/linux/cgroup_subsys.h
++++ b/include/linux/cgroup_subsys.h
+@@ -72,3 +72,9 @@ SUBSYS(net_prio)
+ #endif
+ 
+ /* */
++
++#ifdef CONFIG_CGROUP_BCACHE
++SUBSYS(bcache)
 +#endif
 +
-+MODULE_AUTHOR("Kent Overstreet <koverstreet@google.com>");
-+MODULE_LICENSE("GPL");
++/* */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0657368..63014ba 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1590,6 +1590,10 @@ struct task_struct {
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+ 	atomic_t ptrace_bp_refcnt;
+ #endif
++#if defined(CONFIG_BCACHE) || defined(CONFIG_BCACHE_MODULE)
++	unsigned int	sequential_io;
++	unsigned int	sequential_io_avg;
++#endif
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff --git a/include/trace/events/bcache.h b/include/trace/events/bcache.h
+new file mode 100644
+index 0000000..229ffe1
+--- /dev/null
++++ b/include/trace/events/bcache.h
+@@ -0,0 +1,257 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM bcache
++
++#if !defined(_TRACE_BCACHE_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_BCACHE_H
++
++#include <linux/tracepoint.h>
++
++struct btree_op;
++
++DECLARE_EVENT_CLASS(bcache_request,
++
++	TP_PROTO(struct btree_op *op, struct bio *bio),
++
++	TP_ARGS(op, bio),
++
++	TP_STRUCT__entry(
++		__field(dev_t,		dev			)
++		__field(unsigned int,	orig_major		)
++		__field(unsigned int,	orig_minor		)
++		__field(sector_t,	sector			)
++		__field(dev_t,		orig_sector		)
++		__field(unsigned int,	nr_sector		)
++		__array(char,		rwbs,	6		)
++		__array(char,		comm,	TASK_COMM_LEN	)
++	),
++
++	TP_fast_assign(
++		__entry->dev		= bio->bi_bdev->bd_dev;
++		__entry->orig_major	= op->d->disk->major;
++		__entry->orig_minor	= op->d->disk->first_minor;
++		__entry->sector		= bio->bi_sector;
++		__entry->orig_sector	= bio->bi_sector - 16;
++		__entry->nr_sector	= bio->bi_size >> 9;
++		blk_fill_rwbs(__entry->rwbs, bio->bi_rw, bio->bi_size);
++		memcpy(__entry->comm, current->comm, TASK_COMM_LEN);
++	),
++
++	TP_printk("%d,%d %s %llu + %u [%s] (from %d,%d @ %llu)",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  __entry->rwbs,
++		  (unsigned long long)__entry->sector,
++		  __entry->nr_sector, __entry->comm,
++		  __entry->orig_major, __entry->orig_minor,
++		  (unsigned long long)__entry->orig_sector)
++);
++
++DEFINE_EVENT(bcache_request, bcache_request_start,
++
++	TP_PROTO(struct btree_op *op, struct bio* bio),
++
++	TP_ARGS(op, bio)
++);
++
++DEFINE_EVENT(bcache_request, bcache_request_end,
++
++	TP_PROTO(struct btree_op *op, struct bio* bio),
++
++	TP_ARGS(op, bio)
++);
++
++DECLARE_EVENT_CLASS(bcache_bio,
++
++	TP_PROTO(struct bio *bio),
++
++	TP_ARGS(bio),
++
++	TP_STRUCT__entry(
++		__field(dev_t,		dev			)
++		__field(sector_t,	sector			)
++		__field(unsigned int,	nr_sector		)
++		__array(char,		rwbs,	6		)
++		__array(char,		comm,	TASK_COMM_LEN	)
++	),
++
++	TP_fast_assign(
++		__entry->dev		= bio->bi_bdev->bd_dev;
++		__entry->sector		= bio->bi_sector;
++		__entry->nr_sector	= bio->bi_size >> 9;
++		blk_fill_rwbs(__entry->rwbs, bio->bi_rw, bio->bi_size);
++		memcpy(__entry->comm, current->comm, TASK_COMM_LEN);
++	),
++
++	TP_printk("%d,%d  %s %llu + %u [%s]",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  __entry->rwbs,
++		  (unsigned long long)__entry->sector,
++		  __entry->nr_sector, __entry->comm)
++);
++
++
++DEFINE_EVENT(bcache_bio, bcache_passthrough,
++
++	TP_PROTO(struct bio *bio),
++
++	TP_ARGS(bio)
++);
++
++DEFINE_EVENT(bcache_bio, bcache_cache_hit,
++
++	TP_PROTO(struct bio *bio),
++
++	TP_ARGS(bio)
++);
++
++DEFINE_EVENT(bcache_bio, bcache_cache_miss,
++
++	TP_PROTO(struct bio *bio),
++
++	TP_ARGS(bio)
++);
++
++DEFINE_EVENT(bcache_bio, bcache_read_retry,
++
++	TP_PROTO(struct bio *bio),
++
++	TP_ARGS(bio)
++);
++
++DEFINE_EVENT(bcache_bio, bcache_writethrough,
++
++	TP_PROTO(struct bio *bio),
++
++	TP_ARGS(bio)
++);
++
++DEFINE_EVENT(bcache_bio, bcache_writeback,
++
++	TP_PROTO(struct bio *bio),
++
++	TP_ARGS(bio)
++);
++
++DEFINE_EVENT(bcache_bio, bcache_write_skip,
++
++	TP_PROTO(struct bio *bio),
++
++	TP_ARGS(bio)
++);
++
++DEFINE_EVENT(bcache_bio, bcache_btree_read,
++
++	TP_PROTO(struct bio *bio),
++
++	TP_ARGS(bio)
++);
++
++DEFINE_EVENT(bcache_bio, bcache_btree_write,
++
++	TP_PROTO(struct bio *bio),
++
++	TP_ARGS(bio)
++);
++
++DEFINE_EVENT(bcache_bio, bcache_write_dirty,
++
++	TP_PROTO(struct bio *bio),
++
++	TP_ARGS(bio)
++);
++
++DEFINE_EVENT(bcache_bio, bcache_read_dirty,
++
++	TP_PROTO(struct bio *bio),
++
++	TP_ARGS(bio)
++);
++
++DEFINE_EVENT(bcache_bio, bcache_journal_write,
++
++	TP_PROTO(struct bio *bio),
++
++	TP_ARGS(bio)
++);
++
++DECLARE_EVENT_CLASS(bcache_cache_bio,
++
++	TP_PROTO(struct bio *bio,
++		 sector_t orig_sector,
++		 struct block_device* orig_bdev),
++
++	TP_ARGS(bio, orig_sector, orig_bdev),
++
++	TP_STRUCT__entry(
++		__field(dev_t,		dev			)
++		__field(dev_t,		orig_dev		)
++		__field(sector_t,	sector			)
++		__field(sector_t,	orig_sector		)
++		__field(unsigned int,	nr_sector		)
++		__array(char,		rwbs,	6		)
++		__array(char,		comm,	TASK_COMM_LEN	)
++	),
++
++	TP_fast_assign(
++		__entry->dev		= bio->bi_bdev->bd_dev;
++		__entry->orig_dev	= orig_bdev->bd_dev;
++		__entry->sector		= bio->bi_sector;
++		__entry->orig_sector	= orig_sector;
++		__entry->nr_sector	= bio->bi_size >> 9;
++		blk_fill_rwbs(__entry->rwbs, bio->bi_rw, bio->bi_size);
++		memcpy(__entry->comm, current->comm, TASK_COMM_LEN);
++	),
++
++	TP_printk("%d,%d  %s %llu + %u [%s] (from %d,%d %llu)",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  __entry->rwbs,
++		  (unsigned long long)__entry->sector,
++		  __entry->nr_sector, __entry->comm,
++		  MAJOR(__entry->orig_dev), MINOR(__entry->orig_dev),
++		  (unsigned long long)__entry->orig_sector)
++);
++
++DEFINE_EVENT(bcache_cache_bio, bcache_cache_insert,
++
++	TP_PROTO(struct bio *bio,
++		 sector_t orig_sector,
++		 struct block_device *orig_bdev),
++
++	TP_ARGS(bio, orig_sector, orig_bdev)
++);
++
++DECLARE_EVENT_CLASS(bcache_gc,
++
++	TP_PROTO(uint8_t *uuid),
++
++	TP_ARGS(uuid),
++
++	TP_STRUCT__entry(
++		__field(uint8_t *,	uuid)
++	),
++
++	TP_fast_assign(
++		__entry->uuid		= uuid;
++	),
++
++	TP_printk("%pU", __entry->uuid)
++);
++
++
++DEFINE_EVENT(bcache_gc, bcache_gc_start,
++
++	     TP_PROTO(uint8_t *uuid),
++
++	     TP_ARGS(uuid)
++);
++
++DEFINE_EVENT(bcache_gc, bcache_gc_end,
++
++	     TP_PROTO(uint8_t *uuid),
++
++	     TP_ARGS(uuid)
++);
++
++#endif /* _TRACE_BCACHE_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 26a7a67..9b83c81 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1255,6 +1255,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	p->memcg_batch.do_batch = 0;
+ 	p->memcg_batch.memcg = NULL;
+ #endif
++#ifdef CONFIG_BCACHE
++	p->sequential_io	= 0;
++	p->sequential_io_avg	= 0;
++#endif
+ 
+ 	/* Perform scheduler related setup. Assign this task to a CPU. */
+ 	sched_fork(p);
 -- 
 1.7.9.rc2
 
