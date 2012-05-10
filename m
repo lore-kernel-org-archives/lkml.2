@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab2EJIaz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 04:30:55 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40535 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab2EJIav (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 04:30:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120510143329.4cef3cd78ce5ea55416b1d93@canb.auug.org.au>
-References: <20120510143329.4cef3cd78ce5ea55416b1d93@canb.auug.org.au>
-Date: Thu, 10 May 2012 10:30:50 +0200
-Message-ID: <CACRpkdYsHXnWHvBw6Pt1atvwKP6KYjfu-PwQnL_L7-yW1-4_FA@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the sound-asoc tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Ola Lilja <ola.o.lilja@stericsson.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-next@vger.kernel.org,
+	id S1757429Ab2EJIcB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 04:32:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34259 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753518Ab2EJIb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 04:31:58 -0400
+Date: Thu, 10 May 2012 10:31:50 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH 1/5] HID: hid-multitouch: fix wrong protocol detection
+In-Reply-To: <20120509195632.GA12406@polaris.bitmath.org>
+Message-ID: <alpine.LNX.2.00.1205101026010.31253@pobox.suse.cz>
+References: <1336136030-18503-1-git-send-email-benjamin.tissoires@gmail.com> <1336136030-18503-2-git-send-email-benjamin.tissoires@gmail.com> <20120506190146.GA12571@polaris.bitmath.org> <CAN+gG=G9y_0Le-Mja2z68r76nBmz0De95Lc6671EkrrMZRSEHw@mail.gmail.com>
+ <20120509195632.GA12406@polaris.bitmath.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 6:33 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Wed, 9 May 2012, Henrik Rydberg wrote:
 
-> After merging the sound-asoc tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->
-> In file included from sound/soc/ux500/ux500_msp_dai.c:21:0:
-> include/linux/mfd/dbx500-prcmu.h:614:19: error: redefinition of 'prcmu_abb_read'
-> include/linux/mfd/db8500-prcmu.h:673:19: note: previous definition of 'prcmu_abb_read' was here
-> include/linux/mfd/dbx500-prcmu.h:619:19: error: redefinition of 'prcmu_abb_write'
-> include/linux/mfd/db8500-prcmu.h:678:19: note: previous definition of 'prcmu_abb_write' was here
-> include/linux/mfd/dbx500-prcmu.h:630:19: error: redefinition of 'prcmu_config_clkout'
-> include/linux/mfd/db8500-prcmu.h:643:19: note: previous definition of 'prcmu_config_clkout' was here
-> include/linux/mfd/dbx500-prcmu.h:692:20: error: redefinition of 'prcmu_ac_wake_req'
-> include/linux/mfd/db8500-prcmu.h:683:20: note: previous definition of 'prcmu_ac_wake_req' was here
-> include/linux/mfd/dbx500-prcmu.h:694:20: error: redefinition of 'prcmu_ac_sleep_req'
-> include/linux/mfd/db8500-prcmu.h:685:20: note: previous definition of 'prcmu_ac_sleep_req' was here
-> sound/soc/ux500/ux500_msp_dai.c:23:27: fatal error: mach/hardware.h: No such file or directory
-> sound/soc/ux500/ux500_msp_i2s.c:21:27: fatal error: mach/hardware.h: No such file or directory
->
-> Possibly caused by commit 3592b7f69a54 ("ASoC: Ux500: Add MSP I2S-driver").
->
-> I have used the version of the sound-asoc tree from next-20120508 for today.
+> > well, the idea was to keep the memory footprint low. As these values
+> > are only needed at init, then I freed them once I finished using them.
+> > I can of course skip the pointer, but in that case, wouldn't the
+> > struct declaration be worthless?
+> 
+> My bad, I misread the placement of the free() statement. I was also
+> concerned about memory, since HID is big enough a memory hog as it
+> is. Barring the added complexity of this patch, it now makes more
+> sense.
+> 
+>     Acked-by: Henrik Rydberg <rydberg@euromail.se>
 
-The PRCMU driver is only available on the UX500 platforms so building
-on x86_64 does not make sense.
+drivers/hid/hid-multitouch.c: In function ¡mt_post_parse¢:
+drivers/hid/hid-multitouch.c:673: error: invalid type argument of ¡->¢ (have ¡unsigned int¢)
+make[1]: *** [drivers/hid/hid-multitouch.o] Error 1
 
-Ola/Mark: a simple patch like this should solve the issue I think?
+I believe that
 
-diff --git a/sound/soc/ux500/Kconfig b/sound/soc/ux500/Kconfig
-index 9b0ae4e..f454f06 100644
---- a/sound/soc/ux500/Kconfig
-+++ b/sound/soc/ux500/Kconfig
-@@ -4,6 +4,7 @@
- menuconfig SND_SOC_UX500
-        tristate "SoC Audio support for Ux500 platform"
-        depends on SND_SOC
-+       depends on MFD_DB8500_PRCMU
-        help
-                Say Y if you want to enable ASoC-support for
-                any of the Ux500 platforms (e.g. U8500).
+	td->last_slot_field = f->usages[field_count_per_touch - 1]->hid;
 
+should be
 
-But it seems it has a wider dependency on some MOP500 board
-stuff being merged first, which is more of a problem I think, part
-of that is pending in the Ux500 tree.
+	td->last_slot_field = f->usages[field_count_per_touch - 1];
 
-Yours,
-Linus Walleij
+but I leave this up to you guys to fix.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
