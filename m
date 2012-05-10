@@ -1,132 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760383Ab2EJRuX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:50:23 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45282 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760208Ab2EJRdd (ORCPT
+	id S1760224Ab2EJRxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:53:07 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65132 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757531Ab2EJRxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:33:33 -0400
-Message-Id: <20120510173133.257848025@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:31:35 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Greear <greearb@candelatech.com>,
-        Jiri Pirko <jpirko@redhat.com>, Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        David Ward <david.ward@ll.mit.edu>
-Subject: [ 03/52] e1000: fix vlan processing regression
-In-Reply-To: <20120510173229.GA5678@kroah.com>
+	Thu, 10 May 2012 13:53:03 -0400
+From: Marcus Folkesson <marcus.folkesson@gmail.com>
+To: Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Marcus Folkesson <marcus.folkesson@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: davinci: turn off DDR PHY when entering deep sleep
+Date: Thu, 10 May 2012 19:52:32 +0200
+Message-Id: <1336672352-23191-1-git-send-email-marcus.folkesson@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <marcus.folkesson@gmail.com>
+References: <marcus.folkesson@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+Deepsleep is the most power saving state on the davinci-platform.
+The DDR PHY consumes about 25mW and should be turned off in this low
+power state.
 
-------------------
-
-From: Jiri Pirko <jpirko@redhat.com>
-
-commit 52f5509fe8ccb607ff9b84ad618f244262336475 upstream.
-
-This patch fixes a regression introduced by commit "e1000: do vlan
-cleanup (799d531)".
-
-Apparently some e1000 chips (not mine) are sensitive about the order of
-setting vlan filter and vlan stripping/inserting functionality. So this
-patch changes the order so it's the same as before vlan cleanup.
-
-Reported-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Jiri Pirko <jpirko@redhat.com>
-Tested-by: Ben Greear <greearb@candelatech.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: David Ward <david.ward@ll.mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
 ---
- drivers/net/ethernet/intel/e1000/e1000_main.c |   35 ++++++++++++++++----------
- 1 file changed, 22 insertions(+), 13 deletions(-)
+ arch/arm/mach-davinci/include/mach/memory.h |    2 ++
+ arch/arm/mach-davinci/sleep.S               |   10 ++++++++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
---- a/drivers/net/ethernet/intel/e1000/e1000_main.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
-@@ -164,6 +164,8 @@ static int e1000_82547_fifo_workaround(s
- static bool e1000_vlan_used(struct e1000_adapter *adapter);
- static void e1000_vlan_mode(struct net_device *netdev,
- 			    netdev_features_t features);
-+static void e1000_vlan_filter_on_off(struct e1000_adapter *adapter,
-+				     bool filter_on);
- static int e1000_vlan_rx_add_vid(struct net_device *netdev, u16 vid);
- static int e1000_vlan_rx_kill_vid(struct net_device *netdev, u16 vid);
- static void e1000_restore_vlan(struct e1000_adapter *adapter);
-@@ -1213,7 +1215,7 @@ static int __devinit e1000_probe(struct
- 	if (err)
- 		goto err_register;
+diff --git a/arch/arm/mach-davinci/include/mach/memory.h b/arch/arm/mach-davinci/include/mach/memory.h
+index 7873194..1b1b8ac 100644
+--- a/arch/arm/mach-davinci/include/mach/memory.h
++++ b/arch/arm/mach-davinci/include/mach/memory.h
+@@ -36,6 +36,8 @@
+ #define DDR2_MCLKSTOPEN_BIT	BIT(30)
+ #define DDR2_LPMODEN_BIT	BIT(31)
  
--	e1000_vlan_mode(netdev, netdev->features);
-+	e1000_vlan_filter_on_off(adapter, false);
++#define DDR2_DRPHYC1R_OFFSET 	0xe4
++#define DDR_PWRDNEN_BIT 		BIT(6)
+ /*
+  * Increase size of DMA-consistent memory region
+  */
+diff --git a/arch/arm/mach-davinci/sleep.S b/arch/arm/mach-davinci/sleep.S
+index 5f1e045..30713b2 100644
+--- a/arch/arm/mach-davinci/sleep.S
++++ b/arch/arm/mach-davinci/sleep.S
+@@ -57,6 +57,11 @@ ENTRY(davinci_cpu_suspend)
  
- 	/* print bus type/speed/width info */
- 	e_info(probe, "(PCI%s:%dMHz:%d-bit) %pM\n",
-@@ -4549,6 +4551,22 @@ static bool e1000_vlan_used(struct e1000
- 	return false;
- }
+ 	ldmia	r0, {r0-r4}
  
-+static void __e1000_vlan_mode(struct e1000_adapter *adapter,
-+			      netdev_features_t features)
-+{
-+	struct e1000_hw *hw = &adapter->hw;
-+	u32 ctrl;
++	/* Turn PHY off */
++	ldr	ip, [r0, #DDR2_DRPHYC1R_OFFSET]
++	orr	ip, ip, #DDR_PWRDNEN_BIT 	
++	str	ip, [r0, #DDR2_DRPHYC1R_OFFSET]
 +
-+	ctrl = er32(CTRL);
-+	if (features & NETIF_F_HW_VLAN_RX) {
-+		/* enable VLAN tag insert/strip */
-+		ctrl |= E1000_CTRL_VME;
-+	} else {
-+		/* disable VLAN tag insert/strip */
-+		ctrl &= ~E1000_CTRL_VME;
-+	}
-+	ew32(CTRL, ctrl);
-+}
- static void e1000_vlan_filter_on_off(struct e1000_adapter *adapter,
- 				     bool filter_on)
- {
-@@ -4558,6 +4576,7 @@ static void e1000_vlan_filter_on_off(str
- 	if (!test_bit(__E1000_DOWN, &adapter->flags))
- 		e1000_irq_disable(adapter);
+ 	/*
+ 	 * Switch DDR to self-refresh mode.
+ 	 */
+@@ -171,6 +176,11 @@ ENTRY(davinci_cpu_suspend)
+ 	bic	ip, ip, #DDR2_LPMODEN_BIT
+ 	str	ip, [r0, #DDR2_SDRCR_OFFSET]
  
-+	__e1000_vlan_mode(adapter, adapter->netdev->features);
- 	if (filter_on) {
- 		/* enable VLAN receive filtering */
- 		rctl = er32(RCTL);
-@@ -4578,24 +4597,14 @@ static void e1000_vlan_filter_on_off(str
- }
++	/* Turn PHY on */
++	ldr	ip, [r0, #DDR2_DRPHYC1R_OFFSET]
++	bic	ip, ip, #DDR_PWRDNEN_BIT 	
++	str	ip, [r0, #DDR2_DRPHYC1R_OFFSET]
++
+ 	/* Restore registers and return */
+ 	ldmfd   sp!, {r0-r12, pc}
  
- static void e1000_vlan_mode(struct net_device *netdev,
--	netdev_features_t features)
-+			    netdev_features_t features)
- {
- 	struct e1000_adapter *adapter = netdev_priv(netdev);
--	struct e1000_hw *hw = &adapter->hw;
--	u32 ctrl;
- 
- 	if (!test_bit(__E1000_DOWN, &adapter->flags))
- 		e1000_irq_disable(adapter);
- 
--	ctrl = er32(CTRL);
--	if (features & NETIF_F_HW_VLAN_RX) {
--		/* enable VLAN tag insert/strip */
--		ctrl |= E1000_CTRL_VME;
--	} else {
--		/* disable VLAN tag insert/strip */
--		ctrl &= ~E1000_CTRL_VME;
--	}
--	ew32(CTRL, ctrl);
-+	__e1000_vlan_mode(adapter, features);
- 
- 	if (!test_bit(__E1000_DOWN, &adapter->flags))
- 		e1000_irq_enable(adapter);
-
+-- 
+1.7.5.4
 
