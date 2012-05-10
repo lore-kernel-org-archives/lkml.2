@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570Ab2EJQdC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 12:33:02 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27165 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754396Ab2EJQ2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 12:28:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="142389128"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "H Peter Anvin" <hpa@zytor.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Asit K Mallick" <asit.k.mallick@intel.com>,
-        "Tony Luck" <tony.luck@intel.com>,
-        "Arjan Dan De Ven" <arjan@linux.intel.com>,
-        "Suresh B Siddha" <suresh.b.siddha@intel.com>,
-        "Len Brown" <len.brown@intel.com>,
-        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Randy Dunlap" <rdunlap@xenotime.net>,
-        "Chen Gong" <gong.chen@linux.intel.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
-Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v6 03/12] x86/topology.c: Support functions for CPU0 online/offline
-Date: Thu, 10 May 2012 09:16:45 -0700
-Message-Id: <1336666614-21090-4-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.7.2
-In-Reply-To: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
-References: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
+	id S1757765Ab2EJQf2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 12:35:28 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:51924 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755777Ab2EJQfZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 12:35:25 -0400
+Date: Thu, 10 May 2012 12:33:53 -0400 (EDT)
+Message-Id: <20120510.123353.1458740731067514606.davem@davemloft.net>
+To: joe@perches.com
+Cc: jussi.kivilinna@mbnet.fi, linville@tuxdriver.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: [PATCH 1/3] drivers/net: Convert compare_ether_addr to
+ ether_addr_equal
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1336666288.22495.14.camel@joe2Laptop>
+References: <7c9881a67c52c2f218480b6742155b6d6928122d.1336618708.git.joe@perches.com>
+	<20120510173201.16131du3cg90nybo@www.81.fi>
+	<1336666288.22495.14.camel@joe2Laptop>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 10 May 2012 09:33:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+From: Joe Perches <joe@perches.com>
+Date: Thu, 10 May 2012 09:11:28 -0700
 
-If CONFIG_BOOTPARAM_HOTPLUG_CPU is turned on, CPU0 hotplug feature is enabled
-by default.
+> (cc's trimmed)
+> 
+> On Thu, 2012-05-10 at 17:32 +0300, Jussi Kivilinna wrote:
+>> Quoting Joe Perches <joe@perches.com>:
+>> > Use the new bool function ether_addr_equal to add
+>> > some clarity and reduce the likelihood for misuse
+>> > of compare_ether_addr for sorting.
+> []
+>> > diff --git a/drivers/net/wireless/rndis_wlan.c
+> []
+>> > @@ -2139,7 +2139,7 @@ resize_buf:
+>> >  	while (check_bssid_list_item(bssid, bssid_len, buf, len)) {
+>> >  		if (rndis_bss_info_update(usbdev, bssid) && match_bssid &&
+>> >  		    matched) {
+>> > -			if (compare_ether_addr(bssid->mac, match_bssid))
+>> > +			if (!ether_addr_equal(bssid->mac, match_bssid))
+>> 
+>> While reviewing this, noticed that above original code is wrong. It  
+>> should be !compare_ether_addr. So do I push patch fixing this through  
+>> wireless-testing althought it will later cause conflict with this patch?
+>> 
+>> -Jussi
+>> 
+>> >  				*matched = true;
+>> >  		}
+>> >
+> 
+> Up to John.
+> 
+> Here's the patch I would send against net-next
+> updating the test and the style a little.
 
-If CONFIG_BOOTPARAM_HOTPLUG_CPU is not turned on, CPU0 hotplug feature is not
-enabled by default. The kernel parameter cpu0_hotplug can enable CPU0 hotplug
-feature at boot.
-
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- arch/x86/kernel/topology.c |   27 ++++++++++++++++++++-------
- 1 files changed, 20 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
-index 76ee977..8cec15c 100644
---- a/arch/x86/kernel/topology.c
-+++ b/arch/x86/kernel/topology.c
-@@ -35,18 +35,31 @@
- static DEFINE_PER_CPU(struct x86_cpu, cpu_devices);
- 
- #ifdef CONFIG_HOTPLUG_CPU
-+
-+#ifdef CONFIG_BOOTPARAM_HOTPLUG_CPU0
-+static int __initdata cpu0_hotpluggable = 1;
-+#else
-+static int __initdata cpu0_hotpluggable;
-+static int __init enable_cpu0_hotplug(char *str)
-+{
-+	cpu0_hotpluggable = 1;
-+	return 1;
-+}
-+
-+__setup("cpu0_hotplug", enable_cpu0_hotplug);
-+#endif
-+
- int __ref arch_register_cpu(int num)
- {
- 	/*
--	 * CPU0 cannot be offlined due to several
--	 * restrictions and assumptions in kernel. This basically
--	 * doesn't add a control file, one cannot attempt to offline
--	 * BSP.
-+	 * Two known BSP/CPU0 dependencies: Resume from suspend/hibernate
-+	 * depends on BSP. PIC interrupts depend on BSP.
- 	 *
--	 * Also certain PCI quirks require not to enable hotplug control
--	 * for all CPU's.
-+	 * If the BSP depencies are under control, one can tell kernel to
-+	 * enable BSP hotplug. This basically adds a control file and
-+	 * one can attempt to offline BSP.
- 	 */
--	if (num)
-+	if (num || cpu0_hotpluggable)
- 		per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
- 
- 	return register_cpu(&per_cpu(cpu_devices, num).cpu, num);
--- 
-1.6.0.3
+I think in this specific case it's better to push this one directly
+through net-next.  But yes, it's up to John.
 
