@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760639Ab2EJRgQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:36:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53504 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757580Ab2EJRgK (ORCPT
+	id S932087Ab2EJRn0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:43:26 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37534 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760674Ab2EJRnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:36:10 -0400
-Message-Id: <20120510173135.860774574@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:32:06 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jens Freimann <jfrei@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>
-Subject: [ 34/52] KVM: s390: do store status after handling STOP_ON_STOP bit
-In-Reply-To: <20120510173229.GA5678@kroah.com>
+	Thu, 10 May 2012 13:43:23 -0400
+Message-ID: <4FABFE33.9040502@gmail.com>
+Date: Fri, 11 May 2012 01:43:15 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: lenb@kernel.org, linux-acpi@vger.kernel.org, bhelgaas@google.com,
+        shuahkhan@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/7] ACPI: Add CONFIG_HOTPLUG_OST option
+References: <1336507944-10219-1-git-send-email-toshi.kani@hp.com>  <1336507944-10219-2-git-send-email-toshi.kani@hp.com>  <4FABEF90.4040602@gmail.com> <1336670790.16730.215.camel@misato.fc.hp.com>
+In-Reply-To: <1336670790.16730.215.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On 05/11/2012 01:26 AM, Toshi Kani wrote:
+> On Fri, 2012-05-11 at 00:40 +0800, Jiang Liu wrote:
+>> On 05/09/2012 04:12 AM, Toshi Kani wrote:
+>>> Added CONFIG_ACPI_HOTPLUG_OPT option. When this config option is disabled,
+>>> this patchset has no effect on the platform. This option is disabled by
+>>> default. The dependency list assures consistent behavior among CPU, memory
+>>> and container hotplug operations with regarding the _OST support.
+>> Seems also need to enhance the acpiphp driver for PCI hotplug operations too.
+>> acpiphp driver is also based on the ACPI device hotplug model.
+> 
+> Good question.  ACPI PCI hotplug is a legacy method, which is being
+> replaced by PCI native hotplug.  I expect PCI native hotplug will be
+> used for any platforms supporting PCI-E.  Since this _OST support is
+> targeted for new platforms (as _OST is not supported on the current
+> platforms), I thought that it would be prudent to avoid changing PCI
+> hotplug code for this.
+You are right, acpiphp is legacy method. But it may also be used to support
+some cases which can't be supported by the pciehp driver.
+For example, we have a PCIe system which needs to run acpiphp and pciehp
+concurrently. The pciehp driver is used to manage hot-pluggable PCIe slot,
+and the acpiphp driver is used to migrate downstream ports among virtual 
+PCIe switches of an MR-IOV switch. It would be great if we could enable 
+_OST for acpiphp too.
 
-------------------
+To be honest, our BIOS doesn't provide _OST for acpiphp yet, so we could
+enhance acpiphp driver in future when a system really needing that feature
+appears.
 
-
-From: Jens Freimann <jfrei@linux.vnet.ibm.com>
-
-(cherry picked from commit 9e0d5473e2f0ba2d2fe9dab9408edef3060b710e)
-
-In handle_stop() handle the stop bit before doing the store status as
-described for "Stop and Store Status" in the Principles of Operation.
-We have to give up the local_int.lock before calling kvm store status
-since it calls gmap_fault() which might sleep. Since local_int.lock
-only protects local_int.* and not guest memory we can give up the lock.
-
-Signed-off-by: Jens Freimann <jfrei@linux.vnet.ibm.com>
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/s390/kvm/intercept.c |   20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
-
---- a/arch/s390/kvm/intercept.c
-+++ b/arch/s390/kvm/intercept.c
-@@ -133,13 +133,6 @@ static int handle_stop(struct kvm_vcpu *
- 
- 	vcpu->stat.exit_stop_request++;
- 	spin_lock_bh(&vcpu->arch.local_int.lock);
--	if (vcpu->arch.local_int.action_bits & ACTION_STORE_ON_STOP) {
--		vcpu->arch.local_int.action_bits &= ~ACTION_STORE_ON_STOP;
--		rc = kvm_s390_vcpu_store_status(vcpu,
--						  KVM_S390_STORE_STATUS_NOADDR);
--		if (rc >= 0)
--			rc = -EOPNOTSUPP;
--	}
- 
- 	if (vcpu->arch.local_int.action_bits & ACTION_RELOADVCPU_ON_STOP) {
- 		vcpu->arch.local_int.action_bits &= ~ACTION_RELOADVCPU_ON_STOP;
-@@ -155,7 +148,18 @@ static int handle_stop(struct kvm_vcpu *
- 		rc = -EOPNOTSUPP;
- 	}
- 
--	spin_unlock_bh(&vcpu->arch.local_int.lock);
-+	if (vcpu->arch.local_int.action_bits & ACTION_STORE_ON_STOP) {
-+		vcpu->arch.local_int.action_bits &= ~ACTION_STORE_ON_STOP;
-+		/* store status must be called unlocked. Since local_int.lock
-+		 * only protects local_int.* and not guest memory we can give
-+		 * up the lock here */
-+		spin_unlock_bh(&vcpu->arch.local_int.lock);
-+		rc = kvm_s390_vcpu_store_status(vcpu,
-+						KVM_S390_STORE_STATUS_NOADDR);
-+		if (rc >= 0)
-+			rc = -EOPNOTSUPP;
-+	} else
-+		spin_unlock_bh(&vcpu->arch.local_int.lock);
- 	return rc;
- }
- 
-
-
+Thanks!
+--gerry
