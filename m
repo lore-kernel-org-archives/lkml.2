@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab2EJPwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 11:52:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63334 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942Ab2EJPwH (ORCPT
+	id S1756226Ab2EJPxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 11:53:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60605 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755305Ab2EJPxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 11:52:07 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>
-Subject: [PATCH] slub: remove unused argument of init_kmem_cache_node()
-Date: Fri, 11 May 2012 00:50:47 +0900
-Message-Id: <1336665047-22205-1-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 10 May 2012 11:53:41 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 02/12] pinctrl: basic Nomadik pinctrl interface
+Date: Thu, 10 May 2012 15:53:10 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+References: <1336470270-23518-1-git-send-email-linus.walleij@stericsson.com> <CACRpkdaiTsaBT=20UUOx2mYsK4r5rArVqXfU9LMObFVb3iEA9w@mail.gmail.com> <CACRpkdZ+8n-E_8nyq-kO=Y+GYekkjiNXd3nzTqFnxLszpuKKPg@mail.gmail.com>
+In-Reply-To: <CACRpkdZ+8n-E_8nyq-kO=Y+GYekkjiNXd3nzTqFnxLszpuKKPg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205101553.11304.arnd@arndb.de>
+X-Provags-ID: V02:K0:1I/X/ww2+QPDOBpyMFFT7Mbi1uOCCK3YS6HS/XFlXLN
+ /7t+dqfSIwNDozsMQKRh8/ii+P579BpnZ0rbSybn9PqHK+L1WB
+ RsPT+ZxZDVlYliu0BRm3726P3/m5U8yR2b0QzCICsmobhPDqiy
+ PmLIX03FRqc2Ta42FHb3CZ3fITdl9Fe1bqkhkoI0MfXOx5jTi6
+ UVDYopCi8hNzYTl89nGVRseTnScdqN3KF515nsN01jyNzoX5+r
+ MtnXtBdunllGCHNbl/ucRX/q71qwq3oXbzpKQOT3dfmTFdnosy
+ kGxymAa5s1U5viVvRkO7agdJF0whySmWFsFCqRlO/zdgcwZ8o7
+ /btBGkMyrHoxejg0Qep4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't use the argument since commit 3b89d7d881a1dbb4da158f7eb5d6b3ceefc72810
-('slub: move min_partial to struct kmem_cache'), so remove it
+On Thursday 10 May 2012, Linus Walleij wrote:
+> Then it's probably a good idea to actually loop in Arnd too...
+> sorry for missing it!
+> 
+> On Thu, May 10, 2012 at 5:10 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> > On Wed, May 9, 2012 at 10:34 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> 
+> >>> +static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
+> >>
+> >>> +     /* Poke in other ASIC variants here */
+> >>> +     if (platid->driver_data == PINCTRL_NMK_DB8500)
+> >>> +             nmk_pinctrl_db8500_init(&npct->soc);
+> >>
+> >> Other platforms have a unique top-level driver for each variant, with
+> >> the probe() function for each variant calling into a utility function.
+> >> That way, the common/utility code doesn't need to contain a
+> >> table/list/... of all the variants. Can the same approach be used here?
+> >
+> > Of course I could do it that way, but it's not using this feature
+> > of the driver base to have a string identifier telling which version
+> > it is.
+> >
+> > Since I'm unsure, let's ask Arnd.
+> >
+> > Arnd, what is your preferred design pattern of:
+> >
+> > A) sub-drivers that register one struct platform_driver per
+> >  variant, then calls into a shared core driver, or
+> >
+> > B) a shared core driver registering one platform_driver
+> >  with several struct platform_device_id that then call
+> >  sub-drivers depending on which one is found
+> >
+> > Either way is actually OK for me, but I was thinking if one
+> > is preferred over the other.
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Out of those two, I'd always pick B.
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 9c920a0..323778e 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2766,7 +2766,7 @@ static unsigned long calculate_alignment(unsigned long flags,
- }
- 
- static void
--init_kmem_cache_node(struct kmem_cache_node *n, struct kmem_cache *s)
-+init_kmem_cache_node(struct kmem_cache_node *n)
- {
- 	n->nr_partial = 0;
- 	spin_lock_init(&n->list_lock);
-@@ -2836,7 +2836,7 @@ static void early_kmem_cache_node_alloc(int node)
- 	init_object(kmem_cache_node, n, SLUB_RED_ACTIVE);
- 	init_tracking(kmem_cache_node, n);
- #endif
--	init_kmem_cache_node(n, kmem_cache_node);
-+	init_kmem_cache_node(n);
- 	inc_slabs_node(kmem_cache_node, node, page->objects);
- 
- 	add_partial(n, page, DEACTIVATE_TO_HEAD);
-@@ -2876,7 +2876,7 @@ static int init_kmem_cache_nodes(struct kmem_cache *s)
- 		}
- 
- 		s->node[node] = n;
--		init_kmem_cache_node(n, s);
-+		init_kmem_cache_node(n);
- 	}
- 	return 1;
- }
-@@ -3625,7 +3625,7 @@ static int slab_mem_going_online_callback(void *arg)
- 			ret = -ENOMEM;
- 			goto out;
- 		}
--		init_kmem_cache_node(n, s);
-+		init_kmem_cache_node(n);
- 		s->node[nid] = n;
- 	}
- out:
--- 
-1.7.9.5
+In cases where the variants are different enough that you want to
+put them into separate files, I'd do
 
+C) Make the common code one module that just exports symbols but
+registers no platform_driver at all, then put each variant into
+its own module that binds to one ID and calls the exported
+functions from the common module.
+
+	Arnd
