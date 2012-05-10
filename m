@@ -1,33 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758362Ab2EJRSN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:18:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60511 "EHLO
+	id S1758451Ab2EJRST (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:18:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60514 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757125Ab2EJRSK (ORCPT
+	with ESMTP id S1758363Ab2EJRSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:18:10 -0400
+	Thu, 10 May 2012 13:18:14 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Arun Sharma <asharma@fb.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, David Ahern <dsahern@gmail.com>,
         "Frank C. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Robert Richter <robert.richter@amd.com>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/16] perf report: Fix format string for x86-32 compilation
-Date: Thu, 10 May 2012 14:17:39 -0300
-Message-Id: <1336670265-20401-11-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 00/16] perf/core fixes and improvements
+Date: Thu, 10 May 2012 14:17:29 -0300
+Message-Id: <1336670265-20401-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1336670265-20401-1-git-send-email-acme@infradead.org>
-References: <1336670265-20401-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -35,44 +36,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+Hi Ingo,
 
-Using PRIu64 for printing out u64 nr_events to fix compilation
-for x86 32 bits.
+	This is on top of a 15 patches long series still outstanding on my
+perf/core branch, please consider pulling,
 
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Frank C. Eigler <fche@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/1335958638-5160-7-git-send-email-jolsa@redhat.com
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+- Arnaldo
+
+The following changes since commit dc41b9b8f02dbe2228ae787d525dac43beebb7fa:
+
+  perf ui: Change fallback policy of setup_browser() (2012-05-02 16:17:37 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to 5a5626b1b4bf8467891c9297ffda979db97ed5ec:
+
+  perf hists browser: Use '/' for search/filter instead of 's' (2012-05-10 13:07:59 -0300)
+
+----------------------------------------------------------------
+Fixes and improvements for perf/core:
+
+. perf_target: abstraction for --uid, --pid, --tid, --cpu, --all-cpus handling,
+  eliminating code duplicated in the tools, having constraints that apply to
+  all of them, from Namhyung Kim
+
+. Fixes for handling fallback to cpu-clock on PPC, from David Ahern
+
+. Fix for processing events with unknown size, from Jiri Olsa
+
+. Compilation fix on 32-bit, from Jiri Olsa
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-report.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 5df829f..7477655 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -304,7 +304,7 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
- 	if (evname != NULL)
- 		ret += fprintf(fp, " of event '%s'", evname);
- 
--	ret += fprintf(fp, "\n# Event count (approx.): %lu", nr_events);
-+	ret += fprintf(fp, "\n# Event count (approx.): %" PRIu64, nr_events);
- 	return ret + fprintf(fp, "\n#\n");
- }
- 
--- 
-1.7.9.2.358.g22243
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (3):
+      perf top: Set target.system_wide
+      perf top: Default to system wide using perf_target methods
+      perf hists browser: Use '/' for search/filter instead of 's'
 
+David Ahern (5):
+      perf record: Fix fallback to cpu-clock on ppc
+      perf stat: handle ENXIO error for perf_event_open
+      perf top: Update event name when falling back to cpu-clock
+      perf record: Reset event name when falling back to cpu-clock
+      perf annotate: shorten helpline so it fits in visible space
+
+Jiri Olsa (2):
+      perf session: Fail on processing event with unknown size
+      perf report: Fix format string for x86-32 compilation
+
+Namhyung Kim (6):
+      perf evlist: Fix creation of cpu map
+      perf target: Introduce perf_target_errno
+      perf target: Introduce perf_target__parse_uid()
+      perf tools: Introduce perf_target__strerror()
+      perf target: Consolidate target task/cpu checking
+      perf stat: Use perf_evlist__create_maps
+
+ tools/perf/builtin-record.c       |   36 ++++++++---
+ tools/perf/builtin-report.c       |    2 +-
+ tools/perf/builtin-stat.c         |   41 +++++++------
+ tools/perf/builtin-top.c          |   29 +++++++--
+ tools/perf/ui/browsers/annotate.c |    6 +-
+ tools/perf/ui/browsers/hists.c    |    4 +-
+ tools/perf/util/debug.c           |    1 +
+ tools/perf/util/evlist.c          |    9 ++-
+ tools/perf/util/evsel.c           |    8 +--
+ tools/perf/util/session.c         |   30 +++-------
+ tools/perf/util/target.c          |  119 +++++++++++++++++++++++++++++++++----
+ tools/perf/util/target.h          |   48 ++++++++++++++-
+ tools/perf/util/usage.c           |   31 ----------
+ tools/perf/util/util.h            |    3 -
+ 14 files changed, 250 insertions(+), 117 deletions(-)
