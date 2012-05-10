@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761440Ab2EJARj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 20:17:39 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41578 "EHLO
+	id S1761456Ab2EJAS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 20:18:58 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55878 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755043Ab2EJARi convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755043Ab2EJAS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 20:17:38 -0400
+	Wed, 9 May 2012 20:18:56 -0400
+Date: Wed, 9 May 2012 19:18:42 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chuck Lever <chuck.lever@oracle.com>,
+        Rik Theys <Rik.Theys@esat.kuleuven.be>,
+        David Flyn <davidf@rd.bbc.co.uk>, Jeff Layton <jlayton@redhat.com>
+Subject: Re: [PATCH v2] NFSv4: Save the owner/group name string when doing
+ open
+Message-ID: <20120510001842.GB8228@burratino>
+References: <1325956115-21767-1-git-send-email-Trond.Myklebust@netapp.com>
+ <1325960863-31742-1-git-send-email-Trond.Myklebust@netapp.com>
+ <20120302050813.GA32761@burratino>
 MIME-Version: 1.0
-In-Reply-To: <1336607530.2494.111.camel@ted>
-References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
- <CAK5ve-KSyvZSHw7csQ5M88q0008NSrs1kwuyUH3hFqxD0f7BQQ@mail.gmail.com>
- <20120509122436.1b612004.akpm@linux-foundation.org> <201205092038.16722.arnd.bergmann@linaro.org>
- <CAK5ve-Ko6EjZsJBW++ofL0eHxiR5W+wafb3T99Rm9a1L8pHLBQ@mail.gmail.com> <1336607530.2494.111.camel@ted>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Thu, 10 May 2012 08:17:17 +0800
-X-Google-Sender-Auth: jaUi3Wmb0p2Aj0YZEVLKHvd2rzU
-Message-ID: <CAK5ve-Lu+RhY2vj7EnsgLNt8_wMEt_X66c8nHYDPbd2YJ28bcQ@mail.gmail.com>
-Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and
- consolidate LED driver in ARM
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, nicolas.pitre@linaro.org,
-        tim.gardner@canonical.com, Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120302050813.GA32761@burratino>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 7:52 AM, Richard Purdie <rpurdie@rpsys.net> wrote:
-> On Thu, 2012-05-10 at 07:41 +0800, Bryan Wu wrote:
->> On Thu, May 10, 2012 at 4:38 AM, Arnd Bergmann <arnd.bergmann@linaro.org> wrote:
->> > On Wednesday 09 May 2012, Andrew Morton wrote:
->> >> I'm the LEDs patchmonkey at present.  I can merge the drivers/leds
->> >> change if you like, but there doesn't seem much point in that unless
->> >> all the other patches get merged.
->> >>
->> >> So my preferred approach would be for the patch series to get merged
->> >> via some ARM tree.
->> >
->> > I'm fine with taking it through arm-soc if that helps.
->>
->> That would be great to merge from arm-soc tree, thanks a lot, Arnd and Andrew.
->>
->> > In the long run,
->> > it would be nice to have a proper maintainer for this again after Richard
->> > more or less stepped down from that position. Given that Bryan has shown
->> > that he's persistent enough to get this patch series to v9, how about
->> > making him the primary maintainer for the entire subsystem? He should
->> > know a lot about it already. Bryan?
->> >
->>
->> I do love to start to do more contribution and maintain the
->> drivers/leds subsystem with Richard's help, if Richard is fine with
->> this, I can send out patch to add a MAINTAINER entry.
->
-> I'm ok with that, I'm also happy to stay involved at a distance. I do
-> read emails and try and help where I can :). I'm just not doing day to
-> day rebuilds of cutting edge kernels so the patch work isn't something
-> I've been able to find time for and the Yocto Project is where my main
-> focus appears best placed at the moment.
->
+Jonathan Nieder wrote:
 
-Thanks, Richard, I really appreciate your help here
--Bryan
+[...]
+> | and then log into machine B and do:
+> |
+> | vim
+> | :q
+> |
+> | I get E137: Viminfo file is not writable: /users/system/rtheys/.viminfo
+> |
+> | Every invocation of 'vim and :q' will trigger this.
+> |
+> | Explicitely doing a stat of the file fixes this.
+>
+> Rik Theys bisected and found the bug reproducible after and not before
+> v2.6.32-rc1~412^2~48^2~15 (NFSv4: Don't do idmapper upcalls for
+> asynchronous RPC calls, 2009-08-09).
+>
+> [...]
+>>  6 files changed, 162 insertions(+), 64 deletions(-)
+>
+> Now I am wondering what, if anything, can be done to fix this in the
+> 2.6.32.y, 3.0.y, and 3.2.y stable kernels.  The patch looks too big
+> for inclusion under the usual stable_kernel_rules:
+
+Trond had a neat idea for fixing this.  Let's see how easy it is for a
+novice like me to understand.
+
+As explained at [1], the problem is that after the OPEN call .viminfo
+has the default values for st_uid and st_gid cached (i.e., 0xfffffffe)
+because it does not want to let rpciod wait during an idmapper upcall
+to fill them in.  The fix used in mainline is to save the owner and
+group as strings and perform the upcall in _nfs4_proc_open outside the
+rpciod context.
+
+The fix for stable kernels that Trond suggests is to notice when
+st_uid and st_gid have not been filled in and perform a separate
+GETATTR call.  The patch is nice and small.  My (ignorant) worry: does
+nfs4_open_reclaim need the same fix?
+
+[1] http://thread.gmane.org/gmane.linux.nfs/37230/focus=37250
+---
+Rik, results from testing would be interesting if you have a chance to
+try it.  Thanks again for your help, all.
+
+Jonathan
+
+ fs/nfs/nfs4proc.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git i/fs/nfs/nfs4proc.c w/fs/nfs/nfs4proc.c
+index 3d6730213f9d..30f6548f2b99 100644
+--- i/fs/nfs/nfs4proc.c
++++ w/fs/nfs/nfs4proc.c
+@@ -1771,6 +1771,7 @@ static int _nfs4_do_open(struct inode *dir, struct path *path, fmode_t fmode, in
+ 			nfs_setattr_update_inode(state->inode, sattr);
+ 		nfs_post_op_update_inode(state->inode, opendata->o_res.f_attr);
+ 	}
++	nfs_revalidate_inode(server, state->inode);
+ 	nfs4_opendata_put(opendata);
+ 	nfs4_put_state_owner(sp);
+ 	*res = state;
+-- 
