@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760123Ab2EJP2I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 11:28:08 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:56565 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760100Ab2EJP2F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 11:28:05 -0400
-Date: Thu, 10 May 2012 17:27:51 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        gregkh <gregkh@linuxfoundation.org>
-Subject: Re: [EDAC ABI v13 04/25] events/hw_event: Create a Hardware Events
- Report Mecanism (HERM)
-Message-ID: <20120510152751.GE32700@aftab.osrc.amd.com>
-References: <4FAA7649.5080606@redhat.com>
- <20120509140632.GG22737@aftab.osrc.amd.com>
- <4FAA7C1A.3020406@redhat.com>
- <20120509142456.GH22737@aftab.osrc.amd.com>
- <4FABBFAF.20809@redhat.com>
- <20120510134136.GC31257@aftab.osrc.amd.com>
- <4FABD653.7060401@redhat.com>
- <4FABD9F0.6050008@redhat.com>
- <20120510151254.GD32700@aftab.osrc.amd.com>
- <1336663210.14207.225.camel@gandalf.stny.rr.com>
+	id S1760114Ab2EJPaf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 11:30:35 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:45077 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751071Ab2EJPad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 11:30:33 -0400
+Date: Thu, 10 May 2012 11:30:23 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Jan Kara <jack@suse.cz>
+Cc: Ludwig Nussel <ludwig.nussel@suse.de>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "open list:EXT2 FILE SYSTEM" <linux-ext4@vger.kernel.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH RESEND] implement uid and gid mount options for ext2,
+ ext3 and ext4
+Message-ID: <20120510153023.GE14975@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+	Ludwig Nussel <ludwig.nussel@suse.de>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, Rob Landley <rob@landley.net>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	"open list:EXT2 FILE SYSTEM" <linux-ext4@vger.kernel.org>,
+	"open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
+References: <1336660924-9598-1-git-send-email-ludwig.nussel@suse.de>
+ <20120510150024.GB8588@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1336663210.14207.225.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120510150024.GB8588@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 11:20:10AM -0400, Steven Rostedt wrote:
-> On Thu, 2012-05-10 at 17:12 +0200, Borislav Petkov wrote:
-> > On Thu, May 10, 2012 at 12:08:32PM -0300, Mauro Carvalho Chehab wrote:
-> > > There's also another technical reason to give an acronym to the EDAC
-> > > version that actually works: changeset numbers are not consistent
-> > > within distributions (or other trees, like -stable - although this 60+
-> > > patch series probably won't fit on -stable merging criteria).
-> > >
-> > > Also, this EDAC changeset 60+ patch series can't be represented by a
-> > > single changeset, and requires userspace changes in order to get a
-> > > proper representation model for memories.
-> 
-> Is this a redesign of EDAC or just a fix of it? Does this require
-> userspace to use a new ABI?
-> 
-> > >
-> > > Tagging the EDAC core version with a name helps a lot when dealing
-> > > with all the unsolved bugzillas that will be closed by backporting
-> > > this patch series in order to fix the serious EDAC core bug that
-> > > were providing fake information to the end user for all Intel memory
-> > > controllers manufactured after 2005.
-> > 
-> > edac_module.c:18:#define EDAC_VERSION "Ver: 2.1.0"
-> > 
-> > Increment that in the last patch.
-> 
-> If this is redesigning a subsystem and changing the ABI for userspace
-> than a new name is appropriate. Much like ipchains turning into
-> iptables.
+On Thu, May 10, 2012 at 05:00:24PM +0200, Jan Kara wrote:
+>   I've looked at this in more detail now. Although it would be nice to
+> avoid duplicating the the functionality as others suggested, I agree it's
+> not that simple and it seems to me we'd end up doing similar amount of work
+> in the filesystems anyway (mount option parsing, writing to disk, printing
+> mount options, ...). So I'm ok with the implementation as is and I'd be
+> willing to take it for ext3 / ext2. But we really want to keep all ext?
+> filesystems consistent so this also depends on Ted's approval of the change
+> for ext4.  Ted?
 
-But that's not the question. The subsystem is still called EDAC but
-there's one patch which adds a tracepoint called trace_mc_error and this
-is called needlessly a name - Hardware Events Report Mechanism - which
-is only misleading and generating confusion even to its author.
+Grumble.  I agree, reluctantly.  As much as I would like to make this
+be generic, it looks like the amount of glue code to allow the VFS to
+parse text-based mount options, and change the uid/gid fields after it
+is read from disk and before writing to disk is probably more than the
+code that we could be able to factor out.
 
-Anyway, I think we solved the issue - we're going to increment
-EDAC_VERSION and all is fine :-)
+>   What I'm missing in the changelog description is what i_diskuid/i_diskgid
+> is good for. Although I can imagine some use case, I'm not sure I can see
+> any sufficiently convicing one...
 
--- 
-Regards/Gruss,
-Boris.
+I'd much rather force diskuid and diskgid to 0 if the uid or gid is
+specified, and if uid or gid option is in force, we force nosuid to be
+on, to avoid the very obvious security problems if a sysadmin isn't
+super careful.  The use case is going to be for things like USB sticks
+where it's not likely that the sysadmin will be taking appropriate
+care, so keeping things simple is probably a good thing.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+>   Also please split the patch in three separate patches for ext2, ext3, and
+> ext4. Thanks.
+
+Yes, please.
+
+							- Ted
