@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab2EJDEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 23:04:12 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40870 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641Ab2EJDEK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 23:04:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.02.1205092358090.6376@nyarly>
-References: <1336615995-3813-1-git-send-email-zwu.kernel@gmail.com>
-	<alpine.LNX.2.02.1205092358090.6376@nyarly>
-Date: Thu, 10 May 2012 11:04:09 +0800
-Message-ID: <CAEH94LgFJk6_yXWbQwvFDvN2HL=qnWbB5gmC5ZwE0heygZWX8w@mail.gmail.com>
-Subject: Re: [PATCH] block: remove some unnecessary codes
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Thiago Rafel Becker <trbecker@trbecker.org>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, wuzhy@linux.vnet.ibm.com,
-        stefanha@linux.vnet.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754880Ab2EJDE1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 23:04:27 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:43374 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754719Ab2EJDEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 23:04:24 -0400
+From: Joe Perches <joe@perches.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
+        ath9k-devel@venema.h4ckr.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] net,drivers/net: Use ether_addr_equal and ether_addr_equal_64bits
+Date: Wed,  9 May 2012 20:04:01 -0700
+Message-Id: <cover.1336618707.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 10:58 AM, Thiago Rafel Becker
-<trbecker@trbecker.org> wrote:
-> You should also remove the if statement on line 511.
-Yeah, good comment. thanks. pls see v2.
->
-> On Thu, 10 May 2012, zwu.kernel@gmail.com wrote:
->
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> ---
->>  block/partition-generic.c |    2 --
->>  1 files changed, 0 insertions(+), 2 deletions(-)
->>
->> diff --git a/block/partition-generic.c b/block/partition-generic.c
->> index 6df5d69..4c03880 100644
->> --- a/block/partition-generic.c
->> +++ b/block/partition-generic.c
->> @@ -473,7 +473,6 @@ rescan:
->>       /* add partitions */
->>       for (p = 1; p < state->limit; p++) {
->>               sector_t size, from;
->> -             struct partition_meta_info *info = NULL;
->>
->>               size = state->parts[p].size;
->>               if (!size)
->> @@ -509,7 +508,6 @@ rescan:
->>               }
->>
->>               if (state->parts[p].has_info)
->> -                     info = &state->parts[p].info;
->>               part = add_partition(disk, p, from, size,
->>                                    state->parts[p].flags,
->>                                    &state->parts[p].info);
->> --
->> 1.7.6
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
+Joe Perches (3):
+  drivers/net: Convert compare_ether_addr to ether_addr_equal
+  etherdevice.h: Add ether_addr_equal_64bits
+  net,drivers/net: Convert compare_ether_addr_64bits to ether_addr_equal_64bits
 
-
+ drivers/net/bonding/bond_alb.c                    |   58 ++++++++++----------
+ drivers/net/bonding/bond_main.c                   |    2 +-
+ drivers/net/ethernet/amd/depca.c                  |    3 +-
+ drivers/net/ethernet/cisco/enic/enic_main.c       |   12 ++---
+ drivers/net/ethernet/dec/ewrk3.c                  |    3 +-
+ drivers/net/ethernet/dec/tulip/de4x5.c            |    2 +-
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c  |    5 +-
+ drivers/net/ethernet/sfc/ethtool.c                |    2 +-
+ drivers/net/ethernet/sun/sunvnet.c                |    2 +-
+ drivers/net/ethernet/tile/tilepro.c               |    2 +-
+ drivers/net/ethernet/toshiba/ps3_gelic_wireless.c |    8 ++--
+ drivers/net/macvlan.c                             |    7 +--
+ drivers/net/tun.c                                 |    2 +-
+ drivers/net/wireless/at76c50x-usb.c               |    2 +-
+ drivers/net/wireless/ath/ath5k/base.c             |    6 +-
+ drivers/net/wireless/ath/ath9k/recv.c             |    2 +-
+ drivers/net/wireless/ath/carl9170/rx.c            |    2 +-
+ drivers/net/wireless/ipw2x00/libipw_rx.c          |   16 +++---
+ drivers/net/wireless/iwlegacy/3945.c              |    4 +-
+ drivers/net/wireless/iwlegacy/4965-mac.c          |    2 +-
+ drivers/net/wireless/iwlegacy/common.c            |   14 +++---
+ drivers/net/wireless/iwlwifi/iwl-agn-rx.c         |    4 +-
+ drivers/net/wireless/iwlwifi/iwl-agn-rxon.c       |    8 ++--
+ drivers/net/wireless/iwlwifi/iwl-agn-sta.c        |    6 +-
+ drivers/net/wireless/mwl8k.c                      |    2 +-
+ drivers/net/wireless/p54/txrx.c                   |    2 +-
+ drivers/net/wireless/rndis_wlan.c                 |   12 ++--
+ drivers/net/wireless/rtlwifi/base.c               |    2 +-
+ drivers/net/wireless/rtlwifi/ps.c                 |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192ce/trx.c      |   10 ++--
+ drivers/net/wireless/rtlwifi/rtl8192cu/mac.c      |   10 ++--
+ drivers/net/wireless/rtlwifi/rtl8192de/trx.c      |   11 ++--
+ drivers/net/wireless/rtlwifi/rtl8192se/trx.c      |   11 ++--
+ include/linux/etherdevice.h                       |   20 +++++++
+ net/ethernet/eth.c                                |    5 +-
+ 35 files changed, 140 insertions(+), 121 deletions(-)
 
 -- 
-Regards,
+1.7.8.111.gad25c.dirty
 
-Zhi Yong Wu
