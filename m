@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622Ab2EJPt3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 11:49:29 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35118 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751599Ab2EJPt2 (ORCPT
+	id S1755582Ab2EJPwJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 11:52:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63334 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab2EJPwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 11:49:28 -0400
-Date: Thu, 10 May 2012 17:49:25 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH] mfd: lm3533-core: Fix calling regmap_update_bits() with
- mask and val arguments swapped
-Message-ID: <20120510154925.GB29437@localhost>
-References: <1336664102.15392.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336664102.15392.1.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 10 May 2012 11:52:07 -0400
+From: Joonsoo Kim <js1304@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>
+Subject: [PATCH] slub: remove unused argument of init_kmem_cache_node()
+Date: Fri, 11 May 2012 00:50:47 +0900
+Message-Id: <1336665047-22205-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 11:35:02PM +0800, Axel Lin wrote:
-> Current code calls regmap_update_bits() with mask and val arguments swapped.
-> Fix it.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+We don't use the argument since commit 3b89d7d881a1dbb4da158f7eb5d6b3ceefc72810
+('slub: move min_partial to struct kmem_cache'), so remove it
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
 
-> ---
+diff --git a/mm/slub.c b/mm/slub.c
+index 9c920a0..323778e 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2766,7 +2766,7 @@ static unsigned long calculate_alignment(unsigned long flags,
+ }
+ 
+ static void
+-init_kmem_cache_node(struct kmem_cache_node *n, struct kmem_cache *s)
++init_kmem_cache_node(struct kmem_cache_node *n)
+ {
+ 	n->nr_partial = 0;
+ 	spin_lock_init(&n->list_lock);
+@@ -2836,7 +2836,7 @@ static void early_kmem_cache_node_alloc(int node)
+ 	init_object(kmem_cache_node, n, SLUB_RED_ACTIVE);
+ 	init_tracking(kmem_cache_node, n);
+ #endif
+-	init_kmem_cache_node(n, kmem_cache_node);
++	init_kmem_cache_node(n);
+ 	inc_slabs_node(kmem_cache_node, node, page->objects);
+ 
+ 	add_partial(n, page, DEACTIVATE_TO_HEAD);
+@@ -2876,7 +2876,7 @@ static int init_kmem_cache_nodes(struct kmem_cache *s)
+ 		}
+ 
+ 		s->node[node] = n;
+-		init_kmem_cache_node(n, s);
++		init_kmem_cache_node(n);
+ 	}
+ 	return 1;
+ }
+@@ -3625,7 +3625,7 @@ static int slab_mem_going_online_callback(void *arg)
+ 			ret = -ENOMEM;
+ 			goto out;
+ 		}
+-		init_kmem_cache_node(n, s);
++		init_kmem_cache_node(n);
+ 		s->node[nid] = n;
+ 	}
+ out:
+-- 
+1.7.9.5
 
-Ouch, I was sure I'd fixed that in the submitted v2.
-
-/Johan
-
-
->  drivers/mfd/lm3533-core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mfd/lm3533-core.c b/drivers/mfd/lm3533-core.c
-> index 75f4b7f..4a006c2 100644
-> --- a/drivers/mfd/lm3533-core.c
-> +++ b/drivers/mfd/lm3533-core.c
-> @@ -128,7 +128,7 @@ int lm3533_update(struct lm3533 *lm3533, u8 reg, u8 val, u8 mask)
->  
->  	dev_dbg(lm3533->dev, "update [%02x]: %02x/%02x\n", reg, val, mask);
->  
-> -	ret = regmap_update_bits(lm3533->regmap, reg, val, mask);
-> +	ret = regmap_update_bits(lm3533->regmap, reg, mask, val);
->  	if (ret < 0) {
->  		dev_err(lm3533->dev, "failed to update register %02x: %d\n",
->  								reg, ret);
