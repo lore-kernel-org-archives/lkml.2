@@ -1,109 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab2EJRCJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:02:09 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:45704 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab2EJRCG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:02:06 -0400
-Date: Thu, 10 May 2012 13:01:44 -0400 (EDT)
-From: Igor Mammedov <imammedo@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, pjt@google.com, tglx@linutronix.de,
-        seto hidetoshi <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH] sched_groups are expected to be circular linked list, make it so right after allocation
-Message-ID: <9d71ee11-b6c0-41e6-b4fb-75a72c27600e@zmail16.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <1336657544.2527.116.camel@twins>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1753424Ab2EJREX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:04:23 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:51910 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751279Ab2EJREW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 13:04:22 -0400
+X-IronPort-AV: E=Sophos;i="4.75,565,1330934400"; 
+   d="asc'?scan'208";a="646785713"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        "Linux NFS mailing list" <linux-nfs@vger.kernel.org>
+Subject: [GIT PULL] Please pull one bugfix for the NFS client
+Thread-Topic: [GIT PULL] Please pull one bugfix for the NFS client
+Thread-Index: AQHNLs7w9f6BmKhtnUO8fH9oJp3aiA==
+Date: Thu, 10 May 2012 17:04:20 +0000
+Message-ID: <1336669458.3962.8.camel@lade.trondhjem.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="=-FwuHNlfYtb9Ko+nP81I5"
 MIME-Version: 1.0
-X-Originating-IP: [10.3.228.113]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Peter Zijlstra" <peterz@infradead.org>
-> To: "Igor Mammedov" <imammedo@redhat.com>
-> Cc: "Jiang Liu" <liuj97@gmail.com>, linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
-> tglx@linutronix.de, "seto hidetoshi" <seto.hidetoshi@jp.fujitsu.com>
-> Sent: Thursday, May 10, 2012 3:45:44 PM
-> Subject: Re: [PATCH] sched_groups are expected to be circular linked list, make it so right after allocation
-> 
-> On Thu, 2012-05-10 at 15:26 +0200, Igor Mammedov wrote:
-> > [  141.699854] sched: Bonkers domain doesn't include its own cpu: 3
-> > 0-1,3
-> > [  141.725038] sched: Bonkers domain doesn't include its own cpu: 3
-> > 0-1
-> 
-> Whee!! so cpu_mask (active_mask) does include 3, but the tl->mask()
-> doesn't.
-> 
-> > [  141.775040] sched: Topology is hosed for CPU-3!!
-> > [  141.775596] sched: domain: NODE 0-1
-> > [  141.776004] sched:  group: 0-1
-> > 
-> This seems to suggest its the node topology being wrecked.
-> 
-> which with your code-base would be
-> cpu_node_mask()->sched_domain_node_span()..
-> 
-> Did you specify any node topology on the qemu command line? If not,
-> it
-> should all reduce to cpumask_of_node(0).
-> 
-> identify_secondary_cpu()->identify_cpu()->numa_add_cpu() should set
-> that
-> bit. which is well before the CPU_ONLINE->cpuset_update_active_cpus()
-> sched domain rebuild.
-> 
-> 
-> Most puzzling. Can you dig a little deeper as to why these masks
-> might
-> be wrong? Also, can you reproduce on actual hardware? The reason I
-probably not
+--=-FwuHNlfYtb9Ko+nP81I5
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> never
-> use kvm or other virt for debugging is that I always end up spending
-> time chasing virt bugs, and I hate virt..
+Hi Linus,
 
-qemu started with -smp 4,sockets=4,cores=1,threads=1
+Please pull from the signed tag "nfs-for-3.4-5" in the repository at
 
-I can answer it right away. It happens when one of cpus failed
-to come online on time and boot cpu decided to abandon attempt and exit
-do_boot_cpu with error. While exiting with error it clears some masks:
+   git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs=
+-for-3.4-5
 
-        if (boot_error) {
-                /* Try to put things back the way they were before ... */
-                numa_remove_cpu(cpu); /* was set by numa_add_cpu */
+This will update the following files through the appended changesets.
 
-                /* was set by do_boot_cpu() */
-                cpumask_clear_cpu(cpu, cpu_callout_mask);
+  Cheers,
+    Trond
 
-                /* was set by cpu_init() */
-                cpumask_clear_cpu(cpu, cpu_initialized_mask);
+----
+ net/sunrpc/auth_gss/gss_mech_switch.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-                set_cpu_present(cpu, false);
-                per_cpu(x86_cpu_to_apicid, cpu) = BAD_APICID;
-        }
+commit 7bdf7415a6b8ec31f86b3ad3eaa241257ecb7c4c
+Author: Steve Dickson <steved@redhat.com>
+Date:   Thu May 3 11:47:08 2012 -0400
 
-However cpu that has been blissfully forgotten, continues to boot and sets
-cpu_active_mask. So causing all sorts of havoc in places that use this mask.
-Then when next cpu is being onlined/offlined it eventually calls 
-CPU_[ONLINE|DOWN]->cpuset_update_active_cpus()
-result is OOPS.
+    auth_gss: the list of pseudoflavors not being parsed correctly
+   =20
+    gss_mech_list_pseudoflavors() parses a list of registered mechanisms.
+    On that list contains a list of pseudo flavors which was not being
+    parsed correctly, causing only the first pseudo flavor to be found.
+   =20
+    Signed-off-by: Steve Dickson <steved@redhat.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-That is why I've posted https://lkml.org/lkml/2012/5/9/125
-that prevent all of this from happening by 'gracefully' aborting boot
-process on failed cpu with necessary cleanup.
 
-Checked Ingo's git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git:master
-races, that patches 1, 2, 4 are fixing, are still there.
-If it is preferable for this patches to go into -tip, then I'll rebase them
-on top of it and repost. ???
+--=20
+Trond Myklebust
+Linux NFS client maintainer
 
-Please review them if you think it has a sense to fix races in mainline,
-before cpu-hotplug overhaul of this part is complete.
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+
+--=-FwuHNlfYtb9Ko+nP81I5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPq/USAAoJEGcL54qWCgDy8H0P/jBkHFM6gC8nJOoIzH0aogaZ
+Mn3vNRFDvDtO4o5YvBN1olf5XBHwupkNHXNljjrw4w1Rpjr/Dnykh28axZYOOXmR
+3tTC4XYeoAAcra+j5I9l8nNmTzt5C55BaUA7cgv04xJhvywcdusgKMzc59GoBcFz
+vrNmDsnuy4EV8Mj5fL8acCHaGZKc3wpTNE1jdbrmXIQUE9JYV6p4NoyThLc3aRj2
+3Q8KIC+P/a+O7xDBw6YsK3qzzoSQDtoZuajP0lieolGCnITZiZ18KhmNQaC4OEDy
+PYBmlIoy+raAA4HAqelFsddd8h/mRQA5pxm/OqzDYqvOpbpOPX4UMZDZn9scALZq
+5oy3CUA8t5rtrI5tgd+dhBQmKrJNE6BJVVBmfDYxrGk4Vvfrn2U1YKaMGM86+znI
+x4ZNvVLfywfZh4E9QT4sj/c5E/PMN9L1QUD5uWfcaxZ73ABfSq2LqOJbpCYET9V9
+GMfuHECpT4ENicZbzYGMccdeOiKphy+DmsKFy8yy3pmr3XD5XU79xCF94Kgcjum+
+rCAuD7QZjb47x1K5mOlaX8k/bFgblt050WwTCGXSrh4p89/qpMmK+762UcuEgUYo
+YaJ87SLi9E3h84CbLGdxQ9Ql9jRR8SGSC+BQg/t47Vzw5UGw0at2k8yyJs6jkQRE
+0KX3PI2vRP1sgzksqFZf
+=zX6E
+-----END PGP SIGNATURE-----
+
+--=-FwuHNlfYtb9Ko+nP81I5--
