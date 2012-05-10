@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761493Ab2EJAtb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 20:49:31 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:53531 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754507Ab2EJAt3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 20:49:29 -0400
+	id S1761500Ab2EJAyp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 20:54:45 -0400
+Received: from void.printf.net ([89.145.121.20]:60874 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756907Ab2EJAyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 20:54:43 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Philippe De Swert <philippedeswert@gmail.com>
+Subject: Re: [PATCH 1/2] mmc: Avoid null pointer dereference
+References: <1334176305-6183-1-git-send-email-philippedeswert@gmail.com>
+	<CAKYAXd8Ofmg+kzUgr26CngaNgcw-MXJ91cS4R+BcMLY7yPxjNw@mail.gmail.com>
+	<CAKYAXd9roe8he2bGKiurCsxS3+U5otqQqRXzpB8fVPWak2ow_Q@mail.gmail.com>
+Date: Wed, 09 May 2012 20:54:51 -0400
+In-Reply-To: <CAKYAXd9roe8he2bGKiurCsxS3+U5otqQqRXzpB8fVPWak2ow_Q@mail.gmail.com>
+	(Namjae Jeon's message of "Thu, 10 May 2012 09:43:06 +0900")
+Message-ID: <873978n9d0.fsf@laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyXP8PRusYYrpAnFfV=eL69ktfQfiGxAH1B-Ds8HH+bJQ@mail.gmail.com>
-References: <CAHo-OoxRj-sP1Tcy3oJ7DE3BOGSTnsWHZ5Q3hdmnK8A5jfjFcQ@mail.gmail.com>
-	<CA+55aFzY+W3ECUnyvqU_Su8_2TFqYj-K7U40KZaoe61oDUGdxw@mail.gmail.com>
-	<CAHo-OoxwSNFVCvdBxnMruKMebMW37NLX7eOKkLx=R7cSkhknGw@mail.gmail.com>
-	<CA+55aFyrSNTh3B7L=Lq1L_Hz=0NEPC95TWmo2-W9odKi+80XJg@mail.gmail.com>
-	<CAHo-OowjvXat8dZOpp50GO_KSTYBy_Wa96wvFUfTXmua3oBrUw@mail.gmail.com>
-	<CA+55aFyXP8PRusYYrpAnFfV=eL69ktfQfiGxAH1B-Ds8HH+bJQ@mail.gmail.com>
-Date: Wed, 9 May 2012 17:49:28 -0700
-Message-ID: <CAHo-Ooxj1u3Qyjxrk4yWRG_65_sMB1f4L-bJGPPPS=2tzpNqRg@mail.gmail.com>
-Subject: Re: setuid and RLIMIT_NPROC and 3.1+
-From: =?UTF-8?Q?Maciej_=C5=BBenczykowski?= <zenczykowski@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, Neil Brown <neilb@suse.de>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Well, those bggy apps have to be really *odd* buggy apps now. IOW,
-> they need to do setuid(), and then not execve(). At that point, they
-> really do have to check the error return, since there is no execve()
-> for them to check.
+Hi,
+
+On Wed, May 09 2012, Namjae Jeon wrote:
+> Hi. Chris.
 >
-> In the end, we can do only so much to counter buggy apps. I think my
-> patch is a reasonable "we can try to give the error at execve() time,
-> but if somebody does tons of setuid() without ever doing the execve(),
-> at some point they do have to check the error return of setuid()
-> itself".
+> Would you check this patch ?
 >
-> I suspect most users of setuid() are good and check the error return.
+> Thanks.
+>
+> 2012/4/12, Namjae Jeon <linkinjeon@gmail.com>:
+>> 2012/4/12 Philippe De Swert <philippedeswert@gmail.com>:
+>>> After the null check on md the code jumped to cmd_done, which then
+>>> will dereference md in mmc_blk_put. This patch avoids the possible
+>>> null pointer dereference in that case.
+>>>
+>>> Signed-off-by: Philippe De Swert <philippedeswert@gmail.com>
+>> This patch is good also.
+>> Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
 
-If you return EAGAIN from setuid, because we've run into the hard
-limit, and userspace doesn't check it, then the exec will still
-succeed, and we'll end up running the exec'ed code as root.
-Which re-introduces the same bug this was trying to fix.  At that
-point we might as well just revert the 3.1 commit.
+Thanks for the reminder -- pushed to mmc-next for 3.5.
 
-(what if soft and hard nproc limits are the same? then it's always
-EAGAIN, so the bug is always reintroduced)
-
-In my opinion the buggy apps should be fixed and the 3.1 commit should
-be reverted both in upcoming 3.4 and in stable 3.1/3.2/3.3.
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
