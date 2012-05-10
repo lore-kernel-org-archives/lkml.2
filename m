@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab2EJDBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 23:01:47 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34873 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab2EJDBq (ORCPT
+	id S1754656Ab2EJDEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 23:04:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:40870 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641Ab2EJDEK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 23:01:46 -0400
-Date: Thu, 10 May 2012 13:01:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ben Myers <bpm@sgi.com>, David Chinner <david@fromorbit.com>,
-        xfs@oss.sgi.com
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the xfs tree
-Message-Id: <20120510130134.0efffc5ba1f3a80c614e8f29@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__10_May_2012_13_01_34_+1000_FPATsqTDsb/I5Meq"
+	Wed, 9 May 2012 23:04:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.02.1205092358090.6376@nyarly>
+References: <1336615995-3813-1-git-send-email-zwu.kernel@gmail.com>
+	<alpine.LNX.2.02.1205092358090.6376@nyarly>
+Date: Thu, 10 May 2012 11:04:09 +0800
+Message-ID: <CAEH94LgFJk6_yXWbQwvFDvN2HL=qnWbB5gmC5ZwE0heygZWX8w@mail.gmail.com>
+Subject: Re: [PATCH] block: remove some unnecessary codes
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Thiago Rafel Becker <trbecker@trbecker.org>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, wuzhy@linux.vnet.ibm.com,
+        stefanha@linux.vnet.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__10_May_2012_13_01_34_+1000_FPATsqTDsb/I5Meq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 10, 2012 at 10:58 AM, Thiago Rafel Becker
+<trbecker@trbecker.org> wrote:
+> You should also remove the if statement on line 511.
+Yeah, good comment. thanks. pls see v2.
+>
+> On Thu, 10 May 2012, zwu.kernel@gmail.com wrote:
+>
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>
+>> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>> ---
+>>  block/partition-generic.c |    2 --
+>>  1 files changed, 0 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/block/partition-generic.c b/block/partition-generic.c
+>> index 6df5d69..4c03880 100644
+>> --- a/block/partition-generic.c
+>> +++ b/block/partition-generic.c
+>> @@ -473,7 +473,6 @@ rescan:
+>>       /* add partitions */
+>>       for (p = 1; p < state->limit; p++) {
+>>               sector_t size, from;
+>> -             struct partition_meta_info *info = NULL;
+>>
+>>               size = state->parts[p].size;
+>>               if (!size)
+>> @@ -509,7 +508,6 @@ rescan:
+>>               }
+>>
+>>               if (state->parts[p].has_info)
+>> -                     info = &state->parts[p].info;
+>>               part = add_partition(disk, p, from, size,
+>>                                    state->parts[p].flags,
+>>                                    &state->parts[p].info);
+>> --
+>> 1.7.6
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
 
-Hi all,
 
-After merging the xfs tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
 
-ERROR: ".xfs_extent_busy_trim" [fs/xfs/xfs.ko] undefined!
+-- 
+Regards,
 
-Caused by commit e459df5b5b93 ("xfs: move busy extent handling to it's
-own file") (and aided by 425dcd6c2289 "xfs: clean up busy extent naming").
-
-I have used the xfs tree from next-20120508 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__10_May_2012_13_01_34_+1000_FPATsqTDsb/I5Meq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPqy+OAAoJEECxmPOUX5FEg74QAJVF0uhoISzQGp4g9eRqPPNG
-R+FBKOkg0mFwSJz0LoOke7jM+xrvaYm9qGSVXXJkvp1kl0H0Q+H9If1fnaRKrWHh
-ttVWh2RN7FmhvLjDcr+iLJqj4e/sZTfDPlcEb1n1w9P0zV/lIZl3ly6PJT4TbzJ8
-kLUGtUwHIKW4BD0GQ4SVppHp10El5Hdlr5iAH8ZuUM0IL6H6oEsZowD2iNWXJu07
-OThDTpGQd3MutBtJto/ahXSUmDXLVIF/ZtyAWWXrrDEZZrAef0SYoANRUih8tJyd
-HaAFMKW2u22/5tWZxcA5xuSJFYKzWr1i2Y7l7MEiGTS+JW87kgz1XcykLLY1t4zk
-4RtkEEif+Rq9fHtASTPWyep68K1xYJaczH63G3/aiAPqMI5H0QHr81m1rWglE/hy
-9u+kS3tDMJWQmkGJrCwiWsc/zSWXh1rbuJ5j3FWdCPqiiOuPYusLM256H8AO9I+4
-mcUkeGhYT2IjsD5MwFlvSEnOhyELRWIvL6HYwvObZOMtBkhMRRfOByvwasAuw/mV
-rP3l+/MfzL1KHjzCPgD8ZAGd1wcFTr30+PvL6libBi4YWjujrpXocrvrEZe0YYEB
-pFEVUrENqFmq6Irnq9J2JPf/ygLB3nYvLkbqk8i5mJ8taCcEH+SXhAQ4N71BKeQ7
-yhZy1IC1IZwgh2/hWQuh
-=QHex
------END PGP SIGNATURE-----
-
---Signature=_Thu__10_May_2012_13_01_34_+1000_FPATsqTDsb/I5Meq--
+Zhi Yong Wu
