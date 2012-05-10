@@ -1,46 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121Ab2EJKKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 06:10:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45073 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757911Ab2EJKKj convert rfc822-to-8bit (ORCPT
+	id S1758580Ab2EJKKw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 06:10:52 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:36079 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758213Ab2EJKKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 06:10:39 -0400
-Message-ID: <1336644337.2527.95.camel@twins>
-Subject: Re: [PATCH 4/9] perf: Generic intel uncore support
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: mingo@elte.hu, andi@firstfloor.org, eranian@google.com, jolsa@redhat.com,
-        ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
-        hpa <hpa@zytor.com>
-Date: Thu, 10 May 2012 12:05:37 +0200
-In-Reply-To: <4FAB6F99.6010408@intel.com>
-References: <1335924440-11242-1-git-send-email-zheng.z.yan@intel.com>
-	  <1335924440-11242-5-git-send-email-zheng.z.yan@intel.com>
-	 <1336065156.22523.34.camel@twins> <4FAB6F99.6010408@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 10 May 2012 06:10:50 -0400
+Message-ID: <4FAB9412.5030102@ti.com>
+Date: Thu, 10 May 2012 15:40:26 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Colin Cross <ccross@android.com>, Kevin Hilman <khilman@ti.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [RFC][PATCH 2/2] PM / Domains: Add preliminary cpuidle support
+References: <201205092340.26561.rjw@sisk.pl> <201205092343.11050.rjw@sisk.pl>
+In-Reply-To: <201205092343.11050.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-10 at 15:34 +0800, Yan, Zheng wrote:
+Rafael,
+
+On Thursday 10 May 2012 03:13 AM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> This code doesn't work for PCI uncore device if there are offline CPUs,
-> because topology_physical_package_id() always return 0 for offline CPUs.
+> On some systems there are CPU cores located in the same power
+> domains as I/O devices.  Then, power can only be removed from the
+> domain if all I/O devices in it are not in use and the CPU core
+> is idle.  Add preliminary support for that to the generic PM domains
+> framework.
+> 
+I am just curious to know, what kind of IO devices, you are
+talking here? And also how those devices linked with CPU low power
+states apart from being part of same power domain. And is it
+the power domain or more of voltage domain, we are talking here.
 
-Hmm, that sounds wrong.. one would expect something like BAD_APICID, -1
-or the correct number. hpa should we fix that?
+> This assumes that there is only one CPU core in the system and it is
+> supposed to be set up in the following way.
+> 
+> First, the platform is expected to provide a cpuidle driver with one
+> extra state designated for the generic PM domains code to handle.
+> This state should be initially disabled and its exit_latency value
+> should be set to whatever time is needed to bring up the CPU core
+> itself after restoring power to it, not including the domain's
+> power on latency.  Its .enter() callback should point to a procedure
+> that will save the CPU core's state as appropriate before power
+> removal.  On success, it should return the same value as it has
+> been passed as its third argument, but it shouldn't put the CPU
+> core into a C-state.  If it is about to return the index of
+> a different cpuidle state, however, it should make sure that the CPU
+> be put into that state before it returns.
+> 
+> The remaining characteristics of the extra cpuidle state, referred to
+> as the "domain" cpuidle state below, (e.g. power usage, target
+> residency) should be populated in accordance with the properties of
+> the hardware.
+> 
+> Next, the platform should execute genpd_attach_cpuidle() on the PM
+> domain containing the CPU core.  That will cause the generic PM
+> domains framework to treat that domain in a special way such that:
+> 
+>  * When all devices in the domain have been suspended and it is about
+>    to be turned off, the states of the devices will be saved, but
+>    power will not be removed from the domain.  Instead, the "domain"
+>    cpuidle state will be enabled so that power can be removed from
+>    the domain when the CPU core is idle and the state has been chosen
+>    as the target by the cpuidle governor.  In that case, before
+>    removing power from the domain, the framework will execute the
+>    .enter() callback initially defined for the "domain" state.
+> 
+>  * When the first I/O device in the domain is resumed and
+>    __pm_genpd_poweron(() is called for the first time after
+>    power has been removed from the domain, the "domain" cpuidle
+>    state will be disabled to avoid subsequent surprise power removals
+>    via cpuidle.
+> 
 
-Anyway,
+If these are CPU cluster/package specific IO's like interrupt
+controller, cache controller, Coherency interconnect etc and
+if the intention is to ensure that these devices context
+is saved/restored in cpuidle entry/exit, it can be handled with
+CPU PM notifiers. We already do that for ARM SOCs.
 
-> So besides the per CPU variable, we still need another data structure
-> to track the uncore boxes. Do you still want to use per CPU variable?
+>From the patch description it seems, they are general purpose
+peripherals. We had one thermal sensor on OMAP which
+wrongly clocked from the CPU clock source and needed
+some idle notifier infrastructure to prepare/resume
+this device for idle entry/exit.
 
-Well you don't really need the value for offline CPUs, until they're
-online right? So all you need to do is iterate all the box muck in a
-hotplug handler and set the right pointer, no? (I suspect this would
-need to be done in CPU_STARTING).
+Regards
+Santosh
+
+
+
+
