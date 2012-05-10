@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761430Ab2EJStw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 14:49:52 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44134 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1761346Ab2EJStt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 14:49:49 -0400
-Message-ID: <1336675787.22495.29.camel@joe2Laptop>
-Subject: Re: [Bcache v13 11/16] bcache: Core btree code
-From: Joe Perches <joe@perches.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tejun@google.com, agk@redhat.com
-Date: Thu, 10 May 2012 11:49:47 -0700
-In-Reply-To: <1188908028.170.1336674698865.JavaMail.mail@webmail09>
-References: <cover.1336619038.git.koverstreet@google.com>
-	 <1188908028.170.1336674698865.JavaMail.mail@webmail09>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1761421Ab2EJSv7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 14:51:59 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:45608 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760473Ab2EJSv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 14:51:56 -0400
+Message-ID: <4FAC0E49.6050004@msgid.tls.msk.ru>
+Date: Thu, 10 May 2012 22:51:53 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jan Kiszka <jan.kiszka@siemens.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anthony Liguori <aliguori@us.ibm.com>, Kevin Wolf <kwolf@redhat.com>
+Subject: Re: [PATCH v2] compat: Fix RT signal mask corruption via sigprocmask
+References: <4FAAEB37.1080001@siemens.com> <CA+55aFz-z6F=ynvTZp2xrSyq+Ar7huT92_S9e8Wuxepyppq5ZQ@mail.gmail.com> <4FABBCE4.3050503@siemens.com> <CA+55aFyOsPY-RNwedb3NnbKbj=iAc7L6YuSSEZYy5_Sczmqd4A@mail.gmail.com> <CA+55aFyr4_3MN4yZdNMnDr+nKm+VTONiP6SQnAGXoaQ1egr7zQ@mail.gmail.com>
+In-Reply-To: <CA+55aFyr4_3MN4yZdNMnDr+nKm+VTONiP6SQnAGXoaQ1egr7zQ@mail.gmail.com>
+X-Enigmail-Version: 1.4
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 23:10 -0400, Kent Overstreet wrote:
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-[]
-> +
-> +void btree_read_done(struct closure *cl)
-> +{
-[]
-> +	if (b->written < btree_blocks(b))
-> +		bset_init_next(b);
-> +
-> +	if (0) {
-> +err:		set_btree_node_io_error(b);
-> +		cache_set_error(b->c, "%s at bucket %lu, block %zu, %u keys",
-> +				err, PTR_BUCKET_NR(b->c, &b->key, 0),
-> +				index(i, b), i->keys);
-> +	}
+On 10.05.2012 19:58, Linus Torvalds wrote:
+> On Thu, May 10, 2012 at 8:44 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> I think I'll just edit your patch directly, no need to send me a new version.
+> 
+> Ok, just FYI, this is the incremental diff I ended up with. I'll
+> commit it as this, but I'm sending it out for people to verify before
+> I do. Although just from looking at the code generation, it really
+> does just change those four instructions that do a mask to a single
+> 'movl', so I think it's pretty safe even though I haven't tested it.
 
-Hi Kent
+I tested the changes (from Jan and Linus's patches) and
+the result a) looks sane, and b) actually works and fixes
+our long-standing issues.
 
-trivia:  This if (0) is an exceedingly ugly style.
+So you can add my
 
-I'd much prefer:
+Tested-By: Michael Tokarev <mjt@tls.msk.ru>
 
-	if (foo)
-		bar();
+or, if you prefer,
 
-	goto exit;
+Signed-off-By: Michael Tokarev <mjt@tls.msk.ru>
 
-err:
-	set_btree_node_io_error(b);
-	cache_set_error(b->c, "%s at bucket %lu, block %zu, %u keys",
-			err, PTR_BUCKET_NR(b->c, &b->key, 0),
-			index(i, b), i->keys);
+for the combined patch.
 
-exit:
-	etc...
+Thank you for the excellent catch Jan!
 
-
+/mjt
