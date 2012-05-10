@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761386Ab2EJAB3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 20:01:29 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44274 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755914Ab2EJAB2 (ORCPT
+	id S1761363Ab2EJAC6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 20:02:58 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:22495 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602Ab2EJAC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 20:01:28 -0400
-X-Sasl-enc: xCK4/umPSZ+2UuQD8f+z2aBi/CBE3CYwG8DrLR2jbiDZ 1336608087
-Date: Wed, 9 May 2012 17:01:26 -0700
-From: Greg KH <greg@kroah.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Markus Franke <markus.franke@s2002.tu-chemnitz.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] w1: Add 1-wire slave device driver for DS28E04-100
-Message-ID: <20120510000126.GA2357@kroah.com>
-References: <20120430021300.GA18148@kroah.com>
- <4FA1953B.40008@hrz.tu-chemnitz.de>
- <20120502202134.GB26628@kroah.com>
- <20120503180056.GB13988@ioremap.net>
- <4FAAD584.70102@hrz.tu-chemnitz.de>
- <20120509220636.GA27659@kroah.com>
- <4FAAECB7.8070904@hrz.tu-chemnitz.de>
- <20120509222411.GA24302@kroah.com>
- <4FAAF1C4.2050500@hrz.tu-chemnitz.de>
- <20120509235723.GA7404@ioremap.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120509235723.GA7404@ioremap.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 May 2012 20:02:57 -0400
+X-AuditID: cbfee61a-b7b97ae000004342-e7-4fab05b0dda2
+Message-id: <4FAB05B0.2030906@samsung.com>
+Date: Thu, 10 May 2012 09:02:56 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: I have question for supporting irq_domain of MAX8997
+References: <4FA9F16D.9090106@samsung.com>
+ <CAJuYYwRDe_KyXnPxZq_fGyHuYAB=e76AaRZwoe9UjUer=QX3YA@mail.gmail.com>
+In-reply-to: <CAJuYYwRDe_KyXnPxZq_fGyHuYAB=e76AaRZwoe9UjUer=QX3YA@mail.gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 03:57:23AM +0400, Evgeniy Polyakov wrote:
-> On Thu, May 10, 2012 at 12:37:56AM +0200, Markus Franke (markus.franke@s2002.tu-chemnitz.de) wrote:
-> > Well, the data read/written through this file is actually directly
-> > "passed" on to the device. There are two bits which reflect the current
-> > state of the PIO pins of the DS28E04. However, I must admit that this
-> > could also be implemented as regular sysfs attributes.
-> 
-> Greg, could you please describe what is exactly wrong with binary sysfs
-> file? Or am I missing that it is not usual sysfs file but some special
-> stuff?
+Dear Thomas,
 
-Binary sysfs files should be "pass through" only, the kernel should not
-touch the data involved in them at all, it is a pipe directly from the
-kernel to userspace for binary blob data, like firmware images.  You
-should never do any processing of any binary file data at all in the
-kernel.
+On 05/09/2012 11:27 PM, Thomas Abraham wrote:
 
-Hope this helps,
+> The irq domain support for max8997 irq is already posted. I am yet to
+> address some of the review comments for those patches and hence the
+> max8997 dt (+ irqdomain) patches are still work in progress. But the
+> irq domain support for max8997 is complete.
 
-greg k-h
+I did see your patch for irq_domain support for max8997 in below git repository.
+
+http://git.kernel.org/?p=linux/kernel/git/broonie/regulator.git;a=shortlog;h=refs/heads/for-next
+
+But, I checked that your patch was reverted because it breaks the build
+of the muic driver
+reported by Stephen Rothwell. You can check this following url.
+http://git.kernel.org/?p=linux/kernel/git/broonie/regulator.git;a=commit;h=82b719b11fd750188c125078ad6a6c0d23219dfb
+
+Also, Do you test irq domain of MAX8997 with max8997-muic driver or others?
+While looking through the drivers/mfd/max8997-irq.c, I could not find
+initialization code
+of max8997->irq_domain(field of 'struct max8997_dev'). When tested your
+patch with
+max8997-muic driver, max8997->irq_domain variable is NULL. I think that
+you set only
+local variable(struct irq_domain *domain) in max8997_irq_init().
+
+Thank you,
+Chanwoo Choi
