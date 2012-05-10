@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759415Ab2EJMQZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 08:16:25 -0400
-Received: from fieldses.org ([174.143.236.118]:43031 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756492Ab2EJMQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 08:16:23 -0400
-Date: Thu, 10 May 2012 08:16:21 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: AMIT SAHRAWAT <a.sahrawat@samsung.com>
-Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: Re: [Problem]NFS Server =?utf-8?B?4oCT?=
-	=?utf-8?Q?_Um=3Fount?= results in Device Busy.
-Message-ID: <20120510121621.GA2260@fieldses.org>
-References: <0M3T007GD2F8JJX0@mailout4.samsung.com>
+	id S1759433Ab2EJMQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 08:16:59 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33208 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756492Ab2EJMQ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 08:16:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0M3T007GD2F8JJX0@mailout4.samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1336644082-14137-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1336644082-14137-1-git-send-email-mika.westerberg@linux.intel.com>
+Date: Thu, 10 May 2012 14:16:56 +0200
+Message-ID: <CACRpkdbA58UiNLZRPWe1yGckGFrXqtJ3ddqjLLzLntC6+Cin3g@mail.gmail.com>
+Subject: Re: [PATCH] gpio/langwell: re-read the IRQ status register after each iteration
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        linus.walleij@stericsson.com, Julia Lawall <Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 11:54:43AM +0000, AMIT SAHRAWAT wrote:
-> </head><body>
-> <p>Hi Bruce,</p>
-> <p>&nbsp;</p>
-> <p>Thanks for instant reply.</p>
+On Thu, May 10, 2012 at 12:01 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
 
-Could you turn off html formatting on your mail?
+> Spotted by Grant Likely. The IRQ status register should be re-read after
+> each iteration. Otherwise the loop misses the interrupt if it gets raised
+> immediately after handled.
+>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
+> This patch applies on top of my previous patch ("gpio: langwell: convert to
+> use irq_domain").
 
-> <p>The option you mentioned is working. 'exportfs -f'</p>
-> <p>Actually it is not mentioned anywhere - even when checked for options:</p>
-> <p>#&gt; exportfs -h<br>exportfs: invalid option -- 'h'<br>usage: exportfs [-aruv] [host:/path]<br></p>
+Oh yeah that thing I recognize!
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Sorry, it looks like the help test could be improved!  Patches
-welcomed....
+If someone has  time I think it would be a good idea to
+conjure a cocienelle sematic patch to catch this pattern, because
+I suspect it might exist in more IRQ handlers.
 
-It is documented in the exportfs man page.
+-               pending = readl(gedr);
+-               while (pending) {
++               while ((pending = readl(gedr))) {
+                       gpio = __ffs(pending);
+                       mask = BIT(gpio);
+-                       pending &= ~mask;
 
-> <p>But - when tried to give - '-f' option it is working.</p>
-> <p>Then on checking the code for exportfs - got to know the working of '-f' option.</p>
-> <p>I think it should work. I will check with a number of scenario&nbsp; - to check there is no blockage for other mount points - at the time 'exportfs -f' is being run. Please reply if it wont :)</p>
-
-If no clients are using the export, it should work.
-
---b.
+Yours,
+Linus Walleij
