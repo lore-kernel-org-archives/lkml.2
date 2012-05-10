@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760023Ab2EJPTr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 11:19:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45223 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757805Ab2EJPTp (ORCPT
+	id S1760040Ab2EJPTt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 11:19:49 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37038 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757805Ab2EJPTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 11:19:45 -0400
-Date: Thu, 10 May 2012 08:19:41 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Thu, 10 May 2012 11:19:47 -0400
+Date: Fri, 11 May 2012 00:19:37 +0900
+From: Minchan Kim <minchan@kernel.org>
 To: Seth Jennings <sjenning@linux.vnet.ibm.com>
 Cc: Nitin Gupta <ngupta@vflare.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dan Magenheimer <dan.magenheimer@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
-Message-ID: <20120510151941.GA18302@kroah.com>
+Message-ID: <20120510151937.GC2394@barrios>
 References: <1336027242-372-1-git-send-email-minchan@kernel.org>
  <1336027242-372-3-git-send-email-minchan@kernel.org>
  <4FA28907.9020300@vflare.org>
@@ -61,9 +62,15 @@ On Thu, May 10, 2012 at 10:11:27AM -0500, Seth Jennings wrote:
 > 
 > void * zs_to_void(struct zs *p) { return p->ptr; }
 > struct zs * void_to_zs(void *p) { return (struct zs *)p; }
+> 
+> Right?
 
-Do like what the rest of the kernel does and pass around *ptr and use
-container_of to get 'struct zs'.  Yes, they resolve to the same pointer
-right now, but you shouldn't "expect" to to be the same.
+I though this, too but didn't tried it.
+We DO REALLY want it?
+Why should zsmalloc support like such strange interface?
+I want to solve the problem in zcache, not with zsmalloc.
 
-greg k-h
+> 
+> --
+> Seth
+> 
