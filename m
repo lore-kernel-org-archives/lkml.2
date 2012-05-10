@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761311Ab2EJSeh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 14:34:37 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41901 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760618Ab2EJSef (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 14:34:35 -0400
+	id S1761318Ab2EJSgU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 14:36:20 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:36728 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760669Ab2EJSgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 14:36:18 -0400
+Message-ID: <4FAC0A9E.3020909@sgi.com>
+Date: Thu, 10 May 2012 13:36:14 -0500
+From: Mark Tinguely <tinguely@sgi.com>
+User-Agent: Mozilla/5.0 (X11; FreeBSD amd64; rv:9.0) Gecko/20120122 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <cover.1336619038.git.koverstreet@google.com>
-References: <cover.1336619038.git.koverstreet@google.com>
-Date: Thu, 10 May 2012 11:34:34 -0700
-X-Google-Sender-Auth: 7XFtZOupMsigAK4-hwryhkj0G-Y
-Message-ID: <CAA9_cmdozzzapZrU2uAiquuquggzMUBficntrJBo5KXV_Q58sA@mail.gmail.com>
-Subject: Re: [Bcache v13 00/16]
-From: Dan Williams <dan.j.williams@intel.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tejun@google.com,
-        Alasdair G Kergon <agk@redhat.com>,
-        linux-raid <linux-raid@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ben Myers <bpm@sgi.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: linux-next: build failure after merge of the xfs tree
+References: <20120510130134.0efffc5ba1f3a80c614e8f29@canb.auug.org.au> <20120510183245.GL3963@sgi.com>
+In-Reply-To: <20120510183245.GL3963@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 8:07 PM, Kent Overstreet <koverstreet@google.com> wrote:
-> bcache: a cache for arbitrary block devices using an SSD.
->
-> Short overview:
-> Bcache does both writethrough and writeback caching. It presents itself as a
-> new block device, a bit like say md. You can cache an arbitrary number of
-> block devices with a single cache device, and attach and detach things at
-> runtime - it's quite flexible.
->
-> It's very fast. It uses a b+ tree for the index, along with a journal to
-> coalesce index updates, and a bunch of other cool tricks like auxiliary binary
-> search trees with software floating point keys for searching within btree
-> nodes.
->
-> Bcache is solid, production ready code. There are still bugs being found that
-> affect specific configurations, but there haven't been any major issues found
-> in awhile - it's well past time I started working on getting it into mainline.
->
-> It's a lot of code - I tried to split it out so that it'd make some sort of
-> sense for reviewing. Let me know if there's anything else I can do to make
-> review easier.
->
-> TODO/known issues:
->
-> __up_write() needs to be exported for bcache to compile as a module - it's
-> used for bypassing lockdep when traversing the btree during garbage
-> collection. If someone else knows a better solution, please let me know.
->
-> The userspace interface is going to change before it goes in. The general
-> consensus at LSF was that we don't want yet another interface for
-> probing/managing block devices, and dm exists so we may as well use that. I
-> don't think anyone's started on that yet, though.
+On 05/10/12 13:32, Ben Myers wrote:
 
-Might as well mention I've started work on a md conversion.  Nearing
-the point of having RFC patches ready to post.
+> Signed-off-by: Ben Myers<bpm@sgi.com>
+>
+> Index: xfs/fs/xfs/xfs_alloc.c
+> ===================================================================
+> --- xfs.orig/fs/xfs/xfs_alloc.c
+> +++ xfs/fs/xfs/xfs_alloc.c
+> @@ -47,8 +47,6 @@ STATIC int xfs_alloc_ag_vextent_near(xfs
+>   STATIC int xfs_alloc_ag_vextent_size(xfs_alloc_arg_t *);
+>   STATIC int xfs_alloc_ag_vextent_small(xfs_alloc_arg_t *,
+>   		xfs_btree_cur_t *, xfs_agblock_t *, xfs_extlen_t *, int *);
+> -STATIC void xfs_extent_busy_trim(struct xfs_alloc_arg *,
+> -		xfs_agblock_t, xfs_extlen_t, xfs_agblock_t *, xfs_extlen_t *);
+>
+>   /*
+>    * Lookup the record equal to [bno, len] in the btree given by cur.
+> Index: xfs/fs/xfs/xfs_extent_busy.c
+> ===================================================================
+> --- xfs.orig/fs/xfs/xfs_extent_busy.c
+> +++ xfs/fs/xfs/xfs_extent_busy.c
+> @@ -345,7 +345,7 @@ restart:
+>    * args->minlen no suitable extent could be found, and the higher level
+>    * code needs to force out the log and retry the allocation.
+>    */
+> -STATIC void
+> +void
+>   xfs_extent_busy_trim(
+>   	struct xfs_alloc_arg	*args,
+>   	xfs_agblock_t		bno,
+> Index: xfs/fs/xfs/xfs_extent_busy.h
+> ===================================================================
+> --- xfs.orig/fs/xfs/xfs_extent_busy.h
+> +++ xfs/fs/xfs/xfs_extent_busy.h
+> @@ -54,6 +54,10 @@ void
+>   xfs_extent_busy_reuse(struct xfs_mount *mp, xfs_agnumber_t agno,
+>   	xfs_agblock_t fbno, xfs_extlen_t flen, bool userdata);
+>
+> +void
+> +xfs_extent_busy_trim(struct xfs_alloc_arg *args, xfs_agblock_t bno,
+> +	xfs_extlen_t len, xfs_agblock_t *rbno, xfs_extlen_t *rlen);
+> +
+>   int
+>   xfs_extent_busy_ag_cmp(void *priv, struct list_head *a, struct list_head *b);
+>
+>
 
-I'm doing it in such a way that it does not preclude a dm target from
-coming along as well.  Like I mentioned to Alasdair at LSF, there's no
-reason this could not be treated the same as the shared raid
-personalities between dm and md.
+Hmmm, I saw that before. I have been hand patching that to test.
 
---
-Dan
+Looks good.
+
+Reviewed-by: Mark Tinguely <tinguely@sgi.com>
+
