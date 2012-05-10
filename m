@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759079Ab2EJNqA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 09:46:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35319 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755489Ab2EJNp5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 09:45:57 -0400
-Message-ID: <1336657544.2527.116.camel@twins>
-Subject: Re: [PATCH] sched_groups are expected to be circular linked list,
- make it so right after allocation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, pjt@google.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com
-Date: Thu, 10 May 2012 15:45:44 +0200
-In-Reply-To: <20120510132625.GA1455@thinkpad.mammed.net>
-References: <1336559908-32533-1-git-send-email-imammedo@redhat.com>
-	 <4FAA452A.1070909@gmail.com> <4FAA588B.5010404@redhat.com>
-	 <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
-	 <1336566096.2527.30.camel@twins> <1336566644.2527.33.camel@twins>
-	 <20120510132625.GA1455@thinkpad.mammed.net>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1759366Ab2EJNqS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 09:46:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37336 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932695Ab2EJNpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 09:45:35 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 17/17] mm: Account for the number of times direct reclaimers get throttled
+Date: Thu, 10 May 2012 14:45:10 +0100
+Message-Id: <1336657510-24378-18-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1336657510-24378-1-git-send-email-mgorman@suse.de>
+References: <1336657510-24378-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-10 at 15:26 +0200, Igor Mammedov wrote:
-> [  141.699854] sched: Bonkers domain doesn't include its own cpu: 3 0-1,3
-> [  141.725038] sched: Bonkers domain doesn't include its own cpu: 3 0-1 
+Under significant pressure when writing back to network-backed storage,
+direct reclaimers may get throttled. This is expected to be a
+short-lived event and the processes get woken up again but processes do
+get stalled. This patch counts how many times such stalling occurs. It's
+up to the administrator whether to reduce these stalls by increasing
+min_free_kbytes.
 
-Whee!! so cpu_mask (active_mask) does include 3, but the tl->mask()
-doesn't.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/vm_event_item.h |    1 +
+ mm/vmscan.c                   |    3 +++
+ mm/vmstat.c                   |    1 +
+ 3 files changed, 5 insertions(+)
 
-> [  141.775040] sched: Topology is hosed for CPU-3!!
-> [  141.775596] sched: domain: NODE 0-1
-> [  141.776004] sched:  group: 0-1
-> 
-This seems to suggest its the node topology being wrecked.
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 06f8e38..57f7b10 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -30,6 +30,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		FOR_ALL_ZONES(PGSTEAL_DIRECT),
+ 		FOR_ALL_ZONES(PGSCAN_KSWAPD),
+ 		FOR_ALL_ZONES(PGSCAN_DIRECT),
++		PGSCAN_DIRECT_THROTTLE,
+ #ifdef CONFIG_NUMA
+ 		PGSCAN_ZONE_RECLAIM_FAILED,
+ #endif
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 97c766f..141ab5c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2486,6 +2486,9 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 	if (pfmemalloc_watermark_ok(pgdat))
+ 		return;
+ 
++	/* Account for the throttling */
++	count_vm_event(PGSCAN_DIRECT_THROTTLE);
++
+ 	/*
+ 	 * If the caller cannot enter the filesystem, it's possible that it
+ 	 * is due to the caller holding an FS lock or performing a journal
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 7db1b9b..7861cbe 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -742,6 +742,7 @@ const char * const vmstat_text[] = {
+ 	TEXTS_FOR_ZONES("pgsteal_direct")
+ 	TEXTS_FOR_ZONES("pgscan_kswapd")
+ 	TEXTS_FOR_ZONES("pgscan_direct")
++	"pgscan_direct_throttle",
+ 
+ #ifdef CONFIG_NUMA
+ 	"zone_reclaim_failed",
+-- 
+1.7.9.2
 
-which with your code-base would be
-cpu_node_mask()->sched_domain_node_span()..
-
-Did you specify any node topology on the qemu command line? If not, it
-should all reduce to cpumask_of_node(0).
-
-identify_secondary_cpu()->identify_cpu()->numa_add_cpu() should set that
-bit. which is well before the CPU_ONLINE->cpuset_update_active_cpus()
-sched domain rebuild.
-
-
-Most puzzling. Can you dig a little deeper as to why these masks might
-be wrong? Also, can you reproduce on actual hardware? The reason I never
-use kvm or other virt for debugging is that I always end up spending
-time chasing virt bugs, and I hate virt..
