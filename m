@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757698Ab2EJBKQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 21:10:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:28181 "EHLO mga02.intel.com"
+	id S1757223Ab2EJBKB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 21:10:01 -0400
+Received: from ozlabs.org ([203.10.76.45]:52368 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757704Ab2EJBKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 21:10:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="142120523"
-Date: Thu, 10 May 2012 09:10:23 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Btrfs: use ALIGN macro instead of open-coded expression
-Message-ID: <20120510011023.GF10252@yliu-dev.sh.intel.com>
-References: <1336464984-30746-1-git-send-email-yuanhan.liu@linux.intel.com>
- <20120509164549.GM19331@twin.jikos.cz>
+	id S1756295Ab2EJBKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 21:10:00 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: Re: [PATCH] virtio-mmio: Devices parameter parsing
+In-Reply-To: <1336584616-7802-1-git-send-email-pawel.moll@arm.com>
+References: <1336584616-7802-1-git-send-email-pawel.moll@arm.com>
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 10 May 2012 10:14:55 +0930
+Message-ID: <87d36cdfug.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120509164549.GM19331@twin.jikos.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 06:45:49PM +0200, David Sterba wrote:
-> On Tue, May 08, 2012 at 04:16:24PM +0800, Yuanhan Liu wrote:
-> > According to section 'Find open-coded helpers or macros' at
-> > https://btrfs.wiki.kernel.org/index.php/Cleanup_ideas, here
-> > in the patch we use ALIGN macro to do the alignment.
+On Wed,  9 May 2012 18:30:16 +0100, Pawel Moll <pawel.moll@arm.com> wrote:
+> This patch adds an option to instantiate guest virtio-mmio devices
+> basing on a kernel command line (or module) parameter, for example:
 > 
-> Well, I wrote this section and some time later also the patches,
-> http://www.spinics.net/lists/linux-btrfs/msg12747.html
+> 	virtio_mmio.devices=0x100@0x100b0000:48
 > 
-> but did not update the section with the status reflecting this, sorry
-> that you duplicated work.
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> ---
+> 
+> Hi Rusty,
+> 
+> As the param changes are in now, could you queue this
+> long-time-forgotten patch for 3.5?
 
-It's OK. I just didn't find those 'issue' was fixed in mainline, thus I
-thought it still exist.
+Finally, thanks!
 
-Thanks,
-Yuanhan Liu
+> PS. Congratulations once again and see you in HK.
 
+Thanks, and looking forward to it!
+
+Cheers,
+Rusty. 
