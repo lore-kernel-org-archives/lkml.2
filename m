@@ -1,46 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab2EJQss (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 12:48:48 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:53604 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757304Ab2EJQsr (ORCPT
+	id S1758169Ab2EJQuA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 12:50:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35132 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755339Ab2EJQt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 12:48:47 -0400
+	Thu, 10 May 2012 12:49:58 -0400
+Date: Thu, 10 May 2012 09:49:53 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Johannes Thumshirn <morbidrsa@googlemail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        grabner@icg.tugraz.at, andor.daam@googlemail.com, thomas@m3y3r.de,
+        jj@chaosbits.net, stefanha@gmail.com
+Subject: Re: [PATCH] drivers/staging/line6/config.h: Remove CHECKPOINT macro
+Message-ID: <20120510164953.GA32245@kroah.com>
+References: <1336415273-11713-1-git-send-email-morbidrsa@googlemail.com>
+ <1336667410-10035-1-git-send-email-morbidrsa@googlemail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMYGaxqxb=XR8R26h4e2URA2hG2M3j9V4u0DLJ9ifmkZKJa+eg@mail.gmail.com>
-References: <1336066477-3964-1-git-send-email-rajman.mekaco@gmail.com>
-	<4FA2C946.60006@redhat.com>
-	<4FA2EA4A.6040703@redhat.com>
-	<CAMYGaxosaVXmpQQqpq+bGV9F7-i8APTpDq=ErWdhw2EHGEzmKg@mail.gmail.com>
-	<CAMYGaxruZbhvtZg76_zo6-BjChObpCAE8-MTA=xbBOavct+XNw@mail.gmail.com>
-	<4FABD6BE.1060401@redhat.com>
-	<CAMYGaxqxb=XR8R26h4e2URA2hG2M3j9V4u0DLJ9ifmkZKJa+eg@mail.gmail.com>
-Date: Thu, 10 May 2012 22:18:46 +0530
-Message-ID: <CAMYGaxrj37Wwan+UKKvvSj6M+G=ksNMscmF40JDMrKZmx5tD2g@mail.gmail.com>
-Subject: Re: [PATCH 1/1] mlock: split the shmlock_user_lock spinlock into per
- user_struct spinlock
-From: rajman mekaco <rajman.mekaco@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@gentwo.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336667410-10035-1-git-send-email-morbidrsa@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If 2 different user-mode processes executing on 2 CPUs under 2 different
-> users want to access the same shared memory through the
+On Thu, May 10, 2012 at 06:30:10PM +0200, Johannes Thumshirn wrote:
+> Kill unused debugging macro CHECKPOINT
+> ---
+>  drivers/staging/line6/config.h |    5 -----
+>  1 files changed, 0 insertions(+), 5 deletions(-)
 
-One correction:
-This will happen even for different shared memory as the lock is global.
-This fact just increases the relevance of this patch, dont you think ?
-
-> shmctl(SHM_LOCK) / shmget(SHM_HUGETLB) / usr_shm_lock
-> primitives, they could compete/spin even though their user_structs
-> are different.
->
+-ENOSIGNED_OFF_BY_LINE :(
