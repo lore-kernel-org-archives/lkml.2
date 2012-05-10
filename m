@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab2EJDnw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 23:43:52 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33073 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754134Ab2EJDnu (ORCPT
+	id S1756003Ab2EJDpL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 23:45:11 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46870 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755628Ab2EJDpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 23:43:50 -0400
-X-Sasl-enc: KtGM7rRffY8gIc68x8vfRF32tLrTaKi1k3qBHszU3Myx 1336621429
-Date: Wed, 9 May 2012 20:43:48 -0700
-From: Greg KH <greg@kroah.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Markus Franke <markus.franke@s2002.tu-chemnitz.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] w1: Add 1-wire slave device driver for DS28E04-100
-Message-ID: <20120510034348.GB18484@kroah.com>
-References: <20120502202134.GB26628@kroah.com>
- <20120503180056.GB13988@ioremap.net>
- <4FAAD584.70102@hrz.tu-chemnitz.de>
- <20120509220636.GA27659@kroah.com>
- <4FAAECB7.8070904@hrz.tu-chemnitz.de>
- <20120509222411.GA24302@kroah.com>
- <4FAAF1C4.2050500@hrz.tu-chemnitz.de>
- <20120509235723.GA7404@ioremap.net>
- <20120510000126.GA2357@kroah.com>
- <20120510004350.GA8362@ioremap.net>
+	Wed, 9 May 2012 23:45:08 -0400
+Date: Wed, 9 May 2012 20:45:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Francois Rigaut <frigaut@gmail.com>
+Cc: Jiang Liu <liuj97@gmail.com>,
+        Nico Schottelius <nico-linux-20120419@schottelius.org>,
+        Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Linux Support for Thunderbolt using Apple Monitor
+Message-ID: <20120510034503.GB18543@kroah.com>
+References: <4FA358ED.1080705@gmail.com>
+ <20120504184851.GB11223@kroah.com>
+ <CAE9FiQWuePNRWV=ncJkF57aQZ0ZT91xxZ0sZMexq8HgN9NcAfA@mail.gmail.com>
+ <CAE9FiQWcyRfLKB+YivOfa-GydbhoaMx06n6a4VMDWoTOMkj7ig@mail.gmail.com>
+ <4FA4AA3E.1070903@gmail.com>
+ <4FA544B1.3070705@gmail.com>
+ <20120505164819.GA21599@schottelius.org>
+ <4FA5EE63.1050208@gmail.com>
+ <20120509160555.GA13437@kroah.com>
+ <4FAB1EAF.2090305@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120510004350.GA8362@ioremap.net>
+In-Reply-To: <4FAB1EAF.2090305@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 04:43:50AM +0400, Evgeniy Polyakov wrote:
-> On Wed, May 09, 2012 at 05:01:26PM -0700, Greg KH (greg@kroah.com) wrote:
-> > Binary sysfs files should be "pass through" only, the kernel should not
-> > touch the data involved in them at all, it is a pipe directly from the
-> > kernel to userspace for binary blob data, like firmware images.  You
-> > should never do any processing of any binary file data at all in the
-> > kernel.
+On Thu, May 10, 2012 at 11:49:35AM +1000, Francois Rigaut wrote:
+> Greg,
 > 
-> And if some of the data should be somehow changed, what interfact should
-> be used? Also, Markus, does DS28E04 change written/read data when doing
-> IO?
+> I went ahead and contacted John Ronciak at intel.
+> He gave a presentation on thunderbolt at the 2011 linux plumber conference.
+> Here is his answer:
 > 
-> I must admit, I never heared that binary sysfs files have to follow this
-> constraint.
+> "You are correct that most if not all issues related to Thunderbolt
+> on Linux is due to BIOS problems. We have not seen anything other
+> BIOS issues regarding Thunderbolt issues on Linux. When the BIOS is
+> working correctly the hot-plug PCIe works fine wrt the kernel. These
+> are things that cannot be fixed in the drivers or in kernel
+> infrastructure. So newer systems are going to be better than older
+> ones due to these BIOS issues."
 
-For some reason I thought I had documented it years ago, but in digging
-through the Documentation directory, I don't see it anywhere, sorry
-about that.
-
-I'll add it to my ever-growing TODO list...
-
-thanks,
+Thanks for letting us know, so there's nothing we can do for these
+machines, and we just have to hope the next-generation machines get this
+correct.
 
 greg k-h
