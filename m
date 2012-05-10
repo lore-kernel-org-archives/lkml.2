@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095Ab2EJOsR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 10:48:17 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:57385 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755867Ab2EJOsP (ORCPT
+	id S1757351Ab2EJOxZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 10:53:25 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39390 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756439Ab2EJOxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 10:48:15 -0400
-Date: Thu, 10 May 2012 10:48:14 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Huang Ying <ying.huang@intel.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        huang ying <huang.ying.caritas@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, <ming.m.lin@intel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        Zheng Yan <zheng.z.yan@intel.com>, Lan Tianyu <tianyu.lan@intel.com>
-Subject: Re: [RFC v2 2/5] PM, Add sysfs file power_off to control device
- power off policy
-In-Reply-To: <1336611349.6190.245.camel@yhuang-dev>
-Message-ID: <Pine.LNX.4.44L0.1205101046010.1831-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 10 May 2012 10:53:24 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: inki.dae@samsung.com, jy0922.shim@samsung.com, sw0312.kim@samsung.com,
+        kyungmin.park@samsung.com, airlied@linux.ie
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] drm/exynos: Include missing linux/types.h in header
+Date: Thu, 10 May 2012 16:53:20 +0200
+Message-Id: <1336661600-2409-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 May 2012, Huang Ying wrote:
+Include the linux/types.h file where used types are declared.
 
-> How to remove power is not general enough, but I think whether to power
-> off is more general.  So a flag like power_must_be_on can be general and
-> useful.
+Sparse gives the following warning:
+/usr/include/drm/exynos_drm.h:92:
+	found __[us]{8,16,32,64} type without
+	#include <linux/types.h>
 
-I'm not so sure about that.
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ include/drm/exynos_drm.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-> > Also, from a driver's perspective the result of putting a device into
-> > some non-power-off low-power state may be just as unpleasant as the
-> > result of removing power from it.
-> 
-> Yes.  From device driver or bus point of view, "power off" is just like
-> other low power state.  But from the "all devices" point of view, power
-> off can be the only low power state that is shared by all devices.  So
-> we can say "power off" is special from this point of view.
-
-No -- it's not true that all devices share a "power off" state while 
-the system is running.
-
-The only thing that can be said about all devices is that some of them 
-can be put into one or many low-power states.  That's what the PM core 
-means when it talks about runtime suspend.
-
-Alan Stern
+diff --git a/include/drm/exynos_drm.h b/include/drm/exynos_drm.h
+index e478de4..7eb7ae7 100644
+--- a/include/drm/exynos_drm.h
++++ b/include/drm/exynos_drm.h
+@@ -29,6 +29,8 @@
+ #ifndef _EXYNOS_DRM_H_
+ #define _EXYNOS_DRM_H_
+ 
++#include <linux/types.h>
++
+ /**
+  * User-desired buffer creation information structure.
+  *
+-- 
+1.7.10
 
