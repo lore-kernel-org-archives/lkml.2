@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761369Ab2EJShA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 14:37:00 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:65130 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761329Ab2EJSg5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 14:36:57 -0400
+	id S1761335Ab2EJSj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 14:39:27 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:32892 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757463Ab2EJSjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 14:39:24 -0400
+Date: Thu, 10 May 2012 13:43:23 -0500
+From: Ben Myers <bpm@sgi.com>
+To: Mark Tinguely <tinguely@sgi.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: linux-next: build failure after merge of the xfs tree
+Message-ID: <20120510184323.GM3963@sgi.com>
+References: <20120510130134.0efffc5ba1f3a80c614e8f29@canb.auug.org.au>
+ <20120510183245.GL3963@sgi.com>
+ <4FAC0A9E.3020909@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <20120510111958.7cb00da9.akpm@linux-foundation.org>
-References: <1336609592-3825-1-git-send-email-bryan.wu@canonical.com> <20120510111958.7cb00da9.akpm@linux-foundation.org>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Fri, 11 May 2012 02:36:36 +0800
-X-Google-Sender-Auth: cpfty0h8bSI4CRM0E_EfME1Th6c
-Message-ID: <CAK5ve-LYW6gkZ1Ew76THu5jJDjfyH57EL6eTGC8s9n6d77a3wQ@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: Add maintainer for LED subsystem
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: rpurdie@rpsys.net, linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FAC0A9E.3020909@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 2:19 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Thu, 10 May 2012 08:26:32 +0800
-> Bryan Wu <bryan.wu@canonical.com> wrote:
->
->> Add Bryan Wu as the primary maintainer for drivers/leds
->>
->> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
->> ---
->>  MAINTAINERS |    1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index 7071633..de4e280 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -4034,6 +4034,7 @@ F:      Documentation/scsi/53c700.txt
->>  F:   drivers/scsi/53c700*
->>
->>  LED SUBSYSTEM
->> +M:   Bryan Wu <bryan.wu@canonical.com>
->>  M:   Richard Purdie <rpurdie@rpsys.net>
->>  S:   Maintained
->>  F:   drivers/leds/
->
-> Please set up a git tree based on Linus mainline, get that tree
-> included in linux-next (by emailing Stephen) and include its git
-> URL in this MAINTAINERS record.
->
+On Thu, May 10, 2012 at 01:36:14PM -0500, Mark Tinguely wrote:
+> On 05/10/12 13:32, Ben Myers wrote:
+> 
+> >Signed-off-by: Ben Myers<bpm@sgi.com>
+> >
+> >Index: xfs/fs/xfs/xfs_alloc.c
+> >===================================================================
+> >--- xfs.orig/fs/xfs/xfs_alloc.c
+> >+++ xfs/fs/xfs/xfs_alloc.c
+> >@@ -47,8 +47,6 @@ STATIC int xfs_alloc_ag_vextent_near(xfs
+> >  STATIC int xfs_alloc_ag_vextent_size(xfs_alloc_arg_t *);
+> >  STATIC int xfs_alloc_ag_vextent_small(xfs_alloc_arg_t *,
+> >  		xfs_btree_cur_t *, xfs_agblock_t *, xfs_extlen_t *, int *);
+> >-STATIC void xfs_extent_busy_trim(struct xfs_alloc_arg *,
+> >-		xfs_agblock_t, xfs_extlen_t, xfs_agblock_t *, xfs_extlen_t *);
+> >
+> >  /*
+> >   * Lookup the record equal to [bno, len] in the btree given by cur.
+> >Index: xfs/fs/xfs/xfs_extent_busy.c
+> >===================================================================
+> >--- xfs.orig/fs/xfs/xfs_extent_busy.c
+> >+++ xfs/fs/xfs/xfs_extent_busy.c
+> >@@ -345,7 +345,7 @@ restart:
+> >   * args->minlen no suitable extent could be found, and the higher level
+> >   * code needs to force out the log and retry the allocation.
+> >   */
+> >-STATIC void
+> >+void
+> >  xfs_extent_busy_trim(
+> >  	struct xfs_alloc_arg	*args,
+> >  	xfs_agblock_t		bno,
+> >Index: xfs/fs/xfs/xfs_extent_busy.h
+> >===================================================================
+> >--- xfs.orig/fs/xfs/xfs_extent_busy.h
+> >+++ xfs/fs/xfs/xfs_extent_busy.h
+> >@@ -54,6 +54,10 @@ void
+> >  xfs_extent_busy_reuse(struct xfs_mount *mp, xfs_agnumber_t agno,
+> >  	xfs_agblock_t fbno, xfs_extlen_t flen, bool userdata);
+> >
+> >+void
+> >+xfs_extent_busy_trim(struct xfs_alloc_arg *args, xfs_agblock_t bno,
+> >+	xfs_extlen_t len, xfs_agblock_t *rbno, xfs_extlen_t *rlen);
+> >+
+> >  int
+> >  xfs_extent_busy_ag_cmp(void *priv, struct list_head *a, struct list_head *b);
+> >
+> >
+> 
+> Hmmm, I saw that before. I have been hand patching that to test.
+> 
+> Looks good.
+> 
+> Reviewed-by: Mark Tinguely <tinguely@sgi.com>
 
-Actually I have account on kernel.org, but it was removed maybe after
-we restored kernel.org due to attacking. So is possible for me to
-apply it again, I was told I need more GPG  key signed, right? Or I
-will setup a tree in kernel.ubuntu.com/git.
+CONFIG_XFS_DEBUG clears the #define of STATIC.  That's where this went off the
+rails.
 
-> Once that is all set up I'll send over the current leds queue -
-> currently 17 patches.
->
-
-Nice, 17 patches is a good start for me.
-
-> We don't presently have a leds mailing list.  I generally find stuff by
-> reading linux-kernel.  You'll now need to do that ;) Even if we did
-> have a leds mailing list, one would still need to follow lkml to avoid
-> losing stuff.
->
-> Or you can not bother - I read lkml and shall grab stray leds patches and
-> will send them on to yourself.
->
-
-let's setup a leds mailing list, is it possible have on vger? I will
-also monitor lkml with your help.
-
-Thanks a lot,
--Bryan
+Thanks,
+	Ben
