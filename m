@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761651Ab2EJVqL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 17:46:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56997 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761528Ab2EJVqI (ORCPT
+	id S1761642Ab2EJVsw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 17:48:52 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:43472 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758235Ab2EJVsu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 17:46:08 -0400
-Date: Thu, 10 May 2012 14:46:04 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Hiroshi DOYU <hdoyu@nvidia.com>
-Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, Aneesh V <aneesh@ti.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] ARM: tegra30: Add Tegra Memory Controller(MC) driver
-Message-ID: <20120510214604.GA3525@kroah.com>
-References: <1336635764-30597-1-git-send-email-hdoyu@nvidia.com>
- <1336635764-30597-3-git-send-email-hdoyu@nvidia.com>
+	Thu, 10 May 2012 17:48:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336635764-30597-3-git-send-email-hdoyu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1336675787.22495.29.camel@joe2Laptop>
+References: <cover.1336619038.git.koverstreet@google.com>
+	<1188908028.170.1336674698865.JavaMail.mail@webmail09>
+	<1336675787.22495.29.camel@joe2Laptop>
+Date: Thu, 10 May 2012 14:48:49 -0700
+Message-ID: <CAH+dOxLfFScjKP8XEyQjAKwqGz4zGzASi15wEoXOgvXCqaSsCQ@mail.gmail.com>
+Subject: Re: [Bcache v13 11/16] bcache: Core btree code
+From: Kent Overstreet <koverstreet@google.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tejun@google.com, agk@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 10:42:32AM +0300, Hiroshi DOYU wrote:
-> Tegra Memory Controller(MC) driver for Tegra30
-> Added to support MC General interrupts, mainly for IOMMU(SMMU).
+I don't feel strongly one way or the other about it, but I do think
+it's more just a matter of taste - the if (0) is ugly, I'll certainly
+grant you that but IMO it makes the weird control flow harder to miss,
+and the indentation more or less matches the control flow.
 
-I'll apply this, but:
+But I haven't come up with a way of writing that I actually like, I
+dislike them all almost equally.
 
-> +static inline u32 mc_readl(struct tegra30_mc *mc, u32 offs)
-> +{
-> +	if (offs < 0x10)
-> +		return readl(mc->regs[0] + offs);
-> +	BUG_ON(offs < 0x3c);
-> +	if (offs < 0x1f0)
-> +		return readl(mc->regs[1] + offs - 0x3c);
-> +	BUG_ON(offs < 0x200);
-> +	if (offs < 0x228)
-> +		return readl(mc->regs[2] + offs - 0x200);
-> +	BUG_ON(offs < 0x284);
-> +	if (offs < 0x400)
-> +		return readl(mc->regs[3] + offs - 0x284);
-> +	BUG();
-> +}
-
-That's a lot of BUG* calls.  Same thing with the 1/4 patch in this
-series.
-
-We really should not have a BUG call in any driver, as you just stopped
-the whole system.  I can understand this being there for debugging when
-you create the code originally, but as these are things no one should
-ever be able to hit now, you should remove them, right?
-
-Care to write a follow-on patch removing all of these BUG_ON and BUG
-calls in this and the drivers/memory/tegra20-mc.c driver?
-
-thanks,
-
-greg k-h
+On Thu, May 10, 2012 at 11:49 AM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2012-05-09 at 23:10 -0400, Kent Overstreet wrote:
+>> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> []
+>> +
+>> +void btree_read_done(struct closure *cl)
+>> +{
+> []
+>> +     if (b->written < btree_blocks(b))
+>> +             bset_init_next(b);
+>> +
+>> +     if (0) {
+>> +err:         set_btree_node_io_error(b);
+>> +             cache_set_error(b->c, "%s at bucket %lu, block %zu, %u keys",
+>> +                             err, PTR_BUCKET_NR(b->c, &b->key, 0),
+>> +                             index(i, b), i->keys);
+>> +     }
+>
+> Hi Kent
+>
+> trivia:  This if (0) is an exceedingly ugly style.
+>
+> I'd much prefer:
+>
+>        if (foo)
+>                bar();
+>
+>        goto exit;
+>
+> err:
+>        set_btree_node_io_error(b);
+>        cache_set_error(b->c, "%s at bucket %lu, block %zu, %u keys",
+>                        err, PTR_BUCKET_NR(b->c, &b->key, 0),
+>                        index(i, b), i->keys);
+>
+> exit:
+>        etc...
+>
+>
