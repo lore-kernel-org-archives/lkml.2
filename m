@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760854Ab2EJRiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:38:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61484 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760802Ab2EJRhO (ORCPT
+	id S1760878Ab2EJRiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:38:20 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:34996 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760837Ab2EJRiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:37:14 -0400
-Message-Id: <20120510173137.405358447@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Thu, 10 May 2012 10:32:24 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 52/52] ARM: 7398/1: l2x0: only write to debug registers on PL310
-In-Reply-To: <20120510173229.GA5678@kroah.com>
+	Thu, 10 May 2012 13:38:11 -0400
+Message-ID: <4FABFCFE.8010307@landley.net>
+Date: Thu, 10 May 2012 12:38:06 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] bitops: add _local bitops
+References: <20120509134528.GA18044@redhat.com>
+In-Reply-To: <20120509134528.GA18044@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On 05/09/2012 08:45 AM, Michael S. Tsirkin wrote:
+> diff --git a/Documentation/atomic_ops.txt b/Documentation/atomic_ops.txt
+> index 27f2b21..b7e3b67 100644
+> --- a/Documentation/atomic_ops.txt
+> +++ b/Documentation/atomic_ops.txt
+> @@ -520,6 +520,25 @@ The __clear_bit_unlock version is non-atomic, however it still implements
+>  unlock barrier semantics. This can be useful if the lock itself is protecting
+>  the other bits in the word.
+>  
+> +Local versions of the bitmask operations are also provided.  They are used in
+> +contexts where the operations need to be performed atomically with respect to
+> +the local CPU, but no other CPU accesses the bitmask.  This assumption makes it
+> +possible to avoid the need for SMP protection and use less expensive atomic
+> +operations in the implementation.
+> +They have names similar to the above bitmask operation interfaces,
+> +except that _local is sufficed to the interface name.
+> +
+> +	void set_bit_local(unsigned long nr, volatile unsigned long *addr);
+> +	void clear_bit_local(unsigned long nr, volatile unsigned long *addr);
+> +	void change_bit_local(unsigned long nr, volatile unsigned long *addr);
+> +	int test_and_set_bit_local(unsigned long nr, volatile unsigned long *addr);
+> +	int test_and_clear_bit_local(unsigned long nr, volatile unsigned long *addr);
+> +	int test_and_change_bit_local(unsigned long nr, volatile unsigned long *addr);
+> +
+> +These local variants are useful for example if the bitmask may be accessed from
+> +a local intrerrupt, or from a hypervisor on the same CPU if running in a VM.
+> +These local variants also do not have any special memory barrier semantics.
+> +
+>  Finally, there are non-atomic versions of the bitmask operations
+>  provided.  They are used in contexts where some other higher-level SMP
+>  locking scheme is being used to protect the bitmask, and thus less
 
-------------------
+For this bit:
 
-From: Will Deacon <will.deacon@arm.com>
+Acked-by: Rob Landley <rob@landley.net>
 
-commit ab4d536890853ab6675ede65db40e2c0980cb0ea upstream.
-
-PL310 errata #588369 and #727915 require writes to the debug registers
-of the cache controller to work around known problems. Writing these
-registers on L220 may cause deadlock, so ensure that we only perform
-this operation when we identify a PL310 at probe time.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/mm/cache-l2x0.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
-
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -81,10 +81,13 @@ static inline void l2x0_inv_line(unsigne
- }
- 
- #if defined(CONFIG_PL310_ERRATA_588369) || defined(CONFIG_PL310_ERRATA_727915)
-+static inline void debug_writel(unsigned long val)
-+{
-+	if (outer_cache.set_debug)
-+		outer_cache.set_debug(val);
-+}
- 
--#define debug_writel(val)	outer_cache.set_debug(val)
--
--static void l2x0_set_debug(unsigned long val)
-+static void pl310_set_debug(unsigned long val)
- {
- 	writel_relaxed(val, l2x0_base + L2X0_DEBUG_CTRL);
- }
-@@ -94,7 +97,7 @@ static inline void debug_writel(unsigned
- {
- }
- 
--#define l2x0_set_debug	NULL
-+#define pl310_set_debug	NULL
- #endif
- 
- #ifdef CONFIG_PL310_ERRATA_588369
-@@ -331,6 +334,7 @@ void __init l2x0_init(void __iomem *base
- 		/* Unmapped register. */
- 		sync_reg_offset = L2X0_DUMMY_REG;
- #endif
-+		outer_cache.set_debug = pl310_set_debug;
- 		break;
- 	case L2X0_CACHE_ID_PART_L210:
- 		ways = (aux >> 13) & 0xf;
-@@ -379,7 +383,6 @@ void __init l2x0_init(void __iomem *base
- 	outer_cache.flush_all = l2x0_flush_all;
- 	outer_cache.inv_all = l2x0_inv_all;
- 	outer_cache.disable = l2x0_disable;
--	outer_cache.set_debug = l2x0_set_debug;
- 
- 	printk(KERN_INFO "%s cache controller enabled\n", type);
- 	printk(KERN_INFO "l2x0: %d ways, CACHE_ID 0x%08x, AUX_CTRL 0x%08x, Cache size: %d B\n",
-
-
+Rob
+-- 
+GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
+Either it's "mere aggregation", or a license violation.  Pick one.
