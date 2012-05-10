@@ -1,124 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab2EJCd0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 22:33:26 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46890 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319Ab2EJCdY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 22:33:24 -0400
-Message-ID: <1336617173.25027.4.camel@mop>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
- variable-length record buffer
-From: Kay Sievers <kay@vrfy.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
-Date: Thu, 10 May 2012 04:32:53 +0200
-In-Reply-To: <CA+55aFyrrH0jJV--L=ugt0YK7pT+jmhjvt_WRWyenyiroN97zg@mail.gmail.com>
-References: <1336004953.4240.9.camel@mop>
-	 <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
-	 <1336475689.1179.12.camel@mop>
-	 <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
-	 <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
-	 <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
-	 <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com>
-	 <20120509070710.GA29981@gmail.com>
-	 <CAPXgP11evyQQKNDaa00R7qsOFy5Xk-utN1w9OgB4y6NxLZG=UA@mail.gmail.com>
-	 <1336611278.728.9.camel@mop>
-	 <CA+55aFyrrH0jJV--L=ugt0YK7pT+jmhjvt_WRWyenyiroN97zg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
-Content-Transfer-Encoding: 7bit
+	id S1754277Ab2EJCiN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 22:38:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41534 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753809Ab2EJCiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 22:38:11 -0400
+Date: Thu, 10 May 2012 12:37:54 +1000
+From: NeilBrown <neilb@suse.de>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 0/6] twl4030: Various fixes for charing-from-USB
+Message-ID: <20120510123754.6a6d95b9@notabene.brown>
+In-Reply-To: <20120510012422.GA32077@nchen-desktop>
+References: <20120425072931.20124.56635.stgit@notabene.brown>
+	<20120510012422.GA32077@nchen-desktop>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/xjof8a7xTXExD4Ww5GXamV="; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 18:18 -0700, Linus Torvalds wrote:
-> On Wed, May 9, 2012 at 5:54 PM, Kay Sievers <kay@vrfy.org> wrote:
-> >
-> > How about this? It relaxes the need for KERN_CONT, but it limits
-> > continuation lines to repeated calls of the same thread.
-> 
-> Fair enough, looks reasonable.
-> 
-> Except your case-statement sucks. Having a "case 'c':" that basically
-> then immediately has an "if (it was not 'c')" is just disturbing. Just
-> move the code that is common to all the cases outside the case
-> statement entirely, and make the 'c' case not do anything at all, and
-> remove that crazy extraneous if-statement.
+--Sig_/xjof8a7xTXExD4Ww5GXamV=
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, 10 May 2012 09:24:23 +0800 Peter Chen <peter.chen@freescale.com>
+wrote:
+
+> On Wed, Apr 25, 2012 at 05:33:10PM +1000, NeilBrown wrote:
+> > Following are a collection of patches that I've need using for a while
+> > to make sure the charge-from-usb on my GTA04 works.
+> > Hopefully I've included the right people in the recipient list :-)
+> >=20
+> > The issues are:
+> >  - charge the backup battery as well as the main battery
+> >  - charge from a charger which ties ID to ground via a resistor
+> >  - charge while device is suspended, or when no gadget module is
+> >    loaded (i.e. when the USB side thinks the phy should be powered
+> >    down).
+> According to USB Spec, when the USB bus goes to suspend, the device
+> should not draw more than 2.5mA. So when the device is suspended,
+> it should notify the battery driver do NOT charge any more.
+
+Hi Peter,
+ thanks for your input.
+
+ Would you be able to help me understand exactly what it means for the USB
+ bus to go to suspend?  Is this something that the host initiates or
+ something that the gadget initiates?
+ How does this relate to a simple charger?  It that considered to have a
+ non-suspended bus, or is it considered as a separate case?
+
+ Maybe we need to not suspend the USB OTG interface when the device as a
+ whole enters suspend-to-RAM.  Maybe we need to register a dummy gadget to
+ the bus active while in suspend?
+ Does the gadget have to be responsive while-ever the bus is not suspended?
+ Maybe we can arrange for any USB activity to trigger a resume?
+
+ Entering suspend while still charging really should be possible - at least
+ with a dump charger and hopefully from a host port as well.  I'll like to
+ find the best way to achieve that, and any help you can provide would be
+ greatly appreciated.
+
+Thanks,
+NeilBrown
 
 
-From: Kay Sievers <kay@vrfy.org>
-Subject: printk() - do not merge continuation lines of different threads
-
-This prevents the merging of printk() continuation lines of different
-threads, in the case they race against each other.
-
-It should properly isolate "atomic" single-line printk() users from
-continuation users, to make sure the single-line users will never be
-merged with the racy continuation ones.
-
-Signed-off-by: Kay Sievers <kay@vrfy.org>
----
-
- kernel/printk.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
-
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1230,12 +1230,13 @@ asmlinkage int vprintk_emit(int facility
- 	static size_t buflen;
- 	static int buflevel;
- 	static char textbuf[LOG_LINE_MAX];
-+	static struct task_struct *cont;
- 	char *text = textbuf;
- 	size_t textlen;
- 	unsigned long flags;
- 	int this_cpu;
- 	bool newline = false;
--	bool cont = false;
-+	bool prefix = false;
- 	int printed_len = 0;
- 
- 	boot_delay_msec();
-@@ -1295,20 +1296,16 @@ asmlinkage int vprintk_emit(int facility
- 		case '0' ... '7':
- 			if (level == -1)
- 				level = text[1] - '0';
--			text += 3;
--			textlen -= 3;
--			break;
--		case 'c':	/* KERN_CONT */
--			cont = true;
- 		case 'd':	/* KERN_DEFAULT */
-+			prefix = true;
-+		case 'c':	/* KERN_CONT */
- 			text += 3;
- 			textlen -= 3;
--			break;
- 		}
- 	}
- 
--	if (buflen && (!cont || dict)) {
--		/* no continuation; flush existing buffer */
-+	if (buflen && (prefix || dict || cont != current)) {
-+		/* flush existing buffer */
- 		log_store(facility, buflevel, NULL, 0, buf, buflen);
- 		printed_len += buflen;
- 		buflen = 0;
-@@ -1342,6 +1339,10 @@ asmlinkage int vprintk_emit(int facility
- 				  dict, dictlen, text, textlen);
- 			printed_len += textlen;
- 		}
-+		cont = NULL;
-+	} else {
-+		/* remember thread which filled the buffer */
-+		cont = current;
- 	}
- 
- 	/*
+> >=20
+> > Questions and comments more welcome.
+> >=20
+> > Thanks,
+> > NeilBrown
+> >=20
+> >=20
+> > ---
+> >=20
+> > NeilBrown (6):
+> >       twl4030-usb: Don't report EVENT_ID when there is VBUS.
+> >       twl4030-usb: Don't power down phy when it is in-use by charger.
+> >       twl4030_charger: Allow charger to control the regulator that feed=
+s it.
+> >       twl4030_charger: allow charging whenever VBUS is present.
+> >       twl4030_charger: add backup-battery charging.
+> >       twl4030_charger: Fix some typos
+> >=20
+> >=20
+> >  drivers/mfd/twl-core.c          |    9 ++--
+> >  drivers/power/twl4030_charger.c |   86 +++++++++++++++++++++++++++++++=
+++++----
+> >  drivers/usb/otg/twl4030-usb.c   |   27 ++++++++----
+> >  include/linux/i2c/twl.h         |    2 +
+> >  4 files changed, 102 insertions(+), 22 deletions(-)
+> >=20
+> > --=20
+> > Signature
+> >=20
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >=20
+>=20
 
 
+--Sig_/xjof8a7xTXExD4Ww5GXamV=
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBT6sqAjnsnt1WYoG5AQLHwRAAvVMS9UzWVbhGdiAfhf53lLJbq/AtUuUG
+2h1ayuM39PCZ+zWjqUgB1T4rK++KE3pcnI2hUD1OyFlPN63/RiGIE3SAp3auRBsm
+N+r4EwYwrcLGvnswQ1P2NVuwaGejRCzPb8PgGeRdLHFGghwCBlR59w3/OWRGZ3gV
+77uSSr9nspp7Rg1x2mUKr8S/ZxEtn4p1BvXWXdjzXPVJtZU6oPSEpgh+yQL6SplF
+3cs/4kje/Mu/6VTx4g/V/dUXuFUES/8Gb4+mwJ5qr4/Yz0RitEKjjkOVtrZ3a/w5
+Gj+VzgpGLzYRmslgvP9WwFnSkjvowdIOLACjmgHQ9PajMcojcp20eZpld2ibc2B/
+A9svNs4vHak82Xu+t591Hr9sLC5UVO9zG9cYeMmi8hmcK2qUIS4abfftXEwE6E9d
+YMIKCw3uJjCMp4GsTcZ75QCndP+oApIIdiLpdH305dxMwxawVPY3QKmRpGgJ9BNC
+eR9aKj5yW3EzGRxHSAzFnO+4VvfTc8akeMxjpY6wdtWIVeZ37vhPH7uzMBVfbZ4z
+SulFWMxfkT9bTXu+TEtrOOO1usqPd33cRh4sFzMu8TQmam9vfQa9h+NyzzYs/gV1
+HpTN8Fn2KMbwazRjBGeQYZOsnN/zMq9kSfxzwME2fYW7RMKgSTEvhLG+xPEaV5V1
+3/kqllebkJM=
+=JgN8
+-----END PGP SIGNATURE-----
+
+--Sig_/xjof8a7xTXExD4Ww5GXamV=--
