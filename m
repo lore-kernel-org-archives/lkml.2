@@ -1,135 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab2EJCiN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 May 2012 22:38:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41534 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753809Ab2EJCiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 May 2012 22:38:11 -0400
-Date: Thu, 10 May 2012 12:37:54 +1000
-From: NeilBrown <neilb@suse.de>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 0/6] twl4030: Various fixes for charing-from-USB
-Message-ID: <20120510123754.6a6d95b9@notabene.brown>
-In-Reply-To: <20120510012422.GA32077@nchen-desktop>
-References: <20120425072931.20124.56635.stgit@notabene.brown>
-	<20120510012422.GA32077@nchen-desktop>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/xjof8a7xTXExD4Ww5GXamV="; protocol="application/pgp-signature"
+	id S1754366Ab2EJCnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 May 2012 22:43:45 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56256 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754108Ab2EJCnn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 May 2012 22:43:43 -0400
+Message-ID: <4FAB2B5B.4020902@gmail.com>
+Date: Wed, 09 May 2012 22:43:39 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, anton@samba.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PULL] cpumask: finally make them variable size w/ CPUMASK_OFFSTACK.
+References: <87ipg5c2bk.fsf@rustcorp.com.au> <4FAB1AC9.1050306@gmail.com> <871umsdbm0.fsf@rustcorp.com.au>
+In-Reply-To: <871umsdbm0.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/xjof8a7xTXExD4Ww5GXamV=
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+(5/9/12 10:16 PM), Rusty Russell wrote:
+> On Wed, 09 May 2012 21:32:57 -0400, KOSAKI Motohiro<kosaki.motohiro@gmail.com>  wrote:
+>> (5/9/12 2:10 AM), Rusty Russell wrote:
+>>> Hi Ingo,
+>>>
+>>>           I finally rebased this on top of your tip tree, and tested it
+>>> locally.  Some more old-style cpumask usages have crept in, but it's a
+>>> fairly simple series.
+>>>
+>>> The final result is that if you enable CONFIG_CPUMASK_OFFSTACK, then
+>>> 'struct cpumask' becomes an undefined type.  You can't accidentally take
+>>> the size of it, assign it, or pass it by value.  And thus it's safe for
+>>> us to make it smaller if nr_cpu_ids<   NR_CPUS, as the final patch does.
+>>>
+>>> It unfortunately requires the lglock cleanup patch, which Al already has
+>>> queued, so I've included it here.
+>>
+>> Hi
+>>
+>> Thanks this effort. This is very cleaner than I expected.
+>> However I should NAK following one patch. sorry. because of, lru-drain is
+>> called from memory reclaim context. It mean, additional allocation may not
+>> work. Please just use bare NR_CPUS bitmap instead. space wasting is minor
+>> issue than that.
+>
+> But if it fails the allocation, that's fine: we just send a few more
+> IPIs to every CPU:
+>
+> +	if (!zalloc_cpumask_var(&cpus_with_pcps, GFP_KERNEL)) {
+> +		on_each_cpu(drain_local_pages, NULL, 1);
+> +		return;
+> +	}
+>
+> We can do it the other way, but it sets a bad example, and after we get
+> rid of cpumask, it becomes:
+>
+>          static DECLARE_BITMAP(cpus_with_pcps, NR_CPUS);
+>
+>          ......
+>
+>   		if (has_pcps)
+> 			cpumask_set_cpu(cpu, to_cpumask(cpus_with_pcps));
+> 		else
+> 			cpumask_clear_cpu(cpu, to_cpumask(cpus_with_pcps));
+>   	}
+> 	on_each_cpu_mask(to_cpumask(cpus_with_pcps), drain_local_pages, NULL, 1);
+>
+> Or is there a reason we shouldn't even try to allocate here?
 
-On Thu, 10 May 2012 09:24:23 +0800 Peter Chen <peter.chen@freescale.com>
-wrote:
+1) your code always use GFP_KERNEL. it is trouble maker when alloc_pages w/ GFP_ATOMIC.
+2) When CONFIG_CPUMASK_OFFSTACK=n and NR_CPUS is relatively large, cpumask on stack may
+cause stack overflow. because of, alloc_pages() can be called from very deep call stack.
 
-> On Wed, Apr 25, 2012 at 05:33:10PM +1000, NeilBrown wrote:
-> > Following are a collection of patches that I've need using for a while
-> > to make sure the charge-from-usb on my GTA04 works.
-> > Hopefully I've included the right people in the recipient list :-)
-> >=20
-> > The issues are:
-> >  - charge the backup battery as well as the main battery
-> >  - charge from a charger which ties ID to ground via a resistor
-> >  - charge while device is suspended, or when no gadget module is
-> >    loaded (i.e. when the USB side thinks the phy should be powered
-> >    down).
-> According to USB Spec, when the USB bus goes to suspend, the device
-> should not draw more than 2.5mA. So when the device is suspended,
-> it should notify the battery driver do NOT charge any more.
-
-Hi Peter,
- thanks for your input.
-
- Would you be able to help me understand exactly what it means for the USB
- bus to go to suspend?  Is this something that the host initiates or
- something that the gadget initiates?
- How does this relate to a simple charger?  It that considered to have a
- non-suspended bus, or is it considered as a separate case?
-
- Maybe we need to not suspend the USB OTG interface when the device as a
- whole enters suspend-to-RAM.  Maybe we need to register a dummy gadget to
- the bus active while in suspend?
- Does the gadget have to be responsive while-ever the bus is not suspended?
- Maybe we can arrange for any USB activity to trigger a resume?
-
- Entering suspend while still charging really should be possible - at least
- with a dump charger and hopefully from a host port as well.  I'll like to
- find the best way to achieve that, and any help you can provide would be
- greatly appreciated.
-
-Thanks,
-NeilBrown
-
-
-> >=20
-> > Questions and comments more welcome.
-> >=20
-> > Thanks,
-> > NeilBrown
-> >=20
-> >=20
-> > ---
-> >=20
-> > NeilBrown (6):
-> >       twl4030-usb: Don't report EVENT_ID when there is VBUS.
-> >       twl4030-usb: Don't power down phy when it is in-use by charger.
-> >       twl4030_charger: Allow charger to control the regulator that feed=
-s it.
-> >       twl4030_charger: allow charging whenever VBUS is present.
-> >       twl4030_charger: add backup-battery charging.
-> >       twl4030_charger: Fix some typos
-> >=20
-> >=20
-> >  drivers/mfd/twl-core.c          |    9 ++--
-> >  drivers/power/twl4030_charger.c |   86 +++++++++++++++++++++++++++++++=
-++++----
-> >  drivers/usb/otg/twl4030-usb.c   |   27 ++++++++----
-> >  include/linux/i2c/twl.h         |    2 +
-> >  4 files changed, 102 insertions(+), 22 deletions(-)
-> >=20
-> > --=20
-> > Signature
-> >=20
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >=20
->=20
+Thought?
 
 
---Sig_/xjof8a7xTXExD4Ww5GXamV=
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT6sqAjnsnt1WYoG5AQLHwRAAvVMS9UzWVbhGdiAfhf53lLJbq/AtUuUG
-2h1ayuM39PCZ+zWjqUgB1T4rK++KE3pcnI2hUD1OyFlPN63/RiGIE3SAp3auRBsm
-N+r4EwYwrcLGvnswQ1P2NVuwaGejRCzPb8PgGeRdLHFGghwCBlR59w3/OWRGZ3gV
-77uSSr9nspp7Rg1x2mUKr8S/ZxEtn4p1BvXWXdjzXPVJtZU6oPSEpgh+yQL6SplF
-3cs/4kje/Mu/6VTx4g/V/dUXuFUES/8Gb4+mwJ5qr4/Yz0RitEKjjkOVtrZ3a/w5
-Gj+VzgpGLzYRmslgvP9WwFnSkjvowdIOLACjmgHQ9PajMcojcp20eZpld2ibc2B/
-A9svNs4vHak82Xu+t591Hr9sLC5UVO9zG9cYeMmi8hmcK2qUIS4abfftXEwE6E9d
-YMIKCw3uJjCMp4GsTcZ75QCndP+oApIIdiLpdH305dxMwxawVPY3QKmRpGgJ9BNC
-eR9aKj5yW3EzGRxHSAzFnO+4VvfTc8akeMxjpY6wdtWIVeZ37vhPH7uzMBVfbZ4z
-SulFWMxfkT9bTXu+TEtrOOO1usqPd33cRh4sFzMu8TQmam9vfQa9h+NyzzYs/gV1
-HpTN8Fn2KMbwazRjBGeQYZOsnN/zMq9kSfxzwME2fYW7RMKgSTEvhLG+xPEaV5V1
-3/kqllebkJM=
-=JgN8
------END PGP SIGNATURE-----
-
---Sig_/xjof8a7xTXExD4Ww5GXamV=--
