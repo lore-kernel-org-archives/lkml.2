@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759853Ab2EJPIt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 11:08:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4949 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756452Ab2EJPIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 11:08:48 -0400
-Message-ID: <4FABD9F0.6050008@redhat.com>
-Date: Thu, 10 May 2012 12:08:32 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1759890Ab2EJPKt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 11:10:49 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60508 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757948Ab2EJPKr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 11:10:47 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        gregkh <gregkh@linuxfoundation.org>
-Subject: Re: [EDAC ABI v13 04/25] events/hw_event: Create a Hardware Events
- Report Mecanism (HERM)
-References: <1334608729-30803-1-git-send-email-mchehab@redhat.com> <1334608729-30803-5-git-send-email-mchehab@redhat.com> <20120509121326.GA22737@aftab.osrc.amd.com> <4FAA6802.9070506@redhat.com> <20120509132237.GD22737@aftab.osrc.amd.com> <4FAA7649.5080606@redhat.com> <20120509140632.GG22737@aftab.osrc.amd.com> <4FAA7C1A.3020406@redhat.com> <20120509142456.GH22737@aftab.osrc.amd.com> <4FABBFAF.20809@redhat.com> <20120510134136.GC31257@aftab.osrc.amd.com> <4FABD653.7060401@redhat.com>
-In-Reply-To: <4FABD653.7060401@redhat.com>
-X-Enigmail-Version: 1.4.1
+In-Reply-To: <4FAAD4EB.4010007@wwwdotorg.org>
+References: <1336470270-23518-1-git-send-email-linus.walleij@stericsson.com>
+	<4FAAD4EB.4010007@wwwdotorg.org>
+Date: Thu, 10 May 2012 17:10:46 +0200
+Message-ID: <CACRpkdaiTsaBT=20UUOx2mYsK4r5rArVqXfU9LMObFVb3iEA9w@mail.gmail.com>
+Subject: Re: [PATCH 02/12] pinctrl: basic Nomadik pinctrl interface
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 10-05-2012 11:53, Mauro Carvalho Chehab escreveu:
-> Em 10-05-2012 10:41, Borislav Petkov escreveu:
->> On Thu, May 10, 2012 at 10:16:31AM -0300, Mauro Carvalho Chehab wrote:
->>> Nah, this is not marketing speak. HERM is not a trademark. amd64_edac,
->>> on the other hand, is using a trademark on his name. If we use your
->>> logic, this would need to be renamed to something else, to avoid using
->>> a "marketing speak".
+On Wed, May 9, 2012 at 10:34 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 05/08/2012 03:44 AM, Linus Walleij wrote:
+>> From: Linus Walleij <linus.walleij@linaro.org>
 >>
->> I'm not even going to dignify that with an answer because it is a bunch
->> of bullshit and you know it.
->>
->>> We need some name to differentiate between the broken EDAC core where
->>> modern memory controllers are not properly represented and reports
->>> errors on fake csrows/channels from the EDAC+HERM core that will
->>> properly provide the error information to where it really belongs.
->>
->> A kernel version or a commit id is not enough here I guess.
->>
->>> In other words, HERM is just an acronym[1] to the version to point to
->>> where EDAC starts to work fine with modern memory controllers.
->>
->> Seems to me you're desperately trying to prove your point for having
->> this HERM thing by coming up with a bunch of bogus arguments.
->>
->> And I'm still waiting for a real, technical reason which legitimizes
->> calling a tracepoint something special.
-> 
-> Technical reasons were provided already: before this patch series, EDAC
-> is *broken*.
+>> This adds a scratch pin control interface to the Nomadik pinctrl
+>> driver, and defines the pins and groups in the DB8500 ASIC. We
+>> define GPIO ranges to cover the pins exposed. The DB8500 has
+>> more pins than this but we restrict the driver to the pins that
+>> can be controlled from the combined GPIO and pin control hardware
+>> to begin with.
+>
+>> diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+>
+>> +static int nmk_list_groups(struct pinctrl_dev *pctldev, unsigned selector)
+>> +{
+>> +     struct nmk_pinctrl *npct = pinctrl_dev_get_drvdata(pctldev);
+>> +
+>> +     if (selector >= npct->soc->ngroups)
+>> +             return -EINVAL;
+>
+> I think all the other drivers removed this error-checking from functions
+> called by the pinctrl core, assuming that the core would error-check any
+> user-supplied data and respect limits in the pinctrl device descriptor.
 
-There's also another technical reason to give an acronym to the EDAC version
-that actually works: changeset numbers are not consistent within distributions
-(or other trees, like -stable - although this 60+ patch series probably won't
-fit on -stable merging criteria).
+Oh yeah that's because I based it off 3.4-rc:s simply, I should just merge
+in the pinctrl-mergebase tag and be happy like everyone else, sorry
+will fix.
 
-Also, this EDAC changeset 60+ patch series can't be represented by a single
-changeset, and requires userspace changes in order to get a proper
-representation model for memories.
+>> +static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
+>
+>> +     /* Poke in other ASIC variants here */
+>> +     if (platid->driver_data == PINCTRL_NMK_DB8500)
+>> +             nmk_pinctrl_db8500_init(&npct->soc);
+>
+> Other platforms have a unique top-level driver for each variant, with
+> the probe() function for each variant calling into a utility function.
+> That way, the common/utility code doesn't need to contain a
+> table/list/... of all the variants. Can the same approach be used here?
 
-Tagging the EDAC core version with a name helps a lot when dealing with all
-the unsolved bugzillas that will be closed by backporting this patch series 
-in order to fix the serious EDAC core bug that were providing fake information
-to the end user for all Intel memory controllers manufactured after 2005.
+Of course I could do it that way, but it's not using this feature
+of the driver base to have a string identifier telling which version
+it is.
 
-Regards,
-Mauro
+Since I'm unsure, let's ask Arnd.
 
-> 
-> Mauro.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Arnd, what is your preferred design pattern of:
 
+A) sub-drivers that register one struct platform_driver per
+  variant, then calls into a shared core driver, or
+
+B) a shared core driver registering one platform_driver
+  with several struct platform_device_id that then call
+  sub-drivers depending on which one is found
+
+Either way is actually OK for me, but I was thinking if one
+is preferred over the other.
+
+Yours,
+Linus Walleij
