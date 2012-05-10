@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab2EJIfj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 04:35:39 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:39180 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757401Ab2EJIff (ORCPT
+	id S1757500Ab2EJIkT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 04:40:19 -0400
+Received: from smtp02.smtpout.orange.fr ([80.12.242.124]:24381 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757458Ab2EJIkJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 04:35:35 -0400
-Message-ID: <4FAB7DC1.5060503@stericsson.com>
-Date: Thu, 10 May 2012 10:35:13 +0200
-From: Ola Lilja <ola.o.lilja@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+	Thu, 10 May 2012 04:40:09 -0400
+Message-ID: <4FAB7EE5.8010507@wanadoo.fr>
+Date: Thu, 10 May 2012 10:40:05 +0200
+From: Pascal Chapperon <pascal.chapperon@wanadoo.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the sound-asoc tree
-References: <20120510143329.4cef3cd78ce5ea55416b1d93@canb.auug.org.au> <CACRpkdYsHXnWHvBw6Pt1atvwKP6KYjfu-PwQnL_L7-yW1-4_FA@mail.gmail.com>
-In-Reply-To: <CACRpkdYsHXnWHvBw6Pt1atvwKP6KYjfu-PwQnL_L7-yW1-4_FA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: paulmck@linux.vnet.ibm.com
+CC: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org
+Subject: Re: RCU related performance regression in 3.3
+References: <20177034.34764.1335528920975.JavaMail.www@wwinf1f04> <20120428034257.GA2495@linux.vnet.ibm.com> <20120501000245.GA4329@linux.vnet.ibm.com> <4F9FA50C.9070600@wanadoo.fr> <20120501154513.GD2441@linux.vnet.ibm.com> <4FA3EAEE.9030601@wanadoo.fr> <20120504150411.GC2411@linux.vnet.ibm.com> <4FA44CF9.7050604@wanadoo.fr> <20120504231442.GT2411@linux.vnet.ibm.com>
+In-Reply-To: <20120504231442.GT2411@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2012 10:30 AM, Linus Walleij wrote:
-
-> On Thu, May 10, 2012 at 6:33 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
->> After merging the sound-asoc tree, today's linux-next build (x86_64
->> allmodconfig) failed like this:
+Le 05/05/2012 01:14, Paul E. McKenney a écrit :
+> On Fri, May 04, 2012 at 11:41:13PM +0200, Pascal Chapperon wrote:
+>> Le 04/05/2012 17:04, Paul E. McKenney a écrit :
+>>> On Fri, May 04, 2012 at 04:42:54PM +0200, Pascal Chapperon wrote:
+>>>> Le 01/05/2012 17:45, Paul E. McKenney a écrit :
+>>>>
+>>>>> Here is my RCU_FAST_NO_HZ patch stack on top of v3.4-rc4.
+>>>>>
+>>>>> Or you can pull branch fnh.2012.05.01a from:
+>>>>>
+>>>>> 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+>>>>>
+>>>>> 							Thanx, Paul
+>>>>>
+>>>> I applied your global patch on top of v3.4-rc4. But the slowdown is
+>>>> worse than before : boot sequence took 80s instead 20-30s (12s for
+>>>> initramfs instead of 2s).
+>>>>
+>>>> I'll send you rcu tracing log in a second mail.
+>>>
+>>> Hmmm...  Well, I guess I am glad that I finally did something that
+>>> had an effect, but I sure wish that the effect had been in the other
+>>> direction!
+>>>
+>>> Just to make sure I understand: the difference between the 20-30s and
+>>> the 80s is exactly the patch I sent you?
+>>>
+>>> 							Thanx, Paul
+>>>
+>>>
+>> Yes. Exactly same kernel config as in previous results, I applied
+>> your patch against v3.4-rc4, and sorry, the result is exactly what I
+>> said;
+>> I saw that your global patch was quite huge, and addresses things which
+>> are not directly related with the initial patch (commit
+>> 7cb92499000e3c86dae653077b1465458a039ef6); maybe a side effect?
 >>
->> In file included from sound/soc/ux500/ux500_msp_dai.c:21:0:
->> include/linux/mfd/dbx500-prcmu.h:614:19: error: redefinition of 'prcmu_abb_read'
->> include/linux/mfd/db8500-prcmu.h:673:19: note: previous definition of 'prcmu_abb_read' was here
->> include/linux/mfd/dbx500-prcmu.h:619:19: error: redefinition of 'prcmu_abb_write'
->> include/linux/mfd/db8500-prcmu.h:678:19: note: previous definition of 'prcmu_abb_write' was here
->> include/linux/mfd/dbx500-prcmu.h:630:19: error: redefinition of 'prcmu_config_clkout'
->> include/linux/mfd/db8500-prcmu.h:643:19: note: previous definition of 'prcmu_config_clkout' was here
->> include/linux/mfd/dbx500-prcmu.h:692:20: error: redefinition of 'prcmu_ac_wake_req'
->> include/linux/mfd/db8500-prcmu.h:683:20: note: previous definition of 'prcmu_ac_wake_req' was here
->> include/linux/mfd/dbx500-prcmu.h:694:20: error: redefinition of 'prcmu_ac_sleep_req'
->> include/linux/mfd/db8500-prcmu.h:685:20: note: previous definition of 'prcmu_ac_sleep_req' was here
->> sound/soc/ux500/ux500_msp_dai.c:23:27: fatal error: mach/hardware.h: No such file or directory
->> sound/soc/ux500/ux500_msp_i2s.c:21:27: fatal error: mach/hardware.h: No such file or directory
+>> However, I'm ready to try this patch on my smaller laptop which
+>> supports well CONFIG_FAST_NO_HZ=y and systemd, if you think it can
+>> help ?
 >>
->> Possibly caused by commit 3592b7f69a54 ("ASoC: Ux500: Add MSP I2S-driver").
->>
->> I have used the version of the sound-asoc tree from next-20120508 for today.
-> 
-> The PRCMU driver is only available on the UX500 platforms so building
-> on x86_64 does not make sense.
-> 
-> Ola/Mark: a simple patch like this should solve the issue I think?
+>> Another thought: this issue as nothing to do with i7 Hyper-threading
+>> capacities ? (as I test core2duo, Pentium ulv in same conditions and I
+>> don't encountered any slowdown ?)
+>
+> Well, one possibility is that your setup starts the jiffies counter
+> at some interesting value.  The attached patch (also against v3.4-rc4)
+> applies a bit more paranoia to the initialization to handle this
+> and other possibilities.
+>
+> 							Thanx, Paul
+>
+> ------------------------------------------------------------------------
+I tried your new patch against v3.4-rc5 and saw no improvement :
+still 75 s. for the boot sequence.
 
+I'll send you the logs in a second mail.
 
-True! I think we should put it in the "config SND_SOC_UX500_PLAT_MSP_I2S", though.
-
-> 
-> diff --git a/sound/soc/ux500/Kconfig b/sound/soc/ux500/Kconfig
-> index 9b0ae4e..f454f06 100644
-> --- a/sound/soc/ux500/Kconfig
-> +++ b/sound/soc/ux500/Kconfig
-> @@ -4,6 +4,7 @@
->  menuconfig SND_SOC_UX500
->         tristate "SoC Audio support for Ux500 platform"
->         depends on SND_SOC
-> +       depends on MFD_DB8500_PRCMU
->         help
->                 Say Y if you want to enable ASoC-support for
->                 any of the Ux500 platforms (e.g. U8500).
-> 
-> 
-> But it seems it has a wider dependency on some MOP500 board
-> stuff being merged first, which is more of a problem I think, part
-> of that is pending in the Ux500 tree.
-> 
-> Yours,
-> Linus Walleij
+Pascal
 
 
