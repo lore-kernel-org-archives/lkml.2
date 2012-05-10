@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758269Ab2EJVHi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 17:07:38 -0400
-Received: from bsmtp5.bon.at ([195.3.86.187]:13416 "EHLO lbmfmo03.bon.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754161Ab2EJVHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 17:07:36 -0400
-X-Greylist: delayed 1439 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 May 2012 17:07:36 EDT
-From: Markus Grabner <grabner@icg.tugraz.at>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Johannes Thumshirn <morbidrsa@googlemail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, andor.daam@googlemail.com,
-        thomas@m3y3r.de, jj@chaosbits.net, stefanha@gmail.com
-Subject: Re: [PATCH] drivers/staging/line6/config.h: Remove CHECKPOINT macro
-Date: Thu, 10 May 2012 22:43:12 +0200
-Message-ID: <3216742.sbGdhqZvbl@mark>
-Organization: Graz University of Technology
-User-Agent: KMail/4.8.3 (Linux/3.1.10-1.9-desktop; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <20120510164953.GA32245@kroah.com>
-References: <1336415273-11713-1-git-send-email-morbidrsa@googlemail.com> <1336667410-10035-1-git-send-email-morbidrsa@googlemail.com> <20120510164953.GA32245@kroah.com>
+	id S1758726Ab2EJVKA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 17:10:00 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:57524 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758497Ab2EJVJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 17:09:57 -0400
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, torvalds@linux-foundation.org
+Subject: [PATCH] use linux/bitops.h instead of linux/log2.h to get fls()
+Date: Thu, 10 May 2012 22:49:11 +0200
+Message-ID: <1953408.KQLKiNB2bP@donald.sf-tec.de>
+User-Agent: KMail/4.8.3 (Linux/3.2.9-13-desktop; KDE/4.8.3; i686; ; )
+In-Reply-To: <3154414.psmJh6J2U2@donald.sf-tec.de>
+References: <3154414.psmJh6J2U2@donald.sf-tec.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -26,25 +23,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 May 2012 09:49:53 Greg KH wrote:
-> On Thu, May 10, 2012 at 06:30:10PM +0200, Johannes Thumshirn wrote:
-> > Kill unused debugging macro CHECKPOINT
-> > ---
-> > 
-> >  drivers/staging/line6/config.h |    5 -----
-> >  1 files changed, 0 insertions(+), 5 deletions(-)
-> 
-> -ENOSIGNED_OFF_BY_LINE :(
-The file "config.h" can be removed altogether, it is not included by any other 
-file in the Line6 USB driver.
+Since d66acc39c7cee323733c8503b9de1821a56dff7e (bitops: Optimise get_order())
+getorder.h includes log2.h to get fls() and fls64(). They are not defined in
+log2.h, but in bitops.h. This works since log2.h includes bitops.h, but we
+should do it properly to not get any bad surprises if log2.h changes.
 
-	Kind regards,
-		Markus
+Signed-off-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
+---
+ include/asm-generic/getorder.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
+diff --git a/include/asm-generic/getorder.h b/include/asm-generic/getorder.h
+index 65e4468..563114f 100644
+--- a/include/asm-generic/getorder.h
++++ b/include/asm-generic/getorder.h
+@@ -4,7 +4,7 @@
+ #ifndef __ASSEMBLY__
+ 
+ #include <linux/compiler.h>
+-#include <linux/log2.h>
++#include <linux/bitops.h>
+ 
+ /*
+  * Runtime evaluation of get_order()
 -- 
-Markus Grabner
-Institute for Computer Graphics and Vision
-Graz University of Technology, Inffeldgasse 16a/II, 8010 Graz, Austria
-WWW: http://www.icg.tugraz.at/Members/grabner
+1.7.9.2
 
+--
+To unsubscribe from this list: send the line "unsubscribe linux-parisc" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
