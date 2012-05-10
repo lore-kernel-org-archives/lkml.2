@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759366Ab2EJNqS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 09:46:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37336 "EHLO mx2.suse.de"
+	id S932692Ab2EJNpe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 09:45:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37274 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932695Ab2EJNpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 09:45:35 -0400
+	id S932435Ab2EJNp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 09:45:28 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 17/17] mm: Account for the number of times direct reclaimers get throttled
-Date: Thu, 10 May 2012 14:45:10 +0100
-Message-Id: <1336657510-24378-18-git-send-email-mgorman@suse.de>
+Subject: [PATCH 11/17] netvm: Propagate page->pfmemalloc to skb
+Date: Thu, 10 May 2012 14:45:04 +0100
+Message-Id: <1336657510-24378-12-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1336657510-24378-1-git-send-email-mgorman@suse.de>
 References: <1336657510-24378-1-git-send-email-mgorman@suse.de>
@@ -24,58 +24,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under significant pressure when writing back to network-backed storage,
-direct reclaimers may get throttled. This is expected to be a
-short-lived event and the processes get woken up again but processes do
-get stalled. This patch counts how many times such stalling occurs. It's
-up to the administrator whether to reduce these stalls by increasing
-min_free_kbytes.
+The skb->pfmemalloc flag gets set to true iff during the slab
+allocation of data in __alloc_skb that the the PFMEMALLOC reserves
+were used. If the packet is fragmented, it is possible that pages
+will be allocated from the PFMEMALLOC reserve without propagating
+this information to the skb. This patch propagates page->pfmemalloc
+from pages allocated for fragments to the skb.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/vm_event_item.h |    1 +
- mm/vmscan.c                   |    3 +++
- mm/vmstat.c                   |    1 +
- 3 files changed, 5 insertions(+)
+ include/linux/skbuff.h |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 06f8e38..57f7b10 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -30,6 +30,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		FOR_ALL_ZONES(PGSTEAL_DIRECT),
- 		FOR_ALL_ZONES(PGSCAN_KSWAPD),
- 		FOR_ALL_ZONES(PGSCAN_DIRECT),
-+		PGSCAN_DIRECT_THROTTLE,
- #ifdef CONFIG_NUMA
- 		PGSCAN_ZONE_RECLAIM_FAILED,
- #endif
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 97c766f..141ab5c 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2486,6 +2486,9 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 	if (pfmemalloc_watermark_ok(pgdat))
- 		return;
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 91dd366..ed7cc48 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1229,6 +1229,17 @@ static inline void __skb_fill_page_desc(struct sk_buff *skb, int i,
+ {
+ 	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
  
-+	/* Account for the throttling */
-+	count_vm_event(PGSCAN_DIRECT_THROTTLE);
-+
- 	/*
- 	 * If the caller cannot enter the filesystem, it's possible that it
- 	 * is due to the caller holding an FS lock or performing a journal
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 7db1b9b..7861cbe 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -742,6 +742,7 @@ const char * const vmstat_text[] = {
- 	TEXTS_FOR_ZONES("pgsteal_direct")
- 	TEXTS_FOR_ZONES("pgscan_kswapd")
- 	TEXTS_FOR_ZONES("pgscan_direct")
-+	"pgscan_direct_throttle",
- 
- #ifdef CONFIG_NUMA
- 	"zone_reclaim_failed",
++	/*
++	 * Propagate page->pfmemalloc to the skb if we can. The problem is
++	 * that not all callers have unique ownership of the page. If
++	 * pfmemalloc is set, we check the mapping as a mapping implies
++	 * page->index is set (index and pfmemalloc share space).
++	 * If it's a valid mapping, we cannot use page->pfmemalloc but we
++	 * do not lose pfmemalloc information as the pages would not be
++	 * allocated using __GFP_MEMALLOC.
++	 */
++	if (page->pfmemalloc && !page->mapping)
++		skb->pfmemalloc	= true;
+ 	frag->page.p		  = page;
+ 	frag->page_offset	  = off;
+ 	skb_frag_size_set(frag, size);
 -- 
 1.7.9.2
 
