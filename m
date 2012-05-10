@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760967Ab2EJRpF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:45:05 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45291 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760907Ab2EJRox (ORCPT
+	id S1760540Ab2EJRep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:34:45 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45282 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760501Ab2EJRej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:44:53 -0400
-Subject: Re: [tip:sched/core] sched/numa: Rewrite the CONFIG_NUMA sched
- domain support
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, cmetcalf@tilera.com,
-        tony.luck@intel.com, sivanich@sgi.com, akpm@linux-foundation.org,
-        ralf@linux-mips.org, greg.pearson@hp.com, ink@jurassic.park.msu.ru,
-        tglx@linutronix.de, rth@twiddle.net, kamezawa.hiroyu@jp.fujitsu.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        anton@samba.org, lethal@linux-sh.org, davem@davemloft.net,
-        benh@kernel.crashing.org, dhowells@redhat.com, mattst88@gmail.com,
-        fenghua.yu@intel.com, linux-tip-commits@vger.kernel.org
-In-Reply-To: <CAE9FiQWat=55Ygp-f6ovJx+CD=Knjic9Xvpp+Ngf-o19zNUy7g@mail.gmail.com>
-References: <tip-r74n3n8hhuc2ynbrnp3vt954@git.kernel.org>
-	 <CAE9FiQWat=55Ygp-f6ovJx+CD=Knjic9Xvpp+Ngf-o19zNUy7g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 May 2012 19:44:42 +0200
-Message-ID: <1336671883.27020.128.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 10 May 2012 13:34:39 -0400
+Message-Id: <20120510173135.105281922@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Thu, 10 May 2012 10:31:57 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 25/52] net: l2tp: unlock socket lock before returning from l2tp_ip_sendmsg
+In-Reply-To: <20120510173229.GA5678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-10 at 10:30 -0700, Yinghai Lu wrote:
-> not sure if this one or other is related....
-> 
-> got this from 8 socket Nehalem-ex box.
-> 
-> [   25.549259] mtrr_aps_init() done
-> [   25.554298] ------------[ cut here ]------------
-> [   25.554549] WARNING: at kernel/sched/core.c:6086 build_sched_domains+0x1a9/0x2d0() 
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-oops,.. could you get me the output of:
+------------------
 
- cat /sys/devices/system/node/node*/distance
 
-for that machine? I'll see if I can reproduce using numa=fake.
+From: Sasha Levin <levinsasha928@gmail.com>
+
+[ Upstream commit 84768edbb2721637620b2d84501bb0d5aed603f1 ]
+
+l2tp_ip_sendmsg could return without releasing socket lock, making it all the
+way to userspace, and generating the following warning:
+
+[  130.891594] ================================================
+[  130.894569] [ BUG: lock held when returning to user space! ]
+[  130.897257] 3.4.0-rc5-next-20120501-sasha #104 Tainted: G        W
+[  130.900336] ------------------------------------------------
+[  130.902996] trinity/8384 is leaving the kernel with locks still held!
+[  130.906106] 1 lock held by trinity/8384:
+[  130.907924]  #0:  (sk_lock-AF_INET){+.+.+.}, at: [<ffffffff82b9503f>] l2tp_ip_sendmsg+0x2f/0x550
+
+Introduced by commit 2f16270 ("l2tp: Fix locking in l2tp_ip.c").
+
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/l2tp/l2tp_ip.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/net/l2tp/l2tp_ip.c
++++ b/net/l2tp/l2tp_ip.c
+@@ -441,8 +441,9 @@ static int l2tp_ip_sendmsg(struct kiocb
+ 
+ 		daddr = lip->l2tp_addr.s_addr;
+ 	} else {
++		rc = -EDESTADDRREQ;
+ 		if (sk->sk_state != TCP_ESTABLISHED)
+-			return -EDESTADDRREQ;
++			goto out;
+ 
+ 		daddr = inet->inet_daddr;
+ 		connected = 1;
+
 
