@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932656Ab2EJMLt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 08:11:49 -0400
+	id S932672Ab2EJML5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 08:11:57 -0400
 Received: from mail-lb0-f174.google.com ([209.85.217.174]:35649 "EHLO
 	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756730Ab2EJMLq (ORCPT
+	with ESMTP id S932093Ab2EJMLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 08:11:46 -0400
+	Thu, 10 May 2012 08:11:48 -0400
 From: Johan Hovold <jhovold@gmail.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
@@ -18,136 +18,179 @@ Cc: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 1/2] mfd: lm3533: add boost frequency and ovp to platform data
-Date: Thu, 10 May 2012 14:11:28 +0200
-Message-Id: <1336651889-6425-1-git-send-email-jhovold@gmail.com>
+Subject: [PATCH 2/2] mfd: lm3533: remove boost attributes
+Date: Thu, 10 May 2012 14:11:29 +0200
+Message-Id: <1336651889-6425-2-git-send-email-jhovold@gmail.com>
 X-Mailer: git-send-email 1.7.8.5
-In-Reply-To: <20120510120742.GA29437@localhost>
+In-Reply-To: <1336651889-6425-1-git-send-email-jhovold@gmail.com>
 References: <20120510120742.GA29437@localhost>
+ <1336651889-6425-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add boost-frequency and over-voltage-protection settings to platform
-data.
+Remove boost-frequency and ovp attributes, which can be set through
+platform data, from sysfs.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
- drivers/mfd/lm3533-core.c  |   50 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/lm3533.h |   15 +++++++++++++
- 2 files changed, 65 insertions(+), 0 deletions(-)
+ .../ABI/testing/sysfs-bus-i2c-devices-lm3533       |   23 -----
+ drivers/mfd/lm3533-core.c                          |   88 --------------------
+ 2 files changed, 0 insertions(+), 111 deletions(-)
 
+diff --git a/Documentation/ABI/testing/sysfs-bus-i2c-devices-lm3533 b/Documentation/ABI/testing/sysfs-bus-i2c-devices-lm3533
+index 5700721..1b62230 100644
+--- a/Documentation/ABI/testing/sysfs-bus-i2c-devices-lm3533
++++ b/Documentation/ABI/testing/sysfs-bus-i2c-devices-lm3533
+@@ -1,26 +1,3 @@
+-What:		/sys/bus/i2c/devices/.../boost_freq
+-Date:		April 2012
+-KernelVersion:	3.5
+-Contact:	Johan Hovold <jhovold@gmail.com>
+-Description:
+-		Set the boost converter switching frequency (0, 1), where
+-
+-		0 -  500Hz
+-		1 - 1000Hz
+-
+-What:		/sys/bus/i2c/devices/.../boost_ovp
+-Date:		April 2012
+-KernelVersion:	3.5
+-Contact:	Johan Hovold <jhovold@gmail.com>
+-Description:
+-		Set the boost converter over-voltage protection threshold
+-		(0..3), where
+-
+-		0 - 16V
+-		1 - 24V
+-		2 - 32V
+-		3 - 40V
+-
+ What:		/sys/bus/i2c/devices/.../output_hvled[n]
+ Date:		April 2012
+ KernelVersion:	3.5
 diff --git a/drivers/mfd/lm3533-core.c b/drivers/mfd/lm3533-core.c
-index 75f4b7f..053438c 100644
+index 053438c..d670543 100644
 --- a/drivers/mfd/lm3533-core.c
 +++ b/drivers/mfd/lm3533-core.c
-@@ -138,6 +138,35 @@ int lm3533_update(struct lm3533 *lm3533, u8 reg, u8 val, u8 mask)
- }
- EXPORT_SYMBOL_GPL(lm3533_update);
+@@ -26,11 +26,9 @@
+ #include <linux/mfd/lm3533.h>
  
-+static int lm3533_set_boost_freq(struct lm3533 *lm3533,
-+						enum lm3533_boost_freq freq)
-+{
-+	int ret;
-+
-+	ret = lm3533_update(lm3533, LM3533_REG_BOOST_PWM,
-+					freq << LM3533_BOOST_FREQ_SHIFT,
-+					LM3533_BOOST_FREQ_MASK);
-+	if (ret)
-+		dev_err(lm3533->dev, "failed to set boost frequency\n");
-+
-+	return ret;
-+}
-+
-+
-+static int lm3533_set_boost_ovp(struct lm3533 *lm3533,
-+						enum lm3533_boost_ovp ovp)
-+{
-+	int ret;
-+
-+	ret = lm3533_update(lm3533, LM3533_REG_BOOST_PWM,
-+					ovp << LM3533_BOOST_OVP_SHIFT,
-+					LM3533_BOOST_OVP_MASK);
-+	if (ret)
-+		dev_err(lm3533->dev, "failed to set boost ovp\n");
-+
-+	return ret;
-+}
-+
- /*
-  * HVLED output config -- output hvled controlled by backlight bl
-  */
-@@ -521,6 +550,22 @@ static int __devinit lm3533_device_led_init(struct lm3533 *lm3533)
- 	return 0;
- }
  
-+static int __devinit lm3533_device_setup(struct lm3533 *lm3533,
-+					struct lm3533_platform_data *pdata)
-+{
-+	int ret;
-+
-+	ret = lm3533_set_boost_freq(lm3533, pdata->boost_freq);
-+	if (ret)
-+		return ret;
-+
-+	ret = lm3533_set_boost_ovp(lm3533, pdata->boost_ovp);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
- static int __devinit lm3533_device_init(struct lm3533 *lm3533)
- {
- 	struct lm3533_platform_data *pdata = lm3533->dev->platform_data;
-@@ -550,6 +595,10 @@ static int __devinit lm3533_device_init(struct lm3533 *lm3533)
+-#define LM3533_BOOST_OVP_MAX		0x03
+ #define LM3533_BOOST_OVP_MASK		0x06
+ #define LM3533_BOOST_OVP_SHIFT		1
  
- 	lm3533_enable(lm3533);
+-#define LM3533_BOOST_FREQ_MAX		0x01
+ #define LM3533_BOOST_FREQ_MASK		0x01
+ #define LM3533_BOOST_FREQ_SHIFT		0
  
-+	ret = lm3533_device_setup(lm3533, pdata);
-+	if (ret)
-+		goto err_disable;
-+
- 	lm3533_device_als_init(lm3533);
- 	lm3533_device_bl_init(lm3533);
- 	lm3533_device_led_init(lm3533);
-@@ -564,6 +613,7 @@ static int __devinit lm3533_device_init(struct lm3533 *lm3533)
- 
- err_unregister:
- 	mfd_remove_devices(lm3533->dev);
-+err_disable:
- 	lm3533_disable(lm3533);
- 	if (gpio_is_valid(lm3533->gpio_hwen))
- 		gpio_free(lm3533->gpio_hwen);
-diff --git a/include/linux/mfd/lm3533.h b/include/linux/mfd/lm3533.h
-index 75f85f3..3361137 100644
---- a/include/linux/mfd/lm3533.h
-+++ b/include/linux/mfd/lm3533.h
-@@ -59,9 +59,24 @@ struct lm3533_led_platform_data {
- 	u8 pwm;				/* 0 - 0x3f */
+@@ -253,96 +251,12 @@ struct lm3533_device_attribute {
+ 		struct {
+ 			u8 id;
+ 		} output;
+-		struct {
+-			u8 reg;
+-			u8 shift;
+-			u8 mask;
+-			u8 max;
+-		} generic;
+ 	} u;
  };
  
-+enum lm3533_boost_freq {
-+	LM3533_BOOST_FREQ_500KHZ,
-+	LM3533_BOOST_FREQ_1000KHZ,
-+};
-+
-+enum lm3533_boost_ovp {
-+	LM3533_BOOST_OVP_16V,
-+	LM3533_BOOST_OVP_24V,
-+	LM3533_BOOST_OVP_32V,
-+	LM3533_BOOST_OVP_40V,
-+};
-+
- struct lm3533_platform_data {
- 	int gpio_hwen;
+ #define to_lm3533_dev_attr(_attr) \
+ 	container_of(_attr, struct lm3533_device_attribute, dev_attr)
  
-+	enum lm3533_boost_ovp boost_ovp;
-+	enum lm3533_boost_freq boost_freq;
-+
- 	struct lm3533_als_platform_data *als;
+-static ssize_t show_lm3533_reg(struct device *dev,
+-				struct device_attribute *attr, char *buf)
+-{
+-	struct lm3533 *lm3533 = dev_get_drvdata(dev);
+-	struct lm3533_device_attribute *lattr = to_lm3533_dev_attr(attr);
+-	u8 val;
+-	int ret;
+-
+-	ret = lm3533_read(lm3533, lattr->u.generic.reg, &val);
+-	if (ret)
+-		return ret;
+-
+-	val = (val & lattr->u.generic.mask) >> lattr->u.generic.shift;
+-
+-	return scnprintf(buf, PAGE_SIZE, "%u\n", val);
+-}
+-
+-static ssize_t store_lm3533_reg(struct device *dev,
+-						struct device_attribute *attr,
+-						const char *buf, size_t len)
+-{
+-	struct lm3533 *lm3533 = dev_get_drvdata(dev);
+-	struct lm3533_device_attribute *lattr = to_lm3533_dev_attr(attr);
+-	u8 val;
+-	int ret;
+-
+-	if (kstrtou8(buf, 0, &val) || val > lattr->u.generic.max)
+-		return -EINVAL;
+-
+-	val = val << lattr->u.generic.shift;
+-	ret = lm3533_update(lm3533, lattr->u.generic.reg, val,
+-							lattr->u.generic.mask);
+-	if (ret)
+-		return ret;
+-
+-	return len;
+-}
+-
+-#define GENERIC_ATTR(_reg, _max, _mask, _shift) \
+-	{ .reg		= _reg, \
+-	  .max		= _max, \
+-	  .mask		= _mask, \
+-	  .shift	= _shift }
+-
+-#define LM3533_GENERIC_ATTR(_name, _mode, _show, _store, _type,	\
+-						_reg, _max, _mask, _shift) \
+-	struct lm3533_device_attribute lm3533_dev_attr_##_name = { \
+-		.dev_attr	= __ATTR(_name, _mode, _show, _store), \
+-		.type		= _type, \
+-		.u.generic	= GENERIC_ATTR(_reg, _max, _mask, _shift) }
+-
+-#define LM3533_GENERIC_ATTR_RW(_name, _type, _reg, _max, _mask, _shift) \
+-	LM3533_GENERIC_ATTR(_name, S_IRUGO | S_IWUSR, \
+-					show_lm3533_reg, store_lm3533_reg, \
+-					_type, _reg, _max, _mask, _shift)
+-
+-#define LM3533_BOOST_ATTR_RW(_name, _NAME) \
+-	LM3533_GENERIC_ATTR_RW(_name, LM3533_ATTR_TYPE_BACKLIGHT, \
+-				LM3533_REG_BOOST_PWM, LM3533_##_NAME##_MAX, \
+-				LM3533_##_NAME##_MASK, LM3533_##_NAME##_SHIFT)
+-/*
+- * Boost Over Voltage Protection Select
+- *
+- *   0 - 16 V (default)
+- *   1 - 24 V
+- *   2 - 32 V
+- *   3 - 40 V
+- */
+-static LM3533_BOOST_ATTR_RW(boost_ovp, BOOST_OVP);
+-
+-/*
+- * Boost Frequency Select
+- *
+- *   0 - 500 kHz (default)
+- *   1 - 1 MHz
+- */
+-static LM3533_BOOST_ATTR_RW(boost_freq, BOOST_FREQ);
+-
+ static ssize_t show_output(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+ {
+@@ -432,8 +346,6 @@ static LM3533_OUTPUT_LVLED_ATTR_RW(4);
+ static LM3533_OUTPUT_LVLED_ATTR_RW(5);
  
- 	struct lm3533_bl_platform_data *backlights;
+ static struct attribute *lm3533_attributes[] = {
+-	&lm3533_dev_attr_boost_freq.dev_attr.attr,
+-	&lm3533_dev_attr_boost_ovp.dev_attr.attr,
+ 	&lm3533_dev_attr_output_hvled1.dev_attr.attr,
+ 	&lm3533_dev_attr_output_hvled2.dev_attr.attr,
+ 	&lm3533_dev_attr_output_lvled1.dev_attr.attr,
 -- 
 1.7.8.5
 
