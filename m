@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760325Ab2EJSFG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 14:05:06 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:53036 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473Ab2EJSFD (ORCPT
+	id S1760709Ab2EJSLr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 14:11:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53498 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760433Ab2EJSLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 14:05:03 -0400
-Date: Thu, 10 May 2012 14:04:55 -0400 (EDT)
-Message-Id: <20120510.140455.1781747924240555033.davem@davemloft.net>
-To: mroos@linux.ee
-Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: 3.4.0-rc4: ksoftirqd crash on sparc64 after IO errors and RCU
- stalls
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.SOC.1.00.1204222352580.16791@math.ut.ee>
-References: <alpine.SOC.1.00.1204222352580.16791@math.ut.ee>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 10 May 2012 14:11:46 -0400
+Date: Thu, 10 May 2012 11:11:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Bryan Wu <bryan.wu@canonical.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, rpurdie@rpsys.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, tim.gardner@canonical.com
+Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and
+ consolidate LED driver in ARM
+Message-Id: <20120510111143.2edb3bc8.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.02.1205101351380.21030@xanadu.home>
+References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
+	<CAK5ve-KSyvZSHw7csQ5M88q0008NSrs1kwuyUH3hFqxD0f7BQQ@mail.gmail.com>
+	<20120509122436.1b612004.akpm@linux-foundation.org>
+	<201205092038.16722.arnd.bergmann@linaro.org>
+	<CAK5ve-Ko6EjZsJBW++ofL0eHxiR5W+wafb3T99Rm9a1L8pHLBQ@mail.gmail.com>
+	<CAOesGMhioLshtsYiHCdQxtx7+3GJsCyhgd7c7nDiZC3=3axb6w@mail.gmail.com>
+	<CAK5ve-+rCv3s+K6Laie=QaPqqZ4Vk1+irYU6S4MBZSquKrMWtw@mail.gmail.com>
+	<alpine.LFD.2.02.1205092122140.21030@xanadu.home>
+	<CAK5ve-JC61jFX7+GV9VoZKExbtdxX03jmpkzu5zxHg+Lehy7VQ@mail.gmail.com>
+	<alpine.LFD.2.02.1205101351380.21030@xanadu.home>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 10 May 2012 11:04:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Meelis Roos <mroos@linux.ee>
-Date: Mon, 23 Apr 2012 00:33:07 +0300 (EEST)
+On Thu, 10 May 2012 14:01:35 -0400 (EDT)
+Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
 
-> [  376.207537] Kernel unaligned access at TPC[42c0dc] arch_trigger_all_cpu_backtrace+0x13c/0x1c0
-> [  376.319655] Unable to handle kernel paging request in mna handler
-> [  376.397504]  at virtual address 000007f300000001
-> [  376.460414] current->{active_,}mm->context = 000000000000086f
-> [  376.535905] current->{active_,}mm->pgd = fffff8101d5d0000
-> [  376.606819]               \|/ ____ \|/
-> [  376.606822]               "@'/ .. \`@"
-> [  376.606825]               /_| \__/ |_\
-> [  376.606828]                  \__U_/
-> [  376.800115] ksoftirqd/1(3): Oops [#1]
-> [  376.848157] TSTATE: 0000009980e01600 TPC: 000000000042c0dc TNPC: 000000000042c0e0 Y: 00000000    Not tainted
-> [  376.977422] TPC: <arch_trigger_all_cpu_backtrace+0x13c/0x1c0>
-> [  377.052999] g0: 0000000000000001 g1: ffffffffffffffff g2: 00000000008f5060 g3: 000007f300000001
-> [  377.167387] g4: fffff8101f071ec0 g5: fffff80000bf8000 g6: fffff8101f08c000 g7: 0000000000000003
-> [  377.281766] o0: 000000000000000c o1: 0000000000000020 o2: 0000000000000000 o3: 0000004411001603
-> [  377.396248] o4: 000000000064e920 o5: 000000000064e924 sp: fffff8101f08e2b1 ret_pc: 000000000042c0a0
-> [  377.515306] RPC: <arch_trigger_all_cpu_backtrace+0x100/0x1c0>
-> [  377.590781] l0: 000000000000000e l1: 00000000008f50b0 l2: 00000000008f50e0 l3: 00000000008f5068
-> [  377.705171] l4: 00000000008f5000 l5: 0000000000a0cfc0 l6: 0000000000000000 l7: 0000000000000000
-> [  377.819550] i0: 0000000000000001 i1: 0000000000983680 i2: 00000000009847bc i3: 000000000098ac00
-> [  377.934032] i4: 0000000000a0cfc0 i5: 0000000000000000 i6: fffff8101f08e381 i7: 00000000004cf3b4
-> [  378.048522] I7: <print_cpu_stall+0x54/0x120>
+> On Fri, 11 May 2012, Bryan Wu wrote:
+> 
+> > On Thu, May 10, 2012 at 9:25 AM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> > > You applied your patches on top of linux-next. __This can't be merged
+> > > upstream until you rebase your patches on something stable such as pure
+> > > v3.4-rc6 for example.
+> > >
+> > 
+> > Got it, Nico. As I'm still in US for our Ubuntu Developer Summit, I
+> > plan to rebase and test on my hardware after I'm back to home next
+> > week.
+> 
+> Given where things are, you risk being too late for this merge window if 
+> you do so, meaning that this cleanup will have to wait yet another 
+> cycle which would be rather disappointing.
 
-The thread pointer stored by one of the cpus is garbage.  It's being
-inspected in %g3 at this point on the cpu which triggered the
-backtrace.  It just tested it for NULL, which passed, so then we trust
-it as a good kernel pointer but it's not, it's 000007f300000001.
+Well, there hasn't been an open merge window for over a month. 
+Cleanups and features should be scheduled for 3.5-rc1.
 
-And we take the unaligned trap when we try to dereference that thing.
 
-Looking at the code which collects these registers, the bug is clear.
-In arch/sparc/mm/ultra.S:xcall_fetch_glob_regs we go:
-
-	sethi		%hi(global_reg_snapshot), %g1
-	or		%g1, %lo(global_reg_snapshot), %g1
-	__GET_CPUID(%g2)
-	sllx		%g2, 6, %g3
-	add		%g1, %g3, %g1
-
-so far so good, %g2 holds the current cpu's number, and %g1 now holds
-a pointer to the global_reg_snapshot entry we'll fill in.
-
-But later in this routine:
-
-	rdpr		%cwp, %g2
-	sub		%g2, 1, %g7
-	wrpr		%g7, %cwp
-	mov		%i7, %g7
-	wrpr		%g2, %cwp
-	stx		%g7, [%g1 + GR_SNAP_RPC]
-
-which on the surface looks fine, but the problem is we've clobbered
-%g2 and then afterwards we go:
-
-	sethi		%hi(trap_block), %g7
-	or		%g7, %lo(trap_block), %g7
-	sllx		%g2, TRAP_BLOCK_SZ_SHIFT, %g2
-	add		%g7, %g2, %g7
-	ldx		[%g7 + TRAP_PER_CPU_THREAD], %g3
-	stx		%g3, [%g1 + GR_SNAP_THREAD]
-
-This code assumes %g2 still holds the current cpu's number in it, but
-as stated it's been clobbered with the %cwp read above.
-
-That's why we read a garbage thread pointer, the index we use into
-trap_block[] is wrong.
-
-I'll work on a fix for this, thanks for the report.
