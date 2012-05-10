@@ -1,223 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932721Ab2EJNpj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 09:45:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37293 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932445Ab2EJNpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 09:45:30 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 13/17] netvm: Set PF_MEMALLOC as appropriate during SKB processing
-Date: Thu, 10 May 2012 14:45:06 +0100
-Message-Id: <1336657510-24378-14-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1336657510-24378-1-git-send-email-mgorman@suse.de>
-References: <1336657510-24378-1-git-send-email-mgorman@suse.de>
+	id S1759079Ab2EJNqA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 09:46:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35319 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755489Ab2EJNp5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 09:45:57 -0400
+Message-ID: <1336657544.2527.116.camel@twins>
+Subject: Re: [PATCH] sched_groups are expected to be circular linked list,
+ make it so right after allocation
+From: Peter Zijlstra <peterz@infradead.org>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, pjt@google.com, tglx@linutronix.de,
+        seto.hidetoshi@jp.fujitsu.com
+Date: Thu, 10 May 2012 15:45:44 +0200
+In-Reply-To: <20120510132625.GA1455@thinkpad.mammed.net>
+References: <1336559908-32533-1-git-send-email-imammedo@redhat.com>
+	 <4FAA452A.1070909@gmail.com> <4FAA588B.5010404@redhat.com>
+	 <1336564330.2527.23.camel@twins> <4FAA5BFB.40309@redhat.com>
+	 <1336566096.2527.30.camel@twins> <1336566644.2527.33.camel@twins>
+	 <20120510132625.GA1455@thinkpad.mammed.net>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to make sure pfmemalloc packets receive all memory
-needed to proceed, ensure processing of pfmemalloc SKBs happens
-under PF_MEMALLOC. This is limited to a subset of protocols that
-are expected to be used for writing to swap. Taps are not allowed to
-use PF_MEMALLOC as these are expected to communicate with userspace
-processes which could be paged out.
+On Thu, 2012-05-10 at 15:26 +0200, Igor Mammedov wrote:
+> [  141.699854] sched: Bonkers domain doesn't include its own cpu: 3 0-1,3
+> [  141.725038] sched: Bonkers domain doesn't include its own cpu: 3 0-1 
 
-[a.p.zijlstra@chello.nl: Ideas taken from various patches]
-[jslaby@suse.cz: Lock imbalance fix]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/net/sock.h |    5 +++++
- net/core/dev.c     |   52 ++++++++++++++++++++++++++++++++++++++++++++++------
- net/core/sock.c    |   16 ++++++++++++++++
- 3 files changed, 67 insertions(+), 6 deletions(-)
+Whee!! so cpu_mask (active_mask) does include 3, but the tl->mask()
+doesn't.
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index e6a4248..7f04aa8 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -729,8 +729,13 @@ static inline __must_check int sk_add_backlog(struct sock *sk, struct sk_buff *s
- 	return 0;
- }
- 
-+extern int __sk_backlog_rcv(struct sock *sk, struct sk_buff *skb);
-+
- static inline int sk_backlog_rcv(struct sock *sk, struct sk_buff *skb)
- {
-+	if (skb_pfmemalloc(skb))
-+		return __sk_backlog_rcv(sk, skb);
-+
- 	return sk->sk_backlog_rcv(sk, skb);
- }
- 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 9bb8f87..e78273e 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3173,6 +3173,23 @@ void netdev_rx_handler_unregister(struct net_device *dev)
- }
- EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
- 
-+/*
-+ * Limit the use of PFMEMALLOC reserves to those protocols that implement
-+ * the special handling of PFMEMALLOC skbs.
-+ */
-+static bool skb_pfmemalloc_protocol(struct sk_buff *skb)
-+{
-+	switch (skb->protocol) {
-+	case __constant_htons(ETH_P_ARP):
-+	case __constant_htons(ETH_P_IP):
-+	case __constant_htons(ETH_P_IPV6):
-+	case __constant_htons(ETH_P_8021Q):
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-+
- static int __netif_receive_skb(struct sk_buff *skb)
- {
- 	struct packet_type *ptype, *pt_prev;
-@@ -3182,14 +3199,27 @@ static int __netif_receive_skb(struct sk_buff *skb)
- 	bool deliver_exact = false;
- 	int ret = NET_RX_DROP;
- 	__be16 type;
-+	unsigned long pflags = current->flags;
- 
- 	net_timestamp_check(!netdev_tstamp_prequeue, skb);
- 
- 	trace_netif_receive_skb(skb);
- 
-+	/*
-+	 * PFMEMALLOC skbs are special, they should
-+	 * - be delivered to SOCK_MEMALLOC sockets only
-+	 * - stay away from userspace
-+	 * - have bounded memory usage
-+	 *
-+	 * Use PF_MEMALLOC as this saves us from propagating the allocation
-+	 * context down to all allocation sites.
-+	 */
-+	if (skb_pfmemalloc(skb))
-+		current->flags |= PF_MEMALLOC;
-+
- 	/* if we've gotten here through NAPI, check netpoll */
- 	if (netpoll_receive_skb(skb))
--		return NET_RX_DROP;
-+		goto out;
- 
- 	if (!skb->skb_iif)
- 		skb->skb_iif = skb->dev->ifindex;
-@@ -3210,7 +3240,7 @@ another_round:
- 	if (skb->protocol == cpu_to_be16(ETH_P_8021Q)) {
- 		skb = vlan_untag(skb);
- 		if (unlikely(!skb))
--			goto out;
-+			goto unlock;
- 	}
- 
- #ifdef CONFIG_NET_CLS_ACT
-@@ -3220,6 +3250,9 @@ another_round:
- 	}
- #endif
- 
-+	if (skb_pfmemalloc(skb))
-+		goto skip_taps;
-+
- 	list_for_each_entry_rcu(ptype, &ptype_all, list) {
- 		if (!ptype->dev || ptype->dev == skb->dev) {
- 			if (pt_prev)
-@@ -3228,13 +3261,17 @@ another_round:
- 		}
- 	}
- 
-+skip_taps:
- #ifdef CONFIG_NET_CLS_ACT
- 	skb = handle_ing(skb, &pt_prev, &ret, orig_dev);
- 	if (!skb)
--		goto out;
-+		goto unlock;
- ncls:
- #endif
- 
-+	if (skb_pfmemalloc(skb) && !skb_pfmemalloc_protocol(skb))
-+		goto drop;
-+
- 	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (vlan_tx_tag_present(skb)) {
- 		if (pt_prev) {
-@@ -3244,7 +3281,7 @@ ncls:
- 		if (vlan_do_receive(&skb, !rx_handler))
- 			goto another_round;
- 		else if (unlikely(!skb))
--			goto out;
-+			goto unlock;
- 	}
- 
- 	if (rx_handler) {
-@@ -3254,7 +3291,7 @@ ncls:
- 		}
- 		switch (rx_handler(&skb)) {
- 		case RX_HANDLER_CONSUMED:
--			goto out;
-+			goto unlock;
- 		case RX_HANDLER_ANOTHER:
- 			goto another_round;
- 		case RX_HANDLER_EXACT:
-@@ -3284,6 +3321,7 @@ ncls:
- 	if (pt_prev) {
- 		ret = pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
- 	} else {
-+drop:
- 		atomic_long_inc(&skb->dev->rx_dropped);
- 		kfree_skb(skb);
- 		/* Jamal, now you will not able to escape explaining
-@@ -3292,8 +3330,10 @@ ncls:
- 		ret = NET_RX_DROP;
- 	}
- 
--out:
-+unlock:
- 	rcu_read_unlock();
-+out:
-+	tsk_restore_flags(current, pflags, PF_MEMALLOC);
- 	return ret;
- }
- 
-diff --git a/net/core/sock.c b/net/core/sock.c
-index cd2ad2b..9ad1ed9 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -292,6 +292,22 @@ void sk_clear_memalloc(struct sock *sk)
- }
- EXPORT_SYMBOL_GPL(sk_clear_memalloc);
- 
-+int __sk_backlog_rcv(struct sock *sk, struct sk_buff *skb)
-+{
-+	int ret;
-+	unsigned long pflags = current->flags;
-+
-+	/* these should have been dropped before queueing */
-+	BUG_ON(!sock_flag(sk, SOCK_MEMALLOC));
-+
-+	current->flags |= PF_MEMALLOC;
-+	ret = sk->sk_backlog_rcv(sk, skb);
-+	tsk_restore_flags(current, pflags, PF_MEMALLOC);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(__sk_backlog_rcv);
-+
- #if defined(CONFIG_CGROUPS)
- #if !defined(CONFIG_NET_CLS_CGROUP)
- int net_cls_subsys_id = -1;
--- 
-1.7.9.2
+> [  141.775040] sched: Topology is hosed for CPU-3!!
+> [  141.775596] sched: domain: NODE 0-1
+> [  141.776004] sched:  group: 0-1
+> 
+This seems to suggest its the node topology being wrecked.
 
+which with your code-base would be
+cpu_node_mask()->sched_domain_node_span()..
+
+Did you specify any node topology on the qemu command line? If not, it
+should all reduce to cpumask_of_node(0).
+
+identify_secondary_cpu()->identify_cpu()->numa_add_cpu() should set that
+bit. which is well before the CPU_ONLINE->cpuset_update_active_cpus()
+sched domain rebuild.
+
+
+Most puzzling. Can you dig a little deeper as to why these masks might
+be wrong? Also, can you reproduce on actual hardware? The reason I never
+use kvm or other virt for debugging is that I always end up spending
+time chasing virt bugs, and I hate virt..
