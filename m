@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757648Ab2EJJGZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 05:06:25 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41992 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756474Ab2EJJGL (ORCPT
+	id S1757674Ab2EJJJP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 05:09:15 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56913 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756764Ab2EJJJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 05:06:11 -0400
-Date: Thu, 10 May 2012 19:05:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: linux-next: manual merge of the sound-asoc tree with the regmap
- tree
-Message-Id: <20120510190554.6055315139a68ef0b1c48261@canb.auug.org.au>
-In-Reply-To: <20120510085355.GC3908@opensource.wolfsonmicro.com>
-References: <20120510142552.35f8e15042053707a2086905@canb.auug.org.au>
-	<20120510085355.GC3908@opensource.wolfsonmicro.com>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__10_May_2012_19_05_54_+1000_UFqacnDV5ed4u7YA"
+	Thu, 10 May 2012 05:09:13 -0400
+Date: Thu, 10 May 2012 10:09:10 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Ola Lilja <ola.o.lilja@stericsson.com>, Liam Girdwood <lrg@ti.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the sound-asoc tree
+Message-ID: <20120510090910.GD3908@opensource.wolfsonmicro.com>
+References: <20120510143329.4cef3cd78ce5ea55416b1d93@canb.auug.org.au>
+ <CACRpkdYsHXnWHvBw6Pt1atvwKP6KYjfu-PwQnL_L7-yW1-4_FA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZARJHfwaSJQLOEUz"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYsHXnWHvBw6Pt1atvwKP6KYjfu-PwQnL_L7-yW1-4_FA@mail.gmail.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__10_May_2012_19_05_54_+1000_UFqacnDV5ed4u7YA
-Content-Type: text/plain; charset=US-ASCII
+
+--ZARJHfwaSJQLOEUz
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, 10 May 2012 09:53:55 +0100 Mark Brown <broonie@opensource.wolfsonmi=
-cro.com> wrote:
->
-> On Thu, May 10, 2012 at 02:25:52PM +1000, Stephen Rothwell wrote:
->=20
-> > Today's linux-next merge of the sound-asoc tree got a conflict in
-> > drivers/base/regmap/regmap.c between commit 6560ffd1ccd6 ("regmap: fix
-> > possible memory corruption in regmap_bulk_read()") from the regmap tree
-> > and commit edc9ae420f98 ("regmap: implement register striding") from the
-> > sound-asoc tree.
->=20
-> That's the right fix - it's already included in the regmap tree itself.
+On Thu, May 10, 2012 at 10:30:50AM +0200, Linus Walleij wrote:
 
-Yeah, this conflict arises because there a set of patches in the
-sound-asoc tree that are also in the regmap tree.   They really should
-have been in a stable branch of the regmap tree that both trees could
-merge.
+>  menuconfig SND_SOC_UX500
+>         tristate "SoC Audio support for Ux500 platform"
+>         depends on SND_SOC
+> +       depends on MFD_DB8500_PRCMU
+>         help
+>                 Say Y if you want to enable ASoC-support for
+>                 any of the Ux500 platforms (e.g. U8500).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I applied this (without your signoff as you didn't supply one so it'll
+show up as my patch, I'm not sure if I'll have time to publish the
+change later on today and want to get it into -next tomorrow).
 
---Signature=_Thu__10_May_2012_19_05_54_+1000_UFqacnDV5ed4u7YA
-Content-Type: application/pgp-signature
+> But it seems it has a wider dependency on some MOP500 board
+> stuff being merged first, which is more of a problem I think, part
+> of that is pending in the Ux500 tree.
+
+If this has a dependency on a particular board the driver is badly
+broken, this is the driver for the SoC I2S controller so it should work
+with any board.
+
+That said in terms of applying the change the arch/arm stuff shouldn't
+be an issue - it was just registering devices and clocks.  The driver
+won't load until the two trees are merged but that's not an issue, it's
+not going to run anyway if we delay applying it.
+
+--ZARJHfwaSJQLOEUz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPq4TyAAoJEECxmPOUX5FEnjwP/AupQP52lpEQwmNVGT7qI21+
-/VARBWK79GOf3I39PiDZhKipzHezFl4ussy6X2niWjUb/koahm2liYMoajoDAfAA
-pm2f/c+bGeZWMkv94EZMZ7j+HfFCYYeb/5Q7uFqgKmu7S2KI8I63oswEnG0QTPqh
-Nn0Y48saVoSYm4Ds8/Zy7tFVaTI9xYikZxLRg5gxQBUsHQ8n0DrFZepSeD7S7oFh
-e+Fm+euuLBlnf8t3f/jTL8EjxC9nyHQIcY8IdLSM0FK7ySqF3N/nsHsmL1l88kwq
-nGPHchQOU7KAm4QhD1kE/VzYPOc2zH7deGKj6JbslXeRbYZrrMoz0kFKI+ahiZmj
-OhlXntMg2HSkMd9Ii1dJhyiNZevW8oX5LvfKg+U/heTBP/hxM3SKVMhTElDAGmm4
-TTwxD6Y5ci6weVJImWiDll7UFiOX44DrtjxjYLe87RmhJR7AOF9IXZKqDUClVNiL
-s6kOaXM+rRsJ/jfKRbW+S6sRvW/b/S6OQcgHkloKXPxJwWb0LjTsp9HOPHH13OTT
-YyFP0t3bYCQ0Rx73rwf/rGFblIi0HcJYa0XVXtR5EHqBwDGPEUHyiTEgoy08beTZ
-g2+DQMHbOypIvWc6YATTumgYog4fh9xayo+ii0uYYv/aqOQdsj6R9RhV+ONPGbII
-66kGZ/LQ7eFLVHE3kKwb
-=gzNz
+iQIcBAEBAgAGBQJPq4WuAAoJEBus8iNuMP3doAAQAI+HRRldK099G/2NkiomEvOB
+DiIexhRYKz0+bt3vU1K0KvSspG6/OziUx5w7tWNaIYvcQ1b5y5mqes2SMmLbxoU0
+xw81L3x7uDPvEngHZUGVwQltyZg8YnG3LLmSw/Wi17PYYPzUakDGQRQf270z+v3W
+8mW429EzrrnrIvc16YyZyDBNxpyL/4gGZ48AxGEIaWTJ/u1KDD9DjFIvi1LO4fYD
+jKTDVQ/ltJ8Evky1j5uo+VcFRKGC+Es1oUjNUH0d9YF5jBhSh8asA1mkhEXeiFPm
+3ZkYy3B2hSksurh1KOCp6sHdu8ST/Jwev+tHKw6BvAbjZuNxUg8e9BR5WC+9qJKy
+CdQ6qCK2Yn+AEnfeH0UxcbUFEEDczkTE6It1U8lEZ0CJ3zJSpsYj6UNXzkdjjzmW
+uBOnl8MpchBqO4lCTZUbYNRSRY6MEzD28j6RAmmH06Sn7YpaG915PWPXo0Jwr5oN
+bkVfWe8SVmpO+gg0fBrW5fNSze/sTccnLsU92sgEYcF8X3eFo6rP84vlEl/okfH0
+0TJ6CRmROemHkdu5zciooYJ3K8yXXLne3P/VDbRA4fG28x8Xuk6fSalXhALhxqUQ
+dmN3cLy+v3x/XO4dz/SSgfPBaDLDCCDeX2Dsx+3cYr1EqnEqHbBuZrz0Py7WXYqD
+v6dlu/M7Tqf1XTjMoj64
+=nd72
 -----END PGP SIGNATURE-----
 
---Signature=_Thu__10_May_2012_19_05_54_+1000_UFqacnDV5ed4u7YA--
+--ZARJHfwaSJQLOEUz--
