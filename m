@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab2EJRSB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 13:18:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55878 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757125Ab2EJRR6 (ORCPT
+	id S1758362Ab2EJRSN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 13:18:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60511 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757125Ab2EJRSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 13:17:58 -0400
+	Thu, 10 May 2012 13:18:10 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Arun Sharma <asharma@fb.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Frank C. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/16] perf stat: Use perf_evlist__create_maps
-Date: Thu, 10 May 2012 14:17:37 -0300
-Message-Id: <1336670265-20401-9-git-send-email-acme@infradead.org>
+Subject: [PATCH 10/16] perf report: Fix format string for x86-32 compilation
+Date: Thu, 10 May 2012 14:17:39 -0300
+Message-Id: <1336670265-20401-11-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1336670265-20401-1-git-send-email-acme@infradead.org>
 References: <1336670265-20401-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Use same function with perf record and top to share the code checks
-combinations of different switches.
+Using PRIu64 for printing out u64 nr_events to fix compilation
+for x86 32 bits.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Reviewed-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Frank C. Eigler <fche@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1336367344-28071-8-git-send-email-namhyung.kim@lge.com
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Ulrich Drepper <drepper@gmail.com>
+Link: http://lkml.kernel.org/r/1335958638-5160-7-git-send-email-jolsa@redhat.com
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-stat.c |   22 ++++++++--------------
- 1 file changed, 8 insertions(+), 14 deletions(-)
+ tools/perf/builtin-report.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index d9ff246..e720ba7 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -175,7 +175,9 @@ static struct perf_event_attr very_very_detailed_attrs[] = {
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 5df829f..7477655 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -304,7 +304,7 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
+ 	if (evname != NULL)
+ 		ret += fprintf(fp, " of event '%s'", evname);
  
- static struct perf_evlist	*evsel_list;
+-	ret += fprintf(fp, "\n# Event count (approx.): %lu", nr_events);
++	ret += fprintf(fp, "\n# Event count (approx.): %" PRIu64, nr_events);
+ 	return ret + fprintf(fp, "\n#\n");
+ }
  
--static struct perf_target	target;
-+static struct perf_target	target = {
-+	.uid	= UINT_MAX,
-+};
- 
- static int			run_idx				=  0;
- static int			run_count			=  1;
-@@ -1205,20 +1207,12 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 
- 	perf_target__validate(&target);
- 
--	evsel_list->threads = thread_map__new_str(target.pid,
--						  target.tid, UINT_MAX);
--	if (evsel_list->threads == NULL) {
--		pr_err("Problems finding threads of monitor\n");
--		usage_with_options(stat_usage, options);
--	}
--
--	if (target.system_wide)
--		evsel_list->cpus = cpu_map__new(target.cpu_list);
--	else
--		evsel_list->cpus = cpu_map__dummy_new();
-+	if (perf_evlist__create_maps(evsel_list, &target) < 0) {
-+		if (!perf_target__no_task(&target))
-+			pr_err("Problems finding threads of monitor\n");
-+		if (!perf_target__no_cpu(&target))
-+			perror("failed to parse CPUs map");
- 
--	if (evsel_list->cpus == NULL) {
--		perror("failed to parse CPUs map");
- 		usage_with_options(stat_usage, options);
- 		return -1;
- 	}
 -- 
 1.7.9.2.358.g22243
 
