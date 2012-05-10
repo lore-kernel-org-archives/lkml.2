@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742Ab2EJEzo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 00:55:44 -0400
-Received: from cora.hrz.tu-chemnitz.de ([134.109.228.40]:50370 "EHLO
-	cora.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174Ab2EJEzn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 00:55:43 -0400
-Message-ID: <4FAB4A4D.8080901@hrz.tu-chemnitz.de>
-Date: Thu, 10 May 2012 06:55:41 +0200
-From: Markus Franke <markus.franke@s2002.tu-chemnitz.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Evgeniy Polyakov <zbr@ioremap.net>
-CC: Greg KH <greg@kroah.com>,
-        Markus Franke <markus.franke@s2002.tu-chemnitz.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] w1: Add 1-wire slave device driver for DS28E04-100
-References: <4FA1953B.40008@hrz.tu-chemnitz.de> <20120502202134.GB26628@kroah.com> <20120503180056.GB13988@ioremap.net> <4FAAD584.70102@hrz.tu-chemnitz.de> <20120509220636.GA27659@kroah.com> <4FAAECB7.8070904@hrz.tu-chemnitz.de> <20120509222411.GA24302@kroah.com> <4FAAF1C4.2050500@hrz.tu-chemnitz.de> <20120509235723.GA7404@ioremap.net> <20120510000126.GA2357@kroah.com> <20120510004350.GA8362@ioremap.net>
-In-Reply-To: <20120510004350.GA8362@ioremap.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Scan-AV: cora.hrz.tu-chemnitz.de;2012-05-10 06:55:42;052f32bb6eeb51b5858e470c6c3f46c6
-X-Scan-SA: cora.hrz.tu-chemnitz.de;2012-05-10 06:55:42;0fd19e80c2e62ba03a220aa46db67695
-X-Spam-Score: -1.0 (-)
-X-Spam-Report: --- Textanalyse SpamAssassin 3.3.1 (-1.0 Punkte)
- Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
- * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
- --- Ende Textanalyse
+	id S1751623Ab2EJFB5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 01:01:57 -0400
+Received: from mga02.intel.com ([134.134.136.20]:13293 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750829Ab2EJFBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 01:01:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="142177293"
+From: Alex Shi <alex.shi@intel.com>
+To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com
+Cc: jeremy@goop.org, gregkh@linuxfoundation.org, borislav.petkov@amd.com,
+        alex.shi@intel.com, riel@redhat.com, luto@mit.edu, avi@redhat.com,
+        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
+        ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
+        a.p.zijlstra@chello.nl, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 0/7] tlb flush optimization
+Date: Thu, 10 May 2012 13:00:06 +0800
+Message-Id: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Evgeniy,
+Thanks for all of comments, the v4 patchset were changed accordingly.
 
-Am 10.05.2012 02:43, schrieb Evgeniy Polyakov:
+and also include some code clean up to make the code more logical.
 
-> be used? Also, Markus, does DS28E04 change written/read data when doing
-> IO?
+Thanks for all!
 
-
-Apart from masking the upper 6 bits within w1_f1C_write_pio() the data
-is directly being passed down to the DS28E04. So actually there is no
-other processing done within the driver. Furthermore, I added a new
-Documentation file to Documentation/w1/slaves directory which describes
-the interface of this driver.
-
-@Greg: Is the "pio" binary file now legitimate or do I have to change it
-to a regular sysfs attribute?
-
-Best regards,
-Markus Franke
+[PATCH v4 1/7] x86/tlb: unify TLB_FLUSH_ALL definition
+[PATCH v4 2/7] x86/tlb_info: get last level TLB entry number of CPU
+[PATCH v4 3/7] x86/flush_tlb: try flush_tlb_single one by one in
+[PATCH v4 4/7] x86/tlb: fall back to flush all when meet a THP large
+[PATCH v4 5/7] x86/tlb: add tlb flush all factor for specific CPU
+[PATCH v4 6/7] x86/tlb: optimizing flush_tlb_mm
+[PATCH v4 7/7] x86/tlb: add tlb_flushall_factor into sysfs for user
