@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758386Ab2EJQa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 12:30:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27165 "EHLO mga09.intel.com"
+	id S1758288Ab2EJQa5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 12:30:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3905 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754857Ab2EJQ2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755138Ab2EJQ2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 May 2012 12:28:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="142389142"
+   d="scan'208";a="142389147"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "H Peter Anvin" <hpa@zytor.com>,
@@ -25,9 +25,9 @@ To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v6 06/12] x86/head_64.S: Define start_cpu0
-Date: Thu, 10 May 2012 09:16:48 -0700
-Message-Id: <1336666614-21090-7-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v6 07/12] x86/head_32.S: Define start_cpu0
+Date: Thu, 10 May 2012 09:16:49 -0700
+Message-Id: <1336666614-21090-8-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
 References: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
@@ -37,21 +37,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-start_cpu0() is defined in head_64.S for 64-bit. The function sets up stack and
+start_cpu0() is defined in head_32.S for 32-bit. The function sets up stack and
 jumps to start_secondary() for CPU0 wake up.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/kernel/head_64.S |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ arch/x86/kernel/head_32.S |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 7a40f24..a91ce03 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -256,6 +256,21 @@ ENTRY(secondary_startup_64)
- 	pushq	%rax		# target address in negative space
- 	lretq
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index 463c979..a441303 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -266,6 +266,18 @@ num_subarch_entries = (. - subarch_entries) / 4
+ 	jmp default_entry
+ #endif /* CONFIG_PARAVIRT */
  
 +#ifdef CONFIG_HOTPLUG_CPU
 +/*
@@ -60,17 +60,14 @@ index 7a40f24..a91ce03 100644
 + * start_secondary().
 + */
 +ENTRY(start_cpu0)
-+	movq stack_start(%rip),%rsp
-+	movq	initial_code(%rip),%rax
-+	pushq	$0		# fake return address to stop unwinder
-+	pushq	$__KERNEL_CS	# set correct cs
-+	pushq	%rax		# target address in negative space
-+	lretq
++	movl stack_start, %ecx
++	movl %ecx, %esp
++	jmp  *(initial_code)
 +#endif
 +
- 	/* SMP bootup changes these two */
- 	__REFDATA
- 	.align	8
+ /*
+  * Non-boot CPU entry point; entered from trampoline.S
+  * We can't lgdt here, because lgdt itself uses a data segment, but
 -- 
 1.6.0.3
 
