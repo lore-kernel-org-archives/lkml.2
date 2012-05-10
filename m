@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758875Ab2EJNfA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 09:35:00 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45564 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758661Ab2EJNe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 09:34:58 -0400
-Date: Thu, 10 May 2012 14:34:55 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: rajman mekaco <rajman.mekaco@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-ia64@vger.kernel.org
-Subject: Re: [PATCH 1/1] page_alloc.c: remove argument to
- pageblock_default_order
-Message-ID: <20120510133454.GG9004@csn.ul.ie>
-References: <1336065312-2891-1-git-send-email-rajman.mekaco@gmail.com>
- <20120503163749.d24bf07f.akpm@linux-foundation.org>
+	id S932157Ab2EJNlv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 09:41:51 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:55671 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758608Ab2EJNlt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 09:41:49 -0400
+Date: Thu, 10 May 2012 15:41:36 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [EDAC ABI v13 04/25] events/hw_event: Create a Hardware Events
+ Report Mecanism (HERM)
+Message-ID: <20120510134136.GC31257@aftab.osrc.amd.com>
+References: <1334608729-30803-1-git-send-email-mchehab@redhat.com>
+ <1334608729-30803-5-git-send-email-mchehab@redhat.com>
+ <20120509121326.GA22737@aftab.osrc.amd.com>
+ <4FAA6802.9070506@redhat.com>
+ <20120509132237.GD22737@aftab.osrc.amd.com>
+ <4FAA7649.5080606@redhat.com>
+ <20120509140632.GG22737@aftab.osrc.amd.com>
+ <4FAA7C1A.3020406@redhat.com>
+ <20120509142456.GH22737@aftab.osrc.amd.com>
+ <4FABBFAF.20809@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120503163749.d24bf07f.akpm@linux-foundation.org>
+In-Reply-To: <4FABBFAF.20809@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 03, 2012 at 04:37:49PM -0700, Andrew Morton wrote:
-> On Thu,  3 May 2012 22:45:12 +0530
-> rajman mekaco <rajman.mekaco@gmail.com> wrote:
-> 
-> > When CONFIG_HUGETLB_PAGE_SIZE_VARIABLE is not defined, then
-> > pageblock_default_order has an argument to it.
-> > 
-> > However, free_area_init_core will call it without any argument
-> > anyway.
-> > 
-> > Remove the argument to pageblock_default_order when
-> > CONFIG_HUGETLB_PAGE_SIZE_VARIABLE is not defined.
-> > 
-> > Signed-off-by: rajman mekaco <rajman.mekaco@gmail.com>
-> > ---
-> >  mm/page_alloc.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index a712fb9..4b95412 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -4274,7 +4274,7 @@ static inline void __init set_pageblock_order(unsigned int order)
-> >   * at compile-time. See include/linux/pageblock-flags.h for the values of
-> >   * pageblock_order based on the kernel config
-> >   */
-> > -static inline int pageblock_default_order(unsigned int order)
-> > +static inline int pageblock_default_order(void)
-> >  {
-> >  	return MAX_ORDER-1;
-> >  }
-> 
-> Interesting.  It has been that way since at least 3.1.
-> 
+On Thu, May 10, 2012 at 10:16:31AM -0300, Mauro Carvalho Chehab wrote:
+> Nah, this is not marketing speak. HERM is not a trademark. amd64_edac,
+> on the other hand, is using a trademark on his name. If we use your
+> logic, this would need to be renamed to something else, to avoid using
+> a "marketing speak".
 
-/me slaps self
+I'm not even going to dignify that with an answer because it is a bunch
+of bullshit and you know it.
 
-> It didn't break the build because pageblock_default_order() is only
-> ever invoked by set_pageblock_order(), with:
-> 
-> 	set_pageblock_order(pageblock_default_order());
-> 
-> and set_pageblock_order() is a macro:
-> 
-> #define set_pageblock_order(x)	do {} while (0)
-> 
-> There's yet another reason not to use macros, dammit - they hide bugs.
-> 
-> 
-> Mel, can you have a think about this please?  Can we just kill off
-> pageblock_default_order() and fold its guts into
-> set_pageblock_order(void)?  Only ia64 and powerpc can define
-> CONFIG_HUGETLB_PAGE_SIZE_VARIABLE.
-> 
+> We need some name to differentiate between the broken EDAC core where
+> modern memory controllers are not properly represented and reports
+> errors on fake csrows/channels from the EDAC+HERM core that will
+> properly provide the error information to where it really belongs.
 
-This looks reasonable to me.
+A kernel version or a commit id is not enough here I guess.
+
+> In other words, HERM is just an acronym[1] to the version to point to
+> where EDAC starts to work fine with modern memory controllers.
+
+Seems to me you're desperately trying to prove your point for having
+this HERM thing by coming up with a bunch of bogus arguments.
+
+And I'm still waiting for a real, technical reason which legitimizes
+calling a tracepoint something special.
 
 -- 
-Mel Gorman
-SUSE Labs
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
