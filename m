@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756959Ab2EJMo1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 08:44:27 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:58442 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133Ab2EJMoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 08:44:25 -0400
-X-Greylist: delayed 1521 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 May 2012 08:44:25 EDT
-Date: Thu, 10 May 2012 14:18:57 +0200
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Benjamin Poirier <bpoirier@suse.de>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xfrm: take iphdr size into account for esp payload
- size calculation
-Message-ID: <20120510121857.GJ1021@secunet.com>
-References: <1336602952-10479-1-git-send-email-bpoirier@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336602952-10479-1-git-send-email-bpoirier@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 10 May 2012 12:18:57.0303 (UTC) FILETIME=[12C68A70:01CD2EA7]
+	id S1757212Ab2EJMpY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 08:45:24 -0400
+Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:58492 "EHLO
+	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755729Ab2EJMpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 08:45:22 -0400
+Message-ID: <1336653906.2494.129.camel@ted>
+Subject: Re: [PATCH] MAINTAINERS: Add maintainer for LED subsystem
+From: Richard Purdie <richard.purdie@linuxfoundation.org>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        arnd.bergmann@linaro.org
+Date: Thu, 10 May 2012 13:45:06 +0100
+In-Reply-To: <1336609592-3825-1-git-send-email-bryan.wu@canonical.com>
+References: <1336609592-3825-1-git-send-email-bryan.wu@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 06:35:52PM -0400, Benjamin Poirier wrote:
+On Thu, 2012-05-10 at 08:26 +0800, Bryan Wu wrote:
+> Add Bryan Wu as the primary maintainer for drivers/leds
 > 
-> According to what is done, mainly in esp_output(), net_header_len aka
-> sizeof(struct iphdr) must be taken into account before doing the alignment
-> calculation.
+> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
 
-Why do you need to take the ip header into account here? Your patch breaks
-pmtu discovery, at least on tunnel mode with aes-sha1 (aes blocksize 16 bytes).
+Acked-by: Richard Purdie <richard.purdie@linuxfoundation.org>
 
-With your patch applied:
+> ---
+>  MAINTAINERS |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 7071633..de4e280 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -4034,6 +4034,7 @@ F:	Documentation/scsi/53c700.txt
+>  F:	drivers/scsi/53c700*
+>  
+>  LED SUBSYSTEM
+> +M:	Bryan Wu <bryan.wu@canonical.com>
+>  M:	Richard Purdie <rpurdie@rpsys.net>
+>  S:	Maintained
+>  F:	drivers/leds/
 
-tracepath -n 192.168.1.2
- 1?: [LOCALHOST]     pmtu 1442
- 1:  send failed
- 1:  send failed
-     Resume: pmtu 1442
 
-Without your patch:
-
-tracepath -n 192.168.1.2
- 1?: [LOCALHOST]     pmtu 1438
- 1:  192.168.1.2       0.736ms reached
- 1:  192.168.1.2       0.390ms reached
-     Resume: pmtu 1438 hops 1 back 64 
-
-Your patch increases the mtu by 4 bytes. Be aware that adding
-one byte of payload may increase the packet size up to 16 bytes
-in the case of aes, as we have to pad the encryption payload
-always to a multiple of the cipher blocksize.
-
-> -
-> -	switch (x->props.mode) {
-> -	case XFRM_MODE_TUNNEL:
-> -		break;
-> -	default:
-> -	case XFRM_MODE_TRANSPORT:
-> -		/* The worst case */
-> -		mtu -= blksize - 4;
-> -		mtu += min_t(u32, blksize - 4, rem);
-> -		break;
-
-Btw. why we are doing the calculation above for transport mode?
