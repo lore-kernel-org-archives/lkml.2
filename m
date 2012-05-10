@@ -1,85 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab2EJNQs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 09:16:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47070 "EHLO mx1.redhat.com"
+	id S1756477Ab2EJNSI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 09:18:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56307 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753340Ab2EJNQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 09:16:47 -0400
-Message-ID: <4FABBFAF.20809@redhat.com>
-Date: Thu, 10 May 2012 10:16:31 -0300
+	id S1752551Ab2EJNSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 09:18:04 -0400
+Message-ID: <4FABBFFE.10901@redhat.com>
+Date: Thu, 10 May 2012 10:17:50 -0300
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Borislav Petkov <bp@amd64.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Doug Thompson <norsk5@yahoo.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, Tony Luck <tony.luck@intel.com>
 Subject: Re: [EDAC ABI v13 04/25] events/hw_event: Create a Hardware Events
  Report Mecanism (HERM)
-References: <1334608729-30803-1-git-send-email-mchehab@redhat.com> <1334608729-30803-5-git-send-email-mchehab@redhat.com> <20120509121326.GA22737@aftab.osrc.amd.com> <4FAA6802.9070506@redhat.com> <20120509132237.GD22737@aftab.osrc.amd.com> <4FAA7649.5080606@redhat.com> <20120509140632.GG22737@aftab.osrc.amd.com> <4FAA7C1A.3020406@redhat.com> <20120509142456.GH22737@aftab.osrc.amd.com>
-In-Reply-To: <20120509142456.GH22737@aftab.osrc.amd.com>
+References: <1334608729-30803-1-git-send-email-mchehab@redhat.com>  <1334608729-30803-5-git-send-email-mchehab@redhat.com>  <20120509121326.GA22737@aftab.osrc.amd.com> <4FAA6802.9070506@redhat.com>  <20120509132237.GD22737@aftab.osrc.amd.com> <4FAA7649.5080606@redhat.com> <1336573158.14207.206.camel@gandalf.stny.rr.com>
+In-Reply-To: <1336573158.14207.206.camel@gandalf.stny.rr.com>
 X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 09-05-2012 11:24, Borislav Petkov escreveu:
-> On Wed, May 09, 2012 at 11:15:54AM -0300, Mauro Carvalho Chehab wrote:
->> Em 09-05-2012 11:06, Borislav Petkov escreveu:
->>> On Wed, May 09, 2012 at 10:51:05AM -0300, Mauro Carvalho Chehab wrote:
->>>>> Now, if you really want to have a generic mechanism for RAS, used
->>>>> by all the kernel, then I don't have a problem with you adding it
->>>>> to include/ras/hw_event.h or somewhere in that vicinity along with
->>>>> making it generic enough for other users and then taking care of it and
->>>>> developing it to address users' needs.
->>>>
->>>> I'm ok to move it to include/ras, but, if I remember well from my initial
->>>> tests when I wrote this, several kernel versions ago, there is/was
->>>> a limitation that required that all trace events should be under
->>>> include/trace/events/.
->>>>
->>>> One other option would be to call it as "include/trace/events/ras.h".
->>>>
->>>> Steven,
->>>>
->>>> Would it be possible/recommendable to move this trace header
->>>> to include/linux/ras/hw_event.h?
->>>
->>> Oh, yeah, I remember vaguely something like that. Lets wait what Steven
->>> has to say.
-> 
-> btw, http://lwn.net/Articles/383362/ explains how to define tracepoints outside
-> of include/trace/events.
-> 
-> [ … ]
-> 
->>> and above says "Hardware Events Report Method (HERM)" The fact that you
->>> yourself are not exactly sure about what this abbreviation is supposed
->>> to be/mean/etc, simply should tell you that it is causing only confusion
->>> with no benefit what-so-ever, even to you!
+Em 09-05-2012 11:19, Steven Rostedt escreveu:
+> On Wed, 2012-05-09 at 10:51 -0300, Mauro Carvalho Chehab wrote:
+>> Em 09-05-2012 10:22, Borislav Petkov escreveu:
+>>> + Tony.
 >>
->> Fixed.
+>> C/C Steven.
 > 
-> No, you haven't. It still says HERM below. Please drop the marketing speak!
+> Hehe, I was already Cc'd ;-)
 
-Nah, this is not marketing speak. HERM is not a trademark. amd64_edac, on the other
-hand, is using a trademark on his name. If we use your logic, this would need to
-be renamed to something else, to avoid using a "marketing speak".
+:)
 
-We need some name to differentiate between the broken EDAC core where modern
-memory controllers are not properly represented and reports errors on 
-fake csrows/channels from the EDAC+HERM core that will properly provide the
-error information to where it really belongs.
+>> One other option would be to call it as "include/trace/events/ras.h".
+>>
+>> Steven,
+>>
+>> Would it be possible/recommendable to move this trace header
+>> to include/linux/ras/hw_event.h?
+> 
+> Yeah, it's not hard. In fact, it's documented in
+> samples/trace_events/trace-events-sample.h:
+> 
+> /*
+>  * There are several ways I could have done this. If I left out the
+>  * TRACE_INCLUDE_PATH, then it would default to the kernel source
+>  * include/trace/events directory.
+>  *
+>  * I could specify a path from the define_trace.h file back to this
+>  * file.
+>  *
+>  * #define TRACE_INCLUDE_PATH ../../samples/trace_events
+>  *
+>  * But the safest and easiest way to simply make it use the directory
+>  * that the file is in is to add in the Makefile:
+>  *
+>  * CFLAGS_trace-events-sample.o := -I$(src)
+>  *
+>  * This will make sure the current path is part of the include
+>  * structure for our file so that define_trace.h can find it.
+>  *
+>  * I could have made only the top level directory the include:
+>  *
+>  * CFLAGS_trace-events-sample.o := -I$(PWD)
+>  *
+>  * And then let the path to this directory be the TRACE_INCLUDE_PATH:
+>  *
+>  * #define TRACE_INCLUDE_PATH samples/trace_events
+>  *
+>  * But then if something defines "samples" or "trace_events" as a macro
+>  * then we could risk that being converted too, and give us an unexpected
+>  * result.
+>  */
+> 
+> But usually the header would go where the code is:
+> 
+> drivers/edac/hw_event.h
+> 
+> Or rename it. The XFS tracepoints do this:
+> 
+> fs/xfs/xfs_trace.h
 
-In other words, HERM is just an acronym[1] to the version to point to where 
-EDAC starts to work fine with modern memory controllers.
+As the idea is to use it on other RAS facilities, it is better to put it
+at include/ras/hw_event.h
 
-[1] Btw, EDAC is also an acronym for Error Detection And Correction.
+PS.: putting it at include/linux/ras/hw_event.h doesn't work, as "linux"
+is evaluated to "1" at TRACE_INCLUDE_PATH macro.
+
+Anyway, patch is enclosed.
 
 Regards,
-Mauro
+Mauro.
+
+-
+
+edac, ras/hw_event.h: use HERM events to handle hw issues
+
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+Add a new tracepoint-based Hardware Events Report Method (HERM) for
+outputing Memory Controller events.
+
+Part of the description bellow is shamelessly copied from Tony
+Luck's notes about the Hardware Error BoF during LPC 2010 [1].
+Tony, thanks for your notes and discussions to generate the
+h/w error reporting requirements.
+
+[1] http://lwn.net/Articles/416669/
+
+    We have several subsystems & methods for reporting hardware errors:
+
+    1) EDAC ("Error Detection and Correction").  In its original form
+    this consisted of a platform specific driver that read topology
+    information and error counts from chipset registers and reported
+    the results via a sysfs interface.
+
+    2) mcelog - x86 specific decoding of machine check bank registers
+    reporting in binary form via /dev/mcelog. Recent additions make use
+    of the APEI extensions that were documented in version 4.0a of the
+    ACPI specification to acquire more information about errors without
+    having to rely reading chipset registers directly. A user level
+    programs decodes into somewhat human readable format.
+
+    3) drivers/edac/mce_amd.c - this driver hooks into the mcelog path and
+    decodes errors reported via machine check bank registers in AMD
+    processors to the console log using printk();
+
+    Each of these mechanisms has a band of followers ... and none
+    of them appear to meet all the needs of all users.
+
+As part of a hardware event subsystem, let's encapsulate the memory
+error hardware events into a trace facility.
+
+NOTE: The original patch was providing an additional mechanism for
+MCA-based trace events that also contained MCA error register data.
+Hoever, as no agreement was reached so far for the MCA-based trace
+events, for now, let's add events only for memory errors.
+A latter patch is planned to change the tracepoint, for those types
+of event.
+
+Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+Cc: Doug Thompson <norsk5@yahoo.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
+index f06ce9a..eee7360 100644
+--- a/drivers/edac/edac_core.h
++++ b/drivers/edac/edac_core.h
+@@ -468,7 +468,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 			  const int layer2,
+ 			  const char *msg,
+ 			  const char *other_detail,
+-			  const void *mcelog);
++			  const void *arch_log);
+ 
+ /*
+  * edac_device APIs
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index e5b5563..11f0178 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -33,6 +33,10 @@
+ #include "edac_core.h"
+ #include "edac_module.h"
+ 
++#define CREATE_TRACE_POINTS
++#define TRACE_INCLUDE_PATH ../../include/ras
++#include <ras/hw_event.h>
++
+ /* lock to memory controller's control array */
+ static DEFINE_MUTEX(mem_ctls_mutex);
+ static LIST_HEAD(mc_devices);
+@@ -381,6 +385,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+ 	 * which will perform kobj unregistration and the actual free
+ 	 * will occur during the kobject callback operation
+ 	 */
++
+ 	return mci;
+ }
+ EXPORT_SYMBOL_GPL(edac_mc_alloc);
+@@ -982,7 +987,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 			  const int layer2,
+ 			  const char *msg,
+ 			  const char *other_detail,
+-			  const void *mcelog)
++			  const void *arch_log)
+ {
+ 	/* FIXME: too much for stack: move it to some pre-alocated area */
+ 	char detail[80], location[80];
+@@ -1119,21 +1124,27 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 	}
+ 
+ 	/* Memory type dependent details about the error */
+-	if (type == HW_EVENT_ERR_CORRECTED) {
++	if (type == HW_EVENT_ERR_CORRECTED)
+ 		snprintf(detail, sizeof(detail),
+ 			"page:0x%lx offset:0x%lx grain:%d syndrome:0x%lx",
+ 			page_frame_number, offset_in_page,
+ 			grain, syndrome);
+-		edac_ce_error(mci, pos, msg, location, label, detail,
+-			      other_detail, enable_per_layer_report,
+-			      page_frame_number, offset_in_page, grain);
+-	} else {
++	else
+ 		snprintf(detail, sizeof(detail),
+ 			"page:0x%lx offset:0x%lx grain:%d",
+ 			page_frame_number, offset_in_page, grain);
+ 
++	/* Report the error via the trace interface */
++	trace_mc_error(type, mci->mc_idx, msg, label, location,
++		       detail, other_detail);
++
++	/* Report the error via the edac_mc_printk() interface */
++	if (type == HW_EVENT_ERR_CORRECTED)
++		edac_ce_error(mci, pos, msg, location, label, detail,
++			      other_detail, enable_per_layer_report,
++			      page_frame_number, offset_in_page, grain);
++	else
+ 		edac_ue_error(mci, pos, msg, location, label, detail,
+ 			      other_detail, enable_per_layer_report);
+-	}
+ }
+ EXPORT_SYMBOL_GPL(edac_mc_handle_error);
+diff --git a/include/ras/hw_event.h b/include/ras/hw_event.h
+new file mode 100644
+index 0000000..fe2ec3b
+--- /dev/null
++++ b/include/ras/hw_event.h
+@@ -0,0 +1,77 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM hw_event
++
++#if !defined(_TRACE_HW_EVENT_MC_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_HW_EVENT_MC_H
++
++#include <linux/tracepoint.h>
++#include <linux/edac.h>
++#include <linux/ktime.h>
++
++/*
++ * Hardware Events Report Method (HERM)
++ *
++ * Those events are generated when hardware detected a corrected or
++ * uncorrected event, and are meant to replace the current API to report
++ * errors defined on both EDAC and MCE subsystems.
++ *
++ * FIXME: Add events for handling memory errors originated from the
++ *        MCE subsystem.
++ */
++
++/*
++ * Hardware-independent Memory Controller specific events
++ */
++
++/*
++ * Default error mechanisms for Memory Controller errors (CE and UE)
++ */
++TRACE_EVENT(mc_error,
++
++	TP_PROTO(const unsigned int err_type,
++		 const unsigned int mc_index,
++		 const char *msg,
++		 const char *label,
++		 const char *location,
++		 const char *detail,
++		 const char *driver_detail),
++
++	TP_ARGS(err_type, mc_index, msg, label, location,
++		detail, driver_detail),
++
++	TP_STRUCT__entry(
++		__field(	unsigned int,	err_type		)
++		__field(	unsigned int,	mc_index		)
++		__string(	msg,		msg			)
++		__string(	label,		label			)
++		__string(	detail,		detail			)
++		__string(	location,	location		)
++		__string(	driver_detail,	driver_detail		)
++	),
++
++	TP_fast_assign(
++		__entry->err_type		= err_type;
++		__entry->mc_index		= mc_index;
++		__assign_str(msg, msg);
++		__assign_str(label, label);
++		__assign_str(location, location);
++		__assign_str(detail, detail);
++		__assign_str(driver_detail, driver_detail);
++	),
++
++	TP_printk(HW_ERR "mce#%d: %s error %s on memory stick \"%s\" (%s %s %s)",
++		  __entry->mc_index,
++		  (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
++			((__entry->err_type == HW_EVENT_ERR_FATAL) ?
++			"Fatal" : "Uncorrected"),
++		  __get_str(msg),
++		  __get_str(label),
++		  __get_str(location),
++		  __get_str(detail),
++		  __get_str(driver_detail))
++);
++
++#endif /* _TRACE_HW_EVENT_MC_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+
+
+
