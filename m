@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954Ab2EJUfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 16:35:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:50804 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752872Ab2EJUfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 16:35:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="139237180"
-Message-ID: <4FAC26A5.3050606@intel.com>
-Date: Thu, 10 May 2012 13:35:49 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Jonathan Nieder <jrnieder@gmail.com>
-CC: David Miller <davem@davemloft.net>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, stephen.s.ko@intel.com,
-        jeffrey.t.kirsher@intel.com
-Subject: Re: [ 33/52] net: Fix issue with netdev_tx_reset_queue not resetting
- queue from XOFF state
-References: <20120510173135.772550373@linuxfoundation.org> <4FAC0EA7.3000100@intel.com> <20120510.145510.1040533529305157641.davem@davemloft.net> <20120510194658.GA9858@burratino>
-In-Reply-To: <20120510194658.GA9858@burratino>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756102Ab2EJUhJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 16:37:09 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44424 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751459Ab2EJUhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 16:37:07 -0400
+Message-ID: <1336682226.29763.2.camel@joe2Laptop>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
+ variable-length record buffer
+From: Joe Perches <joe@perches.com>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Kay Sievers <kay@vrfy.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
+Date: Thu, 10 May 2012 13:37:06 -0700
+In-Reply-To: <20120510201409.GA6467@thunk.org>
+References: <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
+	 <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
+	 <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com>
+	 <20120509070710.GA29981@gmail.com>
+	 <CAPXgP11evyQQKNDaa00R7qsOFy5Xk-utN1w9OgB4y6NxLZG=UA@mail.gmail.com>
+	 <1336611278.728.9.camel@mop>
+	 <CA+55aFyrrH0jJV--L=ugt0YK7pT+jmhjvt_WRWyenyiroN97zg@mail.gmail.com>
+	 <1336667984.947.24.camel@mop>
+	 <CA+55aFxUaNC4SGEodrdddkDN6t=Sbx=P4XyaHkj7eTQBQOeLeA@mail.gmail.com>
+	 <1336676986.947.47.camel@mop> <20120510201409.GA6467@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2012 12:46 PM, Jonathan Nieder wrote:
-> David Miller wrote:
->> From: Alexander Duyck <alexander.h.duyck@intel.com>
->>> All of the changes in igb are unnecessary.  I think they can be dropped
->>> from the patch as they have already been reverted from the latest
->>> net-next.  The only change that is really needed is the piece in
->>> netdevice.h below.
->> Does it hurt?  If not, just let it be.
-> Based on the commit description for dad8a3b3eaa0 ("igb, ixgbe:
-> netdev_tx_reset_queue incorrectly called from tx init path"), yes, it
-> hurts.  I don't know if it hurts enough to justify holding up this
-> patch until dad8a3b3eaa0 hits mainline.
->
-> |                            this sort of works in most cases except
-> | when the number of real tx queues changes. When the number of real
-> | tx queues changes netdev_tx_reset_queue() only gets called on the
-> | new number of queues so when we reduce the number of queues we risk
-> | triggering the watchdog timer and repeated device resets.
-> |
-> | So this is not only a cosmetic issue but causes real bugs. For
-> | example enabling/disabling DCB or FCoE in ixgbe will trigger this.
-I'm fairly certain we really shouldn't make the changes to igb.  I would
-say to just modify the existing patch by just dropping the igb portion
-of it and it would be fine.
+On Thu, 2012-05-10 at 16:14 -0400, Ted Ts'o wrote:
+> Is there any difference in any of the cases in terms of how printk's
+> that are prefixed with KERN_CONT versus a printk that does not have
+> any KERN_* prefix?  If so, is there value in keeping KERN_CONT?
 
-Thanks,
+As far as I know, no.
 
-Alex
+It is a useful marker to show where prints
+are actually continued.
+
+#define KERN_CONT ""
+
+would save a small amount of text.
+
+
