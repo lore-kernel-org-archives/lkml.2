@@ -1,161 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758854Ab2EJKS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 06:18:56 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:51523 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758822Ab2EJKSt (ORCPT
+	id S1754984Ab2EJK3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 06:29:50 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:32954 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750848Ab2EJK3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 06:18:49 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <vinod.koul@linux.intel.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <plagnioj@jcrosoft.com>,
-        <linux-kernel@vger.kernel.org>, <ludovic.desroches@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3/3] dmaengine: at_hdmac: take maxburst from slave configuration
-Date: Thu, 10 May 2012 12:17:41 +0200
-Message-ID: <4e7b718aecc03b0c2bbde75bb6fc5464a9e38115.1336644470.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1336644470.git.nicolas.ferre@atmel.com>
-References: <cover.1336644470.git.nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.159.245.203]
+	Thu, 10 May 2012 06:29:49 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+a+rFawSSagvfJolhBZR4H8ysRdo9zwqefUfhAER
+	kCe5ApPfHKSINp
+Message-ID: <1336645785.25483.3.camel@marge.simpson.net>
+Subject: Re: Scheduler still seems awful with x264, worse with patches
+From: Mike Galbraith <efault@gmx.de>
+To: Jason Garrett-Glaser <jason@x264.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 10 May 2012 12:29:45 +0200
+In-Reply-To: <CABS55+A_ZbJT4Tz-XfacbURpgfx2WuXqvPnn1_XkAfhxJMP6eA@mail.gmail.com>
+References: <CABS55+A_ZbJT4Tz-XfacbURpgfx2WuXqvPnn1_XkAfhxJMP6eA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The maxburst/chunk size was taken from the private slave DMA data structure.
-Use the common API provided by DMA_SLAVE_CONFIG to setup src/dst maxburst
-values.
-The ctrla field is not needed anymore in the slave private structure nor the
-header constants that were located in an architecture specific directory.
-The at91sam9g45_devices.c file that was using this platform data is also
-modified to remove this now useless data.
+On Wed, 2012-05-09 at 09:00 -0700, Jason Garrett-Glaser wrote: 
+> Many months ago, the topic of CFS's inefficiencies with x264 came up
+> and some improvements were made, but BFS and Windows still stayed a
+> little bit in the lead.  This seemed to be because of a mix of two
+> issues.  Firstly, a combination of relatively short-lived jobs (x264
+> uses a thread pool, so the actual threads are long-lived).  Secondly,
+> in frame threads, heavy dependencies between threads, benefiting
+> greatly from a dumb scheduler.  Thirdly, in sliced threads -- the
+> focus of this post -- the best scheduling approach is to simply spread
+> them throughout the cores and do nothing, so again, a dumb scheduler
+> will do the right thing.
+> 
+> Recently I tried multithreading x264's lookahead for a customer.  The
+> lookahead previously wasn't threaded, causing bottlenecks with many
+> cores and threads.  I do my development mainly on Windows, and the
+> patch looked to be quite a success, with nice performance boosts for
+> many target use-cases.
+> 
+> And then I ran it on Linux and it choked horribly.
+> 
+> The patch is here:
+> https://github.com/DarkShikari/x264-devel/commit/99e830f1581eac3cf30f07b1d6c6c32bae1725c8
+> .  To replicate the test, simply test that version against the
+> previous version.  My guess is the reason it chokes is that it
+> involves spawning even *shorter*-lived jobs than x264 typically does,
+> something that CFS seems to simply collapse on.
+> 
+> Here's some stats from a recent kernel:
+> 
+> SD encoding (before -> after patch):
+> CFS: 325.49 +/- 1.22 fps -> 251.68 +/- 2.32 fps
+> BFS: 334.94 +/- 0.59 fps -> 344.47 +/- 0.68 fps
+> 
+> HD encoding (before -> after patch):
+> CFS: 39.05 +/- 0.22 fps -> 40.56 +/- 0.23 fps
+> BFS: 40.15 +/- 0.05 fps -> 44.89 +/- 0.05 fps
+> 
+> As can be seen, the longer the threads live (the lower the fps), the
+> less horrific the penalty is.  Furthermore, though I don't have
+> numbers, using schedtool -R -p 1 does basically as well as BFS in
+> eliminating the problem.  Naturally, this is not really a solution as
+> it requires root.
+> 
+> To replicate this test, a commandline like this should work on any
+> cached raw input file (a collection of free raw videos can be found
+> here if you don't like making your own:
+> http://media.xiph.org/video/derf/ ):
+> 
+> ./x264 --preset superfast --tune zerolatency --threads X input -o /dev/null
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/mach-at91/at91sam9g45_devices.c   |    1 -
- arch/arm/mach-at91/include/mach/at_hdmac.h |   21 ---------------------
- drivers/dma/at_hdmac.c                     |    7 ++++---
- drivers/dma/at_hdmac_regs.h                |   21 ++++++++++++++++++++-
- 4 files changed, 24 insertions(+), 26 deletions(-)
+On my Q6600 box, neither scheduler (identical configs) seems to like
+--tune zerolatency much.
 
-diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-index 6b008ae..b3d2e19 100644
---- a/arch/arm/mach-at91/at91sam9g45_devices.c
-+++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-@@ -441,7 +441,6 @@ void __init at91_add_device_mci(short mmc_id, struct mci_platform_data *data)
- 	atslave->dma_dev = &at_hdmac_device.dev;
- 	atslave->cfg = ATC_FIFOCFG_HALFFIFO
- 			| ATC_SRC_H2SEL_HW | ATC_DST_H2SEL_HW;
--	atslave->ctrla = ATC_SCSIZE_16 | ATC_DCSIZE_16;
- 	if (mmc_id == 0)	/* MCI0 */
- 		atslave->cfg |= ATC_SRC_PER(AT_DMA_ID_MCI0)
- 			      | ATC_DST_PER(AT_DMA_ID_MCI0);
-diff --git a/arch/arm/mach-at91/include/mach/at_hdmac.h b/arch/arm/mach-at91/include/mach/at_hdmac.h
-index 810a13e..cab0997 100644
---- a/arch/arm/mach-at91/include/mach/at_hdmac.h
-+++ b/arch/arm/mach-at91/include/mach/at_hdmac.h
-@@ -27,12 +27,10 @@ struct at_dma_platform_data {
-  * struct at_dma_slave - Controller-specific information about a slave
-  * @dma_dev: required DMA master device
-  * @cfg: Platform-specific initializer for the CFG register
-- * @ctrla: Platform-specific initializer for the CTRLA register
-  */
- struct at_dma_slave {
- 	struct device		*dma_dev;
- 	u32			cfg;
--	u32			ctrla;
- };
- 
- 
-@@ -59,24 +57,5 @@ struct at_dma_slave {
- #define		ATC_FIFOCFG_HALFFIFO		(0x1 << 28)
- #define		ATC_FIFOCFG_ENOUGHSPACE		(0x2 << 28)
- 
--/* Platform-configurable bits in CTRLA */
--#define	ATC_SCSIZE_MASK		(0x7 << 16)	/* Source Chunk Transfer Size */
--#define		ATC_SCSIZE_1		(0x0 << 16)
--#define		ATC_SCSIZE_4		(0x1 << 16)
--#define		ATC_SCSIZE_8		(0x2 << 16)
--#define		ATC_SCSIZE_16		(0x3 << 16)
--#define		ATC_SCSIZE_32		(0x4 << 16)
--#define		ATC_SCSIZE_64		(0x5 << 16)
--#define		ATC_SCSIZE_128		(0x6 << 16)
--#define		ATC_SCSIZE_256		(0x7 << 16)
--#define	ATC_DCSIZE_MASK		(0x7 << 20)	/* Destination Chunk Transfer Size */
--#define		ATC_DCSIZE_1		(0x0 << 20)
--#define		ATC_DCSIZE_4		(0x1 << 20)
--#define		ATC_DCSIZE_8		(0x2 << 20)
--#define		ATC_DCSIZE_16		(0x3 << 20)
--#define		ATC_DCSIZE_32		(0x4 << 20)
--#define		ATC_DCSIZE_64		(0x5 << 20)
--#define		ATC_DCSIZE_128		(0x6 << 20)
--#define		ATC_DCSIZE_256		(0x7 << 20)
- 
- #endif /* AT_HDMAC_H */
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index b3f7cbd..07eda80 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -664,7 +664,8 @@ atc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 		return NULL;
- 	}
- 
--	ctrla = atslave->ctrla;
-+	ctrla =   ATC_SCSIZE(sconfig->src_maxburst)
-+		| ATC_DCSIZE(sconfig->dst_maxburst);
- 	ctrlb = ATC_IEN;
- 
- 	switch (direction) {
-@@ -792,12 +793,12 @@ atc_dma_cyclic_fill_desc(struct dma_chan *chan, struct at_desc *desc,
- 		enum dma_transfer_direction direction)
- {
- 	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
--	struct at_dma_slave	*atslave = chan->private;
- 	struct dma_slave_config	*sconfig = &atchan->dma_sconfig;
- 	u32			ctrla;
- 
- 	/* prepare common CRTLA value */
--	ctrla = atslave->ctrla
-+	ctrla =   ATC_SCSIZE(sconfig->src_maxburst)
-+		| ATC_DCSIZE(sconfig->dst_maxburst)
- 		| ATC_DST_WIDTH(reg_width)
- 		| ATC_SRC_WIDTH(reg_width)
- 		| period_len >> reg_width;
-diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
-index 897a8bc..8a6c8e8 100644
---- a/drivers/dma/at_hdmac_regs.h
-+++ b/drivers/dma/at_hdmac_regs.h
-@@ -87,7 +87,26 @@
- /* Bitfields in CTRLA */
- #define	ATC_BTSIZE_MAX		0xFFFFUL	/* Maximum Buffer Transfer Size */
- #define	ATC_BTSIZE(x)		(ATC_BTSIZE_MAX & (x)) /* Buffer Transfer Size */
--/* Chunck Tranfer size definitions are in at_hdmac.h */
-+#define	ATC_SCSIZE_MASK		(0x7 << 16)	/* Source Chunk Transfer Size */
-+#define		ATC_SCSIZE(x)		(ATC_SCSIZE_MASK & ((x) << 16))
-+#define		ATC_SCSIZE_1		(0x0 << 16)
-+#define		ATC_SCSIZE_4		(0x1 << 16)
-+#define		ATC_SCSIZE_8		(0x2 << 16)
-+#define		ATC_SCSIZE_16		(0x3 << 16)
-+#define		ATC_SCSIZE_32		(0x4 << 16)
-+#define		ATC_SCSIZE_64		(0x5 << 16)
-+#define		ATC_SCSIZE_128		(0x6 << 16)
-+#define		ATC_SCSIZE_256		(0x7 << 16)
-+#define	ATC_DCSIZE_MASK		(0x7 << 20)	/* Destination Chunk Transfer Size */
-+#define		ATC_DCSIZE(x)		(ATC_DCSIZE_MASK & ((x) << 20))
-+#define		ATC_DCSIZE_1		(0x0 << 20)
-+#define		ATC_DCSIZE_4		(0x1 << 20)
-+#define		ATC_DCSIZE_8		(0x2 << 20)
-+#define		ATC_DCSIZE_16		(0x3 << 20)
-+#define		ATC_DCSIZE_32		(0x4 << 20)
-+#define		ATC_DCSIZE_64		(0x5 << 20)
-+#define		ATC_DCSIZE_128		(0x6 << 20)
-+#define		ATC_DCSIZE_256		(0x7 << 20)
- #define	ATC_SRC_WIDTH_MASK	(0x3 << 24)	/* Source Single Transfer Size */
- #define		ATC_SRC_WIDTH(x)	((x) << 24)
- #define		ATC_SRC_WIDTH_BYTE	(0x0 << 24)
--- 
-1.7.10
+# ultrafast
+x264 --quiet --no-progress --preset ultrafast --no-scenecut --sync-lookahead 0 --qp 20 -o /dev/null --threads $1 ./soccer_4cif.y4m
+x264 --quiet --no-progress --preset ultrafast --tune zerolatency --no-scenecut --sync-lookahead 0 --qp 20 -o /dev/null --threads $1 ./soccer_4cif.y4m
+x264 --quiet --no-progress --preset ultrafast --tune zerolatency -o /dev/null --threads $1 ./soccer_4cif.y4m
+
+                    3.3.0-bfs          3.3.0-cfs
+marge:~/tmp # ./x264.sh 8
+
+encoded 600 frames, 449.63 fps         400.20 fps
+encoded 600 frames, 355.00 fps         304.12 fps
+encoded 600 frames, 305.65 fps         267.25 fps
+
+marge:~/tmp # schedctl -I ./x264.sh 8
+
+encoded 600 frames, 475.00 fps         483.19 fps
+encoded 600 frames, 364.72 fps         278.37 fps
+encoded 600 frames, 311.69 fps         256.25 fps
+
+marge:~/tmp # schedctl -R ./x264.sh 8
+
+encoded 600 frames, 454.70 fps         489.00 fps
+encoded 600 frames, 358.83 fps         365.61 fps
+encoded 600 frames, 308.81 fps         310.46 fps
+
 
