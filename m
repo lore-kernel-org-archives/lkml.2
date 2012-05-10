@@ -1,88 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932864Ab2EJXYB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 19:24:01 -0400
-Received: from defout.telus.net ([204.209.205.32]:37478 "EHLO defout.telus.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932783Ab2EJXX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 19:23:59 -0400
-X-Greylist: delayed 3941 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 May 2012 19:23:59 EDT
-X-Authority-Analysis: v=1.1 cv=JNvv5G0IPe1OlOJmASH2x7hIc8aOLcrKeJy7TWwfV5I=
- c=1 sm=2 a=eFosVe0FMc8A:10 a=UIdm24C_LI4A:10 a=8nJEP1OIZ-IA:10
- a=pweruynyiksHeOKAIxsA:9 a=1xR5RhKHDJST4iFTkZwA:7 a=wPNLvfGTeEIA:10
-X-Telus-Outbound-IP: 173.181.67.89
-Message-ID: <4FAC3EA3.5080105@telusplanet.net>
-Date: Thu, 10 May 2012 16:18:11 -0600
-From: bob <gillb4@telusplanet.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S932872Ab2EJXYd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 19:24:33 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44575 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118Ab2EJXYb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 19:24:31 -0400
+X-AuditID: 9c93016f-b7cecae000000e00-90-4fac4e2d0130
+Message-ID: <4FAC4E3B.3030909@kernel.org>
+Date: Fri, 11 May 2012 08:24:43 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: USB webcam UVC driver crashing
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Nitin Gupta <ngupta@vflare.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+References: <4FA33DF6.8060107@kernel.org> <20120509201918.GA7288@kroah.com> <4FAB21E7.7020703@kernel.org> <20120510140215.GC26152@phenom.dumpdata.com> <4FABD503.4030808@vflare.org> <4FABDA9F.1000105@linux.vnet.ibm.com> <20120510151941.GA18302@kroah.com> <4FABECF5.8040602@vflare.org> <20120510164418.GC13964@kroah.com> <4FABF9D4.8080303@vflare.org> <20120510173322.GA30481@phenom.dumpdata.com>
+In-Reply-To: <20120510173322.GA30481@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.  I have a USB webcam ID 1e4e:0102.  I can start it and it runs (I 
-can start various webcam applications eg: cheese, mplayer, guvcview), 
-and it works ok for a few minutes, but then crashes. When it crashes, it 
-usually breaks all of USB too, and occasionally the whole machine.  It 
-can be the only application running and crash the machine (but in one 
-instance it was 1150 seconds after starting, in another instance 453 
-seconds after starting).  Some information from kern.log:
+On 05/11/2012 02:33 AM, Konrad Rzeszutek Wilk wrote:
 
-kernel: [ 2208.550294] uvcvideo: USB2.0 Camera: SOF 3205.208526 y 
-990206793 ts 2209.328418 buf ts 2209.338209 (x1 210698240/143/1165 x2 
-212795392/175/1196 y1 1000000000 y2 1032005663)
-kernel: [ 2208.550300] uvcvideo: uvc_v4l2_ioctl(VIDIOC_QBUF)
-kernel: [ 2208.550853] uvcvideo: uvc_v4l2_poll
-kernel: [ 2208.558228] uvcvideo: frame 9819 stats: 0/1/252 packets, 
-0/0/252 pts (!early initial), 251/252 scr, last pts/stc/sof 
-3153758598/3154922431/1196
-kernel: [ 2208.590196] uvcvideo: Frame complete (EOF found).
-kernel: [ 2208.590199] uvcvideo: EOF in empty payload.
-kernel: [ 2208.590219] uvcvideo: uvc_v4l2_poll
-kernel: [ 2208.590226] uvcvideo: uvc_v4l2_ioctl(VIDIOC_DQBUF)
-kernel: [ 2208.590234] uvcvideo: USB2.0 Camera: PTS 3154958118 y 
-3245.189468 SOF 3245.189468 (x1 2147717982 x2 2148648054 y1 213188608 y2 
-215220224 SOF offset 0)
-May 10 11:54:39 Freedom kernel: [ 2208.590241] uvcvideo: USB2.0 Camera: 
-SOF 3245.189468 y 990198914 ts 2209.368408 buf ts 2209.378207 (x1 
-213319680/183/1205 x2 215416832/215/1236 y1 1000000000 y2 1031969188)
-kernel: [ 2208.590246] uvcvideo: uvc_v4l2_ioctl(VIDIOC_QBUF)
-kernel: [ 2208.590759] uvcvideo: uvc_v4l2_poll
-kernel: [ 2208.598215] uvcvideo: frame 9820 stats: 0/1/253 packets, 
-0/0/253 pts (!early initial), 252/253 scr, last pts/stc/sof 
-3154958118/3156122524/1236
-kernel: [ 2208.630178] uvcvideo: Frame complete (EOF found).
-kernel: [ 2208.630181] uvcvideo: EOF in empty payload.
-kernel: [ 2208.630201] uvcvideo: uvc_v4l2_poll
-kernel: [ 2208.630207] uvcvideo: uvc_v4l2_ioctl(VIDIOC_DQBUF)
-kernel: [ 2208.630215] uvcvideo: USB2.0 Camera: PTS 3156157638 y 
-3285.170364 SOF 3285.170364 (x1 2147718555 x2 2148648626 y1 215810048 y2 
-217841664 SOF offset 0)
-...(rinse, repeat)...
+> On Thu, May 10, 2012 at 01:24:36PM -0400, Nitin Gupta wrote:
+>> On 5/10/12 12:44 PM, Greg Kroah-Hartman wrote:
+>>> On Thu, May 10, 2012 at 12:29:41PM -0400, Nitin Gupta wrote:
+>>>> On 5/10/12 11:19 AM, Greg Kroah-Hartman wrote:
+>>>>> On Thu, May 10, 2012 at 10:11:27AM -0500, Seth Jennings wrote:
+>>>>>> On 05/10/2012 09:47 AM, Nitin Gupta wrote:
+>>>>>>
+>>>>>>> On 5/10/12 10:02 AM, Konrad Rzeszutek Wilk wrote:
+>>>>>>>> struct zs {
+>>>>>>>>     void *ptr;
+>>>>>>>> };
+>>>>>>>>
+>>>>>>>> And pass that structure around?
+>>>>>>>>
+>>>>>>>
+>>>>>>> A minor problem is that we store this handle value in a radix tree node.
+>>>>>>> If we wrap it as a struct, then we will not be able to store it directly
+>>>>>>> in the node -- the node will have to point to a 'struct zs'. This will
+>>>>>>> unnecessarily waste sizeof(void *) for every object stored.
+>>>>>>
+>>>>>>
+>>>>>> I don't think so. You can use the fact that for a struct zs var,&var
+>>>>>> and&var->ptr are the same.
+>>>>>>
+>>>>>> For the structure above:
+>>>>>>
+>>>>>> void * zs_to_void(struct zs *p) { return p->ptr; }
+>>>>>> struct zs * void_to_zs(void *p) { return (struct zs *)p; }
+>>>>>
+>>>>> Do like what the rest of the kernel does and pass around *ptr and use
+>>>>> container_of to get 'struct zs'.  Yes, they resolve to the same pointer
+>>>>> right now, but you shouldn't "expect" to to be the same.
+>>>>>
+>>>>>
+>>>>
+>>>> I think we can just use unsigned long as zs handle type since all we
+>>>> have to do is tell the user that the returned value is not a
+>>>> pointer. This will be less pretty than a typedef but still better
+>>>> than a single entry struct + container_of stuff.
+>>>
+>>> But then you are casting the thing all around just as much as you were
+>>> with the void *, right?
+>>>
+>>> Making this a "real" structure ensures type safety and lets the compiler
+>>> find the problems you accidentally create at times :)
+>>>
+>>
+>> If we return a 'struct zs' from zs_malloc then I cannot see how we
+>> are solving the original problem of storing the handle directly in a
+>> radix node. If we pass a struct zs we will require pointing radix
+>> node to this struct, wasting sizeof(void *) for every object.   If
+>> we pass unsigned long, then this problem is solved and it also makes
+>> it clear that the passed value is not a pointer.
+> 
+> It is the same size: sizeof(struct zs) == sizeof(void *).
+> When you return the 'struct zs' it will be as if you are returning 
+> a void * pointer.
+> 
 
-Some of uvcdynctrl -v -l:
-Listing available devices:
-   video2   Hauppauge WinTV-HVR1800 [cx23885[0], PCI:0000:07:00.0]
-   video1   Hauppauge WinTV-HVR1800 [cx23885, PCIe:0000:07:00.0]
-   video0   USB2.0 Camera [uvcvideo, usb-0000:00:1a.7-5.1]
 
-I also have a snip of dmesg.log, but its similar to the kern.log posted 
-above.
+Please look.
 
-Sorry for the long post.  My system: Linux Freedom 3.4.0-rc6 #1 SMP 
-PREEMPT Mon May 7 17:11:54 MDT 2012 x86_64 x86_64 x86_64 GNU/Linux
-Its not a debug kernel (but I can build one and re-run things if needed).
-Its not a new bug, its been doing it for several kernels.  I have a 
-different webcam that doesn't crash (doesn't use the UVC drivers), but 
-the images it produces are drech.
+struct zs_handle {
+	void *handle
+};
 
-Please mail me directly as I'm not on the list.
+1)
 
-TIA,
-Bob
+static struct zv_hdr *zv_create(..)
+{
+	struct zs_handle handle;
+	..
+	handle = zs_malloc(pool, size);
+	..
+	return handle;
+}
+
+handle is on stack so it can't be used by index for slot of radix tree.
+
+2)
+
+static struct zv_hdr *zv_create(..)
+{
+	struct zs_handle handle;
+	..
+	handle = zs_malloc(pool, size);
+	..
+	return handle.handle;
+}
+
+Okay. Now it works but zcache coupled with zsmalloc tightly.
+User of zsmalloc should never know internal of zs_handle.
+
+3)
+
+- zsmalloc.h
+void *zs_handle_to_ptr(struct zs_handle handle)
+{
+	return handle.hanle;
+}
+
+static struct zv_hdr *zv_create(..)
+{
+	struct zs_handle handle;
+	..
+	handle = zs_malloc(pool, size);
+	..
+	return zs_handle_to_ptr(handle);
+}
+
+Why should zsmalloc support such interface?
+It's a zcache problem so it's desriable to solve it in zcache internal.
+And in future, if we can add/remove zs_handle's fields, we can't make
+sure such API.
 
 
+>> Its true that making it a real struct would prevent accidental casts
+>> to void * but due to the above problem, I think we have to stick
+>> with unsigned long.
+>>
+>> Thanks,
+>> Nitin
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
+
+
+-- 
+Kind regards,
+Minchan Kim
