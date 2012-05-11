@@ -1,131 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326Ab2EKSx7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:53:59 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59944 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758733Ab2EKSxk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:53:40 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: gpio: pca953x: interrupt feature unreliable (re-re-send, Grant please acknowledge!!)
-To: Jean-Francois Dagenais <jeff.dagenais@gmail.com>,
-        linus.walleij@stericsson.com
-Cc: torvalds@linux-foundation.org, open list <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, eric.miao@marvell.com,
-        maz@misterjones.org
-In-Reply-To: <8495990E-0B78-4B47-A00D-36D45DC3450F@gmail.com>
-References: <8495990E-0B78-4B47-A00D-36D45DC3450F@gmail.com>
-Date: Fri, 11 May 2012 12:53:37 -0600
-Message-Id: <20120511185337.E31BC3E0791@localhost>
+	id S1759050Ab2EKSyg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:54:36 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:39302 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756071Ab2EKSye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 14:54:34 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [RFC][PATCH 2/2] PM / Domains: Add preliminary cpuidle support
+Date: Fri, 11 May 2012 20:59:25 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Colin Cross <ccross@android.com>, Kevin Hilman <khilman@ti.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+References: <201205092340.26561.rjw@sisk.pl> <201205102041.42473.rjw@sisk.pl> <4FACCC79.5000805@ti.com>
+In-Reply-To: <4FACCC79.5000805@ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205112059.25233.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 May 2012 14:19:17 -0400, Jean-Francois Dagenais <jeff.dagenais@gmail.com> wrote:
-> Hi all,
+On Friday, May 11, 2012, Santosh Shilimkar wrote:
+> On Friday 11 May 2012 12:11 AM, Rafael J. Wysocki wrote:
+> > On Thursday, May 10, 2012, Santosh Shilimkar wrote:
+> >> Rafael,
+> >>
+> >> On Thursday 10 May 2012 03:13 AM, Rafael J. Wysocki wrote:
+> >>> From: Rafael J. Wysocki <rjw@sisk.pl>
+> >>>
+> >>> On some systems there are CPU cores located in the same power
+> >>> domains as I/O devices.  Then, power can only be removed from the
+> >>> domain if all I/O devices in it are not in use and the CPU core
+> >>> is idle.  Add preliminary support for that to the generic PM domains
+> >>> framework.
+> >>>
+> >> I am just curious to know, what kind of IO devices, you are
+> >> talking here?
+> > 
+> > Nothing specific, really.  It can be any kind of I/O devices that happen
+> > to be in the same power domain.  This includes USB, SDHI, MMCIF controllers
+> > on the SoC I have in mind in particular.
+> > 
+> OK.
+> These are more of generic devices and actually not related to CPU/CPU
+> clusters as such.
 > 
-> Here's a fun, yet potentially dangerous problem.
+> >> And also how those devices linked with CPU low power
+> >> states apart from being part of same power domain. And is it
+> >> the power domain or more of voltage domain, we are talking here.
+> > 
+> > Depending on the definitions I guess.  How do you define a power domain and
+> > a voltage domain?
+> >
+> 
+> A voltage domain can be a section of the device supplied by a dedicated
+> voltage rail. A voltage domain can have many power-domains like
+> CPU cluster domain, Interconnect domain, peripheral domains.
+> And each power domain then can have many sub-modules like UART, SPI,
+> USB etc
 
-Hi Jean-Francois,
+OK, so this is not the level of detail the code in question is about.
 
-It sounds like your analysis is accurate and your conclusions look
-correct.  There really isn't much that I can do for you on this though
-as I don't have the hardware.  As Linus mentioned, David Jander has
-worked on the driver in the past, and git log shows some other folks.
-I would ask them.
+In my terminology a power domain is a set of devices such that it only is
+possible to remove power from (and restore power to) all of them together.
 
-g.
+[...]
+> > 
+> > The system I have in mind is designed in such a way that there is a power
+> > domain with three subdomains, one of which contains the CPU core and the
+> > remaining two contain I/O devices of various kinds.  General purpose as well
+> > as "core".
+> > 
+> I am not sure CPUIDLE is suppose to take care of these kind of general
+> purpose IO's. CPUIDLE should take care of CPU and CPU cluster power
+> management. Any other peripherals as you mentioned should be already
+> have some sort of device drivers and they should be using runtime PM for
+> it, no?
 
-> 
-> I've sent this twice already, without any feedback. I'm just trying to get more 
-> visibility on this because I believe it to be a serious issue depending where 
-> this chip may be used. Interrupts could be missed in what could be very tough 
-> conditions to replicate. In my setup I could reproduce the problem easily and 
-> took great care in analysing and documenting it.
-> ===============Re-Re-Send (with edits)==================
-> Hi all,
-> (Using 3.1.0-rc4, didn't change since)
-> 
-> I have detected a flaw in the interrupt support of the gpio-pca953x driver. 
-> This is how I discovered the issue:
-> 
-> I have a interrupt client device which has it's interrupt signal connected to 
-> one of the GPIOs of the pca9555. The client is an ad714x device. It's interrupt 
-> routine is falling edge triggered (so says the driver, but according to the 
-> AD714x specs, it should be level,low, however this is another topic). The 
-> pca9555 is interrupting the CPU through INTA of an ethernet PCI card for which 
-> I have blacklisted the driver module and only done "echo 1 > 
-> /bus/pci/devices/00xyz/enable". It is "(level, low)" which matches the pca953x 
-> request_threaded_isr call (IRQF_TRIGGER_LOW | IRQF_ONESHOT). I used two GPOs on 
-> some other device to get the !ISR signals shown below. These show the nested 
-> nature of the cli ISR called from the pca953x's ISR.
-> ASCII art of my probing (use a monospace font, "!ISR"==low, mean ISR running)
-> 
-> Events(lined-up):1  2 3 4 5  6    7       8    9
->              ____          _______
-> client !INT      |________|       |________(lost)___
->              ___________                   _________
-> cli !ISR                |____|____________|
->              ____      ___         _________________
-> pca953x !INT     |____|   |_______|
->              ______                             ____
-> pca953x !ISR       |___________________________|
-> (note: the little spike in the cli !ISR marks the end of reading the client's 
-> status registers, the rest of the ISR is updating driver state machines, etc.)
-> 
-> Summary: The client enters interrupt(1), which immediately puts the pca953x in 
-> interrupt as well(1). When the pca953x enters it's isr thread(2), it reads the 
-> input status register, this immediately clears the pca953x interrupt(3). The 
-> pca953x ISR then figure's out it should invoke the nested ISR for the client. 
-> The client ISR starts (4) by reading the client chip's status register, which 
-> clears the client interrupt(5). This immediately puts the pca953x back into 
-> interrupt (5) since it's a different state than what was last read in the 
-> pca953x ISR(3). Since pca953x registered it's interrupt with IRQF_ONESHOT, this 
-> new IRQ state is masked and goes un-noticed. The pca953x chips' FLAW IS THEN 
-> REVEILED if/when the client chip goes back in interrupt before (7) the client 
-> ISR (and the pca053x's ISR with the current code) even has time to finish(8 and 
-> 9). At that moment, the pca953x's input are back to the way they where when the 
-> pca953x ISR last read the input status register. So when all of the ISR 
-> routines are done (9...), the client has it's INT line asserted and no more 
-> interrupt will come from the pca953x because of this.
-> 
-> pca953x specs quote: "Resetting the interrupt circuit is achieved when data on 
-> the port is CHANGED TO THE ORIGINAL SETTING, data is read from the port that 
-> generated the interrupt or in a Stop event. [...] Interrupts that occur during 
-> the ACK or NACK clock pulse CAN BE LOST (or be very short) due to the resetting 
-> of the interrupt during this pulse."
-> 
-> So in essence, although the pca953x.c's design and doc says only edges are 
-> detected and supported, the chip design makes it IMPOSSIBLE to guarantee that 
-> all edges will be caught.
-> 
-> The IRQ function SHOULD BE REMOVED from the driver since the chip cannot honor 
-> the driver's promise. At the very least, for system integrators that want to 
-> use level base interrupts implemented by the pca953x, changes to the driver 
-> should be made to correctly handle the lack of LATCHING INTERRUPT STATUS 
-> register...
-> 
-> I would propose a patch, but I am missing knowledge on the internals of the 
-> kernel's irq code, so here's a simple suggestion description, hoping to get 
-> some feedback.
-> 
-> First of all, I propose pca953x_irq_set_type should only support 
-> IRQ_TYPE_LEVEL_HIGH and IRQ_TYPE_LEVEL_LOW. pca953x_irq_handler should be 
-> adjusted accordingly.
-> 
-> To make sure we catch as many transitions of pca953x chips INT as possible 
-> (yikes), we make pca953x_irq_setup() request it's own interrupt as both rising 
-> and falling (IRQF_TRIGGER_RISING|IRQF_TRIGGER_FALLING, is that even possible?) 
-> without IRQF_ONESHOT, so that pca953x_irq_handler is rescheduled for running 
-> even when it's already running.
-> 
-> Any thoughts? Maybe there are more/less fancy, or better yet, "correct" ways of 
-> doing this? Will this even work?
-> 
-> /jfd
-> 
+Yes.
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+> And for the constraints, PM-Qos can be used. So far CPUIDLE
+> core code has maintained that distinction and all the C-state latencies
+> are of the CPU clusters rather than the SOC.
+
+Well, that need not be the case and my patch is about that.
+
+> If you have a voltage rail dependency then that should be handled
+> in the voltage layer/regulator layer. If there is a power domain
+> dependency then the power domain framework should do the use
+> counting yo handle such scenarios.
+
+The power domain framework, though, only covers I/O devices at the moment
+and this is an attempt to extend it to cover domains containing CPU cores
+as well as I/O devices.
+
+> Please correct me but, IIUC, your proposal wants to use CPUIDLE
+> for the SOC level power management.
+
+That depends on what you mean by SoC-level.
+
+> Will you be able to expand your requirements and explain why can't
+> you manage PM for the general purpose devices like MMC, USB etc
+> in their own device drivers ?
+
+Because it is not possible to remove power from those devices individually.
+
+Say you have a bunch of I/O devices such that you can only remove power from
+all of them simultaneously (a power domain, that is).  Suppose that there
+is a register such that if a specific value is written to it, power is cut
+from all of those devices at the same time (and there's an analogous value
+for restoring power).  Then, you can use the generic PM domains framework
+for power management of those devices.
+
+Suppose, however, that if you write the "cut power" value to the register,
+your CPU core will lose power too.  This case is beyond the scope of the
+existing generic PM domains framework, because it has to take the CPU power
+management into account, which is cpuidle in this particular case.
+
+Thanks,
+Rafael
