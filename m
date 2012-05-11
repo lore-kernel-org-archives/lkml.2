@@ -1,120 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab2EKAis (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 20:38:48 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:48534 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772Ab2EKAir (ORCPT
+	id S1755581Ab2EKAjC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 20:39:02 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61028 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755303Ab2EKAi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 20:38:47 -0400
-X-AuditID: cbfee61a-b7bbeae000003a71-1a-4fac5f95fc5e
-Message-id: <4FAC5F95.10004@samsung.com>
-Date: Fri, 11 May 2012 09:38:45 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: broonie@opensource.wolfsonmicro.com, thomas.abraham@linaro.org,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        jonghwa3.lee@samsung.com, linux-kernel@vger.kernel.org,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-Subject: Re: [PATCH 0/2] mfd: MAX8997: Support irq domain for Maxim MAX8997
-References: <1336647288-10858-1-git-send-email-cw00.choi@samsung.com>
- <20120510182015.GB17018@kroah.com> <4FAC5313.80909@samsung.com>
- <20120510235237.GA28601@kroah.com>
-In-reply-to: <20120510235237.GA28601@kroah.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Thu, 10 May 2012 20:38:59 -0400
+Message-ID: <1336696707.947.56.camel@mop>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
+ variable-length record buffer
+From: Kay Sievers <kay@vrfy.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Ingo Molnar <mingo@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
+Date: Fri, 11 May 2012 02:38:27 +0200
+In-Reply-To: <CA+55aFwJgtVr9ZndEU-yhJW3wi-5Omga51pjun+J213awQwJZA@mail.gmail.com>
+References: <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
+	 <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
+	 <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com>
+	 <20120509070710.GA29981@gmail.com>
+	 <CAPXgP11evyQQKNDaa00R7qsOFy5Xk-utN1w9OgB4y6NxLZG=UA@mail.gmail.com>
+	 <1336611278.728.9.camel@mop>
+	 <CA+55aFyrrH0jJV--L=ugt0YK7pT+jmhjvt_WRWyenyiroN97zg@mail.gmail.com>
+	 <1336667984.947.24.camel@mop>
+	 <CA+55aFxUaNC4SGEodrdddkDN6t=Sbx=P4XyaHkj7eTQBQOeLeA@mail.gmail.com>
+	 <1336676986.947.47.camel@mop> <20120510201409.GA6467@thunk.org>
+	 <1336682226.29763.2.camel@joe2Laptop>
+	 <CAPXgP11T7vjBBFaE5jne0hntZ2J-MoVxwJ2C9TNsRzme9DmLuQ@mail.gmail.com>
+	 <1336682772.29763.6.camel@joe2Laptop>
+	 <CA+55aFwJgtVr9ZndEU-yhJW3wi-5Omga51pjun+J213awQwJZA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 08:52 AM, Greg KH wrote:
+On Thu, May 10, 2012 at 10:52 PM, Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> On Fri, May 11, 2012 at 08:45:23AM +0900, Chanwoo Choi wrote:
->> On 05/11/2012 03:20 AM, Greg KH wrote:
->>
->>> On Thu, May 10, 2012 at 07:54:48PM +0900, Chanwoo Choi wrote:
->>>> 
->>>>
->>>> But, I posted following patchset related to MAX8997 driver.
->>>> This patchset support Extcon framework in extcon-max8997 driver to
->>>> control external connector instead of max8997-muic driver. So, first
->>>> patch add MAX8997 extcon driver(drivers/extcon/extcon-max8997.c) and
->>>> last patch remove old MAX8997 muic driver(drivers/misc/max8997-muic.c).
->>>> - https://lkml.org/lkml/2012/5/8/98
->>>>
->>>> This patchset was applied in below git repository of Greg Kroah-Hartman.
->>>> - http://git.kernel.org/?p=linux/kernel/git/gregkh/driver-core.git;a=shortlog;h=refs/heads/driver-core-next
->>>>
->>>> I think that this patchset should be applied on the git repository
->>>> of Greg Kroah-Hartman to remove possible conflict issue when merged.
->>>
->>> That's fine with me, should the MFD maintainer have been copied on this
->>> to get his signed-off-by on it?
->>>
->>
->> I knew that first patch written by Thomas Abraham has been already
->> confirmed ack message from MFD maintainer(Samuel Ortiz
->> <sameo@linux.intel.com>). You can check it on first patch and below git
->> repository of Mark Brown.
-> 
-> Ok, but why didn't you cc: him and everyone else who acked and
-> signed-off on that patch?
-> 
+> The change to verify that 'current' matches the previous printout is
+> so far the *only* sane semantic change I've seen in this thread.
+> Everything else has been pure garbage.
 
-it is my mistake. I should have added maintainer related to first patch
-as you said.
-I will resend this patchset to all of people related to it now.
+Ok, let's continue with sane things then. :)
 
->> The below patch has occurred build break, so it was reverted by Mark
->> Brown. And then I did post this patchset with bug fix.
->>
->> http://git.kernel.org/?p=linux/kernel/git/broonie/regulator.git;a=commit;h=98d8618af37728f6e18e84110ddb99987b47dd12
-> 
-> So does that mean this one is ok, but the older one isn't?
-> 
-> confused, what exactly should I do here?
-> 
+Here is a stupid kernel module which creates 3 racy printk() loops, 2 of
+them do continuation, one does an atomic print. The continuation one
+prints one char per printk.
+  http://people.freedesktop.org/~kay/printk-race/printk-race.c
+
+The lines all try to look like:
+  (AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
+  (CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)
+  (XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)
+
+Every loop has it's own uppercase character. The line enclosed in '()'.
+'A' is the atomic one, the cont ones are 'C' and 'X'.
+
+Our current kernel look like:
+[   99.056806] XC(AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
+[   99.059772] XC(AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
+[   99.062168] XCCX(AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
+[   99.066479] CXXC(AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
+[   99.070063] XC(AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
+[   99.073081] XCCXCXCXCXCXCXCXCXCXCXCXCXCXCXCCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXC)
+[   99.148325] (CCXCXCX)
+[   99.155468] (XXCXCXCXCCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXCXXCXCXCXCXCXCXCXCXC)
+[   99.277357] (CCXCXCXCX)
+  http://people.freedesktop.org/~kay/printk-race/printk-out-before.txt
 
 
-Sorry, I have not sufficient explanation about history of patchset.
+The kernel with the record buffer, and the 'current' who owns the cont buffer
+looks like:
+[   78.080866] (AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
+[   78.082790] (CC
+[   78.084152] (XX
+[   78.084497] (AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
+[   78.085494] C
+[   78.086125] X
+[   78.087188] C
+[   78.088669] X
+[   78.089803] C
+[   78.091510] X
+[   78.091924] (AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
+[   78.094112] CC
+[   78.096171] X
+  http://people.freedesktop.org/~kay/printk-race/printk-out-after.txt
 
-The below was written by Thomas Abraham and it was applied on
-regulator.git repository.
-http://git.kernel.org/?p=linux/kernel/git/broonie/regulator.git;a=commit;h=98d8618af37728f6e18e84110ddb99987b47dd12
-
-But, this patch had occurred build break, it was reported by Stephen
-Rothwell when build max8997-muic driver(drivers/misc/max8997-muic.c) and
-then this patch was reverted by Mark Brown. You can check reverted patch
-on below patch.
-http://git.kernel.org/?p=linux/kernel/git/broonie/regulator.git;a=commit;h=82b719b11fd750188c125078ad6a6c0d23219dfb
-
-Then, I posted patchset ,which is based on patch written by Thomas Abraham,
-to add support irq domain for Max MAX8997 interrupts with bug fix.
-
-I had to modify max8997-muic driver to avoid build break, But previously
-I added extcon-max8997 driver and remove old max8997-muic
-driver(drivers/misc/max8997-muic.c).
-https://lkml.org/lkml/2012/5/8/98
-
-So, I suggested that this patchset should be applied on the git reposity
-of Greg
-to remove possible conflict issue when merged because old max8997-muic
-driver(drivers/misc/max8997-muic.c) is existed on regulator.git of Mark
-Brown.
-
-I am so sorry about obscure explanation of patchset history.
-
-Best Regards,
-Chanwoo Choi
-
-
-
-
-
-
+Thanks,
+Kay
 
