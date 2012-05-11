@@ -1,166 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab2EKEf2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 00:35:28 -0400
-Received: from ngcobalt07.manitu.net ([217.11.48.107]:45380 "EHLO
-	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab2EKEfZ (ORCPT
+	id S1752330Ab2EKEiF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 00:38:05 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38259 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055Ab2EKEiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 00:35:25 -0400
-X-Greylist: delayed 2667 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 May 2012 00:35:24 EDT
-X-manitu-Original-Sender-IP: 127.0.0.1
-X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
-Date: Fri, 11 May 2012 05:49:45 +0200
-From: Roland Eggner <edvx1@systemanalysen.net>
-To: Ludwig Nussel <ludwig.nussel@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "open list:EXT2 FILE SYSTEM" <linux-ext4@vger.kernel.org>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH RESEND] implement uid and gid mount options for ext2,
- ext3 and ext4
-Message-ID: <20120511034945.GA15892@mobil.systemanalysen.net>
-Reply-To: Roland Eggner <edvx1@systemanalysen.net>
-Mail-Followup-To: Ludwig Nussel <ludwig.nussel@suse.de>,
-	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	Jan Kara <jack@suse.cz>, Rob Landley <rob@landley.net>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	Theodore Ts'o <tytso@mit.edu>,
-	"open list:EXT2 FILE SYSTEM" <linux-ext4@vger.kernel.org>,
-	"open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
-References: <1336660924-9598-1-git-send-email-ludwig.nussel@suse.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u3/rZRmxL6MmkK24"
-Content-Disposition: inline
-In-Reply-To: <1336660924-9598-1-git-send-email-ludwig.nussel@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 11 May 2012 00:38:02 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: airlied@linux.ie, alan@linux.intel.com, kirill.shutemov@linux.intel.com
+Cc: airlied@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH] gma500: fix build when ACPI isn't set
+Date: Fri, 11 May 2012 06:39:02 +0200
+Message-Id: <1336711142-26788-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ drivers/gpu/drm/gma500/opregion.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
---u3/rZRmxL6MmkK24
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+diff --git a/drivers/gpu/drm/gma500/opregion.c b/drivers/gpu/drm/gma500/opregion.c
+index 05661bf..e2fbf4d 100644
+--- a/drivers/gpu/drm/gma500/opregion.c
++++ b/drivers/gpu/drm/gma500/opregion.c
+@@ -258,6 +258,7 @@ void psb_intel_opregion_init(struct drm_device *dev)
+ 	if (!opregion->header)
+ 		return;
+ 
++#ifdef CONFIG_ACPI
+ 	if (opregion->acpi) {
+ 		/* Notify BIOS we are ready to handle ACPI video ext notifs.
+ 		 * Right now, all the events are handled by the ACPI video
+@@ -268,6 +269,7 @@ void psb_intel_opregion_init(struct drm_device *dev)
+ 		system_opregion = opregion;
+ 		register_acpi_notifier(&psb_intel_opregion_notifier);
+ 	}
++#endif
+ 
+ 	if (opregion->asle)
+ 		psb_intel_opregion_enable_asle(dev);
+@@ -281,12 +283,14 @@ void psb_intel_opregion_fini(struct drm_device *dev)
+ 	if (!opregion->header)
+ 		return;
+ 
++#ifdef CONFIG_ACPI
+ 	if (opregion->acpi) {
+ 		opregion->acpi->drdy = 0;
+ 
+ 		system_opregion = NULL;
+ 		unregister_acpi_notifier(&psb_intel_opregion_notifier);
+ 	}
++#endif
+ 
+ 	/* just clear all opregion memory pointers now */
+ 	iounmap(opregion->header);
+-- 
+1.7.8.5
 
-On 2012-05-10 Thu 16:42 +0200, Ludwig Nussel wrote:
-> =E2=80=A6
-> When using 'real' file systems on removable storage devices such as
-> hard disks or usb sticks people quickly face the problem that their
-> Linux users have different uids on different machines. Therefore one
-> cannot modify or even read files created on a different machine
-> without running chown as root or storing everything with mode 777.
-> Simple file systems such as vfat don't have that problem as they
-> don't store file ownership information and one can pass the uid
-> files should belong to as mount option.
->=20
-> The following two patches (for 3.4.0-rc4) implement the uid (and
-> gid) mount option for ext2, ext3 and ext4 to make them actually
-> useful on removable media. If a file system is mounted with the uid
-> option all files appear to be owned by the specified uid. Only newly
-> created files actually end up with that uid as owner on disk though.
-> Ownership of existing files cannot be changed permanently if the uid
-> option was specified.
->=20
-> Acked-by: Rob Landley <rob@landley.net>
-> Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
-> ---
->  Documentation/filesystems/ext2.txt |    9 ++++++
->  Documentation/filesystems/ext3.txt |    9 ++++++
->  Documentation/filesystems/ext4.txt |    9 ++++++
->  fs/ext2/ext2.h                     |    8 +++++
->  fs/ext2/inode.c                    |   42 ++++++++++++++++++++------
->  fs/ext2/super.c                    |   57 ++++++++++++++++++++++++++++++=
-+++++-
->  fs/ext3/ext3.h                     |    8 +++++
->  fs/ext3/inode.c                    |   50 ++++++++++++++++++++++---------
->  fs/ext3/super.c                    |   57 ++++++++++++++++++++++++++++++=
-+++++-
->  fs/ext4/ext4.h                     |    4 ++
->  fs/ext4/inode.c                    |   50 ++++++++++++++++++++++---------
->  fs/ext4/super.c                    |   49 ++++++++++++++++++++++++++++++-
->  12 files changed, 311 insertions(+), 41 deletions(-)
->
-> =E2=80=A6
-
-
-In short:
-=2E........
-Problem solving at its root is more efficient than at =E2=80=9Cend of pipe=
-=E2=80=9D.
-
-
-
-IMHO this is an example of =E2=80=9Cend of pipe=E2=80=9C thinking with foll=
-owing downsides:
-=2E........................................................................=
-=2E.
-*  Maintainers point of view:
-   *  Introduces new problems:  Breaking holes in the access restrictions
-      provided by the Linux kernel at will of unprivileged users would rend=
-er
-      the kernel unusable for reliable operation in multiuser environments.
-   *  Adds code complexity and risk of bugs.
-   *  Adds future maintainance load.
-*  Users point of view:
-   *  Editing /etc/fstab or using mount commands with options not in
-      /etc/fstab require root privileges anyway, at least on sane systems.
-   *  Adds usage complexity (new vs. old files, on disk vs. pretended UIDs =
-=E2=80=A6).
-   *  Adds risk of usage errors.
-
-
-
-IMHO the =E2=80=9Cright thing to do=E2=80=9D is to solve the problem at its=
- root:
-=2E................................................................
-My habit is, whenever I use {group,user}add commands:
-*  In advance I create a list of all current and future users (user, GID, U=
-ID)
-   common to all systems that might exchange files.  The list is designed to
-   have =E2=80=9Cheadroom=E2=80=9D for future additions.
-*  I always consult this list and use options --gid $userGID --uid $userUID=
- to
-   {group,user}add commands.
-*  Exchanging files with an unforeseen system is an exception, which requir=
-es
-   root privileges anyway,
-
-Advantages:
-*  Decent migration of files to other systems via backups, external storage=
- =E2=80=A6
-*  No NEW wholes in the access restrictions provided by the Linux kernel.
-*  No NEW kernel code possibly introducing bugs.
-*  No need to learn new mount options.
-*  No NEW risks of usage errors.
-
-
-Summary:
-=2E.......
-*  If UIDs differ on machines FORESEEN for file exchange, this is an
-   administrator error, not a kernel deficit.
-*  File exchange with an UNFORESEEN system requires root privileges anyway.
-
-
-
-Thanks,
-Roland Eggner
-
---u3/rZRmxL6MmkK24
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iEYEARECAAYFAk+sjFkACgkQdN/hKfT7G/LyuACfZ/l08Jfi/eMPukBzOc8QKHjR
-mUoAn3h+N96pE+3+gK5NiHBnpc5jbQZc
-=suRZ
------END PGP SIGNATURE-----
-
---u3/rZRmxL6MmkK24--
