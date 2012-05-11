@@ -1,48 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab2EKGN4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:13:56 -0400
-Received: from cora.hrz.tu-chemnitz.de ([134.109.228.40]:54938 "EHLO
-	cora.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756648Ab2EKGNs (ORCPT
+	id S1756911Ab2EKGPA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:15:00 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33614 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756257Ab2EKGO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:13:48 -0400
-Message-ID: <4FACAE19.2070609@hrz.tu-chemnitz.de>
-Date: Fri, 11 May 2012 08:13:45 +0200
-From: Markus Franke <markus.franke@s2002.tu-chemnitz.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Fri, 11 May 2012 02:14:58 -0400
+Date: Fri, 11 May 2012 08:14:52 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arun Sharma <asharma@fb.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, David Ahern <dsahern@gmail.com>,
+        "Frank C. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/16] perf/core fixes and improvements
+Message-ID: <20120511061452.GA7955@gmail.com>
+References: <1336670265-20401-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Markus Franke <markus.franke@s2002.tu-chemnitz.de>,
-        Evgeniy Polyakov <zbr@ioremap.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] w1: Add 1-wire slave device driver for DS28E04-100
-References: <20120509220636.GA27659@kroah.com> <4FAAECB7.8070904@hrz.tu-chemnitz.de> <20120509222411.GA24302@kroah.com> <4FAAF1C4.2050500@hrz.tu-chemnitz.de> <20120509235723.GA7404@ioremap.net> <20120510000126.GA2357@kroah.com> <20120510004350.GA8362@ioremap.net> <4FAB4A4D.8080901@hrz.tu-chemnitz.de> <20120510151639.GE17472@kroah.com> <4FAC47F6.6080903@hrz.tu-chemnitz.de> <20120510230445.GA11918@kroah.com>
-In-Reply-To: <20120510230445.GA11918@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Scan-AV: cora.hrz.tu-chemnitz.de;2012-05-11 08:13:46;85a8c8ca5033c1db72cb9818c2df706f
-X-Scan-SA: cora.hrz.tu-chemnitz.de;2012-05-11 08:13:46;30e31107ed59e302a166822235162661
-X-Spam-Score: -1.0 (-)
-X-Spam-Report: --- Textanalyse SpamAssassin 3.3.1 (-1.0 Punkte)
- Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
- * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
- --- Ende Textanalyse
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336670265-20401-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You forgot a Documentation/ABI/ update that shows your sysfs files and
 
-> explains them there.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
+> Hi Ingo,
+> 
+> 	This is on top of a 15 patches long series still outstanding on my
+> perf/core branch, please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit dc41b9b8f02dbe2228ae787d525dac43beebb7fa:
+> 
+>   perf ui: Change fallback policy of setup_browser() (2012-05-02 16:17:37 -0300)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to 5a5626b1b4bf8467891c9297ffda979db97ed5ec:
+> 
+>   perf hists browser: Use '/' for search/filter instead of 's' (2012-05-10 13:07:59 -0300)
+> 
+> ----------------------------------------------------------------
+> Fixes and improvements for perf/core:
+> 
+> . perf_target: abstraction for --uid, --pid, --tid, --cpu, --all-cpus handling,
+>   eliminating code duplicated in the tools, having constraints that apply to
+>   all of them, from Namhyung Kim
+> 
+> . Fixes for handling fallback to cpu-clock on PPC, from David Ahern
+> 
+> . Fix for processing events with unknown size, from Jiri Olsa
+> 
+> . Compilation fix on 32-bit, from Jiri Olsa
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (3):
+>       perf top: Set target.system_wide
+>       perf top: Default to system wide using perf_target methods
+>       perf hists browser: Use '/' for search/filter instead of 's'
+> 
+> David Ahern (5):
+>       perf record: Fix fallback to cpu-clock on ppc
+>       perf stat: handle ENXIO error for perf_event_open
+>       perf top: Update event name when falling back to cpu-clock
+>       perf record: Reset event name when falling back to cpu-clock
+>       perf annotate: shorten helpline so it fits in visible space
+> 
+> Jiri Olsa (2):
+>       perf session: Fail on processing event with unknown size
+>       perf report: Fix format string for x86-32 compilation
+> 
+> Namhyung Kim (6):
+>       perf evlist: Fix creation of cpu map
+>       perf target: Introduce perf_target_errno
+>       perf target: Introduce perf_target__parse_uid()
+>       perf tools: Introduce perf_target__strerror()
+>       perf target: Consolidate target task/cpu checking
+>       perf stat: Use perf_evlist__create_maps
+> 
+>  tools/perf/builtin-record.c       |   36 ++++++++---
+>  tools/perf/builtin-report.c       |    2 +-
+>  tools/perf/builtin-stat.c         |   41 +++++++------
+>  tools/perf/builtin-top.c          |   29 +++++++--
+>  tools/perf/ui/browsers/annotate.c |    6 +-
+>  tools/perf/ui/browsers/hists.c    |    4 +-
+>  tools/perf/util/debug.c           |    1 +
+>  tools/perf/util/evlist.c          |    9 ++-
+>  tools/perf/util/evsel.c           |    8 +--
+>  tools/perf/util/session.c         |   30 +++-------
+>  tools/perf/util/target.c          |  119 +++++++++++++++++++++++++++++++++----
+>  tools/perf/util/target.h          |   48 ++++++++++++++-
+>  tools/perf/util/usage.c           |   31 ----------
+>  tools/perf/util/util.h            |    3 -
+>  14 files changed, 250 insertions(+), 117 deletions(-)
 
-There is not even a single 1-wire driver mentioned within
-Documentation/ABI. In which subdirectory shall I put my documentation
-file into? stable?
+Pulled, thanks Arnaldo!
 
-@Evgeniy: Any suggestions?
-
-Best regards,
-Markus Franke
+	Ingo
