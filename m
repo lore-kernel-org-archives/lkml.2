@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760628Ab2EKPrE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 11:47:04 -0400
-Received: from mta1.math.wisc.edu ([144.92.166.194]:34260 "EHLO
-	mta1.math.wisc.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760262Ab2EKPrD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 11:47:03 -0400
-X-Greylist: delayed 589 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 May 2012 11:47:02 EDT
-Message-ID: <E0BBA37A8B0840BF82FE8AEADEBE8B5D@math.wisc.edu>
-From: "John Heim" <jheim@math.wisc.edu>
-To: <linux-kernel@vger.kernel.org>
-Subject: patch for speakup serial hardware synths
-Date: Fri, 11 May 2012 10:36:54 -0500
-Organization: University of Wisconsin-Madison
+	id S1760727Ab2EKPrr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 11:47:47 -0400
+Received: from canardo.mork.no ([148.122.252.1]:45468 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753341Ab2EKPro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 11:47:44 -0400
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+To: David Miller <davem@davemloft.net>
+Cc: paul.gortmaker@windriver.com, rdunlap@xenotime.net, sfr@canb.auug.org.au,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        david.daney@cavium.com, =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [PATCH] net: of/phy: fix build error when phylib is built as a module
+Date: Fri, 11 May 2012 17:47:01 +0200
+Message-Id: <1336751221-19127-1-git-send-email-bjorn@mork.no>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <20120510.224352.2149006669429730060.davem@davemloft.net>
+References: <20120510.224352.2149006669429730060.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few weeks ago I asked about a problem with the speakup screen reader code. 
-It does not work with serial hardware speech synthesizers. But I managed to 
-get it working. How can I submit my fix for integration into the kernel 
-code. The patch file can be downloaded here:
-http://www.math.wisc.edu/~jheim/downloads/patch-2012-03-06.patch
+CONFIG_OF_MDIO is tristate and will be m if PHYLIB is m.  Use
+IS_ENABLED macro to prevent build error:
 
-To install it you cd to the linux source directory and do this:
-patch -i patch-2012-03-06.patch drivers/staging/speakup/serialio.c"
+ ERROR: "of_mdio_find_bus" [drivers/net/phy/mdio-mux.ko] undefined!
 
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: David Daney <david.daney@cavium.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+---
+I wonder if this could be as banal as this?  Not even build tested...
+
+Should be wrapped into commit 25106022 if it works, to ensure
+bisectability.
+
+
+
+Bjørn
+
+ drivers/net/phy/mdio_bus.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
+index 83d5c9f..683ef1c 100644
+--- a/drivers/net/phy/mdio_bus.c
++++ b/drivers/net/phy/mdio_bus.c
+@@ -88,7 +88,7 @@ static struct class mdio_bus_class = {
+ 	.dev_release	= mdiobus_release,
+ };
+ 
+-#ifdef CONFIG_OF_MDIO
++#if IS_ENABLED(CONFIG_OF_MDIO)
+ /* Helper function for of_mdio_find_bus */
+ static int of_mdio_bus_match(struct device *dev, void *mdio_bus_np)
+ {
+-- 
+1.7.10
 
