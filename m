@@ -1,121 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759234Ab2EKOZM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 10:25:12 -0400
-Received: from mail.grid-net.com ([97.65.115.2]:15755 "EHLO mail.grid-net.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753019Ab2EKOZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 10:25:10 -0400
-Message-ID: <4FAD2144.2000902@grid-net.com>
-Date: Fri, 11 May 2012 07:25:08 -0700
-From: Subodh Nijsure <snijsure@grid-net.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1760111Ab2EKOZX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 10:25:23 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51296 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019Ab2EKOZS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 10:25:18 -0400
 MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-CC: <linux-mtd@lists.infradead.org>, <linux-security-module@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] Add security.* XATTR support for the UBIFS
-References: <1336691842-32281-1-git-send-email-snijsure@grid-net.com> <201205112101.AGA05306.JOOFFSHOQMLFtV@I-love.SAKURA.ne.jp>
-In-Reply-To: <201205112101.AGA05306.JOOFFSHOQMLFtV@I-love.SAKURA.ne.jp>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.0.242]
+In-Reply-To: <20120511141508.GQ1214@sortiz-mobl>
+References: <4F5EDB01.9070308@samsung.com>
+	<4F67D86E.30509@samsung.com>
+	<20120511141508.GQ1214@sortiz-mobl>
+Date: Fri, 11 May 2012 23:25:16 +0900
+X-Google-Sender-Auth: LJvEWj1E044RDeQGLcX4H7iYlvY
+Message-ID: <CAH9JG2WJ+Xb9GOHuZ2hLiQ_=Rgs_fqqm0AUDB4Y61HoYqf+zBQ@mail.gmail.com>
+Subject: Re: [RESEND PATCH v2 1/2] MFD: MAX77693: add MAX77693 MFD driver
+From: Kyungmin Park <kmpark@infradead.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 05:01 AM, Tetsuo Handa wrote:
-> Subodh Nijsure wrote:
->> diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
->> index ad6e550..cec3ffab 100644
->> --- a/fs/ubifs/dir.c
->> +++ b/fs/ubifs/dir.c
->> @@ -292,6 +292,14 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
->>
-> According to 3.4-rc6,
+Hi Samuel,
+
+On Fri, May 11, 2012 at 11:15 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> Hi Choi,
 >
-> 	mutex_unlock() is here.
+> On Tue, Mar 20, 2012 at 10:07:58AM +0900, Chanwoo Choi wrote:
+>> @@ -0,0 +1,224 @@
+>> +/*
+>> + * max77693.c - mfd core driver for the MAX 77693
+>> + *
+>> + * Copyright (C) 2011 Samsung Electronics
+> 2012 ?
 >
->>   	ubifs_release_budget(c,&req);
->>   	insert_inode_hash(inode);
->> +
->> +	err = ubifs_init_security(dir, inode,&dentry->d_name);
->> +	if (err) {
->> +		ubifs_err("cannot initialize extended attribute, error %d",
->> +			  err);
->> +		goto out_cancel;
->> +	}
->> +
->>   	d_instantiate(dentry, inode);
->>   	return 0;
-> out_cancel:
-> 	mutex_unlock() is also here...
->
-> Same for the rest.
-I will double check, my tree is based off linux-rc2, may be I messed up 
-things.
->> diff --git a/fs/ubifs/xattr.c b/fs/ubifs/xattr.c
->> index 85b2722..49c426a 100644
->> --- a/fs/ubifs/xattr.c
->> +++ b/fs/ubifs/xattr.c
->> @@ -568,3 +600,91 @@ out_free:
->>   	kfree(xent);
->>   	return err;
->>   }
->> +
->> +size_t
->> +ubifs_security_listxattr(struct dentry *d, char *list, size_t list_size,
->> +			 const char *name, size_t name_len, int flags)
+>> +int max77693_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest)
 >> +{
->> +	const int prefix_len = XATTR_SECURITY_PREFIX_LEN;
->> +	const size_t total_len = prefix_len + name_len + 1;
->> +	if (list&&  total_len<= list_size) {
->> +		memcpy(list, XATTR_SECURITY_PREFIX, prefix_len);
->> +		memcpy(list+prefix_len, name, name_len);
->> +		list[prefix_len + name_len] = '\0';
->> +	}
-> If (list&&  total_len>  list_size), the caller will see total_len
-> but no data is copied to list. Is it OK?
-the above condition you referred to implies that caller passed in buffer 
-that was too short, in that case we don't need to copy the data. Typical 
-usage would be caller call listxattr with null and list size of zero, we 
-return size of the buffer etc.
-
-man listxattr
-ssize_t listxattr (const char *path, char *list, size_t size);
-
-        An empty buffer of size zero can be passed into these calls to 
-return the current size of the list  of  extende attribute names, which 
-can be used to estimate the size of a buffer which is sufficiently large 
-to hold the list of names.
-
-so the above code should be okay?
->> +	return total_len;
->> +}
->> +static int ubifs_initxattrs(struct inode *inode,
->> +			    const struct xattr *xattr_array, void *fs_info)
->> +{
->> +	const struct xattr *xattr;
->> +	char *name;
->> +	int err = 0;
+>> +     struct max77693_dev *max77693 = i2c_get_clientdata(i2c);
+>> +     int ret;
 >> +
->> +	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
->> +		name = kmalloc(XATTR_SECURITY_PREFIX_LEN +
->> +			       strlen(xattr->name) + 1, GFP_NOFS);
-> Maybe nice to have kstrdup2(const char *str1, const char *str2, gfp_t flags).
-  I will modify that.
->> +		if (!name) {
->> +			err = -ENOMEM;
->> +			break;
->> +		}
->> +		strcpy(name, XATTR_SECURITY_PREFIX);
->> +		strcpy(name + XATTR_SECURITY_PREFIX_LEN, xattr->name);
->> +		err = __ubifs_setxattr(inode, name, xattr->value,
->> +				       xattr->value_len, 0);
->> +		kfree(name);
->> +		if (err<  0)
->> +			break;
->> +	}
->> +	return err;
+>> +     mutex_lock(&max77693->iolock);
+>> +     ret = i2c_smbus_read_byte_data(i2c, reg);
+>> +     mutex_unlock(&max77693->iolock);
+> You don't need this locking as the i2c layer will do it for you.
+> Also, this definitely look like a good candidate for a regmap API conversion,
+> I'd appreciate if you could work on that.
+
+Right, it's already done. you can find the updated patches in your mail box.
+
+[PATCH v2 0/3] mfd: MAX77686: Add initial support for MAXIM 77686 mfd chip
+
+This patchset adds suppport for MAX77686 which is a multifunction
+device including
+regulator and rtc. It also contains drivers supporting rtc and regulator.
+All drivers ard based on MAX8997 dirvers and use regmap to access to
+the inner registers.
+To manage IRQs occuered by max77686, it supports IRQ domain.
+
+Thank you,
+Kyungmin Park
+>
+>> +static struct i2c_driver max77693_i2c_driver = {
+>> +     .driver = {
+>> +                .name = "max77693",
+>> +                .owner = THIS_MODULE,
+>> +     },
+>> +     .probe = max77693_i2c_probe,
+>> +     .remove = max77693_i2c_remove,
+>> +     .id_table = max77693_i2c_id,
+>> +};
+>> +
+>> +static int __init max77693_i2c_init(void)
+>> +{
+>> +     return i2c_add_driver(&max77693_i2c_driver);
 >> +}
--Subodh
+>> +/* init early so consumer devices can complete system boot */
+>> +subsys_initcall(max77693_i2c_init);
+>> +
+>> +static void __exit max77693_i2c_exit(void)
+>> +{
+>> +     i2c_del_driver(&max77693_i2c_driver);
+>> +}
+>> +module_exit(max77693_i2c_exit);
+> You could use module_i2c_driver() here.
+>
+> Cheers,
+> Samuel.
+>
+> --
+> Intel Open Source Technology Centre
+> http://oss.intel.com/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
