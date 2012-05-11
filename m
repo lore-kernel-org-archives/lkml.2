@@ -1,105 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933274Ab2EKVL5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 17:11:57 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:44032 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932903Ab2EKVLz convert rfc822-to-8bit (ORCPT
+	id S933285Ab2EKVOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 17:14:51 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40846 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932951Ab2EKVOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 17:11:55 -0400
-From: Satoru Moriya <satoru.moriya@hds.com>
-To: Satoru Moriya <satoru.moriya@hds.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "jweiner@redhat.com" <jweiner@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Date: Fri, 11 May 2012 17:11:35 -0400
-Subject: RE: [RFC][PATCH] avoid swapping out with swappiness==0
-Thread-Topic: [RFC][PATCH] avoid swapping out with swappiness==0
-Thread-Index: Ac0SibtX7j/6MI5MS9Ch6BlzO39vIQMyoA0gBBmNc9A=
-Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9C01583B4D7C@USINDEVS02.corp.hds.com>
-References: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
- <20120305215602.GA1693@redhat.com> <4F5798B1.5070005@jp.fujitsu.com>
- <65795E11DBF1E645A09CEC7EAEE94B9CB951A45F@USINDEVS02.corp.hds.com>
- <65795E11DBF1E645A09CEC7EAEE94B9C01454D13A6@USINDEVS02.corp.hds.com>
- <CAHGf_=p9OgVC9J-Nh78CTbuMbc9CVt-+-G+CNbYUsgz70Uc8Qg@mail.gmail.com>
- <4F7ADE1A.2050004@redhat.com> <4F7C870B.6020807@gmail.com>
- <65795E11DBF1E645A09CEC7EAEE94B9C014575D8CF@USINDEVS02.corp.hds.com>
-In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9C014575D8CF@USINDEVS02.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 11 May 2012 17:14:48 -0400
+Date: Fri, 11 May 2012 23:14:41 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Igor Mammedov <imammedo@redhat.com>
+cc: linux-kernel@vger.kernel.org, rob@landley.net, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, luto@mit.edu, suresh.b.siddha@intel.com,
+        avi@redhat.com, a.p.zijlstra@chello.nl, johnstul@us.ibm.com,
+        arjan@linux.intel.com, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/5] Fix soft-lookup in stop machine on secondary cpu
+ bring up
+In-Reply-To: <4FAD2D63.5010208@redhat.com>
+Message-ID: <alpine.LFD.2.02.1205112256220.3231@ionos>
+References: <1336559102-28103-1-git-send-email-imammedo@redhat.com> <1336559102-28103-2-git-send-email-imammedo@redhat.com> <alpine.LFD.2.02.1205111234460.3231@ionos> <4FAD2D63.5010208@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1205110220
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2012 08:21 PM, Satoru Moriya wrote:
-> On 04/04/2012 01:38 PM, KOSAKI Motohiro wrote:
->> (4/3/12 4:25 AM), Jerome Marchand wrote:
->>> On 04/02/2012 07:10 PM, KOSAKI Motohiro wrote:
->>>> 2012/3/30 Satoru Moriya<satoru.moriya@hds.com>:
->>>>> So the kernel reclaims pages like following.
->>>>>
->>>>> nr_free + nr_filebacked>= watermark_high: reclaim only filebacked pages
->>>>> nr_free + nr_filebacked<   watermark_high: reclaim only anonymous pages
->>>>
->>>> How?
->>>
->>> get_scan_count() checks that case explicitly:
->>>
->>>     if (global_reclaim(sc)) {
->>>         free  = zone_page_state(mz->zone, NR_FREE_PAGES);
->>>         /* If we have very few page cache pages,
->>>            force-scan anon pages. */
->>>         if (unlikely(file + free<= high_wmark_pages(mz->zone))) {
->>>             fraction[0] = 1;
->>>             fraction[1] = 0;
->>>             denominator = 1;
->>>             goto out;
->>>         }
->>>     }
->>
->> Eek. This is silly. Nowaday many people enabled THP and it increase zone watermark.
->> so, high watermask is not good threshold anymore.
+On Fri, 11 May 2012, Igor Mammedov wrote:
+> On 05/11/2012 01:45 PM, Thomas Gleixner wrote:
+> > In fact your change can result in
+> > CPU_ONLINE notifier being called _BEFORE_ CPU_STARTING. Do you really
+> > think that's correct?
 > 
-> Ah yes, it is not so small now.
-> On 4GB server, without THP min_free_kbytes is 8113 but with THP it is 
-> 67584.
+> That's certainly is not correct, it asks for a barrier after
+> cpu_starting and before setting cpu_online_mask.
+
+Ah, a barrier will solve that. Interesting approach.
+
+> > Aside of that your whole patch series tackles the wrong aspect.
 > 
-> How about using low watermark or min watermark?
-> Are they still big?
+> patch series tries to prevent a failed to boot cpu wreck havoc on
+> running kernel. How wrong is that?
+
+Emphasis on "tries". And as I explained before you are fixing stuff at
+the wrong place.
+
+> What should be fixed instead?
+
+If that timeout happens, then prevent that the following code is
+reached, perhaps ?
+ 
+> > Why the heck do you need extra magic in check_tsc_sync_target() ?
+> Because it's plainly racy. patch 2/5 describes/fixes race condition in
+> check_tsc_sync_target().
+
+Crap. You do not understand at all. If the code which is before
+check_tsc_sync_target() is failing then check_tsc_sync_target() should
+not be called at all. It's that simple. Putting weird ass checks into
+that code is simply the wrong solution.
+ 
+> > If the booting CPU fails to set the callin map within 5 seconds then
+> > it should not even reach check_tsc_sync_target() at all.
 > 
-> ...or should we use other value? 
+> Why it shouldn't reach check_tsc_sync_target () at all. There is nothing
+> that prevents it and guaranties such behavior.
 
-What do you think of the idea above?
+That's the whole fcking point. The code is missing which prevents that
+and instead of hacking that crap into check_tsc_sync_target() we need
+to add that what's missing.
 
-By the way, I'd like to discuss this topic in other thread
-because discussion about optimal threshold where the kernel
-changes its reclaim policy does not affect only swappiness==0
-case but also all other settings. 
+> > And just for the record, the new CPU can run into the v()ery same
+> > timeout problem, when the boot CPU fails to set the callout mask.
+> 
+> Yes, it can.
+> I've tried to fix only what was reproducible on my test system, so I
+> haven't touched this.
+> That might result in panic in smp_callin():
+>    panic("%s: CPU%d started up but did not get a callout!\n"
 
-So, I propose that we start with applying this patch first
-and then discuss/improve the threshold.
+I know that. And it's fucking wrong and I don't care whether you are
+only fixing what's reproducible on your test system. If we touch that
+code for that purpose then we better touch it so it's correct in all
+aspects and not in some "this fixes my esoteric problem" approach.
 
-The patch may not be perfect but, at least, we can improve
-the kernel behavior in the enough filebacked memory case
-with this patch. I believe it's better than nothing.
+> > This whole stuff is a complete trainwreck already and I don't want to
+> > see anything like your "fixing the symptoms" hackery near it, really.
+> 
+> Fixing slow to respond cpu might be not option, so we need to gracefully
+> abort failed cpu_online operation instead of hanging in stop_machine or
+> crashing in scheduler[https://lkml.org/lkml/2012/5/9/137].
 
-Regards,
-Satoru
+I'm tired of your symptom links. You are simply not understanding the
+scope of the problem and you just try to fix it so your testing
+failures go away.
+ 
+> > This whole stuff needs a proper rewrite and not some more braindamaged
+> > bandaids. And if we apply bandaids for the time being, then certainly
+> > not bandaids like the mess you created.
+>
+> Rewrite will need to deal with failed to boot in time cpu as well.
+
+Really? Thanks for the hint, didn't know that.
+
+> So if rewrite is not near completion, then maybe for a time being bandaids
+> would be needed.
+
+As I said, I don't object against proper bandaids, but I object
+against the hackery you provided.
+
+> Any ideas/suggestions for "right bandaids" instead of braindamaged ones?
+
+Maybe start to think about my answers instead of blindly repeating
+your observations of symptoms and praising your symptom cures.
+
+Even in bandaid mode we can fix that behaviour by putting proper
+synchronization into the right points, instead of hacking weird
+failure handling into code which should never be affected by that.
+
+Thanks,
+
+	tglx
