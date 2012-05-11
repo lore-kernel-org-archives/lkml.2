@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760010Ab2EKGlF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:41:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57260 "EHLO
+	id S1760192Ab2EKGlm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:41:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57276 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753359Ab2EKGlB (ORCPT
+	with ESMTP id S1753359Ab2EKGlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:41:01 -0400
-Date: Thu, 10 May 2012 23:40:28 -0700
+	Fri, 11 May 2012 02:41:40 -0400
+Date: Thu, 10 May 2012 23:41:18 -0700
 From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-60bbddaaa33865633efa2800702e3b02495a0e94@git.kernel.org>
+Message-ID: <tip-dfe78adaaca90417ece98edbd3eb1c9661334406@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, acme@ghostprotocols.net, namhyung.kim@lge.com,
-        namhyung@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, namhyung.kim@lge.com, namhyung@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1336367344-28071-4-git-send-email-namhyung.kim@lge.com>
-References: <1336367344-28071-4-git-send-email-namhyung.kim@lge.com>
+        namhyung.kim@lge.com, namhyung@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1336367344-28071-5-git-send-email-namhyung.kim@lge.com>
+References: <1336367344-28071-5-git-send-email-namhyung.kim@lge.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf target: Introduce perf_target_errno
-Git-Commit-ID: 60bbddaaa33865633efa2800702e3b02495a0e94
+Subject: [tip:perf/core] perf target: Introduce perf_target__parse_uid()
+Git-Commit-ID: dfe78adaaca90417ece98edbd3eb1c9661334406
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,134 +31,196 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:40:35 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:41:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  60bbddaaa33865633efa2800702e3b02495a0e94
-Gitweb:     http://git.kernel.org/tip/60bbddaaa33865633efa2800702e3b02495a0e94
+Commit-ID:  dfe78adaaca90417ece98edbd3eb1c9661334406
+Gitweb:     http://git.kernel.org/tip/dfe78adaaca90417ece98edbd3eb1c9661334406
 Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Mon, 7 May 2012 14:09:00 +0900
+AuthorDate: Mon, 7 May 2012 14:09:01 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 7 May 2012 16:46:35 -0300
+CommitDate: Mon, 7 May 2012 16:46:48 -0300
 
-perf target: Introduce perf_target_errno
+perf target: Introduce perf_target__parse_uid()
 
-The perf_target_errno enumerations are used to indicate specific error
-cases on perf target operations. It'd help libperf being a more generic
-library.
+Add and use the modern perf_target__parse_uid() and get rid of the old
+parse_target_uid().
 
 Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Reviewed-by: David Ahern <dsahern@gmail.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1336367344-28071-4-git-send-email-namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1336367344-28071-5-git-send-email-namhyung.kim@lge.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/target.c |   33 ++++++++++++++++++++++-----------
- tools/perf/util/target.h |   25 ++++++++++++++++++++++++-
- 2 files changed, 46 insertions(+), 12 deletions(-)
+ tools/perf/builtin-record.c |    4 +---
+ tools/perf/builtin-top.c    |    3 +--
+ tools/perf/util/target.c    |   35 +++++++++++++++++++++++++++++++++++
+ tools/perf/util/target.h    |    5 +++++
+ tools/perf/util/usage.c     |   31 -------------------------------
+ tools/perf/util/util.h      |    3 ---
+ 6 files changed, 42 insertions(+), 39 deletions(-)
 
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index d165909..d26a279 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -886,9 +886,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 
+ 	perf_target__validate(&rec->opts.target);
+ 
+-	rec->opts.target.uid = parse_target_uid(rec->opts.target.uid_str);
+-	if (rec->opts.target.uid_str != NULL &&
+-	    rec->opts.target.uid == UINT_MAX - 1)
++	if (perf_target__parse_uid(&rec->opts.target) < 0)
+ 		goto out_free_fd;
+ 
+ 	if (perf_evlist__create_maps(evsel_list, &rec->opts.target) < 0)
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index e40f86e..c9137ba 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1254,8 +1254,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 
+ 	perf_target__validate(&top.target);
+ 
+-	top.target.uid = parse_target_uid(top.target.uid_str);
+-	if (top.target.uid_str != NULL && top.target.uid == UINT_MAX - 1)
++	if (perf_target__parse_uid(&top.target) < 0)
+ 		goto out_delete_evlist;
+ 
+ 	if (top.target.tid == 0 && top.target.pid == 0 &&
 diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
-index 3fadf85..5c59dcf 100644
+index 5c59dcf..02a6bed 100644
 --- a/tools/perf/util/target.c
 +++ b/tools/perf/util/target.c
-@@ -10,36 +10,47 @@
+@@ -9,6 +9,8 @@
+ #include "target.h"
  #include "debug.h"
  
++#include <pwd.h>
++
  
--void perf_target__validate(struct perf_target *target)
-+enum perf_target_errno perf_target__validate(struct perf_target *target)
+ enum perf_target_errno perf_target__validate(struct perf_target *target)
  {
-+	enum perf_target_errno ret = PERF_ERRNO_TARGET__SUCCESS;
+@@ -54,3 +56,36 @@ enum perf_target_errno perf_target__validate(struct perf_target *target)
+ 
+ 	return ret;
+ }
 +
- 	if (target->pid)
- 		target->tid = target->pid;
- 
- 	/* CPU and PID are mutually exclusive */
- 	if (target->tid && target->cpu_list) {
--		ui__warning("WARNING: PID switch overriding CPU\n");
--		sleep(1);
- 		target->cpu_list = NULL;
-+		if (ret == PERF_ERRNO_TARGET__SUCCESS)
-+			ret = PERF_ERRNO_TARGET__PID_OVERRIDE_CPU;
- 	}
- 
- 	/* UID and PID are mutually exclusive */
- 	if (target->tid && target->uid_str) {
--		ui__warning("PID/TID switch overriding UID\n");
--		sleep(1);
- 		target->uid_str = NULL;
-+		if (ret == PERF_ERRNO_TARGET__SUCCESS)
-+			ret = PERF_ERRNO_TARGET__PID_OVERRIDE_UID;
- 	}
- 
- 	/* UID and CPU are mutually exclusive */
- 	if (target->uid_str && target->cpu_list) {
--		ui__warning("UID switch overriding CPU\n");
--		sleep(1);
- 		target->cpu_list = NULL;
-+		if (ret == PERF_ERRNO_TARGET__SUCCESS)
-+			ret = PERF_ERRNO_TARGET__UID_OVERRIDE_CPU;
- 	}
- 
--	/* PID/UID and SYSTEM are mutually exclusive */
--	if ((target->tid || target->uid_str) && target->system_wide) {
--		ui__warning("PID/TID/UID switch overriding CPU\n");
--		sleep(1);
-+	/* PID and SYSTEM are mutually exclusive */
-+	if (target->tid && target->system_wide) {
- 		target->system_wide = false;
-+		if (ret == PERF_ERRNO_TARGET__SUCCESS)
-+			ret = PERF_ERRNO_TARGET__PID_OVERRIDE_SYSTEM;
- 	}
++enum perf_target_errno perf_target__parse_uid(struct perf_target *target)
++{
++	struct passwd pwd, *result;
++	char buf[1024];
++	const char *str = target->uid_str;
 +
-+	/* UID and SYSTEM are mutually exclusive */
-+	if (target->uid_str && target->system_wide) {
-+		target->system_wide = false;
-+		if (ret == PERF_ERRNO_TARGET__SUCCESS)
-+			ret = PERF_ERRNO_TARGET__UID_OVERRIDE_SYSTEM;
++	target->uid = UINT_MAX;
++	if (str == NULL)
++		return PERF_ERRNO_TARGET__SUCCESS;
++
++	/* Try user name first */
++	getpwnam_r(str, &pwd, buf, sizeof(buf), &result);
++
++	if (result == NULL) {
++		/*
++		 * The user name not found. Maybe it's a UID number.
++		 */
++		char *endptr;
++		int uid = strtol(str, &endptr, 10);
++
++		if (*endptr != '\0')
++			return PERF_ERRNO_TARGET__INVALID_UID;
++
++		getpwuid_r(uid, &pwd, buf, sizeof(buf), &result);
++
++		if (result == NULL)
++			return PERF_ERRNO_TARGET__USER_NOT_FOUND;
 +	}
 +
-+	return ret;
- }
++	target->uid = result->pw_uid;
++	return PERF_ERRNO_TARGET__SUCCESS;
++}
 diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
-index 218291f..eb0d210 100644
+index eb0d210..d4aabda 100644
 --- a/tools/perf/util/target.h
 +++ b/tools/perf/util/target.h
-@@ -13,6 +13,29 @@ struct perf_target {
- 	bool	     system_wide;
+@@ -33,9 +33,14 @@ enum perf_target_errno {
+ 	PERF_ERRNO_TARGET__PID_OVERRIDE_SYSTEM,
+ 	PERF_ERRNO_TARGET__UID_OVERRIDE_SYSTEM,
+ 
++	/* for perf_target__parse_uid() */
++	PERF_ERRNO_TARGET__INVALID_UID,
++	PERF_ERRNO_TARGET__USER_NOT_FOUND,
++
+ 	__PERF_ERRNO_TARGET__END,
  };
  
--void perf_target__validate(struct perf_target *target);
-+enum perf_target_errno {
-+	PERF_ERRNO_TARGET__SUCCESS		= 0,
-+
-+	/*
-+	 * Choose an arbitrary negative big number not to clash with standard
-+	 * errno since SUS requires the errno has distinct positive values.
-+	 * See 'Issue 6' in the link below.
-+	 *
-+	 * http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/errno.h.html
-+	 */
-+	__PERF_ERRNO_TARGET__START		= -10000,
-+
-+
-+	/* for perf_target__validate() */
-+	PERF_ERRNO_TARGET__PID_OVERRIDE_CPU	= __PERF_ERRNO_TARGET__START,
-+	PERF_ERRNO_TARGET__PID_OVERRIDE_UID,
-+	PERF_ERRNO_TARGET__UID_OVERRIDE_CPU,
-+	PERF_ERRNO_TARGET__PID_OVERRIDE_SYSTEM,
-+	PERF_ERRNO_TARGET__UID_OVERRIDE_SYSTEM,
-+
-+	__PERF_ERRNO_TARGET__END,
-+};
-+
-+enum perf_target_errno perf_target__validate(struct perf_target *target);
+ enum perf_target_errno perf_target__validate(struct perf_target *target);
++enum perf_target_errno perf_target__parse_uid(struct perf_target *target);
  
  #endif /* _PERF_TARGET_H */
+diff --git a/tools/perf/util/usage.c b/tools/perf/util/usage.c
+index e851abc..4007aca 100644
+--- a/tools/perf/util/usage.c
++++ b/tools/perf/util/usage.c
+@@ -82,34 +82,3 @@ void warning(const char *warn, ...)
+ 	warn_routine(warn, params);
+ 	va_end(params);
+ }
+-
+-uid_t parse_target_uid(const char *str)
+-{
+-	struct passwd pwd, *result;
+-	char buf[1024];
+-
+-	if (str == NULL)
+-		return UINT_MAX;
+-
+-	getpwnam_r(str, &pwd, buf, sizeof(buf), &result);
+-
+-	if (result == NULL) {
+-		char *endptr;
+-		int uid = strtol(str, &endptr, 10);
+-
+-		if (*endptr != '\0') {
+-			ui__error("Invalid user %s\n", str);
+-			return UINT_MAX - 1;
+-		}
+-
+-		getpwuid_r(uid, &pwd, buf, sizeof(buf), &result);
+-
+-		if (result == NULL) {
+-			ui__error("Problems obtaining information for user %s\n",
+-				  str);
+-			return UINT_MAX - 1;
+-		}
+-	}
+-
+-	return result->pw_uid;
+-}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 52be74c..27a11a7 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -74,7 +74,6 @@
+ #include <netinet/tcp.h>
+ #include <arpa/inet.h>
+ #include <netdb.h>
+-#include <pwd.h>
+ #include <inttypes.h>
+ #include "../../../include/linux/magic.h"
+ #include "types.h"
+@@ -249,8 +248,6 @@ struct perf_event_attr;
+ 
+ void event_attr_init(struct perf_event_attr *attr);
+ 
+-uid_t parse_target_uid(const char *str);
+-
+ #define _STR(x) #x
+ #define STR(x) _STR(x)
+ 
