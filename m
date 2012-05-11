@@ -1,109 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758931Ab2EKKZn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 06:25:43 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:32936 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758328Ab2EKKZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 06:25:41 -0400
-Date: Fri, 11 May 2012 12:25:27 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v22] edac, ras/hw_event.h: use events to handle hw issues
-Message-ID: <20120511102527.GI8913@aftab.osrc.amd.com>
-References: <1336679788-4982-1-git-send-email-mchehab@redhat.com>
- <20120510204042.GA4598@aftab.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F192EC1A2@ORSMSX104.amr.corp.intel.com>
- <4FAC3C35.70101@redhat.com>
- <3908561D78D1C84285E8C5FCA982C28F192EC247@ORSMSX104.amr.corp.intel.com>
- <4FAC6FF8.3050608@redhat.com>
+	id S1755165Ab2EKKaW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 06:30:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16737 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314Ab2EKKaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 06:30:20 -0400
+Date: Fri, 11 May 2012 12:25:22 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, tool: Add modifiers to be part of the event name
+Message-ID: <20120511102522.GA2012@m.brq.redhat.com>
+References: <1336695468-5464-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FAC6FF8.3050608@redhat.com>
+In-Reply-To: <1336695468-5464-1-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 10:48:40PM -0300, Mauro Carvalho Chehab wrote:
-> Em 10-05-2012 19:37, Luck, Tony escreveu:
-> >      kworker/u:6-201   [007] .N..   186.197280: mc_error: [Hardware Error]: mem_ctl#0: Corrected error memory read error on memory stick "DIMM_A1" (channel:0 slot:1  page:0x2f1eb3 offset:0x446 grain:32 syndrome:0x0 1 error(s): Unknown: Err=0001:0090 socket=0 channel=0/mask=1 rank=5)
-> >      
-> > The word "error" appears *five* times on this line (once with a capital E).
-> > I feel beaten, bruised and ready to give up on this machine with just one
-> > actual error reported :-)
+On Thu, May 10, 2012 at 05:17:48PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> :)
-> 
-> Several of them come from the driver-provided details.
-> 
-> The edac-mc core contributes with "mc_error", "[Hardware Error]" and "Corrected error".
-> The sb-edac driver contributes with "memory read error" and "1 error(s)".
-> 
-> We can get easily get rid of "[Hardware Error]" by removing HW_ERR from:
-> 
-> 	TP_printk(HW_ERR "mem_ctl#%d: %s error %s on memory stick \"%s\" (%s %s %s)",
-> 
-> replacing mc_error by something else is not hard, but this is the name of the trace call:
-> 
-> TRACE_EVENT(mc_error,
-> ...
-> 
-> Maybe the better is to do s/mc_error/mc_event/g.
+> We need to save the original string for perf stat output,
+> otherwise :t and :c are invisible.
 
-HW_ERR is the "official" prefix used by the MCE code in the kernel.
-Maybe we can shorten it but it is needed to raise attention when staring
-at dmesg output.
+right, the modifier got lost
 
-Now, since this tracepoint is not dmesg, we don't need it there at all
-since we know that trace_mc_error reports memory errors.
+We need to fix the name once modifier is detected and final
+event name is assigned (e.g. there could be "*?" in the tracepoint
+event name, causing the name to be unwinded..).
 
-"mc_error" is also not needed.
+Please check attached patch.
 
-> The error count msg ("1 error(s)") could be replaced by "count:1".
+I'll add some testcases later, since there's patchset
+waiting in Arnaldo's queue that would need to be rebased.
 
-Is there even a possibility to report more than one error when invoking
-trace_mc_error once? If not, simply drop the count completely.
+thanks,
+jirka
 
-> > We could get rid of one by:
-> >  s/Corrected error memory read error/Corrected memory read error/
-> 
-> This is the hardest possible solution ;) Changing it will cause weird messages
-> all over EDAC drivers ;)
 
-I agree with Tony here - repeating error a gazillion times on one report
-only is a "naaah!"
+---
+We lost modifier as part of the event name after event parser
+refactoring. Adding it back so it could be properly displayed
+in perf stat output.
 
-Here's how it should look:
+If there's a modifier specified for the event we fix the event
+name to include it.
 
-kworker/u:6-201   [007] .N..   161.136624: [Hardware Error]: memory read on memory stick "DIMM_A1" (type: corrected socket:0 mc:0 channel:0 slot:0 rank:1 page:0x586b6e offset:0xa66 grain:32 syndrome:0x0 channel_mask:1)
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/parse-events.c |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
 
-* count is gone
-* MC-drivers shouldn't say "error" when reporting an error
-* UE/CE moves into the brackets
-* socket moves earlier in the brackets, and keep the whole deal hierarchical.
-* drop "err_code" what is that?
-* drop second "socket"
-* drop "area" Area "DRAM" - are there other?
-* what is "channel_mask"?
-* move "rank" to earlier
-
-Now this is an output format I can get on board with.
-
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 5b3a0ef..6125f5e 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -684,11 +684,24 @@ void parse_events_update_lists(struct list_head *list_event,
+ 	INIT_LIST_HEAD(list_event);
+ }
+ 
++static int update_event_name(struct perf_evsel *evsel, char *mod)
++{
++	char name[MAX_NAME_LEN];
++
++	/* Each event should have a name defined at this point. */
++	BUG_ON(!evsel->name);
++	snprintf(name, MAX_NAME_LEN, "%s:%s", evsel->name, mod);
++	free(evsel->name);
++	evsel->name = strdup(name);
++	return evsel->name ? 0 : -ENOMEM;
++}
++
+ int parse_events_modifier(struct list_head *list, char *str)
+ {
+ 	struct perf_evsel *evsel;
+ 	int exclude = 0, exclude_GH = 0;
+ 	int eu = 0, ek = 0, eh = 0, eH = 0, eG = 0, precise = 0;
++	char *mod = str;
+ 
+ 	if (str == NULL)
+ 		return 0;
+@@ -742,6 +755,9 @@ int parse_events_modifier(struct list_head *list, char *str)
+ 		evsel->attr.precise_ip     = precise;
+ 		evsel->attr.exclude_host   = eH;
+ 		evsel->attr.exclude_guest  = eG;
++
++		if (update_event_name(evsel, mod))
++			return -ENOMEM;
+ 	}
+ 
+ 	return 0;
 -- 
-Regards/Gruss,
-Boris.
+1.7.7.6
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
