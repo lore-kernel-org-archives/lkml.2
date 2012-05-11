@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946329Ab2EKW34 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 18:29:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58771 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932627Ab2EKW3y (ORCPT
+	id S1946356Ab2EKWaH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 18:30:07 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49878 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946334Ab2EKW35 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 18:29:54 -0400
-From: "Herton R. Krzesinski" <herton.krzesinski@canonical.com>
-To: spi-devel-general@lists.sourceforge.net
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Kenth Eriksson <kenth.eriksson@transmode.com>,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH] spi/spi-fsl-spi: reference correct pdata in fsl_spi_cs_control
-Date: Fri, 11 May 2012 15:29:50 -0700
-Message-Id: <1336775390-24128-1-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 11 May 2012 18:29:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <1336774168-26577-7-git-send-email-mathieu.poirier@linaro.org>
+References: <1336774168-26577-1-git-send-email-mathieu.poirier@linaro.org>
+	<1336774168-26577-7-git-send-email-mathieu.poirier@linaro.org>
+Date: Fri, 11 May 2012 15:29:56 -0700
+Message-ID: <CAHtARFFnLrk0zQ7GeoiPX3Cyso9zq-05q+RyyeGN0v7q=Dm1gQ@mail.gmail.com>
+Subject: Re: [PATCH 6/7] scsi/megaraid: fix sparse warnings
+From: adam radford <aradford@gmail.com>
+To: mathieu.poirier@linaro.org
+Cc: JBottomley@parallels.com, megaraidlinux@lsi.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+On Fri, May 11, 2012 at 3:09 PM,  <mathieu.poirier@linaro.org> wrote:
+> From: Arnd Bergmann <arnd@arndb.de>
+>
+...
+> diff --git a/drivers/scsi/megaraid/megaraid_sas_fusion.c b/drivers/scsi/megaraid/megaraid_sas_fusion.c
+> index bfd87fa..234ad74 100644
+> --- a/drivers/scsi/megaraid/megaraid_sas_fusion.c
+> +++ b/drivers/scsi/megaraid/megaraid_sas_fusion.c
+> @@ -51,55 +51,16 @@
+>  #include <scsi/scsi_device.h>
+>  #include <scsi/scsi_host.h>
+>
+> +#include "mega_common.h"
 
-Commit 178db7d3, "spi: Fix device unregistration when unregistering
-the bus master", changed spi device initialization of dev.parent pointer
-to be the master's device pointer instead of his parent.
+Do not include mega_common.h in the megaraid_sas driver.  It has
+nothing to do with this driver.  It is for the older Parallel SCSI
+megaraid drivers.
 
-This introduced a bug in spi-fsl-spi, since its usage of spi device
-pointer was not updated accordingly. This was later fixed by commit
-5039a86, "spi/mpc83xx: fix NULL pdata dereference bug", but it missed
-another spot on fsl_spi_cs_control function where we also need to update
-usage of spi device pointer. This change address that.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/spi/spi-fsl-spi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/spi/spi-fsl-spi.c b/drivers/spi/spi-fsl-spi.c
-index 5f748c0..6a62934 100644
---- a/drivers/spi/spi-fsl-spi.c
-+++ b/drivers/spi/spi-fsl-spi.c
-@@ -933,7 +933,7 @@ err:
- 
- static void fsl_spi_cs_control(struct spi_device *spi, bool on)
- {
--	struct device *dev = spi->dev.parent;
-+	struct device *dev = spi->dev.parent->parent;
- 	struct mpc8xxx_spi_probe_info *pinfo = to_of_pinfo(dev->platform_data);
- 	u16 cs = spi->chip_select;
- 	int gpio = pinfo->gpios[cs];
--- 
-1.7.9.5
-
+-Adam
