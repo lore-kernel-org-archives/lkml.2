@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933184Ab2EKTIv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 15:08:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52344 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932215Ab2EKTIu (ORCPT
+	id S1946044Ab2EKTJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 15:09:23 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:39227 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932215Ab2EKTJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 15:08:50 -0400
-Date: Fri, 11 May 2012 20:08:45 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, linus.walleij@stericsson.com,
-        sameo@linux.intel.com, jedu@slimlogic.co.uk, lrg@slimlogic.co.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] gpio: tps65910: move this as platform driver
-Message-ID: <20120511190844.GA29835@opensource.wolfsonmicro.com>
-References: <1336569057-3890-1-git-send-email-ldewangan@nvidia.com>
- <1336569057-3890-5-git-send-email-ldewangan@nvidia.com>
- <20120511174011.3160B3E0791@localhost>
+	Fri, 11 May 2012 15:09:21 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: fjuUAkUVM1l7YcaRwQ.OhVdOFSkaZYS0SJWla9aoppVkpPb
+ 5ckTFMqWJ6V1thZSPB.P6HA2rRfyqm8iQvomfz.1WsqRL8SqPerYz2PahWj2
+ vzO8UGeC0M0QzgRkTqcELpSrCc3FXBPHaQnNqumiHRn4Qm79_qYTecVxJeo4
+ WLBV6E8odAY_s_6yGyriJjNwpdRSMkugoDan252YzYa43Ut5myWL9jU0LkEH
+ BUtR9NkS3nkH11h0hsI2SoYvKoj4LFtWuCGb18KKKc1lknlDz3f_hE10g.EU
+ whA58Sp7fdhJbZ3KZ3auauvECKSt5222kiOZIS0m8BDA.9ZBB5hUdsfW_CiT
+ M_9eg3oq.DRBjR_zGxByAkoI2P2OEsEEKc9E5CFXN8MInQo8tajyVlA7VJof
+ 2
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 11 May 2012 14:09:15 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
+ kfree
+In-Reply-To: <4FAD6169.8090409@parallels.com>
+Message-ID: <alpine.DEB.2.00.1205111407280.386@router.home>
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home> <4FAD531D.6030007@parallels.com> <alpine.DEB.2.00.1205111305570.386@router.home>
+ <4FAD566C.3000804@parallels.com> <alpine.DEB.2.00.1205111316540.386@router.home> <4FAD585A.4070007@parallels.com> <alpine.DEB.2.00.1205111331010.386@router.home> <4FAD5DA2.70803@parallels.com> <alpine.DEB.2.00.1205111354540.386@router.home>
+ <4FAD6169.8090409@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
-Content-Disposition: inline
-In-Reply-To: <20120511174011.3160B3E0791@localhost>
-X-Cookie: Your love life will be... interesting.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 11 May 2012, Glauber Costa wrote:
 
---PNTmBPCT7hxwcZjr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On 05/11/2012 03:56 PM, Christoph Lameter wrote:
+> > On Fri, 11 May 2012, Glauber Costa wrote:
+> >
+> > > So we don't mix pages from multiple memcgs in the same cache - we believe
+> > > that
+> > > would be too confusing.
+> >
+> > Well subsystem create caches and other things that are shared between
+> > multiple processes. How can you track that?
+>
+> Each process that belongs to a memcg triggers the creation of a new child kmem
+> cache.
 
-On Fri, May 11, 2012 at 11:40:11AM -0600, Grant Likely wrote:
-> > +static int __init tps65910_gpio_init(void)
-> > +{
-> > +	return platform_driver_register(&tps65910_gpio_driver);
-> > +}
-> > +subsys_initcall(tps65910_gpio_init);
+I see that. But there are other subsystems from slab allocators that do
+the same. There are also objects that may be used by multiple processes.
+F.e what about shm?
 
-> module_platform_driver()
+> > > /proc/slabinfo reflects this information, by listing the memcg-specific
+> > > slabs.
+> >
+> > What about /sys/kernel/slab/*?
+>
+> From the PoV of the global system, what you'll see is something like:
+> dentry , dentry(2:memcg1), dentry(2:memcg2), etc.
 
-This seems a little premature when we've not got many (any?) drivers
-implementing -EPROBE_DEFER.  If we got the change I posted to make
-gpio_request() return -EPROBE_DEFER if there was no GPIO registered
-that'd get most cases covered though, the drivers would hopefully pass
-the error through.
-
-I've not done this for regulators since the cpufreq drivers are still
-deviceless so couldn't cope.
-
---PNTmBPCT7hxwcZjr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPrWO2AAoJEBus8iNuMP3doNcQAIWTV8JPExMJJ8ZYtWiAzNFW
-MXjvswE39/z3J14FvhdK3fkKHbm6iW6PRFZayZxXSMbld8abSYWWypTOJfaOHPed
-h7b9tjKqGlvH00NnNl1cn58Os3GmE3dP40WXVTsRL9ug+jqCOe9UzKdNqiOAw94/
-zARH4SkQpLCrYu3LMKZo/NYVWhYQkuVrBnDxr16PrNPwt6tHyd04zlVTg12SUt0I
-XkxB6/o+FGOd2LkPq/6W8U0am4S8IkIHr7PprJJ/plT5vXJxAt3KWJafFXF4R6IS
-qG1MNzOMnSSRw0Rwg42bWX5jRmJSujtZuIPzeSlJ1HYRN7kVd9Q0HpkI41xJdYa8
-O9EuP4e1xY1lXGRJR7ZRyHwmlq5htu2WAm4N8zsajWKvsqJlsGt9JQxFNLeNBd/n
-BS5+iNu6UX8K2/GGo/57eHE4nB5th/0q//0sNDSlUQ+cs6m6A2+tJJxEgoZ3ESyN
-y6ur62w7tsmvLye7Gm7i7EpGPYGCM/D/4nMo4C8Q8xOF4jkIim6NjBAfUuM9+jo3
-5/Kl+eA2rf6BD/HTLu5kPDNkg3Ul/2ZP4vHNQ/FFWW4+ZGZq0p5vFhUq367UOJ+/
-laAM4+9/mH20aIeOvjfkUK2aX1zyMabLZNTx57/g4xxd6AdUy0zoF2BMbLbDlnEV
-8tWFMtlX5KGjKNpR9emA
-=JESA
------END PGP SIGNATURE-----
-
---PNTmBPCT7hxwcZjr--
+Hmmm.. Would be better to have a hierachy there. /proc/slabinfo is more
+legacy.
