@@ -1,128 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759050Ab2EKSyg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:54:36 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:39302 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756071Ab2EKSye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:54:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [RFC][PATCH 2/2] PM / Domains: Add preliminary cpuidle support
-Date: Fri, 11 May 2012 20:59:25 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Colin Cross <ccross@android.com>, Kevin Hilman <khilman@ti.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-References: <201205092340.26561.rjw@sisk.pl> <201205102041.42473.rjw@sisk.pl> <4FACCC79.5000805@ti.com>
-In-Reply-To: <4FACCC79.5000805@ti.com>
+	id S1759506Ab2EKS4p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:56:45 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:35714 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756777Ab2EKS4n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 14:56:43 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ANP0zRQVM1npFnPICluuK.xFTLbavsvzJp3Nzb5BG9wKri5
+ A0L0nU5PDxo_ejWzi3OUoZCCH1FjrOY4qy51.7KoOd8Z4ZSfmUs8Rzii0Hny
+ 5dispEIYzyvv2lvFhWamQqYZa5BL3GB8SSATL0O2BHBgjCxREUofsI3O6Vh9
+ gn7n7hNCgDXARaRl1Lgufs_ZPJvIYFOIbLgCmoS_HDNa3ApjIwXziyIMF4T7
+ mFgIFcNy1I61rYVdbTbTDRv7jm0Op26JTmcv7SH340TYMoADEF._nfOaYnQd
+ Dw8MTODsR7YKjGIEgykuopUamgQzYbt7vAeJa1SvfUbUBnxWVoS.2PQ3m7XY
+ Z442Y9VFxH_fhbIStcnCnCjCljsL8bkSpNf4WKSaLh3pd9c2IFLKBBhMQ3Es
+ C
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 11 May 2012 13:56:38 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
+ kfree
+In-Reply-To: <4FAD5DA2.70803@parallels.com>
+Message-ID: <alpine.DEB.2.00.1205111354540.386@router.home>
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home> <4FAD531D.6030007@parallels.com> <alpine.DEB.2.00.1205111305570.386@router.home>
+ <4FAD566C.3000804@parallels.com> <alpine.DEB.2.00.1205111316540.386@router.home> <4FAD585A.4070007@parallels.com> <alpine.DEB.2.00.1205111331010.386@router.home> <4FAD5DA2.70803@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205112059.25233.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 11, 2012, Santosh Shilimkar wrote:
-> On Friday 11 May 2012 12:11 AM, Rafael J. Wysocki wrote:
-> > On Thursday, May 10, 2012, Santosh Shilimkar wrote:
-> >> Rafael,
-> >>
-> >> On Thursday 10 May 2012 03:13 AM, Rafael J. Wysocki wrote:
-> >>> From: Rafael J. Wysocki <rjw@sisk.pl>
-> >>>
-> >>> On some systems there are CPU cores located in the same power
-> >>> domains as I/O devices.  Then, power can only be removed from the
-> >>> domain if all I/O devices in it are not in use and the CPU core
-> >>> is idle.  Add preliminary support for that to the generic PM domains
-> >>> framework.
-> >>>
-> >> I am just curious to know, what kind of IO devices, you are
-> >> talking here?
-> > 
-> > Nothing specific, really.  It can be any kind of I/O devices that happen
-> > to be in the same power domain.  This includes USB, SDHI, MMCIF controllers
-> > on the SoC I have in mind in particular.
-> > 
-> OK.
-> These are more of generic devices and actually not related to CPU/CPU
-> clusters as such.
-> 
-> >> And also how those devices linked with CPU low power
-> >> states apart from being part of same power domain. And is it
-> >> the power domain or more of voltage domain, we are talking here.
-> > 
-> > Depending on the definitions I guess.  How do you define a power domain and
-> > a voltage domain?
-> >
-> 
-> A voltage domain can be a section of the device supplied by a dedicated
-> voltage rail. A voltage domain can have many power-domains like
-> CPU cluster domain, Interconnect domain, peripheral domains.
-> And each power domain then can have many sub-modules like UART, SPI,
-> USB etc
+On Fri, 11 May 2012, Glauber Costa wrote:
 
-OK, so this is not the level of detail the code in question is about.
+> So we don't mix pages from multiple memcgs in the same cache - we believe that
+> would be too confusing.
 
-In my terminology a power domain is a set of devices such that it only is
-possible to remove power from (and restore power to) all of them together.
+Well subsystem create caches and other things that are shared between
+multiple processes. How can you track that?
 
-[...]
-> > 
-> > The system I have in mind is designed in such a way that there is a power
-> > domain with three subdomains, one of which contains the CPU core and the
-> > remaining two contain I/O devices of various kinds.  General purpose as well
-> > as "core".
-> > 
-> I am not sure CPUIDLE is suppose to take care of these kind of general
-> purpose IO's. CPUIDLE should take care of CPU and CPU cluster power
-> management. Any other peripherals as you mentioned should be already
-> have some sort of device drivers and they should be using runtime PM for
-> it, no?
+> /proc/slabinfo reflects this information, by listing the memcg-specific slabs.
 
-Yes.
+What about /sys/kernel/slab/*?
 
-> And for the constraints, PM-Qos can be used. So far CPUIDLE
-> core code has maintained that distinction and all the C-state latencies
-> are of the CPU clusters rather than the SOC.
 
-Well, that need not be the case and my patch is about that.
-
-> If you have a voltage rail dependency then that should be handled
-> in the voltage layer/regulator layer. If there is a power domain
-> dependency then the power domain framework should do the use
-> counting yo handle such scenarios.
-
-The power domain framework, though, only covers I/O devices at the moment
-and this is an attempt to extend it to cover domains containing CPU cores
-as well as I/O devices.
-
-> Please correct me but, IIUC, your proposal wants to use CPUIDLE
-> for the SOC level power management.
-
-That depends on what you mean by SoC-level.
-
-> Will you be able to expand your requirements and explain why can't
-> you manage PM for the general purpose devices like MMC, USB etc
-> in their own device drivers ?
-
-Because it is not possible to remove power from those devices individually.
-
-Say you have a bunch of I/O devices such that you can only remove power from
-all of them simultaneously (a power domain, that is).  Suppose that there
-is a register such that if a specific value is written to it, power is cut
-from all of those devices at the same time (and there's an analogous value
-for restoring power).  Then, you can use the generic PM domains framework
-for power management of those devices.
-
-Suppose, however, that if you write the "cut power" value to the register,
-your CPU core will lose power too.  This case is beyond the scope of the
-existing generic PM domains framework, because it has to take the CPU power
-management into account, which is cpuidle in this particular case.
-
-Thanks,
-Rafael
