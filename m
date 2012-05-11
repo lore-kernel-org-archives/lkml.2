@@ -1,200 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760024Ab2EKNyO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 09:54:14 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:46900 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759847Ab2EKNyM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 09:54:12 -0400
-Message-ID: <1336744445.2874.57.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH v5] tilegx network driver: initial support
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-CC: David Miller <davem@davemloft.net>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-Date: Fri, 11 May 2012 14:54:05 +0100
-In-Reply-To: <201205091452.q49EqcO7005975@farm-0027.internal.tilera.com>
-References: <201205011759.q41HxR21020043@farm-0012.internal.tilera.com>
-	 <20120503.014156.149171097979026872.davem@davemloft.net>
-	 <201205031936.q43Ja9Xb031644@lab-41.internal.tilera.com>
-	 <20120504.024216.1730395431103337434.davem@davemloft.net>
-	 <201205091452.q49EqcO7005975@farm-0027.internal.tilera.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S1760005Ab2EKNz5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 09:55:57 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60054 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751647Ab2EKNzz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 09:55:55 -0400
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18898.005
-X-TM-AS-Result: No--31.141400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+In-Reply-To: <20120511122719.GA3960@opensource.wolfsonmicro.com>
+References: <1336733724.5950.3.camel@sw-eng-lt-dc-vm2>
+	<20120511122719.GA3960@opensource.wolfsonmicro.com>
+Date: Fri, 11 May 2012 15:55:54 +0200
+Message-ID: <CAEqHmAtm4-TkdmLSc-HUPMo_Fyw4WK+d6Xj=X9z1m4kK1A0oJw@mail.gmail.com>
+Subject: Re: [PATCH] regmap: Add support for register paging
+From: dd diasemi <dd.diasemi@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Anthony Olech <Anthony.Olech@diasemi.com>,
+        gg@slimlogic.co.uk, Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's another very incomplete review for you.
+On Fri, May 11, 2012 at 1:27 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Fri, May 11, 2012 at 12:55:24PM +0200, Krystian Garbaciak wrote:
+>
+> In terms of framework I think this is broadly OK, though it'd probably
+> be clearer and easier to understand all round if it were unconditional;
+> right now the diff is pretty hard to read so I may have missed some
+> issues and I'm also reluctant to add any additional combinations of
+> build options that aren't actually needed.
+I did some rearrangement in the code, like splitting functions into
+halves, so it is hard to read it from the patch. However, I have not
+changed present functionality and if paging is not initialised, regmap
+behaves the same way as before.
+I will prepare patch without compilation flag, as it is not so important.
 
-On Wed, 2012-05-09 at 06:42 -0400, Chris Metcalf wrote:
-> This change adds support for the tilegx network driver based on the
-> GXIO IORPC support in the tilegx software stack, using the on-chip
-> mPIPE packet processing engine.
-[...]
-> --- /dev/null
-> +++ b/drivers/net/ethernet/tile/tilegx.c
-[...]
-> +/* Define to support GSO. */
-> +#undef TILE_NET_GSO
+> One other fun thing which just occurred to me is that I've got a bunch
+> of chips which have several independantly paged regions.  I'm not sure
+> that's really worth handling here, though.
+I have more advanced solution, which actually makes register mapping
+split into virtual address ranges. This may solve many problems,
+including giving capability to support several indirect register
+ranges at once.
+Let me know, what you think about this API?
 
-GSO is always enabled by the networking core.
+Kind Regards,
+Krystian
+---
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index a90abb6..13f31f4 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -20,6 +20,7 @@ struct device;
+ struct i2c_client;
+ struct spi_device;
+ struct regmap;
++struct regmap_range;
 
-> +/* Define to support TSO. */
-> +#define TILE_NET_TSO
+ /* An enum of all the supported cache types */
+ enum regcache_type {
+@@ -50,6 +51,9 @@ struct reg_default {
+  * @pad_bits: Number of bits of padding between register and value.
+  * @val_bits: Number of bits in a register value, mandatory.
+  *
++ * @ranges: Array of virtual address range descriptors.
++ * @num_ranges: Descriptor array size.
++ *
+  * @writeable_reg: Optional callback returning true if the register
+  *                 can be written to.
+  * @readable_reg: Optional callback returning true if the register
+@@ -81,6 +85,9 @@ struct regmap_config {
+ 	int pad_bits;
+ 	int val_bits;
 
-No, put NETIF_F_TSO in hw_features so it can be switched at run-time.
++	struct regmap_range *ranges;
++	unsigned int num_ranges;
++
+ 	bool (*writeable_reg)(struct device *dev, unsigned int reg);
+ 	bool (*readable_reg)(struct device *dev, unsigned int reg);
+ 	bool (*volatile_reg)(struct device *dev, unsigned int reg);
+@@ -97,6 +104,35 @@ struct regmap_config {
+ 	u8 write_flag_mask;
+ };
 
-(Currently that won't work if you don't set dev->ethtool_ops, but that's
-a bug that can be fixed.)
-
-> +/* Use 3000 to enable the Linux Traffic Control (QoS) layer, else 0. */
-> +#define TILE_NET_TX_QUEUE_LEN 0
-
-This can be changed through sysfs, so there is no need for a compile-
-time option.
-
-> +/* Define to dump packets (prints out the whole packet on tx and rx). */
-> +#undef TILE_NET_DUMP_PACKETS
-
-Should really be controlled through a 'debug' module parameter (see
-netif_msg_init(), netif_msg_pktdata(), etc.)
-
-[...]
-> +/* Total header bytes per equeue slot.  Must be big enough for 2 bytes
-> + * of NET_IP_ALIGN alignment, plus 14 bytes (?) of L2 header, plus up to
-> + * 60 bytes of actual TCP header.  We round up to align to cache lines.
-> + */
-> +#define HEADER_BYTES 128
-> +
-> +/* Maximum completions per cpu per device (must be a power of two).
-> + * ISSUE: What is the right number here?
-> + */
-> +#define TILE_NET_MAX_COMPS 64
-> +
-> +#define MAX_FRAGS (65536 / PAGE_SIZE + 2 + 1)
-
-Should be MAX_SKB_FRAGS + 1.
-
-[...]
-> +/* Help the kernel transmit a packet. */
-> +static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
-> +{
-> +	struct tile_net_priv *priv = netdev_priv(dev);
-> +
-> +	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-> +
-> +	struct tile_net_egress *egress = &egress_for_echannel[priv->echannel];
-> +	gxio_mpipe_equeue_t *equeue = egress->equeue;
-> +
-> +	struct tile_net_comps *comps =
-> +		info->comps_for_echannel[priv->echannel];
-> +
-> +	struct skb_shared_info *sh = skb_shinfo(skb);
-> +
-> +	unsigned int len = skb->len;
-> +	unsigned char *data = skb->data;
-> +
-> +	unsigned int num_frags;
-> +	struct frag frags[MAX_FRAGS];
-> +	gxio_mpipe_edesc_t edescs[MAX_FRAGS];
-> +
-> +	unsigned int i;
-> +
-> +	int cid;
-> +
-> +	s64 slot;
-> +
-> +	unsigned long irqflags;
-
-Please, no blank lines between your declarations.
-
-[...]
-> +	/* Reserve slots, or return NETDEV_TX_BUSY if "full". */
-> +	slot = gxio_mpipe_equeue_try_reserve(equeue, num_frags);
-> +	if (slot < 0) {
-> +		local_irq_restore(irqflags);
-> +		/* ISSUE: "Virtual device xxx asks to queue packet". */
-> +		return NETDEV_TX_BUSY;
-> +	}
-
-You're supposed to stop queues when they're full.  And since that state
-appears to be per-CPU, I think this device needs to be multiqueue with
-one TX queue per CPU and ndo_select_queue defined accordingly.
-
-> +	for (i = 0; i < num_frags; i++)
-> +		gxio_mpipe_equeue_put_at(equeue, edescs[i], slot + i);
-> +
-> +	/* Wait for a free completion entry.
-> +	 * ISSUE: Is this the best logic?
-> +	 * ISSUE: Can this cause undesirable "blocking"?
-> +	 */
-> +	while (comps->comp_next - comps->comp_last >= TILE_NET_MAX_COMPS - 1)
-> +		tile_net_free_comps(equeue, comps, 32, false);
-
-I'm not convinced you should be processing completions here at all.  But
-certainly you should have stopped the queue earlier rather than having
-to wait here.
-
-> +	/* Update the completions array. */
-> +	cid = comps->comp_next % TILE_NET_MAX_COMPS;
-> +	comps->comp_queue[cid].when = slot + num_frags;
-> +	comps->comp_queue[cid].skb = skb;
-> +	comps->comp_next++;
-> +
-> +	/* HACK: Track "expanded" size for short packets (e.g. 42 < 60). */
-> +	atomic_add(1, (atomic_t *)&priv->stats.tx_packets);
-> +	atomic_add((len >= ETH_ZLEN) ? len : ETH_ZLEN,
-> +		   (atomic_t *)&priv->stats.tx_bytes);
-
-You mustn't treat random fields to atomic_t.  For one thing, atomic_t
-contains an int while stats are unsigned long...
-
-Also, you're adding cache contention between all your CPUs here.  You
-should maintain these stats per-CPU and then sum them in
-tile_net_get_stats().  Then you can just use ordinary additions.
-
-[...]
-> +/* Ioctl commands. */
-> +static int tile_net_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
-> +{
-> +	return -EOPNOTSUPP;
-> +}
-
-So why define it at all?
-
-[...]
-> +static void tile_net_dev_init(const char *name, const uint8_t *mac)
-> +{
-[...]
-> +	/* Register the network device. */
-> +	ret = register_netdev(dev);
-> +	if (ret) {
-> +		netdev_err(dev, "register_netdev failed %d\n", ret);
-> +		free_netdev(dev);
-> +		return;
-> +	}
-> +
-> +	/* Get the MAC address and set it in the device struct; this must
-> +	 * be done before the device is opened.
-[...]
-
-So you had better do this before calling register_netdev(), as the
-device can be opened immediately after that...
-
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
++/**
++ * Descriptors for virtual address range.
++ * Indirect or paged registers, can be defined with one or more descriptors.
++ * Registers not defined in such descriptor are accessed directly.
++ *
++ * @base_reg: Register address of first register in virtual address range.
++ * @num_regs: Number of registers asigned to this range.
++ *
++ * @translate_reg: Function that passes page number and physical
+register number
++ *                 matching virtual_reg.
++ *
++ * @page_sel_reg: Register to update selected page in (available on any page).
++ * @page_sel_shift: Bit mask for page selector access inside the register.
++ * @page_sel_mask: Bit shift for page selector access inside the register.
++ */
++struct regmap_range {
++	/* Registers in virtual address range */
++	unsigned int base_reg;
++	unsigned int num_regs;
++
++	/* Registers translation handler */
++	int (*translate_reg)(struct device *dev, unsigned int virtual_reg,
++			     unsigned int *page, unsigned int *reg);
++
++	/* Description of page selector */
++	unsigned int page_sel_reg;
++	int page_sel_shift;
++};
++
+ typedef int (*regmap_hw_write)(struct device *dev, const void *data,
+ 			       size_t count);
+ typedef int (*regmap_hw_gather_write)(struct device *dev,
