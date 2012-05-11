@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab2EKBaE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 21:30:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34230 "EHLO
+	id S1758276Ab2EKBbg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 21:31:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39366 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756910Ab2EKBaB (ORCPT
+	with ESMTP id S1751295Ab2EKBbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 21:30:01 -0400
-Message-ID: <1336699791.8454.1.camel@phoenix>
-Subject: [PATCH 1/2] mfd: da9052: Convert to use devm_* APIs
+	Thu, 10 May 2012 21:31:35 -0400
+Message-ID: <1336699889.8454.3.camel@phoenix>
+Subject: [PATCH 2/2] mfd: pcf50633-core: Convert to use devm_* APIs
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        David Dajun Chen <dchen@diasemi.com>,
+Cc: Harald Welte <laforge@gnumonks.org>, Lars-Peter Clausen <lars@metafoo.de>,
         Samuel Ortiz <sameo@linux.intel.com>
-Date: Fri, 11 May 2012 09:29:51 +0800
+Date: Fri, 11 May 2012 09:31:29 +0800
+In-Reply-To: <1336699791.8454.1.camel@phoenix>
+References: <1336699791.8454.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
@@ -26,137 +26,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/mfd/da9052-i2c.c |   24 +++++++-----------------
- drivers/mfd/da9052-spi.c |   18 +++++-------------
- 2 files changed, 12 insertions(+), 30 deletions(-)
+ drivers/mfd/pcf50633-core.c |   36 ++++++++++--------------------------
+ 1 files changed, 10 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/mfd/da9052-i2c.c b/drivers/mfd/da9052-i2c.c
-index d8abdb3..115a9c7 100644
---- a/drivers/mfd/da9052-i2c.c
-+++ b/drivers/mfd/da9052-i2c.c
-@@ -70,7 +70,7 @@ static int __devinit da9052_i2c_probe(struct i2c_client *client,
- 	struct da9052 *da9052;
- 	int ret;
+diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
+index 189c2f0..29c122b 100644
+--- a/drivers/mfd/pcf50633-core.c
++++ b/drivers/mfd/pcf50633-core.c
+@@ -204,7 +204,7 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
+ 		return -ENOENT;
+ 	}
  
--	da9052 = kzalloc(sizeof(struct da9052), GFP_KERNEL);
-+	da9052 = devm_kzalloc(&client->dev, sizeof(struct da9052), GFP_KERNEL);
- 	if (!da9052)
+-	pcf = kzalloc(sizeof(*pcf), GFP_KERNEL);
++	pcf = devm_kzalloc(&client->dev, sizeof(*pcf), GFP_KERNEL);
+ 	if (!pcf)
  		return -ENOMEM;
  
-@@ -78,8 +78,7 @@ static int __devinit da9052_i2c_probe(struct i2c_client *client,
- 				     I2C_FUNC_SMBUS_BYTE_DATA)) {
- 		dev_info(&client->dev, "Error in %s:i2c_check_functionality\n",
- 			 __func__);
--		ret = -ENODEV;
--		goto err;
-+		return  -ENODEV;
- 	}
+@@ -212,12 +212,11 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
  
- 	da9052->dev = &client->dev;
-@@ -87,17 +86,17 @@ static int __devinit da9052_i2c_probe(struct i2c_client *client,
+ 	mutex_init(&pcf->lock);
  
- 	i2c_set_clientdata(client, da9052);
- 
--	da9052->regmap = regmap_init_i2c(client, &da9052_regmap_config);
-+	da9052->regmap = devm_regmap_init_i2c(client, &da9052_regmap_config);
- 	if (IS_ERR(da9052->regmap)) {
- 		ret = PTR_ERR(da9052->regmap);
- 		dev_err(&client->dev, "Failed to allocate register map: %d\n",
- 			ret);
--		goto err;
+-	pcf->regmap = regmap_init_i2c(client, &pcf50633_regmap_config);
++	pcf->regmap = devm_regmap_init_i2c(client, &pcf50633_regmap_config);
+ 	if (IS_ERR(pcf->regmap)) {
+ 		ret = PTR_ERR(pcf->regmap);
+-		dev_err(pcf->dev, "Failed to allocate register map: %d\n",
+-			ret);
+-		goto err_free;
++		dev_err(pcf->dev, "Failed to allocate register map: %d\n", ret);
 +		return ret;
  	}
  
- 	ret = da9052_i2c_enable_multiwrite(da9052);
- 	if (ret < 0)
--		goto err_regmap;
-+		return ret;
- 
- #ifdef CONFIG_OF
- 	if (!id) {
-@@ -112,20 +111,14 @@ static int __devinit da9052_i2c_probe(struct i2c_client *client,
- 	if (!id) {
+ 	i2c_set_clientdata(client, pcf);
+@@ -228,7 +227,7 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
+ 	if (version < 0 || variant < 0) {
+ 		dev_err(pcf->dev, "Unable to probe pcf50633\n");
  		ret = -ENODEV;
- 		dev_err(&client->dev, "id is null.\n");
 -		goto err_regmap;
 +		return ret;
  	}
  
- 	ret = da9052_device_init(da9052, id->driver_data);
- 	if (ret != 0)
--		goto err_regmap;
-+		return ret;
+ 	dev_info(pcf->dev, "Probed device version %d variant %d\n",
+@@ -237,16 +236,11 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
+ 	pcf50633_irq_init(pcf, client->irq);
+ 
+ 	/* Create sub devices */
+-	pcf50633_client_dev_register(pcf, "pcf50633-input",
+-						&pcf->input_pdev);
+-	pcf50633_client_dev_register(pcf, "pcf50633-rtc",
+-						&pcf->rtc_pdev);
+-	pcf50633_client_dev_register(pcf, "pcf50633-mbc",
+-						&pcf->mbc_pdev);
+-	pcf50633_client_dev_register(pcf, "pcf50633-adc",
+-						&pcf->adc_pdev);
+-	pcf50633_client_dev_register(pcf, "pcf50633-backlight",
+-						&pcf->bl_pdev);
++	pcf50633_client_dev_register(pcf, "pcf50633-input", &pcf->input_pdev);
++	pcf50633_client_dev_register(pcf, "pcf50633-rtc", &pcf->rtc_pdev);
++	pcf50633_client_dev_register(pcf, "pcf50633-mbc", &pcf->mbc_pdev);
++	pcf50633_client_dev_register(pcf, "pcf50633-adc", &pcf->adc_pdev);
++	pcf50633_client_dev_register(pcf, "pcf50633-backlight", &pcf->bl_pdev);
+ 
+ 
+ 	for (i = 0; i < PCF50633_NUM_REGULATORS; i++) {
+@@ -274,13 +268,6 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
+ 		pdata->probe_done(pcf);
  
  	return 0;
 -
 -err_regmap:
--	regmap_exit(da9052->regmap);
--err:
--	kfree(da9052);
+-	regmap_exit(pcf->regmap);
+-err_free:
+-	kfree(pcf);
+-
 -	return ret;
  }
  
- static int __devexit da9052_i2c_remove(struct i2c_client *client)
-@@ -133,9 +126,6 @@ static int __devexit da9052_i2c_remove(struct i2c_client *client)
- 	struct da9052 *da9052 = i2c_get_clientdata(client);
+ static int __devexit pcf50633_remove(struct i2c_client *client)
+@@ -300,9 +287,6 @@ static int __devexit pcf50633_remove(struct i2c_client *client)
+ 	for (i = 0; i < PCF50633_NUM_REGULATORS; i++)
+ 		platform_device_unregister(pcf->regulator_pdev[i]);
  
- 	da9052_device_exit(da9052);
--	regmap_exit(da9052->regmap);
--	kfree(da9052);
--
- 	return 0;
- }
- 
-diff --git a/drivers/mfd/da9052-spi.c b/drivers/mfd/da9052-spi.c
-index 6e09498..dbeadc5 100644
---- a/drivers/mfd/da9052-spi.c
-+++ b/drivers/mfd/da9052-spi.c
-@@ -25,8 +25,9 @@ static int __devinit da9052_spi_probe(struct spi_device *spi)
- {
- 	int ret;
- 	const struct spi_device_id *id = spi_get_device_id(spi);
--	struct da9052 *da9052 = kzalloc(sizeof(struct da9052), GFP_KERNEL);
-+	struct da9052 *da9052;
- 
-+	da9052 = devm_kzalloc(&spi->dev, sizeof(struct da9052), GFP_KERNEL);
- 	if (!da9052)
- 		return -ENOMEM;
- 
-@@ -42,25 +43,19 @@ static int __devinit da9052_spi_probe(struct spi_device *spi)
- 	da9052_regmap_config.read_flag_mask = 1;
- 	da9052_regmap_config.write_flag_mask = 0;
- 
--	da9052->regmap = regmap_init_spi(spi, &da9052_regmap_config);
-+	da9052->regmap = devm_regmap_init_spi(spi, &da9052_regmap_config);
- 	if (IS_ERR(da9052->regmap)) {
- 		ret = PTR_ERR(da9052->regmap);
- 		dev_err(&spi->dev, "Failed to allocate register map: %d\n",
- 			ret);
--		goto err;
-+		return ret;
- 	}
- 
- 	ret = da9052_device_init(da9052, id->driver_data);
- 	if (ret != 0)
--		goto err_regmap;
-+		return ret;
- 
- 	return 0;
--
--err_regmap:
--	regmap_exit(da9052->regmap);
--err:
--	kfree(da9052);
--	return ret;
- }
- 
- static int __devexit da9052_spi_remove(struct spi_device *spi)
-@@ -68,9 +63,6 @@ static int __devexit da9052_spi_remove(struct spi_device *spi)
- 	struct da9052 *da9052 = dev_get_drvdata(&spi->dev);
- 
- 	da9052_device_exit(da9052);
--	regmap_exit(da9052->regmap);
--	kfree(da9052);
+-	regmap_exit(pcf->regmap);
+-	kfree(pcf);
 -
  	return 0;
  }
