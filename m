@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760389Ab2EKQPG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 12:15:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45381 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab2EKQPD (ORCPT
+	id S1760475Ab2EKQQY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 12:16:24 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:61753 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759246Ab2EKQQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 12:15:03 -0400
-Message-ID: <4FAD3B03.3070109@gmail.com>
-Date: Fri, 11 May 2012 09:14:59 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Fri, 11 May 2012 12:16:22 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
-Subject: Re: linux-next: Tree for May 10 (net/phy)
-References: <20120510192635.c6f3a55196bbf65f13956e44@canb.auug.org.au>	<4FAC35E2.4060900@xenotime.net>	<CAP=VYLon7XRoh9s==wGYjUPNAYaTk8QQx7FGRnaDR97v+O-zXA@mail.gmail.com> <20120510.224352.2149006669429730060.davem@davemloft.net>
-In-Reply-To: <20120510.224352.2149006669429730060.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Date: Fri, 11 May 2012 18:16:21 +0200
+Message-ID: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
+Subject: Plumbers: Tweaking scheduler policy micro-conf RFP
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: paulmck@linux.vnet.ibm.com, smuckle@quicinc.com, khilman@ti.com,
+        Robin.Randhawa@arm.com, suresh.b.siddha@intel.com,
+        thebigcorporation@gmail.com, venki@google.com, peterz@infradead.org,
+        panto@antoniou-consulting.com, mingo@elte.hu, paul.brett@intel.com,
+        pdeschrijver@nvidia.com, pjt@google.com, efault@gmx.de,
+        fweisbec@gmail.com, geoff@infradead.org, rostedt@goodmis.org,
+        tglx@linutronix.de, amit.kucheria@linaro.org
+Cc: linux-kernel@vger.kernel.org, linaro-sched-sig@lists.linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2012 07:43 PM, David Miller wrote:
-> From: Paul Gortmaker<paul.gortmaker@windriver.com>
-> Date: Thu, 10 May 2012 22:36:55 -0400
->
->> On Thu, May 10, 2012 at 5:40 PM, Randy Dunlap<rdunlap@xenotime.net>  wrote:
->>> On 05/10/2012 02:26 AM, Stephen Rothwell wrote:
->>>
->>>> Hi all,
->>>>
->>>> Changes since 20120508:
->>>
->>>
->>>
->>> ERROR: "of_mdio_find_bus" [drivers/net/phy/mdio-mux.ko] undefined!
->>
->> Not just randconfig, but also powerpc allmodconfig:
->>
->> http://kisskb.ellerman.id.au/kisskb/buildresult/6291463/
->>
->> Adding ppc ML to cc.
->
-> Adding the guilty party to the CC:.  This really stinks, especially
-> after I did give the patch submitter a hard time about getting the
-> dependencies right. :-/
+This is a request-for-participation in a micro conference during the
+next Linux Plumber Conference (29-31st Aug).
+It'll require critical mass measured in talk submissions in the
+general area of scheduler and task management.
 
-Indeed, how embarrassing.
+If you're working on improving the the scheduler policy used to place
+a task on a CPU to suit your HW, we are inviting your participation
+and request you to submit a proposal to present your problem (e.g.
+power-efficiency) or a solution to solve said problem that should be
+considered by upstream developers.
 
-It looks like Bjørn may have already posted a fix.  I will try to verify 
-that it works, and take appropriate action.
+We've interacted with the people in To: list before in our quest to
+better understand how the scheduler works and we're hoping you all
+will consider participating in the micro-conf to help guide what kinds
+of ideas are likely to make it upstream.
 
-Sorry about the screw up,
-David Daney
+If you have ongoing work or ideas in the the following areas we're
+especially interested in hearing from you:
+ 1. Consolidation of statistics with other frameworks (cpuidle,
+cpufreq, scheduler all seem to track their own statistics related to
+load, idleness, etc. Can this be converted to a library that is
+useable by all?)
+ 2. Replacement for task consolidation on fewer CPUs aka. replacement
+for sched_mc
+ 3. Improvement in the placement of activity beside tasks: timer,
+workqueue, IO, interruption
+ 4. Instrumentation to calculate the compute capacity available on
+active cores and its utilization by a given workload
+
+We are thinking of organising the micro-conf as a Q & A session where
+a participant would state a problem and then there would be
+brainstorming on if this is indeed a problem and is so, how to achieve
+a solution. In other words, 20-30 minute slots of each Q & A
+
+1. Problem statements with specific examples on why changing the
+default scheduler policy is desired
+2. For each problem, if it is deemed not possible to accomplish easily
+today, brainstorming on what an acceptable solution would look like
+(frameworks to build upon, interfaces to use, related work in the
+area, key people to involve, etc.)
+
+Please email us if you will be attending the conference and interested
+in talking about this problem space.
+
+Regards,
+Amit & Vincent
