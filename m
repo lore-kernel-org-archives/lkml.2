@@ -1,240 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760602Ab2EKGmg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:42:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57298 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756103Ab2EKGme (ORCPT
+	id S1761260Ab2EKGm6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:42:58 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14478 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760647Ab2EKGmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:42:34 -0400
-Date: Thu, 10 May 2012 23:42:08 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-16ad2ffb822cd28e2330284a60fdfec8bb90bbb0@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, acme@ghostprotocols.net, namhyung.kim@lge.com,
-        namhyung@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, namhyung.kim@lge.com, namhyung@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1336367344-28071-6-git-send-email-namhyung.kim@lge.com>
-References: <1336367344-28071-6-git-send-email-namhyung.kim@lge.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Introduce perf_target__strerror()
-Git-Commit-ID: 16ad2ffb822cd28e2330284a60fdfec8bb90bbb0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 11 May 2012 02:42:54 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 10 May 2012 23:42:50 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <linux@arm.linux.org.uk>, <lrg@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
+        <olof@lixom.net>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V3 3/4] ARM: tegra: config: enable REGULATOR_TPS62360
+Date: Fri, 11 May 2012 12:08:44 +0530
+Message-ID: <1336718325-8372-4-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1336718325-8372-1-git-send-email-ldewangan@nvidia.com>
+References: <1336718325-8372-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:42:14 -0700 (PDT)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  16ad2ffb822cd28e2330284a60fdfec8bb90bbb0
-Gitweb:     http://git.kernel.org/tip/16ad2ffb822cd28e2330284a60fdfec8bb90bbb0
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Mon, 7 May 2012 14:09:02 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 7 May 2012 17:30:21 -0300
+Enable regulator REGULATOR_TPS62360 for the core power
+of cardhu.
 
-perf tools: Introduce perf_target__strerror()
-
-The perf_target__strerror() sets @buf to a string that describes the
-(perf_target-specific) error condition that is passed via @errnum.
-
-This is similar to strerror_r() and does same thing if @errnum has a
-standard errno value.
-
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Reviewed-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1336367344-28071-6-git-send-email-namhyung.kim@lge.com
-[ committer note: No need to use PERF_ERRNO_TARGET__SUCCESS, use shorter idiom ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- tools/perf/builtin-record.c |   18 +++++++++++++-
- tools/perf/builtin-top.c    |   19 +++++++++++++--
- tools/perf/util/debug.c     |    1 +
- tools/perf/util/target.c    |   51 +++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/target.h    |    3 ++
- 5 files changed, 87 insertions(+), 5 deletions(-)
+No changes from V1 and V2.
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index d26a279..c8bf6ea 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -831,6 +831,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 	struct perf_evsel *pos;
- 	struct perf_evlist *evsel_list;
- 	struct perf_record *rec = &record;
-+	char errbuf[BUFSIZ];
- 
- 	perf_header__set_cmdline(argc, argv);
- 
-@@ -884,11 +885,24 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 		goto out_symbol_exit;
- 	}
- 
--	perf_target__validate(&rec->opts.target);
-+	err = perf_target__validate(&rec->opts.target);
-+	if (err) {
-+		perf_target__strerror(&rec->opts.target, err, errbuf, BUFSIZ);
-+		ui__warning("%s", errbuf);
-+	}
-+
-+	err = perf_target__parse_uid(&rec->opts.target);
-+	if (err) {
-+		int saved_errno = errno;
- 
--	if (perf_target__parse_uid(&rec->opts.target) < 0)
-+		perf_target__strerror(&rec->opts.target, err, errbuf, BUFSIZ);
-+		ui__warning("%s", errbuf);
-+
-+		err = -saved_errno;
- 		goto out_free_fd;
-+	}
- 
-+	err = -ENOMEM;
- 	if (perf_evlist__create_maps(evsel_list, &rec->opts.target) < 0)
- 		usage_with_options(record_usage, record_options);
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index c9137ba..7ba0f03 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1150,7 +1150,8 @@ static const char * const top_usage[] = {
- int cmd_top(int argc, const char **argv, const char *prefix __used)
- {
- 	struct perf_evsel *pos;
--	int status = -ENOMEM;
-+	int status;
-+	char errbuf[BUFSIZ];
- 	struct perf_top top = {
- 		.count_filter	     = 5,
- 		.delay_secs	     = 2,
-@@ -1252,10 +1253,22 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 
- 	setup_browser(false);
- 
--	perf_target__validate(&top.target);
-+	status = perf_target__validate(&top.target);
-+	if (status) {
-+		perf_target__strerror(&top.target, status, errbuf, BUFSIZ);
-+		ui__warning("%s", errbuf);
-+	}
-+
-+	status = perf_target__parse_uid(&top.target);
-+	if (status) {
-+		int saved_errno = errno;
- 
--	if (perf_target__parse_uid(&top.target) < 0)
-+		perf_target__strerror(&top.target, status, errbuf, BUFSIZ);
-+		ui__warning("%s", errbuf);
-+
-+		status = -saved_errno;
- 		goto out_delete_evlist;
-+	}
- 
- 	if (top.target.tid == 0 && top.target.pid == 0 &&
- 	    top.target.uid_str == NULL)
-diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-index 26817da..efb1fce 100644
---- a/tools/perf/util/debug.c
-+++ b/tools/perf/util/debug.c
-@@ -11,6 +11,7 @@
- #include "event.h"
- #include "debug.h"
- #include "util.h"
-+#include "target.h"
- 
- int verbose;
- bool dump_trace = false, quiet = false;
-diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
-index 02a6bed..1064d5b 100644
---- a/tools/perf/util/target.c
-+++ b/tools/perf/util/target.c
-@@ -10,6 +10,7 @@
- #include "debug.h"
- 
- #include <pwd.h>
-+#include <string.h>
- 
- 
- enum perf_target_errno perf_target__validate(struct perf_target *target)
-@@ -89,3 +90,53 @@ enum perf_target_errno perf_target__parse_uid(struct perf_target *target)
- 	target->uid = result->pw_uid;
- 	return PERF_ERRNO_TARGET__SUCCESS;
- }
-+
-+/*
-+ * This must have a same ordering as the enum perf_target_errno.
-+ */
-+static const char *perf_target__error_str[] = {
-+	"PID/TID switch overriding CPU",
-+	"PID/TID switch overriding UID",
-+	"UID switch overriding CPU",
-+	"PID/TID switch overriding SYSTEM",
-+	"UID switch overriding SYSTEM",
-+	"Invalid User: %s",
-+	"Problems obtaining information for user %s",
-+};
-+
-+int perf_target__strerror(struct perf_target *target, int errnum,
-+			  char *buf, size_t buflen)
-+{
-+	int idx;
-+	const char *msg;
-+
-+	if (errnum >= 0) {
-+		strerror_r(errnum, buf, buflen);
-+		return 0;
-+	}
-+
-+	if (errnum <  __PERF_ERRNO_TARGET__START ||
-+	    errnum >= __PERF_ERRNO_TARGET__END)
-+		return -1;
-+
-+	idx = errnum - __PERF_ERRNO_TARGET__START;
-+	msg = perf_target__error_str[idx];
-+
-+	switch (errnum) {
-+	case PERF_ERRNO_TARGET__PID_OVERRIDE_CPU
-+	 ... PERF_ERRNO_TARGET__UID_OVERRIDE_SYSTEM:
-+		snprintf(buf, buflen, "%s", msg);
-+		break;
-+
-+	case PERF_ERRNO_TARGET__INVALID_UID:
-+	case PERF_ERRNO_TARGET__USER_NOT_FOUND:
-+		snprintf(buf, buflen, msg, target->uid_str);
-+		break;
-+
-+	default:
-+		/* cannot reach here */
-+		break;
-+	}
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
-index d4aabda..6fcd01c 100644
---- a/tools/perf/util/target.h
-+++ b/tools/perf/util/target.h
-@@ -43,4 +43,7 @@ enum perf_target_errno {
- enum perf_target_errno perf_target__validate(struct perf_target *target);
- enum perf_target_errno perf_target__parse_uid(struct perf_target *target);
- 
-+int perf_target__strerror(struct perf_target *target, int errnum, char *buf,
-+			  size_t buflen);
-+
- #endif /* _PERF_TARGET_H */
+ arch/arm/configs/tegra_defconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+index 7a90abb..415ada1 100644
+--- a/arch/arm/configs/tegra_defconfig
++++ b/arch/arm/configs/tegra_defconfig
+@@ -114,6 +114,7 @@ CONFIG_REGULATOR=y
+ CONFIG_REGULATOR_FIXED_VOLTAGE=y
+ CONFIG_REGULATOR_VIRTUAL_CONSUMER=y
+ CONFIG_REGULATOR_GPIO=y
++CONFIG_REGULATOR_TPS62360=y
+ CONFIG_REGULATOR_TPS6586X=y
+ CONFIG_SOUND=y
+ CONFIG_SND=y
+-- 
+1.7.1.1
+
