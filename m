@@ -1,44 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808Ab2EKMCQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 08:02:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8182 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab2EKMCP (ORCPT
+	id S1756720Ab2EKMCe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 08:02:34 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:63162 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754652Ab2EKMCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 08:02:15 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=u_txzUxJlBoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=db_wQAYArh9AhR0307MA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1336737733.14207.252.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH][GIT PULL][v3.4] tracing: Fix a regression with enabling
- all events
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Fri, 11 May 2012 08:02:13 -0400
-In-Reply-To: <1336691420.14207.246.camel@gandalf.stny.rr.com>
-References: <1336691420.14207.246.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Fri, 11 May 2012 08:02:31 -0400
+X-Nat-Received: from [202.181.97.72]:51967 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1336737715.11955
+To: snijsure@grid-net.com
+Cc: linux-mtd@lists.infradead.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Add security.* XATTR support for the UBIFS
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1336691842-32281-1-git-send-email-snijsure@grid-net.com>
+In-Reply-To: <1336691842-32281-1-git-send-email-snijsure@grid-net.com>
+Message-Id: <201205112101.AGA05306.JOOFFSHOQMLFtV@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Fri, 11 May 2012 21:01:55 +0900
 Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 11052012 #7964500, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-10 at 19:10 -0400, Steven Rostedt wrote:
-> Ingo,
-> 
-> I found this regression from the adding of function tracing to perf had
-> a side effect of causing an error message to print, and potentially
-> worse, the perf ->reg() function being called out of context.
-> 
+Subodh Nijsure wrote:
+> diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+> index ad6e550..cec3ffab 100644
+> --- a/fs/ubifs/dir.c
+> +++ b/fs/ubifs/dir.c
+> @@ -292,6 +292,14 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+>  
+According to 3.4-rc6,
 
-I did not add stable to this patch as the regression was introduced in
-the 3.4 merge window and 3.3 is not affected.
+	mutex_unlock() is here.
 
--- Steve
+>  	ubifs_release_budget(c, &req);
+>  	insert_inode_hash(inode);
+> +
+> +	err = ubifs_init_security(dir, inode, &dentry->d_name);
+> +	if (err) {
+> +		ubifs_err("cannot initialize extended attribute, error %d",
+> +			  err);
+> +		goto out_cancel;
+> +	}
+> +
+>  	d_instantiate(dentry, inode);
+>  	return 0;
 
+out_cancel:
+	mutex_unlock() is also here...
 
+Same for the rest.
+
+> diff --git a/fs/ubifs/xattr.c b/fs/ubifs/xattr.c
+> index 85b2722..49c426a 100644
+> --- a/fs/ubifs/xattr.c
+> +++ b/fs/ubifs/xattr.c
+> @@ -568,3 +600,91 @@ out_free:
+>  	kfree(xent);
+>  	return err;
+>  }
+> +
+> +size_t
+> +ubifs_security_listxattr(struct dentry *d, char *list, size_t list_size,
+> +			 const char *name, size_t name_len, int flags)
+> +{
+> +	const int prefix_len = XATTR_SECURITY_PREFIX_LEN;
+> +	const size_t total_len = prefix_len + name_len + 1;
+> +	if (list && total_len <= list_size) {
+> +		memcpy(list, XATTR_SECURITY_PREFIX, prefix_len);
+> +		memcpy(list+prefix_len, name, name_len);
+> +		list[prefix_len + name_len] = '\0';
+> +	}
+
+If (list && total_len > list_size), the caller will see total_len
+but no data is copied to list. Is it OK?
+
+> +	return total_len;
+> +}
+
+> +static int ubifs_initxattrs(struct inode *inode,
+> +			    const struct xattr *xattr_array, void *fs_info)
+> +{
+> +	const struct xattr *xattr;
+> +	char *name;
+> +	int err = 0;
+> +
+> +	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
+> +		name = kmalloc(XATTR_SECURITY_PREFIX_LEN +
+> +			       strlen(xattr->name) + 1, GFP_NOFS);
+
+Maybe nice to have kstrdup2(const char *str1, const char *str2, gfp_t flags).
+
+> +		if (!name) {
+> +			err = -ENOMEM;
+> +			break;
+> +		}
+> +		strcpy(name, XATTR_SECURITY_PREFIX);
+> +		strcpy(name + XATTR_SECURITY_PREFIX_LEN, xattr->name);
+> +		err = __ubifs_setxattr(inode, name, xattr->value,
+> +				       xattr->value_len, 0);
+> +		kfree(name);
+> +		if (err < 0)
+> +			break;
+> +	}
+> +	return err;
+> +}
