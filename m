@@ -1,104 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761585Ab2EKGoY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:44:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57323 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761508Ab2EKGoV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1761499Ab2EKGoV (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 May 2012 02:44:21 -0400
-Date: Thu, 10 May 2012 23:43:48 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-77a6f014e9ae330c747c66bebfddf29abf9b89e9@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <1336367344-28071-8-git-send-email-namhyung.kim@lge.com>
-References: <1336367344-28071-8-git-send-email-namhyung.kim@lge.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf stat: Use perf_evlist__create_maps
-Git-Commit-ID: 77a6f014e9ae330c747c66bebfddf29abf9b89e9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14487 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760686Ab2EKGmz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 02:42:55 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 10 May 2012 23:42:39 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <linux@arm.linux.org.uk>, <lrg@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
+        <olof@lixom.net>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V3 0/4] regulator: tps62360: support dts and enable for tegra-cardhu
+Date: Fri, 11 May 2012 12:08:41 +0530
+Message-ID: <1336718325-8372-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:43:54 -0700 (PDT)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  77a6f014e9ae330c747c66bebfddf29abf9b89e9
-Gitweb:     http://git.kernel.org/tip/77a6f014e9ae330c747c66bebfddf29abf9b89e9
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Mon, 7 May 2012 14:09:04 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 7 May 2012 17:52:22 -0300
+Add support for dt on regulator device tps62360. Also  enable this regulator for Nvidia's
+Tegra platform - cardhu.
+This series:
+- Make the regulator_init_data as pointer type from platform data.
+- enable config variable in tegra defconfig
+- add entry for tps62360 in dts file of tegra-cardhu.
 
-perf stat: Use perf_evlist__create_maps
+Changes from V1:
+	Patch 1 did not compile when not defining CONFIG_OF. Fixed it.
 
-Use same function with perf record and top to share the code checks
-combinations of different switches.
+Changes from V2:
+	Taken care of Grant's review comments.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Reviewed-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1336367344-28071-8-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-stat.c |   22 ++++++++--------------
- 1 files changed, 8 insertions(+), 14 deletions(-)
+Laxman Dewangan (4):
+  regulator: tps62360: make init_data of platform data to pointer.
+	Make the regulator init data as pointer type in platform.
+  regulator: tps62360: add dt support
+	Ad dt support.
+  ARM: tegra: config: enable REGULATOR_TPS62360
+  ARM: dt: tegra: cardhu: register core regulator tps62360
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index d9ff246..e720ba7 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -175,7 +175,9 @@ static struct perf_event_attr very_very_detailed_attrs[] = {
- 
- static struct perf_evlist	*evsel_list;
- 
--static struct perf_target	target;
-+static struct perf_target	target = {
-+	.uid	= UINT_MAX,
-+};
- 
- static int			run_idx				=  0;
- static int			run_count			=  1;
-@@ -1205,20 +1207,12 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 
- 	perf_target__validate(&target);
- 
--	evsel_list->threads = thread_map__new_str(target.pid,
--						  target.tid, UINT_MAX);
--	if (evsel_list->threads == NULL) {
--		pr_err("Problems finding threads of monitor\n");
--		usage_with_options(stat_usage, options);
--	}
--
--	if (target.system_wide)
--		evsel_list->cpus = cpu_map__new(target.cpu_list);
--	else
--		evsel_list->cpus = cpu_map__dummy_new();
-+	if (perf_evlist__create_maps(evsel_list, &target) < 0) {
-+		if (!perf_target__no_task(&target))
-+			pr_err("Problems finding threads of monitor\n");
-+		if (!perf_target__no_cpu(&target))
-+			perror("failed to parse CPUs map");
- 
--	if (evsel_list->cpus == NULL) {
--		perror("failed to parse CPUs map");
- 		usage_with_options(stat_usage, options);
- 		return -1;
- 	}
+ .../bindings/regulator/tps62360-regulator.txt      |   45 ++++++++++++
+ arch/arm/boot/dts/tegra-cardhu.dts                 |   14 ++++
+ arch/arm/configs/tegra_defconfig                   |    1 +
+ drivers/regulator/tps62360-regulator.c             |   74 +++++++++++++++++++-
+ include/linux/regulator/tps62360.h                 |    4 +-
+ 5 files changed, 133 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
+
