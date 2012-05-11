@@ -1,69 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab2EKBAy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 21:00:54 -0400
-Received: from mga11.intel.com ([192.55.52.93]:43895 "EHLO mga11.intel.com"
+	id S1756428Ab2EKBDE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 21:03:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51470 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753276Ab2EKBAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 21:00:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="151639955"
-Message-ID: <4FAC6462.1070904@intel.com>
-Date: Fri, 11 May 2012 08:59:14 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1753276Ab2EKBDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 21:03:01 -0400
+Date: Thu, 10 May 2012 21:02:49 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xfrm: take iphdr size into account for esp payload size
+ calculation
+Message-ID: <20120511010249.GA23584@d2.synalogic.ca>
+References: <1336602952-10479-1-git-send-email-bpoirier@suse.de>
+ <20120510121857.GJ1021@secunet.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, borislav.petkov@amd.com, riel@redhat.com,
-        luto@mit.edu, avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
-        fenghua.yu@intel.com, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
-        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
-        a.p.zijlstra@chello.nl, kamezawa.hiroyu@jp.fujitsu.com,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 7/7] x86/tlb: add tlb_flushall_factor into sysfs for
- user testing/tuning
-References: <1336626013-28413-1-git-send-email-alex.shi@intel.com> <1336626013-28413-8-git-send-email-alex.shi@intel.com> <20120510151346.GD17472@kroah.com>
-In-Reply-To: <20120510151346.GD17472@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120510121857.GJ1021@secunet.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2012/05/10 14:18, Steffen Klassert wrote:
+> On Wed, May 09, 2012 at 06:35:52PM -0400, Benjamin Poirier wrote:
+> > 
+> > According to what is done, mainly in esp_output(), net_header_len aka
+> > sizeof(struct iphdr) must be taken into account before doing the alignment
+> > calculation.
+> 
+> Why do you need to take the ip header into account here?
 
-> Nowhere do you say this is x86 only, please fix that.
+The value returned by this function is tuned for tcp segment size:
+1) from tcp_mtu_to_mss()
+mss = pmtu - tcp_hlen - net_hlen
+2) frame structure for transport mode
+mtu = mss + tcp_hlen + esp_header_len(esp_payload_len) + ah_len + net_hlen
 
+The "mtu" parameter of esp4_get_mtu is in fact mtu - ah_len.
+The return value of esp4_get_mtu is put into pmtu.
 
-sure.
+If we put 1 and 2 together we have:
+pmtu = mtu - ah_len - esp_header_len(esp_payload_len)
+with esp_payload_len = mss + tcp_hlen
+
+This formula expands to:
+pmtu = mtu - ah_len - (header_len + align(align(pmtu - net_hlen + 2, blksize),
+	esp->padlen) - (pmtu - net_hlen) + alen)
+
+and simplifies to:
+pmtu = (mtu - ah_len - net_hlen - header_len - alen) & ~(max(blksize,
+	esp->padlen) - 1) + (net_hlen - 2)
+
+which, in the context of esp4_get_mtu, becomes:
+((mtu - x->props.header_len - crypto_aead_authsize(esp->aead) - sizeof(struct
+iphdr)) & ~(align - 1)) + (sizeof(struct iphdr) - 2)
+
+This is the same formula as before, except for sizeof(struct iphdr) which was
+missing.
+
+> Your patch breaks
+> pmtu discovery, at least on tunnel mode with aes-sha1 (aes blocksize 16 bytes).
+> 
+> With your patch applied:
+> 
+> tracepath -n 192.168.1.2
+>  1?: [LOCALHOST]     pmtu 1442
+>  1:  send failed
+>  1:  send failed
+>      Resume: pmtu 1442
+> 
+> Without your patch:
+> 
+> tracepath -n 192.168.1.2
+>  1?: [LOCALHOST]     pmtu 1438
+>  1:  192.168.1.2       0.736ms reached
+>  1:  192.168.1.2       0.390ms reached
+>      Resume: pmtu 1438 hops 1 back 64 
+> 
+> Your patch increases the mtu by 4 bytes. Be aware that adding
+> one byte of payload may increase the packet size up to 16 bytes
+> in the case of aes, as we have to pad the encryption payload
+> always to a multiple of the cipher blocksize.
+
+Thanks for testing. My own testing had been limited to rsync'ing large
+files.
+
+The problem with tunnel mode in v1 of the patch was twofold.
+First, we don't play games with mss and tcp_hlen. esp_payload_len = pmtu
+directly, instead of esp_payload_len = pmtu - net_hlen.
+Second, in the tunnel case, header_len already includes net_hlen, see
+esp_init_state().
+The net result is that the formula for tunnel mode was already correct.
 
 > 
-> Yeah, another tunable that no one knows how to use.
+> > -
+> > -	switch (x->props.mode) {
+> > -	case XFRM_MODE_TUNNEL:
+> > -		break;
+> > -	default:
+> > -	case XFRM_MODE_TRANSPORT:
+> > -		/* The worst case */
+> > -		mtu -= blksize - 4;
+> > -		mtu += min_t(u32, blksize - 4, rem);
+> > -		break;
 > 
-> Really, why is this here at all?  As others pointed out, this really
-> looks like a debugging thing that almost no one will ever need, so
-> please, put it in debugfs.
-
-
-Ok.
-
-> 
-> 
-> Do the #ifdef in the .h file, not the .c file please, no matter how you
-> end up doing this (debugfs vs. sysfs.)
-
-
-Ok.
-
-> 
-> thanks,
-> 
-> greg k-h
-> 
-
-
+> Btw. why we are doing the calculation above for transport mode?
