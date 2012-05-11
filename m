@@ -1,101 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165Ab2EKKaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 06:30:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16737 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751314Ab2EKKaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 06:30:20 -0400
-Date: Fri, 11 May 2012 12:25:22 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, tool: Add modifiers to be part of the event name
-Message-ID: <20120511102522.GA2012@m.brq.redhat.com>
-References: <1336695468-5464-1-git-send-email-andi@firstfloor.org>
+	id S1756974Ab2EKKfa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 06:35:30 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37603 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752887Ab2EKKf3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 06:35:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336695468-5464-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1336617045.25027.2.camel@mop>
+References: <1336004953.4240.9.camel@mop> <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+ <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
+ <CAPXgP13-XQdn0wMP=coVqS=Eko1vWkOrjOtfq4JQLHFZ3JNbgg@mail.gmail.com>
+ <1336571457.30189.29.camel@joe2Laptop> <CAPXgP11jt5u=wXs9Pe7QksZ25QTKCwNXgTHn+T6JXD6+2NzgBQ@mail.gmail.com>
+ <CAE9FiQUzsu8CFNLXxUyZnu53YobdNdJfQQmPQd8s8r5rgJpcNg@mail.gmail.com>
+ <20120509230649.GA10695@kroah.com> <1336617045.25027.2.camel@mop>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Fri, 11 May 2012 12:35:07 +0200
+Message-ID: <CA+1xoqft4aM_qedn+TDx0z8creS_4mFf3S+4SUNjz0pe+=YHAg@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
+ record buffer
+To: Kay Sievers <kay@vrfy.org>
+Cc: Greg Kroah-Hartmann <greg@kroah.com>, Yinghai Lu <yinghai@kernel.org>,
+        Joe Perches <joe@perches.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 05:17:48PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> We need to save the original string for perf stat output,
-> otherwise :t and :c are invisible.
+On Thu, May 10, 2012 at 4:30 AM, Kay Sievers <kay@vrfy.org> wrote:
+> On Wed, 2012-05-09 at 16:06 -0700, Greg Kroah-Hartmann wrote:
+>> On Wed, May 09, 2012 at 04:02:40PM -0700, Yinghai Lu wrote:
+>> > On Wed, May 9, 2012 at 7:37 AM, Kay Sievers <kay@vrfy.org> wrote:
+>> > >
+>> > >> Changing printk semantics and trying to stabilize
+>> > >> printk message content are bad ideas though.
+>> > >
+>> > > Again, nobody talks about content of here.
+>> >
+>> > printk_time=1 does not work anymore with this patch on serial console.
+>>
+>> Known issue, I think Kay is working on the solution for this right
+>> now...
+>
+> Sure, and this seems to work for me.
+>
+> Thanks,
+> Kay
+>
+>
+> From: Kay Sievers <kay@vrfy.org>
+> Subject: printk() - restore timestamp printing at console output
+>
+> The output of the timestamps got lost with the conversion of the
+> kmsg buffer to records; restore the old behavior.
+>
+> Document, that CONFIG_PRINTK_TIME now only controls the output of
+> the timestamps in the syslog() system call and on the console, and
+> not the recording of the timestamps.
+>
+> Signed-off-by: Kay Sievers <kay@vrfy.org>
+> ---
 
-right, the modifier got lost
+This has a small issue with the way timing is printed compared to how
+it worked previously.
 
-We need to fix the name once modifier is detected and final
-event name is assigned (e.g. there could be "*?" in the tracepoint
-event name, causing the name to be unwinded..).
+Consider the following case:
 
-Please check attached patch.
+    printk("\n foo \n bar \n zoot")
 
-I'll add some testcases later, since there's patchset
-waiting in Arnaldo's queue that would need to be rebased.
-
-thanks,
-jirka
-
-
----
-We lost modifier as part of the event name after event parser
-refactoring. Adding it back so it could be properly displayed
-in perf stat output.
-
-If there's a modifier specified for the event we fix the event
-name to include it.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/util/parse-events.c |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 5b3a0ef..6125f5e 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -684,11 +684,24 @@ void parse_events_update_lists(struct list_head *list_event,
- 	INIT_LIST_HEAD(list_event);
- }
- 
-+static int update_event_name(struct perf_evsel *evsel, char *mod)
-+{
-+	char name[MAX_NAME_LEN];
-+
-+	/* Each event should have a name defined at this point. */
-+	BUG_ON(!evsel->name);
-+	snprintf(name, MAX_NAME_LEN, "%s:%s", evsel->name, mod);
-+	free(evsel->name);
-+	evsel->name = strdup(name);
-+	return evsel->name ? 0 : -ENOMEM;
-+}
-+
- int parse_events_modifier(struct list_head *list, char *str)
- {
- 	struct perf_evsel *evsel;
- 	int exclude = 0, exclude_GH = 0;
- 	int eu = 0, ek = 0, eh = 0, eH = 0, eG = 0, precise = 0;
-+	char *mod = str;
- 
- 	if (str == NULL)
- 		return 0;
-@@ -742,6 +755,9 @@ int parse_events_modifier(struct list_head *list, char *str)
- 		evsel->attr.precise_ip     = precise;
- 		evsel->attr.exclude_host   = eH;
- 		evsel->attr.exclude_guest  = eG;
-+
-+		if (update_event_name(evsel, mod))
-+			return -ENOMEM;
- 	}
- 
- 	return 0;
--- 
-1.7.7.6
-
+Previously, you would see timing on each line of the print, but now
+you see it only on the first.
