@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933227Ab2EKTfa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 15:35:30 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:28174 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933158Ab2EKTf2 (ORCPT
+	id S1422695Ab2EKThV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 15:37:21 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43301 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422662Ab2EKThQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 15:35:28 -0400
-Date: Fri, 11 May 2012 15:29:15 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
-Message-ID: <20120511192915.GD3785@phenom.dumpdata.com>
-References: <4FABD503.4030808@vflare.org>
- <4FABDA9F.1000105@linux.vnet.ibm.com>
- <20120510151941.GA18302@kroah.com>
- <4FABECF5.8040602@vflare.org>
- <20120510164418.GC13964@kroah.com>
- <4FABF9D4.8080303@vflare.org>
- <20120510173322.GA30481@phenom.dumpdata.com>
- <4FAC4E3B.3030909@kernel.org>
- <8473859b-42f3-4354-b5ba-fd5b8cbac22f@default>
- <4FAC59F6.4080503@kernel.org>
+	Fri, 11 May 2012 15:37:16 -0400
+Message-ID: <4FAD6A69.7020303@wwwdotorg.org>
+Date: Fri, 11 May 2012 13:37:13 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FAC59F6.4080503@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 07/12 v2] pinctrl: add sleep state definition
+References: <1336725143-25563-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1336725143-25563-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > there are other users that require a different interface
-> > or a more precise abstract API, zsmalloc could then
-> > evolve to meet the needs of multiple users.  But I think
+On 05/11/2012 02:32 AM, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
+> There is an IDLE definition in the pinctrl framework, but for
+> ux500 SLEEP is more apropriate.
 > 
-> At least, zram is also primary user and it also has such mess although it's not severe than zcache. zram->table[index].handle sometime has real (void*) handle, sometime (struct page*).
+> I've added some comments on the semantics of the common states
+> so as to avoid misunderstandings.
+> 
+> ChangeLog v1->v2:
+> - Fixed terminology "on"->"into".
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-Yikes. Yeah that needs to be fixed.
+The updated patch 2/6/7 all look OK to me too now.
