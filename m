@@ -1,73 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759018Ab2EKKjl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 06:39:41 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:42825 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755796Ab2EKKji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 06:39:38 -0400
-Date: Fri, 11 May 2012 12:39:35 +0200
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Benjamin Poirier <bpoirier@suse.de>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xfrm: take iphdr size into account for esp payload
- size calculation
-Message-ID: <20120511103935.GA1841@secunet.com>
-References: <1336602952-10479-1-git-send-email-bpoirier@suse.de>
- <20120510121857.GJ1021@secunet.com>
- <20120511010249.GA23584@d2.synalogic.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120511010249.GA23584@d2.synalogic.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 11 May 2012 10:39:35.0538 (UTC) FILETIME=[5BB32520:01CD2F62]
+	id S1758992Ab2EKKkK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 06:40:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63800 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753267Ab2EKKkI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 06:40:08 -0400
+From: Ravishankar Karkala Mallikarjunayya <ravishankarkm32@gmail.com>
+To: gregkh@linuxfoundation.org, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Subject: [PATCH 03/25] Staging: comedi: fix printk issue in usbduxfast.c
+Date: Fri, 11 May 2012 16:07:51 +0530
+Message-Id: <1336732693-7408-4-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1336732693-7408-1-git-send-email-ravishankar.km@greenturtles.in>
+References: <1336732693-7408-1-git-send-email-ravishankar.km@greenturtles.in>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 09:02:49PM -0400, Benjamin Poirier wrote:
-> 
-> The value returned by this function is tuned for tcp segment size:
-> 1) from tcp_mtu_to_mss()
-> mss = pmtu - tcp_hlen - net_hlen
-> 2) frame structure for transport mode
-> mtu = mss + tcp_hlen + esp_header_len(esp_payload_len) + ah_len + net_hlen
+This is a patch to the usbduxfast.c file that fixes up a printk found
+by the checkpatch.pl tool.
 
-I think you can simplify the calculations here, this
-calculation should not depend on any special layer 4
-protocol.
+Used dev_*() functions instead of printks wherver possible and fixed
+a quoted string split across line warnings.
 
-> 
-> The "mtu" parameter of esp4_get_mtu is in fact mtu - ah_len.
-> The return value of esp4_get_mtu is put into pmtu.
-> 
-> If we put 1 and 2 together we have:
-> pmtu = mtu - ah_len - esp_header_len(esp_payload_len)
-> with esp_payload_len = mss + tcp_hlen
-> 
-> This formula expands to:
-> pmtu = mtu - ah_len - (header_len + align(align(pmtu - net_hlen + 2, blksize),
-> 	esp->padlen) - (pmtu - net_hlen) + alen)
-> 
-> and simplifies to:
-> pmtu = (mtu - ah_len - net_hlen - header_len - alen) & ~(max(blksize,
-> 	esp->padlen) - 1) + (net_hlen - 2)
-> 
-> which, in the context of esp4_get_mtu, becomes:
-> ((mtu - x->props.header_len - crypto_aead_authsize(esp->aead) - sizeof(struct
-> iphdr)) & ~(align - 1)) + (sizeof(struct iphdr) - 2)
-> 
-> This is the same formula as before, except for sizeof(struct iphdr) which was
-> missing.
-> 
+Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+---
+ drivers/staging/comedi/drivers/usbduxfast.c |   26 +++++++++++++-------------
+ 1 files changed, 13 insertions(+), 13 deletions(-)
 
-Well, makes sense. I use transport mode very rarely, so I never noticed this.
-But I was sure that it worked correct in tunnel mode. 
-
-Thanks.
+diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
+index 32e3f65..4264552 100644
+--- a/drivers/staging/comedi/drivers/usbduxfast.c
++++ b/drivers/staging/comedi/drivers/usbduxfast.c
+@@ -291,11 +291,11 @@ static int usbduxfast_ai_cancel(struct comedi_device *dev,
+ 
+ 	/* force unlink of all urbs */
+ #ifdef CONFIG_COMEDI_DEBUG
+-	printk(KERN_DEBUG "comedi: usbduxfast_ai_cancel\n");
++	dev_dbg(dev->hw_dev, "comedi: usbduxfast_ai_cancel\n");
+ #endif
+ 	udfs = dev->private;
+ 	if (!udfs) {
+-		printk(KERN_ERR "comedi: usbduxfast_ai_cancel: udfs=NULL\n");
++		dev_err(dev->hw_dev, "comedi: usbduxfast_ai_cancel: udfs=NULL\n");
+ 		return -EFAULT;
+ 	}
+ 	down(&udfs->sem);
+@@ -565,10 +565,10 @@ static int usbduxfast_ai_cmdtest(struct comedi_device *dev,
+ 		return -ENODEV;
+ 
+ #ifdef CONFIG_COMEDI_DEBUG
+-	printk(KERN_DEBUG "comedi%d: usbduxfast_ai_cmdtest\n", dev->minor);
+-	printk(KERN_DEBUG "comedi%d: usbduxfast: convert_arg=%u "
+-	       "scan_begin_arg=%u\n",
+-	       dev->minor, cmd->convert_arg, cmd->scan_begin_arg);
++	dev_dbg(dev->hw_dev, "comedi%d: usbduxfast_ai_cmdtest\n",
++		dev->minor);
++	dev_dbg(dev->hw_dev, "comedi%d: usbduxfast: convert_arg=%u scan_begin_arg=%u\n",
++		dev->minor, cmd->convert_arg, cmd->scan_begin_arg);
+ #endif
+ 	/* step 1: make sure trigger sources are trivially valid */
+ 
+@@ -711,12 +711,12 @@ static int usbduxfast_ai_inttrig(struct comedi_device *dev,
+ 		return -ENODEV;
+ 	}
+ #ifdef CONFIG_COMEDI_DEBUG
+-	printk(KERN_DEBUG "comedi%d: usbduxfast_ai_inttrig\n", dev->minor);
++	dev_dbg(dev->hw_dev, "comedi%d: usbduxfast_ai_inttrig\n", dev->minor);
+ #endif
+ 
+ 	if (trignum != 0) {
+-		printk(KERN_ERR "comedi%d: usbduxfast_ai_inttrig: invalid"
+-		       " trignum\n", dev->minor);
++		dev_err(dev->hw_dev, "comedi%d: usbduxfast_ai_inttrig: invalid trignum\n",
++			dev->minor);
+ 		up(&udfs->sem);
+ 		return -EINVAL;
+ 	}
+@@ -724,16 +724,16 @@ static int usbduxfast_ai_inttrig(struct comedi_device *dev,
+ 		udfs->ai_cmd_running = 1;
+ 		ret = usbduxfastsub_submit_InURBs(udfs);
+ 		if (ret < 0) {
+-			printk(KERN_ERR "comedi%d: usbduxfast_ai_inttrig: "
+-			       "urbSubmit: err=%d\n", dev->minor, ret);
++			dev_err(dev->hw_dev, "comedi%d: usbduxfast_ai_inttrig: urbSubmit: err=%d\n",
++				dev->minor, ret);
+ 			udfs->ai_cmd_running = 0;
+ 			up(&udfs->sem);
+ 			return ret;
+ 		}
+ 		s->async->inttrig = NULL;
+ 	} else {
+-		printk(KERN_ERR "comedi%d: ai_inttrig but acqu is already"
+-		       " running\n", dev->minor);
++		dev_err(dev->hw_dev, "comedi%d: ai_inttrig but acqu is already running\n",
++			dev->minor);
+ 	}
+ 	up(&udfs->sem);
+ 	return 1;
+-- 
+1.7.0.4
 
