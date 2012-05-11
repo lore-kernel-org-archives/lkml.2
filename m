@@ -1,894 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759157Ab2EKGhp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:37:45 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:55388 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759837Ab2EKGgn (ORCPT
+	id S1760432Ab2EKGiF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:38:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57180 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759848Ab2EKGiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:36:43 -0400
-X-AuditID: cbfee61a-b7bbeae000003a71-73-4facb37a2bac
-From: Jonghwa Lee <jonghwa3.lee@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Samuel Oritz <sameo@linux.intel.com>, Liam Girdwood <trg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
-        cw00.choi@samsung.com, Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Chiwoong Byun <woong.byun@samsung.com>
-Subject: [PATCH 2/3] regulator: MAX77686: Add Maxim 77686 regulator driver
-Date: Fri, 11 May 2012 15:36:16 +0900
-Message-id: <1336718177-9258-3-git-send-email-jonghwa3.lee@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-In-reply-to: <1336718177-9258-1-git-send-email-jonghwa3.lee@samsung.com>
-References: <1336718177-9258-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Fri, 11 May 2012 02:38:01 -0400
+Date: Thu, 10 May 2012 23:37:10 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-dc41b9b8f02dbe2228ae787d525dac43beebb7fa@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, penberg@kernel.org, namhyung.kim@lge.com,
+        namhyung@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        penberg@kernel.org, namhyung.kim@lge.com, tglx@linutronix.de,
+        namhyung@gmail.com
+In-Reply-To: <1335761711-31403-6-git-send-email-namhyung.kim@lge.com>
+References: <1335761711-31403-6-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf ui: Change fallback policy of setup_browser()
+Git-Commit-ID: dc41b9b8f02dbe2228ae787d525dac43beebb7fa
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:37:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add driver for support max77686 regulator.
-MAX77686 provides LDOs[1~26] and BUCKs[1~9]. It support to set or get the
-volatege of regulator on max77686 chip with using regmap.
+Commit-ID:  dc41b9b8f02dbe2228ae787d525dac43beebb7fa
+Gitweb:     http://git.kernel.org/tip/dc41b9b8f02dbe2228ae787d525dac43beebb7fa
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Mon, 30 Apr 2012 13:55:09 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 2 May 2012 16:17:37 -0300
 
-Signed-off-by: Chiwoong Byun <woong.byun@samsung.com>
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+perf ui: Change fallback policy of setup_browser()
+
+If gtk2 support is not enabled (or failed for some reason) try TUI again
+instead of falling directly back to the stdio interface.
+
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1335761711-31403-6-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/regulator/Kconfig    |    8 +
- drivers/regulator/Makefile   |    1 +
- drivers/regulator/max77686.c |  809 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 818 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/max77686.c
+ tools/perf/ui/gtk/setup.c |    4 ++--
+ tools/perf/ui/setup.c     |   13 +++++++------
+ tools/perf/ui/tui/setup.c |    2 +-
+ tools/perf/util/cache.h   |   15 ++++++---------
+ 4 files changed, 16 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 36db5a4..8e2ebad 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -195,6 +195,14 @@ config REGULATOR_MAX8998
- 	  via I2C bus. The provided regulator is suitable for S3C6410
- 	  and S5PC1XX chips to control VCC_CORE and VCC_USIM voltages.
+diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
+index 8c3b573..8295299 100644
+--- a/tools/perf/ui/gtk/setup.c
++++ b/tools/perf/ui/gtk/setup.c
+@@ -1,9 +1,9 @@
+ #include "gtk.h"
+ #include "../../util/cache.h"
  
-+config REGULATOR_MAX77686
-+	tristate "Maxim 77686 regulator"
-+	depends on MFD_MAX77686
-+	help
-+	  This driver controls a Maxim 77686 regulator
-+	  via I2C bus. The provided regulator is suitable for
-+	  Exynos-4 chips to control VARM and VINT voltages.
-+
- config REGULATOR_PCAP
- 	tristate "Motorola PCAP2 regulator driver"
- 	depends on EZX_PCAP
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 94b5274..008931b 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -30,6 +30,7 @@ obj-$(CONFIG_REGULATOR_MAX8925) += max8925-regulator.o
- obj-$(CONFIG_REGULATOR_MAX8952) += max8952.o
- obj-$(CONFIG_REGULATOR_MAX8997) += max8997.o
- obj-$(CONFIG_REGULATOR_MAX8998) += max8998.o
-+obj-$(CONFIG_REGULATOR_MAX77686) += max77686.o
- obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
- obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
- obj-$(CONFIG_REGULATOR_MC13XXX_CORE) +=  mc13xxx-regulator-core.o
-diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-new file mode 100644
-index 0000000..9ab7a4c
---- /dev/null
-+++ b/drivers/regulator/max77686.c
-@@ -0,0 +1,809 @@
-+/*
-+ * max77686.c - Regulator driver for the Maxim 77686
-+ *
-+ * Copyright (C) 2012 Samsung Electronics
-+ * Chiwoong Byun <woong.byun@smasung.com>
-+ * Jonghwa Lee <jonghwa3.lee@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * This driver is based on max8997.c
-+ */
-+#define pr_fmt(fmt) "%s: " fmt, __func__
-+
-+#include <linux/bug.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/gpio.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/mfd/max77686.h>
-+#include <linux/mfd/max77686-private.h>
-+
-+#define PMIC_DEBUG KERN_INFO
-+#define PMIC_REG_DEBUG KERN_DEBUG
-+
-+#define MAX77686_OPMODE_SHIFT 6
-+#define MAX77686_OPMODE_BUCK234_SHIFT 4
-+#define MAX77686_OPMODE_MASK 0x3
-+
-+struct max77686_data {
-+	struct device *dev;
-+	struct max77686_dev *iodev;
-+	int num_regulators;
-+	struct regulator_dev **rdev;
-+	int ramp_delay; /* in mV/us */
-+
-+	struct max77686_opmode_data *opmode_data;
-+
-+	bool buck2_gpiodvs;
-+	bool buck3_gpiodvs;
-+	bool buck4_gpiodvs;
-+	u8 buck2_vol[8];
-+	u8 buck3_vol[8];
-+	u8 buck4_vol[8];
-+	int buck234_gpios_dvs[3];
-+	int buck234_gpios_selb[3];
-+	int buck234_gpioindex;
-+	bool ignore_gpiodvs_side_effect;
-+
-+	u8 saved_states[MAX77686_REG_MAX];
-+};
-+
-+static inline void max77686_set_gpio(struct max77686_data *max77686)
-+{
-+	int set3 = (max77686->buck234_gpioindex) & 0x1;
-+	int set2 = ((max77686->buck234_gpioindex) >> 1) & 0x1;
-+	int set1 = ((max77686->buck234_gpioindex) >> 2) & 0x1;
-+
-+	if (max77686->buck234_gpios_dvs[0])
-+		gpio_set_value(max77686->buck234_gpios_dvs[0], set1);
-+	if (max77686->buck234_gpios_dvs[1])
-+		gpio_set_value(max77686->buck234_gpios_dvs[1], set2);
-+	if (max77686->buck234_gpios_dvs[2])
-+		gpio_set_value(max77686->buck234_gpios_dvs[2], set3);
-+}
-+
-+struct voltage_map_desc {
-+	int min;
-+	int max;
-+	int step;
-+	unsigned int n_bits;
-+};
-+
-+/* LDO3 ~ 5, 9 ~ 14, 16 ~ 26 (uV) */
-+static const struct voltage_map_desc ldo_voltage_map_desc = {
-+	.min = 800000,	.max = 3950000,	.step = 50000,	.n_bits = 6,
-+};
-+
-+/* LDO1 ~ 2, 6 ~ 8, 15 (uV) */
-+static const struct voltage_map_desc ldo_low_voltage_map_desc = {
-+	.min = 800000,	.max = 2375000,	.step = 25000,	.n_bits = 6,
-+};
-+
-+/* Buck2, 3, 4 (uV) */
-+static const struct voltage_map_desc buck_dvs_voltage_map_desc = {
-+	.min = 600000,	.max = 3787500,	.step = 12500,	.n_bits = 8,
-+};
-+
-+/* Buck1, 5 ~ 9 (uV) */
-+static const struct voltage_map_desc buck_voltage_map_desc = {
-+	.min = 750000,	.max = 3900000,	.step = 50000,	.n_bits = 6,
-+};
-+
-+static const struct voltage_map_desc *reg_voltage_map[] = {
-+	[MAX77686_LDO1] = &ldo_low_voltage_map_desc,
-+	[MAX77686_LDO2] = &ldo_low_voltage_map_desc,
-+	[MAX77686_LDO3] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO4] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO5] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO6] = &ldo_low_voltage_map_desc,
-+	[MAX77686_LDO7] = &ldo_low_voltage_map_desc,
-+	[MAX77686_LDO8] = &ldo_low_voltage_map_desc,
-+	[MAX77686_LDO9] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO10] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO11] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO12] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO13] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO14] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO15] = &ldo_low_voltage_map_desc,
-+	[MAX77686_LDO16] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO17] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO18] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO19] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO20] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO21] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO22] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO23] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO24] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO25] = &ldo_voltage_map_desc,
-+	[MAX77686_LDO26] = &ldo_voltage_map_desc,
-+	[MAX77686_BUCK1] = &buck_voltage_map_desc,
-+	[MAX77686_BUCK2] = &buck_dvs_voltage_map_desc,
-+	[MAX77686_BUCK3] = &buck_dvs_voltage_map_desc,
-+	[MAX77686_BUCK4] = &buck_dvs_voltage_map_desc,
-+	[MAX77686_BUCK5] = &buck_voltage_map_desc,
-+	[MAX77686_BUCK6] = &buck_voltage_map_desc,
-+	[MAX77686_BUCK7] = &buck_voltage_map_desc,
-+	[MAX77686_BUCK8] = &buck_voltage_map_desc,
-+	[MAX77686_BUCK9] = &buck_voltage_map_desc,
-+	[MAX77686_EN32KHZ_AP] = NULL,
-+	[MAX77686_EN32KHZ_CP] = NULL,
-+	[MAX77686_P32KH] = NULL,
-+};
-+
-+static int max77686_list_voltage(struct regulator_dev *rdev,
-+		unsigned int selector)
-+{
-+	const struct voltage_map_desc *desc;
-+	int rid = rdev_get_id(rdev);
-+	int val;
-+
-+	if (rid >= ARRAY_SIZE(reg_voltage_map) ||
-+			rid < 0)
-+		return -EINVAL;
-+
-+	desc = reg_voltage_map[rid];
-+	if (desc == NULL)
-+		return -EINVAL;
-+
-+	val = desc->min + desc->step * selector;
-+	if (val > desc->max)
-+		return -EINVAL;
-+
-+	return val;
-+}
-+
-+/*
-+ * TODO
-+ * Reaction to the LP/Standby for each regulator should be defined by
-+ * each consumer, not by the regulator device driver if it depends
-+ * on which device is attached to which regulator. Here we are
-+ * creating possible PM-wise regression with board changes.Also,
-+ * we can do the same effect without creating issues with board
-+ * changes by carefully defining .state_mem at bsp and suspend ops
-+ * callbacks.
-+ */
-+unsigned int max77686_opmode_reg[][3] = {
-+	/* LDO1 ... LDO26 */
-+	/* {NORMAL, LP, STANDBY} */
-+	{0x3, 0x2, 0x2}, /* LDO1 */
-+	{0x3, 0x2, 0x1},
-+	{0x3, 0x2, 0x2},
-+	{0x3, 0x2, 0x2},
-+	{0x3, 0x2, 0x2},
-+	{0x3, 0x2, 0x1},
-+	{0x3, 0x2, 0x1},
-+	{0x3, 0x2, 0x1},
-+	{0x3, 0x2, 0x2},
-+	{0x3, 0x2, 0x1},
-+	{0x3, 0x2, 0x1}, /* LDO11 */
-+	{0x3, 0x2, 0x1},
-+	{0x3, 0x2, 0x2},
-+	{0x3, 0x2, 0x1},
-+	{0x3, 0x2, 0x1},
-+	{0x3, 0x2, 0x1},
-+	{0x3, 0x2, 0x2},
-+	{0x3, 0x2, 0x2},
-+	{0x3, 0x2, 0x2},
-+	{0x3, 0x2, 0x2},
-+	{0x3, 0x2, 0x2}, /* LDO21 */
-+	{0x3, 0x2, 0x2},
-+	{0x3, 0x2, 0x2},
-+	{0x3, 0x2, 0x2},
-+	{0x3, 0x2, 0x2},
-+	{0x3, 0x2, 0x2},
-+	/* BUCK1 ... BUCK9 */
-+	{0x3, 0x2, 0x1}, /* BUCK1 */
-+	{0x3, 0x2, 0x1},
-+	{0x3, 0x2, 0x1},
-+	{0x3, 0x2, 0x1},
-+	{0x3, 0x3, 0x3},
-+	{0x3, 0x3, 0x3},
-+	{0x3, 0x3, 0x3},
-+	{0x3, 0x3, 0x3},
-+	{0x3, 0x3, 0x3},
-+	/* 32KHZ */
-+	{0x1, 0x1, 0x1},
-+	{0x1, 0x1, 0x1},
-+	{0x1, 0x1, 0x1},
-+};
-+
-+static int max77686_get_enable_register(struct regulator_dev *rdev,
-+		int *reg, int *mask, int *pattern)
-+{
-+	unsigned int rid = rdev_get_id(rdev);
-+	unsigned int mode;
-+	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
-+
-+	if (rid > ARRAY_SIZE(max77686_opmode_reg))
-+		return -EINVAL;
-+
-+	mode = max77686->opmode_data[rid].mode;
-+	pr_debug("rid=%d, mode=%d, size=%d\n",
-+		 rid, mode, ARRAY_SIZE(max77686_opmode_reg));
-+
-+	switch (rid) {
-+	case MAX77686_LDO1 ... MAX77686_LDO26:
-+		*reg = MAX77686_REG_LDO1CTRL1 + (rid - MAX77686_LDO1);
-+		*mask = MAX77686_OPMODE_MASK << MAX77686_OPMODE_SHIFT;
-+		*pattern = max77686_opmode_reg[rid][mode] << MAX77686_OPMODE_SHIFT;
-+		break;
-+	case MAX77686_BUCK1:
-+		*reg = MAX77686_REG_BUCK1CTRL;
-+		*mask = MAX77686_OPMODE_MASK;
-+		*pattern = max77686_opmode_reg[rid][mode];
-+		break;
-+	case MAX77686_BUCK2:
-+	case MAX77686_BUCK3:
-+	case MAX77686_BUCK4:
-+		*reg = MAX77686_REG_BUCK2CTRL1 + (rid - MAX77686_BUCK2)*10;
-+		*mask = MAX77686_OPMODE_MASK << MAX77686_OPMODE_BUCK234_SHIFT;
-+		*pattern = max77686_opmode_reg[rid][mode] << MAX77686_OPMODE_BUCK234_SHIFT;
-+		break;
-+	case MAX77686_BUCK5 ... MAX77686_BUCK9:
-+		*reg = MAX77686_REG_BUCK5CTRL + (rid - MAX77686_BUCK5) * 2;
-+		*mask = MAX77686_OPMODE_MASK;
-+		*pattern = max77686_opmode_reg[rid][mode];
-+		break;
-+	case MAX77686_EN32KHZ_AP ... MAX77686_P32KH:
-+		*reg = MAX77686_REG_32KHZ;
-+		*mask = 0x01 << (rid - MAX77686_EN32KHZ_AP);
-+		*pattern = 0x01 << (rid - MAX77686_EN32KHZ_AP);
-+		break;
-+	default:
-+		/* Not controllable or not exists */
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static int max77686_reg_is_enabled(struct regulator_dev *rdev)
-+{
-+	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
-+	int ret, reg, mask, pattern;
-+	u8 val;
-+
-+	ret = max77686_get_enable_register(rdev, &reg, &mask, &pattern);
-+	if (ret == -EINVAL)
-+		return 1; /* "not controllable" */
-+	else if (ret)
-+		return ret;
-+
-+
-+	ret = max77686_read_reg(max77686->iodev->regmap, reg, &val);
-+	
-+	if (ret)
-+		return ret;
-+
-+	pr_debug("id=%d, ret=%d, val=%x, mask=%x, pattern=%x\n",
-+		 rdev_get_id(rdev), (val & mask) == pattern,
-+		 val, mask, pattern);
-+
-+	return (val & mask) == pattern;
-+}
-+
-+static int max77686_reg_enable(struct regulator_dev *rdev)
-+{
-+	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
-+	int ret, reg, mask, pattern;
-+
-+	ret = max77686_get_enable_register(rdev, &reg, &mask, &pattern);
-+	if (ret)
-+		return ret;
-+
-+	printk(PMIC_DEBUG "%s: id=%d, pattern=%x\n",
-+		__func__, rdev_get_id(rdev), pattern);
-+
-+	return max77686_update_reg(max77686->iodev->regmap, reg, pattern, mask);
-+}
-+
-+static int max77686_reg_disable(struct regulator_dev *rdev)
-+{
-+	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
-+	int ret, reg, mask, pattern;
-+
-+	ret = max77686_get_enable_register(rdev, &reg, &mask, &pattern);
-+	if (ret)
-+		return ret;
-+
-+	printk(PMIC_DEBUG "%s: id=%d, pattern=%x\n",
-+		__func__, rdev_get_id(rdev), pattern);
-+
-+	return max77686_update_reg(max77686->iodev->regmap, reg, ~mask, mask);
-+}
-+
-+static int max77686_get_voltage_register(struct regulator_dev *rdev,
-+		int *_reg, int *_shift, int *_mask)
-+{
-+	int rid = rdev_get_id(rdev);
-+	int reg, shift = 0, mask = 0x3f;
-+
-+	switch (rid) {
-+	case MAX77686_LDO1 ... MAX77686_LDO26:
-+		reg = MAX77686_REG_LDO1CTRL1 + (rid - MAX77686_LDO1);
-+		break;
-+	case MAX77686_BUCK1:
-+		reg = MAX77686_REG_BUCK1OUT;
-+		break;
-+	case MAX77686_BUCK2:
-+		reg = MAX77686_REG_BUCK2DVS1;
-+		mask = 0xff;
-+		break;
-+	case MAX77686_BUCK3:
-+		reg = MAX77686_REG_BUCK3DVS1;
-+		mask = 0xff;
-+		break;
-+	case MAX77686_BUCK4:
-+		reg = MAX77686_REG_BUCK4DVS1;
-+		mask = 0xff;
-+		break;
-+	case MAX77686_BUCK5 ... MAX77686_BUCK9:
-+		reg = MAX77686_REG_BUCK5OUT + (rid - MAX77686_BUCK5) * 2;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	*_reg = reg;
-+	*_shift = shift;
-+	*_mask = mask;
-+
-+	return 0;
-+}
-+
-+static int max77686_get_voltage(struct regulator_dev *rdev)
-+{
-+	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
-+	int reg, shift, mask, ret;
-+	int rid = rdev_get_id(rdev);
-+	u8 val;
-+
-+	ret = max77686_get_voltage_register(rdev, &reg, &shift, &mask);
-+	if (ret)
-+		return ret;
-+
-+	if ((rid == MAX77686_BUCK2 && max77686->buck2_gpiodvs) ||
-+	    (rid == MAX77686_BUCK3 && max77686->buck3_gpiodvs) ||
-+	    (rid == MAX77686_BUCK4 && max77686->buck4_gpiodvs))
-+		reg += max77686->buck234_gpioindex;
-+
-+	ret = max77686_read_reg(max77686->iodev->regmap, reg, &val);
-+	if (ret)
-+		return ret;
-+
-+	val >>= shift;
-+	val &= mask;
-+
-+	printk(PMIC_REG_DEBUG "%s: id=%d, reg=%x, mask=%x, val=%x\n",
-+		__func__, rid, reg, mask, val);
-+
-+	return max77686_list_voltage(rdev, val);
-+}
-+
-+static inline int max77686_get_voltage_proper_val(
-+		const struct voltage_map_desc *desc,
-+		int min_vol, int max_vol)
-+{
-+	int i = 0;
-+
-+	if (desc == NULL)
-+		return -EINVAL;
-+
-+	if (max_vol < desc->min || min_vol > desc->max)
-+		return -EINVAL;
-+
-+	while (desc->min + desc->step * i < min_vol &&
-+			desc->min + desc->step * i < desc->max)
-+		i++;
-+
-+	if (desc->min + desc->step * i > max_vol)
-+		return -EINVAL;
-+
-+	if (i >= (1 << desc->n_bits))
-+		return -EINVAL;
-+
-+	return i;
-+}
-+
-+static int max77686_set_voltage(struct regulator_dev *rdev,
-+		int min_uV, int max_uV, unsigned *selector)
-+{
-+	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
-+	const struct voltage_map_desc *desc;
-+	int rid = rdev_get_id(rdev);
-+	int reg, shift = 0, mask, ret;
-+	int i;
-+	u8 org;
-+
-+	desc = reg_voltage_map[rid];
-+
-+	i = max77686_get_voltage_proper_val(desc, min_uV, max_uV);
-+	if (i < 0)
-+		return i;
-+
-+	ret = max77686_get_voltage_register(rdev, &reg, &shift, &mask);
-+	if (ret)
-+		return ret;
-+
-+	/* TODO: If GPIO-DVS is being used, this won't work. */
-+
-+	max77686_read_reg(max77686->iodev->regmap, reg, &org);
-+	org = (org & mask) >> shift;
-+
-+	ret = max77686_update_reg(max77686->iodev->regmap, reg, i << shift, mask << shift);
-+	*selector = i;
-+
-+	switch (rid) {
-+	case MAX77686_BUCK2 ... MAX77686_BUCK4:
-+		if (org < i)
-+			udelay(DIV_ROUND_UP(desc->step * (i - org),
-+						max77686->ramp_delay * 1000));
-+		break;
-+	case MAX77686_BUCK1:
-+	case MAX77686_BUCK5 ... MAX77686_BUCK9:
-+		/* Unconditionally 100 mV/us */
-+		if (org < i)
-+			udelay(DIV_ROUND_UP(desc->step * (i - org), 100000));
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	printk(PMIC_REG_DEBUG "%s: id=%d, reg=%x, mask=%x, org=%x, val=%x\n",
-+		__func__, rdev_get_id(rdev), reg, mask, org, i);
-+
-+	return ret;
-+}
-+
-+static int max77686_reg_do_nothing(struct regulator_dev *rdev)
-+{
-+	return 0;
-+}
-+
-+static struct regulator_ops max77686_ldo_ops = {
-+	.list_voltage		= max77686_list_voltage,
-+	.is_enabled		= max77686_reg_is_enabled,
-+	.enable			= max77686_reg_enable,
-+	.disable		= max77686_reg_disable,
-+	.get_voltage		= max77686_get_voltage,
-+	.set_voltage		= max77686_set_voltage,
-+	/* TODO: set 0xC0 -> 0x40 with suspend_enable. for 0x0, ->0x0 */
-+	.set_suspend_enable	= max77686_reg_do_nothing,
-+	/* LDO's ON(0xC0) means "ON at normal, OFF at suspend" */
-+	.set_suspend_disable	= max77686_reg_do_nothing,
-+};
-+
-+static struct regulator_ops max77686_buck_ops = {
-+	.list_voltage		= max77686_list_voltage,
-+	.is_enabled		= max77686_reg_is_enabled,
-+	.enable			= max77686_reg_enable,
-+	.disable		= max77686_reg_disable,
-+	.get_voltage		= max77686_get_voltage,
-+	.set_voltage		= max77686_set_voltage,
-+	/* Interpret suspend_enable as "keep on if it was enabled." */
-+	.set_suspend_enable	= max77686_reg_do_nothing,
-+	.set_suspend_disable	= max77686_reg_disable,
-+};
-+
-+static struct regulator_ops max77686_fixedvolt_ops = {
-+	.list_voltage		= max77686_list_voltage,
-+	.is_enabled		= max77686_reg_is_enabled,
-+	.enable			= max77686_reg_enable,
-+	.disable		= max77686_reg_disable,
-+	/* Interpret suspend_enable as "keep on if it was enabled." */
-+	.set_suspend_enable	= max77686_reg_do_nothing,
-+	.set_suspend_disable	= max77686_reg_disable,
-+};
-+
-+#define regulator_desc_ldo(num)		{	\
-+	.name		= "LDO"#num,		\
-+	.id		= MAX77686_LDO##num,	\
-+	.ops		= &max77686_ldo_ops,	\
-+	.type		= REGULATOR_VOLTAGE,	\
-+	.owner		= THIS_MODULE,		\
-+}
-+#define regulator_desc_buck(num)		{	\
-+	.name		= "BUCK"#num,		\
-+	.id		= MAX77686_BUCK##num,	\
-+	.ops		= &max77686_buck_ops,	\
-+	.type		= REGULATOR_VOLTAGE,	\
-+	.owner		= THIS_MODULE,		\
-+}
-+
-+static struct regulator_desc regulators[] = {
-+	regulator_desc_ldo(1),
-+	regulator_desc_ldo(2),
-+	regulator_desc_ldo(3),
-+	regulator_desc_ldo(4),
-+	regulator_desc_ldo(5),
-+	regulator_desc_ldo(6),
-+	regulator_desc_ldo(7),
-+	regulator_desc_ldo(8),
-+	regulator_desc_ldo(9),
-+	regulator_desc_ldo(10),
-+	regulator_desc_ldo(11),
-+	regulator_desc_ldo(12),
-+	regulator_desc_ldo(13),
-+	regulator_desc_ldo(14),
-+	regulator_desc_ldo(15),
-+	regulator_desc_ldo(16),
-+	regulator_desc_ldo(17),
-+	regulator_desc_ldo(18),
-+	regulator_desc_ldo(19),
-+	regulator_desc_ldo(20),
-+	regulator_desc_ldo(21),
-+	regulator_desc_ldo(22),
-+	regulator_desc_ldo(23),
-+	regulator_desc_ldo(24),
-+	regulator_desc_ldo(25),
-+	regulator_desc_ldo(26),
-+	regulator_desc_buck(1),
-+	regulator_desc_buck(2),
-+	regulator_desc_buck(3),
-+	regulator_desc_buck(4),
-+	regulator_desc_buck(5),
-+	regulator_desc_buck(6),
-+	regulator_desc_buck(7),
-+	regulator_desc_buck(8),
-+	regulator_desc_buck(9),
-+	{
-+		.name	= "EN32KHz AP",
-+		.id	= MAX77686_EN32KHZ_AP,
-+		.ops	= &max77686_fixedvolt_ops,
-+		.type	= REGULATOR_VOLTAGE,
-+		.owner	= THIS_MODULE,
-+	}, {
-+		.name	= "EN32KHz CP",
-+		.id	= MAX77686_EN32KHZ_CP,
-+		.ops	= &max77686_fixedvolt_ops,
-+		.type	= REGULATOR_VOLTAGE,
-+		.owner	= THIS_MODULE,
-+	}, {
-+		.name	= "EN32KHz PMIC",
-+		.id	= MAX77686_P32KH,
-+		.ops	= &max77686_fixedvolt_ops,
-+		.type	= REGULATOR_VOLTAGE,
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+static __devinit int max77686_pmic_probe(struct platform_device *pdev)
-+{
-+	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-+	struct max77686_platform_data *pdata = dev_get_platdata(iodev->dev);
-+	struct regulator_dev **rdev;
-+	struct max77686_data *max77686;
-+	struct i2c_client *i2c;
-+	int i, ret, size;
-+	u8 data = 0;
-+
-+	printk(PMIC_DEBUG "%s\n", __func__);
-+
-+	if (!pdata) {
-+		dev_err(pdev->dev.parent, "No platform init data supplied.\n");
-+		return -ENODEV;
-+	}
-+
-+	max77686 = kzalloc(sizeof(struct max77686_data), GFP_KERNEL);
-+	if (!max77686)
-+		return -ENOMEM;
-+
-+	size = sizeof(struct regulator_dev *) * pdata->num_regulators;
-+	max77686->rdev = kzalloc(size, GFP_KERNEL);
-+	if (!max77686->rdev) {
-+		kfree(max77686);
-+		return -ENOMEM;
-+	}
-+
-+	rdev = max77686->rdev;
-+	max77686->dev = &pdev->dev;
-+	max77686->iodev = iodev;
-+	max77686->num_regulators = pdata->num_regulators;
-+	platform_set_drvdata(pdev, max77686);
-+	i2c = max77686->iodev->i2c;
-+
-+	max77686->opmode_data = pdata->opmode_data;
-+
-+	max77686->ramp_delay = 100; /* Set 0x3 for RAMP */
-+	max77686_update_reg(max77686->iodev->regmap, MAX77686_REG_BUCK2CTRL1, 0xC0, 0xC0);
-+	max77686_update_reg(max77686->iodev->regmap, MAX77686_REG_BUCK3CTRL1, 0xC0, 0xC0);
-+	max77686_update_reg(max77686->iodev->regmap, MAX77686_REG_BUCK4CTRL1, 0xC0, 0xC0);
-+
-+	max77686_read_reg(max77686->iodev->regmap, MAX77686_REG_DEVICE_ID, &data);
-+	printk(PMIC_DEBUG "%s: DEVICE ID=0x%x\n", __func__, data);
-+
-+	/*
-+	 * TODO
-+	 * This disables GPIO-DVS. Later we may need to implement GPIO-DVS..
-+	 * or we do not?
-+	 */
-+	max77686->buck2_gpiodvs = false;
-+	max77686->buck3_gpiodvs = false;
-+	max77686->buck4_gpiodvs = false;
-+	for (i = 0; i < 3; i++) {
-+		char buf[80];
-+
-+		sprintf(buf, "MAX77686 DVS%d", i);
-+
-+		if (gpio_is_valid(pdata->buck234_gpio_dvs[i])) {
-+			max77686->buck234_gpios_dvs[i] =
-+				pdata->buck234_gpio_dvs[i];
-+			gpio_request(pdata->buck234_gpio_dvs[i], buf);
-+			gpio_direction_output(pdata->buck234_gpio_dvs[i], 0);
-+		} else {
-+			dev_info(&pdev->dev, "GPIO %s ignored (%d)\n",
-+				 buf, pdata->buck234_gpio_dvs[i]);
-+		}
-+
-+		sprintf(buf, "MAX77686 SELB%d", i);
-+
-+		if (gpio_is_valid(pdata->buck234_gpio_selb[i])) {
-+			max77686->buck234_gpios_selb[i] =
-+				pdata->buck234_gpio_selb[i];
-+			gpio_request(pdata->buck234_gpio_selb[i], buf);
-+			gpio_direction_output(pdata->buck234_gpio_selb[i], 0);
-+		} else {
-+			dev_info(&pdev->dev, "GPIO %s ignored (%d)\n",
-+				 buf, pdata->buck234_gpio_dvs[i]);
-+		}
-+	}
-+	max77686->buck234_gpioindex = 0;
-+
-+	for (i = 0; i < 8; i++) {
-+		ret = max77686_get_voltage_proper_val(
-+				&buck_dvs_voltage_map_desc,
-+				pdata->buck2_voltage[i],
-+				pdata->buck2_voltage[i]
-+					+ buck_dvs_voltage_map_desc.step);
-+		/* 1.1V as default for safety */
-+		if (ret < 0)
-+			max77686->buck2_vol[i] = 0x28;
-+		else
-+			max77686->buck2_vol[i] = ret;
-+		max77686_write_reg(max77686->iodev->regmap, MAX77686_REG_BUCK2DVS1 + i,
-+				   max77686->buck2_vol[i]);
-+
-+		ret = max77686_get_voltage_proper_val(
-+				&buck_dvs_voltage_map_desc,
-+				pdata->buck3_voltage[i],
-+				pdata->buck3_voltage[i]
-+					+ buck_dvs_voltage_map_desc.step);
-+		/* 1.1V as default for safety */
-+		if (ret < 0)
-+			max77686->buck3_vol[i] = 0x28;
-+		else
-+			max77686->buck3_vol[i] = ret;
-+		max77686_write_reg(max77686->iodev->regmap, MAX77686_REG_BUCK3DVS1 + i,
-+				   max77686->buck3_vol[i]);
-+		ret = max77686_get_voltage_proper_val(
-+				&buck_dvs_voltage_map_desc,
-+				pdata->buck4_voltage[i],
-+				pdata->buck4_voltage[i]
-+					+ buck_dvs_voltage_map_desc.step);
-+		/* 1.1V as default for safety */
-+		if (ret < 0)
-+			max77686->buck4_vol[i] = 0x28;
-+		else
-+			max77686->buck4_vol[i] = ret;
-+		max77686_write_reg(max77686->iodev->regmap, MAX77686_REG_BUCK4DVS1 + i,
-+				   max77686->buck4_vol[i]);
-+	}
-+
-+
-+	for (i = 0; i < pdata->num_regulators; i++) {
-+		const struct voltage_map_desc *desc;
-+		int id = pdata->regulators[i].id;
-+
-+		desc = reg_voltage_map[id];
-+		if (desc) {
-+			regulators[id].n_voltages =
-+				(desc->max - desc->min) / desc->step + 1;
-+
-+			printk(PMIC_DEBUG "%s: desc=%p, id=%d, n_vol=%d, max=%d, min=%d, step=%d\n",
-+					__func__, desc, id, regulators[id].n_voltages,
-+					desc->max, desc->min, desc->step);
-+		}
-+
-+		rdev[i] = regulator_register(&regulators[id], max77686->dev,
-+					     pdata->regulators[i].initdata,
-+					     max77686, NULL);
-+		if (IS_ERR(rdev[i])) {
-+			ret = PTR_ERR(rdev[i]);
-+			dev_err(max77686->dev, "regulator init failed for %d\n",
-+					id);
-+			rdev[i] = NULL;
-+			goto err;
-+		}
-+	}
-+
-+	return 0;
-+err:
-+	for (i = 0; i < 3; i++) {
-+		if (max77686->buck234_gpios_dvs[i])
-+			gpio_free(max77686->buck234_gpios_dvs[i]);
-+		if (max77686->buck234_gpios_dvs[i])
-+			gpio_free(max77686->buck234_gpios_selb[i]);
-+	}
-+
-+	for (i = 0; i < max77686->num_regulators; i++)
-+		if (rdev[i])
-+			regulator_unregister(rdev[i]);
-+
-+	kfree(max77686->rdev);
-+	kfree(max77686);
-+
-+	return ret;
-+}
-+
-+static int __devexit max77686_pmic_remove(struct platform_device *pdev)
-+{
-+	struct max77686_data *max77686 = platform_get_drvdata(pdev);
-+	struct regulator_dev **rdev = max77686->rdev;
-+	int i;
-+
-+	for (i = 0; i < 3; i++) {
-+		if (max77686->buck234_gpios_dvs[i])
-+			gpio_free(max77686->buck234_gpios_dvs[i]);
-+		if (max77686->buck234_gpios_dvs[i])
-+			gpio_free(max77686->buck234_gpios_selb[i]);
-+	}
-+
-+	for (i = 0; i < max77686->num_regulators; i++)
-+		if (rdev[i])
-+			regulator_unregister(rdev[i]);
-+
-+	kfree(max77686->rdev);
-+	kfree(max77686);
-+
-+	return 0;
-+}
-+
-+static const struct platform_device_id max77686_pmic_id[] = {
-+	{ "max77686-pmic", 0},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(platform, max77686_pmic_id);
-+
-+static struct platform_driver max77686_pmic_driver = {
-+	.driver = {
-+		.name = "max77686-pmic",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = max77686_pmic_probe,
-+	.remove = __devexit_p(max77686_pmic_remove),
-+	.id_table = max77686_pmic_id,
-+};
-+
-+static int __init max77686_pmic_init(void)
-+{
-+	printk(PMIC_DEBUG "%s\n", __func__);
-+
-+	return platform_driver_register(&max77686_pmic_driver);
-+}
-+subsys_initcall(max77686_pmic_init);
-+
-+static void __exit max77686_pmic_cleanup(void)
-+{
-+	platform_driver_unregister(&max77686_pmic_driver);
-+}
-+module_exit(max77686_pmic_cleanup);
-+
-+MODULE_DESCRIPTION("MAXIM 77686 Regulator Driver");
-+MODULE_AUTHOR("Chiwoong Byun <woong.byun@samsung.com>");
-+MODULE_LICENSE("GPL");
--- 
-1.7.4.1
-
+-void perf_gtk__init(bool fallback_to_pager __used)
++int perf_gtk__init(void)
+ {
+-	gtk_init(NULL, NULL);
++	return gtk_init_check(NULL, NULL) ? 0 : -1;
+ }
+ 
+ void perf_gtk__exit(bool wait_for_ok __used)
+diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
+index 98130e0..9f5f888 100644
+--- a/tools/perf/ui/setup.c
++++ b/tools/perf/ui/setup.c
+@@ -13,13 +13,14 @@ void setup_browser(bool fallback_to_pager)
+ 
+ 	switch (use_browser) {
+ 	case 2:
+-		perf_gtk__init(fallback_to_pager);
+-		break;
+-
++		if (perf_gtk__init() == 0)
++			break;
++		/* fall through */
+ 	case 1:
+-		ui__init(fallback_to_pager);
+-		break;
+-
++		use_browser = 1;
++		if (ui__init() == 0)
++			break;
++		/* fall through */
+ 	default:
+ 		if (fallback_to_pager)
+ 			setup_pager();
+diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
+index 0194cea..d33e943 100644
+--- a/tools/perf/ui/tui/setup.c
++++ b/tools/perf/ui/tui/setup.c
+@@ -100,7 +100,7 @@ static void ui__signal(int sig)
+ 	exit(0);
+ }
+ 
+-int ui__init(bool fallback_to_pager __used)
++int ui__init(void)
+ {
+ 	int err;
+ 
+diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
+index 761d4e9..cff18c6 100644
+--- a/tools/perf/util/cache.h
++++ b/tools/perf/util/cache.h
+@@ -45,27 +45,24 @@ void setup_browser(bool fallback_to_pager);
+ void exit_browser(bool wait_for_ok);
+ 
+ #ifdef NO_NEWT_SUPPORT
+-static inline int ui__init(bool fallback_to_pager)
++static inline int ui__init(void)
+ {
+-	if (fallback_to_pager)
+-		setup_pager();
+-	return 0;
++	return -1;
+ }
+ static inline void ui__exit(bool wait_for_ok __used) {}
+ #else
+-int ui__init(bool fallback_to_pager);
++int ui__init(void);
+ void ui__exit(bool wait_for_ok);
+ #endif
+ 
+ #ifdef NO_GTK2_SUPPORT
+-static inline void perf_gtk__init(bool fallback_to_pager)
++static inline int perf_gtk__init(void)
+ {
+-	if (fallback_to_pager)
+-		setup_pager();
++	return -1;
+ }
+ static inline void perf_gtk__exit(bool wait_for_ok __used) {}
+ #else
+-void perf_gtk__init(bool fallback_to_pager);
++int perf_gtk__init(void);
+ void perf_gtk__exit(bool wait_for_ok);
+ #endif
+ #endif /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
