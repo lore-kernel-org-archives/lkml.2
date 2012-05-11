@@ -1,334 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946163Ab2EKTlb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 15:41:31 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38427 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933245Ab2EKTl0 (ORCPT
+	id S1946178Ab2EKTll (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 15:41:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57381 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946166Ab2EKTlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 15:41:26 -0400
+	Fri, 11 May 2012 15:41:35 -0400
 From: Magnus Damm <magnus.damm@gmail.com>
 To: linux-arm-kernel@lists.infradead.org
-Cc: linux@arm.linux.org.uk, arnd@arndb.de, linux-sh@vger.kernel.org,
-        lethal@linux-sh.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        horms@verge.net.au, olof@lixom.net,
+Cc: horms@verge.net.au, linux@arm.linux.org.uk, arnd@arndb.de,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        lethal@linux-sh.org, olof@lixom.net,
         Magnus Damm <magnus.damm@gmail.com>
-Date: Sat, 12 May 2012 04:42:20 +0900
-Message-Id: <20120511194220.6567.56443.sendpatchset@w520>
+Date: Sat, 12 May 2012 04:42:31 +0900
+Message-Id: <20120511194231.6567.67186.sendpatchset@w520>
 In-Reply-To: <20120511194151.6567.53888.sendpatchset@w520>
 References: <20120511194151.6567.53888.sendpatchset@w520>
-Subject: [PATCH 03/06] mach-shmobile: Emma Mobile EV2 SMP support V2
+Subject: [PATCH 04/06] mach-shmobile: Emma Mobile EV2 GPIO support V2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Magnus Damm <damm@opensource.se>
 
-This is V2 of Emma Mobile EV2 SMP support.
+Tie in the Emma Mobile GPIO driver "em-gio" to
+support the GPIOs on Emma Mobile EV2.
 
-At this point only the most basic form of SMP operation
-is supported. TWD and CPU Hotplug support is excluded.
+A static IRQ range is used to allow boards to
+hook up their platform devices to the GPIOs.
 
-Tied to both the Emma Mobile EV2 and the KZM9D board
-due to the need to switch on board in platsmp.c and
-the newly introduced need for static mappings.
-
-The static mappings are needed to allow hardware
-acces early during boot when SMP is initialized.
-This early requirement forces us to also map in
-the SMU registers.
+DT support is still on the TODO for the GPIO driver,
+so only platform device support is included here.
 
 Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
 
  Changes since V1:
- - access SMU via separate function
- - rework SCU coherency setting function
- - make use of broken out emev2 header
+ - none, this is the first public release
 
- arch/arm/mach-shmobile/Makefile             |    1 
- arch/arm/mach-shmobile/board-kzm9d.c        |    1 
- arch/arm/mach-shmobile/clock-emev2.c        |   18 +++++
- arch/arm/mach-shmobile/include/mach/emev2.h |    7 +
- arch/arm/mach-shmobile/platsmp.c            |   17 ++++
- arch/arm/mach-shmobile/setup-emev2.c        |   24 ++++++
- arch/arm/mach-shmobile/smp-emev2.c          |   97 +++++++++++++++++++++++++++
- 7 files changed, 165 insertions(+)
+ arch/arm/mach-shmobile/Kconfig              |    1 
+ arch/arm/mach-shmobile/include/mach/emev2.h |    3 
+ arch/arm/mach-shmobile/setup-emev2.c        |  203 +++++++++++++++++++++++++++
+ 3 files changed, 207 insertions(+)
 
---- 0008/arch/arm/mach-shmobile/Makefile
-+++ work/arch/arm/mach-shmobile/Makefile	2012-05-12 02:48:35.000000000 +0900
-@@ -19,6 +19,7 @@ smp-y				:= platsmp.o headsmp.o
- smp-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
- smp-$(CONFIG_ARCH_SH73A0)	+= smp-sh73a0.o
- smp-$(CONFIG_ARCH_R8A7779)	+= smp-r8a7779.o
-+smp-$(CONFIG_ARCH_EMEV2)	+= smp-emev2.o
+--- 0008/arch/arm/mach-shmobile/Kconfig
++++ work/arch/arm/mach-shmobile/Kconfig	2012-05-12 03:41:45.000000000 +0900
+@@ -45,6 +45,7 @@ config ARCH_EMEV2
+ 	bool "Emma Mobile EV2"
+ 	select CPU_V7
+ 	select ARM_GIC
++	select ARCH_WANT_OPTIONAL_GPIOLIB
  
- # Pinmux setup
- pfc-y				:=
---- 0008/arch/arm/mach-shmobile/board-kzm9d.c
-+++ work/arch/arm/mach-shmobile/board-kzm9d.c	2012-05-12 03:23:09.000000000 +0900
-@@ -27,6 +27,7 @@
- #include <asm/hardware/gic.h>
+ comment "SH-Mobile Board Type"
  
- MACHINE_START(KZM9D, "kzm9d")
-+	.map_io		= emev2_map_io,
- 	.init_early	= emev2_add_early_devices,
- 	.nr_irqs	= NR_IRQS_LEGACY,
- 	.init_irq	= emev2_init_irq,
---- 0007/arch/arm/mach-shmobile/clock-emev2.c
-+++ work/arch/arm/mach-shmobile/clock-emev2.c	2012-05-12 03:34:20.000000000 +0900
-@@ -40,6 +40,7 @@
- #define USIB2SCLKDIV 0x65c
- #define USIB3SCLKDIV 0x660
- #define STI_CLKSEL 0x688
-+#define SMU_GENERAL_REG0 0x7c0
+--- 0009/arch/arm/mach-shmobile/include/mach/emev2.h
++++ work/arch/arm/mach-shmobile/include/mach/emev2.h	2012-05-12 03:44:29.000000000 +0900
+@@ -13,4 +13,7 @@ extern void emev2_secondary_init(unsigne
+ extern int emev2_boot_secondary(unsigned int cpu);
+ extern void emev2_smp_prepare_cpus(void);
  
- /* not pretty, but hey */
- static void __iomem *smu_base;
-@@ -50,6 +51,11 @@ static void emev2_smu_write(unsigned lon
- 	iowrite32(value, smu_base + offs);
- }
- 
-+void emev2_set_boot_vector(unsigned long value)
-+{
-+	emev2_smu_write(value, SMU_GENERAL_REG0);
-+}
++#define EMEV2_GPIO_BASE 200
++#define EMEV2_GPIO_IRQ(n) (EMEV2_GPIO_BASE + (n))
 +
- static struct clk_mapping smu_mapping = {
- 	.phys	= EMEV2_SMU_BASE,
- 	.len	= PAGE_SIZE,
-@@ -194,6 +200,18 @@ static struct clk_lookup lookups[] = {
- void __init emev2_clock_init(void)
- {
- 	int k, ret = 0;
-+	static int is_setup;
-+
-+	/* yuck, this is ugly as hell, but the non-smp case of clocks
-+	 * code is now designed to rely on ioremap() instead of static
-+	 * entity maps. in the case of smp we need access to the SMU
-+	 * register earlier than ioremap() is actually working without
-+	 * any static maps. to enable SMP in ugly but with dynamic
-+	 * mappings we have to call emev2_clock_init() from different
-+	 * places depending on UP and SMP...
-+	 */
-+	if (is_setup++)
-+		return;
- 
- 	smu_base = ioremap(EMEV2_SMU_BASE, PAGE_SIZE);
- 	BUG_ON(!smu_base);
---- 0007/arch/arm/mach-shmobile/include/mach/emev2.h
-+++ work/arch/arm/mach-shmobile/include/mach/emev2.h	2012-05-12 02:59:15.000000000 +0900
-@@ -1,9 +1,16 @@
- #ifndef __ASM_EMEV2_H__
- #define __ASM_EMEV2_H__
- 
-+extern void emev2_map_io(void);
- extern void emev2_init_irq(void);
- extern void emev2_add_early_devices(void);
- extern void emev2_add_standard_devices(void);
- extern void emev2_clock_init(void);
-+extern void emev2_set_boot_vector(unsigned long value);
-+extern unsigned int emev2_get_core_count(void);
-+extern int emev2_platform_cpu_kill(unsigned int cpu);
-+extern void emev2_secondary_init(unsigned int cpu);
-+extern int emev2_boot_secondary(unsigned int cpu);
-+extern void emev2_smp_prepare_cpus(void);
- 
  #endif /* __ASM_EMEV2_H__ */
---- 0001/arch/arm/mach-shmobile/platsmp.c
-+++ work/arch/arm/mach-shmobile/platsmp.c	2012-05-12 03:20:28.000000000 +0900
-@@ -19,9 +19,11 @@
- #include <asm/hardware/gic.h>
- #include <asm/mach-types.h>
- #include <mach/common.h>
-+#include <mach/emev2.h>
+--- 0009/arch/arm/mach-shmobile/setup-emev2.c
++++ work/arch/arm/mach-shmobile/setup-emev2.c	2012-05-12 03:45:30.000000000 +0900
+@@ -21,6 +21,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+ #include <linux/platform_device.h>
++#include <linux/platform_data/gpio-em.h>
+ #include <linux/delay.h>
+ #include <linux/input.h>
+ #include <linux/io.h>
+@@ -156,6 +157,203 @@ static struct platform_device sti_device
+ 	.num_resources	= ARRAY_SIZE(sti_resources),
+ };
  
- #define is_sh73a0() (machine_is_ag5evm() || machine_is_kota2() || machine_is_kzm9g())
- #define is_r8a7779() machine_is_marzen()
-+#define is_emev2() machine_is_kzm9d()
- 
- static unsigned int __init shmobile_smp_get_core_count(void)
- {
-@@ -31,6 +33,9 @@ static unsigned int __init shmobile_smp_
- 	if (is_r8a7779())
- 		return r8a7779_get_core_count();
- 
-+	if (is_emev2())
-+		return emev2_get_core_count();
 +
- 	return 1;
- }
- 
-@@ -41,6 +46,9 @@ static void __init shmobile_smp_prepare_
- 
- 	if (is_r8a7779())
- 		r8a7779_smp_prepare_cpus();
-+
-+	if (is_emev2())
-+		emev2_smp_prepare_cpus();
- }
- 
- int shmobile_platform_cpu_kill(unsigned int cpu)
-@@ -48,6 +56,9 @@ int shmobile_platform_cpu_kill(unsigned
- 	if (is_r8a7779())
- 		return r8a7779_platform_cpu_kill(cpu);
- 
-+	if (is_emev2())
-+		return emev2_platform_cpu_kill(cpu);
-+
- 	return 1;
- }
- 
-@@ -60,6 +71,9 @@ void __cpuinit platform_secondary_init(u
- 
- 	if (is_r8a7779())
- 		r8a7779_secondary_init(cpu);
-+
-+	if (is_emev2())
-+		emev2_secondary_init(cpu);
- }
- 
- int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
-@@ -70,6 +84,9 @@ int __cpuinit boot_secondary(unsigned in
- 	if (is_r8a7779())
- 		return r8a7779_boot_secondary(cpu);
- 
-+	if (is_emev2())
-+		return emev2_boot_secondary(cpu);
-+
- 	return -ENOSYS;
- }
- 
---- 0007/arch/arm/mach-shmobile/setup-emev2.c
-+++ work/arch/arm/mach-shmobile/setup-emev2.c	2012-05-12 03:37:24.000000000 +0900
-@@ -34,6 +34,30 @@
- #include <asm/mach/time.h>
- #include <asm/hardware/gic.h>
- 
-+static struct map_desc emev2_io_desc[] __initdata = {
-+#ifdef CONFIG_SMP
-+	/* 128K entity map for 0xe0100000 (SMU) */
-+	{
-+		.virtual	= 0xe0100000,
-+		.pfn		= __phys_to_pfn(0xe0100000),
-+		.length		= SZ_128K,
-+		.type		= MT_DEVICE
-+	},
-+	/* 2M mapping for SCU + L2 controller */
-+	{
-+		.virtual	= 0xf0000000,
-+		.pfn		= __phys_to_pfn(0x1e000000),
-+		.length		= SZ_2M,
-+		.type		= MT_DEVICE
-+	},
-+#endif
++/* GIO */
++static struct gpio_em_config gio0_config = {
++	.gpio_base = 0,
++	.irq_base = EMEV2_GPIO_IRQ(0),
++	.number_of_pins = 32,
 +};
 +
-+void __init emev2_map_io(void)
-+{
-+	iotable_init(emev2_io_desc, ARRAY_SIZE(emev2_io_desc));
-+}
++static struct resource gio0_resources[] = {
++	[0] = {
++		.name	= "GIO_000",
++		.start	= 0xe0050000,
++		.end	= 0xe005002b,
++		.flags	= IORESOURCE_MEM,
++	},
++	[1] = {
++		.name	= "GIO_000",
++		.start	= 0xe0050040,
++		.end	= 0xe005005f,
++		.flags	= IORESOURCE_MEM,
++	},
++	[2] = {
++		.start	= 99,
++		.flags	= IORESOURCE_IRQ,
++	},
++	[3] = {
++		.start	= 100,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
 +
- /* UART */
- static struct resource uart0_resources[] = {
- 	[0]	= {
---- /dev/null
-+++ work/arch/arm/mach-shmobile/smp-emev2.c	2012-05-12 03:38:32.000000000 +0900
-@@ -0,0 +1,97 @@
-+/*
-+ * SMP support for Emma Mobile EV2
-+ *
-+ * Copyright (C) 2012  Renesas Solutions Corp.
-+ * Copyright (C) 2012  Magnus Damm
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-+ */
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/smp.h>
-+#include <linux/spinlock.h>
-+#include <linux/io.h>
-+#include <linux/delay.h>
-+#include <mach/common.h>
-+#include <mach/emev2.h>
-+#include <asm/smp_plat.h>
-+#include <asm/smp_scu.h>
-+#include <asm/hardware/gic.h>
-+#include <asm/cacheflush.h>
++static struct platform_device gio0_device = {
++	.name		= "em_gio",
++	.id		= 0,
++	.resource	= gio0_resources,
++	.num_resources	= ARRAY_SIZE(gio0_resources),
++	.dev		= {
++		.platform_data	= &gio0_config,
++	},
++};
 +
-+#define EMEV2_SCU_BASE 0x1e000000
++static struct gpio_em_config gio1_config = {
++	.gpio_base = 32,
++	.irq_base = EMEV2_GPIO_IRQ(32),
++	.number_of_pins = 32,
++};
 +
-+static DEFINE_SPINLOCK(scu_lock);
-+static void __iomem *scu_base;
++static struct resource gio1_resources[] = {
++	[0] = {
++		.name	= "GIO_032",
++		.start	= 0xe0050080,
++		.end	= 0xe00500ab,
++		.flags	= IORESOURCE_MEM,
++	},
++	[1] = {
++		.name	= "GIO_032",
++		.start	= 0xe00500c0,
++		.end	= 0xe00500df,
++		.flags	= IORESOURCE_MEM,
++	},
++	[2] = {
++		.start	= 101,
++		.flags	= IORESOURCE_IRQ,
++	},
++	[3] = {
++		.start	= 102,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
 +
-+static void modify_scu_cpu_psr(unsigned long set, unsigned long clr)
-+{
-+	unsigned long tmp;
++static struct platform_device gio1_device = {
++	.name		= "em_gio",
++	.id		= 1,
++	.resource	= gio1_resources,
++	.num_resources	= ARRAY_SIZE(gio1_resources),
++	.dev		= {
++		.platform_data	= &gio1_config,
++	},
++};
 +
-+	/* we assume this code is running on a different cpu
-+	 * than the one that is changing coherency setting */
-+	spin_lock(&scu_lock);
-+	tmp = readl(scu_base + 8);
-+	tmp &= ~clr;
-+	tmp |= set;
-+	writel(tmp, scu_base + 8);
-+	spin_unlock(&scu_lock);
++static struct gpio_em_config gio2_config = {
++	.gpio_base = 64,
++	.irq_base = EMEV2_GPIO_IRQ(64),
++	.number_of_pins = 32,
++};
 +
-+}
++static struct resource gio2_resources[] = {
++	[0] = {
++		.name	= "GIO_064",
++		.start	= 0xe0050100,
++		.end	= 0xe005012b,
++		.flags	= IORESOURCE_MEM,
++	},
++	[1] = {
++		.name	= "GIO_064",
++		.start	= 0xe0050140,
++		.end	= 0xe005015f,
++		.flags	= IORESOURCE_MEM,
++	},
++	[2] = {
++		.start	= 103,
++		.flags	= IORESOURCE_IRQ,
++	},
++	[3] = {
++		.start	= 104,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
 +
-+unsigned int __init emev2_get_core_count(void)
-+{
-+	if (!scu_base) {
-+		scu_base = ioremap(EMEV2_SCU_BASE, PAGE_SIZE);
-+		emev2_clock_init(); /* need ioremapped SMU */
-+	}
++static struct platform_device gio2_device = {
++	.name		= "em_gio",
++	.id		= 2,
++	.resource	= gio2_resources,
++	.num_resources	= ARRAY_SIZE(gio2_resources),
++	.dev		= {
++		.platform_data	= &gio2_config,
++	},
++};
 +
-+	WARN_ON_ONCE(!scu_base);
++static struct gpio_em_config gio3_config = {
++	.gpio_base = 96,
++	.irq_base = EMEV2_GPIO_IRQ(96),
++	.number_of_pins = 32,
++};
 +
-+	return scu_base ? scu_get_core_count(scu_base) : 1;
-+}
++static struct resource gio3_resources[] = {
++	[0] = {
++		.name	= "GIO_096",
++		.start	= 0xe0050100,
++		.end	= 0xe005012b,
++		.flags	= IORESOURCE_MEM,
++	},
++	[1] = {
++		.name	= "GIO_096",
++		.start	= 0xe0050140,
++		.end	= 0xe005015f,
++		.flags	= IORESOURCE_MEM,
++	},
++	[2] = {
++		.start	= 105,
++		.flags	= IORESOURCE_IRQ,
++	},
++	[3] = {
++		.start	= 106,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
 +
-+int emev2_platform_cpu_kill(unsigned int cpu)
-+{
-+	return 0; /* not supported yet */
-+}
++static struct platform_device gio3_device = {
++	.name		= "em_gio",
++	.id		= 3,
++	.resource	= gio3_resources,
++	.num_resources	= ARRAY_SIZE(gio3_resources),
++	.dev		= {
++		.platform_data	= &gio3_config,
++	},
++};
 +
-+void __cpuinit emev2_secondary_init(unsigned int cpu)
-+{
-+	gic_secondary_init(0);
-+}
++static struct gpio_em_config gio4_config = {
++	.gpio_base = 128,
++	.irq_base = EMEV2_GPIO_IRQ(128),
++	.number_of_pins = 31,
++};
 +
-+int __cpuinit emev2_boot_secondary(unsigned int cpu)
-+{
-+	cpu = cpu_logical_map(cpu);
++static struct resource gio4_resources[] = {
++	[0] = {
++		.name	= "GIO_128",
++		.start	= 0xe0050200,
++		.end	= 0xe005022b,
++		.flags	= IORESOURCE_MEM,
++	},
++	[1] = {
++		.name	= "GIO_128",
++		.start	= 0xe0050240,
++		.end	= 0xe005025f,
++		.flags	= IORESOURCE_MEM,
++	},
++	[2] = {
++		.start	= 107,
++		.flags	= IORESOURCE_IRQ,
++	},
++	[3] = {
++		.start	= 108,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
 +
-+	/* enable cache coherency */
-+	modify_scu_cpu_psr(0, 3 << (cpu * 8));
++static struct platform_device gio4_device = {
++	.name		= "em_gio",
++	.id		= 4,
++	.resource	= gio4_resources,
++	.num_resources	= ARRAY_SIZE(gio4_resources),
++	.dev		= {
++		.platform_data	= &gio4_config,
++	},
++};
 +
-+	/* Tell ROM loader about our vector (in headsmp.S) */
-+	emev2_set_boot_vector(__pa(shmobile_secondary_vector));
-+
-+	gic_raise_softirq(cpumask_of(cpu), 1);
-+	return 0;
-+}
-+
-+void __init emev2_smp_prepare_cpus(void)
-+{
-+	int cpu = cpu_logical_map(0);
-+
-+	scu_enable(scu_base);
-+
-+	/* enable cache coherency on CPU0 */
-+	modify_scu_cpu_psr(0, 3 << (cpu * 8));
-+}
+ static struct platform_device *emev2_early_devices[] __initdata = {
+ 	&uart0_device,
+ 	&uart1_device,
+@@ -165,6 +363,11 @@ static struct platform_device *emev2_ear
+ 
+ static struct platform_device *emev2_late_devices[] __initdata = {
+ 	&sti_device,
++	&gio0_device,
++	&gio1_device,
++	&gio2_device,
++	&gio3_device,
++	&gio4_device,
+ };
+ 
+ void __init emev2_add_standard_devices(void)
