@@ -1,101 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946036Ab2EKRvY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 13:51:24 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:14777 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1945930Ab2EKRvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 13:51:14 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+	id S1946024Ab2EKRvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 13:51:19 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:30888 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1945970Ab2EKRvP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 13:51:15 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: TZT0ymYVM1lVAQvXIgjR3thQhN9bxVt95MzbWXqNuEZGIOZ
+ QSOqfbZMlcLIdnadAZ5Ml1SNcfiONhn9er0MI9f9gYIV2RLCfkBqpP9BfPGy
+ mdv6rhWnfefBeYV_nW1vd2JHq_tKgfkdNw8zCz7ocHPOXsYwrMwU45LDNury
+ 3.0z5CjMrjPMG5nZj8MHDOwsN8kYGW7zXbgekLNWlIPMAULxwQN3UR4bF_AI
+ PHdrGvxu95VThfAp5gIp36HXIQsb3P.bw4LwHJ0DB6epYX2MtljdWltJgF.K
+ nXaWwQECmStzTZRypMpLZbyjtId8kW2U1SKE2u1wbR_gix_RsXdankpFCXwj
+ o66XqpNA.cTfqxJ8fntTbBSy9uirjjmunqnwzgVBkxH_jEDsTIydvGPDYRE.
+ wuBdmNJewkUagM5fefokn4h_93g--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 11 May 2012 12:51:10 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
         Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
         Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
         Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v2 17/29] slab: create duplicate cache
-Date: Fri, 11 May 2012 14:44:19 -0300
-Message-Id: <1336758272-24284-18-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1336758272-24284-1-git-send-email-glommer@parallels.com>
-References: <1336758272-24284-1-git-send-email-glommer@parallels.com>
+Subject: Re: [PATCH v2 02/29] slub: fix slab_state for slub
+In-Reply-To: <1336758272-24284-3-git-send-email-glommer@parallels.com>
+Message-ID: <alpine.DEB.2.00.1205111250590.31049@router.home>
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-3-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides kmem_cache_dup(), that duplicates
-a cache for a memcg, preserving its creation properties.
-Object size, alignment and flags are all respected.
-An exception is the SLAB_PANIC flag, since cache creation
-inside a memcg should not be fatal.
 
-This code is mostly written by Suleiman Souhlal,
-with some adaptations and simplifications by me.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-CC: Suleiman Souhlal <suleiman@google.com>
----
- mm/slab.c |   32 ++++++++++++++++++++++++++++++++
- 1 files changed, 32 insertions(+), 0 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index d05a326..985714a 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -301,6 +301,8 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int len,
- 			int node);
- static int enable_cpucache(struct kmem_cache *cachep, gfp_t gfp);
- static void cache_reap(struct work_struct *unused);
-+static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
-+			    int batchcount, int shared, gfp_t gfp);
- 
- /*
-  * This function must be completely optimized away if a constant is passed to
-@@ -2598,6 +2600,36 @@ kmem_cache_create(const char *name, size_t size, size_t align,
- EXPORT_SYMBOL(kmem_cache_create);
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
-+				  struct kmem_cache *cachep)
-+{
-+	struct kmem_cache *new;
-+	unsigned long flags;
-+	char *name;
-+
-+	name = mem_cgroup_cache_name(memcg, cachep);
-+	if (!name)
-+		return NULL;
-+
-+	flags = cachep->flags & ~(SLAB_PANIC|CFLGS_OFF_SLAB);
-+	mutex_lock(&cache_chain_mutex);
-+	new = __kmem_cache_create(memcg, name, obj_size(cachep),
-+	    cachep->memcg_params.orig_align, flags, cachep->ctor);
-+
-+	if (new == NULL)
-+		goto out;
-+
-+	if ((cachep->limit != new->limit) ||
-+	    (cachep->batchcount != new->batchcount) ||
-+	    (cachep->shared != new->shared))
-+		do_tune_cpucache(new, cachep->limit, cachep->batchcount,
-+		    cachep->shared, GFP_KERNEL);
-+out:
-+	mutex_unlock(&cache_chain_mutex);
-+	kfree(name);
-+	return new;
-+}
-+
- static int __init memcg_slab_register_all(void)
- {
- 	struct kmem_cache *cachep;
--- 
-1.7.7.6
+Acked-by: Christoph Lameter <cl@linux.com>
 
