@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab2EKRtK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 13:49:10 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:29644 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932896Ab2EKRtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 13:49:05 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v2 09/29] memcg: change defines to an enum
-Date: Fri, 11 May 2012 14:44:11 -0300
-Message-Id: <1336758272-24284-10-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1336758272-24284-1-git-send-email-glommer@parallels.com>
-References: <1336758272-24284-1-git-send-email-glommer@parallels.com>
+	id S1945912Ab2EKSAB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:00:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43215 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757972Ab2EKR76 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 13:59:58 -0400
+Date: Fri, 11 May 2012 10:59:54 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        abbotti@mev.co.uk, fmhess@users.sourceforge.net
+Subject: Re: [PATCH] staging: comedi: Add helper macro for comedi pci driver
+ boilerplate
+Message-ID: <20120511175954.GA7920@kroah.com>
+References: <201205111007.46754.hartleys@visionengravers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201205111007.46754.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is just a cleanup patch for clarity of expression.
-In earlier submissions, people asked it to be in a separate
-patch, so here it is.
+On Fri, May 11, 2012 at 10:07:43AM -0700, H Hartley Sweeten wrote:
+> --- a/drivers/staging/comedi/drivers.c
+> +++ b/drivers/staging/comedi/drivers.c
+> @@ -950,6 +950,34 @@ void comedi_pci_auto_unconfig(struct pci_dev *pcidev)
+>  }
+>  EXPORT_SYMBOL_GPL(comedi_pci_auto_unconfig);
+>  
+> +int comedi_pci_driver_register(struct comedi_driver *comedi_driver,
+> +		struct pci_driver *pci_driver)
+> +{
+> +	int ret;
+> +
+> +	ret = comedi_driver_register(comedi_driver);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	pci_driver->name = comedi_driver->driver_name;
+> +	ret = pci_register_driver(pci_driver);
+> +	if (ret < 0) {
+> +		comedi_driver_unregister(comedi_driver);
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(comedi_pci_driver_register);
+> +
+> +void comedi_pci_driver_unregister(struct comedi_driver *comedi_driver,
+> +		struct pci_driver *pci_driver)
+> +{
+> +	pci_unregister_driver(pci_driver);
+> +	comedi_driver_unregister(comedi_driver);
+> +}
+> +EXPORT_SYMBOL(comedi_pci_driver_unregister);
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+EXPORT_SYMBOL_GPL() for these two functions?
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 47d3979..789ca5a 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -374,9 +374,12 @@ enum charge_type {
- };
- 
- /* for encoding cft->private value on file */
--#define _MEM			(0)
--#define _MEMSWAP		(1)
--#define _OOM_TYPE		(2)
-+enum res_type {
-+	_MEM,
-+	_MEMSWAP,
-+	_OOM_TYPE,
-+};
-+
- #define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
- #define MEMFILE_TYPE(val)	(((val) >> 16) & 0xffff)
- #define MEMFILE_ATTR(val)	((val) & 0xffff)
--- 
-1.7.7.6
+thanks,
 
+greg k-h
