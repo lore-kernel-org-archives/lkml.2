@@ -1,307 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760881Ab2EKRHL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 13:07:11 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:34769 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760817Ab2EKRHC (ORCPT
+	id S1760891Ab2EKRH6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 13:07:58 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:56431 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950Ab2EKRH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 13:07:02 -0400
-Date: Fri, 11 May 2012 19:06:47 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+	Fri, 11 May 2012 13:07:56 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Daniel Lezcano <dlezcano@fr.ibm.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v.23-2] RAS: use tracepoint to handle hw issues
-Message-ID: <20120511170647.GA17299@aftab.osrc.amd.com>
-References: <1336683628-12954-1-git-send-email-mchehab@redhat.com>
- <1336748054-21325-1-git-send-email-mchehab@redhat.com>
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <4FAD0524.3000307@parallels.com>
+Date: Fri, 11 May 2012 10:07:49 -0700
+In-Reply-To: <4FAD0524.3000307@parallels.com> (Pavel Emelyanov's message of
+	"Fri, 11 May 2012 16:25:08 +0400")
+Message-ID: <877gwi7ije.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336748054-21325-1-git-send-email-mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX186n6xXvYXU1tH2CU9zKe1VXDRKUaqSQPg=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Pavel Emelyanov <xemul@parallels.com>
+X-Spam-Relay-Country: XX
+Subject: Re: [PATCH 1/2] proc: Show ns-based inode numbers for /proc/pid/ns/* files
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From Documentation/SubmittingPatches:
+Pavel Emelyanov <xemul@parallels.com> writes:
 
-"2) Describe your changes.
+> Some time ago we tried to expose kernel object IDs to the user space to
+> let it possible to detect shared mm, fs, etc. The namespaces' IDs were
+> included in this set and Eric proposed, that we'd better expose the ID
+> in the stat's st_ino field.
 
-Describe the technical detail of the change(s) your patch includes.
+A quick question.  With kcmp you have something that is at least in
+principle usable for checkpoint restart.
 
-Be as specific as possible."
+Are wanting this for checkpoint restart or something else?
 
-"use tracepoint to handle hw issues" is not specific - it is bullshit
-bingo with a random word generator.
-
-I'm getting tired of this crap: either take the suggestion as is,
-without randomly changing it for no reason whatsoever, or give a good
-reason why it is not a good suggestion and propose a better one!
-
-Randomly changing it in the next version of the patch for another, even
-crappier one doesn't help.
-
-On Fri, May 11, 2012 at 11:54:14AM -0300, Mauro Carvalho Chehab wrote:
-> Add a new tracepoint-based hardware events report method for
-> reporting Memory Controller events.
-> 
-> Part of the description bellow is shamelessly copied from Tony
-> Luck's notes about the Hardware Error BoF during LPC 2010 [1].
-> Tony, thanks for your notes and discussions to generate the
-> h/w error reporting requirements.
-> 
-> [1] http://lwn.net/Articles/416669/
-> 
->     We have several subsystems & methods for reporting hardware errors:
-> 
->     1) EDAC ("Error Detection and Correction").  In its original form
->     this consisted of a platform specific driver that read topology
->     information and error counts from chipset registers and reported
->     the results via a sysfs interface.
-> 
->     2) mcelog - x86 specific decoding of machine check bank registers
->     reporting in binary form via /dev/mcelog. Recent additions make use
->     of the APEI extensions that were documented in version 4.0a of the
->     ACPI specification to acquire more information about errors without
->     having to rely reading chipset registers directly. A user level
->     programs decodes into somewhat human readable format.
-> 
->     3) drivers/edac/mce_amd.c - this driver hooks into the mcelog path and
->     decodes errors reported via machine check bank registers in AMD
->     processors to the console log using printk();
-> 
->     Each of these mechanisms has a band of followers ... and none
->     of them appear to meet all the needs of all users.
-> 
-> As part of a RAS subsystem, let's encapsulate the memory error hardware
-> events into a trace facility.
-> 
-> The tracepoint printk will be displayed like:
-> 
-> mc_event: (Corrected|Uncorrected|Fatal) error:[error msg] on memory stick "[label]" ([location] [edac_mc detail] [driver_detail])
-> 
-> Where:
-> 	[error msg] is the driver-specific error message
-> 		    (e. g. "memory read", "bus error", ...);
-> 	[location] is the location in terms of memory controller and
-> 		   branch/channel/slot, channel/slot or csrow/channel;
-> 	[label] is the memory stick label;
-> 	[edac_mc detail] describes the address location of the error
-> 			 and the syndrome;
-> 	[driver detail] is driver-specifig error message details,
-> 			when needed/provided (e. g. "area:DMA", ...)
-> 
-> For example:
-> 
-> mc_event: Corrected error:memory read on memory stick "DIMM_1A" (mc:0 channel:0 slot:0 page:0x586b6e offset:0xa66 grain:32 syndrome:0x0 area:DMA)
-> 
-> Of course, any userspace tools meant to handle errors should not parse
-> the above data. They should, instead, use the binary fields provided by
-> the tracepoint, mapping them directly into their MIBs.
-> 
-> NOTE: The original patch was providing an additional mechanism for
-> MCA-based trace events that also contained MCA error register data.
-> Hoever, as no agreement was reached so far for the MCA-based trace
-> events, for now, let's add events only for memory errors.
-> A latter patch is planned to change the tracepoint, for those types
-> of event.
-> 
-> Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
-> Cc: Doug Thompson <norsk5@yahoo.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
->  drivers/edac/edac_core.h |    2 +-
->  drivers/edac/edac_mc.c   |   25 ++++++++++----
->  include/ras/ras_event.h  |   78 ++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 97 insertions(+), 8 deletions(-)
->  create mode 100644 include/ras/ras_event.h
-> 
-> diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-> index f06ce9a..eee7360 100644
-> --- a/drivers/edac/edac_core.h
-> +++ b/drivers/edac/edac_core.h
-> @@ -468,7 +468,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
->  			  const int layer2,
->  			  const char *msg,
->  			  const char *other_detail,
-> -			  const void *mcelog);
-> +			  const void *arch_log);
->  
->  /*
->   * edac_device APIs
-> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-> index e5b5563..0153cd98 100644
-> --- a/drivers/edac/edac_mc.c
-> +++ b/drivers/edac/edac_mc.c
-> @@ -33,6 +33,10 @@
->  #include "edac_core.h"
->  #include "edac_module.h"
->  
-> +#define CREATE_TRACE_POINTS
-> +#define TRACE_INCLUDE_PATH ../../include/ras
-> +#include <ras/ras_event.h>
-> +
->  /* lock to memory controller's control array */
->  static DEFINE_MUTEX(mem_ctls_mutex);
->  static LIST_HEAD(mc_devices);
-> @@ -381,6 +385,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
->  	 * which will perform kobj unregistration and the actual free
->  	 * will occur during the kobject callback operation
->  	 */
-> +
->  	return mci;
->  }
->  EXPORT_SYMBOL_GPL(edac_mc_alloc);
-> @@ -982,7 +987,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
->  			  const int layer2,
->  			  const char *msg,
->  			  const char *other_detail,
-> -			  const void *mcelog)
-> +			  const void *arch_log)
->  {
->  	/* FIXME: too much for stack: move it to some pre-alocated area */
->  	char detail[80], location[80];
-> @@ -1119,21 +1124,27 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
->  	}
->  
->  	/* Memory type dependent details about the error */
-> -	if (type == HW_EVENT_ERR_CORRECTED) {
-> +	if (type == HW_EVENT_ERR_CORRECTED)
->  		snprintf(detail, sizeof(detail),
->  			"page:0x%lx offset:0x%lx grain:%d syndrome:0x%lx",
->  			page_frame_number, offset_in_page,
->  			grain, syndrome);
-> -		edac_ce_error(mci, pos, msg, location, label, detail,
-> -			      other_detail, enable_per_layer_report,
-> -			      page_frame_number, offset_in_page, grain);
-> -	} else {
-> +	else
->  		snprintf(detail, sizeof(detail),
->  			"page:0x%lx offset:0x%lx grain:%d",
->  			page_frame_number, offset_in_page, grain);
->  
-> +	/* Report the error via the trace interface */
-> +	trace_mc_event(type, mci->mc_idx, msg, label, location,
-> +		       detail, other_detail);
-> +
-> +	/* Report the error via the edac_mc_printk() interface */
-> +	if (type == HW_EVENT_ERR_CORRECTED)
-> +		edac_ce_error(mci, pos, msg, location, label, detail,
-> +			      other_detail, enable_per_layer_report,
-> +			      page_frame_number, offset_in_page, grain);
-> +	else
->  		edac_ue_error(mci, pos, msg, location, label, detail,
->  			      other_detail, enable_per_layer_report);
-> -	}
->  }
->  EXPORT_SYMBOL_GPL(edac_mc_handle_error);
-> diff --git a/include/ras/ras_event.h b/include/ras/ras_event.h
-> new file mode 100644
-> index 0000000..66f6a43
-> --- /dev/null
-> +++ b/include/ras/ras_event.h
-> @@ -0,0 +1,78 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM ras
-> +#define TRACE_INCLUDE_FILE ras_event
-> +
-> +#if !defined(_TRACE_HW_EVENT_MC_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_HW_EVENT_MC_H
-> +
-> +#include <linux/tracepoint.h>
-> +#include <linux/edac.h>
-> +#include <linux/ktime.h>
-> +
-> +/*
-> + * Hardware Events Report
-> + *
-> + * Those events are generated when hardware detected a corrected or
-> + * uncorrected event, and are meant to replace the current API to report
-> + * errors defined on both EDAC and MCE subsystems.
-> + *
-> + * FIXME: Add events for handling memory errors originated from the
-> + *        MCE subsystem.
-> + */
-> +
-> +/*
-> + * Hardware-independent Memory Controller specific events
-> + */
-> +
-> +/*
-> + * Default error mechanisms for Memory Controller errors (CE and UE)
-> + */
-> +TRACE_EVENT(mc_event,
-> +
-> +	TP_PROTO(const unsigned int err_type,
-> +		 const unsigned int mc_index,
-> +		 const char *error_msg,
-> +		 const char *label,
-> +		 const char *location,
-> +		 const char *core_detail,
-> +		 const char *driver_detail),
-> +
-> +	TP_ARGS(err_type, mc_index, error_msg, label, location,
-> +		core_detail, driver_detail),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	unsigned int,	err_type		)
-> +		__field(	unsigned int,	mc_index		)
-> +		__string(	msg,		error_msg		)
-> +		__string(	label,		label			)
-> +		__string(	detail,		core_detail		)
-> +		__string(	location,	location		)
-> +		__string(	driver_detail,	driver_detail		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->err_type		= err_type;
-> +		__entry->mc_index		= mc_index;
-> +		__assign_str(msg, error_msg);
-> +		__assign_str(label, label);
-> +		__assign_str(location, location);
-> +		__assign_str(detail, core_detail);
-> +		__assign_str(driver_detail, driver_detail);
-> +	),
-> +
-> +	TP_printk("%s error:%s on memory stick \"%s\" (mc:%d %s %s %s)",
-> +		  (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
-> +			((__entry->err_type == HW_EVENT_ERR_FATAL) ?
-> +			"Fatal" : "Uncorrected"),
-> +		  __get_str(msg),
-> +		  __get_str(label),
-> +		  __entry->mc_index,
-> +		  __get_str(location),
-> +		  __get_str(detail),
-> +		  __get_str(driver_detail))
-> +);
-> +
-> +#endif /* _TRACE_HW_EVENT_MC_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
-> -- 
-> 1.7.8
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Eric
