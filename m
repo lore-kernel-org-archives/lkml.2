@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933041Ab2EKSAl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:00:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50051 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932957Ab2EKSAi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:00:38 -0400
-Date: Fri, 11 May 2012 11:00:33 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Julian Andres Klode <jak@jak-linux.org>, devel@driverdev.osuosl.org,
-        sjenning@linux.vnet.ibm.com, Konrad Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org
-Subject: Re: [PATCH] ramster: switch over to zsmalloc and crypto interface
-Message-ID: <20120511180033.GB7920@kroah.com>
-References: <1336676781-8571-1-git-send-email-dan.magenheimer@oracle.com>
- <20120510192836.GA17750@jak-linux.org>
- <1ff67ec4-7dd0-49c8-9be2-e927f58e6472@default>
+	id S933007Ab2EKSBH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:01:07 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:44974 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932949Ab2EKSBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 14:01:03 -0400
+Message-ID: <4FAD531D.6030007@parallels.com>
+Date: Fri, 11 May 2012 14:57:49 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1ff67ec4-7dd0-49c8-9be2-e927f58e6472@default>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoph Lameter <cl@linux.com>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
+ kfree
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home>
+In-Reply-To: <alpine.DEB.2.00.1205111251420.31049@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.105.248.83]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 09:23:12AM -0700, Dan Magenheimer wrote:
-> > From: Julian Andres Klode [mailto:jak@jak-linux.org]
-> > Sent: Thursday, May 10, 2012 1:29 PM
-> > To: Dan Magenheimer
-> > Cc: devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org; gregkh@linuxfoundation.org; linux-
-> > mm@kvack.org; ngupta@vflare.org; Konrad Wilk; sjenning@linux.vnet.ibm.com
-> > Subject: Re: [PATCH] ramster: switch over to zsmalloc and crypto interface
-> > 
-> > On Thu, May 10, 2012 at 12:06:21PM -0700, Dan Magenheimer wrote:
-> > > RAMster does many zcache-like things.  In order to avoid major
-> > > merge conflicts at 3.4, ramster used lzo1x directly for compression
-> > > and retained a local copy of xvmalloc, while zcache moved to the
-> > > new zsmalloc allocator and the crypto API.
-> > >
-> > > This patch moves ramster forward to use zsmalloc and crypto.
-> > >
-> > > Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com
-> > 
-> > Nothing important, but the right ">" is missing here.
-> 
-> Oops!  Cut-and-paste error!  Thanks for noticing Julian!
-> 
-> Greg, do you need me to resubmit with the missing '>'?
+On 05/11/2012 02:53 PM, Christoph Lameter wrote:
+> On Fri, 11 May 2012, Glauber Costa wrote:
+>
+>> struct page already have this information. If we start chaining
+>> caches, this information will always be more trustworthy than
+>> whatever is passed into the function
+>
+> Other allocators may not have that information and this patch may
+> cause bugs to go unnoticed if the caller specifies the wrong slab cache.
+>
+> Adding a VM_BUG_ON may be useful to make sure that kmem_cache_free is
+> always passed the correct slab cache.
 
-No need, I'll fix it up.
+Well, problem is , it isn't always passed the "correct" slab cache.
+At least not after this series, since we'll have child caches associated 
+with the main cache.
 
+So we'll pass, for instance, kmem_cache_free(dentry_cache...), but will 
+in fact free from the memcg copy of the dentry cache.
+
+We can, of course, verify if the cache at least belongs to the same 
+"family". But that's quite expensive.
