@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab2EKHi0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 03:38:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40050 "EHLO mx1.redhat.com"
+	id S1756003Ab2EKHib (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 03:38:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43446 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755684Ab2EKHiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 03:38:22 -0400
-Date: Fri, 11 May 2012 10:38:22 +0300
+	id S1751770Ab2EKHi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 03:38:27 -0400
+Date: Fri, 11 May 2012 10:38:28 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: x86@kernel.org, kvm@vger.kernel.org
 Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCHv2 4/7] x86: eoi micro-optimization
-Message-ID: <766cee729b1198bf37ac3e8a34c56f0d45768e95.1336679924.git.mst@redhat.com>
+Subject: [PATCHv2 5/7] kvm_para: guest side for eoi avoidance
+Message-ID: <b53be3bfceab3aa7efe09e5fe235206e49cd4b8e.1336679924.git.mst@redhat.com>
 References: <cover.1336679924.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,132 +25,238 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We know both register and value for eoi beforehand,
-so there's no need to check it and no need to do math
-to calculate the msr. Saves instructions/branches
-on each EOI when using x2apic.
+The idea is simple: there's a bit, per APIC, in guest memory,
+that tells the guest that it does not need EOI.
+Guest tests it using a single est and clear operation - this is
+necessary so that host can detect interrupt nesting - and if set, it can
+skip the EOI MSR.
 
-I'm not sure what kind of tests should one run
-to check whether this patch is good for performance.
+A simple microbenchmark shows exit reduction:
 
-Some data below: in case it's insufficient,
-this patch can be dropped from the series for now:
+# perf stat -e 'kvm:*' -a sleep 1s
 
-I looked at the objdump output to verify that the generated code
-looks right and actually is shorter.
+ Performance counter stats for 'sleep 1s':
 
-Some benchmark results below show a tiny
-but measureable improvement. The tests were run on
-an AMD box with 24 cpus.
+            47,357 kvm:kvm_entry                                                [99.98%]
+                 0 kvm:kvm_hypercall                                            [99.98%]
+                 0 kvm:kvm_hv_hypercall                                         [99.98%]
+             5,001 kvm:kvm_pio                                                  [99.98%]
+                 0 kvm:kvm_cpuid                                                [99.98%]
+            22,124 kvm:kvm_apic                                                 [99.98%]
+            49,849 kvm:kvm_exit                                                 [99.98%]
+            21,115 kvm:kvm_inj_virq                                             [99.98%]
+                 0 kvm:kvm_inj_exception                                        [99.98%]
+                 0 kvm:kvm_page_fault                                           [99.98%]
+            22,937 kvm:kvm_msr                                                  [99.98%]
+                 0 kvm:kvm_cr                                                   [99.98%]
+                 0 kvm:kvm_pic_set_irq                                          [99.98%]
+                 0 kvm:kvm_apic_ipi                                             [99.98%]
+            22,207 kvm:kvm_apic_accept_irq                                      [99.98%]
+            22,421 kvm:kvm_eoi                                                  [99.98%]
+                 0 kvm:kvm_pv_eoi                                               [99.99%]
+                 0 kvm:kvm_nested_vmrun                                         [99.99%]
+                 0 kvm:kvm_nested_intercepts                                    [99.99%]
+                 0 kvm:kvm_nested_vmexit                                        [99.99%]
+                 0 kvm:kvm_nested_vmexit_inject                                    [99.99%]
+                 0 kvm:kvm_nested_intr_vmexit                                    [99.99%]
+                 0 kvm:kvm_invlpga                                              [99.99%]
+                 0 kvm:kvm_skinit                                               [99.99%]
+                57 kvm:kvm_emulate_insn                                         [99.99%]
+                 0 kvm:vcpu_match_mmio                                          [99.99%]
+                 0 kvm:kvm_userspace_exit                                       [99.99%]
+                 2 kvm:kvm_set_irq                                              [99.99%]
+                 2 kvm:kvm_ioapic_set_irq                                       [99.99%]
+            23,609 kvm:kvm_msi_set_irq                                          [99.99%]
+                 1 kvm:kvm_ack_irq                                              [99.99%]
+               131 kvm:kvm_mmio                                                 [99.99%]
+               226 kvm:kvm_fpu                                                  [100.00%]
+                 0 kvm:kvm_age_page                                             [100.00%]
+                 0 kvm:kvm_try_async_get_page                                    [100.00%]
+                 0 kvm:kvm_async_pf_doublefault                                    [100.00%]
+                 0 kvm:kvm_async_pf_not_present                                    [100.00%]
+                 0 kvm:kvm_async_pf_ready                                       [100.00%]
+                 0 kvm:kvm_async_pf_completed                                   
 
-- A clean kernel build after reboot shows
-a tiny but measureable improvement in system time
-which means lower CPU overhead (though not measureable
-in total time - that is dominated by user time and fluctuates
-too much):
+       1.002100578 seconds time elapsed
 
-linux# reboot -f
-...
-linux# make clean
-linux# time make -j 64 LOCALVERSION= 2>&1 > /dev/null
+# perf stat -e 'kvm:*' -a sleep 1s
 
-Before:
+ Performance counter stats for 'sleep 1s':
 
-real    2m52.244s
-user    35m53.833s
-sys     6m7.194s
+            28,354 kvm:kvm_entry                                                [99.98%]
+                 0 kvm:kvm_hypercall                                            [99.98%]
+                 0 kvm:kvm_hv_hypercall                                         [99.98%]
+             1,347 kvm:kvm_pio                                                  [99.98%]
+                 0 kvm:kvm_cpuid                                                [99.98%]
+             1,931 kvm:kvm_apic                                                 [99.98%]
+            29,595 kvm:kvm_exit                                                 [99.98%]
+            24,884 kvm:kvm_inj_virq                                             [99.98%]
+                 0 kvm:kvm_inj_exception                                        [99.98%]
+                 0 kvm:kvm_page_fault                                           [99.98%]
+             1,986 kvm:kvm_msr                                                  [99.98%]
+                 0 kvm:kvm_cr                                                   [99.98%]
+                 0 kvm:kvm_pic_set_irq                                          [99.98%]
+                 0 kvm:kvm_apic_ipi                                             [99.99%]
+            25,953 kvm:kvm_apic_accept_irq                                      [99.99%]
+            26,132 kvm:kvm_eoi                                                  [99.99%]
+            26,593 kvm:kvm_pv_eoi                                               [99.99%]
+                 0 kvm:kvm_nested_vmrun                                         [99.99%]
+                 0 kvm:kvm_nested_intercepts                                    [99.99%]
+                 0 kvm:kvm_nested_vmexit                                        [99.99%]
+                 0 kvm:kvm_nested_vmexit_inject                                    [99.99%]
+                 0 kvm:kvm_nested_intr_vmexit                                    [99.99%]
+                 0 kvm:kvm_invlpga                                              [99.99%]
+                 0 kvm:kvm_skinit                                               [99.99%]
+               284 kvm:kvm_emulate_insn                                         [99.99%]
+                68 kvm:vcpu_match_mmio                                          [99.99%]
+                68 kvm:kvm_userspace_exit                                       [99.99%]
+                 2 kvm:kvm_set_irq                                              [99.99%]
+                 2 kvm:kvm_ioapic_set_irq                                       [99.99%]
+            28,288 kvm:kvm_msi_set_irq                                          [99.99%]
+                 1 kvm:kvm_ack_irq                                              [99.99%]
+               131 kvm:kvm_mmio                                                 [100.00%]
+               588 kvm:kvm_fpu                                                  [100.00%]
+                 0 kvm:kvm_age_page                                             [100.00%]
+                 0 kvm:kvm_try_async_get_page                                    [100.00%]
+                 0 kvm:kvm_async_pf_doublefault                                    [100.00%]
+                 0 kvm:kvm_async_pf_not_present                                    [100.00%]
+                 0 kvm:kvm_async_pf_ready                                       [100.00%]
+                 0 kvm:kvm_async_pf_completed                                   
 
-After:
+       1.002039622 seconds time elapsed
 
-real    2m52.827s
-user    35m48.916s
-sys     6m2.305s
-
-- perf micro-benchmarks seem to consistently show
-  a tiny improvement in total time as well but it's below
-  the confidence level of 3 std deviations:
-
-# ./tools/perf/perf   stat --sync --repeat 100 --null perf bench sched messaging
-...
-       0.414666797 seconds time elapsed ( +-  1.29% )
-
-Performance counter stats for 'perf bench sched messaging' (100 runs):
-
-       0.395370891 seconds time elapsed
-( +-  1.04% )
-
-
-# ./tools/perf/perf   stat --sync --repeat 100 --null perf bench sched pipe -l 10000
-       0.307019664 seconds time elapsed
-( +-  0.10% )
-
-       0.304738024 seconds time elapsed
-( +-  0.08% )
 
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/x86/include/asm/apic.h           |    5 +++++
- arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
- arch/x86/kernel/apic/x2apic_phys.c    |    2 +-
- arch/x86/kernel/apic/x2apic_uv_x.c    |    2 +-
- 4 files changed, 8 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/bitops.h |    6 +++-
+ arch/x86/kernel/kvm.c         |   50 ++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 51 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 74efb8d..5eb6d56 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -138,6 +138,11 @@ static inline void native_apic_msr_write(u32 reg, u32 v)
- 	wrmsr(APIC_BASE_MSR + (reg >> 4), v, 0);
+diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+index b97596e..c9c70ea 100644
+--- a/arch/x86/include/asm/bitops.h
++++ b/arch/x86/include/asm/bitops.h
+@@ -26,11 +26,13 @@
+ #if __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 1)
+ /* Technically wrong, but this avoids compilation errors on some gcc
+    versions. */
+-#define BITOP_ADDR(x) "=m" (*(volatile long *) (x))
++#define BITOP_ADDR_CONSTRAINT "=m"
+ #else
+-#define BITOP_ADDR(x) "+m" (*(volatile long *) (x))
++#define BITOP_ADDR_CONSTRAINT "+m"
+ #endif
+ 
++#define BITOP_ADDR(x) BITOP_ADDR_CONSTRAINT (*(volatile long *) (x))
++
+ #define ADDR				BITOP_ADDR(addr)
+ 
+ /*
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index e554e5a..31f85cb 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -39,6 +39,8 @@
+ #include <asm/desc.h>
+ #include <asm/tlbflush.h>
+ #include <asm/idle.h>
++#include <asm/apic.h>
++#include <asm/apicdef.h>
+ 
+ static int kvmapf = 1;
+ 
+@@ -283,6 +285,23 @@ static void kvm_register_steal_time(void)
+ 		cpu, __pa(st));
  }
  
-+static inline void native_apic_msr_eoi_write(u32 reg, u32 v)
++/* size alignment is implied but just to make it explicit. */
++static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) __aligned(2) = 0;
++
++static void kvm_guest_apic_eoi_write(u32 reg, u32 val)
 +{
-+	wrmsr(APIC_BASE_MSR + (APIC_EOI >> 4), APIC_EOI_ACK, 0);
++	/**
++	 * This relies on __test_and_clear_bit to modify the memory
++	 * in a way that is atomic with respect to the local CPU.
++	 * The hypervisor only accesses this memory from the local CPU so
++	 * there's no need for lock or memory barriers.
++	 * An optimization barrier is implied in apic write.
++	 */
++	if (__test_and_clear_bit(0, &__get_cpu_var(kvm_apic_eoi)))
++		return;
++	apic->write(APIC_EOI, APIC_EOI_ACK);
 +}
 +
- static inline u32 native_apic_msr_read(u32 reg)
+ void __cpuinit kvm_guest_cpu_init(void)
  {
- 	u64 msr;
-diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index a5baa78..ff35cff 100644
---- a/arch/x86/kernel/apic/x2apic_cluster.c
-+++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -260,7 +260,7 @@ static struct apic apic_x2apic_cluster = {
+ 	if (!kvm_para_available())
+@@ -300,11 +319,17 @@ void __cpuinit kvm_guest_cpu_init(void)
+ 		       smp_processor_id());
+ 	}
  
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
--	.eoi_write			= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_eoi_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-index 8340356..c17e982 100644
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -172,7 +172,7 @@ static struct apic apic_x2apic_phys = {
++	if (kvm_para_has_feature(KVM_FEATURE_EOI)) {
++		__get_cpu_var(kvm_apic_eoi) = 0;
++		wrmsrl(MSR_KVM_EOI_EN, __pa(&__get_cpu_var(kvm_apic_eoi)) |
++		       KVM_MSR_ENABLED);
++	}
++
+ 	if (has_steal_clock)
+ 		kvm_register_steal_time();
+ }
  
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
--	.eoi_write			= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_eoi_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index 5b0e3d0..c6d03f7 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -404,7 +404,7 @@ static struct apic __refdata apic_x2apic_uv_x = {
+-static void kvm_pv_disable_apf(void *unused)
++static void kvm_pv_disable_apf(void)
+ {
+ 	if (!__get_cpu_var(apf_reason).enabled)
+ 		return;
+@@ -316,11 +341,18 @@ static void kvm_pv_disable_apf(void *unused)
+ 	       smp_processor_id());
+ }
  
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
--	.eoi_write			= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_eoi_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
++static void kvm_pv_guest_cpu_reboot(void *unused)
++{
++	if (kvm_para_has_feature(KVM_FEATURE_EOI))
++		wrmsrl(MSR_KVM_EOI_EN, 0);
++	kvm_pv_disable_apf();
++}
++
+ static int kvm_pv_reboot_notify(struct notifier_block *nb,
+ 				unsigned long code, void *unused)
+ {
+ 	if (code == SYS_RESTART)
+-		on_each_cpu(kvm_pv_disable_apf, NULL, 1);
++		on_each_cpu(kvm_pv_guest_cpu_reboot, NULL, 1);
+ 	return NOTIFY_DONE;
+ }
+ 
+@@ -371,7 +403,9 @@ static void __cpuinit kvm_guest_cpu_online(void *dummy)
+ static void kvm_guest_cpu_offline(void *dummy)
+ {
+ 	kvm_disable_steal_time();
+-	kvm_pv_disable_apf(NULL);
++	if (kvm_para_has_feature(KVM_FEATURE_EOI))
++		wrmsrl(MSR_KVM_EOI_EN, 0);
++	kvm_pv_disable_apf();
+ 	apf_task_wake_all();
+ }
+ 
+@@ -424,6 +458,16 @@ void __init kvm_guest_init(void)
+ 		pv_time_ops.steal_clock = kvm_steal_clock;
+ 	}
+ 
++	if (kvm_para_has_feature(KVM_FEATURE_EOI)) {
++		struct apic **drv;
++
++		for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
++			/* Should happen once for each apic */
++			WARN_ON((*drv)->eoi_write == kvm_guest_apic_eoi_write);
++			(*drv)->eoi_write = kvm_guest_apic_eoi_write;
++		}
++	}
++
+ #ifdef CONFIG_SMP
+ 	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
+ 	register_cpu_notifier(&kvm_cpu_notifier);
 -- 
 MST
 
