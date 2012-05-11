@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933175Ab2EKSWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:22:13 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:58347 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932215Ab2EKSWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:22:09 -0400
-Message-ID: <4FAD585A.4070007@parallels.com>
-Date: Fri, 11 May 2012 15:20:10 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S933179Ab2EKS0m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:26:42 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:46543 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932388Ab2EKS0l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 14:26:41 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-16.tower-127.messagelabs.com!1336760799!5240183!3
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Date: Fri, 11 May 2012 13:26:37 -0500
+Subject: RE: [PATCH] staging: comedi: Add helper macro for comedi pci driver
+ boilerplate
+Thread-Topic: [PATCH] staging: comedi: Add helper macro for comedi pci
+ driver boilerplate
+Thread-Index: Ac0voeus9KUNZGk3Sa+hFNQboVCcQAAAJX5g
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698A17ECA@AUSP01VMBX24.collaborationhost.net>
+References: <201205111007.46754.hartleys@visionengravers.com>
+ <4FAD4D20.1010302@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F0020698A17E6A@AUSP01VMBX24.collaborationhost.net>
+ <4FAD4F7F.1060603@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F0020698A17E89@AUSP01VMBX24.collaborationhost.net>
+ <4FAD5703.7080504@mev.co.uk>
+In-Reply-To: <4FAD5703.7080504@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
- kfree
-References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home> <4FAD531D.6030007@parallels.com> <alpine.DEB.2.00.1205111305570.386@router.home> <4FAD566C.3000804@parallels.com> <alpine.DEB.2.00.1205111316540.386@router.home>
-In-Reply-To: <alpine.DEB.2.00.1205111316540.386@router.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.105.248.83]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4BIQmHG021052
 
-On 05/11/2012 03:17 PM, Christoph Lameter wrote:
-> On Fri, 11 May 2012, Glauber Costa wrote:
->
->> On 05/11/2012 03:06 PM, Christoph Lameter wrote:
->>> On Fri, 11 May 2012, Glauber Costa wrote:
->>>
->>>>> Adding a VM_BUG_ON may be useful to make sure that kmem_cache_free is
->>>>> always passed the correct slab cache.
->>>>
->>>> Well, problem is , it isn't always passed the "correct" slab cache.
->>>> At least not after this series, since we'll have child caches associated
->>>> with
->>>> the main cache.
->>>>
->>>> So we'll pass, for instance, kmem_cache_free(dentry_cache...), but will in
->>>> fact free from the memcg copy of the dentry cache.
->>>
->>> Urg. But then please only do this for the MEMCG case and add a fat big
->>> warning in kmem_cache_free.
->>
->> I can do that, of course.
->> Another option if you don't oppose, is to add another field in the kmem_cache
->> structure (I tried to keep them at a minimum),
->> to record the parent cache we got created from.
->>
->> Then, it gets trivial to do the following:
->>
->> VM_BUG_ON(page->slab != s&&  page->slab != s->parent_cache);
->
-> Sounds ok but I need to catch up on what this whole memcg thing in slab
-> allocators should accomplish in order to say something definite.
->
-Fair enough.
+On Friday, May 11, 2012 11:14 AM, Ian Abbott wrote:
+> Okay, but I don't think it's worth doing three patches for each driver 
+> where one would do.  Adding a one-line .name = "foo", to the single 
+> patch for each driver you were planning to do anyway seems like a 
+> trivial addition that could be slotted into the patch without too much 
+> argument from the "one change per patch" folks, especially if you 
+> mention the purpose of that line in the commit message.  (I'd defer to 
+> the better judgement of Greg though.)
 
-Thank you in advance for your time reviewing this!
+With this patch my main goal was to not "break" any of the drivers.
+
+As a follow-up to this patch I was going to use the macro in all the
+pci drivers that have been refactored. Similar to what I did with the
+module_comedi_driver macro. When I do that I can add the static
+name field to those drivers.
+
+How about doing this in the register function:
+
+	If (!pci_driver->name)
+		pci_driver->name = comedi_driver->driver_name;
+
+This way all the drivers that still need to be refactored will still work.
+
+After all the drivers have been updated, those two lines can be
+removed.
+
+So we have this patch and one big patch updating all the refactored
+drivers. Some number of patches refactoring the remaining drivers
+and using the module_comedi_pci_driver macro. Then one last
+patch removing the check above.
+
+How does that sound?
+
+Regards,
+Hartley
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
