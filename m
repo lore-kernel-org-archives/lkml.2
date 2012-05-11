@@ -1,53 +1,481 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758803Ab2EKJgE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 05:36:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36750 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758155Ab2EKJgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 05:36:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="164880285"
-Date: Fri, 11 May 2012 11:45:31 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Felipe Balbi <balbi@ti.com>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 0/4] twl4030_charger improvements.
-Message-ID: <20120511094531.GF1214@sortiz-mobl>
-References: <20120508213518.2844.95446.stgit@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120508213518.2844.95446.stgit@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758833Ab2EKJkM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 05:40:12 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45215 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758723Ab2EKJkJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 05:40:09 -0400
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: rjw@sisk.pl, linus.walleij@stericsson.com, arnd@arndb.de,
+        linux-sh@vger.kernel.org, horms@verge.net.au,
+        grant.likely@secretlab.ca, lethal@linux-sh.org, olof@lixom.net,
+        Magnus Damm <magnus.damm@gmail.com>
+Date: Fri, 11 May 2012 18:41:03 +0900
+Message-Id: <20120511094103.16423.51840.sendpatchset@w520>
+Subject: [PATCH] gpio: Emma Mobile GPIO driver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Neil,
+From: Magnus Damm <damm@opensource.se>
 
-On Wed, May 09, 2012 at 07:40:39AM +1000, NeilBrown wrote:
-> Hi,
->  this series is a resend of a previous submission with some
->  contentious patches removed and extra maintainers added.
-> 
->  They allow the twl4030 to charge the backup battery (voltage and
->  current configured in board file) and allow the charger to continue
->  charging while the USB PHY is otherwise idle (no gadget module
->  loaded, or host in suspend-to-RAM).
-> 
->  Anton: could you take the first three?  Do I need to split the third
->    patch into an 'MFD' part for Samuel and a power_supply part for you?
-I'm fine with Anton taking patch #3 as it is.
+This patch adds a GPIO driver for the Emma Mobile line
+of SoCs. The driver is designed to be reusable between
+multiple SoCs that share the same basic building block,
+but so far it has only been used on Emma Mobile EV2.
 
-Cheers,
-Samuel.
+Each driver instance handles 32 GPIOs with individually
+maskable IRQs. The driver operates on two I/O memory 
+ranges and the 32 GPIOs are hooked up to two interrupts.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+In the case of Emma Mobile EV2 this GPIO building block
+is used as main external interrupt controller hooking up
+159 GPIOS as 159 interrupts via 5 driver instances and
+10 interrupts to the GIC and the Cortex-A9 Dual.
+
+This version of the driver gets all configuration via
+struct resource and platform data, but DT bindings are
+currently in development and such support will be sent
+as a individual feature patch in the near future.
+
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
+
+ Built on top of linux-next 20120511. There are no known
+ merge or runtime dependencies on queued up patches.
+
+ drivers/gpio/Kconfig                  |    6 
+ drivers/gpio/Makefile                 |    1 
+ drivers/gpio/gpio-em.c                |  385 +++++++++++++++++++++++++++++++++
+ include/linux/platform_data/gpio-em.h |   10 
+ 4 files changed, 402 insertions(+)
+
+--- 0001/drivers/gpio/Kconfig
++++ work/drivers/gpio/Kconfig	2012-05-11 18:04:53.000000000 +0900
+@@ -95,6 +95,12 @@ config GPIO_IT8761E
+ 	help
+ 	  Say yes here to support GPIO functionality of IT8761E super I/O chip.
+ 
++config GPIO_EM
++	tristate "Emma Mobile GPIO"
++	depends on ARM
++	help
++	  Say yes here to support GPIO on Renesas Emma Mobile SoCs.
++
+ config GPIO_EP93XX
+ 	def_bool y
+ 	depends on ARCH_EP93XX
+--- 0001/drivers/gpio/Makefile
++++ work/drivers/gpio/Makefile	2012-05-11 18:04:53.000000000 +0900
+@@ -16,6 +16,7 @@ obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
+ obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
+ obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
+ obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
++obj-$(CONFIG_GPIO_EM)		+= gpio-em.o
+ obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
+ obj-$(CONFIG_GPIO_GE_FPGA)	+= gpio-ge.o
+ obj-$(CONFIG_GPIO_ICH)		+= gpio-ich.o
+--- /dev/null
++++ work/drivers/gpio/gpio-em.c	2012-05-11 18:06:47.000000000 +0900
+@@ -0,0 +1,385 @@
++/*
++ * Emma Mobile GPIO Support - GIO
++ *
++ *  Copyright (C) 2012 Magnus Damm
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/spinlock.h>
++#include <linux/interrupt.h>
++#include <linux/ioport.h>
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/err.h>
++#include <linux/gpio.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/platform_data/gpio-em.h>
++
++struct em_gio_priv {
++	void __iomem *base0;
++	void __iomem *base1;
++	unsigned int irq_base;
++	spinlock_t sense_lock;
++	struct gpio_chip gpio_chip;
++	struct irq_chip irq_chip;
++};
++
++#define GIO_E1 0x00
++#define GIO_E0 0x04
++#define GIO_EM 0x04
++#define GIO_OL 0x08
++#define GIO_OH 0x0c
++#define GIO_I 0x10
++#define GIO_IIA 0x14
++#define GIO_IEN 0x18
++#define GIO_IDS 0x1c
++#define GIO_IIM 0x1c
++#define GIO_RAW 0x20
++#define GIO_MST 0x24
++#define GIO_IIR 0x28
++
++#define GIO_IDT0 0x40
++#define GIO_IDT1 0x44
++#define GIO_IDT2 0x48
++#define GIO_IDT3 0x4c
++#define GIO_RAWBL 0x50
++#define GIO_RAWBH 0x54
++#define GIO_IRBL 0x58
++#define GIO_IRBH 0x5c
++
++#define GIO_IDT(n) GIO_IDT0 + ((n) * 4)
++
++static inline unsigned long em_gio_read(struct em_gio_priv *p, int offs)
++{
++	if (offs < GIO_IDT0)
++		return ioread32(p->base0 + offs);
++	else
++		return ioread32(p->base1 + (offs - GIO_IDT0));
++}
++
++static inline void em_gio_write(struct em_gio_priv *p, int offs,
++				unsigned long value)
++{
++	if (offs < GIO_IDT0)
++		iowrite32(value, p->base0 + offs);
++	else
++		iowrite32(value, p->base1 + (offs - GIO_IDT0));
++}
++
++static struct em_gio_priv *irq_to_priv(unsigned int irq)
++{
++	struct irq_chip *chip = irq_get_chip(irq);
++	return container_of(chip, struct em_gio_priv, irq_chip);
++}
++
++static void em_gio_irq_disable(struct irq_data *data)
++{
++	struct em_gio_priv *p = irq_to_priv(data->irq);
++	int offset = data->irq - p->irq_base;
++
++	em_gio_write(p, GIO_IDS, 1 << offset);
++}
++
++static void em_gio_irq_enable(struct irq_data *data)
++{
++	struct em_gio_priv *p = irq_to_priv(data->irq);
++	int offset = data->irq - p->irq_base;
++
++	em_gio_write(p, GIO_IEN, 1 << offset);
++}
++
++#define GIO_ASYNC(x) (x + 8)
++
++static unsigned char em_gio_sense_table[IRQ_TYPE_SENSE_MASK + 1] = {
++	[IRQ_TYPE_EDGE_RISING] = GIO_ASYNC(0x00),
++	[IRQ_TYPE_EDGE_FALLING] = GIO_ASYNC(0x01),
++	[IRQ_TYPE_LEVEL_HIGH] = GIO_ASYNC(0x02),
++	[IRQ_TYPE_LEVEL_LOW] = GIO_ASYNC(0x03),
++	[IRQ_TYPE_EDGE_BOTH] = GIO_ASYNC(0x04),
++};
++
++static int em_gio_irq_set_type(struct irq_data *data, unsigned int type)
++{
++	unsigned char value = em_gio_sense_table[type & IRQ_TYPE_SENSE_MASK];
++	struct em_gio_priv *p = irq_to_priv(data->irq);
++	unsigned int reg, offset, shift;
++	unsigned long flags;
++	unsigned long tmp;
++
++	if (!value)
++		return -EINVAL;
++
++	offset = data->irq - p->irq_base;
++
++	pr_debug("gio: sense irq = %d, irq = %d, mode = %d, sw base = %d\n",
++		 offset, data->irq, value, p->irq_base);
++
++	/* 8 x 4 bit fields in 4 IDT registers */
++	reg = GIO_IDT(offset >> 3);
++	shift = (offset & 0x07) << 4;
++
++	spin_lock_irqsave(&p->sense_lock, flags);
++
++	/* disable the interrupt in IIA */
++	tmp = em_gio_read(p, GIO_IIA);
++	tmp &= ~(1 << offset);
++	em_gio_write(p, GIO_IIA, tmp);
++
++	/* change the sense setting in IDT */
++	tmp = em_gio_read(p, reg);
++	tmp &= ~(0xf << shift);
++	tmp |= value << shift;
++	em_gio_write(p, reg, tmp);
++
++	/* clear pending interrupts */
++	em_gio_write(p, GIO_IIR, 1 << offset);
++
++	/* enable the interrupt in IIA */
++	tmp = em_gio_read(p, GIO_IIA);
++	tmp |= 1 << offset;
++	em_gio_write(p, GIO_IIA, tmp);
++
++	spin_unlock_irqrestore(&p->sense_lock, flags);
++
++	return 0;
++}
++
++static irqreturn_t em_gio_irq_handler(int irq, void *dev_id)
++{
++	struct em_gio_priv *p = dev_id;
++	unsigned long tmp, status;
++	unsigned int offset;
++
++	status = tmp = em_gio_read(p, GIO_MST);
++	if (!status)
++		return IRQ_NONE;
++
++	while (status) {
++		offset = __ffs(status);
++		generic_handle_irq(p->irq_base + offset);
++		status &= ~(1 << offset);
++	}
++
++	em_gio_write(p, GIO_IIR, tmp);
++
++	return IRQ_HANDLED;
++}
++
++static struct em_gio_priv *gpio_to_priv(struct gpio_chip *chip)
++{
++	return container_of(chip, struct em_gio_priv, gpio_chip);
++}
++
++static int em_gio_direction_input(struct gpio_chip *chip, unsigned offset)
++{
++	em_gio_write(gpio_to_priv(chip), GIO_E0, 1 << offset);
++	return 0;
++}
++
++static int em_gio_get(struct gpio_chip *chip, unsigned offset)
++{
++	return (int)(em_gio_read(gpio_to_priv(chip), GIO_I) & (1 << offset));
++}
++
++static void __em_gio_set(struct gpio_chip *chip, unsigned int reg,
++			 unsigned shift, int value)
++{
++	/* upper 16 bits contains mask and lower 16 actual value */
++	em_gio_write(gpio_to_priv(chip), reg,
++		     (1 << (shift + 16)) | (value << shift));
++}
++
++static void em_gio_set(struct gpio_chip *chip, unsigned offset, int value)
++{
++	/* output is split into two registers */
++	if (offset < 16)
++		__em_gio_set(chip, GIO_OL, offset, value);
++	else
++		__em_gio_set(chip, GIO_OH, offset - 16, value);
++}
++
++static int em_gio_direction_output(struct gpio_chip *chip, unsigned offset,
++				   int value)
++{
++	/* write GPIO value to output before selecting output mode of pin */
++	em_gio_set(chip, offset, value);
++	em_gio_write(gpio_to_priv(chip), GIO_E1, 1 << offset);
++	return 0;
++}
++
++static int em_gio_to_irq(struct gpio_chip *chip, unsigned offset)
++{
++	return gpio_to_priv(chip)->irq_base + offset;
++}
++
++static int __devinit em_gio_probe(struct platform_device *pdev)
++{
++	struct gpio_em_config *pdata = pdev->dev.platform_data;
++	struct em_gio_priv *p;
++	struct resource *io[2], *irq[2];
++	struct gpio_chip *gpio_chip;
++	struct irq_chip *irq_chip;
++	const char *name = dev_name(&pdev->dev);
++	int k, ret;
++
++	p = kzalloc(sizeof(*p), GFP_KERNEL);
++	if (!p) {
++		dev_err(&pdev->dev, "failed to allocate driver data\n");
++		ret = -ENOMEM;
++		goto err0;
++	}
++
++	gpio_chip = &p->gpio_chip;
++	irq_chip = &p->irq_chip;
++	platform_set_drvdata(pdev, p);
++	spin_lock_init(&p->sense_lock);
++
++	io[0] = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	io[1] = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	irq[0] = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	irq[1] = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
++
++	if (!io[0] || !io[1] || !irq[0] || !irq[1] || !pdata) {
++		dev_err(&pdev->dev, "missing IRQ, IOMEM or configuration\n");
++		ret = -EINVAL;
++		goto err1;
++	}
++
++	p->base0 = ioremap_nocache(io[0]->start, resource_size(io[0]));
++	if (!p->base0) {
++		dev_err(&pdev->dev, "failed to remap low I/O memory\n");
++		ret = -ENXIO;
++		goto err1;
++	}
++
++	p->base1 = ioremap_nocache(io[1]->start, resource_size(io[1]));
++	if (!p->base1) {
++		dev_err(&pdev->dev, "failed to remap high I/O memory\n");
++		ret = -ENXIO;
++		goto err2;
++	}
++
++	p->irq_base = irq_alloc_descs(pdata->irq_base, 0,
++				      pdata->number_of_pins, numa_node_id());
++	if (IS_ERR_VALUE(p->irq_base)) {
++		dev_err(&pdev->dev, "cannot get irq_desc\n");
++		ret = -ENXIO;
++		goto err3;
++	}
++
++	pr_debug("gio: hw base = %d, nr = %d, sw base = %d\n",
++		 pdata->gpio_base, pdata->number_of_pins, p->irq_base);
++
++	irq_chip->name = name;
++	irq_chip->irq_mask = em_gio_irq_disable;
++	irq_chip->irq_unmask = em_gio_irq_enable;
++	irq_chip->irq_enable = em_gio_irq_enable;
++	irq_chip->irq_disable = em_gio_irq_disable;
++	irq_chip->irq_set_type = em_gio_irq_set_type;
++	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE;
++
++	for (k = p->irq_base; k < (p->irq_base + pdata->number_of_pins); k++) {
++		irq_set_chip_and_handler_name(k, irq_chip, handle_level_irq,
++					      "level");
++		set_irq_flags(k, IRQF_VALID); /* kill me now */
++	}
++
++	if (request_irq(irq[0]->start, em_gio_irq_handler, 0, name, p)) {
++		dev_err(&pdev->dev, "failed to request low IRQ\n");
++		ret = -ENOENT;
++		goto err4;
++	}
++
++	if (request_irq(irq[1]->start, em_gio_irq_handler, 0, name, p)) {
++		dev_err(&pdev->dev, "failed to request high IRQ\n");
++		ret = -ENOENT;
++		goto err5;
++	}
++
++	gpio_chip->direction_input = em_gio_direction_input;
++	gpio_chip->get = em_gio_get;
++	gpio_chip->direction_output = em_gio_direction_output;
++	gpio_chip->set = em_gio_set;
++
++	gpio_chip->to_irq = em_gio_to_irq;
++
++	gpio_chip->label = name;
++	gpio_chip->owner = THIS_MODULE;
++
++	gpio_chip->base = pdata->gpio_base;
++	gpio_chip->ngpio = pdata->number_of_pins;
++
++	ret = gpiochip_add(gpio_chip);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to add GPIO cntroller\n");
++		goto err6;
++	}
++	return 0;
++
++err6:
++	free_irq(irq[1]->start, pdev);
++err5:
++	free_irq(irq[0]->start, pdev);
++err4:
++	irq_free_descs(p->irq_base, pdata->number_of_pins);
++err3:
++	iounmap(p->base1);
++err2:
++	iounmap(p->base0);
++err1:
++	kfree(p);
++err0:
++	return ret;
++}
++
++static int __devexit em_gio_remove(struct platform_device *pdev)
++{
++	struct gpio_em_config *pdata = pdev->dev.platform_data;
++	struct em_gio_priv *p = platform_get_drvdata(pdev);
++	struct resource *irq[2];
++	int ret;
++
++	ret = gpiochip_remove(&p->gpio_chip);
++	if (ret)
++		return ret;
++
++	irq[0] = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	irq[1] = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
++
++	free_irq(irq[1]->start, pdev);
++	free_irq(irq[0]->start, pdev);
++	irq_free_descs(p->irq_base, pdata->number_of_pins);
++	iounmap(p->base1);
++	iounmap(p->base0);
++	kfree(p);
++	return 0;
++}
++
++static struct platform_driver em_gio_device_driver = {
++	.probe		= em_gio_probe,
++	.remove		= __devexit_p(em_gio_remove),
++	.driver		= {
++		.name	= "em_gio",
++	}
++};
++
++module_platform_driver(em_gio_device_driver);
++
++MODULE_AUTHOR("Magnus Damm");
++MODULE_DESCRIPTION("Renesas Emma Mobile GIO Driver");
++MODULE_LICENSE("GPL v2");
+--- /dev/null
++++ work/include/linux/platform_data/gpio-em.h	2012-05-11 18:04:54.000000000 +0900
+@@ -0,0 +1,10 @@
++#ifndef __GPIO_EM_H__
++#define __GPIO_EM_H__
++
++struct gpio_em_config {
++	unsigned int gpio_base;
++	unsigned int irq_base;
++	unsigned int number_of_pins;
++};
++
++#endif /* __GPIO_EM_H__ */
