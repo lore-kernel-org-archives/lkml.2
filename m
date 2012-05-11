@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760517Ab2EKPpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 11:45:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45271 "EHLO mx2.suse.de"
+	id S1760651Ab2EKPqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 11:46:16 -0400
+Received: from smtp.fullrate.dk ([90.185.1.42]:52192 "EHLO smtp.fullrate.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760450Ab2EKPpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 11:45:45 -0400
-Date: Fri, 11 May 2012 16:45:40 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: David Miller <davem@davemloft.net>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, neilb@suse.de, a.p.zijlstra@chello.nl,
-        michaelc@cs.wisc.edu, emunson@mgebm.net
-Subject: Re: [PATCH 00/17] Swap-over-NBD without deadlocking V10
-Message-ID: <20120511154540.GV11435@suse.de>
-References: <1336657510-24378-1-git-send-email-mgorman@suse.de>
- <20120511.010445.1020972261904383892.davem@davemloft.net>
+	id S1760588Ab2EKPqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 11:46:14 -0400
+Message-ID: <4FAD3443.40805@molgaard.org>
+Date: Fri, 11 May 2012 17:46:11 +0200
+From: =?ISO-8859-1?Q?Sune_M=F8lgaard?= <sune@molgaard.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/15.0 Firefox/15.0a1 SeaMonkey/2.12a1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120511.010445.1020972261904383892.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: Re: Boot failure since 3.3-rc?
+References: <4F931C6D.8040407@molgaard.org> <4FA2BA49.3070902@molgaard.org>
+In-Reply-To: <4FA2BA49.3070902@molgaard.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 01:04:45AM -0400, David Miller wrote:
-> 
-> Ok, I'm generally happy with the networking parts.
-> 
+Sune Mølgaard wrote:
+> Incidentally, I had to swap a wifi card, and bisecting now leads to a
+> different bad commit(?)
+>
+> This is what it says is the culprit now (I wonder if I should bisect
+> again, and attempt booting maybe 3 or 4 times each time):
+>
+> f94edacf998516ac9d849f7bc6949a703977a7f3 is the first bad commit
+> commit f94edacf998516ac9d849f7bc6949a703977a7f3
 
-Great!
+Would anyone happen to know if this has been backported to the 3.0-series?
 
-> If you address my feedback I'll sign off on it.
-> 
+Just tried booting the latest ubuntu 11.10 kernel (based on 3.0) which 
+also failed. That should, naturally, be logged with the Ubuntu guys (and 
+it will be), but until then, if someone can positively say that the 
+above patch was backported, it might lend credence to the assumption 
+that it is indeed the culprit.
 
-I didn't get through all the feedback and respond today but I will
-during next week, get it retested and reposted. Thanks a lot.
+I have, btw., ordered a small display to hook up to the machine in order 
+to see where it fails.
 
-> The next question is whose tree this stuff goes through :-)
+Will report back...
 
-Yep, that's going to be entertaining.  I had structured this so it could
-go through multiple trees but it's not perfect. If I switch patches 14
-(slab-related) and 15 (network related), then it becomes
+Best regards,
 
-Patch 1 gets dropped after the next merge window as it'll be in mainline anyway
-Patch 2-3 goes through Pekka's sl*b tree
-Patch 4-7 goes through akpm
-Patch 8-14 goes through linux-net
-Patch 15-17 goes through akpm
-
-That sort of multiple staging is messy though and correctness would depend
-on what order linux-next pulls trees from. I think I should be able to
-move 15-17 before linux-net which might simplify things a little although
-that would be a bit odd from a bisection perspective.
-
->From my point of view, the ideal would be that all the patches go through
-akpm's tree or yours but that probably will cause merge difficulties.
-
-Any recommendations?
+Sune Mølgaard
 
 -- 
-Mel Gorman
-SUSE Labs
+First things first, but not necessarily in that order.
+- Doctor Who
+
+
