@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933156Ab2EKSLh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:11:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44227 "EHLO mx1.redhat.com"
+	id S1422672Ab2EKSN4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:13:56 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:33612 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932215Ab2EKSLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:11:34 -0400
-Date: Fri, 11 May 2012 18:28:55 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, gregkh@linuxfoundation.org, borislav.petkov@amd.com,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
-        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
-        penberg@kernel.org, hughd@google.com, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
-        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
-        oleg@redhat.com, axboe@kernel.dk, a.p.zijlstra@chello.nl,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 4/7] x86/tlb: fall back to flush all when meet a THP
- large page
-Message-ID: <20120511162855.GB19697@redhat.com>
-References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
- <1336626013-28413-5-git-send-email-alex.shi@intel.com>
+	id S932215Ab2EKSNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 14:13:55 -0400
+Message-ID: <4FAD566C.3000804@parallels.com>
+Date: Fri, 11 May 2012 15:11:56 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336626013-28413-5-git-send-email-alex.shi@intel.com>
+To: Christoph Lameter <cl@linux.com>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
+ kfree
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home> <4FAD531D.6030007@parallels.com> <alpine.DEB.2.00.1205111305570.386@router.home>
+In-Reply-To: <alpine.DEB.2.00.1205111305570.386@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.105.248.83]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 05/11/2012 03:06 PM, Christoph Lameter wrote:
+> On Fri, 11 May 2012, Glauber Costa wrote:
+>
+>>> Adding a VM_BUG_ON may be useful to make sure that kmem_cache_free is
+>>> always passed the correct slab cache.
+>>
+>> Well, problem is , it isn't always passed the "correct" slab cache.
+>> At least not after this series, since we'll have child caches associated with
+>> the main cache.
+>>
+>> So we'll pass, for instance, kmem_cache_free(dentry_cache...), but will in
+>> fact free from the memcg copy of the dentry cache.
+>
+> Urg. But then please only do this for the MEMCG case and add a fat big
+> warning in kmem_cache_free.
 
-On Thu, May 10, 2012 at 01:00:10PM +0800, Alex Shi wrote:
-> +	for (addr = start; addr <= end; addr += HPAGE_SIZE) {
-> +		pgd = pgd_offset(mm, addr);
-> +		if (likely(!pgd_none(*pgd))) {
-> +			pud = pud_offset(pgd, addr);
-> +			if (likely(!pud_none(*pud))) {
-> +				pmd = pmd_offset(pud, addr);
-> +				if (likely(!pmd_none(*pmd)))
-> +					if (pmd_large(*pmd))
-> +						return 1;
+I can do that, of course.
+Another option if you don't oppose, is to add another field in the 
+kmem_cache structure (I tried to keep them at a minimum),
+to record the parent cache we got created from.
 
-Note with THP we've to set the pmd temporarily not present during
-split_huge_page just before it returns a regular pmd (to avoid erratas
-and mixing 4k and 2m tlb on the same physical page). So pmd_large
-would fail in that small time window and we would do the invlpg loop
-(which should still work safe so no big deal). But I believe you could
-use pmd_trans_huge above, maybe gcc can drop the whole block with
-CONFIG_TRANSPARENT_HUGEPAGE=n.
+Then, it gets trivial to do the following:
+
+VM_BUG_ON(page->slab != s && page->slab != s->parent_cache);
+
