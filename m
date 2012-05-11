@@ -1,156 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364Ab2EKJuR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 05:50:17 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36922 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109Ab2EKJuK (ORCPT
+	id S932405Ab2EKJuX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 05:50:23 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:37105 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932109Ab2EKJuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 05:50:10 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FACE05C.60608@jp.fujitsu.com>
-Date: Fri, 11 May 2012 18:48:12 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 3/6] memcg: use res_counter_uncharge_until in move_parent()
-References: <4FACDED0.3020400@jp.fujitsu.com>
-In-Reply-To: <4FACDED0.3020400@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Fri, 11 May 2012 05:50:20 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: glikely@secretlab.ca, arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v9 2/2] gpio: Device tree support for LPC32xx
+Date: Fri, 11 May 2012 11:47:40 +0200
+Message-Id: <1336729660-7670-2-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1336729660-7670-1-git-send-email-stigge@antcom.de>
+References: <1336729660-7670-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By using res_counter_uncharge_until(), we can avoid race and
-unnecessary charging.
+This patch adds device tree support for gpio-lpc32xx.c.
 
-Changelog since v2:
- - a coding style chanve in __mem_cgroup_cancel_local_charge()
- - fixed typos.
+To register the various GPIO banks as (struct) gpio_chips via the same DT
+gpio-controller, we utilize the adjusted of_xlate API to manipulate the
+actually used struct gpio_chip.
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+
 ---
- mm/memcontrol.c |   63 ++++++++++++++++++++++++++++++++++++------------------
- 1 files changed, 42 insertions(+), 21 deletions(-)
+Applies to v3.4-rc6
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 09109be..cb90be1 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2446,6 +2446,24 @@ static void __mem_cgroup_cancel_charge(struct mem_cgroup *memcg,
- }
+Changes since last version:
+* Use new of_xlate API: Register all GPIO banks at once via the
+  same GPIO controller DT entry by manipulating the actually used struct
+  gpio_chip.
+* Updated devicetree binding documentation
+
+Thanks to Jean-Christophe PLAGNIOL-VILLARD, Grant Likely, Arnd Bergmann, Jon
+Smirl, Mark Brown for reviewing!
+
+You can also pull from:
+  git://git.antcom.de/linux-2.6.git dt/gpio
+  http://git.antcom.de/linux-2.6.git dt/gpio
+  http://git.antcom.de/?p=linux-2.6.git;a=shortlog;h=refs/heads/dt/gpio
+
+ Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt |   43 ++++++++++++
+ arch/arm/mach-lpc32xx/include/mach/gpio.h               |    9 ++
+ drivers/gpio/gpio-lpc32xx.c                             |   55 +++++++++++++++-
+ 3 files changed, 105 insertions(+), 2 deletions(-)
+
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
+@@ -0,0 +1,43 @@
++NXP LPC32xx SoC GPIO controller
++
++Required properties:
++- compatible: must be "nxp,lpc3220-gpio"
++- reg: Physical base address and length of the controller's registers.
++- gpio-controller: Marks the device node as a GPIO controller.
++- #gpio-cells: Should be 3:
++   1) bank:
++      0: GPIO P0
++      1: GPIO P1
++      2: GPIO P2
++      3: GPIO P3
++      4: GPI P3
++      5: GPO P3
++   2) pin number
++   3) optional parameters:
++      - bit 0 specifies polarity (0 for normal, 1 for inverted)
++- reg: Index of the GPIO group
++
++Example:
++
++	gpio: gpio@40028000 {
++		compatible = "nxp,lpc3220-gpio";
++		reg = <0x40028000 0x1000>;
++		gpio-controller;
++		#gpio-cells = <3>; /* bank, pin, flags */
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		led0 {
++			gpios = <&gpio 5 1 1>; /* GPO_P3 1, active low */
++			linux,default-trigger = "heartbeat";
++			default-state = "off";
++		};
++
++		led1 {
++			gpios = <&gpio 5 14 1>; /* GPO_P3 14, active low */
++			linux,default-trigger = "timer";
++			default-state = "off";
++		};
++	};
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/include/mach/gpio.h
++++ linux-2.6/arch/arm/mach-lpc32xx/include/mach/gpio.h
+@@ -1 +1,8 @@
+-/* empty */
++#ifndef __MACH_GPIO_H
++#define __MACH_GPIO_H
++
++#include "gpio-lpc32xx.h"
++
++#define ARCH_NR_GPIOS (LPC32XX_GPO_P3_GRP + LPC32XX_GPO_P3_MAX)
++
++#endif /* __MACH_GPIO_H */
+--- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
++++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
+@@ -21,6 +21,9 @@
+ #include <linux/io.h>
+ #include <linux/errno.h>
+ #include <linux/gpio.h>
++#include <linux/of_gpio.h>
++#include <linux/platform_device.h>
++#include <linux/module.h>
  
- /*
-+ * Cancel chrages in this cgroup....doesn't propagate to parent cgroup.
-+ * This is useful when moving usage to parent cgroup.
+ #include <mach/hardware.h>
+ #include <mach/platform.h>
+@@ -454,10 +457,60 @@ static struct lpc32xx_gpio_chip lpc32xx_
+ 	},
+ };
+ 
++/* Empty now, can be removed later when mach-lpc32xx is finally switched over
++ * to DT support
 + */
-+static void __mem_cgroup_cancel_local_charge(struct mem_cgroup *memcg,
-+					unsigned int nr_pages)
-+{
-+	unsigned long bytes = nr_pages * PAGE_SIZE;
-+
-+	if (mem_cgroup_is_root(memcg))
-+		return;
-+
-+	res_counter_uncharge_until(&memcg->res, memcg->res.parent, bytes);
-+	if (do_swap_account)
-+		res_counter_uncharge_until(&memcg->memsw,
-+						memcg->memsw.parent, bytes);
+ void __init lpc32xx_gpio_init(void)
+ {
 +}
 +
-+/*
-  * A helper function to get mem_cgroup from ID. must be called under
-  * rcu_read_lock(). The caller must check css_is_removed() or some if
-  * it's concern. (dropping refcnt from swap can be called against removed
-@@ -2711,16 +2729,28 @@ static int mem_cgroup_move_parent(struct page *page,
- 	nr_pages = hpage_nr_pages(page);
- 
- 	parent = mem_cgroup_from_cont(pcg);
--	ret = __mem_cgroup_try_charge(NULL, gfp_mask, nr_pages, &parent, false);
--	if (ret)
--		goto put_back;
-+	if (!parent->use_hierarchy) {
-+		ret = __mem_cgroup_try_charge(NULL,
-+					gfp_mask, nr_pages, &parent, false);
-+		if (ret)
-+			goto put_back;
-+	}
- 
- 	if (nr_pages > 1)
- 		flags = compound_lock_irqsave(page);
- 
--	ret = mem_cgroup_move_account(page, nr_pages, pc, child, parent, true);
--	if (ret)
--		__mem_cgroup_cancel_charge(parent, nr_pages);
-+	if (parent->use_hierarchy) {
-+		ret = mem_cgroup_move_account(page, nr_pages,
-+					pc, child, parent, false);
-+		if (!ret)
-+			__mem_cgroup_cancel_local_charge(child, nr_pages);
-+	} else {
-+		ret = mem_cgroup_move_account(page, nr_pages,
-+					pc, child, parent, true);
++static int lpc32xx_of_xlate(struct gpio_chip **gc,
++			    const struct of_phandle_args *gpiospec, u32 *flags)
++{
++	u32 bank;
++	if (WARN_ON(gpiospec->args_count < 3))
++		return -EINVAL;
 +
-+		if (ret)
-+			__mem_cgroup_cancel_charge(parent, nr_pages);
-+	}
- 
- 	if (nr_pages > 1)
- 		compound_unlock_irqrestore(page, flags);
-@@ -3324,6 +3354,7 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
- 	struct cgroup *pcgrp = cgroup->parent;
- 	struct mem_cgroup *parent = mem_cgroup_from_cont(pcgrp);
- 	struct mem_cgroup *memcg  = mem_cgroup_from_cont(cgroup);
-+	struct res_counter *counter;
- 
- 	if (!get_page_unless_zero(page))
- 		goto out;
-@@ -3334,28 +3365,18 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
- 		goto err_out;
- 
- 	csize = PAGE_SIZE << compound_order(page);
--	/*
--	 * If we have use_hierarchy set we can never fail here. So instead of
--	 * using res_counter_uncharge use the open-coded variant which just
--	 * uncharge the child res_counter. The parent will retain the charge.
--	 */
--	if (parent->use_hierarchy) {
--		unsigned long flags;
--		struct res_counter *counter;
--
--		counter = &memcg->hugepage[idx];
--		spin_lock_irqsave(&counter->lock, flags);
--		res_counter_uncharge_locked(counter, csize);
--		spin_unlock_irqrestore(&counter->lock, flags);
--	} else {
-+	/* If parent->use_hierarchy == 0, we need to charge parent */
-+	if (!parent->use_hierarchy) {
- 		ret = res_counter_charge(&parent->hugepage[idx],
- 					 csize, &fail_res);
- 		if (ret) {
- 			ret = -EBUSY;
- 			goto err_out;
- 		}
--		res_counter_uncharge(&memcg->hugepage[idx], csize);
- 	}
-+	counter = &memcg->hugepage[idx];
-+	res_counter_uncharge_until(counter, counter->parent, csize);
++	bank = gpiospec->args[0];
++	if (WARN_ON(bank > 5))
++		return -EINVAL;
 +
- 	pc->mem_cgroup = parent;
- err_out:
- 	unlock_page_cgroup(pc);
--- 
-1.7.4.1
-
-
++	*gc = &lpc32xx_gpiochip[bank].chip;
++	if (flags)
++		*flags = gpiospec->args[2];
++	return gpiospec->args[1];
++}
++
++static int __devinit lpc32xx_gpio_probe(struct platform_device *pdev)
++{
+ 	int i;
+ 
+-	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++)
++	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++) {
++		if (pdev->dev.of_node) {
++			lpc32xx_gpiochip[i].chip.of_xlate = lpc32xx_of_xlate;
++			lpc32xx_gpiochip[i].chip.of_gpio_n_cells = 3;
++			lpc32xx_gpiochip[i].chip.of_node = pdev->dev.of_node;
++		}
+ 		gpiochip_add(&lpc32xx_gpiochip[i].chip);
++	}
++
++	return 0;
+ }
++
++#ifdef CONFIG_OF
++static struct of_device_id lpc32xx_gpio_of_match[] __devinitdata = {
++	{ .compatible = "nxp,lpc3220-gpio", },
++	{ },
++};
++#endif
++
++static struct platform_driver lpc32xx_gpio_driver = {
++	.driver		= {
++		.name	= "lpc32xx-gpio",
++		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(lpc32xx_gpio_of_match),
++	},
++	.probe		= lpc32xx_gpio_probe,
++};
++
++module_platform_driver(lpc32xx_gpio_driver);
