@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932365Ab2EKQkQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 12:40:16 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:20996 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932224Ab2EKQkL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 12:40:11 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: lenb@kernel.org, linux-acpi@vger.kernel.org
-Cc: bhelgaas@google.com, shuahkhan@gmail.com, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v3 1/7] ACPI: Add CONFIG_HOTPLUG_OST option
-Date: Fri, 11 May 2012 10:36:57 -0600
-Message-Id: <1336754223-5346-2-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1336754223-5346-1-git-send-email-toshi.kani@hp.com>
-References: <1336754223-5346-1-git-send-email-toshi.kani@hp.com>
+	id S932425Ab2EKQqR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 12:46:17 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:34088 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755115Ab2EKQqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 12:46:14 -0400
+Date: Fri, 11 May 2012 12:46:05 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Rob Landley <rob@landley.net>
+Cc: Ludwig Nussel <ludwig.nussel@suse.de>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "open list:EXT2 FILE SYSTEM" <linux-ext4@vger.kernel.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH RESEND] implement uid and gid mount options for ext2,
+ ext3 and ext4
+Message-ID: <20120511164605.GC6467@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Rob Landley <rob@landley.net>,
+	Ludwig Nussel <ludwig.nussel@suse.de>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	"open list:EXT2 FILE SYSTEM" <linux-ext4@vger.kernel.org>,
+	"open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
+References: <1336660924-9598-1-git-send-email-ludwig.nussel@suse.de>
+ <20120511034945.GA15892@mobil.systemanalysen.net>
+ <4FAD2161.3090108@landley.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FAD2161.3090108@landley.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added CONFIG_ACPI_HOTPLUG_OPT option. When this config option is disabled,
-this patchset has no effect on the platform. This option is disabled by
-default. The dependency list assures consistent behavior among CPU, memory
-and container hotplug operations with regarding the _OST support.
+On Fri, May 11, 2012 at 09:25:37AM -0500, Rob Landley wrote:
+> Well it's certainly a point of view. Luckily, FAT already _has_ the
+> workaround we're discussing.  The objections were mainly "can't the VFS
+> do this for us?" and the answer, upon closer inspection, turned out to
+> be "not easily, no, the VFS takes option flags instead of parsing string
+> options so doesn't have some necessary infrastructure".
 
-Some platforms may require the OS to support _OST in order to support
-ACPI hotplug operations. For example, if a platform has the management
-console where user can request a hotplug operation from, this _OST support
-would be required for the management console to show the result of the
-hotplug request to user.
+The only reasonable use case I can imagine for this feature is one
+where someone wants to use a removable storage device (which could be
+a USB thumb drive to a USB HDD to a SSD in a USB 3.0 enclosure) as an
+interchange device between Unix systems which do not have compatible
+uid/gid spaces.
 
-ACPI PCI hotplug is not enhanced to support _OST at this time since it is
-a legacy method being replaced by PCI native hotplug. _OST support for
-ACPI PCI hotplug may be added in future if necessary.
+So perhaps the right approach is that we should have an ext2/3/4
+read-only feature flag which enforces a default of nosuid and all
+files to be read-only and world-readable.  There would be mount
+options which could modify this default behaviour so that the files
+could be writeable by a particular uid or gid, and another mount
+option which would change the permission bits seen for that file
+system from 0755/0644 for directories/files to 0700/0600.
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
- drivers/acpi/Kconfig |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+Basically, the idea is we should mark the file system in an explicit
+way that it is intended for interchange across incompatible uid/gid
+spaces, with defaults which minimize security risk.  The fact that all
+files become world-readable is potentially a risk, but if the user is
+willing to put their private files on a removeable media that could
+easily be dropped in a parking lot, or otherwise stolen or lost,
+that's a potential risk that they've implicitly accepted in any case;
+we might as well make it be explicit.
 
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 47768ff..d318c5e 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -351,6 +351,20 @@ config ACPI_HOTPLUG_MEMORY
- 	  To compile this driver as a module, choose M here:
- 	  the module will be called acpi_memhotplug.
- 
-+config ACPI_HOTPLUG_OST
-+	bool "Hotplug Status Indication Support"
-+	depends on ACPI_HOTPLUG_CPU
-+	depends on ACPI_HOTPLUG_MEMORY
-+	depends on ACPI_CONTAINER
-+	default n
-+	help
-+	  This option enables the use of the ACPI OSPM Status Indication
-+          (_OST), if available, for the platform to determine the status
-+	  of various hotplug operations. Some platforms may require that
-+	  this option be enabled to track the status of hotplug operations.
-+	  This option has no effect when the platform does not support
-+	  _OST.
-+
- config ACPI_SBS
- 	tristate "Smart Battery System"
- 	depends on X86
--- 
-1.7.7.6
+							- Ted
 
