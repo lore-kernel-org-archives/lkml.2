@@ -1,32 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030191Ab2EKQ61 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 12:58:27 -0400
-Received: from mga14.intel.com ([143.182.124.37]:53492 "EHLO mga14.intel.com"
+	id S1030278Ab2EKRCs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 13:02:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37468 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760776Ab2EKQ6Y convert rfc822-to-8bit (ORCPT
+	id S932689Ab2EKRCp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 12:58:24 -0400
+	Fri, 11 May 2012 13:02:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="99033893"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/3] Xen physical cpus interface (V2)
-Thread-Topic: [PATCH 3/3] Xen physical cpus interface (V2)
-Thread-Index: AQHNL38KJV8RtIigTTax7Uicx2M6K5bEzH6w
-Date: Fri, 11 May 2012 16:58:08 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923351BA0B2@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351B58A3@SHSMSX101.ccr.corp.intel.com>
- <20120511140454.GA13735@phenom.dumpdata.com>
-In-Reply-To: <20120511140454.GA13735@phenom.dumpdata.com>
+   d="scan'208";a="141951991"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: RE: [PATCH v.23-2] RAS: use tracepoint to handle hw issues
+Thread-Topic: [PATCH v.23-2] RAS: use tracepoint to handle hw issues
+Thread-Index: AQHNL4YeaA7E6BnMIESUIXda6cSFE5bEyvFw
+Date: Fri, 11 May 2012 17:02:43 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F192ED5D3@ORSMSX104.amr.corp.intel.com>
+References: <1336683628-12954-1-git-send-email-mchehab@redhat.com>
+ <1336748054-21325-1-git-send-email-mchehab@redhat.com>
+In-Reply-To: <1336748054-21325-1-git-send-email-mchehab@redhat.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
+x-originating-ip: [10.22.254.140]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -34,165 +37,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
-> On Thu, May 10, 2012 at 03:06:14PM +0000, Liu, Jinsong wrote:
->>> From 7aa4cf7c1172e24611dc76163397b8708acacc59 Mon Sep 17 00:00:00
->>> 2001 
->> From: Liu, Jinsong <jinsong.liu@intel.com>
->> Date: Fri, 11 May 2012 06:55:35 +0800
->> Subject: [PATCH 3/3] Xen physical cpus interface
->> 
->> Manage physical cpus in dom0, get physical cpus info and provide sys
->> interface. 
->> 
->> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
->> Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com> ---
->>  .../ABI/testing/sysfs-devices-system-xen_cpu       |   20 +
->>  drivers/xen/Makefile                               |    1 +
->>  drivers/xen/pcpu.c                                 |  374
->>  ++++++++++++++++++++ include/xen/interface/platform.h              
->>  |    8 + include/xen/interface/xen.h                        |    1 +
->>  5 files changed, 404 insertions(+), 0 deletions(-)
->>  create mode 100644
->>  Documentation/ABI/testing/sysfs-devices-system-xen_cpu create mode
->> 100644 drivers/xen/pcpu.c 
->> 
->> diff --git a/Documentation/ABI/testing/sysfs-devices-system-xen_cpu
->> b/Documentation/ABI/testing/sysfs-devices-system-xen_cpu new file
->> mode 100644 index 0000000..9ca02fb --- /dev/null
->> +++ b/Documentation/ABI/testing/sysfs-devices-system-xen_cpu @@ -0,0
->> +1,20 @@ +What:		/sys/devices/system/xen_cpu/
->> +Date:		May 2012
->> +Contact:	Liu, Jinsong <jinsong.liu@intel.com>
->> +Description:
->> +		A collection of global/individual Xen physical cpu attributes +
->> +		Individual physical cpu attributes are contained in
->> +		subdirectories named by the Xen's logical cpu number, e.g.:
->> +		/sys/devices/system/xen_cpu/xen_cpu#/
->> +
->> +
->> +What:		/sys/devices/system/xen_cpu/xen_cpu#/online +Date:		May 2012
->> +Contact:	Liu, Jinsong <jinsong.liu@intel.com>
->> +Description:
->> +		Interface to online/offline Xen physical cpus
->> +
->> +		When running under Xen platform, it provide user interface
->> +		to online/offline physical cpus, except cpu0 due to several
->> +		logic restrictions and assumptions.
->> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
->> index 1d3e763..d12d14d 100644
->> --- a/drivers/xen/Makefile
->> +++ b/drivers/xen/Makefile
->> @@ -19,6 +19,7 @@ obj-$(CONFIG_XEN_PVHVM)			+= platform-pci.o
->>  obj-$(CONFIG_XEN_TMEM)			+= tmem.o
->>  obj-$(CONFIG_SWIOTLB_XEN)		+= swiotlb-xen.o
->>  obj-$(CONFIG_XEN_DOM0)			+= pci.o
->> +obj-$(CONFIG_XEN_DOM0)			+= pcpu.o
->>  obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
->>  obj-$(CONFIG_XEN_PRIVCMD)		+= xen-privcmd.o
->>  obj-$(CONFIG_XEN_ACPI_PROCESSOR)	+= xen-acpi-processor.o
->> diff --git a/drivers/xen/pcpu.c b/drivers/xen/pcpu.c
->> new file mode 100644
->> index 0000000..9014ff1
->> --- /dev/null
->> +++ b/drivers/xen/pcpu.c
->> @@ -0,0 +1,374 @@
->> +/******************************************************************************
->> + * pcpu.c + * Management physical cpu in dom0, get pcpu info and
->> provide sys interface + * + * Copyright (c) 2012 Intel Corporation
->> + * Author: Liu, Jinsong <jinsong.liu@intel.com>
->> + * Author: Jiang, Yunhong <yunhong.jiang@intel.com> + *
->> + * This program is free software; you can redistribute it and/or
->> + * modify it under the terms of the GNU General Public License
->> version 2 + * as published by the Free Software Foundation; or, when
->> distributed + * separately from the Linux kernel or incorporated
->> into other + * software packages, subject to the following license:
->> + * + * Permission is hereby granted, free of charge, to any person
->> obtaining a copy + * of this source file (the "Software"), to deal
->> in the Software without + * restriction, including without
->> limitation the rights to use, copy, modify, + * merge, publish,
->> distribute, sublicense, and/or sell copies of the Software, + * and
->> to permit persons to whom the Software is furnished to do so,
->> subject to + * the following conditions: + * + * The above copyright
->> notice and this permission notice shall be included in + * all
->> copies or substantial portions of the Software. + * + * THE SOFTWARE
->> IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR + *
->> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
->> MERCHANTABILITY, + * FITNESS FOR A PARTICULAR PURPOSE AND
->> NONINFRINGEMENT. IN NO EVENT SHALL THE + * AUTHORS OR COPYRIGHT
->> HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER + * LIABILITY,
->> WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING + *
->> FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
->> DEALINGS + * IN THE SOFTWARE. + */ + +#include <linux/interrupt.h>
->> +#include <linux/spinlock.h>
->> +#include <linux/cpu.h>
->> +#include <linux/stat.h>
->> +#include <linux/capability.h>
->> +
->> +#include <xen/xen.h>
->> +#include <xen/xenbus.h>
->> +#include <xen/events.h>
->> +#include <xen/interface/platform.h>
->> +#include <asm/xen/hypervisor.h>
->> +#include <asm/xen/hypercall.h>
->> +
->> +#define XEN_PCPU "xen_cpu: "
->> +
->> +/*
->> + * @cpu_id: Xen physical cpu logic number
->> + * @flags: Xen physical cpu status flag
->> + * - XEN_PCPU_FLAGS_ONLINE: cpu is online
->> + * - XEN_PCPU_FLAGS_INVALID: cpu is not present
->> + */
->> +struct pcpu {
->> +	struct list_head list;
->> +	struct device dev;
->> +	uint32_t cpu_id;
->> +	uint32_t flags;
->> +};
->> +
->> +static struct bus_type xen_pcpu_subsys = {
->> +	.name = "xen_cpu",
->> +	.dev_name = "xen_cpu",
->> +};
->> +
->> +static DEFINE_MUTEX(xen_pcpu_lock);
->> +
->> +static LIST_HEAD(xen_pcpus);
-> 
-> So what about the recommendation to get rid of that and
-> instead do
-> 
-> struct pcpu *xen_cpu;
+> For example:
+>
+> mc_event: Corrected error:memory read on memory stick "DIMM_1A" (mc:0 channel:0 slot:0 page:0x586b6e offset:0xa66 grain:32 syndrome:0x0 area:DMA)
 
-I'm not quite clear your meaning here, do you mean 'LIST_HEAD(xen_pcpus)' instead of 'struct pcpu *xen_cpu'?
+This is looking so much better.
 
+I looked through your examples from drivers on what text we might see
+in the "memory read" position ... and agree that it would be a lot of
+work to make them all come up with grammatically clean messages, especially
+for all the poorly documented (or undocumented) "default/unknown/..." cases.
 
-> 
-> and use that as a list? Meaning
-> .. snip..
->> +{
->> +	struct list_head *cur;
->> +	struct pcpu *pcpu;
->> +
->> +	list_for_each(cur, &xen_pcpus) {
->> +		pcpu = list_entry(cur, struct pcpu, list);
->> +		if (pcpu->cpu_id == cpu_id)
->> +			return pcpu;
->> +	}
-> 
-> do:
-> struct pcpu *pcpu;
-> 
-> list_for_each_entry(pcpu, xen_pcpus, list)
-> 	if (pcpu->cpu_id == cpu_id)
-> 		return pcpu;
-> ?
-> 
-> and such.
+Back to my "does the casual user really need to know" soapbox. What different
+actions do we expect a user to take when we tell them "read error" or "write
+error" or "unknown error"?  I'm beginning to think that this belongs inside
+the brackets! Perhaps as:  type:"memory read"?
 
-OK for me to update.
+Then we'd have:
 
-Thanks,
-Jinsong
+mc_event: Corrected error on memory stick "DIMM_1A" (bunch of stuff for deep diagnosis by vendor)
 
+Knowing that the error was Corrected/Uncorrected is vital to the user. It lets them know
+the urgency with which they need to take action ... we need to educate them that a few
+"Corrected" errors are perfectly normal and nothing to raise blood pressure about.
+
+Knowing which memory stick was involved - also very important. If they do take action,
+they should be able to swap out the memory stick that was the source of the problem.
+
+Everything else is just for memory geeks like me, you and Boris (and OEMs who want to
+diagnose root cause of problems they see by pattern analysis across errors from multiple
+machines with DIMMS from different batches/vendors).
+
+-Tony
