@@ -1,179 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759858Ab2EKNWm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 09:22:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6066 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759802Ab2EKNWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 09:22:30 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: jaxboe@fusionio.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        npiggin@kernel.dk
-Subject: Re: [patch, v2] block: don't mark buffers beyond end of disk as mapped
-References: <x49obq666i8.fsf@segfault.boston.devel.redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 11 May 2012 09:22:25 -0400
-In-Reply-To: <x49obq666i8.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
-	message of "Wed, 02 May 2012 09:45:51 -0400")
-Message-ID: <x49d36ax372.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1759889Ab2EKNWo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 09:22:44 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:54261 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759816Ab2EKNWh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 09:22:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH RESEND v8] gpio: Device tree support for LPC32xx
+Date: Fri, 11 May 2012 13:22:14 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, devicetree-discuss@lists.ozlabs.org,
+        rob.herring@calxeda.com
+References: <1336679838-30738-1-git-send-email-stigge@antcom.de> <201205111219.10025.arnd@arndb.de> <4FAD0A79.8040207@antcom.de>
+In-Reply-To: <4FAD0A79.8040207@antcom.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205111322.15191.arnd@arndb.de>
+X-Provags-ID: V02:K0:wtKuVUf8v/UY8Zo+Sowtje+InQVmiYvZZjJ+e1Pb0X1
+ nCmvwF4s0/r0y2LEd+8Mu/fFZ3vGFA9RLSSHG33z2davB5EYLl
+ WhznBQSyi2DC5J4FSp930OjGpD2gdkKaHpC+JsFDv9V53wXpNt
+ esjVMvDYQYk5QvSr9ZbTM27RHdPoP6CATiwWgUcJB6q5FG38jO
+ duc2tAu5szLIynjBsBfyTC1cSqF2eWrX9Z6aZYPcsJbH9ChlUW
+ eBzAwiviXywd7mAeVG+I1uU6y9e1MxzAtdZidcEioPBw4YWr4e
+ 4LsX5BtKqOS5ivO9qO9bwCnxXN4/SISpm4I57KeLgwxQ+K2o7i
+ 7hShPuWFgT2uUbvVPGh8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens, could you please queue this patch up?
+On Friday 11 May 2012, Roland Stigge wrote:
+> Right. Personally, I would be fine with either of my v8 (all banks in
+> dt, referenced naturally by name) and v9 (one simple DT entry for the
+> whole GPIO controller, integer index for referencing banks) patches.
+> 
+> Consider the DT-documented mapping in the latter case:
+> 
+>       0: GPIO P0
+>       1: GPIO P1
+>       2: GPIO P2
+>       3: GPIO P3
+>       4: GPI P3
+>       5: GPO P3
+> 
+> Not too difficult and would also be acceptable, IMO.
+> 
+> So Arnd and Grant, please agree one of those and pick it. :-)
+> 
 
-Thanks!
-Jeff
+Grant is maintainer for both GPIO and DT, so his opinion is what
+counts in this case.
+I was merely giving the background on how we got there so he
+can make an informed decision.
 
-
-Jeff Moyer <jmoyer@redhat.com> writes:
-
-> Hi,
->
-> We have a bug report open where a squashfs image mounted on ppc64 would
-> exhibit errors due to trying to read beyond the end of the disk.  It can
-> easily be reproduced by doing the following:
->
-> [root@ibm-p750e-02-lp3 ~]# ls -l install.img
-> -rw-r--r-- 1 root root 142032896 Apr 30 16:46 install.img
-> [root@ibm-p750e-02-lp3 ~]# mount -o loop ./install.img /mnt/test
-> [root@ibm-p750e-02-lp3 ~]# dd if=/dev/loop0 of=/dev/null 
-> dd: reading `/dev/loop0': Input/output error
-> 277376+0 records in
-> 277376+0 records out
-> 142016512 bytes (142 MB) copied, 0.9465 s, 150 MB/s
->
-> In dmesg, you'll find the following:
->
-> squashfs: version 4.0 (2009/01/31) Phillip Lougher
-> [   43.106012] attempt to access beyond end of device
-> [   43.106029] loop0: rw=0, want=277410, limit=277408
-> [   43.106039] Buffer I/O error on device loop0, logical block 138704
-> [   43.106053] attempt to access beyond end of device
-> [   43.106057] loop0: rw=0, want=277412, limit=277408
-> [   43.106061] Buffer I/O error on device loop0, logical block 138705
-> [   43.106066] attempt to access beyond end of device
-> [   43.106070] loop0: rw=0, want=277414, limit=277408
-> [   43.106073] Buffer I/O error on device loop0, logical block 138706
-> [   43.106078] attempt to access beyond end of device
-> [   43.106081] loop0: rw=0, want=277416, limit=277408
-> [   43.106085] Buffer I/O error on device loop0, logical block 138707
-> [   43.106089] attempt to access beyond end of device
-> [   43.106093] loop0: rw=0, want=277418, limit=277408
-> [   43.106096] Buffer I/O error on device loop0, logical block 138708
-> [   43.106101] attempt to access beyond end of device
-> [   43.106104] loop0: rw=0, want=277420, limit=277408
-> [   43.106108] Buffer I/O error on device loop0, logical block 138709
-> [   43.106112] attempt to access beyond end of device
-> [   43.106116] loop0: rw=0, want=277422, limit=277408
-> [   43.106120] Buffer I/O error on device loop0, logical block 138710
-> [   43.106124] attempt to access beyond end of device
-> [   43.106128] loop0: rw=0, want=277424, limit=277408
-> [   43.106131] Buffer I/O error on device loop0, logical block 138711
-> [   43.106135] attempt to access beyond end of device
-> [   43.106139] loop0: rw=0, want=277426, limit=277408
-> [   43.106143] Buffer I/O error on device loop0, logical block 138712
-> [   43.106147] attempt to access beyond end of device
-> [   43.106151] loop0: rw=0, want=277428, limit=277408
-> [   43.106154] Buffer I/O error on device loop0, logical block 138713
-> [   43.106158] attempt to access beyond end of device
-> [   43.106162] loop0: rw=0, want=277430, limit=277408
-> [   43.106166] attempt to access beyond end of device
-> [   43.106169] loop0: rw=0, want=277432, limit=277408
-> ...
-> [   43.106307] attempt to access beyond end of device
-> [   43.106311] loop0: rw=0, want=277470, limit=2774
->
-> Squashfs manages to read in the end block(s) of the disk during the
-> mount operation.  Then, when dd reads the block device, it leads to
-> block_read_full_page being called with buffers that are beyond end of
-> disk, but are marked as mapped.  Thus, it would end up submitting read
-> I/O against them, resulting in the errors mentioned above.  I fixed the
-> problem by modifying init_page_buffers to only set the buffer mapped if
-> it fell inside of i_size.
->
-> Cheers,
-> Jeff
->
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-> Acked-by: Nick Piggin <npiggin@kernel.dk>
->
-> --
->
-> Changes from v1->v2: re-used max_block, as suggested by Nick Piggin.
->
-> diff --git a/fs/block_dev.c b/fs/block_dev.c
-> index e08f6a2..ba11c30 100644
-> --- a/fs/block_dev.c
-> +++ b/fs/block_dev.c
-> @@ -70,7 +70,7 @@ static void bdev_inode_switch_bdi(struct inode *inode,
->  	spin_unlock(&dst->wb.list_lock);
->  }
->  
-> -static sector_t max_block(struct block_device *bdev)
-> +sector_t blkdev_max_block(struct block_device *bdev)
->  {
->  	sector_t retval = ~((sector_t)0);
->  	loff_t sz = i_size_read(bdev->bd_inode);
-> @@ -163,7 +163,7 @@ static int
->  blkdev_get_block(struct inode *inode, sector_t iblock,
->  		struct buffer_head *bh, int create)
->  {
-> -	if (iblock >= max_block(I_BDEV(inode))) {
-> +	if (iblock >= blkdev_max_block(I_BDEV(inode))) {
->  		if (create)
->  			return -EIO;
->  
-> @@ -185,7 +185,7 @@ static int
->  blkdev_get_blocks(struct inode *inode, sector_t iblock,
->  		struct buffer_head *bh, int create)
->  {
-> -	sector_t end_block = max_block(I_BDEV(inode));
-> +	sector_t end_block = blkdev_max_block(I_BDEV(inode));
->  	unsigned long max_blocks = bh->b_size >> inode->i_blkbits;
->  
->  	if ((iblock + max_blocks) > end_block) {
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 351e18e..ad5938c 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -921,6 +921,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
->  	struct buffer_head *head = page_buffers(page);
->  	struct buffer_head *bh = head;
->  	int uptodate = PageUptodate(page);
-> +	sector_t end_block = blkdev_max_block(I_BDEV(bdev->bd_inode));
->  
->  	do {
->  		if (!buffer_mapped(bh)) {
-> @@ -929,7 +930,8 @@ init_page_buffers(struct page *page, struct block_device *bdev,
->  			bh->b_blocknr = block;
->  			if (uptodate)
->  				set_buffer_uptodate(bh);
-> -			set_buffer_mapped(bh);
-> +			if (block < end_block)
-> +				set_buffer_mapped(bh);
->  		}
->  		block++;
->  		bh = bh->b_this_page;
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 8de6755..25c40b9 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2051,6 +2051,7 @@ extern void unregister_blkdev(unsigned int, const char *);
->  extern struct block_device *bdget(dev_t);
->  extern struct block_device *bdgrab(struct block_device *bdev);
->  extern void bd_set_size(struct block_device *, loff_t size);
-> +extern sector_t blkdev_max_block(struct block_device *bdev);
->  extern void bd_forget(struct inode *inode);
->  extern void bdput(struct block_device *);
->  extern void invalidate_bdev(struct block_device *);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+	Arnd
