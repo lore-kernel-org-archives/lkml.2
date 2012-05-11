@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759187Ab2EKGeK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:34:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57118 "EHLO
+	id S1759472Ab2EKGfA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:35:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57131 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab2EKGeH (ORCPT
+	with ESMTP id S1754278Ab2EKGe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:34:07 -0400
-Date: Thu, 10 May 2012 23:33:50 -0700
+	Fri, 11 May 2012 02:34:58 -0400
+Date: Thu, 10 May 2012 23:34:40 -0700
 From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-ca09b2e1b307724666577859eb460ac6d4c67330@git.kernel.org>
+Message-ID: <tip-7706f966323f32f3ea13121b5918851432876ae5@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, penberg@kernel.org, namhyung.kim@lge.com,
@@ -18,11 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         penberg@kernel.org, namhyung.kim@lge.com, tglx@linutronix.de,
         namhyung@gmail.com
-In-Reply-To: <1335761711-31403-2-git-send-email-namhyung.kim@lge.com>
-References: <1335761711-31403-2-git-send-email-namhyung.kim@lge.com>
+In-Reply-To: <1335761711-31403-3-git-send-email-namhyung.kim@lge.com>
+References: <1335761711-31403-3-git-send-email-namhyung.kim@lge.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui: Make setup_browser() generic
-Git-Commit-ID: ca09b2e1b307724666577859eb460ac6d4c67330
+Subject: [tip:perf/core] perf ui gtk: Drop arg[cv]
+  arguments from perf_gtk_setup_browser()
+Git-Commit-ID: 7706f966323f32f3ea13121b5918851432876ae5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,26 +32,24 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:33:56 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:34:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ca09b2e1b307724666577859eb460ac6d4c67330
-Gitweb:     http://git.kernel.org/tip/ca09b2e1b307724666577859eb460ac6d4c67330
+Commit-ID:  7706f966323f32f3ea13121b5918851432876ae5
+Gitweb:     http://git.kernel.org/tip/7706f966323f32f3ea13121b5918851432876ae5
 Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Mon, 30 Apr 2012 13:55:05 +0900
+AuthorDate: Mon, 30 Apr 2012 13:55:06 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 2 May 2012 16:17:20 -0300
+CommitDate: Wed, 2 May 2012 16:17:25 -0300
 
-perf ui: Make setup_browser() generic
+perf ui gtk: Drop arg[cv] arguments from perf_gtk_setup_browser()
 
-The setup_browser contained newt-related codes in it.
+As perf doesn't allow to specify gtk command-line option, drop the
+arguments and pass NULL to gtk_init().
 
-As gtk front-end added recently, it should be more generic to handle
-both cases properly.
-
-So move newt codes to the ui__init() for now.
+This makes the function easier to be called from setup_browser().
 
 Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 Acked-by: Pekka Enberg <penberg@kernel.org>
@@ -59,85 +58,62 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1335761711-31403-2-git-send-email-namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1335761711-31403-3-git-send-email-namhyung.kim@lge.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/setup.c |   44 +++++++++++++++++++++++++-------------------
- 1 files changed, 25 insertions(+), 19 deletions(-)
+ tools/perf/builtin-report.c |    2 +-
+ tools/perf/ui/gtk/browser.c |    5 ++---
+ tools/perf/util/cache.h     |    4 ++--
+ 3 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
-index 85a69fa..becdcd0 100644
---- a/tools/perf/ui/setup.c
-+++ b/tools/perf/ui/setup.c
-@@ -93,14 +93,37 @@ static void newt_suspend(void *d __used)
- 	newtResume();
- }
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index cec2b8c..2b20001 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -678,7 +678,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
  
-+static void ui__exit(void);
-+
-+static void ui__signal(int sig)
-+{
-+	ui__exit();
-+	psignal(sig, "perf");
-+	exit(0);
-+}
-+
- static int ui__init(void)
+ 	if (strcmp(report.input_name, "-") != 0) {
+ 		if (report.use_gtk)
+-			perf_gtk_setup_browser(argc, argv, true);
++			perf_gtk_setup_browser(true);
+ 		else
+ 			setup_browser(true);
+ 	} else {
+diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
+index 258352a..a1a83de 100644
+--- a/tools/perf/ui/gtk/browser.c
++++ b/tools/perf/ui/gtk/browser.c
+@@ -9,10 +9,9 @@
+ 
+ #define MAX_COLUMNS			32
+ 
+-void perf_gtk_setup_browser(int argc, const char *argv[],
+-			    bool fallback_to_pager __used)
++void perf_gtk_setup_browser(bool fallback_to_pager __used)
  {
--	int err = SLkp_init();
-+	int err;
- 
--	if (err < 0)
-+	newtInit();
-+	err = SLkp_init();
-+	if (err < 0) {
-+		pr_err("TUI initialization failed.\n");
- 		goto out;
-+	}
- 
- 	SLkp_define_keysym((char *)"^(kB)", SL_KEY_UNTAB);
-+
-+	newtSetSuspendCallback(newt_suspend, NULL);
-+	ui_helpline__init();
-+	ui_browser__init();
-+
-+	signal(SIGSEGV, ui__signal);
-+	signal(SIGFPE, ui__signal);
-+	signal(SIGINT, ui__signal);
-+	signal(SIGQUIT, ui__signal);
-+	signal(SIGTERM, ui__signal);
- out:
- 	return err;
- }
-@@ -113,13 +136,6 @@ static void ui__exit(void)
- 	SLang_reset_tty();
+-	gtk_init(&argc, (char ***)&argv);
++	gtk_init(NULL, NULL);
  }
  
--static void ui__signal(int sig)
--{
--	ui__exit();
--	psignal(sig, "perf");
--	exit(0);
--}
--
- void setup_browser(bool fallback_to_pager)
+ void perf_gtk_exit_browser(bool wait_for_ok __used)
+diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
+index 8dd224d..d22ca68 100644
+--- a/tools/perf/util/cache.h
++++ b/tools/perf/util/cache.h
+@@ -46,14 +46,14 @@ void exit_browser(bool wait_for_ok);
+ #endif
+ 
+ #ifdef NO_GTK2_SUPPORT
+-static inline void perf_gtk_setup_browser(int argc __used, const char *argv[] __used, bool fallback_to_pager)
++static inline void perf_gtk_setup_browser(bool fallback_to_pager)
  {
- 	if (!isatty(1) || !use_browser || dump_trace) {
-@@ -130,17 +146,7 @@ void setup_browser(bool fallback_to_pager)
- 	}
- 
- 	use_browser = 1;
--	newtInit();
- 	ui__init();
--	newtSetSuspendCallback(newt_suspend, NULL);
--	ui_helpline__init();
--	ui_browser__init();
--
--	signal(SIGSEGV, ui__signal);
--	signal(SIGFPE, ui__signal);
--	signal(SIGINT, ui__signal);
--	signal(SIGQUIT, ui__signal);
--	signal(SIGTERM, ui__signal);
+ 	if (fallback_to_pager)
+ 		setup_pager();
  }
+ static inline void perf_gtk_exit_browser(bool wait_for_ok __used) {}
+ #else
+-void perf_gtk_setup_browser(int argc, const char *argv[], bool fallback_to_pager);
++void perf_gtk_setup_browser(bool fallback_to_pager);
+ void perf_gtk_exit_browser(bool wait_for_ok);
+ #endif
  
- void exit_browser(bool wait_for_ok)
