@@ -1,190 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab2EKOKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 10:10:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44675 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760096Ab2EKOKn (ORCPT
+	id S1760137Ab2EKOLH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 10:11:07 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:50269 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932126Ab2EKOLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 10:10:43 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH] Optimize bitmap_weight
-Date: Fri, 11 May 2012 23:10:14 +0900
-Message-Id: <1336745414-5530-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 11 May 2012 10:11:04 -0400
+Date: Fri, 11 May 2012 10:04:54 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] Xen physical cpus interface (V2)
+Message-ID: <20120511140454.GA13735@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351B58A3@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351B58A3@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current implementation of bitmap_weight simply evaluates the
-population count for each long word of the array, and adds.
+On Thu, May 10, 2012 at 03:06:14PM +0000, Liu, Jinsong wrote:
+> >From 7aa4cf7c1172e24611dc76163397b8708acacc59 Mon Sep 17 00:00:00 2001
+> From: Liu, Jinsong <jinsong.liu@intel.com>
+> Date: Fri, 11 May 2012 06:55:35 +0800
+> Subject: [PATCH 3/3] Xen physical cpus interface
+> 
+> Manage physical cpus in dom0, get physical cpus info and provide sys interface.
+> 
+> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
+> Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
+> ---
+>  .../ABI/testing/sysfs-devices-system-xen_cpu       |   20 +
+>  drivers/xen/Makefile                               |    1 +
+>  drivers/xen/pcpu.c                                 |  374 ++++++++++++++++++++
+>  include/xen/interface/platform.h                   |    8 +
+>  include/xen/interface/xen.h                        |    1 +
+>  5 files changed, 404 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/ABI/testing/sysfs-devices-system-xen_cpu
+>  create mode 100644 drivers/xen/pcpu.c
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-devices-system-xen_cpu b/Documentation/ABI/testing/sysfs-devices-system-xen_cpu
+> new file mode 100644
+> index 0000000..9ca02fb
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-devices-system-xen_cpu
+> @@ -0,0 +1,20 @@
+> +What:		/sys/devices/system/xen_cpu/
+> +Date:		May 2012
+> +Contact:	Liu, Jinsong <jinsong.liu@intel.com>
+> +Description:
+> +		A collection of global/individual Xen physical cpu attributes
+> +
+> +		Individual physical cpu attributes are contained in
+> +		subdirectories named by the Xen's logical cpu number, e.g.:
+> +		/sys/devices/system/xen_cpu/xen_cpu#/
+> +
+> +
+> +What:		/sys/devices/system/xen_cpu/xen_cpu#/online
+> +Date:		May 2012
+> +Contact:	Liu, Jinsong <jinsong.liu@intel.com>
+> +Description:
+> +		Interface to online/offline Xen physical cpus
+> +
+> +		When running under Xen platform, it provide user interface
+> +		to online/offline physical cpus, except cpu0 due to several
+> +		logic restrictions and assumptions.
+> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+> index 1d3e763..d12d14d 100644
+> --- a/drivers/xen/Makefile
+> +++ b/drivers/xen/Makefile
+> @@ -19,6 +19,7 @@ obj-$(CONFIG_XEN_PVHVM)			+= platform-pci.o
+>  obj-$(CONFIG_XEN_TMEM)			+= tmem.o
+>  obj-$(CONFIG_SWIOTLB_XEN)		+= swiotlb-xen.o
+>  obj-$(CONFIG_XEN_DOM0)			+= pci.o
+> +obj-$(CONFIG_XEN_DOM0)			+= pcpu.o
+>  obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
+>  obj-$(CONFIG_XEN_PRIVCMD)		+= xen-privcmd.o
+>  obj-$(CONFIG_XEN_ACPI_PROCESSOR)	+= xen-acpi-processor.o
+> diff --git a/drivers/xen/pcpu.c b/drivers/xen/pcpu.c
+> new file mode 100644
+> index 0000000..9014ff1
+> --- /dev/null
+> +++ b/drivers/xen/pcpu.c
+> @@ -0,0 +1,374 @@
+> +/******************************************************************************
+> + * pcpu.c
+> + * Management physical cpu in dom0, get pcpu info and provide sys interface
+> + *
+> + * Copyright (c) 2012 Intel Corporation
+> + * Author: Liu, Jinsong <jinsong.liu@intel.com>
+> + * Author: Jiang, Yunhong <yunhong.jiang@intel.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version 2
+> + * as published by the Free Software Foundation; or, when distributed
+> + * separately from the Linux kernel or incorporated into other
+> + * software packages, subject to the following license:
+> + *
+> + * Permission is hereby granted, free of charge, to any person obtaining a copy
+> + * of this source file (the "Software"), to deal in the Software without
+> + * restriction, including without limitation the rights to use, copy, modify,
+> + * merge, publish, distribute, sublicense, and/or sell copies of the Software,
+> + * and to permit persons to whom the Software is furnished to do so, subject to
+> + * the following conditions:
+> + *
+> + * The above copyright notice and this permission notice shall be included in
+> + * all copies or substantial portions of the Software.
+> + *
+> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+> + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+> + * IN THE SOFTWARE.
+> + */
+> +
+> +#include <linux/interrupt.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/cpu.h>
+> +#include <linux/stat.h>
+> +#include <linux/capability.h>
+> +
+> +#include <xen/xen.h>
+> +#include <xen/xenbus.h>
+> +#include <xen/events.h>
+> +#include <xen/interface/platform.h>
+> +#include <asm/xen/hypervisor.h>
+> +#include <asm/xen/hypercall.h>
+> +
+> +#define XEN_PCPU "xen_cpu: "
+> +
+> +/*
+> + * @cpu_id: Xen physical cpu logic number
+> + * @flags: Xen physical cpu status flag
+> + * - XEN_PCPU_FLAGS_ONLINE: cpu is online
+> + * - XEN_PCPU_FLAGS_INVALID: cpu is not present
+> + */
+> +struct pcpu {
+> +	struct list_head list;
+> +	struct device dev;
+> +	uint32_t cpu_id;
+> +	uint32_t flags;
+> +};
+> +
+> +static struct bus_type xen_pcpu_subsys = {
+> +	.name = "xen_cpu",
+> +	.dev_name = "xen_cpu",
+> +};
+> +
+> +static DEFINE_MUTEX(xen_pcpu_lock);
+> +
+> +static LIST_HEAD(xen_pcpus);
 
-The subsection "Counting 1-bits in an Array" in the revisions of
-the book 'Hacker's Delight' explains more superior methods than
-the naive method.
+So what about the recommendation to get rid of that and
+instead do
 
-http://www.hackersdelight.org/revisions.pdf
-http://www.hackersdelight.org/HDcode/newCode/pop_arrayHS.c.txt
+struct pcpu *xen_cpu;
 
-My benchmark results on Intel Core i3 CPU with 32-bit kernel
-showed 50% faster for 8192 bits bitmap.  However, it is not faster
-for small bitmap (< BITS_PER_LONG * 8) than the naive method.
-So if the bitmap size is known to be small at compile time,
-use the naive method.
+and use that as a list? Meaning
+.. snip..
+> +{
+> +	struct list_head *cur;
+> +	struct pcpu *pcpu;
+> +
+> +	list_for_each(cur, &xen_pcpus) {
+> +		pcpu = list_entry(cur, struct pcpu, list);
+> +		if (pcpu->cpu_id == cpu_id)
+> +			return pcpu;
+> +	}
 
-/*
- * userspace bitmap_weight() benchmark program
- */
-extern int __bitmap_weight(const unsigned long *bitmap, int bits);
-extern int __bitmap_weight_fast(const unsigned long *bitmap, int bits);
+do:
+struct pcpu *pcpu;
 
-int main(int argc, char **argv)
-{
-	int i;
-	struct timeval start[2], stop[2], diff[2];
-	unsigned int bits;
-	unsigned long bitmap[1024 * 1024];
-	int n, m;
-	int iterations;
+list_for_each_entry(pcpu, xen_pcpus, list)
+	if (pcpu->cpu_id == cpu_id)
+		return pcpu;
+?
 
-	if (argc != 4) {
-		fprintf(stderr, "Usage: %s SEED BITS ITERATIONS\n", argv[0]);
-		return -1;
-	}
-
-	srand(atoi(argv[1]));
-	bits = atoi(argv[2]) % (sizeof(bitmap) * 8);
-	iterations = atoi(argv[3]);
-
-	for (i = 0; i < sizeof(bitmap); i++)
-		((unsigned char *)bitmap)[i] = rand();
-
-	/* dummy call */
-	gettimeofday(&start[0], NULL);
-	n = __bitmap_weight(bitmap, bits);
-	gettimeofday(&stop[0], NULL);
-	gettimeofday(&start[1], NULL);
-	m = __bitmap_weight_fast(bitmap, bits);
-	gettimeofday(&stop[1], NULL);
-
-	if (n != m) {
-		fprintf(stderr, "Oops %d != %d (%d)\n", n, m, atoi(argv[1]));
-		return -1;
-	}
-
-	gettimeofday(&start[0], NULL);
-	for (i = 0; i < iterations; i++)
-		n += __bitmap_weight(bitmap, bits);
-	gettimeofday(&stop[0], NULL);
-
-	gettimeofday(&start[1], NULL);
-	for (i = 0; i < iterations; i++)
-		m += __bitmap_weight_fast(bitmap, bits);
-	gettimeofday(&stop[1], NULL);
-
-	if (n != m)
-		return -1;
-
-	timersub(&stop[0], &start[0], &diff[0]);
-	timersub(&stop[1], &start[1], &diff[1]);
-	printf("%d %d: %lu.%06lu %lu.%06lu\n", bits, iterations,
-		diff[0].tv_sec, diff[0].tv_usec,
-		diff[1].tv_sec, diff[1].tv_usec);
-
-	return 0;
-}
-
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
----
- include/linux/bitmap.h |    5 +++-
- lib/bitmap.c           |   49 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 53 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/bitmap.h b/include/linux/bitmap.h
-index 7ad6345..9191c7d 100644
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -111,6 +111,7 @@ extern int __bitmap_intersects(const unsigned long *bitmap1,
- extern int __bitmap_subset(const unsigned long *bitmap1,
- 			const unsigned long *bitmap2, int bits);
- extern int __bitmap_weight(const unsigned long *bitmap, int bits);
-+extern int __bitmap_weight_fast(const unsigned long *bitmap, int bits);
- 
- extern void bitmap_set(unsigned long *map, int i, int len);
- extern void bitmap_clear(unsigned long *map, int start, int nr);
-@@ -277,7 +278,9 @@ static inline int bitmap_weight(const unsigned long *src, int nbits)
- {
- 	if (small_const_nbits(nbits))
- 		return hweight_long(*src & BITMAP_LAST_WORD_MASK(nbits));
--	return __bitmap_weight(src, nbits);
-+	else if (__builtin_constant_p(nbits) && (nbits) < BITS_PER_LONG * 8)
-+		return __bitmap_weight(src, nbits);
-+	return __bitmap_weight_fast(src, nbits);
- }
- 
- static inline void bitmap_shift_right(unsigned long *dst,
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index 18c67d8..7352263 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -254,6 +254,55 @@ int __bitmap_weight(const unsigned long *bitmap, int bits)
- }
- EXPORT_SYMBOL(__bitmap_weight);
- 
-+#define CSA(h, l, a, b, c) \
-+	{ \
-+		unsigned long u = a ^ b; \
-+		unsigned long v = c; \
-+		h = (a & b) | (u & v); \
-+		l = u ^ v; \
-+	} while (0)
-+
-+/**
-+ * __bitmap_weight_fast - count the set bits in a bitmap
-+ * @bitmap: pointer to bitmap
-+ * @bits: bitmap size, in bits
-+ *
-+ * This implementation is based on the algorithm from the subsection
-+ * "Counting 1-bits in an Array" in the revisions of the book
-+ * 'Hacker's Delight'.
-+ *
-+ * http://www.hackersdelight.org/revisions.pdf
-+ * http://www.hackersdelight.org/HDcode/newCode/pop_arrayHS.c.txt
-+ */
-+int __bitmap_weight_fast(const unsigned long *bitmap, int bits)
-+{
-+	int k, w = 0, lim = bits / BITS_PER_LONG;
-+	unsigned long ones, twos, twosA, twosB, fours, foursA, foursB, eights;
-+	fours = twos = ones = 0;
-+
-+	for (k = 0; k < lim - 7; k += 8) {
-+		CSA(twosA, ones, ones, bitmap[k], bitmap[k + 1]);
-+		CSA(twosB, ones, ones, bitmap[k + 2], bitmap[k + 3]);
-+		CSA(foursA, twos, twos, twosA, twosB);
-+		CSA(twosA, ones, ones, bitmap[k + 4], bitmap[k + 5]);
-+		CSA(twosB, ones, ones, bitmap[k + 6], bitmap[k + 7]);
-+		CSA(foursB, twos, twos, twosA, twosB);
-+		CSA(eights, fours, fours, foursA, foursB);
-+		w += hweight_long(eights);
-+	}
-+	w = 8 * w + 4 * hweight_long(fours) + 2 * hweight_long(twos) +
-+		hweight_long(ones);
-+
-+	for (; k < lim; k++)
-+		w += hweight_long(bitmap[k]);
-+
-+	if (bits % BITS_PER_LONG)
-+		w += hweight_long(bitmap[k] & BITMAP_LAST_WORD_MASK(bits));
-+
-+	return w;
-+}
-+EXPORT_SYMBOL(__bitmap_weight_fast);
-+
- void bitmap_set(unsigned long *map, int start, int nr)
- {
- 	unsigned long *p = map + BIT_WORD(start);
--- 
-1.7.7.6
-
+and such.
