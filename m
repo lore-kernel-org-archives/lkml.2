@@ -1,373 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933299Ab2EKVfK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 17:35:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53716 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422631Ab2EKVew (ORCPT
+	id S1761121Ab2EKVue (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 17:50:34 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46227 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761048Ab2EKVuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 17:34:52 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        spi-devel-general@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-doc@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH 1/2] MIPS: OCTEON: Add register definitions for SPI host hardware.
-Date: Fri, 11 May 2012 14:34:45 -0700
-Message-Id: <1336772086-17248-2-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1336772086-17248-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1336772086-17248-1-git-send-email-ddaney.cavm@gmail.com>
+	Fri, 11 May 2012 17:50:32 -0400
+Message-ID: <4FAD8984.2050201@linux.vnet.ibm.com>
+Date: Fri, 11 May 2012 16:49:56 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Minchan Kim <minchan@kernel.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+References: <4FABD503.4030808@vflare.org> <4FABDA9F.1000105@linux.vnet.ibm.com> <20120510151941.GA18302@kroah.com> <4FABECF5.8040602@vflare.org> <20120510164418.GC13964@kroah.com> <4FABF9D4.8080303@vflare.org> <20120510173322.GA30481@phenom.dumpdata.com> <4FAC4E3B.3030909@kernel.org> <8473859b-42f3-4354-b5ba-fd5b8cbac22f@default> <4FAC59F6.4080503@kernel.org> <20120511192915.GD3785@phenom.dumpdata.com>
+In-Reply-To: <20120511192915.GD3785@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051121-6148-0000-0000-000005C47B26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On 05/11/2012 02:29 PM, Konrad Rzeszutek Wilk wrote:
 
-Needed by SPI driver.
+>> At least, zram is also primary user and it also has such mess
+>> although it's not severe than zcache. zram->table[index].handle
+>> sometime has real (void*) handle, sometime (struct page*).
+> 
+> Yikes. Yeah that needs to be fixed.
+> 
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- arch/mips/include/asm/octeon/cvmx-mpi-defs.h |  328 ++++++++++++++++++++++++++
- 1 files changed, 328 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/include/asm/octeon/cvmx-mpi-defs.h
 
-diff --git a/arch/mips/include/asm/octeon/cvmx-mpi-defs.h b/arch/mips/include/asm/octeon/cvmx-mpi-defs.h
-new file mode 100644
-index 0000000..4615b10
---- /dev/null
-+++ b/arch/mips/include/asm/octeon/cvmx-mpi-defs.h
-@@ -0,0 +1,328 @@
-+/***********************license start***************
-+ * Author: Cavium Networks
-+ *
-+ * Contact: support@caviumnetworks.com
-+ * This file is part of the OCTEON SDK
-+ *
-+ * Copyright (c) 2003-2012 Cavium Networks
-+ *
-+ * This file is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, Version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This file is distributed in the hope that it will be useful, but
-+ * AS-IS and WITHOUT ANY WARRANTY; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE, TITLE, or
-+ * NONINFRINGEMENT.  See the GNU General Public License for more
-+ * details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this file; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-+ * or visit http://www.gnu.org/licenses/.
-+ *
-+ * This file may also be available under a different license from Cavium.
-+ * Contact Cavium Networks for more information
-+ ***********************license end**************************************/
+How about this (untested)?  Changes to zram_bvec_write() are a little
+hard to make out in this format.  There are a couple of checkpatch fixes
+(two split line strings) and an unused variable store_offset removal mixed
+in too. If this patch is good, I'll break them up for official submission
+after I test.
+
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index fbe8ac9..10dcd99 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -81,7 +81,10 @@ enum zram_pageflags {
+ 
+ /* Allocated for each disk page */
+ struct table {
+-	void *handle;
++	union {
++		void *handle; /* compressible */
++		struct page *page; /* incompressible */
++	};
+ 	u16 size;	/* object size (excluding header) */
+ 	u8 count;	/* object ref count (not yet used) */
+ 	u8 flags;
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 685d612..d49deca 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -150,7 +150,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+ 	}
+ 
+ 	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+-		__free_page(handle);
++		__free_page(zram->table[index].page);
+ 		zram_clear_flag(zram, index, ZRAM_UNCOMPRESSED);
+ 		zram_stat_dec(&zram->stats.pages_expand);
+ 		goto out;
+@@ -189,7 +189,7 @@ static void handle_uncompressed_page(struct zram *zram, struct bio_vec *bvec,
+ 	unsigned char *user_mem, *cmem;
+ 
+ 	user_mem = kmap_atomic(page);
+-	cmem = kmap_atomic(zram->table[index].handle);
++	cmem = kmap_atomic(zram->table[index].page);
+ 
+ 	memcpy(user_mem + bvec->bv_offset, cmem + offset, bvec->bv_len);
+ 	kunmap_atomic(cmem);
+@@ -315,7 +315,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 			   int offset)
+ {
+ 	int ret;
+-	u32 store_offset;
+ 	size_t clen;
+ 	void *handle;
+ 	struct zobj_header *zheader;
+@@ -390,31 +389,38 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		clen = PAGE_SIZE;
+ 		page_store = alloc_page(GFP_NOIO | __GFP_HIGHMEM);
+ 		if (unlikely(!page_store)) {
+-			pr_info("Error allocating memory for "
+-				"incompressible page: %u\n", index);
++			pr_info("Error allocating memory for incompressible page: %u\n", index);
+ 			ret = -ENOMEM;
+ 			goto out;
+ 		}
+ 
+-		store_offset = 0;
+-		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
+-		zram_stat_inc(&zram->stats.pages_expand);
+-		handle = page_store;
+ 		src = kmap_atomic(page);
+ 		cmem = kmap_atomic(page_store);
+-		goto memstore;
+-	}
++		memcpy(cmem, src, clen);
++		kunmap_atomic(cmem);
++		kunmap_atomic(src);
+ 
+-	handle = zs_malloc(zram->mem_pool, clen + sizeof(*zheader));
+-	if (!handle) {
+-		pr_info("Error allocating memory for compressed "
+-			"page: %u, size=%zu\n", index, clen);
+-		ret = -ENOMEM;
+-		goto out;
++		zram->table[index].page = page_store;
++		zram->table[index].size = PAGE_SIZE;
 +
-+#ifndef __CVMX_MPI_DEFS_H__
-+#define __CVMX_MPI_DEFS_H__
++		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
++		zram_stat_inc(&zram->stats.pages_expand);
++	} else {
++		handle = zs_malloc(zram->mem_pool, clen + sizeof(*zheader));
++		if (!handle) {
++			pr_info("Error allocating memory for compressed page: %u, size=%zu\n", index, clen);
++			ret = -ENOMEM;
++			goto out;
++		}
 +
-+#define CVMX_MPI_CFG (CVMX_ADD_IO_SEG(0x0001070000001000ull))
-+#define CVMX_MPI_DATX(offset) (CVMX_ADD_IO_SEG(0x0001070000001080ull) + ((offset) & 15) * 8)
-+#define CVMX_MPI_STS (CVMX_ADD_IO_SEG(0x0001070000001008ull))
-+#define CVMX_MPI_TX (CVMX_ADD_IO_SEG(0x0001070000001010ull))
++		zram->table[index].handle = handle;
++		zram->table[index].size = clen;
 +
-+union cvmx_mpi_cfg {
-+	uint64_t u64;
-+	struct cvmx_mpi_cfg_s {
-+#ifdef __BIG_ENDIAN_BITFIELD
-+		uint64_t reserved_29_63:35;
-+		uint64_t clkdiv:13;
-+		uint64_t csena3:1;
-+		uint64_t csena2:1;
-+		uint64_t csena1:1;
-+		uint64_t csena0:1;
-+		uint64_t cslate:1;
-+		uint64_t tritx:1;
-+		uint64_t idleclks:2;
-+		uint64_t cshi:1;
-+		uint64_t csena:1;
-+		uint64_t int_ena:1;
-+		uint64_t lsbfirst:1;
-+		uint64_t wireor:1;
-+		uint64_t clk_cont:1;
-+		uint64_t idlelo:1;
-+		uint64_t enable:1;
-+#else
-+		uint64_t enable:1;
-+		uint64_t idlelo:1;
-+		uint64_t clk_cont:1;
-+		uint64_t wireor:1;
-+		uint64_t lsbfirst:1;
-+		uint64_t int_ena:1;
-+		uint64_t csena:1;
-+		uint64_t cshi:1;
-+		uint64_t idleclks:2;
-+		uint64_t tritx:1;
-+		uint64_t cslate:1;
-+		uint64_t csena0:1;
-+		uint64_t csena1:1;
-+		uint64_t csena2:1;
-+		uint64_t csena3:1;
-+		uint64_t clkdiv:13;
-+		uint64_t reserved_29_63:35;
-+#endif
-+	} s;
-+	struct cvmx_mpi_cfg_cn30xx {
-+#ifdef __BIG_ENDIAN_BITFIELD
-+		uint64_t reserved_29_63:35;
-+		uint64_t clkdiv:13;
-+		uint64_t reserved_12_15:4;
-+		uint64_t cslate:1;
-+		uint64_t tritx:1;
-+		uint64_t idleclks:2;
-+		uint64_t cshi:1;
-+		uint64_t csena:1;
-+		uint64_t int_ena:1;
-+		uint64_t lsbfirst:1;
-+		uint64_t wireor:1;
-+		uint64_t clk_cont:1;
-+		uint64_t idlelo:1;
-+		uint64_t enable:1;
-+#else
-+		uint64_t enable:1;
-+		uint64_t idlelo:1;
-+		uint64_t clk_cont:1;
-+		uint64_t wireor:1;
-+		uint64_t lsbfirst:1;
-+		uint64_t int_ena:1;
-+		uint64_t csena:1;
-+		uint64_t cshi:1;
-+		uint64_t idleclks:2;
-+		uint64_t tritx:1;
-+		uint64_t cslate:1;
-+		uint64_t reserved_12_15:4;
-+		uint64_t clkdiv:13;
-+		uint64_t reserved_29_63:35;
-+#endif
-+	} cn30xx;
-+	struct cvmx_mpi_cfg_cn31xx {
-+#ifdef __BIG_ENDIAN_BITFIELD
-+		uint64_t reserved_29_63:35;
-+		uint64_t clkdiv:13;
-+		uint64_t reserved_11_15:5;
-+		uint64_t tritx:1;
-+		uint64_t idleclks:2;
-+		uint64_t cshi:1;
-+		uint64_t csena:1;
-+		uint64_t int_ena:1;
-+		uint64_t lsbfirst:1;
-+		uint64_t wireor:1;
-+		uint64_t clk_cont:1;
-+		uint64_t idlelo:1;
-+		uint64_t enable:1;
-+#else
-+		uint64_t enable:1;
-+		uint64_t idlelo:1;
-+		uint64_t clk_cont:1;
-+		uint64_t wireor:1;
-+		uint64_t lsbfirst:1;
-+		uint64_t int_ena:1;
-+		uint64_t csena:1;
-+		uint64_t cshi:1;
-+		uint64_t idleclks:2;
-+		uint64_t tritx:1;
-+		uint64_t reserved_11_15:5;
-+		uint64_t clkdiv:13;
-+		uint64_t reserved_29_63:35;
-+#endif
-+	} cn31xx;
-+	struct cvmx_mpi_cfg_cn30xx cn50xx;
-+	struct cvmx_mpi_cfg_cn61xx {
-+#ifdef __BIG_ENDIAN_BITFIELD
-+		uint64_t reserved_29_63:35;
-+		uint64_t clkdiv:13;
-+		uint64_t reserved_14_15:2;
-+		uint64_t csena1:1;
-+		uint64_t csena0:1;
-+		uint64_t cslate:1;
-+		uint64_t tritx:1;
-+		uint64_t idleclks:2;
-+		uint64_t cshi:1;
-+		uint64_t reserved_6_6:1;
-+		uint64_t int_ena:1;
-+		uint64_t lsbfirst:1;
-+		uint64_t wireor:1;
-+		uint64_t clk_cont:1;
-+		uint64_t idlelo:1;
-+		uint64_t enable:1;
-+#else
-+		uint64_t enable:1;
-+		uint64_t idlelo:1;
-+		uint64_t clk_cont:1;
-+		uint64_t wireor:1;
-+		uint64_t lsbfirst:1;
-+		uint64_t int_ena:1;
-+		uint64_t reserved_6_6:1;
-+		uint64_t cshi:1;
-+		uint64_t idleclks:2;
-+		uint64_t tritx:1;
-+		uint64_t cslate:1;
-+		uint64_t csena0:1;
-+		uint64_t csena1:1;
-+		uint64_t reserved_14_15:2;
-+		uint64_t clkdiv:13;
-+		uint64_t reserved_29_63:35;
-+#endif
-+	} cn61xx;
-+	struct cvmx_mpi_cfg_cn66xx {
-+#ifdef __BIG_ENDIAN_BITFIELD
-+		uint64_t reserved_29_63:35;
-+		uint64_t clkdiv:13;
-+		uint64_t csena3:1;
-+		uint64_t csena2:1;
-+		uint64_t reserved_12_13:2;
-+		uint64_t cslate:1;
-+		uint64_t tritx:1;
-+		uint64_t idleclks:2;
-+		uint64_t cshi:1;
-+		uint64_t reserved_6_6:1;
-+		uint64_t int_ena:1;
-+		uint64_t lsbfirst:1;
-+		uint64_t wireor:1;
-+		uint64_t clk_cont:1;
-+		uint64_t idlelo:1;
-+		uint64_t enable:1;
-+#else
-+		uint64_t enable:1;
-+		uint64_t idlelo:1;
-+		uint64_t clk_cont:1;
-+		uint64_t wireor:1;
-+		uint64_t lsbfirst:1;
-+		uint64_t int_ena:1;
-+		uint64_t reserved_6_6:1;
-+		uint64_t cshi:1;
-+		uint64_t idleclks:2;
-+		uint64_t tritx:1;
-+		uint64_t cslate:1;
-+		uint64_t reserved_12_13:2;
-+		uint64_t csena2:1;
-+		uint64_t csena3:1;
-+		uint64_t clkdiv:13;
-+		uint64_t reserved_29_63:35;
-+#endif
-+	} cn66xx;
-+	struct cvmx_mpi_cfg_cn61xx cnf71xx;
-+};
-+
-+union cvmx_mpi_datx {
-+	uint64_t u64;
-+	struct cvmx_mpi_datx_s {
-+#ifdef __BIG_ENDIAN_BITFIELD
-+		uint64_t reserved_8_63:56;
-+		uint64_t data:8;
-+#else
-+		uint64_t data:8;
-+		uint64_t reserved_8_63:56;
-+#endif
-+	} s;
-+	struct cvmx_mpi_datx_s cn30xx;
-+	struct cvmx_mpi_datx_s cn31xx;
-+	struct cvmx_mpi_datx_s cn50xx;
-+	struct cvmx_mpi_datx_s cn61xx;
-+	struct cvmx_mpi_datx_s cn66xx;
-+	struct cvmx_mpi_datx_s cnf71xx;
-+};
-+
-+union cvmx_mpi_sts {
-+	uint64_t u64;
-+	struct cvmx_mpi_sts_s {
-+#ifdef __BIG_ENDIAN_BITFIELD
-+		uint64_t reserved_13_63:51;
-+		uint64_t rxnum:5;
-+		uint64_t reserved_1_7:7;
-+		uint64_t busy:1;
-+#else
-+		uint64_t busy:1;
-+		uint64_t reserved_1_7:7;
-+		uint64_t rxnum:5;
-+		uint64_t reserved_13_63:51;
-+#endif
-+	} s;
-+	struct cvmx_mpi_sts_s cn30xx;
-+	struct cvmx_mpi_sts_s cn31xx;
-+	struct cvmx_mpi_sts_s cn50xx;
-+	struct cvmx_mpi_sts_s cn61xx;
-+	struct cvmx_mpi_sts_s cn66xx;
-+	struct cvmx_mpi_sts_s cnf71xx;
-+};
-+
-+union cvmx_mpi_tx {
-+	uint64_t u64;
-+	struct cvmx_mpi_tx_s {
-+#ifdef __BIG_ENDIAN_BITFIELD
-+		uint64_t reserved_22_63:42;
-+		uint64_t csid:2;
-+		uint64_t reserved_17_19:3;
-+		uint64_t leavecs:1;
-+		uint64_t reserved_13_15:3;
-+		uint64_t txnum:5;
-+		uint64_t reserved_5_7:3;
-+		uint64_t totnum:5;
-+#else
-+		uint64_t totnum:5;
-+		uint64_t reserved_5_7:3;
-+		uint64_t txnum:5;
-+		uint64_t reserved_13_15:3;
-+		uint64_t leavecs:1;
-+		uint64_t reserved_17_19:3;
-+		uint64_t csid:2;
-+		uint64_t reserved_22_63:42;
-+#endif
-+	} s;
-+	struct cvmx_mpi_tx_cn30xx {
-+#ifdef __BIG_ENDIAN_BITFIELD
-+		uint64_t reserved_17_63:47;
-+		uint64_t leavecs:1;
-+		uint64_t reserved_13_15:3;
-+		uint64_t txnum:5;
-+		uint64_t reserved_5_7:3;
-+		uint64_t totnum:5;
-+#else
-+		uint64_t totnum:5;
-+		uint64_t reserved_5_7:3;
-+		uint64_t txnum:5;
-+		uint64_t reserved_13_15:3;
-+		uint64_t leavecs:1;
-+		uint64_t reserved_17_63:47;
-+#endif
-+	} cn30xx;
-+	struct cvmx_mpi_tx_cn30xx cn31xx;
-+	struct cvmx_mpi_tx_cn30xx cn50xx;
-+	struct cvmx_mpi_tx_cn61xx {
-+#ifdef __BIG_ENDIAN_BITFIELD
-+		uint64_t reserved_21_63:43;
-+		uint64_t csid:1;
-+		uint64_t reserved_17_19:3;
-+		uint64_t leavecs:1;
-+		uint64_t reserved_13_15:3;
-+		uint64_t txnum:5;
-+		uint64_t reserved_5_7:3;
-+		uint64_t totnum:5;
-+#else
-+		uint64_t totnum:5;
-+		uint64_t reserved_5_7:3;
-+		uint64_t txnum:5;
-+		uint64_t reserved_13_15:3;
-+		uint64_t leavecs:1;
-+		uint64_t reserved_17_19:3;
-+		uint64_t csid:1;
-+		uint64_t reserved_21_63:43;
-+#endif
-+	} cn61xx;
-+	struct cvmx_mpi_tx_s cn66xx;
-+	struct cvmx_mpi_tx_cn61xx cnf71xx;
-+};
-+
-+#endif
--- 
-1.7.2.3
++		cmem = zs_map_object(zram->mem_pool, handle);
++		memcpy(cmem, src, clen);
++		zs_unmap_object(zram->mem_pool, handle);
+ 	}
+-	cmem = zs_map_object(zram->mem_pool, handle);
+ 
+-memstore:
+ #if 0
+ 	/* Back-reference needed for memory defragmentation */
+ 	if (!zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)) {
+@@ -424,18 +430,6 @@ memstore:
+ 	}
+ #endif
+ 
+-	memcpy(cmem, src, clen);
+-
+-	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+-		kunmap_atomic(cmem);
+-		kunmap_atomic(src);
+-	} else {
+-		zs_unmap_object(zram->mem_pool, handle);
+-	}
+-
+-	zram->table[index].handle = handle;
+-	zram->table[index].size = clen;
+-
+ 	/* Update stats */
+ 	zram_stat64_add(zram, &zram->stats.compr_size, clen);
+ 	zram_stat_inc(&zram->stats.pages_stored);
+@@ -580,6 +574,8 @@ error:
+ void __zram_reset_device(struct zram *zram)
+ {
+ 	size_t index;
++	void *handle;
++	struct page *page;
+ 
+ 	zram->init_done = 0;
+ 
+@@ -592,14 +588,17 @@ void __zram_reset_device(struct zram *zram)
+ 
+ 	/* Free all pages that are still in this zram device */
+ 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+-		void *handle = zram->table[index].handle;
+-		if (!handle)
+-			continue;
+-
+-		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)))
+-			__free_page(handle);
+-		else
++		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
++			page = zram->table[index].page;
++			if (!page)
++				continue;
++			__free_page(page);
++		} else {
++			handle = zram->table[index].handle;
++			if (!handle)
++				continue;
+ 			zs_free(zram->mem_pool, handle);
++		}
+ 	}
+ 
+ 	vfree(zram->table);
 
