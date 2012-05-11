@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422655Ab2EKSIj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:08:39 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:42105 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933067Ab2EKSIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:08:34 -0400
-Message-ID: <4FAD54E1.6040106@parallels.com>
-Date: Fri, 11 May 2012 15:05:21 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1422668Ab2EKSJb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:09:31 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:21676 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422636Ab2EKSJ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 14:09:28 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6708"; a="190113390"
+Date: Fri, 11 May 2012 11:09:26 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] arm: msm: fix up very basic HTC Sapphire support
+Message-ID: <20120511180926.GC12227@codeaurora.org>
+References: <1334203443-30011-1-git-send-email-dwalker@fifo99.com>
+ <CAOesGMiHfQwWXSQwvcEPxY63FEjbsB7ux4dHvAPM99Kf43cDZw@mail.gmail.com>
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>
-Subject: Re: [PATCH v2 00/29] kmem limitation for memcg
-References: <1336758272-24284-1-git-send-email-glommer@parallels.com>
-In-Reply-To: <1336758272-24284-1-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.105.248.83]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOesGMiHfQwWXSQwvcEPxY63FEjbsB7ux4dHvAPM99Kf43cDZw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 02:44 PM, Glauber Costa wrote:
-> Hello All,
->
-> This is my new take for the memcg kmem accounting.
-> At this point, I consider the series pretty mature - although of course,
-> bugs are always there...
->
-> As a disclaimer, however, I must say that the slub code is much more stressed
-> by me, since I know it better. If you have no more objections to the concepts
-> presented, the remaining edges can probably be polished in a rc cycle,
-> at the maintainers discretion, of course.
->
-> Otherwise, I'll be happy to address any concerns of yours.
->
-> Since last submission:
->
->   * memcgs can be properly removed.
->   * We are not charging based on current->mm->owner instead of current
->   * kmem_large allocations for slub got some fixes, specially for the free case
->   * A cache that is registered can be properly removed (common module case)
->     even if it spans memcg children. Slab had some code for that, now it works
->     well with both
->   * A new mechanism for skipping allocations is proposed (patch posted
->     separately already). Now instead of having kmalloc_no_account, we mark
->     a region as non-accountable for memcg.
->
-Forgot to mention the ida-based index allocation, instead of keeping our 
-own bitmap.
+On Wed, May 09, 2012 at 01:39:05AM -0700, Olof Johansson wrote:
+> Hi,
+> 
+> On Wed, Apr 11, 2012 at 9:04 PM, Daniel Walker <dwalker@fifo99.com> wrote:
+> > Adds sapphire into the make file, and fixes all the code problems that
+> > prevented it from building (including adding board-sapphire.h)
+> >
+> > Signed-off-by: Daniel Walker <dwalker@fifo99.com>
+> > ---
+> >  arch/arm/mach-msm/Kconfig          |   10 +-
+> >  arch/arm/mach-msm/Makefile         |    1 +
+> >  arch/arm/mach-msm/board-sapphire.c |   18 +--
+> >  arch/arm/mach-msm/board-sapphire.h |  224 ++++++++++++++++++++++++++++++++++++
+> >  4 files changed, 235 insertions(+), 18 deletions(-)
+> >  create mode 100644 arch/arm/mach-msm/board-sapphire.h
+> >
+> > diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+> > index 1cd40ad..04f3b8e 100644
+> > --- a/arch/arm/mach-msm/Kconfig
+> > +++ b/arch/arm/mach-msm/Kconfig
+> > @@ -6,7 +6,6 @@ choice
+> >
+> >  config ARCH_MSM7X00A
+> >        bool "MSM7x00A / MSM7x01A"
+> > -       select MACH_TROUT if !MACH_HALIBUT
+> >        select ARCH_MSM_ARM11
+> >        select MSM_SMD
+> >        select MSM_SMD_PKG3
+> > @@ -80,6 +79,7 @@ config  MSM_VIC
+> >  menu "Qualcomm MSM Board Type"
+> >
+> >  config MACH_HALIBUT
+> > +       select MACH_TROUT if !MACH_SAPPHIRE && !MACH_HALIBUT
+> 
+> This doesn't seem to make much sense here.
+> 
+> >        depends on ARCH_MSM
+> >        depends on ARCH_MSM7X00A
+> >        bool "Halibut Board (QCT SURF7201A)"
+> > @@ -93,6 +93,14 @@ config MACH_TROUT
+> >        help
+> >          Support for the HTC Dream, T-Mobile G1, Android ADP1 devices.
+> >
+> > +config MACH_SAPPHIRE
+> > +       select MACH_TROUT if !MACH_HALIBUT && !MACH_SAPPHIRE
+> 
+> Nor does this.
+> 
+> I presume these are here to make sure that at least one of the boards
+> is selected. There are already build checks to make sure that at least
+> one machine entry exists, so if a user mis-configures his kernel he
+> will hit a build error. Seems as reasonable as any catch for this.
+> 
+> If you feel strongly that you need to select at least one board, then
+> do so at the ARCH_ level, not on every board option.
+
+I'll go ahead and leave this patch out of the msm-core tree for 3.5.
+Daniel, feel free to update the patch, and I can make another pull.
+
+David
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
