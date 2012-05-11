@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759260Ab2EKMnf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 08:43:35 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:25733
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753318Ab2EKMne (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 08:43:34 -0400
-X-SpamScore: -19
-X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4R8275bh8275dhz2dh668h839h944hd25he5bh)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M3UZCC-02-9C4-02
-X-M-MSG: 
-Date: Fri, 11 May 2012 14:43:27 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: KyongHo <pullip.cho@samsung.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>,
-        <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
-        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>
-Subject: Re: [PATCH] iommu/exynos: Add iommu driver for Exynos Platforms
-Message-ID: <20120511124327.GB11750@amd.com>
-References: <000001cd2f71$62c5c2f0$285148d0$%cho@samsung.com>
+	id S1759453Ab2EKMr6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 08:47:58 -0400
+Received: from antcom.de ([188.40.178.216]:35811 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758563Ab2EKMr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 08:47:57 -0400
+Message-ID: <4FAD0A79.8040207@antcom.de>
+Date: Fri, 11 May 2012 14:47:53 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <000001cd2f71$62c5c2f0$285148d0$%cho@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Grant Likely <grant.likely@secretlab.ca>, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, devicetree-discuss@lists.ozlabs.org,
+        rob.herring@calxeda.com
+Subject: Re: [PATCH RESEND v8] gpio: Device tree support for LPC32xx
+References: <1336679838-30738-1-git-send-email-stigge@antcom.de> <20120510234100.7F5463E04A6@localhost> <201205111219.10025.arnd@arndb.de>
+In-Reply-To: <201205111219.10025.arnd@arndb.de>
+X-Enigmail-Version: 1.3.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 09:27:09PM +0900, KyongHo wrote:
-> This is the System MMU driver and IOMMU API implementation for Exynos SOC
-> platforms. Exynos platforms has more than 10 System MMUs dedicated for each
-> multimedia accelerators.
+On 05/11/2012 02:19 PM, Arnd Bergmann wrote:
+> On Thursday 10 May 2012, Grant Likely wrote:
+>> How about the following instead (very rough, there should be a cleaner
+>> way to update the gc pointer in of_xlate):
+>>
+>>         gpio: gpio@40028000 {
+>>                 compatible = "nxp,lpc3220-gpio";
+>>                 reg = <0x40028000 0x1000>;
+>>                 gpio-controller;
+>>                 #gpio-cells = <3>; /* bank, pin, flags */
+>>         }
+>>
 > 
-> The System MMU driver is already in arc/arm/plat-s5p but it is moved to
-> drivers/iommu due to Ohad Ben-Cohen gathered IOMMU drivers there
-> 
-> Any device driver in Exynos platforms that needs to control its System MMU must
-> call platform_set_sysmmu() to inform System MMU driver who will control it.
-> platform_set_sysmmu() is defined in <mach/sysmmu.h>
-> 
-> To compile this patch,
-> you will need "for-next" branch of the linux-samsung.git:
-> git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
-> Other patches needed by this patch are merged to the above branch.
-> 
-> Cc: Joerg Roedel <joerg.roedel@amd.com>
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
-> Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+> I thought about that when I suggested the current binding to Roland,
+> but the problem with this is that passing the bank as a number is
+> not very intuitive when the data sheet has separate number spaces
+> for gpio, gpi and gpo here, so it seemed more natural to go with what
+> the data sheet describes.
 
-Looks good.
+Right. Personally, I would be fine with either of my v8 (all banks in
+dt, referenced naturally by name) and v9 (one simple DT entry for the
+whole GPIO controller, integer index for referencing banks) patches.
 
-Acked-by: Joerg Roedel <joerg.roedel@amd.com>
+Consider the DT-documented mapping in the latter case:
 
-Please get this merged via the Samsung tree. Since the patch depends on
-that tree anyway it makes the most sense to be there.
+      0: GPIO P0
+      1: GPIO P1
+      2: GPIO P2
+      3: GPIO P3
+      4: GPI P3
+      5: GPO P3
 
--- 
-AMD Operating System Research Center
+Not too difficult and would also be acceptable, IMO.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+So Arnd and Grant, please agree one of those and pick it. :-)
 
+Thanks in advance,
+
+Roland
