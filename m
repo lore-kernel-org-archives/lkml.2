@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932795Ab2EKRlS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 13:41:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34465 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932600Ab2EKRlP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 13:41:15 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio/msm-v1: re-read IRQ flags on each iteration
-To: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>,
-        Linus Walleij <linus.walleij@linaro.org>
-In-Reply-To: <1336738032-14940-1-git-send-email-linus.walleij@stericsson.com>
-References: <1336738032-14940-1-git-send-email-linus.walleij@stericsson.com>
-Date: Fri, 11 May 2012 11:41:12 -0600
-Message-Id: <20120511174112.D9EEE3E0791@localhost>
+	id S932750Ab2EKRmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 13:42:13 -0400
+Received: from mga11.intel.com ([192.55.52.93]:61777 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757972Ab2EKRmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 13:42:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="165046725"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Chen Gong <gong.chen@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: RE: [PATCH 2/2] x86/mce: Add instruction recovery signatures to
+ mce-severity table
+Thread-Topic: [PATCH 2/2] x86/mce: Add instruction recovery signatures to
+ mce-severity table
+Thread-Index: AQHNL0lNX6PGPdBkbUOeJPxXhK/15JbE0YwA
+Date: Fri, 11 May 2012 17:42:09 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F192ED617@ORSMSX104.amr.corp.intel.com>
+References: <cover.1336674796.git.tony.luck@intel.com>
+ <0e89440bf6444635bde0b876eedd26e5c51f9ca3.1336674796.git.tony.luck@intel.com>
+ <4FACC25B.80305@linux.intel.com>
+In-Reply-To: <4FACC25B.80305@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4BHgNVr020686
 
-On Fri, 11 May 2012 14:07:12 +0200, Linus Walleij <linus.walleij@stericsson.com> wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> We have recently found a number or erroneous IRQ handlers in
-> the kernel where the flag iterator loop miss IRQs that get
-> raised when the loop is executing. This was spotted in the
-> MSM v1 GPIO driver by Julia Lawall using this cocinelle
-> snippet:
-> 
-> @@
-> expression pending,gedr,e1;
-> statement S;
-> @@
-> 
-> *pending = readl(gedr);
-> ... when != pending = e1
-> while (pending) S
-> 
-> Reported-by: Julia Lawall <julia.lawall@lip6.fr>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> For IFU, on affected logical processors, RIPV and EIPV both are 0,
+> since now new IFU entries are added into severity table, the old
+> entry as below should be removed:
+>
+> /* Neither return not error IP -- no chance to recover -> PANIC */
+>        MCESEV(
+>                PANIC, "Neither restart nor error IP",
+>                MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, 0)
+>                ),
 
-Thanks Linus,
+We need to keep this. If EIPV is not set, then CS and IP on the
+stack are not guaranteed ... so we can't tell whether the error
+happened in user or kernel mode. This makes recovery "challenging".
 
-I'll need an ack from an msm developer before applying this.
+I'm trying to figure out a quirk for processors that do generate
+EIPV=RIPV=0 signature for IFU errors. There are some case where
+we can work around the lack of EIPV.
 
-g.
+-Tony
 
-> ---
->  drivers/gpio/gpio-msm-v1.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-msm-v1.c b/drivers/gpio/gpio-msm-v1.c
-> index 52a4d42..68ca760 100644
-> --- a/drivers/gpio/gpio-msm-v1.c
-> +++ b/drivers/gpio/gpio-msm-v1.c
-> @@ -567,9 +567,9 @@ static void msm_gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
->  
->  	for (i = 0; i < msm_gpio_count; i++) {
->  		struct msm_gpio_chip *msm_chip = &msm_gpio_chips[i];
-> -		val = readl(msm_chip->regs.int_status);
-> -		val &= msm_chip->int_enable[0];
-> -		while (val) {
-> +
-> +		while (val = (readl(msm_chip->regs.int_status) &
-> +			      msm_chip->int_enable[0])) {
->  			mask = val & -val;
->  			j = fls(mask) - 1;
->  			/* printk("%s %08x %08x bit %d gpio %d irq %d\n",
-> -- 
-> 1.7.9.2
-> 
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
