@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030217Ab2EKLCI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 07:02:08 -0400
-Received: from mga14.intel.com ([143.182.124.37]:64406 "EHLO mga14.intel.com"
+	id S1030271Ab2EKLCX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 07:02:23 -0400
+Received: from mga03.intel.com ([143.182.124.21]:25575 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758999Ab2EKLCG convert rfc822-to-8bit (ORCPT
+	id S1759167Ab2EKLCV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 07:02:06 -0400
+	Fri, 11 May 2012 07:02:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="98914876"
+   d="scan'208";a="98914974"
 From: "Du, ChangbinX" <changbinx.du@intel.com>
 To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
         "mina86@mina86.com" <mina86@mina86.com>,
@@ -17,13 +17,11 @@ To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
         "balbi@ti.com" <balbi@ti.com>, "hpa@zytor.com" <hpa@zytor.com>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: [PATCH 2/3] testusb: using real device-nodes managed by udev
- instead of using usbfs
-Thread-Topic: [PATCH 2/3] testusb: using real device-nodes managed by udev
- instead of using usbfs
-Thread-Index: AQHNL1p/cPl9Qq41ikap8bVWXEqTwJbEa8gQ
-Date: Fri, 11 May 2012 11:02:01 +0000
-Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A060D0C@SHSMSX101.ccr.corp.intel.com>
+Subject: [PATCH 3/3] testusb: improve testing output pattern
+Thread-Topic: [PATCH 3/3] testusb: improve testing output pattern
+Thread-Index: AQHNL1p/AScWMv1/6EG7a+F8iVYplpbEa9Lw
+Date: Fri, 11 May 2012 11:02:16 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A060D13@SHSMSX101.ccr.corp.intel.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -36,121 +34,268 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the usbfs functionality have replaced by real device-nodes managed by udev whose nodes lived in /dev/bus/usb for a long time, testusb tool need update correspondingly.
+1. more help message to make it easier to use.
+2. print VID/PID for each device found.
+3. each case testing result is displayed by columns "DEVICE","TEST-NUM"," RESULT","DURATION(s)","ERROR".
+output example:
+$ ./testusb -a
+/dev/bus/usb/002/083	VID/PID:0x0525/0xa4a0	speed:unknown	interface:0
 
-Because udev path is fixed, so the "-A" option no longer need and it is removed.
+DEVICE                TEST-NUM  RESULT  DURATION(s)  ERROR
+/dev/bus/usb/002/083  0         pass    0.000007     (0)Success
+/dev/bus/usb/002/083  1         pass    9.523400     (0)Success
+/dev/bus/usb/002/083  2         pass    0.125101     (0)Success
+/dev/bus/usb/002/083  3         pass    0.249602     (0)Success
+/dev/bus/usb/002/083  4         pass    0.125075     (0)Success
+/dev/bus/usb/002/083  5         pass    1.000218     (0)Success
+/dev/bus/usb/002/083  6         pass    0.999864     (0)Success
+/dev/bus/usb/002/083  7         pass    0.999987     (0)Success
+/dev/bus/usb/002/083  8         pass    0.999883     (0)Success
+/dev/bus/usb/002/083  9         pass    4.500352     (0)Success
+/dev/bus/usb/002/083  10        fail    4.500352     (71)Protocol error
+/dev/bus/usb/002/083  11        fail    4.500352     (71)Protocol error
+/dev/bus/usb/002/083  12        fail    4.500352     (71)Protocol error
 
 Signed-off-by: Du Changbin <changbinx.du@intel.com>
 ---
- tools/usb/testusb.c |   53 +++++++++------------------------------------------
- 1 file changed, 9 insertions(+), 44 deletions(-)
+ tools/usb/testusb.c |  118 +++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 72 insertions(+), 46 deletions(-)
 
-diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c index 6e0f567..4fcb656 100644
+diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c index 4fcb656..e735ca0 100644
 --- a/tools/usb/testusb.c
 +++ b/tools/usb/testusb.c
-@@ -253,9 +253,6 @@ static int find_testdev(const char *name, const struct stat *sb, int flag)
+@@ -4,6 +4,7 @@
+  * Copyright (c) 2002 by David Brownell
+  * Copyright (c) 2010 by Samsung Electronics
+  * Author: Michal Nazarewicz <mina86@mina86.com>
++ * Copyright (c) 2012 by Du Changbin <changbinx.du@intel.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the @@ -135,6 +136,7 @@ struct testdev {
+ 	int			test;
  
- 	if (flag != FTW_F)
- 		return 0;
--	/* ignore /proc/bus/usb/{devices,drivers} */
--	if (strrchr(name, '/')[1] == 'd')
--		return 0;
+ 	struct usbtest_param	param;
++	struct usb_device_descriptor	descriptor;
+ };
+ static struct testdev		*testdevs;
  
- 	fd = fopen(name, "rb");
- 	if (!fd) {
-@@ -354,31 +351,6 @@ restart:
- 	return arg;
+@@ -161,18 +163,16 @@ static int testdev_ffs_ifnum(FILE *fd)
+ 	}
  }
  
--static const char *usbfs_dir_find(void) -{
--	static char usbfs_path_0[] = "/dev/usb/devices";
--	static char usbfs_path_1[] = "/proc/bus/usb/devices";
+-static int testdev_ifnum(FILE *fd)
++static int testdev_ifnum(FILE *fd, struct usb_device_descriptor *dev)
+ {
+-	struct usb_device_descriptor dev;
 -
--	static char *const usbfs_paths[] = {
--		usbfs_path_0, usbfs_path_1
--	};
--
--	static char *const *
--		end = usbfs_paths + sizeof usbfs_paths / sizeof *usbfs_paths;
--
--	char *const *it = usbfs_paths;
--	do {
--		int fd = open(*it, O_RDONLY);
--		close(fd);
--		if (fd >= 0) {
--			strrchr(*it, '/')[0] = '\0';
--			return *it;
--		}
--	} while (++it != end);
--
--	return NULL;
--}
--
- static int parse_num(unsigned *num, const char *str)  {
- 	unsigned long val;
-@@ -398,7 +370,7 @@ int main (int argc, char **argv)
- 	int			c;
- 	struct testdev		*entry;
- 	char			*device;
--	const char		*usbfs_dir = NULL;
-+	const char		*usb_dir = "/dev/bus/usb";
- 	int			all = 0, forever = 0, not = 0;
- 	int			test = -1 /* all */;
- 	struct usbtest_param	param;
-@@ -420,14 +392,11 @@ int main (int argc, char **argv)
- 	/* for easy use when hotplugging */
- 	device = getenv ("DEVICE");
+-	if (fread(&dev, sizeof dev, 1, fd) != 1)
++	if (fread(dev, sizeof *dev, 1, fd) != 1)
+ 		return -1;
  
--	while ((c = getopt (argc, argv, "D:aA:c:g:hns:t:v:")) != EOF)
-+	while ((c = getopt (argc, argv, "D:ac:g:lhns:t:v:")) != EOF)
- 	switch (c) {
- 	case 'D':	/* device, if only one */
- 		device = optarg;
- 		continue;
--	case 'A':	/* use all devices with specified usbfs dir */
--		usbfs_dir = optarg;
--		/* FALL THROUGH */
- 	case 'a':	/* use all devices */
- 		device = NULL;
- 		all = 1;
-@@ -463,7 +432,7 @@ int main (int argc, char **argv)
+-	if (dev.bLength != sizeof dev || dev.bDescriptorType != USB_DT_DEVICE)
++	if (dev->bLength != sizeof *dev || dev->bDescriptorType != 
++USB_DT_DEVICE)
+ 		return -1;
+ 
+ 	/* FX2 with (tweaked) bulksrc firmware */
+-	if (dev.idVendor == 0x0547 && dev.idProduct == 0x1002)
++	if (dev->idVendor == 0x0547 && dev->idProduct == 0x1002)
+ 		return 0;
+ 
+ 	/*----------------------------------------------------*/
+@@ -188,45 +188,45 @@ static int testdev_ifnum(FILE *fd)
+ 	 */
+ 
+ 	/* generic EZ-USB FX controller */
+-	if (dev.idVendor == 0x0547 && dev.idProduct == 0x2235)
++	if (dev->idVendor == 0x0547 && dev->idProduct == 0x2235)
+ 		return 0;
+ 
+ 	/* generic EZ-USB FX2 controller */
+-	if (dev.idVendor == 0x04b4 && dev.idProduct == 0x8613)
++	if (dev->idVendor == 0x04b4 && dev->idProduct == 0x8613)
+ 		return 0;
+ 
+ 	/* CY3671 development board with EZ-USB FX */
+-	if (dev.idVendor == 0x0547 && dev.idProduct == 0x0080)
++	if (dev->idVendor == 0x0547 && dev->idProduct == 0x0080)
+ 		return 0;
+ 
+ 	/* Keyspan 19Qi uses an21xx (original EZ-USB) */
+-	if (dev.idVendor == 0x06cd && dev.idProduct == 0x010b)
++	if (dev->idVendor == 0x06cd && dev->idProduct == 0x010b)
+ 		return 0;
+ 
+ 	/*----------------------------------------------------*/
+ 
+ 	/* "gadget zero", Linux-USB test software */
+-	if (dev.idVendor == 0x0525 && dev.idProduct == 0xa4a0)
++	if (dev->idVendor == 0x0525 && dev->idProduct == 0xa4a0)
+ 		return 0;
+ 
+ 	/* user mode subset of that */
+-	if (dev.idVendor == 0x0525 && dev.idProduct == 0xa4a4)
++	if (dev->idVendor == 0x0525 && dev->idProduct == 0xa4a4)
+ 		return testdev_ffs_ifnum(fd);
+ 		/* return 0; */
+ 
+ 	/* iso version of usermode code */
+-	if (dev.idVendor == 0x0525 && dev.idProduct == 0xa4a3)
++	if (dev->idVendor == 0x0525 && dev->idProduct == 0xa4a3)
+ 		return 0;
+ 
+ 	/* some GPL'd test firmware uses these IDs */
+ 
+-	if (dev.idVendor == 0xfff0 && dev.idProduct == 0xfff0)
++	if (dev->idVendor == 0xfff0 && dev->idProduct == 0xfff0)
+ 		return 0;
+ 
+ 	/*----------------------------------------------------*/
+ 
+ 	/* iBOT2 high speed webcam */
+-	if (dev.idVendor == 0x0b62 && dev.idProduct == 0x0059)
++	if (dev->idVendor == 0x0b62 && dev->idProduct == 0x0059)
+ 		return 0;
+ 
+ 	/*----------------------------------------------------*/
+@@ -235,9 +235,9 @@ static int testdev_ifnum(FILE *fd)
+ 	 * anywhere.  We look for an interface descriptor that match
+ 	 * what we expect.  We ignore configuratiens thou. */
+ 
+-	if (dev.idVendor == 0x0525 && dev.idProduct == 0xa4ac
+-	 && (dev.bDeviceClass == USB_CLASS_PER_INTERFACE
+-	  || dev.bDeviceClass == USB_CLASS_VENDOR_SPEC))
++	if (dev->idVendor == 0x0525 && dev->idProduct == 0xa4ac
++	 && (dev->bDeviceClass == USB_CLASS_PER_INTERFACE
++	  || dev->bDeviceClass == USB_CLASS_VENDOR_SPEC))
+ 		return testdev_ffs_ifnum(fd);
+ 
+ 	return -1;
+@@ -260,14 +260,15 @@ static int find_testdev(const char *name, const struct stat *sb, int flag)
+ 		return 0;
+ 	}
+ 
+-	ifnum = testdev_ifnum(fd);
+-	fclose(fd);
+-	if (ifnum < 0)
+-		return 0;
+-
+ 	entry = calloc(1, sizeof *entry);
+ 	if (!entry)
+ 		goto nomem;
++	memset (entry, 0, sizeof *entry);
++
++	ifnum = testdev_ifnum(fd, &entry->descriptor);
++	fclose(fd);
++	if (ifnum < 0)
++		return 0;
+ 
+ 	entry->name = strdup(name);
+ 	if (!entry->name) {
+@@ -282,8 +283,9 @@ nomem:
+ 	/* FIXME ask usbfs what speed; update USBDEVFS_CONNECTINFO so
+ 	 * it tells about high speed etc */
+ 
+-	fprintf(stderr, "%s speed\t%s\t%u\n",
+-		speed(entry->speed), entry->name, entry->ifnum);
++	fprintf(stderr, "%s\tVID/PID:0x%04x/0x%04x\tspeed:%s\tinterface:%u\n",
++			entry->name, entry->descriptor.idVendor, entry->descriptor.idProduct,
++			speed(entry->speed), entry->ifnum);
+ 
+ 	entry->next = testdevs;
+ 	testdevs = entry;
+@@ -302,6 +304,36 @@ usbdev_ioctl (int fd, int ifno, unsigned request, void *param)
+ 	return ioctl (fd, USBDEVFS_IOCTL, &wrapper);  }
+ 
++static void print_result(const char *device, const struct usbtest_param *p,
++		int status, int err)
++{
++	static int first = 1;
++	char	testnum[5];
++	char	duration[10];
++	char	result[5] = "pass";
++	char	error[80];
++	char	formate[] = "%-22s%-10s%-8s%-13s%-s";
++
++	snprintf(testnum, sizeof testnum, "%d", p->test_num);
++	snprintf(duration, sizeof duration, "%-d.%-.06d",
++			(int) p->duration.tv_sec, (int) p->duration.tv_usec);
++	if (status < 0)
++		snprintf(result, sizeof result, "fail");
++	snprintf(error, sizeof error, "(%d)", err);
++	strerror_r(err, error + strlen(error), sizeof error - strlen(error));
++	
++	if (first) {
++		printf("\n");
++		printf(formate, "DEVICE", "TEST-NUM", "RESULT", "DURATION(s)", "ERROR");
++		printf("\n");
++		first = 0;
++	}
++	printf(formate, device, testnum, result, duration, error);
++	printf("\n");
++	fflush (stdout);
++}
++
++/* do test work on specific device */
+ static void *handle_testdev (void *arg)  {
+ 	struct testdev		*dev = arg;
+@@ -327,22 +359,7 @@ restart:
+ 		/* FIXME need a "syslog it" option for background testing */
+ 
+ 		/* NOTE: each thread emits complete lines; no fragments! */
+-		if (status < 0) {
+-			char	buf [80];
+-			int	err = errno;
+-
+-			if (strerror_r (errno, buf, sizeof buf)) {
+-				snprintf (buf, sizeof buf, "error %d", err);
+-				errno = err;
+-			}
+-			printf ("%s test %d --> %d (%s)\n",
+-				dev->name, i, errno, buf);
+-		} else
+-			printf ("%s test %d, %4d.%.06d secs\n", dev->name, i,
+-				(int) dev->param.duration.tv_sec,
+-				(int) dev->param.duration.tv_usec);
+-
+-		fflush (stdout);
++		print_result(dev->name, &dev->param, status, errno);
+ 	}
+ 	if (dev->forever)
+ 		goto restart;
+@@ -432,10 +449,19 @@ int main (int argc, char **argv)
  	case 'h':
  	default:
  usage:
--		fprintf (stderr, "usage: %s [-n] [-D dev | -a | -A usbfs-dir]\n"
-+		fprintf (stderr, "usage: %s [-n] [-D dev | -a]\n"
- 			"\t[-c iterations]  [-t testnum]\n"
- 			"\t[-s packetsize] [-g sglen] [-v vary]\n",
- 			argv [0]);
-@@ -473,22 +442,18 @@ usage:
- 		goto usage;
- 	if (!all && !device) {
- 		fprintf (stderr, "must specify '-a' or '-D dev', "
--			"or DEVICE=/proc/bus/usb/BBB/DDD in env\n");
-+			"or DEVICE=%s/BBB/DDD in env\n", usb_dir);
+-		fprintf (stderr, "usage: %s [-n] [-D dev | -a]\n"
+-			"\t[-c iterations]  [-t testnum]\n"
+-			"\t[-s packetsize] [-g sglen] [-v vary]\n",
+-			argv [0]);
++		fprintf (stderr,
++			"usage: %s [options]\n"
++			"Options:\n"
++			"	-n		no test running, just show devices to be tested\n"
++			"	-D dev		only test specific device: %s/BBB/DDD\n"
++			"	-a		test all recognized devices\n"
++			"	-l		loop forever(for stress test)\n"
++			"	-t testnum	only run a specific case\n"
++			"	-c iterations	default 1000\n"
++			"	-s packetsize	default 512\n"
++			"	-g sglen	default 32\n"
++			"	-v vary		default 512\n",
++			argv [0], usb_dir);
+ 		return 1;
+ 	}
+ 	if (optind != argc)
+@@ -446,7 +472,7 @@ usage:
  		goto usage;
  	}
  
--	/* Find usbfs mount point */
--	if (!usbfs_dir) {
--		usbfs_dir = usbfs_dir_find();
--		if (!usbfs_dir) {
--			fputs ("usbfs files are missing\n", stderr);
--			return -1;
--		}
-+	if (access(usb_dir,F_OK) != 0) {
-+		fprintf(stderr, "can not find path %s\n", usb_dir);
-+		return -1;
- 	}
- 
- 	/* collect and list the test devices */
--	if (ftw (usbfs_dir, find_testdev, 3) != 0) {
--		fputs ("ftw failed; is usbfs missing?\n", stderr);
-+	if (ftw (usb_dir, find_testdev, 3) != 0) {
-+		fputs ("ftw failed.\n", stderr);
+-	if (access(usb_dir,F_OK) != 0) {
++	if (access(usb_dir, F_OK) != 0) {
+ 		fprintf(stderr, "can not find path %s\n", usb_dir);
  		return -1;
  	}
- 
 --
 1.7.9.5
 
