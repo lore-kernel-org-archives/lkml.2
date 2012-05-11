@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab2EKXf4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 19:35:56 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:33356 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754984Ab2EKXfy (ORCPT
+	id S1758298Ab2EKXhK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 19:37:10 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:57623 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754567Ab2EKXhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 19:35:54 -0400
-Message-ID: <4FADA267.1020608@xenotime.net>
-Date: Fri, 11 May 2012 16:36:07 -0700
+	Fri, 11 May 2012 19:37:08 -0400
+Message-ID: <4FADA2B2.8070302@xenotime.net>
+Date: Fri, 11 May 2012 16:37:22 -0700
 From: Randy Dunlap <rdunlap@xenotime.net>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
 To: Stephen Rothwell <sfr@canb.auug.org.au>
 CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@vrfy.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH -next] printk: add stub for prepend_timestamp()
-References: <20120511162738.1d65b6efe099a54841be6313@canb.auug.org.au> <4FAD9E94.7020109@xenotime.net>
-In-Reply-To: <4FAD9E94.7020109@xenotime.net>
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: [PATCH -next] via_wdt: depends on PCI
+References: <20120511162738.1d65b6efe099a54841be6313@canb.auug.org.au>
+In-Reply-To: <20120511162738.1d65b6efe099a54841be6313@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
@@ -28,26 +27,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <rdunlap@xenotime.net>
 
-Add a stub for prepend_timestamp() when CONFIG_PRINTK is not
-enabled.  Fixes this build error:
+via_wdt is a PCI driver so it should depend on PCI so that
+it will not cause build errors.
 
-kernel/printk.c:1770:3: error: implicit declaration of function 'prepend_timestamp'
+drivers/watchdog/via_wdt.c:256:1: warning: data definition has no type or storage class
+drivers/watchdog/via_wdt.c:256:1: warning: type defaults to 'int' in declaration of 'module_pci_driver'
+drivers/watchdog/via_wdt.c:256:1: warning: parameter names (without types) in function declaration
 
 Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
- kernel/printk.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/watchdog/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- linux-next-20120511.orig/kernel/printk.c
-+++ linux-next-20120511/kernel/printk.c
-@@ -1439,6 +1439,10 @@ static struct log *log_from_idx(u32 idx)
- static u32 log_next(u32 idx) { return 0; }
- static char *log_text(const struct log *msg) { return NULL; }
- static void call_console_drivers(int level, const char *text, size_t len) {}
-+static size_t prepend_timestamp(unsigned long long t, char *buf)
-+{
-+	return 0;
-+}
+--- linux-next-20120511.orig/drivers/watchdog/Kconfig
++++ linux-next-20120511/drivers/watchdog/Kconfig
+@@ -788,7 +788,7 @@ config SMSC37B787_WDT
  
- #endif /* CONFIG_PRINTK */
- 
+ config VIA_WDT
+ 	tristate "VIA Watchdog Timer"
+-	depends on X86
++	depends on X86 && PCI
+ 	select WATCHDOG_CORE
+ 	---help---
+ 	This is the driver for the hardware watchdog timer on VIA
