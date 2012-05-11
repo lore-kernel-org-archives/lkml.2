@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759214Ab2EKGaz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:30:55 -0400
-Received: from mga03.intel.com ([143.182.124.21]:30228 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758371Ab2EKGaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:30:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="141755921"
-Subject: [PATCH] dmaengine: fix cyclic dma usage
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: rmk <rmk@arm.linux.org.uk>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Mika Westerberg <mika.westerberg@iki.fi>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 May 2012 11:54:09 +0530
-Message-ID: <1336717449.15424.1585.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1759258Ab2EKGbG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:31:06 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46392 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759227Ab2EKGbB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 02:31:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FAC959E.4070305@canonical.com>
+References: <1336609592-3825-1-git-send-email-bryan.wu@canonical.com>
+ <20120510111958.7cb00da9.akpm@linux-foundation.org> <CAK5ve-LYW6gkZ1Ew76THu5jJDjfyH57EL6eTGC8s9n6d77a3wQ@mail.gmail.com>
+ <20120510115332.7c5a262b.akpm@linux-foundation.org> <4FAC959E.4070305@canonical.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Fri, 11 May 2012 14:30:40 +0800
+X-Google-Sender-Auth: BR-_etEGXaSLGadhbnBwJ2H2m9k
+Message-ID: <CAK5ve-+4uyxv92M4rhL+Y1Rkp1Ab7fx6rkXMnMT0EQKe=iCaWg@mail.gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: Add maintainer for LED subsystem
+To: tim.gardner@canonical.com
+Cc: Andrew Morton <akpm@linux-foundation.org>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 11, 2012 at 12:29 PM, Tim Gardner <rtg.canonical@gmail.com> wrote:
+>>> Actually I have account on kernel.org, but it was removed maybe after
+>>> we restored kernel.org due to attacking. So is possible for me to
+>>> apply it again, I was told I need more GPG  key signed, right? Or I
+>>> will setup a tree in kernel.ubuntu.com/git.
+>>
+>>
+>> Either's OK by me.  You're at a conference, yes?  A good place to get
+>> keys signed!
+>>
+>
+> Bryan - Get your key signed by Kees Cook who is here this week.
+>
 
->From 24db9e25a31ac46327253f11908463c48518dec8 Mon Sep 17 00:00:00 2001
-From: Vinod Koul <vinod.koul@linux.intel.com>
-Date: Fri, 11 May 2012 11:48:21 +0530
-Subject: [PATCH] dmaengine: fix cyclic dma usage
+Yeah, with John and Stephan's help, I created a new 4096 GPG key and
+handed over the fingerprint card to Kees. He will help to sign my key
+soon.
 
-for cyclic dma, dont mark the descriptor as complete.
-Fix the remaining users of cyclic dma which do so
-
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
----
-Looking for tested by for these two
----
- drivers/dma/at_hdmac.c   |    4 +++-
- drivers/dma/ep93xx_dma.c |    4 +++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index 445fdf8..bf0d7e4 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -245,7 +245,9 @@ atc_chain_complete(struct at_dma_chan *atchan, struct at_desc *desc)
- 	dev_vdbg(chan2dev(&atchan->chan_common),
- 		"descriptor %u complete\n", txd->cookie);
- 
--	dma_cookie_complete(txd);
-+	/* mark the descriptor as complete for non cyclic cases only */
-+	if (!atc_chan_is_cyclic(atchan))
-+		dma_cookie_complete(txd);
- 
- 	/* move children to free_list */
- 	list_splice_init(&desc->tx_list, &atchan->free_list);
-diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
-index e6f133b..f6e9b57 100644
---- a/drivers/dma/ep93xx_dma.c
-+++ b/drivers/dma/ep93xx_dma.c
-@@ -703,7 +703,9 @@ static void ep93xx_dma_tasklet(unsigned long data)
- 	desc = ep93xx_dma_get_active(edmac);
- 	if (desc) {
- 		if (desc->complete) {
--			dma_cookie_complete(&desc->txd);
-+			/* mark descriptor complete for non cyclic case only */
-+			if (!test_bit(EP93XX_DMA_IS_CYCLIC, &edmac->flags))
-+				dma_cookie_complete(&desc->txd);
- 			list_splice_init(&edmac->active, &list);
- 		}
- 		callback = desc->txd.callback;
+Thanks,
 -- 
-1.7.0.4
-
-
--- 
-~Vinod
-
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
