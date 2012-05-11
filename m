@@ -1,58 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932845Ab2EKRma (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 13:42:30 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:47547 "EHLO mail.mev.co.uk"
+	id S932920Ab2EKRsF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 13:48:05 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:4983 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932096Ab2EKRm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 13:42:28 -0400
-Message-ID: <4FAD4F7F.1060603@mev.co.uk>
-Date: Fri, 11 May 2012 18:42:23 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120414 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] staging: comedi: Add helper macro for comedi pci driver
- boilerplate
-References: <201205111007.46754.hartleys@visionengravers.com> <4FAD4D20.1010302@mev.co.uk> <ADE657CA350FB648AAC2C43247A983F0020698A17E6A@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698A17E6A@AUSP01VMBX24.collaborationhost.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932650Ab2EKRsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 13:48:02 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>
+Subject: [PATCH v2 00/29] kmem limitation for memcg
+Date: Fri, 11 May 2012 14:44:02 -0300
+Message-Id: <1336758272-24284-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-05-11 18:34, H Hartley Sweeten wrote:
-> On Friday, May 11, 2012 10:32 AM, Ian Abbott wrote:
->> On 2012-05-11 18:07, H Hartley Sweeten wrote:
->>> +int comedi_pci_driver_register(struct comedi_driver *comedi_driver,
->>> +		struct pci_driver *pci_driver)
->>> +{
->>> +	int ret;
->>> +
->>> +	ret = comedi_driver_register(comedi_driver);
->>> +	if (ret<   0)
->>> +		return ret;
->>> +
->>> +	pci_driver->name = comedi_driver->driver_name;
->>
->> I think it would be better if the driver modules that call this function
->> already had pci_driver->name initialized statically.
->
-> I agree, but this is how all the pci drivers do it now.
->
-> To change this will require auditing all the comedi pci drivers and adding
-> the static name.
+Hello All,
 
-But if you're going to be calling this function from those drivers 
-anyway, you might as well add the static names at the same time!  Saves 
-another round of patches.
+This is my new take for the memcg kmem accounting.
+At this point, I consider the series pretty mature - although of course,
+bugs are always there...
+
+As a disclaimer, however, I must say that the slub code is much more stressed
+by me, since I know it better. If you have no more objections to the concepts
+presented, the remaining edges can probably be polished in a rc cycle,
+at the maintainers discretion, of course.
+
+Otherwise, I'll be happy to address any concerns of yours.
+
+Since last submission:
+
+ * memcgs can be properly removed.
+ * We are not charging based on current->mm->owner instead of current
+ * kmem_large allocations for slub got some fixes, specially for the free case
+ * A cache that is registered can be properly removed (common module case)
+   even if it spans memcg children. Slab had some code for that, now it works
+   well with both
+ * A new mechanism for skipping allocations is proposed (patch posted
+   separately already). Now instead of having kmalloc_no_account, we mark
+   a region as non-accountable for memcg.
+
+I should point out again that most, if not all, of the code in the caches
+are wrapped in static_key areas, meaning they will be completely patched out
+until the first limit is set.
+
+I also put a lot of effort, as you will all see, in the proper separation
+of the patches, so the review process is made as easy as the complexity of
+the work allows to.
+
+Frederic Weisbecker (1):
+  cgroups: ability to stop res charge propagation on bounded ancestor
+
+Glauber Costa (24):
+  slab: dup name string
+  slub: fix slab_state for slub
+  memcg: Always free struct memcg through schedule_work()
+  slub: always get the cache from its page in kfree
+  slab: rename gfpflags to allocflags
+  slab: use obj_size field of struct kmem_cache when not debugging
+  memcg: change defines to an enum
+  res_counter: don't force return value checking in
+    res_counter_charge_nofail
+  kmem slab accounting basic infrastructure
+  slab/slub: struct memcg_params
+  slub: consider a memcg parameter in kmem_create_cache
+  slab: pass memcg parameter to kmem_cache_create
+  slub: create duplicate cache
+  slab: create duplicate cache
+  memcg: kmem controller charge/uncharge infrastructure
+  skip memcg kmem allocations in specified code regions
+  slub: charge allocation to a memcg
+  slab: per-memcg accounting of slab caches
+  memcg: disable kmem code when not in use.
+  memcg: destroy memcg caches
+  memcg/slub: shrink dead caches
+  slub: create slabinfo file for memcg
+  slub: track all children of a kmem cache
+  Documentation: add documentation for slab tracker for memcg
+
+Suleiman Souhlal (4):
+  memcg: Make it possible to use the stock for more than one page.
+  memcg: Reclaim when more than one page needed.
+  memcg: Track all the memcg children of a kmem_cache.
+  memcg: Per-memcg memory.kmem.slabinfo file.
+
+ Documentation/cgroups/memory.txt           |   33 ++
+ Documentation/cgroups/resource_counter.txt |   18 +-
+ include/linux/memcontrol.h                 |   88 ++++
+ include/linux/res_counter.h                |   23 +-
+ include/linux/sched.h                      |    1 +
+ include/linux/slab.h                       |   29 +
+ include/linux/slab_def.h                   |   72 +++-
+ include/linux/slub_def.h                   |   51 ++-
+ init/Kconfig                               |    2 +-
+ kernel/res_counter.c                       |   13 +-
+ mm/memcontrol.c                            |  773 ++++++++++++++++++++++++++--
+ mm/slab.c                                  |  394 ++++++++++++---
+ mm/slub.c                                  |  298 ++++++++++-
+ 13 files changed, 1658 insertions(+), 137 deletions(-)
 
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+1.7.7.6
+
