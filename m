@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758705Ab2EKJQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 05:16:26 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:49964 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758471Ab2EKJQX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 05:16:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sakari Ailus <sakari.ailus@iki.fi>
-Subject: Re: [PATCH v3 1/1] v4l2: use __u32 rather than enums in ioctl() structs
-Date: Fri, 11 May 2012 09:16:10 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        mchehab@redhat.com, remi@remlab.net, hverkuil@xs4all.nl,
-        laurent.pinchart@ideasonboard.com
-References: <1336629727-11111-1-git-send-email-sakari.ailus@iki.fi>
-In-Reply-To: <1336629727-11111-1-git-send-email-sakari.ailus@iki.fi>
+	id S1758446Ab2EKJ3F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 05:29:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:61288 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752152Ab2EKJ3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 05:29:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="151754901"
+Date: Fri, 11 May 2012 11:38:42 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 0/6 v3] Update TPS65910 to boot using devicetree
+Message-ID: <20120511093842.GC1214@sortiz-mobl>
+References: <1336502563-31789-1-git-send-email-rklein@nvidia.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205110916.11308.arnd@arndb.de>
-X-Provags-ID: V02:K0:QC1G47hN7p3VEMZcEKVZ+rYFFJ8r7cJq7Dx/v718T0I
- zlm4u6LG/3P4aGEhywLNBxlaRx4CgGhUgO3HD8CKW/2rwsdO4r
- f942/otDzexgK8+mxOCetfu/xeDAqZ0yCv5hqmj8MD9DDsJrTG
- PAFmVRvqrt//MaoucdSHDwwU+h8dc+uZS+kKG+lcn/Nt/6iIdK
- LtSq6Ra6EH8U+FvjdjbSZ4p5j9HhqiTZMm7AIDKtXtkFbQSS1U
- 6NTkhy+OluN3LMmGKfZOe1ozLt2KsKKrMBs6bthPi7Qhb49NMI
- GrTkUmezkbC//P0TQSqFQ4L8fkxyOJIuU38Ur89Jwx68kPjm+R
- zGqB6Rfy77dr5muuejUo=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336502563-31789-1-git-send-email-rklein@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 May 2012, Sakari Ailus wrote:
-> The issue boils down to whether enums are fundamentally different from __u32
-> or not, and can the former be substituted by the latter. During the
-> discussion it was concluded that the __u32 has the same size as enums on all
-> archs Linux is supported: it has not been shown that replacing those enums
-> in IOCTL arguments would break neither source or binary compatibility. If no
-> such reason is found, just replacing the enums with __u32s is the way to go.
+Hi Rhyland,
 
-Well, ARM Android was building stuff with short enums for a while, but it
-seems that was corrected now, and using __u32 would in this case only
-help maintain compatibility when mixing android kernels with regular
-user space or vice versa.
+On Tue, May 08, 2012 at 11:42:37AM -0700, Rhyland Klein wrote:
+> This patch set updates the tps65910 driver to boot using devicetree.
+> 
+> This patch set now uses the new addition to the of_regulator code,
+> of_regulator_match to find all the regulator init data for the device.
+> 
+> Rhyland Klein (6):
+>   mfd: tps65910: Commonize regmap access through header
+>   regulator: tps65910: Add device tree bindings
+>   mfd: tps65910: Add device-tree support
+>   regulator: tps65910 regulator: add device tree support
+>   mfd: tps65910-irq: Add devicetree init support
+>   ARM: Tegra: Add support for TPS65910 PMIC
+I applied patches 1,2 and 3 to my for-next branch.
+Patch 4 is a regulator one, I assume Mark is going to take it. And patch 5
+needs some additional work.
 
-	Arnd
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
