@@ -1,35 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761093Ab2EKGqi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:46:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57390 "EHLO
+	id S1761537Ab2EKGrX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:47:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57410 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048Ab2EKGqg (ORCPT
+	with ESMTP id S1753048Ab2EKGrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:46:36 -0400
-Date: Thu, 10 May 2012 23:45:27 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-04480d01105324dc5b77ca3fbdf85037a7d80dbb@git.kernel.org>
-Cc: acme@redhat.com, eranian@google.com, mingo@kernel.org, gorcunov@openvz.org,
-        a.p.zijlstra@chello.nl, jolsa@redhat.com, drepper@gmail.com,
-        robert.richter@amd.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, asharma@fb.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, fche@redhat.com,
-        paulus@samba.org, tzanussi@gmail.com, masami.hiramatsu.pt@hitachi.com,
-        mingo@elte.hu
-Reply-To: mingo@kernel.org, eranian@google.com, acme@redhat.com,
-        gorcunov@openvz.org, a.p.zijlstra@chello.nl, jolsa@redhat.com,
-        fweisbec@gmail.com, drepper@gmail.com, robert.richter@amd.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, asharma@fb.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, fche@redhat.com,
-        paulus@samba.org, tzanussi@gmail.com, masami.hiramatsu.pt@hitachi.com,
-        mingo@elte.hu
-In-Reply-To: <1335958638-5160-7-git-send-email-jolsa@redhat.com>
-References: <1335958638-5160-7-git-send-email-jolsa@redhat.com>
+	Fri, 11 May 2012 02:47:21 -0400
+Date: Thu, 10 May 2012 23:47:07 -0700
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-979987a567d9e666fe719f337409b2fbb6418f5f@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, peterz@infradead.org, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1336490956-57145-1-git-send-email-dsahern@gmail.com>
+References: <1336490956-57145-1-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf report:
-  Fix format string for x86-32 compilation
-Git-Commit-ID: 04480d01105324dc5b77ca3fbdf85037a7d80dbb
+Subject: [tip:perf/core] perf stat: handle ENXIO error for perf_event_open
+Git-Commit-ID: 979987a567d9e666fe719f337409b2fbb6418f5f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,53 +29,65 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:45:33 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:47:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  04480d01105324dc5b77ca3fbdf85037a7d80dbb
-Gitweb:     http://git.kernel.org/tip/04480d01105324dc5b77ca3fbdf85037a7d80dbb
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 2 May 2012 13:37:07 +0200
+Commit-ID:  979987a567d9e666fe719f337409b2fbb6418f5f
+Gitweb:     http://git.kernel.org/tip/979987a567d9e666fe719f337409b2fbb6418f5f
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Tue, 8 May 2012 09:29:16 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 9 May 2012 11:27:08 -0300
+CommitDate: Wed, 9 May 2012 11:58:48 -0300
 
-perf report: Fix format string for x86-32 compilation
+perf stat: handle ENXIO error for perf_event_open
 
-Using PRIu64 for printing out u64 nr_events to fix compilation
-for x86 32 bits.
+perf stat on PPC currently fails to run:
 
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Frank C. Eigler <fche@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/1335958638-5160-7-git-send-email-jolsa@redhat.com
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+$ perf stat -- sleep 1
+  Error: open_counter returned with 6 (No such device or address). /bin/dmesg may provide additional information.
+
+  Fatal: Not all events could be opened.
+
+The problem is that until 2.6.37 (behavior changed with commit b0a873e)
+perf on PPC returns ENXIO when hw_perf_event_init() fails. With this
+patch we get the expected behavior:
+
+$ perf stat -v -- sleep 1
+cycles event is not supported by the kernel.
+stalled-cycles-frontend event is not supported by the kernel.
+stalled-cycles-backend event is not supported by the kernel.
+instructions event is not supported by the kernel.
+branches event is not supported by the kernel.
+branch-misses event is not supported by the kernel.
+
+...
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1336490956-57145-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/builtin-stat.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 5df829f..7477655 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -304,7 +304,7 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
- 	if (evname != NULL)
- 		ret += fprintf(fp, " of event '%s'", evname);
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index e720ba7..d060568 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -462,8 +462,13 @@ static int run_perf_stat(int argc __used, const char **argv)
  
--	ret += fprintf(fp, "\n# Event count (approx.): %lu", nr_events);
-+	ret += fprintf(fp, "\n# Event count (approx.): %" PRIu64, nr_events);
- 	return ret + fprintf(fp, "\n#\n");
- }
- 
+ 	list_for_each_entry(counter, &evsel_list->entries, node) {
+ 		if (create_perf_stat_counter(counter, first) < 0) {
++			/*
++			 * PPC returns ENXIO for HW counters until 2.6.37
++			 * (behavior changed with commit b0a873e).
++			 */
+ 			if (errno == EINVAL || errno == ENOSYS ||
+-			    errno == ENOENT || errno == EOPNOTSUPP) {
++			    errno == ENOENT || errno == EOPNOTSUPP ||
++			    errno == ENXIO) {
+ 				if (verbose)
+ 					ui__warning("%s event is not supported by the kernel.\n",
+ 						    event_name(counter));
