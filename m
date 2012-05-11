@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642Ab2EKAcV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 20:32:21 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35192 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab2EKAcU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 20:32:20 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FAC5DA9.90202@jp.fujitsu.com>
-Date: Fri, 11 May 2012 09:30:33 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1754814Ab2EKAfR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 20:35:17 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14096 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751894Ab2EKAfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 20:35:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="164711837"
+Message-ID: <4FAC5E6E.8060903@intel.com>
+Date: Fri, 11 May 2012 08:33:50 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-To: Andre Nathan <andre@digirati.com.br>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: About cgroup memory limits
-References: <1336588657.26723.23.camel@andre>  <4FAB8EB5.8080901@jp.fujitsu.com> <1336647342.7710.5.camel@andre>
-In-Reply-To: <1336647342.7710.5.camel@andre>
-Content-Type: text/plain; charset=UTF-8
+To: Borislav Petkov <bp@amd64.org>
+CC: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, gregkh@linuxfoundation.org, riel@redhat.com,
+        luto@mit.edu, avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
+        fenghua.yu@intel.com, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
+        a.p.zijlstra@chello.nl, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/7] x86/tlb_info: get last level TLB entry number
+ of CPU
+References: <1336626013-28413-1-git-send-email-alex.shi@intel.com> <1336626013-28413-3-git-send-email-alex.shi@intel.com> <20120510144321.GA32700@aftab.osrc.amd.com>
+In-Reply-To: <20120510144321.GA32700@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/05/10 19:55), Andre Nathan wrote:
+>> +
 
-> Thanks a lot Kame.
+>> +void intel_cpu_detect_tlb(struct cpuinfo_x86 *c)
 > 
-> On Thu, 2012-05-10 at 18:47 +0900, KAMEZAWA Hiroyuki wrote:
->> From above, rss + mapped_file == resident.
-> 
-> But if you check the numbers I get from memory.stat and the sum of the
-> statm fields for all container processes, this doesn't hold.
-> 
-> resident    = 28741632
-> rss         = 8192000
-> mapped_file = 3743744
-> 
-> Am I missing something here?
-> 
-
-Considering again...
-
-file_mapped is accounted into the memcg where it's accounted as 'cache' to.
-
-So, you can know 'mapped_file/caches ratio' but you can't know which cgroup
-maps it.
-
->        size  resident     share     text  lib       data  dt
->   897208320  28741632  20500480  1171456    0  170676224   0
-> 
- 
-resident - share = anon.
-
-28741632  - 20500480 = 8241152 (anon)  near value to rss.
-
-About file_mapped, 3743744(mapped_file)  * 100 /20500480(shared) = 18 %
-
-18% of your app's file-mapping may be accounted into the memcg.
-
-You may be able to different score if you do all test after drop-cache.
-echo 3 > /proc/sys/vm/drop_caches
-
-Thanks,
--Kame
+> cpu_detect_tlb() is __cpuinit and it calls into this one, maybe this
+> whole facility should be __cpuinit/__cpuinitdata because its results
+> land in the tlb_ll*_* arrays and all those functions and table can be
+> thrown away then because they're not needed anymore.
 
 
-
-
+Yes, you r right.
