@@ -1,99 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab2EKLni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 07:43:38 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:45969 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752368Ab2EKLng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 07:43:36 -0400
-Subject: [RFC PATCH] SUNRPC: protect service sockets lists during per-net
-	shutdown
-To: bfields@fieldses.org, Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Fri, 11 May 2012 15:41:56 +0400
-Message-ID: <20120511114126.8399.2554.stgit@localhost.localdomain>
-In-Reply-To: <20120509143518.GB24233@fieldses.org>
-References: <20120509143518.GB24233@fieldses.org>
-User-Agent: StGit/0.16
+	id S1757268Ab2EKLpa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 07:45:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36728 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754192Ab2EKLp2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 07:45:28 -0400
+Date: Fri, 11 May 2012 13:45:23 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Igor Mammedov <imammedo@redhat.com>
+cc: linux-kernel@vger.kernel.org, rob@landley.net, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, luto@mit.edu, suresh.b.siddha@intel.com,
+        avi@redhat.com, a.p.zijlstra@chello.nl, johnstul@us.ibm.com,
+        arjan@linux.intel.com, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/5] Fix soft-lookup in stop machine on secondary cpu
+ bring up
+In-Reply-To: <1336559102-28103-2-git-send-email-imammedo@redhat.com>
+Message-ID: <alpine.LFD.2.02.1205111234460.3231@ionos>
+References: <1336559102-28103-1-git-send-email-imammedo@redhat.com> <1336559102-28103-2-git-send-email-imammedo@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Service sv_tempsocks and sv_permsocks lists are accessible by tasks with
-different network namespaces, and thus per-net service destruction must be
-protected.
-These lists are protected by service sv_lock. So lets wrap list munipulations
-with this lock and move tranports destruction outside wrapped area to prevent
-deadlocks.
+On Wed, 9 May 2012, Igor Mammedov wrote:
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- net/sunrpc/svc_xprt.c |   29 +++++++++++++++++++++++++----
- 1 files changed, 25 insertions(+), 4 deletions(-)
+> When bringing up cpuX1, it could stall in start_secondary
+> before setting cpu_callin_mask for more than 5 sec. That forces
+> do_boot_cpu() to give up on waiting and go to error return path
+> printing messages:
+>   pr_err("CPU%d: Stuck ??\n", cpuX1);
+> or
+>   pr_err("CPU%d: Not responding.\n", cpuX1);
+> and native_cpu_up returns early with -EIO. However AP may continue
+> its boot process till it reaches check_tsc_sync_target(), where
+> it will wait for boot cpu to run cpu_up...=>check_tsc_sync_source.
+> That will never happen since cpu_up have returned with error before.
+> 
+> Now we need to note that cpuX1 is marked as active in smp_callin
+> before it stuck in check_tsc_sync_target. And when another cpuX2
+> is being onlined, start_secondary on it will call
+>   smp_callin
+>     -> smp_store_cpu_info
+>       -> identify_secondary_cpu
+>         -> mtrr_ap_init
+>           -> set_mtrr_from_inactive_cpu
+>             -> stop_machine_from_inactive_cpu
+> where it's going to schedule stop_machine work on all ACTIVE cpus
+>   smdata.num_threads = num_active_cpus() + 1;
+> and wait till they all complete it before continuing. As was noted
+> before cpuX1 was marked as active but can't execute any work since
+> it's not completed initialization and stuck in check_tsc_sync_target.
+> As result system soft lockups in stop_machine_cpu_stop.
+> 
+> backtrace from reproducer:
+> 
+> PID: 3324   TASK: ffff88007c00ae20  CPU: other cpus   COMMAND: "migration/1"
+>     [exception RIP: stop_machine_cpu_stop+131]
+> ...
+>  #0 [ffff88007b4d7de8] cpu_stopper_thread at ffffffff810c66bd
+>  #1 [ffff88007b4d7ee8] kthread at ffffffff8107871e
+>  #2 [ffff88007b4d7f48] kernel_thread_helper at ffffffff8154af24
+> 
+> PID: 0      TASK: ffff88007c029710  CPU: 2   COMMAND: "swapper/2"
+>     [exception RIP: check_tsc_sync_target+33]
+> ...
+>  #0 [ffff88007c025f30] start_secondary at ffffffff81539876
+> 
+> PID: 0      TASK: ffff88007c041710  CPU: 3   COMMAND: "swapper/3"
+>     [exception RIP: stop_machine_cpu_stop+131]
+> ...
+>  #0 [ffff88007c04be50] stop_machine_from_inactive_cpu at ffffffff810c6b2f
+>  #1 [ffff88007c04bee0] mtrr_ap_init at ffffffff8102e963
+>  #2 [ffff88007c04bf10] identify_secondary_cpu at ffffffff81536799
+>  #3 [ffff88007c04bf20] smp_store_cpu_info at ffffffff815396d5
+>  #4 [ffff88007c04bf30] start_secondary at ffffffff81539800
+> 
+> Could be fixed by not marking being onlined cpu as active too early.
 
-diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-index 8195c6a..233f993 100644
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -954,7 +954,8 @@ static void svc_clear_pools(struct svc_serv *serv, struct net *net)
- 	}
- }
- 
--static void svc_clear_list(struct list_head *xprt_list, struct net *net)
-+static void svc_clear_list(struct list_head *xprt_list, struct net *net,
-+			   struct list_head *kill_list)
- {
- 	struct svc_xprt *xprt;
- 	struct svc_xprt *tmp;
-@@ -962,7 +963,8 @@ static void svc_clear_list(struct list_head *xprt_list, struct net *net)
- 	list_for_each_entry_safe(xprt, tmp, xprt_list, xpt_list) {
- 		if (xprt->xpt_net != net)
- 			continue;
--		svc_delete_xprt(xprt);
-+		list_move(&xprt->xpt_list, kill_list);
-+		set_bit(XPT_DETACHED, &xprt->xpt_flags);
- 	}
- 	list_for_each_entry(xprt, xprt_list, xpt_list)
- 		BUG_ON(xprt->xpt_net == net);
-@@ -970,6 +972,15 @@ static void svc_clear_list(struct list_head *xprt_list, struct net *net)
- 
- void svc_close_net(struct svc_serv *serv, struct net *net)
- {
-+	struct svc_xprt *xprt;
-+	LIST_HEAD(kill_list);
-+
-+	/*
-+	 * Protect the lists, since they can be by tasks with different network
-+	 * namespace contexts.
-+	 */
-+	spin_lock(&serv->sv_lock);
-+
- 	svc_close_list(&serv->sv_tempsocks, net);
- 	svc_close_list(&serv->sv_permsocks, net);
- 
-@@ -979,8 +990,18 @@ void svc_close_net(struct svc_serv *serv, struct net *net)
- 	 * svc_enqueue will not add new entries without taking the
- 	 * sp_lock and checking XPT_BUSY.
- 	 */
--	svc_clear_list(&serv->sv_tempsocks, net);
--	svc_clear_list(&serv->sv_permsocks, net);
-+	svc_clear_list(&serv->sv_tempsocks, net, &kill_list);
-+	svc_clear_list(&serv->sv_permsocks, net, &kill_list);
-+
-+	spin_unlock(&serv->sv_lock);
-+
-+	/*
-+	 * Destroy collected transports.
-+	 * Note: tranports has been marked as XPT_DETACHED on svc_clear_list(),
-+	 * so no need to protect againt list_del() in svc_delete_xprt().
-+	 */
-+	list_for_each_entry(xprt, &kill_list, xpt_list)
-+		svc_delete_xprt(xprt);
- }
- 
- /*
+This explanation is completely useless. What's fixed by what. And is
+it fixed or could it be fixed?
 
+This also want's an explanation why moving the cpu_starting notifier
+does not hurt any assumptions of the code which has notifiers
+registered for CPU_STARTING. In fact your change can result in
+CPU_ONLINE notifier being called _BEFORE_ CPU_STARTING. Do you really
+think that's correct?
+
+Aside of that your whole patch series tackles the wrong aspect.
+ 
+Why the heck do you need extra magic in check_tsc_sync_target() ?
+
+If the booting CPU fails to set the callin map within 5 seconds then
+it should not even reach check_tsc_sync_target() at all.
+
+And just for the record, the new CPU can run into the very same
+timeout problem, when the boot CPU fails to set the callout mask.
+
+This whole stuff is a complete trainwreck already and I don't want to
+see anything like your "fixing the symptoms" hackery near it, really.
+
+This whole stuff needs a proper rewrite and not some more braindamaged
+bandaids. And if we apply bandaids for the time being, then certainly
+not bandaids like the mess you created.
+
+Thanks,
+
+	tglx
