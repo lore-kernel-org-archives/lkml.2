@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759182Ab2EKScT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:32:19 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:4517 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756764Ab2EKScR (ORCPT
+	id S933205Ab2EKSc4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:32:56 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:30190 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933159Ab2EKScx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:32:17 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6708"; a="187846773"
-Date: Fri, 11 May 2012 11:32:16 -0700
-From: David Brown <davidb@codeaurora.org>
-To: arm@kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] msm-core changes for v3.5, take 2
-Message-ID: <20120511183216.GA13034@codeaurora.org>
-References: <20120507215828.GA21748@codeaurora.org>
+	Fri, 11 May 2012 14:32:53 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: IvxqZzUVM1kH8q3DPVBcRdECJhKLpnCPBfZ3UyrXi.AqnnX
+ LKg5n8RJCWTumeDxvYXxcglLFblAV.5WbyNujEuvK0hohzFWeiTq6nneBUVV
+ Ue.HMxPesWIU26tGdjzWgO64_PUJlZV7ZC8_EhICWlA0cWNvQ4OyZFIbAmzC
+ 92L2VETQZ7LMAsASREER93YzeYK7kaRjlFkStZk5_mPLsODoycVH63OFC.21
+ mVqVS0lea1miDPNyKALr3w6__GsTcD18TwerqEz6HmaAtSqEZP_.ENq8_1FY
+ iIpAbfdy7h7BoujPGp4xqFiEythHYTGAOQFhuVMgbKiwb_L4ny5I1uup1fwz
+ dXsYndtJ.I.rKPvw4nyUef8vbokXuZYQpmjm1X8J_CrtK5GP04ZV2MKtnejr
+ d
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 11 May 2012 13:32:48 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
+ kfree
+In-Reply-To: <4FAD585A.4070007@parallels.com>
+Message-ID: <alpine.DEB.2.00.1205111331010.386@router.home>
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home> <4FAD531D.6030007@parallels.com> <alpine.DEB.2.00.1205111305570.386@router.home>
+ <4FAD566C.3000804@parallels.com> <alpine.DEB.2.00.1205111316540.386@router.home> <4FAD585A.4070007@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120507215828.GA21748@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some minor fixes to msm.  Dropped Sapphire support from Daniel Walker
-until concerns are addressed.
+On Fri, 11 May 2012, Glauber Costa wrote:
 
-The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
+> Thank you in advance for your time reviewing this!
 
-  Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
+Where do I find the rationale for all of this? Trouble is that pages can
+contain multiple objects f.e. so accounting of pages to groups is a bit fuzzy.
+I have not followed memcg too much since it is not relevant (actual
+it is potentially significantly harmful given the performance
+impact) to the work loads that I am using.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git msm-core
-
-for you to fetch changes up to 26e87b13834f04fc209e887f124e8ef4f3ca526c:
-
-  ARM: msm: fix compilation flags for MSM_SCM (part 2) (2012-05-11 11:08:37 -0700)
-
-----------------------------------------------------------------
-Danny Kukawka (1):
-      arch/arm/mach-msm: linux/gpio.h included twice
-
-Stephen Boyd (2):
-      ARM: msm: Drop useless teq from DEBUG_LL support
-      ARM: msm: fix compilation flags for MSM_SCM (part 2)
-
- arch/arm/mach-msm/board-msm7x30.c            |    1 -
- arch/arm/mach-msm/board-qsd8x50.c            |    1 -
- arch/arm/mach-msm/include/mach/debug-macro.S |    3 +--
- arch/arm/mach-msm/scm.c                      |    3 +++
- 4 files changed, 4 insertions(+), 4 deletions(-)
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
