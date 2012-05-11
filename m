@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946261Ab2EKV65 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 17:58:57 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:45679 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758746Ab2EKV6z (ORCPT
+	id S1946272Ab2EKV7t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 17:59:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56536 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946234Ab2EKV7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 17:58:55 -0400
-Subject: Re: [GIT PULL] target fixes for v3.4-rc7
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1336773136.25759.167.camel@haakon2.linux-iscsi.org>
-References: <1336773136.25759.167.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 May 2012 14:58:54 -0700
-Message-ID: <1336773534.25759.170.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 11 May 2012 17:59:47 -0400
+Date: Fri, 11 May 2012 14:59:43 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: comedi: Add helper macro for comedi pci driver
+ boilerplate
+Message-ID: <20120511215943.GA27371@kroah.com>
+References: <201205111007.46754.hartleys@visionengravers.com>
+ <4FAD4D20.1010302@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F0020698A17E6A@AUSP01VMBX24.collaborationhost.net>
+ <4FAD4F7F.1060603@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F0020698A17E89@AUSP01VMBX24.collaborationhost.net>
+ <4FAD5703.7080504@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F0020698A17ECA@AUSP01VMBX24.collaborationhost.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698A17ECA@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-11 at 14:52 -0700, Nicholas A. Bellinger wrote:
-> Hi Linus !
+On Fri, May 11, 2012 at 01:26:37PM -0500, H Hartley Sweeten wrote:
+> On Friday, May 11, 2012 11:14 AM, Ian Abbott wrote:
+> > Okay, but I don't think it's worth doing three patches for each driver 
+> > where one would do.  Adding a one-line .name = "foo", to the single 
+> > patch for each driver you were planning to do anyway seems like a 
+> > trivial addition that could be slotted into the patch without too much 
+> > argument from the "one change per patch" folks, especially if you 
+> > mention the purpose of that line in the commit message.  (I'd defer to 
+> > the better judgement of Greg though.)
 > 
-> This time around for -rc7, there is only a single outstanding target
-> pending bugfix ready to be merged..
+> With this patch my main goal was to not "break" any of the drivers.
 > 
-> Please go ahead and pull from:
+> As a follow-up to this patch I was going to use the macro in all the
+> pci drivers that have been refactored. Similar to what I did with the
+> module_comedi_driver macro. When I do that I can add the static
+> name field to those drivers.
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git 3.4-urgent
+> How about doing this in the register function:
 > 
-> This patch removes some incorrect legacy code to free se_lun_acl memory
-> in the NodeACL release path that could potentially trigger an OOPs
-> during shutdown once dynamic -> explicit initiator NodeACL conversion
-> has occurred.
+> 	If (!pci_driver->name)
+> 		pci_driver->name = comedi_driver->driver_name;
 > 
-> That said, we've been able to trigger an OOPs in v4.0 code for this
-> special case when the associated MappedLUNs had not also been made
-> explicit based on active TPG LUN layout during the conversion, so it
-> really makes senses to go ahead and drop this extra cruft to avoid any
-> possible issues here.
+> This way all the drivers that still need to be refactored will still work.
 > 
-> This ends up only effecting iscsi-target module code (it's the only
-> user) and is CC'ed to stable.
+> After all the drivers have been updated, those two lines can be
+> removed.
 > 
-> Thanks!
+> So we have this patch and one big patch updating all the refactored
+> drivers. Some number of patches refactoring the remaining drivers
+> and using the module_comedi_pci_driver macro. Then one last
+> patch removing the check above.
 > 
-> --nab
-> 
-> Nicholas Bellinger (1):
->   target: Drop incorrect se_lun_acl release for dynamic -> explict ACL
->     conversion
-> 
->  drivers/target/target_core_tpg.c |   21 ---------------------
->  1 files changed, 0 insertions(+), 21 deletions(-)
-> 
+> How does that sound?
 
-Whoops sorry, missed the now unused variables in this patch..
+That sounds reasonable to me.
 
-Here is the updated diff-stat for target-pending/3.4-urgent
-
- drivers/target/target_core_tpg.c |   22 ----------------------
- 1 files changed, 0 insertions(+), 22 deletions(-)
-
-Thanks,
-
---nab
-
-
+greg k-h
