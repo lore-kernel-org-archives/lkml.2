@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760718Ab2EKQYP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 12:24:15 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:21523 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077Ab2EKQYN convert rfc822-to-8bit (ORCPT
+	id S1760744Ab2EKQ0A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 12:26:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63136 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756722Ab2EKQZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 12:24:13 -0400
+	Fri, 11 May 2012 12:25:58 -0400
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] perf top: Fix a race in callchain handling
+References: <1336231388-12347-1-git-send-email-namhyung@gmail.com>
+	<1336242167.2463.138.camel@laptop>
+	<20120505235319.GB2150@infradead.org>
+	<1336271107.1534.12.camel@leonhard>
+	<20120506183212.GB2485@infradead.org>
+	<878vh4srmh.fsf@sejong.aot.lge.com>
+	<87vck3ii18.fsf@sejong.aot.lge.com>
+	<20120511150111.GA2485@infradead.org>
+Date: Sat, 12 May 2012 01:25:48 +0900
+In-Reply-To: <20120511150111.GA2485@infradead.org> (Arnaldo Carvalho de Melo's
+	message of "Fri, 11 May 2012 12:01:11 -0300")
+Message-ID: <87boluwupf.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Message-ID: <1ff67ec4-7dd0-49c8-9be2-e927f58e6472@default>
-Date: Fri, 11 May 2012 09:23:12 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Julian Andres Klode <jak@jak-linux.org>, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, sjenning@linux.vnet.ibm.com
-Subject: RE: [PATCH] ramster: switch over to zsmalloc and crypto interface
-References: <1336676781-8571-1-git-send-email-dan.magenheimer@oracle.com>
- <20120510192836.GA17750@jak-linux.org>
-In-Reply-To: <20120510192836.GA17750@jak-linux.org>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Julian Andres Klode [mailto:jak@jak-linux.org]
-> Sent: Thursday, May 10, 2012 1:29 PM
-> To: Dan Magenheimer
-> Cc: devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org; gregkh@linuxfoundation.org; linux-
-> mm@kvack.org; ngupta@vflare.org; Konrad Wilk; sjenning@linux.vnet.ibm.com
-> Subject: Re: [PATCH] ramster: switch over to zsmalloc and crypto interface
-> 
-> On Thu, May 10, 2012 at 12:06:21PM -0700, Dan Magenheimer wrote:
-> > RAMster does many zcache-like things.  In order to avoid major
-> > merge conflicts at 3.4, ramster used lzo1x directly for compression
-> > and retained a local copy of xvmalloc, while zcache moved to the
-> > new zsmalloc allocator and the crypto API.
-> >
-> > This patch moves ramster forward to use zsmalloc and crypto.
-> >
-> > Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com
-> 
-> Nothing important, but the right ">" is missing here.
+Hi,
 
-Oops!  Cut-and-paste error!  Thanks for noticing Julian!
+On Fri, 11 May 2012 12:01:11 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Fri, May 11, 2012 at 11:10:59AM +0900, Namhyung Kim escreveu:
+>> On Mon, 07 May 2012 10:32:22 +0900, Namhyung Kim wrote:
+>> > I thought about it before, but it still cannot protect it from accessing
+>> > a hists by multiple concurrent threads. IOW if two threads call the
+>> > function to a same hists at the same time, ->callchain_collapse_cursor
+>> > would still get the race problem - so crashed.
+>> >
+>> > I guess callchain_cursor should be thread-local, eventually. No need to
+>> > make it hist-local IMHO.
+>> 
+>> So, any thoughts?
+>
+> Can you try writing a patch using TLS?
+>
 
-Greg, do you need me to resubmit with the missing '>'?
+Well, I can do it, but I still think the current patch is just enough
+for now though. My concern is the TLS might make perf less portable
+especially for embedded systems which are not using glibc.
+
+Anyway I'll give it a spin as you ask.
 
 Thanks,
-Dan
+Namhyung
