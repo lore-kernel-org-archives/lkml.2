@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030196Ab2EKKFX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 06:05:23 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1797 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932312Ab2EKKFU (ORCPT
+	id S1030202Ab2EKKJJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 06:09:09 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:32880 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932418Ab2EKKJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 06:05:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 11 May 2012 03:05:08 -0700
-From: Hiroshi DOYU <hdoyu@nvidia.com>
-To: <gregkh@linuxfoundation.org>, <swarren@wwwdotorg.org>
-CC: <linux-tegra@vger.kernel.org>, Hiroshi DOYU <hdoyu@nvidia.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [v2 1/2] ARM: tegra20: MC: Remove unnecessary BUG*()
-Date: Fri, 11 May 2012 13:04:44 +0300
-Message-ID: <1336730689-27092-1-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1336717334-23276-2-git-send-email-hdoyu@nvidia.com>
-References: <1336717334-23276-2-git-send-email-hdoyu@nvidia.com>
+	Fri, 11 May 2012 06:09:07 -0400
+Date: Fri, 11 May 2012 12:08:52 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] edac: Increase version to 3.0.0 (aka: "HERM" version)
+Message-ID: <20120511100852.GH8913@aftab.osrc.amd.com>
+References: <4FABDBE6.3060901@redhat.com>
+ <1336679860-5340-1-git-send-email-mchehab@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336679860-5340-1-git-send-email-mchehab@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Accessing interleaved MC register offsets/ranges are verified. BUG*()s
-in accessors can be removed.
+On Thu, May 10, 2012 at 04:57:40PM -0300, Mauro Carvalho Chehab wrote:
+> There were lots of changes introduced to justify renaming it to
+> 3.0.0 (HERM - Hardware Events Report Method):
+> 
+>   - EDAC core were redesigned to represent all types of
+>     memory controllers;
+> 
+>   - EDAC API were redesigned to properly represent the memory
+>     controller hierarchy;
+> 
+>   - a tracepoint-based API were added to report memory errors.
+> 
+> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
----
- drivers/memory/tegra20-mc.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Dude, drop this goddam "HERM" thing already! Just call EDAC 3.0.0 and
+stop mentioning HERM anywhere - use it in your own paper jumble if it
+helps you but don't leak it into the kernel.
 
-diff --git a/drivers/memory/tegra20-mc.c b/drivers/memory/tegra20-mc.c
-index c0bfffa..2a437e9 100644
---- a/drivers/memory/tegra20-mc.c
-+++ b/drivers/memory/tegra20-mc.c
-@@ -53,12 +53,14 @@ struct tegra20_mc {
- 
- static inline u32 mc_readl(struct tegra20_mc *mc, u32 offs)
- {
-+	u32 val = 0;
-+
- 	if (offs < 0x24)
--		return readl(mc->regs[0] + offs);
--	BUG_ON(offs < 0x3c);
-+		val = readl(mc->regs[0] + offs);
- 	if (offs < 0x400)
--		return readl(mc->regs[1] + offs - 0x3c);
--	BUG();
-+		val = readl(mc->regs[1] + offs - 0x3c);
-+
-+	return val;
- }
- 
- static inline void mc_writel(struct tegra20_mc *mc, u32 val, u32 offs)
-@@ -67,12 +69,10 @@ static inline void mc_writel(struct tegra20_mc *mc, u32 val, u32 offs)
- 		writel(val, mc->regs[0] + offs);
- 		return;
- 	}
--	BUG_ON(offs < 0x3c);
- 	if (offs < 0x400) {
- 		writel(val, mc->regs[1] + offs - 0x3c);
- 		return;
- 	}
--	BUG();
- }
- 
- static const char * const tegra20_mc_client[] = {
 -- 
-1.7.5.4
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
