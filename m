@@ -1,132 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210Ab2EKSmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:42:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758953Ab2EKSl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:41:28 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: <x86@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 1/3] Revert "x86, reboot: Use NMI instead of REBOOT_VECTOR to stop cpus"
-Date: Fri, 11 May 2012 14:41:13 -0400
-Message-Id: <1336761675-24296-2-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1336761675-24296-1-git-send-email-dzickus@redhat.com>
-References: <1336761675-24296-1-git-send-email-dzickus@redhat.com>
+	id S1760450Ab2EKSmZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:42:25 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:37390 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932232Ab2EKSmT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 14:42:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1205111352330.3231@ionos>
+References: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
+	<1336666614-21090-5-git-send-email-fenghua.yu@intel.com>
+	<alpine.LFD.2.02.1205111352330.3231@ionos>
+Date: Fri, 11 May 2012 11:42:18 -0700
+X-Google-Sender-Auth: Xj8QClfHXiEQzgbBU6FON-uOknU
+Message-ID: <CA+8MBbJbEWTR2Tawa2SzcJ-mZSPzZ12a9usR5eQu=PhArZwXLA@mail.gmail.com>
+Subject: Re: [PATCH v6 04/12] x86/smpboot.c: Don't offline CPU0 if any irq can
+ not be migrated out of it and remove CPU0 check in smp_callin()
+From: Tony Luck <tony.luck@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 3603a2512f9e69dc87914ba922eb4a0812b21cd6.
+On Fri, May 11, 2012 at 5:05 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> +     if (cpuid == 0)
+>> +             identify_boot_cpu_online();
+>
+> No, this is not how we do things.
+>
+> If this is required, then hell we do it at boot time and not at a
+> random place in the cpu hotplug code.
 
-Originally I wanted a better hammer to shutdown cpus during panic.
-However, this really steps on the toes of various spinlocks in the
-panic path.  Sometimes it is easier to wait for the IRQ to become
-re-enabled to indictate the cpu left the critical region and then
-shutdown the cpu.
+Open to better suggestions for placement.  Sometimes we do need
+special cases because on x86 the system isn't symmetrical, cpu0
+really is treated differently by h/w and f/w and we have to live with this.
+Biggest code impact of that is the extra code to bring cpu0 back online
+using NMI instead of INIT. We can't use INIT because if cpu0 gets one,
+it just resets the whole machine :-(  But obviously we'd like to avoid
+special cases where there is a sane way to do so.
 
-The next patch moves the NMI addition after the IRQ part.  To make
-it easier to see the logic of everything, revert this patch and
-apply the next simpler patch.
+> This is as fricking wrong as it gets. We already know that at boot
+> time when we initialize the irq chips. There is no need to iterate
+> over the whole irq descriptors just to figure that out.
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/kernel/smp.c |   59 +-----------------------------------------------
- 1 files changed, 2 insertions(+), 57 deletions(-)
+We *knew* it at boot time ... but that information will be stale if
+we hot plugged new devices and bound their interrupts to cpu0.
 
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 66c74f4..6d20f52 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -29,7 +29,6 @@
- #include <asm/mmu_context.h>
- #include <asm/proto.h>
- #include <asm/apic.h>
--#include <asm/nmi.h>
- /*
-  *	Some notes on x86 processor bugs affecting SMP operation:
-  *
-@@ -149,60 +148,6 @@ void native_send_call_func_ipi(const struct cpumask *mask)
- 	free_cpumask_var(allbutself);
- }
- 
--static atomic_t stopping_cpu = ATOMIC_INIT(-1);
--
--static int smp_stop_nmi_callback(unsigned int val, struct pt_regs *regs)
--{
--	/* We are registered on stopping cpu too, avoid spurious NMI */
--	if (raw_smp_processor_id() == atomic_read(&stopping_cpu))
--		return NMI_HANDLED;
--
--	stop_this_cpu(NULL);
--
--	return NMI_HANDLED;
--}
--
--static void native_nmi_stop_other_cpus(int wait)
--{
--	unsigned long flags;
--	unsigned long timeout;
--
--	if (reboot_force)
--		return;
--
--	/*
--	 * Use an own vector here because smp_call_function
--	 * does lots of things not suitable in a panic situation.
--	 */
--	if (num_online_cpus() > 1) {
--		/* did someone beat us here? */
--		if (atomic_cmpxchg(&stopping_cpu, -1, safe_smp_processor_id()) != -1)
--			return;
--
--		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
--					 NMI_FLAG_FIRST, "smp_stop"))
--			/* Note: we ignore failures here */
--			return;
--
--		/* sync above data before sending NMI */
--		wmb();
--
--		apic->send_IPI_allbutself(NMI_VECTOR);
--
--		/*
--		 * Don't wait longer than a second if the caller
--		 * didn't ask us to wait.
--		 */
--		timeout = USEC_PER_SEC;
--		while (num_online_cpus() > 1 && (wait || timeout--))
--			udelay(1);
--	}
--
--	local_irq_save(flags);
--	disable_local_APIC();
--	local_irq_restore(flags);
--}
--
- /*
-  * this function calls the 'stop' function on all other CPUs in the system.
-  */
-@@ -215,7 +160,7 @@ asmlinkage void smp_reboot_interrupt(void)
- 	irq_exit();
- }
- 
--static void native_irq_stop_other_cpus(int wait)
-+static void native_stop_other_cpus(int wait)
- {
- 	unsigned long flags;
- 	unsigned long timeout;
-@@ -298,7 +243,7 @@ struct smp_ops smp_ops = {
- 	.smp_prepare_cpus	= native_smp_prepare_cpus,
- 	.smp_cpus_done		= native_smp_cpus_done,
- 
--	.stop_other_cpus	= native_nmi_stop_other_cpus,
-+	.stop_other_cpus	= native_stop_other_cpus,
- 	.smp_send_reschedule	= native_smp_send_reschedule,
- 
- 	.cpu_up			= native_cpu_up,
--- 
-1.7.7.6
+Do we need to maintain some parallel table of this information, or
+is there a better way to check this?
 
+-Tony
