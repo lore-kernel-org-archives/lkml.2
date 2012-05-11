@@ -1,197 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356Ab2EKJvW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 05:51:22 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41843 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109Ab2EKJvT (ORCPT
+	id S932375Ab2EKJvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 05:51:52 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:32793 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932175Ab2EKJvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 05:51:19 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FACE0A2.30608@jp.fujitsu.com>
-Date: Fri, 11 May 2012 18:49:22 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 11 May 2012 05:51:51 -0400
+Date: Fri, 11 May 2012 11:51:36 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, gregkh@linuxfoundation.org, riel@redhat.com,
+        luto@mit.edu, avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
+        fenghua.yu@intel.com, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
+        a.p.zijlstra@chello.nl, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 7/7] x86/tlb: add tlb_flushall_factor into sysfs for
+ user testing/tuning
+Message-ID: <20120511095136.GE8913@aftab.osrc.amd.com>
+References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
+ <1336626013-28413-8-git-send-email-alex.shi@intel.com>
+ <20120510082731.GC30055@aftab.osrc.amd.com>
+ <4FAC62B9.9090304@intel.com>
 MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 4/6] memcg: move charges to root cgroup if use_hierarchy=0.
-References: <4FACDED0.3020400@jp.fujitsu.com>
-In-Reply-To: <4FACDED0.3020400@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FAC62B9.9090304@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, at removal of cgroup, ->pre_destroy() is called and move charges
-to the parent cgroup. A major reason of -EBUSY returned by ->pre_destroy()
-is that the 'moving' hits parent's resource limitation. It happens only
-when use_hierarchy=0.
+On Fri, May 11, 2012 at 08:52:09AM +0800, Alex Shi wrote:
+> >> +#ifdef CONFIG_DEBUG_TLBFLUSH
+> 
+> >> +static ssize_t __tlb_flushall_factor_store(const char *buf,
+> >> +					size_t count, int smt)
+> >> +{
+> >> +	short factor = 0;
+> >> +
+> >> +	if (sscanf(buf, "%hd", &factor) != 1)
+> >> +		return -EINVAL;
+> > 
+> > This means only single-digit factors, right?
+> 
+> No, you can try '32' '16' etc. not a 'single-digit'.
 
-Considering use_hierarchy=0, all cgroups should be flat. So, no one
-cannot justify moving charges to parent...parent and children are in
-flat configuration, not hierarchical.
+Ah, misread sscanf, nevermind.
 
-This patch modifes to move charges to root cgroup at rmdir/force_empty
-if use_hierarchy==0. This will much simplify rmdir() and reduce error
-in ->pre_destroy.
+> > Why not use kstrtoul?
+> 
+> any advantage of this?
 
-Changelog since v2:
-  - use parent_mem_cgroup()
-  - updated Documenation
+Well, sscanf uses simple_strto* and those miss overflow checks etc, see
+33ee3b2e2eb9b4b6c64dcf9ed66e2ac3124e748c for details.
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- Documentation/cgroups/memory.txt |   13 ++++++----
- mm/memcontrol.c                  |   49 +++++++++++++------------------------
- 2 files changed, 25 insertions(+), 37 deletions(-)
+Btw, there are other kstrto* functions which you could use to fit better
+the argument type and size passed to tlb_flushall_factor.
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 730e222a..8d0de70 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -393,14 +393,15 @@ cgroup might have some charge associated with it, even though all
- tasks have migrated away from it. (because we charge against pages, not
- against tasks.)
- 
--Such charges are freed or moved to their parent. At moving, both of RSS
--and CACHES are moved to parent.
--rmdir() may return -EBUSY if freeing/moving fails. See 5.1 also.
-+We move the stats to root (if use_hierarchy==0) or parent (if
-+use_hierarchy==1), and no change on the charge except uncharging
-+from the child.
- 
- Charges recorded in swap information is not updated at removal of cgroup.
- Recorded information is discarded and a cgroup which uses swap (swapcache)
- will be charged as a new owner of it.
- 
-+About use_hierarchy, see Section 6.
- 
- 5. Misc. interfaces.
- 
-@@ -413,13 +414,15 @@ will be charged as a new owner of it.
- 
-   Almost all pages tracked by this memory cgroup will be unmapped and freed.
-   Some pages cannot be freed because they are locked or in-use. Such pages are
--  moved to parent and this cgroup will be empty. This may return -EBUSY if
--  VM is too busy to free/move all pages immediately.
-+  moved to parent(if use_hierarchy==1) or root (if use_hierarchy==0) and this
-+  cgroup will be empty.
- 
-   Typical use case of this interface is that calling this before rmdir().
-   Because rmdir() moves all pages to parent, some out-of-use page caches can be
-   moved to the parent. If you want to avoid that, force_empty will be useful.
- 
-+  About use_hierarchy, see Section 6.
-+
- 5.2 stat file
- 
- memory.stat file includes following statistics
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index cb90be1..f007c17 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2709,15 +2709,13 @@ static int mem_cgroup_move_parent(struct page *page,
- 				  struct mem_cgroup *child,
- 				  gfp_t gfp_mask)
- {
--	struct cgroup *cg = child->css.cgroup;
--	struct cgroup *pcg = cg->parent;
- 	struct mem_cgroup *parent;
- 	unsigned int nr_pages;
- 	unsigned long uninitialized_var(flags);
- 	int ret;
- 
- 	/* Is ROOT ? */
--	if (!pcg)
-+	if (mem_cgroup_is_root(child))
- 		return -EINVAL;
- 
- 	ret = -EBUSY;
-@@ -2728,33 +2726,23 @@ static int mem_cgroup_move_parent(struct page *page,
- 
- 	nr_pages = hpage_nr_pages(page);
- 
--	parent = mem_cgroup_from_cont(pcg);
--	if (!parent->use_hierarchy) {
--		ret = __mem_cgroup_try_charge(NULL,
--					gfp_mask, nr_pages, &parent, false);
--		if (ret)
--			goto put_back;
--	}
-+	parent = parent_mem_cgroup(child);
-+	/*
-+	 * If no parent, move charges to root cgroup.
-+	 */
-+	if (!parent)
-+		parent = root_mem_cgroup;
- 
- 	if (nr_pages > 1)
- 		flags = compound_lock_irqsave(page);
- 
--	if (parent->use_hierarchy) {
--		ret = mem_cgroup_move_account(page, nr_pages,
--					pc, child, parent, false);
--		if (!ret)
--			__mem_cgroup_cancel_local_charge(child, nr_pages);
--	} else {
--		ret = mem_cgroup_move_account(page, nr_pages,
--					pc, child, parent, true);
--
--		if (ret)
--			__mem_cgroup_cancel_charge(parent, nr_pages);
--	}
-+	ret = mem_cgroup_move_account(page, nr_pages,
-+				pc, child, parent, false);
-+	if (!ret)
-+		__mem_cgroup_cancel_local_charge(child, nr_pages);
- 
- 	if (nr_pages > 1)
- 		compound_unlock_irqrestore(page, flags);
--put_back:
- 	putback_lru_page(page);
- put:
- 	put_page(page);
-@@ -3351,9 +3339,8 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
- 	struct page_cgroup *pc;
- 	int csize,  ret = 0;
- 	struct res_counter *fail_res;
--	struct cgroup *pcgrp = cgroup->parent;
--	struct mem_cgroup *parent = mem_cgroup_from_cont(pcgrp);
- 	struct mem_cgroup *memcg  = mem_cgroup_from_cont(cgroup);
-+	struct mem_cgroup *parent = parent_mem_cgroup(memcg);
- 	struct res_counter *counter;
- 
- 	if (!get_page_unless_zero(page))
-@@ -3366,13 +3353,11 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
- 
- 	csize = PAGE_SIZE << compound_order(page);
- 	/* If parent->use_hierarchy == 0, we need to charge parent */
--	if (!parent->use_hierarchy) {
--		ret = res_counter_charge(&parent->hugepage[idx],
--					 csize, &fail_res);
--		if (ret) {
--			ret = -EBUSY;
--			goto err_out;
--		}
-+	if (!parent) {
-+		parent = root_mem_cgroup;
-+		/* root has no limit */
-+		res_counter_charge_nofail(&parent->hugepage[idx],
-+				 csize, &fail_res);
- 	}
- 	counter = &memcg->hugepage[idx];
- 	res_counter_uncharge_until(counter, counter->parent, csize);
+
 -- 
-1.7.4.1
+Regards/Gruss,
+Boris.
 
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
