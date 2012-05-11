@@ -1,187 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760137Ab2EKOLH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 10:11:07 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:50269 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932126Ab2EKOLE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 10:11:04 -0400
-Date: Fri, 11 May 2012 10:04:54 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] Xen physical cpus interface (V2)
-Message-ID: <20120511140454.GA13735@phenom.dumpdata.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351B58A3@SHSMSX101.ccr.corp.intel.com>
+	id S1760129Ab2EKOMk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 10:12:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40303 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759976Ab2EKOMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 10:12:38 -0400
+Date: Fri, 11 May 2012 15:12:32 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, neilb@suse.de, a.p.zijlstra@chello.nl,
+        michaelc@cs.wisc.edu, emunson@mgebm.net
+Subject: Re: [PATCH 08/17] net: Introduce sk_allocation() to allow addition
+ of GFP flags depending on the individual socket
+Message-ID: <20120511141232.GR11435@suse.de>
+References: <1336657510-24378-1-git-send-email-mgorman@suse.de>
+ <1336657510-24378-9-git-send-email-mgorman@suse.de>
+ <20120511.004949.655300373402132371.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351B58A3@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <20120511.004949.655300373402132371.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 03:06:14PM +0000, Liu, Jinsong wrote:
-> >From 7aa4cf7c1172e24611dc76163397b8708acacc59 Mon Sep 17 00:00:00 2001
-> From: Liu, Jinsong <jinsong.liu@intel.com>
-> Date: Fri, 11 May 2012 06:55:35 +0800
-> Subject: [PATCH 3/3] Xen physical cpus interface
+On Fri, May 11, 2012 at 12:49:49AM -0400, David Miller wrote:
+> From: Mel Gorman <mgorman@suse.de>
+> Date: Thu, 10 May 2012 14:45:01 +0100
 > 
-> Manage physical cpus in dom0, get physical cpus info and provide sys interface.
+> > Introduce sk_allocation(), this function allows to inject sock specific
+> > flags to each sock related allocation. It is only used on allocation
+> > paths that may be required for writing pages back to network storage.
+> > 
+> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
 > 
-> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
-> Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
-> ---
->  .../ABI/testing/sysfs-devices-system-xen_cpu       |   20 +
->  drivers/xen/Makefile                               |    1 +
->  drivers/xen/pcpu.c                                 |  374 ++++++++++++++++++++
->  include/xen/interface/platform.h                   |    8 +
->  include/xen/interface/xen.h                        |    1 +
->  5 files changed, 404 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/ABI/testing/sysfs-devices-system-xen_cpu
->  create mode 100644 drivers/xen/pcpu.c
+> This is still a little bit more than it needs to be.
 > 
-> diff --git a/Documentation/ABI/testing/sysfs-devices-system-xen_cpu b/Documentation/ABI/testing/sysfs-devices-system-xen_cpu
-> new file mode 100644
-> index 0000000..9ca02fb
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-devices-system-xen_cpu
-> @@ -0,0 +1,20 @@
-> +What:		/sys/devices/system/xen_cpu/
-> +Date:		May 2012
-> +Contact:	Liu, Jinsong <jinsong.liu@intel.com>
-> +Description:
-> +		A collection of global/individual Xen physical cpu attributes
-> +
-> +		Individual physical cpu attributes are contained in
-> +		subdirectories named by the Xen's logical cpu number, e.g.:
-> +		/sys/devices/system/xen_cpu/xen_cpu#/
-> +
-> +
-> +What:		/sys/devices/system/xen_cpu/xen_cpu#/online
-> +Date:		May 2012
-> +Contact:	Liu, Jinsong <jinsong.liu@intel.com>
-> +Description:
-> +		Interface to online/offline Xen physical cpus
-> +
-> +		When running under Xen platform, it provide user interface
-> +		to online/offline physical cpus, except cpu0 due to several
-> +		logic restrictions and assumptions.
-> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-> index 1d3e763..d12d14d 100644
-> --- a/drivers/xen/Makefile
-> +++ b/drivers/xen/Makefile
-> @@ -19,6 +19,7 @@ obj-$(CONFIG_XEN_PVHVM)			+= platform-pci.o
->  obj-$(CONFIG_XEN_TMEM)			+= tmem.o
->  obj-$(CONFIG_SWIOTLB_XEN)		+= swiotlb-xen.o
->  obj-$(CONFIG_XEN_DOM0)			+= pci.o
-> +obj-$(CONFIG_XEN_DOM0)			+= pcpu.o
->  obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
->  obj-$(CONFIG_XEN_PRIVCMD)		+= xen-privcmd.o
->  obj-$(CONFIG_XEN_ACPI_PROCESSOR)	+= xen-acpi-processor.o
-> diff --git a/drivers/xen/pcpu.c b/drivers/xen/pcpu.c
-> new file mode 100644
-> index 0000000..9014ff1
-> --- /dev/null
-> +++ b/drivers/xen/pcpu.c
-> @@ -0,0 +1,374 @@
-> +/******************************************************************************
-> + * pcpu.c
-> + * Management physical cpu in dom0, get pcpu info and provide sys interface
-> + *
-> + * Copyright (c) 2012 Intel Corporation
-> + * Author: Liu, Jinsong <jinsong.liu@intel.com>
-> + * Author: Jiang, Yunhong <yunhong.jiang@intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License version 2
-> + * as published by the Free Software Foundation; or, when distributed
-> + * separately from the Linux kernel or incorporated into other
-> + * software packages, subject to the following license:
-> + *
-> + * Permission is hereby granted, free of charge, to any person obtaining a copy
-> + * of this source file (the "Software"), to deal in the Software without
-> + * restriction, including without limitation the rights to use, copy, modify,
-> + * merge, publish, distribute, sublicense, and/or sell copies of the Software,
-> + * and to permit persons to whom the Software is furnished to do so, subject to
-> + * the following conditions:
-> + *
-> + * The above copyright notice and this permission notice shall be included in
-> + * all copies or substantial portions of the Software.
-> + *
-> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-> + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-> + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-> + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-> + * IN THE SOFTWARE.
-> + */
-> +
-> +#include <linux/interrupt.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/cpu.h>
-> +#include <linux/stat.h>
-> +#include <linux/capability.h>
-> +
-> +#include <xen/xen.h>
-> +#include <xen/xenbus.h>
-> +#include <xen/events.h>
-> +#include <xen/interface/platform.h>
-> +#include <asm/xen/hypervisor.h>
-> +#include <asm/xen/hypercall.h>
-> +
-> +#define XEN_PCPU "xen_cpu: "
-> +
-> +/*
-> + * @cpu_id: Xen physical cpu logic number
-> + * @flags: Xen physical cpu status flag
-> + * - XEN_PCPU_FLAGS_ONLINE: cpu is online
-> + * - XEN_PCPU_FLAGS_INVALID: cpu is not present
-> + */
-> +struct pcpu {
-> +	struct list_head list;
-> +	struct device dev;
-> +	uint32_t cpu_id;
-> +	uint32_t flags;
-> +};
-> +
-> +static struct bus_type xen_pcpu_subsys = {
-> +	.name = "xen_cpu",
-> +	.dev_name = "xen_cpu",
-> +};
-> +
-> +static DEFINE_MUTEX(xen_pcpu_lock);
-> +
-> +static LIST_HEAD(xen_pcpus);
+> You are trying to propagate a single bit from sk->sk_allocation into
+> all of the annotated socket memory allocation sites.
+> 
+> But many of them use sk->sk_allocation already.  In fact all of them
+> that use a variable rather than a constant GFP_* satisfy this
+> invariant.
+> 
+> All of those annotations are therefore spurious, and probably end up
+> generating unnecessary |'s in of that special bit in at least some
+> cases.
+> 
 
-So what about the recommendation to get rid of that and
-instead do
+Yes, you're completely correct here.
 
-struct pcpu *xen_cpu;
+> What you really, therefore, care about are the GFP_FOO cases.  And in
+> fact those are all GFP_ATOMIC.  So make something that says what it
+> is that you want, a GFP_ATOMIC with some socket specified bits |'d
+> in.
+> 
+> Something like this:
+> 
+> static inline gfp_t sk_gfp_atomic(struct sock *sk)
+> {
+> 	return GFP_ATOMIC | (sk->sk_allocation & __GFP_MEMALLOC);
+> }
+> 
 
-and use that as a list? Meaning
-.. snip..
-> +{
-> +	struct list_head *cur;
-> +	struct pcpu *pcpu;
-> +
-> +	list_for_each(cur, &xen_pcpus) {
-> +		pcpu = list_entry(cur, struct pcpu, list);
-> +		if (pcpu->cpu_id == cpu_id)
-> +			return pcpu;
-> +	}
+I went with this.
 
-do:
-struct pcpu *pcpu;
+> You'll also have to make your networking patches conform to the
+> networking subsystem coding style.
+> 
+> For example:
+> 
+> > -	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1, GFP_ATOMIC);
+> > +	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1,
+> > +					sk_allocation(sk, GFP_ATOMIC));
+> 
+> The sk_allocation() argument has to line up with the first column
+> after the openning parenthesis of the function call.  You can't just
+> use all TAB characters.  And this all TABs thing looks extremely ugly
+> to boot.
+> 
 
-list_for_each_entry(pcpu, xen_pcpus, list)
-	if (pcpu->cpu_id == cpu_id)
-		return pcpu;
-?
+I was not aware of the networking subsystem coding style. I'll fix it
+up.
 
-and such.
+> > -		newnp->pktoptions = skb_clone(treq->pktopts, GFP_ATOMIC);
+> > +		newnp->pktoptions = skb_clone(treq->pktopts,
+> > +						sk_allocation(sk, GFP_ATOMIC));
+> 
+> Same here.
+> 
+> What's really funny to me is that in several cases elsewhere in this
+> pach you get it right.
+
+Whether I got it right or not would be effectively random. I tried
+myself to see what pattern I was using thinking it would be "always"
+tab but nope, no pattern :)
+
+-- 
+Mel Gorman
+SUSE Labs
