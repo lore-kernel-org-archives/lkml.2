@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758335Ab2EKPJO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 11:09:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35008 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754237Ab2EKPJL (ORCPT
+	id S1757608Ab2EKPKH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 11:10:07 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:51554 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab2EKPKD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 11:09:11 -0400
-Date: Fri, 11 May 2012 16:09:09 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, linux@arm.linux.org.uk,
-        lrg@ti.com, swarren@nvidia.com, olof@lixom.net,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V3 1/4] regulator: tps62360: make init_data of platform
- data to pointer.
-Message-ID: <20120511150908.GJ3960@opensource.wolfsonmicro.com>
-References: <1336718325-8372-1-git-send-email-ldewangan@nvidia.com>
- <1336718325-8372-2-git-send-email-ldewangan@nvidia.com>
+	Fri, 11 May 2012 11:10:03 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="W13SgbpmD6bhZUTM"
-Content-Disposition: inline
-In-Reply-To: <1336718325-8372-2-git-send-email-ldewangan@nvidia.com>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120511145243.GE5958@kroah.com>
+References: <20120503212151.568.91854.stgit@bob.linux.org.uk>
+ <20120503212219.568.15653.stgit@bob.linux.org.uk> <CA+1xoqezLCQh_fqJ1iNAs25X7Fm24W=-0J8zTZuVVJQnWTtSLg@mail.gmail.com>
+ <20120507171126.5beddc27@pyramind.ukuu.org.uk> <1336408208.3638.15.camel@lappy>
+ <20120507174240.4209c5cb@pyramind.ukuu.org.uk> <CA+1xoqez0PaX2KBHHN-etztwbFoU1cKx3NwMXX+PO4SguA3bRg@mail.gmail.com>
+ <4FA838D2.9000908@suse.cz> <CA+1xoqdi1Jdkrjtj9bmnDfs4Ok=o=AsmpP=MY0V8cDXjcSNm1w@mail.gmail.com>
+ <CA+1xoqcZnxGoo=_X1idCPTk9gR=drnAKhULGzgkH33zYGnAgOA@mail.gmail.com> <20120511145243.GE5958@kroah.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Fri, 11 May 2012 17:09:42 +0200
+Message-ID: <CA+1xoqdgckzNAtHFwgjVHj169ZYn5rna1HNwudrQKegr4DAqVw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] tty_lock: Localise the lock
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Jiri Slaby <jirislaby@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 11, 2012 at 4:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> The printk rework should now be working again in linux-next.  Is it
+> still causing problems for you?
 
---W13SgbpmD6bhZUTM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Mostly does, there's still a minor issue regarding showing timestamps
+on each line in the log, I've commented about it in the original
+thread (
+http://permalink.gmane.org/gmane.linux.kernel/1295580).
 
-On Fri, May 11, 2012 at 12:08:42PM +0530, Laxman Dewangan wrote:
-> Convert platform data member regulator_init_data to pointer type.
-> This will avoid the copy of entire regualator init data into
-> platform data member when adding dt support and it can be achieve
-> by simple assignment:
-> pdata->init_data = of_get_regulator_init_data(dev, dev->of_node);
-
-Applied, thanks.
-
---W13SgbpmD6bhZUTM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPrSuOAAoJEBus8iNuMP3dYGQP/AhY7sgQoJ+xqtrcIam98jPl
-BbwRakm3ymbWyimAsZlTGeFnI6uILRmOA6VJQu83p/PZuEshRy4Ro4osLU/20QIJ
-kai28N3XFqAm+nBGn4vz6dDVC4ehK8bfnqUpnY+rAIGl12q4/uft19apT1CSVSdP
-dUcwu2qP5/lewvA8EK9UTTcU/jz7uY2+LK23us2fiTx6Mf4yv1xN3CEJgbaww+rN
-o3LEn1G8XOAktH97zRyXrcoimnuX8reN4HAQjHS4k5IvxZnK8dgkt5lIhBAtHVeH
-OUf2EXHTujyKIvuR3ZmCgjDKNFAa7aC3BdqK8v7vUg2k0GnW9Y474t066d+F04YF
-vSc94DGKz0w7/OCy1Ussvi8xh8D2N2dHLvXt29eYv6pus1UPBjITtdLtb89as6KF
-Ltuncytzl6yvxpZBQtMoNgG/FBQUMAzLV0jLxlig/GeG2Xjtytri1NgScEHoNShC
-vIWUPrg3ZZPnwMXXaLd7fiVlJDOJ6a87XGZSDLrOxpu2Ef4pz3MHPnzlqvFFmpyN
-PZRZxfNlisHhiL74QpwQ1httWW2DnSsK9LH0c4XA2sOv0gUrxeHnL1mXW2yBY2lO
-v7cOKuOcwj8rIPqHkTIICOmfM5zLtyHioogp2HJszKs8IM9rh704gXGhfskvvt33
-tTURC8nsiU5B9VnzOObT
-=Xzmp
------END PGP SIGNATURE-----
-
---W13SgbpmD6bhZUTM--
+It's fairly visible in the lockdep spew, since lockdep does lots of
+this "printk("\nsomething\n");"
