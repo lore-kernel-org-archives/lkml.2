@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946058Ab2EKTWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 15:22:08 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2896 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760812Ab2EKTWF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 15:22:05 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 11 May 2012 12:22:02 -0700
-Subject: Re: [PATCH 0/6 v3] Update TPS65910 to boot using devicetree
-From: Rhyland Klein <rklein@nvidia.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, "Liam Girdwood" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-In-Reply-To: <20120511093842.GC1214@sortiz-mobl>
-References: <1336502563-31789-1-git-send-email-rklein@nvidia.com>
-	 <20120511093842.GC1214@sortiz-mobl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 May 2012 12:21:58 -0700
-Message-ID: <1336764118.3085.0.camel@rhyland-vbox>
+	id S1760943Ab2EKTY2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 15:24:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17480 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757972Ab2EKTY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 15:24:26 -0400
+Date: Fri, 11 May 2012 15:24:20 -0400
+From: Dave Jones <davej@redhat.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: CPU frequency drivers MAINTAINERS update
+Message-ID: <20120511192420.GA10041@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linux PM list <linux-pm@vger.kernel.org>
+References: <20120504160417.GA421@redhat.com>
+ <201205052110.03323.rjw@sisk.pl>
+ <201205112116.25257.rjw@sisk.pl>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201205112116.25257.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-11 at 02:38 -0700, Samuel Ortiz wrote:
-> Hi Rhyland,
-> 
-> On Tue, May 08, 2012 at 11:42:37AM -0700, Rhyland Klein wrote:
-> > This patch set updates the tps65910 driver to boot using devicetree.
-> > 
-> > This patch set now uses the new addition to the of_regulator code,
-> > of_regulator_match to find all the regulator init data for the device.
-> > 
-> > Rhyland Klein (6):
-> >   mfd: tps65910: Commonize regmap access through header
-> >   regulator: tps65910: Add device tree bindings
-> >   mfd: tps65910: Add device-tree support
-> >   regulator: tps65910 regulator: add device tree support
-> >   mfd: tps65910-irq: Add devicetree init support
-> >   ARM: Tegra: Add support for TPS65910 PMIC
-> I applied patches 1,2 and 3 to my for-next branch.
-> Patch 4 is a regulator one, I assume Mark is going to take it. And patch 5
-> needs some additional work.
-> 
-> Cheers,
-> Samuel.
-> 
-Thank! I will resend the change for patch 5.
+On Fri, May 11, 2012 at 09:16:25PM +0200, Rafael J. Wysocki wrote:
+ > On Saturday, May 05, 2012, Rafael J. Wysocki wrote:
+ > > Hi Dave,
+ > > 
+ > > On Friday, May 04, 2012, Dave Jones wrote:
+ > > > Remove myself as cpufreq maintainer.
+ > > > x86 driver changes can go through the regular x86/ACPI trees.
+ > > > ARM driver changes through the ARM trees.
+ > > > cpufreq core changes are rare these days, and can just go to lkml/direct.
+ > > > 
+ > > > Signed-off-by: Dave Jones <davej@redhat.com>
+ > > 
+ > > Would you mind if I took over the maintenance of cpufreq, so that it goes
+ > > along with the other core power management code?
+ > 
+ > I'm taking the silence as "no, I wouldn't". :-)
 
--rhyland
+Sure. I'll still be looking at it occasionally so I'll be around to ack
+things if necessary. I just don't have time to deal with build-testing
+architectures I don't care about for eg, and dealing with the inevitable fallout
+when things break.
 
--- 
-nvpublic
+The only words of advice I give to you or whoever takes over, is to push back
+on adding more sysfs knobs to cpufreq. There's no end to what people want to do,
+and adding "just one more knob" seems to be the default action. It's already
+gotten out of hand, and more knobs aren't always the right answer.
+
+	Dave
 
