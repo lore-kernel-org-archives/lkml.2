@@ -1,80 +1,1108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab2EKHc0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 03:32:26 -0400
-Received: from webbox1416.server-home.net ([77.236.96.61]:55325 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751425Ab2EKHcZ (ORCPT
+	id S1755013Ab2EKHhM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 03:37:12 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:47591 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752557Ab2EKHhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 03:32:25 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
-        Bryan Wu <bryan.wu@canonical.com>
-Subject: Re: [PATCH] leds-pca955x: Fix race condition while setting brightness on several LEDs
-Date: Fri, 11 May 2012 09:32:21 +0200
-Message-ID: <1505623.sWns9kv83I@ws-stein>
-User-Agent: KMail/4.8.0 (Linux/3.2.12-gentoo; KDE/4.8.1; x86_64; ; )
-In-Reply-To: <20120510144016.3a1b006c.akpm@linux-foundation.org>
-References: <1328705048-21073-1-git-send-email-alexander.stein@systec-electronic.com> <20120510144016.3a1b006c.akpm@linux-foundation.org>
+	Fri, 11 May 2012 03:37:09 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 02/12 v2] pinctrl: basic Nomadik pinctrl interface
+Date: Fri, 11 May 2012 09:36:15 +0200
+Message-ID: <1336721775-23621-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.9.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 10. Mai 2012, 14:40:16 schrieb Andrew Morton:
-> On Wed,  8 Feb 2012 13:44:08 +0100
-> 
-> Alexander Stein <alexander.stein@systec-electronic.com> wrote:
-> > When issuing the following command:
-> > for I in 0 1 2 3 4 5 6 7; do
-> > 
-> >   echo 0 > /sys/class/leds/pca955x\:${I}/brightness;
-> > 
-> > done
-> > It is possible that all the pca955x_read_ls calls are done sequentially
-> > before any pca955x_write_ls call is done. This updates the LS only to the
-> > last LED update in its set.
-> > Fix this by using a global lock for the pca995x device during
-> > pca955x_led_work.
-> 
-> There's the bugfix.
-> 
-> > Also used a struct for shared data bewteen all LEDs.
-> 
-> And there's an apparently unrelated change whcih created a *lot* of
-> noise in the patch.  It would be good to separate these things, with
-> the bugfix being the first change.
+From: Linus Walleij <linus.walleij@linaro.org>
 
-This doesn't work. A problem was that each LED had it's own lock used upon 
-scheduling it's own workqueue. No synchronization betwen all LEDs on this 
-chip.
+This adds a scratch pin control interface to the Nomadik pinctrl
+driver, and defines the pins and groups in the DB8500 ASIC. We
+define GPIO ranges to cover the pins exposed. The DB8500 has
+more pins than this but we restrict the driver to the pins that
+can be controlled from the combined GPIO and pin control hardware
+to begin with.
 
-> > ...
-> > 
-> > -static inline u8 pca955x_ledsel(u8 oldval, int led_num, int state)
-> > +static inline u8 pca955x_ledel(u8 oldval, int led_num, int state)
-> 
-> Why was this function renamed, and what does "ledel" mean?
+ChangeLog v1->v2:
+- Base on the latest pinctrl development from
+  pinctrl-mergebase-20120418 so we can get rid of legacy
+  group count mechanism. Also drop the range checks for group
+  index, this is handled by the core now.
 
-Whoops, my mistake. This wasn't intended. I will gladly send a new patch with 
-the last function name change reverted. Unless someone objects against the 
-synchronizaton.
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ arch/arm/mach-ux500/Kconfig              |    3 +
+ arch/arm/mach-ux500/cpu-db8500.c         |    1 +
+ arch/arm/mach-ux500/devices-common.h     |   12 +
+ drivers/pinctrl/Kconfig                  |    8 +
+ drivers/pinctrl/Makefile                 |    3 +-
+ drivers/pinctrl/pinctrl-nomadik-db8500.c |  727 ++++++++++++++++++++++++++++++
+ drivers/pinctrl/pinctrl-nomadik.c        |  122 ++++-
+ drivers/pinctrl/pinctrl-nomadik.h        |   61 +++
+ 8 files changed, 935 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/pinctrl/pinctrl-nomadik-db8500.c
+ create mode 100644 drivers/pinctrl/pinctrl-nomadik.h
 
-Regards,
-Alexander
+diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
+index ef7099e..4adb493 100644
+--- a/arch/arm/mach-ux500/Kconfig
++++ b/arch/arm/mach-ux500/Kconfig
+@@ -9,6 +9,8 @@ config UX500_SOC_COMMON
+ 	select ARM_ERRATA_754322
+ 	select ARM_ERRATA_764369
+ 	select CACHE_L2X0
++	select PINCTRL
++	select PINCTRL_NOMADIK
+ 
+ config UX500_SOC_DB5500
+ 	bool
+@@ -20,6 +22,7 @@ config UX500_SOC_DB8500
+ 	select REGULATOR
+ 	select REGULATOR_DB8500_PRCMU
+ 	select CPU_FREQ_TABLE if CPU_FREQ
++	select PINCTRL_DB8500
+ 
+ menu "Ux500 target platform (boards)"
+ 
+diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
+index 9bd8163..d992d2b 100644
+--- a/arch/arm/mach-ux500/cpu-db8500.c
++++ b/arch/arm/mach-ux500/cpu-db8500.c
+@@ -141,6 +141,7 @@ static void __init db8500_add_gpios(struct device *parent)
+ 
+ 	dbx500_add_gpios(parent, ARRAY_AND_SIZE(db8500_gpio_base),
+ 			 IRQ_DB8500_GPIO0, &pdata);
++	dbx500_add_pinctrl(parent, "pinctrl-db8500");
+ }
+ 
+ static int usb_db8500_rx_dma_cfg[] = {
+diff --git a/arch/arm/mach-ux500/devices-common.h b/arch/arm/mach-ux500/devices-common.h
+index 39c74ec..939f750 100644
+--- a/arch/arm/mach-ux500/devices-common.h
++++ b/arch/arm/mach-ux500/devices-common.h
+@@ -93,4 +93,16 @@ struct nmk_gpio_platform_data;
+ void dbx500_add_gpios(struct device *parent, resource_size_t *base, int num,
+ 		      int irq, struct nmk_gpio_platform_data *pdata);
+ 
++static inline void
++dbx500_add_pinctrl(struct device *parent, const char *name)
++{
++	struct platform_device_info pdevinfo = {
++		.parent = parent,
++		.name = name,
++		.id = -1,
++	};
++
++	platform_device_register_full(&pdevinfo);
++}
++
+ #endif
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index f73a5ea..5e71820 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -36,6 +36,14 @@ config PINCTRL_MMP2
+ 	select PINCTRL_PXA3xx
+ 	select PINCONF
+ 
++config PINCTRL_NOMADIK
++	bool "Nomadik pin controller driver"
++	depends on ARCH_U8500
++
++config PINCTRL_DB8500
++	bool "DB8500 pin controller driver"
++	depends on PINCTRL_NOMADIK && ARCH_U8500
++
+ config PINCTRL_PXA168
+ 	bool "PXA168 pin controller driver"
+ 	depends on ARCH_MMP
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index dd797ca..637951e 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -11,7 +11,8 @@ endif
+ obj-$(CONFIG_GENERIC_PINCONF)	+= pinconf-generic.o
+ obj-$(CONFIG_PINCTRL_PXA3xx)	+= pinctrl-pxa3xx.o
+ obj-$(CONFIG_PINCTRL_MMP2)	+= pinctrl-mmp2.o
+-obj-$(CONFIG_PLAT_NOMADIK)	+= pinctrl-nomadik.o
++obj-$(CONFIG_PINCTRL_NOMADIK)	+= pinctrl-nomadik.o
++obj-$(CONFIG_PINCTRL_DB8500)	+= pinctrl-nomadik-db8500.o
+ obj-$(CONFIG_PINCTRL_PXA168)	+= pinctrl-pxa168.o
+ obj-$(CONFIG_PINCTRL_PXA910)	+= pinctrl-pxa910.o
+ obj-$(CONFIG_PINCTRL_SIRF)	+= pinctrl-sirf.o
+diff --git a/drivers/pinctrl/pinctrl-nomadik-db8500.c b/drivers/pinctrl/pinctrl-nomadik-db8500.c
+new file mode 100644
+index 0000000..f3c0482
+--- /dev/null
++++ b/drivers/pinctrl/pinctrl-nomadik-db8500.c
+@@ -0,0 +1,727 @@
++#include <linux/kernel.h>
++#include <linux/pinctrl/pinctrl.h>
++#include "pinctrl-nomadik.h"
++
++/* All the pins that can be used for GPIO and some other functions */
++#define _GPIO(offset)		(offset)
++
++#define DB8500_PIN_AJ5		_GPIO(0)
++#define DB8500_PIN_AJ3		_GPIO(1)
++#define DB8500_PIN_AH4		_GPIO(2)
++#define DB8500_PIN_AH3		_GPIO(3)
++#define DB8500_PIN_AH6		_GPIO(4)
++#define DB8500_PIN_AG6		_GPIO(5)
++#define DB8500_PIN_AF6		_GPIO(6)
++#define DB8500_PIN_AG5		_GPIO(7)
++#define DB8500_PIN_AD5		_GPIO(8)
++#define DB8500_PIN_AE4		_GPIO(9)
++#define DB8500_PIN_AF5		_GPIO(10)
++#define DB8500_PIN_AG4		_GPIO(11)
++#define DB8500_PIN_AC4		_GPIO(12)
++#define DB8500_PIN_AF3		_GPIO(13)
++#define DB8500_PIN_AE3		_GPIO(14)
++#define DB8500_PIN_AC3		_GPIO(15)
++#define DB8500_PIN_AD3		_GPIO(16)
++#define DB8500_PIN_AD4		_GPIO(17)
++#define DB8500_PIN_AC2		_GPIO(18)
++#define DB8500_PIN_AC1		_GPIO(19)
++#define DB8500_PIN_AB4		_GPIO(20)
++#define DB8500_PIN_AB3		_GPIO(21)
++#define DB8500_PIN_AA3		_GPIO(22)
++#define DB8500_PIN_AA4		_GPIO(23)
++#define DB8500_PIN_AB2		_GPIO(24)
++#define DB8500_PIN_Y4		_GPIO(25)
++#define DB8500_PIN_Y2		_GPIO(26)
++#define DB8500_PIN_AA2		_GPIO(27)
++#define DB8500_PIN_AA1		_GPIO(28)
++#define DB8500_PIN_W2		_GPIO(29)
++#define DB8500_PIN_W3		_GPIO(30)
++#define DB8500_PIN_V3		_GPIO(31)
++#define DB8500_PIN_V2		_GPIO(32)
++#define DB8500_PIN_AF2		_GPIO(33)
++#define DB8500_PIN_AE1		_GPIO(34)
++#define DB8500_PIN_AE2		_GPIO(35)
++#define DB8500_PIN_AG2		_GPIO(36)
++/* Hole */
++#define DB8500_PIN_F3		_GPIO(64)
++#define DB8500_PIN_F1		_GPIO(65)
++#define DB8500_PIN_G3		_GPIO(66)
++#define DB8500_PIN_G2		_GPIO(67)
++#define DB8500_PIN_E1		_GPIO(68)
++#define DB8500_PIN_E2		_GPIO(69)
++#define DB8500_PIN_G5		_GPIO(70)
++#define DB8500_PIN_G4		_GPIO(71)
++#define DB8500_PIN_H4		_GPIO(72)
++#define DB8500_PIN_H3		_GPIO(73)
++#define DB8500_PIN_J3		_GPIO(74)
++#define DB8500_PIN_H2		_GPIO(75)
++#define DB8500_PIN_J2		_GPIO(76)
++#define DB8500_PIN_H1		_GPIO(77)
++#define DB8500_PIN_F4		_GPIO(78)
++#define DB8500_PIN_E3		_GPIO(79)
++#define DB8500_PIN_E4		_GPIO(80)
++#define DB8500_PIN_D2		_GPIO(81)
++#define DB8500_PIN_C1		_GPIO(82)
++#define DB8500_PIN_D3		_GPIO(83)
++#define DB8500_PIN_C2		_GPIO(84)
++#define DB8500_PIN_D5		_GPIO(85)
++#define DB8500_PIN_C6		_GPIO(86)
++#define DB8500_PIN_B3		_GPIO(87)
++#define DB8500_PIN_C4		_GPIO(88)
++#define DB8500_PIN_E6		_GPIO(89)
++#define DB8500_PIN_A3		_GPIO(90)
++#define DB8500_PIN_B6		_GPIO(91)
++#define DB8500_PIN_D6		_GPIO(92)
++#define DB8500_PIN_B7		_GPIO(93)
++#define DB8500_PIN_D7		_GPIO(94)
++#define DB8500_PIN_E8		_GPIO(95)
++#define DB8500_PIN_D8		_GPIO(96)
++#define DB8500_PIN_D9		_GPIO(97)
++/* Hole */
++#define DB8500_PIN_A5		_GPIO(128)
++#define DB8500_PIN_B4		_GPIO(129)
++#define DB8500_PIN_C8		_GPIO(130)
++#define DB8500_PIN_A12		_GPIO(131)
++#define DB8500_PIN_C10		_GPIO(132)
++#define DB8500_PIN_B10		_GPIO(133)
++#define DB8500_PIN_B9		_GPIO(134)
++#define DB8500_PIN_A9		_GPIO(135)
++#define DB8500_PIN_C7		_GPIO(136)
++#define DB8500_PIN_A7		_GPIO(137)
++#define DB8500_PIN_C5		_GPIO(138)
++#define DB8500_PIN_C9		_GPIO(139)
++#define DB8500_PIN_B11		_GPIO(140)
++#define DB8500_PIN_C12		_GPIO(141)
++#define DB8500_PIN_C11		_GPIO(142)
++#define DB8500_PIN_D12		_GPIO(143)
++#define DB8500_PIN_B13		_GPIO(144)
++#define DB8500_PIN_C13		_GPIO(145)
++#define DB8500_PIN_D13		_GPIO(146)
++#define DB8500_PIN_C15		_GPIO(147)
++#define DB8500_PIN_B16		_GPIO(148)
++#define DB8500_PIN_B14		_GPIO(149)
++#define DB8500_PIN_C14		_GPIO(150)
++#define DB8500_PIN_D17		_GPIO(151)
++#define DB8500_PIN_D16		_GPIO(152)
++#define DB8500_PIN_B17		_GPIO(153)
++#define DB8500_PIN_C16		_GPIO(154)
++#define DB8500_PIN_C19		_GPIO(155)
++#define DB8500_PIN_C17		_GPIO(156)
++#define DB8500_PIN_A18		_GPIO(157)
++#define DB8500_PIN_C18		_GPIO(158)
++#define DB8500_PIN_B19		_GPIO(159)
++#define DB8500_PIN_B20		_GPIO(160)
++#define DB8500_PIN_D21		_GPIO(161)
++#define DB8500_PIN_D20		_GPIO(162)
++#define DB8500_PIN_C20		_GPIO(163)
++#define DB8500_PIN_B21		_GPIO(164)
++#define DB8500_PIN_C21		_GPIO(165)
++#define DB8500_PIN_A22		_GPIO(166)
++#define DB8500_PIN_B24		_GPIO(167)
++#define DB8500_PIN_C22		_GPIO(168)
++#define DB8500_PIN_D22		_GPIO(169)
++#define DB8500_PIN_C23		_GPIO(170)
++#define DB8500_PIN_D23		_GPIO(171)
++/* Hole */
++#define DB8500_PIN_AJ27		_GPIO(192)
++#define DB8500_PIN_AH27		_GPIO(193)
++#define DB8500_PIN_AF27		_GPIO(194)
++#define DB8500_PIN_AG28		_GPIO(195)
++#define DB8500_PIN_AG26		_GPIO(196)
++#define DB8500_PIN_AH24		_GPIO(197)
++#define DB8500_PIN_AG25		_GPIO(198)
++#define DB8500_PIN_AH23		_GPIO(199)
++#define DB8500_PIN_AH26		_GPIO(200)
++#define DB8500_PIN_AF24		_GPIO(201)
++#define DB8500_PIN_AF25		_GPIO(202)
++#define DB8500_PIN_AE23		_GPIO(203)
++#define DB8500_PIN_AF23		_GPIO(204)
++#define DB8500_PIN_AG23		_GPIO(205)
++#define DB8500_PIN_AG24		_GPIO(206)
++#define DB8500_PIN_AJ23		_GPIO(207)
++#define DB8500_PIN_AH16		_GPIO(208)
++#define DB8500_PIN_AG15		_GPIO(209)
++#define DB8500_PIN_AJ15		_GPIO(210)
++#define DB8500_PIN_AG14		_GPIO(211)
++#define DB8500_PIN_AF13		_GPIO(212)
++#define DB8500_PIN_AG13		_GPIO(213)
++#define DB8500_PIN_AH15		_GPIO(214)
++#define DB8500_PIN_AH13		_GPIO(215)
++#define DB8500_PIN_AG12		_GPIO(216)
++#define DB8500_PIN_AH12		_GPIO(217)
++#define DB8500_PIN_AH11		_GPIO(218)
++#define DB8500_PIN_AG10		_GPIO(219)
++#define DB8500_PIN_AH10		_GPIO(220)
++#define DB8500_PIN_AJ11		_GPIO(221)
++#define DB8500_PIN_AJ9		_GPIO(222)
++#define DB8500_PIN_AH9		_GPIO(223)
++#define DB8500_PIN_AG9		_GPIO(224)
++#define DB8500_PIN_AG8		_GPIO(225)
++#define DB8500_PIN_AF8		_GPIO(226)
++#define DB8500_PIN_AH7		_GPIO(227)
++#define DB8500_PIN_AJ6		_GPIO(228)
++#define DB8500_PIN_AG7		_GPIO(229)
++#define DB8500_PIN_AF7		_GPIO(230)
++/* Hole */
++#define DB8500_PIN_AF28		_GPIO(256)
++#define DB8500_PIN_AE29		_GPIO(257)
++#define DB8500_PIN_AD29		_GPIO(258)
++#define DB8500_PIN_AC29		_GPIO(259)
++#define DB8500_PIN_AD28		_GPIO(260)
++#define DB8500_PIN_AD26		_GPIO(261)
++#define DB8500_PIN_AE26		_GPIO(262)
++#define DB8500_PIN_AG29		_GPIO(263)
++#define DB8500_PIN_AE27		_GPIO(264)
++#define DB8500_PIN_AD27		_GPIO(265)
++#define DB8500_PIN_AC28		_GPIO(266)
++#define DB8500_PIN_AC27		_GPIO(267)
++
++/*
++ * The names of the pins are denoted by GPIO number and ball name, even
++ * though they can be used for other things than GPIO, this is the first
++ * column in the table of the data sheet and often used on schematics and
++ * such.
++ */
++static const struct pinctrl_pin_desc nmk_db8500_pins[] = {
++	PINCTRL_PIN(DB8500_PIN_AJ5, "GPIO0_AJ5"),
++	PINCTRL_PIN(DB8500_PIN_AJ3, "GPIO1_AJ3"),
++	PINCTRL_PIN(DB8500_PIN_AH4, "GPIO2_AH4"),
++	PINCTRL_PIN(DB8500_PIN_AH3, "GPIO3_AH3"),
++	PINCTRL_PIN(DB8500_PIN_AH6, "GPIO4_AH6"),
++	PINCTRL_PIN(DB8500_PIN_AG6, "GPIO5_AG6"),
++	PINCTRL_PIN(DB8500_PIN_AF6, "GPIO6_AF6"),
++	PINCTRL_PIN(DB8500_PIN_AG5, "GPIO7_AG5"),
++	PINCTRL_PIN(DB8500_PIN_AD5, "GPIO8_AD5"),
++	PINCTRL_PIN(DB8500_PIN_AE4, "GPIO9_AE4"),
++	PINCTRL_PIN(DB8500_PIN_AF5, "GPIO10_AF5"),
++	PINCTRL_PIN(DB8500_PIN_AG4, "GPIO11_AG4"),
++	PINCTRL_PIN(DB8500_PIN_AC4, "GPIO12_AC4"),
++	PINCTRL_PIN(DB8500_PIN_AF3, "GPIO13_AF3"),
++	PINCTRL_PIN(DB8500_PIN_AE3, "GPIO14_AE3"),
++	PINCTRL_PIN(DB8500_PIN_AC3, "GPIO15_AC3"),
++	PINCTRL_PIN(DB8500_PIN_AD3, "GPIO16_AD3"),
++	PINCTRL_PIN(DB8500_PIN_AD4, "GPIO17_AD4"),
++	PINCTRL_PIN(DB8500_PIN_AC2, "GPIO18_AC2"),
++	PINCTRL_PIN(DB8500_PIN_AC1, "GPIO19_AC1"),
++	PINCTRL_PIN(DB8500_PIN_AB4, "GPIO20_AB4"),
++	PINCTRL_PIN(DB8500_PIN_AB3, "GPIO21_AB3"),
++	PINCTRL_PIN(DB8500_PIN_AA3, "GPIO22_AA3"),
++	PINCTRL_PIN(DB8500_PIN_AA4, "GPIO23_AA4"),
++	PINCTRL_PIN(DB8500_PIN_AB2, "GPIO24_AB2"),
++	PINCTRL_PIN(DB8500_PIN_Y4, "GPIO25_Y4"),
++	PINCTRL_PIN(DB8500_PIN_Y2, "GPIO26_Y2"),
++	PINCTRL_PIN(DB8500_PIN_AA2, "GPIO27_AA2"),
++	PINCTRL_PIN(DB8500_PIN_AA1, "GPIO28_AA1"),
++	PINCTRL_PIN(DB8500_PIN_W2, "GPIO29_W2"),
++	PINCTRL_PIN(DB8500_PIN_W3, "GPIO30_W3"),
++	PINCTRL_PIN(DB8500_PIN_V3, "GPIO31_V3"),
++	PINCTRL_PIN(DB8500_PIN_V2, "GPIO32_V2"),
++	PINCTRL_PIN(DB8500_PIN_AF2, "GPIO33_AF2"),
++	PINCTRL_PIN(DB8500_PIN_AE1, "GPIO34_AE1"),
++	PINCTRL_PIN(DB8500_PIN_AE2, "GPIO35_AE2"),
++	PINCTRL_PIN(DB8500_PIN_AG2, "GPIO36_AG2"),
++	/* Hole */
++	PINCTRL_PIN(DB8500_PIN_F3, "GPIO64_F3"),
++	PINCTRL_PIN(DB8500_PIN_F1, "GPIO65_F1"),
++	PINCTRL_PIN(DB8500_PIN_G3, "GPIO66_G3"),
++	PINCTRL_PIN(DB8500_PIN_G2, "GPIO67_G2"),
++	PINCTRL_PIN(DB8500_PIN_E1, "GPIO68_E1"),
++	PINCTRL_PIN(DB8500_PIN_E2, "GPIO69_E2"),
++	PINCTRL_PIN(DB8500_PIN_G5, "GPIO70_G5"),
++	PINCTRL_PIN(DB8500_PIN_G4, "GPIO71_G4"),
++	PINCTRL_PIN(DB8500_PIN_H4, "GPIO72_H4"),
++	PINCTRL_PIN(DB8500_PIN_H3, "GPIO73_H3"),
++	PINCTRL_PIN(DB8500_PIN_J3, "GPIO74_J3"),
++	PINCTRL_PIN(DB8500_PIN_H2, "GPIO75_H2"),
++	PINCTRL_PIN(DB8500_PIN_J2, "GPIO76_J2"),
++	PINCTRL_PIN(DB8500_PIN_H1, "GPIO77_H1"),
++	PINCTRL_PIN(DB8500_PIN_F4, "GPIO78_F4"),
++	PINCTRL_PIN(DB8500_PIN_E3, "GPIO79_E3"),
++	PINCTRL_PIN(DB8500_PIN_E4, "GPIO80_E4"),
++	PINCTRL_PIN(DB8500_PIN_D2, "GPIO81_D2"),
++	PINCTRL_PIN(DB8500_PIN_C1, "GPIO82_C1"),
++	PINCTRL_PIN(DB8500_PIN_D3, "GPIO83_D3"),
++	PINCTRL_PIN(DB8500_PIN_C2, "GPIO84_C2"),
++	PINCTRL_PIN(DB8500_PIN_D5, "GPIO85_D5"),
++	PINCTRL_PIN(DB8500_PIN_C6, "GPIO86_C6"),
++	PINCTRL_PIN(DB8500_PIN_B3, "GPIO87_B3"),
++	PINCTRL_PIN(DB8500_PIN_C4, "GPIO88_C4"),
++	PINCTRL_PIN(DB8500_PIN_E6, "GPIO89_E6"),
++	PINCTRL_PIN(DB8500_PIN_A3, "GPIO90_A3"),
++	PINCTRL_PIN(DB8500_PIN_B6, "GPIO91_B6"),
++	PINCTRL_PIN(DB8500_PIN_D6, "GPIO92_D6"),
++	PINCTRL_PIN(DB8500_PIN_B7, "GPIO93_B7"),
++	PINCTRL_PIN(DB8500_PIN_D7, "GPIO94_D7"),
++	PINCTRL_PIN(DB8500_PIN_E8, "GPIO95_E8"),
++	PINCTRL_PIN(DB8500_PIN_D8, "GPIO96_D8"),
++	PINCTRL_PIN(DB8500_PIN_D9, "GPIO97_D9"),
++	/* Hole */
++	PINCTRL_PIN(DB8500_PIN_A5, "GPIO128_A5"),
++	PINCTRL_PIN(DB8500_PIN_B4, "GPIO129_B4"),
++	PINCTRL_PIN(DB8500_PIN_C8, "GPIO130_C8"),
++	PINCTRL_PIN(DB8500_PIN_A12, "GPIO131_A12"),
++	PINCTRL_PIN(DB8500_PIN_C10, "GPIO132_C10"),
++	PINCTRL_PIN(DB8500_PIN_B10, "GPIO133_B10"),
++	PINCTRL_PIN(DB8500_PIN_B9, "GPIO134_B9"),
++	PINCTRL_PIN(DB8500_PIN_A9, "GPIO135_A9"),
++	PINCTRL_PIN(DB8500_PIN_C7, "GPIO136_C7"),
++	PINCTRL_PIN(DB8500_PIN_A7, "GPIO137_A7"),
++	PINCTRL_PIN(DB8500_PIN_C5, "GPIO138_C5"),
++	PINCTRL_PIN(DB8500_PIN_C9, "GPIO139_C9"),
++	PINCTRL_PIN(DB8500_PIN_B11, "GPIO140_B11"),
++	PINCTRL_PIN(DB8500_PIN_C12, "GPIO141_12"),
++	PINCTRL_PIN(DB8500_PIN_C11, "GPIO142_C11"),
++	PINCTRL_PIN(DB8500_PIN_D12, "GPIO143_D12"),
++	PINCTRL_PIN(DB8500_PIN_B13, "GPIO144_B13"),
++	PINCTRL_PIN(DB8500_PIN_C13, "GPIO145_C13"),
++	PINCTRL_PIN(DB8500_PIN_D13, "GPIO146_D13"),
++	PINCTRL_PIN(DB8500_PIN_C15, "GPIO147_C15"),
++	PINCTRL_PIN(DB8500_PIN_B16, "GPIO148_B16"),
++	PINCTRL_PIN(DB8500_PIN_B14, "GPIO149_B14"),
++	PINCTRL_PIN(DB8500_PIN_C14, "GPIO150_C14"),
++	PINCTRL_PIN(DB8500_PIN_D17, "GPIO151_D17"),
++	PINCTRL_PIN(DB8500_PIN_D16, "GPIO152_D16"),
++	PINCTRL_PIN(DB8500_PIN_B17, "GPIO153_B17"),
++	PINCTRL_PIN(DB8500_PIN_C16, "GPIO154_C16"),
++	PINCTRL_PIN(DB8500_PIN_C19, "GPIO155_C19"),
++	PINCTRL_PIN(DB8500_PIN_C17, "GPIO156_C17"),
++	PINCTRL_PIN(DB8500_PIN_A18, "GPIO157_A18"),
++	PINCTRL_PIN(DB8500_PIN_C18, "GPIO158_C18"),
++	PINCTRL_PIN(DB8500_PIN_B19, "GPIO159_B19"),
++	PINCTRL_PIN(DB8500_PIN_B20, "GPIO160_B20"),
++	PINCTRL_PIN(DB8500_PIN_D21, "GPIO161_D21"),
++	PINCTRL_PIN(DB8500_PIN_D20, "GPIO162_D20"),
++	PINCTRL_PIN(DB8500_PIN_C20, "GPIO163_C20"),
++	PINCTRL_PIN(DB8500_PIN_B21, "GPIO164_B21"),
++	PINCTRL_PIN(DB8500_PIN_C21, "GPIO165_C21"),
++	PINCTRL_PIN(DB8500_PIN_A22, "GPIO166_A22"),
++	PINCTRL_PIN(DB8500_PIN_B24, "GPIO167_B24"),
++	PINCTRL_PIN(DB8500_PIN_C22, "GPIO168_C22"),
++	PINCTRL_PIN(DB8500_PIN_D22, "GPIO169_D22"),
++	PINCTRL_PIN(DB8500_PIN_C23, "GPIO170_C23"),
++	PINCTRL_PIN(DB8500_PIN_D23, "GPIO171_D23"),
++	/* Hole */
++	PINCTRL_PIN(DB8500_PIN_AJ27, "GPIO192_AJ27"),
++	PINCTRL_PIN(DB8500_PIN_AH27, "GPIO193_AH27"),
++	PINCTRL_PIN(DB8500_PIN_AF27, "GPIO194_AF27"),
++	PINCTRL_PIN(DB8500_PIN_AG28, "GPIO195_AG28"),
++	PINCTRL_PIN(DB8500_PIN_AG26, "GPIO196_AG26"),
++	PINCTRL_PIN(DB8500_PIN_AH24, "GPIO197_AH24"),
++	PINCTRL_PIN(DB8500_PIN_AG25, "GPIO198_AG25"),
++	PINCTRL_PIN(DB8500_PIN_AH23, "GPIO199_AH23"),
++	PINCTRL_PIN(DB8500_PIN_AH26, "GPIO200_AH26"),
++	PINCTRL_PIN(DB8500_PIN_AF24, "GPIO201_AF24"),
++	PINCTRL_PIN(DB8500_PIN_AF25, "GPIO202_AF25"),
++	PINCTRL_PIN(DB8500_PIN_AE23, "GPIO203_AE23"),
++	PINCTRL_PIN(DB8500_PIN_AF23, "GPIO204_AF23"),
++	PINCTRL_PIN(DB8500_PIN_AG23, "GPIO205_AG23"),
++	PINCTRL_PIN(DB8500_PIN_AG24, "GPIO206_AG24"),
++	PINCTRL_PIN(DB8500_PIN_AJ23, "GPIO207_AJ23"),
++	PINCTRL_PIN(DB8500_PIN_AH16, "GPIO208_AH16"),
++	PINCTRL_PIN(DB8500_PIN_AG15, "GPIO209_AG15"),
++	PINCTRL_PIN(DB8500_PIN_AJ15, "GPIO210_AJ15"),
++	PINCTRL_PIN(DB8500_PIN_AG14, "GPIO211_AG14"),
++	PINCTRL_PIN(DB8500_PIN_AF13, "GPIO212_AF13"),
++	PINCTRL_PIN(DB8500_PIN_AG13, "GPIO213_AG13"),
++	PINCTRL_PIN(DB8500_PIN_AH15, "GPIO214_AH15"),
++	PINCTRL_PIN(DB8500_PIN_AH13, "GPIO215_AH13"),
++	PINCTRL_PIN(DB8500_PIN_AG12, "GPIO216_AG12"),
++	PINCTRL_PIN(DB8500_PIN_AH12, "GPIO217_AH12"),
++	PINCTRL_PIN(DB8500_PIN_AH11, "GPIO218_AH11"),
++	PINCTRL_PIN(DB8500_PIN_AG10, "GPIO219_AG10"),
++	PINCTRL_PIN(DB8500_PIN_AH10, "GPIO220_AH10"),
++	PINCTRL_PIN(DB8500_PIN_AJ11, "GPIO221_AJ11"),
++	PINCTRL_PIN(DB8500_PIN_AJ9, "GPIO222_AJ9"),
++	PINCTRL_PIN(DB8500_PIN_AH9, "GPIO223_AH9"),
++	PINCTRL_PIN(DB8500_PIN_AG9, "GPIO224_AG9"),
++	PINCTRL_PIN(DB8500_PIN_AG8, "GPIO225_AG8"),
++	PINCTRL_PIN(DB8500_PIN_AF8, "GPIO226_AF8"),
++	PINCTRL_PIN(DB8500_PIN_AH7, "GPIO227_AH7"),
++	PINCTRL_PIN(DB8500_PIN_AJ6, "GPIO228_AJ6"),
++	PINCTRL_PIN(DB8500_PIN_AG7, "GPIO229_AG7"),
++	PINCTRL_PIN(DB8500_PIN_AF7, "GPIO230_AF7"),
++	/* Hole */
++	PINCTRL_PIN(DB8500_PIN_AF28, "GPIO256_AF28"),
++	PINCTRL_PIN(DB8500_PIN_AE29, "GPIO257_AE29"),
++	PINCTRL_PIN(DB8500_PIN_AD29, "GPIO258_AD29"),
++	PINCTRL_PIN(DB8500_PIN_AC29, "GPIO259_AC29"),
++	PINCTRL_PIN(DB8500_PIN_AD28, "GPIO260_AD28"),
++	PINCTRL_PIN(DB8500_PIN_AD26, "GPIO261_AD26"),
++	PINCTRL_PIN(DB8500_PIN_AE26, "GPIO262_AE26"),
++	PINCTRL_PIN(DB8500_PIN_AG29, "GPIO263_AG29"),
++	PINCTRL_PIN(DB8500_PIN_AE27, "GPIO264_AE27"),
++	PINCTRL_PIN(DB8500_PIN_AD27, "GPIO265_AD27"),
++	PINCTRL_PIN(DB8500_PIN_AC28, "GPIO266_AC28"),
++	PINCTRL_PIN(DB8500_PIN_AC27, "GPIO267_AC27"),
++};
++
++#define DB8500_GPIO_RANGE(a, b, c) { .name = "DB8500", .id = a, .base = b, \
++			.pin_base = b, .npins = c }
++
++/*
++ * This matches the 32-pin gpio chips registered by the GPIO portion. This
++ * cannot be const since we assign the struct gpio_chip * pointer at runtime.
++ */
++static struct pinctrl_gpio_range nmk_db8500_ranges[] = {
++	DB8500_GPIO_RANGE(0, 0, 32),
++	DB8500_GPIO_RANGE(1, 32, 5),
++	DB8500_GPIO_RANGE(2, 64, 32),
++	DB8500_GPIO_RANGE(3, 96, 2),
++	DB8500_GPIO_RANGE(4, 128, 32),
++	DB8500_GPIO_RANGE(5, 160, 12),
++	DB8500_GPIO_RANGE(6, 192, 32),
++	DB8500_GPIO_RANGE(7, 224, 7),
++	DB8500_GPIO_RANGE(8, 256, 12),
++};
++
++/*
++ * Read the pin group names like this:
++ * u0_a_1    = first groups of pins for uart0 on alt function a
++ * i2c2_b_2  = second group of pins for i2c2 on alt function b
++ *
++ * The groups are arranged as sets per altfunction column, so we can
++ * mux in one group at a time by selecting the same altfunction for them
++ * all. When functions require pins on different altfunctions, you need
++ * to combine several groups.
++ */
++
++/* Altfunction A column */
++static const unsigned u0_a_1_pins[] = { DB8500_PIN_AJ5, DB8500_PIN_AJ3,
++					DB8500_PIN_AH4, DB8500_PIN_AH3 };
++static const unsigned u1rxtx_a_1_pins[] = { DB8500_PIN_AH6, DB8500_PIN_AG6 };
++static const unsigned u1ctsrts_a_1_pins[] = { DB8500_PIN_AF6, DB8500_PIN_AG5 };
++/* Image processor I2C line, this is driven by image processor firmware */
++static const unsigned ipi2c_a_1_pins[] = { DB8500_PIN_AD5, DB8500_PIN_AE4 };
++static const unsigned ipi2c_a_2_pins[] = { DB8500_PIN_AF5, DB8500_PIN_AG4 };
++/* MSP0 can only be on these pins, but TXD and RXD can be flipped */
++static const unsigned msp0txrx_a_1_pins[] = { DB8500_PIN_AC4, DB8500_PIN_AC3 };
++static const unsigned msp0tfstck_a_1_pins[] = { DB8500_PIN_AF3, DB8500_PIN_AE3 };
++static const unsigned msp0rfsrck_a_1_pins[] = { DB8500_PIN_AD3, DB8500_PIN_AD4 };
++/* Basic pins of the MMC/SD card 0 interface */
++static const unsigned mc0_a_1_pins[] = { DB8500_PIN_AC2, DB8500_PIN_AC1,
++	DB8500_PIN_AB4, DB8500_PIN_AA3, DB8500_PIN_AA4, DB8500_PIN_AB2,
++	DB8500_PIN_Y4, DB8500_PIN_Y2, DB8500_PIN_AA2, DB8500_PIN_AA1 };
++/* Often only 4 bits are used, then these are not needed (only used for MMC) */
++static const unsigned mc0_dat47_a_1_pins[] = { DB8500_PIN_W2, DB8500_PIN_W3,
++	DB8500_PIN_V3, DB8500_PIN_V2};
++static const unsigned mc0dat31dir_a_1_pins[] = { DB8500_PIN_AB3 };
++/* MSP1 can only be on these pins, but TXD and RXD can be flipped */
++static const unsigned msp1txrx_a_1_pins[] = { DB8500_PIN_AF2, DB8500_PIN_AG2 };
++static const unsigned msp1_a_1_pins[] = { DB8500_PIN_AE1, DB8500_PIN_AE2 };
++/* LCD interface */
++static const unsigned lcdb_a_1_pins[] = { DB8500_PIN_F3, DB8500_PIN_F1,
++					  DB8500_PIN_G3, DB8500_PIN_G2 };
++static const unsigned lcdvsi0_a_1_pins[] = { DB8500_PIN_E1 };
++static const unsigned lcdvsi1_a_1_pins[] = { DB8500_PIN_E2 };
++static const unsigned lcd_d0_d7_a_1_pins[] = {
++	DB8500_PIN_G5, DB8500_PIN_G4, DB8500_PIN_H4, DB8500_PIN_H3,
++	DB8500_PIN_J3, DB8500_PIN_H2, DB8500_PIN_J2, DB8500_PIN_H1 };
++/* D8 thru D11 often used as TVOUT lines */
++static const unsigned lcd_d8_d11_a_1_pins[] = { DB8500_PIN_F4,
++	DB8500_PIN_E3, DB8500_PIN_E4, DB8500_PIN_D2 };
++static const unsigned lcd_d12_d23_a_1_pins[] = {
++	DB8500_PIN_C1, DB8500_PIN_D3, DB8500_PIN_C2, DB8500_PIN_D5,
++	DB8500_PIN_C6, DB8500_PIN_B3, DB8500_PIN_C4, DB8500_PIN_E6,
++	DB8500_PIN_A3, DB8500_PIN_B6, DB8500_PIN_D6, DB8500_PIN_B7 };
++static const unsigned kp_a_1_pins[] = { DB8500_PIN_D7, DB8500_PIN_E8,
++	DB8500_PIN_D8, DB8500_PIN_D9 };
++static const unsigned kpskaskb_a_1_pins[] = { DB8500_PIN_D17, DB8500_PIN_D16 };
++static const unsigned kp_a_2_pins[] = {
++	DB8500_PIN_B17, DB8500_PIN_C16, DB8500_PIN_C19, DB8500_PIN_C17,
++	DB8500_PIN_A18, DB8500_PIN_C18, DB8500_PIN_B19, DB8500_PIN_B20,
++	DB8500_PIN_D21, DB8500_PIN_D20, DB8500_PIN_C20, DB8500_PIN_B21,
++	DB8500_PIN_C21, DB8500_PIN_A22, DB8500_PIN_B24, DB8500_PIN_C22 };
++/* MC2 has 8 data lines and no direction control, so only for (e)MMC */
++static const unsigned mc2_a_1_pins[] = { DB8500_PIN_A5, DB8500_PIN_B4,
++	DB8500_PIN_C8, DB8500_PIN_A12, DB8500_PIN_C10, DB8500_PIN_B10,
++	DB8500_PIN_B9, DB8500_PIN_A9, DB8500_PIN_C7, DB8500_PIN_A7,
++	DB8500_PIN_C5 };
++static const unsigned ssp1_a_1_pins[] = { DB8500_PIN_C9, DB8500_PIN_B11,
++					  DB8500_PIN_C12, DB8500_PIN_C11 };
++static const unsigned ssp0_a_1_pins[] = { DB8500_PIN_D12, DB8500_PIN_B13,
++					  DB8500_PIN_C13, DB8500_PIN_D13 };
++static const unsigned i2c0_a_1_pins[] = { DB8500_PIN_C15, DB8500_PIN_B16 };
++/*
++ * Image processor GPIO pins are named "ipgpio" and have their own
++ * numberspace
++ */
++static const unsigned ipgpio0_a_1_pins[] = { DB8500_PIN_B14 };
++static const unsigned ipgpio1_a_1_pins[] = { DB8500_PIN_C14 };
++/* Three modem pins named RF_PURn, MODEM_STATE and MODEM_PWREN */
++static const unsigned modem_a_1_pins[] = { DB8500_PIN_D22, DB8500_PIN_C23,
++					   DB8500_PIN_D23 };
++/*
++ * This MSP cannot switch RX and TX, SCK in a separate group since this
++ * seems to be optional.
++ */
++static const unsigned msp2sck_a_1_pins[] = { DB8500_PIN_AJ27 };
++static const unsigned msp2_a_1_pins[] = { DB8500_PIN_AH27, DB8500_PIN_AF27,
++					  DB8500_PIN_AG28, DB8500_PIN_AG26 };
++static const unsigned mc4_a_1_pins[] = { DB8500_PIN_AH24, DB8500_PIN_AG25,
++	DB8500_PIN_AH23, DB8500_PIN_AH26, DB8500_PIN_AF24, DB8500_PIN_AF25,
++	DB8500_PIN_AE23, DB8500_PIN_AF23, DB8500_PIN_AG23, DB8500_PIN_AG24,
++	DB8500_PIN_AJ23 };
++/* MC1 has only 4 data pins, designed for SD or SDIO exclusively */
++static const unsigned mc1_a_1_pins[] = { DB8500_PIN_AH16, DB8500_PIN_AG15,
++	DB8500_PIN_AJ15, DB8500_PIN_AG14, DB8500_PIN_AF13, DB8500_PIN_AG13,
++	DB8500_PIN_AH15 };
++static const unsigned mc1dir_a_1_pins[] = { DB8500_PIN_AH13, DB8500_PIN_AG12,
++	DB8500_PIN_AH12, DB8500_PIN_AH11 };
++static const unsigned hsir_a_1_pins[] = { DB8500_PIN_AG10, DB8500_PIN_AH10 };
++static const unsigned hsit_a_1_pins[] = { DB8500_PIN_AJ11, DB8500_PIN_AJ9,
++	DB8500_PIN_AH9, DB8500_PIN_AG9, DB8500_PIN_AG8, DB8500_PIN_AF8 };
++static const unsigned clkout_a_1_pins[] = { DB8500_PIN_AH7, DB8500_PIN_AJ6 };
++static const unsigned clkout_a_2_pins[] = { DB8500_PIN_AG7, DB8500_PIN_AF7 };
++static const unsigned usb_a_1_pins[] = { DB8500_PIN_AF28, DB8500_PIN_AE29,
++	DB8500_PIN_AD29, DB8500_PIN_AC29, DB8500_PIN_AD28, DB8500_PIN_AD26,
++	DB8500_PIN_AE26, DB8500_PIN_AG29, DB8500_PIN_AE27, DB8500_PIN_AD27,
++	DB8500_PIN_AC28, DB8500_PIN_AC27 };
++
++/* Altfunction B column */
++static const unsigned trig_b_1_pins[] = { DB8500_PIN_AJ5, DB8500_PIN_AJ3 };
++static const unsigned i2c4_b_1_pins[] = { DB8500_PIN_AH6, DB8500_PIN_AG6 };
++static const unsigned i2c1_b_1_pins[] = { DB8500_PIN_AF6, DB8500_PIN_AG5 };
++static const unsigned i2c2_b_1_pins[] = { DB8500_PIN_AD5, DB8500_PIN_AE4 };
++static const unsigned i2c2_b_2_pins[] = { DB8500_PIN_AF5, DB8500_PIN_AG4 };
++static const unsigned msp0txrx_b_1_pins[] = { DB8500_PIN_AC4, DB8500_PIN_AC3 };
++static const unsigned i2c1_b_2_pins[] = { DB8500_PIN_AD3, DB8500_PIN_AD4 };
++/* Just RX and TX for UART2 */
++static const unsigned u2rxtx_b_1_pins[] = { DB8500_PIN_AC2, DB8500_PIN_AC1 };
++static const unsigned uartmodtx_b_1_pins[] = { DB8500_PIN_AB4 };
++static const unsigned msp0sck_b_1_pins[] = { DB8500_PIN_AB3 };
++static const unsigned uartmodrx_b_1_pins[] = { DB8500_PIN_AA3 };
++static const unsigned stmmod_b_1_pins[] = { DB8500_PIN_AA4, DB8500_PIN_Y4,
++	DB8500_PIN_Y2, DB8500_PIN_AA2, DB8500_PIN_AA1 };
++static const unsigned uartmodrx_b_2_pins[] = { DB8500_PIN_AB2 };
++static const unsigned spi3_b_1_pins[] = { DB8500_PIN_W2, DB8500_PIN_W3,
++					  DB8500_PIN_V3, DB8500_PIN_V2 };
++static const unsigned msp1txrx_b_1_pins[] = { DB8500_PIN_AF2, DB8500_PIN_AG2 };
++static const unsigned kp_b_1_pins[] = { DB8500_PIN_F3, DB8500_PIN_F1,
++	DB8500_PIN_G3, DB8500_PIN_G2, DB8500_PIN_E1, DB8500_PIN_E2,
++	DB8500_PIN_G5, DB8500_PIN_G4, DB8500_PIN_H4, DB8500_PIN_H3,
++	DB8500_PIN_J3, DB8500_PIN_H2, DB8500_PIN_J2, DB8500_PIN_H1,
++	DB8500_PIN_F4, DB8500_PIN_E3, DB8500_PIN_E4, DB8500_PIN_D2,
++	DB8500_PIN_C1, DB8500_PIN_D3, DB8500_PIN_C2, DB8500_PIN_D5 };
++static const unsigned sm_b_1_pins[] = { DB8500_PIN_C6, DB8500_PIN_B3,
++	DB8500_PIN_C4, DB8500_PIN_E6, DB8500_PIN_A3, DB8500_PIN_B6,
++	DB8500_PIN_D6, DB8500_PIN_B7, DB8500_PIN_D7, DB8500_PIN_D8,
++	DB8500_PIN_D9, DB8500_PIN_A5, DB8500_PIN_B4, DB8500_PIN_C8,
++	DB8500_PIN_A12, DB8500_PIN_C10, DB8500_PIN_B10, DB8500_PIN_B9,
++	DB8500_PIN_A9, DB8500_PIN_C7, DB8500_PIN_A7, DB8500_PIN_C5,
++	DB8500_PIN_C9, DB8500_PIN_B14 };
++/* This chip select pin can be "ps0" in alt B so have it separately */
++static const unsigned smcs0_b_1_pins[] = { DB8500_PIN_E8 };
++static const unsigned ipgpio7_b_1_pins[] = { DB8500_PIN_B11 };
++static const unsigned ipgpio2_b_1_pins[] = { DB8500_PIN_C12 };
++static const unsigned ipgpio3_b_1_pins[] = { DB8500_PIN_C11 };
++static const unsigned lcdaclk_b_1_pins[] = { DB8500_PIN_C14 };
++static const unsigned lcda_b_1_pins[] = { DB8500_PIN_D22,
++	DB8500_PIN_C23, DB8500_PIN_D23 };
++static const unsigned lcd_b_1_pins[] = { DB8500_PIN_D17, DB8500_PIN_D16,
++	DB8500_PIN_B17, DB8500_PIN_C16, DB8500_PIN_C19, DB8500_PIN_C17,
++	DB8500_PIN_A18, DB8500_PIN_C18, DB8500_PIN_B19, DB8500_PIN_B20,
++	DB8500_PIN_D21, DB8500_PIN_D20, DB8500_PIN_C20, DB8500_PIN_B21,
++	DB8500_PIN_C21, DB8500_PIN_A22, DB8500_PIN_B24, DB8500_PIN_C22 };
++static const unsigned ddrtrig_b_1_pins[] = { DB8500_PIN_AJ27 };
++static const unsigned pwl_b_1_pins[] = { DB8500_PIN_AF25 };
++static const unsigned spi1_b_1_pins[] = { DB8500_PIN_AG15, DB8500_PIN_AF13,
++					  DB8500_PIN_AG13, DB8500_PIN_AH15 };
++static const unsigned mc3_b_1_pins[] = { DB8500_PIN_AH13, DB8500_PIN_AG12,
++	DB8500_PIN_AH12, DB8500_PIN_AH11, DB8500_PIN_AG10, DB8500_PIN_AH10,
++	DB8500_PIN_AJ11, DB8500_PIN_AJ9, DB8500_PIN_AH9, DB8500_PIN_AG9,
++	DB8500_PIN_AG8 };
++static const unsigned pwl_b_2_pins[] = { DB8500_PIN_AF8 };
++static const unsigned pwl_b_3_pins[] = { DB8500_PIN_AG7 };
++static const unsigned pwl_b_4_pins[] = { DB8500_PIN_AF7 };
++
++/* Altfunction C column */
++static const unsigned ipjtag_c_1_pins[] = { DB8500_PIN_AJ5, DB8500_PIN_AJ3,
++	DB8500_PIN_AH4, DB8500_PIN_AH3, DB8500_PIN_AH6 };
++static const unsigned ipgpio6_c_1_pins[] = { DB8500_PIN_AG6 };
++static const unsigned ipgpio0_c_1_pins[] = { DB8500_PIN_AF6 };
++static const unsigned ipgpio1_c_1_pins[] = { DB8500_PIN_AG5 };
++static const unsigned ipgpio3_c_1_pins[] = { DB8500_PIN_AF5 };
++static const unsigned ipgpio2_c_1_pins[] = { DB8500_PIN_AG4 };
++static const unsigned slim0_c_1_pins[] = { DB8500_PIN_AD3, DB8500_PIN_AD4 };
++/* Optional 4-bit Memory Stick interface */
++static const unsigned ms_c_1_pins[] = { DB8500_PIN_AC2, DB8500_PIN_AC1,
++	DB8500_PIN_AB3, DB8500_PIN_AA3, DB8500_PIN_AA4, DB8500_PIN_AB2,
++	DB8500_PIN_Y4, DB8500_PIN_Y2, DB8500_PIN_AA2, DB8500_PIN_AA1 };
++static const unsigned iptrigout_c_1_pins[] = { DB8500_PIN_AB4 };
++static const unsigned u2rxtx_c_1_pins[] = { DB8500_PIN_W2, DB8500_PIN_W3 };
++static const unsigned u2ctsrts_c_1_pins[] = { DB8500_PIN_V3, DB8500_PIN_V2 };
++static const unsigned u0_c_1_pins[] = { DB8500_PIN_AF2, DB8500_PIN_AE1,
++					DB8500_PIN_AE2, DB8500_PIN_AG2 };
++static const unsigned ipgpio4_c_1_pins[] = { DB8500_PIN_F3 };
++static const unsigned ipgpio5_c_1_pins[] = { DB8500_PIN_F1 };
++static const unsigned ipgpio6_c_2_pins[] = { DB8500_PIN_G3 };
++static const unsigned ipgpio7_c_1_pins[] = { DB8500_PIN_G2 };
++static const unsigned smcleale_c_1_pins[] = { DB8500_PIN_E1, DB8500_PIN_E2 };
++static const unsigned stmape_c_1_pins[] = { DB8500_PIN_G5, DB8500_PIN_G4,
++	DB8500_PIN_H4, DB8500_PIN_H3, DB8500_PIN_J3 };
++static const unsigned u2rxtx_c_2_pins[] = { DB8500_PIN_H2, DB8500_PIN_J2 };
++static const unsigned ipgpio2_c_2_pins[] = { DB8500_PIN_F4 };
++static const unsigned ipgpio3_c_2_pins[] = { DB8500_PIN_E3 };
++static const unsigned ipgpio4_c_2_pins[] = { DB8500_PIN_E4 };
++static const unsigned ipgpio5_c_2_pins[] = { DB8500_PIN_D2 };
++static const unsigned mc5_c_1_pins[] = { DB8500_PIN_C6, DB8500_PIN_B3,
++	DB8500_PIN_C4, DB8500_PIN_E6, DB8500_PIN_A3, DB8500_PIN_B6,
++	DB8500_PIN_D6, DB8500_PIN_B7, DB8500_PIN_D7, DB8500_PIN_D8,
++	DB8500_PIN_D9 };
++static const unsigned mc2rstn_c_1_pins[] = { DB8500_PIN_C8 };
++static const unsigned kp_c_1_pins[] = { DB8500_PIN_C9, DB8500_PIN_B11,
++	DB8500_PIN_C12, DB8500_PIN_C11, DB8500_PIN_D17, DB8500_PIN_D16,
++	DB8500_PIN_C23, DB8500_PIN_D23 };
++static const unsigned smps1_c_1_pins[] = { DB8500_PIN_B14 };
++static const unsigned u2rxtx_c_3_pins[] = { DB8500_PIN_B17, DB8500_PIN_C16 };
++static const unsigned stmape_c_2_pins[] = { DB8500_PIN_C19, DB8500_PIN_C17,
++	DB8500_PIN_A18, DB8500_PIN_C18, DB8500_PIN_B19 };
++static const unsigned uartmodrx_c_1_pins[] = { DB8500_PIN_D21 };
++static const unsigned uartmodtx_c_1_pins[] = { DB8500_PIN_D20 };
++static const unsigned stmmod_c_1_pins[] = { DB8500_PIN_C20, DB8500_PIN_B21,
++	DB8500_PIN_C21, DB8500_PIN_A22, DB8500_PIN_B24 };
++static const unsigned usbsim_c_1_pins[] = { DB8500_PIN_D22 };
++static const unsigned mc4rstn_c_1_pins[] = { DB8500_PIN_AF25 };
++static const unsigned clkout_c_1_pins[] = { DB8500_PIN_AH13, DB8500_PIN_AH12 };
++static const unsigned i2c3_c_1_pins[] = { DB8500_PIN_AG12, DB8500_PIN_AH11 };
++static const unsigned spi0_c_1_pins[] = { DB8500_PIN_AH10, DB8500_PIN_AH9,
++					  DB8500_PIN_AG9, DB8500_PIN_AG8 };
++static const unsigned usbsim_c_2_pins[] = { DB8500_PIN_AF8 };
++static const unsigned i2c3_c_2_pins[] = { DB8500_PIN_AG7, DB8500_PIN_AF7 };
++
++/* Other C1 column */
++static const unsigned kp_oc1_1_pins[] = { DB8500_PIN_C6, DB8500_PIN_B3,
++	DB8500_PIN_C4, DB8500_PIN_E6, DB8500_PIN_A3, DB8500_PIN_B6,
++	DB8500_PIN_D6, DB8500_PIN_B7 };
++static const unsigned spi2_oc1_1_pins[] = { DB8500_PIN_AH13, DB8500_PIN_AG12,
++	DB8500_PIN_AH12, DB8500_PIN_AH11 };
++
++#define DB8500_PIN_GROUP(a,b) { .name = #a, .pins = a##_pins,		\
++			.npins = ARRAY_SIZE(a##_pins), .altsetting = b }
++
++static const struct nmk_pingroup nmk_db8500_groups[] = {
++	/* Altfunction A column */
++	DB8500_PIN_GROUP(u0_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(u1rxtx_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(u1ctsrts_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(ipi2c_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(ipi2c_a_2, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(msp0txrx_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(msp0tfstck_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(msp0rfsrck_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(mc0_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(msp1txrx_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(msp1_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(lcdb_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(lcdvsi0_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(lcdvsi1_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(lcd_d0_d7_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(lcd_d8_d11_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(lcd_d12_d23_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(kp_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(mc2_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(ssp1_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(ssp0_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(i2c0_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(ipgpio0_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(ipgpio1_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(msp2sck_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(msp2_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(mc4_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(mc1_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(hsir_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(hsit_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(clkout_a_1, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(clkout_a_2, NMK_GPIO_ALT_A),
++	DB8500_PIN_GROUP(usb_a_1, NMK_GPIO_ALT_A),
++	/* Altfunction B column */
++	DB8500_PIN_GROUP(trig_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(i2c4_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(i2c1_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(i2c2_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(i2c2_b_2, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(msp0txrx_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(i2c1_b_2, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(u2rxtx_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(uartmodtx_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(msp0sck_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(uartmodrx_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(stmmod_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(uartmodrx_b_2, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(spi3_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(msp1txrx_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(kp_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(sm_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(smcs0_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(ipgpio7_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(ipgpio2_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(ipgpio3_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(lcdaclk_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(lcda_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(lcd_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(ddrtrig_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(pwl_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(spi1_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(mc3_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(pwl_b_2, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(pwl_b_3, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(pwl_b_4, NMK_GPIO_ALT_B),
++	/* Altfunction C column */
++	DB8500_PIN_GROUP(ipjtag_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ipgpio6_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ipgpio0_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ipgpio1_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ipgpio3_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ipgpio2_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(slim0_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ms_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(iptrigout_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(u2rxtx_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(u2ctsrts_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(u0_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ipgpio4_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ipgpio5_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ipgpio6_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ipgpio7_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(smcleale_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(stmape_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(u2rxtx_c_2, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ipgpio2_c_2, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ipgpio3_c_2, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ipgpio4_c_2, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(ipgpio5_c_2, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(mc5_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(mc2rstn_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(kp_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(smps1_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(u2rxtx_c_3, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(stmape_c_2, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(uartmodrx_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(uartmodtx_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(stmmod_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(usbsim_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(mc4rstn_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(clkout_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(i2c3_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(spi0_c_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(usbsim_c_2, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(i2c3_c_2, NMK_GPIO_ALT_C),
++	/* Other alt C1 column, these are still configured as alt C */
++	DB8500_PIN_GROUP(kp_oc1_1, NMK_GPIO_ALT_C),
++	DB8500_PIN_GROUP(spi2_oc1_1, NMK_GPIO_ALT_C),
++};
++
++static const struct nmk_pinctrl_soc_data nmk_db8500_soc = {
++	.gpio_ranges = nmk_db8500_ranges,
++	.gpio_num_ranges = ARRAY_SIZE(nmk_db8500_ranges),
++	.pins = nmk_db8500_pins,
++	.npins = ARRAY_SIZE(nmk_db8500_pins),
++	.groups = nmk_db8500_groups,
++	.ngroups = ARRAY_SIZE(nmk_db8500_groups),
++};
++
++void __devinit
++nmk_pinctrl_db8500_init(const struct nmk_pinctrl_soc_data **soc)
++{
++	*soc = &nmk_db8500_soc;
++}
+diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+index 1352f33..7d5484f 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.c
++++ b/drivers/pinctrl/pinctrl-nomadik.c
+@@ -24,12 +24,15 @@
+ #include <linux/irq.h>
+ #include <linux/irqdomain.h>
+ #include <linux/slab.h>
++#include <linux/pinctrl/pinctrl.h>
+ 
+ #include <asm/mach/irq.h>
+ 
+ #include <plat/pincfg.h>
+ #include <plat/gpio-nomadik.h>
+ 
++#include "pinctrl-nomadik.h"
++
+ /*
+  * The GPIO module in the Nomadik family of Systems-on-Chip is an
+  * AMBA device, managing 32 pins and alternate functions.  The logic block
+@@ -64,6 +67,12 @@ struct nmk_gpio_chip {
+ 	u32 lowemi;
+ };
+ 
++struct nmk_pinctrl {
++	struct device *dev;
++	struct pinctrl_dev *pctl;
++	const struct nmk_pinctrl_soc_data *soc;
++};
++
+ static struct nmk_gpio_chip *
+ nmk_gpio_chips[DIV_ROUND_UP(ARCH_NR_GPIOS, NMK_GPIO_PER_CHIP)];
+ 
+@@ -1282,6 +1291,98 @@ out:
+ 	return ret;
+ }
+ 
++static int nmk_get_groups_cnt(struct pinctrl_dev *pctldev)
++{
++	struct nmk_pinctrl *npct = pinctrl_dev_get_drvdata(pctldev);
++
++	return npct->soc->ngroups;
++}
++
++static const char *nmk_get_group_name(struct pinctrl_dev *pctldev,
++				       unsigned selector)
++{
++	struct nmk_pinctrl *npct = pinctrl_dev_get_drvdata(pctldev);
++
++	return npct->soc->groups[selector].name;
++}
++
++static int nmk_get_group_pins(struct pinctrl_dev *pctldev, unsigned selector,
++			      const unsigned **pins,
++			      unsigned *num_pins)
++{
++	struct nmk_pinctrl *npct = pinctrl_dev_get_drvdata(pctldev);
++
++	*pins = npct->soc->groups[selector].pins;
++	*num_pins = npct->soc->groups[selector].npins;
++	return 0;
++}
++
++static void nmk_pin_dbg_show(struct pinctrl_dev *pctldev, struct seq_file *s,
++		   unsigned offset)
++{
++	seq_printf(s, " Nomadik GPIO");
++}
++
++static struct pinctrl_ops nmk_pinctrl_ops = {
++	.get_groups_count = nmk_get_groups_cnt,
++	.get_group_name = nmk_get_group_name,
++	.get_group_pins = nmk_get_group_pins,
++	.pin_dbg_show = nmk_pin_dbg_show,
++};
++
++static struct pinctrl_desc nmk_pinctrl_desc = {
++	.name = "pinctrl-nomadik",
++	.pctlops = &nmk_pinctrl_ops,
++	.owner = THIS_MODULE,
++};
++
++static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
++{
++	const struct platform_device_id *platid = platform_get_device_id(pdev);
++	struct nmk_pinctrl *npct;
++	int i;
++
++	npct = devm_kzalloc(&pdev->dev, sizeof(*npct), GFP_KERNEL);
++	if (!npct)
++		return -ENOMEM;
++
++	/* Poke in other ASIC variants here */
++	if (platid->driver_data == PINCTRL_NMK_DB8500)
++		nmk_pinctrl_db8500_init(&npct->soc);
++
++	/*
++	 * We need all the GPIO drivers to probe FIRST, or we will not be able
++	 * to obtain references to the struct gpio_chip * for them, and we
++	 * need this to proceed.
++	 */
++	for (i = 0; i < npct->soc->gpio_num_ranges; i++) {
++		if (!nmk_gpio_chips[i]) {
++			dev_warn(&pdev->dev, "GPIO chip %d not registered yet\n", i);
++			devm_kfree(&pdev->dev, npct);
++			return -EPROBE_DEFER;
++		}
++		npct->soc->gpio_ranges[i].gc = &nmk_gpio_chips[i]->chip;
++	}
++
++	nmk_pinctrl_desc.pins = npct->soc->pins;
++	nmk_pinctrl_desc.npins = npct->soc->npins;
++	npct->dev = &pdev->dev;
++	npct->pctl = pinctrl_register(&nmk_pinctrl_desc, &pdev->dev, npct);
++	if (!npct->pctl) {
++		dev_err(&pdev->dev, "could not register Nomadik pinctrl driver\n");
++		return -EINVAL;
++	}
++
++	/* We will handle a range of GPIO pins */
++	for (i = 0; i < npct->soc->gpio_num_ranges; i++)
++		pinctrl_add_gpio_range(npct->pctl, &npct->soc->gpio_ranges[i]);
++
++	platform_set_drvdata(pdev, npct);
++	dev_info(&pdev->dev, "initialized Nomadik pin control driver\n");
++
++	return 0;
++}
++
+ static const struct of_device_id nmk_gpio_match[] = {
+ 	{ .compatible = "st,nomadik-gpio", },
+ 	{}
+@@ -1296,9 +1397,28 @@ static struct platform_driver nmk_gpio_driver = {
+ 	.probe = nmk_gpio_probe,
+ };
+ 
++static const struct platform_device_id nmk_pinctrl_id[] = {
++	{ "pinctrl-stn8815", PINCTRL_NMK_STN8815 },
++	{ "pinctrl-db8500", PINCTRL_NMK_DB8500 },
++};
++
++static struct platform_driver nmk_pinctrl_driver = {
++	.driver = {
++		.owner = THIS_MODULE,
++		.name = "pinctrl-nomadik",
++	},
++	.probe = nmk_pinctrl_probe,
++	.id_table = nmk_pinctrl_id,
++};
++
+ static int __init nmk_gpio_init(void)
+ {
+-	return platform_driver_register(&nmk_gpio_driver);
++	int ret;
++
++	ret = platform_driver_register(&nmk_gpio_driver);
++	if (ret)
++		return ret;
++	return platform_driver_register(&nmk_pinctrl_driver);
+ }
+ 
+ core_initcall(nmk_gpio_init);
+diff --git a/drivers/pinctrl/pinctrl-nomadik.h b/drivers/pinctrl/pinctrl-nomadik.h
+new file mode 100644
+index 0000000..e690acc
+--- /dev/null
++++ b/drivers/pinctrl/pinctrl-nomadik.h
+@@ -0,0 +1,61 @@
++#ifndef PINCTRL_PINCTRL_NOMADIK_H
++#define PINCTRL_PINCTRL_NOMADIK_H
++
++#include <plat/gpio-nomadik.h>
++
++/* Package definitions */
++#define PINCTRL_NMK_STN8815	0
++#define PINCTRL_NMK_DB8500	1
++
++/**
++ * struct nmk_pingroup - describes a Nomadik pin group
++ * @name: the name of this specific pin group
++ * @pins: an array of discrete physical pins used in this group, taken
++ *	from the driver-local pin enumeration space
++ * @num_pins: the number of pins in this group array, i.e. the number of
++ *	elements in .pins so we can iterate over that array
++ * @altsetting: the altsetting to apply to all pins in this group to
++ *	configure them to be used by a function
++ */
++struct nmk_pingroup {
++	const char *name;
++	const unsigned int *pins;
++	const unsigned npins;
++	u32 altsetting;
++};
++
++/**
++ * struct nmk_pinctrl_soc_data - Nomadik pin controller per-SoC configuration
++ * @gpio_ranges: An array of GPIO ranges for this SoC
++ * @gpio_num_ranges: The number of GPIO ranges for this SoC
++ * @pins:	An array describing all pins the pin controller affects.
++ *		All pins which are also GPIOs must be listed first within the
++ *		array, and be numbered identically to the GPIO controller's
++ *		numbering.
++ * @npins:	The numbmer of entries in @pins.
++ * @groups:	An array describing all pin groups the pin SoC supports.
++ * @ngroups:	The number of entries in @groups.
++ */
++struct nmk_pinctrl_soc_data {
++	struct pinctrl_gpio_range *gpio_ranges;
++	unsigned gpio_num_ranges;
++	const struct pinctrl_pin_desc *pins;
++	unsigned npins;
++	const struct nmk_pingroup *groups;
++	unsigned ngroups;
++};
++
++#ifdef CONFIG_PINCTRL_DB8500
++
++void nmk_pinctrl_db8500_init(const struct nmk_pinctrl_soc_data **soc);
++
++#else
++
++static inline void
++nmk_pinctrl_db8500_init(const struct nmk_pinctrl_soc_data **soc)
++{
++}
++
++#endif
++
++#endif /* PINCTRL_PINCTRL_NOMADIK_H */
 -- 
-Dipl.-Inf. Alexander Stein
+1.7.9.2
 
-SYS TEC electronic GmbH
-August-Bebel-Str. 29
-D-07973 Greiz
-
-Tel: +49-3661-6279-0, Fax: +49-3661-6279-99
-eMail:    Alexander.Stein@systec-electronic.com
-Internet: http://www.systec-electronic.com
-
-Managing Director: Dipl.-Phys. Siegmar Schmidt
-Commercial registry: Amtsgericht Jena, HRB 205563
