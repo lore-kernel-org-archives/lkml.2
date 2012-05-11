@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759181Ab2EKDY1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 23:24:27 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:56618 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758876Ab2EKDYZ (ORCPT
+	id S932916Ab2EKD2u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 23:28:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44234 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932255Ab2EKD2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 23:24:25 -0400
-Date: Thu, 10 May 2012 23:23:15 -0400 (EDT)
-Message-Id: <20120510.232315.682267960099945551.davem@davemloft.net>
-To: xose.vazquez@gmail.com
-Cc: samuel@sortiz.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] irda: irda-usb.c URL to sigmatel stir 4210/4220/4116
- fw from archive.org
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1336167477-28835-1-git-send-email-xose.vazquez@gmail.com>
-References: <1336167477-28835-1-git-send-email-xose.vazquez@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 10 May 2012 20:23:17 -0700 (PDT)
+	Thu, 10 May 2012 23:28:48 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH RFC] spi: Dont call prepare/unprepare transfer if not populated
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        andrew@lunn.ch
+In-Reply-To: <CACRpkdZmr+i6d+k8XU6Qxo425=mFZo5kzUe1wFk+grxDshaoVA@mail.gmail.com>
+References: <1336657841-2306-1-git-send-email-shubhrajyoti@ti.com> <CACRpkdZmr+i6d+k8XU6Qxo425=mFZo5kzUe1wFk+grxDshaoVA@mail.gmail.com>
+Date: Thu, 10 May 2012 21:24:55 -0600
+Message-Id: <20120511032455.6BB853E04A6@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xose Vazquez Perez <xose.vazquez@gmail.com>
-Date: Fri,  4 May 2012 23:37:57 +0200
+On Thu, 10 May 2012 16:01:27 +0200, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, May 10, 2012 at 3:50 PM, Shubhrajyoti D <shubhrajyoti@ti.com> wrote:
+> 
+> > Currently the prepare/unprepare transfer are called unconditionally.
+> > The assumption is that every driver using the spi core queue infrastructure
+> > has to populate the prepare and unprepare functions. This encourages
+> > drivers to populate empty functions to prevent crashing.
+> > This patch prevents the call to prepare/unprepare if not populated.
+> >
+> > Cc: Linus Walleij <linus.walleij@linaro.org>
+> > Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+> 
+> Great!
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-> @@ -1081,6 +1081,7 @@ static int stir421x_patch_device(struct irda_usb_cb *self)
->          /*
->           * Known firmware patch file names for STIR421x dongles
->           * are "42101001.sb" or "42101002.sb"
-> +         * http://web.archive.org/web/http://www.sigmatel.com/documents/stir4210_4220_4116_patch_files.tar.gz
+Applied, thanks (after fixing extra whitespace defect).
 
-This really doesn't scale in the long term.
+g.
 
-Someone needs to host this firmware at a location which serves the
-needs of the people who have an interest in using this driver.
