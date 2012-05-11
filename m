@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760546Ab2EKOqd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 10:46:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41716 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757393Ab2EKOqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 10:46:31 -0400
-Date: Fri, 11 May 2012 15:46:20 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: David Miller <davem@davemloft.net>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, neilb@suse.de, a.p.zijlstra@chello.nl,
-        michaelc@cs.wisc.edu, emunson@mgebm.net
-Subject: Re: [PATCH 12/17] netvm: Propagate page->pfmemalloc from
- netdev_alloc_page to skb
-Message-ID: <20120511144620.GT11435@suse.de>
-References: <1336657510-24378-1-git-send-email-mgorman@suse.de>
- <1336657510-24378-13-git-send-email-mgorman@suse.de>
- <20120511.010109.1698578316660207883.davem@davemloft.net>
+	id S1760061Ab2EKOwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 10:52:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36853 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758517Ab2EKOws (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 10:52:48 -0400
+Date: Fri, 11 May 2012 07:52:43 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [PATCH 3/3] tty_lock: Localise the lock
+Message-ID: <20120511145243.GE5958@kroah.com>
+References: <20120503212151.568.91854.stgit@bob.linux.org.uk>
+ <20120503212219.568.15653.stgit@bob.linux.org.uk>
+ <CA+1xoqezLCQh_fqJ1iNAs25X7Fm24W=-0J8zTZuVVJQnWTtSLg@mail.gmail.com>
+ <20120507171126.5beddc27@pyramind.ukuu.org.uk>
+ <1336408208.3638.15.camel@lappy>
+ <20120507174240.4209c5cb@pyramind.ukuu.org.uk>
+ <CA+1xoqez0PaX2KBHHN-etztwbFoU1cKx3NwMXX+PO4SguA3bRg@mail.gmail.com>
+ <4FA838D2.9000908@suse.cz>
+ <CA+1xoqdi1Jdkrjtj9bmnDfs4Ok=o=AsmpP=MY0V8cDXjcSNm1w@mail.gmail.com>
+ <CA+1xoqcZnxGoo=_X1idCPTk9gR=drnAKhULGzgkH33zYGnAgOA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120511.010109.1698578316660207883.davem@davemloft.net>
+In-Reply-To: <CA+1xoqcZnxGoo=_X1idCPTk9gR=drnAKhULGzgkH33zYGnAgOA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 01:01:09AM -0400, David Miller wrote:
-> From: Mel Gorman <mgorman@suse.de>
-> Date: Thu, 10 May 2012 14:45:05 +0100
+On Fri, May 11, 2012 at 12:40:41PM +0200, Sasha Levin wrote:
+> On Tue, May 8, 2012 at 8:12 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> > On Mon, May 7, 2012 at 11:04 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+> >> On 05/07/2012 07:00 PM, Sasha Levin wrote:
+> >>>> So whatever your trace is showing, that's not the bug. Something more
+> >>>> complicated would appear to be afoot.
+> >>>
+> >>> Oddly enough, tty != tty->link, but the lockdep warning triggers.
+> >>>
+> >>> Any idea why it might happen?
+> >>
+> >> I think so, both locks are the same lockdep class. So lockdep thinks it
+> >> is the same lock. However this is a false positive. I guess we need
+> >> mutex_lock_nested...
+> >
+> > It looks like it causes an actual deadlock, and hung_tasks screams if
+> > left alone for a bit, so it doesn't look like a lockdep issue.
 > 
-> > +/**
-> > + *	propagate_pfmemalloc_skb - Propagate pfmemalloc if skb is allocated after RX page
-> > + *	@page: The page that was allocated from netdev_alloc_page
-> > + *	@skb: The skb that may need pfmemalloc set
-> > + */
-> > +static inline void propagate_pfmemalloc_skb(struct page *page,
-> > +						struct sk_buff *skb)
-> 
-> Please use consistent prefixes in the names for new interfaces.
-> 
+> I've applied the patch that unlocks before hangup, and started seeing
+> this new warning instead (sorry if output below looks a bit broken,
+> linux-next has a printk rework in progress):
 
-Understood.
+The printk rework should now be working again in linux-next.  Is it
+still causing problems for you?
 
-> This one should probably be named "skb_propagate_pfmemalloc()" and
-> go into skbuff.h since it needs no knowledge of netdevices.
-> 
+thanks,
 
-I used a netdev prefix and placed it in skbuff.h which was stupid. The
-screw-up was because I was partially reverting a patch that deleted
-netdev_alloc_page but I didn't need any device information so the naming
-was poor. I renamed netdev_alloc_page to skb_alloc_page and will fix up
-the documentation appropriately.
-
-Thanks.
-
--- 
-Mel Gorman
-SUSE Labs
+greg k-h
