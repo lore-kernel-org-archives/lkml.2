@@ -1,233 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759957Ab2EKNnp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 09:43:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38188 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753576Ab2EKNnn convert rfc822-to-8bit (ORCPT
+	id S1760024Ab2EKNyO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 09:54:14 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:46900 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759847Ab2EKNyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 09:43:43 -0400
-Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
-Mime-Version: 1.0 (Apple Message framework v1257)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <4EB6917F.3000507@web.de>
-Date: Fri, 11 May 2012 15:42:51 +0200
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Avi Kivity <avi@redhat.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <59D7E7EE-13D5-4D0C-B556-013A2897402E@suse.de>
-References: <1314221904-28266-1-git-send-email-agraf@suse.de> <4EB6917F.3000507@web.de>
-To: Jan Kiszka <jan.kiszka@web.de>
-X-Mailer: Apple Mail (2.1257)
+	Fri, 11 May 2012 09:54:12 -0400
+Message-ID: <1336744445.2874.57.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH v5] tilegx network driver: initial support
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+CC: David Miller <davem@davemloft.net>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Date: Fri, 11 May 2012 14:54:05 +0100
+In-Reply-To: <201205091452.q49EqcO7005975@farm-0027.internal.tilera.com>
+References: <201205011759.q41HxR21020043@farm-0012.internal.tilera.com>
+	 <20120503.014156.149171097979026872.davem@davemloft.net>
+	 <201205031936.q43Ja9Xb031644@lab-41.internal.tilera.com>
+	 <20120504.024216.1730395431103337434.davem@davemloft.net>
+	 <201205091452.q49EqcO7005975@farm-0027.internal.tilera.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18898.005
+X-TM-AS-Result: No--31.141400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Here's another very incomplete review for you.
 
-On 06.11.2011, at 14:54, Jan Kiszka wrote:
+On Wed, 2012-05-09 at 06:42 -0400, Chris Metcalf wrote:
+> This change adds support for the tilegx network driver based on the
+> GXIO IORPC support in the tilegx software stack, using the on-chip
+> mPIPE packet processing engine.
+[...]
+> --- /dev/null
+> +++ b/drivers/net/ethernet/tile/tilegx.c
+[...]
+> +/* Define to support GSO. */
+> +#undef TILE_NET_GSO
 
-> On 2011-08-24 23:38, Alexander Graf wrote:
->> On LinuxCon I had a nice chat with Linus on what he thinks kvm-tool
->> would be doing and what he expects from it. Basically he wants a
->> small and simple tool he and other developers can run to try out and
->> see if the kernel they just built actually works.
->> 
->> Fortunately, QEMU can do that today already! The only piece that was
->> missing was the "simple" piece of the equation, so here is a script
->> that wraps around QEMU and executes a kernel you just built.
->> 
->> If you do have KVM around and are not cross-compiling, it will use
->> KVM. But if you don't, you can still fall back to emulation mode and
->> at least check if your kernel still does what you expect. I only
->> implemented support for s390x and ppc there, but it's easily extensible
->> to more platforms, as QEMU can emulate (and virtualize) pretty much
->> any platform out there.
->> 
->> If you don't have qemu installed, please do so before using this script. Your
->> distro should provide a package for it (might even call it "kvm"). If not,
->> just compile it from source - it's not hard!
->> 
->> To quickly get going, just execute the following as user:
->> 
->>    $ ./Documentation/run-qemu.sh -r / -a init=/bin/bash
->> 
->> This will drop you into a shell on your rootfs.
->> 
->> Happy hacking!
->> 
->> Signed-off-by: Alexander Graf <agraf@suse.de>
->> 
->> ---
->> 
->> v1 -> v2:
->> 
->>  - fix naming of QEMU
->>  - use grep -q for has_config
->>  - support multiple -a args
->>  - spawn gdb on execution
->>  - pass through qemu options
->>  - dont use qemu-system-x86_64 on i386
->>  - add funny sentence to startup text
->>  - more helpful error messages
->> ---
->> scripts/run-qemu.sh |  334 +++++++++++++++++++++++++++++++++++++++++++++++++++
->> 1 files changed, 334 insertions(+), 0 deletions(-)
->> create mode 100755 scripts/run-qemu.sh
->> 
->> diff --git a/scripts/run-qemu.sh b/scripts/run-qemu.sh
->> new file mode 100755
->> index 0000000..5d4e185
->> --- /dev/null
->> +++ b/scripts/run-qemu.sh
->> @@ -0,0 +1,334 @@
->> +#!/bin/bash
->> +#
->> +# QEMU Launcher
->> +#
->> +# This script enables simple use of the KVM and QEMU tool stack for
->> +# easy kernel testing. It allows to pass either a host directory to
->> +# the guest or a disk image. Example usage:
->> +#
->> +# Run the host root fs inside a VM:
->> +#
->> +# $ ./scripts/run-qemu.sh -r /
->> +#
->> +# Run the same with SDL:
->> +#
->> +# $ ./scripts/run-qemu.sh -r / --sdl
->> +# 
->> +# Or with a PPC build:
->> +#
->> +# $ ARCH=ppc ./scripts/run-qemu.sh -r /
->> +# 
->> +# PPC with a mac99 model by passing options to QEMU:
->> +#
->> +# $ ARCH=ppc ./scripts/run-qemu.sh -r / -- -M mac99
->> +#
->> +
->> +USE_SDL=
->> +USE_VNC=
->> +USE_GDB=1
->> +KERNEL_BIN=arch/x86/boot/bzImage
->> +MON_STDIO=
->> +KERNEL_APPEND2=
->> +SERIAL=ttyS0
->> +SERIAL_KCONFIG=SERIAL_8250
->> +BASENAME=$(basename "$0")
->> +
->> +function usage() {
->> +	echo "
->> +$BASENAME allows you to execute a virtual machine with the Linux kernel
->> +that you just built. To only execute a simple VM, you can just run it
->> +on your root fs with \"-r / -a init=/bin/bash\"
->> +
->> +	-a, --append parameters
->> +		Append the given parameters to the kernel command line.
->> +
->> +	-d, --disk image
->> +		Add the image file as disk into the VM.
->> +
->> +	-D, --no-gdb
->> +		Don't run an xterm with gdb attached to the guest.
->> +
->> +	-r, --root directory
->> +		Use the specified directory as root directory inside the guest.
->> +
->> +	-s, --sdl
->> +		Enable SDL graphical output.
->> +
->> +	-S, --smp cpus
->> +		Set number of virtual CPUs.
->> +
->> +	-v, --vnc
->> +		Enable VNC graphical output.
->> +
->> +Examples:
->> +
->> +	Run the host root fs inside a VM:
->> +	$ ./scripts/run-qemu.sh -r /
->> +
->> +	Run the same with SDL:
->> +	$ ./scripts/run-qemu.sh -r / --sdl
->> +	
->> +	Or with a PPC build:
->> +	$ ARCH=ppc ./scripts/run-qemu.sh -r /
->> +	
->> +	PPC with a mac99 model by passing options to QEMU:
->> +	$ ARCH=ppc ./scripts/run-qemu.sh -r / -- -M mac99
->> +"
->> +}
->> +
->> +function require_config() {
->> +	if [ "$(grep CONFIG_$1=y .config)" ]; then
->> +		return
->> +	fi
->> +
->> +	echo "You need to enable CONFIG_$1 for run-qemu to work properly"
->> +	exit 1
->> +}
->> +
->> +function has_config() {
->> +	grep -q "CONFIG_$1=y" .config
->> +}
->> +
->> +function drive_if() {
->> +	if has_config VIRTIO_BLK; then
->> +		echo virtio
->> +	elif has_config ATA_PIIX; then
->> +		echo ide
-> 
-> + require_config "BLK_DEV_SD"
-> 
-> Maybe there should also be a warning if no standard FS (ext[34], btrfs,
-> xfs etc.) is build into the kernel.
-> 
-> Another thing, but that's just a recommendation for initrd-free mode:
-> DEVTMPFS_MOUNT
-> 
->> +	else
->> +		echo "\
->> +Your kernel must have either VIRTIO_BLK or ATA_PIIX
->> +enabled for block device assignment" >&2
->> +		exit 1
->> +	fi
->> +}
->> +
->> +GETOPT=`getopt -o a:d:Dhr:sS:v --long append,disk:,no-gdb,help,root:,sdl,smp:,vnc \
->> +	-n "$(basename \"$0\")" -- "$@"`
->> +
->> +if [ $? != 0 ]; then
->> +	echo "Terminating..." >&2
->> +	exit 1
->> +fi
->> +
->> +eval set -- "$GETOPT"
->> +
->> +while true; do
->> +	case "$1" in
->> +	-a|--append)
->> +		KERNEL_APPEND2="$KERNEL_APPEND2 $KERNEL_APPEND2"
-> 
-> That should be
-> 
-> KERNEL_APPEND2="$KERNEL_APPEND2 $2"
-> 
->> +		shift
->> +		;;
->> +	-d|--disk)
->> +		QEMU_OPTIONS="$QEMU_OPTIONS -drive \
->> +			file=$2,if=$(drive_if),cache=unsafe"
-> 
-> 		if [ $? != 0 ]; then
-> 			exit $?
-> 		fi
+GSO is always enabled by the networking core.
 
-Not sure I understand this one. There's no program executing here...
+> +/* Define to support TSO. */
+> +#define TILE_NET_TSO
 
+No, put NETIF_F_TSO in hw_features so it can be switched at run-time.
 
-Alex
+(Currently that won't work if you don't set dev->ethtool_ops, but that's
+a bug that can be fixed.)
+
+> +/* Use 3000 to enable the Linux Traffic Control (QoS) layer, else 0. */
+> +#define TILE_NET_TX_QUEUE_LEN 0
+
+This can be changed through sysfs, so there is no need for a compile-
+time option.
+
+> +/* Define to dump packets (prints out the whole packet on tx and rx). */
+> +#undef TILE_NET_DUMP_PACKETS
+
+Should really be controlled through a 'debug' module parameter (see
+netif_msg_init(), netif_msg_pktdata(), etc.)
+
+[...]
+> +/* Total header bytes per equeue slot.  Must be big enough for 2 bytes
+> + * of NET_IP_ALIGN alignment, plus 14 bytes (?) of L2 header, plus up to
+> + * 60 bytes of actual TCP header.  We round up to align to cache lines.
+> + */
+> +#define HEADER_BYTES 128
+> +
+> +/* Maximum completions per cpu per device (must be a power of two).
+> + * ISSUE: What is the right number here?
+> + */
+> +#define TILE_NET_MAX_COMPS 64
+> +
+> +#define MAX_FRAGS (65536 / PAGE_SIZE + 2 + 1)
+
+Should be MAX_SKB_FRAGS + 1.
+
+[...]
+> +/* Help the kernel transmit a packet. */
+> +static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
+> +{
+> +	struct tile_net_priv *priv = netdev_priv(dev);
+> +
+> +	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
+> +
+> +	struct tile_net_egress *egress = &egress_for_echannel[priv->echannel];
+> +	gxio_mpipe_equeue_t *equeue = egress->equeue;
+> +
+> +	struct tile_net_comps *comps =
+> +		info->comps_for_echannel[priv->echannel];
+> +
+> +	struct skb_shared_info *sh = skb_shinfo(skb);
+> +
+> +	unsigned int len = skb->len;
+> +	unsigned char *data = skb->data;
+> +
+> +	unsigned int num_frags;
+> +	struct frag frags[MAX_FRAGS];
+> +	gxio_mpipe_edesc_t edescs[MAX_FRAGS];
+> +
+> +	unsigned int i;
+> +
+> +	int cid;
+> +
+> +	s64 slot;
+> +
+> +	unsigned long irqflags;
+
+Please, no blank lines between your declarations.
+
+[...]
+> +	/* Reserve slots, or return NETDEV_TX_BUSY if "full". */
+> +	slot = gxio_mpipe_equeue_try_reserve(equeue, num_frags);
+> +	if (slot < 0) {
+> +		local_irq_restore(irqflags);
+> +		/* ISSUE: "Virtual device xxx asks to queue packet". */
+> +		return NETDEV_TX_BUSY;
+> +	}
+
+You're supposed to stop queues when they're full.  And since that state
+appears to be per-CPU, I think this device needs to be multiqueue with
+one TX queue per CPU and ndo_select_queue defined accordingly.
+
+> +	for (i = 0; i < num_frags; i++)
+> +		gxio_mpipe_equeue_put_at(equeue, edescs[i], slot + i);
+> +
+> +	/* Wait for a free completion entry.
+> +	 * ISSUE: Is this the best logic?
+> +	 * ISSUE: Can this cause undesirable "blocking"?
+> +	 */
+> +	while (comps->comp_next - comps->comp_last >= TILE_NET_MAX_COMPS - 1)
+> +		tile_net_free_comps(equeue, comps, 32, false);
+
+I'm not convinced you should be processing completions here at all.  But
+certainly you should have stopped the queue earlier rather than having
+to wait here.
+
+> +	/* Update the completions array. */
+> +	cid = comps->comp_next % TILE_NET_MAX_COMPS;
+> +	comps->comp_queue[cid].when = slot + num_frags;
+> +	comps->comp_queue[cid].skb = skb;
+> +	comps->comp_next++;
+> +
+> +	/* HACK: Track "expanded" size for short packets (e.g. 42 < 60). */
+> +	atomic_add(1, (atomic_t *)&priv->stats.tx_packets);
+> +	atomic_add((len >= ETH_ZLEN) ? len : ETH_ZLEN,
+> +		   (atomic_t *)&priv->stats.tx_bytes);
+
+You mustn't treat random fields to atomic_t.  For one thing, atomic_t
+contains an int while stats are unsigned long...
+
+Also, you're adding cache contention between all your CPUs here.  You
+should maintain these stats per-CPU and then sum them in
+tile_net_get_stats().  Then you can just use ordinary additions.
+
+[...]
+> +/* Ioctl commands. */
+> +static int tile_net_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
+> +{
+> +	return -EOPNOTSUPP;
+> +}
+
+So why define it at all?
+
+[...]
+> +static void tile_net_dev_init(const char *name, const uint8_t *mac)
+> +{
+[...]
+> +	/* Register the network device. */
+> +	ret = register_netdev(dev);
+> +	if (ret) {
+> +		netdev_err(dev, "register_netdev failed %d\n", ret);
+> +		free_netdev(dev);
+> +		return;
+> +	}
+> +
+> +	/* Get the MAC address and set it in the device struct; this must
+> +	 * be done before the device is opened.
+[...]
+
+So you had better do this before calling register_netdev(), as the
+device can be opened immediately after that...
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
