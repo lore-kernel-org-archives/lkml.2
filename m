@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933215Ab2EKTNI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 15:13:08 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:41274 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932215Ab2EKTNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 15:13:06 -0400
-Message-ID: <4FAD6449.2060201@parallels.com>
-Date: Fri, 11 May 2012 16:11:05 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S933225Ab2EKTPh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 15:15:37 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:62594 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760463Ab2EKTPe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 15:15:34 -0400
+From: =?UTF-8?q?Jean-Fran=C3=A7ois=20Dagenais?= <jeff.dagenais@gmail.com>
+To: sameo@linux.intel.com
+Cc: alexander.stein@systec-electronic.com, denis@compulab.co.il,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Jean-Fran=C3=A7ois=20Dagenais?= <jeff.dagenais@gmail.com>
+Subject: [PATCH] mfd: lpc_sch - tolerate f/w disabled WDT
+Date: Fri, 11 May 2012 15:15:22 -0400
+Message-Id: <1336763722-11535-1-git-send-email-jeff.dagenais@gmail.com>
+X-Mailer: git-send-email 1.7.9
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
- kfree
-References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home> <4FAD531D.6030007@parallels.com> <alpine.DEB.2.00.1205111305570.386@router.home> <4FAD566C.3000804@parallels.com> <alpine.DEB.2.00.1205111316540.386@router.home> <4FAD585A.4070007@parallels.com> <alpine.DEB.2.00.1205111331010.386@router.home> <4FAD5DA2.70803@parallels.com> <alpine.DEB.2.00.1205111354540.386@router.home> <4FAD6169.8090409@parallels.com> <alpine.DEB.2.00.1205111407280.386@router.home>
-In-Reply-To: <alpine.DEB.2.00.1205111407280.386@router.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.105.248.83]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 04:09 PM, Christoph Lameter wrote:
-> On Fri, 11 May 2012, Glauber Costa wrote:
->
->> On 05/11/2012 03:56 PM, Christoph Lameter wrote:
->>> On Fri, 11 May 2012, Glauber Costa wrote:
->>>
->>>> So we don't mix pages from multiple memcgs in the same cache - we believe
->>>> that
->>>> would be too confusing.
->>>
->>> Well subsystem create caches and other things that are shared between
->>> multiple processes. How can you track that?
->>
->> Each process that belongs to a memcg triggers the creation of a new child kmem
->> cache.
->
-> I see that. But there are other subsystems from slab allocators that do
-> the same. There are also objects that may be used by multiple processes.
+(Observed while running on Kontron nano-TT module.)
 
-This is also true for normal user pages. And then, we do what memcg 
-does: first one to touch, gets accounted. I don't think deviating from 
-the memcg behavior for user pages makes much sense here.
+Certain BIOS/boot firmware may disable the tunnelcreek watchdog. Perhaps
+because the mainboard or module provides it's own watchdog mechanism. In these
+cases, lpc_sch should just go on and still provide the rest of the cells
+it declares (GPIO and SMBus). The same logic could be applied to the other
+resources, but I'll leave it to others to decide that.
 
-A cache won't go away while it still have objects, even after the memcg 
-is removed (it is marked as dead)
+This change makes the probe function tolerate the I/O range being disabled,
+but not if the base address inside the register is not configured.
 
-> F.e what about shm?
->
->>>> /proc/slabinfo reflects this information, by listing the memcg-specific
->>>> slabs.
->>>
->>> What about /sys/kernel/slab/*?
->>
->>  From the PoV of the global system, what you'll see is something like:
->> dentry , dentry(2:memcg1), dentry(2:memcg2), etc.
->
-> Hmmm.. Would be better to have a hierachy there. /proc/slabinfo is more
-> legacy.
+Cc: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: Denis Turischev <denis@compulab.co.il>
+Signed-off-by: Jean-François Dagenais <jeff.dagenais@gmail.com>
+---
+ drivers/mfd/lpc_sch.c |   39 ++++++++++++++++++++-------------------
+ 1 files changed, 20 insertions(+), 19 deletions(-)
 
-I can take a look at that then. Assuming you agree with all the rest, is 
-looking into that a pre-requisite for merging, or is something that can 
-be deferred for a phase2 ? (We still don't do shrinkers, for instance, 
-so this is sure to have a phase2)
+diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
+index ea1169b..6621cd3 100644
+--- a/drivers/mfd/lpc_sch.c
++++ b/drivers/mfd/lpc_sch.c
+@@ -127,26 +127,27 @@ static int __devinit lpc_sch_probe(struct pci_dev *dev,
+ 
+ 	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC) {
+ 		pci_read_config_dword(dev, WDTBASE, &base_addr_cfg);
+-		if (!(base_addr_cfg & (1 << 31))) {
+-			dev_err(&dev->dev, "Decode of the WDT I/O range disabled\n");
+-			ret = -ENODEV;
+-			goto out_dev;
++		if (base_addr_cfg & (1 << 31)) {
++			base_addr = (unsigned short)base_addr_cfg;
++			if (base_addr == 0) {
++				dev_err(&dev->dev,
++					"I/O space for WDT uninitialized\n");
++				ret = -ENODEV;
++				goto out_dev;
++			}
++
++			wdt_sch_resource.start = base_addr;
++			wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
++
++			for (i = 0; i < ARRAY_SIZE(tunnelcreek_cells); i++)
++				tunnelcreek_cells[i].id = id->device;
++
++			ret = mfd_add_devices(&dev->dev, 0, tunnelcreek_cells,
++				ARRAY_SIZE(tunnelcreek_cells), NULL, 0);
++		} else {
++			dev_warn(&dev->dev, "Decode of the WDT I/O range disabled, tunnelcreek watchdog timer maybe disabled by firmware or BIOS");
++			return 0;
+ 		}
+-		base_addr = (unsigned short)base_addr_cfg;
+-		if (base_addr == 0) {
+-			dev_err(&dev->dev, "I/O space for WDT uninitialized\n");
+-			ret = -ENODEV;
+-			goto out_dev;
+-		}
+-
+-		wdt_sch_resource.start = base_addr;
+-		wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
+-
+-		for (i = 0; i < ARRAY_SIZE(tunnelcreek_cells); i++)
+-			tunnelcreek_cells[i].id = id->device;
+-
+-		ret = mfd_add_devices(&dev->dev, 0, tunnelcreek_cells,
+-			ARRAY_SIZE(tunnelcreek_cells), NULL, 0);
+ 	}
+ 
+ 	return ret;
+-- 
+1.7.9
+
