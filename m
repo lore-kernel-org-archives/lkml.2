@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab2EKN1O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 09:27:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64198 "EHLO mga02.intel.com"
+	id S1759825Ab2EKN3x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 09:29:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30406 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753470Ab2EKN1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 09:27:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="142773577"
-Date: Fri, 11 May 2012 15:36:52 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] mfd: lm3533-core: Fix calling regmap_update_bits() with
- mask and val arguments swapped
-Message-ID: <20120511133652.GM1214@sortiz-mobl>
-References: <1336664102.15392.1.camel@phoenix>
- <20120510154925.GB29437@localhost>
+	id S1753500Ab2EKN3v convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 09:29:51 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, tejun@google.com,
+        agk@redhat.com, Martin Peterson <mkp@mkp.net>
+Subject: Re: [dm-devel] [Bcache v13 01/16] Only clone bio vecs that are in use
+References: <cover.1336619038.git.koverstreet@google.com>
+	<cb817596299fecd01ea36e4a80203f23165bda75.1336619038.git.koverstreet@google.com>
+	<20120510213556.GO23768@redhat.com>
+	<CAH+dOxJ2Vi=8Oq1zDZLmqD9-a_wgM=co3+xemw4XBoiDkh_4zg@mail.gmail.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 11 May 2012 09:29:42 -0400
+In-Reply-To: <CAH+dOxJ2Vi=8Oq1zDZLmqD9-a_wgM=co3+xemw4XBoiDkh_4zg@mail.gmail.com>
+	(Kent Overstreet's message of "Thu, 10 May 2012 14:42:17 -0700")
+Message-ID: <x494nrmx2ux.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120510154925.GB29437@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johan, Axel,
 
-On Thu, May 10, 2012 at 05:49:25PM +0200, Johan Hovold wrote:
-> On Thu, May 10, 2012 at 11:35:02PM +0800, Axel Lin wrote:
-> > Current code calls regmap_update_bits() with mask and val arguments swapped.
-> > Fix it.
-> > 
-> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> 
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Rather Acked-by.
-I applied this patch.
+[top posting fixed]
+
+Kent Overstreet <koverstreet@google.com> writes:
+
+> 2012/5/10 Vivek Goyal <vgoyal@redhat.com>:
+>> On Wed, May 09, 2012 at 11:08:13PM -0400, Kent Overstreet wrote:
+>>
+>> [..]
+>>> -
+>>> -     if (bio_integrity(bio)) {
+>>> -             bio_integrity_clone(clone, bio, GFP_NOIO, bs);
+>>> -
+>>> +#if 0
+>>> +     if (bio_integrity(bio))
+>>>               if (idx != bio->bi_idx || clone->bi_size < bio->bi_size)
+>>>                       bio_integrity_trim(clone,
+>>>                                          bio_sector_offset(bio, idx, 0), len);
+>>> -     }
+>>> -
+>>> +#endif
+>>
+>> Dead/debug code under "#if 0" ?
+>>
+> Oh, I never got around to figuring out what needed to be done with the
+> bio integrity - presumably it'll have to be handled differently
+> somehow (I'm assuming an index in the integrity bvec is intended to
+> match up with an index in the regular bvec), but I don't have any way
+> to test the integrity stuff.
+
+The scsi debug module supports dif/dix, so you can use that for testing.
 
 Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Jeff
