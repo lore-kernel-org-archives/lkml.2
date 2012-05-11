@@ -1,130 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab2EKJtG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 05:49:06 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36888 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755283Ab2EKJtE (ORCPT
+	id S932284Ab2EKJuH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 05:50:07 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:57595 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932109Ab2EKJuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 05:49:04 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FACE01A.4040405@jp.fujitsu.com>
-Date: Fri, 11 May 2012 18:47:06 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/6] add res_counter_uncharge_until()
-References: <4FACDED0.3020400@jp.fujitsu.com>
-In-Reply-To: <4FACDED0.3020400@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Fri, 11 May 2012 05:50:05 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: glikely@secretlab.ca, arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v9 1/2] gpio: Adjust of_xlate API to support multiple GPIO chips
+Date: Fri, 11 May 2012 11:47:39 +0200
+Message-Id: <1336729660-7670-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+This patch changes the of_xlate API to make it possible to manipulate the
+actual used gc. This way, multiple GPIO banks can be supported with the same DT
+registered GPIO controller.
 
-At killing res_counter which is a child of other counter,
-we need to do
-	res_counter_uncharge(child, xxx)
-	res_counter_charge(parent, xxx)
+The issue was discussed upon the integration of LPC32xx's DT support for its
+GPIO (see separate patch).
 
-This is not atomic and wasting cpu. This patch adds
-res_counter_uncharge_until(). This function's uncharge propagates
-to ancestors until specified res_counter.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-	res_counter_uncharge_until(child, parent, xxx)
-
-Now, ops is atomic and efficient.
-
-Changelog since v2
- - removed unnecessary lines.
- - Fixed 'From' , this patch comes from his series. Please signed-off-by if good.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- Documentation/cgroups/resource_counter.txt |    8 ++++++++
- include/linux/res_counter.h                |    3 +++
- kernel/res_counter.c                       |   10 ++++++++--
- 3 files changed, 19 insertions(+), 2 deletions(-)
+Applies to v3.4-rc6
 
-diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
-index 95b24d7..703103a 100644
---- a/Documentation/cgroups/resource_counter.txt
-+++ b/Documentation/cgroups/resource_counter.txt
-@@ -92,6 +92,14 @@ to work with it.
+Changes since last version:
+* Added this patch to the series
+
+Thanks to Grant Likely for reviewing and advice!
+
+ drivers/gpio/gpio-samsung.c |   10 +++++-----
+ drivers/of/gpio.c           |   14 ++++++++------
+ include/asm-generic/gpio.h  |    2 +-
+ include/linux/of_gpio.h     |    2 +-
+ 4 files changed, 15 insertions(+), 13 deletions(-)
+
+--- linux-2.6.orig/drivers/gpio/gpio-samsung.c
++++ linux-2.6/drivers/gpio/gpio-samsung.c
+@@ -2655,21 +2655,21 @@ static struct samsung_gpio_chip exynos5_
  
- 	The _locked routines imply that the res_counter->lock is taken.
  
-+ f. void res_counter_uncharge_until
-+		(struct res_counter *rc, struct res_counter *top,
-+		 unsinged long val)
-+
-+	Almost same as res_cunter_uncharge() but propagation of uncharge
-+	stops when rc == top. This is useful when kill a res_coutner in
-+	child cgroup.
-+
-  2.1 Other accounting routines
- 
-     There are more routines that may help you with common needs, like
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-index da81af0..d11c1cd 100644
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -135,6 +135,9 @@ int __must_check res_counter_charge_nofail(struct res_counter *counter,
- void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
- void res_counter_uncharge(struct res_counter *counter, unsigned long val);
- 
-+void res_counter_uncharge_until(struct res_counter *counter,
-+				struct res_counter *top,
-+				unsigned long val);
- /**
-  * res_counter_margin - calculate chargeable space of a counter
-  * @cnt: the counter
-diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-index d508363..d9ea45e 100644
---- a/kernel/res_counter.c
-+++ b/kernel/res_counter.c
-@@ -99,13 +99,15 @@ void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
- 	counter->usage -= val;
- }
- 
--void res_counter_uncharge(struct res_counter *counter, unsigned long val)
-+void res_counter_uncharge_until(struct res_counter *counter,
-+				struct res_counter *top,
-+				unsigned long val)
+ #if defined(CONFIG_ARCH_EXYNOS) && defined(CONFIG_OF)
+-static int exynos_gpio_xlate(struct gpio_chip *gc,
++static int exynos_gpio_xlate(struct gpio_chip **gc,
+ 			const struct of_phandle_args *gpiospec, u32 *flags)
  {
- 	unsigned long flags;
- 	struct res_counter *c;
+ 	unsigned int pin;
  
- 	local_irq_save(flags);
--	for (c = counter; c != NULL; c = c->parent) {
-+	for (c = counter; c != top; c = c->parent) {
- 		spin_lock(&c->lock);
- 		res_counter_uncharge_locked(c, val);
- 		spin_unlock(&c->lock);
-@@ -113,6 +115,10 @@ void res_counter_uncharge(struct res_counter *counter, unsigned long val)
- 	local_irq_restore(flags);
- }
+-	if (WARN_ON(gc->of_gpio_n_cells < 4))
++	if (WARN_ON((*gc)->of_gpio_n_cells < 4))
+ 		return -EINVAL;
  
-+void res_counter_uncharge(struct res_counter *counter, unsigned long val)
-+{
-+	res_counter_uncharge_until(counter, NULL, val);
-+}
+-	if (WARN_ON(gpiospec->args_count < gc->of_gpio_n_cells))
++	if (WARN_ON(gpiospec->args_count < (*gc)->of_gpio_n_cells))
+ 		return -EINVAL;
  
- static inline unsigned long long *
- res_counter_member(struct res_counter *counter, int member)
--- 
-1.7.4.1
-
-
+-	if (gpiospec->args[0] > gc->ngpio)
++	if (gpiospec->args[0] > (*gc)->ngpio)
+ 		return -EINVAL;
+ 
+-	pin = gc->base + gpiospec->args[0];
++	pin = (*gc)->base + gpiospec->args[0];
+ 
+ 	if (s3c_gpio_cfgpin(pin, S3C_GPIO_SFN(gpiospec->args[1])))
+ 		pr_warn("gpio_xlate: failed to set pin function\n");
+--- linux-2.6.orig/drivers/of/gpio.c
++++ linux-2.6/drivers/of/gpio.c
+@@ -64,7 +64,7 @@ int of_get_named_gpio_flags(struct devic
+ 	if (flags)
+ 		*flags = 0;
+ 
+-	ret = gc->of_xlate(gc, &gpiospec, flags);
++	ret = gc->of_xlate(&gc, &gpiospec, flags);
+ 	if (ret < 0)
+ 		goto err1;
+ 
+@@ -114,7 +114,9 @@ EXPORT_SYMBOL(of_gpio_named_count);
+ 
+ /**
+  * of_gpio_simple_xlate - translate gpio_spec to the GPIO number and flags
+- * @gc:		pointer to the gpio_chip structure
++ * @gc:		pointer to pointer to the gpio_chip structure: the xlate
++ *              function can alter *gc itself to make GPIO distribution to
++ *              multiple gpio_chips possible
+  * @np:		device node of the GPIO chip
+  * @gpio_spec:	gpio specifier as found in the device tree
+  * @flags:	a flags pointer to fill in
+@@ -123,7 +125,7 @@ EXPORT_SYMBOL(of_gpio_named_count);
+  * gpio chips. This function performs only one sanity check: whether gpio
+  * is less than ngpios (that is specified in the gpio_chip).
+  */
+-int of_gpio_simple_xlate(struct gpio_chip *gc,
++int of_gpio_simple_xlate(struct gpio_chip **gc,
+ 			 const struct of_phandle_args *gpiospec, u32 *flags)
+ {
+ 	/*
+@@ -132,15 +134,15 @@ int of_gpio_simple_xlate(struct gpio_chi
+ 	 * number and the flags from a single gpio cell -- this is possible,
+ 	 * but not recommended).
+ 	 */
+-	if (gc->of_gpio_n_cells < 2) {
++	if ((*gc)->of_gpio_n_cells < 2) {
+ 		WARN_ON(1);
+ 		return -EINVAL;
+ 	}
+ 
+-	if (WARN_ON(gpiospec->args_count < gc->of_gpio_n_cells))
++	if (WARN_ON(gpiospec->args_count < (*gc)->of_gpio_n_cells))
+ 		return -EINVAL;
+ 
+-	if (gpiospec->args[0] >= gc->ngpio)
++	if (gpiospec->args[0] >= (*gc)->ngpio)
+ 		return -EINVAL;
+ 
+ 	if (flags)
+--- linux-2.6.orig/include/asm-generic/gpio.h
++++ linux-2.6/include/asm-generic/gpio.h
+@@ -129,7 +129,7 @@ struct gpio_chip {
+ 	 */
+ 	struct device_node *of_node;
+ 	int of_gpio_n_cells;
+-	int (*of_xlate)(struct gpio_chip *gc,
++	int (*of_xlate)(struct gpio_chip **gc,
+ 		        const struct of_phandle_args *gpiospec, u32 *flags);
+ #endif
+ };
+--- linux-2.6.orig/include/linux/of_gpio.h
++++ linux-2.6/include/linux/of_gpio.h
+@@ -59,7 +59,7 @@ extern int of_mm_gpiochip_add(struct dev
+ extern void of_gpiochip_add(struct gpio_chip *gc);
+ extern void of_gpiochip_remove(struct gpio_chip *gc);
+ extern struct gpio_chip *of_node_to_gpiochip(struct device_node *np);
+-extern int of_gpio_simple_xlate(struct gpio_chip *gc,
++extern int of_gpio_simple_xlate(struct gpio_chip **gc,
+ 				const struct of_phandle_args *gpiospec,
+ 				u32 *flags);
+ 
