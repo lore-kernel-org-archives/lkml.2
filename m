@@ -1,111 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932505Ab2EKKlL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 06:41:11 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54355 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932332Ab2EKKlD (ORCPT
+	id S1030239Ab2EKKpX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 06:45:23 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:56897 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757911Ab2EKKpT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 06:41:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+1xoqdi1Jdkrjtj9bmnDfs4Ok=o=AsmpP=MY0V8cDXjcSNm1w@mail.gmail.com>
-References: <20120503212151.568.91854.stgit@bob.linux.org.uk>
- <20120503212219.568.15653.stgit@bob.linux.org.uk> <CA+1xoqezLCQh_fqJ1iNAs25X7Fm24W=-0J8zTZuVVJQnWTtSLg@mail.gmail.com>
- <20120507171126.5beddc27@pyramind.ukuu.org.uk> <1336408208.3638.15.camel@lappy>
- <20120507174240.4209c5cb@pyramind.ukuu.org.uk> <CA+1xoqez0PaX2KBHHN-etztwbFoU1cKx3NwMXX+PO4SguA3bRg@mail.gmail.com>
- <4FA838D2.9000908@suse.cz> <CA+1xoqdi1Jdkrjtj9bmnDfs4Ok=o=AsmpP=MY0V8cDXjcSNm1w@mail.gmail.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Fri, 11 May 2012 12:40:41 +0200
-Message-ID: <CA+1xoqcZnxGoo=_X1idCPTk9gR=drnAKhULGzgkH33zYGnAgOA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] tty_lock: Localise the lock
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 11 May 2012 06:45:19 -0400
+X-AuditID: cbfee61a-b7bbeae000003a71-8b-4facedbd4d8a
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "=?utf-8?Q?'Jos=C3=A9_Miguel_Gon=C3=A7alves'?=" 
+	<jose.goncalves@inov.pt>
+Cc: "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1336607209-6409-1-git-send-email-jose.goncalves@inov.pt>
+ <036701cd2e8e$cf4cc100$6de64300$%kim@samsung.com> <4FABC720.5090301@inov.pt>
+In-reply-to: <4FABC720.5090301@inov.pt>
+Subject: RE: [PATCH] ARM: SAMSUNG: Fix for S3C2412 EBI memory mapping.
+Date: Fri, 11 May 2012 19:45:18 +0900
+Message-id: <045501cd2f63$27de99e0$779bcda0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac0us6qcP3OJ7mjcTKCly5VqaPApdQArwmKQ
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 8, 2012 at 8:12 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> On Mon, May 7, 2012 at 11:04 PM, Jiri Slaby <jslaby@suse.cz> wrote:
->> On 05/07/2012 07:00 PM, Sasha Levin wrote:
->>>> So whatever your trace is showing, that's not the bug. Something more
->>>> complicated would appear to be afoot.
->>>
->>> Oddly enough, tty != tty->link, but the lockdep warning triggers.
->>>
->>> Any idea why it might happen?
->>
->> I think so, both locks are the same lockdep class. So lockdep thinks it
->> is the same lock. However this is a false positive. I guess we need
->> mutex_lock_nested...
->
-> It looks like it causes an actual deadlock, and hung_tasks screams if
-> left alone for a bit, so it doesn't look like a lockdep issue.
+José Miguel Gonçalves wrote:
+> 
+> On 10-05-2012 10:25, Kukjin Kim wrote:
+> > José Miguel Gonçalves wrote:
+> >> While upgrading the kernel on a S3C2412 based board I've noted that it
+> was
+> >> impossible to boot the board with a 2.6.32 or upper kernel.
+> >> I've tracked down the problem to the EBI virtual memory mapping that is
+> in
+> >> conflict with the IO mapping definition in arch/arm/mach-
+> s3c24xx/s3c2412.c.
+> >>
+> >> Signed-off-by: José Miguel Gonçalves<jose.goncalves@inov.pt>
+> >> ---
+> >>   arch/arm/plat-samsung/include/plat/map-s3c.h |    2 +-
+> >>   1 files changed, 1 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/arch/arm/plat-samsung/include/plat/map-s3c.h
+> b/arch/arm/plat-
+> >> samsung/include/plat/map-s3c.h
+> >> index 7d04875..c0c70a8 100644
+> >> --- a/arch/arm/plat-samsung/include/plat/map-s3c.h
+> >> +++ b/arch/arm/plat-samsung/include/plat/map-s3c.h
+> >> @@ -22,7 +22,7 @@
+> >>   #define S3C24XX_VA_WATCHDOG	S3C_VA_WATCHDOG
+> >>
+> >>   #define S3C2412_VA_SSMC		S3C_ADDR_CPU(0x00000000)
+> >> -#define S3C2412_VA_EBI		S3C_ADDR_CPU(0x00010000)
+> >> +#define S3C2412_VA_EBI		S3C_ADDR_CPU(0x00100000)
+> >>
+> >>   #define S3C2410_PA_UART		(0x50000000)
+> >>   #define S3C24XX_PA_UART		S3C2410_PA_UART
+> >> --
+> >> 1.7.5.4
+> > Yeah, as you said, the mapping for SSMC invade EBI area but I think,
+> just SZ_4K is enough for SSMC. So following is better in this case. How do
+> you think? And there is no problem on your board?
+> >
+> > diff --git a/arch/arm/mach-s3c24xx/s3c2412.c b/arch/arm/mach-
+> s3c24xx/s3c2412.c
+> > index d4bc7f9..ac906bf 100644
+> > --- a/arch/arm/mach-s3c24xx/s3c2412.c
+> > +++ b/arch/arm/mach-s3c24xx/s3c2412.c
+> > @@ -72,7 +72,7 @@ static struct map_desc s3c2412_iodesc[] __initdata = {
+> >   	{
+> >   		.virtual = (unsigned long)S3C2412_VA_SSMC,
+> >   		.pfn     = __phys_to_pfn(S3C2412_PA_SSMC),
+> > -		.length  = SZ_1M,
+> > +		.length  = SZ_4K,
+> >   		.type    = MT_DEVICE,
+> >   	},
+> >   	{
+> >
+> 
+> It does not work! I tried also a 64K length and also did not work. With
+> your patch
+> my console (with earlyprintk set) only displays the following:
+> 
+> ## Booting image at 30800000 ...
+>     Image Name:   Linux-3.2.16-inov1
+>     Created:      2012-05-10  12:42:49 UTC
+>     Image Type:   ARM Linux Kernel Image (uncompressed)
+>     Data Size:    1202592 Bytes =  1.1 MB
+>     Load Address: 30008000
+>     Entry Point:  30008000
+>     Verifying Checksum ... OK
+> OK
+> 
+> Starting kernel ...
+> 
+> Uncompressing Linux... done, booting the kernel.
+> Linux version 3.2.16-inov1 (jmpg@st-ze) (gcc version 4.6.4 20120402
+> (prerelease)
+> (crosstool-NG 1.15.2) ) #3 PREEMPT Thu May 10 13:42:48 WEST 2012
+> CPU: ARM926EJ-S [41069265] revision 5 (ARMv5TEJ), cr=00053177
+> CPU: VIVT data cache, VIVT instruction cache
+> Machine: SMDK2412
+> bootconsole [earlycon0] enabled
+> Memory policy: ECC disabled, Data cache writeback
+> CPU S3C2412 (id 0x32412003)
+> 
+> My guess is that the MMU initialization on the S3C2412 chip only allows a
+> minimum
+> of 1MB for the page size.
+> 
+Hmm, could be... there is no smdk2412 on my desk :(
 
-I've applied the patch that unlocks before hangup, and started seeing
-this new warning instead (sorry if output below looks a bit broken,
-linux-next has a printk rework in progress):
+OK, will apply your fix.
+Thanks.
 
-[   47.919734] =============================================
-[   47.920013] [ INFO: possible recursive locking detected ]
-[   47.920013] 3.4.0-rc6-next-20120511-sasha-00001-g1975c5f #183
-Tainted: G        W
-[   47.920013] ---------------------------------------------
-[   47.920013] trinity/6825 is trying to acquire lock:
-[   47.920013]  (&tty->legacy_mutex){+.+.+.}, at: [<ffffffff82e9cd02>]
-tty_lock+0x72/0x80
-[   47.920013]
-but task is already holding lock:
-[   47.920013]  (&tty->legacy_mutex){+.+.+.}, at: [<ffffffff82e9cd02>]
-tty_lock+0x72/0x80
-[   47.920013]
-other info that might help us debug this:
-[   47.920013]  Possible unsafe locking scenario:
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-[   47.920013]        CPU0
-[   47.920013]        ----
-[   47.920013]   lock(&tty->legacy_mutex);
-[   47.920013]   lock(&tty->legacy_mutex);
-[   47.920013]
- *** DEADLOCK ***
-
-[   47.920013]  May be due to missing lock nesting notation
-
-[   47.920013] 2 locks held by trinity/6825:
-[   47.920013]  #0:  (tty_mutex){+.+.+.}, at: [<ffffffff81b00837>]
-tty_release+0x177/0x4d0
-[   47.920013]  #1:  (&tty->legacy_mutex){+.+.+.}, at:
-[<ffffffff82e9cd02>] tty_lock+0x72/0x80
-[   47.920013]
-stack backtrace:
-[   47.920013] Pid: 6825, comm: trinity Tainted: G        W
-3.4.0-rc6-next-20120511-sasha-00001-g1975c5f #183
-[   47.920013] Call Trace:
-[   47.920013]  [<ffffffff811440b9>] print_deadlock_bug+0x119/0x140
-[   47.920013]  [<ffffffff8114622e>] validate_chain+0x5ee/0x790
-[   47.920013]  [<ffffffff81119eb8>] ? sched_clock_cpu+0x108/0x120
-[   47.920013]  [<ffffffff811467f3>] __lock_acquire+0x423/0x4c0
-[   47.920013]  [<ffffffff81146a1a>] lock_acquire+0x18a/0x1e0
-[   47.920013]  [<ffffffff82e9cd02>] ? tty_lock+0x72/0x80
-[   47.920013]  [<ffffffff82e99558>] ? __mutex_lock_common+0x518/0x590
-[   47.920013]  [<ffffffff82e990a0>] __mutex_lock_common+0x60/0x590
-[   47.920013]  [<ffffffff82e9cd02>] ? tty_lock+0x72/0x80
-[   47.920013]  [<ffffffff82e9cd02>] ? tty_lock+0x72/0x80
-[   47.920013]  [<ffffffff82e99700>] mutex_lock_nested+0x40/0x50
-[   47.920013]  [<ffffffff82e9cd02>] tty_lock+0x72/0x80
-[   47.920013]  [<ffffffff82e9cd36>] tty_lock_pair+0x26/0x54
-[   47.920013]  [<ffffffff81b00842>] tty_release+0x182/0x4d0
-[   47.920013]  [<ffffffff8122cf1a>] __fput+0x11a/0x2c0
-[   47.920013]  [<ffffffff8122d0d5>] fput+0x15/0x20
-[   47.920013]  [<ffffffff812293e2>] filp_close+0x82/0xa0
-[   47.920013]  [<ffffffff810d6214>] close_files+0x1b4/0x200
-[   47.920013]  [<ffffffff810d6060>] ? wait_task_stopped+0x3c0/0x3c0
-[   47.920013]  [<ffffffff810d6425>] ? exit_files+0x45/0x60
-[   47.920013]  [<ffffffff810d6281>] put_files_struct+0x21/0x180
-[   47.920013]  [<ffffffff82e9c6a0>] ? _raw_spin_unlock+0x30/0x60
-[   47.920013]  [<ffffffff810d642d>] exit_files+0x4d/0x60
-[   47.920013]  [<ffffffff810d86e2>] do_exit+0x322/0x500
-[   47.920013]  [<ffffffff810d8961>] do_group_exit+0xa1/0xe0
-[   47.920013]  [<ffffffff810d89b2>] sys_exit_group+0x12/0x20
-[   47.920013]  [<ffffffff82e9d7f9>] system_call_fastpath+0x16/0x1b
