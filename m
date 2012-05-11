@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab2EKPIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 11:08:52 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51689 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab2EKPIv convert rfc822-to-8bit (ORCPT
+	id S1758335Ab2EKPJO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 11:09:14 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35008 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754237Ab2EKPJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 11:08:51 -0400
+	Fri, 11 May 2012 11:09:11 -0400
+Date: Fri, 11 May 2012 16:09:09 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, linux@arm.linux.org.uk,
+        lrg@ti.com, swarren@nvidia.com, olof@lixom.net,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V3 1/4] regulator: tps62360: make init_data of platform
+ data to pointer.
+Message-ID: <20120511150908.GJ3960@opensource.wolfsonmicro.com>
+References: <1336718325-8372-1-git-send-email-ldewangan@nvidia.com>
+ <1336718325-8372-2-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <1336619193-4808-1-git-send-email-zwu.kernel@gmail.com>
-References: <1336619193-4808-1-git-send-email-zwu.kernel@gmail.com>
-Date: Fri, 11 May 2012 23:08:50 +0800
-Message-ID: <CAEH94LiZ0+BD1UZUcTxkZun8RciWspwj=RqmdTjcH2sobk+4mA@mail.gmail.com>
-Subject: Re: [PATCH v2] block: Remove some unnecessary codes
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: jaxboe@fusionio.com
-Cc: axboe@kernel.dk, wuzhy@linux.vnet.ibm.com, stefanha@linux.vnet.ibm.com,
-        trbecker@trbecker.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="W13SgbpmD6bhZUTM"
+Content-Disposition: inline
+In-Reply-To: <1336718325-8372-2-git-send-email-ldewangan@nvidia.com>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI, Jens,
 
-Can you help queue this patch up?
+--W13SgbpmD6bhZUTM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Thu, May 10, 2012 at 11:06 AM,  <zwu.kernel@gmail.com> wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> ---
->  block/partition-generic.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
->
-> diff --git a/block/partition-generic.c b/block/partition-generic.c
-> index 6df5d69..b6a9d5b 100644
-> --- a/block/partition-generic.c
-> +++ b/block/partition-generic.c
-> @@ -473,7 +473,6 @@ rescan:
->        /* add partitions */
->        for (p = 1; p < state->limit; p++) {
->                sector_t size, from;
-> -               struct partition_meta_info *info = NULL;
->
->                size = state->parts[p].size;
->                if (!size)
-> @@ -508,8 +507,6 @@ rescan:
->                        }
->                }
->
-> -               if (state->parts[p].has_info)
-> -                       info = &state->parts[p].info;
->                part = add_partition(disk, p, from, size,
->                                     state->parts[p].flags,
->                                     &state->parts[p].info);
-> --
-> 1.7.6
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Fri, May 11, 2012 at 12:08:42PM +0530, Laxman Dewangan wrote:
+> Convert platform data member regulator_init_data to pointer type.
+> This will avoid the copy of entire regualator init data into
+> platform data member when adding dt support and it can be achieve
+> by simple assignment:
+> pdata->init_data = of_get_regulator_init_data(dev, dev->of_node);
 
+Applied, thanks.
 
+--W13SgbpmD6bhZUTM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Regards,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Zhi Yong Wu
+iQIcBAEBAgAGBQJPrSuOAAoJEBus8iNuMP3dYGQP/AhY7sgQoJ+xqtrcIam98jPl
+BbwRakm3ymbWyimAsZlTGeFnI6uILRmOA6VJQu83p/PZuEshRy4Ro4osLU/20QIJ
+kai28N3XFqAm+nBGn4vz6dDVC4ehK8bfnqUpnY+rAIGl12q4/uft19apT1CSVSdP
+dUcwu2qP5/lewvA8EK9UTTcU/jz7uY2+LK23us2fiTx6Mf4yv1xN3CEJgbaww+rN
+o3LEn1G8XOAktH97zRyXrcoimnuX8reN4HAQjHS4k5IvxZnK8dgkt5lIhBAtHVeH
+OUf2EXHTujyKIvuR3ZmCgjDKNFAa7aC3BdqK8v7vUg2k0GnW9Y474t066d+F04YF
+vSc94DGKz0w7/OCy1Ussvi8xh8D2N2dHLvXt29eYv6pus1UPBjITtdLtb89as6KF
+Ltuncytzl6yvxpZBQtMoNgG/FBQUMAzLV0jLxlig/GeG2Xjtytri1NgScEHoNShC
+vIWUPrg3ZZPnwMXXaLd7fiVlJDOJ6a87XGZSDLrOxpu2Ef4pz3MHPnzlqvFFmpyN
+PZRZxfNlisHhiL74QpwQ1httWW2DnSsK9LH0c4XA2sOv0gUrxeHnL1mXW2yBY2lO
+v7cOKuOcwj8rIPqHkTIICOmfM5zLtyHioogp2HJszKs8IM9rh704gXGhfskvvt33
+tTURC8nsiU5B9VnzOObT
+=Xzmp
+-----END PGP SIGNATURE-----
+
+--W13SgbpmD6bhZUTM--
