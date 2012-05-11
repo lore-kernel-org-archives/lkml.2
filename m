@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964864Ab2EKW6P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 18:58:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46377 "EHLO mx1.redhat.com"
+	id S932815Ab2EKW5C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 18:57:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17220 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964828Ab2EKW5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 18:57:06 -0400
+	id S1759817Ab2EKW44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 18:56:56 -0400
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 11/13] pci: Create common pcibios_err_to_errno
+Subject: [PATCH 09/13] vfio: x86 IOMMU implementation
 To: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
         joerg.roedel@amd.com, dwmw2@infradead.org
 Cc: chrisw@sous-sol.org, agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
@@ -16,8 +16,8 @@ Cc: chrisw@sous-sol.org, agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         bhelgaas@google.com, alex.williamson@redhat.com
-Date: Fri, 11 May 2012 16:56:44 -0600
-Message-ID: <20120511225643.30496.36823.stgit@bling.home>
+Date: Fri, 11 May 2012 16:56:30 -0600
+Message-ID: <20120511225629.30496.47286.stgit@bling.home>
 In-Reply-To: <20120511222148.30496.68571.stgit@bling.home>
 References: <20120511222148.30496.68571.stgit@bling.home>
 User-Agent: StGIT/0.14.3
@@ -28,81 +28,888 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For returning errors out to non-PCI code.  Re-name xen's version.
+x86 is probably the wrong name for this VFIO IOMMU driver, but x86
+is the primary target for it.  This driver support a very simple
+usage model using the existing IOMMU API.  The IOMMU is expected to
+support the full host address space with no special IOVA windows,
+number of mappings restrictions, or unique processor target options.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
- drivers/xen/xen-pciback/conf_space.c |    6 +++---
- include/linux/pci.h                  |   26 ++++++++++++++++++++++++++
- 2 files changed, 29 insertions(+), 3 deletions(-)
+ Documentation/ioctl/ioctl-number.txt |    2 
+ drivers/vfio/Kconfig                 |    6 
+ drivers/vfio/Makefile                |    2 
+ drivers/vfio/vfio.c                  |    7 
+ drivers/vfio/vfio_iommu_x86.c        |  743 ++++++++++++++++++++++++++++++++++
+ include/linux/vfio.h                 |   52 ++
+ 6 files changed, 811 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/vfio/vfio_iommu_x86.c
 
-diff --git a/drivers/xen/xen-pciback/conf_space.c b/drivers/xen/xen-pciback/conf_space.c
-index 30d7be0..46ae0f9 100644
---- a/drivers/xen/xen-pciback/conf_space.c
-+++ b/drivers/xen/xen-pciback/conf_space.c
-@@ -124,7 +124,7 @@ static inline u32 merge_value(u32 val, u32 new_val, u32 new_val_mask,
- 	return val;
- }
- 
--static int pcibios_err_to_errno(int err)
-+static int xen_pcibios_err_to_errno(int err)
- {
- 	switch (err) {
- 	case PCIBIOS_SUCCESSFUL:
-@@ -202,7 +202,7 @@ out:
- 		       pci_name(dev), size, offset, value);
- 
- 	*ret_val = value;
--	return pcibios_err_to_errno(err);
-+	return xen_pcibios_err_to_errno(err);
- }
- 
- int xen_pcibk_config_write(struct pci_dev *dev, int offset, int size, u32 value)
-@@ -290,7 +290,7 @@ int xen_pcibk_config_write(struct pci_dev *dev, int offset, int size, u32 value)
- 		}
- 	}
- 
--	return pcibios_err_to_errno(err);
-+	return xen_pcibios_err_to_errno(err);
- }
- 
- void xen_pcibk_config_free_dyn_fields(struct pci_dev *dev)
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index b437225..20a8f2e 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -467,6 +467,32 @@ static inline bool pci_dev_msi_enabled(struct pci_dev *pci_dev) { return false;
- #define PCIBIOS_SET_FAILED		0x88
- #define PCIBIOS_BUFFER_TOO_SMALL	0x89
- 
-+/*
-+ * Translate above to generic errno for passing back through non-pci.
-+ */
-+static inline int pcibios_err_to_errno(int err)
-+{
-+	if (err <= PCIBIOS_SUCCESSFUL)
-+		return err; /* Assume already errno */
+diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
+index 111e30a..9d1694e 100644
+--- a/Documentation/ioctl/ioctl-number.txt
++++ b/Documentation/ioctl/ioctl-number.txt
+@@ -88,7 +88,7 @@ Code  Seq#(hex)	Include File		Comments
+ 		and kernel/power/user.c
+ '8'	all				SNP8023 advanced NIC card
+ 					<mailto:mcr@solidum.com>
+-';'	64-6F	linux/vfio.h
++';'	64-72	linux/vfio.h
+ '@'	00-0F	linux/radeonfb.h	conflict!
+ '@'	00-0F	drivers/video/aty/aty128fb.c	conflict!
+ 'A'	00-1F	linux/apm_bios.h	conflict!
+diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
+index 9acb1e7..bd88a30 100644
+--- a/drivers/vfio/Kconfig
++++ b/drivers/vfio/Kconfig
+@@ -1,6 +1,12 @@
++config VFIO_IOMMU_X86
++	tristate
++	depends on VFIO && X86
++	default n
 +
-+	switch (err) {
-+	case PCIBIOS_FUNC_NOT_SUPPORTED:
-+		return -ENOENT;
-+	case PCIBIOS_BAD_VENDOR_ID:
+ menuconfig VFIO
+ 	tristate "VFIO Non-Privileged userspace driver framework"
+ 	depends on IOMMU_API
++	select VFIO_IOMMU_X86 if X86
+ 	help
+ 	  VFIO provides a framework for secure userspace device drivers.
+ 	  See Documentation/vfio.txt for more details.
+diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
+index 7500a67..1f1abee 100644
+--- a/drivers/vfio/Makefile
++++ b/drivers/vfio/Makefile
+@@ -1 +1,3 @@
+ obj-$(CONFIG_VFIO) += vfio.o
++obj-$(CONFIG_VFIO_IOMMU_X86) += vfio_iommu_x86.o
++obj-$(CONFIG_VFIO_PCI) += pci/
+diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
+index af0e4f8..410c4b0 100644
+--- a/drivers/vfio/vfio.c
++++ b/drivers/vfio/vfio.c
+@@ -1362,6 +1362,13 @@ static int __init vfio_init(void)
+ 
+ 	pr_info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
+ 
++	/*
++	 * Attempt to load known iommu-drivers.  This gives us a working
++	 * environment without the user needing to explicitly load iommu
++	 * drivers.
++	 */
++	request_module_nowait("vfio_iommu_x86");
++
+ 	return 0;
+ 
+ err_groups_cdev:
+diff --git a/drivers/vfio/vfio_iommu_x86.c b/drivers/vfio/vfio_iommu_x86.c
+new file mode 100644
+index 0000000..a52391d
+--- /dev/null
++++ b/drivers/vfio/vfio_iommu_x86.c
+@@ -0,0 +1,743 @@
++/*
++ * VFIO: IOMMU DMA mapping support for x86 (Intel VT-d & AMD-Vi)
++ *
++ * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
++ *     Author: Alex Williamson <alex.williamson@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Derived from original vfio:
++ * Copyright 2010 Cisco Systems, Inc.  All rights reserved.
++ * Author: Tom Lyon, pugs@cisco.com
++ */
++
++#include <linux/compat.h>
++#include <linux/device.h>
++#include <linux/fs.h>
++#include <linux/iommu.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/pci.h>		/* pci_bus_type */
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/uaccess.h>
++#include <linux/vfio.h>
++#include <linux/workqueue.h>
++
++#define DRIVER_VERSION  "0.2"
++#define DRIVER_AUTHOR   "Alex Williamson <alex.williamson@redhat.com>"
++#define DRIVER_DESC     "x86 IOMMU driver for VFIO"
++
++static bool allow_unsafe_interrupts;
++module_param_named(allow_unsafe_interrupts,
++		   allow_unsafe_interrupts, bool, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(allow_unsafe_interrupts,
++		 "Enable VFIO IOMMU support for on platforms without interrupt remapping support.");
++
++struct vfio_iommu {
++	struct iommu_domain	*domain;
++	struct mutex		lock;
++	struct list_head	dma_list;
++	struct list_head	group_list;
++	bool			cache;
++};
++
++struct vfio_dma {
++	struct list_head	next;
++	dma_addr_t		iova;		/* Device address */
++	unsigned long		vaddr;		/* Process virtual addr */
++	long			npage;		/* Number of pages */
++	int			prot;		/* IOMMU_READ/WRITE */
++};
++
++struct vfio_group {
++	struct iommu_group	*iommu_group;
++	struct list_head	next;
++};
++
++/*
++ * This code handles mapping and unmapping of user data buffers
++ * into DMA'ble space using the IOMMU
++ */
++
++#define NPAGE_TO_SIZE(npage)	((size_t)(npage) << PAGE_SHIFT)
++
++struct vwork {
++	struct mm_struct	*mm;
++	long			npage;
++	struct work_struct	work;
++};
++
++/* delayed decrement/increment for locked_vm */
++static void vfio_lock_acct_bg(struct work_struct *work)
++{
++	struct vwork *vwork = container_of(work, struct vwork, work);
++	struct mm_struct *mm;
++
++	mm = vwork->mm;
++	down_write(&mm->mmap_sem);
++	mm->locked_vm += vwork->npage;
++	up_write(&mm->mmap_sem);
++	mmput(mm);
++	kfree(vwork);
++}
++
++static void vfio_lock_acct(long npage)
++{
++	struct vwork *vwork;
++	struct mm_struct *mm;
++
++	if (!current->mm)
++		return; /* process exited */
++
++	if (down_write_trylock(&current->mm->mmap_sem)) {
++		current->mm->locked_vm += npage;
++		up_write(&current->mm->mmap_sem);
++		return;
++	}
++
++	/*
++	 * Couldn't get mmap_sem lock, so must setup to update
++	 * mm->locked_vm later. If locked_vm were atomic, we
++	 * wouldn't need this silliness
++	 */
++	vwork = kmalloc(sizeof(struct vwork), GFP_KERNEL);
++	if (!vwork)
++		return;
++	mm = get_task_mm(current);
++	if (!mm) {
++		kfree(vwork);
++		return;
++	}
++	INIT_WORK(&vwork->work, vfio_lock_acct_bg);
++	vwork->mm = mm;
++	vwork->npage = npage;
++	schedule_work(&vwork->work);
++}
++
++/*
++ * Some mappings aren't backed by a struct page, for example an mmap'd
++ * MMIO range for our own or another device.  These use a different
++ * pfn conversion and shouldn't be tracked as locked pages.
++ */
++static bool is_invalid_reserved_pfn(unsigned long pfn)
++{
++	if (pfn_valid(pfn)) {
++		bool reserved;
++		struct page *tail = pfn_to_page(pfn);
++		struct page *head = compound_trans_head(tail);
++		reserved = !!(PageReserved(head));
++		if (head != tail) {
++			/*
++			 * "head" is not a dangling pointer
++			 * (compound_trans_head takes care of that)
++			 * but the hugepage may have been split
++			 * from under us (and we may not hold a
++			 * reference count on the head page so it can
++			 * be reused before we run PageReferenced), so
++			 * we've to check PageTail before returning
++			 * what we just read.
++			 */
++			smp_rmb();
++			if (PageTail(tail))
++				return reserved;
++		}
++		return PageReserved(tail);
++	}
++
++	return true;
++}
++
++static int put_pfn(unsigned long pfn, int prot)
++{
++	if (!is_invalid_reserved_pfn(pfn)) {
++		struct page *page = pfn_to_page(pfn);
++		if (prot & IOMMU_WRITE)
++			SetPageDirty(page);
++		put_page(page);
++		return 1;
++	}
++	return 0;
++}
++
++/* Unmap DMA region */
++static long __vfio_dma_do_unmap(struct vfio_iommu *iommu, dma_addr_t iova,
++			     long npage, int prot)
++{
++	long i, unlocked = 0;
++
++	for (i = 0; i < npage; i++, iova += PAGE_SIZE) {
++		unsigned long pfn;
++
++		pfn = iommu_iova_to_phys(iommu->domain, iova) >> PAGE_SHIFT;
++		if (pfn) {
++			iommu_unmap(iommu->domain, iova, PAGE_SIZE);
++			unlocked += put_pfn(pfn, prot);
++		}
++	}
++	return unlocked;
++}
++
++static void vfio_dma_unmap(struct vfio_iommu *iommu, dma_addr_t iova,
++			   long npage, int prot)
++{
++	long unlocked;
++
++	unlocked = __vfio_dma_do_unmap(iommu, iova, npage, prot);
++	vfio_lock_acct(-unlocked);
++}
++
++static int vaddr_get_pfn(unsigned long vaddr, int prot, unsigned long *pfn)
++{
++	struct page *page[1];
++	struct vm_area_struct *vma;
++	int ret = -EFAULT;
++
++	if (get_user_pages_fast(vaddr, 1, !!(prot & IOMMU_WRITE), page) == 1) {
++		*pfn = page_to_pfn(page[0]);
++		return 0;
++	}
++
++	down_read(&current->mm->mmap_sem);
++
++	vma = find_vma_intersection(current->mm, vaddr, vaddr + 1);
++
++	if (vma && vma->vm_flags & VM_PFNMAP) {
++		*pfn = ((vaddr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
++		if (is_invalid_reserved_pfn(*pfn))
++			ret = 0;
++	}
++
++	up_read(&current->mm->mmap_sem);
++
++	return ret;
++}
++
++/* Map DMA region */
++static int __vfio_dma_map(struct vfio_iommu *iommu, dma_addr_t iova,
++			  unsigned long vaddr, long npage, int prot)
++{
++	dma_addr_t start = iova;
++	long i, locked = 0;
++	int ret;
++
++	/* Verify that pages are not already mapped */
++	for (i = 0; i < npage; i++, iova += PAGE_SIZE)
++		if (iommu_iova_to_phys(iommu->domain, iova))
++			return -EBUSY;
++
++	iova = start;
++
++	if (iommu->cache)
++		prot |= IOMMU_CACHE;
++
++	/*
++	 * XXX We break mappings into pages and use get_user_pages_fast to
++	 * pin the pages in memory.  It's been suggested that mlock might
++	 * provide a more efficient mechanism, but nothing prevents the
++	 * user from munlocking the pages, which could then allow the user
++	 * access to random host memory.  We also have no guarantee from the
++	 * IOMMU API that the iommu driver can unmap sub-pages of previous
++	 * mappings.  This means we might lose an entire range if a single
++	 * page within it is unmapped.  Single page mappings are inefficient,
++	 * but provide the most flexibility for now.
++	 */
++	for (i = 0; i < npage; i++, iova += PAGE_SIZE, vaddr += PAGE_SIZE) {
++		unsigned long pfn = 0;
++
++		ret = vaddr_get_pfn(vaddr, prot, &pfn);
++		if (ret) {
++			__vfio_dma_do_unmap(iommu, start, i, prot);
++			return ret;
++		}
++
++		/*
++		 * Only add actual locked pages to accounting
++		 * XXX We're effectively marking a page locked for every
++		 * IOVA page even though it's possible the user could be
++		 * backing multiple IOVAs with the same vaddr.  This over-
++		 * penalizes the user process, but we currently have no
++		 * easy way to do this properly.
++		 */
++		if (!is_invalid_reserved_pfn(pfn))
++			locked++;
++
++		ret = iommu_map(iommu->domain, iova,
++				(phys_addr_t)pfn << PAGE_SHIFT,
++				PAGE_SIZE, prot);
++		if (ret) {
++			/* Back out mappings on error */
++			put_pfn(pfn, prot);
++			__vfio_dma_do_unmap(iommu, start, i, prot);
++			return ret;
++		}
++	}
++	vfio_lock_acct(locked);
++	return 0;
++}
++
++static inline bool ranges_overlap(dma_addr_t start1, size_t size1,
++				  dma_addr_t start2, size_t size2)
++{
++	if (start1 < start2)
++		return (start2 - start1 < size1);
++	else if (start2 < start1)
++		return (start1 - start2 < size2);
++	return (size1 > 0 && size2 > 0);
++}
++
++static struct vfio_dma *vfio_find_dma(struct vfio_iommu *iommu,
++						dma_addr_t start, size_t size)
++{
++	struct vfio_dma *dma;
++
++	list_for_each_entry(dma, &iommu->dma_list, next) {
++		if (ranges_overlap(dma->iova, NPAGE_TO_SIZE(dma->npage),
++				   start, size))
++			return dma;
++	}
++	return NULL;
++}
++
++static long vfio_remove_dma_overlap(struct vfio_iommu *iommu, dma_addr_t start,
++				    size_t size, struct vfio_dma *dma)
++{
++	struct vfio_dma *split;
++	long npage_lo, npage_hi;
++
++	/* Existing dma region is completely covered, unmap all */
++	if (start <= dma->iova &&
++	    start + size >= dma->iova + NPAGE_TO_SIZE(dma->npage)) {
++		vfio_dma_unmap(iommu, dma->iova, dma->npage, dma->prot);
++		list_del(&dma->next);
++		npage_lo = dma->npage;
++		kfree(dma);
++		return npage_lo;
++	}
++
++	/* Overlap low address of existing range */
++	if (start <= dma->iova) {
++		size_t overlap;
++
++		overlap = start + size - dma->iova;
++		npage_lo = overlap >> PAGE_SHIFT;
++
++		vfio_dma_unmap(iommu, dma->iova, npage_lo, dma->prot);
++		dma->iova += overlap;
++		dma->vaddr += overlap;
++		dma->npage -= npage_lo;
++		return npage_lo;
++	}
++
++	/* Overlap high address of existing range */
++	if (start + size >= dma->iova + NPAGE_TO_SIZE(dma->npage)) {
++		size_t overlap;
++
++		overlap = dma->iova + NPAGE_TO_SIZE(dma->npage) - start;
++		npage_hi = overlap >> PAGE_SHIFT;
++
++		vfio_dma_unmap(iommu, start, npage_hi, dma->prot);
++		dma->npage -= npage_hi;
++		return npage_hi;
++	}
++
++	/* Split existing */
++	npage_lo = (start - dma->iova) >> PAGE_SHIFT;
++	npage_hi = dma->npage - (size >> PAGE_SHIFT) - npage_lo;
++
++	split = kzalloc(sizeof *split, GFP_KERNEL);
++	if (!split)
++		return -ENOMEM;
++
++	vfio_dma_unmap(iommu, start, size >> PAGE_SHIFT, dma->prot);
++
++	dma->npage = npage_lo;
++
++	split->npage = npage_hi;
++	split->iova = start + size;
++	split->vaddr = dma->vaddr + NPAGE_TO_SIZE(npage_lo) + size;
++	split->prot = dma->prot;
++	list_add(&split->next, &iommu->dma_list);
++	return size >> PAGE_SHIFT;
++}
++
++static int vfio_dma_do_unmap(struct vfio_iommu *iommu,
++			     struct vfio_iommu_x86_dma_unmap *unmap)
++{
++	long ret = 0, npage = unmap->size >> PAGE_SHIFT;
++	struct vfio_dma *dma, *tmp;
++	uint64_t mask;
++
++	mask = ((uint64_t)1 << __ffs(iommu->domain->ops->pgsize_bitmap)) - 1;
++
++	if (unmap->iova & mask)
 +		return -EINVAL;
-+	case PCIBIOS_DEVICE_NOT_FOUND:
-+		return -ENODEV;
-+	case PCIBIOS_BAD_REGISTER_NUMBER:
-+		return -EFAULT;
-+	case PCIBIOS_SET_FAILED:
-+		return -EIO;
-+	case PCIBIOS_BUFFER_TOO_SMALL:
-+		return -ENOSPC;
++	if (unmap->size & mask)
++		return -EINVAL;
++
++	/* XXX We still break these down into PAGE_SIZE */
++	WARN_ON(mask & PAGE_MASK);
++
++	mutex_lock(&iommu->lock);
++
++	list_for_each_entry_safe(dma, tmp, &iommu->dma_list, next) {
++		if (ranges_overlap(dma->iova, NPAGE_TO_SIZE(dma->npage),
++				   unmap->iova, unmap->size)) {
++			ret = vfio_remove_dma_overlap(iommu, unmap->iova,
++						      unmap->size, dma);
++			if (ret > 0)
++				npage -= ret;
++			if (ret < 0 || npage == 0)
++				break;
++		}
++	}
++	mutex_unlock(&iommu->lock);
++	return ret > 0 ? 0 : (int)ret;
++}
++
++static int vfio_dma_do_map(struct vfio_iommu *iommu,
++			   struct vfio_iommu_x86_dma_map *map)
++{
++	struct vfio_dma *dma, *pdma = NULL;
++	dma_addr_t iova = map->iova;
++	unsigned long locked, lock_limit, vaddr = map->vaddr;
++	size_t size = map->size;
++	int ret = 0, prot = 0;
++	uint64_t mask;
++	long npage;
++
++	mask = ((uint64_t)1 << __ffs(iommu->domain->ops->pgsize_bitmap)) - 1;
++
++	/* READ/WRITE from device perspective */
++	if (map->flags & VFIO_DMA_MAP_FLAG_WRITE)
++		prot |= IOMMU_WRITE;
++	if (map->flags & VFIO_DMA_MAP_FLAG_READ)
++		prot |= IOMMU_READ;
++
++	if (!prot)
++		return -EINVAL; /* No READ/WRITE? */
++
++	if (vaddr & mask)
++		return -EINVAL;
++	if (iova & mask)
++		return -EINVAL;
++	if (size & mask)
++		return -EINVAL;
++
++	/* XXX We still break these down into PAGE_SIZE */
++	WARN_ON(mask & PAGE_MASK);
++
++	/* Don't allow IOVA wrap */
++	if (iova + size && iova + size < iova)
++		return -EINVAL;
++
++	/* Don't allow virtual address wrap */
++	if (vaddr + size && vaddr + size < vaddr)
++		return -EINVAL;
++
++	npage = size >> PAGE_SHIFT;
++	if (!npage)
++		return -EINVAL;
++
++	mutex_lock(&iommu->lock);
++
++	if (vfio_find_dma(iommu, iova, size)) {
++		ret = -EBUSY;
++		goto out_lock;
++	}
++
++	/* account for locked pages */
++	locked = current->mm->locked_vm + npage;
++	lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
++	if (locked > lock_limit && !capable(CAP_IPC_LOCK)) {
++		printk(KERN_WARNING "%s: RLIMIT_MEMLOCK (%ld) exceeded\n",
++			__func__, rlimit(RLIMIT_MEMLOCK));
++		ret = -ENOMEM;
++		goto out_lock;
++	}
++
++	ret = __vfio_dma_map(iommu, iova, vaddr, npage, prot);
++	if (ret)
++		goto out_lock;
++
++	/* Check if we abut a region below - nothing below 0 */
++	if (iova) {
++		dma = vfio_find_dma(iommu, iova - 1, 1);
++		if (dma && dma->prot == prot &&
++		    dma->vaddr + NPAGE_TO_SIZE(dma->npage) == vaddr) {
++
++			dma->npage += npage;
++			iova = dma->iova;
++			vaddr = dma->vaddr;
++			npage = dma->npage;
++			size = NPAGE_TO_SIZE(npage);
++
++			pdma = dma;
++		}
++	}
++
++	/* Check if we abut a region above - nothing above ~0 + 1 */
++	if (iova + size) {
++		dma = vfio_find_dma(iommu, iova + size, 1);
++		if (dma && dma->prot == prot &&
++		    dma->vaddr == vaddr + size) {
++
++			dma->npage += npage;
++			dma->iova = iova;
++			dma->vaddr = vaddr;
++
++			/*
++			 * If merged above and below, remove previously
++			 * merged entry.  New entry covers it.
++			 */
++			if (pdma) {
++				list_del(&pdma->next);
++				kfree(pdma);
++			}
++			pdma = dma;
++		}
++	}
++
++	/* Isolated, new region */
++	if (!pdma) {
++		dma = kzalloc(sizeof *dma, GFP_KERNEL);
++		if (!dma) {
++			ret = -ENOMEM;
++			vfio_dma_unmap(iommu, iova, npage, prot);
++			goto out_lock;
++		}
++
++		dma->npage = npage;
++		dma->iova = iova;
++		dma->vaddr = vaddr;
++		dma->prot = prot;
++		list_add(&dma->next, &iommu->dma_list);
++	}
++
++out_lock:
++	mutex_unlock(&iommu->lock);
++	return ret;
++}
++
++static int vfio_iommu_x86_attach_group(void *iommu_data,
++				       struct iommu_group *iommu_group)
++{
++	struct vfio_iommu *iommu = iommu_data;
++	struct vfio_group *group, *tmp;
++	int ret;
++
++	group = kzalloc(sizeof(*group), GFP_KERNEL);
++	if (!group)
++		return -ENOMEM;
++
++	mutex_lock(&iommu->lock);
++
++	list_for_each_entry(tmp, &iommu->group_list, next) {
++		if (tmp->iommu_group == iommu_group) {
++			mutex_unlock(&iommu->lock);
++			kfree(group);
++			return -EINVAL;
++		}
++	}
++
++	/*
++	 * TODO: Domain have capabilities that might change as we add
++	 * groups (see iommu->cache, currently never set).  Check for
++	 * them and potentially disallow groups to be attached when it
++	 * would change capabilities (ugh).
++	 */
++	ret = iommu_attach_group(iommu->domain, iommu_group);
++	if (ret) {
++		mutex_unlock(&iommu->lock);
++		kfree(group);
++		return ret;
++	}
++
++	group->iommu_group = iommu_group;
++	list_add(&group->next, &iommu->group_list);
++
++	mutex_unlock(&iommu->lock);
++
++	return 0;
++}
++
++static void vfio_iommu_x86_detach_group(void *iommu_data,
++					struct iommu_group *iommu_group)
++{
++	struct vfio_iommu *iommu = iommu_data;
++	struct vfio_group *group;
++
++	mutex_lock(&iommu->lock);
++
++	list_for_each_entry(group, &iommu->group_list, next) {
++		if (group->iommu_group == iommu_group) {
++			iommu_detach_group(iommu->domain, iommu_group);
++			list_del(&group->next);
++			kfree(group);
++			break;
++		}
++	}
++
++	mutex_unlock(&iommu->lock);
++}
++
++static void *vfio_iommu_x86_open(unsigned long arg)
++{
++	struct vfio_iommu *iommu;
++
++	if (arg != VFIO_X86_IOMMU)
++		return ERR_PTR(-EINVAL);
++
++	iommu = kzalloc(sizeof(*iommu), GFP_KERNEL);
++	if (!iommu)
++		return ERR_PTR(-ENOMEM);
++
++	INIT_LIST_HEAD(&iommu->group_list);
++	INIT_LIST_HEAD(&iommu->dma_list);
++	mutex_init(&iommu->lock);
++
++	/*
++	 * Wish we didn't have to know about bus_type here.
++	 */
++	iommu->domain = iommu_domain_alloc(&pci_bus_type);
++	if (!iommu->domain) {
++		kfree(iommu);
++		return ERR_PTR(-EIO);
++	}
++
++	/*
++	 * Wish we could specify required capabilities rather than create
++	 * a domain, see what comes out and hope it doesn't change along
++	 * the way.  Fortunately we know interrupt remapping is global for
++	 * our iommus.
++	 */
++	if (!allow_unsafe_interrupts &&
++	    !iommu_domain_has_cap(iommu->domain, IOMMU_CAP_INTR_REMAP)) {
++		printk(KERN_WARNING
++		       "%s: No interrupt remapping support.  Use the module param \"allow_unsafe_interrupts\" to enable VFIO IOMMU support on this platform\n",
++		       __func__);
++		iommu_domain_free(iommu->domain);
++		kfree(iommu);
++		return ERR_PTR(-EPERM);
++	}
++
++	return iommu;
++}
++
++static void vfio_iommu_x86_release(void *iommu_data)
++{
++	struct vfio_iommu *iommu = iommu_data;
++	struct vfio_group *group, *group_tmp;
++	struct vfio_dma *dma, *dma_tmp;
++
++	list_for_each_entry_safe(group, group_tmp, &iommu->group_list, next) {
++		iommu_detach_group(iommu->domain, group->iommu_group);
++		list_del(&group->next);
++		kfree(group);
++	}
++
++	list_for_each_entry_safe(dma, dma_tmp, &iommu->dma_list, next) {
++		vfio_dma_unmap(iommu, dma->iova, dma->npage, dma->prot);
++		list_del(&dma->next);
++		kfree(dma);
++	}
++
++	iommu_domain_free(iommu->domain);
++	iommu->domain = NULL;
++	kfree(iommu);
++}
++
++static long vfio_iommu_x86_ioctl(void *iommu_data,
++				 unsigned int cmd, unsigned long arg)
++{
++	struct vfio_iommu *iommu = iommu_data;
++	unsigned long minsz;
++
++	if (cmd == VFIO_CHECK_EXTENSION) {
++		switch (arg) {
++		case VFIO_X86_IOMMU:
++			return 1;
++		default:
++			return 0;
++		}
++	} else if (cmd == VFIO_IOMMU_GET_INFO) {
++		struct vfio_iommu_x86_info info;
++
++		minsz = offsetofend(struct vfio_iommu_x86_info, iova_pgsizes);
++
++		if (copy_from_user(&info, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (info.argsz < minsz)
++			return -EINVAL;
++
++		info.flags = 0;
++
++		info.iova_pgsizes = iommu->domain->ops->pgsize_bitmap;
++
++		return copy_to_user((void __user *)arg, &info, minsz);
++
++	} else if (cmd == VFIO_IOMMU_MAP_DMA) {
++		struct vfio_iommu_x86_dma_map map;
++		uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
++				VFIO_DMA_MAP_FLAG_WRITE;
++
++		minsz = offsetofend(struct vfio_iommu_x86_dma_map, size);
++
++		if (copy_from_user(&map, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (map.argsz < minsz || map.flags & ~mask)
++			return -EINVAL;
++
++		return vfio_dma_do_map(iommu, &map);
++
++	} else if (cmd == VFIO_IOMMU_UNMAP_DMA) {
++		struct vfio_iommu_x86_dma_unmap unmap;
++
++		minsz = offsetofend(struct vfio_iommu_x86_dma_unmap, size);
++
++		if (copy_from_user(&unmap, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (unmap.argsz < minsz || unmap.flags)
++			return -EINVAL;
++
++		return vfio_dma_do_unmap(iommu, &unmap);
 +	}
 +
 +	return -ENOTTY;
 +}
 +
- /* Low-level architecture-dependent routines */
++const struct vfio_iommu_driver_ops vfio_iommu_driver_ops_x86 = {
++	.name		= "vfio-iommu-x86",
++	.owner		= THIS_MODULE,
++	.open		= vfio_iommu_x86_open,
++	.release	= vfio_iommu_x86_release,
++	.ioctl		= vfio_iommu_x86_ioctl,
++	.attach_group	= vfio_iommu_x86_attach_group,
++	.detach_group	= vfio_iommu_x86_detach_group,
++};
++
++static int __init vfio_iommu_x86_init(void)
++{
++	if (!iommu_present(&pci_bus_type))
++		return -ENODEV;
++
++	return vfio_register_iommu_driver(&vfio_iommu_driver_ops_x86);
++}
++
++static void __exit vfio_iommu_x86_cleanup(void)
++{
++	vfio_unregister_iommu_driver(&vfio_iommu_driver_ops_x86);
++}
++
++module_init(vfio_iommu_x86_init);
++module_exit(vfio_iommu_x86_cleanup);
++
++MODULE_VERSION(DRIVER_VERSION);
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR(DRIVER_AUTHOR);
++MODULE_DESCRIPTION(DRIVER_DESC);
+diff --git a/include/linux/vfio.h b/include/linux/vfio.h
+index a264054..1c7119c 100644
+--- a/include/linux/vfio.h
++++ b/include/linux/vfio.h
+@@ -361,4 +361,56 @@ struct vfio_irq_set {
+  */
+ #define VFIO_DEVICE_RESET		_IO(VFIO_TYPE, VFIO_BASE + 11)
  
- struct pci_ops {
++/* -------- API for x86 VFIO IOMMU -------- */
++
++/**
++ * VFIO_IOMMU_GET_INFO - _IOR(VFIO_TYPE, VFIO_BASE + 12, struct vfio_iommu_info)
++ *
++ * Retrieve information about the IOMMU object. Fills in provided
++ * struct vfio_iommu_info. Caller sets argsz.
++ *
++ * XXX Should we do these by CHECK_EXTENSION too?
++ */
++struct vfio_iommu_x86_info {
++	__u32	argsz;
++	__u32	flags;
++#define VFIO_IOMMU_INFO_PGSIZES (1 << 0)	/* supported page sizes info */
++	__u64	iova_pgsizes;		/* Bitmap of supported page sizes */
++};
++
++#define VFIO_IOMMU_GET_INFO _IO(VFIO_TYPE, VFIO_BASE + 12)
++
++/**
++ * VFIO_IOMMU_MAP_DMA - _IOW(VFIO_TYPE, VFIO_BASE + 13, struct vfio_dma_map)
++ *
++ * Map process virtual addresses to IO virtual addresses using the
++ * provided struct vfio_dma_map. Caller sets argsz. READ &/ WRITE required.
++ */
++struct vfio_iommu_x86_dma_map {
++	__u32	argsz;
++	__u32	flags;
++#define VFIO_DMA_MAP_FLAG_READ (1 << 0)		/* readable from device */
++#define VFIO_DMA_MAP_FLAG_WRITE (1 << 1)	/* writable from device */
++	__u64	vaddr;				/* Process virtual address */
++	__u64	iova;				/* IO virtual address */
++	__u64	size;				/* Size of mapping (bytes) */
++};
++
++#define VFIO_IOMMU_MAP_DMA _IO(VFIO_TYPE, VFIO_BASE + 13)
++
++/**
++ * VFIO_IOMMU_UNMAP_DMA - _IOW(VFIO_TYPE, VFIO_BASE + 14, struct vfio_dma_unmap)
++ *
++ * Unmap IO virtual addresses using the provided struct vfio_dma_unmap.
++ * Caller sets argsz.
++ */
++struct vfio_iommu_x86_dma_unmap {
++	__u32	argsz;
++	__u32	flags;
++	__u64	iova;				/* IO virtual address */
++	__u64	size;				/* Size of mapping (bytes) */
++};
++
++#define VFIO_IOMMU_UNMAP_DMA _IO(VFIO_TYPE, VFIO_BASE + 14)
++
+ #endif /* VFIO_H */
 
