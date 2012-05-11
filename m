@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760943Ab2EKTY2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 15:24:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17480 "EHLO mx1.redhat.com"
+	id S1760613Ab2EKT0N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 15:26:13 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:34327 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757972Ab2EKTY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 15:24:26 -0400
-Date: Fri, 11 May 2012 15:24:20 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: CPU frequency drivers MAINTAINERS update
-Message-ID: <20120511192420.GA10041@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linux PM list <linux-pm@vger.kernel.org>
-References: <20120504160417.GA421@redhat.com>
- <201205052110.03323.rjw@sisk.pl>
- <201205112116.25257.rjw@sisk.pl>
+	id S1755663Ab2EKT0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 15:26:10 -0400
+Message-ID: <4FAD675B.6020709@parallels.com>
+Date: Fri, 11 May 2012 16:24:11 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201205112116.25257.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoph Lameter <cl@linux.com>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
+ kfree
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home> <4FAD531D.6030007@parallels.com> <alpine.DEB.2.00.1205111305570.386@router.home> <4FAD566C.3000804@parallels.com> <alpine.DEB.2.00.1205111316540.386@router.home> <4FAD585A.4070007@parallels.com> <alpine.DEB.2.00.1205111331010.386@router.home> <4FAD5DA2.70803@parallels.com> <alpine.DEB.2.00.1205111354540.386@router.home> <4FAD6169.8090409@parallels.com> <alpine.DEB.2.00.1205111407280.386@router.home> <4FAD6449.2060201@parallels.com> <alpine.DEB.2.00.1205111418350.386@router.home>
+In-Reply-To: <alpine.DEB.2.00.1205111418350.386@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.105.248.83]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 09:16:25PM +0200, Rafael J. Wysocki wrote:
- > On Saturday, May 05, 2012, Rafael J. Wysocki wrote:
- > > Hi Dave,
- > > 
- > > On Friday, May 04, 2012, Dave Jones wrote:
- > > > Remove myself as cpufreq maintainer.
- > > > x86 driver changes can go through the regular x86/ACPI trees.
- > > > ARM driver changes through the ARM trees.
- > > > cpufreq core changes are rare these days, and can just go to lkml/direct.
- > > > 
- > > > Signed-off-by: Dave Jones <davej@redhat.com>
- > > 
- > > Would you mind if I took over the maintenance of cpufreq, so that it goes
- > > along with the other core power management code?
- > 
- > I'm taking the silence as "no, I wouldn't". :-)
+On 05/11/2012 04:20 PM, Christoph Lameter wrote:
+> On Fri, 11 May 2012, Glauber Costa wrote:
+>
+>>> I see that. But there are other subsystems from slab allocators that do
+>>> the same. There are also objects that may be used by multiple processes.
+>>
+>> This is also true for normal user pages. And then, we do what memcg does:
+>> first one to touch, gets accounted. I don't think deviating from the memcg
+>> behavior for user pages makes much sense here.
+>>
+>> A cache won't go away while it still have objects, even after the memcg is
+>> removed (it is marked as dead)
+>
+> Ok so we will have some dead pages around that are then repatriated to
+> the / set?
 
-Sure. I'll still be looking at it occasionally so I'll be around to ack
-things if necessary. I just don't have time to deal with build-testing
-architectures I don't care about for eg, and dealing with the inevitable fallout
-when things break.
+No, they are not repatriated. I actually wrote code for that once in my 
+first series, but it was the general feeling at the time that it was too 
+complicated. (and I only tried for the slub, not slab)
 
-The only words of advice I give to you or whoever takes over, is to push back
-on adding more sysfs knobs to cpufreq. There's no end to what people want to do,
-and adding "just one more knob" seems to be the default action. It's already
-gotten out of hand, and more knobs aren't always the right answer.
+So instead, we just keep the cache around, until the objects go away.
+It will show in slabinfo as dentry(css_id:memcgname)dead
 
-	Dave
+For the record, I wrote that code because I found a nice feature, but I 
+totally agree with the complicated part.
+
+Also, in normal scenarios, dead caches are not expected to be common. 
+Most of them should go away as memcg dies.
+
+>>> Hmmm.. Would be better to have a hierachy there. /proc/slabinfo is more
+>>> legacy.
+>>
+>> I can take a look at that then. Assuming you agree with all the rest, is
+>> looking into that a pre-requisite for merging, or is something that can be
+>> deferred for a phase2 ? (We still don't do shrinkers, for instance, so this is
+>> sure to have a phase2)
+>
+> Not a prerequisite for merging but note that I intend to rework the
+> allocators to extract common code so that they have the same sysfs
+> interface, error reporting and failure scenarios. We can at that time
+> also add support for /sys/kernel/slab to memcg. (/sys/memcg/<name>/slab/* ?)
+
+Yes, that would be a good plan.
+
 
