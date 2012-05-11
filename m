@@ -1,119 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759346Ab2EKMu7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 08:50:59 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16399 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756241Ab2EKMu5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 08:50:57 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 11 May 2012 05:50:57 -0700
-From: <puneets@nvidia.com>
-To: <cpufreq@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <davej@redhat.com>, Puneet Saxena <puneets@nvidia.com>
-Subject: [PATCH] cpufreq: interface for setting governor for a cpu
-Date: Fri, 11 May 2012 18:20:28 +0530
-Message-ID: <1336740628-917-1-git-send-email-puneets@nvidia.com>
-X-Mailer: git-send-email 1.7.1
+	id S1759593Ab2EKMvX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 08:51:23 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63691 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751782Ab2EKMvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 08:51:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="164938465"
+Message-ID: <4FAD0B3A.4060705@intel.com>
+Date: Fri, 11 May 2012 20:51:06 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Peter Zijlstra <peterz@infradead.org>
+CC: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, gregkh@linuxfoundation.org, borislav.petkov@amd.com,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
+        oleg@redhat.com, axboe@kernel.dk, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 5/7] x86/tlb: add tlb flush all factor for specific
+ CPU
+References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>  <1336626013-28413-6-git-send-email-alex.shi@intel.com>  <1336642715.2527.84.camel@twins> <4FAC621D.2020704@intel.com>  <1336727058.2527.144.camel@twins> <1336727094.2527.145.camel@twins>
+In-Reply-To: <1336727094.2527.145.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Puneet Saxena <puneets@nvidia.com>
+On 05/11/2012 05:04 PM, Peter Zijlstra wrote:
 
-This implementation sets governor for a cpu using existing
-cpufreq interfaces.
+> On Fri, 2012-05-11 at 11:04 +0200, Peter Zijlstra wrote:
+> 
+>>> NO, the first judgement is from CPU. But second '-1' is may from user
+>>> setting in sysfs.
+>>
+>> Then you're doing it wrong. Don't allow setting the sysfs variable if !
+>> cpu_has_invlpg.
+> 
+> Better yet, don't create the sysfs file at all in that case.
 
-Signed-off-by: Puneet Saxena <puneets@nvidia.com>
----
 
-This is applicable for the usecase where user wants to change
-the governor inside kernel. Earlier if driver wants to change
-cpu governor, it needs to write in userspace sysfs "store"
-entry, which calls "store_scaling_governor()", a kernel interface.
-The implementation avoids the unwanted flow from KENREL-->
-USER-->KERNEL.
-
- drivers/cpufreq/cpufreq.c |   50 +++++++++++++++++++++++++++++++++++++++++++++
- include/linux/cpufreq.h   |    1 +
- 2 files changed, 51 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 3acc428..5bbe8c3 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1785,6 +1785,56 @@ no_policy:
- }
- EXPORT_SYMBOL(cpufreq_update_policy);
- 
-+/*
-+ *	cpufreq_set_gov - set governor for a cpu
-+ *	@cpu: CPU whose governor needs to be changed
-+ *	@target_gov: new governor to be set
-+ */
-+int cpufreq_set_gov(char *target_gov, unsigned int cpu)
-+{
-+	int ret = 0;
-+	struct cpufreq_policy new_policy;
-+	struct cpufreq_policy *cur_policy;
-+
-+	if (target_gov == NULL)
-+		return -EINVAL;
-+
-+	/* Get current governer */
-+	cur_policy = cpufreq_cpu_get(cpu);
-+	if (!cur_policy)
-+		return -EINVAL;
-+
-+	new_policy = *cur_policy;
-+	if (!strncmp(cur_policy->governor->name, target_gov,
-+			strlen(target_gov))) {
-+		/* Target governer & current governer is same */
-+		ret = -EINVAL;
-+		goto err_out;
-+	} else {
-+		if (cpufreq_parse_governor(target_gov, &new_policy.policy,
-+				&new_policy.governor)) {
-+			ret = -EINVAL;
-+			goto err_out;
-+		}
-+
-+		if (lock_policy_rwsem_write(cur_policy->cpu) < 0) {
-+			ret = -EINVAL;
-+			goto err_out;
-+		}
-+
-+		ret = __cpufreq_set_policy(cur_policy, &new_policy);
-+
-+		cur_policy->user_policy.policy = cur_policy->policy;
-+		cur_policy->user_policy.governor = cur_policy->governor;
-+
-+		unlock_policy_rwsem_write(cur_policy->cpu);
-+	}
-+err_out:
-+	cpufreq_cpu_put(cur_policy);
-+	return ret;
-+}
-+EXPORT_SYMBOL(cpufreq_set_gov);
-+
- static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
- 					unsigned long action, void *hcpu)
- {
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index c6126b9..09b8ea9 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -310,6 +310,7 @@ __ATTR(_name, 0644, show_##_name, store_##_name)
-  *********************************************************************/
- int cpufreq_get_policy(struct cpufreq_policy *policy, unsigned int cpu);
- int cpufreq_update_policy(unsigned int cpu);
-+int cpufreq_set_gov(char *target_gov, unsigned int cpu);
- 
- #ifdef CONFIG_CPU_FREQ
- /* query the current CPU frequency (in kHz). If zero, cpufreq couldn't detect it */
--- 
-1.7.1
-
+Yes, true.
