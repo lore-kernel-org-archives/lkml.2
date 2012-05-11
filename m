@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab2EKWsk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 18:48:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34294 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755763Ab2EKWsj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 18:48:39 -0400
-Date: Fri, 11 May 2012 15:48:36 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Optimize bitmap_weight
-Message-Id: <20120511154836.aff26ad3.akpm@linux-foundation.org>
-In-Reply-To: <1336745414-5530-1-git-send-email-akinobu.mita@gmail.com>
-References: <1336745414-5530-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756735Ab2EKW4F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 18:56:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21887 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751484Ab2EKWz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 18:55:59 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH 01/13] driver core: Add iommu_group tracking to struct device
+To: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
+        joerg.roedel@amd.com, dwmw2@infradead.org
+Cc: chrisw@sous-sol.org, agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
+        B08248@freescale.com, B07421@freescale.com, avi@redhat.com,
+        konrad.wilk@oracle.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        bhelgaas@google.com, alex.williamson@redhat.com
+Date: Fri, 11 May 2012 16:55:35 -0600
+Message-ID: <20120511225534.30496.54563.stgit@bling.home>
+In-Reply-To: <20120511222148.30496.68571.stgit@bling.home>
+References: <20120511222148.30496.68571.stgit@bling.home>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 May 2012 23:10:14 +0900
-Akinobu Mita <akinobu.mita@gmail.com> wrote:
+IOMMU groups allow IOMMU drivers to represent DMA visibility
+and isolation of devices.  Multiple devices may be grouped
+together for the purposes of DMA.  Placing a pointer on
+struct device enable easy access for things like streaming
+DMA programming and drivers like VFIO.
 
-> The current implementation of bitmap_weight simply evaluates the
-> population count for each long word of the array, and adds.
-> 
-> The subsection "Counting 1-bits in an Array" in the revisions of
-> the book 'Hacker's Delight' explains more superior methods than
-> the naive method.
-> 
-> http://www.hackersdelight.org/revisions.pdf
-> http://www.hackersdelight.org/HDcode/newCode/pop_arrayHS.c.txt
-> 
-> My benchmark results on Intel Core i3 CPU with 32-bit kernel
-> showed 50% faster for 8192 bits bitmap.  However, it is not faster
-> for small bitmap (< BITS_PER_LONG * 8) than the naive method.
-> So if the bitmap size is known to be small at compile time,
-> use the naive method.
-> 
-> ...
->
->  extern void bitmap_clear(unsigned long *map, int start, int nr);
-> @@ -277,7 +278,9 @@ static inline int bitmap_weight(const unsigned long *src, int nbits)
->  {
->  	if (small_const_nbits(nbits))
->  		return hweight_long(*src & BITMAP_LAST_WORD_MASK(nbits));
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
 
-Why do we require a constant_p `nbits' for this case?
+ include/linux/device.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-> -	return __bitmap_weight(src, nbits);
-> +	else if (__builtin_constant_p(nbits) && (nbits) < BITS_PER_LONG * 8)
-> +		return __bitmap_weight(src, nbits);
-> +	return __bitmap_weight_fast(src, nbits);
->  }
-
-BITS_PER_LONG*8 sounds like a large bitmap: 256 or 512 entries.  Will
-the kernel call __bitmap_weight_fast() sufficiently often to make this
-extra code worth merging?
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 5ad17cc..13dd26b 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -35,6 +35,7 @@ struct subsys_private;
+ struct bus_type;
+ struct device_node;
+ struct iommu_ops;
++struct iommu_group;
+ 
+ struct bus_attribute {
+ 	struct attribute	attr;
+@@ -677,6 +678,7 @@ struct device {
+ 	const struct attribute_group **groups;	/* optional groups */
+ 
+ 	void	(*release)(struct device *dev);
++	struct iommu_group	*iommu_group;
+ };
+ 
+ /* Get the wakeup routines, which depend on struct device */
 
