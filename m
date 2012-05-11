@@ -1,169 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760918Ab2EKT0l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 15:26:41 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64553 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932488Ab2EKT0j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 15:26:39 -0400
-Date: Fri, 11 May 2012 22:26:31 +0300
-From: Ido Yariv <ido@wizery.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Shai Fultheim <shai@scalemp.com>
-Subject: Re: [PATCH v4] vsmp: Fix number of CPUs when vsmp is disabled
-Message-ID: <20120511192631.GA13342@NoteStation.colubris.lan>
-References: <20120509082225.GB5036@NoteStation.colubris.lan>
- <1336552121-6742-1-git-send-email-ido@wizery.com>
- <20120509154448.GD2653@gmail.com>
- <4FAA938A.1030003@zytor.com>
+	id S1945965Ab2EKT3M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 15:29:12 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:39401 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932708Ab2EKT3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 15:29:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Dave Jones <davej@redhat.com>
+Subject: Re: CPU frequency drivers MAINTAINERS update
+Date: Fri, 11 May 2012 21:34:02 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <20120504160417.GA421@redhat.com> <201205112116.25257.rjw@sisk.pl> <20120511192420.GA10041@redhat.com>
+In-Reply-To: <20120511192420.GA10041@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FAA938A.1030003@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205112134.02273.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, May 09, 2012 at 08:55:54AM -0700, H. Peter Anvin wrote:
-> On 05/09/2012 08:44 AM, Ingo Molnar wrote:
-> > 
-> > * Ido Yariv <ido@wizery.com> wrote:
-> > 
-> >> +static void __init vsmp_cap_cpus(void)
-> >> +{
-> >> +	void __iomem *address;
-> >> +	unsigned int cfg, topology, node_shift, maxcpus;
-> >> +
-> >> +#ifdef CONFIG_X86_VSMP
-> >> +	/* VSMP is enabled, no need to cap cpus */
-> >> +	return;
-> >> +#elif defined(CONFIG_SMP)
-> >> +	/*
-> >> +	 * CONFIG_X86_VSMP is not configured, so limit the number CPUs to the
-> > 
-> > I suspect this will throw compiler warnings in the 
-> > CONFIG_X86_VSMP && !CONFIG_SMP case.
-> > 
+On Friday, May 11, 2012, Dave Jones wrote:
+> On Fri, May 11, 2012 at 09:16:25PM +0200, Rafael J. Wysocki wrote:
+>  > On Saturday, May 05, 2012, Rafael J. Wysocki wrote:
+>  > > Hi Dave,
+>  > > 
+>  > > On Friday, May 04, 2012, Dave Jones wrote:
+>  > > > Remove myself as cpufreq maintainer.
+>  > > > x86 driver changes can go through the regular x86/ACPI trees.
+>  > > > ARM driver changes through the ARM trees.
+>  > > > cpufreq core changes are rare these days, and can just go to lkml/direct.
+>  > > > 
+>  > > > Signed-off-by: Dave Jones <davej@redhat.com>
+>  > > 
+>  > > Would you mind if I took over the maintenance of cpufreq, so that it goes
+>  > > along with the other core power management code?
+>  > 
+>  > I'm taking the silence as "no, I wouldn't". :-)
 > 
-> What on Earth is the point of allowing that combination?  Why not make
-> X86_VSMP depend on SMP and reduce the testing matrix?
+> Sure. I'll still be looking at it occasionally so I'll be around to ack
+> things if necessary.
 
-CONFIG_X86_VSMP shouldn't be used without CONFIG_SMP, so we can safely
-add this dependency.
-Ingo's suggestion will still fix unreferenced variables warnings, so how
-about the following patch?
+Cool, thanks!
 
-Thanks,
-Ido.
+> I just don't have time to deal with build-testing
+> architectures I don't care about for eg, and dealing with the inevitable fallout
+> when things break.
 
->From 6fa023be44749092088618379f13d7a3e086d692 Mon Sep 17 00:00:00 2001
-From: Shai Fultheim <shai@scalemp.com>
-Date: Mon, 16 Apr 2012 10:39:35 +0300
-Subject: [PATCH v5] vsmp: Fix number of CPUs when vsmp is disabled
+Sure.
 
-In case CONFIG_X86_VSMP is not set, limit the number of CPUs to the
-number of CPUs of the first board.
+> The only words of advice I give to you or whoever takes over, is to push back
+> on adding more sysfs knobs to cpufreq. There's no end to what people want to do,
+> and adding "just one more knob" seems to be the default action. It's already
+> gotten out of hand, and more knobs aren't always the right answer.
 
-Also make CONFIG_X86_VSMP depend on CONFIG_SMP, as there's little
-point in having a vsmp machine with a single CPU.
+I agree.
 
-Signed-off-by: Shai Fultheim <shai@scalemp.com>
-[ido@wizery.com: rebased, fixed minor coding-style issues]
-Signed-off-by: Ido Yariv <ido@wizery.com>
----
- arch/x86/Kconfig          |    1 +
- arch/x86/kernel/vsmp_64.c |   40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 41 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index c9866b0..b1e98c9 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -374,6 +374,7 @@ config X86_VSMP
- 	select PARAVIRT
- 	depends on X86_64 && PCI
- 	depends on X86_EXTENDED_PLATFORM
-+	depends on SMP
- 	---help---
- 	  Support for ScaleMP vSMP systems.  Say 'Y' here if this kernel is
- 	  supposed to run on these EM64T-based machines.  Only choose this option
-diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
-index a1d804b..8eeb55a 100644
---- a/arch/x86/kernel/vsmp_64.c
-+++ b/arch/x86/kernel/vsmp_64.c
-@@ -15,6 +15,7 @@
- #include <linux/init.h>
- #include <linux/pci_ids.h>
- #include <linux/pci_regs.h>
-+#include <linux/smp.h>
- 
- #include <asm/apic.h>
- #include <asm/pci-direct.h>
-@@ -22,6 +23,8 @@
- #include <asm/paravirt.h>
- #include <asm/setup.h>
- 
-+#define TOPOLOGY_REGISTER_OFFSET 0x10
-+
- #if defined CONFIG_PCI && defined CONFIG_PARAVIRT
- /*
-  * Interrupt control on vSMPowered systems:
-@@ -149,12 +152,49 @@ int is_vsmp_box(void)
- 	return 0;
- }
- #endif
-+
-+static void __init vsmp_cap_cpus(void)
-+{
-+#if !defined(CONFIG_X86_VSMP) && defined(CONFIG_SMP)
-+	void __iomem *address;
-+	unsigned int cfg, topology, node_shift, maxcpus;
-+
-+	/*
-+	 * CONFIG_X86_VSMP is not configured, so limit the number CPUs to the
-+	 * ones present in the first board, unless explicitly overridden by
-+	 * setup_max_cpus
-+	 */
-+	if (setup_max_cpus != NR_CPUS)
-+		return;
-+
-+	/* Read the vSMP Foundation topology register */
-+	cfg = read_pci_config(0, 0x1f, 0, PCI_BASE_ADDRESS_0);
-+	address = early_ioremap(cfg + TOPOLOGY_REGISTER_OFFSET, 4);
-+	if (WARN_ON(!address))
-+		return;
-+
-+	topology = readl(address);
-+	node_shift = (topology >> 16) & 0x7;
-+	if (!node_shift)
-+		/* The value 0 should be decoded as 8 */
-+		node_shift = 8;
-+	maxcpus = (topology & ((1 << node_shift) - 1)) + 1;
-+
-+	pr_info("vSMP CTL: Capping CPUs to %d (CONFIG_X86_VSMP is unset)\n",
-+		maxcpus);
-+	setup_max_cpus = maxcpus;
-+	early_iounmap(address, 4);
-+#endif
-+}
-+
- void __init vsmp_init(void)
- {
- 	detect_vsmp_box();
- 	if (!is_vsmp_box())
- 		return;
- 
-+	vsmp_cap_cpus();
-+
- 	set_vsmp_pv_ops();
- 	return;
- }
--- 
-1.7.6.5
-
+Thanks a lot,
+Rafael
