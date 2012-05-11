@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab2EKG6f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:58:35 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:49628 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752039Ab2EKG6d (ORCPT
+	id S1755253Ab2EKHAb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 03:00:31 -0400
+Received: from smtprelay02.ispgateway.de ([80.67.29.24]:37939 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab2EKHAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:58:33 -0400
-Message-ID: <4FACB894.7000304@ti.com>
-Date: Fri, 11 May 2012 09:58:28 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120509 Thunderbird/12.0.1
+	Fri, 11 May 2012 03:00:30 -0400
+Message-ID: <4FACB9F6.1070704@ladisch.de>
+Date: Fri, 11 May 2012 09:04:22 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: dmitry.torokhov@gmail.com, broonie@opensource.wolfsonicro.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] TWL6040: fix build error
-References: <1336675473-24774-1-git-send-email-levinsasha928@gmail.com>
-In-Reply-To: <1336675473-24774-1-git-send-email-levinsasha928@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@amd64.org>
+CC: LKML <linux-kernel@vger.kernel.org>, X86-ML <x86@kernel.org>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH 1/9] x86, amd_nb: Export model 0x10 and later PCI id
+References: <1336660229-32644-1-git-send-email-bp@amd64.org> <1336660229-32644-2-git-send-email-bp@amd64.org>
+In-Reply-To: <1336660229-32644-2-git-send-email-bp@amd64.org>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Borislav Petkov wrote:
+> Add the F3 PCI id of F15h, model 0x10 to pci_ids.h and to the amd_nb
+> code which generates the list of northbridges on an AMD box. Shorten
+> define name while at it so that it fits into pci_ids.h.
+>
+> Cc: Clemens Ladisch <clemens@ladisch.de>
 
-On 05/10/2012 09:44 PM, Sasha Levin wrote:
-> Fixes build error due to missing of_property_read_u32.
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
 
-The reason I have not seen this is that I have CONFIG_OF_DEVICE selected
-which will make the linux/of.h to be included in the linux/of_device.h
-
-When I did sanity build check on x86 (64bit) I have not noticed any
-breakage since the allmodconfig on 64bit does not build the
-twl6040-vibra driver.
-
-It is obvious that I need to improve my sanity kernel build testing.
-
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-
-Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Acked-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> ---
+>  arch/x86/kernel/amd_nb.c |    1 +
+>  drivers/hwmon/k10temp.c  |    5 +----
+>  include/linux/pci_ids.h  |    1 +
+>  3 files changed, 3 insertions(+), 4 deletions(-)
