@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932942Ab2EKR6Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 13:58:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44198 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422632Ab2EKR6J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 13:58:09 -0400
-Message-ID: <4FAD532E.401@gmail.com>
-Date: Fri, 11 May 2012 10:58:06 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
-        David Miller <davem@davemloft.net>
-CC: "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH] net: of/phy: fix build error when phylib is built as
- a module
-References: <20120510.224352.2149006669429730060.davem@davemloft.net> <1336751221-19127-1-git-send-email-bjorn@mork.no>
-In-Reply-To: <1336751221-19127-1-git-send-email-bjorn@mork.no>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S933021Ab2EKRtK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 13:49:10 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:29644 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932896Ab2EKRtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 13:49:05 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v2 09/29] memcg: change defines to an enum
+Date: Fri, 11 May 2012 14:44:11 -0300
+Message-Id: <1336758272-24284-10-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1336758272-24284-1-git-send-email-glommer@parallels.com>
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 08:47 AM, Bjørn Mork wrote:
-> CONFIG_OF_MDIO is tristate and will be m if PHYLIB is m.  Use
-> IS_ENABLED macro to prevent build error:
->
->   ERROR: "of_mdio_find_bus" [drivers/net/phy/mdio-mux.ko] undefined!
->
-> Reported-by: Randy Dunlap<rdunlap@xenotime.net>
-> Cc: David Daney<david.daney@cavium.com>
-> Signed-off-by: Bjørn Mork<bjorn@mork.no>
+This is just a cleanup patch for clarity of expression.
+In earlier submissions, people asked it to be in a separate
+patch, so here it is.
 
-I was able to reproduce the failure, and this patch both fixes it and 
-seems correct, so...
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Michal Hocko <mhocko@suse.cz>
+CC: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-Acked-by: David Daney<david.daney@cavium.com>
-
-Sorry about this failure.
-
-
-> ---
-> I wonder if this could be as banal as this?  Not even build tested...
->
-> Should be wrapped into commit 25106022 if it works, to ensure
-> bisectability.
->
->
->
-> Bjørn
->
->   drivers/net/phy/mdio_bus.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-> index 83d5c9f..683ef1c 100644
-> --- a/drivers/net/phy/mdio_bus.c
-> +++ b/drivers/net/phy/mdio_bus.c
-> @@ -88,7 +88,7 @@ static struct class mdio_bus_class = {
->   	.dev_release	= mdiobus_release,
->   };
->
-> -#ifdef CONFIG_OF_MDIO
-> +#if IS_ENABLED(CONFIG_OF_MDIO)
->   /* Helper function for of_mdio_find_bus */
->   static int of_mdio_bus_match(struct device *dev, void *mdio_bus_np)
->   {
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 47d3979..789ca5a 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -374,9 +374,12 @@ enum charge_type {
+ };
+ 
+ /* for encoding cft->private value on file */
+-#define _MEM			(0)
+-#define _MEMSWAP		(1)
+-#define _OOM_TYPE		(2)
++enum res_type {
++	_MEM,
++	_MEMSWAP,
++	_OOM_TYPE,
++};
++
+ #define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
+ #define MEMFILE_TYPE(val)	(((val) >> 16) & 0xffff)
+ #define MEMFILE_ATTR(val)	((val) & 0xffff)
+-- 
+1.7.7.6
 
