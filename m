@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422677Ab2EKSPi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:15:38 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30918 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215Ab2EKSPg (ORCPT
+	id S1422688Ab2EKSRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:17:49 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:27518 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932215Ab2EKSRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:15:36 -0400
-Date: Fri, 11 May 2012 21:18:48 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>
-Subject: Re: [PATCH] staging: comedi: register sysfs device attributes with
- driver core
-Message-ID: <20120511181848.GA16984@mwanda>
-References: <201205101805.28589.hartleys@visionengravers.com>
- <20120511061649.GW22134@mwanda>
- <4FAD109A.9040607@mev.co.uk>
+	Fri, 11 May 2012 14:17:46 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: aY9bqesVM1kXj74EswpzTG6aYMUWtMCULwpo7a8HLouzDsD
+ t3ZXfoEqvpgVBgHxAOxA5kwrq2iY8ixQpWm.yWhg1iH2nftrPf.D.kzHVarE
+ HWAf3J2eZsyAJpvvQMcSna4WQXAQVX3aZjmHYqR5mUJdhfTbxtsUBC6vgN3d
+ 7dG69KRD3AfmeKf8lxaGCktMZm.WxwI0xcsks9XpDFLUdw6DiUTKwgOhlyub
+ xchYBcOWNcuSYnbqjYVB159tN0HhwuDRht7Y2N1zOYhAuDrWXDifl784FcjQ
+ KU5piSvyAaWbe80qouI0aQBg1dpLJbDcX.hf.UKFsrPzoEnHMePvi8VcPx0c
+ nZRiiB7a56y.sCwIQ59J42JY4v7tr5oIEKiGPB9HjO1OF56h3RXQl.lSyBmZ
+ F
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 11 May 2012 13:17:41 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
+ kfree
+In-Reply-To: <4FAD566C.3000804@parallels.com>
+Message-ID: <alpine.DEB.2.00.1205111316540.386@router.home>
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home> <4FAD531D.6030007@parallels.com> <alpine.DEB.2.00.1205111305570.386@router.home>
+ <4FAD566C.3000804@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FAD109A.9040607@mev.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 02:14:02PM +0100, Ian Abbott wrote:
-> On 2012-05-11 07:16, Dan Carpenter wrote:
-> >On Thu, May 10, 2012 at 06:05:28PM -0700, H Hartley Sweeten wrote:
-> >>-static const struct attribute_group comedi_sysfs_files = {
-> >>-	.attrs	= comedi_attrs,
-> >>+static struct device_attribute comedi_dev_attrs[] = {
-> >>+	__ATTR(max_read_buffer_kb, S_IRUGO | S_IWUSR,
-> >>+		show_max_read_buffer_kb, store_max_read_buffer_kb),
-> >>+	__ATTR(read_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
-> >>+		show_read_buffer_kb, store_read_buffer_kb),
-> >>+	__ATTR(max_write_buffer_kb, S_IRUGO | S_IWUSR,
-> >>+		show_max_write_buffer_kb, store_max_write_buffer_kb),
-> >>+	__ATTR(write_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
-> >>+		show_write_buffer_kb, store_write_buffer_kb),
-> >>+	__ATTR_NULL
-> >
-> >Some of these are group writable and some are only user writable so
-> >it's not consistent.  Probably just make them user writeable.
-> >
-> >I guess this was in the original code too, but it's just more
-> >obvious now that they're grouped together.
-> 
-> Is it possible to change (group) ownership of these attribute files
-> using udev rules?  Ideally, users in the group that has group
-> ownership on the /dev/comedi* files should be able to modify the
-> read_buffer_kb and write_buffer_kb attribute files as well, but only
-> super-users should be able to modify the max_read_buffer_kb and
-> max_write_buffer_kb files.
-> 
+On Fri, 11 May 2012, Glauber Costa wrote:
 
-Oh.  Ok that's fine then.  I didn't understand what was going on.
+> On 05/11/2012 03:06 PM, Christoph Lameter wrote:
+> > On Fri, 11 May 2012, Glauber Costa wrote:
+> >
+> > > > Adding a VM_BUG_ON may be useful to make sure that kmem_cache_free is
+> > > > always passed the correct slab cache.
+> > >
+> > > Well, problem is , it isn't always passed the "correct" slab cache.
+> > > At least not after this series, since we'll have child caches associated
+> > > with
+> > > the main cache.
+> > >
+> > > So we'll pass, for instance, kmem_cache_free(dentry_cache...), but will in
+> > > fact free from the memcg copy of the dentry cache.
+> >
+> > Urg. But then please only do this for the MEMCG case and add a fat big
+> > warning in kmem_cache_free.
+>
+> I can do that, of course.
+> Another option if you don't oppose, is to add another field in the kmem_cache
+> structure (I tried to keep them at a minimum),
+> to record the parent cache we got created from.
+>
+> Then, it gets trivial to do the following:
+>
+> VM_BUG_ON(page->slab != s && page->slab != s->parent_cache);
 
-regards,
-dan carpenter
+Sounds ok but I need to catch up on what this whole memcg thing in slab
+allocators should accomplish in order to say something definite.
 
