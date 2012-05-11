@@ -1,526 +1,1192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759223Ab2EKM1a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 08:27:30 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36024 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759091Ab2EKM1Z (ORCPT
+	id S1759047Ab2EKM1R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 08:27:17 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:20403 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758049Ab2EKM1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 08:27:25 -0400
-Date: Fri, 11 May 2012 13:27:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Krystian Garbaciak <dd.diasemi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Anthony Olech <Anthony.Olech@diasemi.com>,
-        gg@slimlogic.co.uk, Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] regmap: Add support for register paging
-Message-ID: <20120511122719.GA3960@opensource.wolfsonmicro.com>
-References: <1336733724.5950.3.camel@sw-eng-lt-dc-vm2>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
-Content-Disposition: inline
-In-Reply-To: <1336733724.5950.3.camel@sw-eng-lt-dc-vm2>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 11 May 2012 08:27:12 -0400
+X-AuditID: cbfee61a-b7bbeae000003a71-48-4fad059ea90a
+From: KyongHo <pullip.cho@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: "'Joerg Roedel'" <joro@8bytes.org>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Subash Patel'" <subash.ramaswamy@linaro.org>
+References: 
+In-reply-to: 
+Subject: [PATCH] iommu/exynos: Add iommu driver for Exynos Platforms
+Date: Fri, 11 May 2012 21:27:09 +0900
+Organization: Samsung Electronics Co., Ltd.
+Message-id: <000001cd2f71$62c5c2f0$285148d0$%cho@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac0Chi8xxCxRpflBTjm2kOFd23HL0As6nbNw
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is the System MMU driver and IOMMU API implementation for Exynos SOC
+platforms. Exynos platforms has more than 10 System MMUs dedicated for each
+multimedia accelerators.
 
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The System MMU driver is already in arc/arm/plat-s5p but it is moved to
+drivers/iommu due to Ohad Ben-Cohen gathered IOMMU drivers there
 
-On Fri, May 11, 2012 at 12:55:24PM +0200, Krystian Garbaciak wrote:
+Any device driver in Exynos platforms that needs to control its System MMU must
+call platform_set_sysmmu() to inform System MMU driver who will control it.
+platform_set_sysmmu() is defined in <mach/sysmmu.h>
 
-> Devices, having register map split into pages, can initialize regmap to
-> switch between pages automatically. This simply makes the total number
-> of registers to be virtually expanded and multiplied by number of pages.
+To compile this patch,
+you will need "for-next" branch of the linux-samsung.git:
+git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+Other patches needed by this patch are merged to the above branch.
 
-Adding some people I believe work with devices that have paged registers
-(I don't really myself).  I'm not deleting any text for their benefit.
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+---
+ drivers/iommu/Kconfig        |   21 +
+ drivers/iommu/Makefile       |    1 +
+ drivers/iommu/exynos-iommu.c | 1076 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 1098 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/iommu/exynos-iommu.c
 
-> When driver defines non-zero number of bits for page selection, register
-> address passed for read or write should consist of total number of page
-> bits and register bits to form an address, where page bits are the most
-> significant ones.
+diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
+index 3bd9fff..23db792 100644
+--- a/drivers/iommu/Kconfig
++++ b/drivers/iommu/Kconfig
+@@ -162,4 +162,25 @@ config TEGRA_IOMMU_SMMU
+ 	  space through the SMMU (System Memory Management Unit)
+ 	  hardware included on Tegra SoCs.
+ 
++config EXYNOS_IOMMU
++	bool "Exynos IOMMU Support"
++	depends on ARCH_EXYNOS && EXYNOS_DEV_SYSMMU
++	select IOMMU_API
++	help
++	  Support for the IOMMU(System MMU) of Samsung Exynos application
++	  processor family. This enables H/W multimedia accellerators to see
++	  non-linear physical memory chunks as a linear memory in their
++	  address spaces
++
++	  If unsure, say N here.
++
++config EXYNOS_IOMMU_DEBUG
++	bool "Debugging log for Exynos IOMMU"
++	depends on EXYNOS_IOMMU
++	help
++	  Select this to see the detailed log message that shows what
++	  happens in the IOMMU driver
++
++	  Say N unless you need kernel log message for IOMMU debugging
++
+ endif # IOMMU_SUPPORT
+diff --git a/drivers/iommu/Makefile b/drivers/iommu/Makefile
+index 7ad7a3b..d06dec6 100644
+--- a/drivers/iommu/Makefile
++++ b/drivers/iommu/Makefile
+@@ -10,3 +10,4 @@ obj-$(CONFIG_OMAP_IOVMM) += omap-iovmm.o
+ obj-$(CONFIG_OMAP_IOMMU_DEBUG) += omap-iommu-debug.o
+ obj-$(CONFIG_TEGRA_IOMMU_GART) += tegra-gart.o
+ obj-$(CONFIG_TEGRA_IOMMU_SMMU) += tegra-smmu.o
++obj-$(CONFIG_EXYNOS_IOMMU) += exynos-iommu.o
+diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+new file mode 100644
+index 0000000..9a114b9
+--- /dev/null
++++ b/drivers/iommu/exynos-iommu.c
+@@ -0,0 +1,1076 @@
++/* linux/drivers/iommu/exynos_iommu.c
++ *
++ * Copyright (c) 2011 Samsung Electronics Co., Ltd.
++ *		http://www.samsung.com
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifdef CONFIG_EXYNOS_IOMMU_DEBUG
++#define DEBUG
++#endif
++
++#include <linux/io.h>
++#include <linux/interrupt.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/pm_runtime.h>
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/mm.h>
++#include <linux/iommu.h>
++#include <linux/errno.h>
++#include <linux/list.h>
++#include <linux/memblock.h>
++#include <linux/export.h>
++
++#include <asm/cacheflush.h>
++#include <asm/pgtable.h>
++
++#include <mach/sysmmu.h>
++
++/* We does not consider super section mapping (16MB) */
++#define SECT_ORDER 20
++#define LPAGE_ORDER 16
++#define SPAGE_ORDER 12
++
++#define SECT_SIZE (1 << SECT_ORDER)
++#define LPAGE_SIZE (1 << LPAGE_ORDER)
++#define SPAGE_SIZE (1 << SPAGE_ORDER)
++
++#define SECT_MASK (~(SECT_SIZE - 1))
++#define LPAGE_MASK (~(LPAGE_SIZE - 1))
++#define SPAGE_MASK (~(SPAGE_SIZE - 1))
++
++#define lv1ent_fault(sent) (((*(sent) & 3) == 0) || ((*(sent) & 3) == 3))
++#define lv1ent_page(sent) ((*(sent) & 3) == 1)
++#define lv1ent_section(sent) ((*(sent) & 3) == 2)
++
++#define lv2ent_fault(pent) ((*(pent) & 3) == 0)
++#define lv2ent_small(pent) ((*(pent) & 2) == 2)
++#define lv2ent_large(pent) ((*(pent) & 3) == 1)
++
++#define section_phys(sent) (*(sent) & SECT_MASK)
++#define section_offs(iova) ((iova) & 0xFFFFF)
++#define lpage_phys(pent) (*(pent) & LPAGE_MASK)
++#define lpage_offs(iova) ((iova) & 0xFFFF)
++#define spage_phys(pent) (*(pent) & SPAGE_MASK)
++#define spage_offs(iova) ((iova) & 0xFFF)
++
++#define lv1ent_offset(iova) ((iova) >> SECT_ORDER)
++#define lv2ent_offset(iova) (((iova) & 0xFF000) >> SPAGE_ORDER)
++
++#define NUM_LV1ENTRIES 4096
++#define NUM_LV2ENTRIES 256
++
++#define LV2TABLE_SIZE (NUM_LV2ENTRIES * sizeof(long))
++
++#define SPAGES_PER_LPAGE (LPAGE_SIZE / SPAGE_SIZE)
++
++#define lv2table_base(sent) (*(sent) & 0xFFFFFC00)
++
++#define mk_lv1ent_sect(pa) ((pa) | 2)
++#define mk_lv1ent_page(pa) ((pa) | 1)
++#define mk_lv2ent_lpage(pa) ((pa) | 1)
++#define mk_lv2ent_spage(pa) ((pa) | 2)
++
++#define CTRL_ENABLE	0x5
++#define CTRL_BLOCK	0x7
++#define CTRL_DISABLE	0x0
++
++#define REG_MMU_CTRL		0x000
++#define REG_MMU_CFG		0x004
++#define REG_MMU_STATUS		0x008
++#define REG_MMU_FLUSH		0x00C
++#define REG_MMU_FLUSH_ENTRY	0x010
++#define REG_PT_BASE_ADDR	0x014
++#define REG_INT_STATUS		0x018
++#define REG_INT_CLEAR		0x01C
++
++#define REG_PAGE_FAULT_ADDR	0x024
++#define REG_AW_FAULT_ADDR	0x028
++#define REG_AR_FAULT_ADDR	0x02C
++#define REG_DEFAULT_SLAVE_ADDR	0x030
++
++#define REG_MMU_VERSION		0x034
++
++#define REG_PB0_SADDR		0x04C
++#define REG_PB0_EADDR		0x050
++#define REG_PB1_SADDR		0x054
++#define REG_PB1_EADDR		0x058
++
++static unsigned long *section_entry(unsigned long *pgtable, unsigned long iova)
++{
++	return pgtable + lv1ent_offset(iova);
++}
++
++static unsigned long *page_entry(unsigned long *sent, unsigned long iova)
++{
++	return (unsigned long *)__va(lv2table_base(sent)) + lv2ent_offset(iova);
++}
++
++enum exynos_sysmmu_inttype {
++	SYSMMU_PAGEFAULT,
++	SYSMMU_AR_MULTIHIT,
++	SYSMMU_AW_MULTIHIT,
++	SYSMMU_BUSERROR,
++	SYSMMU_AR_SECURITY,
++	SYSMMU_AR_ACCESS,
++	SYSMMU_AW_SECURITY,
++	SYSMMU_AW_PROTECTION, /* 7 */
++	SYSMMU_FAULT_UNKNOWN,
++	SYSMMU_FAULTS_NUM
++};
++
++/*
++ * @itype: type of fault.
++ * @pgtable_base: the physical address of page table base. This is 0 if @itype
++ *                is SYSMMU_BUSERROR.
++ * @fault_addr: the device (virtual) address that the System MMU tried to
++ *             translated. This is 0 if @itype is SYSMMU_BUSERROR.
++ */
++typedef int (*sysmmu_fault_handler_t)(enum exynos_sysmmu_inttype itype,
++			unsigned long pgtable_base, unsigned long fault_addr);
++
++static unsigned short fault_reg_offset[SYSMMU_FAULTS_NUM] = {
++	REG_PAGE_FAULT_ADDR,
++	REG_AR_FAULT_ADDR,
++	REG_AW_FAULT_ADDR,
++	REG_DEFAULT_SLAVE_ADDR,
++	REG_AR_FAULT_ADDR,
++	REG_AR_FAULT_ADDR,
++	REG_AW_FAULT_ADDR,
++	REG_AW_FAULT_ADDR
++};
++
++static char *sysmmu_fault_name[SYSMMU_FAULTS_NUM] = {
++	"PAGE FAULT",
++	"AR MULTI-HIT FAULT",
++	"AW MULTI-HIT FAULT",
++	"BUS ERROR",
++	"AR SECURITY PROTECTION FAULT",
++	"AR ACCESS PROTECTION FAULT",
++	"AW SECURITY PROTECTION FAULT",
++	"AW ACCESS PROTECTION FAULT",
++	"UNKNOWN FAULT"
++};
++
++struct exynos_iommu_domain {
++	struct list_head clients; /* list of sysmmu_drvdata.node */
++	unsigned long *pgtable; /* lv1 page table, 16KB */
++	short *lv2entcnt; /* free lv2 entry counter for each section */
++	spinlock_t lock; /* lock for this structure */
++	spinlock_t pgtablelock; /* lock for modifying page table @ pgtable */
++};
++
++struct sysmmu_drvdata {
++	struct list_head node; /* entry of exynos_iommu_domain.clients */
++	struct device *sysmmu;	/* System MMU's device descriptor */
++	struct device *dev;	/* Owner of system MMU */
++	char *dbgname;
++	int nsfrs;
++	void __iomem **sfrbases;
++	struct clk *clk[2];
++	int activations;
++	rwlock_t lock;
++	struct iommu_domain *domain;
++	sysmmu_fault_handler_t fault_handler;
++	unsigned long pgtable;
++};
++
++static bool set_sysmmu_active(struct sysmmu_drvdata *data)
++{
++	/* return true if the System MMU was not active previously
++	   and it needs to be initialized */
++	return ++data->activations == 1;
++}
++
++static bool set_sysmmu_inactive(struct sysmmu_drvdata *data)
++{
++	/* return true if the System MMU is needed to be disabled */
++	BUG_ON(data->activations < 1);
++	return --data->activations == 0;
++}
++
++static bool is_sysmmu_active(struct sysmmu_drvdata *data)
++{
++	return data->activations > 0;
++}
++
++static void sysmmu_unblock(void __iomem *sfrbase)
++{
++	__raw_writel(CTRL_ENABLE, sfrbase + REG_MMU_CTRL);
++}
++
++static bool sysmmu_block(void __iomem *sfrbase)
++{
++	int i = 120;
++
++	__raw_writel(CTRL_BLOCK, sfrbase + REG_MMU_CTRL);
++	while ((i > 0) && !(__raw_readl(sfrbase + REG_MMU_STATUS) & 1))
++		--i;
++
++	if (!(__raw_readl(sfrbase + REG_MMU_STATUS) & 1)) {
++		sysmmu_unblock(sfrbase);
++		return false;
++	}
++
++	return true;
++}
++
++static void __sysmmu_tlb_invalidate(void __iomem *sfrbase)
++{
++	__raw_writel(0x1, sfrbase + REG_MMU_FLUSH);
++}
++
++static void __sysmmu_tlb_invalidate_entry(void __iomem *sfrbase,
++						unsigned long iova)
++{
++	__raw_writel((iova & SPAGE_MASK) | 1, sfrbase + REG_MMU_FLUSH_ENTRY);
++}
++
++static void __sysmmu_set_ptbase(void __iomem *sfrbase,
++				       unsigned long pgd)
++{
++	__raw_writel(0x1, sfrbase + REG_MMU_CFG); /* 16KB LV1, LRU */
++	__raw_writel(pgd, sfrbase + REG_PT_BASE_ADDR);
++
++	__sysmmu_tlb_invalidate(sfrbase);
++}
++
++static void __sysmmu_set_prefbuf(void __iomem *sfrbase, unsigned long base,
++						unsigned long size, int idx)
++{
++	__raw_writel(base, sfrbase + REG_PB0_SADDR + idx * 8);
++	__raw_writel(size - 1 + base,  sfrbase + REG_PB0_EADDR + idx * 8);
++}
++
++void exynos_sysmmu_set_prefbuf(struct device *dev,
++				unsigned long base0, unsigned long size0,
++				unsigned long base1, unsigned long size1)
++{
++	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
++	unsigned long flags;
++	int i;
++
++	BUG_ON((base0 + size0) <= base0);
++	BUG_ON((size1 > 0) && ((base1 + size1) <= base1));
++
++	read_lock_irqsave(&data->lock, flags);
++	if (!is_sysmmu_active(data))
++		goto finish;
++
++	for (i = 0; i < data->nsfrs; i++) {
++		if ((readl(data->sfrbases[i] + REG_MMU_VERSION) >> 28) == 3) {
++			if (!sysmmu_block(data->sfrbases[i]))
++				continue;
++
++			if (size1 == 0) {
++				if (size0 <= SZ_128K) {
++					base1 = base0;
++					size1 = size0;
++				} else {
++					size1 = size0 -
++						ALIGN(size0 / 2, SZ_64K);
++					size0 = size0 - size1;
++					base1 = base0 + size0;
++				}
++			}
++
++			__sysmmu_set_prefbuf(
++					data->sfrbases[i], base0, size0, 0);
++			__sysmmu_set_prefbuf(
++					data->sfrbases[i], base1, size1, 1);
++
++			sysmmu_unblock(data->sfrbases[i]);
++		}
++	}
++finish:
++	read_unlock_irqrestore(&data->lock, flags);
++}
++
++static void __set_fault_handler(struct sysmmu_drvdata *data,
++					sysmmu_fault_handler_t handler)
++{
++	unsigned long flags;
++
++	write_lock_irqsave(&data->lock, flags);
++	data->fault_handler = handler;
++	write_unlock_irqrestore(&data->lock, flags);
++}
++
++void exynos_sysmmu_set_fault_handler(struct device *dev,
++					sysmmu_fault_handler_t handler)
++{
++	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
++
++	__set_fault_handler(data, handler);
++}
++
++static int default_fault_handler(enum exynos_sysmmu_inttype itype,
++		     unsigned long pgtable_base, unsigned long fault_addr)
++{
++	unsigned long *ent;
++
++	if ((itype >= SYSMMU_FAULTS_NUM) || (itype < SYSMMU_PAGEFAULT))
++		itype = SYSMMU_FAULT_UNKNOWN;
++
++	pr_err("%s occured at 0x%lx(Page table base: 0x%lx)\n",
++			sysmmu_fault_name[itype], fault_addr, pgtable_base);
++
++	ent = section_entry(__va(pgtable_base), fault_addr);
++	pr_err("\tLv1 entry: 0x%lx\n", *ent);
++
++	if (lv1ent_page(ent)) {
++		ent = page_entry(ent, fault_addr);
++		pr_err("\t Lv2 entry: 0x%lx\n", *ent);
++	}
++
++	pr_err("Generating Kernel OOPS... because it is unrecoverable.\n");
++
++	BUG();
++
++	return 0;
++}
++
++static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
++{
++	/* SYSMMU is in blocked when interrupt occurred. */
++	struct sysmmu_drvdata *data = dev_id;
++	struct resource *irqres;
++	struct platform_device *pdev;
++	enum exynos_sysmmu_inttype itype;
++	unsigned long addr = -1;
++
++	int i, ret = -ENOSYS;
++
++	read_lock(&data->lock);
++
++	WARN_ON(!is_sysmmu_active(data));
++
++	pdev = to_platform_device(data->sysmmu);
++	for (i = 0; i < (pdev->num_resources / 2); i++) {
++		irqres = platform_get_resource(pdev, IORESOURCE_IRQ, i);
++		if (irqres && ((int)irqres->start == irq))
++			break;
++	}
++
++	if (i == pdev->num_resources) {
++		itype = SYSMMU_FAULT_UNKNOWN;
++	} else {
++		itype = (enum exynos_sysmmu_inttype)
++			__ffs(__raw_readl(data->sfrbases[i] + REG_INT_STATUS));
++		if (WARN_ON(!((itype >= 0) && (itype < SYSMMU_FAULT_UNKNOWN))))
++			itype = SYSMMU_FAULT_UNKNOWN;
++		else
++			addr = __raw_readl(
++				data->sfrbases[i] + fault_reg_offset[itype]);
++	}
++
++	if (data->domain)
++		ret = report_iommu_fault(data->domain, data->dev,
++				addr, itype);
++
++	if ((ret == -ENOSYS) && data->fault_handler) {
++		unsigned long base = data->pgtable;
++		if (itype != SYSMMU_FAULT_UNKNOWN)
++			base = __raw_readl(
++					data->sfrbases[i] + REG_PT_BASE_ADDR);
++		ret = data->fault_handler(itype, base, addr);
++	}
++
++	if (!ret && (itype != SYSMMU_FAULT_UNKNOWN))
++		__raw_writel(1 << itype, data->sfrbases[i] + REG_INT_CLEAR);
++	else
++		dev_dbg(data->sysmmu, "(%s) %s is not handled.\n",
++				data->dbgname, sysmmu_fault_name[itype]);
++
++	if (itype != SYSMMU_FAULT_UNKNOWN)
++		sysmmu_unblock(data->sfrbases[i]);
++
++	read_unlock(&data->lock);
++
++	return IRQ_HANDLED;
++}
++
++static bool __exynos_sysmmu_disable(struct sysmmu_drvdata *data)
++{
++	unsigned long flags;
++	bool disabled = false;
++	int i;
++
++	write_lock_irqsave(&data->lock, flags);
++
++	if (!set_sysmmu_inactive(data))
++		goto finish;
++
++	for (i = 0; i < data->nsfrs; i++)
++		__raw_writel(CTRL_DISABLE, data->sfrbases[i] + REG_MMU_CTRL);
++
++	if (data->clk[1])
++		clk_disable(data->clk[1]);
++	if (data->clk[0])
++		clk_disable(data->clk[0]);
++
++	disabled = true;
++	data->pgtable = 0;
++	data->domain = NULL;
++finish:
++	write_unlock_irqrestore(&data->lock, flags);
++
++	if (disabled)
++		dev_dbg(data->sysmmu, "(%s) Disabled\n", data->dbgname);
++	else
++		dev_dbg(data->sysmmu, "(%s) %d times left to be disabled\n",
++					data->dbgname, data->activations);
++
++	return disabled;
++}
++
++/* __exynos_sysmmu_enable: Enables System MMU
++ *
++ * returns -error if an error occurred and System MMU is not enabled,
++ * 0 if the System MMU has been just enabled and 1 if System MMU was already
++ * enabled before.
++ */
++static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
++			unsigned long pgtable, struct iommu_domain *domain)
++{
++	int i, ret = 0;
++	unsigned long flags;
++
++	write_lock_irqsave(&data->lock, flags);
++
++	if (!set_sysmmu_active(data)) {
++		if (WARN_ON(pgtable != data->pgtable)) {
++			ret = -EBUSY;
++			set_sysmmu_inactive(data);
++		} else {
++			ret = 1;
++		}
++
++		dev_dbg(data->sysmmu, "(%s) Already enabled\n", data->dbgname);
++		goto finish;
++	}
++
++	if (data->clk[0])
++		clk_enable(data->clk[0]);
++	if (data->clk[1])
++		clk_enable(data->clk[1]);
++
++	data->pgtable = pgtable;
++
++	for (i = 0; i < data->nsfrs; i++) {
++		__sysmmu_set_ptbase(data->sfrbases[i], pgtable);
++
++		if ((readl(data->sfrbases[i] + REG_MMU_VERSION) >> 28) == 3) {
++			/* System MMU version is 3.x */
++			__raw_writel((1 << 12) | (2 << 28),
++					data->sfrbases[i] + REG_MMU_CFG);
++			__sysmmu_set_prefbuf(data->sfrbases[i], 0, -1, 0);
++			__sysmmu_set_prefbuf(data->sfrbases[i], 0, -1, 1);
++		}
++
++		__raw_writel(CTRL_ENABLE, data->sfrbases[i] + REG_MMU_CTRL);
++	}
++
++	data->domain = domain;
++
++	dev_dbg(data->sysmmu, "(%s) Enabled\n", data->dbgname);
++finish:
++	write_unlock_irqrestore(&data->lock, flags);
++
++	return ret;
++}
++
++int exynos_sysmmu_enable(struct device *dev, unsigned long pgtable)
++{
++	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
++	int ret;
++
++	BUG_ON(!memblock_is_memory(pgtable));
++
++	ret = pm_runtime_get_sync(data->sysmmu);
++	if (ret < 0) {
++		dev_dbg(data->sysmmu, "(%s) Failed to enable\n", data->dbgname);
++		return ret;
++	}
++
++	ret = __exynos_sysmmu_enable(data, pgtable, NULL);
++	if (WARN_ON(ret < 0)) {
++		pm_runtime_put(data->sysmmu);
++		dev_err(data->sysmmu,
++			"(%s) Already enabled with page table %#lx\n",
++			data->dbgname, data->pgtable);
++	} else {
++		data->dev = dev;
++	}
++
++	return ret;
++}
++
++bool exynos_sysmmu_disable(struct device *dev)
++{
++	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
++	bool disabled;
++
++	disabled = __exynos_sysmmu_disable(data);
++	pm_runtime_put(data->sysmmu);
++
++	return disabled;
++}
++
++static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova)
++{
++	unsigned long flags;
++	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
++
++	read_lock_irqsave(&data->lock, flags);
++
++	if (is_sysmmu_active(data)) {
++		int i;
++		for (i = 0; i < data->nsfrs; i++) {
++			if (sysmmu_block(data->sfrbases[i])) {
++				__sysmmu_tlb_invalidate_entry(
++						data->sfrbases[i], iova);
++				sysmmu_unblock(data->sfrbases[i]);
++			}
++		}
++	} else {
++		dev_dbg(data->sysmmu,
++			"(%s) Disabled. Skipping invalidating TLB.\n",
++			data->dbgname);
++	}
++
++	read_unlock_irqrestore(&data->lock, flags);
++}
++
++void exynos_sysmmu_tlb_invalidate(struct device *dev)
++{
++	unsigned long flags;
++	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
++
++	read_lock_irqsave(&data->lock, flags);
++
++	if (is_sysmmu_active(data)) {
++		int i;
++		for (i = 0; i < data->nsfrs; i++) {
++			if (sysmmu_block(data->sfrbases[i])) {
++				__sysmmu_tlb_invalidate(data->sfrbases[i]);
++				sysmmu_unblock(data->sfrbases[i]);
++			}
++		}
++	} else {
++		dev_dbg(data->sysmmu,
++			"(%s) Disabled. Skipping invalidating TLB.\n",
++			data->dbgname);
++	}
++
++	read_unlock_irqrestore(&data->lock, flags);
++}
++
++static int exynos_sysmmu_probe(struct platform_device *pdev)
++{
++	int i, ret;
++	struct device *dev;
++	struct sysmmu_drvdata *data;
++
++	dev = &pdev->dev;
++
++	data = kzalloc(sizeof(*data), GFP_KERNEL);
++	if (!data) {
++		dev_dbg(dev, "Not enough memory\n");
++		ret = -ENOMEM;
++		goto err_alloc;
++	}
++
++	ret = dev_set_drvdata(dev, data);
++	if (ret) {
++		dev_dbg(dev, "Unabled to initialize driver data\n");
++		goto err_init;
++	}
++
++	data->nsfrs = pdev->num_resources / 2;
++	data->sfrbases = kmalloc(sizeof(*data->sfrbases) * data->nsfrs,
++								GFP_KERNEL);
++	if (data->sfrbases == NULL) {
++		dev_dbg(dev, "Not enough memory\n");
++		ret = -ENOMEM;
++		goto err_init;
++	}
++
++	for (i = 0; i < data->nsfrs; i++) {
++		struct resource *res;
++		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
++		if (!res) {
++			dev_dbg(dev, "Unable to find IOMEM region\n");
++			ret = -ENOENT;
++			goto err_res;
++		}
++
++		data->sfrbases[i] = ioremap(res->start, resource_size(res));
++		if (!data->sfrbases[i]) {
++			dev_dbg(dev, "Unable to map IOMEM @ PA:%#x\n",
++							res->start);
++			ret = -ENOENT;
++			goto err_res;
++		}
++	}
++
++	for (i = 0; i < data->nsfrs; i++) {
++		ret = platform_get_irq(pdev, i);
++		if (ret <= 0) {
++			dev_dbg(dev, "Unable to find IRQ resource\n");
++			goto err_irq;
++		}
++
++		ret = request_irq(ret, exynos_sysmmu_irq, 0,
++					dev_name(dev), data);
++		if (ret) {
++			dev_dbg(dev, "Unabled to register interrupt handler\n");
++			goto err_irq;
++		}
++	}
++
++	if (dev_get_platdata(dev)) {
++		char *deli, *beg;
++		struct sysmmu_platform_data *platdata = dev_get_platdata(dev);
++
++		beg = platdata->clockname;
++
++		for (deli = beg; (*deli != '\0') && (*deli != ','); deli++)
++			/* NOTHING */;
++
++		if (*deli == '\0')
++			deli = NULL;
++		else
++			*deli = '\0';
++
++		data->clk[0] = clk_get(dev, beg);
++		if (IS_ERR(data->clk[0])) {
++			data->clk[0] = NULL;
++			dev_dbg(dev, "No clock descriptor registered\n");
++		}
++
++		if (data->clk[0] && deli) {
++			*deli = ',';
++			data->clk[1] = clk_get(dev, deli + 1);
++			if (IS_ERR(data->clk[1]))
++				data->clk[1] = NULL;
++		}
++
++		data->dbgname = platdata->dbgname;
++	}
++
++	data->sysmmu = dev;
++	rwlock_init(&data->lock);
++	INIT_LIST_HEAD(&data->node);
++
++	__set_fault_handler(data, &default_fault_handler);
++
++	if (dev->parent)
++		pm_runtime_enable(dev);
++
++	dev_dbg(dev, "(%s) Initialized\n", data->dbgname);
++	return 0;
++err_irq:
++	while (i-- > 0) {
++		int irq;
++
++		irq = platform_get_irq(pdev, i);
++		free_irq(irq, data);
++	}
++err_res:
++	while (data->nsfrs-- > 0)
++		iounmap(data->sfrbases[data->nsfrs]);
++	kfree(data->sfrbases);
++err_init:
++	kfree(data);
++err_alloc:
++	dev_err(dev, "Failed to initialize\n");
++	return ret;
++}
++
++static struct platform_driver exynos_sysmmu_driver = {
++	.probe		= exynos_sysmmu_probe,
++	.driver		= {
++		.owner		= THIS_MODULE,
++		.name		= "exynos-sysmmu",
++	}
++};
++
++static inline void pgtable_flush(void *vastart, void *vaend)
++{
++	dmac_flush_range(vastart, vaend);
++	outer_flush_range(virt_to_phys(vastart),
++				virt_to_phys(vaend));
++}
++
++static int exynos_iommu_domain_init(struct iommu_domain *domain)
++{
++	struct exynos_iommu_domain *priv;
++
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	priv->pgtable = (unsigned long *)__get_free_pages(
++						GFP_KERNEL | __GFP_ZERO, 2);
++	if (!priv->pgtable)
++		goto err_pgtable;
++
++	priv->lv2entcnt = (short *)__get_free_pages(
++						GFP_KERNEL | __GFP_ZERO, 1);
++	if (!priv->lv2entcnt)
++		goto err_counter;
++
++	pgtable_flush(priv->pgtable, priv->pgtable + NUM_LV1ENTRIES);
++
++	spin_lock_init(&priv->lock);
++	spin_lock_init(&priv->pgtablelock);
++	INIT_LIST_HEAD(&priv->clients);
++
++	domain->priv = priv;
++	return 0;
++
++err_counter:
++	free_pages((unsigned long)priv->pgtable, 2);
++err_pgtable:
++	kfree(priv);
++	return -ENOMEM;
++}
++
++static void exynos_iommu_domain_destroy(struct iommu_domain *domain)
++{
++	struct exynos_iommu_domain *priv = domain->priv;
++	struct sysmmu_drvdata *data;
++	unsigned long flags;
++	int i;
++
++	WARN_ON(!list_empty(&priv->clients));
++
++	spin_lock_irqsave(&priv->lock, flags);
++
++	list_for_each_entry(data, &priv->clients, node) {
++		while (!exynos_sysmmu_disable(data->dev))
++			; /* until System MMU is actually disabled */
++	}
++
++	spin_unlock_irqrestore(&priv->lock, flags);
++
++	for (i = 0; i < NUM_LV1ENTRIES; i++)
++		if (lv1ent_page(priv->pgtable + i))
++			kfree(__va(lv2table_base(priv->pgtable + i)));
++
++	free_pages((unsigned long)priv->pgtable, 2);
++	free_pages((unsigned long)priv->lv2entcnt, 1);
++	kfree(domain->priv);
++	domain->priv = NULL;
++}
++
++static int exynos_iommu_attach_device(struct iommu_domain *domain,
++				   struct device *dev)
++{
++	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
++	struct exynos_iommu_domain *priv = domain->priv;
++	unsigned long flags;
++	int ret;
++
++	ret = pm_runtime_get_sync(data->sysmmu);
++	if (ret < 0)
++		return ret;
++
++	ret = 0;
++
++	spin_lock_irqsave(&priv->lock, flags);
++
++	ret = __exynos_sysmmu_enable(data, __pa(priv->pgtable), domain);
++
++	if (ret == 0) {
++		/* 'data->node' must not be appeared in priv->clients */
++		BUG_ON(!list_empty(&data->node));
++		data->dev = dev;
++		list_add_tail(&data->node, &priv->clients);
++	}
++
++	spin_unlock_irqrestore(&priv->lock, flags);
++
++	if (ret < 0) {
++		dev_err(dev, "%s: Failed to attach IOMMU with pgtable %#lx\n",
++				__func__, __pa(priv->pgtable));
++		pm_runtime_put(data->sysmmu);
++	} else if (ret > 0) {
++		dev_dbg(dev, "%s: IOMMU with pgtable 0x%lx already attached\n",
++					__func__, __pa(priv->pgtable));
++	} else {
++		dev_dbg(dev, "%s: Attached new IOMMU with pgtable 0x%lx\n",
++					__func__, __pa(priv->pgtable));
++	}
++
++	return ret;
++}
++
++static void exynos_iommu_detach_device(struct iommu_domain *domain,
++				    struct device *dev)
++{
++	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
++	struct exynos_iommu_domain *priv = domain->priv;
++	struct list_head *pos;
++	unsigned long flags;
++	bool found = false;
++
++	spin_lock_irqsave(&priv->lock, flags);
++
++	list_for_each(pos, &priv->clients) {
++		if (list_entry(pos, struct sysmmu_drvdata, node) == data) {
++			found = true;
++			break;
++		}
++	}
++
++	if (!found)
++		goto finish;
++
++	if (__exynos_sysmmu_disable(data)) {
++		dev_dbg(dev, "%s: Detached IOMMU with pgtable %#lx\n",
++					__func__, __pa(priv->pgtable));
++		list_del(&data->node);
++		INIT_LIST_HEAD(&data->node);
++
++	} else {
++		dev_dbg(dev, "%s: Detaching IOMMU with pgtable %#lx delayed",
++					__func__, __pa(priv->pgtable));
++	}
++
++finish:
++	spin_unlock_irqrestore(&priv->lock, flags);
++
++	if (found)
++		pm_runtime_put(data->sysmmu);
++}
++
++static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
++					short *pgcounter)
++{
++	if (lv1ent_fault(sent)) {
++		unsigned long *pent;
++
++		pent = kzalloc(LV2TABLE_SIZE, GFP_ATOMIC);
++		BUG_ON((unsigned long)pent & (LV2TABLE_SIZE - 1));
++		if (!pent)
++			return NULL;
++
++		*sent = mk_lv1ent_page(__pa(pent));
++		*pgcounter = NUM_LV2ENTRIES;
++		pgtable_flush(pent, pent + NUM_LV2ENTRIES);
++		pgtable_flush(sent, sent + 1);
++	}
++
++	return page_entry(sent, iova);
++}
++
++static int lv1set_section(unsigned long *sent, phys_addr_t paddr, short *pgcnt)
++{
++	if (lv1ent_section(sent))
++		return -EADDRINUSE;
++
++	if (lv1ent_page(sent)) {
++		if (*pgcnt != NUM_LV2ENTRIES)
++			return -EADDRINUSE;
++
++		kfree(page_entry(sent, 0));
++
++		*pgcnt = 0;
++	}
++
++	*sent = mk_lv1ent_sect(paddr);
++
++	pgtable_flush(sent, sent + 1);
++
++	return 0;
++}
++
++static int lv2set_page(unsigned long *pent, phys_addr_t paddr, size_t size,
++								short *pgcnt)
++{
++	if (size == SPAGE_SIZE) {
++		if (!lv2ent_fault(pent))
++			return -EADDRINUSE;
++
++		*pent = mk_lv2ent_spage(paddr);
++		pgtable_flush(pent, pent + 1);
++		*pgcnt -= 1;
++	} else { /* size == LPAGE_SIZE */
++		int i;
++		for (i = 0; i < SPAGES_PER_LPAGE; i++, pent++) {
++			if (!lv2ent_fault(pent)) {
++				memset(pent, 0, sizeof(*pent) * i);
++				return -EADDRINUSE;
++			}
++
++			*pent = mk_lv2ent_lpage(paddr);
++		}
++		pgtable_flush(pent - SPAGES_PER_LPAGE, pent);
++		*pgcnt -= SPAGES_PER_LPAGE;
++	}
++
++	return 0;
++}
++
++static int exynos_iommu_map(struct iommu_domain *domain, unsigned long iova,
++			 phys_addr_t paddr, size_t size, int prot)
++{
++	struct exynos_iommu_domain *priv = domain->priv;
++	unsigned long *entry;
++	unsigned long flags;
++	int ret = -ENOMEM;
++
++	BUG_ON(priv->pgtable == NULL);
++
++	spin_lock_irqsave(&priv->pgtablelock, flags);
++
++	entry = section_entry(priv->pgtable, iova);
++
++	if (size == SECT_SIZE) {
++		ret = lv1set_section(entry, paddr,
++					&priv->lv2entcnt[lv1ent_offset(iova)]);
++	} else {
++		unsigned long *pent;
++
++		pent = alloc_lv2entry(entry, iova,
++					&priv->lv2entcnt[lv1ent_offset(iova)]);
++
++		if (!pent)
++			ret = -ENOMEM;
++		else
++			ret = lv2set_page(pent, paddr, size,
++					&priv->lv2entcnt[lv1ent_offset(iova)]);
++	}
++
++	if (ret) {
++		pr_debug("%s: Failed to map iova 0x%lx/0x%x bytes\n",
++							__func__, iova, size);
++	}
++
++	spin_unlock_irqrestore(&priv->pgtablelock, flags);
++
++	return ret;
++}
++
++static size_t exynos_iommu_unmap(struct iommu_domain *domain,
++					       unsigned long iova, size_t size)
++{
++	struct exynos_iommu_domain *priv = domain->priv;
++	struct sysmmu_drvdata *data;
++	unsigned long flags;
++	unsigned long *ent;
++
++	BUG_ON(priv->pgtable == NULL);
++
++	spin_lock_irqsave(&priv->pgtablelock, flags);
++
++	ent = section_entry(priv->pgtable, iova);
++
++	if (lv1ent_section(ent)) {
++		BUG_ON(size < SECT_SIZE);
++
++		*ent = 0;
++		pgtable_flush(ent, ent + 1);
++		size = SECT_SIZE;
++		goto done;
++	}
++
++	if (unlikely(lv1ent_fault(ent))) {
++		if (size > SECT_SIZE)
++			size = SECT_SIZE;
++		goto done;
++	}
++
++	/* lv1ent_page(sent) == true here */
++
++	ent = page_entry(ent, iova);
++
++	if (unlikely(lv2ent_fault(ent))) {
++		size = SPAGE_SIZE;
++		goto done;
++	}
++
++	if (lv2ent_small(ent)) {
++		*ent = 0;
++		size = SPAGE_SIZE;
++		priv->lv2entcnt[lv1ent_offset(iova)] += 1;
++		goto done;
++	}
++
++	/* lv1ent_large(ent) == true here */
++	BUG_ON(size < LPAGE_SIZE);
++
++	memset(ent, 0, sizeof(*ent) * SPAGES_PER_LPAGE);
++
++	size = LPAGE_SIZE;
++	priv->lv2entcnt[lv1ent_offset(iova)] += SPAGES_PER_LPAGE;
++done:
++	spin_unlock_irqrestore(&priv->pgtablelock, flags);
++
++	spin_lock_irqsave(&priv->lock, flags);
++	list_for_each_entry(data, &priv->clients, node)
++		sysmmu_tlb_invalidate_entry(data->dev, iova);
++	spin_unlock_irqrestore(&priv->lock, flags);
++
++
++	return size;
++}
++
++static phys_addr_t exynos_iommu_iova_to_phys(struct iommu_domain *domain,
++					  unsigned long iova)
++{
++	struct exynos_iommu_domain *priv = domain->priv;
++	unsigned long *entry;
++	unsigned long flags;
++	phys_addr_t phys = 0;
++
++	spin_lock_irqsave(&priv->pgtablelock, flags);
++
++	entry = section_entry(priv->pgtable, iova);
++
++	if (lv1ent_section(entry)) {
++		phys = section_phys(entry) + section_offs(iova);
++	} else if (lv1ent_page(entry)) {
++		entry = page_entry(entry, iova);
++
++		if (lv2ent_large(entry))
++			phys = lpage_phys(entry) + lpage_offs(iova);
++		else if (lv2ent_small(entry))
++			phys = spage_phys(entry) + spage_offs(iova);
++	}
++
++	spin_unlock_irqrestore(&priv->pgtablelock, flags);
++
++	return phys;
++}
++
++static struct iommu_ops exynos_iommu_ops = {
++	.domain_init = &exynos_iommu_domain_init,
++	.domain_destroy = &exynos_iommu_domain_destroy,
++	.attach_dev = &exynos_iommu_attach_device,
++	.detach_dev = &exynos_iommu_detach_device,
++	.map = &exynos_iommu_map,
++	.unmap = &exynos_iommu_unmap,
++	.iova_to_phys = &exynos_iommu_iova_to_phys,
++	.pgsize_bitmap = SECT_SIZE | LPAGE_SIZE | SPAGE_SIZE,
++};
++
++static int __init exynos_iommu_init(void)
++{
++	int ret;
++
++	ret = platform_driver_register(&exynos_sysmmu_driver);
++
++	if (ret == 0)
++		bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
++
++	return ret;
++}
++subsys_initcall(exynos_iommu_init);
+-- 
+1.7.1
 
-> In order to make page switching efficient, register used for page
-> selection should be declared as cacheable (when possible). Driver can
-> define pageable and non-pageable (page independent) registers, so that
-> page switching will be carried out for pageable registers only.
 
-In terms of framework I think this is broadly OK, though it'd probably
-be clearer and easier to understand all round if it were unconditional;
-right now the diff is pretty hard to read so I may have missed some
-issues and I'm also reluctant to add any additional combinations of
-build options that aren't actually needed.
-
-The only thing that concerns me is that it flattens the register range
-by muxing the paging into the register address.  This isn't how most of
-the existing paged register users I've seen have handled things and it
-does mean that we're running the risk of the number of pages interfering
-with the register space.  On the other hand it hides the fact that we're
-doing paging from the rest of the kernel which is very nice for anything
-doing generic infrastructure on top of regmap.
-
-One other fun thing which just occurred to me is that I've got a bunch
-of chips which have several independantly paged regions.  I'm not sure
-that's really worth handling here, though.
-
-> Signed-off-by: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-> ---
-> diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
-> index 0f6c7fb..590d72c 100644
-> --- a/drivers/base/regmap/Kconfig
-> +++ b/drivers/base/regmap/Kconfig
-> @@ -16,3 +16,6 @@ config REGMAP_SPI
-> =20
->  config REGMAP_IRQ
->  	bool
-> +
-> +config REGMAP_PAGING
-> +	bool
-
-> diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/interna=
-l.h
-> index fcafc5b..b7931e1 100644
-> --- a/drivers/base/regmap/internal.h
-> +++ b/drivers/base/regmap/internal.h
-> @@ -31,6 +31,18 @@ struct regmap_format {
->  	unsigned int (*parse_val)(void *buf);
->  };
-> =20
-> +#ifdef CONFIG_REGMAP_PAGING
-> +struct regmap_paging {
-> +	unsigned int page_mask;
-> +	unsigned int reg_mask;
-> +	unsigned int reg_bits;
-> +	bool (*pageable_reg)(struct device *dev, unsigned int reg);
-> +	unsigned int sel_reg;
-> +	int sel_shift;
-> +	unsigned int sel_mask;
-> +};
-> +#endif
-
-It'd be good to have a way of enumerating the pages for the debugfs
-interface.  Should we have a max_page as well?
-
-> +
->  struct regmap {
->  	struct mutex lock;
-> =20
-> @@ -79,6 +91,10 @@ struct regmap {
-> =20
->  	struct reg_default *patch;
->  	int patch_regs;
-> +
-> +#ifdef CONFIG_REGMAP_PAGING
-> +	struct regmap_paging page;
-> +#endif
->  };
-> =20
->  struct regcache_ops {
-> diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-> index 7a3f535..45794cc 100644
-> --- a/drivers/base/regmap/regmap.c
-> +++ b/drivers/base/regmap/regmap.c
-> @@ -80,6 +80,24 @@ static bool regmap_volatile_range(struct regmap *map, =
-unsigned int reg,
->  	return true;
->  }
-> =20
-> +#ifdef CONFIG_REGMAP_PAGING
-> +static bool regmap_pageable_range(struct regmap *map, unsigned int reg,
-> +				  unsigned int num)
-> +{
-> +	if (map->page.pageable_reg) {
-> +		unsigned int i;
-> +
-> +		for (i =3D 0; i < num; i++)
-> +			if (map->page.pageable_reg(map->dev, reg))
-> +				return true;
-> +
-> +		return false;
-
-Hrm.  I see where you're going with this test ("is any register in the
-range pageable") but you could also read the function name as "is this
-range of registers pageable".  Can we rename the function to
-"has_pageable" instead to avoid confusion.
-
-> +	}
-> +
-> +	return true;
-> +}
-> +#endif
-> +
->  static void regmap_format_2_6_write(struct regmap *map,
->  				     unsigned int reg, unsigned int val)
->  {
-> @@ -199,6 +217,17 @@ struct regmap *regmap_init(struct device *dev,
->  	map->volatile_reg =3D config->volatile_reg;
->  	map->precious_reg =3D config->precious_reg;
->  	map->cache_type =3D config->cache_type;
-> +#ifdef CONFIG_REGMAP_PAGING
-> +	map->page.page_mask =3D ((1 << config->page_bits) - 1) << config->reg_b=
-its;
-> +	map->page.reg_mask =3D (1 << config->reg_bits) - 1;
-> +	map->page.reg_bits =3D config->reg_bits;
-> +	map->page.pageable_reg =3D config->pageable_reg;
-> +	map->page.sel_reg =3D config->page_sel_reg;
-> +	map->page.sel_shift =3D config->page_sel_shift;
-> +	map->page.sel_mask =3D ((1 << config->page_bits) - 1) <<
-> +			     config->page_sel_shift;
-> +#endif
-> +
-> =20
->  	if (config->read_flag_mask || config->write_flag_mask) {
->  		map->read_flag_mask =3D config->read_flag_mask;
-> @@ -396,41 +425,66 @@ void regmap_exit(struct regmap *map)
->  }
->  EXPORT_SYMBOL_GPL(regmap_exit);
-> =20
-> -static int _regmap_raw_write(struct regmap *map, unsigned int reg,
-> -			     const void *val, size_t val_len)
-> -{
-> -	u8 *u8 =3D map->work_buf;
-> -	void *buf;
-> -	int ret =3D -ENOTSUPP;
-> -	size_t len;
-> -	int i;
-> +static int _regmap_update_bits(struct regmap *map, unsigned int reg,
-> +			       unsigned int mask, unsigned int val,
-> +			       bool *change);
-> =20
-> -	/* Check for unwritable registers before we start */
-> -	if (map->writeable_reg)
-> -		for (i =3D 0; i < val_len / map->format.val_bytes; i++)
-> -			if (!map->writeable_reg(map->dev, reg + i))
-> -				return -EINVAL;
-
-Hrm.  diff has done something really odd here which makes things hard to
-read...
-
-> +#ifdef CONFIG_REGMAP_PAGING
-> +static int _regmap_paged_access(struct regmap *map,
-> +		int (*regmap_bus_access)(struct regmap *map, unsigned int reg,
-> +					 void *val, unsigned int val_len),
-> +		unsigned int reg, void *val, unsigned int val_len)
-> +{
-> +	unsigned int val_num =3D val_len / map->format.val_bytes;
-> +	u8 *_val =3D val;
-> +	unsigned int _reg =3D reg & map->page.reg_mask;
-> +	unsigned int _page =3D reg >> map->page.reg_bits;
-> +	unsigned int _num;
-> +	size_t _len;
-> +	bool change;
-> +	int ret;
-> =20
-> -	if (!map->cache_bypass && map->format.parse_val) {
-> -		unsigned int ival;
-> -		int val_bytes =3D map->format.val_bytes;
-> -		for (i =3D 0; i < val_len / val_bytes; i++) {
-> -			memcpy(map->work_buf, val + (i * val_bytes), val_bytes);
-> -			ival =3D map->format.parse_val(map->work_buf);
-> -			ret =3D regcache_write(map, reg + i, ival);
-> -			if (ret) {
-> -				dev_err(map->dev,
-> -				   "Error in caching of register: %u ret: %d\n",
-> -					reg + i, ret);
-> +	/* Split write into separate blocks, one for each page */
-> +	while (val_num) {
-> +		if ((_reg + val_num  - 1) >> map->page.reg_bits !=3D 0)
-> +			_num =3D (map->page.reg_mask - _reg + 1);
-> +		else
-> +			_num =3D val_num;
-> +
-> +		if (regmap_pageable_range(map, _reg, _num)) {
-> +			/* Update page selector, try to use cache.
-> +			   Page selector is in nonpageable register, so it is
-> +			   safe to reenter update function here. */
-> +			ret =3D _regmap_update_bits(map,
-> +						  map->page.sel_reg,
-> +						  map->page.sel_mask,
-> +						  _page << map->page.sel_shift,
-> +						  &change);
-> +			if (ret < 0)
->  				return ret;
-> -			}
-> -		}
-> -		if (map->cache_only) {
-> -			map->cache_dirty =3D true;
-> -			return 0;
->  		}
-> +
-> +		_len =3D _num * map->format.val_bytes;
-> +		ret =3D regmap_bus_access(map, _reg, _val, _len);
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		val_num -=3D _num;
-> +		_val +=3D _len;
-> +		_reg =3D 0;
-> +		_page++;
->  	}
-> =20
-> +	return 0;
-> +}
-> +#endif /* CONFIG_REGMAP_PAGING */
-> +
-> +static int _regmap_bus_write(struct regmap *map, unsigned int reg,
-> +			     void *val, size_t val_len)
-> +{
-> +	u8 *u8 =3D map->work_buf;
-> +	int ret =3D -ENOTSUPP;
-> +
->  	map->format.format_reg(map->work_buf, reg);
-> =20
->  	u8[0] |=3D map->write_flag_mask;
-> @@ -456,6 +510,9 @@ static int _regmap_raw_write(struct regmap *map, unsi=
-gned int reg,
-> =20
->  	/* If that didn't work fall back on linearising by hand. */
->  	if (ret =3D=3D -ENOTSUPP) {
-> +		void *buf;
-> +		size_t len;
-> +
->  		len =3D map->format.reg_bytes + map->format.pad_bytes + val_len;
->  		buf =3D kzalloc(len, GFP_KERNEL);
->  		if (!buf)
-> @@ -475,6 +532,52 @@ static int _regmap_raw_write(struct regmap *map, uns=
-igned int reg,
->  	return ret;
->  }
-> =20
-> +static int _regmap_raw_write(struct regmap *map, unsigned int reg,
-> +			     const void *val, size_t val_len)
-> +{
-> +	void *_val =3D (void *)val;
-> +	int i;
-> +	int ret;
-> +
-> +	/* Check for unwritable registers before we start */
-> +	if (map->writeable_reg)
-> +		for (i =3D 0; i < val_len / map->format.val_bytes; i++)
-> +			if (!map->writeable_reg(map->dev, reg + i))
-> +				return -EINVAL;
-> +
-> +	if (!map->cache_bypass && map->format.parse_val) {
-> +		unsigned int ival;
-> +		int val_bytes =3D map->format.val_bytes;
-> +		for (i =3D 0; i < val_len / map->format.val_bytes; i++) {
-> +			memcpy(map->work_buf, val + (i * val_bytes), val_bytes);
-> +			ival =3D map->format.parse_val(map->work_buf);
-> +			ret =3D regcache_write(map, reg + i, ival);
-> +			if (ret) {
-> +				dev_err(map->dev,
-> +				   "Error in caching of register: %u ret: %d\n",
-> +					reg + i, ret);
-> +				return ret;
-> +			}
-> +		}
-> +		if (map->cache_only) {
-> +			map->cache_dirty =3D true;
-> +			return 0;
-> +		}
-> +	}
-> +
-> +#ifdef CONFIG_REGMAP_PAGING
-> +	/* Maintain paging, if enabled and register is page dependent */
-> +	if (map->page.page_mask &&
-> +	    !(map->page.sel_reg =3D=3D reg &&
-> +	      val_len =3D=3D map->format.val_bytes)) {
-> +		return _regmap_paged_access(map, &_regmap_bus_write,
-> +					    reg, _val, val_len);
-> +	}
-> +#endif /* CONFIG_REGMAP_PAGING */
-> +
-> +	return _regmap_bus_write(map, reg, _val, val_len);
-> +}
-> +
->  int _regmap_write(struct regmap *map, unsigned int reg,
->  		  unsigned int val)
->  {
-> @@ -494,6 +597,28 @@ int _regmap_write(struct regmap *map, unsigned int r=
-eg,
->  	trace_regmap_reg_write(map->dev, reg, val);
-> =20
->  	if (map->format.format_write) {
-> +#ifdef CONFIG_REGMAP_PAGING
-> +		/* Maintain paging, if enabled and register is page dependent */
-> +		if (map->page.page_mask &&
-> +		    map->page.sel_reg !=3D reg &&
-> +		    (!map->page.pageable_reg ||
-> +		     map->page.pageable_reg(map->dev, reg))) {
-> +			unsigned int page =3D reg >> map->page.reg_bits;
-> +			bool change;
-> +
-> +			/* Update page selector, when needed.
-> +			   Page selector is in nonpageable register, so it is
-> +			   safe to reenter for its update in here. */
-> +			ret =3D _regmap_update_bits(map,
-> +						  map->page.sel_reg,
-> +						  map->page.sel_mask,
-> +						  page << map->page.sel_shift,
-> +						  &change);
-> +			if (ret < 0)
-> +				return ret;
-> +		}
-> +#endif
-> +
->  		map->format.format_write(map, reg, val);
-> =20
->  		trace_regmap_hw_write_start(map->dev, reg, 1);
-> @@ -620,7 +745,7 @@ out:
->  }
->  EXPORT_SYMBOL_GPL(regmap_bulk_write);
-> =20
-> -static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *=
-val,
-> +static int _regmap_bus_read(struct regmap *map, unsigned int reg, void *=
-val,
->  			    unsigned int val_len)
->  {
->  	u8 *u8 =3D map->work_buf;
-> @@ -649,6 +774,21 @@ static int _regmap_raw_read(struct regmap *map, unsi=
-gned int reg, void *val,
->  	return ret;
->  }
-> =20
-> +static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *=
-val,
-> +			    unsigned int val_len)
-> +{
-> +#ifdef CONFIG_REGMAP_PAGING
-> +	/* Maintain paging, if enabled and register is page dependent */
-> +	if (map->page.page_mask &&
-> +	    !(map->page.sel_reg =3D=3D reg &&
-> +	      val_len =3D=3D map->format.val_bytes))
-> +		return _regmap_paged_access(map, &_regmap_bus_read,
-> +					    reg, val, val_len);
-> +#endif /* CONFIG_REGMAP_PAGING */
-> +
-> +	return _regmap_bus_read(map, reg, val, val_len);
-> +}
-> +
->  static int _regmap_read(struct regmap *map, unsigned int reg,
->  			unsigned int *val)
->  {
-> @@ -792,11 +932,9 @@ static int _regmap_update_bits(struct regmap *map, u=
-nsigned int reg,
->  	int ret;
->  	unsigned int tmp, orig;
-> =20
-> -	mutex_lock(&map->lock);
-> -
->  	ret =3D _regmap_read(map, reg, &orig);
->  	if (ret !=3D 0)
-> -		goto out;
-> +		return ret;
-> =20
->  	tmp =3D orig & ~mask;
->  	tmp |=3D val & mask;
-> @@ -808,9 +946,6 @@ static int _regmap_update_bits(struct regmap *map, un=
-signed int reg,
->  		*change =3D false;
->  	}
-> =20
-> -out:
-> -	mutex_unlock(&map->lock);
-> -
->  	return ret;
->  }
-> =20
-> @@ -828,7 +963,12 @@ int regmap_update_bits(struct regmap *map, unsigned =
-int reg,
->  		       unsigned int mask, unsigned int val)
->  {
->  	bool change;
-> -	return _regmap_update_bits(map, reg, mask, val, &change);
-> +	int ret;
-> +
-> +	mutex_lock(&map->lock);
-> +	ret =3D _regmap_update_bits(map, reg, mask, val, &change);
-> +	mutex_unlock(&map->lock);
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(regmap_update_bits);
-> =20
-> @@ -848,7 +988,12 @@ int regmap_update_bits_check(struct regmap *map, uns=
-igned int reg,
->  			     unsigned int mask, unsigned int val,
->  			     bool *change)
->  {
-> -	return _regmap_update_bits(map, reg, mask, val, change);
-> +	int ret;
-> +
-> +	mutex_lock(&map->lock);
-> +	ret =3D _regmap_update_bits(map, reg, mask, val, change);
-> +	mutex_unlock(&map->lock);
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(regmap_update_bits_check);
-> =20
-> diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-> index a90abb6..e4f9db0 100644
-> --- a/include/linux/regmap.h
-> +++ b/include/linux/regmap.h
-> @@ -50,6 +50,14 @@ struct reg_default {
->   * @pad_bits: Number of bits of padding between register and value.
->   * @val_bits: Number of bits in a register value, mandatory.
->   *
-> + * @page_bits: Number of address top-most bits designated to be page num=
-ber.
-> + *             These bits will be written to page selector, for page swi=
-tch.
-> + * @page_sel_reg: Register to update selected page in (available on any =
-page).
-> + * @page_sel_shift: Bit shift for page selector inside the register.
-> + * @pageable_reg: Optional callback returning true, if a register needs
-> + *                page switching (ie. it is page dependent). Register
-> + *                in page_sel_reg is always considered as page independe=
-nt.
-> + *
->   * @writeable_reg: Optional callback returning true if the register
->   *                 can be written to.
->   * @readable_reg: Optional callback returning true if the register
-> @@ -81,6 +89,13 @@ struct regmap_config {
->  	int pad_bits;
->  	int val_bits;
-> =20
-> +#ifdef CONFIG_REGMAP_PAGING
-> +	int page_bits;
-> +	unsigned int page_sel_reg;
-> +	int page_sel_shift;
-> +	bool (*pageable_reg)(struct device *dev, unsigned int reg);
-> +#endif
-> +
->  	bool (*writeable_reg)(struct device *dev, unsigned int reg);
->  	bool (*readable_reg)(struct device *dev, unsigned int reg);
->  	bool (*volatile_reg)(struct device *dev, unsigned int reg);
-
-
---wac7ysb48OaltWcw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPrQWeAAoJEBus8iNuMP3dyDwP/AxjdZYzHEDv5XaPSWjB/v0f
-949ACue8Mn5cNMohDQidqDyBpwEWA69PXmJFcpwfjXb4YjFisEVa0lDbnVXQmws1
-2I92pdcSpAvJN9SKvNvU9okcLi8WIMtCRefhWyOZfUwuLqEc7mcSO6ZulGoNhqR0
-dD04N2KwEZcSbEt+TeX3NHhqVBoZimPea8Ab3uMfk5JjVuYq9N0LuHCaqHNRoED3
-kyDIT8IAlmP3rNSD8nqXlu5tTc2o5oY3H4pYHSPdC2sCcNOrvj8riicciRbh7Kj+
-U23iKlOz0/prFiM1NTCUzfARO8miuJTYJuCmPidc59sxnMKezD7k5CZLbsKUbJt4
-oGiIFb1zyavwJg5+Qu2iwKCoY+rbkpI58N5H8RrDCxyhnon3sOWDOKpKXobSu/uo
-C1l85Mjd1UBNGn4p1kCRpK3v1Vv1lHcwRiW5BUU9883++v2C7WJwTLeN5Q+sI9A6
-QK6mRRc/0ACZuevHTGsxN9Kfc4OQYtFAgzMTARDuXCVdpZ3ALMJg/Nomx61UjHq8
-SgAoMPOXATVTrIFCrKoMVcJHceQ7lx3GCONHQ5gfyRV1i7zsvrOTF8pbld7vFCkx
-eKnz6EJmOS/1HQWon87Sg2igM9Pg0jTP+r6tLi9r3CC7mfTkTYRok2EjSg8upKu0
-Q7VwRtReKv4NpwVgI62J
-=ddBz
------END PGP SIGNATURE-----
-
---wac7ysb48OaltWcw--
