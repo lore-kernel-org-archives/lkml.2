@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761313Ab2EKXwL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 19:52:11 -0400
-Received: from gate.crashing.org ([63.228.1.57]:37261 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761249Ab2EKXwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 19:52:06 -0400
-Message-ID: <1336780315.31450.3.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Sat, 12 May 2012 09:51:55 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1761285Ab2EKXwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 19:52:09 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:55363 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1761227Ab2EKXwB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 19:52:01 -0400
+Message-ID: <4FADA630.1080806@xenotime.net>
+Date: Fri, 11 May 2012 16:52:16 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: linux-next: Tree for May 11 (perf_event_amd.c)
+References: <20120511162738.1d65b6efe099a54841be6313@canb.auug.org.au>
+In-Reply-To: <20120511162738.1d65b6efe099a54841be6313@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On 05/10/2012 11:27 PM, Stephen Rothwell wrote:
 
-It looks like my previous fix for the lazy irq masking problem wasn't
-quite enough. There was another problem related to performance monitor
-interrupts acting as NMIs leaving the flags in an incorrect state.
-Here's a fix that finally seems to make perf solid again.
-
-The following changes since commit 4e25651b70b8d6ded7229ead8181619e121b648d:
-
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu (2012-05-11 09:28:35 -0700)
-
-are available in the git repository at:
+> Hi all,
+> 
+> Changes since 201205010:
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
 
-for you to fetch changes up to 7c0482e3d055e5de056d3c693b821e39205b99ae:
+when CONFIG_LOCAL_APIC is not enabled:
 
-  powerpc/irq: Fix another case of lazy IRQ state getting out of sync (2012-05-12 09:40:41 +1000)
-
-----------------------------------------------------------------
-Benjamin Herrenschmidt (1):
-      powerpc/irq: Fix another case of lazy IRQ state getting out of sync
-
- arch/powerpc/kernel/entry_64.S |   44 ++++++++++++++++++++++++++++------------
- arch/powerpc/kernel/irq.c      |   13 ++++++++++++
- 2 files changed, 44 insertions(+), 13 deletions(-)
+perf_event_amd.c:(.text+0x11530): undefined reference to `get_ibs_caps'
 
 
+-- 
+~Randy
