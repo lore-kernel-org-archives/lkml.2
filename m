@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760215Ab2EKQtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 12:49:17 -0400
-Received: from mail.telros.ru ([83.136.244.21]:63389 "EHLO mail.telros.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754992Ab2EKQtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 12:49:15 -0400
-Date: Fri, 11 May 2012 20:49:07 +0400
-From: volokh@telros.ru
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: volokh84@gmail.com, mchehab@infradead.org, gregkh@linuxfoundation.org,
-        dhowells@redhat.com, rdunlap@xenotime.net, pete@sensoray.com,
-        pradheep.sh@gmail.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Volokh Konstantin <my84@bk.ru>
-Subject: Re: [PATCH] staging: media: go7007: Adlink MPG24 board issues
-Message-ID: <20120511164907.GA16306@VPir.telros.lan>
-References: <1336714980-13460-1-git-send-email-volokh84@gmail.com>
- <4FAD1FAD.4020508@gmail.com>
+	id S932495Ab2EKQym (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 12:54:42 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57187 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950Ab2EKQyk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 12:54:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FAD1FAD.4020508@gmail.com>
+In-Reply-To: <CA+1xoqc15HY1rECsJ6Aj1WMzwT12z4DByJhFopyBAiKawEFh3Q@mail.gmail.com>
+References: <alpine.LSU.2.00.1205110054520.2801@eggly.anvils>
+ <CA+1xoqcChazS=TRt6-7GjJAzQNFLFXmO623rWwjRkdD5x3k=iw@mail.gmail.com>
+ <4FACD00D.4060003@kernel.org> <4FACD573.4060103@kernel.org>
+ <CA+55aFxsZqU4bXRz61ngnR2ozH=AAhwGHR+PqzdTRfnCxJY0oQ@mail.gmail.com> <CA+1xoqc15HY1rECsJ6Aj1WMzwT12z4DByJhFopyBAiKawEFh3Q@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 11 May 2012 09:54:18 -0700
+X-Google-Sender-Auth: q_58MuCnT7Ywp3ye2GrpH8gtQnM
+Message-ID: <CA+55aFztbcB1sULup-rCsWmOaC7RFLvuJ=sqGQz=SAKzys02mw@mail.gmail.com>
+Subject: Re: [PATCH] mm: raise MemFree by reverting percpu_pagelist_fraction
+ to 0
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>some simple stuff I found along the way..
+On Fri, May 11, 2012 at 9:35 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
+>
+> Once it's on, we reserve 1/x of the pages for the pagelists. I'm not
+> sure why 8 was selected in the first place, but I guess it made sense
+> that you don't want to reserve 15%+ of your memory for the pagelists.
 
-On 05/10/2012 10:43 PM, volokh84@gmail.com wrote:
-> From: Volokh Konstantin<my84@bk.ru>                                                                          
->                                                                                                              
-> This issuses applyed only for Adlink MPG24 board with go7007                                                 
+Why not just accept any number, but turn small numbers into the minimum?
 
->>this issue applies only for...
+And if it's a per-cpu, then the minimum had better depend on number of
+CPU's anyway. 15% of memory on a single-cpu already sounds insanely
+high, but if you have several cpu's, it's going to be just totally
+crazy.
 
->   &  wis2804, all whese changes was tested for continuos                                                     
->   load&restart mode                                                                                          
->                                                                                                              
+So a minimum of 8 already sounds broken. Exposing that minimum in a
+way that makes it impossible to reset it sounds just insane.
 
->>these changes were tested for continuous
-
-> This is minimal changes needed for start up go7007&wis2804 to work correctly                                 
->    in 3.4 branch                                                                                             
->                                                                                                              
-> Changes:                                                                                                     
->    - When go7007 reset device, i2c was not worked (need rewrite GPIO5)                                       
-
->>working
-
->    - As wis2804 has i2c_addr=0x00/*really*/, so Need set I2C_CLIENT_TEN flag for validity                    
->    - some main nonzero initialization, rewrites with kzalloc instead kmalloc                                 
->    - STATUS_SHUTDOWN was pl
-
-
-Thanks for english language notation.
-I`ve never used it in real word.
+                    Linus
