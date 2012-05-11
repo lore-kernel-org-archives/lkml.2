@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933078Ab2EKRtV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 13:49:21 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:22723 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932958Ab2EKRtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 13:49:16 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v2 02/29] slub: fix slab_state for slub
-Date: Fri, 11 May 2012 14:44:04 -0300
-Message-Id: <1336758272-24284-3-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1336758272-24284-1-git-send-email-glommer@parallels.com>
-References: <1336758272-24284-1-git-send-email-glommer@parallels.com>
+	id S1422643Ab2EKR56 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 13:57:58 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38322 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932932Ab2EKR5x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 13:57:53 -0400
+Date: Fri, 11 May 2012 21:56:40 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, khlebnikov@openvz.org,
+        xemul@parallels.com, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: c/r: broken locking when executing map_files
+Message-ID: <20120511175640.GA11238@albatros>
+References: <1335979380.10666.6.camel@lappy>
+ <20120502172756.GD2301@moon>
+ <20120503173125.GF19347@moon>
+ <20120505182051.GA16029@albatros>
+ <20120505185306.GB28746@moon>
+ <20120505193201.GA2500@moon>
+ <20120506202132.GA6570@albatros>
+ <20120506204904.GA1912@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120506204904.GA1912@moon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the slub code wants to know if the sysfs state has already been
-initialized, it tests for slab_state == SYSFS. This is quite fragile,
-since new state can be added in the future (it is, in fact, for
-memcg caches). This patch fixes this behavior so the test matches
->= SYSFS, as all other state does.
+On Mon, May 07, 2012 at 00:49 +0400, Cyrill Gorcunov wrote:
+> On Mon, May 07, 2012 at 12:21:32AM +0400, Vasiliy Kulikov wrote:
+> > On Sat, May 05, 2012 at 23:32 +0400, Cyrill Gorcunov wrote:
+> > > On Sat, May 05, 2012 at 10:53:06PM +0400, Cyrill Gorcunov wrote:
+> > >  | [root@neptune ~]# /proc/self/map_files/400000-419000
+> > > 
+> > > it sleeps forever until killed, which is not good I think. Vasiliy, could
+> > > you remind me what exactly is problem if we use unlocked ptrace_may_access
+> > > here?
+> > 
+> > There is a race between ptrace_may_access() and dname_to_vma_addr().
+> > The target task may do exec() between these calls and
+> > dname_to_vma_addr() will be called against a privileged task.  This may
+> > lead to a leak of task maps.
+> 
+> Wait, the proc_map_files_lookup requires the caller to be cap-sysadmin
+> granted, would not this be enough?
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
----
- mm/slub.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yes :-) You can also remove additional checks after capable() in
+readdir and revalidate functions.
 
-diff --git a/mm/slub.c b/mm/slub.c
-index ffe13fd..226e053 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -5356,7 +5356,7 @@ static int sysfs_slab_alias(struct kmem_cache *s, const char *name)
- {
- 	struct saved_alias *al;
- 
--	if (slab_state == SYSFS) {
-+	if (slab_state >= SYSFS) {
- 		/*
- 		 * If we have a leftover link then remove it.
- 		 */
 -- 
-1.7.7.6
-
+Vasily Kulikov
+http://www.openwall.com - bringing security into open computing environments
