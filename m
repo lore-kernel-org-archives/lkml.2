@@ -1,115 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab2EKLpa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 07:45:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36728 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192Ab2EKLp2 (ORCPT
+	id S1756924Ab2EKLxt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 07:53:49 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:16689
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751071Ab2EKLxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 07:45:28 -0400
-Date: Fri, 11 May 2012 13:45:23 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Igor Mammedov <imammedo@redhat.com>
-cc: linux-kernel@vger.kernel.org, rob@landley.net, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, luto@mit.edu, suresh.b.siddha@intel.com,
-        avi@redhat.com, a.p.zijlstra@chello.nl, johnstul@us.ibm.com,
-        arjan@linux.intel.com, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/5] Fix soft-lookup in stop machine on secondary cpu
- bring up
-In-Reply-To: <1336559102-28103-2-git-send-email-imammedo@redhat.com>
-Message-ID: <alpine.LFD.2.02.1205111234460.3231@ionos>
-References: <1336559102-28103-1-git-send-email-imammedo@redhat.com> <1336559102-28103-2-git-send-email-imammedo@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 11 May 2012 07:53:48 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: <linuxppc-dev@lists.ozlabs.org>
+CC: <linux-kernel@vger.kernel.org>, <scottwood@freescale.com>,
+        <galak@kernel.crashing.org>, <leoli@freescale.com>
+Subject: [PATCH v5 1/5] powerpc/85xx: implement hardware timebase sync
+Date: Fri, 11 May 2012 19:53:51 +0800
+Message-ID: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com>
+X-Mailer: git-send-email 1.6.4.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 May 2012, Igor Mammedov wrote:
+Do hardware timebase sync. Firstly, stop all timebases, and transfer
+the timebase value of the boot core to the other core. Finally,
+start all timebases.
 
-> When bringing up cpuX1, it could stall in start_secondary
-> before setting cpu_callin_mask for more than 5 sec. That forces
-> do_boot_cpu() to give up on waiting and go to error return path
-> printing messages:
->   pr_err("CPU%d: Stuck ??\n", cpuX1);
-> or
->   pr_err("CPU%d: Not responding.\n", cpuX1);
-> and native_cpu_up returns early with -EIO. However AP may continue
-> its boot process till it reaches check_tsc_sync_target(), where
-> it will wait for boot cpu to run cpu_up...=>check_tsc_sync_source.
-> That will never happen since cpu_up have returned with error before.
-> 
-> Now we need to note that cpuX1 is marked as active in smp_callin
-> before it stuck in check_tsc_sync_target. And when another cpuX2
-> is being onlined, start_secondary on it will call
->   smp_callin
->     -> smp_store_cpu_info
->       -> identify_secondary_cpu
->         -> mtrr_ap_init
->           -> set_mtrr_from_inactive_cpu
->             -> stop_machine_from_inactive_cpu
-> where it's going to schedule stop_machine work on all ACTIVE cpus
->   smdata.num_threads = num_active_cpus() + 1;
-> and wait till they all complete it before continuing. As was noted
-> before cpuX1 was marked as active but can't execute any work since
-> it's not completed initialization and stuck in check_tsc_sync_target.
-> As result system soft lockups in stop_machine_cpu_stop.
-> 
-> backtrace from reproducer:
-> 
-> PID: 3324   TASK: ffff88007c00ae20  CPU: other cpus   COMMAND: "migration/1"
->     [exception RIP: stop_machine_cpu_stop+131]
-> ...
->  #0 [ffff88007b4d7de8] cpu_stopper_thread at ffffffff810c66bd
->  #1 [ffff88007b4d7ee8] kthread at ffffffff8107871e
->  #2 [ffff88007b4d7f48] kernel_thread_helper at ffffffff8154af24
-> 
-> PID: 0      TASK: ffff88007c029710  CPU: 2   COMMAND: "swapper/2"
->     [exception RIP: check_tsc_sync_target+33]
-> ...
->  #0 [ffff88007c025f30] start_secondary at ffffffff81539876
-> 
-> PID: 0      TASK: ffff88007c041710  CPU: 3   COMMAND: "swapper/3"
->     [exception RIP: stop_machine_cpu_stop+131]
-> ...
->  #0 [ffff88007c04be50] stop_machine_from_inactive_cpu at ffffffff810c6b2f
->  #1 [ffff88007c04bee0] mtrr_ap_init at ffffffff8102e963
->  #2 [ffff88007c04bf10] identify_secondary_cpu at ffffffff81536799
->  #3 [ffff88007c04bf20] smp_store_cpu_info at ffffffff815396d5
->  #4 [ffff88007c04bf30] start_secondary at ffffffff81539800
-> 
-> Could be fixed by not marking being onlined cpu as active too early.
+Only apply to dual-core chips, such as MPC8572, P2020, etc.
 
-This explanation is completely useless. What's fixed by what. And is
-it fixed or could it be fixed?
+Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+Signed-off-by: Li Yang <leoli@freescale.com>
+---
+ arch/powerpc/include/asm/fsl_guts.h |    2 +
+ arch/powerpc/platforms/85xx/smp.c   |   93 +++++++++++++++++++++++++++++++++--
+ 2 files changed, 91 insertions(+), 4 deletions(-)
 
-This also want's an explanation why moving the cpu_starting notifier
-does not hurt any assumptions of the code which has notifiers
-registered for CPU_STARTING. In fact your change can result in
-CPU_ONLINE notifier being called _BEFORE_ CPU_STARTING. Do you really
-think that's correct?
-
-Aside of that your whole patch series tackles the wrong aspect.
+diff --git a/arch/powerpc/include/asm/fsl_guts.h b/arch/powerpc/include/asm/fsl_guts.h
+index aa4c488..dd5ba2c 100644
+--- a/arch/powerpc/include/asm/fsl_guts.h
++++ b/arch/powerpc/include/asm/fsl_guts.h
+@@ -48,6 +48,8 @@ struct ccsr_guts {
+         __be32  dmuxcr;		/* 0x.0068 - DMA Mux Control Register */
+         u8	res06c[0x70 - 0x6c];
+ 	__be32	devdisr;	/* 0x.0070 - Device Disable Control */
++#define CCSR_GUTS_DEVDISR_TB1	0x00001000
++#define CCSR_GUTS_DEVDISR_TB0	0x00004000
+ 	__be32	devdisr2;	/* 0x.0074 - Device Disable Control 2 */
+ 	u8	res078[0x7c - 0x78];
+ 	__be32  pmjcr;		/* 0x.007c - 4 Power Management Jog Control Register */
+diff --git a/arch/powerpc/platforms/85xx/smp.c b/arch/powerpc/platforms/85xx/smp.c
+index ff42490..6862dda 100644
+--- a/arch/powerpc/platforms/85xx/smp.c
++++ b/arch/powerpc/platforms/85xx/smp.c
+@@ -24,6 +24,7 @@
+ #include <asm/mpic.h>
+ #include <asm/cacheflush.h>
+ #include <asm/dbell.h>
++#include <asm/fsl_guts.h>
  
-Why the heck do you need extra magic in check_tsc_sync_target() ?
+ #include <sysdev/fsl_soc.h>
+ #include <sysdev/mpic.h>
+@@ -115,13 +116,70 @@ smp_85xx_kick_cpu(int nr)
+ 
+ struct smp_ops_t smp_85xx_ops = {
+ 	.kick_cpu = smp_85xx_kick_cpu,
+-#ifdef CONFIG_KEXEC
+-	.give_timebase	= smp_generic_give_timebase,
+-	.take_timebase	= smp_generic_take_timebase,
+-#endif
+ };
+ 
+ #ifdef CONFIG_KEXEC
++static struct ccsr_guts __iomem *guts;
++static u64 timebase;
++static int tb_req;
++static int tb_valid;
++
++static void mpc85xx_timebase_freeze(int freeze)
++{
++	unsigned int mask;
++
++	if (!guts)
++		return;
++
++	mask = CCSR_GUTS_DEVDISR_TB0 | CCSR_GUTS_DEVDISR_TB1;
++	if (freeze)
++		setbits32(&guts->devdisr, mask);
++	else
++		clrbits32(&guts->devdisr, mask);
++
++	in_be32(&guts->devdisr);
++}
++
++static void mpc85xx_give_timebase(void)
++{
++	unsigned long flags;
++
++	local_irq_save(flags);
++
++	while (!tb_req)
++		barrier();
++	tb_req = 0;
++
++	mpc85xx_timebase_freeze(1);
++	timebase = get_tb();
++	mb();
++	tb_valid = 1;
++
++	while (tb_valid)
++		barrier();
++
++	mpc85xx_timebase_freeze(0);
++
++	local_irq_restore(flags);
++}
++
++static void mpc85xx_take_timebase(void)
++{
++	unsigned long flags;
++
++	local_irq_save(flags);
++
++	tb_req = 1;
++	while (!tb_valid)
++		barrier();
++
++	set_tb(timebase >> 32, timebase & 0xffffffff);
++	mb();
++	tb_valid = 0;
++
++	local_irq_restore(flags);
++}
++
+ atomic_t kexec_down_cpus = ATOMIC_INIT(0);
+ 
+ void mpc85xx_smp_kexec_cpu_down(int crash_shutdown, int secondary)
+@@ -228,6 +286,20 @@ smp_85xx_setup_cpu(int cpu_nr)
+ 		doorbell_setup_this_cpu();
+ }
+ 
++#ifdef CONFIG_KEXEC
++static const struct of_device_id guts_ids[] = {
++	{ .compatible = "fsl,mpc8572-guts", },
++	{ .compatible = "fsl,mpc8560-guts", },
++	{ .compatible = "fsl,mpc8536-guts", },
++	{ .compatible = "fsl,p1020-guts", },
++	{ .compatible = "fsl,p1021-guts", },
++	{ .compatible = "fsl,p1022-guts", },
++	{ .compatible = "fsl,p1023-guts", },
++	{ .compatible = "fsl,p2020-guts", },
++	{},
++};
++#endif
++
+ void __init mpc85xx_smp_init(void)
+ {
+ 	struct device_node *np;
+@@ -249,6 +321,19 @@ void __init mpc85xx_smp_init(void)
+ 		smp_85xx_ops.cause_ipi = doorbell_cause_ipi;
+ 	}
+ 
++#ifdef CONFIG_KEXEC
++	np = of_find_matching_node(NULL, guts_ids);
++	if (np) {
++		guts = of_iomap(np, 0);
++		smp_85xx_ops.give_timebase = mpc85xx_give_timebase;
++		smp_85xx_ops.take_timebase = mpc85xx_take_timebase;
++		of_node_put(np);
++	} else {
++		smp_85xx_ops.give_timebase = smp_generic_give_timebase;
++		smp_85xx_ops.take_timebase = smp_generic_take_timebase;
++	}
++#endif
++
+ 	smp_ops = &smp_85xx_ops;
+ 
+ #ifdef CONFIG_KEXEC
+-- 
+1.6.4.1
 
-If the booting CPU fails to set the callin map within 5 seconds then
-it should not even reach check_tsc_sync_target() at all.
 
-And just for the record, the new CPU can run into the very same
-timeout problem, when the boot CPU fails to set the callout mask.
-
-This whole stuff is a complete trainwreck already and I don't want to
-see anything like your "fixing the symptoms" hackery near it, really.
-
-This whole stuff needs a proper rewrite and not some more braindamaged
-bandaids. And if we apply bandaids for the time being, then certainly
-not bandaids like the mess you created.
-
-Thanks,
-
-	tglx
