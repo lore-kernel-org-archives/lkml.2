@@ -1,216 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761191Ab2EKGm5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:42:57 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19318 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760307Ab2EKGmx (ORCPT
+	id S1760347Ab2EKGnf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:43:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57311 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757458Ab2EKGna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:42:53 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 10 May 2012 23:42:46 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <linux@arm.linux.org.uk>, <lrg@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
-        <olof@lixom.net>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3 2/4] regulator: tps62360: add dt support
-Date: Fri, 11 May 2012 12:08:43 +0530
-Message-ID: <1336718325-8372-3-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1336718325-8372-1-git-send-email-ldewangan@nvidia.com>
-References: <1336718325-8372-1-git-send-email-ldewangan@nvidia.com>
+	Fri, 11 May 2012 02:43:30 -0400
+Date: Thu, 10 May 2012 23:42:57 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-d67356e7f80f5c2ef487bedc11a91d5fe18c5a15@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1336367344-28071-7-git-send-email-namhyung.kim@lge.com>
+References: <1336367344-28071-7-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf target: Consolidate target task/cpu checking
+Git-Commit-ID: d67356e7f80f5c2ef487bedc11a91d5fe18c5a15
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:43:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add dt support for the pmu device tps62360 and
-Add binding documentation with example.
-With this patch driver will support both device-tree and
-non-device tree registration.
+Commit-ID:  d67356e7f80f5c2ef487bedc11a91d5fe18c5a15
+Gitweb:     http://git.kernel.org/tip/d67356e7f80f5c2ef487bedc11a91d5fe18c5a15
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Mon, 7 May 2012 14:09:03 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 7 May 2012 17:52:05 -0300
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+perf target: Consolidate target task/cpu checking
+
+There are places that check whether target task/cpu is given or not and
+some of them didn't check newly introduced uid or cpu list. Add and use
+three of helper functions to treat them properly.
+
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1336367344-28071-7-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
-Changes from V1:
-	Fixed compilation error in non-devicetree configuration.
-Changes from V2:
-	Taken care of Grant's review comments.
+ tools/perf/builtin-record.c |    4 +---
+ tools/perf/builtin-stat.c   |   12 ++++++------
+ tools/perf/builtin-top.c    |    2 +-
+ tools/perf/util/evlist.c    |   10 ++++------
+ tools/perf/util/evsel.c     |    8 ++++----
+ tools/perf/util/target.h    |   15 +++++++++++++++
+ 6 files changed, 31 insertions(+), 20 deletions(-)
 
- .../bindings/regulator/tps62360-regulator.txt      |   45 ++++++++++++
- drivers/regulator/tps62360-regulator.c             |   73 +++++++++++++++++++-
- 2 files changed, 117 insertions(+), 1 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
-
-diff --git a/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt b/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
-new file mode 100644
-index 0000000..f411b57
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/tps62360-regulator.txt
-@@ -0,0 +1,45 @@
-+TPS62360 Voltage regulators
-+
-+Required properties:
-+- compatible: Must be one of the following.
-+	"ti,tps62360"
-+	"ti,tps62361",
-+	"ti,tps62362",
-+	"ti,tps62363",
-+- reg: I2C slave address
-+
-+Optional properties:
-+- ti,enable-force-pwm: Enable force PWM mode. This is boolean value.
-+- ti,enable-vout-discharge: Enable output discharge. This is boolean value.
-+- ti,enable-pull-down: Enable pull down. This is boolean value.
-+- ti,vsel0-gpio: GPIO for controlling VSEL0 line.
-+  If this property is missing, then assume that there is no GPIO
-+  for vsel0 control.
-+- ti,vsel1-gpio: Gpio for controlling VSEL1 line.
-+  If this property is missing, then assume that there is no GPIO
-+  for vsel1 control.
-+- ti,vsel0-state-high: Inital state of vsel0 input is high.
-+  If this property is missing, then assume the state as low (0).
-+- ti,vsel1-state-high: Inital state of vsel1 input is high.
-+  If this property is missing, then assume the state as low (0).
-+
-+Any property defined as part of the core regulator binding, defined in
-+regulator.txt, can also be used.
-+
-+Example:
-+
-+	abc: tps62360 {
-+		compatible = "ti,tps62361";
-+		reg =  <0x60>;
-+		regulator-name = "tps62361-vout";
-+		regulator-min-microvolt = <500000>;
-+		regulator-max-microvolt = <1500000>;
-+		regulator-boot-on
-+		ti,vsel0-gpio = <&gpio1 16 0>;
-+		ti,vsel1-gpio = <&gpio1 17 0>;
-+		ti,vsel0-state-high;
-+		ti,vsel1-state-high;
-+		ti,enable-pull-down;
-+		ti,enable-force-pwm;
-+		ti,enable-vout-discharge;
-+	};
-diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
-index 3506900..60765cc 100644
---- a/drivers/regulator/tps62360-regulator.c
-+++ b/drivers/regulator/tps62360-regulator.c
-@@ -26,6 +26,10 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/err.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
-+#include <linux/regulator/of_regulator.h>
- #include <linux/platform_device.h>
- #include <linux/regulator/driver.h>
- #include <linux/regulator/machine.h>
-@@ -297,6 +301,56 @@ static const struct regmap_config tps62360_regmap_config = {
- 	.cache_type		= REGCACHE_RBTREE,
- };
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index c8bf6ea..42e2414 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -843,9 +843,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
  
-+static struct tps62360_regulator_platform_data *
-+	of_get_tps62360_platform_data(struct device *dev)
+ 	argc = parse_options(argc, argv, record_options, record_usage,
+ 			    PARSE_OPT_STOP_AT_NON_OPTION);
+-	if (!argc && !rec->opts.target.pid && !rec->opts.target.tid &&
+-	    !rec->opts.target.system_wide && !rec->opts.target.cpu_list &&
+-	    !rec->opts.target.uid_str)
++	if (!argc && perf_target__none(&rec->opts.target))
+ 		usage_with_options(record_usage, record_options);
+ 
+ 	if (rec->force && rec->append_file) {
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index bb77232..d9ff246 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -290,10 +290,10 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
+ 
+ 	attr->inherit = !no_inherit;
+ 
+-	if (target.system_wide)
++	if (!perf_target__no_cpu(&target))
+ 		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
+ 						group, group_fd);
+-	if (!target.pid && !target.tid && (!group || evsel == first)) {
++	if (perf_target__no_task(&target) && (!group || evsel == first)) {
+ 		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
+ 	}
+@@ -443,7 +443,7 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 			exit(-1);
+ 		}
+ 
+-		if (!target.tid && !target.pid && !target.system_wide)
++		if (perf_target__none(&target))
+ 			evsel_list->threads->map[0] = child_pid;
+ 
+ 		/*
+@@ -965,7 +965,7 @@ static void print_stat(int argc, const char **argv)
+ 	if (!csv_output) {
+ 		fprintf(output, "\n");
+ 		fprintf(output, " Performance counter stats for ");
+-		if (!target.pid && !target.tid) {
++		if (perf_target__no_task(&target)) {
+ 			fprintf(output, "\'%s", argv[0]);
+ 			for (i = 1; i < argc; i++)
+ 				fprintf(output, " %s", argv[i]);
+@@ -1187,13 +1187,13 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	} else if (big_num_opt == 0) /* User passed --no-big-num */
+ 		big_num = false;
+ 
+-	if (!argc && !target.pid && !target.tid)
++	if (!argc && perf_target__no_task(&target))
+ 		usage_with_options(stat_usage, options);
+ 	if (run_count <= 0)
+ 		usage_with_options(stat_usage, options);
+ 
+ 	/* no_aggr, cgroup are for system-wide only */
+-	if ((no_aggr || nr_cgroups) && !target.system_wide) {
++	if ((no_aggr || nr_cgroups) && perf_target__no_cpu(&target)) {
+ 		fprintf(stderr, "both cgroup and no-aggregation "
+ 			"modes only available in system-wide mode\n");
+ 
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 7ba0f03..e4ca827 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1016,7 +1016,7 @@ static int __cmd_top(struct perf_top *top)
+ 	if (ret)
+ 		goto out_delete;
+ 
+-	if (top->target.tid || top->target.uid != UINT_MAX)
++	if (!perf_target__no_task(&top->target))
+ 		perf_event__synthesize_thread_map(&top->tool, top->evlist->threads,
+ 						  perf_event__process,
+ 						  &top->session->host_machine);
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 183b199..1201daf 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -609,12 +609,10 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
+ 	if (evlist->threads == NULL)
+ 		return -1;
+ 
+-	if (target->uid != UINT_MAX || target->tid)
+-		evlist->cpus = cpu_map__dummy_new();
+-	else if (!target->system_wide && target->cpu_list == NULL)
+-		evlist->cpus = cpu_map__dummy_new();
+-	else
++	if (!perf_target__no_cpu(target))
+ 		evlist->cpus = cpu_map__new(target->cpu_list);
++	else
++		evlist->cpus = cpu_map__dummy_new();
+ 
+ 	if (evlist->cpus == NULL)
+ 		goto out_delete_threads;
+@@ -831,7 +829,7 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
+ 		exit(-1);
+ 	}
+ 
+-	if (!opts->target.system_wide && !opts->target.tid && !opts->target.pid)
++	if (perf_target__none(&opts->target))
+ 		evlist->threads->map[0] = evlist->workload.pid;
+ 
+ 	close(child_ready_pipe[1]);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index bb785a0..21eaab2 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -114,8 +114,8 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 		attr->sample_type	|= PERF_SAMPLE_PERIOD;
+ 
+ 	if (!opts->sample_id_all_missing &&
+-	    (opts->sample_time || opts->target.system_wide ||
+-	     !opts->no_inherit || opts->target.cpu_list))
++	    (opts->sample_time || !opts->no_inherit ||
++	     !perf_target__no_cpu(&opts->target)))
+ 		attr->sample_type	|= PERF_SAMPLE_TIME;
+ 
+ 	if (opts->raw_samples) {
+@@ -136,8 +136,8 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 	attr->mmap = track;
+ 	attr->comm = track;
+ 
+-	if (!opts->target.pid && !opts->target.tid &&
+-	    !opts->target.system_wide && (!opts->group || evsel == first)) {
++	if (perf_target__none(&opts->target) &&
++	    (!opts->group || evsel == first)) {
+ 		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
+ 	}
+diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
+index 6fcd01c..127cff3 100644
+--- a/tools/perf/util/target.h
++++ b/tools/perf/util/target.h
+@@ -46,4 +46,19 @@ enum perf_target_errno perf_target__parse_uid(struct perf_target *target);
+ int perf_target__strerror(struct perf_target *target, int errnum, char *buf,
+ 			  size_t buflen);
+ 
++static inline bool perf_target__no_task(struct perf_target *target)
 +{
-+	struct tps62360_regulator_platform_data *pdata;
-+	struct device_node *np = dev->of_node;
-+
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		dev_err(dev, "Memory alloc failed for platform data\n");
-+		return NULL;
-+	}
-+
-+	pdata->reg_init_data = of_get_regulator_init_data(dev, dev->of_node);
-+	if (!pdata->reg_init_data) {
-+		dev_err(dev, "Not able to get OF regulator init data\n");
-+		return NULL;
-+	}
-+
-+	pdata->vsel0_gpio = of_get_named_gpio(np, "vsel0-gpio", 0);
-+	pdata->vsel1_gpio = of_get_named_gpio(np, "vsel1-gpio", 0);
-+
-+	if (of_find_property(np, "ti,vsel0-state-high", NULL))
-+		pdata->vsel0_def_state = 1;
-+
-+	if (of_find_property(np, "ti,vsel1-state-high", NULL))
-+		pdata->vsel1_def_state = 1;
-+
-+	if (of_find_property(np, "ti,enable-pull-down", NULL))
-+		pdata->en_internal_pulldn = true;
-+
-+	if (of_find_property(np, "ti,enable-force-pwm", NULL))
-+		pdata->en_force_pwm = true;
-+
-+	if (of_find_property(np, "ti,enable-vout-discharge", NULL))
-+		pdata->en_discharge = true;
-+
-+	return pdata;
++	return !target->pid && !target->tid && !target->uid_str;
 +}
 +
-+#if defined(CONFIG_OF)
-+static const struct of_device_id tps62360_of_match[] = {
-+	 { .compatible = "ti,tps62360", .data = (void *)TPS62360},
-+	 { .compatible = "ti,tps62361", .data = (void *)TPS62361},
-+	 { .compatible = "ti,tps62362", .data = (void *)TPS62362},
-+	 { .compatible = "ti,tps62363", .data = (void *)TPS62363},
-+	{},
++static inline bool perf_target__no_cpu(struct perf_target *target)
++{
++	return !target->system_wide && !target->cpu_list;
 +}
-+MODULE_DEVICE_TABLE(of, tps62360_of_match);
-+#endif
 +
- static int __devinit tps62360_probe(struct i2c_client *client,
- 				     const struct i2c_device_id *id)
- {
-@@ -306,8 +360,24 @@ static int __devinit tps62360_probe(struct i2c_client *client,
- 	struct tps62360_chip *tps;
- 	int ret;
- 	int i;
-+	int chip_id;
- 
- 	pdata = client->dev.platform_data;
-+	chip_id = id->driver_data;
++static inline bool perf_target__none(struct perf_target *target)
++{
++	return perf_target__no_task(target) && perf_target__no_cpu(target);
++}
 +
-+	if (client->dev.of_node) {
-+		const struct of_device_id *match;
-+		match = of_match_device(of_match_ptr(tps62360_of_match),
-+				&client->dev);
-+		if (!match) {
-+			dev_err(&client->dev, "Error: No device match found\n");
-+			return -ENODEV;
-+		}
-+		chip_id = (int)match->data;
-+		if (!pdata)
-+			pdata = of_get_tps62360_platform_data(&client->dev);
-+	}
-+
- 	if (!pdata) {
- 		dev_err(&client->dev, "%s(): Platform data not found\n",
- 						__func__);
-@@ -328,7 +398,7 @@ static int __devinit tps62360_probe(struct i2c_client *client,
- 	tps->vsel1_gpio = pdata->vsel1_gpio;
- 	tps->dev = &client->dev;
- 
--	switch (id->driver_data) {
-+	switch (chip_id) {
- 	case TPS62360:
- 	case TPS62362:
- 		tps->voltage_base = TPS62360_BASE_VOLTAGE;
-@@ -484,6 +554,7 @@ static struct i2c_driver tps62360_i2c_driver = {
- 	.driver = {
- 		.name = "tps62360",
- 		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(tps62360_of_match),
- 	},
- 	.probe = tps62360_probe,
- 	.remove = __devexit_p(tps62360_remove),
--- 
-1.7.1.1
-
+ #endif /* _PERF_TARGET_H */
