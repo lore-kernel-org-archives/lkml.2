@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964801Ab2EKJzH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 05:55:07 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41963 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175Ab2EKJzF (ORCPT
+	id S964812Ab2EKJ60 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 05:58:26 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39280 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932109Ab2EKJ6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 05:55:05 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FACE184.6020307@jp.fujitsu.com>
-Date: Fri, 11 May 2012 18:53:08 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 6/6] remove __must_check for res_counter_charge_nofail()
-References: <4FACDED0.3020400@jp.fujitsu.com>
-In-Reply-To: <4FACDED0.3020400@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Fri, 11 May 2012 05:58:25 -0400
+Date: Fri, 11 May 2012 11:01:07 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: airlied@linux.ie, alan@linux.intel.com, kirill.shutemov@linux.intel.com,
+        airlied@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gma500: fix build when ACPI isn't set
+Message-ID: <20120511110107.06d3e336@pyramind.ukuu.org.uk>
+In-Reply-To: <CA+1xoqdp3N=hxF-bq0vCwUcyLuZ9wbpFiRJT2MjeBx=xQNgDJQ@mail.gmail.com>
+References: <1336711142-26788-1-git-send-email-levinsasha928@gmail.com>
+	<20120511104341.561ad95b@pyramind.ukuu.org.uk>
+	<CA+1xoqdp3N=hxF-bq0vCwUcyLuZ9wbpFiRJT2MjeBx=xQNgDJQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I picked this up from Costa's slub memcg series. For fixing added warning
-by patch 4.
-==
-From: Glauber Costa <glommer@parallels.com>
-Subject: [PATCH 6/6] remove __must_check for res_counter_charge_nofail()
+On Fri, 11 May 2012 11:49:48 +0200
+Sasha Levin <levinsasha928@gmail.com> wrote:
 
-Since we will succeed with the allocation no matter what, there
-isn't the need to use __must_check with it. It can very well
-be optional.
+> On Fri, May 11, 2012 at 11:43 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> > Not btw that I imagine you could run a non ACPI kernel on a box new
+> > enough to have a GMA500 8)
+> 
+> Probably not, but I saw more #ifdef CONFIG_ACPI below and assumed
+> there's a good reason for that.
+> 
+> Out of curiously, is a scenario where a GMA500 is assigned to a KVM
+> guest which doesn't have ACPI support plausible?
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/res_counter.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I doubt it - the GMA500 is doing direct memory access via the GTT and
+hitting hardware level stuff. I don't believe any work has ever been done
+for Imagination based graphics pass through.
 
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-index d11c1cd..c6b0368 100644
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -119,7 +119,7 @@ int __must_check res_counter_charge_locked(struct res_counter *counter,
- 		unsigned long val);
- int __must_check res_counter_charge(struct res_counter *counter,
- 		unsigned long val, struct res_counter **limit_fail_at);
--int __must_check res_counter_charge_nofail(struct res_counter *counter,
-+int res_counter_charge_nofail(struct res_counter *counter,
- 		unsigned long val, struct res_counter **limit_fail_at);
- 
- /*
--- 
-1.7.4.1
-
-
+Alan
