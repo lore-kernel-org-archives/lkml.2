@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758557Ab2EKG0B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:26:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56971 "EHLO
+	id S1758724Ab2EKG0l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:26:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56988 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755994Ab2EKGZ7 (ORCPT
+	with ESMTP id S1751383Ab2EKG0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:25:59 -0400
-Date: Thu, 10 May 2012 23:25:29 -0700
-From: tip-bot for Ulrich Drepper <drepper@akkadia.org>
-Message-ID: <tip-f3054c778e367d624ca0dfe68b8498b5c463a9d1@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, robert.richter@amd.com, drepper@gmail.com,
-        drepper@akkadia.org, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, robert.richter@amd.com, drepper@gmail.com,
-        dsahern@gmail.com, drepper@akkadia.org, tglx@linutronix.de
-In-Reply-To: <201204231304.q3ND4TFe020805@drepperk.user.openhosting.com>
-References: <201204231304.q3ND4TFe020805@drepperk.user.openhosting.com>
+	Fri, 11 May 2012 02:26:39 -0400
+Date: Thu, 10 May 2012 23:26:19 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-0tjedaozsy9oarq30nvzg74b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Cleanup realloc use
-Git-Commit-ID: f3054c778e367d624ca0dfe68b8498b5c463a9d1
+Subject: [tip:perf/core] perf test: Make the rdpmc test honour 'verbose'
+  mode
+Git-Commit-ID: 23080e4cd224013c06444e7850fe0bcb55c129ff
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,68 +30,81 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:25:35 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:26:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f3054c778e367d624ca0dfe68b8498b5c463a9d1
-Gitweb:     http://git.kernel.org/tip/f3054c778e367d624ca0dfe68b8498b5c463a9d1
-Author:     Ulrich Drepper <drepper@akkadia.org>
-AuthorDate: Mon, 23 Apr 2012 09:04:29 -0400
+Commit-ID:  23080e4cd224013c06444e7850fe0bcb55c129ff
+Gitweb:     http://git.kernel.org/tip/23080e4cd224013c06444e7850fe0bcb55c129ff
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 26 Apr 2012 16:22:09 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 23 Apr 2012 15:33:05 -0300
+CommitDate: Wed, 2 May 2012 15:14:12 -0300
 
-perf tools: Cleanup realloc use
+perf test: Make the rdpmc test honour 'verbose' mode
 
-The if branch is completely unnecessary since 'realloc' handles NULL
-pointers for the first parameter.
+It was unconditionally printing debug stuff when in non -v mode we
+should just print the name and result of the test.
 
-This is really only a cleanup and submitted mainly to prevent
-proliferation of bad practices.
+Now:
 
-Signed-off-by: Ulrich Drepper <drepper@gmail.com>
+[root@sandy ~]# perf test rdpmc
+ 6: x86 rdpmc test: Ok
+[root@sandy ~]# perf test -v rdpmc
+ 6: x86 rdpmc test:
+--- start ---
+             0:           6030
+             1:          60030
+             2:         600050
+             3:        6000056
+             4:       60000070
+             5:      600000266
+   ---- end ----
+x86 rdpmc test: Ok
+[root@sandy ~]#
+
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/201204231304.q3ND4TFe020805@drepperk.user.openhosting.com
+Link: http://lkml.kernel.org/n/tip-0tjedaozsy9oarq30nvzg74b@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c |   17 ++++++-----------
- 1 files changed, 6 insertions(+), 11 deletions(-)
+ tools/perf/builtin-test.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 4c7c2d7..6e618ba 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -31,21 +31,16 @@ static const char **header_argv;
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 1c5b980..5502a4a 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -1549,8 +1549,6 @@ static int __test__rdpmc(void)
+ 	sa.sa_sigaction = segfault_handler;
+ 	sigaction(SIGSEGV, &sa, NULL);
  
- int perf_header__push_event(u64 id, const char *name)
- {
-+	struct perf_trace_event_type *nevents;
-+
- 	if (strlen(name) > MAX_EVENT_NAME)
- 		pr_warning("Event %s will be truncated\n", name);
+-	fprintf(stderr, "\n\n");
+-
+ 	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
+ 	if (fd < 0) {
+ 		die("Error: sys_perf_event_open() syscall returned "
+@@ -1575,7 +1573,7 @@ static int __test__rdpmc(void)
+ 		loops *= 10;
  
--	if (!events) {
--		events = malloc(sizeof(struct perf_trace_event_type));
--		if (events == NULL)
--			return -ENOMEM;
--	} else {
--		struct perf_trace_event_type *nevents;
-+	nevents = realloc(events, (event_count + 1) * sizeof(*events));
-+	if (nevents == NULL)
-+		return -ENOMEM;
-+	events = nevents;
+ 		delta = now - stamp;
+-		fprintf(stderr, "%14d: %14Lu\n", n, (long long)delta);
++		pr_debug("%14d: %14Lu\n", n, (long long)delta);
  
--		nevents = realloc(events, (event_count + 1) * sizeof(*events));
--		if (nevents == NULL)
--			return -ENOMEM;
--		events = nevents;
--	}
- 	memset(&events[event_count], 0, sizeof(struct perf_trace_event_type));
- 	events[event_count].event_id = id;
- 	strncpy(events[event_count].name, name, MAX_EVENT_NAME - 1);
+ 		delta_sum += delta;
+ 	}
+@@ -1583,7 +1581,7 @@ static int __test__rdpmc(void)
+ 	munmap(addr, page_size);
+ 	close(fd);
+ 
+-	fprintf(stderr, "   ");
++	pr_debug("   ");
+ 
+ 	if (!delta_sum)
+ 		return -1;
