@@ -1,208 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030264Ab2EKLMP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 07:12:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35206 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759501Ab2EKLMN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 07:12:13 -0400
-Message-ID: <1336734684.1017.13.camel@twins>
-Subject: Re: [tip:sched/core] x86/numa: Check for nonsensical topologies on
- real hw as well
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tj@kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Date: Fri, 11 May 2012 13:11:24 +0200
-In-Reply-To: <CA+1xoqfygHVK8hXqSOrZtudE57ZFut52Ptus9zwgBAJxH-VL_g@mail.gmail.com>
-References: <tip-re15l0jqjtpz709oxozt2zoh@git.kernel.org>
-	 <CAE9FiQVu7KP=rabe5_jYZyEGpW7sv6wkK9wumJfW1vk2=+cYKA@mail.gmail.com>
-	 <1336650578.27020.94.camel@laptop> <1336651704.27020.100.camel@laptop>
-	 <1336658058.2527.119.camel@twins>
-	 <CA+1xoqfygHVK8hXqSOrZtudE57ZFut52Ptus9zwgBAJxH-VL_g@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	id S1759653Ab2EKLN6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 07:13:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11979 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753275Ab2EKLN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 07:13:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="139465152"
+Message-ID: <1336735041.2625.35.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 1/7] [RFC] UBI: Add checkpoint on-chip layout
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, tim.bird@am.sony.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de
+Date: Fri, 11 May 2012 14:17:21 +0300
+In-Reply-To: <1336585125-127220-2-git-send-email-richard@nod.at>
+References: <1336585125-127220-1-git-send-email-richard@nod.at>
+	 <1336585125-127220-2-git-send-email-richard@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-PKaHel37MzVOY7Ncvu5+"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-11 at 13:00 +0200, Sasha Levin wrote:
-> On Thu, May 10, 2012 at 3:54 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> > OK here's one that compiles and boots without silly warnings on a WSM-EP
-> >
-> >
-> > ---
-> 
-> I've tried Ingo's original patch on a KVM guest that has
-> 'numa=fake=10', and saw two of these warnings mentioned above show up.
-> 
-> I've tried applying Peter's patch on top, but now I get 24 such
-> warnings instead.
 
-Yeah, I should probably make that WARN_ONCE()
+--=-PKaHel37MzVOY7Ncvu5+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
----
-Subject: x86: Rewrite set_cpu_sibling_map
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri May 11 13:05:59 CEST 2012
+I'd like to a git tree for this stuff at some point, when you feel you
+are ready, and then do all further changes incrementally on top of that.
+Then would also be able to participate - at least do minor things myself
+and send patches to you.
 
-Commit ad7687dde ("x86/numa: Check for nonsensical topologies on real
-hw as well") is broken in that the condition can trigger for valid
-setups but only changes the end result for invalid setups with no real
-means of discerning between those.
+On Wed, 2012-05-09 at 19:38 +0200, Richard Weinberger wrote:
+> +#ifdef CONFIG_MTD_UBI_CHECKPOINT
+> +#define UBI_CP_SB_VOLUME_ID	(UBI_LAYOUT_VOLUME_ID + 1)
+> +#define UBI_CP_DATA_VOLUME_ID	(UBI_CP_SB_VOLUME_ID + 1)
 
-Rewrite set_cpu_sibling_map() to make the code clearer and make sure
-to only warn when the check changes the end result.
+#define UBI_CP_DATA_VOLUME_ID	(UBI_LAYOUT_VOLUME_ID + 2)
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- arch/x86/kernel/smpboot.c |  116 ++++++++++++++++++++++++++--------------------
- 1 file changed, 68 insertions(+), 48 deletions(-)
+is more readable I think.
 
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -299,70 +299,90 @@ void __cpuinit smp_store_cpu_info(int id
- 		identify_secondary_cpu(c);
- }
- 
--static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
-+static bool __cpuinit
-+topology_sane(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o, const char *name)
- {
--	cpumask_set_cpu(cpu1, cpu_sibling_mask(cpu2));
--	cpumask_set_cpu(cpu2, cpu_sibling_mask(cpu1));
--	cpumask_set_cpu(cpu1, cpu_core_mask(cpu2));
--	cpumask_set_cpu(cpu2, cpu_core_mask(cpu1));
--	cpumask_set_cpu(cpu1, cpu_llc_shared_mask(cpu2));
--	cpumask_set_cpu(cpu2, cpu_llc_shared_mask(cpu1));
-+	int cpu1 = c->cpu_index, cpu2 = o->cpu_index;
-+
-+	return !WARN_ONCE(cpu_to_node(cpu1) != cpu_to_node(cpu2),
-+		"sched: CPU #%d's %s-sibling CPU #%d is not on the same node! "
-+		"[node: %d != %d]. Ignoring dependency.\n",
-+		cpu1, name, cpu2, cpu_to_node(cpu1), cpu_to_node(cpu2));
- }
- 
-+#define link_mask(_m, c1, c2)						\
-+do {									\
-+	cpumask_set_cpu((c1), cpu_##_m##_mask(c2));			\
-+	cpumask_set_cpu((c2), cpu_##_m##_mask(c1));			\
-+} while (0)
-+
-+static bool __cpuinit match_smt(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
-+{
-+	if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
-+		int cpu1 = c->cpu_index, cpu2 = o->cpu_index;
-+
-+		if (c->phys_proc_id == o->phys_proc_id &&
-+		    per_cpu(cpu_llc_id, cpu1) == per_cpu(cpu_llc_id, cpu2) &&
-+		    c->compute_unit_id == o->compute_unit_id)
-+			return topology_sane(c, o, "smt");
-+
-+	} else if (c->phys_proc_id == o->phys_proc_id &&
-+		   c->cpu_core_id == o->cpu_core_id) {
-+		return topology_sane(c, o, "smt");
-+	}
-+
-+	return false;
-+}
-+
-+static bool __cpuinit match_llc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
-+{
-+	int cpu1 = c->cpu_index, cpu2 = o->cpu_index;
-+
-+	if (per_cpu(cpu_llc_id, cpu1) != BAD_APICID &&
-+	    per_cpu(cpu_llc_id, cpu1) == per_cpu(cpu_llc_id, cpu2))
-+		return topology_sane(c, o, "llc");
-+
-+	return false;
-+}
-+
-+static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
-+{
-+	if (c->phys_proc_id == o->phys_proc_id)
-+		return topology_sane(c, o, "mc");
-+
-+	return false;
-+}
- 
- void __cpuinit set_cpu_sibling_map(int cpu)
- {
--	int i;
-+	bool has_mc = boot_cpu_data.x86_max_cores > 1;
-+	bool has_smt = smp_num_siblings > 1;
- 	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+	struct cpuinfo_x86 *o;
-+	int i;
- 
- 	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
- 
--	if (smp_num_siblings > 1) {
--		for_each_cpu(i, cpu_sibling_setup_mask) {
--			struct cpuinfo_x86 *o = &cpu_data(i);
--
--			if (cpu_to_node(cpu) != cpu_to_node(i)) {
--				WARN_ONCE(1, "sched: CPU #%d's thread-sibling CPU #%d not on the same node! [node %d != %d]. Ignoring sibling dependency.\n", cpu, i, cpu_to_node(cpu), cpu_to_node(i));
--				continue;
--			}
--
--			if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
--				if (c->phys_proc_id == o->phys_proc_id &&
--				    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i) &&
--				    c->compute_unit_id == o->compute_unit_id)
--					link_thread_siblings(cpu, i);
--			} else if (c->phys_proc_id == o->phys_proc_id &&
--				   c->cpu_core_id == o->cpu_core_id) {
--				link_thread_siblings(cpu, i);
--			}
--		}
--	} else {
-+	if (!has_smt && !has_mc) {
- 		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
--	}
--
--	cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
--
--	if (__this_cpu_read(cpu_info.x86_max_cores) == 1) {
--		cpumask_copy(cpu_core_mask(cpu), cpu_sibling_mask(cpu));
-+		cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
-+		cpumask_set_cpu(cpu, cpu_core_mask(cpu));
- 		c->booted_cores = 1;
- 		return;
- 	}
- 
- 	for_each_cpu(i, cpu_sibling_setup_mask) {
--		if (cpu_to_node(cpu) != cpu_to_node(i)) {
--			WARN_ONCE(1, "sched: CPU #%d's core-sibling CPU #%d not on the same node! [node %d != %d]. Ignoring sibling dependency.\n", cpu, i, cpu_to_node(cpu), cpu_to_node(i));
--			continue;
--		}
--
--		if (per_cpu(cpu_llc_id, cpu) != BAD_APICID &&
--		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
--			cpumask_set_cpu(i, cpu_llc_shared_mask(cpu));
--			cpumask_set_cpu(cpu, cpu_llc_shared_mask(i));
--		}
--
--		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
--			cpumask_set_cpu(i, cpu_core_mask(cpu));
--			cpumask_set_cpu(cpu, cpu_core_mask(i));
-+		o = &cpu_data(i);
-+
-+		if ((i == cpu) || (has_smt && match_smt(c, o)))
-+			link_mask(sibling, cpu, i);
-+
-+		if ((i == cpu) || (has_mc && match_llc(c, o)))
-+			link_mask(llc_shared, cpu, i);
-+
-+		if ((i == cpu) || (has_mc && match_mc(c, o))) {
-+			link_mask(core, cpu, i);
-+
- 			/*
- 			 *  Does this new cpu bringup a new core?
- 			 */
+> +#define UBI_CP_MAX_BLOCKS	32
+
+This really needs a comment on top of it telling how big flash with say,
+128KiB PEB size this would support.
+
+> +
+> +/**
+> + * struct ubi_cp_sb - UBI checkpoint super block
+> + * @magic: checkpoint super block magic number (%UBI_CP_SB_MAGIC)
+> + * @version: format version of this checkpoint
+> + * @data_crc: CRC over the checkpoint data
+> + * @nblocks: number of PEBs used by this checkpoint
+> + * @block_loc: an array containing the location of all PEBs of the check=
+point
+> + * @block_ec: the erase counter of each used PEB
+> + * @sqnum: highest sequence number value at the time while taking the ch=
+eckpoint
+> + *
+> + * The checkpoint
+> + */
+> +struct ubi_cp_sb {
+> +	__be32 magic;
+> +	__u8 version;
+> +	__be32 data_crc;
+> +	__be32 nblocks;
+> +	__be32 block_loc[UBI_CP_MAX_BLOCKS];
+> +	__be32 block_ec[UBI_CP_MAX_BLOCKS];
+> +	__be64 sqnum;
+> +} __packed;
+
+Please, unless it is size-critical, always leave some unused space in
+on-flash data structure for possible future extensions, and initialize
+them to 0.
+
+BTW, side-note, please, check that you follow the convention of UBI and
+make all on-flash data structures 64-bit aligned (of course unless it is
+size-critical).
+
+> +/**
+> + * struct ubi_cp_long_pool - Checkpoint pool with long term used PEBs
+> + * @magic: long pool magic numer (%UBI_CP_LPOOL_MAGIC)
+> + * @size: current pool size
+> + * @pebs: an array containing the location of all PEBs in this pool
+> + */
+> +struct ubi_cp_long_pool {
+> +	__be32 magic;
+> +	__be32 size;
+> +	__be32 pebs[UBI_CP_MAX_POOL_SIZE];
+> +} __packed;
+
+What's the perpose of having these pools - once you read all the
+information from the fastmap and the wl subsystem inserts it to the
+RB-trees - you already know this data. Why you need to store this on the
+flash? This whole pool think look redundant and unneeded.
+
+> +/**
+> + * struct ubi_cp_ec - stores the erase counter of a PEB
+> + * @pnum: PEB number
+> + * @ec: ec of this PEB
+> + */
+> +struct ubi_cp_ec {
+> +	__be32 pnum;
+> +	__be32 ec;
+> +} __packed;
+
+It is weird that you do not have an array of ECs instead for _every_
+PEB. Why wasting the flash and time writing/reading this data?
+
+> +/**
+> + * struct ubi_cp_eba - denotes an association beween a PEB and LEB
+> + * @lnum: LEB number
+> + * @pnum: PEB number
+> + */
+> +struct ubi_cp_eba {
+> +	__be32 lnum;
+> +	__be32 pnum;
+> +} __packed;
+
+Same here - I'd expect a simple array for every PEB in the system.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-PKaHel37MzVOY7Ncvu5+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPrPVBAAoJECmIfjd9wqK0IR4P/RsWA/kMgNJwsCzTQzoOHuZl
+DY3itbcEwjhzUqIO5W+eiaZrC9actTWZubcH8CN1J8C/7oDPYbd2ehKoy/V+lbzf
+DFp05xfr06yXFWXfyFDDRNfspcyBrHn22i7ZNbke/kxY1fDlrQ6saBqQotRNc7JI
+VFb2N15HG8UgLKxqNK79uOsazqhXu04ehiSdGex3BZ5QfICPPcbJzq6MdCQCZD12
+c/4faGhK24pTgDNF74JAH0K36MNU3IMR2fylYSkasTKh0zVY9RyDB9fHshQ9+Zue
+uO79gfDt9SQUBfVwDMeSWYikLadFqi5B2vQKI5G5gCqZC9rdRR/d9qrAURy5lFxG
+GKx7oBdfaQFux9C3p4oPoPDNT4dZ8Ygl55v/X24JjsypbNqsyeGEJdQiQ37KqWuP
+US3fDGDZuHSnVNwXjhaFIOKzITqdYKBEoSIuTfVGyAmLOFVkIjazEDk5zRqrdnRS
+XZZz+2WQMXxVZ7IxlybYLHcS1VOr6NV6OI79AT73ZK6uhY5GOXX7k1b20Ct3Mhd+
+0lMTFcdKdNypekJ24K4wbFOTYDBstRHEPqN/+P6wvnD5jS1X722Hn53Z2yV6JBnG
+1dBEEcCJ8aODOu8zDIJee41kBsCBjg53w/rjvFkHTDSdaidwDgq9FBWcz1ed3QJQ
+Dck5mZ5GnundnJnZtLit
+=M9HW
+-----END PGP SIGNATURE-----
+
+--=-PKaHel37MzVOY7Ncvu5+--
 
