@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933314Ab2EKVfM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 17:35:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46690 "EHLO
+	id S933299Ab2EKVfK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 17:35:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53716 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933270Ab2EKVew (ORCPT
+	with ESMTP id S1422631Ab2EKVew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 May 2012 17:34:52 -0400
 From: David Daney <ddaney.cavm@gmail.com>
@@ -14,9 +14,9 @@ To: devicetree-discuss@lists.ozlabs.org,
         spi-devel-general@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
         linux-doc@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH 2/2] spi: Add SPI master controller for OCTEON SOCs.
-Date: Fri, 11 May 2012 14:34:46 -0700
-Message-Id: <1336772086-17248-3-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH 1/2] MIPS: OCTEON: Add register definitions for SPI host hardware.
+Date: Fri, 11 May 2012 14:34:45 -0700
+Message-Id: <1336772086-17248-2-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1336772086-17248-1-git-send-email-ddaney.cavm@gmail.com>
 References: <1336772086-17248-1-git-send-email-ddaney.cavm@gmail.com>
@@ -26,463 +26,348 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-Add the driver, link it into the kbuild system and provide device tree
-binding documentation.
+Needed by SPI driver.
 
 Signed-off-by: David Daney <david.daney@cavium.com>
 ---
- .../devicetree/bindings/spi/spi-octeon.txt         |   33 ++
- drivers/spi/Kconfig                                |    7 +
- drivers/spi/Makefile                               |    1 +
- drivers/spi/spi-octeon.c                           |  369 ++++++++++++++++++++
- 4 files changed, 410 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/spi/spi-octeon.txt
- create mode 100644 drivers/spi/spi-octeon.c
+ arch/mips/include/asm/octeon/cvmx-mpi-defs.h |  328 ++++++++++++++++++++++++++
+ 1 files changed, 328 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/include/asm/octeon/cvmx-mpi-defs.h
 
-diff --git a/Documentation/devicetree/bindings/spi/spi-octeon.txt b/Documentation/devicetree/bindings/spi/spi-octeon.txt
+diff --git a/arch/mips/include/asm/octeon/cvmx-mpi-defs.h b/arch/mips/include/asm/octeon/cvmx-mpi-defs.h
 new file mode 100644
-index 0000000..431add1
+index 0000000..4615b10
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/spi/spi-octeon.txt
-@@ -0,0 +1,33 @@
-+Cavium, Inc. OCTEON SOC SPI master controller.
-+
-+Required properties:
-+- compatible : "cavium,octeon-3010-spi"
-+- reg : The register base for the controller.
-+- interrupts : One interrupt, used by the controller.
-+- #address-cells : <1>, as required by generic SPI binding.
-+- #size-cells : <0>, also as required by generic SPI binding.
-+
-+Child nodes as per the generic SPI binding.
-+
-+Example:
-+
-+	spi@1070000001000 {
-+		compatible = "cavium,octeon-3010-spi";
-+		reg = <0x10700 0x00001000 0x0 0x100>;
-+		interrupts = <0 58>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		eeprom@0 {
-+			compatible = "st,m95256", "atmel,at25";
-+			reg = <0>;
-+			spi-max-frequency = <5000000>;
-+			spi-cpha;
-+			spi-cpol;
-+
-+			pagesize = <64>;
-+			size = <32768>;
-+			address-width = <16>;
-+		};
-+	};
-+
-diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index 00c0240..e1dd0d0 100644
---- a/drivers/spi/Kconfig
-+++ b/drivers/spi/Kconfig
-@@ -228,6 +228,13 @@ config SPI_OC_TINY
- 	help
- 	  This is the driver for OpenCores tiny SPI master controller.
- 
-+config SPI_OCTEON
-+	tristate "Cavium OCTEON SPI controller"
-+	depends on CPU_CAVIUM_OCTEON
-+	help
-+	  SPI host driver for the hardware found on some Cavium OCTEON
-+	  SOCs.
-+
- config SPI_OMAP_UWIRE
- 	tristate "OMAP1 MicroWire"
- 	depends on ARCH_OMAP1
-diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 9d75d21..c7f8b71 100644
---- a/drivers/spi/Makefile
-+++ b/drivers/spi/Makefile
-@@ -37,6 +37,7 @@ obj-$(CONFIG_SPI_MPC52xx_PSC)		+= spi-mpc52xx-psc.o
- obj-$(CONFIG_SPI_MPC52xx)		+= spi-mpc52xx.o
- obj-$(CONFIG_SPI_NUC900)		+= spi-nuc900.o
- obj-$(CONFIG_SPI_OC_TINY)		+= spi-oc-tiny.o
-+obj-$(CONFIG_SPI_OCTEON)		+= spi-octeon.o
- obj-$(CONFIG_SPI_OMAP_UWIRE)		+= spi-omap-uwire.o
- obj-$(CONFIG_SPI_OMAP_100K)		+= spi-omap-100k.o
- obj-$(CONFIG_SPI_OMAP24XX)		+= spi-omap2-mcspi.o
-diff --git a/drivers/spi/spi-octeon.c b/drivers/spi/spi-octeon.c
-new file mode 100644
-index 0000000..7207aaf
---- /dev/null
-+++ b/drivers/spi/spi-octeon.c
-@@ -0,0 +1,369 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
++++ b/arch/mips/include/asm/octeon/cvmx-mpi-defs.h
+@@ -0,0 +1,328 @@
++/***********************license start***************
++ * Author: Cavium Networks
 + *
-+ * Copyright (C) 2011, 2012 Cavium, Inc.
-+ */
++ * Contact: support@caviumnetworks.com
++ * This file is part of the OCTEON SDK
++ *
++ * Copyright (c) 2003-2012 Cavium Networks
++ *
++ * This file is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, Version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This file is distributed in the hope that it will be useful, but
++ * AS-IS and WITHOUT ANY WARRANTY; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE, TITLE, or
++ * NONINFRINGEMENT.  See the GNU General Public License for more
++ * details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this file; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
++ * or visit http://www.gnu.org/licenses/.
++ *
++ * This file may also be available under a different license from Cavium.
++ * Contact Cavium Networks for more information
++ ***********************license end**************************************/
 +
-+#include <linux/platform_device.h>
-+#include <linux/interrupt.h>
-+#include <linux/spi/spi.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/of_spi.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
++#ifndef __CVMX_MPI_DEFS_H__
++#define __CVMX_MPI_DEFS_H__
 +
-+#include <asm/octeon/octeon.h>
-+#include <asm/octeon/cvmx-mpi-defs.h>
++#define CVMX_MPI_CFG (CVMX_ADD_IO_SEG(0x0001070000001000ull))
++#define CVMX_MPI_DATX(offset) (CVMX_ADD_IO_SEG(0x0001070000001080ull) + ((offset) & 15) * 8)
++#define CVMX_MPI_STS (CVMX_ADD_IO_SEG(0x0001070000001008ull))
++#define CVMX_MPI_TX (CVMX_ADD_IO_SEG(0x0001070000001010ull))
 +
-+#define DRV_VERSION "2.0" /* Version 1 was the out-of-tree driver */
-+#define DRV_DESCRIPTION "Cavium, Inc. OCTEON SPI bus driver"
-+
-+
-+#define OCTEON_SPI_CFG 0
-+#define OCTEON_SPI_STS 0x08
-+#define OCTEON_SPI_TX 0x10
-+#define OCTEON_SPI_DAT0 0x80
-+
-+#define OCTEON_SPI_MAX_BYTES 9
-+
-+#define OCTEON_SPI_MAX_CLOCK_HZ 16000000
-+
-+struct octeon_spi {
-+	struct spi_master *my_master;
-+	u64 register_base;
-+	u64 last_cfg;
-+	u64 cs_enax;
++union cvmx_mpi_cfg {
++	uint64_t u64;
++	struct cvmx_mpi_cfg_s {
++#ifdef __BIG_ENDIAN_BITFIELD
++		uint64_t reserved_29_63:35;
++		uint64_t clkdiv:13;
++		uint64_t csena3:1;
++		uint64_t csena2:1;
++		uint64_t csena1:1;
++		uint64_t csena0:1;
++		uint64_t cslate:1;
++		uint64_t tritx:1;
++		uint64_t idleclks:2;
++		uint64_t cshi:1;
++		uint64_t csena:1;
++		uint64_t int_ena:1;
++		uint64_t lsbfirst:1;
++		uint64_t wireor:1;
++		uint64_t clk_cont:1;
++		uint64_t idlelo:1;
++		uint64_t enable:1;
++#else
++		uint64_t enable:1;
++		uint64_t idlelo:1;
++		uint64_t clk_cont:1;
++		uint64_t wireor:1;
++		uint64_t lsbfirst:1;
++		uint64_t int_ena:1;
++		uint64_t csena:1;
++		uint64_t cshi:1;
++		uint64_t idleclks:2;
++		uint64_t tritx:1;
++		uint64_t cslate:1;
++		uint64_t csena0:1;
++		uint64_t csena1:1;
++		uint64_t csena2:1;
++		uint64_t csena3:1;
++		uint64_t clkdiv:13;
++		uint64_t reserved_29_63:35;
++#endif
++	} s;
++	struct cvmx_mpi_cfg_cn30xx {
++#ifdef __BIG_ENDIAN_BITFIELD
++		uint64_t reserved_29_63:35;
++		uint64_t clkdiv:13;
++		uint64_t reserved_12_15:4;
++		uint64_t cslate:1;
++		uint64_t tritx:1;
++		uint64_t idleclks:2;
++		uint64_t cshi:1;
++		uint64_t csena:1;
++		uint64_t int_ena:1;
++		uint64_t lsbfirst:1;
++		uint64_t wireor:1;
++		uint64_t clk_cont:1;
++		uint64_t idlelo:1;
++		uint64_t enable:1;
++#else
++		uint64_t enable:1;
++		uint64_t idlelo:1;
++		uint64_t clk_cont:1;
++		uint64_t wireor:1;
++		uint64_t lsbfirst:1;
++		uint64_t int_ena:1;
++		uint64_t csena:1;
++		uint64_t cshi:1;
++		uint64_t idleclks:2;
++		uint64_t tritx:1;
++		uint64_t cslate:1;
++		uint64_t reserved_12_15:4;
++		uint64_t clkdiv:13;
++		uint64_t reserved_29_63:35;
++#endif
++	} cn30xx;
++	struct cvmx_mpi_cfg_cn31xx {
++#ifdef __BIG_ENDIAN_BITFIELD
++		uint64_t reserved_29_63:35;
++		uint64_t clkdiv:13;
++		uint64_t reserved_11_15:5;
++		uint64_t tritx:1;
++		uint64_t idleclks:2;
++		uint64_t cshi:1;
++		uint64_t csena:1;
++		uint64_t int_ena:1;
++		uint64_t lsbfirst:1;
++		uint64_t wireor:1;
++		uint64_t clk_cont:1;
++		uint64_t idlelo:1;
++		uint64_t enable:1;
++#else
++		uint64_t enable:1;
++		uint64_t idlelo:1;
++		uint64_t clk_cont:1;
++		uint64_t wireor:1;
++		uint64_t lsbfirst:1;
++		uint64_t int_ena:1;
++		uint64_t csena:1;
++		uint64_t cshi:1;
++		uint64_t idleclks:2;
++		uint64_t tritx:1;
++		uint64_t reserved_11_15:5;
++		uint64_t clkdiv:13;
++		uint64_t reserved_29_63:35;
++#endif
++	} cn31xx;
++	struct cvmx_mpi_cfg_cn30xx cn50xx;
++	struct cvmx_mpi_cfg_cn61xx {
++#ifdef __BIG_ENDIAN_BITFIELD
++		uint64_t reserved_29_63:35;
++		uint64_t clkdiv:13;
++		uint64_t reserved_14_15:2;
++		uint64_t csena1:1;
++		uint64_t csena0:1;
++		uint64_t cslate:1;
++		uint64_t tritx:1;
++		uint64_t idleclks:2;
++		uint64_t cshi:1;
++		uint64_t reserved_6_6:1;
++		uint64_t int_ena:1;
++		uint64_t lsbfirst:1;
++		uint64_t wireor:1;
++		uint64_t clk_cont:1;
++		uint64_t idlelo:1;
++		uint64_t enable:1;
++#else
++		uint64_t enable:1;
++		uint64_t idlelo:1;
++		uint64_t clk_cont:1;
++		uint64_t wireor:1;
++		uint64_t lsbfirst:1;
++		uint64_t int_ena:1;
++		uint64_t reserved_6_6:1;
++		uint64_t cshi:1;
++		uint64_t idleclks:2;
++		uint64_t tritx:1;
++		uint64_t cslate:1;
++		uint64_t csena0:1;
++		uint64_t csena1:1;
++		uint64_t reserved_14_15:2;
++		uint64_t clkdiv:13;
++		uint64_t reserved_29_63:35;
++#endif
++	} cn61xx;
++	struct cvmx_mpi_cfg_cn66xx {
++#ifdef __BIG_ENDIAN_BITFIELD
++		uint64_t reserved_29_63:35;
++		uint64_t clkdiv:13;
++		uint64_t csena3:1;
++		uint64_t csena2:1;
++		uint64_t reserved_12_13:2;
++		uint64_t cslate:1;
++		uint64_t tritx:1;
++		uint64_t idleclks:2;
++		uint64_t cshi:1;
++		uint64_t reserved_6_6:1;
++		uint64_t int_ena:1;
++		uint64_t lsbfirst:1;
++		uint64_t wireor:1;
++		uint64_t clk_cont:1;
++		uint64_t idlelo:1;
++		uint64_t enable:1;
++#else
++		uint64_t enable:1;
++		uint64_t idlelo:1;
++		uint64_t clk_cont:1;
++		uint64_t wireor:1;
++		uint64_t lsbfirst:1;
++		uint64_t int_ena:1;
++		uint64_t reserved_6_6:1;
++		uint64_t cshi:1;
++		uint64_t idleclks:2;
++		uint64_t tritx:1;
++		uint64_t cslate:1;
++		uint64_t reserved_12_13:2;
++		uint64_t csena2:1;
++		uint64_t csena3:1;
++		uint64_t clkdiv:13;
++		uint64_t reserved_29_63:35;
++#endif
++	} cn66xx;
++	struct cvmx_mpi_cfg_cn61xx cnf71xx;
 +};
 +
-+struct octeon_spi_setup {
-+	u32 max_speed_hz;
-+	u8 chip_select;
-+	u8 mode;
-+	u8 bits_per_word;
++union cvmx_mpi_datx {
++	uint64_t u64;
++	struct cvmx_mpi_datx_s {
++#ifdef __BIG_ENDIAN_BITFIELD
++		uint64_t reserved_8_63:56;
++		uint64_t data:8;
++#else
++		uint64_t data:8;
++		uint64_t reserved_8_63:56;
++#endif
++	} s;
++	struct cvmx_mpi_datx_s cn30xx;
++	struct cvmx_mpi_datx_s cn31xx;
++	struct cvmx_mpi_datx_s cn50xx;
++	struct cvmx_mpi_datx_s cn61xx;
++	struct cvmx_mpi_datx_s cn66xx;
++	struct cvmx_mpi_datx_s cnf71xx;
 +};
 +
-+static void octeon_spi_wait_ready(struct octeon_spi *p)
-+{
-+	union cvmx_mpi_sts mpi_sts;
-+	unsigned int loops = 0;
-+
-+	do {
-+		if (loops++)
-+			__delay(500);
-+		mpi_sts.u64 = cvmx_read_csr(p->register_base + OCTEON_SPI_STS);
-+	} while (mpi_sts.s.busy);
-+}
-+
-+static int octeon_spi_do_transfer(struct octeon_spi *p,
-+				  struct spi_message *msg,
-+				  struct spi_transfer *xfer,
-+				  bool last_xfer)
-+{
-+	union cvmx_mpi_cfg mpi_cfg;
-+	union cvmx_mpi_tx mpi_tx;
-+	unsigned int clkdiv;
-+	unsigned int speed_hz;
-+	int mode;
-+	bool cpha, cpol;
-+	int bits_per_word;
-+	const u8 *tx_buf;
-+	u8 *rx_buf;
-+	int len;
-+	int i;
-+
-+	struct octeon_spi_setup *msg_setup = spi_get_ctldata(msg->spi);
-+
-+	speed_hz = msg_setup->max_speed_hz;
-+	mode = msg_setup->mode;
-+	cpha = mode & SPI_CPHA;
-+	cpol = mode & SPI_CPOL;
-+	bits_per_word = msg_setup->bits_per_word;
-+
-+	if (xfer->speed_hz)
-+		speed_hz = xfer->speed_hz;
-+	if (xfer->bits_per_word)
-+		bits_per_word = xfer->bits_per_word;
-+
-+	if (speed_hz > OCTEON_SPI_MAX_CLOCK_HZ)
-+		speed_hz = OCTEON_SPI_MAX_CLOCK_HZ;
-+
-+	clkdiv = octeon_get_io_clock_rate() / (2 * speed_hz);
-+
-+	mpi_cfg.u64 = 0;
-+
-+	mpi_cfg.s.clkdiv = clkdiv;
-+	mpi_cfg.s.cshi = (mode & SPI_CS_HIGH) ? 1 : 0;
-+	mpi_cfg.s.lsbfirst = (mode & SPI_LSB_FIRST) ? 1 : 0;
-+	mpi_cfg.s.wireor = (mode & SPI_3WIRE) ? 1 : 0;
-+	mpi_cfg.s.idlelo = cpha != cpol;
-+	mpi_cfg.s.cslate = cpha ? 1 : 0;
-+	mpi_cfg.s.enable = 1;
-+
-+	if (msg_setup->chip_select < 4)
-+		p->cs_enax |= 1ull << (12 + msg_setup->chip_select);
-+	mpi_cfg.u64 |= p->cs_enax;
-+
-+	if (mpi_cfg.u64 != p->last_cfg) {
-+		p->last_cfg = mpi_cfg.u64;
-+		cvmx_write_csr(p->register_base + OCTEON_SPI_CFG, mpi_cfg.u64);
-+	}
-+	tx_buf = xfer->tx_buf;
-+	rx_buf = xfer->rx_buf;
-+	len = xfer->len;
-+	while (len > OCTEON_SPI_MAX_BYTES) {
-+		for (i = 0; i < OCTEON_SPI_MAX_BYTES; i++) {
-+			u8 d;
-+			if (tx_buf)
-+				d = *tx_buf++;
-+			else
-+				d = 0;
-+			cvmx_write_csr(p->register_base + OCTEON_SPI_DAT0 + (8 * i), d);
-+		}
-+		mpi_tx.u64 = 0;
-+		mpi_tx.s.csid = msg_setup->chip_select;
-+		mpi_tx.s.leavecs = 1;
-+		mpi_tx.s.txnum = tx_buf ? OCTEON_SPI_MAX_BYTES : 0;
-+		mpi_tx.s.totnum = OCTEON_SPI_MAX_BYTES;
-+		cvmx_write_csr(p->register_base + OCTEON_SPI_TX, mpi_tx.u64);
-+
-+		octeon_spi_wait_ready(p);
-+		if (rx_buf)
-+			for (i = 0; i < OCTEON_SPI_MAX_BYTES; i++) {
-+				u64 v = cvmx_read_csr(p->register_base + OCTEON_SPI_DAT0 + (8 * i));
-+				*rx_buf++ = (u8)v;
-+			}
-+		len -= OCTEON_SPI_MAX_BYTES;
-+	}
-+
-+	for (i = 0; i < len; i++) {
-+		u8 d;
-+		if (tx_buf)
-+			d = *tx_buf++;
-+		else
-+			d = 0;
-+		cvmx_write_csr(p->register_base + OCTEON_SPI_DAT0 + (8 * i), d);
-+	}
-+
-+	mpi_tx.u64 = 0;
-+	mpi_tx.s.csid = msg_setup->chip_select;
-+	if (last_xfer)
-+		mpi_tx.s.leavecs = xfer->cs_change;
-+	else
-+		mpi_tx.s.leavecs = !xfer->cs_change;
-+	mpi_tx.s.txnum = tx_buf ? len : 0;
-+	mpi_tx.s.totnum = len;
-+	cvmx_write_csr(p->register_base + OCTEON_SPI_TX, mpi_tx.u64);
-+
-+	octeon_spi_wait_ready(p);
-+	if (rx_buf)
-+		for (i = 0; i < len; i++) {
-+			u64 v = cvmx_read_csr(p->register_base + OCTEON_SPI_DAT0 + (8 * i));
-+			*rx_buf++ = (u8)v;
-+		}
-+
-+	if (xfer->delay_usecs)
-+		udelay(xfer->delay_usecs);
-+
-+	return xfer->len;
-+}
-+
-+static int octeon_spi_validate_bpw(struct spi_device *spi, u32 speed)
-+{
-+	switch (speed) {
-+	case 8:
-+		break;
-+	default:
-+		dev_err(&spi->dev, "Error: %d bits per word not supported\n",
-+			speed);
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+static int octeon_spi_transfer_one_message(struct spi_master *master,
-+					   struct spi_message *msg)
-+{
-+	struct octeon_spi *p = spi_master_get_devdata(master);
-+	unsigned int total_len = 0;
-+	int status = 0;
-+	struct spi_transfer *xfer;
-+
-+	/*
-+	 * We better have set the configuration via a call to .setup
-+	 * before we get here.
-+	 */
-+	if (spi_get_ctldata(msg->spi) == NULL) {
-+		status = -EINVAL;
-+		goto err;
-+	}
-+
-+	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
-+		if (xfer->bits_per_word) {
-+			status = octeon_spi_validate_bpw(msg->spi,
-+							 xfer->bits_per_word);
-+			if (status)
-+				goto err;
-+		}
-+	}
-+
-+	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
-+		bool last_xfer = &xfer->transfer_list == msg->transfers.prev;
-+		int r = octeon_spi_do_transfer(p, msg, xfer, last_xfer);
-+		if (r < 0) {
-+			status = r;
-+			goto err;
-+		}
-+		total_len += r;
-+	}
-+err:
-+	msg->status = status;
-+	msg->actual_length = total_len;
-+	spi_finalize_current_message(master);
-+	return status;
-+}
-+
-+static struct octeon_spi_setup *octeon_spi_new_setup(struct spi_device *spi)
-+{
-+	struct octeon_spi_setup *setup = kzalloc(sizeof(*setup), GFP_KERNEL);
-+	if (!setup)
-+		return NULL;
-+
-+	setup->max_speed_hz = spi->max_speed_hz;
-+	setup->chip_select = spi->chip_select;
-+	setup->mode = spi->mode;
-+	setup->bits_per_word = spi->bits_per_word;
-+	return setup;
-+}
-+
-+static int octeon_spi_setup(struct spi_device *spi)
-+{
-+	int r;
-+	struct octeon_spi_setup *new_setup;
-+	struct octeon_spi_setup *old_setup = spi_get_ctldata(spi);
-+
-+	r = octeon_spi_validate_bpw(spi, spi->bits_per_word);
-+	if (r)
-+		return r;
-+
-+	new_setup = octeon_spi_new_setup(spi);
-+	if (!new_setup)
-+		return -ENOMEM;
-+
-+	spi_set_ctldata(spi, new_setup);
-+	kfree(old_setup);
-+
-+	return 0;
-+}
-+
-+static void octeon_spi_cleanup(struct spi_device *spi)
-+{
-+	struct octeon_spi_setup *old_setup = spi_get_ctldata(spi);
-+	spi_set_ctldata(spi, NULL);
-+	kfree(old_setup);
-+}
-+
-+static int octeon_spi_nop_transfer_hardware(struct spi_master *master)
-+{
-+	return 0;
-+}
-+
-+static int __devinit octeon_spi_probe(struct platform_device *pdev)
-+{
-+
-+	struct resource *res_mem;
-+	struct spi_master *master;
-+	struct octeon_spi *p;
-+	int err = -ENOENT;
-+
-+	master = spi_alloc_master(&pdev->dev, sizeof(struct octeon_spi));
-+	if (!master)
-+		return -ENOMEM;
-+	p = spi_master_get_devdata(master);
-+	platform_set_drvdata(pdev, p);
-+	p->my_master = master;
-+
-+	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+
-+	if (res_mem == NULL) {
-+		dev_err(&pdev->dev, "found no memory resource\n");
-+		err = -ENXIO;
-+		goto fail;
-+	}
-+	if (!devm_request_mem_region(&pdev->dev, res_mem->start,
-+				     resource_size(res_mem), res_mem->name)) {
-+		dev_err(&pdev->dev, "request_mem_region failed\n");
-+		goto fail;
-+	}
-+	p->register_base = (u64)devm_ioremap(&pdev->dev, res_mem->start,
-+					     resource_size(res_mem));
-+
-+	/* Dynamic bus numbering */
-+	master->bus_num = -1;
-+	master->num_chipselect = 4;
-+	master->mode_bits = SPI_CPHA |
-+			    SPI_CPOL |
-+			    SPI_CS_HIGH |
-+			    SPI_LSB_FIRST |
-+			    SPI_3WIRE;
-+
-+	master->setup = octeon_spi_setup;
-+	master->cleanup = octeon_spi_cleanup;
-+	master->prepare_transfer_hardware = octeon_spi_nop_transfer_hardware;
-+	master->transfer_one_message = octeon_spi_transfer_one_message;
-+	master->unprepare_transfer_hardware = octeon_spi_nop_transfer_hardware;
-+
-+	master->dev.of_node = pdev->dev.of_node;
-+	err = spi_register_master(master);
-+	if (err) {
-+		dev_err(&pdev->dev, "register master failed: %d\n", err);
-+		goto fail;
-+	}
-+
-+	dev_info(&pdev->dev, "Version " DRV_VERSION "\n");
-+
-+	return 0;
-+fail:
-+	spi_master_put(master);
-+	return err;
-+}
-+
-+static int __devexit octeon_spi_remove(struct platform_device *pdev)
-+{
-+	struct octeon_spi *p = platform_get_drvdata(pdev);
-+	struct spi_master *master = p->my_master;
-+
-+	spi_unregister_master(master);
-+
-+	/* Clear the CSENA* and put everything in a known state. */
-+	cvmx_write_csr(p->register_base + OCTEON_SPI_CFG, 0);
-+	spi_master_put(master);
-+	return 0;
-+}
-+
-+static struct of_device_id octeon_spi_match[] = {
-+	{
-+		.compatible = "cavium,octeon-3010-spi",
-+	},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, octeon_spi_match);
-+
-+static struct platform_driver octeon_spi_driver = {
-+	.driver = {
-+		.name		= "spi-octeon",
-+		.owner		= THIS_MODULE,
-+		.of_match_table = octeon_spi_match,
-+	},
-+	.probe		= octeon_spi_probe,
-+	.remove		= __exit_p(octeon_spi_remove),
++union cvmx_mpi_sts {
++	uint64_t u64;
++	struct cvmx_mpi_sts_s {
++#ifdef __BIG_ENDIAN_BITFIELD
++		uint64_t reserved_13_63:51;
++		uint64_t rxnum:5;
++		uint64_t reserved_1_7:7;
++		uint64_t busy:1;
++#else
++		uint64_t busy:1;
++		uint64_t reserved_1_7:7;
++		uint64_t rxnum:5;
++		uint64_t reserved_13_63:51;
++#endif
++	} s;
++	struct cvmx_mpi_sts_s cn30xx;
++	struct cvmx_mpi_sts_s cn31xx;
++	struct cvmx_mpi_sts_s cn50xx;
++	struct cvmx_mpi_sts_s cn61xx;
++	struct cvmx_mpi_sts_s cn66xx;
++	struct cvmx_mpi_sts_s cnf71xx;
 +};
 +
-+module_platform_driver(octeon_spi_driver);
++union cvmx_mpi_tx {
++	uint64_t u64;
++	struct cvmx_mpi_tx_s {
++#ifdef __BIG_ENDIAN_BITFIELD
++		uint64_t reserved_22_63:42;
++		uint64_t csid:2;
++		uint64_t reserved_17_19:3;
++		uint64_t leavecs:1;
++		uint64_t reserved_13_15:3;
++		uint64_t txnum:5;
++		uint64_t reserved_5_7:3;
++		uint64_t totnum:5;
++#else
++		uint64_t totnum:5;
++		uint64_t reserved_5_7:3;
++		uint64_t txnum:5;
++		uint64_t reserved_13_15:3;
++		uint64_t leavecs:1;
++		uint64_t reserved_17_19:3;
++		uint64_t csid:2;
++		uint64_t reserved_22_63:42;
++#endif
++	} s;
++	struct cvmx_mpi_tx_cn30xx {
++#ifdef __BIG_ENDIAN_BITFIELD
++		uint64_t reserved_17_63:47;
++		uint64_t leavecs:1;
++		uint64_t reserved_13_15:3;
++		uint64_t txnum:5;
++		uint64_t reserved_5_7:3;
++		uint64_t totnum:5;
++#else
++		uint64_t totnum:5;
++		uint64_t reserved_5_7:3;
++		uint64_t txnum:5;
++		uint64_t reserved_13_15:3;
++		uint64_t leavecs:1;
++		uint64_t reserved_17_63:47;
++#endif
++	} cn30xx;
++	struct cvmx_mpi_tx_cn30xx cn31xx;
++	struct cvmx_mpi_tx_cn30xx cn50xx;
++	struct cvmx_mpi_tx_cn61xx {
++#ifdef __BIG_ENDIAN_BITFIELD
++		uint64_t reserved_21_63:43;
++		uint64_t csid:1;
++		uint64_t reserved_17_19:3;
++		uint64_t leavecs:1;
++		uint64_t reserved_13_15:3;
++		uint64_t txnum:5;
++		uint64_t reserved_5_7:3;
++		uint64_t totnum:5;
++#else
++		uint64_t totnum:5;
++		uint64_t reserved_5_7:3;
++		uint64_t txnum:5;
++		uint64_t reserved_13_15:3;
++		uint64_t leavecs:1;
++		uint64_t reserved_17_19:3;
++		uint64_t csid:1;
++		uint64_t reserved_21_63:43;
++#endif
++	} cn61xx;
++	struct cvmx_mpi_tx_s cn66xx;
++	struct cvmx_mpi_tx_cn61xx cnf71xx;
++};
 +
-+MODULE_DESCRIPTION(DRV_DESCRIPTION);
-+MODULE_VERSION(DRV_VERSION);
-+MODULE_AUTHOR("David Daney");
-+MODULE_LICENSE("GPL");
++#endif
 -- 
 1.7.2.3
 
