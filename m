@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759449Ab2EKGbq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:31:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57080 "EHLO
+	id S1759414Ab2EKGc2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:32:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57091 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759227Ab2EKGbn (ORCPT
+	with ESMTP id S1758515Ab2EKGc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:31:43 -0400
-Date: Thu, 10 May 2012 23:31:17 -0700
+	Fri, 11 May 2012 02:32:26 -0400
+Date: Thu, 10 May 2012 23:32:06 -0700
 From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-b809ac100e2f12ebf1b58ff522dba15651a77d27@git.kernel.org>
+Message-ID: <tip-770a34a38b74982724dbb099225944b415f90281@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@gmail.com,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         namhyung.kim@lge.com, namhyung@gmail.com, dsahern@gmail.com,
         tglx@linutronix.de
-In-Reply-To: <1335417327-11796-6-git-send-email-namhyung.kim@lge.com>
-References: <1335417327-11796-6-git-send-email-namhyung.kim@lge.com>
+In-Reply-To: <1335417327-11796-7-git-send-email-namhyung.kim@lge.com>
+References: <1335417327-11796-7-git-send-email-namhyung.kim@lge.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist: Make create_maps()
-  take struct perf_target
-Git-Commit-ID: b809ac100e2f12ebf1b58ff522dba15651a77d27
+Subject: [tip:perf/core] perf tools: Check more combinations of PID/TID,
+  UID and CPU switches
+Git-Commit-ID: 770a34a38b74982724dbb099225944b415f90281
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,22 +32,30 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:31:23 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:32:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b809ac100e2f12ebf1b58ff522dba15651a77d27
-Gitweb:     http://git.kernel.org/tip/b809ac100e2f12ebf1b58ff522dba15651a77d27
+Commit-ID:  770a34a38b74982724dbb099225944b415f90281
+Gitweb:     http://git.kernel.org/tip/770a34a38b74982724dbb099225944b415f90281
 Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 26 Apr 2012 14:15:19 +0900
+AuthorDate: Thu, 26 Apr 2012 14:15:20 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 2 May 2012 15:23:11 -0300
+CommitDate: Wed, 2 May 2012 15:24:14 -0300
 
-perf evlist: Make create_maps() take struct perf_target
+perf tools: Check more combinations of PID/TID, UID and CPU switches
 
-Now we have all information that needed to create cpu/thread maps in
-struct perf_target, it'd be better using it as an argument.
+There were some combinations of these switches that are not so
+appropriate IMHO.
+
+Since there are implicit priorities between them and they worked well
+anyway, but it ends up opening useless duplicated events.
+
+For example, 'perf stat -t <pid> -a' will open multiple events for the
+thread instead of one.
+
+Add explicit checks and warn user in perf_target__validate().
 
 Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 Reviewed-by: David Ahern <dsahern@gmail.com>
@@ -56,113 +64,32 @@ Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1335417327-11796-6-git-send-email-namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1335417327-11796-7-git-send-email-namhyung.kim@lge.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |    4 +---
- tools/perf/builtin-test.c   |    7 ++++---
- tools/perf/builtin-top.c    |    4 +---
- tools/perf/util/evlist.c    |   12 +++++++-----
- tools/perf/util/evlist.h    |    4 ++--
- 5 files changed, 15 insertions(+), 16 deletions(-)
+ tools/perf/util/usage.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 3596cca..d165909 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -891,9 +891,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 	    rec->opts.target.uid == UINT_MAX - 1)
- 		goto out_free_fd;
- 
--	if (perf_evlist__create_maps(evsel_list, rec->opts.target.pid,
--				     rec->opts.target.tid, rec->opts.target.uid,
--				     rec->opts.target.cpu_list) < 0)
-+	if (perf_evlist__create_maps(evsel_list, &rec->opts.target) < 0)
- 		usage_with_options(record_usage, record_options);
- 
- 	list_for_each_entry(pos, &evsel_list->entries, node) {
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 27882d8..9d9abbb 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -1165,6 +1165,9 @@ realloc:
- static int test__PERF_RECORD(void)
- {
- 	struct perf_record_opts opts = {
-+		.target = {
-+			.uid = UINT_MAX,
-+		},
- 		.no_delay   = true,
- 		.freq	    = 10,
- 		.mmap_pages = 256,
-@@ -1207,9 +1210,7 @@ static int test__PERF_RECORD(void)
- 	 * perf_evlist__prepare_workload we'll fill in the only thread
- 	 * we're monitoring, the one forked there.
- 	 */
--	err = perf_evlist__create_maps(evlist, opts.target.pid,
--				       opts.target.tid, UINT_MAX,
--				       opts.target.cpu_list);
-+	err = perf_evlist__create_maps(evlist, &opts.target);
- 	if (err < 0) {
- 		pr_debug("Not enough memory to create thread/cpu maps\n");
- 		goto out_delete_evlist;
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 4f47952..2a0ec09 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1258,9 +1258,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 	if (top.target.uid_str != NULL && top.target.uid == UINT_MAX - 1)
- 		goto out_delete_evlist;
- 
--	if (perf_evlist__create_maps(top.evlist, top.target.pid,
--				     top.target.tid, top.target.uid,
--				     top.target.cpu_list) < 0)
-+	if (perf_evlist__create_maps(top.evlist, &top.target) < 0)
- 		usage_with_options(top_usage, options);
- 
- 	if (!top.evlist->nr_entries &&
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 7080901..a43e2c5 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -599,18 +599,20 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
- 	return perf_evlist__mmap_per_cpu(evlist, prot, mask);
+diff --git a/tools/perf/util/usage.c b/tools/perf/util/usage.c
+index 0a1a885..228f0a5 100644
+--- a/tools/perf/util/usage.c
++++ b/tools/perf/util/usage.c
+@@ -132,4 +132,18 @@ void perf_target__validate(struct perf_target *target)
+ 		sleep(1);
+ 		target->uid_str = NULL;
+ 	}
++
++	/* UID and CPU are mutually exclusive */
++	if (target->uid_str && target->cpu_list) {
++		ui__warning("UID switch overriding CPU\n");
++		sleep(1);
++		target->cpu_list = NULL;
++	}
++
++	/* PID/UID and SYSTEM are mutually exclusive */
++	if ((target->tid || target->uid_str) && target->system_wide) {
++		ui__warning("PID/TID/UID switch overriding CPU\n");
++		sleep(1);
++		target->system_wide = false;
++	}
  }
- 
--int perf_evlist__create_maps(struct perf_evlist *evlist, const char *target_pid,
--			     const char *target_tid, uid_t uid, const char *cpu_list)
-+int perf_evlist__create_maps(struct perf_evlist *evlist,
-+			     struct perf_target *target)
- {
--	evlist->threads = thread_map__new_str(target_pid, target_tid, uid);
-+	evlist->threads = thread_map__new_str(target->pid, target->tid,
-+					      target->uid);
- 
- 	if (evlist->threads == NULL)
- 		return -1;
- 
--	if (uid != UINT_MAX || (cpu_list == NULL && target_tid))
-+	if (target->uid != UINT_MAX ||
-+	    (target->cpu_list == NULL && target->tid))
- 		evlist->cpus = cpu_map__dummy_new();
- 	else
--		evlist->cpus = cpu_map__new(cpu_list);
-+		evlist->cpus = cpu_map__new(target->cpu_list);
- 
- 	if (evlist->cpus == NULL)
- 		goto out_delete_threads;
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 21f1c9e..58abb63 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -106,8 +106,8 @@ static inline void perf_evlist__set_maps(struct perf_evlist *evlist,
- 	evlist->threads	= threads;
- }
- 
--int perf_evlist__create_maps(struct perf_evlist *evlist, const char *target_pid,
--			     const char *tid, uid_t uid, const char *cpu_list);
-+int perf_evlist__create_maps(struct perf_evlist *evlist,
-+			     struct perf_target *target);
- void perf_evlist__delete_maps(struct perf_evlist *evlist);
- int perf_evlist__set_filters(struct perf_evlist *evlist);
- 
