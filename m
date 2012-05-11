@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758886Ab2EKJkc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 05:40:32 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:43237 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758751Ab2EKJk2 (ORCPT
+	id S1758859Ab2EKJlE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 05:41:04 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39247 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758771Ab2EKJlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 05:40:28 -0400
-From: Bo Shen <voice.shen@atmel.com>
-To: tiwai@suse.de
-Cc: linux-kernel@vger.kernel.org, linux-sound@vger.kernel.org,
-        alsa-devel@alsa-project.org, nicolas.ferre@atmel.com,
-        plagnioj@jcrosoft.com, josh.wu@atmel.com, jm.lin@atmel.com,
-        Bo Shen <voice.shen@atmel.com>
-Subject: [PATCH] atmel/ac97c: correct the unexpected behavior when using uninitial value for reset pin
-Date: Fri, 11 May 2012 17:39:28 +0800
-Message-Id: <1336729168-20562-1-git-send-email-voice.shen@atmel.com>
-X-Mailer: git-send-email 1.7.10
+	Fri, 11 May 2012 05:41:02 -0400
+Date: Fri, 11 May 2012 10:43:41 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: airlied@linux.ie, alan@linux.intel.com, kirill.shutemov@linux.intel.com,
+        airlied@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gma500: fix build when ACPI isn't set
+Message-ID: <20120511104341.561ad95b@pyramind.ukuu.org.uk>
+In-Reply-To: <1336711142-26788-1-git-send-email-levinsasha928@gmail.com>
+References: <1336711142-26788-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When pdata->reset_pin is passed with a negative value (means gpio
-is invalid), then chip->reset_pin will not be assigned to a vaule,
-it will use default value 0. This will cause unexpected behavior.
+On Fri, 11 May 2012 06:39:02 +0200
+Sasha Levin <levinsasha928@gmail.com> wrote:
 
-So, add this patch to correct.
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- sound/atmel/ac97c.c |    2 ++
- 1 file changed, 2 insertions(+)
+NAK - see the patch I posted for Randy to test. That avoids all the
+ifdeffery and simply doesn't touch the opregion at all in a non ACPI
+build.
 
-diff --git a/sound/atmel/ac97c.c b/sound/atmel/ac97c.c
-index 115313e..f5ded64 100644
---- a/sound/atmel/ac97c.c
-+++ b/sound/atmel/ac97c.c
-@@ -991,6 +991,8 @@ static int __devinit atmel_ac97c_probe(struct platform_device *pdev)
- 			gpio_direction_output(pdata->reset_pin, 1);
- 			chip->reset_pin = pdata->reset_pin;
- 		}
-+	} else {
-+		chip->reset_pin = -EINVAL;
- 	}
- 
- 	snd_card_set_dev(card, &pdev->dev);
--- 
-1.7.10
+Not btw that I imagine you could run a non ACPI kernel on a box new
+enough to have a GMA500 8)
 
+Alan
