@@ -1,127 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab2EKUbX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 16:31:23 -0400
-Received: from mga14.intel.com ([143.182.124.37]:15055 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932157Ab2EKUbW convert rfc822-to-8bit (ORCPT
+	id S933201Ab2EKUg0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 16:36:26 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37144 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932157Ab2EKUgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 16:31:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="99104894"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: RE: [Xen-devel] [PATCH 3/3] Xen physical cpus interface
-Thread-Topic: [Xen-devel] [PATCH 3/3] Xen physical cpus interface
-Thread-Index: AQHNLr1B1b8pDRiwSFiwkpXixs4X8JbDIYNQgAHTcp+AABcXMA==
-Date: Fri, 11 May 2012 20:31:15 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923351BCD16@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC8292335154F3E@SHSMSX101.ccr.corp.intel.com>
- <20120420192439.GA32170@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351B5807@SHSMSX101.ccr.corp.intel.com>
- <20120510145745.GO26152@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351B5A2E@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923351B873F@SHSMSX101.ccr.corp.intel.com>
- <20120511142758.GA29677@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351BC88D@SHSMSX101.ccr.corp.intel.com>
- <20120511190041.GA3785@phenom.dumpdata.com>
-In-Reply-To: <20120511190041.GA3785@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 11 May 2012 16:36:24 -0400
+Date: Fri, 11 May 2012 21:36:20 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, linux@arm.linux.org.uk,
+        lrg@ti.com, swarren@nvidia.com, olof@lixom.net,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V3 2/4] regulator: tps62360: add dt support
+Message-ID: <20120511203619.GC29835@opensource.wolfsonmicro.com>
+References: <1336718325-8372-1-git-send-email-ldewangan@nvidia.com>
+ <1336718325-8372-3-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ctP54qlpMx3WjD+/"
+Content-Disposition: inline
+In-Reply-To: <1336718325-8372-3-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Your love life will be... interesting.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
-> On Fri, May 11, 2012 at 06:04:21PM +0000, Liu, Jinsong wrote:
->> Konrad Rzeszutek Wilk wrote:
->>> On Fri, May 11, 2012 at 01:12:13PM +0000, Liu, Jinsong wrote:
->>>> Liu, Jinsong wrote:
->>>>> Just notice your reply (so quick :)
->>>>> 
->>>>> Agree and will update later, except 1 concern below.
->>>>> 
->>>>> Konrad Rzeszutek Wilk wrote:
->>>>>>> 
->>>>>>> Hmm, it's good if it's convenient to do it automatically via
->>>>>>> dev->release. However, dev container (pcpu) would be free at
->>>>>>> some other error cases, so I prefer do it 'manually'.
->>>>>> 
->>>>>> You could also call pcpu_release(..) to do it manually.
->>>>>> 
->>>>> 
->>>>> that means kfree(pcpu) would be done twice at some error cases,
->>>>> do you think it really good? 
->>>>> 
->>>> 
->>>> Ping.
->>>> 
->>>> I think error recovery should be kept inside error logic level
->>>> itself, if try to recover upper level error would bring trouble.
->>>> 
->>>> In our example, there are 2 logic levels:
->>>> pcpu level (as container), and dev level (subfield used for sys)
->>> 
->>> So you need to untangle free_pcpu from doing both. Meaning one does
->>> the SysFS and the other deals with free-ing the structure and
->>> removing itself from the list.
->>> 
->> 
->> free_cpu is very samll, just consist of the 2 parts your said:
->> * pcpu_sys_remove() deal with sysfs
->> * list_del/kfree(pcpu) deal with pcpu
->> 
->>> 
->>>> dev->release should only recover error occurred at dev/sys level,
->>>> and the pcpu error should be recovered at pcpu level.
->>>> 
->>>> If dev->release try to recover its container pcpu level error, like
->>>> list_del/kfree(pcpu), it would make confusing. i.e., considering
->>>> pcpu_sys_create(), 2 error cases: device_register fail, and
->>>> device_create_file fail --> how can the caller decide kfree(pcpu)
->>>> or not?
->>> 
->>> Then you should free it manually. But you can do this by a wrapper
->>> function: 
->>> 
->>> __pcpu_release(..) {
->>> 	..
->>> 	/* Does the removing itself from the list and kfree the pcpu */ }
->>> pcpu_release(..) {
->>> 	struct pcpcu *p= container_of(..)
->>> 	__pcpu_release(p);
->>> }
->>> 
->>> dev->release = &pcpu_release;
->>> 
->> 
->> Too weird way. If we want to release dev itself it's good to use
->> dev->release, but for pcpu I doubt it. (consider the example I gave
->> --> why we create issue (it maybe solved in weird method I agree),
->> just for using dev->release?)  
->> 
->> In kernel many dev->release keep NULL.
->> An example of using dev->release is cpu/mcheck/mce.c -->
->> mce_device_release(), it *just* deal dev itself. 
-> 
-> OK? I am not sure what are we arguing here anymore?
-> I think using 'kfree(pcpu)' on the error paths (as long as it is
-> done before device_register) is OK. I think that seperating
-> the SysFS deletion from the pcpu deletion should be done to
-> avoid races. Perhaps the SysFS deletion function should also
-> remove the pcpu from the list.
 
-How about static array pcpu[NR_CPUS]?
-It seems solve all issues we argued :)
+--ctP54qlpMx3WjD+/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks,
-Jinsong
+On Fri, May 11, 2012 at 12:08:43PM +0530, Laxman Dewangan wrote:
+> Add dt support for the pmu device tps62360 and
+> Add binding documentation with example.
+> With this patch driver will support both device-tree and
+> non-device tree registration.
+
+Oh, sorry - I meant to say that I went ahead and applied this.  Ideally
+the active discharge thing will get factored out quickly though.
+
+--ctP54qlpMx3WjD+/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPrXg6AAoJEBus8iNuMP3dyHsP/AgtZUk+LjHHIbPdLjrCB/dX
+u10Xi4RSFSP7sgKVR/A7WuifEfXfzmykJDVkRGnKsWvfsNc/QKr5ZTZWcccGmCaI
+hZimnp95b3KReT8y6vj2nQbXprnxb561Yu9wNuEFv5BCOih1oNZfO272JFqqtaXV
+uBlxVySimxwnJFt9zvxqoZ5htIL6WohxXXbG8NfnU/5hH0g1zopIx7thV/k3rS8Z
+SeQXAKqPIWn81cPVp7Lm5rKtpJXaYmIE3Zg/QUG7xk/rtMClP/D932d4yPY8kbff
+dOCWjuds1RpnfAftXFLJx9AgRcvG4ruKIImvfF9V8r82GQICLra54gYiH5Cwfvq5
+tEnoNhD3d/l7KTc6vZMKvVyuT6iL9K+bfVmTK+4y7T8W6s1Mb5jtlcx6wF3kXdla
+uO1POwCEavqtNnec0mVcqZxPgQAtyYKi0l9FmwNYNJYKvgN+dSsZy96ZW7UCHwNz
+L18fbuDsLYesTCLBnA/JQS8dJ4oDsXIP2JuHoI1QdpaZH9k5kYezGf6JDAU0+2fh
+BkQ9EhIHU/iJG13n3LoOcN78tS0jMXGz8QpwNsc4G86AR1sQRhrqt/SiNRpDYuCP
+WWlyElLYE8kMTiebivTNF6nVhVqe5tnDYsXLFOGiENLB2FCl9vLc9xbzX4CYvMUw
+85ygqBYtBE+1jnIEhFpu
+=tC4w
+-----END PGP SIGNATURE-----
+
+--ctP54qlpMx3WjD+/--
