@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932916Ab2EKD2u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 23:28:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44234 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932255Ab2EKD2s (ORCPT
+	id S933036Ab2EKDfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 23:35:48 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:56714 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932919Ab2EKDfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 23:28:48 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH RFC] spi: Dont call prepare/unprepare transfer if not populated
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        andrew@lunn.ch
-In-Reply-To: <CACRpkdZmr+i6d+k8XU6Qxo425=mFZo5kzUe1wFk+grxDshaoVA@mail.gmail.com>
-References: <1336657841-2306-1-git-send-email-shubhrajyoti@ti.com> <CACRpkdZmr+i6d+k8XU6Qxo425=mFZo5kzUe1wFk+grxDshaoVA@mail.gmail.com>
-Date: Thu, 10 May 2012 21:24:55 -0600
-Message-Id: <20120511032455.6BB853E04A6@localhost>
+	Thu, 10 May 2012 23:35:45 -0400
+Date: Thu, 10 May 2012 23:35:34 -0400 (EDT)
+Message-Id: <20120510.233534.836223106369679267.davem@davemloft.net>
+To: joe@perches.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
+        ath9k-devel@venema.h4ckr.net
+Subject: Re: [PATCH 1/3] drivers/net: Convert compare_ether_addr to
+ ether_addr_equal
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <7c9881a67c52c2f218480b6742155b6d6928122d.1336618708.git.joe@perches.com>
+References: <cover.1336618707.git.joe@perches.com>
+	<7c9881a67c52c2f218480b6742155b6d6928122d.1336618708.git.joe@perches.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 10 May 2012 20:35:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 May 2012 16:01:27 +0200, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, May 10, 2012 at 3:50 PM, Shubhrajyoti D <shubhrajyoti@ti.com> wrote:
+From: Joe Perches <joe@perches.com>
+Date: Wed,  9 May 2012 20:17:46 -0700
+
+> Use the new bool function ether_addr_equal to add
+> some clarity and reduce the likelihood for misuse
+> of compare_ether_addr for sorting.
 > 
-> > Currently the prepare/unprepare transfer are called unconditionally.
-> > The assumption is that every driver using the spi core queue infrastructure
-> > has to populate the prepare and unprepare functions. This encourages
-> > drivers to populate empty functions to prevent crashing.
-> > This patch prevents the call to prepare/unprepare if not populated.
-> >
-> > Cc: Linus Walleij <linus.walleij@linaro.org>
-> > Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-> 
-> Great!
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Done via cocci script:
+ ...
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Applied, thanks (after fixing extra whitespace defect).
-
-g.
-
+Applied.
