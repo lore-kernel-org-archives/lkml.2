@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755084Ab2EKLVb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 07:21:31 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:50984 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752368Ab2EKLV3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 07:21:29 -0400
-Message-ID: <4FACF61A.7070706@mvista.com>
-Date: Fri, 11 May 2012 15:20:58 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: joseph daniel <josephdanielwalter@gmail.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb/dwc3: Fix the dwc3 dependency
-References: <1336715724-8441-1-git-send-email-josephdanielwalter@gmail.com>
-In-Reply-To: <1336715724-8441-1-git-send-email-josephdanielwalter@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756132Ab2EKLXU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 07:23:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64457 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752350Ab2EKLXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 07:23:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="139467110"
+Message-ID: <1336735603.2625.42.camel@sauron.fi.intel.com>
+Subject: Re: [RFC v2] UBI: UBIVIS (aka checkpointing) support
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, tim.bird@am.sony.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de
+Date: Fri, 11 May 2012 14:26:43 +0300
+In-Reply-To: <4FACEEA1.9020400@nod.at>
+References: <1336585125-127220-1-git-send-email-richard@nod.at>
+	  <1336624000.1936.22.camel@brekeke> <4FAB7D70.1040704@nod.at>
+	 <1336733182.2625.17.camel@sauron.fi.intel.com> <4FACEEA1.9020400@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-uKZ1GFmsTuARIPv5WQMH"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 11-05-2012 9:55, joseph daniel wrote:
+--=-uKZ1GFmsTuARIPv5WQMH
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> The warning shown up when ran with randconfig,
+On Fri, 2012-05-11 at 12:49 +0200, Richard Weinberger wrote:
+> Am 11.05.2012 12:46, schrieb Artem Bityutskiy:
+> > On Thu, 2012-05-10 at 10:33 +0200, Richard Weinberger wrote:
+> >> First of all, yes it's fully backward-compatible. It uses two new inte=
+rnal volume IDs
+> >> with compat =3D UBI_COMPAT_DELETE.
+> >> Old UBI implementations will delete the checkpoint and continue with s=
+canning...
+> >=20
+> > OK. BTW, these patches do not compile when the fastmap is disabled. I
+> > hope you'll just kill the ifdefs in the next revision and this problem
+> > will go away.
+>=20
+> It builds fine here with CONFIG_MTD_UBI_CHECKPOINT=3Dn.
+> What error do you get?
 
-> warning: (USB_DWC3) selects USB_XHCI_PLATFORM which has unmet direct dependencies (USB_SUPPORT&&  USB_XHCI_HCD)
+If you are going to kill the ifdefs anyway, I won't spend time on this.
+I have several defconfigs with different combinations of the UBI
+configuration options, probably one of them did not build. Or may be I
+made a mistake.
 
-> Signed-off-by: joseph daniel<josephdanielwalter@gmail.com>
-> ---
->   drivers/usb/dwc3/Kconfig |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
+--=20
+Best Regards,
+Artem Bityutskiy
 
-> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
-> index d8f741f..68271fa 100644
-> --- a/drivers/usb/dwc3/Kconfig
-> +++ b/drivers/usb/dwc3/Kconfig
-> @@ -1,6 +1,6 @@
->   config USB_DWC3
->   	tristate "DesignWare USB3 DRD Core Support"
-> -	depends on (USB&&  USB_GADGET)
-> +	depends on (USB&&  USB_SUPPORT&&  USB_XCHI_HCD&&  USB_GADGET)
+--=-uKZ1GFmsTuARIPv5WQMH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-    Parens not needed -- could as well get rid of them.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-WBR, Sergei
+iQIcBAABAgAGBQJPrPdzAAoJECmIfjd9wqK0sZ4P/2GUvV81e/9GRO2XnP8vO+Jo
+VxH48hrM88CLa/wQgHgnyOUxTZdC1wjD2wGKwlcubo9fcRxi+cCTwnmC3oTx1ocp
+TLcQicqdXlrz81wYVD/tci7KcY6pPDiDaHOvU1gc/FAr1AX31CpNFIliJFfxDBoL
+SJoIufIvF8yZbDRE9iQPI8XECHOXEyNTOBYIaio1ybPlR2wfNqxCvx9Twno+qxeG
+fYASumSmFwh+2IkSkxTvfEVE6SpQZREe1Hlq+rpfExAswy2EMXdpqQPytd26V+Kl
+5Qj4suh5pLK78AR32r0+yDDiUPdURT3d3A0jtQmf41E/SAciPOl2q01WCUUkPBM6
+G4xgWCYKNwJ2Tgu+KwJb7G6YX0UiaXPxbvX2uei63qHDfJuHNEvbUQpi5fnQ9zdt
+eNlYYBJjA6JIvZhzCVIGtio2lcLbgxYkFauShovqvoRFR9JV+UfEhj6Ez173w6P0
+YY56RmirxgSUbbRjkZfnwEWTZbDLACg+PLOdTTUtuIV95Q8RcKj0b6QrFsrSg9Ca
+Eew4HyqONnLgZvS5y6O2fO3kF3vH9tNQGmAx+ZM8UUJkU4mOEEOxSI6Sag7xnSeH
+xqAzuVS0sj9hLSocrIuPguyJ8zoK3X6DGcKy54NFW7aj7sMRh1Cn3yWMJFEroDut
+rbkrMYE4gBum6ex8GbQY
+=qpob
+-----END PGP SIGNATURE-----
+
+--=-uKZ1GFmsTuARIPv5WQMH--
+
