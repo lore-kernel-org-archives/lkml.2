@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759552Ab2EKLFP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 07:05:15 -0400
-Received: from exprod5og114.obsmtp.com ([64.18.0.28]:53267 "EHLO
-	exprod5og114.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274Ab2EKLFN (ORCPT
+	id S1759594Ab2EKLFX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 07:05:23 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1282 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274Ab2EKLFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 07:05:13 -0400
-Message-ID: <4FACF265.7010205@ge.com>
-Date: Fri, 11 May 2012 12:05:09 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 11 May 2012 07:05:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 11 May 2012 04:05:10 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <dan.j.williams@intel.com>, <vinod.koul@intel.com>,
+        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>
+CC: Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V3 0/2] dmaengine: tegra: add dma driver
+Date: Fri, 11 May 2012 16:30:42 +0530
+Message-ID: <1336734044-14275-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] Staging: ipack/devices/ipoctal: change the licence
- to explicitly GPLv2
-References: <1336724236-21665-1-git-send-email-siglesias@igalia.com> <1336724236-21665-6-git-send-email-siglesias@igalia.com>
-In-Reply-To: <1336724236-21665-6-git-send-email-siglesias@igalia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/12 09:17, Samuel Iglesias Gonsalvez wrote:
-> Change the licence to explicitly GPLv2 to avoid possible conflicts in the
-> future.
-> 
+This series add NVIDIA Tegra's APB dma controller driver based on dmaengine.
+There is already old driver in mach-tegra/dma.c and we want to get rid
+of this old style driver which exposes private apis.
+Once this driver get through, there will be series of patches to move all
+existing driver to use the dmaengine based driver and old mach-tegra/dma.c
+will get deleted. This driver has following feature than old one:
+- better queue managment.
+- Cyclic transfer supports.
+- Platform driver.
+- Full support for device tree.
+- Multiple bug fixes over old driver.
 
-This could also probably be rolled up into patch 4.
+Changes from V1:
+- Incorportaed review comments from Vinod.
+- get rid of the tegra_dma header.
+- Having clock control through runtime pm.
+- Remove regmap support.
 
-Martyn
+Changes from V2:
+- Taken care of aall review comments provided by Vinod.
+- Drop cyclic_half notify mode of dma and implemented as cyclic only.
+  This will make the this patch as simple. Also this can be achive
+  by cyclic once mode. If require, we will add later.
+- Remove goto most of places.
+- Remove the cookie_complete() in aborted case.
+- Remove callback when terminating.
+- Macro names are now namespaced.
+- Message prints are well formated to have in 1 or 2 line.
 
-> Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-> ---
->  drivers/staging/ipack/devices/ipoctal.c |    3 +--
->  drivers/staging/ipack/devices/ipoctal.h |    3 +--
->  drivers/staging/ipack/devices/scc2698.h |    3 +--
->  3 files changed, 3 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/staging/ipack/devices/ipoctal.c b/drivers/staging/ipack/devices/ipoctal.c
-> index 15c0c6b..a28c677 100644
-> --- a/drivers/staging/ipack/devices/ipoctal.c
-> +++ b/drivers/staging/ipack/devices/ipoctal.c
-> @@ -8,8 +8,7 @@
->   *
->   * This program is free software; you can redistribute it and/or modify it
->   * under the terms of the GNU General Public License as published by the Free
-> - * Software Foundation; either version 2 of the License, or (at your option)
-> - * any later version.
-> + * Software Foundation; version 2 of the License.
->   */
->  
->  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> diff --git a/drivers/staging/ipack/devices/ipoctal.h b/drivers/staging/ipack/devices/ipoctal.h
-> index 7c5d211..266f361 100644
-> --- a/drivers/staging/ipack/devices/ipoctal.h
-> +++ b/drivers/staging/ipack/devices/ipoctal.h
-> @@ -8,8 +8,7 @@
->   *
->   * This program is free software; you can redistribute it and/or modify it
->   * under the terms of the GNU General Public License as published by the Free
-> - * Software Foundation; either version 2 of the License, or (at your option)
-> - * any later version.
-> + * Software Foundation; version 2 of the License.
->   */
->  
->  #ifndef _IPOCTAL_H
-> diff --git a/drivers/staging/ipack/devices/scc2698.h b/drivers/staging/ipack/devices/scc2698.h
-> index e683019..47f6269 100644
-> --- a/drivers/staging/ipack/devices/scc2698.h
-> +++ b/drivers/staging/ipack/devices/scc2698.h
-> @@ -8,8 +8,7 @@
->   *
->   * This program is free software; you can redistribute it and/or modify it
->   * under the terms of the GNU General Public License as published by the Free
-> - * Software Foundation; either version 2 of the License, or (at your option)
-> - * any later version.
-> + * Software Foundation; version 2 of the License.
->   */
->  
->  #ifndef SCC2698_H_
+Laxman Dewangan (2):
+  dma: dmaengine: add slave req id in slave_config
+  dma: tegra: add dmaengine based dma driver
 
+ drivers/dma/Kconfig       |   13 +
+ drivers/dma/Makefile      |    1 +
+ drivers/dma/tegra_dma.c   | 1594 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/dmaengine.h |    4 +
+ 4 files changed, 1612 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/dma/tegra_dma.c
 
--- 
-Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
-GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
-T +44(0)1327322748                     | Manchester, M2 3AB
-E martyn.welch@ge.com                  | VAT:GB 927559189
