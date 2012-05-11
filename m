@@ -1,60 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760891Ab2EKRH6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 13:07:58 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:56431 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753950Ab2EKRH4 (ORCPT
+	id S1161015Ab2EKRIU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 13:08:20 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:26229 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932600Ab2EKRIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 13:07:56 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <4FAD0524.3000307@parallels.com>
-Date: Fri, 11 May 2012 10:07:49 -0700
-In-Reply-To: <4FAD0524.3000307@parallels.com> (Pavel Emelyanov's message of
-	"Fri, 11 May 2012 16:25:08 +0400")
-Message-ID: <877gwi7ije.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 11 May 2012 13:08:17 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-13.tower-127.messagelabs.com!1336756076!5235492!43
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: Add helper macro for comedi pci driver boilerplate
+Date: Fri, 11 May 2012 10:07:43 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX186n6xXvYXU1tH2CU9zKe1VXDRKUaqSQPg=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Pavel Emelyanov <xemul@parallels.com>
-X-Spam-Relay-Country: XX
-Subject: Re: [PATCH 1/2] proc: Show ns-based inode numbers for /proc/pid/ns/* files
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201205111007.46754.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Emelyanov <xemul@parallels.com> writes:
+Introduce the module_comedi_pci_driver macro, and the
+associated register/unregister functions, which is a
+convenience macro for comedi pci driver modules similar
+to module_platform_driver. It is intended to be used by
+drivers where the init/exit section does nothing but
+register/unregister the comedi driver and associated pci
+driver. By using this macro it is possible to eliminate
+a few lines of boilerplate code per comedi pci driver.
 
-> Some time ago we tried to expose kernel object IDs to the user space to
-> let it possible to detect shared mm, fs, etc. The namespaces' IDs were
-> included in this set and Eric proposed, that we'd better expose the ID
-> in the stat's st_ino field.
+Also, when registering the pci driver check for failure
+and unregister the comedi driver.
 
-A quick question.  With kcmp you have something that is at least in
-principle usable for checkpoint restart.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Are wanting this for checkpoint restart or something else?
+---
 
-Eric
+diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+index 8828609..92a1199 100644
+--- a/drivers/staging/comedi/comedidev.h
++++ b/drivers/staging/comedi/comedidev.h
+@@ -310,6 +310,25 @@ int comedi_driver_unregister(struct comedi_driver *);
+ 	module_driver(__comedi_driver, comedi_driver_register, \
+ 			comedi_driver_unregister)
+ 
++struct pci_driver;
++
++int comedi_pci_driver_register(struct comedi_driver *, struct pci_driver *);
++void comedi_pci_driver_unregister(struct comedi_driver *, struct pci_driver *);
++
++/**
++ * module_comedi_pci_driver() - Helper macro for registering a comedi PCI driver
++ * @__comedi_driver: comedi_driver struct
++ * @__pci_driver: pci_driver struct
++ *
++ * Helper macro for comedi PCI drivers which do not do anything special
++ * in module init/exit. This eliminates a lot of boilerplate. Each
++ * module may only use this macro once, and calling it replaces
++ * module_init() and module_exit()
++ */
++#define module_comedi_pci_driver(__comedi_driver, __pci_driver) \
++	module_driver(__comedi_driver, comedi_pci_driver_register, \
++			comedi_pci_driver_unregister, &(__pci_driver))
++
+ void init_polling(void);
+ void cleanup_polling(void);
+ void start_polling(struct comedi_device *);
+diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
+index 49681a1..7071109 100644
+--- a/drivers/staging/comedi/drivers.c
++++ b/drivers/staging/comedi/drivers.c
+@@ -950,6 +950,34 @@ void comedi_pci_auto_unconfig(struct pci_dev *pcidev)
+ }
+ EXPORT_SYMBOL_GPL(comedi_pci_auto_unconfig);
+ 
++int comedi_pci_driver_register(struct comedi_driver *comedi_driver,
++		struct pci_driver *pci_driver)
++{
++	int ret;
++
++	ret = comedi_driver_register(comedi_driver);
++	if (ret < 0)
++		return ret;
++
++	pci_driver->name = comedi_driver->driver_name;
++	ret = pci_register_driver(pci_driver);
++	if (ret < 0) {
++		comedi_driver_unregister(comedi_driver);
++		return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(comedi_pci_driver_register);
++
++void comedi_pci_driver_unregister(struct comedi_driver *comedi_driver,
++		struct pci_driver *pci_driver)
++{
++	pci_unregister_driver(pci_driver);
++	comedi_driver_unregister(comedi_driver);
++}
++EXPORT_SYMBOL(comedi_pci_driver_unregister);
++
+ static int comedi_old_usb_auto_config(struct usb_interface *intf,
+ 				      struct comedi_driver *driver)
+ {
