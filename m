@@ -1,117 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab2EKDCx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 23:02:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:27369 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932182Ab2EKDCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 23:02:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="164756982"
-From: Youquan Song <youquan.song@intel.com>
-To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, len.brown@intel.com,
-        akpm@linux-foundation.org
-Cc: arjan@linux.intel.com, len.brown@linux.intel.com,
-        suresh.b.siddha@intel.com, Youquan Song <youquan.song@linux.intel.com>,
-        Youquan Song <youquan.song@intel.com>
-Subject: [PATCH 2/3] x86,idle: Quickly notice prediction failure in general case
-Date: Fri, 11 May 2012 11:15:56 -0400
-Message-Id: <1336749357-9133-3-git-send-email-youquan.song@intel.com>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1336749357-9133-2-git-send-email-youquan.song@intel.com>
-References: <1336749357-9133-1-git-send-email-youquan.song@intel.com>
- <1336749357-9133-2-git-send-email-youquan.song@intel.com>
+	id S932532Ab2EKDEY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 23:04:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58072 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932373Ab2EKDEV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 23:04:21 -0400
+Message-ID: <1336705456.8274.428.camel@deadeye>
+Subject: Re: [ 034/167] [PATCH] usb: gadget: udc-core: stop UDC on
+ device-initiated disconnect
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Felipe Balbi <balbi@ti.com>
+Date: Fri, 11 May 2012 04:04:16 +0100
+In-Reply-To: <20120509191950.GB15527@herton-ThinkPad-T420>
+References: <20120509055029.588587017@decadent.org.uk>
+	 <20120509055034.318079643@decadent.org.uk>
+	 <20120509191950.GB15527@herton-ThinkPad-T420>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-RZrqEJEASoUaHdGtWo/P"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch extends the patch to enhance the prediction for repeat mode by add a 
-timer when menu governor choose a shallow C-state. 
-The timer is set to time out in 50 milli-seconds by default. It is special twist
- that there are no power saving gains even sleep longer than it.
-  
-When C-state is waken up prior to the adding timer, the timer will be cancelled 
-initiatively. When the timer is triggered and menu governor will quickly notice
-prediction failure and re-evaluates deeper C-states possibility. 
 
-Signed-off-by: Youquan Song <youquan.song@intel.com>
----
- drivers/cpuidle/governors/menu.c |   48 ++++++++++++++++++++++++++------------
- 1 files changed, 33 insertions(+), 15 deletions(-)
+--=-RZrqEJEASoUaHdGtWo/P
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index 8c23fbd..9f92dd4 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -113,6 +113,13 @@ static DEFINE_PER_CPU(int, hrtimer_started);
-  * represented in the system load average.
-  *
-  */
-+
-+/*
-+ * Default set to 50 milliseconds based on special twist mentioned above that
-+ * there are no power gains sleep longer than it.
-+ */
-+static unsigned int perfect_cstate_ms __read_mostly = 50;
-+module_param(perfect_cstate_ms, uint, 0000);
- 
- struct menu_device {
- 	int		last_state_idx;
-@@ -343,26 +350,37 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 			data->exit_us = s->exit_latency;
- 		}
- 	}
--
-+
-+	/* not deepest C-state chosen */
- 	if (data->last_state_idx < drv->state_count - 1) { 
-+		unsigned int repeat_us = 0;
-+		unsigned int perfect_us = 0;
-+
-+		/*
-+		 * Set enough timer to recognize the repeat mode broken.
-+		 * If the timer is time out, the repeat mode prediction
-+		 * fails,then re-evaluate deeper C-states possibility.
-+		 * If the timer is not triggered, the timer will be
-+		 * cancelled when CPU waken up.
-+		 */
-+		repeat_us =
-+			(repeat ? (2 * data->predicted_us + MAX_DEVIATION) : 0);
-+		perfect_us = perfect_cstate_ms * 1000;
- 
- 		/* Repeat mode detected */
--		if (repeat) {
--			unsigned int repeat_us = 0;
--			/* 
--			 * Set enough timer to recognize the repeat mode broken.
--			 * If the timer is time out, the repeat mode prediction
--			 * fails,then re-evaluate deeper C-states possibility. 
--			 * If the timer is not triggered, the timer will be
--			 * cancelled when CPU waken up.
--			 */
--			repeat_us = 2 * data->predicted_us + MAX_DEVIATION;
--			hrtimer_start(hrtmr, ns_to_ktime(1000 * repeat_us),
--	      			HRTIMER_MODE_REL_PINNED);
-+		if (repeat && (repeat_us  < perfect_us)) {
-+			hrtimer_start(hrtmr, ns_to_ktime(1000 * repeat_us),
-+				HRTIMER_MODE_REL_PINNED);
-+			/* menu hrtimer is started */
-+			per_cpu(hrtimer_started, cpu) = 1;
-+		} else if (perfect_us < data->expected_us) {
-+			/* expected time is larger than adding timer time */
-+			hrtimer_start(hrtmr, ns_to_ktime(1000 * perfect_us),
-+					HRTIMER_MODE_REL_PINNED);
- 			/* menu hrtimer is started */
- 			per_cpu(hrtimer_started, cpu) = 1;
--		}
--	}
-+		}
-+	}
- 
- 	return data->last_state_idx;
- }
--- 
-1.6.4.2
+On Wed, 2012-05-09 at 12:19 -0700, Herton Ronaldo Krzesinski wrote:
+> On Wed, May 09, 2012 at 06:51:03AM +0100, Ben Hutchings wrote:
+> > 3.2-stable review patch.  If anyone has any objections, please let me k=
+now.
+> >=20
+> > ------------------
+> >=20
+> > From: Felipe Balbi <balbi@ti.com>
+> >=20
+> > commit 6d258a4c42089229b855fd706622029decf316d6 upstream.
+>=20
+> We also need a follow up fix to this, commit
+> 83a787a71e034244a9fd1d5988fe18f226341417 upstream.
+[...]
 
+Right, Peter Korsgaard already pointed out this and commit
+320cd1e750f1bf3e47eb41209dcb2be07264cb76, and I've added them to the
+queue.
+
+Ben.
+
+--=20
+Ben Hutchings
+Life is what happens to you while you're busy making other plans.
+                                                               - John Lenno=
+n
+
+--=-RZrqEJEASoUaHdGtWo/P
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAT6yBsee/yOyVhhEJAQoR3xAAwayWyax1JRabuB56ywWWjutRtiplZqFY
+jR5h6vywAibLe6BZVmejPFwLRjbu5NZDBlEIFXEnQ2s2E1AXxrtjkdVi2mcvS5tY
+UD5DgkCOI/dhb/nrHL3jvKHqh1sV2LhsvqveVxJ9s3Z8lSUv4n8W5+Gb3oXdmGaf
+pnU+NPBoZo0wjUmUWHGRGCogo1l1qqenD5Ljq4tp54alB+xaVlTZuy5TresVM9Px
+BU0cpbpfHSfyvo0J2SB3ig2jLKfuqiVAYXoOg6f1ZS4R9CyALoAVc6KSy0BS0RAO
+XVan3GToAOl+3IVV+h/ekaBD2HJSKwg/wf9JGUa0NPU4vOf9AiCdtnuegu3zZLWf
+aOrSAbUmbGoJ1/VvEWgYhoP8xcDHurDxlv/A0jqcSsQIkQgzHa71Lc8iikFfjhJe
+fFApDMupt+GH7r5BYGU1lWYAZ69OzThgyGiI4UV/MXhZFhRjdZdxLfYN8BP3iesl
++ZwPVzfIwSTw78xDo0bBChZ8mQxqRcuaidro8PGHs/AT8j1PfzWt5eC2grBFAge6
+b/7tNkQiA9VNnP8usO5uClTUbIfXvxqFHSOr3I4woPEHUTkID5vwjhJf4JgOibe+
+jHc3nmsqD0SBpU5wyISNTQc2/+PQ68AvS3wcpBhgPuF3/xPUfz+qR8Q3/4EFQYb2
+VkHJfLH7CSQ=
+=h54U
+-----END PGP SIGNATURE-----
+
+--=-RZrqEJEASoUaHdGtWo/P--
