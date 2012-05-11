@@ -1,203 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761121Ab2EKVue (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 17:50:34 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:46227 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761048Ab2EKVuc (ORCPT
+	id S1422704Ab2EKVwU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 17:52:20 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:41711 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422632Ab2EKVwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 17:50:32 -0400
-Message-ID: <4FAD8984.2050201@linux.vnet.ibm.com>
-Date: Fri, 11 May 2012 16:49:56 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Minchan Kim <minchan@kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
-References: <4FABD503.4030808@vflare.org> <4FABDA9F.1000105@linux.vnet.ibm.com> <20120510151941.GA18302@kroah.com> <4FABECF5.8040602@vflare.org> <20120510164418.GC13964@kroah.com> <4FABF9D4.8080303@vflare.org> <20120510173322.GA30481@phenom.dumpdata.com> <4FAC4E3B.3030909@kernel.org> <8473859b-42f3-4354-b5ba-fd5b8cbac22f@default> <4FAC59F6.4080503@kernel.org> <20120511192915.GD3785@phenom.dumpdata.com>
-In-Reply-To: <20120511192915.GD3785@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 11 May 2012 17:52:18 -0400
+Subject: [GIT PULL] target fixes for v3.4-rc7
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 May 2012 14:52:16 -0700
+Message-ID: <1336773136.25759.167.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051121-6148-0000-0000-000005C47B26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 02:29 PM, Konrad Rzeszutek Wilk wrote:
+Hi Linus !
 
->> At least, zram is also primary user and it also has such mess
->> although it's not severe than zcache. zram->table[index].handle
->> sometime has real (void*) handle, sometime (struct page*).
-> 
-> Yikes. Yeah that needs to be fixed.
-> 
+This time around for -rc7, there is only a single outstanding target
+pending bugfix ready to be merged..
 
+Please go ahead and pull from:
 
-How about this (untested)?  Changes to zram_bvec_write() are a little
-hard to make out in this format.  There are a couple of checkpatch fixes
-(two split line strings) and an unused variable store_offset removal mixed
-in too. If this patch is good, I'll break them up for official submission
-after I test.
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git 3.4-urgent
 
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index fbe8ac9..10dcd99 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -81,7 +81,10 @@ enum zram_pageflags {
- 
- /* Allocated for each disk page */
- struct table {
--	void *handle;
-+	union {
-+		void *handle; /* compressible */
-+		struct page *page; /* incompressible */
-+	};
- 	u16 size;	/* object size (excluding header) */
- 	u8 count;	/* object ref count (not yet used) */
- 	u8 flags;
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 685d612..d49deca 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -150,7 +150,7 @@ static void zram_free_page(struct zram *zram, size_t index)
- 	}
- 
- 	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
--		__free_page(handle);
-+		__free_page(zram->table[index].page);
- 		zram_clear_flag(zram, index, ZRAM_UNCOMPRESSED);
- 		zram_stat_dec(&zram->stats.pages_expand);
- 		goto out;
-@@ -189,7 +189,7 @@ static void handle_uncompressed_page(struct zram *zram, struct bio_vec *bvec,
- 	unsigned char *user_mem, *cmem;
- 
- 	user_mem = kmap_atomic(page);
--	cmem = kmap_atomic(zram->table[index].handle);
-+	cmem = kmap_atomic(zram->table[index].page);
- 
- 	memcpy(user_mem + bvec->bv_offset, cmem + offset, bvec->bv_len);
- 	kunmap_atomic(cmem);
-@@ -315,7 +315,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			   int offset)
- {
- 	int ret;
--	u32 store_offset;
- 	size_t clen;
- 	void *handle;
- 	struct zobj_header *zheader;
-@@ -390,31 +389,38 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		clen = PAGE_SIZE;
- 		page_store = alloc_page(GFP_NOIO | __GFP_HIGHMEM);
- 		if (unlikely(!page_store)) {
--			pr_info("Error allocating memory for "
--				"incompressible page: %u\n", index);
-+			pr_info("Error allocating memory for incompressible page: %u\n", index);
- 			ret = -ENOMEM;
- 			goto out;
- 		}
- 
--		store_offset = 0;
--		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
--		zram_stat_inc(&zram->stats.pages_expand);
--		handle = page_store;
- 		src = kmap_atomic(page);
- 		cmem = kmap_atomic(page_store);
--		goto memstore;
--	}
-+		memcpy(cmem, src, clen);
-+		kunmap_atomic(cmem);
-+		kunmap_atomic(src);
- 
--	handle = zs_malloc(zram->mem_pool, clen + sizeof(*zheader));
--	if (!handle) {
--		pr_info("Error allocating memory for compressed "
--			"page: %u, size=%zu\n", index, clen);
--		ret = -ENOMEM;
--		goto out;
-+		zram->table[index].page = page_store;
-+		zram->table[index].size = PAGE_SIZE;
-+
-+		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
-+		zram_stat_inc(&zram->stats.pages_expand);
-+	} else {
-+		handle = zs_malloc(zram->mem_pool, clen + sizeof(*zheader));
-+		if (!handle) {
-+			pr_info("Error allocating memory for compressed page: %u, size=%zu\n", index, clen);
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+
-+		zram->table[index].handle = handle;
-+		zram->table[index].size = clen;
-+
-+		cmem = zs_map_object(zram->mem_pool, handle);
-+		memcpy(cmem, src, clen);
-+		zs_unmap_object(zram->mem_pool, handle);
- 	}
--	cmem = zs_map_object(zram->mem_pool, handle);
- 
--memstore:
- #if 0
- 	/* Back-reference needed for memory defragmentation */
- 	if (!zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)) {
-@@ -424,18 +430,6 @@ memstore:
- 	}
- #endif
- 
--	memcpy(cmem, src, clen);
--
--	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
--		kunmap_atomic(cmem);
--		kunmap_atomic(src);
--	} else {
--		zs_unmap_object(zram->mem_pool, handle);
--	}
--
--	zram->table[index].handle = handle;
--	zram->table[index].size = clen;
--
- 	/* Update stats */
- 	zram_stat64_add(zram, &zram->stats.compr_size, clen);
- 	zram_stat_inc(&zram->stats.pages_stored);
-@@ -580,6 +574,8 @@ error:
- void __zram_reset_device(struct zram *zram)
- {
- 	size_t index;
-+	void *handle;
-+	struct page *page;
- 
- 	zram->init_done = 0;
- 
-@@ -592,14 +588,17 @@ void __zram_reset_device(struct zram *zram)
- 
- 	/* Free all pages that are still in this zram device */
- 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
--		void *handle = zram->table[index].handle;
--		if (!handle)
--			continue;
--
--		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)))
--			__free_page(handle);
--		else
-+		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
-+			page = zram->table[index].page;
-+			if (!page)
-+				continue;
-+			__free_page(page);
-+		} else {
-+			handle = zram->table[index].handle;
-+			if (!handle)
-+				continue;
- 			zs_free(zram->mem_pool, handle);
-+		}
- 	}
- 
- 	vfree(zram->table);
+This patch removes some incorrect legacy code to free se_lun_acl memory
+in the NodeACL release path that could potentially trigger an OOPs
+during shutdown once dynamic -> explicit initiator NodeACL conversion
+has occurred.
+
+That said, we've been able to trigger an OOPs in v4.0 code for this
+special case when the associated MappedLUNs had not also been made
+explicit based on active TPG LUN layout during the conversion, so it
+really makes senses to go ahead and drop this extra cruft to avoid any
+possible issues here.
+
+This ends up only effecting iscsi-target module code (it's the only
+user) and is CC'ed to stable.
+
+Thanks!
+
+--nab
+
+Nicholas Bellinger (1):
+  target: Drop incorrect se_lun_acl release for dynamic -> explict ACL
+    conversion
+
+ drivers/target/target_core_tpg.c |   21 ---------------------
+ 1 files changed, 0 insertions(+), 21 deletions(-)
+
 
