@@ -1,148 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284Ab2EKJuH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 05:50:07 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:57595 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932109Ab2EKJuF (ORCPT
+	id S932364Ab2EKJuR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 05:50:17 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36922 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932109Ab2EKJuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 05:50:05 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: glikely@secretlab.ca, arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v9 1/2] gpio: Adjust of_xlate API to support multiple GPIO chips
-Date: Fri, 11 May 2012 11:47:39 +0200
-Message-Id: <1336729660-7670-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.9
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Fri, 11 May 2012 05:50:10 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FACE05C.60608@jp.fujitsu.com>
+Date: Fri, 11 May 2012 18:48:12 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        Tejun Heo <tj@kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 3/6] memcg: use res_counter_uncharge_until in move_parent()
+References: <4FACDED0.3020400@jp.fujitsu.com>
+In-Reply-To: <4FACDED0.3020400@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the of_xlate API to make it possible to manipulate the
-actual used gc. This way, multiple GPIO banks can be supported with the same DT
-registered GPIO controller.
+By using res_counter_uncharge_until(), we can avoid race and
+unnecessary charging.
 
-The issue was discussed upon the integration of LPC32xx's DT support for its
-GPIO (see separate patch).
+Changelog since v2:
+ - a coding style chanve in __mem_cgroup_cancel_local_charge()
+ - fixed typos.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
-Applies to v3.4-rc6
+ mm/memcontrol.c |   63 ++++++++++++++++++++++++++++++++++++------------------
+ 1 files changed, 42 insertions(+), 21 deletions(-)
 
-Changes since last version:
-* Added this patch to the series
-
-Thanks to Grant Likely for reviewing and advice!
-
- drivers/gpio/gpio-samsung.c |   10 +++++-----
- drivers/of/gpio.c           |   14 ++++++++------
- include/asm-generic/gpio.h  |    2 +-
- include/linux/of_gpio.h     |    2 +-
- 4 files changed, 15 insertions(+), 13 deletions(-)
-
---- linux-2.6.orig/drivers/gpio/gpio-samsung.c
-+++ linux-2.6/drivers/gpio/gpio-samsung.c
-@@ -2655,21 +2655,21 @@ static struct samsung_gpio_chip exynos5_
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 09109be..cb90be1 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2446,6 +2446,24 @@ static void __mem_cgroup_cancel_charge(struct mem_cgroup *memcg,
+ }
  
+ /*
++ * Cancel chrages in this cgroup....doesn't propagate to parent cgroup.
++ * This is useful when moving usage to parent cgroup.
++ */
++static void __mem_cgroup_cancel_local_charge(struct mem_cgroup *memcg,
++					unsigned int nr_pages)
++{
++	unsigned long bytes = nr_pages * PAGE_SIZE;
++
++	if (mem_cgroup_is_root(memcg))
++		return;
++
++	res_counter_uncharge_until(&memcg->res, memcg->res.parent, bytes);
++	if (do_swap_account)
++		res_counter_uncharge_until(&memcg->memsw,
++						memcg->memsw.parent, bytes);
++}
++
++/*
+  * A helper function to get mem_cgroup from ID. must be called under
+  * rcu_read_lock(). The caller must check css_is_removed() or some if
+  * it's concern. (dropping refcnt from swap can be called against removed
+@@ -2711,16 +2729,28 @@ static int mem_cgroup_move_parent(struct page *page,
+ 	nr_pages = hpage_nr_pages(page);
  
- #if defined(CONFIG_ARCH_EXYNOS) && defined(CONFIG_OF)
--static int exynos_gpio_xlate(struct gpio_chip *gc,
-+static int exynos_gpio_xlate(struct gpio_chip **gc,
- 			const struct of_phandle_args *gpiospec, u32 *flags)
- {
- 	unsigned int pin;
+ 	parent = mem_cgroup_from_cont(pcg);
+-	ret = __mem_cgroup_try_charge(NULL, gfp_mask, nr_pages, &parent, false);
+-	if (ret)
+-		goto put_back;
++	if (!parent->use_hierarchy) {
++		ret = __mem_cgroup_try_charge(NULL,
++					gfp_mask, nr_pages, &parent, false);
++		if (ret)
++			goto put_back;
++	}
  
--	if (WARN_ON(gc->of_gpio_n_cells < 4))
-+	if (WARN_ON((*gc)->of_gpio_n_cells < 4))
- 		return -EINVAL;
+ 	if (nr_pages > 1)
+ 		flags = compound_lock_irqsave(page);
  
--	if (WARN_ON(gpiospec->args_count < gc->of_gpio_n_cells))
-+	if (WARN_ON(gpiospec->args_count < (*gc)->of_gpio_n_cells))
- 		return -EINVAL;
+-	ret = mem_cgroup_move_account(page, nr_pages, pc, child, parent, true);
+-	if (ret)
+-		__mem_cgroup_cancel_charge(parent, nr_pages);
++	if (parent->use_hierarchy) {
++		ret = mem_cgroup_move_account(page, nr_pages,
++					pc, child, parent, false);
++		if (!ret)
++			__mem_cgroup_cancel_local_charge(child, nr_pages);
++	} else {
++		ret = mem_cgroup_move_account(page, nr_pages,
++					pc, child, parent, true);
++
++		if (ret)
++			__mem_cgroup_cancel_charge(parent, nr_pages);
++	}
  
--	if (gpiospec->args[0] > gc->ngpio)
-+	if (gpiospec->args[0] > (*gc)->ngpio)
- 		return -EINVAL;
+ 	if (nr_pages > 1)
+ 		compound_unlock_irqrestore(page, flags);
+@@ -3324,6 +3354,7 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
+ 	struct cgroup *pcgrp = cgroup->parent;
+ 	struct mem_cgroup *parent = mem_cgroup_from_cont(pcgrp);
+ 	struct mem_cgroup *memcg  = mem_cgroup_from_cont(cgroup);
++	struct res_counter *counter;
  
--	pin = gc->base + gpiospec->args[0];
-+	pin = (*gc)->base + gpiospec->args[0];
+ 	if (!get_page_unless_zero(page))
+ 		goto out;
+@@ -3334,28 +3365,18 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
+ 		goto err_out;
  
- 	if (s3c_gpio_cfgpin(pin, S3C_GPIO_SFN(gpiospec->args[1])))
- 		pr_warn("gpio_xlate: failed to set pin function\n");
---- linux-2.6.orig/drivers/of/gpio.c
-+++ linux-2.6/drivers/of/gpio.c
-@@ -64,7 +64,7 @@ int of_get_named_gpio_flags(struct devic
- 	if (flags)
- 		*flags = 0;
- 
--	ret = gc->of_xlate(gc, &gpiospec, flags);
-+	ret = gc->of_xlate(&gc, &gpiospec, flags);
- 	if (ret < 0)
- 		goto err1;
- 
-@@ -114,7 +114,9 @@ EXPORT_SYMBOL(of_gpio_named_count);
- 
- /**
-  * of_gpio_simple_xlate - translate gpio_spec to the GPIO number and flags
-- * @gc:		pointer to the gpio_chip structure
-+ * @gc:		pointer to pointer to the gpio_chip structure: the xlate
-+ *              function can alter *gc itself to make GPIO distribution to
-+ *              multiple gpio_chips possible
-  * @np:		device node of the GPIO chip
-  * @gpio_spec:	gpio specifier as found in the device tree
-  * @flags:	a flags pointer to fill in
-@@ -123,7 +125,7 @@ EXPORT_SYMBOL(of_gpio_named_count);
-  * gpio chips. This function performs only one sanity check: whether gpio
-  * is less than ngpios (that is specified in the gpio_chip).
-  */
--int of_gpio_simple_xlate(struct gpio_chip *gc,
-+int of_gpio_simple_xlate(struct gpio_chip **gc,
- 			 const struct of_phandle_args *gpiospec, u32 *flags)
- {
- 	/*
-@@ -132,15 +134,15 @@ int of_gpio_simple_xlate(struct gpio_chi
- 	 * number and the flags from a single gpio cell -- this is possible,
- 	 * but not recommended).
- 	 */
--	if (gc->of_gpio_n_cells < 2) {
-+	if ((*gc)->of_gpio_n_cells < 2) {
- 		WARN_ON(1);
- 		return -EINVAL;
+ 	csize = PAGE_SIZE << compound_order(page);
+-	/*
+-	 * If we have use_hierarchy set we can never fail here. So instead of
+-	 * using res_counter_uncharge use the open-coded variant which just
+-	 * uncharge the child res_counter. The parent will retain the charge.
+-	 */
+-	if (parent->use_hierarchy) {
+-		unsigned long flags;
+-		struct res_counter *counter;
+-
+-		counter = &memcg->hugepage[idx];
+-		spin_lock_irqsave(&counter->lock, flags);
+-		res_counter_uncharge_locked(counter, csize);
+-		spin_unlock_irqrestore(&counter->lock, flags);
+-	} else {
++	/* If parent->use_hierarchy == 0, we need to charge parent */
++	if (!parent->use_hierarchy) {
+ 		ret = res_counter_charge(&parent->hugepage[idx],
+ 					 csize, &fail_res);
+ 		if (ret) {
+ 			ret = -EBUSY;
+ 			goto err_out;
+ 		}
+-		res_counter_uncharge(&memcg->hugepage[idx], csize);
  	}
- 
--	if (WARN_ON(gpiospec->args_count < gc->of_gpio_n_cells))
-+	if (WARN_ON(gpiospec->args_count < (*gc)->of_gpio_n_cells))
- 		return -EINVAL;
- 
--	if (gpiospec->args[0] >= gc->ngpio)
-+	if (gpiospec->args[0] >= (*gc)->ngpio)
- 		return -EINVAL;
- 
- 	if (flags)
---- linux-2.6.orig/include/asm-generic/gpio.h
-+++ linux-2.6/include/asm-generic/gpio.h
-@@ -129,7 +129,7 @@ struct gpio_chip {
- 	 */
- 	struct device_node *of_node;
- 	int of_gpio_n_cells;
--	int (*of_xlate)(struct gpio_chip *gc,
-+	int (*of_xlate)(struct gpio_chip **gc,
- 		        const struct of_phandle_args *gpiospec, u32 *flags);
- #endif
- };
---- linux-2.6.orig/include/linux/of_gpio.h
-+++ linux-2.6/include/linux/of_gpio.h
-@@ -59,7 +59,7 @@ extern int of_mm_gpiochip_add(struct dev
- extern void of_gpiochip_add(struct gpio_chip *gc);
- extern void of_gpiochip_remove(struct gpio_chip *gc);
- extern struct gpio_chip *of_node_to_gpiochip(struct device_node *np);
--extern int of_gpio_simple_xlate(struct gpio_chip *gc,
-+extern int of_gpio_simple_xlate(struct gpio_chip **gc,
- 				const struct of_phandle_args *gpiospec,
- 				u32 *flags);
- 
++	counter = &memcg->hugepage[idx];
++	res_counter_uncharge_until(counter, counter->parent, csize);
++
+ 	pc->mem_cgroup = parent;
+ err_out:
+ 	unlock_page_cgroup(pc);
+-- 
+1.7.4.1
+
+
