@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760809Ab2EKQ2R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 12:28:17 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61880 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760559Ab2EKQ2O (ORCPT
+	id S1760767Ab2EKQcg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 12:32:36 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:30641 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753511Ab2EKQcf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 12:28:14 -0400
-Message-ID: <4FAD3E18.5000700@lwfinger.net>
-Date: Fri, 11 May 2012 11:28:08 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
+	Fri, 11 May 2012 12:32:35 -0400
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Alberto Lago Ballesteros <saniukeokusainaya@gmail.com>,
-        Adrian <agib@gmx.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [ 166/167] [PATCH] staging: r8712u: Fix regression caused by
- commit 8c213fa
-References: <20120509055029.588587017@decadent.org.uk>  <20120509055052.452419913@decadent.org.uk>  <20120509194859.GE15527@herton-ThinkPad-T420> <1336706470.8274.435.camel@deadeye>
-In-Reply-To: <1336706470.8274.435.camel@deadeye>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <6a2c6de7-fc2f-4af7-9abd-da8698578f00@default>
+Date: Fri, 11 May 2012 09:31:53 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Konrad Wilk <konrad.wilk@oracle.com>, Nitin Gupta <ngupta@vflare.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: RE: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+References: <4FA33DF6.8060107@kernel.org> <20120509201918.GA7288@kroah.com>
+ <4FAB21E7.7020703@kernel.org> <20120510140215.GC26152@phenom.dumpdata.com>
+ <4FABD503.4030808@vflare.org> <4FABDA9F.1000105@linux.vnet.ibm.com>
+ <20120510151941.GA18302@kroah.com> <4FABECF5.8040602@vflare.org>
+ <20120510164418.GC13964@kroah.com> <4FABF9D4.8080303@vflare.org>
+ <20120510173322.GA30481@phenom.dumpdata.com> <4FAC4E3B.3030909@kernel.org>
+ <8473859b-42f3-4354-b5ba-fd5b8cbac22f@default> <4FAC59F6.4080503@kernel.org>
+In-Reply-To: <4FAC59F6.4080503@kernel.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2012 10:21 PM, Ben Hutchings wrote:
-> On Wed, 2012-05-09 at 12:49 -0700, Herton Ronaldo Krzesinski wrote:
->> On Wed, May 09, 2012 at 06:53:15AM +0100, Ben Hutchings wrote:
->>> 3.2-stable review patch.  If anyone has any objections, please let me know.
->>>
->>> ------------------
->>>
->>> From: Larry Finger<Larry.Finger@lwfinger.net>
->>>
->>> commit 2080913e017ab9f88379d93fd09546ad95faf87b upstream.
-> [...]
->>> --- a/drivers/staging/rtl8712/usb_intf.c
->>> +++ b/drivers/staging/rtl8712/usb_intf.c
->>> @@ -30,6 +30,7 @@
->>>
->>>   #include<linux/usb.h>
->>>   #include<linux/module.h>
->>> +#include<linux/firmware.h>
->>>
->>>   #include "osdep_service.h"
->>>   #include "drv_types.h"
->>> @@ -620,6 +621,10 @@ static void r871xu_dev_remove(struct usb_interface *pusb_intf)
->>>   	struct _adapter *padapter = netdev_priv(pnetdev);
->>>   	struct usb_device *udev = interface_to_usbdev(pusb_intf);
->>>
->>> +	if (padapter->fw_found)
->>> +		release_firmware(padapter->fw);
->>> +	/* never exit with a firmware callback pending */
->>> +	wait_for_completion(&padapter->rtl8712_fw_ready);
->>
->> We also need to apply commit ee6aeff71e2f16b9fe95ce908d098c169e0f4004
->> after this, due to the possible invalid padapter dereference.
-> [...]
->
-> That 'fix' makes no sense since netdev_priv() never returns NULL.
->
-> Larry, you should remove the test for pAdapter completely, or if pnetdev
-> can somehow be NULL then test *that*.
+> From: Minchan Kim [mailto:minchan@kernel.org]
+> Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+> 
+> Hi Dan,
+> 
+> At least, zram is also primary user and it also has such mess although it's not severe than zcache.
+> zram->table[index].handle sometime has real (void*) handle, sometime (struct page*).
+> And I assume ramster you sent yesterday will be.
+> 
+> I think there are already many mess and I bet it will prevent going to mainline.
+> Especially, handle problem is severe because it a arguement of most functions exported in zsmalloc
+> So, we should clean up before late, IMHO.
+> 
+> > zcache is going to need more access to the internals
+> > of its allocator, not less.  Zsmalloc is currently missing
+> > some important functionality that (I believe) will be
+> > necessary to turn zcache into an enterprise-ready,
+> 
+> If you have such TODO list, could you post it?
+> It helps direction point of my stuff.
 
-Thanks. I have a patch under testing.
+Will you be proposing to promote zram and zsmalloc out of staging
+for the upcoming window?  If so, I will try to make some time
+for this.  Otherwise, I apologize, but I will need to
+wait a week or two (after the upcoming window) when I will
+have more time.
+ 
+> > always-on kernel feature.  If it evolves to add that
+> > functionality, then it may no longer be able to provide
+> > generic abstract access... in which case generic zsmalloc
+> > may then have zero users in the kernel.
+> 
+> Hmm, Do you want to make zsmalloc by zcache owned private allocator?
 
-Larry
+I would prefer to use only zsmalloc, but it currently cannot provide
+all the functionality of "zbud" which is a private allocator in
+zcache and ramster.  I'll explain more later.
 
+Dan
