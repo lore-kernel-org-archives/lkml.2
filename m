@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab2EKEiF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 00:38:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38259 "EHLO
+	id S1752583Ab2EKEig (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 00:38:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40182 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab2EKEiC (ORCPT
+	with ESMTP id S1751339Ab2EKEie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 00:38:02 -0400
+	Fri, 11 May 2012 00:38:34 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
-To: airlied@linux.ie, alan@linux.intel.com, kirill.shutemov@linux.intel.com
-Cc: airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH] gma500: fix build when ACPI isn't set
-Date: Fri, 11 May 2012 06:39:02 +0200
-Message-Id: <1336711142-26788-1-git-send-email-levinsasha928@gmail.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH] usb: gadget: dummy_hcd: fix build when BUG is not set
+Date: Fri, 11 May 2012 06:39:37 +0200
+Message-Id: <1336711177-26826-1-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use WARN_ON() instead of __WARN, which also means we won't use any
+internal macros.
+
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- drivers/gpu/drm/gma500/opregion.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/usb/gadget/dummy_hcd.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpu/drm/gma500/opregion.c b/drivers/gpu/drm/gma500/opregion.c
-index 05661bf..e2fbf4d 100644
---- a/drivers/gpu/drm/gma500/opregion.c
-+++ b/drivers/gpu/drm/gma500/opregion.c
-@@ -258,6 +258,7 @@ void psb_intel_opregion_init(struct drm_device *dev)
- 	if (!opregion->header)
+diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
+index 83bb2e3..b799106 100644
+--- a/drivers/usb/gadget/dummy_hcd.c
++++ b/drivers/usb/gadget/dummy_hcd.c
+@@ -598,7 +598,7 @@ static void dummy_free_request(struct usb_ep *_ep, struct usb_request *_req)
+ 	struct dummy_request	*req;
+ 
+ 	if (!_ep || !_req) {
+-		__WARN();
++		WARN_ON(1);
  		return;
- 
-+#ifdef CONFIG_ACPI
- 	if (opregion->acpi) {
- 		/* Notify BIOS we are ready to handle ACPI video ext notifs.
- 		 * Right now, all the events are handled by the ACPI video
-@@ -268,6 +269,7 @@ void psb_intel_opregion_init(struct drm_device *dev)
- 		system_opregion = opregion;
- 		register_acpi_notifier(&psb_intel_opregion_notifier);
  	}
-+#endif
  
- 	if (opregion->asle)
- 		psb_intel_opregion_enable_asle(dev);
-@@ -281,12 +283,14 @@ void psb_intel_opregion_fini(struct drm_device *dev)
- 	if (!opregion->header)
- 		return;
- 
-+#ifdef CONFIG_ACPI
- 	if (opregion->acpi) {
- 		opregion->acpi->drdy = 0;
- 
- 		system_opregion = NULL;
- 		unregister_acpi_notifier(&psb_intel_opregion_notifier);
- 	}
-+#endif
- 
- 	/* just clear all opregion memory pointers now */
- 	iounmap(opregion->header);
 -- 
 1.7.8.5
 
