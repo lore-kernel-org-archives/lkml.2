@@ -1,113 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757798Ab2EKMQS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 08:16:18 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:2701 "EHLO MMS3.broadcom.com"
+	id S1758029Ab2EKMRl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 08:17:41 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16817 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197Ab2EKMQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 08:16:17 -0400
-X-Server-Uuid: B730DE51-FC43-4C83-941F-F1F78A914BDD
-Message-ID: <4FAD0304.5060200@broadcom.com>
-Date: Fri, 11 May 2012 14:16:04 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430
- Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "Kay Sievers" <kay@vrfy.org>
-cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: in-kernel drivers and firmware loader
-References: <4FACF02B.7070006@broadcom.com>
- <CAPXgP12qaNm1Vh=8isf2gq=sUW8hOgi_STNfTuOqg5XT4KgwZA@mail.gmail.com>
-In-Reply-To: <CAPXgP12qaNm1Vh=8isf2gq=sUW8hOgi_STNfTuOqg5XT4KgwZA@mail.gmail.com>
-X-Enigmail-Version: 1.5pre
-X-WSS-ID: 63B3DC903E031669302-01-01
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1751197Ab2EKMRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 08:17:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="142754934"
+Message-ID: <1336738864.2625.66.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 1/7] [RFC] UBI: Add checkpoint on-chip layout
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, tim.bird@am.sony.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de
+Date: Fri, 11 May 2012 15:21:04 +0300
+In-Reply-To: <4FACFFED.40105@nod.at>
+References: <1336585125-127220-1-git-send-email-richard@nod.at>
+	  <1336585125-127220-2-git-send-email-richard@nod.at>
+	 <1336735041.2625.35.camel@sauron.fi.intel.com> <4FACFFED.40105@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-iNt0B3CujsPbsLsXPj0/"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 01:03 PM, Kay Sievers wrote:
-> On Fri, May 11, 2012 at 12:55 PM, Arend van Spriel <arend@broadcom.com> wrote:
->> To my memory (which fails from time to time) you posted a message on
->> using the asynchronous API for firmware loading as some drivers were
->> blocking on it in the module initialization. So for our driver we
->> decoupled the initialization from probe and subsequently the firmware
->> request. Assuming this solves the udev issue, but I am currently looking
->> into a somewhat related issue with our driver built-in.
->>
->> I am testing on a PandaBoard which boots a linux kernel without a initrd
->> and our device is detected before the root filesystem is mounted. I was
->> expecting the async firmware request to get called back immediatly with
->> firmware pointer being NULL. The behaviour is slightly different as this
->> callback is coming after 60 seconds, which is the timeout. I guess the
->> uevent just gets lost without the kernel knowing it. Is that correct?
-> 
-> It's probably sent, but nothing see it because there is no userspace
-> that would have subscribed.
-> 
-> If udev is started later during bootup, and the coldplug triggers all
-> events again, the firmware request should be found and be fulfilled by
-> userspace -- at least that's the theory.
-> 
-> Can you reach the box with a login before the 60 seconds are reached?
-> 
-> Do you see a firmware request (directory) still hanging around in
-> /sys/class/firmware/ ?
-> 
-> Kay
-> 
 
-Thanks, Kay
+--=-iNt0B3CujsPbsLsXPj0/
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Here is the
+On Fri, 2012-05-11 at 14:02 +0200, Richard Weinberger wrote:
+> > Please, unless it is size-critical, always leave some unused space in
+> > on-flash data structure for possible future extensions, and initialize
+> > them to 0.
+>=20
+> If the fastmap on-flash layout changes, I'll increment the "version" fiel=
+d.
+> But I can leave some space.
 
-# cd /sys/class/firmware/mmc1\:0001\:2/
-# ls
-data       device     loading    power      subsystem  uevent
-# cat uevent
-FIRMWARE=brcm/brcmfmac-sdio.bin
-TIMEOUT=60
-ASYNC=1
-# cat loading
-0
+But if you have extra space you _often_ have chances to add new features
+in a backward-compatible way, without incrementing the version, which
+would make new images backward-incompatible. It really may make a big
+difference.
 
-Not sure if loading content means anything or it presence is indicating
-it is in progress. Below also the dmesg output.
+This is not _always_ possible, of course, but sometimes it is. So if it
+does not hurt, leave extra space in all on flash data structures (but
+probably not in those you have large arrays of, though). This is just a
+good practice I think. For some reason I have a feeling that we
+discussed this already :-) I think I sent you an e-mail with various
+questions which you did not answer long time ago, but it was long time
+ago, so does not matter anymore.
 
-Gr. AvS
+> > What's the perpose of having these pools - once you read all the
+> > information from the fastmap and the wl subsystem inserts it to the
+> > RB-trees - you already know this data. Why you need to store this on th=
+e
+> > flash? This whole pool think look redundant and unneeded.
+>=20
+> We need this pool to find all PEBs that have changed since we wrote the l=
+ast
+> checkpoint (or fastmap).
 
-[    6.801452] brcmfmac: brcmf_sdbrcm_probe: completed!!
-[    6.801483] brcmfmac: brcmf_sdbrcm_probe: request firmware
-"brcm/brcmfmac-sdio.bin"
-[    6.802703] brcmfmac: brcmf_ops_sdio_probe: Enter
-[    6.802703] brcmfmac: brcmf_ops_sdio_probe: func->class=2
-[    6.802734] brcmfmac: brcmf_ops_sdio_probe: sdio_vendor: 0x02d0
-[    6.802734] brcmfmac: brcmf_ops_sdio_probe: sdio_device: 0x4329
-[    6.802734] brcmfmac: brcmf_ops_sdio_probe: Function#: 0x0003
-[    6.895507] smsc95xx 1-1.1:1.0: eth0: register 'smsc95xx' at
-usb-ehci-omap.0-1.1, smsc95xx USB 2.0 Ethernet, ca:2a:a4:72:d9:6b
-[    6.908111] drivers/usb/core/inode.c: creating file '003'
-[    6.921234] mmc2: card claims to support voltages below the defined
-range. These will be ignored.
-[    6.940582] mmc2: queuing unknown CIS tuple 0x91 (3 bytes)
-[    6.947418] mmc2: new SDIO card at address 0001
-[    7.001281] kjournald starting.  Commit interval 5 seconds
-[    7.014190] EXT3-fs (mmcblk0p2): using internal journal
-[    7.019714] EXT3-fs (mmcblk0p2): mounted filesystem with ordered data
-mode
-[    7.027038] VFS: Mounted root (ext3 filesystem) on device 179:2.
-[    7.036437] devtmpfs: mounted
-[    7.039764] Freeing init memory: 236K
-[    8.119812] hub 2-0:1.0: hub_suspend
-[    8.120025] usb usb2: bus auto-suspend, wakeup 1
-[    8.120056] ohci-omap3 ohci-omap3.0: suspend root hub
-[    9.666809] usb 1-1.1: link qh8-0001/ee2cc700 start 2 [1/0 us]
-[   11.448059] smsc95xx 1-1.1:1.0: eth0: link up, 100Mbps, full-duplex,
-lpa 0xCDE1
-[   67.573059] brcmfmac: brcmf_sdbrcm_fw_callback: enter
-[   67.573059] brcmfmac: brcmf_sdbrcm_fw_callback: firmware not found
-[   67.573059] brcmfmac: brcmf_sdbrcm_release: Enter
+OK, I see, thanks.
+
+> BTW: That's why we named it "UBI Checkpointing".
+> If all PEBs in the pool are used (IOW no longer empty) we fill the pool w=
+ith empty PEBs
+> and write a new checkpoint.
+> While reading the checkpoint we know that only PEBs within the pool my ha=
+ve changed...
+>=20
+> Without this pool we'd have to write the checkpoint every time the EBA ch=
+anges
+> or we'd have to scan the whole list of free PEBs while attaching.
+
+I just had an impression that you write the fastmap only on unmount or
+at some kind of "sync" points, and power cuts always would lead to
+re-scan.
+
+> > It is weird that you do not have an array of ECs instead for _every_
+> > PEB. Why wasting the flash and time writing/reading this data?
+>=20
+> By array of ECs you mean that all ec values are written to the flash
+> and pnum is the index?
+> Sounds sane.
+
+Yes, to me it sounds like the only sane way, unless there is a strong
+reason to have redundant "pnum" fields. :-)
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-iNt0B3CujsPbsLsXPj0/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPrQQwAAoJECmIfjd9wqK08pQQAJKw7tIxZcDh7ATZtE8a6950
+l0UdXzorOrrQlCFolgX04oSqZkqMLIajylIjIAjvOsyV/KHH98hO0Gp9qgpDVaMr
+L/6sapkYeRH7Y9QVshPUGzUXfWqudQHQYOpaOY2iARyCKFqibt2d/r8pG47ML2Kf
+5J6hU229xKG6xkFI0GwXLpKgAJFMT1/yD0A9IeaFquYuwSeoJnZiKd1lfVD9X/TZ
+d09UlcxYVWedZ4Upc1UrwNI1opTwRB1URGfI4e368REcu6cuO+Qcaic5DeO/tNTi
+O3o7g/q8hpJbvkQyFo0gORu17L0sf3Dedirr/YGNS0MgQBkSOdIBaGpTzgBENSgD
+X+t1ubDlNgB5JGU5PnyT6t6/CA3y34DghWM6nzmxBDCS0HQwji+iiYAxcxx4HQYo
+9Rzwjm2g9T14geiU3PsMozLJ3TMsGsGHUwzsf1fXMVkeiQaWYdH5YxgjcfkmfuHR
+SEhYTdr1GMKjn+4O7YWEzprzLtSpFqsPppwpSrF+z2bx6aC/71oK8+ivDswvxC/3
+MoQY6TsNWQnVTF3yGnoyXe0G2eHHaxlVCQvdSPHZwDTEc1MP3fgbbzl9OWYpUMAs
+7omZ6WMfrAqUQ8zd2m6buy8Qkfavo4HcOd55BGYv5cP+mK4bO4rsphso4Or4+Z0A
+06zGHSua9svUO6QWT1AX
+=qAC6
+-----END PGP SIGNATURE-----
+
+--=-iNt0B3CujsPbsLsXPj0/--
 
