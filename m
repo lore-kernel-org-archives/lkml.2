@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756767Ab2EKIAa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 04:00:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34413 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755917Ab2EKIA2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 04:00:28 -0400
-Date: Fri, 11 May 2012 01:00:07 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: raise MemFree by reverting percpu_pagelist_fraction to
- 0
-Message-ID: <alpine.LSU.2.00.1205110054520.2801@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756833Ab2EKIBp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 04:01:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6295 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751756Ab2EKIBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 04:01:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="139414073"
+From: Alex Shi <alex.shi@intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, tj@kernel.org,
+        cl@linux-foundation.org, tony.luck@intel.com, bp@amd64.org,
+        davem@davemloft.net
+Cc: akpm@linux-foundation.org, ebiederm@xmission.com, sfr@canb.auug.org.au,
+        alex.shi@intel.com, luto@mit.edu, glommer@parallels.com,
+        fernando@oss.ntt.co.jp, vapier@gentoo.org, eric.dumazet@gmail.com,
+        dzickus@redhat.com, dhowells@redhat.com, cbouatmailru@gmail.com,
+        fenghua.yu@intel.com, jkosina@suse.cz, ext-phil.2.carmody@nokia.com,
+        dan.carpenter@oracle.com, len.brown@intel.com, fweisbec@gmail.com,
+        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org, anton@samba.org,
+        kamezawa.hiroyu@jp.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] replace percpu_ops function with this_cpu_ops 
+Date: Fri, 11 May 2012 16:00:12 +0800
+Message-Id: <1336723215-16660-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Why is there less MemFree than there used to be?  It perturbed a test,
-so I've just been bisecting linux-next, and now find the offender went
-upstream yesterday.
+I am sorry for mess commit log previous patchset.
 
-Commit 93278814d359 "mm: fix division by 0 in percpu_pagelist_fraction()"
-mistakenly initialized percpu_pagelist_fraction to the sysctl's minimum 8,
-which leaves 1/8th of memory on percpu lists (on each cpu??); but most of
-us expect it to be left unset at 0 (and it's not then used as a divisor).
+As Andrew Morton's request, I combind and clean up the patchset.
 
-MemTotal: 8061476kB  8061476kB  8061476kB  8061476kB  8061476kB  8061476kB
-Repetitive test with percpu_pagelist_fraction 8:
-MemFree:  6948420kB  6237172kB  6949696kB  6840692kB  6949048kB  6862984kB
-Same test with percpu_pagelist_fraction back to 0:
-MemFree:  7945000kB  7944908kB  7948568kB  7949060kB  7948796kB  7948812kB
+According to Ingo's complain. I use the same and short 
+'this_cpu_ops' functions in x86 part code.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
+Thanks for all comments!
 
- mm/page_alloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- 3.4-rc6+/mm/page_alloc.c	2012-05-10 22:53:35.362478419 -0700
-+++ linux/mm/page_alloc.c	2012-05-11 00:07:31.613657283 -0700
-@@ -105,7 +105,7 @@ unsigned long totalreserve_pages __read_
-  */
- unsigned long dirty_balance_reserve __read_mostly;
- 
--int percpu_pagelist_fraction = 8;
-+int percpu_pagelist_fraction;
- gfp_t gfp_allowed_mask __read_mostly = GFP_BOOT_MASK;
- 
- #ifdef CONFIG_PM_SLEEP
+[PATCH 1/3] net: replace percpu_xxx funcs with this_cpu_xxx or
+[PATCH 2/3] x86: replace percpu_xxx funcs with this_cpu_xxx
+[PATCH 3/3] percpu: remove percpu_xxx() functions
