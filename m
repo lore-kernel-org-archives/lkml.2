@@ -1,77 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758639Ab2EKXMA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 19:12:00 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:63741 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab2EKXL6 convert rfc822-to-8bit (ORCPT
+	id S1757212Ab2EKXPv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 19:15:51 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:60219 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab2EKXPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 19:11:58 -0400
+	Fri, 11 May 2012 19:15:49 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-16.tower-209.messagelabs.com!1336778148!5365020!1
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] staging: comedi: Add helper macro for comedi pci driver boilerplate
+Date: Fri, 11 May 2012 16:15:39 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1205101351380.21030@xanadu.home>
-References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
- <CAK5ve-KSyvZSHw7csQ5M88q0008NSrs1kwuyUH3hFqxD0f7BQQ@mail.gmail.com>
- <20120509122436.1b612004.akpm@linux-foundation.org> <201205092038.16722.arnd.bergmann@linaro.org>
- <CAK5ve-Ko6EjZsJBW++ofL0eHxiR5W+wafb3T99Rm9a1L8pHLBQ@mail.gmail.com>
- <CAOesGMhioLshtsYiHCdQxtx7+3GJsCyhgd7c7nDiZC3=3axb6w@mail.gmail.com>
- <CAK5ve-+rCv3s+K6Laie=QaPqqZ4Vk1+irYU6S4MBZSquKrMWtw@mail.gmail.com>
- <alpine.LFD.2.02.1205092122140.21030@xanadu.home> <CAK5ve-JC61jFX7+GV9VoZKExbtdxX03jmpkzu5zxHg+Lehy7VQ@mail.gmail.com>
- <alpine.LFD.2.02.1205101351380.21030@xanadu.home>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Sat, 12 May 2012 07:11:36 +0800
-X-Google-Sender-Auth: c3o3LlBSW7ePw2UjNVNvq4cgdEM
-Message-ID: <CAK5ve-L4rcAx-=n5u7G0AQzvUG3ir_jzF_ibaSf-EntXAzFUCw@mail.gmail.com>
-Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and
- consolidate LED driver in ARM
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, rpurdie@rpsys.net,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, tim.gardner@canonical.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201205111615.39517.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 2:01 AM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> On Fri, 11 May 2012, Bryan Wu wrote:
->
->> On Thu, May 10, 2012 at 9:25 AM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
->> > You applied your patches on top of linux-next.  This can't be merged
->> > upstream until you rebase your patches on something stable such as pure
->> > v3.4-rc6 for example.
->> >
->>
->> Got it, Nico. As I'm still in US for our Ubuntu Developer Summit, I
->> plan to rebase and test on my hardware after I'm back to home next
->> week.
->
-> Given where things are, you risk being too late for this merge window if
-> you do so, meaning that this cleanup will have to wait yet another
-> cycle which would be rather disappointing.
->
-> Given that the probabilities for something to break are rather small if
-> you simply rebase on top of v3.4-rc6 from linux-next, I'd suggest you do
-> the rebase ASAP and perform compilation tests only.  If this can be
-> merged in the arm-soc tree quickly then this will get some exposure and
-> actual testing from others which should be fine.
->
->
+Introduce the module_comedi_pci_driver macro, and the
+associated register/unregister functions, which is a
+convenience macro for comedi pci driver modules similar
+to module_platform_driver. It is intended to be used by
+drivers where the init/exit section does nothing but
+register/unregister the comedi driver and associated pci
+driver. By using this macro it is possible to eliminate
+a few lines of boilerplate code per comedi pci driver.
 
-OK, I rebased my patch back on 3.4.0-rc6, please find it here:
-git://kernel.ubuntu.com/roc/linux-2.6/.git leds
+Add a check to make sure that the pci_driver->name is
+set. Once all the comedi pci drivers have been fixed this
+will be removed.
 
-linux-next branch can be also found here:
-git://kernel.ubuntu.com/roc/linux-2.6/.git leds-next
+Also, when registering the pci driver check for failure
+and unregister the comedi driver.
 
-Arnd, could you please help me to merge? if got any issue, please
-point to me to fix.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Thanks,
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+---
+
+ drivers/staging/comedi/comedidev.h |   19 +++++++++++++++++++
+ drivers/staging/comedi/drivers.c   |   31 +++++++++++++++++++++++++++++++
+ 2 files changed, 50 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+index 8828609..92a1199 100644
+--- a/drivers/staging/comedi/comedidev.h
++++ b/drivers/staging/comedi/comedidev.h
+@@ -310,6 +310,25 @@ int comedi_driver_unregister(struct comedi_driver *);
+ 	module_driver(__comedi_driver, comedi_driver_register, \
+ 			comedi_driver_unregister)
+ 
++struct pci_driver;
++
++int comedi_pci_driver_register(struct comedi_driver *, struct pci_driver *);
++void comedi_pci_driver_unregister(struct comedi_driver *, struct pci_driver *);
++
++/**
++ * module_comedi_pci_driver() - Helper macro for registering a comedi PCI driver
++ * @__comedi_driver: comedi_driver struct
++ * @__pci_driver: pci_driver struct
++ *
++ * Helper macro for comedi PCI drivers which do not do anything special
++ * in module init/exit. This eliminates a lot of boilerplate. Each
++ * module may only use this macro once, and calling it replaces
++ * module_init() and module_exit()
++ */
++#define module_comedi_pci_driver(__comedi_driver, __pci_driver) \
++	module_driver(__comedi_driver, comedi_pci_driver_register, \
++			comedi_pci_driver_unregister, &(__pci_driver))
++
+ void init_polling(void);
+ void cleanup_polling(void);
+ void start_polling(struct comedi_device *);
+diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
+index 49681a1..3a82950 100644
+--- a/drivers/staging/comedi/drivers.c
++++ b/drivers/staging/comedi/drivers.c
+@@ -950,6 +950,37 @@ void comedi_pci_auto_unconfig(struct pci_dev *pcidev)
+ }
+ EXPORT_SYMBOL_GPL(comedi_pci_auto_unconfig);
+ 
++int comedi_pci_driver_register(struct comedi_driver *comedi_driver,
++		struct pci_driver *pci_driver)
++{
++	int ret;
++
++	ret = comedi_driver_register(comedi_driver);
++	if (ret < 0)
++		return ret;
++
++	/* FIXME: Remove this test after auditing all comedi pci drivers */
++	if (!pci_driver->name)
++		pci_driver->name = comedi_driver->driver_name;
++
++	ret = pci_register_driver(pci_driver);
++	if (ret < 0) {
++		comedi_driver_unregister(comedi_driver);
++		return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(comedi_pci_driver_register);
++
++void comedi_pci_driver_unregister(struct comedi_driver *comedi_driver,
++		struct pci_driver *pci_driver)
++{
++	pci_unregister_driver(pci_driver);
++	comedi_driver_unregister(comedi_driver);
++}
++EXPORT_SYMBOL_GPL(comedi_pci_driver_unregister);
++
+ static int comedi_old_usb_auto_config(struct usb_interface *intf,
+ 				      struct comedi_driver *driver)
+ {
