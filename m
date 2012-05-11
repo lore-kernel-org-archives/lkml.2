@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760727Ab2EKPrr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 11:47:47 -0400
-Received: from canardo.mork.no ([148.122.252.1]:45468 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341Ab2EKPro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 11:47:44 -0400
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-To: David Miller <davem@davemloft.net>
-Cc: paul.gortmaker@windriver.com, rdunlap@xenotime.net, sfr@canb.auug.org.au,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        david.daney@cavium.com, =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [PATCH] net: of/phy: fix build error when phylib is built as a module
-Date: Fri, 11 May 2012 17:47:01 +0200
-Message-Id: <1336751221-19127-1-git-send-email-bjorn@mork.no>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <20120510.224352.2149006669429730060.davem@davemloft.net>
-References: <20120510.224352.2149006669429730060.davem@davemloft.net>
+	id S1760699Ab2EKPrn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 11:47:43 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:33503 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760340Ab2EKPrm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 11:47:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPXgP11teuiH0cPRrhWdvKCW1jtq4_6wkH21wgRT6UpDF0G1gQ@mail.gmail.com>
+References: <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+ <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
+ <CAPXgP13-XQdn0wMP=coVqS=Eko1vWkOrjOtfq4JQLHFZ3JNbgg@mail.gmail.com>
+ <1336571457.30189.29.camel@joe2Laptop> <CAPXgP11jt5u=wXs9Pe7QksZ25QTKCwNXgTHn+T6JXD6+2NzgBQ@mail.gmail.com>
+ <CAE9FiQUzsu8CFNLXxUyZnu53YobdNdJfQQmPQd8s8r5rgJpcNg@mail.gmail.com>
+ <20120509230649.GA10695@kroah.com> <1336617045.25027.2.camel@mop>
+ <CA+1xoqft4aM_qedn+TDx0z8creS_4mFf3S+4SUNjz0pe+=YHAg@mail.gmail.com>
+ <20120511151944.GA6990@kroah.com> <CA+55aFz8-96rHLfqRrRSgFAzOFmyDaDKSB15WKkCoUssHq8R-A@mail.gmail.com>
+ <CAPXgP11teuiH0cPRrhWdvKCW1jtq4_6wkH21wgRT6UpDF0G1gQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 11 May 2012 08:47:19 -0700
+X-Google-Sender-Auth: 98sdsPCbv0SCmmF1oYiwM7jUwBE
+Message-ID: <CA+55aFyG2jQFURwWebMWw7bAt3=zbXRsHSOtZVYBw-frUXqiRg@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
+ record buffer
+To: Kay Sievers <kay@vrfy.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Joe Perches <joe@perches.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_OF_MDIO is tristate and will be m if PHYLIB is m.  Use
-IS_ENABLED macro to prevent build error:
+On Fri, May 11, 2012 at 8:40 AM, Kay Sievers <kay@vrfy.org> wrote:
+>
+> Should we just pad the multi-newline-in-one-record output with 15
+> spaces when printk_time is on?
 
- ERROR: "of_mdio_find_bus" [drivers/net/phy/mdio-mux.ko] undefined!
+Yeah, I think that would be the nicest thing.
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: David Daney <david.daney@cavium.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
----
-I wonder if this could be as banal as this?  Not even build tested...
+Btw, I'd also *love* to see some model (eventually - not necessarily
+now) where we could have the option of the time printouts being a bit
+different (rather than just on/off). It would be very nice if we had
+"relative" time printouts for events close together, so the rule could
+be something like:
 
-Should be wrapped into commit 25106022 if it works, to ensure
-bisectability.
+ - if time is same as last line, pad with empty
 
+ - if time is more than a minute from last one, show an absolute value
+of dd hh:mm:ss
 
+ - otherwise, show a relative value of +ss.mmmmmm
 
-Bjørn
+So the on/off choice could be on/off/relative.
 
- drivers/net/phy/mdio_bus.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hmm?
 
-diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-index 83d5c9f..683ef1c 100644
---- a/drivers/net/phy/mdio_bus.c
-+++ b/drivers/net/phy/mdio_bus.c
-@@ -88,7 +88,7 @@ static struct class mdio_bus_class = {
- 	.dev_release	= mdiobus_release,
- };
- 
--#ifdef CONFIG_OF_MDIO
-+#if IS_ENABLED(CONFIG_OF_MDIO)
- /* Helper function for of_mdio_find_bus */
- static int of_mdio_bus_match(struct device *dev, void *mdio_bus_np)
- {
--- 
-1.7.10
-
+             Linus
