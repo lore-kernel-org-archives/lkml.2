@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759611Ab2EKLGE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 07:06:04 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7275 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759525Ab2EKLFV (ORCPT
+	id S1759466Ab2EKLJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 07:09:23 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:49081 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753259Ab2EKLJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 07:05:21 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 11 May 2012 04:05:13 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <dan.j.williams@intel.com>, <vinod.koul@intel.com>,
-        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-CC: Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3 1/2] dma: dmaengine: add slave req id in slave_config
-Date: Fri, 11 May 2012 16:30:43 +0530
-Message-ID: <1336734044-14275-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1336734044-14275-1-git-send-email-ldewangan@nvidia.com>
-References: <1336734044-14275-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 11 May 2012 07:09:22 -0400
+Message-ID: <1336734559.4310.23.camel@jlt3.sipsolutions.net>
+Subject: Re: in-kernel drivers and firmware loader
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 11 May 2012 13:09:19 +0200
+In-Reply-To: <CAPXgP12qaNm1Vh=8isf2gq=sUW8hOgi_STNfTuOqg5XT4KgwZA@mail.gmail.com> (sfid-20120511_130405_681592_56A4BAAD)
+References: <4FACF02B.7070006@broadcom.com>
+	 <CAPXgP12qaNm1Vh=8isf2gq=sUW8hOgi_STNfTuOqg5XT4KgwZA@mail.gmail.com>
+	 (sfid-20120511_130405_681592_56A4BAAD)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DMA controller like Nvidia's Tegra Dma controller
-supports the different slave requestor id from different slave.
-This need to be configure in dma controller to handle the request
-properly.
+On Fri, 2012-05-11 at 13:03 +0200, Kay Sievers wrote:
 
-Adding the slave-id in the slave configuration so that information
-can be passed from client when configuring for slave.
+> > I am testing on a PandaBoard which boots a linux kernel without a initrd
+> > and our device is detected before the root filesystem is mounted. I was
+> > expecting the async firmware request to get called back immediatly with
+> > firmware pointer being NULL. The behaviour is slightly different as this
+> > callback is coming after 60 seconds, which is the timeout. I guess the
+> > uevent just gets lost without the kernel knowing it. Is that correct?
+> 
+> It's probably sent, but nothing see it because there is no userspace
+> that would have subscribed.
+> 
+> If udev is started later during bootup, and the coldplug triggers all
+> events again, the firmware request should be found and be fulfilled by
+> userspace -- at least that's the theory.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
+I haven't really read all of the message, but we've also had users who
+observed in some cases that the coldplug doesn't properly trigger
+firmware load requests. Unfortunately, I don't have any details.
 
-Changes from V2:
-- Make slave_id as unsigned.
-
- include/linux/dmaengine.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 1082698..9732396 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -338,6 +338,9 @@ enum dma_slave_buswidth {
-  * @device_fc: Flow Controller Settings. Only valid for slave channels. Fill
-  * with 'true' if peripheral should be flow controller. Direction will be
-  * selected at Runtime.
-+ * @slave_id: Slave requester id. Only valid for slave channels. The dma
-+ * slave peripheral will have unique id as dma requester which need to be
-+ * pass as slave config.
-  *
-  * This struct is passed in as configuration data to a DMA engine
-  * in order to set up a certain channel for DMA transport at runtime.
-@@ -365,6 +368,7 @@ struct dma_slave_config {
- 	u32 src_maxburst;
- 	u32 dst_maxburst;
- 	bool device_fc;
-+	unsigned int slave_id;
- };
- 
- static inline const char *dma_chan_name(struct dma_chan *chan)
--- 
-1.7.1.1
+johannes
 
