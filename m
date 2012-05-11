@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760455Ab2EKOdY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 10:33:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41616 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753549Ab2EKOdW convert rfc822-to-8bit (ORCPT
+	id S1760335Ab2EKOeM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 10:34:12 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:34769 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757321Ab2EKOeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 10:33:22 -0400
-Message-ID: <1336746790.1017.17.camel@twins>
-Subject: Re: Commit cb83b62 fails to boot with a divide by zero error.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Robin Holt <holt@sgi.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Date: Fri, 11 May 2012 16:33:10 +0200
-In-Reply-To: <20120511133938.GG3751@sgi.com>
-References: <20120511133938.GG3751@sgi.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 11 May 2012 10:34:09 -0400
+Date: Fri, 11 May 2012 10:27:58 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] Xen physical cpus interface
+Message-ID: <20120511142758.GA29677@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC8292335154F3E@SHSMSX101.ccr.corp.intel.com>
+ <20120420192439.GA32170@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351B5807@SHSMSX101.ccr.corp.intel.com>
+ <20120510145745.GO26152@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351B5A2E@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923351B873F@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351B873F@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-11 at 08:39 -0500, Robin Holt wrote:
-
-> We found that reverting the commit:
-> cb83b62 (x86/sched/core) sched/numa: Rewrite the CONFIG_NUMA sched domain support
+On Fri, May 11, 2012 at 01:12:13PM +0000, Liu, Jinsong wrote:
+> Liu, Jinsong wrote:
+> > Just notice your reply (so quick :)
+> > 
+> > Agree and will update later, except 1 concern below.
+> > 
+> > Konrad Rzeszutek Wilk wrote:
+> >>> 
+> >>> Hmm, it's good if it's convenient to do it automatically via
+> >>> dev->release. However, dev container (pcpu) would be free at some
+> >>> other error cases, so I prefer do it 'manually'.
+> >> 
+> >> You could also call pcpu_release(..) to do it manually.
+> >> 
+> > 
+> > that means kfree(pcpu) would be done twice at some error cases, do
+> > you think it really good? 
+> > 
 > 
-> also got things working.
+> Ping.
+> 
+> I think error recovery should be kept inside error logic level itself, if try to recover upper level error would bring trouble.
+> 
+> In our example, there are 2 logic levels:
+> pcpu level (as container), and dev level (subfield used for sys)
 
-there's a particularly stupid bug in that code
+So you need to untangle free_pcpu from doing both. Meaning one does the
+SysFS and the other deals with free-ing the structure and removing itself
+from the list.
 
 
+> dev->release should only recover error occurred at dev/sys level, and the pcpu error should be recovered at pcpu level.
+> 
+> If dev->release try to recover its container pcpu level error, like list_del/kfree(pcpu), it would make confusing. i.e., considering pcpu_sys_create(), 2 error cases:
+> device_register fail, and device_create_file fail --> how can the caller decide kfree(pcpu) or not?
 
----
-Subject: sched, numa: Fix the new NUMA topology bits
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri May 11 00:56:20 CEST 2012
+Then you should free it manually. But you can do this by a wrapper
+function:
 
-There's no need to convert a node number to a node number by
-pretending its a cpu number..
+__pcpu_release(..) {
+	..
+	/* Does the removing itself from the list and kfree the pcpu */
+}
+pcpu_release(..) {
+	struct pcpcu *p= container_of(..)
+	__pcpu_release(p);
+}
 
-Reported-by: Yinghai Lu <yinghai@kernel.org>
-Reported-and-Tested-by: Greg Pearson <greg.pearson@hp.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/sched/core.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+dev->release = &pcpu_release;
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6378,8 +6378,7 @@ static void sched_init_numa(void)
- 			sched_domains_numa_masks[i][j] = mask;
- 
- 			for (k = 0; k < nr_node_ids; k++) {
--				if (node_distance(cpu_to_node(j), k) >
--						sched_domains_numa_distance[i])
-+				if (node_distance(j, k) > sched_domains_numa_distance[i])
- 					continue;
- 
- 				cpumask_or(mask, mask, cpumask_of_node(k));
-
+> 
+> So how about recover pcpu error manually and explicitly?
+> 
+> Thanks,
+> Jinsong
