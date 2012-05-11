@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128Ab2EKSGp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:06:45 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:23271 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933067Ab2EKSGl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:06:41 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: sSe1gaUVM1kSFynf23djkWegyS3yy1OwKvLkY1.W88wFOST
- GtIumnc5T1Evw4XGe0vYKupI3dxTowEFRWY1NblCk5S0YqtD9vOfdLsa9MeD
- N.H97pjNCZLO9BLeXm_sBGg8xBK2CLypioFL8uBh.z_A3nYhj.w7rUdWKMq_
- fumzejLOVgQ6Hnm5uZc0pi8bSlxZR0cFTBika4jqmtYTot4aqCGw_2R3giGA
- dNxGB5bapIcTg78EOfPas.4CwFRMIddJ_fdrXeFeqpWe3GpDlDGG7kk3fQWw
- gUuNbP4sxVN9YECMiklbyru11rSwbaxlC0S3MwU9qGE.Dl_jo3qbY0iWCpZu
- ynr9ic.wphwSDht2TuTMVKxk6ZmvZH_TwXKAOUE3cXk22iKOEIztZGAcrrO8
- biqoBQV.pMOLPhi2fzKno87BaXYDLeRT9IBkb
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 11 May 2012 13:06:36 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
- kfree
-In-Reply-To: <4FAD531D.6030007@parallels.com>
-Message-ID: <alpine.DEB.2.00.1205111305570.386@router.home>
-References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home> <4FAD531D.6030007@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S933148Ab2EKSIa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:08:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42247 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933067Ab2EKSI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 14:08:27 -0400
+Message-ID: <4FAD4806.2010507@redhat.com>
+Date: Fri, 11 May 2012 14:10:30 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Borislav Petkov <bp@amd64.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v.23-2] RAS: use tracepoint to handle hw issues
+References: <1336683628-12954-1-git-send-email-mchehab@redhat.com> <1336748054-21325-1-git-send-email-mchehab@redhat.com> <20120511170647.GA17299@aftab.osrc.amd.com>
+In-Reply-To: <20120511170647.GA17299@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 May 2012, Glauber Costa wrote:
+Em 11-05-2012 14:06, Borislav Petkov escreveu:
+> From Documentation/SubmittingPatches:
+> 
+> "2) Describe your changes.
+> 
+> Describe the technical detail of the change(s) your patch includes.
+> 
+> Be as specific as possible."
+> 
+> "use tracepoint to handle hw issues" is not specific - it is bullshit
+> bingo with a random word generator.
+> 
+> I'm getting tired of this crap: either take the suggestion as is,
+> without randomly changing it for no reason whatsoever, or give a good
+> reason why it is not a good suggestion and propose a better one!
+> 
+> Randomly changing it in the next version of the patch for another, even
+> crappier one doesn't help.
 
-> > Adding a VM_BUG_ON may be useful to make sure that kmem_cache_free is
-> > always passed the correct slab cache.
->
-> Well, problem is , it isn't always passed the "correct" slab cache.
-> At least not after this series, since we'll have child caches associated with
-> the main cache.
->
-> So we'll pass, for instance, kmem_cache_free(dentry_cache...), but will in
-> fact free from the memcg copy of the dentry cache.
+Well, tell me what title you want for this patch, instead of coming with
+offending comments like above, and I'll change it to match your desire.
 
-Urg. But then please only do this for the MEMCG case and add a fat big
-warning in kmem_cache_free.
+Regards,
+Mauro
