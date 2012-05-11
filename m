@@ -1,146 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab2EKALa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 20:11:30 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54441 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab2EKAL2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 20:11:28 -0400
-Message-ID: <4FAC592B.90904@gmail.com>
-Date: Thu, 10 May 2012 18:11:23 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com, namhyung.kim@lge.com
-Subject: Re: [PATCH 2/5] perf tools: fix piped mode read code
-References: <1334134889-20312-1-git-send-email-eranian@google.com> <1334134889-20312-3-git-send-email-eranian@google.com>
-In-Reply-To: <1334134889-20312-3-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754924Ab2EKANW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 20:13:22 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:45705 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751676Ab2EKANU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 20:13:20 -0400
+Message-ID: <1336695199.29763.28.camel@joe2Laptop>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
+ variable-length record buffer
+From: Joe Perches <joe@perches.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kay Sievers <kay@vrfy.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Ingo Molnar <mingo@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
+Date: Thu, 10 May 2012 17:13:19 -0700
+In-Reply-To: <CA+55aFygHfYd3O5-sBg32_Vcn6GOm7irr2R8jW6QVPuepXTeWw@mail.gmail.com>
+References: <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
+	 <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
+	 <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com>
+	 <20120509070710.GA29981@gmail.com>
+	 <CAPXgP11evyQQKNDaa00R7qsOFy5Xk-utN1w9OgB4y6NxLZG=UA@mail.gmail.com>
+	 <1336611278.728.9.camel@mop>
+	 <CA+55aFyrrH0jJV--L=ugt0YK7pT+jmhjvt_WRWyenyiroN97zg@mail.gmail.com>
+	 <1336667984.947.24.camel@mop>
+	 <CA+55aFxUaNC4SGEodrdddkDN6t=Sbx=P4XyaHkj7eTQBQOeLeA@mail.gmail.com>
+	 <1336676986.947.47.camel@mop> <20120510201409.GA6467@thunk.org>
+	 <1336682226.29763.2.camel@joe2Laptop>
+	 <CAPXgP11T7vjBBFaE5jne0hntZ2J-MoVxwJ2C9TNsRzme9DmLuQ@mail.gmail.com>
+	 <1336682772.29763.6.camel@joe2Laptop>
+	 <CA+55aFwJgtVr9ZndEU-yhJW3wi-5Omga51pjun+J213awQwJZA@mail.gmail.com>
+	 <1336684277.29763.12.camel@joe2Laptop>
+	 <CA+55aFygHfYd3O5-sBg32_Vcn6GOm7irr2R8jW6QVPuepXTeWw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephane:
+On Thu, 2012-05-10 at 14:58 -0700, Linus Torvalds wrote:
+> On Thu, May 10, 2012 at 2:11 PM, Joe Perches <joe@perches.com> wrote:
+> >
+> > I think it's a distinction without a difference for,
+> > as fas as I know, that's a case that doesn't exist
+> > in the current kernel.
+> 
+> So? Even if we hadn't had this bug before (we have),
 
-This patch no longer applies cleanly. Can you update the series?
+True.  I've fixed the ones you've introduced when you
+changed printk semantics in the past.
 
-David
+> your argument is utter crap.
 
-On 4/11/12 3:01 AM, Stephane Eranian wrote:
-> In __perf_session__process_pipe_events(), there was a risk
-> we would read more than what a union perf_event struct can
-> hold. this could happen in case, perf is reading a file which
-> contains new record types it does not know about and which are
-> larger than anything it knows about.
->
-> In general, perf is supposed to skip records it does not
-> understand, but in pipe mode, those have to be read and ignored.
-> The fixed size header contains the size of the record, but that
-> size may be larger than union perf_event, yet it was used as
-> the backing to the read in:
->
->    union perf_event event;
->    void *p;
->
->    size = event->header.size;
->
->    p =&event;
->    p += sizeof(struct perf_event_header);
->    if (size - sizeof(struct perf_event_header)) {
->      err = readn(self->fd, p, size - sizeof(struct perf_event_header));
->
-> We fix this by allocating a buffer based on the size reported in
-> the header. We reuse the buffer as much as we can. We realloc in
-> case it becomes too small. In the  common case, the performance
-> impact is negligible.
->
-> Signed-off-by: Stephane Eranian<eranian@google.com>
-> ---
->   tools/perf/util/session.c |   35 +++++++++++++++++++++++++++--------
->   1 files changed, 27 insertions(+), 8 deletions(-)
->
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 9412e3b..d13e915 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -1056,8 +1056,9 @@ volatile int session_done;
->   static int __perf_session__process_pipe_events(struct perf_session *self,
->   					       struct perf_tool *tool)
->   {
-> -	union perf_event event;
-> -	uint32_t size;
-> +	union perf_event *event;
-> +	uint32_t size, cur_size = 0;
-> +	void *buf = NULL;
->   	int skip = 0;
->   	u64 head;
->   	int err;
-> @@ -1066,8 +1067,14 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
->   	perf_tool__fill_defaults(tool);
->
->   	head = 0;
-> +	cur_size = sizeof(union perf_event);
-> +
-> +	buf = malloc(cur_size);
-> +	if (!buf)
-> +		return -errno;
->   more:
-> -	err = readn(self->fd,&event, sizeof(struct perf_event_header));
-> +	event = buf;
-> +	err = readn(self->fd, event, sizeof(struct perf_event_header));
->   	if (err<= 0) {
->   		if (err == 0)
->   			goto done;
-> @@ -1077,13 +1084,23 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
->   	}
->
->   	if (self->header.needs_swap)
-> -		perf_event_header__bswap(&event.header);
-> +		perf_event_header__bswap(&event->header);
->
-> -	size = event.header.size;
-> +	size = event->header.size;
->   	if (size == 0)
->   		size = 8;
->
-> -	p =&event;
-> +	if (size>  cur_size) {
-> +		void *new = realloc(buf, size);
-> +		if (!new) {
-> +			pr_err("failed to allocate memory to read event\n");
-> +			goto out_err;
-> +		}
-> +		buf = new;
-> +		cur_size = size;
-> +		event = buf;
-> +	}
-> +	p = event;
->   	p += sizeof(struct perf_event_header);
->
->   	if (size - sizeof(struct perf_event_header)) {
-> @@ -1099,9 +1116,10 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
->   		}
->   	}
->
-> -	if ((skip = perf_session__process_event(self,&event, tool, head))<  0) {
-> +	skip = perf_session__process_event(self, event, tool, head);
-> +	if (skip<  0) {
->   		dump_printf("%#" PRIx64 " [%#x]: skipping unknown header type: %d\n",
-> -			    head, event.header.size, event.header.type);
-> +			    head, event->header.size, event->header.type);
->   		/*
->   		 * assume we lost track of the stream, check alignment, and
->   		 * increment a single u64 in the hope to catch on again 'soon'.
-> @@ -1122,6 +1140,7 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
->   done:
->   	err = 0;
->   out_err:
-> +	free(buf);
->   	perf_session__warn_about_errors(self, tool);
->   	perf_session_free_sample_buffers(self);
->   	return err;
+What happened to the pragmatic Linus Torvalds?
+Did the dogmatic one replace him again temporarily?
+
+> Even if we weren't to have that patter right *now*, that
+> doesn't mean that it cannot happen.
+
+Not what I said.
+
+> Your grep is also not at all exhaustive.
+
+I believe I know the printk subsystem and its uses
+as well as anyone.  I don't think there is a case
+today.
+
+> We do need an escape model.
+
+Or an agreement to not to emit "<[0-7cd]>"
+as the first 3 bytes after a newline or as
+the start of a new printk.  It could just
+as easily be an escape is a required leading
+non "<" character.
+
+I think that's not onerous.
+
+> The current KERN_CONT does that. Stop
+> arguing for crap.
+
+Correctness in all cases can be a good thing.
+Simplicity may be better because complexity
+is reduced.
+
+cheers, Joe
 
