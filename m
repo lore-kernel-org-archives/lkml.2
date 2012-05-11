@@ -1,34 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933320Ab2EKWLO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 18:11:14 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:37169 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946282Ab2EKWJr (ORCPT
+	id S1030317Ab2EKWL6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 18:11:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58842 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030295Ab2EKWJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 18:09:47 -0400
-Date: Fri, 11 May 2012 18:07:08 -0400 (EDT)
-Message-Id: <20120511.180708.1058930531947355928.davem@davemloft.net>
-To: eldad@fogrefinery.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net/ipv6/af_inet6.c: checkpatch cleanup
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1336248834-25271-1-git-send-email-eldad@fogrefinery.com>
-References: <1336248834-25271-1-git-send-email-eldad@fogrefinery.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 11 May 2012 15:07:10 -0700 (PDT)
+	Fri, 11 May 2012 18:09:39 -0400
+From: mathieu.poirier@linaro.org
+To: JBottomley@parallels.com
+Cc: megaraidlinux@lsi.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de,
+        mathieu.poirier@linaro.org
+Subject: [PATCH 4/7] scsi/advansys: do not build on ARM
+Date: Fri, 11 May 2012 16:09:25 -0600
+Message-Id: <1336774168-26577-5-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1336774168-26577-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1336774168-26577-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eldad Zack <eldad@fogrefinery.com>
-Date: Sat,  5 May 2012 22:13:53 +0200
+From: Arnd Bergmann <arnd@arndb.de>
 
- ...
-> Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+The advansys driver uses the dma_cache_sync interface
+which is impossible to support on ARM.
 
-Applied.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ drivers/scsi/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
+index 651f905..2f49a00 100644
+--- a/drivers/scsi/Kconfig
++++ b/drivers/scsi/Kconfig
+@@ -584,6 +584,7 @@ config SCSI_ADVANSYS
+ 	tristate "AdvanSys SCSI support"
+ 	depends on SCSI && VIRT_TO_BUS
+ 	depends on ISA || EISA || PCI
++	depends on !ARM # no support for DMA_CACHE_SYNC
+ 	help
+ 	  This is a driver for all SCSI host adapters manufactured by
+ 	  AdvanSys. It is documented in the kernel source in
+-- 
+1.7.5.4
+
