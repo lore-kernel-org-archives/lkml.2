@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933288Ab2EKWJw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 18:09:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36595 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030303Ab2EKWJk (ORCPT
+	id S1946326Ab2EKWKe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 18:10:34 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47862 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933305Ab2EKWK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 18:09:40 -0400
-From: mathieu.poirier@linaro.org
-To: JBottomley@parallels.com
-Cc: megaraidlinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de,
-        mathieu.poirier@linaro.org
-Subject: [PATCH 5/7] scsi/atp870u: use mdelay instead of large udelay
-Date: Fri, 11 May 2012 16:09:26 -0600
-Message-Id: <1336774168-26577-6-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1336774168-26577-1-git-send-email-mathieu.poirier@linaro.org>
-References: <1336774168-26577-1-git-send-email-mathieu.poirier@linaro.org>
+	Fri, 11 May 2012 18:10:28 -0400
+Date: Fri, 11 May 2012 15:10:24 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: "Du, ChangbinX" <changbinx.du@intel.com>
+Cc: "mina86@mina86.com" <mina86@mina86.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "balbi@ti.com" <balbi@ti.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 1/3] testusb: fix a makefile bug in tools/usb
+Message-ID: <20120511221024.GE13675@kroah.com>
+References: <0C18FE92A7765D4EB9EE5D38D86A563A060D00@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A060D00@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+On Fri, May 11, 2012 at 11:00:01AM +0000, Du, ChangbinX wrote:
+> For gcc, link options must behind of compiling options, else it could lead to "undefined reference ..." error since gcc cannot find specific library.
 
-Some architectures like ARM cannot handle large numbers as
-arguments to udelay, so the drivers should use mdelay when
-delaying for multiple miliseconds.
+How is this working today?  What version of gcc causes this change to be
+needed?  What about clang, does this also work there?
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- drivers/scsi/atp870u.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+And please, wrap your changelog comments at column 72.
 
-diff --git a/drivers/scsi/atp870u.c b/drivers/scsi/atp870u.c
-index 68ce085..86ad079 100644
---- a/drivers/scsi/atp870u.c
-+++ b/drivers/scsi/atp870u.c
-@@ -1173,7 +1173,7 @@ wait_io1:
- 	outw(val, tmport);
- 	outb(2, 0x80);
- TCM_SYNC:
--	udelay(0x800);
-+	mdelay(2);
- 	if ((inb(tmport) & 0x80) == 0x00) {	/* bsy ? */
- 		outw(0, tmport--);
- 		outb(0, tmport);
--- 
-1.7.5.4
+Care to resend after providing this information?
 
+thanks,
+
+greg k-h
