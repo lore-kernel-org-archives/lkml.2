@@ -1,110 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760352Ab2EKOc2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 10:32:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64610 "EHLO mx1.redhat.com"
+	id S1760302Ab2EKOc0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 10:32:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41104 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760105Ab2EKOcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751976Ab2EKOcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 May 2012 10:32:21 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <201205112230.EED65669.tQOVFMSOFOFHJL@I-love.SAKURA.ne.jp>
-References: <201205112230.EED65669.tQOVFMSOFOFHJL@I-love.SAKURA.ne.jp> <20120510233901.4137.19023.stgit@warthog.procyon.org.uk>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: dhowells@redhat.com, rusty@rustcorp.com.au, kyle@mcmartin.ca,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org
-Subject: Re: [PATCH 00/29] Crypto keys and module signing [ver #4]
-Date: Fri, 11 May 2012 15:32:03 +0100
-Message-ID: <11253.1336746723@redhat.com>
+Date: Fri, 11 May 2012 16:32:13 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Nestor Lopez Casado <nlopezcasad@logitech.com>
+Cc: jrnieder@gmail.com, Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hugo@osvaldobarrera.com.ar, 671292@bugs.debian.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] HID: logitech: read all 32 bits of report type
+ bitfield
+In-Reply-To: <1336745836-17385-1-git-send-email-nlopezcasad@logitech.com>
+Message-ID: <alpine.LNX.2.00.1205111631590.17928@pobox.suse.cz>
+References: <1336745836-17385-1-git-send-email-nlopezcasad@logitech.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
+On Fri, 11 May 2012, Nestor Lopez Casado wrote:
 
-> +	int npkey = key->algo->n_pub_mpi;
-> +	int i, ret = -ENOMEM;
-> +
-> +	kenter("");
-> +
-> +	n = (pgp->version < PGP_KEY_VERSION_4) ? 8 : 6;
-> +	for (i = 0; i < npkey; i++) {
-> +		nb[i] = mpi_get_nbits(key->mpi[i]);
+> From: Jonathan Nieder <jrnieder@gmail.com>
 > 
-> Is key->algo->n_pub_mpi < ARRAY_SIZE(key->mpi) guaranteed?
-
-Yes.  It's hard-coded in the public_key_algorithm struct - for instance the
-one to be found at the bottom of security/keys/crypto_rsa.c.
-
-We also check for an excessive quantity of MPIs in pgp_process_public_key().
-
-> +		if( pgp->expires_at)
+> On big-endian systems (e.g., Apple PowerBook), trying to use a
+> logitech wireless mouse with the Logitech Unifying Receiver does not
+> work with v3.2 and later kernels.  The device doesn't show up in
+> /dev/input.  Older kernels work fine.
 > 
-> checkpatch.pl
-
-Fixed some of those.
-
-> +error:
-> +	for (i = 0; i < npkey; i++)
-> +		kfree(pp[i]);
+> That is because the new hid-logitech-dj driver claims the device.  The
+> device arrival notification appears:
 > 
-> Stack memory may not be initialized.
-
-Fair point.
-
-> +		hashedsz = 4 + 2 + (data[4] << 8) + data[5];
+> 	20 00 41 02 00 00 00 00 00 00 00 00 00 00 00
 > 
-> Given the (datalen <= 2) check below, can we trust data[4,5] here?
-
-We've already done some length and content checking on the signature data.  In
-the module verification case, this happens:
-
- (1) module_verify_sig() has already passed the signature data to
-     verify_sig_begin(),
-
- (2) which passed it to pgp_pkey_verify_sig_begin(),
-
- (3) which invoked pgp_parse_packets(),
-
- (4) which called back to pgp_pkey_parse_signature(),
-
- (5) which then invoked pgp_parse_sig_params() which did sufficient length
-     checking to make sure we're okay here.
-
-by the time we get to pgp_pkey_digest_signature() we're at the end of the
-process (in verify_sig_end()).
-
-The trailer, however, is not checked at that point - though I suppose it
-probably should be.  There isn't currently an MPI function to do just a check
-rather than an extraction.
-
-I can add comments to this effect if you think it would help reduce confusion.
-
-> +static int module_verify_canonicalise(struct module_verify_data *mvdata)
-> +{
-> +	const Elf_Shdr *sechdrs = mvdata->sections;
-> +	unsigned *canonlist, canon, loop, tmp;
-> +	bool changed;
-> +
-> +	canonlist = kmalloc(sizeof(unsigned) * mvdata->nsects * 2, GFP_KERNEL);
-> +	if (!canonlist)
-> +		return -ENOMEM;
+> and we read the report_types bitfield (02 00 00 00) to find out what
+> kind of device it is.  Unfortunately the driver only reads the first 8
+> bits and treats that value as a 32-bit little-endian number, so on a
+> powerpc the report type seems to be 0x02000000 and is not recognized.
 > 
-> Can mvdata->nsects == (UINT_MAX + 1) / (sizeof(unsigned) * 2) due to size_t?
-> I think we want kmalloc() variant that does not return ZERO_SIZE_PTR.
+> Even on little-endian machines, connecting a media center remote
+> control (report type 00 01 00 00) with this driver loaded would
+> presumably fail for the same reason.
 
-This line should prevent that:
+Applied, thanks.
 
-	elfcheck(hdr->e_shnum < SHN_LORESERVE);
-
-given:
-
-	#define SHN_LORESERVE	0xff00
-
-Thanks for the thorough review!
-
-David
+-- 
+Jiri Kosina
+SUSE Labs
