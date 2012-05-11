@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964784Ab2EKQlb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 12:41:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11304 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932215Ab2EKQlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 12:41:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="141942889"
-Date: Fri, 11 May 2012 17:56:48 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] ata_generic: Skip is_intel_ider() check when
- ata_generic=1 is set
-Message-ID: <20120511175648.19f2eaa5@bob.linux.org.uk>
-In-Reply-To: <1336754003-31487-1-git-send-email-andi@firstfloor.org>
-References: <1336754003-31487-1-git-send-email-andi@firstfloor.org>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932723Ab2EKQlr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 12:41:47 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:26347 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932627Ab2EKQkq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 12:40:46 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: lenb@kernel.org, linux-acpi@vger.kernel.org
+Cc: bhelgaas@google.com, shuahkhan@gmail.com, liuj97@gmail.com,
+        linux-kernel@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v3 7/7] ACPI: Set hotplug _OST support bit to _OSC
+Date: Fri, 11 May 2012 10:37:03 -0600
+Message-Id: <1336754223-5346-8-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1336754223-5346-1-git-send-email-toshi.kani@hp.com>
+References: <1336754223-5346-1-git-send-email-toshi.kani@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 May 2012 09:33:23 -0700
-Andi Kleen <andi@firstfloor.org> wrote:
+When CONFIG_ACPI_HOTPLUG_OST is enabled, set hotplug _OST support bit
+OSC_SB_HOTPLUG_OST_SUPPORT to indicate that the OS supports hotplug
+_OST by calling the platform-wide ACPI Operating System Capabilities
+(_OSC).
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> When ata_generic_ide=1 is set don't do the is_intel_ider() magic
-> check. We found at least one box who needed that.
-> 
-> Cc: alan@linux.intel.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+---
+ drivers/acpi/bus.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index 3263b68..93bf515 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -544,6 +544,10 @@ static void acpi_bus_osc_support(void)
+ 	capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_PPC_OST_SUPPORT;
+ #endif
+ 
++#ifdef CONFIG_ACPI_HOTPLUG_OST
++	capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_HOTPLUG_OST_SUPPORT;
++#endif
++
+ 	if (!ghes_disable)
+ 		capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_APEI_SUPPORT;
+ 	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle)))
+-- 
+1.7.7.6
+
