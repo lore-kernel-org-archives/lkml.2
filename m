@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759022Ab2EKSFG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:05:06 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51909 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757972Ab2EKSFC (ORCPT
+	id S933128Ab2EKSGp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:06:45 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:23271 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933067Ab2EKSGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:05:02 -0400
-Message-ID: <4FAD54C9.6040904@wwwdotorg.org>
-Date: Fri, 11 May 2012 12:04:57 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 11 May 2012 14:06:41 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: sSe1gaUVM1kSFynf23djkWegyS3yy1OwKvLkY1.W88wFOST
+ GtIumnc5T1Evw4XGe0vYKupI3dxTowEFRWY1NblCk5S0YqtD9vOfdLsa9MeD
+ N.H97pjNCZLO9BLeXm_sBGg8xBK2CLypioFL8uBh.z_A3nYhj.w7rUdWKMq_
+ fumzejLOVgQ6Hnm5uZc0pi8bSlxZR0cFTBika4jqmtYTot4aqCGw_2R3giGA
+ dNxGB5bapIcTg78EOfPas.4CwFRMIddJ_fdrXeFeqpWe3GpDlDGG7kk3fQWw
+ gUuNbP4sxVN9YECMiklbyru11rSwbaxlC0S3MwU9qGE.Dl_jo3qbY0iWCpZu
+ ynr9ic.wphwSDht2TuTMVKxk6ZmvZH_TwXKAOUE3cXk22iKOEIztZGAcrrO8
+ biqoBQV.pMOLPhi2fzKno87BaXYDLeRT9IBkb
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 11 May 2012 13:06:36 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
+ kfree
+In-Reply-To: <4FAD531D.6030007@parallels.com>
+Message-ID: <alpine.DEB.2.00.1205111305570.386@router.home>
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home> <4FAD531D.6030007@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Hiroshi DOYU <hdoyu@nvidia.com>, linux-tegra@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] iommu/tegra: smmu: Add device tree support for SMMU
-References: <1336636221-31575-1-git-send-email-hdoyu@nvidia.com> <1336636221-31575-2-git-send-email-hdoyu@nvidia.com> <4FAC2041.7030405@wwwdotorg.org> <20120511094625.GA11750@amd.com>
-In-Reply-To: <20120511094625.GA11750@amd.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 03:46 AM, Joerg Roedel wrote:
-> On Thu, May 10, 2012 at 02:08:33PM -0600, Stephen Warren wrote:
->> On 05/10/2012 01:50 AM, Hiroshi DOYU wrote:
->>> The necessary info is expected to pass from DT.
->>>
->>> For more precise resource reservation, there shouldn't be any
->>> overlapping of register range between SMMU and MC. SMMU register
->>> offset needs to be calculated correctly, based on its register bank.
->>>
->>> Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
->>
->> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
->>
->> I expect patch 1 will go through the IOMMU tree, and I'll take patch 2
->> through the Tegra tree.
-> 
-> Any reason for splitting it up? The patches touch mostly drivers/iommu.
-> So to avoid conflicts its probably the best to apply them together.
+On Fri, 11 May 2012, Glauber Costa wrote:
 
-Patch 1 is the driver that touches drivers/iommu and related
-documentation, whereas patch 2 touches the device tree file in
-arch/arm/boot/dts. Either of the patches would get conflicts if they
-were merged into the "other" tree.
+> > Adding a VM_BUG_ON may be useful to make sure that kmem_cache_free is
+> > always passed the correct slab cache.
+>
+> Well, problem is , it isn't always passed the "correct" slab cache.
+> At least not after this series, since we'll have child caches associated with
+> the main cache.
+>
+> So we'll pass, for instance, kmem_cache_free(dentry_cache...), but will in
+> fact free from the memcg copy of the dentry cache.
+
+Urg. But then please only do this for the MEMCG case and add a fat big
+warning in kmem_cache_free.
