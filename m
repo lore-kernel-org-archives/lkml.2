@@ -1,90 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924Ab2EKANW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 20:13:22 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45705 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751676Ab2EKANU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 20:13:20 -0400
-Message-ID: <1336695199.29763.28.camel@joe2Laptop>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
- variable-length record buffer
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kay Sievers <kay@vrfy.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Ingo Molnar <mingo@kernel.org>, Jonathan Corbet <corbet@lwn.net>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Greg Kroah-Hartmann <greg@kroah.com>, linux-kernel@vger.kernel.org
-Date: Thu, 10 May 2012 17:13:19 -0700
-In-Reply-To: <CA+55aFygHfYd3O5-sBg32_Vcn6GOm7irr2R8jW6QVPuepXTeWw@mail.gmail.com>
-References: <CA+1xoqcAjEh5LT42NpjoE0998KUecY6EWQp4FM0_CY8MPyLmbQ@mail.gmail.com>
-	 <CA+55aFzVs0GLpNVUBHtLRuc8uQc=WKd8ajeVWsffbNvxSQvB4Q@mail.gmail.com>
-	 <CA+55aFzgXzFs9z-5ViQ4=4hhtOtK=CBHGxNX_dsXQV9mn1qANg@mail.gmail.com>
-	 <20120509070710.GA29981@gmail.com>
-	 <CAPXgP11evyQQKNDaa00R7qsOFy5Xk-utN1w9OgB4y6NxLZG=UA@mail.gmail.com>
-	 <1336611278.728.9.camel@mop>
-	 <CA+55aFyrrH0jJV--L=ugt0YK7pT+jmhjvt_WRWyenyiroN97zg@mail.gmail.com>
-	 <1336667984.947.24.camel@mop>
-	 <CA+55aFxUaNC4SGEodrdddkDN6t=Sbx=P4XyaHkj7eTQBQOeLeA@mail.gmail.com>
-	 <1336676986.947.47.camel@mop> <20120510201409.GA6467@thunk.org>
-	 <1336682226.29763.2.camel@joe2Laptop>
-	 <CAPXgP11T7vjBBFaE5jne0hntZ2J-MoVxwJ2C9TNsRzme9DmLuQ@mail.gmail.com>
-	 <1336682772.29763.6.camel@joe2Laptop>
-	 <CA+55aFwJgtVr9ZndEU-yhJW3wi-5Omga51pjun+J213awQwJZA@mail.gmail.com>
-	 <1336684277.29763.12.camel@joe2Laptop>
-	 <CA+55aFygHfYd3O5-sBg32_Vcn6GOm7irr2R8jW6QVPuepXTeWw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1755200Ab2EKAOi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 20:14:38 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53312 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772Ab2EKAOg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 20:14:36 -0400
+X-AuditID: 9c930197-b7be2ae000000ebb-fe-4fac59e87491
+Message-ID: <4FAC59F6.4080503@kernel.org>
+Date: Fri, 11 May 2012 09:14:46 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Konrad Wilk <konrad.wilk@oracle.com>, Nitin Gupta <ngupta@vflare.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+References: <4FA33DF6.8060107@kernel.org> <20120509201918.GA7288@kroah.com> <4FAB21E7.7020703@kernel.org> <20120510140215.GC26152@phenom.dumpdata.com> <4FABD503.4030808@vflare.org> <4FABDA9F.1000105@linux.vnet.ibm.com> <20120510151941.GA18302@kroah.com> <4FABECF5.8040602@vflare.org> <20120510164418.GC13964@kroah.com> <4FABF9D4.8080303@vflare.org> <20120510173322.GA30481@phenom.dumpdata.com> <4FAC4E3B.3030909@kernel.org> <8473859b-42f3-4354-b5ba-fd5b8cbac22f@default>
+In-Reply-To: <8473859b-42f3-4354-b5ba-fd5b8cbac22f@default>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-10 at 14:58 -0700, Linus Torvalds wrote:
-> On Thu, May 10, 2012 at 2:11 PM, Joe Perches <joe@perches.com> wrote:
-> >
-> > I think it's a distinction without a difference for,
-> > as fas as I know, that's a case that doesn't exist
-> > in the current kernel.
+Hi Dan,
+
+On 05/11/2012 08:50 AM, Dan Magenheimer wrote:
+
+>> From: Minchan Kim [mailto:minchan@kernel.org]
+>>
+>> Okay. Now it works but zcache coupled with zsmalloc tightly.
+>> User of zsmalloc should never know internal of zs_handle.
+>>
+>> 3)
+>>
+>> - zsmalloc.h
+>> void *zs_handle_to_ptr(struct zs_handle handle)
+>> {
+>> 	return handle.hanle;
+>> }
+>>
+>> static struct zv_hdr *zv_create(..)
+>> {
+>> 	struct zs_handle handle;
+>> 	..
+>> 	handle = zs_malloc(pool, size);
+>> 	..
+>> 	return zs_handle_to_ptr(handle);
+>> }
+>>
+>> Why should zsmalloc support such interface?
+>> It's a zcache problem so it's desriable to solve it in zcache internal.
+>> And in future, if we can add/remove zs_handle's fields, we can't make
+>> sure such API.
 > 
-> So? Even if we hadn't had this bug before (we have),
+> Hi Minchan --
+> 
+> I'm confused so maybe I am misunderstanding or you can
+> explain further.  It seems like you are trying to redesign
+> zsmalloc so that it can be a pure abstraction in a library.
+> While I understand and value abstractions in software
+> designs, the primary use now of zsmalloc is in zcache.  If
 
-True.  I've fixed the ones you've introduced when you
-changed printk semantics in the past.
+> there are other users that require a different interface
+> or a more precise abstract API, zsmalloc could then
+> evolve to meet the needs of multiple users.  But I think
 
-> your argument is utter crap.
 
-What happened to the pragmatic Linus Torvalds?
-Did the dogmatic one replace him again temporarily?
+At least, zram is also primary user and it also has such mess although it's not severe than zcache. zram->table[index].handle sometime has real (void*) handle, sometime (struct page*).
+And I assume ramster you sent yesterday will be.
 
-> Even if we weren't to have that patter right *now*, that
-> doesn't mean that it cannot happen.
+I think there are already many mess and I bet it will prevent going to mainline.
+Especially, handle problem is severe because it a arguement of most functions exported in zsmalloc
+So, we should clean up before late, IMHO.
 
-Not what I said.
+> zcache is going to need more access to the internals
+> of its allocator, not less.  Zsmalloc is currently missing
+> some important functionality that (I believe) will be
+> necessary to turn zcache into an enterprise-ready,
 
-> Your grep is also not at all exhaustive.
 
-I believe I know the printk subsystem and its uses
-as well as anyone.  I don't think there is a case
-today.
+If you have such TODO list, could you post it?
+It helps direction point of my stuff.
 
-> We do need an escape model.
+> always-on kernel feature.  If it evolves to add that
+> functionality, then it may no longer be able to provide
+> generic abstract access... in which case generic zsmalloc
+> may then have zero users in the kernel.
 
-Or an agreement to not to emit "<[0-7cd]>"
-as the first 3 bytes after a newline or as
-the start of a new printk.  It could just
-as easily be an escape is a required leading
-non "<" character.
 
-I think that's not onerous.
+Hmm, Do you want to make zsmalloc by zcache owned private allocator?
 
-> The current KERN_CONT does that. Stop
-> arguing for crap.
+> 
+> So I'd suggest we hold off on trying to make zsmalloc
+> "pretty" until we better understand how it will be used
+> by zcache (and ramster) and, if there are any, any future
+> users.
 
-Correctness in all cases can be a good thing.
-Simplicity may be better because complexity
-is reduced.
 
-cheers, Joe
+zcache isn't urgent? I'm okay about zcache but at least, zram is when it merged into mainline, I think.
+Many embedded system have a advantage with it so I hope we finish zsmalloc mess as soon as possble.
 
+> 
+> That's just my opinion...
+
+
+Dan, Thanks for sharing your opinion.
+
+> Dan
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=ilto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
+
+
+-- 
+Kind regards,
+Minchan Kim
