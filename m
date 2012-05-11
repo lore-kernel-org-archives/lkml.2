@@ -1,761 +1,489 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760281Ab2EKGgt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:36:49 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:8903 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760052Ab2EKGgp (ORCPT
+	id S1759695Ab2EKGhL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:37:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57170 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759161Ab2EKGg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:36:45 -0400
-X-AuditID: cbfee61b-b7b94ae000002e44-3a-4facb37cda02
-From: Jonghwa Lee <jonghwa3.lee@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Samuel Oritz <sameo@linux.intel.com>, Liam Girdwood <trg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
-        cw00.choi@samsung.com, Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Chiwoong Byun <woong.byun@samsung.com>
-Subject: [PATCH 3/3] rtc: MAX77686: Add Maxim 77686 rtc driver
-Date: Fri, 11 May 2012 15:36:17 +0900
-Message-id: <1336718177-9258-4-git-send-email-jonghwa3.lee@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-In-reply-to: <1336718177-9258-1-git-send-email-jonghwa3.lee@samsung.com>
-References: <1336718177-9258-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Fri, 11 May 2012 02:36:57 -0400
+Date: Thu, 10 May 2012 23:36:21 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-281ef544a8476f750b9f378593c42b3e8a0b8788@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, penberg@kernel.org, namhyung.kim@lge.com,
+        namhyung@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        penberg@kernel.org, namhyung.kim@lge.com, tglx@linutronix.de,
+        namhyung@gmail.com
+In-Reply-To: <1335761711-31403-5-git-send-email-namhyung.kim@lge.com>
+References: <1335761711-31403-5-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf ui: Add gtk2 support into setup_browser()
+Git-Commit-ID: 281ef544a8476f750b9f378593c42b3e8a0b8788
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:36:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add driver for support max77686 rtc.
-MAX77686 rtc support smpl and wtsr mode. It has two alarm register,
-and can be used for waking system up. It sharing i2c bus, regmap supplies
-the way can get to the its register.
+Commit-ID:  281ef544a8476f750b9f378593c42b3e8a0b8788
+Gitweb:     http://git.kernel.org/tip/281ef544a8476f750b9f378593c42b3e8a0b8788
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Mon, 30 Apr 2012 13:55:08 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 2 May 2012 16:17:34 -0300
 
-Signed-off-by: Chiwoong Byun <woong.byun@samsung.com>
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Signed-off-by: Myunjoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+perf ui: Add gtk2 support into setup_browser()
+
+Now setup_browser can handle gtk2 front-end so split the TUI code to
+ui/tui/setup.c in order to remove dependency.
+
+To this end, make ui__init/exit global symbols and take an argument.
+Also split gtk code to ui/gtk/setup.c.
+
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1335761711-31403-5-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/rtc/Kconfig        |   10 +
- drivers/rtc/Makefile       |    5 +-
- drivers/rtc/rtc-max77686.c |  667 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 680 insertions(+), 2 deletions(-)
- create mode 100644 drivers/rtc/rtc-max77686.c
+ tools/perf/Makefile             |    6 ++
+ tools/perf/builtin-report.c     |   10 +--
+ tools/perf/ui/gtk/browser.c     |   10 ---
+ tools/perf/ui/gtk/setup.c       |   12 +++
+ tools/perf/ui/setup.c           |  169 ++++++---------------------------------
+ tools/perf/ui/{ => tui}/setup.c |   53 ++++---------
+ tools/perf/util/cache.h         |   23 ++++-
+ 7 files changed, 81 insertions(+), 202 deletions(-)
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 9a7072e..114e74c 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -223,6 +223,16 @@ config RTC_DRV_MAX8997
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-max8997.
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 4122a66..4734f41 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -483,6 +483,7 @@ else
+ 		LIB_OBJS += $(OUTPUT)ui/helpline.o
+ 		LIB_OBJS += $(OUTPUT)ui/progress.o
+ 		LIB_OBJS += $(OUTPUT)ui/util.o
++		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
+ 		LIB_H += ui/browser.h
+ 		LIB_H += ui/browsers/map.h
+ 		LIB_H += ui/helpline.h
+@@ -505,6 +506,11 @@ else
+ 		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0)
+ 		EXTLIBS += $(shell pkg-config --libs gtk+-2.0)
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
++		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
++		# Make sure that it'd be included only once.
++		ifneq ($(findstring -DNO_NEWT_SUPPORT,$(BASIC_CFLAGS)),)
++			LIB_OBJS += $(OUTPUT)ui/setup.o
++		endif
+ 	endif
+ endif
  
-+config RTC_DRV_MAX77686
-+	tristate "Maxim MAX77686"
-+	depends on MFD_MAX77686
-+	help
-+	  If you say yes here you will get support for the
-+	  RTC of Maxim MAX77686 PMIC.
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called rtc-max77686.
-+
- config RTC_DRV_RS5C372
- 	tristate "Ricoh R2025S/D, RS5C372A/B, RV5C386, RV5C387A"
- 	help
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 8810867..801ea07 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -63,10 +63,11 @@ obj-$(CONFIG_RTC_DRV_M48T59)	+= rtc-m48t59.o
- obj-$(CONFIG_RTC_DRV_M48T86)	+= rtc-m48t86.o
- obj-$(CONFIG_RTC_MXC)		+= rtc-mxc.o
- obj-$(CONFIG_RTC_DRV_MAX6900)	+= rtc-max6900.o
-+obj-$(CONFIG_RTC_DRV_MAX6902)	+= rtc-max6902.o
- obj-$(CONFIG_RTC_DRV_MAX8925)	+= rtc-max8925.o
--obj-$(CONFIG_RTC_DRV_MAX8998)	+= rtc-max8998.o
- obj-$(CONFIG_RTC_DRV_MAX8997)	+= rtc-max8997.o
--obj-$(CONFIG_RTC_DRV_MAX6902)	+= rtc-max6902.o
-+obj-$(CONFIG_RTC_DRV_MAX8998)	+= rtc-max8998.o
-+obj-$(CONFIG_RTC_DRV_MAX77686)	+= rtc-max77686.o
- obj-$(CONFIG_RTC_DRV_MC13XXX)	+= rtc-mc13xxx.o
- obj-$(CONFIG_RTC_DRV_MSM6242)	+= rtc-msm6242.o
- obj-$(CONFIG_RTC_DRV_MPC5121)	+= rtc-mpc5121.o
-diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 06115ff..5df829f 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -676,14 +676,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ 
+ 	}
+ 
+-	if (strcmp(report.input_name, "-") != 0) {
+-		if (report.use_gtk)
+-			perf_gtk__setup_browser(true);
+-		else
+-			setup_browser(true);
+-	} else {
++	if (strcmp(report.input_name, "-") != 0)
++		setup_browser(true);
++	else
+ 		use_browser = 0;
+-	}
+ 
+ 	/*
+ 	 * Only in the newt browser we are doing integrated annotation,
+diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
+index 5eafd9b..0656c38 100644
+--- a/tools/perf/ui/gtk/browser.c
++++ b/tools/perf/ui/gtk/browser.c
+@@ -9,16 +9,6 @@
+ 
+ #define MAX_COLUMNS			32
+ 
+-void perf_gtk__setup_browser(bool fallback_to_pager __used)
+-{
+-	gtk_init(NULL, NULL);
+-}
+-
+-void perf_gtk__exit_browser(bool wait_for_ok __used)
+-{
+-	gtk_main_quit();
+-}
+-
+ static void perf_gtk__signal(int sig)
+ {
+ 	psignal(sig, "perf");
+diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
 new file mode 100644
-index 0000000..c5bc96a
+index 0000000..8c3b573
 --- /dev/null
-+++ b/drivers/rtc/rtc-max77686.c
-@@ -0,0 +1,667 @@
-+/*
-+ * RTC driver for Maxim MAX77686
-+ *
-+ * Copyright (C) 2012 Samsung Electronics Co.Ltd
-+ *
-+ *  based on rtc-max8997.c
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ */
++++ b/tools/perf/ui/gtk/setup.c
+@@ -0,0 +1,12 @@
++#include "gtk.h"
++#include "../../util/cache.h"
 +
-+#include <linux/slab.h>
-+#include <linux/rtc.h>
-+#include <linux/delay.h>
-+#include <linux/mutex.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/max77686-private.h>
-+#include <linux/irqdomain.h>
-+
-+/* RTC Control Register */
-+#define BCD_EN_SHIFT			0
-+#define BCD_EN_MASK				(1 << BCD_EN_SHIFT)
-+#define MODEL24_SHIFT			1
-+#define MODEL24_MASK			(1 << MODEL24_SHIFT)
-+/* RTC Update Register1 */
-+#define RTC_UDR_SHIFT			0
-+#define RTC_UDR_MASK			(1 << RTC_UDR_SHIFT)
-+#define RTC_RBUDR_SHIFT			4
-+#define RTC_RBUDR_MASK			(1 << RTC_RBUDR_SHIFT)
-+/* WTSR and SMPL Register */
-+#define WTSRT_SHIFT				0
-+#define SMPLT_SHIFT				2
-+#define WTSR_EN_SHIFT			6
-+#define SMPL_EN_SHIFT			7
-+#define WTSRT_MASK				(3 << WTSRT_SHIFT)
-+#define SMPLT_MASK				(3 << SMPLT_SHIFT)
-+#define WTSR_EN_MASK			(1 << WTSR_EN_SHIFT)
-+#define SMPL_EN_MASK			(1 << SMPL_EN_SHIFT)
-+/* RTC Hour register */
-+#define HOUR_PM_SHIFT			6
-+#define HOUR_PM_MASK			(1 << HOUR_PM_SHIFT)
-+/* RTC Alarm Enable */
-+#define ALARM_ENABLE_SHIFT		7
-+#define ALARM_ENABLE_MASK		(1 << ALARM_ENABLE_SHIFT)
-+
-+#define MAX77686_RTC_UPDATE_DELAY	16
-+#undef MAX77686_RTC_WTSR_SMPL
-+
-+enum {
-+	RTC_SEC = 0,
-+	RTC_MIN,
-+	RTC_HOUR,
-+	RTC_WEEKDAY,
-+	RTC_MONTH,
-+	RTC_YEAR,
-+	RTC_DATE,
-+	RTC_NR_TIME
-+};
-+
-+struct max77686_rtc_info {
-+	struct device		*dev;
-+	struct max77686_dev	*max77686;
-+	struct i2c_client	*rtc;
-+	struct rtc_device	*rtc_dev;
-+	struct mutex		lock;
-+	int irq;
-+	int virq;
-+	int rtc_24hr_mode;
-+};
-+
-+enum MAX77686_RTC_OP {
-+	MAX77686_RTC_WRITE,
-+	MAX77686_RTC_READ,
-+};
-+
-+static inline int max77686_rtc_calculate_wday(u8 shifted)
++void perf_gtk__init(bool fallback_to_pager __used)
 +{
-+	int counter = -1;
-+	while (shifted) {
-+		shifted >>= 1;
-+		counter++;
-+	}
-+	return counter;
++	gtk_init(NULL, NULL);
 +}
 +
-+static void max77686_rtc_data_to_tm(u8 *data, struct rtc_time *tm,
-+				   int rtc_24hr_mode)
++void perf_gtk__exit(bool wait_for_ok __used)
 +{
-+	tm->tm_sec = data[RTC_SEC] & 0x7f;
-+	tm->tm_min = data[RTC_MIN] & 0x7f;
-+	if (rtc_24hr_mode)
-+		tm->tm_hour = data[RTC_HOUR] & 0x1f;
-+	else {
-+		tm->tm_hour = data[RTC_HOUR] & 0x0f;
-+		if (data[RTC_HOUR] & HOUR_PM_MASK)
-+			tm->tm_hour += 12;
-+	}
-+
-+	tm->tm_wday = max77686_rtc_calculate_wday(data[RTC_WEEKDAY] & 0x7f);
-+	tm->tm_mday = data[RTC_DATE] & 0x1f;
-+	tm->tm_mon = (data[RTC_MONTH] & 0x0f) - 1;
-+	tm->tm_year = (data[RTC_YEAR] & 0x7f) + 100;
-+	tm->tm_yday = 0;
-+	tm->tm_isdst = 0;
++	gtk_main_quit();
 +}
-+
-+static int max77686_rtc_tm_to_data(struct rtc_time *tm, u8 *data)
-+{
-+	data[RTC_SEC] = tm->tm_sec;
-+	data[RTC_MIN] = tm->tm_min;
-+	data[RTC_HOUR] = tm->tm_hour;
-+	data[RTC_WEEKDAY] = 1 << tm->tm_wday;
-+	data[RTC_DATE] = tm->tm_mday;
-+	data[RTC_MONTH] = tm->tm_mon + 1;
-+	data[RTC_YEAR] = tm->tm_year > 100 ? (tm->tm_year - 100) : 0 ;
-+
-+	if (tm->tm_year < 100) {
-+		pr_warn("%s: MAX77686 RTC cannot handle the year %d."
-+			"Assume it's 2000.\n", __func__, 1900 + tm->tm_year);
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+static inline int max77686_rtc_update(struct max77686_rtc_info *info,
-+	enum MAX77686_RTC_OP op)
-+{
-+	int ret;
-+	u8 data;
-+
-+	switch (op) {
-+	case MAX77686_RTC_WRITE:
-+		data = 1 << RTC_UDR_SHIFT;
+diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
+index becdcd0..98130e0 100644
+--- a/tools/perf/ui/setup.c
++++ b/tools/perf/ui/setup.c
+@@ -1,161 +1,44 @@
+-#include <newt.h>
+-#include <signal.h>
+-#include <stdbool.h>
+-
+ #include "../cache.h"
+ #include "../debug.h"
+-#include "browser.h"
+-#include "helpline.h"
+-#include "ui.h"
+-#include "util.h"
+-#include "libslang.h"
+-#include "keysyms.h"
+-
+-pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
+-
+-static volatile int ui__need_resize;
+-
+-void ui__refresh_dimensions(bool force)
+-{
+-	if (force || ui__need_resize) {
+-		ui__need_resize = 0;
+-		pthread_mutex_lock(&ui__lock);
+-		SLtt_get_screen_size();
+-		SLsmg_reinit_smg();
+-		pthread_mutex_unlock(&ui__lock);
+-	}
+-}
+-
+-static void ui__sigwinch(int sig __used)
+-{
+-	ui__need_resize = 1;
+-}
+-
+-static void ui__setup_sigwinch(void)
+-{
+-	static bool done;
+-
+-	if (done)
+-		return;
+-
+-	done = true;
+-	pthread__unblock_sigwinch();
+-	signal(SIGWINCH, ui__sigwinch);
+-}
+-
+-int ui__getch(int delay_secs)
+-{
+-	struct timeval timeout, *ptimeout = delay_secs ? &timeout : NULL;
+-	fd_set read_set;
+-	int err, key;
+-
+-	ui__setup_sigwinch();
+-
+-	FD_ZERO(&read_set);
+-	FD_SET(0, &read_set);
+-
+-	if (delay_secs) {
+-		timeout.tv_sec = delay_secs;
+-		timeout.tv_usec = 0;
+-	}
+-
+-        err = select(1, &read_set, NULL, NULL, ptimeout);
+-
+-	if (err == 0)
+-		return K_TIMER;
+-
+-	if (err == -1) {
+-		if (errno == EINTR)
+-			return K_RESIZE;
+-		return K_ERROR;
+-	}
+ 
+-	key = SLang_getkey();
+-	if (key != K_ESC)
+-		return key;
+ 
+-	FD_ZERO(&read_set);
+-	FD_SET(0, &read_set);
+-	timeout.tv_sec = 0;
+-	timeout.tv_usec = 20;
+-        err = select(1, &read_set, NULL, NULL, &timeout);
+-	if (err == 0)
+-		return K_ESC;
+-
+-	SLang_ungetkey(key);
+-	return SLkp_getkey();
+-}
+-
+-static void newt_suspend(void *d __used)
+-{
+-	newtSuspend();
+-	raise(SIGTSTP);
+-	newtResume();
+-}
+-
+-static void ui__exit(void);
+-
+-static void ui__signal(int sig)
+-{
+-	ui__exit();
+-	psignal(sig, "perf");
+-	exit(0);
+-}
+-
+-static int ui__init(void)
++void setup_browser(bool fallback_to_pager)
+ {
+-	int err;
+-
+-	newtInit();
+-	err = SLkp_init();
+-	if (err < 0) {
+-		pr_err("TUI initialization failed.\n");
+-		goto out;
+-	}
+-
+-	SLkp_define_keysym((char *)"^(kB)", SL_KEY_UNTAB);
++	if (!isatty(1) || dump_trace)
++		use_browser = 0;
+ 
+-	newtSetSuspendCallback(newt_suspend, NULL);
+-	ui_helpline__init();
+-	ui_browser__init();
++	/* default to TUI */
++	if (use_browser < 0)
++		use_browser = 1;
+ 
+-	signal(SIGSEGV, ui__signal);
+-	signal(SIGFPE, ui__signal);
+-	signal(SIGINT, ui__signal);
+-	signal(SIGQUIT, ui__signal);
+-	signal(SIGTERM, ui__signal);
+-out:
+-	return err;
+-}
++	switch (use_browser) {
++	case 2:
++		perf_gtk__init(fallback_to_pager);
 +		break;
-+	case MAX77686_RTC_READ:
-+		data = 1 << RTC_RBUDR_SHIFT;
+ 
+-static void ui__exit(void)
+-{
+-	SLtt_set_cursor_visibility(1);
+-	SLsmg_refresh();
+-	SLsmg_reset_smg();
+-	SLang_reset_tty();
+-}
++	case 1:
++		ui__init(fallback_to_pager);
 +		break;
-+	}
+ 
+-void setup_browser(bool fallback_to_pager)
+-{
+-	if (!isatty(1) || !use_browser || dump_trace) {
+-		use_browser = 0;
++	default:
+ 		if (fallback_to_pager)
+ 			setup_pager();
+-		return;
++		break;
+ 	}
+-
+-	use_browser = 1;
+-	ui__init();
+ }
+ 
+ void exit_browser(bool wait_for_ok)
+ {
+-	if (use_browser > 0) {
+-		if (wait_for_ok)
+-			ui__question_window("Fatal Error",
+-					    ui_helpline__last_msg,
+-					    "Press any key...", 0);
+-		ui__exit();
++	switch (use_browser) {
++	case 2:
++		perf_gtk__exit(wait_for_ok);
++		break;
 +
-+	ret = max77686_update_reg(info->max77686->rtc_regmap,
-+					 MAX77686_RTC_UPDATE0, data, data);
-+	if (ret < 0)
-+		dev_err(info->dev, "%s: fail to write update reg(ret=%d, data=0x%x)\n",
-+				__func__, ret, data);
-+	else {
-+		/* Minimum 16ms delay required before RTC update. */
-+		msleep(MAX77686_RTC_UPDATE_DELAY);
-+	}
++	case 1:
++		ui__exit(wait_for_ok);
++		break;
 +
-+	return ret;
-+}
++	default:
++		break;
+ 	}
+ }
+diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/tui/setup.c
+similarity index 75%
+copy from tools/perf/ui/setup.c
+copy to tools/perf/ui/tui/setup.c
+index becdcd0..0194cea 100644
+--- a/tools/perf/ui/setup.c
++++ b/tools/perf/ui/tui/setup.c
+@@ -2,14 +2,14 @@
+ #include <signal.h>
+ #include <stdbool.h>
+ 
+-#include "../cache.h"
+-#include "../debug.h"
+-#include "browser.h"
+-#include "helpline.h"
+-#include "ui.h"
+-#include "util.h"
+-#include "libslang.h"
+-#include "keysyms.h"
++#include "../../util/cache.h"
++#include "../../util/debug.h"
++#include "../browser.h"
++#include "../helpline.h"
++#include "../ui.h"
++#include "../util.h"
++#include "../libslang.h"
++#include "../keysyms.h"
+ 
+ pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
+ 
+@@ -93,16 +93,14 @@ static void newt_suspend(void *d __used)
+ 	newtResume();
+ }
+ 
+-static void ui__exit(void);
+-
+ static void ui__signal(int sig)
+ {
+-	ui__exit();
++	ui__exit(false);
+ 	psignal(sig, "perf");
+ 	exit(0);
+ }
+ 
+-static int ui__init(void)
++int ui__init(bool fallback_to_pager __used)
+ {
+ 	int err;
+ 
+@@ -128,34 +126,15 @@ out:
+ 	return err;
+ }
+ 
+-static void ui__exit(void)
++void ui__exit(bool wait_for_ok)
+ {
++	if (wait_for_ok)
++		ui__question_window("Fatal Error",
++				    ui_helpline__last_msg,
++				    "Press any key...", 0);
 +
-+static int max77686_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 	SLtt_set_cursor_visibility(1);
+ 	SLsmg_refresh();
+ 	SLsmg_reset_smg();
+ 	SLang_reset_tty();
+ }
+-
+-void setup_browser(bool fallback_to_pager)
+-{
+-	if (!isatty(1) || !use_browser || dump_trace) {
+-		use_browser = 0;
+-		if (fallback_to_pager)
+-			setup_pager();
+-		return;
+-	}
+-
+-	use_browser = 1;
+-	ui__init();
+-}
+-
+-void exit_browser(bool wait_for_ok)
+-{
+-	if (use_browser > 0) {
+-		if (wait_for_ok)
+-			ui__question_window("Fatal Error",
+-					    ui_helpline__last_msg,
+-					    "Press any key...", 0);
+-		ui__exit();
+-	}
+-}
+diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
+index 3428b77..761d4e9 100644
+--- a/tools/perf/util/cache.h
++++ b/tools/perf/util/cache.h
+@@ -33,7 +33,7 @@ extern int pager_use_color;
+ 
+ extern int use_browser;
+ 
+-#ifdef NO_NEWT_SUPPORT
++#if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
+ static inline void setup_browser(bool fallback_to_pager)
+ {
+ 	if (fallback_to_pager)
+@@ -43,19 +43,32 @@ static inline void exit_browser(bool wait_for_ok __used) {}
+ #else
+ void setup_browser(bool fallback_to_pager);
+ void exit_browser(bool wait_for_ok);
++
++#ifdef NO_NEWT_SUPPORT
++static inline int ui__init(bool fallback_to_pager)
 +{
-+	struct max77686_rtc_info *info = dev_get_drvdata(dev);
-+	u8 data[RTC_NR_TIME];
-+	int ret;
-+
-+	mutex_lock(&info->lock);
-+
-+	ret = max77686_rtc_update(info, MAX77686_RTC_READ);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = max77686_bulk_read(info->max77686->rtc_regmap,
-+				 MAX77686_RTC_SEC, RTC_NR_TIME, data);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to read time reg(%d)\n", __func__,	ret);
-+		goto out;
-+	}
-+
-+	max77686_rtc_data_to_tm(data, tm, info->rtc_24hr_mode);
-+
-+	ret = rtc_valid_tm(tm);
-+
-+	printk(KERN_INFO "%s: %d/%d/%d %d:%d:%d(%d)\n", __func__,
-+		tm->tm_year, tm->tm_mon, tm->tm_mday,
-+		tm->tm_hour, tm->tm_min, tm->tm_sec, tm->tm_wday);
-+
-+out:
-+	mutex_unlock(&info->lock);
-+	return ret;
-+}
-+
-+static int max77686_rtc_set_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct max77686_rtc_info *info = dev_get_drvdata(dev);
-+	u8 data[RTC_NR_TIME];
-+	int ret;
-+
-+	ret = max77686_rtc_tm_to_data(tm, data);
-+	if (ret < 0)
-+		return ret;
-+
-+	printk(KERN_INFO "%s: %d/%d/%d %d:%d:%d(%d)\n", __func__,
-+		tm->tm_year, tm->tm_mon, tm->tm_mday,
-+		tm->tm_hour, tm->tm_min, tm->tm_sec, tm->tm_wday);
-+
-+	mutex_lock(&info->lock);
-+
-+	ret = max77686_bulk_write(info->max77686->rtc_regmap,
-+				 MAX77686_RTC_SEC, RTC_NR_TIME, data);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to write time reg(%d)\n", __func__,
-+				ret);
-+		goto out;
-+	}
-+
-+	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
-+
-+out:
-+	mutex_unlock(&info->lock);
-+	return ret;
-+}
-+
-+static int max77686_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct max77686_rtc_info *info = dev_get_drvdata(dev);
-+	u8 data[RTC_NR_TIME];
-+	u8 val;
-+	int i, ret;
-+
-+	mutex_lock(&info->lock);
-+
-+	ret = max77686_rtc_update(info, MAX77686_RTC_READ);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = max77686_bulk_read(info->max77686->rtc_regmap,
-+				 MAX77686_ALARM1_SEC, RTC_NR_TIME, data);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s:%d fail to read alarm reg(%d)\n",
-+				__func__, __LINE__, ret);
-+		goto out;
-+	}
-+
-+	max77686_rtc_data_to_tm(data, &alrm->time, info->rtc_24hr_mode);
-+
-+	printk(KERN_INFO "%s: %d/%d/%d %d:%d:%d(%d)\n", __func__,
-+		alrm->time.tm_year, alrm->time.tm_mon, alrm->time.tm_mday,
-+		alrm->time.tm_hour, alrm->time.tm_min, alrm->time.tm_sec, alrm->time.tm_wday);
-+
-+	alrm->enabled = 0;
-+	for (i = 0; i < RTC_NR_TIME; i++) {
-+		if (data[i] & ALARM_ENABLE_MASK) {
-+			alrm->enabled = 1;
-+			break;
-+		}
-+	}
-+
-+	alrm->pending = 0;
-+	ret = max77686_read_reg(info->max77686->regmap, MAX77686_REG_STATUS1, &val);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s:%d fail to read status1 reg(%d)\n",
-+				__func__, __LINE__, ret);
-+		goto out;
-+	}
-+
-+	if (val & (1 << 4)) /* RTCA1 */
-+		alrm->pending = 1;
-+
-+out:
-+	mutex_unlock(&info->lock);
++	if (fallback_to_pager)
++		setup_pager();
 +	return 0;
 +}
-+
-+static int max77686_rtc_stop_alarm(struct max77686_rtc_info *info)
-+{
-+	u8 data[RTC_NR_TIME];
-+	int ret, i;
-+	struct rtc_time tm;
-+
-+	if (!mutex_is_locked(&info->lock))
-+		dev_warn(info->dev, "%s: should have mutex locked\n", __func__);
-+
-+	ret = max77686_rtc_update(info, MAX77686_RTC_READ);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = max77686_bulk_read(info->max77686->rtc_regmap,
-+				 MAX77686_ALARM1_SEC, RTC_NR_TIME, data);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to read alarm reg(%d)\n",
-+				__func__, ret);
-+		goto out;
-+	}
-+
-+	max77686_rtc_data_to_tm(data, &tm, info->rtc_24hr_mode);
-+	printk(KERN_INFO "%s: %d/%d/%d %d:%d:%d(%d)\n", __func__,
-+		tm.tm_year, tm.tm_mon, tm.tm_mday,
-+		tm.tm_hour, tm.tm_min, tm.tm_sec, tm.tm_wday);
-+
-+	for (i = 0; i < RTC_NR_TIME; i++)
-+		data[i] &= ~ALARM_ENABLE_MASK;
-+
-+	ret = max77686_bulk_write(info->max77686->rtc_regmap,
-+				 MAX77686_ALARM1_SEC, RTC_NR_TIME, data);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
-+				__func__, ret);
-+		goto out;
-+	}
-+
-+	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
-+out:
-+	return ret;
-+}
-+
-+static int max77686_rtc_start_alarm(struct max77686_rtc_info *info)
-+{
-+	u8 data[RTC_NR_TIME];
-+	int ret;
-+	struct rtc_time tm;
-+
-+	if (!mutex_is_locked(&info->lock))
-+		dev_warn(info->dev, "%s: should have mutex locked\n", __func__);
-+
-+	ret = max77686_rtc_update(info, MAX77686_RTC_READ);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = max77686_bulk_read(info->max77686->rtc_regmap,
-+				 MAX77686_ALARM1_SEC, RTC_NR_TIME, data);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to read alarm reg(%d)\n",
-+				__func__, ret);
-+		goto out;
-+	}
-+
-+	max77686_rtc_data_to_tm(data, &tm, info->rtc_24hr_mode);
-+	printk(KERN_INFO "%s: %d/%d/%d %d:%d:%d(%d)\n", __func__,
-+		tm.tm_year, tm.tm_mon, tm.tm_mday,
-+		tm.tm_hour, tm.tm_min, tm.tm_sec, tm.tm_wday);
-+
-+	data[RTC_SEC] |= (1 << ALARM_ENABLE_SHIFT);
-+	data[RTC_MIN] |= (1 << ALARM_ENABLE_SHIFT);
-+	data[RTC_HOUR] |= (1 << ALARM_ENABLE_SHIFT);
-+	data[RTC_WEEKDAY] &= ~ALARM_ENABLE_MASK;
-+	if (data[RTC_MONTH] & 0xf)
-+		data[RTC_MONTH] |= (1 << ALARM_ENABLE_SHIFT);
-+	if (data[RTC_YEAR] & 0x7f)
-+		data[RTC_YEAR] |= (1 << ALARM_ENABLE_SHIFT);
-+	if (data[RTC_DATE] & 0x1f)
-+		data[RTC_DATE] |= (1 << ALARM_ENABLE_SHIFT);
-+
-+	ret = max77686_bulk_write(info->max77686->rtc_regmap,
-+				 MAX77686_ALARM1_SEC, RTC_NR_TIME, data);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
-+				__func__, ret);
-+		goto out;
-+	}
-+
-+	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
-+out:
-+	return ret;
-+}
-+
-+static int max77686_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct max77686_rtc_info *info = dev_get_drvdata(dev);
-+	u8 data[RTC_NR_TIME];
-+	int ret;
-+
-+	ret = max77686_rtc_tm_to_data(&alrm->time, data);
-+	if (ret < 0)
-+		return ret;
-+
-+	printk(KERN_INFO "%s: %d/%d/%d %d:%d:%d(%d)\n", __func__,
-+		alrm->time.tm_year, alrm->time.tm_mon, alrm->time.tm_mday,
-+		alrm->time.tm_hour, alrm->time.tm_min, alrm->time.tm_sec, alrm->time.tm_wday);
-+
-+	mutex_lock(&info->lock);
-+
-+	ret = max77686_rtc_stop_alarm(info);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = max77686_bulk_write(info->max77686->rtc_regmap,
-+				 MAX77686_ALARM1_SEC, RTC_NR_TIME, data);
-+
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
-+				__func__, ret);
-+		goto out;
-+	}
-+
-+	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
-+	if (ret < 0)
-+		goto out;
-+
-+	if (alrm->enabled)
-+		ret = max77686_rtc_start_alarm(info);
-+out:
-+	mutex_unlock(&info->lock);
-+	return ret;
-+}
-+
-+static int max77686_rtc_alarm_irq_enable(struct device *dev,
-+					unsigned int enabled)
-+{
-+	struct max77686_rtc_info *info = dev_get_drvdata(dev);
-+	int ret;
-+
-+	mutex_lock(&info->lock);
-+	if (enabled)
-+		ret = max77686_rtc_start_alarm(info);
-+	else
-+		ret = max77686_rtc_stop_alarm(info);
-+	mutex_unlock(&info->lock);
-+
-+	return ret;
-+}
-+
-+static irqreturn_t max77686_rtc_alarm_irq(int irq, void *data)
-+{
-+	struct max77686_rtc_info *info = data;
-+
-+	dev_info(info->dev, "%s:irq(%d)\n", __func__, irq);
-+
-+	rtc_update_irq(info->rtc_dev, 1, RTC_IRQF | RTC_AF);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static const struct rtc_class_ops max77686_rtc_ops = {
-+	.read_time = max77686_rtc_read_time,
-+	.set_time = max77686_rtc_set_time,
-+	.read_alarm = max77686_rtc_read_alarm,
-+	.set_alarm = max77686_rtc_set_alarm,
-+	.alarm_irq_enable = max77686_rtc_alarm_irq_enable,
-+};
-+
-+#ifdef MAX77686_RTC_WTSR_SMPL
-+static void max77686_rtc_enable_wtsr(struct max77686_rtc_info *info, bool enable)
-+{
-+	int ret;
-+	u8 val, mask;
-+
-+	if (enable)
-+		val = (1 << WTSR_EN_SHIFT) | (3 << WTSRT_SHIFT);
-+	else
-+		val = 0;
-+
-+	mask = WTSR_EN_MASK | WTSRT_MASK;
-+
-+	dev_info(info->dev, "%s: %s WTSR\n", __func__,
-+			enable ? "enable" : "disable");
-+
-+	ret = max77686_update_reg(info->max77686->rtc_regmap,
-+				 MAX77686_WTSR_SMPL_CNTL, val, mask);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to update WTSR reg(%d)\n",
-+				__func__, ret);
-+		return;
-+	}
-+
-+	max77686_rtc_update(info, MAX77686_RTC_WRITE);
-+}
-+
-+static void max77686_rtc_enable_smpl(struct max77686_rtc_info *info, bool enable)
-+{
-+	int ret;
-+	u8 val, mask;
-+
-+	if (enable)
-+		val = (1 << SMPL_EN_SHIFT) | (0 << SMPLT_SHIFT);
-+	else
-+		val = 0;
-+
-+	mask = SMPL_EN_MASK | SMPLT_MASK;
-+
-+	dev_info(info->dev, "%s: %s SMPL\n", __func__,
-+			enable ? "enable" : "disable");
-+
-+	ret = max77686_update_reg(info->max77686->rtc_regmap,
-+				 MAX77686_WTSR_SMPL_CNTL, val, mask);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to update SMPL reg(%d)\n",
-+				__func__, ret);
-+		return;
-+	}
-+
-+	max77686_rtc_update(info, MAX77686_RTC_WRITE);
-+
-+	val = 0;
-+	max77686_read_reg(info->max77686->rtc_regmap,
-+				 MAX77686_WTSR_SMPL_CNTL, &val);
-+	pr_info("%s: WTSR_SMPL(0x%02x)\n", __func__, val);
-+}
-+#endif /* MAX77686_RTC_WTSR_SMPL */
-+
-+static int max77686_rtc_init_reg(struct max77686_rtc_info *info)
-+{
-+	u8 data[2];
-+	int ret;
-+
-+	/* Set RTC control register : Binary mode, 24hour mdoe */
-+	data[0] = (1 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
-+	data[1] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
-+
-+	info->rtc_24hr_mode = 1;
-+
-+	ret = max77686_bulk_write(info->max77686->rtc_regmap,
-+					 MAX77686_RTC_CONTROLM, 2, data);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to write controlm reg(%d)\n",
-+				__func__, ret);
-+		return ret;
-+	}
-+
-+	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
-+	return ret;
-+}
-+
-+static struct regmap_config max77686_rtc_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+};
-+
-+static int __devinit max77686_rtc_probe(struct platform_device *pdev)
-+{
-+	struct max77686_dev *max77686 = dev_get_drvdata(pdev->dev.parent);
-+	struct max77686_rtc_info *info;
-+	int ret, virq;
-+
-+	printk(KERN_INFO "%s\n", __func__);
-+
-+	info = kzalloc(sizeof(struct max77686_rtc_info), GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
-+
-+	mutex_init(&info->lock);
-+	info->dev = &pdev->dev;
-+	info->max77686 = max77686;
-+	info->rtc = max77686->rtc;
-+	info->max77686->rtc_regmap = regmap_init_i2c(info->max77686->rtc,
-+					 &max77686_rtc_regmap_config);
-+	if (IS_ERR(info->max77686->rtc_regmap)) {
-+		ret = PTR_ERR(info->max77686->rtc_regmap);
-+		dev_err(info->max77686->dev, "Failed to allocate register map: %d\n",
-+				ret);
-+		kfree(info);
-+		return ret;
-+	}
-+	platform_set_drvdata(pdev, info);
-+
-+	ret = max77686_rtc_init_reg(info);
-+
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Failed to initialize RTC reg:%d\n", ret);
-+		goto err_rtc;
-+	}
-+
-+#ifdef MAX77686_RTC_WTSR_SMPL
-+	max77686_rtc_enable_wtsr(info, true);
-+	max77686_rtc_enable_smpl(info, true);
-+#endif
-+
-+	device_init_wakeup(&pdev->dev, 1);
-+
-+	info->rtc_dev = rtc_device_register("max77686-rtc", &pdev->dev,
-+			&max77686_rtc_ops, THIS_MODULE);
-+
-+	if (IS_ERR(info->rtc_dev)) {
-+		printk(KERN_INFO "%s: fail\n", __func__);
-+
-+		ret = PTR_ERR(info->rtc_dev);
-+		dev_err(&pdev->dev, "Failed to register RTC device: %d\n", ret);
-+		if (ret == 0)
-+			ret = -EINVAL;
-+		goto err_rtc;
-+	}
-+	virq = irq_create_mapping(max77686->irq_domain, MAX77686_RTCIRQ_RTCA1);
-+	if (!virq)
-+		goto err_rtc;
-+	info->virq = virq;
-+
-+	ret = request_threaded_irq(virq, NULL, max77686_rtc_alarm_irq, 0,
-+			"rtc-alarm0", info);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Failed to request alarm IRQ: %d: %d\n",
-+			info->irq, ret);
-+		goto err_rtc;
-+	}
-+
-+	goto out;
-+err_rtc:
-+	kfree(info);
-+	return ret;
-+out:
-+	return ret;
-+}
-+
-+static int __devexit max77686_rtc_remove(struct platform_device *pdev)
-+{
-+	struct max77686_rtc_info *info = platform_get_drvdata(pdev);
-+
-+	if (info) {
-+		free_irq(info->virq, info);
-+		rtc_device_unregister(info->rtc_dev);
-+		kfree(info);
-+	}
-+
-+	return 0;
-+}
-+
-+static void max77686_rtc_shutdown(struct platform_device *pdev)
-+{
-+#ifdef MAX77686_RTC_WTSR_SMPL
-+	struct max77686_rtc_info *info = platform_get_drvdata(pdev);
-+	int i;
-+	u8 val = 0;
-+
-+	for (i = 0; i < 3; i++) {
-+		max77686_rtc_enable_wtsr(info, false);
-+		max77686_read_reg(info->max77686->rtc_regmap,
-+					 MAX77686_WTSR_SMPL_CNTL, &val);
-+		pr_info("%s: WTSR_SMPL reg(0x%02x)\n", __func__, val);
-+		if (val & WTSR_EN_MASK)
-+			pr_emerg("%s: fail to disable WTSR\n", __func__);
-+		else {
-+			pr_info("%s: success to disable WTSR\n", __func__);
-+			break;
-+		}
-+	}
-+
-+	/* Disable SMPL when power off */
-+	max77686_rtc_enable_smpl(info, false);
-+#endif /* MAX77686_RTC_WTSR_SMPL */
-+}
-+
-+static const struct platform_device_id rtc_id[] = {
-+	{ "max77686-rtc", 0 },
-+	{},
-+};
-+
-+static struct platform_driver max77686_rtc_driver = {
-+	.driver		= {
-+		.name	= "max77686-rtc",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= max77686_rtc_probe,
-+	.remove		= __devexit_p(max77686_rtc_remove),
-+	.shutdown	= max77686_rtc_shutdown,
-+	.id_table	= rtc_id,
-+};
-+
-+static int __init max77686_rtc_init(void)
-+{
-+	return platform_driver_register(&max77686_rtc_driver);
-+}
-+module_init(max77686_rtc_init);
-+
-+static void __exit max77686_rtc_exit(void)
-+{
-+	platform_driver_unregister(&max77686_rtc_driver);
-+}
-+module_exit(max77686_rtc_exit);
-+
-+MODULE_DESCRIPTION("Maxim MAX77686 RTC driver");
-+MODULE_AUTHOR("<woong.byun@samsung.com>");
-+MODULE_LICENSE("GPL");
--- 
-1.7.4.1
-
++static inline void ui__exit(bool wait_for_ok __used) {}
++#else
++int ui__init(bool fallback_to_pager);
++void ui__exit(bool wait_for_ok);
+ #endif
+ 
+ #ifdef NO_GTK2_SUPPORT
+-static inline void perf_gtk__setup_browser(bool fallback_to_pager)
++static inline void perf_gtk__init(bool fallback_to_pager)
+ {
+ 	if (fallback_to_pager)
+ 		setup_pager();
+ }
+-static inline void perf_gtk__exit_browser(bool wait_for_ok __used) {}
++static inline void perf_gtk__exit(bool wait_for_ok __used) {}
+ #else
+-void perf_gtk__setup_browser(bool fallback_to_pager);
+-void perf_gtk__exit_browser(bool wait_for_ok);
++void perf_gtk__init(bool fallback_to_pager);
++void perf_gtk__exit(bool wait_for_ok);
+ #endif
++#endif /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
+ 
+ char *alias_lookup(const char *alias);
+ int split_cmdline(char *cmdline, const char ***argv);
