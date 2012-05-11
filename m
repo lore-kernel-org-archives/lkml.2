@@ -1,46 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760235Ab2EKOcS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 10:32:18 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:57048 "EHLO mx2.fusionio.com"
+	id S1760405Ab2EKOca (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 10:32:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41109 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760105Ab2EKOcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 10:32:16 -0400
-X-ASG-Debug-ID: 1336746735-0421b516ea10100001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4FAD22E6.4060702@fusionio.com>
-Date: Fri, 11 May 2012 16:32:06 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1760245Ab2EKOcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 10:32:23 -0400
+Date: Fri, 11 May 2012 15:32:18 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, neilb@suse.de, a.p.zijlstra@chello.nl,
+        michaelc@cs.wisc.edu, emunson@mgebm.net
+Subject: Re: [PATCH 10/17] netvm: Allow skb allocation to use PFMEMALLOC
+ reserves
+Message-ID: <20120511143218.GS11435@suse.de>
+References: <1336657510-24378-1-git-send-email-mgorman@suse.de>
+ <1336657510-24378-11-git-send-email-mgorman@suse.de>
+ <20120511.005740.210437168371869566.davem@davemloft.net>
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>
-Subject: Re: [patch, v2] block: don't mark buffers beyond end of disk as mapped
-References: <x49obq666i8.fsf@segfault.boston.devel.redhat.com> <x49d36ax372.fsf@segfault.boston.devel.redhat.com>
-X-ASG-Orig-Subj: Re: [patch, v2] block: don't mark buffers beyond end of disk as mapped
-In-Reply-To: <x49d36ax372.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1336746735
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.96643
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120511.005740.210437168371869566.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 03:22 PM, Jeff Moyer wrote:
-> Jens, could you please queue this patch up?
+On Fri, May 11, 2012 at 12:57:40AM -0400, David Miller wrote:
+> From: Mel Gorman <mgorman@suse.de>
+> Date: Thu, 10 May 2012 14:45:03 +0100
+> 
+> > +/* Returns true if the gfp_mask allows use of ALLOC_NO_WATERMARK */
+> > +bool gfp_pfmemalloc_allowed(gfp_t gfp_mask);
+> 
+> I know this gets added in an earlier patch, but it seems slightly
+> overkill to have a function call just for a simply bit test.
+> 
 
-Yup will do, thanks!
+It's not that simple. gfp_pfmemalloc_allowed calls gfp_to_alloc_flags()
+which is quite involved and probably should not be duplicated. In the slab
+case, it's called from slow paths where we are already under memory pressure
+and swapping to network so it's not a major problem. In the network case,
+it is called when kmalloc() has already failed and also a slow path.
+
+> > +extern atomic_t memalloc_socks;
+> > +static inline int sk_memalloc_socks(void)
+> > +{
+> > +	return atomic_read(&memalloc_socks);
+> > +}
+> 
+> Please change this to be a static branch.
+> 
+
+Will do. I renamed memalloc_socks to sk_memalloc_socks, made it a int as
+atomics are unnecessary and I check it directly in a branch instead of a
+static inline. It should be relatively easy for the branch predictor.
+
+> > +	skb = __alloc_skb(length + NET_SKB_PAD, gfp_mask,
+> > +						SKB_ALLOC_RX, NUMA_NO_NODE);
+> 
+> Please fix the argument indentation.
+> 
+
+Done.
+
+> > +	data = kmalloc_reserve(size + SKB_DATA_ALIGN(sizeof(struct skb_shared_info)),
+> > +		       gfp_mask, NUMA_NO_NODE, NULL);
+> 
+> Likewise.
+
+Done
+
+> 
+> > -	struct sk_buff *n = alloc_skb(newheadroom + skb->len + newtailroom,
+> > -				      gfp_mask);
+> > +	struct sk_buff *n = __alloc_skb(newheadroom + skb->len + newtailroom,
+> > +				      gfp_mask, skb_alloc_rx_flag(skb),
+> > +				      NUMA_NO_NODE);
+> 
+> Likewise.
+> 
+
+Done.
+
+> > -			nskb = alloc_skb(hsize + doffset + headroom,
+> > -					 GFP_ATOMIC);
+> > +			nskb = __alloc_skb(hsize + doffset + headroom,
+> > +					 GFP_ATOMIC, skb_alloc_rx_flag(skb),
+> > +					 NUMA_NO_NODE);
+> 
+> Likewise.
+
+Done.
+
+Thanks.
 
 -- 
-Jens Axboe
-
+Mel Gorman
+SUSE Labs
