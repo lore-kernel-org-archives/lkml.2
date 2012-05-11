@@ -1,164 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757077Ab2EKBFr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 21:05:47 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:32202 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755825Ab2EKBFq (ORCPT
+	id S1757651Ab2EKBHk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 21:07:40 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:40252 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755909Ab2EKBHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 21:05:46 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-209.messagelabs.com!1336698345!4826074!1
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: register sysfs device attributes with driver core
-Date: Thu, 10 May 2012 18:05:28 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201205101805.28589.hartleys@visionengravers.com>
+	Thu, 10 May 2012 21:07:38 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] xfrm: take iphdr size into account for esp payload size calculation
+Date: Thu, 10 May 2012 21:07:22 -0400
+Message-Id: <1336698442-25148-1-git-send-email-bpoirier@suse.de>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <20120511010249.GA23584@d2.synalogic.ca>
+References: <20120511010249.GA23584@d2.synalogic.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the sysfs device attributes are created by the comedi
-core after each comedi device is created. This can lead to a race
-condition where userspace gets an add event before the files are
-created.
+Corrects the function that determines the esp payload size.
+The calculations done in esp4_get_mtu lead to overlength frames in transport
+mode for certain mtu values and suboptimal frames for others.
 
-Register the device attributes with the comedi class so that the
-driver core handles creating them and we avoid the race.
+According to what is done, mainly in esp_output(), net_header_len aka
+sizeof(struct iphdr) must be taken into account before doing the alignment
+calculation.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 
 ---
+Changes since v1:
+* introduce l3_adj to preserve the same returned value as before for tunnel
+  mode
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index 44ca1fe..7677657 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -227,9 +227,6 @@ static ssize_t store_max_read_buffer_kb(struct device *dev,
- 	return count;
- }
- 
--static DEVICE_ATTR(max_read_buffer_kb, S_IRUGO | S_IWUSR,
--		show_max_read_buffer_kb, store_max_read_buffer_kb);
+For example, with md5 AH and 3des ESP (transport mode):
+mtu = 1499 leads to FRAGFAILS
+mtu = 1500 the addition of padding in the esp header could be avoided
+
+Tested with
+* transport mode E
+* transport mode EA
+* transport mode E + ah
+* tunnel mode E
+
+Not tested with BEET, but it should be the same as transport mode
+	draft-nikander-esp-beet-mode-03.txt Section 5.2:
+	"The wire packet format is identical to the ESP transport mode"
+---
+ net/ipv4/esp4.c |   24 +++++++++---------------
+ 1 files changed, 9 insertions(+), 15 deletions(-)
+
+diff --git a/net/ipv4/esp4.c b/net/ipv4/esp4.c
+index 89a47b3..b2503f6 100644
+--- a/net/ipv4/esp4.c
++++ b/net/ipv4/esp4.c
+@@ -459,28 +459,22 @@ static u32 esp4_get_mtu(struct xfrm_state *x, int mtu)
+ 	struct esp_data *esp = x->data;
+ 	u32 blksize = ALIGN(crypto_aead_blocksize(esp->aead), 4);
+ 	u32 align = max_t(u32, blksize, esp->padlen);
+-	u32 rem;
 -
- static ssize_t show_read_buffer_kb(struct device *dev,
- 				   struct device_attribute *attr, char *buf)
- {
-@@ -287,9 +284,6 @@ static ssize_t store_read_buffer_kb(struct device *dev,
- 	return count;
- }
+-	mtu -= x->props.header_len + crypto_aead_authsize(esp->aead);
+-	rem = mtu & (align - 1);
+-	mtu &= ~(align - 1);
++	unsigned int l3_adj;
  
--static DEVICE_ATTR(read_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
--		show_read_buffer_kb, store_read_buffer_kb);
--
- static ssize_t show_max_write_buffer_kb(struct device *dev,
- 					struct device_attribute *attr,
- 					char *buf)
-@@ -344,9 +338,6 @@ static ssize_t store_max_write_buffer_kb(struct device *dev,
- 	return count;
- }
- 
--static DEVICE_ATTR(max_write_buffer_kb, S_IRUGO | S_IWUSR,
--		show_max_write_buffer_kb, store_max_write_buffer_kb);
--
- static ssize_t show_write_buffer_kb(struct device *dev,
- 				    struct device_attribute *attr, char *buf)
- {
-@@ -404,19 +395,16 @@ static ssize_t store_write_buffer_kb(struct device *dev,
- 	return count;
- }
- 
--static DEVICE_ATTR(write_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
--		show_write_buffer_kb, store_write_buffer_kb);
--
--static struct attribute *comedi_attrs[] = {
--	&dev_attr_max_read_buffer_kb.attr,
--	&dev_attr_read_buffer_kb.attr,
--	&dev_attr_max_write_buffer_kb.attr,
--	&dev_attr_write_buffer_kb.attr,
--	NULL
--};
--
--static const struct attribute_group comedi_sysfs_files = {
--	.attrs	= comedi_attrs,
-+static struct device_attribute comedi_dev_attrs[] = {
-+	__ATTR(max_read_buffer_kb, S_IRUGO | S_IWUSR,
-+		show_max_read_buffer_kb, store_max_read_buffer_kb),
-+	__ATTR(read_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
-+		show_read_buffer_kb, store_read_buffer_kb),
-+	__ATTR(max_write_buffer_kb, S_IRUGO | S_IWUSR,
-+		show_max_write_buffer_kb, store_max_write_buffer_kb),
-+	__ATTR(write_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
-+		show_write_buffer_kb, store_write_buffer_kb),
-+	__ATTR_NULL
- };
- 
- static long comedi_unlocked_ioctl(struct file *file, unsigned int cmd,
-@@ -2355,6 +2343,8 @@ static int __init comedi_init(void)
- 		return PTR_ERR(comedi_class);
+ 	switch (x->props.mode) {
+-	case XFRM_MODE_TUNNEL:
+-		break;
+-	default:
+ 	case XFRM_MODE_TRANSPORT:
+-		/* The worst case */
+-		mtu -= blksize - 4;
+-		mtu += min_t(u32, blksize - 4, rem);
+-		break;
+ 	case XFRM_MODE_BEET:
+-		/* The worst case. */
+-		mtu += min_t(u32, IPV4_BEET_PHMAXLEN, rem);
++		l3_adj = sizeof(struct iphdr);
+ 		break;
++	case XFRM_MODE_TUNNEL:
++		l3_adj = 0;
++		break;
++	default:
++		BUG();
  	}
  
-+	comedi_class->dev_attrs = comedi_dev_attrs;
-+
- 	/* XXX requires /proc interface */
- 	comedi_proc_init();
- 
-@@ -2496,7 +2486,6 @@ int comedi_alloc_board_minor(struct device *hardware_device)
- 	struct comedi_device_file_info *info;
- 	struct device *csdev;
- 	unsigned i;
--	int retval;
- 
- 	info = kzalloc(sizeof(struct comedi_device_file_info), GFP_KERNEL);
- 	if (info == NULL)
-@@ -2532,14 +2521,6 @@ int comedi_alloc_board_minor(struct device *hardware_device)
- 		info->device->class_dev = csdev;
- 	dev_set_drvdata(csdev, info);
- 
--	retval = sysfs_create_group(&csdev->kobj, &comedi_sysfs_files);
--	if (retval) {
--		printk(KERN_ERR
--		       "comedi: failed to create sysfs attribute files\n");
--		comedi_free_board_minor(i);
--		return retval;
--	}
--
- 	return i;
+-	return mtu - 2;
++	return ((mtu - x->props.header_len - crypto_aead_authsize(esp->aead) -
++			l3_adj) & ~(align - 1)) + (l3_adj - 2);
  }
  
-@@ -2590,7 +2571,6 @@ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
- 	struct comedi_device_file_info *info;
- 	struct device *csdev;
- 	unsigned i;
--	int retval;
- 
- 	info = kmalloc(sizeof(struct comedi_device_file_info), GFP_KERNEL);
- 	if (info == NULL)
-@@ -2621,14 +2601,6 @@ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
- 		s->class_dev = csdev;
- 	dev_set_drvdata(csdev, info);
- 
--	retval = sysfs_create_group(&csdev->kobj, &comedi_sysfs_files);
--	if (retval) {
--		printk(KERN_ERR
--		       "comedi: failed to create sysfs attribute files\n");
--		comedi_free_subdevice_minor(s);
--		return retval;
--	}
--
- 	return i;
- }
- 
+ static void esp4_err(struct sk_buff *skb, u32 info)
+-- 
+1.7.7
+
