@@ -1,135 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761018Ab2EKUto (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 16:49:44 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:48289 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753457Ab2EKUtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 16:49:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
-	:cc:date:message-id:mime-version:content-type; q=dns; s=sasl; b=
-	ehoVLjyp+OVpeWJag6scbF3BY9sGcpEsvCjKmlsgteIpntMxEHCIfVpfVTYVVMdz
-	wOkUfrRiD6TisKRCIhTBpzcE1FHE6q9yJNA8NDHuSh5OxLCDcAk//PopgQJc8UWj
-	N/bVR7inydwTTofHmwlqXgurUNaobUvPoFKkAFtGPbw=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.10.2
-cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 11 May 2012 13:49:38 -0700
-Message-ID: <7v4nrml9y5.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1761037Ab2EKUyg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 16:54:36 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:32756 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760950Ab2EKUyd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 16:54:33 -0400
+Date: Fri, 11 May 2012 16:48:24 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 3/3] Xen physical cpus interface
+Message-ID: <20120511204824.GA2156@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC8292335154F3E@SHSMSX101.ccr.corp.intel.com>
+ <20120420192439.GA32170@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351B5807@SHSMSX101.ccr.corp.intel.com>
+ <20120510145745.GO26152@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351B5A2E@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923351B873F@SHSMSX101.ccr.corp.intel.com>
+ <20120511142758.GA29677@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351BC88D@SHSMSX101.ccr.corp.intel.com>
+ <20120511190041.GA3785@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351BCD16@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: D482FCBE-9BAA-11E1-811F-FC762E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351BCD16@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git 1.7.10.2 is now available at
-the usual places.
+On Fri, May 11, 2012 at 08:31:15PM +0000, Liu, Jinsong wrote:
+> Konrad Rzeszutek Wilk wrote:
+> > On Fri, May 11, 2012 at 06:04:21PM +0000, Liu, Jinsong wrote:
+> >> Konrad Rzeszutek Wilk wrote:
+> >>> On Fri, May 11, 2012 at 01:12:13PM +0000, Liu, Jinsong wrote:
+> >>>> Liu, Jinsong wrote:
+> >>>>> Just notice your reply (so quick :)
+> >>>>> 
+> >>>>> Agree and will update later, except 1 concern below.
+> >>>>> 
+> >>>>> Konrad Rzeszutek Wilk wrote:
+> >>>>>>> 
+> >>>>>>> Hmm, it's good if it's convenient to do it automatically via
+> >>>>>>> dev->release. However, dev container (pcpu) would be free at
+> >>>>>>> some other error cases, so I prefer do it 'manually'.
+> >>>>>> 
+> >>>>>> You could also call pcpu_release(..) to do it manually.
+> >>>>>> 
+> >>>>> 
+> >>>>> that means kfree(pcpu) would be done twice at some error cases,
+> >>>>> do you think it really good? 
+> >>>>> 
+> >>>> 
+> >>>> Ping.
+> >>>> 
+> >>>> I think error recovery should be kept inside error logic level
+> >>>> itself, if try to recover upper level error would bring trouble.
+> >>>> 
+> >>>> In our example, there are 2 logic levels:
+> >>>> pcpu level (as container), and dev level (subfield used for sys)
+> >>> 
+> >>> So you need to untangle free_pcpu from doing both. Meaning one does
+> >>> the SysFS and the other deals with free-ing the structure and
+> >>> removing itself from the list.
+> >>> 
+> >> 
+> >> free_cpu is very samll, just consist of the 2 parts your said:
+> >> * pcpu_sys_remove() deal with sysfs
+> >> * list_del/kfree(pcpu) deal with pcpu
+> >> 
+> >>> 
+> >>>> dev->release should only recover error occurred at dev/sys level,
+> >>>> and the pcpu error should be recovered at pcpu level.
+> >>>> 
+> >>>> If dev->release try to recover its container pcpu level error, like
+> >>>> list_del/kfree(pcpu), it would make confusing. i.e., considering
+> >>>> pcpu_sys_create(), 2 error cases: device_register fail, and
+> >>>> device_create_file fail --> how can the caller decide kfree(pcpu)
+> >>>> or not?
+> >>> 
+> >>> Then you should free it manually. But you can do this by a wrapper
+> >>> function: 
+> >>> 
+> >>> __pcpu_release(..) {
+> >>> 	..
+> >>> 	/* Does the removing itself from the list and kfree the pcpu */ }
+> >>> pcpu_release(..) {
+> >>> 	struct pcpcu *p= container_of(..)
+> >>> 	__pcpu_release(p);
+> >>> }
+> >>> 
+> >>> dev->release = &pcpu_release;
+> >>> 
+> >> 
+> >> Too weird way. If we want to release dev itself it's good to use
+> >> dev->release, but for pcpu I doubt it. (consider the example I gave
+> >> --> why we create issue (it maybe solved in weird method I agree),
+> >> just for using dev->release?)  
+> >> 
+> >> In kernel many dev->release keep NULL.
+> >> An example of using dev->release is cpu/mcheck/mce.c -->
+> >> mce_device_release(), it *just* deal dev itself. 
+> > 
+> > OK? I am not sure what are we arguing here anymore?
+> > I think using 'kfree(pcpu)' on the error paths (as long as it is
+> > done before device_register) is OK. I think that seperating
+> > the SysFS deletion from the pcpu deletion should be done to
+> > avoid races. Perhaps the SysFS deletion function should also
+> > remove the pcpu from the list.
+> 
+> How about static array pcpu[NR_CPUS]?
+> It seems solve all issues we argued :)
 
-The release tarballs are found at:
-
-    http://code.google.com/p/git-core/downloads/list
-
-and their SHA-1 checksums are:
-
-e4b7f746ff4e356baaddcad0b2911376efde031b  git-1.7.10.2.tar.gz
-004a2bf989b935657e2e1e6000a748d83657649f  git-htmldocs-1.7.10.2.tar.gz
-6cc3f80185bdd1a608cf373b05313b2adc82b898  git-manpages-1.7.10.2.tar.gz
-
-Also the following public repositories all have a copy of the v1.7.10.2
-tag and the maint branch that the tag points at:
-
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Git v1.7.10.2 Release Notes
-===========================
-
-Fixes since v1.7.10.1
----------------------
-
- * The test scaffolding for git-daemon was flaky.
-
- * The test scaffolding for fast-import was flaky.
-
- * The filesystem boundary was not correctly reported when .git directory
-   discovery stopped at a mount point.
-
- * HTTP transport that requires authentication did not work correctly when
-   multiple connections are used simultaneously.
-
- * Minor memory leak during unpack_trees (hence "merge" and "checkout"
-   to check out another branch) has been plugged.
-
- * In the older days, the header "Conflicts:" in "cherry-pick" and "merge"
-   was separated by a blank line from the list of paths that follow for
-   readability, but when "merge" was rewritten in C, we lost it by
-   mistake. Remove the newline from "cherry-pick" to make them match
-   again.
-
- * The command line parser choked "git cherry-pick $name" when $name can
-   be both revision name and a pathname, even though $name can never be a
-   path in the context of the command.
-
- * The "include.path" facility in the configuration mechanism added in
-   1.7.10 forgot to interpret "~/path" and "~user/path" as it should.
-
- * "git config --rename-section" to rename an existing section into a
-   bogus one did not check the new name.
-
- * The "diff --no-index" codepath used limited-length buffers, risking
-   pathnames getting truncated.  Update it to use the strbuf API.
-
- * The report from "git fetch" said "new branch" even for a non branch
-   ref.
-
- * The http-backend (the server side of the smart http transfer) used
-   to overwrite GIT_COMMITTER_NAME and GIT_COMMITTER_EMAIL with the
-   value obtained from REMOTE_USER unconditionally, making it
-   impossible for the server side site-specific customization to use
-   different identity sources to affect the names logged. It now uses
-   REMOTE_USER only as a fallback value.
-
- * "log --graph" was not very friendly with "--stat" option and its
-   output had line breaks at wrong places.
-
- * Octopus merge strategy did not reduce heads that are recorded in the
-   final commit correctly.
-
- * "git push" over smart-http lost progress output a few releases ago;
-   this release resurrects it.
-
- * The error and advice messages given by "git push" when it fails due
-   to non-ff were not very helpful to new users; it has been broken
-   into three cases, and each is given a separate advice message.
-
- * The insn sheet given by "rebase -i" did not make it clear that the
-   insn lines can be re-ordered to affect the order of the commits in
-   the resulting history.
-
- * "git repack" used to write out unreachable objects as loose objects
-   when repacking, even if such loose objects will immediately pruned
-   due to its age.
-
- * A contrib script "rerere-train" did not work out of the box unless
-   user futzed with her $PATH.
-
- * "git rev-parse --show-prefix" used to emit nothing when run at the
-   top-level of the working tree, but now it gives a blank line.
-
- * The i18n of error message "git stash save" was not properly done.
-
- * "git submodule" used a sed script that some platforms mishandled.
-
- * When using a Perl script on a system where "perl" found on user's
-   $PATH could be ancient or otherwise broken, we allow builders to
-   specify the path to a good copy of Perl with $PERL_PATH.  The
-   gitweb test forgot to use that Perl when running its test.
-
-Also contains minor fixes and documentation updates.
-
+Ugh. That could mean a structure of more than 4K of items.
+Lets stick with making it dynamic.
