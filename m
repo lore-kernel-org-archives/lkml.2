@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760612Ab2EKPBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 11:01:18 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:36960 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758262Ab2EKPBR (ORCPT
+	id S1755278Ab2EKPFd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 11:05:33 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:38390 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752082Ab2EKPFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 11:01:17 -0400
-Date: Fri, 11 May 2012 12:01:11 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] perf top: Fix a race in callchain handling
-Message-ID: <20120511150111.GA2485@infradead.org>
-References: <1336231388-12347-1-git-send-email-namhyung@gmail.com>
- <1336242167.2463.138.camel@laptop>
- <20120505235319.GB2150@infradead.org>
- <1336271107.1534.12.camel@leonhard>
- <20120506183212.GB2485@infradead.org>
- <878vh4srmh.fsf@sejong.aot.lge.com>
- <87vck3ii18.fsf@sejong.aot.lge.com>
+	Fri, 11 May 2012 11:05:31 -0400
+Message-ID: <4FAD2AB6.7030403@ti.com>
+Date: Fri, 11 May 2012 18:05:26 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120509 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87vck3ii18.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        broonie@opensource.wolfsonicro.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TWL6040: fix build error
+References: <1336675473-24774-1-git-send-email-levinsasha928@gmail.com> <CAP=VYLqwAO8x4aWw7_pH1LH_SPO9Td2ec9oOmKPL-_5LOEQw3g@mail.gmail.com> <4FACB9D7.5090100@ti.com> <20120511072049.GA9088@core.coreip.homeip.net> <4FAD1C38.5050907@windriver.com>
+In-Reply-To: <4FAD1C38.5050907@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, May 11, 2012 at 11:10:59AM +0900, Namhyung Kim escreveu:
-> On Mon, 07 May 2012 10:32:22 +0900, Namhyung Kim wrote:
-> > I thought about it before, but it still cannot protect it from accessing
-> > a hists by multiple concurrent threads. IOW if two threads call the
-> > function to a same hists at the same time, ->callchain_collapse_cursor
-> > would still get the race problem - so crashed.
-> >
-> > I guess callchain_cursor should be thread-local, eventually. No need to
-> > make it hist-local IMHO.
+Hi,
+
+On 05/11/2012 05:03 PM, Paul Gortmaker wrote:
+> Hi Dmitry,
 > 
-> So, any thoughts?
+> It should be limited to the platforms where the hardware is available,
+> so that coverage builds aren't needlessly spending cycles building
+> stuff that can't possibly ever be used.  Also if it is limited to
+> ARM, then we can't have an ARM bug like this one mask the x86_64
+> allyesconfig build from uncovering possible errors that we really
+> care about seeing.
 
-Can you try writing a patch using TLS?
+The cleanest way to do this is to make the twl6040 MFD
+(CONFIG_TWL6040_CORE) to depend on ARM (or on OMAP). That way none of
+the drivers depending on it will got built on non ARM platforms.
 
-- Arnaldo
+-- 
+Péter
