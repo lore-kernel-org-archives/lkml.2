@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759445Ab2EKSoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:44:44 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:32776 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759075Ab2EKSom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:44:42 -0400
-Message-ID: <4FAD5DA2.70803@parallels.com>
-Date: Fri, 11 May 2012 15:42:42 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
- kfree
-References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home> <4FAD531D.6030007@parallels.com> <alpine.DEB.2.00.1205111305570.386@router.home> <4FAD566C.3000804@parallels.com> <alpine.DEB.2.00.1205111316540.386@router.home> <4FAD585A.4070007@parallels.com> <alpine.DEB.2.00.1205111331010.386@router.home>
-In-Reply-To: <alpine.DEB.2.00.1205111331010.386@router.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.105.248.83]
+	id S1760912Ab2EKSph (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:45:37 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48477 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759087Ab2EKSpf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 14:45:35 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 5/6 v3] mfd: tps65910-irq: Add devicetree init support
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Rhyland Klein <rklein@nvidia.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Rob Herring <rob.herring@calxeda.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+In-Reply-To: <20120508154820.GA15893@opensource.wolfsonmicro.com>
+References: <1336502563-31789-1-git-send-email-rklein@nvidia.com> <1336502563-31789-6-git-send-email-rklein@nvidia.com> <20120508154820.GA15893@opensource.wolfsonmicro.com>
+Date: Fri, 11 May 2012 12:45:32 -0600
+Message-Id: <20120511184532.C74D73E0791@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 03:32 PM, Christoph Lameter wrote:
-> On Fri, 11 May 2012, Glauber Costa wrote:
->
->> Thank you in advance for your time reviewing this!
->
-> Where do I find the rationale for all of this? Trouble is that pages can
-> contain multiple objects f.e. so accounting of pages to groups is a bit fuzzy.
-> I have not followed memcg too much since it is not relevant (actual
-> it is potentially significantly harmful given the performance
-> impact) to the work loads that I am using.
->
-It's been spread during last discussions. The user-visible part is 
-documented in the last patch, but I'll try to use this space here to 
-summarize more of the internals (it can also go somewhere in the tree
-if needed):
+On Tue, 8 May 2012 16:48:21 +0100, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> On Tue, May 08, 2012 at 11:42:42AM -0700, Rhyland Klein wrote:
+> 
+> > +	if (pdata->irq_base <= 0)
+> > +		pdata->irq_base = irq_alloc_descs(-1, 0, tps65910->irq_num, -1);
+> > +
+> > +	if (pdata->irq_base <= 0) {
+> > +		dev_err(tps65910->dev, "Failed to allocate irq descs: %d\n",
+> > +			pdata->irq_base);
+> > +		return pdata->irq_base;
+> > +	}
+> 
+> I'd expect the driver to always call irq_alloc_descs() but to use the
+> value specified in platform data if there is any.  This is the normal
+> way of doing things, anyway.
 
-We want to limit the amount of kernel memory tasks inside a memory 
-cgroup use. slab is not the only one of them, but it is quite significant.
+More importantly, the driver should be converted to use an irq_domain
+and remove the custom irq_to_tps65910_irq function.
+irq_find_mapping() handles the hwirq --> irq lookup and
+irq_data->hwirq will always give you the controller's irq number.
 
-For that, the least invasive, and most reasonable way we found to do it,
-is to create a copy of each slab inside the memcg. Or almost: we lazy 
-create them, so only slabs that are touched by the memcg are created.
+When irq_base is -1, then use irq_domain_add_linear() which will also
+manage irq_desc allocations for you.  If the driver requires a
+specific irq_base then the descs still need to be manually allocated
+and use an irq_domain_add_legacy() to set it up. (this is sub-optimal
+though; I hope to have a better solution for legacy that also manages
+desc allocations just like the other mappings; maybe in the 3.6
+timeframe).
 
-So we don't mix pages from multiple memcgs in the same cache - we 
-believe that would be too confusing.
+g.
 
-/proc/slabinfo reflects this information, by listing the memcg-specific 
-slabs.
-
-This also appears in a memcg-specific memory.kmem.slabinfo.
-
-Also note that accounting is not done until kernel memory is limited.
-And if no memcg is limited, the code is wrapped inside static_key 
-branches. So it should be completely patched out if you don't put stuff 
-inside memcg.
-
-
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
