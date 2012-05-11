@@ -1,112 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab2EKIhm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 04:37:42 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:10028 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757276Ab2EKIhk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 04:37:40 -0400
-X-AuditID: cbfee612-b7cd7ae00000275e-9e-4faccfcdcc1f
-Date: Fri, 11 May 2012 08:37:33 +0000 (GMT)
-From: AMIT SAHRAWAT <a.sahrawat@samsung.com>
-Subject: =?windows-1252?Q?Re:_Re:_Re:_[Problem]NFS_Server_=96?=
- =?windows-1252?Q?=09_Um=3Fount_results_in_Device_Busy.?=
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Reply-to: a.sahrawat@samsung.com
-MIME-version: 1.0
-X-MTR: 20120511082621200@a.sahrawat
-Msgkey: 20120511082621200@a.sahrawat
-X-EPLocale: en_US.windows-1252
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120511082621200@a.sahrawat
-X-ParentMTR: 
-X-ArchiveUser: 
-Content-type: text/plain; charset=windows-1252
-MIME-version: 1.0
-Message-id: <373541.55191336725451746.JavaMail.weblogic@epml01>
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	id S1758094Ab2EKIh4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 04:37:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:57887 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757940Ab2EKIhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 04:37:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="164861778"
+Subject: Re: [PATCH 1/3] dmaengine: Use sg_dma_address instead of sg_phys
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Viresh Kumar <viresh.kumar@st.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Yong Wang <yong.y.wang@intel.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CACRpkdaZv0ufh1fh9kmeXu0cC9GFWNwyVT6bXJSSWsM3bGSqog@mail.gmail.com>
+References: <1335379853-10122-1-git-send-email-lars@metafoo.de>
+	 <CACRpkdaZv0ufh1fh9kmeXu0cC9GFWNwyVT6bXJSSWsM3bGSqog@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 May 2012 14:01:10 +0530
+Message-ID: <1336725070.15424.1833.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q4B8bmKY017844
 
-Hi Bruce,
-Sorry it was the mail composer - I did not check mark the plain text option.
-
-We need an opinion.
-We will be using around 15 NFS client mounted - with one NFS Server. We are try to make out how many NFSD should we start at the NFS Server.
-It all depends upon the load - these 15 NFS clients are going to generate. But is there any default number - we should use to start with? like 1 per NFS client mount?
-Please share your advise on this.
-
-Thanks & Regards,
-Amit Sahrawat
-
-------- Original Message -------
-Sender : J. Bruce Fields<bfields@fieldses.org>
-Date : May 10, 2012 17:46 (GMT+05:30)
-Title : Re: Re: [Problem]NFS Server – Um?ount results in Device Busy.
-
-On Thu, May 10, 2012 at 11:54:43AM +0000, AMIT SAHRAWAT wrote:
+On Thu, 2012-04-26 at 23:28 +0200, Linus Walleij wrote:
+> On Wed, Apr 25, 2012 at 8:50 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
 > 
+> > dmaengine drivers should always use sg_dma_address instead of sg_phys to get the
+> > addresses for the transfer from a sg element.
 > 
-Hi Bruce,
+> All three patches look correct to me (cannot test right now though).
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Thanks applied all 3.
 
-> 
+-- 
+~Vinod
 
-
-> 
-Thanks for instant reply.
-
-
-Could you turn off html formatting on your mail?
-
-> 
-The option you mentioned is working. 'exportfs -f'
-
-> 
-Actually it is not mentioned anywhere - even when checked for options:
-
-> 
-#> exportfs -h
-exportfs: invalid option -- 'h'
-usage: exportfs [-aruv] [host:/path]
-
-
-
-Sorry, it looks like the help test could be improved!  Patches
-welcomed....
-
-It is documented in the exportfs man page.
-
-> 
-But - when tried to give - '-f' option it is working.
-
-> 
-Then on checking the code for exportfs - got to know the working of '-f' option.
-
-> 
-I think it should work. I will check with a number of scenario  - to check there is no blockage for other mount points - at the time 'exportfs -f' is being run. Please reply if it wont :)
-
-
-If no clients are using the export, it should work.
-
---b.
-
-
-
-Thanks & Regards,
-Amit Sahrawatÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
