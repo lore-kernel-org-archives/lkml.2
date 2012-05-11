@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab2EKJvw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 05:51:52 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:32793 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175Ab2EKJvv (ORCPT
+	id S932335Ab2EKJw1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 05:52:27 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36998 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932175Ab2EKJwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 05:51:51 -0400
-Date: Fri, 11 May 2012 11:51:36 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, gregkh@linuxfoundation.org, riel@redhat.com,
-        luto@mit.edu, avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
-        fenghua.yu@intel.com, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, paul.gortmaker@windriver.com, trenn@suse.de,
-        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk,
-        a.p.zijlstra@chello.nl, kamezawa.hiroyu@jp.fujitsu.com,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 7/7] x86/tlb: add tlb_flushall_factor into sysfs for
- user testing/tuning
-Message-ID: <20120511095136.GE8913@aftab.osrc.amd.com>
-References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
- <1336626013-28413-8-git-send-email-alex.shi@intel.com>
- <20120510082731.GC30055@aftab.osrc.amd.com>
- <4FAC62B9.9090304@intel.com>
+	Fri, 11 May 2012 05:52:25 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FACE0E1.8040109@jp.fujitsu.com>
+Date: Fri, 11 May 2012 18:50:25 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FAC62B9.9090304@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        Tejun Heo <tj@kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 5/6] memcg: don't uncharge in mem_cgroup_move_account
+References: <4FACDED0.3020400@jp.fujitsu.com>
+In-Reply-To: <4FACDED0.3020400@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 08:52:09AM +0800, Alex Shi wrote:
-> >> +#ifdef CONFIG_DEBUG_TLBFLUSH
-> 
-> >> +static ssize_t __tlb_flushall_factor_store(const char *buf,
-> >> +					size_t count, int smt)
-> >> +{
-> >> +	short factor = 0;
-> >> +
-> >> +	if (sscanf(buf, "%hd", &factor) != 1)
-> >> +		return -EINVAL;
-> > 
-> > This means only single-digit factors, right?
-> 
-> No, you can try '32' '16' etc. not a 'single-digit'.
 
-Ah, misread sscanf, nevermind.
+Now, all caller passes 'false' for 'bool uncharge', remove the argument.
 
-> > Why not use kstrtoul?
-> 
-> any advantage of this?
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   20 ++++++--------------
+ 1 files changed, 6 insertions(+), 14 deletions(-)
 
-Well, sscanf uses simple_strto* and those miss overflow checks etc, see
-33ee3b2e2eb9b4b6c64dcf9ed66e2ac3124e748c for details.
-
-Btw, there are other kstrto* functions which you could use to fit better
-the argument type and size passed to tlb_flushall_factor.
-
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index f007c17..fcb0095 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2615,23 +2615,19 @@ void mem_cgroup_split_huge_fixup(struct page *head)
+  * @pc:	page_cgroup of the page.
+  * @from: mem_cgroup which the page is moved from.
+  * @to:	mem_cgroup which the page is moved to. @from != @to.
+- * @uncharge: whether we should call uncharge and css_put against @from.
+  *
+  * The caller must confirm following.
+  * - page is not on LRU (isolate_page() is useful.)
+  * - compound_lock is held when nr_pages > 1
+  *
+- * This function doesn't do "charge" nor css_get to new cgroup. It should be
+- * done by a caller(__mem_cgroup_try_charge would be useful). If @uncharge is
+- * true, this function does "uncharge" from old cgroup, but it doesn't if
+- * @uncharge is false, so a caller should do "uncharge".
++ * This function doesn't do "charge" to new cgroup and doesn't do "uncharge"
++ * from old cgroup.
+  */
+ static int mem_cgroup_move_account(struct page *page,
+ 				   unsigned int nr_pages,
+ 				   struct page_cgroup *pc,
+ 				   struct mem_cgroup *from,
+-				   struct mem_cgroup *to,
+-				   bool uncharge)
++				   struct mem_cgroup *to)
+ {
+ 	unsigned long flags;
+ 	int ret;
+@@ -2673,9 +2669,6 @@ static int mem_cgroup_move_account(struct page *page,
+ 		preempt_enable();
+ 	}
+ 	mem_cgroup_charge_statistics(from, anon, -nr_pages);
+-	if (uncharge)
+-		/* This is not "cancel", but cancel_charge does all we need. */
+-		__mem_cgroup_cancel_charge(from, nr_pages);
+ 
+ 	/* caller should have done css_get */
+ 	pc->mem_cgroup = to;
+@@ -2737,7 +2730,7 @@ static int mem_cgroup_move_parent(struct page *page,
+ 		flags = compound_lock_irqsave(page);
+ 
+ 	ret = mem_cgroup_move_account(page, nr_pages,
+-				pc, child, parent, false);
++				pc, child, parent);
+ 	if (!ret)
+ 		__mem_cgroup_cancel_local_charge(child, nr_pages);
+ 
+@@ -5757,8 +5750,7 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
+ 			if (!isolate_lru_page(page)) {
+ 				pc = lookup_page_cgroup(page);
+ 				if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
+-							     pc, mc.from, mc.to,
+-							     false)) {
++							pc, mc.from, mc.to)) {
+ 					mc.precharge -= HPAGE_PMD_NR;
+ 					mc.moved_charge += HPAGE_PMD_NR;
+ 				}
+@@ -5788,7 +5780,7 @@ retry:
+ 				goto put;
+ 			pc = lookup_page_cgroup(page);
+ 			if (!mem_cgroup_move_account(page, 1, pc,
+-						     mc.from, mc.to, false)) {
++						     mc.from, mc.to)) {
+ 				mc.precharge--;
+ 				/* we uncharge from mc.from later. */
+ 				mc.moved_charge++;
 -- 
-Regards/Gruss,
-Boris.
+1.7.4.1
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+
