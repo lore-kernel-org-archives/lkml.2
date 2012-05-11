@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761636Ab2EKGts (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:49:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57442 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760560Ab2EKGtq (ORCPT
+	id S1761693Ab2EKGuf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:50:35 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15226 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761120Ab2EKGud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:49:46 -0400
-Date: Thu, 10 May 2012 23:49:36 -0700
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-f6c1be2711333b40d7940ff87e3509b4cd278195@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1336510879-64610-1-git-send-email-dsahern@gmail.com>
-References: <1336510879-64610-1-git-send-email-dsahern@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate:
-  shorten helpline so it fits in visible space
-Git-Commit-ID: f6c1be2711333b40d7940ff87e3509b4cd278195
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 11 May 2012 02:50:33 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 10 May 2012 23:49:28 -0700
+Date: Fri, 11 May 2012 09:50:12 +0300
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Colin Cross <ccross@android.com>, "Olof Johansson" <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Santosh Shilimkar" <santosh.shilimkar@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, Aneesh V <aneesh@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/4] ARM: tegra20: Add Tegra Memory Controller(MC)
+ driver
+Message-ID: <20120511095012.57f737d1b0d2536e0d367a9b@nvidia.com>
+In-Reply-To: <4FABF9AB.6020902@wwwdotorg.org>
+References: <1336635764-30597-1-git-send-email-hdoyu@nvidia.com>
+	<4FABF9AB.6020902@wwwdotorg.org>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:49:41 -0700 (PDT)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f6c1be2711333b40d7940ff87e3509b4cd278195
-Gitweb:     http://git.kernel.org/tip/f6c1be2711333b40d7940ff87e3509b4cd278195
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Tue, 8 May 2012 15:01:19 -0600
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 9 May 2012 12:02:36 -0300
+Hi Greg, Stephen,
 
-perf annotate: shorten helpline so it fits in visible space
+On Thu, 10 May 2012 19:23:55 +0200
+Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-Additional toggles have pushed the help line out of view on a modestly
-sized terminal (120 columns wide). Shorten it to just reminders.
+> On 05/10/2012 01:42 AM, Hiroshi DOYU wrote:
+> > Tegra Memory Controller(MC) driver for Tegra20
+> > Added to support MC General interrupts, mainly for IOMMU(GART).
+> 
+> Greg, you appear to have been commiting all of drivers/memory. I assume
+> you'll take patches 1 and 3 in this series, and I will take 2 and 4
+> through the Tegra tree? I can take them all through the Tegra tree if
+> you want. Taking the .dts patches through your tree might cause
+> conflicts in 3.6, since I anticipate some DT-wide cleanup in 3.6.
+> 
+> Hiroshi, one question below (same for patch 3)
+> 
+> > diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+> 
+> > @@ -20,6 +20,8 @@ config ARCH_TEGRA_2x_SOC
+> >  	select PL310_ERRATA_727915 if CACHE_L2X0
+> >  	select PL310_ERRATA_769419 if CACHE_L2X0
+> >  	select CPU_FREQ_TABLE if CPU_FREQ
+> > +	select MEMORY
+> > +	select TEGRA20_MC
+> 
+> Does ARCH_TEGRA_2x_SOC /have/ to select these?
+> 
+> I'd be inclined to drop the change to mach-tegra/Kconfig. As rationale,
+> the code works fine without the driver right now. You'd need to make
+> config TEGRA*_MC user-visible/selectable though.
+> 
+> You could replace this change with a patch to tegra_defconfig which
+> enables MEMORY and TEGRA*_MC, or perhaps make config TEGRA20_MC default y.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1336510879-64610-1-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/browsers/annotate.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+I'm sending the fixup patches, following this mail, since Greg has
+already put the original patches in queue. I think that the following
+fixup patches could be squashed into the original ones. The fixup
+patches are:
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 4db5186..a299290 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -491,9 +491,9 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 	struct map_symbol *ms = self->b.priv;
- 	struct symbol *sym = ms->sym;
- 	const char *help = "<-/ESC: Exit, TAB/shift+TAB: Cycle hot lines, "
--			   "H: Go to hottest line, ->/ENTER: Line action, "
--			   "O: Toggle offset view, "
--			   "S: Toggle source code view";
-+			   "H: Hottest line, ->/ENTER: Line action, "
-+			   "O: Offset view, "
-+			   "S: Source view";
- 	int key;
- 
- 	if (ui_browser__show(&self->b, sym->name, help) < 0)
+  [PATCH 1/3] ARM: tegra20: Make MC optional in Kconfig
+  [PATCH 2/3] ARM: tegra30: Make MC optional in Kconfig
+  [PATCH 3/3] ARM: tegra: Make TEGRA{20,30}_MC selectable in defconfig
+
+Let me know if it's better to resend the complete patches again.
