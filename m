@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932425Ab2EKQqR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 12:46:17 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:34088 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755115Ab2EKQqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 12:46:14 -0400
-Date: Fri, 11 May 2012 12:46:05 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Rob Landley <rob@landley.net>
-Cc: Ludwig Nussel <ludwig.nussel@suse.de>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "open list:EXT2 FILE SYSTEM" <linux-ext4@vger.kernel.org>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH RESEND] implement uid and gid mount options for ext2,
- ext3 and ext4
-Message-ID: <20120511164605.GC6467@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Rob Landley <rob@landley.net>,
-	Ludwig Nussel <ludwig.nussel@suse.de>, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	"open list:EXT2 FILE SYSTEM" <linux-ext4@vger.kernel.org>,
-	"open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
-References: <1336660924-9598-1-git-send-email-ludwig.nussel@suse.de>
- <20120511034945.GA15892@mobil.systemanalysen.net>
- <4FAD2161.3090108@landley.net>
+	id S1760215Ab2EKQtR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 12:49:17 -0400
+Received: from mail.telros.ru ([83.136.244.21]:63389 "EHLO mail.telros.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754992Ab2EKQtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 12:49:15 -0400
+Date: Fri, 11 May 2012 20:49:07 +0400
+From: volokh@telros.ru
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: volokh84@gmail.com, mchehab@infradead.org, gregkh@linuxfoundation.org,
+        dhowells@redhat.com, rdunlap@xenotime.net, pete@sensoray.com,
+        pradheep.sh@gmail.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Volokh Konstantin <my84@bk.ru>
+Subject: Re: [PATCH] staging: media: go7007: Adlink MPG24 board issues
+Message-ID: <20120511164907.GA16306@VPir.telros.lan>
+References: <1336714980-13460-1-git-send-email-volokh84@gmail.com>
+ <4FAD1FAD.4020508@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FAD2161.3090108@landley.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <4FAD1FAD.4020508@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 09:25:37AM -0500, Rob Landley wrote:
-> Well it's certainly a point of view. Luckily, FAT already _has_ the
-> workaround we're discussing.  The objections were mainly "can't the VFS
-> do this for us?" and the answer, upon closer inspection, turned out to
-> be "not easily, no, the VFS takes option flags instead of parsing string
-> options so doesn't have some necessary infrastructure".
+>>some simple stuff I found along the way..
 
-The only reasonable use case I can imagine for this feature is one
-where someone wants to use a removable storage device (which could be
-a USB thumb drive to a USB HDD to a SSD in a USB 3.0 enclosure) as an
-interchange device between Unix systems which do not have compatible
-uid/gid spaces.
+On 05/10/2012 10:43 PM, volokh84@gmail.com wrote:
+> From: Volokh Konstantin<my84@bk.ru>                                                                          
+>                                                                                                              
+> This issuses applyed only for Adlink MPG24 board with go7007                                                 
 
-So perhaps the right approach is that we should have an ext2/3/4
-read-only feature flag which enforces a default of nosuid and all
-files to be read-only and world-readable.  There would be mount
-options which could modify this default behaviour so that the files
-could be writeable by a particular uid or gid, and another mount
-option which would change the permission bits seen for that file
-system from 0755/0644 for directories/files to 0700/0600.
+>>this issue applies only for...
 
-Basically, the idea is we should mark the file system in an explicit
-way that it is intended for interchange across incompatible uid/gid
-spaces, with defaults which minimize security risk.  The fact that all
-files become world-readable is potentially a risk, but if the user is
-willing to put their private files on a removeable media that could
-easily be dropped in a parking lot, or otherwise stolen or lost,
-that's a potential risk that they've implicitly accepted in any case;
-we might as well make it be explicit.
+>   &  wis2804, all whese changes was tested for continuos                                                     
+>   load&restart mode                                                                                          
+>                                                                                                              
 
-							- Ted
+>>these changes were tested for continuous
 
+> This is minimal changes needed for start up go7007&wis2804 to work correctly                                 
+>    in 3.4 branch                                                                                             
+>                                                                                                              
+> Changes:                                                                                                     
+>    - When go7007 reset device, i2c was not worked (need rewrite GPIO5)                                       
+
+>>working
+
+>    - As wis2804 has i2c_addr=0x00/*really*/, so Need set I2C_CLIENT_TEN flag for validity                    
+>    - some main nonzero initialization, rewrites with kzalloc instead kmalloc                                 
+>    - STATUS_SHUTDOWN was pl
+
+
+Thanks for english language notation.
+I`ve never used it in real word.
