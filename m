@@ -1,87 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab2EKSxQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:53:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751794Ab2EKSxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:53:14 -0400
-Message-ID: <4FAD6012.20408@redhat.com>
-Date: Fri, 11 May 2012 15:53:06 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v.23-2] RAS: use tracepoint to handle hw issues
-References: <1336683628-12954-1-git-send-email-mchehab@redhat.com> <1336748054-21325-1-git-send-email-mchehab@redhat.com> <3908561D78D1C84285E8C5FCA982C28F192ED5D3@ORSMSX104.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192ED5D3@ORSMSX104.amr.corp.intel.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1759326Ab2EKSx7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:53:59 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59944 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758733Ab2EKSxk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 14:53:40 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: gpio: pca953x: interrupt feature unreliable (re-re-send, Grant please acknowledge!!)
+To: Jean-Francois Dagenais <jeff.dagenais@gmail.com>,
+        linus.walleij@stericsson.com
+Cc: torvalds@linux-foundation.org, open list <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, eric.miao@marvell.com,
+        maz@misterjones.org
+In-Reply-To: <8495990E-0B78-4B47-A00D-36D45DC3450F@gmail.com>
+References: <8495990E-0B78-4B47-A00D-36D45DC3450F@gmail.com>
+Date: Fri, 11 May 2012 12:53:37 -0600
+Message-Id: <20120511185337.E31BC3E0791@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 11-05-2012 14:02, Luck, Tony escreveu:
->> For example:
->>
->> mc_event: Corrected error:memory read on memory stick "DIMM_1A" (mc:0 channel:0 slot:0 page:0x586b6e offset:0xa66 grain:32 syndrome:0x0 area:DMA)
+On Thu, 10 May 2012 14:19:17 -0400, Jean-Francois Dagenais <jeff.dagenais@gmail.com> wrote:
+> Hi all,
 > 
-> This is looking so much better.
+> Here's a fun, yet potentially dangerous problem.
+
+Hi Jean-Francois,
+
+It sounds like your analysis is accurate and your conclusions look
+correct.  There really isn't much that I can do for you on this though
+as I don't have the hardware.  As Linus mentioned, David Jander has
+worked on the driver in the past, and git log shows some other folks.
+I would ask them.
+
+g.
+
 > 
-> I looked through your examples from drivers on what text we might see
-> in the "memory read" position ... and agree that it would be a lot of
-> work to make them all come up with grammatically clean messages, especially
-> for all the poorly documented (or undocumented) "default/unknown/..." cases.
+> I've sent this twice already, without any feedback. I'm just trying to get more 
+> visibility on this because I believe it to be a serious issue depending where 
+> this chip may be used. Interrupts could be missed in what could be very tough 
+> conditions to replicate. In my setup I could reproduce the problem easily and 
+> took great care in analysing and documenting it.
+> ===============Re-Re-Send (with edits)==================
+> Hi all,
+> (Using 3.1.0-rc4, didn't change since)
 > 
-> Back to my "does the casual user really need to know" soapbox. What different
-> actions do we expect a user to take when we tell them "read error" or "write
-> error" or "unknown error"?  I'm beginning to think that this belongs inside
-> the brackets! Perhaps as:  type:"memory read"?
-
-Indeed, read/write errors are equal for the user, but other events like (i5100):
-
-		"SPD protocol error", /* 18 */
-		"spare copy initiated", /* 20 */
-		"spare copy completed", /* 21 */
-
-Or (i5000):
-	"Northbound CRC error on non-redundant retry";
-	">Tmid Thermal event with intelligent throttling disabled";
-			specific = "DIMM-spare copy started";
-			specific = "DIMM-spare copy completed";
-
-May mean that the DIMM is ok, but the error maybe on some other part of the system
-(like an overheated cabinet, a badly-inserted DIMM or PCI device or maybe just some
- data mirroring in progress).
-
-So, IMHO, keeping it at the main part of the error is valuable, at least when the
-driver can generate such kinds of event.
-
-> Then we'd have:
+> I have detected a flaw in the interrupt support of the gpio-pca953x driver. 
+> This is how I discovered the issue:
 > 
-> mc_event: Corrected error on memory stick "DIMM_1A" (bunch of stuff for deep diagnosis by vendor)
-
-With the current implementation, this can actually be done at driver-basis: just fill
-error_msg with a blank string and add all details at the driver-specific error detail.
-
-> Knowing that the error was Corrected/Uncorrected is vital to the user. It lets them know
-> the urgency with which they need to take action ... we need to educate them that a few
-> "Corrected" errors are perfectly normal and nothing to raise blood pressure about.
+> I have a interrupt client device which has it's interrupt signal connected to 
+> one of the GPIOs of the pca9555. The client is an ad714x device. It's interrupt 
+> routine is falling edge triggered (so says the driver, but according to the 
+> AD714x specs, it should be level,low, however this is another topic). The 
+> pca9555 is interrupting the CPU through INTA of an ethernet PCI card for which 
+> I have blacklisted the driver module and only done "echo 1 > 
+> /bus/pci/devices/00xyz/enable". It is "(level, low)" which matches the pca953x 
+> request_threaded_isr call (IRQF_TRIGGER_LOW | IRQF_ONESHOT). I used two GPOs on 
+> some other device to get the !ISR signals shown below. These show the nested 
+> nature of the cli ISR called from the pca953x's ISR.
+> ASCII art of my probing (use a monospace font, "!ISR"==low, mean ISR running)
 > 
-> Knowing which memory stick was involved - also very important. If they do take action,
-> they should be able to swap out the memory stick that was the source of the problem.
+> Events(lined-up):1  2 3 4 5  6    7       8    9
+>              ____          _______
+> client !INT      |________|       |________(lost)___
+>              ___________                   _________
+> cli !ISR                |____|____________|
+>              ____      ___         _________________
+> pca953x !INT     |____|   |_______|
+>              ______                             ____
+> pca953x !ISR       |___________________________|
+> (note: the little spike in the cli !ISR marks the end of reading the client's 
+> status registers, the rest of the ISR is updating driver state machines, etc.)
+> 
+> Summary: The client enters interrupt(1), which immediately puts the pca953x in 
+> interrupt as well(1). When the pca953x enters it's isr thread(2), it reads the 
+> input status register, this immediately clears the pca953x interrupt(3). The 
+> pca953x ISR then figure's out it should invoke the nested ISR for the client. 
+> The client ISR starts (4) by reading the client chip's status register, which 
+> clears the client interrupt(5). This immediately puts the pca953x back into 
+> interrupt (5) since it's a different state than what was last read in the 
+> pca953x ISR(3). Since pca953x registered it's interrupt with IRQF_ONESHOT, this 
+> new IRQ state is masked and goes un-noticed. The pca953x chips' FLAW IS THEN 
+> REVEILED if/when the client chip goes back in interrupt before (7) the client 
+> ISR (and the pca053x's ISR with the current code) even has time to finish(8 and 
+> 9). At that moment, the pca953x's input are back to the way they where when the 
+> pca953x ISR last read the input status register. So when all of the ISR 
+> routines are done (9...), the client has it's INT line asserted and no more 
+> interrupt will come from the pca953x because of this.
+> 
+> pca953x specs quote: "Resetting the interrupt circuit is achieved when data on 
+> the port is CHANGED TO THE ORIGINAL SETTING, data is read from the port that 
+> generated the interrupt or in a Stop event. [...] Interrupts that occur during 
+> the ACK or NACK clock pulse CAN BE LOST (or be very short) due to the resetting 
+> of the interrupt during this pulse."
+> 
+> So in essence, although the pca953x.c's design and doc says only edges are 
+> detected and supported, the chip design makes it IMPOSSIBLE to guarantee that 
+> all edges will be caught.
+> 
+> The IRQ function SHOULD BE REMOVED from the driver since the chip cannot honor 
+> the driver's promise. At the very least, for system integrators that want to 
+> use level base interrupts implemented by the pca953x, changes to the driver 
+> should be made to correctly handle the lack of LATCHING INTERRUPT STATUS 
+> register...
+> 
+> I would propose a patch, but I am missing knowledge on the internals of the 
+> kernel's irq code, so here's a simple suggestion description, hoping to get 
+> some feedback.
+> 
+> First of all, I propose pca953x_irq_set_type should only support 
+> IRQ_TYPE_LEVEL_HIGH and IRQ_TYPE_LEVEL_LOW. pca953x_irq_handler should be 
+> adjusted accordingly.
+> 
+> To make sure we catch as many transitions of pca953x chips INT as possible 
+> (yikes), we make pca953x_irq_setup() request it's own interrupt as both rising 
+> and falling (IRQF_TRIGGER_RISING|IRQF_TRIGGER_FALLING, is that even possible?) 
+> without IRQF_ONESHOT, so that pca953x_irq_handler is rescheduled for running 
+> even when it's already running.
+> 
+> Any thoughts? Maybe there are more/less fancy, or better yet, "correct" ways of 
+> doing this? Will this even work?
+> 
+> /jfd
+> 
 
-> Everything else is just for memory geeks like me, you and Boris (and OEMs who want to
-> diagnose root cause of problems they see by pattern analysis across errors from multiple
-> machines with DIMMS from different batches/vendors).
-
-Agreed (except for the cases like the above described).
-
-Regards,
-Mauro
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
