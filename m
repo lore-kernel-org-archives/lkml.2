@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171Ab2EKSSr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:18:47 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:37882 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215Ab2EKSSp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:18:45 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-10.tower-127.messagelabs.com!1336760322!5244076!9
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>
-Date: Fri, 11 May 2012 13:18:42 -0500
-Subject: RE: [PATCH] staging: comedi: Add helper macro for comedi pci driver
- boilerplate
-Thread-Topic: [PATCH] staging: comedi: Add helper macro for comedi pci
- driver boilerplate
-Thread-Index: Ac0vof4R6hHR4fElSHqm3qlkc4OL9QAAGkIA
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698A17EC1@AUSP01VMBX24.collaborationhost.net>
-References: <201205111007.46754.hartleys@visionengravers.com>
- <20120511175954.GA7920@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F0020698A17EA9@AUSP01VMBX24.collaborationhost.net>
- <4FAD5723.1060405@mev.co.uk>
-In-Reply-To: <4FAD5723.1060405@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933175Ab2EKSWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:22:13 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:58347 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932215Ab2EKSWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 14:22:09 -0400
+Message-ID: <4FAD585A.4070007@parallels.com>
+Date: Fri, 11 May 2012 15:20:10 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
+ kfree
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home> <4FAD531D.6030007@parallels.com> <alpine.DEB.2.00.1205111305570.386@router.home> <4FAD566C.3000804@parallels.com> <alpine.DEB.2.00.1205111316540.386@router.home>
+In-Reply-To: <alpine.DEB.2.00.1205111316540.386@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.105.248.83]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 11, 2012 11:15 AM, Ian Abbott wrote:
-> On 2012-05-11 19:04, H Hartley Sweeten wrote:
->> On Friday, May 11, 2012 11:00 AM, Greg KH wrote:
->>> On Fri, May 11, 2012 at 10:07:43AM -0700, H Hartley Sweeten wrote:
->>>> +EXPORT_SYMBOL(comedi_pci_driver_unregister);
->>>
->>> EXPORT_SYMBOL_GPL() for these two functions?
->>
->> I wasn't sure about that...
->>
->> Question.. when "should" EXPORT_SYMBOL be used and
->> when should it be EXPORT_SYMBOL_GPL?
+On 05/11/2012 03:17 PM, Christoph Lameter wrote:
+> On Fri, 11 May 2012, Glauber Costa wrote:
 >
-> Adding EXPORT_SYMBOL_GPL shouldn't remove previous functionality.  It 
-> doesn't in this case, so that's okay!
+>> On 05/11/2012 03:06 PM, Christoph Lameter wrote:
+>>> On Fri, 11 May 2012, Glauber Costa wrote:
+>>>
+>>>>> Adding a VM_BUG_ON may be useful to make sure that kmem_cache_free is
+>>>>> always passed the correct slab cache.
+>>>>
+>>>> Well, problem is , it isn't always passed the "correct" slab cache.
+>>>> At least not after this series, since we'll have child caches associated
+>>>> with
+>>>> the main cache.
+>>>>
+>>>> So we'll pass, for instance, kmem_cache_free(dentry_cache...), but will in
+>>>> fact free from the memcg copy of the dentry cache.
+>>>
+>>> Urg. But then please only do this for the MEMCG case and add a fat big
+>>> warning in kmem_cache_free.
+>>
+>> I can do that, of course.
+>> Another option if you don't oppose, is to add another field in the kmem_cache
+>> structure (I tried to keep them at a minimum),
+>> to record the parent cache we got created from.
+>>
+>> Then, it gets trivial to do the following:
+>>
+>> VM_BUG_ON(page->slab != s&&  page->slab != s->parent_cache);
+>
+> Sounds ok but I need to catch up on what this whole memcg thing in slab
+> allocators should accomplish in order to say something definite.
+>
+Fair enough.
 
-OK. I'll change it.
-
-Regards,
-Hartley
-
+Thank you in advance for your time reviewing this!
