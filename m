@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761537Ab2EKGrX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:47:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57410 "EHLO
+	id S1761553Ab2EKGsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:48:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57419 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048Ab2EKGrV (ORCPT
+	with ESMTP id S1753048Ab2EKGsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:47:21 -0400
-Date: Thu, 10 May 2012 23:47:07 -0700
+	Fri, 11 May 2012 02:48:08 -0400
+Date: Thu, 10 May 2012 23:47:57 -0700
 From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-979987a567d9e666fe719f337409b2fbb6418f5f@git.kernel.org>
+Message-ID: <tip-40491eaa46a693e8c6ef94102350a747c63e584d@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, dsahern@gmail.com,
-        tglx@linutronix.de
+        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, peterz@infradead.org, dsahern@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <1336490956-57145-1-git-send-email-dsahern@gmail.com>
-References: <1336490956-57145-1-git-send-email-dsahern@gmail.com>
+        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1336495789-58420-1-git-send-email-dsahern@gmail.com>
+References: <1336495789-58420-1-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf stat: handle ENXIO error for perf_event_open
-Git-Commit-ID: 979987a567d9e666fe719f337409b2fbb6418f5f
+Subject: [tip:perf/core] perf top:
+  Update event name when falling back to cpu-clock
+Git-Commit-ID: 40491eaa46a693e8c6ef94102350a747c63e584d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,65 +28,50 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:47:12 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 10 May 2012 23:48:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  979987a567d9e666fe719f337409b2fbb6418f5f
-Gitweb:     http://git.kernel.org/tip/979987a567d9e666fe719f337409b2fbb6418f5f
+Commit-ID:  40491eaa46a693e8c6ef94102350a747c63e584d
+Gitweb:     http://git.kernel.org/tip/40491eaa46a693e8c6ef94102350a747c63e584d
 Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Tue, 8 May 2012 09:29:16 -0600
+AuthorDate: Tue, 8 May 2012 10:49:49 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 9 May 2012 11:58:48 -0300
+CommitDate: Wed, 9 May 2012 12:01:57 -0300
 
-perf stat: handle ENXIO error for perf_event_open
+perf top: Update event name when falling back to cpu-clock
 
-perf stat on PPC currently fails to run:
+The 'perf top' command falls back to cpu-clock if the H/W cycles event
+is not supported, but the event name is not updated leading to a
+misleading header:
 
-$ perf stat -- sleep 1
-  Error: open_counter returned with 6 (No such device or address). /bin/dmesg may provide additional information.
+PerfTop: 8 irqs/sec  kernel:75.0%  exact:  0.0% [1000Hz cycles],  ...
 
-  Fatal: Not all events could be opened.
+Update the event name when the event type is changed so that the
+header displays correctly:
 
-The problem is that until 2.6.37 (behavior changed with commit b0a873e)
-perf on PPC returns ENXIO when hw_perf_event_init() fails. With this
-patch we get the expected behavior:
-
-$ perf stat -v -- sleep 1
-cycles event is not supported by the kernel.
-stalled-cycles-frontend event is not supported by the kernel.
-stalled-cycles-backend event is not supported by the kernel.
-instructions event is not supported by the kernel.
-branches event is not supported by the kernel.
-branch-misses event is not supported by the kernel.
-
-...
+PerfTop: 794 irqs/sec  kernel:100.0%  exact:  0.0% [1000Hz cpu-clock], ...
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1336490956-57145-1-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1336495789-58420-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-stat.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ tools/perf/builtin-top.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index e720ba7..d060568 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -462,8 +462,13 @@ static int run_perf_stat(int argc __used, const char **argv)
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index c53cdab..4eb6171 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -948,6 +948,10 @@ try_again:
  
- 	list_for_each_entry(counter, &evsel_list->entries, node) {
- 		if (create_perf_stat_counter(counter, first) < 0) {
-+			/*
-+			 * PPC returns ENXIO for HW counters until 2.6.37
-+			 * (behavior changed with commit b0a873e).
-+			 */
- 			if (errno == EINVAL || errno == ENOSYS ||
--			    errno == ENOENT || errno == EOPNOTSUPP) {
-+			    errno == ENOENT || errno == EOPNOTSUPP ||
-+			    errno == ENXIO) {
- 				if (verbose)
- 					ui__warning("%s event is not supported by the kernel.\n",
- 						    event_name(counter));
+ 				attr->type = PERF_TYPE_SOFTWARE;
+ 				attr->config = PERF_COUNT_SW_CPU_CLOCK;
++				if (counter->name) {
++					free(counter->name);
++					counter->name = strdup(event_name(counter));
++				}
+ 				goto try_again;
+ 			}
+ 
