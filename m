@@ -1,49 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759915Ab2EKXV3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 19:21:29 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41585 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752911Ab2EKXV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 19:21:27 -0400
-Message-ID: <1336778486.16292.0.camel@joe2Laptop>
-Subject: Re: [PATCH 0/2] Add and use vsprintf extension %pMbt for bluetooth
- macs
-From: Joe Perches <joe@perches.com>
-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 11 May 2012 16:21:26 -0700
-In-Reply-To: <20120509090156.GB8473@aemeltch-MOBL1>
-References: <cover.1291419007.git.joe@perches.com>
-	 <20120509090156.GB8473@aemeltch-MOBL1>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756027Ab2EKXeI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 19:34:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51681 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753699Ab2EKXeG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 19:34:06 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH V3 2/2] gpio: add STA2X11 GPIO block
+To: Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org
+Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>, sameo@linux.intel.com,
+        linus.walleij@stericsson.com
+In-Reply-To: <5e419c41c8e3bcbeac341aa9457a9c93bc4c8309.1334219874.git.rubini@gnudd.com>
+References: <cover.1334219873.git.rubini@gnudd.com> <5e419c41c8e3bcbeac341aa9457a9c93bc4c8309.1334219874.git.rubini@gnudd.com>
+Date: Fri, 11 May 2012 17:34:02 -0600
+Message-Id: <20120511233402.43D813E0791@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-09 at 12:01 +0300, Andrei Emeltchenko wrote:
-> Hi Joe
+On Thu, 12 Apr 2012 10:48:55 +0200, Alessandro Rubini <rubini@gnudd.com> wrote:
+> This introduces 128 gpio bits (for each PCI device installed) with
+> working interrupt support.
 > 
-> On Fri, Dec 03, 2010 at 06:33:02PM -0800, Joe Perches wrote:
-> > Using vsprintf extensions can save text and data.
-> > Add %pMbt for the byte reversed output for bluetooth addresses.
-> > 
-> > Joe Perches (2):
-> >   vsprintf: Add %pMbt, bluetooth mac address
-> >   bluetooth: Use printf extension %pMbt
-> 
-> I think this would be the best way to solve our issues with batostr.
-> 
-> BTW: What is the status with this patch series?
+> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+> Cc: Alan Cox <alan@linux.intel.com>
+> ---
+[...]
+> +/* The platform device used here is instantiated by the MFD device */
+> +static int __devinit gsta_probe(struct platform_device *dev)
+> +{
+> +	int i, err;
+> +	struct pci_dev *pdev;
+> +	struct sta2x11_gpio_pdata *gpio_pdata;
+> +	struct gsta_gpio *chip;
+> +	struct resource *res;
+> +
+> +	pdev = *(struct pci_dev **)(dev->dev.platform_data);
+> +	gpio_pdata = dev_get_platdata(&pdev->dev);
+> +
+> +	if (gpio_pdata == NULL)
+> +		dev_err(&dev->dev, "no gpio config\n");
+> +	pr_debug("gpio config: %p\n", gpio_pdata);
+> +
+> +	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
+> +
+> +	chip = devm_kzalloc(&dev->dev, sizeof(*chip), GFP_KERNEL);
+> +	chip->dev = &dev->dev;
+> +	chip->reg_base = devm_request_and_ioremap(&dev->dev, res);
+> +
+> +	for (i = 0; i < GSTA_NR_BLOCKS; i++) {
+> +		chip->regs[i] = chip->reg_base + i * 4096;
+> +		/* disable all irqs */
+> +		writel(0, &chip->regs[i]->rimsc);
+> +		writel(0, &chip->regs[i]->fimsc);
+> +		writel(~0, &chip->regs[i]->ic);
+> +	}
+> +	spin_lock_init(&chip->lock);
+> +	gsta_gpio_setup(chip);
+> +	for (i = 0; i < GSTA_NR_GPIO; i++)
+> +		gsta_set_config(chip, i, gpio_pdata->pinconfig[i]);
+> +
+> +	/* 384 was used in previous code: be compatible for other drivers */
+> +	err = irq_alloc_descs(-1, 384, GSTA_NR_GPIO, NUMA_NO_NODE);
+> +	if (err < 0) {
+> +		dev_warn(&dev->dev, "sta2x11 gpio: Can't get irq base (%i)\n",
+> +			 -err);
+> +		return err;
+> +	}
+> +	chip->irq_base = err;
 
-18 month old patches generally don't apply.
+Where does the number 384 come from?  It looks like the driver only
+needs to allocate a range of irqs and that it doesn't actually matter
+what the real numbers are.  Can 0 be used instead?
 
-If you want to bring it forward or redo it,
-please do.
+Actually, I'd rather see this driver switched to using
+irq_domain_add_linear so that irq_descs can be allocated on demand
+instead of all at once.  That way only gpios actually used for irqs
+get setup.
 
+To convert, use irq_domain_add_linear() and then irq_data->hwirq gets
+populated with the gpio number automatically for you and
+irq_find_mapping takes care of the hwirq->irq reverse lookup.
