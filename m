@@ -1,139 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946299Ab2EKWVJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 18:21:09 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:35083 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758355Ab2EKWVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 18:21:07 -0400
-Message-ID: <1336774866.13434.16.camel@joe2Laptop>
-Subject: [PATCH net-next] etherdevice: Remove now unused
- compare_ether_addr_64bits
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 11 May 2012 15:21:06 -0700
-In-Reply-To: <20120510.233554.263340913611469229.davem@davemloft.net>
-References: <cover.1336618707.git.joe@perches.com>
-	 <acb363688c8ed729cc61e288605cdb4aa4089149.1336618708.git.joe@perches.com>
-	 <20120510.233554.263340913611469229.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1946282Ab2EKWXy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 18:23:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58753 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932266Ab2EKWXw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 18:23:52 -0400
+Date: Fri, 11 May 2012 15:23:48 -0700
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [ 046/167] [PATCH] spi: Fix device unregistration when
+ unregistering the bus master
+Message-ID: <20120511222347.GA22143@herton-ThinkPad-T420>
+References: <20120509055029.588587017@decadent.org.uk>
+ <20120509055036.064659639@decadent.org.uk>
+ <20120509193335.GD15527@herton-ThinkPad-T420>
+ <1336706149.8274.431.camel@deadeye>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336706149.8274.431.camel@deadeye>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move and invert the logic from the otherwise unused
-compare_ether_addr_64bits to ether_addr_equal_64bits.
+On Fri, May 11, 2012 at 04:15:49AM +0100, Ben Hutchings wrote:
+> On Wed, 2012-05-09 at 12:33 -0700, Herton Ronaldo Krzesinski wrote:
+> > On Wed, May 09, 2012 at 06:51:15AM +0100, Ben Hutchings wrote:
+> > > 3.2-stable review patch.  If anyone has any objections, please let me know.
+> > > 
+> > > ------------------
+> > > 
+> > > From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > > 
+> > > commit 178db7d30f94707efca1a189753c105ef69942ed upstream.
+> > 
+> > After applying this change, this introduces a bug on spi-fsl-spi.c, we
+> > need to apply in addition to this change commit
+> > 5039a86973cd35bdb2f64d28ee12f13fe2bb5a4c
+> [...]
+> 
+> OK, I've added that to the queue.  But doesn't fsl_spi_cs_control() also
+> need to be changed?
 
-Neaten the logic in is_etherdev_addr.
+I think so as well, I took a look and if no one beats me to it I'll send
+a patch for that with Cc: stable.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/linux/etherdevice.h |   46 ++++++++++++------------------------------
- 1 files changed, 13 insertions(+), 33 deletions(-)
+> 
+> Ben.
+> 
+> -- 
+> Ben Hutchings
+> Life is what happens to you while you're busy making other plans.
+>                                                                - John Lennon
 
-diff --git a/include/linux/etherdevice.h b/include/linux/etherdevice.h
-index afacf85..dc85c1d 100644
---- a/include/linux/etherdevice.h
-+++ b/include/linux/etherdevice.h
-@@ -193,12 +193,12 @@ static inline unsigned long zap_last_2bytes(unsigned long value)
- }
- 
- /**
-- * compare_ether_addr_64bits - Compare two Ethernet addresses
-+ * ether_addr_equal_64bits - Compare two Ethernet addresses
-  * @addr1: Pointer to an array of 8 bytes
-  * @addr2: Pointer to an other array of 8 bytes
-  *
-- * Compare two ethernet addresses, returns 0 if equal, non-zero otherwise.
-- * Unlike memcmp(), it doesn't return a value suitable for sorting.
-+ * Compare two ethernet addresses, returns true if equal, false otherwise.
-+ *
-  * The function doesn't need any conditional branches and possibly uses
-  * word memory accesses on CPU allowing cheap unaligned memory reads.
-  * arrays = { byte1, byte2, byte3, byte4, byte6, byte7, pad1, pad2}
-@@ -206,45 +206,25 @@ static inline unsigned long zap_last_2bytes(unsigned long value)
-  * Please note that alignment of addr1 & addr2 is only guaranted to be 16 bits.
-  */
- 
--static inline unsigned compare_ether_addr_64bits(const u8 addr1[6+2],
--						 const u8 addr2[6+2])
-+static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
-+					   const u8 addr2[6+2])
- {
- #ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
- 	unsigned long fold = ((*(unsigned long *)addr1) ^
- 			      (*(unsigned long *)addr2));
- 
- 	if (sizeof(fold) == 8)
--		return zap_last_2bytes(fold) != 0;
-+		return zap_last_2bytes(fold) == 0;
- 
- 	fold |= zap_last_2bytes((*(unsigned long *)(addr1 + 4)) ^
- 				(*(unsigned long *)(addr2 + 4)));
--	return fold != 0;
-+	return fold == 0;
- #else
--	return compare_ether_addr(addr1, addr2);
-+	return ether_addr_equal(addr1, addr2);
- #endif
- }
- 
- /**
-- * ether_addr_equal_64bits - Compare two Ethernet addresses
-- * @addr1: Pointer to an array of 8 bytes
-- * @addr2: Pointer to an other array of 8 bytes
-- *
-- * Compare two ethernet addresses, returns true if equal, false otherwise.
-- *
-- * The function doesn't need any conditional branches and possibly uses
-- * word memory accesses on CPU allowing cheap unaligned memory reads.
-- * arrays = { byte1, byte2, byte3, byte4, byte6, byte7, pad1, pad2}
-- *
-- * Please note that alignment of addr1 & addr2 is only guaranted to be 16 bits.
-- */
--
--static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
--					   const u8 addr2[6+2])
--{
--	return !compare_ether_addr_64bits(addr1, addr2);
--}
--
--/**
-  * is_etherdev_addr - Tell if given Ethernet address belongs to the device.
-  * @dev: Pointer to a device structure
-  * @addr: Pointer to a six-byte array containing the Ethernet address
-@@ -252,23 +232,23 @@ static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
-  * Compare passed address with all addresses of the device. Return true if the
-  * address if one of the device addresses.
-  *
-- * Note that this function calls compare_ether_addr_64bits() so take care of
-+ * Note that this function calls ether_addr_equal_64bits() so take care of
-  * the right padding.
-  */
- static inline bool is_etherdev_addr(const struct net_device *dev,
- 				    const u8 addr[6 + 2])
- {
- 	struct netdev_hw_addr *ha;
--	int res = 1;
-+	bool res = false;
- 
- 	rcu_read_lock();
- 	for_each_dev_addr(dev, ha) {
--		res = compare_ether_addr_64bits(addr, ha->addr);
--		if (!res)
-+		res = ether_addr_equal_64bits(addr, ha->addr);
-+		if (res)
- 			break;
- 	}
- 	rcu_read_unlock();
--	return !res;
-+	return res;
- }
- #endif	/* __KERNEL__ */
- 
-
-
+-- 
+[]'s
+Herton
