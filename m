@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab2EKL5p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 07:57:45 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57198 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab2EKL5n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 07:57:43 -0400
+	id S1754996Ab2EKL73 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 07:59:29 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:4498 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752689Ab2EKL71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 07:59:27 -0400
+X-Server-Uuid: 72204117-5C29-4314-8910-60DB108979CB
+Message-ID: <4FACFF12.60504@broadcom.com>
+Date: Fri, 11 May 2012 13:59:14 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430
+ Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1205102211060.1957@localhost6.localdomain6>
-References: <1336644082-14137-1-git-send-email-mika.westerberg@linux.intel.com>
-	<CACRpkdbA58UiNLZRPWe1yGckGFrXqtJ3ddqjLLzLntC6+Cin3g@mail.gmail.com>
-	<alpine.DEB.2.02.1205102211060.1957@localhost6.localdomain6>
-Date: Fri, 11 May 2012 13:57:42 +0200
-Message-ID: <CACRpkda7=kaN53yHT0JML_QQZMYKESEPSh0D5D-3m7hHups6kw@mail.gmail.com>
-Subject: Re: [PATCH] gpio/langwell: re-read the IRQ status register after each iteration
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linus.walleij@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Randy Dunlap" <rdunlap@xenotime.net>
+cc: "Stephen Rothwell" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Luciano Coelho" <coelho@ti.com>, linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Arik Nemtsov" <arik@wizery.com>
+Subject: Re: [PATCH -next] wireless: TI wlxxx depends on MAC80211
+References: <20120416161121.261ba4e7e38989173accfb16@canb.auug.org.au>
+ <4F8C784B.2040402@xenotime.net>
+In-Reply-To: <4F8C784B.2040402@xenotime.net>
+X-Enigmail-Version: 1.5pre
+X-WSS-ID: 63B220B844G2976677-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 10:34 PM, Julia Lawall <julia.lawall@lip6.fr> wrote:
+On 04/16/2012 09:51 PM, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> wl12xx build fails with many undefined symbol errors when MAC80211
+> and CFG80211 are not enabled, so make WLCORE and WL12XX depend
+> on MAC80211 (which already depends on CFG80211).
+> 
+> ---
+>  drivers/net/wireless/ti/wl12xx/Kconfig |    1 +
+>  drivers/net/wireless/ti/wlcore/Kconfig |    2 +-
+>  2 files changed, 2 insertions(+), 1 deletion(-)
+> 
+> --- linux-next-20120416.orig/drivers/net/wireless/ti/wl12xx/Kconfig
+> +++ linux-next-20120416/drivers/net/wireless/ti/wl12xx/Kconfig
+> @@ -1,5 +1,6 @@
+>  config WL12XX
+>         tristate "TI wl12xx support"
+> +	depends on MAC80211
+>         select WLCORE
 
-> I tried the following:
->
-> @@
-> expression pending,gedr,e1;
-> statement S;
-> @@
->
-> *pending = readl(gedr);
-> ... when != pending = e1
-> while (pending) S
->
-> That is, a readl call followed by a while loop with no reassignment of
-> pending.
->
-> Perhaps the following are suspicious:
->
-> arch/arm/mach-msm/dma.c, function msm_datamover_irq_handler
-> drivers/gpio/gpio-msm-v1.c, function msm_gpio_irq_handler
->
-> But I am not completely sure to understand what is wanted (or not wanted).
+Similar patch is probably needed for new wl18xx driver.
 
-No problem, I will look at them.
-Thanks Julia!
+>         ---help---
+>  	  This module adds support for wireless adapters based on TI wl1271,
+> --- linux-next-20120416.orig/drivers/net/wireless/ti/wlcore/Kconfig
+> +++ linux-next-20120416/drivers/net/wireless/ti/wlcore/Kconfig
+> @@ -1,6 +1,6 @@
+>  config WLCORE
+>  	tristate "TI wlcore support"
+> -	depends on WL_TI && GENERIC_HARDIRQS
+> +	depends on WL_TI && GENERIC_HARDIRQS && MAC80211
+>  	depends on INET
+>  	select FW_LOADER
+>  	---help---
 
-Yours,
-Linus Walleij
+Gr. AvS
+
