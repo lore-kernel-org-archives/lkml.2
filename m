@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758716Ab2EKMZa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 08:25:30 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:27678 "EHLO relay.sw.ru"
+	id S1758955Ab2EKM0u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 08:26:50 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:23732 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758387Ab2EKMZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 08:25:23 -0400
-Message-ID: <4FAD0524.3000307@parallels.com>
-Date: Fri, 11 May 2012 16:25:08 +0400
+	id S1758632Ab2EKM0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 08:26:05 -0400
+Message-ID: <4FAD0555.4090906@parallels.com>
+Date: Fri, 11 May 2012 16:25:57 +0400
 From: Pavel Emelyanov <xemul@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
@@ -16,244 +16,116 @@ To: "Eric W. Biederman" <ebiederm@xmission.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "Serge E. Hallyn" <serge@hallyn.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/2] proc: Show ns-based inode numbers for /proc/pid/ns/*
- files
+Subject: [PATCH 2/2] ns: Add proc_ns_operations for mount namespaces
+References: <4FAD0524.3000307@parallels.com>
+In-Reply-To: <4FAD0524.3000307@parallels.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some time ago we tried to expose kernel object IDs to the user space to
-let it possible to detect shared mm, fs, etc. The namespaces' IDs were
-included in this set and Eric proposed, that we'd better expose the ID
-in the stat's st_ino field.
+Currently LXC by default creates a container in a new mount
+namespace. Thus in order to explore it we have to
 
-That's an implementation of this proposal. The proc_ns_operations is
-equipped with the get_ns_id() callback, which should return some unique
-ID of a namespace provided. This value is then mixed with the namespace's
-type number to make the IDs truly unique.
+a) find out, that a new mount namespace is in use
+b) enter this other namespace
 
-For IPC and UTS namespaces these IDs are generated with sequentially
-incremented 64-bit atomic number. For net namespace the ID is the ifindex
-of the namespace's loopback device.
+This patch solves both -- allows us to distinguish one mount
+namespace from another by comparing its inode numbers and lets
+us enter a mount namespace with the setns system call.
 
 Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
 ---
- fs/proc/namespaces.c          |   49 +++++++++++++++++++++++++++++++++++++++++
- include/linux/ipc_namespace.h |    1 +
- include/linux/proc_fs.h       |    1 +
- include/linux/utsname.h       |    1 +
- ipc/namespace.c               |   10 ++++++++
- kernel/utsname.c              |   11 +++++++++
- net/core/net_namespace.c      |    7 ++++++
- 7 files changed, 80 insertions(+), 0 deletions(-)
+ fs/namespace.c          |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ fs/proc/namespaces.c    |    1 +
+ include/linux/proc_fs.h |    2 ++
+ 3 files changed, 48 insertions(+), 0 deletions(-)
 
+diff --git a/fs/namespace.c b/fs/namespace.c
+index e608199..9467904 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -20,6 +20,7 @@
+ #include <linux/fs_struct.h>	/* get_fs_root et.al. */
+ #include <linux/fsnotify.h>	/* fsnotify_vfsmount_delete */
+ #include <linux/uaccess.h>
++#include <linux/proc_fs.h>
+ #include "pnode.h"
+ #include "internal.h"
+ 
+@@ -2633,3 +2634,47 @@ bool our_mnt(struct vfsmount *mnt)
+ {
+ 	return check_mnt(real_mount(mnt));
+ }
++
++static void *mntns_get(struct task_struct *task)
++{
++	struct mnt_namespace *mn = NULL;
++	struct nsproxy *nsproxy;
++
++	rcu_read_lock();
++	nsproxy = task_nsproxy(task);
++	if (nsproxy) {
++		mn = nsproxy->mnt_ns;
++		get_mnt_ns(mn);
++	}
++	rcu_read_unlock();
++
++	return mn;
++}
++
++static void mntns_put(void *ns)
++{
++	put_mnt_ns(ns);
++}
++
++static int mntns_install(struct nsproxy *nsproxy, void *ns)
++{
++	put_mnt_ns(nsproxy->mnt_ns);
++	get_mnt_ns(ns);
++	nsproxy->mnt_ns = ns;
++	return 0;
++}
++
++static u64 mntns_get_id(void *_ns)
++{
++	struct mnt_namespace *ns = _ns;
++	return ns->root->mnt_id;
++}
++
++const struct proc_ns_operations mntns_operations = {
++	.name		= "mnt",
++	.type		= CLONE_NEWNS,
++	.get		= mntns_get,
++	.put		= mntns_put,
++	.install	= mntns_install,
++	.get_id		= mntns_get_id,
++};
 diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
-index 0d9e23a..b6c7560 100644
+index b6c7560..e0399dd 100644
 --- a/fs/proc/namespaces.c
 +++ b/fs/proc/namespaces.c
-@@ -30,6 +30,54 @@ static const struct file_operations ns_file_operations = {
- 	.llseek		= no_llseek,
+@@ -24,6 +24,7 @@ static const struct proc_ns_operations *ns_entries[] = {
+ #ifdef CONFIG_IPC_NS
+ 	&ipcns_operations,
+ #endif
++	&mntns_operations,
  };
  
-+/*
-+ * Namespaces IDs are generated by sequential increment of a
-+ * static variable. Then the type value is mixed with it to make
-+ * them unique. Thus, this salt value should never be overwritten
-+ * by the ID. The 60 bits for constantly incrementing ID will
-+ * overflow in 4k years, so it's big enough.
-+ */
-+
-+#define NS_ID_SHIFT	(4)
-+#define NS_BIT_MIN	(16)	/* to fit CLONE_NEWNS */
-+
-+static inline u64 ns_id_gen(u64 id, unsigned type)
-+{
-+	type = fls(type) - NS_BIT_MIN;
-+	BUG_ON(type == 0 || (type >= (1 << NS_ID_SHIFT)));
-+	return (id << NS_ID_SHIFT) | type;
-+}
-+
-+static int proc_ns_getattr(struct vfsmount *mnt, struct dentry *dentry,
-+		struct kstat *stat)
-+{
-+	int ret;
-+
-+	ret = pid_getattr(mnt, dentry, stat);
-+	if (!ret) {
-+		u64 ns_id = 0;
-+		struct proc_inode *ei;
-+		const struct proc_ns_operations *ops;
-+
-+		ei = PROC_I(dentry->d_inode);
-+		ops = ei->ns_ops;
-+		if (!ops || !ops->get_id)
-+			printk("No OPS/ID for %p, %x, %s\n", ops, ops ? ops->type : -1,
-+					dentry->d_name.name);
-+		else {
-+			ns_id = ops->get_id(ei->ns);
-+			stat->ino = ns_id_gen(ns_id, ops->type);
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static const struct inode_operations ns_inode_operations = {
-+	.getattr	= proc_ns_getattr,
-+	.setattr	= proc_setattr,
-+};
-+
- static struct dentry *proc_ns_instantiate(struct inode *dir,
- 	struct dentry *dentry, struct task_struct *task, const void *ptr)
- {
-@@ -49,6 +97,7 @@ static struct dentry *proc_ns_instantiate(struct inode *dir,
- 
- 	ei = PROC_I(inode);
- 	inode->i_mode = S_IFREG|S_IRUSR;
-+	inode->i_op = &ns_inode_operations;
- 	inode->i_fop  = &ns_file_operations;
- 	ei->ns_ops    = ns_ops;
- 	ei->ns	      = ns;
-diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-index 8a297a5..e8c2dab 100644
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -65,6 +65,7 @@ struct ipc_namespace {
- 
- 	/* user_ns which owns the ipc ns */
- 	struct user_namespace *user_ns;
-+	u64		id;
- };
- 
- extern struct ipc_namespace init_ipc_ns;
+ static const struct file_operations ns_file_operations = {
 diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-index 85c5073..e5ee83a 100644
+index e5ee83a..f6311b4 100644
 --- a/include/linux/proc_fs.h
 +++ b/include/linux/proc_fs.h
-@@ -247,6 +247,7 @@ struct proc_ns_operations {
- 	void *(*get)(struct task_struct *task);
- 	void (*put)(void *ns);
- 	int (*install)(struct nsproxy *nsproxy, void *ns);
-+	u64 (*get_id)(void *ns);
- };
+@@ -252,6 +252,8 @@ struct proc_ns_operations {
  extern const struct proc_ns_operations netns_operations;
  extern const struct proc_ns_operations utsns_operations;
-diff --git a/include/linux/utsname.h b/include/linux/utsname.h
-index c714ed7..5f7cdbb 100644
---- a/include/linux/utsname.h
-+++ b/include/linux/utsname.h
-@@ -52,6 +52,7 @@ struct uts_namespace {
- 	struct kref kref;
- 	struct new_utsname name;
- 	struct user_namespace *user_ns;
-+	u64 id;
- };
- extern struct uts_namespace init_uts_ns;
- 
-diff --git a/ipc/namespace.c b/ipc/namespace.c
-index ce0a647..e837bd0 100644
---- a/ipc/namespace.c
-+++ b/ipc/namespace.c
-@@ -16,6 +16,8 @@
- 
- #include "util.h"
- 
-+static atomic_long_t ipcns_id = ATOMIC_LONG_INIT(0);
+ extern const struct proc_ns_operations ipcns_operations;
++extern const struct proc_ns_operations mntns_operations;
 +
- static struct ipc_namespace *create_ipc_ns(struct task_struct *tsk,
- 					   struct ipc_namespace *old_ns)
- {
-@@ -47,6 +49,7 @@ static struct ipc_namespace *create_ipc_ns(struct task_struct *tsk,
- 	register_ipcns_notifier(ns);
  
- 	ns->user_ns = get_user_ns(task_cred_xxx(tsk, user)->user_ns);
-+	ns->id = atomic_long_inc_return(&ipcns_id);
- 
- 	return ns;
- }
-@@ -170,10 +173,17 @@ static int ipcns_install(struct nsproxy *nsproxy, void *ns)
- 	return 0;
- }
- 
-+static u64 ipcns_get_id(void *_ns)
-+{
-+	struct ipc_namespace *ns = _ns;
-+	return ns->id;
-+}
-+
- const struct proc_ns_operations ipcns_operations = {
- 	.name		= "ipc",
- 	.type		= CLONE_NEWIPC,
- 	.get		= ipcns_get,
- 	.put		= ipcns_put,
- 	.install	= ipcns_install,
-+	.get_id		= ipcns_get_id,
- };
-diff --git a/kernel/utsname.c b/kernel/utsname.c
-index 405caf9..cba6ad3 100644
---- a/kernel/utsname.c
-+++ b/kernel/utsname.c
-@@ -17,6 +17,8 @@
- #include <linux/user_namespace.h>
- #include <linux/proc_fs.h>
- 
-+static atomic_long_t utsns_id = ATOMIC_LONG_INIT(0);
-+
- static struct uts_namespace *create_uts_ns(void)
- {
- 	struct uts_namespace *uts_ns;
-@@ -45,6 +47,8 @@ static struct uts_namespace *clone_uts_ns(struct task_struct *tsk,
- 	memcpy(&ns->name, &old_ns->name, sizeof(ns->name));
- 	ns->user_ns = get_user_ns(task_cred_xxx(tsk, user)->user_ns);
- 	up_read(&uts_sem);
-+	ns->id = atomic_long_inc_return(&utsns_id);
-+
- 	return ns;
- }
- 
-@@ -110,11 +114,18 @@ static int utsns_install(struct nsproxy *nsproxy, void *ns)
- 	return 0;
- }
- 
-+static u64 utsns_get_id(void *_ns)
-+{
-+	struct uts_namespace *ns = _ns;
-+	return ns->id;
-+}
-+
- const struct proc_ns_operations utsns_operations = {
- 	.name		= "uts",
- 	.type		= CLONE_NEWUTS,
- 	.get		= utsns_get,
- 	.put		= utsns_put,
- 	.install	= utsns_install,
-+	.get_id		= utsns_get_id,
- };
- 
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index 0e950fd..6611433 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -627,11 +627,18 @@ static int netns_install(struct nsproxy *nsproxy, void *ns)
- 	return 0;
- }
- 
-+static u64 netns_get_id(void *_ns)
-+{
-+	struct net *ns = _ns;
-+	return ns->loopback_dev->ifindex;
-+}
-+
- const struct proc_ns_operations netns_operations = {
- 	.name		= "net",
- 	.type		= CLONE_NEWNET,
- 	.get		= netns_get,
- 	.put		= netns_put,
- 	.install	= netns_install,
-+	.get_id		= netns_get_id,
- };
- #endif
+ union proc_op {
+ 	int (*proc_get_link)(struct dentry *, struct path *);
 -- 
 1.7.6.5
