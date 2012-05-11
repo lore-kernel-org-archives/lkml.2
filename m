@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759473Ab2EKLDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 07:03:51 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59843 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274Ab2EKLDt (ORCPT
+	id S1759489Ab2EKLET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 07:04:19 -0400
+Received: from exprod5og108.obsmtp.com ([64.18.0.186]:38853 "EHLO
+	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759401Ab2EKLER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 07:03:49 -0400
+	Fri, 11 May 2012 07:04:17 -0400
+Message-ID: <4FACF22C.1050304@ge.com>
+Date: Fri, 11 May 2012 12:04:12 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FACF02B.7070006@broadcom.com>
-References: <4FACF02B.7070006@broadcom.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Fri, 11 May 2012 13:03:28 +0200
-Message-ID: <CAPXgP12qaNm1Vh=8isf2gq=sUW8hOgi_STNfTuOqg5XT4KgwZA@mail.gmail.com>
-Subject: Re: in-kernel drivers and firmware loader
-To: Arend van Spriel <arend@broadcom.com>
-Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] Staging: ipack: move the devices source line in Kconfig
+ file
+References: <1336724236-21665-1-git-send-email-siglesias@igalia.com> <1336724236-21665-2-git-send-email-siglesias@igalia.com>
+In-Reply-To: <1336724236-21665-2-git-send-email-siglesias@igalia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 12:55 PM, Arend van Spriel <arend@broadcom.com> wrote:
-> To my memory (which fails from time to time) you posted a message on
-> using the asynchronous API for firmware loading as some drivers were
-> blocking on it in the module initialization. So for our driver we
-> decoupled the initialization from probe and subsequently the firmware
-> request. Assuming this solves the udev issue, but I am currently looking
-> into a somewhat related issue with our driver built-in.
->
-> I am testing on a PandaBoard which boots a linux kernel without a initrd
-> and our device is detected before the root filesystem is mounted. I was
-> expecting the async firmware request to get called back immediatly with
-> firmware pointer being NULL. The behaviour is slightly different as this
-> callback is coming after 60 seconds, which is the timeout. I guess the
-> uevent just gets lost without the kernel knowing it. Is that correct?
+On 11/05/12 09:17, Samuel Iglesias Gonsalvez wrote:
+> Maintain the proper order of definitions in Kconfig following the time order of
+> the commits.
+> 
 
-It's probably sent, but nothing see it because there is no userspace
-that would have subscribed.
+This could probably be rolled up into patch 1.
 
-If udev is started later during bootup, and the coldplug triggers all
-events again, the firmware request should be found and be fulfilled by
-userspace -- at least that's the theory.
+Martyn
 
-Can you reach the box with a login before the 60 seconds are reached?
+> Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+> ---
+>  drivers/staging/ipack/Kconfig |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/ipack/Kconfig b/drivers/staging/ipack/Kconfig
+> index 619c149..4f4b9d6 100644
+> --- a/drivers/staging/ipack/Kconfig
+> +++ b/drivers/staging/ipack/Kconfig
+> @@ -9,8 +9,8 @@ menuconfig IPACK_BUS
+>  
+>  if IPACK_BUS
+>  
+> -source "drivers/staging/ipack/devices/Kconfig"
+> -
+>  source "drivers/staging/ipack/bridges/Kconfig"
+>  
+> +source "drivers/staging/ipack/devices/Kconfig"
+> +
+>  endif # IPACK
 
-Do you see a firmware request (directory) still hanging around in
-/sys/class/firmware/ ?
 
-Kay
+-- 
+Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
+GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
+T +44(0)1327322748                     | Manchester, M2 3AB
+E martyn.welch@ge.com                  | VAT:GB 927559189
