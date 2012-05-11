@@ -1,76 +1,497 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946037Ab2EKTlD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 15:41:03 -0400
+	id S1946121Ab2EKTlL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 15:41:11 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:38427 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933201Ab2EKTk6 (ORCPT
+	with ESMTP id S1946048Ab2EKTlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 15:40:58 -0400
+	Fri, 11 May 2012 15:41:07 -0400
 From: Magnus Damm <magnus.damm@gmail.com>
 To: linux-arm-kernel@lists.infradead.org
-Cc: horms@verge.net.au, linux@arm.linux.org.uk, arnd@arndb.de,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        lethal@linux-sh.org, olof@lixom.net,
+Cc: linux@arm.linux.org.uk, arnd@arndb.de, linux-sh@vger.kernel.org,
+        lethal@linux-sh.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        horms@verge.net.au, olof@lixom.net,
         Magnus Damm <magnus.damm@gmail.com>
-Date: Sat, 12 May 2012 04:41:51 +0900
-Message-Id: <20120511194151.6567.53888.sendpatchset@w520>
-Subject: [PATCH 00/06] mach-shmobile: Emma Mobile EV2 support V2
+Date: Sat, 12 May 2012 04:42:03 +0900
+Message-Id: <20120511194203.6567.29067.sendpatchset@w520>
+In-Reply-To: <20120511194151.6567.53888.sendpatchset@w520>
+References: <20120511194151.6567.53888.sendpatchset@w520>
+Subject: [PATCH 01/06] mach-shmobile: Emma Mobile EV2 SoC base support V2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mach-shmobile: Emma Mobile EV2 support V2
+From: Magnus Damm <damm@opensource.se>
 
-[PATCH 01/06] mach-shmobile: Emma Mobile EV2 SoC base support V2
-[PATCH 02/06] mach-shmobile: KZM9D board support V2
-[PATCH 03/06] mach-shmobile: Emma Mobile EV2 SMP support V2
-[PATCH 04/06] mach-shmobile: Emma Mobile EV2 GPIO support V2
-[PATCH 05/06] mach-shmobile: KZM9D board Ethernet support V2
-[PATCH 06/06] mach-shmobile: Emma Mobile EV2 DT support V2
-
-This series are the second iteration of Emma Mobile EV2 support
-for mach-shmobile. Yet another dual core Cortex-A9 SoC.
-
-At this point serial, timer and gpio are supported as platform
-devices. Serial and timer also come with DT bindings.
-
-Basic SMP support is in place, but CPU hotplug and TWD needs
-more work.
-
-Clocks are enabled in the case of the KZM9D board support
-via platform devices. In the DT case there are no clocks
-enabled. SMP is also missing from DT. So anyone playing
-around with DT will have to accept the fact that it is very
-limited at tis point. All features with upstream support
-can however be enabled via regular platform devices.
-
-Many thanks to Arnd for his endless reviews and helpful
-suggestions and a lot of patience!
-
-To build this you also need whatever included in linux-next
-as of 20120511 plus the following patches:
-
-[PATCH 01/03] clockevents: Make clockevents_config() a global symbol
-[PATCH 02/03] clocksource: em_sti: Emma Mobile STI driver V2
-[PATCH 03/03] clocksource: em_sti: Add DT support
-[PATCH] gpio: Emma Mobile GPIO driver
-
-Also, the KZM9D mach-type entry seems gone in linux-next,
-so I suppose we need to deal with that as well somehow.
+This is V2 of the Emma Mobile EV2 SoC support.
+Included here is support for serial and timer
+devices which is just about enough to boot a kernel.
 
 Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
 
- Applies to linux-next 20120511
+ Changes since V1:
+ - use IOMEM(), ioremap() and iowrite32() for clock code
+ - use built-in ioremap in shared sh clock code
+ - break out function prototypes to a separate header
+ - move gic code into setup-emev2.c
+ - get rid of static io table
 
- arch/arm/boot/dts/emev2-kzm9d.dts           |   66 +++
- arch/arm/mach-shmobile/Kconfig              |   10 
- arch/arm/mach-shmobile/Makefile             |    3 
- arch/arm/mach-shmobile/board-kzm9d.c        |   81 ++++
- arch/arm/mach-shmobile/clock-emev2.c        |  249 ++++++++++++++
- arch/arm/mach-shmobile/include/mach/emev2.h |   19 +
- arch/arm/mach-shmobile/platsmp.c            |   17 +
- arch/arm/mach-shmobile/setup-emev2.c        |  454 ++++++++++++++++++++++++++-
- arch/arm/mach-shmobile/smp-emev2.c          |   97 +++++
- 9 files changed, 994 insertions(+), 2 deletions(-)
+ Thanks to Arnd for his kind help!
+
+ arch/arm/mach-shmobile/Kconfig              |    5 
+ arch/arm/mach-shmobile/Makefile             |    1 
+ arch/arm/mach-shmobile/clock-emev2.c        |  226 +++++++++++++++++++++++++++
+ arch/arm/mach-shmobile/include/mach/emev2.h |    9 +
+ arch/arm/mach-shmobile/setup-emev2.c        |  180 +++++++++++++++++++++
+ 5 files changed, 421 insertions(+)
+
+--- 0003/arch/arm/mach-shmobile/Kconfig
++++ work/arch/arm/mach-shmobile/Kconfig	2012-05-12 02:45:10.000000000 +0900
+@@ -41,6 +41,11 @@ config ARCH_R8A7779
+ 	select ARM_GIC
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 
++config ARCH_EMEV2
++	bool "Emma Mobile EV2"
++	select CPU_V7
++	select ARM_GIC
++
+ comment "SH-Mobile Board Type"
+ 
+ config MACH_G3EVM
+--- 0001/arch/arm/mach-shmobile/Makefile
++++ work/arch/arm/mach-shmobile/Makefile	2012-05-12 02:45:20.000000000 +0900
+@@ -12,6 +12,7 @@ obj-$(CONFIG_ARCH_SH7372)	+= setup-sh737
+ obj-$(CONFIG_ARCH_SH73A0)	+= setup-sh73a0.o clock-sh73a0.o intc-sh73a0.o
+ obj-$(CONFIG_ARCH_R8A7740)	+= setup-r8a7740.o clock-r8a7740.o intc-r8a7740.o
+ obj-$(CONFIG_ARCH_R8A7779)	+= setup-r8a7779.o clock-r8a7779.o intc-r8a7779.o
++obj-$(CONFIG_ARCH_EMEV2)	+= setup-emev2.o clock-emev2.o
+ 
+ # SMP objects
+ smp-y				:= platsmp.o headsmp.o
+--- /dev/null
++++ work/arch/arm/mach-shmobile/clock-emev2.c	2012-05-12 02:44:44.000000000 +0900
+@@ -0,0 +1,226 @@
++/*
++ * Emma Mobile EV2 clock framework support
++ *
++ * Copyright (C) 2012  Magnus Damm
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ */
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/io.h>
++#include <linux/sh_clk.h>
++#include <linux/clkdev.h>
++#include <mach/common.h>
++
++#define EMEV2_SMU_BASE 0xe0110000
++
++/* EMEV2 SMU registers */
++#define USIAU0_RSTCTRL 0x094
++#define USIBU1_RSTCTRL 0x0ac
++#define USIBU2_RSTCTRL 0x0b0
++#define USIBU3_RSTCTRL 0x0b4
++#define STI_RSTCTRL 0x124
++#define USIAU0GCLKCTRL 0x4a0
++#define USIBU1GCLKCTRL 0x4b8
++#define USIBU2GCLKCTRL 0x4bc
++#define USIBU3GCLKCTRL 0x04c0
++#define STIGCLKCTRL 0x528
++#define USIAU0SCLKDIV 0x61c
++#define USIB2SCLKDIV 0x65c
++#define USIB3SCLKDIV 0x660
++#define STI_CLKSEL 0x688
++
++/* not pretty, but hey */
++static void __iomem *smu_base;
++
++static void emev2_smu_write(unsigned long value, int offs)
++{
++	BUG_ON(!smu_base || (offs >= PAGE_SIZE));
++	iowrite32(value, smu_base + offs);
++}
++
++static struct clk_mapping smu_mapping = {
++	.phys	= EMEV2_SMU_BASE,
++	.len	= PAGE_SIZE,
++};
++
++/* Fixed 32 KHz root clock from C32K pin */
++static struct clk c32k_clk = {
++	.rate           = 32768,
++	.mapping	= &smu_mapping,
++};
++
++/* PLL3 multiplies C32K with 7000 */
++static unsigned long pll3_recalc(struct clk *clk)
++{
++	return clk->parent->rate * 7000;
++}
++
++static struct sh_clk_ops pll3_clk_ops = {
++	.recalc		= pll3_recalc,
++};
++
++static struct clk pll3_clk = {
++	.ops		= &pll3_clk_ops,
++	.parent		= &c32k_clk,
++};
++
++static struct clk *main_clks[] = {
++	&c32k_clk,
++	&pll3_clk,
++};
++
++enum { SCLKDIV_USIAU0, SCLKDIV_USIBU2, SCLKDIV_USIBU1, SCLKDIV_USIBU3,
++	SCLKDIV_NR };
++
++#define SCLKDIV(_reg, _shift)			\
++{								\
++	.parent		= &pll3_clk,				\
++	.enable_reg	= IOMEM(EMEV2_SMU_BASE + (_reg)),	\
++	.enable_bit	= _shift,				\
++}
++
++static struct clk sclkdiv_clks[SCLKDIV_NR] = {
++	[SCLKDIV_USIAU0] = SCLKDIV(USIAU0SCLKDIV, 0),
++	[SCLKDIV_USIBU2] = SCLKDIV(USIB2SCLKDIV, 16),
++	[SCLKDIV_USIBU1] = SCLKDIV(USIB2SCLKDIV, 0),
++	[SCLKDIV_USIBU3] = SCLKDIV(USIB3SCLKDIV, 0),
++};
++
++enum { GCLK_USIAU0_SCLK, GCLK_USIBU1_SCLK, GCLK_USIBU2_SCLK, GCLK_USIBU3_SCLK,
++	GCLK_STI_SCLK,
++	GCLK_NR };
++
++#define GCLK_SCLK(_parent, _reg) \
++{								\
++	.parent		= _parent,				\
++	.enable_reg	= IOMEM(EMEV2_SMU_BASE + (_reg)),	\
++	.enable_bit	= 1, /* SCLK_GCC */			\
++}
++
++static struct clk gclk_clks[GCLK_NR] = {
++	[GCLK_USIAU0_SCLK] = GCLK_SCLK(&sclkdiv_clks[SCLKDIV_USIAU0],
++				       USIAU0GCLKCTRL),
++	[GCLK_USIBU1_SCLK] = GCLK_SCLK(&sclkdiv_clks[SCLKDIV_USIBU1],
++				       USIBU1GCLKCTRL),
++	[GCLK_USIBU2_SCLK] = GCLK_SCLK(&sclkdiv_clks[SCLKDIV_USIBU2],
++				       USIBU2GCLKCTRL),
++	[GCLK_USIBU3_SCLK] = GCLK_SCLK(&sclkdiv_clks[SCLKDIV_USIBU3],
++				       USIBU3GCLKCTRL),
++	[GCLK_STI_SCLK] = GCLK_SCLK(&c32k_clk, STIGCLKCTRL),
++};
++
++static int emev2_gclk_enable(struct clk *clk)
++{
++	iowrite32(ioread32(clk->mapped_reg) | (1 << clk->enable_bit),
++		  clk->mapped_reg);
++	return 0;
++}
++
++static void emev2_gclk_disable(struct clk *clk)
++{
++	iowrite32(ioread32(clk->mapped_reg) & ~(1 << clk->enable_bit),
++		  clk->mapped_reg);
++}
++
++static struct sh_clk_ops emev2_gclk_clk_ops = {
++	.enable		= emev2_gclk_enable,
++	.disable	= emev2_gclk_disable,
++	.recalc		= followparent_recalc,
++};
++
++static int __init emev2_gclk_register(struct clk *clks, int nr)
++{
++	struct clk *clkp;
++	int ret = 0;
++	int k;
++
++	for (k = 0; !ret && (k < nr); k++) {
++		clkp = clks + k;
++		clkp->ops = &emev2_gclk_clk_ops;
++		ret |= clk_register(clkp);
++	}
++
++	return ret;
++}
++
++static unsigned long emev2_sclkdiv_recalc(struct clk *clk)
++{
++	unsigned int sclk_div;
++
++	sclk_div = (ioread32(clk->mapped_reg) >> clk->enable_bit) & 0xff;
++
++	return clk->parent->rate / (sclk_div + 1);
++}
++
++static struct sh_clk_ops emev2_sclkdiv_clk_ops = {
++	.recalc		= emev2_sclkdiv_recalc,
++};
++
++static int __init emev2_sclkdiv_register(struct clk *clks, int nr)
++{
++	struct clk *clkp;
++	int ret = 0;
++	int k;
++
++	for (k = 0; !ret && (k < nr); k++) {
++		clkp = clks + k;
++		clkp->ops = &emev2_sclkdiv_clk_ops;
++		ret |= clk_register(clkp);
++	}
++
++	return ret;
++}
++
++static struct clk_lookup lookups[] = {
++	CLKDEV_DEV_ID("serial8250-em.0", &gclk_clks[GCLK_USIAU0_SCLK]),
++	CLKDEV_DEV_ID("serial8250-em.1", &gclk_clks[GCLK_USIBU1_SCLK]),
++	CLKDEV_DEV_ID("serial8250-em.2", &gclk_clks[GCLK_USIBU2_SCLK]),
++	CLKDEV_DEV_ID("serial8250-em.3", &gclk_clks[GCLK_USIBU3_SCLK]),
++	CLKDEV_DEV_ID("em_sti.0", &gclk_clks[GCLK_STI_SCLK]),
++};
++
++void __init emev2_clock_init(void)
++{
++	int k, ret = 0;
++
++	smu_base = ioremap(EMEV2_SMU_BASE, PAGE_SIZE);
++	BUG_ON(!smu_base);
++
++	/* setup STI timer to run on 37.768 kHz and deassert reset */
++	emev2_smu_write(0, STI_CLKSEL);
++	emev2_smu_write(1, STI_RSTCTRL);
++
++	/* deassert reset for UART0->UART3 */
++	emev2_smu_write(2, USIAU0_RSTCTRL);
++	emev2_smu_write(2, USIBU1_RSTCTRL);
++	emev2_smu_write(2, USIBU2_RSTCTRL);
++	emev2_smu_write(2, USIBU3_RSTCTRL);
++
++	for (k = 0; !ret && (k < ARRAY_SIZE(main_clks)); k++)
++		ret = clk_register(main_clks[k]);
++
++	if (!ret)
++		ret = emev2_sclkdiv_register(sclkdiv_clks, SCLKDIV_NR);
++
++	if (!ret)
++		ret = emev2_gclk_register(gclk_clks, GCLK_NR);
++
++	clkdev_add_table(lookups, ARRAY_SIZE(lookups));
++
++	if (!ret)
++		shmobile_clk_init();
++	else
++		panic("failed to setup emev2 clocks\n");
++}
+--- /dev/null
++++ work/arch/arm/mach-shmobile/include/mach/emev2.h	2012-05-12 02:44:44.000000000 +0900
+@@ -0,0 +1,9 @@
++#ifndef __ASM_EMEV2_H__
++#define __ASM_EMEV2_H__
++
++extern void emev2_init_irq(void);
++extern void emev2_add_early_devices(void);
++extern void emev2_add_standard_devices(void);
++extern void emev2_clock_init(void);
++
++#endif /* __ASM_EMEV2_H__ */
+--- /dev/null
++++ work/arch/arm/mach-shmobile/setup-emev2.c	2012-05-12 02:44:44.000000000 +0900
+@@ -0,0 +1,180 @@
++/*
++ * Emma Mobile EV2 processor support
++ *
++ * Copyright (C) 2012  Magnus Damm
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ */
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/platform_device.h>
++#include <linux/delay.h>
++#include <linux/input.h>
++#include <linux/io.h>
++#include <mach/hardware.h>
++#include <mach/common.h>
++#include <mach/emev2.h>
++#include <mach/irqs.h>
++#include <asm/mach-types.h>
++#include <asm/mach/arch.h>
++#include <asm/mach/map.h>
++#include <asm/mach/time.h>
++#include <asm/hardware/gic.h>
++
++/* UART */
++static struct resource uart0_resources[] = {
++	[0]	= {
++		.start	= 0xe1020000,
++		.end	= 0xe1020037,
++		.flags	= IORESOURCE_MEM,
++	},
++	[1]	= {
++		.start	= 40,
++		.flags	= IORESOURCE_IRQ,
++	}
++};
++
++static struct platform_device uart0_device = {
++	.name		= "serial8250-em",
++	.id		= 0,
++	.num_resources	= ARRAY_SIZE(uart0_resources),
++	.resource	= uart0_resources,
++};
++
++static struct resource uart1_resources[] = {
++	[0]	= {
++		.start	= 0xe1030000,
++		.end	= 0xe1030037,
++		.flags	= IORESOURCE_MEM,
++	},
++	[1]	= {
++		.start	= 41,
++		.flags	= IORESOURCE_IRQ,
++	}
++};
++
++static struct platform_device uart1_device = {
++	.name		= "serial8250-em",
++	.id		= 1,
++	.num_resources	= ARRAY_SIZE(uart1_resources),
++	.resource	= uart1_resources,
++};
++
++static struct resource uart2_resources[] = {
++	[0]	= {
++		.start	= 0xe1040000,
++		.end	= 0xe1040037,
++		.flags	= IORESOURCE_MEM,
++	},
++	[1]	= {
++		.start	= 42,
++		.flags	= IORESOURCE_IRQ,
++	}
++};
++
++static struct platform_device uart2_device = {
++	.name		= "serial8250-em",
++	.id		= 2,
++	.num_resources	= ARRAY_SIZE(uart2_resources),
++	.resource	= uart2_resources,
++};
++
++static struct resource uart3_resources[] = {
++	[0]	= {
++		.start	= 0xe1050000,
++		.end	= 0xe1050037,
++		.flags	= IORESOURCE_MEM,
++	},
++	[1]	= {
++		.start	= 43,
++		.flags	= IORESOURCE_IRQ,
++	}
++};
++
++static struct platform_device uart3_device = {
++	.name		= "serial8250-em",
++	.id		= 3,
++	.num_resources	= ARRAY_SIZE(uart3_resources),
++	.resource	= uart3_resources,
++};
++
++/* STI */
++static struct resource sti_resources[] = {
++	[0] = {
++		.name	= "STI",
++		.start	= 0xe0180000,
++		.end	= 0xe0180053,
++		.flags	= IORESOURCE_MEM,
++	},
++	[1] = {
++		.start	= 157,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++static struct platform_device sti_device = {
++	.name		= "em_sti",
++	.id		= 0,
++	.resource	= sti_resources,
++	.num_resources	= ARRAY_SIZE(sti_resources),
++};
++
++static struct platform_device *emev2_early_devices[] __initdata = {
++	&uart0_device,
++	&uart1_device,
++	&uart2_device,
++	&uart3_device,
++};
++
++static struct platform_device *emev2_late_devices[] __initdata = {
++	&sti_device,
++};
++
++void __init emev2_add_standard_devices(void)
++{
++	emev2_clock_init();
++
++	platform_add_devices(emev2_early_devices,
++			     ARRAY_SIZE(emev2_early_devices));
++
++	platform_add_devices(emev2_late_devices,
++			     ARRAY_SIZE(emev2_late_devices));
++}
++
++void __init emev2_add_early_devices(void)
++{
++	shmobile_setup_delay(533, 1, 3); /* Cortex-A9 @ 533MHz */
++
++	early_platform_add_devices(emev2_early_devices,
++				   ARRAY_SIZE(emev2_early_devices));
++
++	/* setup early console here as well */
++	shmobile_setup_console();
++}
++
++void __init emev2_init_irq(void)
++{
++	void __iomem *gic_dist_base;
++	void __iomem *gic_cpu_base;
++
++	/* Static mappings, never released */
++	gic_dist_base = ioremap(0xe0028000, PAGE_SIZE);
++	gic_cpu_base = ioremap(0xe0020000, PAGE_SIZE);
++	BUG_ON(!gic_dist_base || !gic_cpu_base);
++
++	/* Use GIC to handle interrupts */
++	gic_init(0, 29, gic_dist_base, gic_cpu_base);
++}
