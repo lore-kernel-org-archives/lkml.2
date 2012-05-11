@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945920Ab2EKRtg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 13:49:36 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:42010 "EHLO relay.sw.ru"
+	id S1945943Ab2EKRuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 13:50:09 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:28608 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1945906Ab2EKRt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 13:49:29 -0400
+	id S1161018Ab2EKRuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 13:50:02 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
@@ -13,12 +13,14 @@ Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
         Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
         Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
         Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v2 04/29] slub: always get the cache from its page in kfree
-Date: Fri, 11 May 2012 14:44:06 -0300
-Message-Id: <1336758272-24284-5-git-send-email-glommer@parallels.com>
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Aditya Kali <adityakali@google.com>,
+        Oleg Nesterov <oleg@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Tim Hockin <thockin@hockin.org>, Tejun Heo <htejun@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v2 11/29] cgroups: ability to stop res charge propagation on bounded ancestor
+Date: Fri, 11 May 2012 14:44:13 -0300
+Message-Id: <1336758272-24284-12-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1336758272-24284-1-git-send-email-glommer@parallels.com>
 References: <1336758272-24284-1-git-send-email-glommer@parallels.com>
@@ -26,30 +28,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct page already have this information. If we start chaining
-caches, this information will always be more trustworthy than
-whatever is passed into the function
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
+Moving a task from a cgroup to another may require to substract its
+resource charge from the old cgroup and add it to the new one.
+
+For this to happen, the uncharge/charge propagation can just stop when we
+reach the common ancestor for the two cgroups.  Further the performance
+reasons, we also want to avoid to temporarily overload the common
+ancestors with a non-accurate resource counter usage if we charge first
+the new cgroup and uncharge the old one thereafter.  This is going to be a
+requirement for the coming max number of task subsystem.
+
+To solve this, provide a pair of new API that can charge/uncharge a
+resource counter until we reach a given ancestor.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Paul Menage <paul@paulmenage.org>
+Acked-by: Glauber Costa <glommer@parallels.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Aditya Kali <adityakali@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Tim Hockin <thockin@hockin.org>
+Cc: Tejun Heo <htejun@gmail.com>
+Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- mm/slub.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ Documentation/cgroups/resource_counter.txt |   18 +++++++++++++++++-
+ include/linux/res_counter.h                |   21 ++++++++++++++++++---
+ kernel/res_counter.c                       |   13 ++++++++-----
+ 3 files changed, 43 insertions(+), 9 deletions(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 226e053..e606f1b 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2600,7 +2600,7 @@ void kmem_cache_free(struct kmem_cache *s, void *x)
+diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
+index 95b24d7..a2cd05b 100644
+--- a/Documentation/cgroups/resource_counter.txt
++++ b/Documentation/cgroups/resource_counter.txt
+@@ -83,7 +83,15 @@ to work with it.
+ 	res_counter->lock internally (it must be called with res_counter->lock
+ 	held).
  
- 	page = virt_to_head_page(x);
+- e. void res_counter_uncharge[_locked]
++ e. int res_counter_charge_until(struct res_counter *counter,
++			     struct res_counter *limit, unsigned long val,
++			     struct res_counter **limit_fail_at)
++
++	The same as res_counter_charge(), but the charge propagation to
++	the hierarchy stops at the limit given in the "limit" parameter.
++
++
++ f. void res_counter_uncharge[_locked]
+ 			(struct res_counter *rc, unsigned long val)
  
--	slab_free(s, page, x, _RET_IP_);
-+	slab_free(page->slab, page, x, _RET_IP_);
+ 	When a resource is released (freed) it should be de-accounted
+@@ -92,6 +100,14 @@ to work with it.
  
- 	trace_kmem_cache_free(_RET_IP_, x);
+ 	The _locked routines imply that the res_counter->lock is taken.
+ 
++
++ g. void res_counter_uncharge_until(struct res_counter *counter,
++				struct res_counter *limit,
++				unsigned long val)
++
++	The same as res_counter_charge, but the uncharge propagation to
++	the hierarchy stops at the limit given in the "limit" parameter.
++
+  2.1 Other accounting routines
+ 
+     There are more routines that may help you with common needs, like
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+index f7621cf..c12143e 100644
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -117,11 +117,20 @@ void res_counter_init(struct res_counter *counter, struct res_counter *parent);
+ 
+ int __must_check res_counter_charge_locked(struct res_counter *counter,
+ 		unsigned long val);
+-int __must_check res_counter_charge(struct res_counter *counter,
+-		unsigned long val, struct res_counter **limit_fail_at);
++int __must_check res_counter_charge_until(struct res_counter *counter,
++					  struct res_counter *limit,
++					  unsigned long val,
++					  struct res_counter **limit_fail_at);
+ int res_counter_charge_nofail(struct res_counter *counter,
+ 		unsigned long val, struct res_counter **limit_fail_at);
+ 
++static inline int __must_check
++res_counter_charge(struct res_counter *counter, unsigned long val,
++		   struct res_counter **limit_fail_at)
++{
++	return res_counter_charge_until(counter, NULL, val, limit_fail_at);
++}
++
+ /*
+  * uncharge - tell that some portion of the resource is released
+  *
+@@ -133,7 +142,13 @@ int res_counter_charge_nofail(struct res_counter *counter,
+  */
+ 
+ void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
+-void res_counter_uncharge(struct res_counter *counter, unsigned long val);
++void res_counter_uncharge_until(struct res_counter *counter,
++				struct res_counter *limit, unsigned long val);
++static inline void res_counter_uncharge(struct res_counter *counter,
++					unsigned long val)
++{
++	res_counter_uncharge_until(counter, NULL, val);
++}
+ 
+ /**
+  * res_counter_margin - calculate chargeable space of a counter
+diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+index d508363..7aebf96 100644
+--- a/kernel/res_counter.c
++++ b/kernel/res_counter.c
+@@ -35,8 +35,9 @@ int res_counter_charge_locked(struct res_counter *counter, unsigned long val)
+ 	return 0;
  }
+ 
+-int res_counter_charge(struct res_counter *counter, unsigned long val,
+-			struct res_counter **limit_fail_at)
++int res_counter_charge_until(struct res_counter *counter,
++			     struct res_counter *limit, unsigned long val,
++			     struct res_counter **limit_fail_at)
+ {
+ 	int ret;
+ 	unsigned long flags;
+@@ -44,7 +45,7 @@ int res_counter_charge(struct res_counter *counter, unsigned long val,
+ 
+ 	*limit_fail_at = NULL;
+ 	local_irq_save(flags);
+-	for (c = counter; c != NULL; c = c->parent) {
++	for (c = counter; c != limit; c = c->parent) {
+ 		spin_lock(&c->lock);
+ 		ret = res_counter_charge_locked(c, val);
+ 		spin_unlock(&c->lock);
+@@ -99,13 +100,15 @@ void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
+ 	counter->usage -= val;
+ }
+ 
+-void res_counter_uncharge(struct res_counter *counter, unsigned long val)
++void res_counter_uncharge_until(struct res_counter *counter,
++				struct res_counter *limit,
++				unsigned long val)
+ {
+ 	unsigned long flags;
+ 	struct res_counter *c;
+ 
+ 	local_irq_save(flags);
+-	for (c = counter; c != NULL; c = c->parent) {
++	for (c = counter; c != limit; c = c->parent) {
+ 		spin_lock(&c->lock);
+ 		res_counter_uncharge_locked(c, val);
+ 		spin_unlock(&c->lock);
 -- 
 1.7.7.6
 
