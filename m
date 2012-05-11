@@ -1,61 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759791Ab2EKNWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 09:22:19 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19072 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758847Ab2EKNV4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 09:21:56 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 11 May 2012 06:21:04 -0700
-Message-ID: <4FAD1188.7000706@nvidia.com>
-Date: Fri, 11 May 2012 18:48:00 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1759858Ab2EKNWm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 09:22:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6066 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759802Ab2EKNWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 09:22:30 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: jaxboe@fusionio.com
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        npiggin@kernel.dk
+Subject: Re: [patch, v2] block: don't mark buffers beyond end of disk as mapped
+References: <x49obq666i8.fsf@segfault.boston.devel.redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 11 May 2012 09:22:25 -0400
+In-Reply-To: <x49obq666i8.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
+	message of "Wed, 02 May 2012 09:45:51 -0400")
+Message-ID: <x49d36ax372.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] mfd:tps65910: use devm_* and register gpio as platform
- driver
-References: <1336569057-3890-1-git-send-email-ldewangan@nvidia.com> <20120511131454.GI1214@sortiz-mobl>
-In-Reply-To: <20120511131454.GI1214@sortiz-mobl>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 May 2012 06:44 PM, Samuel Ortiz wrote:
-> Hi Laxman,
+Jens, could you please queue this patch up?
+
+Thanks!
+Jeff
+
+
+Jeff Moyer <jmoyer@redhat.com> writes:
+
+> Hi,
 >
-> On Wed, May 09, 2012 at 06:40:53PM +0530, Laxman Dewangan wrote:
->> This series does cleanup in the mfd/tps65910 as follows:
->> - Do not cache the register when initailizing regmap. Cache when
->>    actually when we need it.
->> - Convert the allocation to use devm_* apis.
->> - Move the gpio as platform driver and register it as mfd sub devices.
->>
->> Laxman Dewangan (4):
->>    mfd: tps65910: cache register when we need it
->> 	Remove the chaching of register in regmap initialization.
->>
->>    mfd: tps65910: convert all allocation to devm_*
->> 	Convert the allocation to use devm_* apis.
->>
->>    mfd: tps65910: register gpio as mfd device
->>    gpio: tps65910: move this as platform driver
->> 	Above two patch to make gpio driver as platform driver and register
->> 	as mfd sub device from core driver.
->> 	
-> I applied patches 1, 2 and 3. Patch #4 does not apply cleanly to my for-next
-> branch, could you please rebase it ?
-> Also, having Grant's ACK for it would be nice.
-Thanks for taking care.
-I will create a new patch based on your tree if Grant is OK with this.
+> We have a bug report open where a squashfs image mounted on ppc64 would
+> exhibit errors due to trying to read beyond the end of the disk.  It can
+> easily be reproduced by doing the following:
+>
+> [root@ibm-p750e-02-lp3 ~]# ls -l install.img
+> -rw-r--r-- 1 root root 142032896 Apr 30 16:46 install.img
+> [root@ibm-p750e-02-lp3 ~]# mount -o loop ./install.img /mnt/test
+> [root@ibm-p750e-02-lp3 ~]# dd if=/dev/loop0 of=/dev/null 
+> dd: reading `/dev/loop0': Input/output error
+> 277376+0 records in
+> 277376+0 records out
+> 142016512 bytes (142 MB) copied, 0.9465 s, 150 MB/s
+>
+> In dmesg, you'll find the following:
+>
+> squashfs: version 4.0 (2009/01/31) Phillip Lougher
+> [   43.106012] attempt to access beyond end of device
+> [   43.106029] loop0: rw=0, want=277410, limit=277408
+> [   43.106039] Buffer I/O error on device loop0, logical block 138704
+> [   43.106053] attempt to access beyond end of device
+> [   43.106057] loop0: rw=0, want=277412, limit=277408
+> [   43.106061] Buffer I/O error on device loop0, logical block 138705
+> [   43.106066] attempt to access beyond end of device
+> [   43.106070] loop0: rw=0, want=277414, limit=277408
+> [   43.106073] Buffer I/O error on device loop0, logical block 138706
+> [   43.106078] attempt to access beyond end of device
+> [   43.106081] loop0: rw=0, want=277416, limit=277408
+> [   43.106085] Buffer I/O error on device loop0, logical block 138707
+> [   43.106089] attempt to access beyond end of device
+> [   43.106093] loop0: rw=0, want=277418, limit=277408
+> [   43.106096] Buffer I/O error on device loop0, logical block 138708
+> [   43.106101] attempt to access beyond end of device
+> [   43.106104] loop0: rw=0, want=277420, limit=277408
+> [   43.106108] Buffer I/O error on device loop0, logical block 138709
+> [   43.106112] attempt to access beyond end of device
+> [   43.106116] loop0: rw=0, want=277422, limit=277408
+> [   43.106120] Buffer I/O error on device loop0, logical block 138710
+> [   43.106124] attempt to access beyond end of device
+> [   43.106128] loop0: rw=0, want=277424, limit=277408
+> [   43.106131] Buffer I/O error on device loop0, logical block 138711
+> [   43.106135] attempt to access beyond end of device
+> [   43.106139] loop0: rw=0, want=277426, limit=277408
+> [   43.106143] Buffer I/O error on device loop0, logical block 138712
+> [   43.106147] attempt to access beyond end of device
+> [   43.106151] loop0: rw=0, want=277428, limit=277408
+> [   43.106154] Buffer I/O error on device loop0, logical block 138713
+> [   43.106158] attempt to access beyond end of device
+> [   43.106162] loop0: rw=0, want=277430, limit=277408
+> [   43.106166] attempt to access beyond end of device
+> [   43.106169] loop0: rw=0, want=277432, limit=277408
+> ...
+> [   43.106307] attempt to access beyond end of device
+> [   43.106311] loop0: rw=0, want=277470, limit=2774
+>
+> Squashfs manages to read in the end block(s) of the disk during the
+> mount operation.  Then, when dd reads the block device, it leads to
+> block_read_full_page being called with buffers that are beyond end of
+> disk, but are marked as mapped.  Thus, it would end up submitting read
+> I/O against them, resulting in the errors mentioned above.  I fixed the
+> problem by modifying init_page_buffers to only set the buffer mapped if
+> it fell inside of i_size.
+>
+> Cheers,
+> Jeff
+>
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+> Acked-by: Nick Piggin <npiggin@kernel.dk>
+>
+> --
+>
+> Changes from v1->v2: re-used max_block, as suggested by Nick Piggin.
+>
+> diff --git a/fs/block_dev.c b/fs/block_dev.c
+> index e08f6a2..ba11c30 100644
+> --- a/fs/block_dev.c
+> +++ b/fs/block_dev.c
+> @@ -70,7 +70,7 @@ static void bdev_inode_switch_bdi(struct inode *inode,
+>  	spin_unlock(&dst->wb.list_lock);
+>  }
+>  
+> -static sector_t max_block(struct block_device *bdev)
+> +sector_t blkdev_max_block(struct block_device *bdev)
+>  {
+>  	sector_t retval = ~((sector_t)0);
+>  	loff_t sz = i_size_read(bdev->bd_inode);
+> @@ -163,7 +163,7 @@ static int
+>  blkdev_get_block(struct inode *inode, sector_t iblock,
+>  		struct buffer_head *bh, int create)
+>  {
+> -	if (iblock >= max_block(I_BDEV(inode))) {
+> +	if (iblock >= blkdev_max_block(I_BDEV(inode))) {
+>  		if (create)
+>  			return -EIO;
+>  
+> @@ -185,7 +185,7 @@ static int
+>  blkdev_get_blocks(struct inode *inode, sector_t iblock,
+>  		struct buffer_head *bh, int create)
+>  {
+> -	sector_t end_block = max_block(I_BDEV(inode));
+> +	sector_t end_block = blkdev_max_block(I_BDEV(inode));
+>  	unsigned long max_blocks = bh->b_size >> inode->i_blkbits;
+>  
+>  	if ((iblock + max_blocks) > end_block) {
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index 351e18e..ad5938c 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -921,6 +921,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
+>  	struct buffer_head *head = page_buffers(page);
+>  	struct buffer_head *bh = head;
+>  	int uptodate = PageUptodate(page);
+> +	sector_t end_block = blkdev_max_block(I_BDEV(bdev->bd_inode));
+>  
+>  	do {
+>  		if (!buffer_mapped(bh)) {
+> @@ -929,7 +930,8 @@ init_page_buffers(struct page *page, struct block_device *bdev,
+>  			bh->b_blocknr = block;
+>  			if (uptodate)
+>  				set_buffer_uptodate(bh);
+> -			set_buffer_mapped(bh);
+> +			if (block < end_block)
+> +				set_buffer_mapped(bh);
+>  		}
+>  		block++;
+>  		bh = bh->b_this_page;
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 8de6755..25c40b9 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -2051,6 +2051,7 @@ extern void unregister_blkdev(unsigned int, const char *);
+>  extern struct block_device *bdget(dev_t);
+>  extern struct block_device *bdgrab(struct block_device *bdev);
+>  extern void bd_set_size(struct block_device *, loff_t size);
+> +extern sector_t blkdev_max_block(struct block_device *bdev);
+>  extern void bd_forget(struct inode *inode);
+>  extern void bdput(struct block_device *);
+>  extern void invalidate_bdev(struct block_device *);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
