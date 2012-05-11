@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758075Ab2EKIlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 04:41:17 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54541 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757871Ab2EKIlN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 04:41:13 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH] mfd: lm3533: fix return type of attribute is_visible
-Date: Fri, 11 May 2012 10:40:41 +0200
-Message-Id: <1336725641-11826-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.7.8.5
+	id S1758280Ab2EKIsh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 04:48:37 -0400
+Received: from mga03.intel.com ([143.182.124.21]:32770 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757957Ab2EKIse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 04:48:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="98884807"
+Subject: Re: [PATCH V2 2/2] dmaengine: tegra: add dma driver
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+In-Reply-To: <4FAB4C7D.7030406@nvidia.com>
+References: <1336030889-32269-1-git-send-email-ldewangan@nvidia.com>
+	 <1336030889-32269-3-git-send-email-ldewangan@nvidia.com>
+	 <1336558444.1540.243.camel@vkoul-udesk3>  <4FAA4EA3.70001@nvidia.com>
+	 <1336620844.1540.269.camel@vkoul-udesk3>  <4FAB4C7D.7030406@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 May 2012 14:11:53 +0530
+Message-ID: <1336725713.15424.1856.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 587a1f1659 ("switch ->is_visible() to returning umode_t")
-the return type of is_visible is umode_t rather than mode_t.
+On Thu, 2012-05-10 at 10:35 +0530, Laxman Dewangan wrote:
 
-This silences a compiler warning on some architectures where these types
-are not compatible.
+> But when we update the chan->completed_cookie for aborted cookie?
+> Otherwise I will get the DMA_IN_PROGRSS when I call dma_cookie_status() 
+> but actually it is aborted.
+no in .device_tx_status, you should check if the descriptor is aborted
+or not and rteurn error for aborted descriptor.
 
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/mfd/lm3533-core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/lm3533-core.c b/drivers/mfd/lm3533-core.c
-index d11c891..5770bea 100644
---- a/drivers/mfd/lm3533-core.c
-+++ b/drivers/mfd/lm3533-core.c
-@@ -359,7 +359,7 @@ static struct attribute *lm3533_attributes[] = {
- #define to_dev_attr(_attr) \
- 	container_of(_attr, struct device_attribute, attr)
- 
--static mode_t lm3533_attr_is_visible(struct kobject *kobj,
-+static umode_t lm3533_attr_is_visible(struct kobject *kobj,
- 					     struct attribute *attr, int n)
- {
- 	struct device *dev = container_of(kobj, struct device, kobj);
-@@ -367,7 +367,7 @@ static mode_t lm3533_attr_is_visible(struct kobject *kobj,
- 	struct device_attribute *dattr = to_dev_attr(attr);
- 	struct lm3533_device_attribute *lattr = to_lm3533_dev_attr(dattr);
- 	enum lm3533_attribute_type type = lattr->type;
--	mode_t mode = attr->mode;
-+	umode_t mode = attr->mode;
- 
- 	if (!lm3533->have_backlights && type == LM3533_ATTR_TYPE_BACKLIGHT)
- 		mode = 0;
 -- 
-1.7.8.5
+~Vinod
 
