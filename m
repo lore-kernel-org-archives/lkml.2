@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945903Ab2EKRt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 13:49:26 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:4479 "EHLO relay.sw.ru"
+	id S1945935Ab2EKRtk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 13:49:40 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:28242 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932956Ab2EKRtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 13:49:24 -0400
+	id S1945922Ab2EKRth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 13:49:37 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
@@ -13,10 +13,12 @@ Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
         Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
         Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
         Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v2 06/29] memcg: Make it possible to use the stock for more than one page.
-Date: Fri, 11 May 2012 14:44:08 -0300
-Message-Id: <1336758272-24284-7-git-send-email-glommer@parallels.com>
+        Glauber Costa <glommer@parallels.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [PATCH v2 05/29] slab: rename gfpflags to allocflags
+Date: Fri, 11 May 2012 14:44:07 -0300
+Message-Id: <1336758272-24284-6-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1336758272-24284-1-git-send-email-glommer@parallels.com>
 References: <1336758272-24284-1-git-send-email-glommer@parallels.com>
@@ -24,64 +26,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
+A consistent name with slub saves us an acessor function.
+In both caches, this field represents the same thing. We would
+like to use it from the mem_cgroup code.
 
-Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
 ---
- mm/memcontrol.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+ include/linux/slab_def.h |    2 +-
+ mm/slab.c                |   10 +++++-----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 0b4b4c8..248d80b 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1998,19 +1998,19 @@ static DEFINE_PER_CPU(struct memcg_stock_pcp, memcg_stock);
- static DEFINE_MUTEX(percpu_charge_mutex);
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index fbd1117..d41effe 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -39,7 +39,7 @@ struct kmem_cache {
+ 	unsigned int gfporder;
  
- /*
-- * Try to consume stocked charge on this cpu. If success, one page is consumed
-- * from local stock and true is returned. If the stock is 0 or charges from a
-- * cgroup which is not current target, returns false. This stock will be
-- * refilled.
-+ * Try to consume stocked charge on this cpu. If success, nr_pages pages are
-+ * consumed from local stock and true is returned. If the stock is 0 or
-+ * charges from a cgroup which is not current target, returns false.
-+ * This stock will be refilled.
-  */
--static bool consume_stock(struct mem_cgroup *memcg)
-+static bool consume_stock(struct mem_cgroup *memcg, int nr_pages)
+ 	/* force GFP flags, e.g. GFP_DMA */
+-	gfp_t gfpflags;
++	gfp_t allocflags;
+ 
+ 	size_t colour;			/* cache colouring range */
+ 	unsigned int colour_off;	/* colour offset */
+diff --git a/mm/slab.c b/mm/slab.c
+index 91b9c13..8a851ed 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1798,7 +1798,7 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ 	flags |= __GFP_COMP;
+ #endif
+ 
+-	flags |= cachep->gfpflags;
++	flags |= cachep->allocflags;
+ 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
+ 		flags |= __GFP_RECLAIMABLE;
+ 
+@@ -2509,9 +2509,9 @@ kmem_cache_create (const char *name, size_t size, size_t align,
+ 	cachep->colour = left_over / cachep->colour_off;
+ 	cachep->slab_size = slab_size;
+ 	cachep->flags = flags;
+-	cachep->gfpflags = 0;
++	cachep->allocflags = 0;
+ 	if (CONFIG_ZONE_DMA_FLAG && (flags & SLAB_CACHE_DMA))
+-		cachep->gfpflags |= GFP_DMA;
++		cachep->allocflags |= GFP_DMA;
+ 	cachep->buffer_size = size;
+ 	cachep->reciprocal_buffer_size = reciprocal_value(size);
+ 
+@@ -2858,9 +2858,9 @@ static void kmem_flagcheck(struct kmem_cache *cachep, gfp_t flags)
  {
- 	struct memcg_stock_pcp *stock;
- 	bool ret = true;
+ 	if (CONFIG_ZONE_DMA_FLAG) {
+ 		if (flags & GFP_DMA)
+-			BUG_ON(!(cachep->gfpflags & GFP_DMA));
++			BUG_ON(!(cachep->allocflags & GFP_DMA));
+ 		else
+-			BUG_ON(cachep->gfpflags & GFP_DMA);
++			BUG_ON(cachep->allocflags & GFP_DMA);
+ 	}
+ }
  
- 	stock = &get_cpu_var(memcg_stock);
--	if (memcg == stock->cached && stock->nr_pages)
--		stock->nr_pages--;
-+	if (memcg == stock->cached && stock->nr_pages >= nr_pages)
-+		stock->nr_pages -= nr_pages;
- 	else /* need to call res_counter_charge */
- 		ret = false;
- 	put_cpu_var(memcg_stock);
-@@ -2309,7 +2309,7 @@ again:
- 		VM_BUG_ON(css_is_removed(&memcg->css));
- 		if (mem_cgroup_is_root(memcg))
- 			goto done;
--		if (nr_pages == 1 && consume_stock(memcg))
-+		if (consume_stock(memcg, nr_pages))
- 			goto done;
- 		css_get(&memcg->css);
- 	} else {
-@@ -2334,7 +2334,7 @@ again:
- 			rcu_read_unlock();
- 			goto done;
- 		}
--		if (nr_pages == 1 && consume_stock(memcg)) {
-+		if (consume_stock(memcg, nr_pages)) {
- 			/*
- 			 * It seems dagerous to access memcg without css_get().
- 			 * But considering how consume_stok works, it's not
 -- 
 1.7.7.6
 
