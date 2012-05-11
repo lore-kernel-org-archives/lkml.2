@@ -1,114 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428Ab2EKBDE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 21:03:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51470 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753276Ab2EKBDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 21:03:01 -0400
-Date: Thu, 10 May 2012 21:02:49 -0400
-From: Benjamin Poirier <bpoirier@suse.de>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xfrm: take iphdr size into account for esp payload size
- calculation
-Message-ID: <20120511010249.GA23584@d2.synalogic.ca>
-References: <1336602952-10479-1-git-send-email-bpoirier@suse.de>
- <20120510121857.GJ1021@secunet.com>
+	id S1757077Ab2EKBFr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 21:05:47 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:32202 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755825Ab2EKBFq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 May 2012 21:05:46 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-209.messagelabs.com!1336698345!4826074!1
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: register sysfs device attributes with driver core
+Date: Thu, 10 May 2012 18:05:28 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20120510121857.GJ1021@secunet.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <201205101805.28589.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/05/10 14:18, Steffen Klassert wrote:
-> On Wed, May 09, 2012 at 06:35:52PM -0400, Benjamin Poirier wrote:
-> > 
-> > According to what is done, mainly in esp_output(), net_header_len aka
-> > sizeof(struct iphdr) must be taken into account before doing the alignment
-> > calculation.
-> 
-> Why do you need to take the ip header into account here?
+Currently the sysfs device attributes are created by the comedi
+core after each comedi device is created. This can lead to a race
+condition where userspace gets an add event before the files are
+created.
 
-The value returned by this function is tuned for tcp segment size:
-1) from tcp_mtu_to_mss()
-mss = pmtu - tcp_hlen - net_hlen
-2) frame structure for transport mode
-mtu = mss + tcp_hlen + esp_header_len(esp_payload_len) + ah_len + net_hlen
+Register the device attributes with the comedi class so that the
+driver core handles creating them and we avoid the race.
 
-The "mtu" parameter of esp4_get_mtu is in fact mtu - ah_len.
-The return value of esp4_get_mtu is put into pmtu.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-If we put 1 and 2 together we have:
-pmtu = mtu - ah_len - esp_header_len(esp_payload_len)
-with esp_payload_len = mss + tcp_hlen
+---
 
-This formula expands to:
-pmtu = mtu - ah_len - (header_len + align(align(pmtu - net_hlen + 2, blksize),
-	esp->padlen) - (pmtu - net_hlen) + alen)
-
-and simplifies to:
-pmtu = (mtu - ah_len - net_hlen - header_len - alen) & ~(max(blksize,
-	esp->padlen) - 1) + (net_hlen - 2)
-
-which, in the context of esp4_get_mtu, becomes:
-((mtu - x->props.header_len - crypto_aead_authsize(esp->aead) - sizeof(struct
-iphdr)) & ~(align - 1)) + (sizeof(struct iphdr) - 2)
-
-This is the same formula as before, except for sizeof(struct iphdr) which was
-missing.
-
-> Your patch breaks
-> pmtu discovery, at least on tunnel mode with aes-sha1 (aes blocksize 16 bytes).
-> 
-> With your patch applied:
-> 
-> tracepath -n 192.168.1.2
->  1?: [LOCALHOST]     pmtu 1442
->  1:  send failed
->  1:  send failed
->      Resume: pmtu 1442
-> 
-> Without your patch:
-> 
-> tracepath -n 192.168.1.2
->  1?: [LOCALHOST]     pmtu 1438
->  1:  192.168.1.2       0.736ms reached
->  1:  192.168.1.2       0.390ms reached
->      Resume: pmtu 1438 hops 1 back 64 
-> 
-> Your patch increases the mtu by 4 bytes. Be aware that adding
-> one byte of payload may increase the packet size up to 16 bytes
-> in the case of aes, as we have to pad the encryption payload
-> always to a multiple of the cipher blocksize.
-
-Thanks for testing. My own testing had been limited to rsync'ing large
-files.
-
-The problem with tunnel mode in v1 of the patch was twofold.
-First, we don't play games with mss and tcp_hlen. esp_payload_len = pmtu
-directly, instead of esp_payload_len = pmtu - net_hlen.
-Second, in the tunnel case, header_len already includes net_hlen, see
-esp_init_state().
-The net result is that the formula for tunnel mode was already correct.
-
-> 
-> > -
-> > -	switch (x->props.mode) {
-> > -	case XFRM_MODE_TUNNEL:
-> > -		break;
-> > -	default:
-> > -	case XFRM_MODE_TRANSPORT:
-> > -		/* The worst case */
-> > -		mtu -= blksize - 4;
-> > -		mtu += min_t(u32, blksize - 4, rem);
-> > -		break;
-> 
-> Btw. why we are doing the calculation above for transport mode?
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index 44ca1fe..7677657 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -227,9 +227,6 @@ static ssize_t store_max_read_buffer_kb(struct device *dev,
+ 	return count;
+ }
+ 
+-static DEVICE_ATTR(max_read_buffer_kb, S_IRUGO | S_IWUSR,
+-		show_max_read_buffer_kb, store_max_read_buffer_kb);
+-
+ static ssize_t show_read_buffer_kb(struct device *dev,
+ 				   struct device_attribute *attr, char *buf)
+ {
+@@ -287,9 +284,6 @@ static ssize_t store_read_buffer_kb(struct device *dev,
+ 	return count;
+ }
+ 
+-static DEVICE_ATTR(read_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
+-		show_read_buffer_kb, store_read_buffer_kb);
+-
+ static ssize_t show_max_write_buffer_kb(struct device *dev,
+ 					struct device_attribute *attr,
+ 					char *buf)
+@@ -344,9 +338,6 @@ static ssize_t store_max_write_buffer_kb(struct device *dev,
+ 	return count;
+ }
+ 
+-static DEVICE_ATTR(max_write_buffer_kb, S_IRUGO | S_IWUSR,
+-		show_max_write_buffer_kb, store_max_write_buffer_kb);
+-
+ static ssize_t show_write_buffer_kb(struct device *dev,
+ 				    struct device_attribute *attr, char *buf)
+ {
+@@ -404,19 +395,16 @@ static ssize_t store_write_buffer_kb(struct device *dev,
+ 	return count;
+ }
+ 
+-static DEVICE_ATTR(write_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
+-		show_write_buffer_kb, store_write_buffer_kb);
+-
+-static struct attribute *comedi_attrs[] = {
+-	&dev_attr_max_read_buffer_kb.attr,
+-	&dev_attr_read_buffer_kb.attr,
+-	&dev_attr_max_write_buffer_kb.attr,
+-	&dev_attr_write_buffer_kb.attr,
+-	NULL
+-};
+-
+-static const struct attribute_group comedi_sysfs_files = {
+-	.attrs	= comedi_attrs,
++static struct device_attribute comedi_dev_attrs[] = {
++	__ATTR(max_read_buffer_kb, S_IRUGO | S_IWUSR,
++		show_max_read_buffer_kb, store_max_read_buffer_kb),
++	__ATTR(read_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
++		show_read_buffer_kb, store_read_buffer_kb),
++	__ATTR(max_write_buffer_kb, S_IRUGO | S_IWUSR,
++		show_max_write_buffer_kb, store_max_write_buffer_kb),
++	__ATTR(write_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
++		show_write_buffer_kb, store_write_buffer_kb),
++	__ATTR_NULL
+ };
+ 
+ static long comedi_unlocked_ioctl(struct file *file, unsigned int cmd,
+@@ -2355,6 +2343,8 @@ static int __init comedi_init(void)
+ 		return PTR_ERR(comedi_class);
+ 	}
+ 
++	comedi_class->dev_attrs = comedi_dev_attrs;
++
+ 	/* XXX requires /proc interface */
+ 	comedi_proc_init();
+ 
+@@ -2496,7 +2486,6 @@ int comedi_alloc_board_minor(struct device *hardware_device)
+ 	struct comedi_device_file_info *info;
+ 	struct device *csdev;
+ 	unsigned i;
+-	int retval;
+ 
+ 	info = kzalloc(sizeof(struct comedi_device_file_info), GFP_KERNEL);
+ 	if (info == NULL)
+@@ -2532,14 +2521,6 @@ int comedi_alloc_board_minor(struct device *hardware_device)
+ 		info->device->class_dev = csdev;
+ 	dev_set_drvdata(csdev, info);
+ 
+-	retval = sysfs_create_group(&csdev->kobj, &comedi_sysfs_files);
+-	if (retval) {
+-		printk(KERN_ERR
+-		       "comedi: failed to create sysfs attribute files\n");
+-		comedi_free_board_minor(i);
+-		return retval;
+-	}
+-
+ 	return i;
+ }
+ 
+@@ -2590,7 +2571,6 @@ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
+ 	struct comedi_device_file_info *info;
+ 	struct device *csdev;
+ 	unsigned i;
+-	int retval;
+ 
+ 	info = kmalloc(sizeof(struct comedi_device_file_info), GFP_KERNEL);
+ 	if (info == NULL)
+@@ -2621,14 +2601,6 @@ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
+ 		s->class_dev = csdev;
+ 	dev_set_drvdata(csdev, info);
+ 
+-	retval = sysfs_create_group(&csdev->kobj, &comedi_sysfs_files);
+-	if (retval) {
+-		printk(KERN_ERR
+-		       "comedi: failed to create sysfs attribute files\n");
+-		comedi_free_subdevice_minor(s);
+-		return retval;
+-	}
+-
+ 	return i;
+ }
+ 
