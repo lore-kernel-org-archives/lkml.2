@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761903Ab2EKG5V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:57:21 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1652 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758672Ab2EKG5S (ORCPT
+	id S1755908Ab2EKG6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:58:35 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:49628 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752039Ab2EKG6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:57:18 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 10 May 2012 23:56:00 -0700
-From: Hiroshi DOYU <hdoyu@nvidia.com>
-To: <gregkh@linuxfoundation.org>, <swarren@wwwdotorg.org>
-CC: <linux-tegra@vger.kernel.org>, Hiroshi DOYU <hdoyu@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] ARM: tegra: Make TEGRA{20,30}_MC selectable in defconfig
-Date: Fri, 11 May 2012 09:56:26 +0300
-Message-ID: <1336719389-28506-3-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1336719389-28506-1-git-send-email-hdoyu@nvidia.com>
-References: <20120511095012.57f737d1b0d2536e0d367a9b@nvidia.com>
- <1336719389-28506-1-git-send-email-hdoyu@nvidia.com>
+	Fri, 11 May 2012 02:58:33 -0400
+Message-ID: <4FACB894.7000304@ti.com>
+Date: Fri, 11 May 2012 09:58:28 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120509 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: dmitry.torokhov@gmail.com, broonie@opensource.wolfsonicro.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TWL6040: fix build error
+References: <1336675473-24774-1-git-send-email-levinsasha928@gmail.com>
+In-Reply-To: <1336675473-24774-1-git-send-email-levinsasha928@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_TEGRA{20,30}_MC depends on CONFIG_MEMORY.
+Hi,
 
-Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
----
- arch/arm/configs/tegra_defconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On 05/10/2012 09:44 PM, Sasha Levin wrote:
+> Fixes build error due to missing of_property_read_u32.
 
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index 7a90abb..639778d 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -149,6 +149,7 @@ CONFIG_KEYBOARD_NVEC=y
- CONFIG_SERIO_NVEC_PS2=y
- CONFIG_TEGRA_IOMMU_GART=y
- CONFIG_TEGRA_IOMMU_SMMU=y
-+CONFIG_MEMORY=y
- CONFIG_IIO=y
- CONFIG_EXT2_FS=y
- CONFIG_EXT2_FS_XATTR=y
--- 
-1.7.5.4
+The reason I have not seen this is that I have CONFIG_OF_DEVICE selected
+which will make the linux/of.h to be included in the linux/of_device.h
 
+When I did sanity build check on x86 (64bit) I have not noticed any
+breakage since the allmodconfig on 64bit does not build the
+twl6040-vibra driver.
+
+It is obvious that I need to improve my sanity kernel build testing.
+
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+
+Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
