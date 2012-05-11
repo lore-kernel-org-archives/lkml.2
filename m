@@ -1,114 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab2EKIVb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 04:21:31 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52538 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab2EKIVV convert rfc822-to-8bit (ORCPT
+	id S1757177Ab2EKIXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 04:23:39 -0400
+Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:52484 "EHLO
+	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751224Ab2EKIXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 04:21:21 -0400
+	Fri, 11 May 2012 04:23:30 -0400
+Message-ID: <4FACCC79.5000805@ti.com>
+Date: Fri, 11 May 2012 13:53:21 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FAAD721.3070101@wwwdotorg.org>
-References: <1336470302-23670-1-git-send-email-linus.walleij@stericsson.com>
-	<4FAAD721.3070101@wwwdotorg.org>
-Date: Fri, 11 May 2012 10:21:20 +0200
-Message-ID: <CACRpkdY0phbf3Ec+A8O4+HvVoWjC4vs9jsNfGzZiLYeCqPrrrQ@mail.gmail.com>
-Subject: Re: [PATCH 06/12] pinctrl/nomadik: implement pin configuration
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Colin Cross <ccross@android.com>, Kevin Hilman <khilman@ti.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [RFC][PATCH 2/2] PM / Domains: Add preliminary cpuidle support
+References: <201205092340.26561.rjw@sisk.pl> <201205092343.11050.rjw@sisk.pl> <4FAB9412.5030102@ti.com> <201205102041.42473.rjw@sisk.pl>
+In-Reply-To: <201205102041.42473.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 10:44 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 05/08/2012 03:45 AM, Linus Walleij wrote:
->> From: Linus Walleij <linus.walleij@linaro.org>
+On Friday 11 May 2012 12:11 AM, Rafael J. Wysocki wrote:
+> On Thursday, May 10, 2012, Santosh Shilimkar wrote:
+>> Rafael,
 >>
->> This implements the pin configuration interface for the
->> Nomadik pin controller.
+>> On Thursday 10 May 2012 03:13 AM, Rafael J. Wysocki wrote:
+>>> From: Rafael J. Wysocki <rjw@sisk.pl>
+>>>
+>>> On some systems there are CPU cores located in the same power
+>>> domains as I/O devices.  Then, power can only be removed from the
+>>> domain if all I/O devices in it are not in use and the CPU core
+>>> is idle.  Add preliminary support for that to the generic PM domains
+>>> framework.
+>>>
+>> I am just curious to know, what kind of IO devices, you are
+>> talking here?
+> 
+> Nothing specific, really.  It can be any kind of I/O devices that happen
+> to be in the same power domain.  This includes USB, SDHI, MMCIF controllers
+> on the SoC I have in mind in particular.
+> 
+OK.
+These are more of generic devices and actually not related to CPU/CPU
+clusters as such.
+
+>> And also how those devices linked with CPU low power
+>> states apart from being part of same power domain. And is it
+>> the power domain or more of voltage domain, we are talking here.
+> 
+> Depending on the definitions I guess.  How do you define a power domain and
+> a voltage domain?
+>
+
+A voltage domain can be a section of the device supplied by a dedicated
+voltage rail. A voltage domain can have many power-domains like
+CPU cluster domain, Interconnect domain, peripheral domains.
+And each power domain then can have many sub-modules like UART, SPI,
+USB etc
+
+>>> This assumes that there is only one CPU core in the system and it is
+>>> supposed to be set up in the following way.
+>>>
+>>> First, the platform is expected to provide a cpuidle driver with one
+>>> extra state designated for the generic PM domains code to handle.
+>>> This state should be initially disabled and its exit_latency value
+>>> should be set to whatever time is needed to bring up the CPU core
+>>> itself after restoring power to it, not including the domain's
+>>> power on latency.  Its .enter() callback should point to a procedure
+>>> that will save the CPU core's state as appropriate before power
+>>> removal.  On success, it should return the same value as it has
+>>> been passed as its third argument, but it shouldn't put the CPU
+>>> core into a C-state.  If it is about to return the index of
+>>> a different cpuidle state, however, it should make sure that the CPU
+>>> be put into that state before it returns.
+>>>
+>>> The remaining characteristics of the extra cpuidle state, referred to
+>>> as the "domain" cpuidle state below, (e.g. power usage, target
+>>> residency) should be populated in accordance with the properties of
+>>> the hardware.
+>>>
+>>> Next, the platform should execute genpd_attach_cpuidle() on the PM
+>>> domain containing the CPU core.  That will cause the generic PM
+>>> domains framework to treat that domain in a special way such that:
+>>>
+>>>  * When all devices in the domain have been suspended and it is about
+>>>    to be turned off, the states of the devices will be saved, but
+>>>    power will not be removed from the domain.  Instead, the "domain"
+>>>    cpuidle state will be enabled so that power can be removed from
+>>>    the domain when the CPU core is idle and the state has been chosen
+>>>    as the target by the cpuidle governor.  In that case, before
+>>>    removing power from the domain, the framework will execute the
+>>>    .enter() callback initially defined for the "domain" state.
+>>>
+>>>  * When the first I/O device in the domain is resumed and
+>>>    __pm_genpd_poweron(() is called for the first time after
+>>>    power has been removed from the domain, the "domain" cpuidle
+>>>    state will be disabled to avoid subsequent surprise power removals
+>>>    via cpuidle.
+>>>
 >>
->> As part of the exercise we add a bit in the pin_cfg_t for
->> the Nomadik pinctrl driver that indicates if the pin should
->> be forced into GPIO mode. This is not done to go behind the
->> back of the GPIO subsystem, but to ensure that default modes
->> can be set by hogs on boot and system suspend/resume states.
->> It was used implicitly by the old code defining all config
->> settings and modes in a single config word but we now have
->> a split between pinmux and pinconf leading to the need to
->> have this.
+>> If these are CPU cluster/package specific IO's like interrupt
+>> controller, cache controller, Coherency interconnect etc and
+>> if the intention is to ensure that these devices context
+>> is saved/restored in cpuidle entry/exit, it can be handled with
+>> CPU PM notifiers.
+> 
+> Maybe it can, but I'm not so sure of that in general.
+> 
+>> We already do that for ARM SOCs.
+> 
+> Surely not all of them?  I know of a few at least where this isn't done.
 >
-> Yes, I have wondered if we should have always represented the
-> GPIO/pinctrl interaction as a pinctrl "function" of "GPIO. There are a
-> few gotchas that prevented me moving forward with this though:
->
-> 1) On Tegra at least, GPIO-vs-pinmux is actually a bit in the GPIO
-> controller, so that mux is after the pinmux's output mux
+You are right these are not for general purpose IO's
 
-Nomadik/Ux500 is different. It has the mux before the driver
-stage, so we need to driver the GPIO lo/hi by a bit into the
-mux, then after the driver stage we can e.g. pull up/down.
+>> From the patch description it seems, they are general purpose
+>> peripherals.
+> 
+> Yes, they are.
+> 
+>> We had one thermal sensor on OMAP which
+>> wrongly clocked from the CPU clock source and needed
+>> some idle notifier infrastructure to prepare/resume
+>> this device for idle entry/exit.
+> 
+> The system I have in mind is designed in such a way that there is a power
+> domain with three subdomains, one of which contains the CPU core and the
+> remaining two contain I/O devices of various kinds.  General purpose as well
+> as "core".
+> 
+I am not sure CPUIDLE is suppose to take care of these kind of general
+purpose IO's. CPUIDLE should take care of CPU and CPU cluster power
+management. Any other peripherals as you mentioned should be already
+have some sort of device drivers and they should be using runtime PM for
+it, no? And for the constraints, PM-Qos can be used. So far CPUIDLE
+core code has maintained that distinction and all the C-state latencies
+are of the CPU clusters rather than the SOC.
 
-> 2) I'm not sure how it'd work when you could mux "GPIO controller A GPIO
-> x" or "GPIO controller B pin y" onto the same pinctrl pin
+If you have a voltage rail dependency then that should be handled
+in the voltage layer/regulator layer. If there is a power domain
+dependency then the power domain framework should do the use
+counting yo handle such scenarios.
 
-Well pins x and y have a unique number in the GPIO numberspace,
-which means they will have two different ranges defined,
-and depending on which range you get passed to
-.gpio_request_enable() you do different things in the driver.
+Please correct me but, IIUC, your proposal wants to use CPUIDLE
+for the SOC level power management.
+Will you be able to expand your requirements and explain why can't
+you manage PM for the general purpose devices like MMC, USB etc
+in their own device drivers ?
 
-But with named gpio functions on each pin and just a plain request()
-there will be a problem (I guess this is what you're referring to).
+Regards
+Santosh
 
-Maybe it's simply so that .gpio_request_enable() is a better
-idea for this kind of scenario anyway?
 
-> 3) On Tegra at least, special-function muxing is at a per-pingroup
-> level, but GPIO muxing is at a per-pin level. So much for regular HW:-(
 
-I think we need to keep concepts separate, and think of the
-usecase rather than the fact that the pin has a mode which happens
-to be called "gpio", for my usecase that is just a four-letter acronym
-with no meaning than that it's a hardware state, it could be named
-"drive control" or "frox" or whatever.
 
-Right now it's working pretty well since when I put the pins to sleep
-I need to configure them into a mode where I can set the pins to be
-biased and in a certain way and with certain wakeup props.
-
-That mode happens to have the name "gpio" and has the
-side-effect that if it had been claimed for GPIO it would have been
-possible to use the gpiolib interface to drive it high/low etc. But since
-the pins are occupied by a device, this isn't possible, gpio_request()
-would fail on it.
-
-So this is one of these cases where trying to map physical
-properties to logical framework use breaks down, and we have
-to rely on the kernel concepts for determining what the pin is
-really used for. Just reading a hardware register won't tell us
-if it's actually used for GPIO or for some device sleep mode.
-Not in this driver atleast.
-
->> @@ -1561,7 +1562,8 @@ int nmk_gpio_request_enable(struct pinctrl_dev *pctldev,
->>
->>       clk_enable(nmk_chip->clk);
->>       bit = offset % NMK_GPIO_PER_CHIP;
->> -     __nmk_gpio_set_mode_safe(nmk_chip, bit, NMK_GPIO_ALT_GPIO, false);
->> +     /* There is no glitch when converting any pin to GPIO */
->> +     __nmk_gpio_set_mode(nmk_chip, bit, NMK_GPIO_ALT_GPIO);
->
-> Was that meant to be squashed into some other earlier change?
-
-Yes, I'll update!
-
-Thanks,
-Linus Walleij
