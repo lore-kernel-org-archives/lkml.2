@@ -1,48 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964812Ab2EKJ60 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 05:58:26 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39280 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109Ab2EKJ6Z (ORCPT
+	id S964826Ab2EKKEs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 06:04:48 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:32860 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932312Ab2EKKEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 05:58:25 -0400
-Date: Fri, 11 May 2012 11:01:07 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: airlied@linux.ie, alan@linux.intel.com, kirill.shutemov@linux.intel.com,
-        airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gma500: fix build when ACPI isn't set
-Message-ID: <20120511110107.06d3e336@pyramind.ukuu.org.uk>
-In-Reply-To: <CA+1xoqdp3N=hxF-bq0vCwUcyLuZ9wbpFiRJT2MjeBx=xQNgDJQ@mail.gmail.com>
-References: <1336711142-26788-1-git-send-email-levinsasha928@gmail.com>
-	<20120511104341.561ad95b@pyramind.ukuu.org.uk>
-	<CA+1xoqdp3N=hxF-bq0vCwUcyLuZ9wbpFiRJT2MjeBx=xQNgDJQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 11 May 2012 06:04:46 -0400
+Date: Fri, 11 May 2012 12:04:31 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCHv23] RAS: use events to handle hw issues
+Message-ID: <20120511100431.GG8913@aftab.osrc.amd.com>
+References: <20120510204042.GA4598@aftab.osrc.amd.com>
+ <1336683628-12954-1-git-send-email-mchehab@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336683628-12954-1-git-send-email-mchehab@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 May 2012 11:49:48 +0200
-Sasha Levin <levinsasha928@gmail.com> wrote:
+Let me repeat myself:
 
-> On Fri, May 11, 2012 at 11:43 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> > Not btw that I imagine you could run a non ACPI kernel on a box new
-> > enough to have a GMA500 8)
+> It should be:
 > 
-> Probably not, but I saw more #ifdef CONFIG_ACPI below and assumed
-> there's a good reason for that.
+> Subject: RAS: Add a tracepoint for reporting memory controller errors
 > 
-> Out of curiously, is a scenario where a GMA500 is assigned to a KVM
-> guest which doesn't have ACPI support plausible?
+> and not
+> 
+> Subject: edac, ras/hw_event.h: use events to handle hw issues
+> 
+> because events don't handle hw issues.
 
-I doubt it - the GMA500 is doing direct memory access via the GTT and
-hitting hardware level stuff. I don't believe any work has ever been done
-for Imagination based graphics pass through.
+You don't use events to handle hardware issues - you use tracepoints to
+report hardware issues! And besides, "event" is so overloaded in kernel
+land that actually refraining from its use makes me keep at least a bit
+of sanity when looking at yet another header called something event.h.
 
-Alan
+Please be more precise when naming your patches.
+
+Thanks.
+
+On Thu, May 10, 2012 at 06:00:28PM -0300, Mauro Carvalho Chehab wrote:
+> Add a new tracepoint-based hardware events report method for
+> reporting Memory Controller events.
+> 
+> Part of the description bellow is shamelessly copied from Tony
+> Luck's notes about the Hardware Error BoF during LPC 2010 [1].
+> Tony, thanks for your notes and discussions to generate the
+> h/w error reporting requirements.
+> 
+> [1] http://lwn.net/Articles/416669/
+> 
+>     We have several subsystems & methods for reporting hardware errors:
+> 
+>     1) EDAC ("Error Detection and Correction").  In its original form
+>     this consisted of a platform specific driver that read topology
+>     information and error counts from chipset registers and reported
+>     the results via a sysfs interface.
+> 
+>     2) mcelog - x86 specific decoding of machine check bank registers
+>     reporting in binary form via /dev/mcelog. Recent additions make use
+>     of the APEI extensions that were documented in version 4.0a of the
+>     ACPI specification to acquire more information about errors without
+>     having to rely reading chipset registers directly. A user level
+>     programs decodes into somewhat human readable format.
+> 
+>     3) drivers/edac/mce_amd.c - this driver hooks into the mcelog path and
+>     decodes errors reported via machine check bank registers in AMD
+>     processors to the console log using printk();
+> 
+>     Each of these mechanisms has a band of followers ... and none
+>     of them appear to meet all the needs of all users.
+> 
+> As part of a RAS subsystem, let's encapsulate the memory error hardware
+> events into a trace facility.
+> 
+> NOTE: The original patch was providing an additional mechanism for
+> MCA-based trace events that also contained MCA error register data.
+> Hoever, as no agreement was reached so far for the MCA-based trace
+> events, for now, let's add events only for memory errors.
+> A latter patch is planned to change the tracepoint, for those types
+> of event.
+> 
+> Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+> Cc: Doug Thompson <norsk5@yahoo.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> ---
+>  drivers/edac/edac_core.h |    2 +-
+>  drivers/edac/edac_mc.c   |   25 +++++++++++----
+>  include/ras/ras.h        |   77 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 96 insertions(+), 8 deletions(-)
+>  create mode 100644 include/ras/ras.h
+> 
+> diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
+> index f06ce9a..eee7360 100644
+> --- a/drivers/edac/edac_core.h
+> +++ b/drivers/edac/edac_core.h
+> @@ -468,7 +468,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+>  			  const int layer2,
+>  			  const char *msg,
+>  			  const char *other_detail,
+> -			  const void *mcelog);
+> +			  const void *arch_log);
+>  
+>  /*
+>   * edac_device APIs
+> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+> index e5b5563..7493adb 100644
+> --- a/drivers/edac/edac_mc.c
+> +++ b/drivers/edac/edac_mc.c
+> @@ -33,6 +33,10 @@
+>  #include "edac_core.h"
+>  #include "edac_module.h"
+>  
+> +#define CREATE_TRACE_POINTS
+> +#define TRACE_INCLUDE_PATH ../../include/ras
+> +#include <ras/ras.h>
+> +
+>  /* lock to memory controller's control array */
+>  static DEFINE_MUTEX(mem_ctls_mutex);
+>  static LIST_HEAD(mc_devices);
+> @@ -381,6 +385,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+>  	 * which will perform kobj unregistration and the actual free
+>  	 * will occur during the kobject callback operation
+>  	 */
+> +
+>  	return mci;
+>  }
+>  EXPORT_SYMBOL_GPL(edac_mc_alloc);
+> @@ -982,7 +987,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+>  			  const int layer2,
+>  			  const char *msg,
+>  			  const char *other_detail,
+> -			  const void *mcelog)
+> +			  const void *arch_log)
+>  {
+>  	/* FIXME: too much for stack: move it to some pre-alocated area */
+>  	char detail[80], location[80];
+> @@ -1119,21 +1124,27 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+>  	}
+>  
+>  	/* Memory type dependent details about the error */
+> -	if (type == HW_EVENT_ERR_CORRECTED) {
+> +	if (type == HW_EVENT_ERR_CORRECTED)
+>  		snprintf(detail, sizeof(detail),
+>  			"page:0x%lx offset:0x%lx grain:%d syndrome:0x%lx",
+>  			page_frame_number, offset_in_page,
+>  			grain, syndrome);
+> -		edac_ce_error(mci, pos, msg, location, label, detail,
+> -			      other_detail, enable_per_layer_report,
+> -			      page_frame_number, offset_in_page, grain);
+> -	} else {
+> +	else
+>  		snprintf(detail, sizeof(detail),
+>  			"page:0x%lx offset:0x%lx grain:%d",
+>  			page_frame_number, offset_in_page, grain);
+>  
+> +	/* Report the error via the trace interface */
+> +	trace_mc_error(type, mci->mc_idx, msg, label, location,
+> +		       detail, other_detail);
+> +
+> +	/* Report the error via the edac_mc_printk() interface */
+> +	if (type == HW_EVENT_ERR_CORRECTED)
+> +		edac_ce_error(mci, pos, msg, location, label, detail,
+> +			      other_detail, enable_per_layer_report,
+> +			      page_frame_number, offset_in_page, grain);
+> +	else
+>  		edac_ue_error(mci, pos, msg, location, label, detail,
+>  			      other_detail, enable_per_layer_report);
+> -	}
+>  }
+>  EXPORT_SYMBOL_GPL(edac_mc_handle_error);
+> diff --git a/include/ras/ras.h b/include/ras/ras.h
+> new file mode 100644
+> index 0000000..13ea4ee
+> --- /dev/null
+> +++ b/include/ras/ras.h
+> @@ -0,0 +1,77 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM ras
+> +
+> +#if !defined(_TRACE_HW_EVENT_MC_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_HW_EVENT_MC_H
+> +
+> +#include <linux/tracepoint.h>
+> +#include <linux/edac.h>
+> +#include <linux/ktime.h>
+> +
+> +/*
+> + * Hardware Events Report
+> + *
+> + * Those events are generated when hardware detected a corrected or
+> + * uncorrected event, and are meant to replace the current API to report
+> + * errors defined on both EDAC and MCE subsystems.
+> + *
+> + * FIXME: Add events for handling memory errors originated from the
+> + *        MCE subsystem.
+> + */
+> +
+> +/*
+> + * Hardware-independent Memory Controller specific events
+> + */
+> +
+> +/*
+> + * Default error mechanisms for Memory Controller errors (CE and UE)
+> + */
+> +TRACE_EVENT(mc_error,
+> +
+> +	TP_PROTO(const unsigned int err_type,
+> +		 const unsigned int mc_index,
+> +		 const char *msg,
+> +		 const char *label,
+> +		 const char *location,
+> +		 const char *detail,
+> +		 const char *driver_detail),
+> +
+> +	TP_ARGS(err_type, mc_index, msg, label, location,
+> +		detail, driver_detail),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	unsigned int,	err_type		)
+> +		__field(	unsigned int,	mc_index		)
+> +		__string(	msg,		msg			)
+> +		__string(	label,		label			)
+> +		__string(	detail,		detail			)
+> +		__string(	location,	location		)
+> +		__string(	driver_detail,	driver_detail		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->err_type		= err_type;
+> +		__entry->mc_index		= mc_index;
+> +		__assign_str(msg, msg);
+> +		__assign_str(label, label);
+> +		__assign_str(location, location);
+> +		__assign_str(detail, detail);
+> +		__assign_str(driver_detail, driver_detail);
+> +	),
+> +
+> +	TP_printk(HW_ERR "mem_ctl#%d: %s error %s on memory stick \"%s\" (%s %s %s)",
+> +		  __entry->mc_index,
+> +		  (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
+> +			((__entry->err_type == HW_EVENT_ERR_FATAL) ?
+> +			"Fatal" : "Uncorrected"),
+> +		  __get_str(msg),
+> +		  __get_str(label),
+> +		  __get_str(location),
+> +		  __get_str(detail),
+> +		  __get_str(driver_detail))
+> +);
+> +
+> +#endif /* _TRACE_HW_EVENT_MC_H */
+> +
+> +/* This part must be outside protection */
+> +#include <trace/define_trace.h>
+> -- 
+> 1.7.8
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
