@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933205Ab2EKSc4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 14:32:56 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:30190 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933159Ab2EKScx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 14:32:53 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: IvxqZzUVM1kH8q3DPVBcRdECJhKLpnCPBfZ3UyrXi.AqnnX
- LKg5n8RJCWTumeDxvYXxcglLFblAV.5WbyNujEuvK0hohzFWeiTq6nneBUVV
- Ue.HMxPesWIU26tGdjzWgO64_PUJlZV7ZC8_EhICWlA0cWNvQ4OyZFIbAmzC
- 92L2VETQZ7LMAsASREER93YzeYK7kaRjlFkStZk5_mPLsODoycVH63OFC.21
- mVqVS0lea1miDPNyKALr3w6__GsTcD18TwerqEz6HmaAtSqEZP_.ENq8_1FY
- iIpAbfdy7h7BoujPGp4xqFiEythHYTGAOQFhuVMgbKiwb_L4ny5I1uup1fwz
- dXsYndtJ.I.rKPvw4nyUef8vbokXuZYQpmjm1X8J_CrtK5GP04ZV2MKtnejr
- d
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 11 May 2012 13:32:48 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 04/29] slub: always get the cache from its page in
- kfree
-In-Reply-To: <4FAD585A.4070007@parallels.com>
-Message-ID: <alpine.DEB.2.00.1205111331010.386@router.home>
-References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205111251420.31049@router.home> <4FAD531D.6030007@parallels.com> <alpine.DEB.2.00.1205111305570.386@router.home>
- <4FAD566C.3000804@parallels.com> <alpine.DEB.2.00.1205111316540.386@router.home> <4FAD585A.4070007@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1946032Ab2EKSfw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 14:35:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34178 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946015Ab2EKSft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 14:35:49 -0400
+Message-ID: <4FAD5B87.6090809@zytor.com>
+Date: Fri, 11 May 2012 11:33:43 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Rob Landley <rob@landley.net>
+CC: Alex Shi <alex.shi@intel.com>, tglx@linutronix.de, mingo@redhat.com,
+        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, gregkh@linuxfoundation.org, borislav.petkov@amd.com,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
+        oleg@redhat.com, axboe@kernel.dk, a.p.zijlstra@chello.nl,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 1/7] x86/tlb: unify TLB_FLUSH_ALL definition
+References: <1336626013-28413-1-git-send-email-alex.shi@intel.com> <1336626013-28413-2-git-send-email-alex.shi@intel.com> <4FAC0D1E.3000403@landley.net>
+In-Reply-To: <4FAC0D1E.3000403@landley.net>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 May 2012, Glauber Costa wrote:
+On 05/10/2012 11:46 AM, Rob Landley wrote:
+> On 05/10/2012 12:00 AM, Alex Shi wrote:
+>> Since sizeof(long) is 4 in x86_32 mode, and it's 8 in x86_64 mode,
+>> sizeof(long long) is also 8 byte in x86_64 mode.
+>> use long mode can fit TLB_FLUSH_ALL defination here both in 32 or
+>> 64 bits mode.
+> 
+> I.E. Linux follows the LP64 standad, as do the BSDs and MacOS X:
+> 
+> http://www.unix.org/whitepapers/64bit.html
+> http://www.unix.org/version2/whatsnew/lp64_wp.html
+> 
 
-> Thank you in advance for your time reviewing this!
+Specifically, it is universally assumed in the Linux kernel that
+sizeof(long) == sizeof(size_t) == sizeof(intptr_t).
 
-Where do I find the rationale for all of this? Trouble is that pages can
-contain multiple objects f.e. so accounting of pages to groups is a bit fuzzy.
-I have not followed memcg too much since it is not relevant (actual
-it is potentially significantly harmful given the performance
-impact) to the work loads that I am using.
+	-hpa
 
