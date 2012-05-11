@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab2EKGNm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 02:13:42 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:35306 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756085Ab2EKGNk (ORCPT
+	id S1757014Ab2EKGN4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 02:13:56 -0400
+Received: from cora.hrz.tu-chemnitz.de ([134.109.228.40]:54938 "EHLO
+	cora.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756648Ab2EKGNs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 02:13:40 -0400
-Date: Fri, 11 May 2012 09:16:49 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
-        fmhess@users.sourceforge.net, abbotti@mev.co.uk,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH] staging: comedi: register sysfs device attributes with
- driver core
-Message-ID: <20120511061649.GW22134@mwanda>
-References: <201205101805.28589.hartleys@visionengravers.com>
+	Fri, 11 May 2012 02:13:48 -0400
+Message-ID: <4FACAE19.2070609@hrz.tu-chemnitz.de>
+Date: Fri, 11 May 2012 08:13:45 +0200
+From: Markus Franke <markus.franke@s2002.tu-chemnitz.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201205101805.28589.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Markus Franke <markus.franke@s2002.tu-chemnitz.de>,
+        Evgeniy Polyakov <zbr@ioremap.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] w1: Add 1-wire slave device driver for DS28E04-100
+References: <20120509220636.GA27659@kroah.com> <4FAAECB7.8070904@hrz.tu-chemnitz.de> <20120509222411.GA24302@kroah.com> <4FAAF1C4.2050500@hrz.tu-chemnitz.de> <20120509235723.GA7404@ioremap.net> <20120510000126.GA2357@kroah.com> <20120510004350.GA8362@ioremap.net> <4FAB4A4D.8080901@hrz.tu-chemnitz.de> <20120510151639.GE17472@kroah.com> <4FAC47F6.6080903@hrz.tu-chemnitz.de> <20120510230445.GA11918@kroah.com>
+In-Reply-To: <20120510230445.GA11918@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Scan-AV: cora.hrz.tu-chemnitz.de;2012-05-11 08:13:46;85a8c8ca5033c1db72cb9818c2df706f
+X-Scan-SA: cora.hrz.tu-chemnitz.de;2012-05-11 08:13:46;30e31107ed59e302a166822235162661
+X-Spam-Score: -1.0 (-)
+X-Spam-Report: --- Textanalyse SpamAssassin 3.3.1 (-1.0 Punkte)
+ Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
+ * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+ --- Ende Textanalyse
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 06:05:28PM -0700, H Hartley Sweeten wrote:
-> -static const struct attribute_group comedi_sysfs_files = {
-> -	.attrs	= comedi_attrs,
-> +static struct device_attribute comedi_dev_attrs[] = {
-> +	__ATTR(max_read_buffer_kb, S_IRUGO | S_IWUSR,
-> +		show_max_read_buffer_kb, store_max_read_buffer_kb),
-> +	__ATTR(read_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
-> +		show_read_buffer_kb, store_read_buffer_kb),
-> +	__ATTR(max_write_buffer_kb, S_IRUGO | S_IWUSR,
-> +		show_max_write_buffer_kb, store_max_write_buffer_kb),
-> +	__ATTR(write_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
-> +		show_write_buffer_kb, store_write_buffer_kb),
-> +	__ATTR_NULL
+> You forgot a Documentation/ABI/ update that shows your sysfs files and
 
-Some of these are group writable and some are only user writable so
-it's not consistent.  Probably just make them user writeable.
+> explains them there.
 
-I guess this was in the original code too, but it's just more
-obvious now that they're grouped together.
 
-regards,
-dan carpenter
+There is not even a single 1-wire driver mentioned within
+Documentation/ABI. In which subdirectory shall I put my documentation
+file into? stable?
 
+@Evgeniy: Any suggestions?
+
+Best regards,
+Markus Franke
