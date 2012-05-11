@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964823Ab2EKW5G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 18:57:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64814 "EHLO mx1.redhat.com"
+	id S964864Ab2EKW6P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 18:58:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46377 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759814Ab2EKW4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 18:56:55 -0400
+	id S964828Ab2EKW5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 18:57:06 -0400
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 10/13] pci: export pci_user functions for use by other drivers
+Subject: [PATCH 11/13] pci: Create common pcibios_err_to_errno
 To: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
         joerg.roedel@amd.com, dwmw2@infradead.org
 Cc: chrisw@sous-sol.org, agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
@@ -16,8 +16,8 @@ Cc: chrisw@sous-sol.org, agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         bhelgaas@google.com, alex.williamson@redhat.com
-Date: Fri, 11 May 2012 16:56:37 -0600
-Message-ID: <20120511225636.30496.26907.stgit@bling.home>
+Date: Fri, 11 May 2012 16:56:44 -0600
+Message-ID: <20120511225643.30496.36823.stgit@bling.home>
 In-Reply-To: <20120511222148.30496.68571.stgit@bling.home>
 References: <20120511222148.30496.68571.stgit@bling.home>
 User-Agent: StGIT/0.14.3
@@ -28,76 +28,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VFIO PCI support will make use of these for user initiated
-PCI config accesses.
+For returning errors out to non-PCI code.  Re-name xen's version.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
- drivers/pci/access.c |    6 ++++--
- drivers/pci/pci.h    |    7 -------
- include/linux/pci.h  |    8 ++++++++
- 3 files changed, 12 insertions(+), 9 deletions(-)
+ drivers/xen/xen-pciback/conf_space.c |    6 +++---
+ include/linux/pci.h                  |   26 ++++++++++++++++++++++++++
+ 2 files changed, 29 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pci/access.c b/drivers/pci/access.c
-index 2a58164..ba91a7e 100644
---- a/drivers/pci/access.c
-+++ b/drivers/pci/access.c
-@@ -162,7 +162,8 @@ int pci_user_read_config_##size						\
- 	if (ret > 0)							\
- 		ret = -EINVAL;						\
- 	return ret;							\
--}
-+}									\
-+EXPORT_SYMBOL_GPL(pci_user_read_config_##size);
- 
- /* Returns 0 on success, negative values indicate error. */
- #define PCI_USER_WRITE_CONFIG(size,type)				\
-@@ -181,7 +182,8 @@ int pci_user_write_config_##size					\
- 	if (ret > 0)							\
- 		ret = -EINVAL;						\
- 	return ret;							\
--}
-+}									\
-+EXPORT_SYMBOL_GPL(pci_user_write_config_##size);
- 
- PCI_USER_READ_CONFIG(byte, u8)
- PCI_USER_READ_CONFIG(word, u16)
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index e8f2f8f..68e3475 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -86,13 +86,6 @@ static inline bool pci_is_bridge(struct pci_dev *pci_dev)
- 	return !!(pci_dev->subordinate);
+diff --git a/drivers/xen/xen-pciback/conf_space.c b/drivers/xen/xen-pciback/conf_space.c
+index 30d7be0..46ae0f9 100644
+--- a/drivers/xen/xen-pciback/conf_space.c
++++ b/drivers/xen/xen-pciback/conf_space.c
+@@ -124,7 +124,7 @@ static inline u32 merge_value(u32 val, u32 new_val, u32 new_val_mask,
+ 	return val;
  }
  
--extern int pci_user_read_config_byte(struct pci_dev *dev, int where, u8 *val);
--extern int pci_user_read_config_word(struct pci_dev *dev, int where, u16 *val);
--extern int pci_user_read_config_dword(struct pci_dev *dev, int where, u32 *val);
--extern int pci_user_write_config_byte(struct pci_dev *dev, int where, u8 val);
--extern int pci_user_write_config_word(struct pci_dev *dev, int where, u16 val);
--extern int pci_user_write_config_dword(struct pci_dev *dev, int where, u32 val);
--
- struct pci_vpd_ops {
- 	ssize_t (*read)(struct pci_dev *dev, loff_t pos, size_t count, void *buf);
- 	ssize_t (*write)(struct pci_dev *dev, loff_t pos, size_t count, const void *buf);
+-static int pcibios_err_to_errno(int err)
++static int xen_pcibios_err_to_errno(int err)
+ {
+ 	switch (err) {
+ 	case PCIBIOS_SUCCESSFUL:
+@@ -202,7 +202,7 @@ out:
+ 		       pci_name(dev), size, offset, value);
+ 
+ 	*ret_val = value;
+-	return pcibios_err_to_errno(err);
++	return xen_pcibios_err_to_errno(err);
+ }
+ 
+ int xen_pcibk_config_write(struct pci_dev *dev, int offset, int size, u32 value)
+@@ -290,7 +290,7 @@ int xen_pcibk_config_write(struct pci_dev *dev, int offset, int size, u32 value)
+ 		}
+ 	}
+ 
+-	return pcibios_err_to_errno(err);
++	return xen_pcibios_err_to_errno(err);
+ }
+ 
+ void xen_pcibk_config_free_dyn_fields(struct pci_dev *dev)
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index dc25da3..b437225 100644
+index b437225..20a8f2e 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
-@@ -770,6 +770,14 @@ static inline int pci_write_config_dword(const struct pci_dev *dev, int where,
- 	return pci_bus_write_config_dword(dev->bus, dev->devfn, where, val);
- }
+@@ -467,6 +467,32 @@ static inline bool pci_dev_msi_enabled(struct pci_dev *pci_dev) { return false;
+ #define PCIBIOS_SET_FAILED		0x88
+ #define PCIBIOS_BUFFER_TOO_SMALL	0x89
  
-+/* user-space driven config access */
-+extern int pci_user_read_config_byte(struct pci_dev *dev, int where, u8 *val);
-+extern int pci_user_read_config_word(struct pci_dev *dev, int where, u16 *val);
-+extern int pci_user_read_config_dword(struct pci_dev *dev, int where, u32 *val);
-+extern int pci_user_write_config_byte(struct pci_dev *dev, int where, u8 val);
-+extern int pci_user_write_config_word(struct pci_dev *dev, int where, u16 val);
-+extern int pci_user_write_config_dword(struct pci_dev *dev, int where, u32 val);
++/*
++ * Translate above to generic errno for passing back through non-pci.
++ */
++static inline int pcibios_err_to_errno(int err)
++{
++	if (err <= PCIBIOS_SUCCESSFUL)
++		return err; /* Assume already errno */
 +
- int __must_check pci_enable_device(struct pci_dev *dev);
- int __must_check pci_enable_device_io(struct pci_dev *dev);
- int __must_check pci_enable_device_mem(struct pci_dev *dev);
++	switch (err) {
++	case PCIBIOS_FUNC_NOT_SUPPORTED:
++		return -ENOENT;
++	case PCIBIOS_BAD_VENDOR_ID:
++		return -EINVAL;
++	case PCIBIOS_DEVICE_NOT_FOUND:
++		return -ENODEV;
++	case PCIBIOS_BAD_REGISTER_NUMBER:
++		return -EFAULT;
++	case PCIBIOS_SET_FAILED:
++		return -EIO;
++	case PCIBIOS_BUFFER_TOO_SMALL:
++		return -ENOSPC;
++	}
++
++	return -ENOTTY;
++}
++
+ /* Low-level architecture-dependent routines */
+ 
+ struct pci_ops {
 
