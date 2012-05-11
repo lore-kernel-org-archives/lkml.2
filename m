@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab2EKHnq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 03:43:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53959 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750704Ab2EKHno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 03:43:44 -0400
-Date: Fri, 11 May 2012 10:43:35 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: x86@kernel.org, kvm@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
-        Markus Armbruster <armbru@redhat.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Subject: [PATCH] qemu: whitelist kvm pv eoi feature
-Message-ID: <20120511074334.GA1504@redhat.com>
+	id S1755212Ab2EKHsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 03:48:47 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39980 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398Ab2EKHsp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 03:48:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1336679924.git.mst@redhat.com>
+In-Reply-To: <8495990E-0B78-4B47-A00D-36D45DC3450F@gmail.com>
+References: <8495990E-0B78-4B47-A00D-36D45DC3450F@gmail.com>
+Date: Fri, 11 May 2012 09:48:45 +0200
+Message-ID: <CACRpkdZZmxqus6jujtq43qD_d_dHxi2wORmC18kGsD3aB1jjAQ@mail.gmail.com>
+Subject: Re: gpio: pca953x: interrupt feature unreliable (re-re-send, Grant
+ please acknowledge!!)
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jean-Francois Dagenais <jeff.dagenais@gmail.com>,
+        David Jander <david@protonic.nl>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linus.walleij@stericsson.com,
+        torvalds@linux-foundation.org,
+        open list <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, eric.miao@marvell.com,
+        maz@misterjones.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Whitelist kvm pv eoi feature. The feature is enabled
-with -cpu kvm64. To disable: -cpu kvm64,-kvm_eoi.
+On Thu, May 10, 2012 at 8:19 PM, Jean-Francois Dagenais
+<jeff.dagenais@gmail.com> wrote:
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+> I would propose a patch, but I am missing knowledge on the internals of the
+> kernel's irq code, so here's a simple suggestion description, hoping to get
+> some feedback.
 
-Sending a copy to kernel list as this is needed
-to test the pv eoi feature recently submitted.
+David Jander has been working on this driver lately, David can you have a
+look at the quite complex description from Jean-Francois?
 
- target-i386/cpuid.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/target-i386/cpuid.c b/target-i386/cpuid.c
-index 465ea15..c421b19 100644
---- a/target-i386/cpuid.c
-+++ b/target-i386/cpuid.c
-@@ -75,7 +75,7 @@ static const char *ext3_feature_name[] = {
- };
- 
- static const char *kvm_feature_name[] = {
--    "kvmclock", "kvm_nopiodelay", "kvm_mmu", "kvmclock", "kvm_asyncpf", NULL, NULL, NULL,
-+    "kvmclock", "kvm_nopiodelay", "kvm_mmu", "kvmclock", "kvm_asyncpf", NULL, "kvm_eoi", NULL,
-     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
--- 
-MST
+Yours,
+Linus Walleij
