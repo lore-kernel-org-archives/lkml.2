@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab2EKDEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 May 2012 23:04:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58072 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932373Ab2EKDEV (ORCPT
+	id S932594Ab2EKDH4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 May 2012 23:07:56 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:56514 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932423Ab2EKDHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 May 2012 23:04:21 -0400
-Message-ID: <1336705456.8274.428.camel@deadeye>
-Subject: Re: [ 034/167] [PATCH] usb: gadget: udc-core: stop UDC on
- device-initiated disconnect
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+	Thu, 10 May 2012 23:07:54 -0400
+Date: Thu, 10 May 2012 23:07:37 -0400 (EDT)
+Message-Id: <20120510.230737.585788465862567756.davem@davemloft.net>
+To: ben@decadent.org.uk
+Cc: jrnieder@gmail.com, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Felipe Balbi <balbi@ti.com>
-Date: Fri, 11 May 2012 04:04:16 +0100
-In-Reply-To: <20120509191950.GB15527@herton-ThinkPad-T420>
-References: <20120509055029.588587017@decadent.org.uk>
-	 <20120509055034.318079643@decadent.org.uk>
-	 <20120509191950.GB15527@herton-ThinkPad-T420>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-RZrqEJEASoUaHdGtWo/P"
-X-Mailer: Evolution 3.2.2-1 
+        alan@lxorguk.ukuu.org.uk, eric.dumazet@gmail.com,
+        subramanian.vijay@gmail.com
+Subject: Re: [ 074/167] [PATCH 14/26] tcp: fix tcp_trim_head()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1336705215.8274.425.camel@deadeye>
+References: <20120509055040.099618905@decadent.org.uk>
+	<20120509081617.GD32230@burratino>
+	<1336705215.8274.425.camel@deadeye>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 10 May 2012 20:07:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Fri, 11 May 2012 04:00:15 +0100
 
---=-RZrqEJEASoUaHdGtWo/P
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> On Wed, 2012-05-09 at 03:16 -0500, Jonathan Nieder wrote:
+>> Ben Hutchings wrote:
+>> 
+>> > 3.2-stable review patch.  If anyone has any objections, please let me know.
+>> [...]
+>> > [ Upstream commit 4fa48bf3c75069d636fc8830743c929a062e80dc ]
+>> >
+>> > commit f07d960df3 (tcp: avoid frag allocation for small frames)
+>> > breaked assumption in tcp stack that skb is either linear (skb->data_len
+>> > == 0), or fully fragged (skb->data_len == skb->len)
+>> >
+>> > tcp_trim_head() made this assumption, we must fix it.
+>> 
+>> Is this needed in the context of 3.2.y (which does not include
+>> f07d960df3)?
+> [...]
+> 
+> The code being replaced really didn't make sense, but unless there is
+> some other case that breaks the assumption described then I don't think
+> this meets the stable rules.  David?
 
-On Wed, 2012-05-09 at 12:19 -0700, Herton Ronaldo Krzesinski wrote:
-> On Wed, May 09, 2012 at 06:51:03AM +0100, Ben Hutchings wrote:
-> > 3.2-stable review patch.  If anyone has any objections, please let me k=
-now.
-> >=20
-> > ------------------
-> >=20
-> > From: Felipe Balbi <balbi@ti.com>
-> >=20
-> > commit 6d258a4c42089229b855fd706622029decf316d6 upstream.
->=20
-> We also need a follow up fix to this, commit
-> 83a787a71e034244a9fd1d5988fe18f226341417 upstream.
-[...]
-
-Right, Peter Korsgaard already pointed out this and commit
-320cd1e750f1bf3e47eb41209dcb2be07264cb76, and I've added them to the
-queue.
-
-Ben.
-
---=20
-Ben Hutchings
-Life is what happens to you while you're busy making other plans.
-                                                               - John Lenno=
-n
-
---=-RZrqEJEASoUaHdGtWo/P
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT6yBsee/yOyVhhEJAQoR3xAAwayWyax1JRabuB56ywWWjutRtiplZqFY
-jR5h6vywAibLe6BZVmejPFwLRjbu5NZDBlEIFXEnQ2s2E1AXxrtjkdVi2mcvS5tY
-UD5DgkCOI/dhb/nrHL3jvKHqh1sV2LhsvqveVxJ9s3Z8lSUv4n8W5+Gb3oXdmGaf
-pnU+NPBoZo0wjUmUWHGRGCogo1l1qqenD5Ljq4tp54alB+xaVlTZuy5TresVM9Px
-BU0cpbpfHSfyvo0J2SB3ig2jLKfuqiVAYXoOg6f1ZS4R9CyALoAVc6KSy0BS0RAO
-XVan3GToAOl+3IVV+h/ekaBD2HJSKwg/wf9JGUa0NPU4vOf9AiCdtnuegu3zZLWf
-aOrSAbUmbGoJ1/VvEWgYhoP8xcDHurDxlv/A0jqcSsQIkQgzHa71Lc8iikFfjhJe
-fFApDMupt+GH7r5BYGU1lWYAZ69OzThgyGiI4UV/MXhZFhRjdZdxLfYN8BP3iesl
-+ZwPVzfIwSTw78xDo0bBChZ8mQxqRcuaidro8PGHs/AT8j1PfzWt5eC2grBFAge6
-b/7tNkQiA9VNnP8usO5uClTUbIfXvxqFHSOr3I4woPEHUTkID5vwjhJf4JgOibe+
-jHc3nmsqD0SBpU5wyISNTQc2/+PQ68AvS3wcpBhgPuF3/xPUfz+qR8Q3/4EFQYb2
-VkHJfLH7CSQ=
-=h54U
------END PGP SIGNATURE-----
-
---=-RZrqEJEASoUaHdGtWo/P--
+It's a prerequisite for cleanly applying the patch that comes right
+afterwards.
