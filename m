@@ -1,131 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030239Ab2EKKpX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 06:45:23 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:56897 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757911Ab2EKKpT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 06:45:19 -0400
-X-AuditID: cbfee61a-b7bbeae000003a71-8b-4facedbd4d8a
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "=?utf-8?Q?'Jos=C3=A9_Miguel_Gon=C3=A7alves'?=" 
-	<jose.goncalves@inov.pt>
-Cc: "'Ben Dooks'" <ben-linux@fluff.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1336607209-6409-1-git-send-email-jose.goncalves@inov.pt>
- <036701cd2e8e$cf4cc100$6de64300$%kim@samsung.com> <4FABC720.5090301@inov.pt>
-In-reply-to: <4FABC720.5090301@inov.pt>
-Subject: RE: [PATCH] ARM: SAMSUNG: Fix for S3C2412 EBI memory mapping.
-Date: Fri, 11 May 2012 19:45:18 +0900
-Message-id: <045501cd2f63$27de99e0$779bcda0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac0us6qcP3OJ7mjcTKCly5VqaPApdQArwmKQ
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	id S1759035Ab2EKKtT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 06:49:19 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758328Ab2EKKtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 06:49:17 -0400
+Message-ID: <4FACEEA1.9020400@nod.at>
+Date: Fri, 11 May 2012 12:49:05 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, tim.bird@am.sony.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de
+Subject: Re: [RFC v2] UBI: UBIVIS (aka checkpointing) support
+References: <1336585125-127220-1-git-send-email-richard@nod.at>  <1336624000.1936.22.camel@brekeke> <4FAB7D70.1040704@nod.at> <1336733182.2625.17.camel@sauron.fi.intel.com>
+In-Reply-To: <1336733182.2625.17.camel@sauron.fi.intel.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigD4331553F95E0AAFE1602F32"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-José Miguel Gonçalves wrote:
-> 
-> On 10-05-2012 10:25, Kukjin Kim wrote:
-> > José Miguel Gonçalves wrote:
-> >> While upgrading the kernel on a S3C2412 based board I've noted that it
-> was
-> >> impossible to boot the board with a 2.6.32 or upper kernel.
-> >> I've tracked down the problem to the EBI virtual memory mapping that is
-> in
-> >> conflict with the IO mapping definition in arch/arm/mach-
-> s3c24xx/s3c2412.c.
-> >>
-> >> Signed-off-by: José Miguel Gonçalves<jose.goncalves@inov.pt>
-> >> ---
-> >>   arch/arm/plat-samsung/include/plat/map-s3c.h |    2 +-
-> >>   1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/arch/arm/plat-samsung/include/plat/map-s3c.h
-> b/arch/arm/plat-
-> >> samsung/include/plat/map-s3c.h
-> >> index 7d04875..c0c70a8 100644
-> >> --- a/arch/arm/plat-samsung/include/plat/map-s3c.h
-> >> +++ b/arch/arm/plat-samsung/include/plat/map-s3c.h
-> >> @@ -22,7 +22,7 @@
-> >>   #define S3C24XX_VA_WATCHDOG	S3C_VA_WATCHDOG
-> >>
-> >>   #define S3C2412_VA_SSMC		S3C_ADDR_CPU(0x00000000)
-> >> -#define S3C2412_VA_EBI		S3C_ADDR_CPU(0x00010000)
-> >> +#define S3C2412_VA_EBI		S3C_ADDR_CPU(0x00100000)
-> >>
-> >>   #define S3C2410_PA_UART		(0x50000000)
-> >>   #define S3C24XX_PA_UART		S3C2410_PA_UART
-> >> --
-> >> 1.7.5.4
-> > Yeah, as you said, the mapping for SSMC invade EBI area but I think,
-> just SZ_4K is enough for SSMC. So following is better in this case. How do
-> you think? And there is no problem on your board?
-> >
-> > diff --git a/arch/arm/mach-s3c24xx/s3c2412.c b/arch/arm/mach-
-> s3c24xx/s3c2412.c
-> > index d4bc7f9..ac906bf 100644
-> > --- a/arch/arm/mach-s3c24xx/s3c2412.c
-> > +++ b/arch/arm/mach-s3c24xx/s3c2412.c
-> > @@ -72,7 +72,7 @@ static struct map_desc s3c2412_iodesc[] __initdata = {
-> >   	{
-> >   		.virtual = (unsigned long)S3C2412_VA_SSMC,
-> >   		.pfn     = __phys_to_pfn(S3C2412_PA_SSMC),
-> > -		.length  = SZ_1M,
-> > +		.length  = SZ_4K,
-> >   		.type    = MT_DEVICE,
-> >   	},
-> >   	{
-> >
-> 
-> It does not work! I tried also a 64K length and also did not work. With
-> your patch
-> my console (with earlyprintk set) only displays the following:
-> 
-> ## Booting image at 30800000 ...
->     Image Name:   Linux-3.2.16-inov1
->     Created:      2012-05-10  12:42:49 UTC
->     Image Type:   ARM Linux Kernel Image (uncompressed)
->     Data Size:    1202592 Bytes =  1.1 MB
->     Load Address: 30008000
->     Entry Point:  30008000
->     Verifying Checksum ... OK
-> OK
-> 
-> Starting kernel ...
-> 
-> Uncompressing Linux... done, booting the kernel.
-> Linux version 3.2.16-inov1 (jmpg@st-ze) (gcc version 4.6.4 20120402
-> (prerelease)
-> (crosstool-NG 1.15.2) ) #3 PREEMPT Thu May 10 13:42:48 WEST 2012
-> CPU: ARM926EJ-S [41069265] revision 5 (ARMv5TEJ), cr=00053177
-> CPU: VIVT data cache, VIVT instruction cache
-> Machine: SMDK2412
-> bootconsole [earlycon0] enabled
-> Memory policy: ECC disabled, Data cache writeback
-> CPU S3C2412 (id 0x32412003)
-> 
-> My guess is that the MMU initialization on the S3C2412 chip only allows a
-> minimum
-> of 1MB for the page size.
-> 
-Hmm, could be... there is no smdk2412 on my desk :(
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigD4331553F95E0AAFE1602F32
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-OK, will apply your fix.
-Thanks.
+Am 11.05.2012 12:46, schrieb Artem Bityutskiy:
+> On Thu, 2012-05-10 at 10:33 +0200, Richard Weinberger wrote:
+>> First of all, yes it's fully backward-compatible. It uses two new inte=
+rnal volume IDs
+>> with compat =3D UBI_COMPAT_DELETE.
+>> Old UBI implementations will delete the checkpoint and continue with s=
+canning...
+>=20
+> OK. BTW, these patches do not compile when the fastmap is disabled. I
+> hope you'll just kill the ifdefs in the next revision and this problem
+> will go away.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+It builds fine here with CONFIG_MTD_UBI_CHECKPOINT=3Dn.
+What error do you get?
 
+>> Regarding design, ubi_wl_get_peb() currently offers three types of dat=
+a types.
+>> UBI_LONGTERM, UBI_SHORTTERM and UBI_UNKNOWN. Do we really need them?
+>> Checkpointing has a pool of unknown PEBs. This PEBs have to be scanned=
+ while attaching.
+>> For now I had to create three pools (for UBI_LONGTERM, UBI_SHORTTERM a=
+nd UBI_UNKNOWN).
+>> This makes the whole thing complexer than needed.
+>> It introduces also some nasty corner cases.
+>=20
+> But AFAIR we already agreed that we kill these, no? I thought you'll
+> send a separate patch for this. We do not need this feature and to our
+> shame it even was not working and there was a bug found very recently.
+
+Perfect!
+I was confused and thought that this feature will be removed later...
+
+Thanks,
+//richard
+
+
+--------------enigD4331553F95E0AAFE1602F32
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPrO6oAAoJEN9758yqZn9eKB0IAINa5vvj6Wdo9zI9NQtZr5RC
+OLUL7rs9GlZUPhNM3YuA4CNOCv2cY7uDhRGayg1MYTe5o3Gr+p50sK43RUMxLguj
+S5JieWvEL/gGBtRgE8+Qs6nI2dmJq5JxZdNcVRPdy8UFW0DCtnnTW5gavqKe12lQ
+RDGHV1Dh9/S/y9N0VQ5bRyB+P0jmi0+Pad0Xl7aAuy7d7sdCkGW/jn+7EQKPZUg/
+Kz3/uY0VzPU9OyrpRDF/t1bQtAwAnp4Rt5h4pS4w/lnO7G2x8i3HUaee776oeYbz
+xURb4MOYYwokK/5XYkhYcUSknPTGk77Jes2/08tAeDvS43OwxhQBH8nGpazgUv4=
+=Mbaq
+-----END PGP SIGNATURE-----
+
+--------------enigD4331553F95E0AAFE1602F32--
