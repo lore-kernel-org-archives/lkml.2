@@ -1,135 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755621Ab2EKW4D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 18:56:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54386 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750706Ab2EKWz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 18:55:59 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 00/13] IOMMU Groups + VFIO
-To: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
-        joerg.roedel@amd.com, dwmw2@infradead.org
-Cc: chrisw@sous-sol.org, agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
-        B08248@freescale.com, B07421@freescale.com, avi@redhat.com,
-        konrad.wilk@oracle.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        bhelgaas@google.com, alex.williamson@redhat.com
-Date: Fri, 11 May 2012 16:55:25 -0600
-Message-ID: <20120511222148.30496.68571.stgit@bling.home>
-User-Agent: StGIT/0.14.3
+	id S1758639Ab2EKXMA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 19:12:00 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63741 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676Ab2EKXL6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 19:11:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LFD.2.02.1205101351380.21030@xanadu.home>
+References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
+ <CAK5ve-KSyvZSHw7csQ5M88q0008NSrs1kwuyUH3hFqxD0f7BQQ@mail.gmail.com>
+ <20120509122436.1b612004.akpm@linux-foundation.org> <201205092038.16722.arnd.bergmann@linaro.org>
+ <CAK5ve-Ko6EjZsJBW++ofL0eHxiR5W+wafb3T99Rm9a1L8pHLBQ@mail.gmail.com>
+ <CAOesGMhioLshtsYiHCdQxtx7+3GJsCyhgd7c7nDiZC3=3axb6w@mail.gmail.com>
+ <CAK5ve-+rCv3s+K6Laie=QaPqqZ4Vk1+irYU6S4MBZSquKrMWtw@mail.gmail.com>
+ <alpine.LFD.2.02.1205092122140.21030@xanadu.home> <CAK5ve-JC61jFX7+GV9VoZKExbtdxX03jmpkzu5zxHg+Lehy7VQ@mail.gmail.com>
+ <alpine.LFD.2.02.1205101351380.21030@xanadu.home>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Sat, 12 May 2012 07:11:36 +0800
+X-Google-Sender-Auth: c3o3LlBSW7ePw2UjNVNvq4cgdEM
+Message-ID: <CAK5ve-L4rcAx-=n5u7G0AQzvUG3ir_jzF_ibaSf-EntXAzFUCw@mail.gmail.com>
+Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and
+ consolidate LED driver in ARM
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, rpurdie@rpsys.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, tim.gardner@canonical.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the latest incantation of IOMMU Groups and matching VFIO
-code.  After some discussions with BenH and David Gibson I think
-we have some agreement on moving forward with the IOMMU Group
-approach, which covers the first 6 patches in this series.  The
-basic idea of this is that IOMMU groups need to be a more
-integrated part of the driver model.  The current iommu_device_group
-interface requires the user to do all all the heavy lifting of
-finding devices reporting the same ID and putting them together into
-something useful.  If an esoteric driver like VFIO is the only user
-of the groups, this works nicely, but if we want to use groups for
-common DMA paths, it's too much overhead.  We therefore add an
-iommu_group pointer off the device so we can easily get to the group
-for fast paths like streaming DMA (GregKH, does this work for you?).
+On Fri, May 11, 2012 at 2:01 AM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Fri, 11 May 2012, Bryan Wu wrote:
+>
+>> On Thu, May 10, 2012 at 9:25 AM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+>> > You applied your patches on top of linux-next.  This can't be merged
+>> > upstream until you rebase your patches on something stable such as pure
+>> > v3.4-rc6 for example.
+>> >
+>>
+>> Got it, Nico. As I'm still in US for our Ubuntu Developer Summit, I
+>> plan to rebase and test on my hardware after I'm back to home next
+>> week.
+>
+> Given where things are, you risk being too late for this merge window if
+> you do so, meaning that this cleanup will have to wait yet another
+> cycle which would be rather disappointing.
+>
+> Given that the probabilities for something to break are rather small if
+> you simply rebase on top of v3.4-rc6 from linux-next, I'd suggest you do
+> the rebase ASAP and perform compilation tests only.  If this can be
+> merged in the arm-soc tree quickly then this will get some exposure and
+> actual testing from others which should be fine.
+>
+>
 
-I include code to support IOMMU group on both amd_iommu and
-intel-iommu.  These take into account device quirks, like the Ricoh
-device that David Woodhouse has noted on a few occasions.  I'll
-leave it to the iommu owners to make use of these.
+OK, I rebased my patch back on 3.4.0-rc6, please find it here:
+git://kernel.ubuntu.com/roc/linux-2.6/.git leds
 
-For VFIO itself, the core has had nearly a complete rewrite to
-support the IOMMU group interface and also to switch to a new model
-for allowing IOMMU domains to share context (merge is gone).  To
-allow the most flexibility (and also to avoid ratholing on the exposed
-IOMMU interface), the VFIO IOMMU backend is completely modular,
-allowing the user to probe and initiate a specific backend for a
-group.  I've poorly chosen the name "x86" for the current IOMMU
-backend, simply for lack of a good way to describe a non-window based,
-page table driven IOMMU implementation.
+linux-next branch can be also found here:
+git://kernel.ubuntu.com/roc/linux-2.6/.git leds-next
 
-These patches can be found in git here:
+Arnd, could you please help me to merge? if got any issue, please
+point to me to fix.
 
-git://github.com/awilliam/linux-vfio.git (iommu-group-vfio-20120511)
-
-The matching qemu tree supporting VFIO device assignment is here:
-
-git://github.com/awilliam/qemu-vfio.git (iommu-group-vfio)
-
-Sorry, this is based on Qemu-1.0.  Updating to 1.1 is next on my
-todo list.
-
-I'd really like to move forward with this, so please provide
-comments and feedback.  This touches iommu, x86 iommu drivers, pci,
-device, and adds a new driver, so I appreciate any kind of ack
-(or nak I suppose) to know if we've got end-to-end support.  Thanks!
-
-Alex
----
-
-Alex Williamson (13):
-      vfio: Add PCI device driver
-      pci: Misc pci_reg additions
-      pci: Create common pcibios_err_to_errno
-      pci: export pci_user functions for use by other drivers
-      vfio: x86 IOMMU implementation
-      vfio: Add documentation
-      vfio: VFIO core
-      iommu: Make use of DMA quirking and ACS enabled check for groups
-      pci: New pci_acs_enabled()
-      pci: New pci_dma_quirk()
-      iommu: IOMMU groups for VT-d and AMD-Vi
-      iommu: IOMMU Groups
-      driver core: Add iommu_group tracking to struct device
-
-
- Documentation/ioctl/ioctl-number.txt |    1 
- Documentation/vfio.txt               |  315 +++++++
- MAINTAINERS                          |    8 
- drivers/Kconfig                      |    2 
- drivers/Makefile                     |    1 
- drivers/iommu/amd_iommu.c            |   52 +
- drivers/iommu/intel-iommu.c          |   72 +-
- drivers/iommu/iommu.c                |  449 +++++++++-
- drivers/pci/access.c                 |    6 
- drivers/pci/pci.c                    |   43 +
- drivers/pci/pci.h                    |    8 
- drivers/pci/quirks.c                 |   22 
- drivers/vfio/Kconfig                 |   16 
- drivers/vfio/Makefile                |    3 
- drivers/vfio/pci/Kconfig             |    8 
- drivers/vfio/pci/Makefile            |    4 
- drivers/vfio/pci/vfio_pci.c          |  557 ++++++++++++
- drivers/vfio/pci/vfio_pci_config.c   | 1527 ++++++++++++++++++++++++++++++++++
- drivers/vfio/pci/vfio_pci_intrs.c    |  724 ++++++++++++++++
- drivers/vfio/pci/vfio_pci_private.h  |   91 ++
- drivers/vfio/pci/vfio_pci_rdwr.c     |  267 ++++++
- drivers/vfio/vfio.c                  | 1406 +++++++++++++++++++++++++++++++
- drivers/vfio/vfio_iommu_x86.c        |  743 +++++++++++++++++
- drivers/xen/xen-pciback/conf_space.c |    6 
- include/linux/device.h               |    2 
- include/linux/iommu.h                |   84 ++
- include/linux/pci.h                  |   37 +
- include/linux/pci_regs.h             |  112 ++
- include/linux/vfio.h                 |  442 ++++++++++
- 29 files changed, 6892 insertions(+), 116 deletions(-)
- create mode 100644 Documentation/vfio.txt
- create mode 100644 drivers/vfio/Kconfig
- create mode 100644 drivers/vfio/Makefile
- create mode 100644 drivers/vfio/pci/Kconfig
- create mode 100644 drivers/vfio/pci/Makefile
- create mode 100644 drivers/vfio/pci/vfio_pci.c
- create mode 100644 drivers/vfio/pci/vfio_pci_config.c
- create mode 100644 drivers/vfio/pci/vfio_pci_intrs.c
- create mode 100644 drivers/vfio/pci/vfio_pci_private.h
- create mode 100644 drivers/vfio/pci/vfio_pci_rdwr.c
- create mode 100644 drivers/vfio/vfio.c
- create mode 100644 drivers/vfio/vfio_iommu_x86.c
- create mode 100644 include/linux/vfio.h
+Thanks,
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
