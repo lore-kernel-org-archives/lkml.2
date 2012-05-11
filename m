@@ -1,34 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933291Ab2EKVWm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 17:22:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51170 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933065Ab2EKVWk (ORCPT
+	id S1946218Ab2EKVXy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 17:23:54 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:36724 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946149Ab2EKVXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 17:22:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120511174112.D9EEE3E0791@localhost>
-References: <1336738032-14940-1-git-send-email-linus.walleij@stericsson.com>
-	<20120511174112.D9EEE3E0791@localhost>
-Date: Fri, 11 May 2012 23:22:40 +0200
-Message-ID: <CACRpkdatENc_i2yyqiQiKScmNVWPujRC2MBoCsHa1VmTVV5xOQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio/msm-v1: re-read IRQ flags on each iteration
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 11 May 2012 17:23:53 -0400
+Date: Fri, 11 May 2012 17:23:39 -0400 (EDT)
+Message-Id: <20120511.172339.2007927803884694483.davem@davemloft.net>
+To: mgorman@suse.de
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, neilb@suse.de, a.p.zijlstra@chello.nl,
+        michaelc@cs.wisc.edu, emunson@mgebm.net
+Subject: Re: [PATCH 00/17] Swap-over-NBD without deadlocking V10
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120511154540.GV11435@suse.de>
+References: <1336657510-24378-1-git-send-email-mgorman@suse.de>
+	<20120511.010445.1020972261904383892.davem@davemloft.net>
+	<20120511154540.GV11435@suse.de>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 11 May 2012 14:23:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 7:41 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Fri, 11 May 2012 14:07:12 +0200, Linus Walleij <linus.walleij@stericsson.com> wrote:
+From: Mel Gorman <mgorman@suse.de>
+Date: Fri, 11 May 2012 16:45:40 +0100
 
-> I'll need an ack from an msm developer before applying this.
+> From my point of view, the ideal would be that all the patches go
+> through akpm's tree or yours but that probably will cause merge
+> difficulties.
+> 
+> Any recommendations?
 
-Yep I forward it to David Brown when I realized I forgot him in the Cc...
+I know there will be networking side conflicts very soon, it's not a
+matter of 'if' but 'when'.
 
-Yours,
-Linus Walleij
+But the trick is that I bet the 'mm' and 'slab' folks are in a similar
+situation.
+
+In any event I'm more than happy to take it all in my tree.
