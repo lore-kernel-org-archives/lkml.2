@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab2EKIie (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 04:38:34 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42499 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757871Ab2EKIi0 (ORCPT
+	id S1758075Ab2EKIlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 04:41:17 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54541 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757871Ab2EKIlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 04:38:26 -0400
-X-AuditID: 9c930197-b7be2ae000000ebb-53-4faccfffd675
-Message-ID: <4FACD00D.4060003@kernel.org>
-Date: Fri, 11 May 2012 17:38:37 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: raise MemFree by reverting percpu_pagelist_fraction
- to 0
-References: <alpine.LSU.2.00.1205110054520.2801@eggly.anvils> <CA+1xoqcChazS=TRt6-7GjJAzQNFLFXmO623rWwjRkdD5x3k=iw@mail.gmail.com>
-In-Reply-To: <CA+1xoqcChazS=TRt6-7GjJAzQNFLFXmO623rWwjRkdD5x3k=iw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 11 May 2012 04:41:13 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH] mfd: lm3533: fix return type of attribute is_visible
+Date: Fri, 11 May 2012 10:40:41 +0200
+Message-Id: <1336725641-11826-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.7.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 05:30 PM, Sasha Levin wrote:
+Since commit 587a1f1659 ("switch ->is_visible() to returning umode_t")
+the return type of is_visible is umode_t rather than mode_t.
 
-> On Fri, May 11, 2012 at 10:00 AM, Hugh Dickins <hughd@google.com> wrote:
->> Commit 93278814d359 "mm: fix division by 0 in percpu_pagelist_fraction()"
->> mistakenly initialized percpu_pagelist_fraction to the sysctl's minimum 8,
->> which leaves 1/8th of memory on percpu lists (on each cpu??); but most of
->> us expect it to be left unset at 0 (and it's not then used as a divisor).
-> 
-> I'm a bit confused about this, does it mean that once you set
-> percpu_pagelist_fraction to a value above the minimum, you can no
-> longer set it back to being 0?
+This silences a compiler warning on some architectures where these types
+are not compatible.
 
+Reported-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/mfd/lm3533-core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Unfortunately, Yes. :(
-It's rather awkward and need fix.
-
-
+diff --git a/drivers/mfd/lm3533-core.c b/drivers/mfd/lm3533-core.c
+index d11c891..5770bea 100644
+--- a/drivers/mfd/lm3533-core.c
++++ b/drivers/mfd/lm3533-core.c
+@@ -359,7 +359,7 @@ static struct attribute *lm3533_attributes[] = {
+ #define to_dev_attr(_attr) \
+ 	container_of(_attr, struct device_attribute, attr)
+ 
+-static mode_t lm3533_attr_is_visible(struct kobject *kobj,
++static umode_t lm3533_attr_is_visible(struct kobject *kobj,
+ 					     struct attribute *attr, int n)
+ {
+ 	struct device *dev = container_of(kobj, struct device, kobj);
+@@ -367,7 +367,7 @@ static mode_t lm3533_attr_is_visible(struct kobject *kobj,
+ 	struct device_attribute *dattr = to_dev_attr(attr);
+ 	struct lm3533_device_attribute *lattr = to_lm3533_dev_attr(dattr);
+ 	enum lm3533_attribute_type type = lattr->type;
+-	mode_t mode = attr->mode;
++	umode_t mode = attr->mode;
+ 
+ 	if (!lm3533->have_backlights && type == LM3533_ATTR_TYPE_BACKLIGHT)
+ 		mode = 0;
 -- 
-Kind regards,
-Minchan Kim
+1.7.8.5
+
