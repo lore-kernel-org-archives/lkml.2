@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759493Ab2EKPFj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 11:05:39 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:46765 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752082Ab2EKPFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 11:05:36 -0400
-Date: Fri, 11 May 2012 10:05:33 -0500
-From: Robin Holt <holt@sgi.com>
+	id S1756159Ab2EKPHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 11:07:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42991 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753886Ab2EKPHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 11:07:52 -0400
+Date: Fri, 11 May 2012 16:07:47 +0100
+From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Commit cb83b62 fails to boot with a divide by zero error.
-Message-ID: <20120511150533.GH3751@sgi.com>
-References: <20120511133938.GG3751@sgi.com>
- <1336746790.1017.17.camel@twins>
+Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, neilb@suse.de, michaelc@cs.wisc.edu,
+        emunson@mgebm.net
+Subject: Re: [PATCH 10/17] netvm: Allow skb allocation to use PFMEMALLOC
+ reserves
+Message-ID: <20120511150747.GU11435@suse.de>
+References: <1336657510-24378-1-git-send-email-mgorman@suse.de>
+ <1336657510-24378-11-git-send-email-mgorman@suse.de>
+ <20120511.005740.210437168371869566.davem@davemloft.net>
+ <20120511143218.GS11435@suse.de>
+ <1336747350.1017.22.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1336746790.1017.17.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1336747350.1017.22.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 04:33:10PM +0200, Peter Zijlstra wrote:
-> On Fri, 2012-05-11 at 08:39 -0500, Robin Holt wrote:
-> 
-> > We found that reverting the commit:
-> > cb83b62 (x86/sched/core) sched/numa: Rewrite the CONFIG_NUMA sched domain support
+On Fri, May 11, 2012 at 04:42:30PM +0200, Peter Zijlstra wrote:
+> On Fri, 2012-05-11 at 15:32 +0100, Mel Gorman wrote:
+> > > > +extern atomic_t memalloc_socks;
+> > > > +static inline int sk_memalloc_socks(void)
+> > > > +{
+> > > > +   return atomic_read(&memalloc_socks);
+> > > > +}
+> > > 
+> > > Please change this to be a static branch.
+> > > 
 > > 
-> > also got things working.
+> > Will do. I renamed memalloc_socks to sk_memalloc_socks, made it a int as
+> > atomics are unnecessary and I check it directly in a branch instead of a
+> > static inline. It should be relatively easy for the branch predictor. 
 > 
-> there's a particularly stupid bug in that code
+> David means you to use include/linux/jump_label.h.
+> 
 
-Even with that applied, I still get the divide by zero.
+Ah, that makes a whole lot more sense. Thanks for the clarification.
 
-Robin
-
-> 
-> 
-> 
-> ---
-> Subject: sched, numa: Fix the new NUMA topology bits
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date: Fri May 11 00:56:20 CEST 2012
-> 
-> There's no need to convert a node number to a node number by
-> pretending its a cpu number..
-> 
-> Reported-by: Yinghai Lu <yinghai@kernel.org>
-> Reported-and-Tested-by: Greg Pearson <greg.pearson@hp.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  kernel/sched/core.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -6378,8 +6378,7 @@ static void sched_init_numa(void)
->  			sched_domains_numa_masks[i][j] = mask;
->  
->  			for (k = 0; k < nr_node_ids; k++) {
-> -				if (node_distance(cpu_to_node(j), k) >
-> -						sched_domains_numa_distance[i])
-> +				if (node_distance(j, k) > sched_domains_numa_distance[i])
->  					continue;
->  
->  				cpumask_or(mask, mask, cpumask_of_node(k));
+-- 
+Mel Gorman
+SUSE Labs
