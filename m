@@ -1,268 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759757Ab2EKLK5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 07:10:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53106 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759419Ab2EKLKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 07:10:19 -0400
-From: Ludwig Nussel <ludwig.nussel@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Ludwig Nussel <ludwig.nussel@suse.de>, linux-fsdevel@vger.kernel.org,
-        Jan Kara <jack@suse.cz> (maintainer:EXT2 FILE SYSTEM),
-        Rob Landley <rob@landley.net> (maintainer:DOCUMENTATION),
-        Andrew Morton <akpm@linux-foundation.org> (maintainer:EXT3 FILE
-	SYSTEM),
-        Andreas Dilger <adilger.kernel@dilger.ca> (maintainer:EXT3 FILE
-	SYSTEM),
-        "Theodore Ts'o" <tytso@mit.edu> (maintainer:EXT4 FILE SYSTEM),
-        linux-ext4@vger.kernel.org (open list:EXT2 FILE SYSTEM),
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION)
-Subject: [PATCH 1/3] implement uid and gid mount options for ext2
-Date: Fri, 11 May 2012 13:10:06 +0200
-Message-Id: <1336734608-15157-2-git-send-email-ludwig.nussel@suse.de>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1336734608-15157-1-git-send-email-ludwig.nussel@suse.de>
-References: <1336660924-9598-1-git-send-email-ludwig.nussel@suse.d>
- <1336734608-15157-1-git-send-email-ludwig.nussel@suse.de>
+	id S1030264Ab2EKLMP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 07:12:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35206 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759501Ab2EKLMN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 07:12:13 -0400
+Message-ID: <1336734684.1017.13.camel@twins>
+Subject: Re: [tip:sched/core] x86/numa: Check for nonsensical topologies on
+ real hw as well
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, tj@kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Date: Fri, 11 May 2012 13:11:24 +0200
+In-Reply-To: <CA+1xoqfygHVK8hXqSOrZtudE57ZFut52Ptus9zwgBAJxH-VL_g@mail.gmail.com>
+References: <tip-re15l0jqjtpz709oxozt2zoh@git.kernel.org>
+	 <CAE9FiQVu7KP=rabe5_jYZyEGpW7sv6wkK9wumJfW1vk2=+cYKA@mail.gmail.com>
+	 <1336650578.27020.94.camel@laptop> <1336651704.27020.100.camel@laptop>
+	 <1336658058.2527.119.camel@twins>
+	 <CA+1xoqfygHVK8hXqSOrZtudE57ZFut52Ptus9zwgBAJxH-VL_g@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
----
- Documentation/filesystems/ext2.txt |    9 ++++++
- fs/ext2/ext2.h                     |    8 +++++
- fs/ext2/inode.c                    |   42 ++++++++++++++++++++------
- fs/ext2/super.c                    |   57 +++++++++++++++++++++++++++++++++++-
- 4 files changed, 105 insertions(+), 11 deletions(-)
+On Fri, 2012-05-11 at 13:00 +0200, Sasha Levin wrote:
+> On Thu, May 10, 2012 at 3:54 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >
+> > OK here's one that compiles and boots without silly warnings on a WSM-EP
+> >
+> >
+> > ---
+> 
+> I've tried Ingo's original patch on a KVM guest that has
+> 'numa=fake=10', and saw two of these warnings mentioned above show up.
+> 
+> I've tried applying Peter's patch on top, but now I get 24 such
+> warnings instead.
 
-diff --git a/Documentation/filesystems/ext2.txt b/Documentation/filesystems/ext2.txt
-index 67639f9..fcc1002 100644
---- a/Documentation/filesystems/ext2.txt
-+++ b/Documentation/filesystems/ext2.txt
-@@ -42,6 +42,15 @@ orlov			(*)	Use the Orlov block allocator.
- resuid=n			The user ID which may use the reserved blocks.
- resgid=n			The group ID which may use the reserved blocks.
+Yeah, I should probably make that WARN_ONCE()
+
+---
+Subject: x86: Rewrite set_cpu_sibling_map
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Fri May 11 13:05:59 CEST 2012
+
+Commit ad7687dde ("x86/numa: Check for nonsensical topologies on real
+hw as well") is broken in that the condition can trigger for valid
+setups but only changes the end result for invalid setups with no real
+means of discerning between those.
+
+Rewrite set_cpu_sibling_map() to make the code clearer and make sure
+to only warn when the check changes the end result.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ arch/x86/kernel/smpboot.c |  116 ++++++++++++++++++++++++++--------------------
+ 1 file changed, 68 insertions(+), 48 deletions(-)
+
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -299,70 +299,90 @@ void __cpuinit smp_store_cpu_info(int id
+ 		identify_secondary_cpu(c);
+ }
  
-+uid=n[:m]			Make all files appear to belong to uid n.
-+				Useful for e.g. removable media with fstab
-+				options 'user,uid=useruid'. The optional second
-+				uid m is actually written to the file system.
+-static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
++static bool __cpuinit
++topology_sane(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o, const char *name)
+ {
+-	cpumask_set_cpu(cpu1, cpu_sibling_mask(cpu2));
+-	cpumask_set_cpu(cpu2, cpu_sibling_mask(cpu1));
+-	cpumask_set_cpu(cpu1, cpu_core_mask(cpu2));
+-	cpumask_set_cpu(cpu2, cpu_core_mask(cpu1));
+-	cpumask_set_cpu(cpu1, cpu_llc_shared_mask(cpu2));
+-	cpumask_set_cpu(cpu2, cpu_llc_shared_mask(cpu1));
++	int cpu1 = c->cpu_index, cpu2 = o->cpu_index;
 +
-+gid=n[:m]			Make all files appear to belong to gid n.
-+				The optional second gid m is actually written to
-+				the file system.
++	return !WARN_ONCE(cpu_to_node(cpu1) != cpu_to_node(cpu2),
++		"sched: CPU #%d's %s-sibling CPU #%d is not on the same node! "
++		"[node: %d != %d]. Ignoring dependency.\n",
++		cpu1, name, cpu2, cpu_to_node(cpu1), cpu_to_node(cpu2));
+ }
+ 
++#define link_mask(_m, c1, c2)						\
++do {									\
++	cpumask_set_cpu((c1), cpu_##_m##_mask(c2));			\
++	cpumask_set_cpu((c2), cpu_##_m##_mask(c1));			\
++} while (0)
 +
- sb=n				Use alternate superblock at this location.
++static bool __cpuinit match_smt(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
++{
++	if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
++		int cpu1 = c->cpu_index, cpu2 = o->cpu_index;
++
++		if (c->phys_proc_id == o->phys_proc_id &&
++		    per_cpu(cpu_llc_id, cpu1) == per_cpu(cpu_llc_id, cpu2) &&
++		    c->compute_unit_id == o->compute_unit_id)
++			return topology_sane(c, o, "smt");
++
++	} else if (c->phys_proc_id == o->phys_proc_id &&
++		   c->cpu_core_id == o->cpu_core_id) {
++		return topology_sane(c, o, "smt");
++	}
++
++	return false;
++}
++
++static bool __cpuinit match_llc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
++{
++	int cpu1 = c->cpu_index, cpu2 = o->cpu_index;
++
++	if (per_cpu(cpu_llc_id, cpu1) != BAD_APICID &&
++	    per_cpu(cpu_llc_id, cpu1) == per_cpu(cpu_llc_id, cpu2))
++		return topology_sane(c, o, "llc");
++
++	return false;
++}
++
++static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
++{
++	if (c->phys_proc_id == o->phys_proc_id)
++		return topology_sane(c, o, "mc");
++
++	return false;
++}
  
- user_xattr			Enable "user." POSIX Extended Attributes
-diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
-index 0b2b4db..b584e45 100644
---- a/fs/ext2/ext2.h
-+++ b/fs/ext2/ext2.h
-@@ -84,6 +84,10 @@ struct ext2_sb_info {
- 	unsigned long s_sb_block;
- 	uid_t s_resuid;
- 	gid_t s_resgid;
-+	uid_t s_uid;          /* make all files appear to belong to this uid */
-+	uid_t s_diskuid;      /* write this uid to disk (if s_uid != 0) */
-+	gid_t s_gid;          /* make all files appear to belong to this gid */
-+	gid_t s_diskgid;      /* write this gid to disk (if s_gid != 0) */
- 	unsigned short s_mount_state;
- 	unsigned short s_pad;
- 	int s_addr_per_block_bits;
-@@ -639,6 +643,10 @@ struct ext2_mount_options {
- 	unsigned long s_mount_opt;
- 	uid_t s_resuid;
- 	gid_t s_resgid;
-+	uid_t s_uid;
-+	uid_t s_diskuid;
-+	gid_t s_gid;
-+	gid_t s_diskgid;
- };
+ void __cpuinit set_cpu_sibling_map(int cpu)
+ {
+-	int i;
++	bool has_mc = boot_cpu_data.x86_max_cores > 1;
++	bool has_smt = smp_num_siblings > 1;
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
++	struct cpuinfo_x86 *o;
++	int i;
  
- /*
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 740cad8..aabcb38 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -1316,6 +1316,10 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
- 		inode->i_uid |= le16_to_cpu(raw_inode->i_uid_high) << 16;
- 		inode->i_gid |= le16_to_cpu(raw_inode->i_gid_high) << 16;
+ 	cpumask_set_cpu(cpu, cpu_sibling_setup_mask);
+ 
+-	if (smp_num_siblings > 1) {
+-		for_each_cpu(i, cpu_sibling_setup_mask) {
+-			struct cpuinfo_x86 *o = &cpu_data(i);
+-
+-			if (cpu_to_node(cpu) != cpu_to_node(i)) {
+-				WARN_ONCE(1, "sched: CPU #%d's thread-sibling CPU #%d not on the same node! [node %d != %d]. Ignoring sibling dependency.\n", cpu, i, cpu_to_node(cpu), cpu_to_node(i));
+-				continue;
+-			}
+-
+-			if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
+-				if (c->phys_proc_id == o->phys_proc_id &&
+-				    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i) &&
+-				    c->compute_unit_id == o->compute_unit_id)
+-					link_thread_siblings(cpu, i);
+-			} else if (c->phys_proc_id == o->phys_proc_id &&
+-				   c->cpu_core_id == o->cpu_core_id) {
+-				link_thread_siblings(cpu, i);
+-			}
+-		}
+-	} else {
++	if (!has_smt && !has_mc) {
+ 		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
+-	}
+-
+-	cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
+-
+-	if (__this_cpu_read(cpu_info.x86_max_cores) == 1) {
+-		cpumask_copy(cpu_core_mask(cpu), cpu_sibling_mask(cpu));
++		cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
++		cpumask_set_cpu(cpu, cpu_core_mask(cpu));
+ 		c->booted_cores = 1;
+ 		return;
  	}
-+	if (EXT2_SB(sb)->s_uid)
-+		inode->i_uid = EXT2_SB(sb)->s_uid;
-+	if (EXT2_SB(sb)->s_gid)
-+		inode->i_gid = EXT2_SB(sb)->s_gid;
- 	set_nlink(inode, le16_to_cpu(raw_inode->i_links_count));
- 	inode->i_size = le32_to_cpu(raw_inode->i_size);
- 	inode->i_atime.tv_sec = (signed)le32_to_cpu(raw_inode->i_atime);
-@@ -1419,6 +1423,10 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
- 	struct ext2_inode * raw_inode = ext2_get_inode(sb, ino, &bh);
- 	int n;
- 	int err = 0;
-+	__le16 uid_low;
-+	__le16 gid_low;
-+	__le16 uid_high;
-+	__le16 gid_high;
  
- 	if (IS_ERR(raw_inode))
-  		return -EIO;
-@@ -1430,26 +1438,40 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
- 
- 	ext2_get_inode_flags(ei);
- 	raw_inode->i_mode = cpu_to_le16(inode->i_mode);
-+	if (EXT2_SB(sb)->s_uid)
-+		uid = EXT2_SB(sb)->s_diskuid;
-+	if (EXT2_SB(sb)->s_gid)
-+		gid = EXT2_SB(sb)->s_diskgid;
- 	if (!(test_opt(sb, NO_UID32))) {
--		raw_inode->i_uid_low = cpu_to_le16(low_16_bits(uid));
--		raw_inode->i_gid_low = cpu_to_le16(low_16_bits(gid));
-+		uid_low = cpu_to_le16(low_16_bits(uid));
-+		gid_low = cpu_to_le16(low_16_bits(gid));
- /*
-  * Fix up interoperability with old kernels. Otherwise, old inodes get
-  * re-used with the upper 16 bits of the uid/gid intact
-  */
- 		if (!ei->i_dtime) {
--			raw_inode->i_uid_high = cpu_to_le16(high_16_bits(uid));
--			raw_inode->i_gid_high = cpu_to_le16(high_16_bits(gid));
-+			uid_high = cpu_to_le16(high_16_bits(uid));
-+			gid_high = cpu_to_le16(high_16_bits(gid));
- 		} else {
--			raw_inode->i_uid_high = 0;
--			raw_inode->i_gid_high = 0;
-+			uid_high = 0;
-+			gid_high = 0;
- 		}
- 	} else {
--		raw_inode->i_uid_low = cpu_to_le16(fs_high2lowuid(uid));
--		raw_inode->i_gid_low = cpu_to_le16(fs_high2lowgid(gid));
--		raw_inode->i_uid_high = 0;
--		raw_inode->i_gid_high = 0;
-+		uid_low = cpu_to_le16(fs_high2lowuid(uid));
-+		gid_low = cpu_to_le16(fs_high2lowgid(gid));
-+		uid_high = 0;
-+		gid_high = 0;
- 	}
-+	/* don't mangle uid/gid of existing files if override is active */
-+	if (!EXT2_SB(sb)->s_uid || ei->i_state & EXT2_STATE_NEW) {
-+		raw_inode->i_uid_high = uid_high;
-+		raw_inode->i_uid_low = uid_low;
-+	}
-+	if (!EXT2_SB(sb)->s_gid || ei->i_state & EXT2_STATE_NEW) {
-+		raw_inode->i_gid_high = gid_high;
-+		raw_inode->i_gid_low = gid_low;
-+	}
+ 	for_each_cpu(i, cpu_sibling_setup_mask) {
+-		if (cpu_to_node(cpu) != cpu_to_node(i)) {
+-			WARN_ONCE(1, "sched: CPU #%d's core-sibling CPU #%d not on the same node! [node %d != %d]. Ignoring sibling dependency.\n", cpu, i, cpu_to_node(cpu), cpu_to_node(i));
+-			continue;
+-		}
+-
+-		if (per_cpu(cpu_llc_id, cpu) != BAD_APICID &&
+-		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
+-			cpumask_set_cpu(i, cpu_llc_shared_mask(cpu));
+-			cpumask_set_cpu(cpu, cpu_llc_shared_mask(i));
+-		}
+-
+-		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
+-			cpumask_set_cpu(i, cpu_core_mask(cpu));
+-			cpumask_set_cpu(cpu, cpu_core_mask(i));
++		o = &cpu_data(i);
 +
- 	raw_inode->i_links_count = cpu_to_le16(inode->i_nlink);
- 	raw_inode->i_size = cpu_to_le32(inode->i_size);
- 	raw_inode->i_atime = cpu_to_le32(inode->i_atime.tv_sec);
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index e1025c7..0661574 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -236,6 +236,20 @@ static int ext2_show_options(struct seq_file *seq, struct dentry *root)
- 	    le16_to_cpu(es->s_def_resgid) != EXT2_DEF_RESGID) {
- 		seq_printf(seq, ",resgid=%u", sbi->s_resgid);
- 	}
-+	if (sbi->s_uid) {
-+		if (sbi->s_uid != sbi->s_diskuid)
-+			seq_printf(seq, ",uid=%u:%u",
-+				sbi->s_uid, sbi->s_diskuid);
-+		else
-+			seq_printf(seq, ",uid=%u", sbi->s_uid);
-+	}
-+	if (sbi->s_gid) {
-+		if (sbi->s_gid != sbi->s_diskgid)
-+			seq_printf(seq, ",gid=%u:%u",
-+				sbi->s_gid, sbi->s_diskgid);
-+		else
-+			seq_printf(seq, ",gid=%u", sbi->s_gid);
-+	}
- 	if (test_opt(sb, ERRORS_RO)) {
- 		int def_errors = le16_to_cpu(es->s_errors);
- 
-@@ -393,7 +407,8 @@ enum {
- 	Opt_err_ro, Opt_nouid32, Opt_nocheck, Opt_debug,
- 	Opt_oldalloc, Opt_orlov, Opt_nobh, Opt_user_xattr, Opt_nouser_xattr,
- 	Opt_acl, Opt_noacl, Opt_xip, Opt_ignore, Opt_err, Opt_quota,
--	Opt_usrquota, Opt_grpquota, Opt_reservation, Opt_noreservation
-+	Opt_usrquota, Opt_grpquota, Opt_reservation, Opt_noreservation,
-+	Opt_uid, Opt_diskuid, Opt_gid, Opt_diskgid
- };
- 
- static const match_table_t tokens = {
-@@ -427,6 +442,10 @@ static const match_table_t tokens = {
- 	{Opt_usrquota, "usrquota"},
- 	{Opt_reservation, "reservation"},
- 	{Opt_noreservation, "noreservation"},
-+	{Opt_uid, "uid=%u"},
-+	{Opt_diskuid, "uid=%u:%u"},
-+	{Opt_gid, "gid=%u"},
-+	{Opt_diskgid, "gid=%u:%u"},
- 	{Opt_err, NULL}
- };
- 
-@@ -568,6 +587,34 @@ static int parse_options(char *options, struct super_block *sb)
- 			clear_opt(sbi->s_mount_opt, RESERVATION);
- 			ext2_msg(sb, KERN_INFO, "reservations OFF");
- 			break;
-+		case Opt_uid:
-+			if (match_int(&args[0], &option))
-+				return 0;
-+			sbi->s_uid = sbi->s_diskuid = option;
-+			break;
-+		case Opt_diskuid:
-+			if (match_int(&args[0], &option))
-+				return 0;
-+			sbi->s_uid = option;
++		if ((i == cpu) || (has_smt && match_smt(c, o)))
++			link_mask(sibling, cpu, i);
 +
-+			if (match_int(&args[1], &option))
-+				return 0;
-+			sbi->s_diskuid = option;
-+			break;
-+		case Opt_gid:
-+			if (match_int(&args[0], &option))
-+				return 0;
-+			sbi->s_gid = sbi->s_diskgid = option;
-+			break;
-+		case Opt_diskgid:
-+			if (match_int(&args[0], &option))
-+				return 0;
-+			sbi->s_gid = option;
++		if ((i == cpu) || (has_mc && match_llc(c, o)))
++			link_mask(llc_shared, cpu, i);
 +
-+			if (match_int(&args[1], &option))
-+				return 0;
-+			sbi->s_diskgid = option;
-+			break;
- 		case Opt_ignore:
- 			break;
- 		default:
-@@ -1214,6 +1261,10 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data)
- 	old_opts.s_mount_opt = sbi->s_mount_opt;
- 	old_opts.s_resuid = sbi->s_resuid;
- 	old_opts.s_resgid = sbi->s_resgid;
-+	old_opts.s_uid = sbi->s_uid;
-+	old_opts.s_diskuid = sbi->s_diskuid;
-+	old_opts.s_gid = sbi->s_gid;
-+	old_opts.s_diskgid = sbi->s_diskgid;
- 
- 	/*
- 	 * Allow the "check" option to be passed as a remount option.
-@@ -1300,6 +1351,10 @@ restore_opts:
- 	sbi->s_mount_opt = old_opts.s_mount_opt;
- 	sbi->s_resuid = old_opts.s_resuid;
- 	sbi->s_resgid = old_opts.s_resgid;
-+	sbi->s_uid = old_opts.s_uid;
-+	sbi->s_diskuid = old_opts.s_diskuid;
-+	sbi->s_gid = old_opts.s_gid;
-+	sbi->s_diskgid = old_opts.s_diskgid;
- 	sb->s_flags = old_sb_flags;
- 	spin_unlock(&sbi->s_lock);
- 	return err;
--- 
-1.7.7
++		if ((i == cpu) || (has_mc && match_mc(c, o))) {
++			link_mask(core, cpu, i);
++
+ 			/*
+ 			 *  Does this new cpu bringup a new core?
+ 			 */
 
