@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030258Ab2EKKm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 06:42:58 -0400
+	id S932634Ab2EKKnJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 06:43:09 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:57485 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030234Ab2EKKmz (ORCPT
+	with ESMTP id S1030271Ab2EKKnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 06:42:55 -0400
+	Fri, 11 May 2012 06:43:05 -0400
 From: Ravishankar Karkala Mallikarjunayya <ravishankarkm32@gmail.com>
 To: gregkh@linuxfoundation.org, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 23/25] Staging: comedi: fix printk issue in poc.c
-Date: Fri, 11 May 2012 16:08:11 +0530
-Message-Id: <1336732693-7408-24-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 24/25] Staging: comedi: fix printk issue in ni_pcimio.c
+Date: Fri, 11 May 2012 16:08:12 +0530
+Message-Id: <1336732693-7408-25-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1336732693-7408-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1336732693-7408-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -22,57 +22,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the poc.c file that fixes up a
+This is a patch to the pcimio.c file that fixes up a
 printk warning found by the checkpatch.pl tool.
 
 Converted printks to dev_<level> function.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/poc.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+ drivers/staging/comedi/drivers/ni_pcimio.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/poc.c b/drivers/staging/comedi/drivers/poc.c
-index e3690bb..a55b877 100644
---- a/drivers/staging/comedi/drivers/poc.c
-+++ b/drivers/staging/comedi/drivers/poc.c
-@@ -142,21 +142,22 @@ static int poc_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	unsigned int iosize;
- 
- 	iobase = it->options[0];
--	printk(KERN_INFO "comedi%d: poc: using %s iobase 0x%lx\n", dev->minor,
--	       this_board->name, iobase);
-+	dev_info(dev->hw_dev, "comedi%d: poc: using %s iobase 0x%lx\n",
-+		 dev->minor, this_board->name, iobase);
- 
- 	dev->board_name = this_board->name;
- 
- 	if (iobase == 0) {
--		printk(KERN_ERR "io base address required\n");
-+		dev_err(dev->hw_dev, "io base address required\n");
- 		return -EINVAL;
- 	}
- 
- 	iosize = this_board->iosize;
- 	/* check if io addresses are available */
- 	if (!request_region(iobase, iosize, "dac02")) {
--		printk(KERN_ERR "I/O port conflict: failed to allocate ports "
--			"0x%lx to 0x%lx\n", iobase, iobase + iosize - 1);
-+		dev_err(dev->hw_dev,
-+			"I/O port conflict: failed to allocate ports 0x%lx to 0x%lx\n",
-+			iobase, iobase + iosize - 1);
- 		return -EIO;
- 	}
- 	dev->iobase = iobase;
-@@ -187,7 +188,7 @@ static int poc_detach(struct comedi_device *dev)
- 	if (dev->iobase)
- 		release_region(dev->iobase, this_board->iosize);
- 
--	printk(KERN_INFO "comedi%d: dac02: remove\n", dev->minor);
-+	dev_info(dev->hw_dev, "comedi%d: remove\n", dev->minor);
- 
- 	return 0;
- }
+diff --git a/drivers/staging/comedi/drivers/ni_pcimio.c b/drivers/staging/comedi/drivers/ni_pcimio.c
+index 1065b2c..9fd9c3c 100644
+--- a/drivers/staging/comedi/drivers/ni_pcimio.c
++++ b/drivers/staging/comedi/drivers/ni_pcimio.c
+@@ -1491,8 +1491,8 @@ static void m_series_stc_writew(struct comedi_device *dev, uint16_t data,
+ 		/* FIXME: DIO_Output_Register (16 bit reg) is replaced by M_Offset_Static_Digital_Output (32 bit)
+ 		   and M_Offset_SCXI_Serial_Data_Out (8 bit) */
+ 	default:
+-		printk(KERN_WARNING "%s: bug! unhandled register=0x%x in switch.\n",
+-		       __func__, reg);
++		dev_warn(dev->hw_dev, "%s: bug! unhandled register=0x%x in switch.\n",
++			 __func__, reg);
+ 		BUG();
+ 		return;
+ 		break;
+@@ -1526,8 +1526,8 @@ static uint16_t m_series_stc_readw(struct comedi_device *dev, int reg)
+ 		offset = M_Offset_G01_Status;
+ 		break;
+ 	default:
+-		printk(KERN_WARNING "%s: bug! unhandled register=0x%x in switch.\n",
+-		       __func__, reg);
++		dev_warn(dev->hw_dev, "%s: bug! unhandled register=0x%x in switch.\n",
++			 __func__, reg);
+ 		BUG();
+ 		return 0;
+ 		break;
+@@ -1568,8 +1568,8 @@ static void m_series_stc_writel(struct comedi_device *dev, uint32_t data,
+ 		offset = M_Offset_G1_Load_B;
+ 		break;
+ 	default:
+-		printk(KERN_WARNING "%s: bug! unhandled register=0x%x in switch.\n",
+-		       __func__, reg);
++		dev_warn(dev->hw_dev, "%s: bug! unhandled register=0x%x in switch.\n",
++			 __func__, reg);
+ 		BUG();
+ 		return;
+ 		break;
+@@ -1594,8 +1594,8 @@ static uint32_t m_series_stc_readl(struct comedi_device *dev, int reg)
+ 		offset = M_Offset_G1_Save;
+ 		break;
+ 	default:
+-		printk(KERN_WARNING "%s: bug! unhandled register=0x%x in switch.\n",
+-		       __func__, reg);
++		dev_warn(dev->hw_dev, "%s: bug! unhandled register=0x%x in switch.\n",
++			 __func__, reg);
+ 		BUG();
+ 		return 0;
+ 		break;
 -- 
 1.7.0.4
 
