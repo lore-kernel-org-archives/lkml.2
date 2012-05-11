@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759746Ab2EKNQH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 09:16:07 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57218 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753400Ab2EKNQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 09:16:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="141873019"
-Date: Fri, 11 May 2012 15:25:45 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] mfd: wm8400: Remove custom cache implementation
-Message-ID: <20120511132545.GK1214@sortiz-mobl>
-References: <1336600428-13238-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1759791Ab2EKNWT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 09:22:19 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19072 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758847Ab2EKNV4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 May 2012 09:21:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 11 May 2012 06:21:04 -0700
+Message-ID: <4FAD1188.7000706@nvidia.com>
+Date: Fri, 11 May 2012 18:48:00 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336600428-13238-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] mfd:tps65910: use devm_* and register gpio as platform
+ driver
+References: <1336569057-3890-1-git-send-email-ldewangan@nvidia.com> <20120511131454.GI1214@sortiz-mobl>
+In-Reply-To: <20120511131454.GI1214@sortiz-mobl>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On Wed, May 09, 2012 at 10:53:48PM +0100, Mark Brown wrote:
-> Save a useful amount of code by removing the custom cache implementation
-> for wm8400 and using the regmap cache. Also simplify things by not
-> separately reseting the CODEC registers, this is a sufficiently infrequent
-> operation that we can simply invalidate the entire cache when this happens.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/wm8400-core.c          |  251 +++++-------------------------------
->  include/linux/mfd/wm8400-private.h |   14 +-
->  2 files changed, 42 insertions(+), 223 deletions(-)
-Applied as well, thanks.
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+On Friday 11 May 2012 06:44 PM, Samuel Ortiz wrote:
+> Hi Laxman,
+>
+> On Wed, May 09, 2012 at 06:40:53PM +0530, Laxman Dewangan wrote:
+>> This series does cleanup in the mfd/tps65910 as follows:
+>> - Do not cache the register when initailizing regmap. Cache when
+>>    actually when we need it.
+>> - Convert the allocation to use devm_* apis.
+>> - Move the gpio as platform driver and register it as mfd sub devices.
+>>
+>> Laxman Dewangan (4):
+>>    mfd: tps65910: cache register when we need it
+>> 	Remove the chaching of register in regmap initialization.
+>>
+>>    mfd: tps65910: convert all allocation to devm_*
+>> 	Convert the allocation to use devm_* apis.
+>>
+>>    mfd: tps65910: register gpio as mfd device
+>>    gpio: tps65910: move this as platform driver
+>> 	Above two patch to make gpio driver as platform driver and register
+>> 	as mfd sub device from core driver.
+>> 	
+> I applied patches 1, 2 and 3. Patch #4 does not apply cleanly to my for-next
+> branch, could you please rebase it ?
+> Also, having Grant's ACK for it would be nice.
+Thanks for taking care.
+I will create a new patch based on your tree if Grant is OK with this.
