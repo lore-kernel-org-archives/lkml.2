@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946346Ab2EKWf1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 18:35:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:55786 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946205Ab2EKWfY convert rfc822-to-8bit (ORCPT
+	id S1756155Ab2EKWsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 18:48:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34294 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755763Ab2EKWsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 18:35:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="165164928"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: RE: [PATCH v.23-2] RAS: use tracepoint to handle hw issues
-Thread-Topic: [PATCH v.23-2] RAS: use tracepoint to handle hw issues
-Thread-Index: AQHNL4YeaA7E6BnMIESUIXda6cSFE5bFRzGAgAABCgCAAFmcgP//iw7Q
-Date: Fri, 11 May 2012 22:35:23 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F192ED6F5@ORSMSX104.amr.corp.intel.com>
-References: <1336683628-12954-1-git-send-email-mchehab@redhat.com>
- <1336748054-21325-1-git-send-email-mchehab@redhat.com>
- <20120511170647.GA17299@aftab.osrc.amd.com> <4FAD4806.2010507@redhat.com>
- <20120511223113.GA18908@aftab.osrc.amd.com>
-In-Reply-To: <20120511223113.GA18908@aftab.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 11 May 2012 18:48:39 -0400
+Date: Fri, 11 May 2012 15:48:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Optimize bitmap_weight
+Message-Id: <20120511154836.aff26ad3.akpm@linux-foundation.org>
+In-Reply-To: <1336745414-5530-1-git-send-email-akinobu.mita@gmail.com>
+References: <1336745414-5530-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Subject: RAS: Add a tracepoint for reporting memory controller errors
+On Fri, 11 May 2012 23:10:14 +0900
+Akinobu Mita <akinobu.mita@gmail.com> wrote:
 
-s/errors/events/ ... since Mauro has pointed out that some events like:
-"spare copy initiated" and "spare copy completed" may be reported using
-this tracepoint ... and they are not errors
+> The current implementation of bitmap_weight simply evaluates the
+> population count for each long word of the array, and adds.
+> 
+> The subsection "Counting 1-bits in an Array" in the revisions of
+> the book 'Hacker's Delight' explains more superior methods than
+> the naive method.
+> 
+> http://www.hackersdelight.org/revisions.pdf
+> http://www.hackersdelight.org/HDcode/newCode/pop_arrayHS.c.txt
+> 
+> My benchmark results on Intel Core i3 CPU with 32-bit kernel
+> showed 50% faster for 8192 bits bitmap.  However, it is not faster
+> for small bitmap (< BITS_PER_LONG * 8) than the naive method.
+> So if the bitmap size is known to be small at compile time,
+> use the naive method.
+> 
+> ...
+>
+>  extern void bitmap_clear(unsigned long *map, int start, int nr);
+> @@ -277,7 +278,9 @@ static inline int bitmap_weight(const unsigned long *src, int nbits)
+>  {
+>  	if (small_const_nbits(nbits))
+>  		return hweight_long(*src & BITMAP_LAST_WORD_MASK(nbits));
 
--Tony
+Why do we require a constant_p `nbits' for this case?
+
+> -	return __bitmap_weight(src, nbits);
+> +	else if (__builtin_constant_p(nbits) && (nbits) < BITS_PER_LONG * 8)
+> +		return __bitmap_weight(src, nbits);
+> +	return __bitmap_weight_fast(src, nbits);
+>  }
+
+BITS_PER_LONG*8 sounds like a large bitmap: 256 or 512 entries.  Will
+the kernel call __bitmap_weight_fast() sufficiently often to make this
+extra code worth merging?
+
