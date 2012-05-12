@@ -1,56 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab2ELVZm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 17:25:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36343 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab2ELVZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 17:25:41 -0400
-Date: Sat, 12 May 2012 18:25:31 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL 0/8] Annotation weekly ponies delivery
-Message-ID: <20120512212531.GC20057@infradead.org>
-References: <1336852387-16322-1-git-send-email-acme@infradead.org>
- <CA+55aFxeqrCj71fSe2r9kwzyO9q2BT9A89f7nLUgbrTG_uPP2g@mail.gmail.com>
+	id S1754487Ab2ELVeN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 17:34:13 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:40892 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751765Ab2ELVeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 May 2012 17:34:10 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Minho Ban <mhban@samsung.com>
+Subject: Re: [PATCH] PM / Hibernate : Use get_gendisk to verify partition if resume_file is integer format
+Date: Sat, 12 May 2012 23:39:01 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-pm@vger.kernel.org
+References: <4FAA4597.7060302@samsung.com>
+In-Reply-To: <4FAA4597.7060302@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxeqrCj71fSe2r9kwzyO9q2BT9A89f7nLUgbrTG_uPP2g@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205122339.01696.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, May 12, 2012 at 01:40:07PM -0700, Linus Torvalds escreveu:
-> On Sat, May 12, 2012 at 12:52 PM, Arnaldo Carvalho de Melo
-> <acme@infradead.org> wrote:
-> >
-> > Arjan & Linus Annotation Edition
+On Wednesday, May 09, 2012, Minho Ban wrote:
+> Sometimes resume= parameter comes in integer style (e.g. major:minor) then
+> name_to_dev_t can not detect partition properly. (especially async device like
+> usb, mmc)
+> This patch calls get_gendisk if resumewait is true and resume_file is in integer
+> format.
 > 
-> I pulled this into my current git tree just for testing.
+> Signed-off-by: Minho Ban <mhban@samsung.com>
+> ---
+>  Documentation/kernel-parameters.txt |    2 ++
+>  kernel/power/hibernate.c            |   13 +++++++++++++
+>  2 files changed, 15 insertions(+), 0 deletions(-)
 > 
-> It's horribly broken, but it's not the annotation that is broken.
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index c1601e5..5900b49 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2372,6 +2372,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  
+>  	resume=		[SWSUSP]
+>  			Specify the partition device for software suspend
+> +			Format:
+> +			{/dev/<dev> | PARTUUID=<uuid> | <int>:<int> | <hex>}
+>  
+>  	resume_offset=	[SWSUSP]
+>  			Specify the offset from the beginning of the partition
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> index e09dfbf..8b53db3 100644
+> --- a/kernel/power/hibernate.c
+> +++ b/kernel/power/hibernate.c
+> @@ -25,6 +25,8 @@
+>  #include <linux/freezer.h>
+>  #include <linux/gfp.h>
+>  #include <linux/syscore_ops.h>
+> +#include <linux/ctype.h>
+> +#include <linux/genhd.h>
+>  #include <scsi/scsi_scan.h>
+>  
+>  #include "power.h"
+> @@ -722,6 +724,17 @@ static int software_resume(void)
+>  
+>  	/* Check if the device is there */
+>  	swsusp_resume_device = name_to_dev_t(resume_file);
+> +
+> +	/*
+> +	 * name_to_dev_t is ineffective to verify parition if resume_file is in
+> +	 * integer format. (e.g. major:minor)
+> +	 */
+> +	if (isdigit(resume_file[0]) && resume_wait) {
+> +		int partno;
+> +		while (!get_gendisk(swsusp_resume_device, &partno))
+> +			msleep(10);
+> +	}
+
+Hmm.  Wouldn't it be better to do:
+
+	if (isdigit(resume_file[0]) && resume_wait) {
+		int partno;
+		while (!get_gendisk(swsusp_resume_device, &partno))
+			msleep(10);
+	} else {
+		swsusp_resume_device = name_to_dev_t(resume_file);
+	}
+
+?
+
+Your new code will overwrite whatever swsusp_resume_device is set to by the
+preceding statement anyway.
+
+> +
+>  	if (!swsusp_resume_device) {
+>  		/*
+>  		 * Some device discovery might still be in progress; we need
 > 
-> The whole "-e cycles:pp" doesn't work any more. I don't get any nice
-> PEBS information, I get the totally useless irq-based profiling.
 
-> I don't think this has anything to do with your changes, but I thought
-> I'd report it anyway. Something in 'perf' land is broken.
-
-Didn't notice it, but then I'm not updating the kernel that frequently,
-will check on this Sandy Bridge nobo (i7-2920XM).
-
-- Arnaldo
+Thanks,
+Rafael
