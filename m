@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761389Ab2ELAAs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 20:00:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40107 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761323Ab2ELAAp (ORCPT
+	id S1761383Ab2ELAGw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 20:06:52 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43160 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757972Ab2ELAGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 20:00:45 -0400
-Date: Fri, 11 May 2012 17:00:40 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
-        joerg.roedel@amd.com, dwmw2@infradead.org, chrisw@sous-sol.org,
-        agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
-        B08248@freescale.com, B07421@freescale.com, avi@redhat.com,
-        konrad.wilk@oracle.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com
-Subject: Re: [PATCH 01/13] driver core: Add iommu_group tracking to struct
- device
-Message-ID: <20120512000040.GA17559@kroah.com>
-References: <20120511222148.30496.68571.stgit@bling.home>
- <20120511225534.30496.54563.stgit@bling.home>
- <20120511233821.GA9335@kroah.com>
- <1336780681.12477.198.camel@bling.home>
+	Fri, 11 May 2012 20:06:50 -0400
+Message-ID: <4FADA984.3050901@gmail.com>
+Date: Sat, 12 May 2012 02:06:28 +0200
+From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
+	<phcoder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336780681.12477.198.camel@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Kara <jack@suse.cz>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] Fix race condition in AFFS
+References: <4FA99001.8080800@gmail.com> <20120510142300.GB4343@quack.suse.cz>
+In-Reply-To: <20120510142300.GB4343@quack.suse.cz>
+X-Enigmail-Version: 1.4.1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enig9AF8BDECBD62991A53A9617B"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 05:58:01PM -0600, Alex Williamson wrote:
-> On Fri, 2012-05-11 at 16:38 -0700, Greg KH wrote:
-> > On Fri, May 11, 2012 at 04:55:35PM -0600, Alex Williamson wrote:
-> > > IOMMU groups allow IOMMU drivers to represent DMA visibility
-> > > and isolation of devices.  Multiple devices may be grouped
-> > > together for the purposes of DMA.  Placing a pointer on
-> > > struct device enable easy access for things like streaming
-> > > DMA programming and drivers like VFIO.
-> > > 
-> > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > 
-> > Can't you get this today from the iommu_ops pointer that is on the bus
-> > that the device is associated with?  Or can devices on a bus have
-> > different iommu_group pointers?
-> 
-> The latter, each device on a bus might be it's own group.  This is often
-> the case on x86 unless PCIe-to-PCI bridges obscure the device
-> visibility.  Thanks,
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig9AF8BDECBD62991A53A9617B
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Ah, ok, then I have no objection to add this to struct device:
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>  Otherwise your patch looks fine.
 
+Ok, I've fixed trhe problems you mentioned, now need to test it and so
+need to free few GiBs to compile Linux first. Wil send new version ASAP
+
+
+--=20
+Regards
+Vladimir '=CF=86-coder/phcoder' Serbinenko
+
+
+
+--------------enig9AF8BDECBD62991A53A9617B
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iF4EAREKAAYFAk+tqYwACgkQNak7dOguQgnD2AD/UhAsoMQZwhiYPmmJy9AC2hHy
+ga8Ru3kufTJ4w4QXDOYA/AnqZufOlRfgoRDpN257/f0aDWAH1dy9r1oh3QRwX5AY
+=2iU7
+-----END PGP SIGNATURE-----
+
+--------------enig9AF8BDECBD62991A53A9617B--
