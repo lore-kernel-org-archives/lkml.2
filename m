@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab2ELM4W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 08:56:22 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:63133 "EHLO
+	id S1755878Ab2ELNC1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 09:02:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:49172 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755727Ab2ELM4U (ORCPT
+	with ESMTP id S1755776Ab2ELNCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 08:56:20 -0400
+	Sat, 12 May 2012 09:02:25 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH] gpiolib: Use seq_file's iterator interface
-Date: Sat, 12 May 2012 12:56:14 +0000
+To: adam radford <aradford@gmail.com>
+Subject: Re: [PATCH 6/7] scsi/megaraid: fix sparse warnings
+Date: Sat, 12 May 2012 13:02:21 +0000
 User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-References: <1334229961-1844-1-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1334229961-1844-1-git-send-email-thierry.reding@avionic-design.de>
+Cc: mathieu.poirier@linaro.org, JBottomley@parallels.com,
+        megaraidlinux@lsi.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1336774168-26577-1-git-send-email-mathieu.poirier@linaro.org> <1336774168-26577-7-git-send-email-mathieu.poirier@linaro.org> <CAHtARFFnLrk0zQ7GeoiPX3Cyso9zq-05q+RyyeGN0v7q=Dm1gQ@mail.gmail.com>
+In-Reply-To: <CAHtARFFnLrk0zQ7GeoiPX3Cyso9zq-05q+RyyeGN0v7q=Dm1gQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-15"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205121256.14283.arnd@arndb.de>
-X-Provags-ID: V02:K0:Soljqxchkhh97ElZutqz5xgpxbRWL8xWea8/hB9QOlb
- 8V/NOzbbvRjJpjmT65jdFZayaIUeEgVAHx+/PoiJuifb4UJvZx
- 4rnEcnqk0KvTYJmNZXh6k4ghs3KAbJwu7Lv/9GH/qHLTe/6v6d
- h5nmT7e1CNINik5ZX4wlOTkkE9lG5lnRPJ/5QDrIPFk4TKRBmk
- MP0394s6H38q6COQjX1czZGkYgIhTzS6w0i6/gdS1GNYJi15RZ
- UmZlsO7LPs1p8MfyQM6IMfJXagtawTBTx6yKdFr1ankdkNiOh5
- 4j/k1+jLqTehvaubcyj6kAuCjTDGWHHQbZMsF0pi7nwBUMdSkN
- Z5V/vIAqbB2w7fiW16R4=
+Message-Id: <201205121302.21623.arnd@arndb.de>
+X-Provags-ID: V02:K0:JJxlQmHPHieaf58eXEUR/PMZuVEW4ETKvuwDpjts5ri
+ MB3u9fnXDdtLQNYNmhPiE2oXKYf9XsbrB43/VLrNsaG0vuj2zH
+ RfSPKdJE29cNq+lGDC8UsGjbEzg1vbL4jQkuhlmGfk3KasJsF5
+ lB0WQEETkMBN7pnwSivvEkjSOhZZxh1XlvuLJACKdJkCyXIW10
+ HfPnLNzlOofTeRwta+dhOgQ9CtYkdC1Rj3ZftFfWa7O8vGZaNj
+ D/oExiTTHPA+FvFVKa9YC4U3XdXmC2mz0OjBGW1/saOqDY970l
+ Yhmue8+liKnteQjQBCq6npiJytrM6DeRA8ebI4M1zh6xCXxgWu
+ PUmBNNtP5j+iQsdrzVh0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 12 April 2012, Thierry Reding wrote:
-> When dumping a collection of items via seq_file, it is recommended to
-> use the iterator interface. For the gpiolib debugfs interface this can
-> be done to dump each GPIO chip in turn.
+On Friday 11 May 2012, adam radford wrote:
 > 
-> Note that for gpiolib this is a little cumbersome because it does not
-> provide a list of registered GPIO chips and the only way to iterate is
-> over each GPIO individually. Once a chip is found, the number of GPIOs
-> it provides can be skipped as a small optimization.
+> On Fri, May 11, 2012 at 3:09 PM,  <mathieu.poirier@linaro.org> wrote:
+> > From: Arnd Bergmann <arnd@arndb.de>
+> >
+> ...
+> > diff --git a/drivers/scsi/megaraid/megaraid_sas_fusion.c b/drivers/scsi/megaraid/megaraid_sas_fusion.c
+> > index bfd87fa..234ad74 100644
+> > --- a/drivers/scsi/megaraid/megaraid_sas_fusion.c
+> > +++ b/drivers/scsi/megaraid/megaraid_sas_fusion.c
+> > @@ -51,55 +51,16 @@
+> >  #include <scsi/scsi_device.h>
+> >  #include <scsi/scsi_host.h>
+> >
+> > +#include "mega_common.h"
 > 
-> This patch was requested by Arnd Bergmann here:
-> 
->         http://article.gmane.org/gmane.linux.ports.tegra/3535
-> 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> Cc: Linus Walleij <linus.walleij@stericsson.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux-kernel@vger.kernel.org
+> Do not include mega_common.h in the megaraid_sas driver.  It has
+> nothing to do with this driver.  It is for the older Parallel SCSI
+> megaraid drivers.
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Ok. I think I first tried moving all declarations into mega_common.h
+and then decided otherwise but forgot to remove that #include statement
+again. Thanks for taking a look!
+
+	Arnd
