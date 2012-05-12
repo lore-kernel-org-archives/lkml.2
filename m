@@ -1,149 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab2ELNMV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 09:12:21 -0400
-Received: from relay.sigmatic.fi ([80.69.161.51]:55595 "EHLO relay.sigmatic.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755376Ab2ELNMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 09:12:19 -0400
-Date: Sat, 12 May 2012 16:12:16 +0300
-From: Hannu Heikkinen <hannuxx@iki.fi>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net,
-        Kevin Hilman <khilman@deeprootsystems.com>, tony@atomide.com
-Subject: Re: [PATCH] spi/omap: cleanup probe/remove routines
-Message-ID: <20120512131216.GA4664@beyadr.localdomain>
-References: <1336567438-6715-1-git-send-email-hannuxx@iki.fi>
- <20120510003720.2F90C3E08F4@localhost>
+	id S1755994Ab2ELNTR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 09:19:17 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:57364 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab2ELNTP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 May 2012 09:19:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver
+Date: Sat, 12 May 2012 13:18:53 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        rjw@sisk.pl, linus.walleij@stericsson.com, linux-sh@vger.kernel.org,
+        horms@verge.net.au, grant.likely@secretlab.ca, lethal@linux-sh.org,
+        olof@lixom.net
+References: <20120511094103.16423.51840.sendpatchset@w520> <CACRpkdaVsBswz8uO_nTjbfbzt+T+YcxunpvoDvOn4+=DTwjG3A@mail.gmail.com> <CANqRtoRx0VDmrPz=foD03z+ZYdb605Km8SEDKQQwCzbrZ54m3Q@mail.gmail.com>
+In-Reply-To: <CANqRtoRx0VDmrPz=foD03z+ZYdb605Km8SEDKQQwCzbrZ54m3Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120510003720.2F90C3E08F4@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205121318.54115.arnd@arndb.de>
+X-Provags-ID: V02:K0:jvKFpWeZLoGPiaz58Nju44Fh0M9EJ1CDg7snlNGxW7I
+ udjqcUH4iKtODMnZbNHaVFA7PREQ2R/E97jPdpr/LdReq2JG6Q
+ EIM9BBoK9v+CImo5fVdcZLG1fm5m1jGTov4aBQ89hvItwKKw7U
+ 3weWycIxEcF/Q8ZMfU/7tMo783z17FL2SRaEDRMFAS0qe9uoRF
+ Exg+aAxDL4/OWjxFAct5cvJB3uAtslAnDtcKcZBGDzikFI9hXL
+ phcF27nnlTkQ1D0Lzc+wXn2oKqqVMex/YDcvQV3BACcIb5iQgZ
+ ihGVafDfNSLPSsAIQ02O5m8K4zmPB7LNgdCcpDpTx6eExvqRc8
+ IMfeZ81Vg/0aoLMXx7Wk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/12 18:37 -0600, Grant Likely wrote:
-> On Wed,  9 May 2012 15:43:58 +0300, Hannu Heikkinen <hannuxx@iki.fi> wrote:
-> > Cleanup probe and remove routines, use devm_* functions for
-> > managing resources.
-> > 
-> > Also, in under free_master label, change use of kfree() into
-> > spi_master_put().
+On Friday 11 May 2012, Magnus Damm wrote:
+> On Fri, May 11, 2012 at 10:10 PM, Linus Walleij
+> <linus.walleij@linaro.org> wrote:
+> > On Fri, May 11, 2012 at 11:41 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+> >
+> >> +config GPIO_EM
+> >> +       tristate "Emma Mobile GPIO"
+> >> +       depends on ARM
+> >
+> > ARM really? Why should all ARM systems have the option of configuring in an Emma
+> > controller?
 > 
-> Patch does not apply to my current spi/next branch[1].
+> Well, first of all, the Emma Mobile line of SoCs are ARM based. You
+> may think of MIPS based Emma devices. I don' t know so much about
+> them, but if you happen to know where I can find docs then I'd be very
+> interested in looking at them to see if I can share any of my recently
+> developed drivers.
 > 
-> [1]git://git.secretlab.ca/git/linux-2.6 spi/next
+> Not sure if your point is that this has nothing to do with the CPU
+> core itself - at least I usually prefer to omit CPU dependencies for
+> I/O devices and have as few dependencies as possible to get as much as
+> compile time testing done. In this particular case I've added ARM as
+> dependency because I was asked so for the UART driver 8250_em. Either
+> way is fine with me, so it's up to you GPIO maintainers to decide what
+> you want. As long as I can enable it on the ARM based SoC family I'm
+> happy. =)
+
+My preference is generally to define the dependencies rather broadly
+so you can build each driver on as many platforms as possible, and
+just leave them out of defconfig. This seems to be the common way to
+do things. Limiting by architecture makes some sense if you don't
+want to expose the driver to all architectures that might not be
+able to build it (e.g. s390 would not be able to build this one).
+
+> >> +static inline unsigned long em_gio_read(struct em_gio_priv *p, int offs)
+> >> +{
+> >> +       if (offs < GIO_IDT0)
+> >> +               return ioread32(p->base0 + offs);
+> >> +       else
+> >> +               return ioread32(p->base1 + (offs - GIO_IDT0));
+> >> +}
+> >> +
+> >> +static inline void em_gio_write(struct em_gio_priv *p, int offs,
+> >> +                               unsigned long value)
+> >> +{
+> >> +       if (offs < GIO_IDT0)
+> >> +               iowrite32(value, p->base0 + offs);
+> >> +       else
+> >> +               iowrite32(value, p->base1 + (offs - GIO_IDT0));
+> >> +}
+> >
+> > Isn't ioread()/iowrite() some ISA I/O-space operations? What's wrong with
+> > readl_[relaxed] and writel_[relaxed]()?
 > 
-> While I'm thinking about it; Kevin, how do you want me handling OMAP
-> spi patches.  Do you want to pick them up, test them and send me a git
-> branch to pull like with gpio?  Or can I just pick them up?
+> Nothing wrong with readl/writel, I've just have a habit of using the
+> ioread/iowrite ones. I find the code that allows platforms to select
+> PORT or IOMEM in lib/iomap.c rather neat.
+
+For reference: The ioread family is defined to be a superset of the
+readl family and the inl family and to be compatible with the calling
+convention of readl, so it's correct to use it here, but it may be
+slower on architectures that require the lib/iomap.c wrappers. ARM
+does not use those wrappers on modern systems because the PIO space
+is memory mapped.
+
+For performance sensitive drivers that do not use DMA, it makes
+sense to use the readl_relaxed() family instead, because those
+omit the expensive barriers that protect us from overlapping with
+DMA.
+
+The main advantage of using readl/writel is that it's more common
+on ARM so reviewers don't have to wonder why this driver does things
+differently. Any driver shared with powerpc, mips or sh would likely
+use a different style. E.g. on powerpc, using readl/writel is considered
+wrong because it's only well-defined for PCI there.
+
+> >> +static struct em_gio_priv *irq_to_priv(unsigned int irq)
+> >> +{
+> >> +       struct irq_chip *chip = irq_get_chip(irq);
+> >> +       return container_of(chip, struct em_gio_priv, irq_chip);
+> >> +}
+> >
+> > Should this be inline maybe?
 > 
-> g.
+> I have not checked if they actually turn out inline with my ARM
+> compiler, but gcc for SH was always rather good at deciding when to
+> inline by itself. Its a bit like likely()/unlikely() in my mind, it
+> may be good to give hints for the compiler but in the majority of the
+> cases the compiler will be fine by itself. I guess this particular
+> function may end up as just a few instructions.
 
-hi, I forgot this spi/next brach. devm funcs already applied
-(commit 1a77b127ae147f5827043a9896d7f4cb248b402e - Shubhrajyoti).
+Right.
 
-Please ignore below patch, I'll check if there's something devm related
-to do left.
-
-br,
-Hannu
-
+> >> +static irqreturn_t em_gio_irq_handler(int irq, void *dev_id)
+> >> +{
+> >> +       struct em_gio_priv *p = dev_id;
+> >> +       unsigned long tmp, status;
+> >> +       unsigned int offset;
+> >> +
+> >> +       status = tmp = em_gio_read(p, GIO_MST);
+> >> +       if (!status)
+> >> +               return IRQ_NONE;
+> >> +
+> >> +       while (status) {
+> >> +               offset = __ffs(status);
+> >> +               generic_handle_irq(p->irq_base + offset);
+> >
+> > Pleas use irqdomain to translate the IRQ numbers.
 > 
-> > 
-> > CC: grant.likely@secretlab.ca
-> > CC: tony@atomide.com
-> > Signed-off-by: Hannu Heikkinen <hannuxx@iki.fi>
-> > ---
-> >  drivers/spi/spi-omap2-mcspi.c |   27 ++++++---------------------
-> >  1 file changed, 6 insertions(+), 21 deletions(-)
-> > 
-> > diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-> > index bb9274c..392efce 100644
-> > --- a/drivers/spi/spi-omap2-mcspi.c
-> > +++ b/drivers/spi/spi-omap2-mcspi.c
-> > @@ -1166,17 +1166,12 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
-> >  	r->start += regs_offset;
-> >  	r->end += regs_offset;
-> >  	mcspi->phys = r->start;
-> > -	if (!request_mem_region(r->start, resource_size(r),
-> > -				dev_name(&pdev->dev))) {
-> > -		status = -EBUSY;
-> > -		goto free_master;
-> > -	}
-> >  
-> > -	mcspi->base = ioremap(r->start, resource_size(r));
-> > +	mcspi->base = devm_request_and_ioremap(&pdev->dev, r);
-> >  	if (!mcspi->base) {
-> > -		dev_dbg(&pdev->dev, "can't ioremap MCSPI\n");
-> > -		status = -ENOMEM;
-> > -		goto release_region;
-> > +		dev_dbg(&pdev->dev, "can't request mem and ioremap MCSPI\n");
-> > +		status =  -ENOMEM;
-> > +		goto free_master;
-> >  	}
-> >  
-> >  	mcspi->dev = &pdev->dev;
-> > @@ -1191,7 +1186,7 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
-> >  			GFP_KERNEL);
-> >  
-> >  	if (mcspi->dma_channels == NULL)
-> > -		goto unmap_io;
-> > +		goto free_master;
-> >  
-> >  	for (i = 0; i < master->num_chipselect; i++) {
-> >  		char dma_ch_name[14];
-> > @@ -1241,12 +1236,8 @@ disable_pm:
-> >  	pm_runtime_disable(&pdev->dev);
-> >  dma_chnl_free:
-> >  	kfree(mcspi->dma_channels);
-> > -unmap_io:
-> > -	iounmap(mcspi->base);
-> > -release_region:
-> > -	release_mem_region(r->start, resource_size(r));
-> >  free_master:
-> > -	kfree(master);
-> > +	spi_master_put(master);
-> >  	platform_set_drvdata(pdev, NULL);
-> >  	return status;
-> >  }
-> > @@ -1256,8 +1247,6 @@ static int __exit omap2_mcspi_remove(struct platform_device *pdev)
-> >  	struct spi_master	*master;
-> >  	struct omap2_mcspi	*mcspi;
-> >  	struct omap2_mcspi_dma	*dma_channels;
-> > -	struct resource		*r;
-> > -	void __iomem *base;
-> >  
-> >  	master = dev_get_drvdata(&pdev->dev);
-> >  	mcspi = spi_master_get_devdata(master);
-> > @@ -1265,12 +1254,8 @@ static int __exit omap2_mcspi_remove(struct platform_device *pdev)
-> >  
-> >  	omap2_mcspi_disable_clocks(mcspi);
-> >  	pm_runtime_disable(&pdev->dev);
-> > -	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > -	release_mem_region(r->start, resource_size(r));
-> >  
-> > -	base = mcspi->base;
-> >  	spi_unregister_master(master);
-> > -	iounmap(base);
-> >  	kfree(dma_channels);
-> >  	destroy_workqueue(mcspi->wq);
-> >  	platform_set_drvdata(pdev, NULL);
-> > -- 
-> > 1.7.10
-> > 
+> Is this mandatory for regular platform devices not using DT?
 > 
-> -- 
-> Grant Likely, B.Sc, P.Eng.
-> Secret Lab Technologies, Ltd.
+> I don't object to your idea, but I was planning on adding that in my
+> DT feature patch.
 
--- 
--------------------------------------
-Hannu Heikkinen
-hannuxx@iki.fi
-PGP Key fingerprint FB04 2612 05B5 1CBD 9428  9E4D 2407 2F8C 52C0 A173
--------------------------------------
+There is little value in delaying this if you already know how
+to do it. irq domains are useful for other reasons as well, e.g.
+for allowing to build with sparse IRQ, which is needed when we get
+to multiplatform kernels.
 
+> >> +static struct em_gio_priv *gpio_to_priv(struct gpio_chip *chip)
+> >> +{
+> >> +       return container_of(chip, struct em_gio_priv, gpio_chip);
+> >> +}
+> >
+> > inline?
+> 
+> Sure, if you think that is absolutely necessary. May I ask, is it
+> important for you, or is it ok if I skip and keep this driver in line
+> with my other ones? =)
+
+I don't think it makes any difference in practice, other for people
+reading the code. Adding the 'inline' tells the reader that this is
+meant to be a trivial function that doesn't add much object code,
+and that the author was aware of that. I don't think it matters much
+either way.
+
+> > Isn't there a new nice inline that will both request and
+> > remap a piece of memory?
+> 
+> If so then that would be excellent. Especially together with
+> ioread/iowrite so the code can work both for IOMEM and PORT
+> transparently.
+
+We have a bunch of helpers, but I think none that does
+everything yet. io_iomap() locates and remaps the resource.
+devm_request_and_ioremap() does the request and the map, but
+doesn't pull it out of the device.
+
+	Arnd
