@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab2ELHRh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 03:17:37 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:37078 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab2ELHRd (ORCPT
+	id S1753463Ab2ELHoT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 03:44:19 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:48657 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751556Ab2ELHoR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 03:17:33 -0400
-Message-ID: <4FAE0E88.2030703@suse.cz>
-Date: Sat, 12 May 2012 09:17:28 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120426 Thunderbird/13.0
+	Sat, 12 May 2012 03:44:17 -0400
 MIME-Version: 1.0
-To: stable@kernel.org
-CC: linux-pm <linux-pm@lists.linux-foundation.org>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: 3.3.5 regression: resume doesn't switch to X
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFyG2jQFURwWebMWw7bAt3=zbXRsHSOtZVYBw-frUXqiRg@mail.gmail.com>
+References: <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+ <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
+ <CAPXgP13-XQdn0wMP=coVqS=Eko1vWkOrjOtfq4JQLHFZ3JNbgg@mail.gmail.com>
+ <1336571457.30189.29.camel@joe2Laptop> <CAPXgP11jt5u=wXs9Pe7QksZ25QTKCwNXgTHn+T6JXD6+2NzgBQ@mail.gmail.com>
+ <CAE9FiQUzsu8CFNLXxUyZnu53YobdNdJfQQmPQd8s8r5rgJpcNg@mail.gmail.com>
+ <20120509230649.GA10695@kroah.com> <1336617045.25027.2.camel@mop>
+ <CA+1xoqft4aM_qedn+TDx0z8creS_4mFf3S+4SUNjz0pe+=YHAg@mail.gmail.com>
+ <20120511151944.GA6990@kroah.com> <CA+55aFz8-96rHLfqRrRSgFAzOFmyDaDKSB15WKkCoUssHq8R-A@mail.gmail.com>
+ <CAPXgP11teuiH0cPRrhWdvKCW1jtq4_6wkH21wgRT6UpDF0G1gQ@mail.gmail.com> <CA+55aFyG2jQFURwWebMWw7bAt3=zbXRsHSOtZVYBw-frUXqiRg@mail.gmail.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Sat, 12 May 2012 09:43:57 +0200
+Message-ID: <CA+1xoqf5YbkOJgQJWOgck0NpqGzGtxtHHJASZKHvwVuBzkKK6A@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
+ record buffer
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kay Sievers <kay@vrfy.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, Joe Perches <joe@perches.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, May 11, 2012 at 5:47 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Btw, I'd also *love* to see some model (eventually - not necessarily
+> now) where we could have the option of the time printouts being a bit
+> different (rather than just on/off). It would be very nice if we had
+> "relative" time printouts for events close together, so the rule could
+> be something like:
+>
+>  - if time is same as last line, pad with empty
+>
+>  - if time is more than a minute from last one, show an absolute value
+> of dd hh:mm:ss
+>
+>  - otherwise, show a relative value of +ss.mmmmmm
+>
+> So the on/off choice could be on/off/relative.
+>
+> Hmm?
 
-since update to 3.3.5, my X doesn't show up after resume from
-hibernation anymore. The only thing I see is "resuming..." on the
-console. I can switch to any tty and login in text mode, but cannot
-switch to X despite it is running. I have to restart whole session to
-have X again.
+So I got something like this:
 
-Now I'm back to 3.3.4 and everything is OK.
+# sleep 61 ; echo foo > /dev/kmsg ; sleep 61 ; echo bar > /dev/kmsg ;
+sleep 5 ; echo zoot > /dev/kmsg ; sleep 10 ; echo foo > /dev/kmsg ;
+echo bar > /dev/kmsg ; sleep 61 ; echo zoot > /dev/kmsg ; echo foo >
+/dev/kmsg
 
-Using radeon driver on:
-01:00.0 VGA compatible controller [0300]: Advanced Micro Devices [AMD]
-nee ATI RV515 [Radeon Mobility X1450] [1002:7186]
+[  673.222632] foo
+[  734.315249] bar
+[   +5.077527] zoot
+[  +10.235225] foo
+[   +0.002971] bar
+[  810.883085] zoot
+[   +0.003081] foo
 
-regards,
--- 
-js
-suse labs
-
+If that looks right, I can send a patch once this printf overhaul is
+stable, unless Kay already plans on doing it as part of his work.
