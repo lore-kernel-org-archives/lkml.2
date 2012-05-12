@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab2ELLBS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 07:01:18 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:30042 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab2ELLBP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 07:01:15 -0400
-Date: Sat, 12 May 2012 14:01:04 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] mfd: lm3533: silence a gcc warning
-Message-ID: <20120512110104.GC19472@elgon.mountain>
+	id S1754888Ab2ELL0q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 07:26:46 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58083 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754716Ab2ELL0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 May 2012 07:26:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="152128675"
+Date: Sat, 12 May 2012 19:26:37 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: liwp.linux@gmail.com, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org,
+        Wanpeng Li <liwp@linux.vnet.ibm.com>
+Subject: Re: [PATCH] unmapped quotes
+Message-ID: <20120512112637.GA11577@localhost>
+References: <y>
+ <4fae23ca.68db440a.4bc9.22cc@mx.google.com>
+ <4FAE272C.6080804@msgid.tls.msk.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FAE272C.6080804@msgid.tls.msk.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is supposed to be umode_t.  It causes a GCC warning:
-drivers/mfd/lm3533-core.c:440:2: warning: initialization from incompatible pointer type [enabled by default]
-drivers/mfd/lm3533-core.c:440:2: warning: (near initialization for ‘lm3533_attribute_group.is_visible’) [enabled by default]
+On Sat, May 12, 2012 at 01:02:36PM +0400, Michael Tokarev wrote:
+> On 12.05.2012 12:47, liwp.linux@gmail.com wrote:
+> > - * If we're over `background_thresh' then the writeback threads are woken to
+> > + * If we're over 'background_thresh' then the writeback threads are woken to
+> 
+> I can't say the original is wrong.  Since these quotes don't have
+> "open" and "close" versions like {} or () pairs does, people often
+> use ` as opening and ' as closing - while staying within ascii.
+> Alternatives are things like « » or other things, but these aren't
+> ascii anymore.  So I'd say keep it alone... ;)
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Agreed. For example, latex uses ` and ' as opening and closing pairs.
+That does look a bit weird for C and shell users ;)
 
-diff --git a/drivers/mfd/lm3533-core.c b/drivers/mfd/lm3533-core.c
-index 75f4b7f..6f315d6 100644
---- a/drivers/mfd/lm3533-core.c
-+++ b/drivers/mfd/lm3533-core.c
-@@ -418,7 +418,7 @@ static struct attribute *lm3533_attributes[] = {
- #define to_dev_attr(_attr) \
- 	container_of(_attr, struct device_attribute, attr)
- 
--static mode_t lm3533_attr_is_visible(struct kobject *kobj,
-+static umode_t lm3533_attr_is_visible(struct kobject *kobj,
- 					     struct attribute *attr, int n)
- {
- 	struct device *dev = container_of(kobj, struct device, kobj);
+Thanks,
+Fengguang
