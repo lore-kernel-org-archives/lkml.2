@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab2ELHoT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 03:44:19 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:48657 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556Ab2ELHoR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 03:44:17 -0400
+	id S1753516Ab2ELH6m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 03:58:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:39991 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751556Ab2ELH6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 May 2012 03:58:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="142173153"
+Message-ID: <4FAE1808.1080504@intel.com>
+Date: Sat, 12 May 2012 15:58:00 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyG2jQFURwWebMWw7bAt3=zbXRsHSOtZVYBw-frUXqiRg@mail.gmail.com>
-References: <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
- <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
- <CAPXgP13-XQdn0wMP=coVqS=Eko1vWkOrjOtfq4JQLHFZ3JNbgg@mail.gmail.com>
- <1336571457.30189.29.camel@joe2Laptop> <CAPXgP11jt5u=wXs9Pe7QksZ25QTKCwNXgTHn+T6JXD6+2NzgBQ@mail.gmail.com>
- <CAE9FiQUzsu8CFNLXxUyZnu53YobdNdJfQQmPQd8s8r5rgJpcNg@mail.gmail.com>
- <20120509230649.GA10695@kroah.com> <1336617045.25027.2.camel@mop>
- <CA+1xoqft4aM_qedn+TDx0z8creS_4mFf3S+4SUNjz0pe+=YHAg@mail.gmail.com>
- <20120511151944.GA6990@kroah.com> <CA+55aFz8-96rHLfqRrRSgFAzOFmyDaDKSB15WKkCoUssHq8R-A@mail.gmail.com>
- <CAPXgP11teuiH0cPRrhWdvKCW1jtq4_6wkH21wgRT6UpDF0G1gQ@mail.gmail.com> <CA+55aFyG2jQFURwWebMWw7bAt3=zbXRsHSOtZVYBw-frUXqiRg@mail.gmail.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Sat, 12 May 2012 09:43:57 +0200
-Message-ID: <CA+1xoqf5YbkOJgQJWOgck0NpqGzGtxtHHJASZKHvwVuBzkKK6A@mail.gmail.com>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
- record buffer
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kay Sievers <kay@vrfy.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Yinghai Lu <yinghai@kernel.org>, Joe Perches <joe@perches.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, gregkh@linuxfoundation.org, borislav.petkov@amd.com,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
+        oleg@redhat.com, axboe@kernel.dk, a.p.zijlstra@chello.nl,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 4/7] x86/tlb: fall back to flush all when meet a THP
+ large page
+References: <1336626013-28413-1-git-send-email-alex.shi@intel.com> <1336626013-28413-5-git-send-email-alex.shi@intel.com> <20120511162855.GB19697@redhat.com>
+In-Reply-To: <20120511162855.GB19697@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 5:47 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Btw, I'd also *love* to see some model (eventually - not necessarily
-> now) where we could have the option of the time printouts being a bit
-> different (rather than just on/off). It would be very nice if we had
-> "relative" time printouts for events close together, so the rule could
-> be something like:
->
->  - if time is same as last line, pad with empty
->
->  - if time is more than a minute from last one, show an absolute value
-> of dd hh:mm:ss
->
->  - otherwise, show a relative value of +ss.mmmmmm
->
-> So the on/off choice could be on/off/relative.
->
-> Hmm?
+On 05/12/2012 12:28 AM, Andrea Arcangeli wrote:
 
-So I got something like this:
+> Hi,
+> 
+> On Thu, May 10, 2012 at 01:00:10PM +0800, Alex Shi wrote:
+>> +	for (addr = start; addr <= end; addr += HPAGE_SIZE) {
+>> +		pgd = pgd_offset(mm, addr);
+>> +		if (likely(!pgd_none(*pgd))) {
+>> +			pud = pud_offset(pgd, addr);
+>> +			if (likely(!pud_none(*pud))) {
+>> +				pmd = pmd_offset(pud, addr);
+>> +				if (likely(!pmd_none(*pmd)))
+>> +					if (pmd_large(*pmd))
+>> +						return 1;
+> 
+> Note with THP we've to set the pmd temporarily not present during
+> split_huge_page just before it returns a regular pmd (to avoid erratas
+> and mixing 4k and 2m tlb on the same physical page). So pmd_large
+> would fail in that small time window and we would do the invlpg loop
+> (which should still work safe so no big deal). But I believe you could
+> use pmd_trans_huge above, maybe gcc can drop the whole block with
+> CONFIG_TRANSPARENT_HUGEPAGE=n.
 
-# sleep 61 ; echo foo > /dev/kmsg ; sleep 61 ; echo bar > /dev/kmsg ;
-sleep 5 ; echo zoot > /dev/kmsg ; sleep 10 ; echo foo > /dev/kmsg ;
-echo bar > /dev/kmsg ; sleep 61 ; echo zoot > /dev/kmsg ; echo foo >
-/dev/kmsg
 
-[  673.222632] foo
-[  734.315249] bar
-[   +5.077527] zoot
-[  +10.235225] foo
-[   +0.002971] bar
-[  810.883085] zoot
-[   +0.003081] foo
-
-If that looks right, I can send a patch once this printf overhaul is
-stable, unless Kay already plans on doing it as part of his work.
+Thanks the explanation.
+Sure, if THP was not enabled, we can return 0 directly. :)
