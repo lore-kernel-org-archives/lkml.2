@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab2ELTDR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 15:03:17 -0400
-Received: from hm1481-24.locaweb.com.br ([201.76.49.146]:23295 "EHLO
-	hm1481-24.locaweb.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892Ab2ELTDP (ORCPT
+	id S1753500Ab2ELTFG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 15:05:06 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56258 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab2ELTFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 15:03:15 -0400
-From: Thiago Rafael Becker <trbecker@trbecker.org>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Cc: Thiago Rafael Becker <trbecker@trbecker.org>, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        a.p.zijlstra@chello.nl, jason.wessel@windriver.com,
-        jan.kiszka@siemens.com, dhowells@redhat.com
-Subject: [PATCH] kgdb: clear compilation warning
-Date: Sat, 12 May 2012 16:02:23 -0300
-Message-Id: <1336849343-2701-1-git-send-email-trbecker@trbecker.org>
-X-Mailer: git-send-email 1.7.10.1
-X-CMAE-Score: 0
-X-CMAE-Analysis: v=2.0 cv=Krv6LxqN c=1 sm=1 a=0YOFKI15By1UX1CHIXxkcA==:17
-	a=Wkv0oGY1V4kA:10 a=la6TjtyCKkkA:10 a=E8gkYdMb1ykA:10 a=e_HWqny2AAAA:8
-	a=vrZhlg8AEgI0H31yA2UA:9 a=C4R2vJAwBmoA:10 a=zWQKXumA2evbgYzgbGTjVw==:117
+	Sat, 12 May 2012 15:05:04 -0400
+Date: Sat, 12 May 2012 20:05:02 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] gpiolib: Implement devm_gpio_request_one()
+Message-ID: <20120512190501.GB11435@sirena.org.uk>
+References: <1335959206-8138-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1335959206-8138-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335959206-8138-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Cookie: To err is human, to moo bovine.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the function kgdb_arch_set_breakpoint, the variable is only used
-if DEBUG_RODATA is configured. This clears the following compilation
-warning:
+On Wed, May 02, 2012 at 12:46:46PM +0100, Mark Brown wrote:
+> Allow drivers to use the modern request and configure idiom together
+> with devres.
 
-arch/x86/kernel/kgdb.c:749:7: warning: unused variable 'opc'
+> As with plain gpio_request() and gpio_request_one() we can't implement
+> the old school version in terms of _one() as this would force the
+> explicit selection of a direction in gpio_request() which could break
+> systems if we pick the wrong one.  Implementing devm_gpio_request_one()
+> in terms of devm_gpio_request() would needlessly complicate things or
+> lead to duplication from the unmanaged version depending on how it's
+> done.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Signed-off-by: Thiago Rafael Becker <trbecker@trbecker.org>
----
- arch/x86/kernel/kgdb.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-index 8bfb614..0ea80ef 100644
---- a/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -746,7 +746,9 @@ void kgdb_arch_set_pc(struct pt_regs *regs, unsigned long ip)
- int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
- {
- 	int err;
-+#ifdef CONFIG_DEBUG_RODATA
- 	char opc[BREAK_INSTR_SIZE];
-+#endif
- 
- 	bpt->type = BP_BREAKPOINT;
- 	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
--- 
-1.7.10.1
-
+Any chance we can get this into 3.5?  Writing error handling code is
+boring :)
