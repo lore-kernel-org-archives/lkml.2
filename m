@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761442Ab2ELAQj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 20:16:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50341 "EHLO
+	id S1761429Ab2ELASf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 20:18:35 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42602 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761403Ab2ELAQg (ORCPT
+	with ESMTP id S1755258Ab2ELASd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 20:16:36 -0400
-Date: Fri, 11 May 2012 17:15:06 -0700
+	Fri, 11 May 2012 20:18:33 -0400
+Date: Fri, 11 May 2012 17:17:06 -0700
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>
@@ -17,66 +17,54 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Marco Stornelli <marco.stornelli@gmail.com>,
-        Sergiu Iordache <sergiu@chromium.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 0/11] Merge ramoops and persistent_ram, generic pstore RAM
- backend
-Message-ID: <20120512001506.GA8653@lizard>
+Subject: [PATCH 01/11] persistent_ram: Remove prz->node
+Message-ID: <20120512001706.GA14782@lizard>
+References: <20120512001506.GA8653@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <20120512001506.GA8653@lizard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+The 'node' struct member is unused, so remove it.
 
-There are currently two competing debug facilities to store kernel
-messages in a persistent storage: a generic pstore and Google's
-persistent_ram. Not so long ago (https://lkml.org/lkml/2012/3/8/252),
-it was decided that we should fix this situation.
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ drivers/staging/android/persistent_ram.c |    2 --
+ drivers/staging/android/persistent_ram.h |    1 -
+ 2 files changed, 3 deletions(-)
 
-Recently ramoops has switched to pstore, which basically means that
-it became a RAM backend for the pstore framework.
-
-persistent_ram+ram_console and ramoops+pstore have almost the same
-features, except:
-
-1. Ramoops doesn't support ECC. Having ECC is useful when a hardware
-   reset was used to bring the machine back to life (i.e. a watchdog
-   triggered). In such cases, RAM may be somewhat corrupt, but
-   usually it is restorable.
-
-2. Pstore doesn't support logging kernel messages in run-time, it only
-   dumps dmesg when kernel oopses/panics. This makes pstore useless for
-   debugging hangs caused by HW issues or improper use of HW (e.g.
-   weird device inserted -> driver tried to write a reserved bits ->
-   SoC hanged. In that case we don't get any messages in the pstore.
-
-These patches solve the first issue, plus move things to their
-proper places. Patches that will fix the second issue are pending.
-
-Thanks,
-
---- 
- drivers/char/Kconfig                     |    9 -
- drivers/char/Makefile                    |    1 -
- drivers/char/ramoops.c                   |  362 --------------------
- drivers/staging/android/Kconfig          |   10 +-
- drivers/staging/android/persistent_ram.c |  473 --------------------------
- drivers/staging/android/persistent_ram.h |   78 -----
- drivers/staging/android/ram_console.c    |    2 +-
- fs/pstore/Kconfig                        |   12 +
- fs/pstore/Makefile                       |    1 +
- fs/pstore/ram.c                          |  384 ++++++++++++++++++++++
- fs/pstore/ram_core.c                     |  530 ++++++++++++++++++++++++++++++
- include/linux/pstore_ram.h               |   99 ++++++
- include/linux/ramoops.h                  |   17 -
- 13 files changed, 1028 insertions(+), 950 deletions(-)
-
+diff --git a/drivers/staging/android/persistent_ram.c b/drivers/staging/android/persistent_ram.c
+index 8407112..12444fd 100644
+--- a/drivers/staging/android/persistent_ram.c
++++ b/drivers/staging/android/persistent_ram.c
+@@ -407,8 +407,6 @@ struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
+ 		goto err;
+ 	}
+ 
+-	INIT_LIST_HEAD(&prz->node);
+-
+ 	ret = persistent_ram_buffer_init(dev_name(dev), prz);
+ 	if (ret) {
+ 		pr_err("persistent_ram: failed to initialize buffer\n");
+diff --git a/drivers/staging/android/persistent_ram.h b/drivers/staging/android/persistent_ram.h
+index f41e208..5635355 100644
+--- a/drivers/staging/android/persistent_ram.h
++++ b/drivers/staging/android/persistent_ram.h
+@@ -38,7 +38,6 @@ struct persistent_ram {
+ };
+ 
+ struct persistent_ram_zone {
+-	struct list_head node;
+ 	void *vaddr;
+ 	struct persistent_ram_buffer *buffer;
+ 	size_t buffer_size;
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+1.7.9.2
+
