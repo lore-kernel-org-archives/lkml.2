@@ -1,47 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab2ELTFG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 15:05:06 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56258 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab2ELTFE (ORCPT
+	id S1753833Ab2ELTJJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 15:09:09 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33159 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330Ab2ELTJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 15:05:04 -0400
-Date: Sat, 12 May 2012 20:05:02 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] gpiolib: Implement devm_gpio_request_one()
-Message-ID: <20120512190501.GB11435@sirena.org.uk>
-References: <1335959206-8138-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1335959206-8138-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Sat, 12 May 2012 15:09:07 -0400
+Date: Sat, 12 May 2012 16:09:00 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: pull request: bluetooth 2012-05-04
+Message-ID: <20120512190900.GA15956@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+	netdev@vger.kernel.org
+References: <20120505001243.GC23728@joana>
+ <20120508070211.GB11843@joana>
+ <20120511201620.GD7620@joana>
+ <20120512182227.GA30574@tuxdriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1335959206-8138-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Cookie: To err is human, to moo bovine.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20120512182227.GA30574@tuxdriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 02, 2012 at 12:46:46PM +0100, Mark Brown wrote:
-> Allow drivers to use the modern request and configure idiom together
-> with devres.
+Hi John,
 
-> As with plain gpio_request() and gpio_request_one() we can't implement
-> the old school version in terms of _one() as this would force the
-> explicit selection of a direction in gpio_request() which could break
-> systems if we pick the wrong one.  Implementing devm_gpio_request_one()
-> in terms of devm_gpio_request() would needlessly complicate things or
-> lead to duplication from the unmanaged version depending on how it's
-> done.
+* John W. Linville <linville@tuxdriver.com> [2012-05-12 14:22:27 -0400]:
+
+> On Fri, May 11, 2012 at 05:16:20PM -0300, Gustavo Padovan wrote:
+> > Hi Dave,
+> > 
+> > I couldn't get this pull by John this week, he's been unresponsive.
+> > We would love to see this code in the 3.4 kernel (not sure if this would be
+> > possible if Linus do not release the -rc7, there are important fixes 
+> > in the pull request, such as a fix to a regression that was breaking bluetooth
+> > keyboards.
+> > 
+> > Please let me know if you have any problems with this! I checked this code for
+> > coding style issues too. Thanks.
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Well, I do apologize for my lack of responsiveness.  My employer saw
+> fit to have me (figuratively) locked in a room with no email access all
+> week, with me getting home rather late in the evenings and returning
+> early each morning.  I would have liked to have stayed awake for
+> hours each night catching-up, but I just didn't have the strength. :-(
+> 
+> With that said, I'm not at all sure that this batch of fixes is
+> appropriate for this late in the release cycle.  Normally at this
+> point I would expect to see "regression cause by commit 1234" or
+> "this common action results in this crash", all fixed by one-liners
+> wherever possible.  This batch is more like "causes some problems",
+> or "needs to be different" -- neither of which sound urgent enough
+> to be worth requesting delays in Linus's release schedule.
 
-Any chance we can get this into 3.5?  Writing error handling code is
-boring :)
+
+In my point of view there are two commits there that are really necessary:
+
+Gustavo Padovan (2):
+      Bluetooth: report the right security level in getsockopt
+
+Johan Hedberg (2):
+      Bluetooth: mgmt: Fix device_connected sending order
+
+They fix a userspace breakage caused by:
+
+Author: Marcel Holtmann <marcel@holtmann.org>
+Date:   Mon Feb 20 21:24:37 2012 +0100
+
+    Bluetooth: Always enable management interface
+    
+    The management interface API has reached stable version 1.0 and thus
+    it can now be always enabled. All future changes will be made backwards
+    compatible.
+    
+    Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+    Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+
+
+This cause no crash, but it make bluetooth keyboards stop to work with Linux.
+This a serious breakage IMO. I really would like to see at least these two
+patches in. The other fixes can wait.
+ 
+	Gustavo
+
+---
+
+The following changes since commit 985140369be1e886754d8ac0375dd64e4f727311:
+
+  Add Foxconn / Hon Hai IDs for btusb module (2012-04-24 11:38:41 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth for-upstream
+
+for you to fetch changes up to 3ca67a07a20880c78bfce52017956c1472db69ff:
+
+  Bluetooth: mgmt: Fix device_connected sending order (2012-05-12 16:02:06 -0300)
+
+----------------------------------------------------------------
+Gustavo Padovan (1):
+      Bluetooth: notify userspace of security level change
+
+Johan Hedberg (1):
+      Bluetooth: mgmt: Fix device_connected sending order
+
+ include/net/bluetooth/bluetooth.h |    1 +
+ net/bluetooth/af_bluetooth.c      |    2 +-
+ net/bluetooth/hci_core.c          |    8 ++++++++
+ net/bluetooth/hci_event.c         |   11 +++++++++--
+ net/bluetooth/l2cap_core.c        |    5 +++++
+ net/bluetooth/l2cap_sock.c        |   15 ++++++++++-----
+ 6 files changed, 34 insertions(+), 8 deletions(-)
