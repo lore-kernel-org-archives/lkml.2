@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab2ELMga (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 08:36:30 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49679 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754708Ab2ELMgW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 08:36:22 -0400
-Date: Sat, 12 May 2012 14:36:10 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Marcus Folkesson <marcus.folkesson@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: davinci: Free requested IRQ in remove
-Message-ID: <20120512123610.GG20673@pengutronix.de>
-References: <1336053396-24974-1-git-send-email-marcus.folkesson@gmail.com>
+	id S1755853Ab2ELMhM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 08:37:12 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:42874 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755802Ab2ELMgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 May 2012 08:36:46 -0400
+Message-ID: <4FAE595A.6010605@bfs.de>
+Date: Sat, 12 May 2012 14:36:42 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DNUSDXU7R7AVVM8C"
-Content-Disposition: inline
-In-Reply-To: <1336053396-24974-1-git-send-email-marcus.folkesson@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] iommu: off by one in dmar_get_fault_reason()
+References: <20120512105935.GA19472@elgon.mountain>
+In-Reply-To: <20120512105935.GA19472@elgon.mountain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---DNUSDXU7R7AVVM8C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, May 03, 2012 at 03:56:36PM +0200, Marcus Folkesson wrote:
-> The freed IRQ is not necessary the one requested in probe.
-> Even if it was, with two or more i2c-controllers it will fails anyway.
->=20
-> Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
+Am 12.05.2012 12:59, schrieb Dan Carpenter:
+> fault_reason == ARRAY_SIZE(irq_remap_fault_reasons) + 0x20 - 0x20 is one
+> past the end of the array.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+> index 5ef65cf..9390f3f 100644
+> --- a/drivers/iommu/dmar.c
+> +++ b/drivers/iommu/dmar.c
+> @@ -1057,7 +1057,7 @@ static const char *irq_remap_fault_reasons[] =
+>  
+>  const char *dmar_get_fault_reason(u8 fault_reason, int *fault_type)
+>  {
+> -	if (fault_reason >= 0x20 && (fault_reason <= 0x20 +
+> +	if (fault_reason >= 0x20 && (fault_reason < 0x20 +
+>  				     ARRAY_SIZE(irq_remap_fault_reasons))) {
+>  		*fault_type = INTR_REMAP;
+>  		return irq_remap_fault_reasons[fault_reason - 0x20];
 
-Applied to current, thanks!
+perhaps this is more readable:
+if (fault_reason >= 0x20 && (fault_reason - 0x20 < ARRAY_SIZE(irq_remap_fault_reasons)))
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---DNUSDXU7R7AVVM8C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+uWToACgkQD27XaX1/VRuoyQCfQxX5csD6HT6ELM7I3GXq6jOI
-N3YAn3kFG838Juaxx9AbWY6TSnpnd4ej
-=uJzO
------END PGP SIGNATURE-----
-
---DNUSDXU7R7AVVM8C--
+re,
+ wh
