@@ -1,46 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab2ELMH7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 08:07:59 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:2908 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755217Ab2ELMH5 (ORCPT
+	id S1755451Ab2ELMJS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 08:09:18 -0400
+Received: from kungfu.dreamhost.com ([66.33.216.126]:60633 "EHLO
+	kungfu.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755337Ab2ELMJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 08:07:57 -0400
-X-Greylist: delayed 2148 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 May 2012 08:07:56 EDT
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host q4CBW2s1021561
-Subject: Re: [RFC 1/1] driver core: Add dev_*_ratelimited() family
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Sat, 12 May 2012 13:32:03 +0200
-In-Reply-To: <20120512.135227.1196366807162247040.hdoyu@nvidia.com>
-References: <20120512.135227.1196366807162247040.hdoyu@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1336822324.14918.9.camel@thorin>
-Mime-Version: 1.0
-X-DCC-dcc1-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	Sat, 12 May 2012 08:09:17 -0400
+To: linux-kernel@vger.kernel.org
+Subject: HOW TO TURN $12 INTO $4000 IN 7 DAYS ONLINE!
+Date: Sat, 12 May 2012 00:32:00 -0700
+From: Anthony <work4u_anthony@yahoo.com>
+Reply-to: Anthony <work4u_anthony@yahoo.com>
+Message-ID: <901a22ffd9b28e4268165c0a0e9c107f@www.puregrainbakery.com>
+X-Priority: 3
+X-Mailer: PHPMailer [version 1.73]
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Dear Fellow Entrepreneur, 
 
-On Sam, 2012-05-12 at 12:52 +0200, Hiroshi Doyu wrote:
-[...]
-> An unclosed "if" statement in the MACRO seems a bit risky, but I don't
-> have any better/simple solution for this, ATM. Is there any alternative?
+OK, I'm going to keep this short and sweet - I'm not going to bore you with the 
 
-No, the "do { ... } while (0)" is actually the only one and widely used
-- not only in the Linux kernel.
+usual "rags-to-riches" story because I'm pretty sure you don't want to hear it.
 
-[....]
+What I will say though, is this...
 
-	Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
+If you're tired of all the so-called "systems" and business opportunities that 
+
+require you to sell affiliate products, run pay per click advertising campaigns, 
+
+operate websites or recruit new members then I have excellent news for you.
+
+Keep reading because I guarantee that this will be the most important piece of 
+
+information you will ever read about making money online... 
+
+or in general for that matter. I have discovered an amazingly simple income 
+
+system that will allow you and anyone else to earn an incredible income from home, 
+
+just by using your computer and the Internet.
+
+This system is called "The Baraka Cash System" 
+
+and it does NOT involve any of the following:
+
+* No building websites
+
+* No selling products - in any way shape or form
+
+* No advertising
+
+* No data entry
+
+* No Adsense
+
+* No mailing lists
+
+* No rebate processing
+
+* No recruiting new members - this is not MLM
+
+* No uplines or downlines
+
+* No gambling
+
+* No chain letters
+
+* No surveys or "paid to read" programs
+
+If you want to make money online, 
+join to my system before it's too late.
+
+Click or Copy Paste the link below: 
+
+http://www.4easystepsystem.com?code=4fab2846cf48f   
+
+Feel FREE To Check This Out Here:)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------
+http://www.puregrainbakery.com übernimmt keine Haftung für diese E-Mail.
 
