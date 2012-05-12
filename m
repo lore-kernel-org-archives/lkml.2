@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761536Ab2ELAUK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 20:20:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33194 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932362Ab2ELAT7 (ORCPT
+	id S1761560Ab2ELAUV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 20:20:21 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42602 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761454Ab2ELAUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 20:19:59 -0400
-Date: Fri, 11 May 2012 17:18:31 -0700
+	Fri, 11 May 2012 20:20:15 -0400
+Date: Fri, 11 May 2012 17:18:41 -0700
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>
@@ -20,8 +20,8 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 09/11] persistent_ram: Move to fs/pstore/ram_core.c
-Message-ID: <20120512001831.GI14782@lizard>
+Subject: [PATCH 10/11] pstore/ram: Switch to persistent_ram routines
+Message-ID: <20120512001840.GJ14782@lizard>
 References: <20120512001506.GA8653@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -32,1351 +32,220 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a first step for adding ECC support for pstore RAM backend: we
-will use the persistent_ram routines, kindly provided by Google.
-
-Basically, persistent_ram is a set of helper routines to deal with the
-[optionally] ECC-protected persistent ram regions.
-
-A bit of Makefile, Kconfig and header files adjustments were needed
-because of the move.
+The patch switches pstore RAM backend to use persistent_ram routines,
+one step closer to the ECC support.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- drivers/staging/android/Kconfig          |   10 +-
- drivers/staging/android/persistent_ram.c |  530 ------------------------------
- drivers/staging/android/persistent_ram.h |   84 -----
- drivers/staging/android/ram_console.c    |    2 +-
- fs/pstore/Kconfig                        |    7 +-
- fs/pstore/Makefile                       |    2 +-
- fs/pstore/ram_core.c                     |  530 ++++++++++++++++++++++++++++++
- include/linux/pstore_ram.h               |   86 ++++-
- 8 files changed, 622 insertions(+), 629 deletions(-)
- delete mode 100644 drivers/staging/android/persistent_ram.c
- delete mode 100644 drivers/staging/android/persistent_ram.h
- create mode 100644 fs/pstore/ram_core.c
+ fs/pstore/ram.c |  109 ++++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 60 insertions(+), 49 deletions(-)
 
-diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
-index 42f0133..4bfcceb 100644
---- a/drivers/staging/android/Kconfig
-+++ b/drivers/staging/android/Kconfig
-@@ -25,17 +25,9 @@ config ANDROID_LOGGER
- 	tristate "Android log driver"
- 	default n
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index b26b58e..cf0ad92 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -62,7 +62,7 @@ MODULE_PARM_DESC(dump_oops,
+ 		"set to 1 to dump oopses, 0 to only dump panics (default 1)");
  
--config ANDROID_PERSISTENT_RAM
--	bool
--	depends on HAVE_MEMBLOCK
--	select REED_SOLOMON
--	select REED_SOLOMON_ENC8
--	select REED_SOLOMON_DEC8
--
- config ANDROID_RAM_CONSOLE
- 	bool "Android RAM buffer console"
--	depends on !S390 && !UML && HAVE_MEMBLOCK
--	select ANDROID_PERSISTENT_RAM
-+	depends on !S390 && !UML && HAVE_MEMBLOCK && PSTORE_RAM
- 	default n
- 
- config ANDROID_TIMED_OUTPUT
-diff --git a/drivers/staging/android/persistent_ram.c b/drivers/staging/android/persistent_ram.c
-deleted file mode 100644
-index 63481da..0000000
---- a/drivers/staging/android/persistent_ram.c
-+++ /dev/null
-@@ -1,530 +0,0 @@
--/*
-- * Copyright (C) 2012 Google, Inc.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#include <linux/device.h>
--#include <linux/err.h>
--#include <linux/errno.h>
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/io.h>
--#include <linux/list.h>
--#include <linux/memblock.h>
--#include <linux/rslib.h>
--#include <linux/slab.h>
--#include <linux/vmalloc.h>
--#include <asm/page.h>
--#include "persistent_ram.h"
--
--struct persistent_ram_buffer {
--	uint32_t    sig;
--	atomic_t    start;
--	atomic_t    size;
--	uint8_t     data[0];
--};
--
--#define PERSISTENT_RAM_SIG (0x43474244) /* DBGC */
--
--static __initdata LIST_HEAD(persistent_ram_list);
--
--static inline size_t buffer_size(struct persistent_ram_zone *prz)
--{
--	return atomic_read(&prz->buffer->size);
--}
--
--static inline size_t buffer_start(struct persistent_ram_zone *prz)
--{
--	return atomic_read(&prz->buffer->start);
--}
--
--/* increase and wrap the start pointer, returning the old value */
--static inline size_t buffer_start_add(struct persistent_ram_zone *prz, size_t a)
--{
--	int old;
--	int new;
--
--	do {
--		old = atomic_read(&prz->buffer->start);
--		new = old + a;
--		while (unlikely(new > prz->buffer_size))
--			new -= prz->buffer_size;
--	} while (atomic_cmpxchg(&prz->buffer->start, old, new) != old);
--
--	return old;
--}
--
--/* increase the size counter until it hits the max size */
--static inline void buffer_size_add(struct persistent_ram_zone *prz, size_t a)
--{
--	size_t old;
--	size_t new;
--
--	if (atomic_read(&prz->buffer->size) == prz->buffer_size)
--		return;
--
--	do {
--		old = atomic_read(&prz->buffer->size);
--		new = old + a;
--		if (new > prz->buffer_size)
--			new = prz->buffer_size;
--	} while (atomic_cmpxchg(&prz->buffer->size, old, new) != old);
--}
--
--static void notrace persistent_ram_encode_rs8(struct persistent_ram_zone *prz,
--	uint8_t *data, size_t len, uint8_t *ecc)
--{
--	int i;
--	uint16_t par[prz->ecc_size];
--
--	/* Initialize the parity buffer */
--	memset(par, 0, sizeof(par));
--	encode_rs8(prz->rs_decoder, data, len, par, 0);
--	for (i = 0; i < prz->ecc_size; i++)
--		ecc[i] = par[i];
--}
--
--static int persistent_ram_decode_rs8(struct persistent_ram_zone *prz,
--	void *data, size_t len, uint8_t *ecc)
--{
--	int i;
--	uint16_t par[prz->ecc_size];
--
--	for (i = 0; i < prz->ecc_size; i++)
--		par[i] = ecc[i];
--	return decode_rs8(prz->rs_decoder, data, par, len,
--				NULL, 0, NULL, 0, NULL);
--}
--
--static void notrace persistent_ram_update_ecc(struct persistent_ram_zone *prz,
--	unsigned int start, unsigned int count)
--{
--	struct persistent_ram_buffer *buffer = prz->buffer;
--	uint8_t *buffer_end = buffer->data + prz->buffer_size;
--	uint8_t *block;
--	uint8_t *par;
--	int ecc_block_size = prz->ecc_block_size;
--	int ecc_size = prz->ecc_size;
--	int size = prz->ecc_block_size;
--
--	if (!prz->ecc)
--		return;
--
--	block = buffer->data + (start & ~(ecc_block_size - 1));
--	par = prz->par_buffer + (start / ecc_block_size) * prz->ecc_size;
--
--	do {
--		if (block + ecc_block_size > buffer_end)
--			size = buffer_end - block;
--		persistent_ram_encode_rs8(prz, block, size, par);
--		block += ecc_block_size;
--		par += ecc_size;
--	} while (block < buffer->data + start + count);
--}
--
--static void persistent_ram_update_header_ecc(struct persistent_ram_zone *prz)
--{
--	struct persistent_ram_buffer *buffer = prz->buffer;
--
--	if (!prz->ecc)
--		return;
--
--	persistent_ram_encode_rs8(prz, (uint8_t *)buffer, sizeof(*buffer),
--				  prz->par_header);
--}
--
--static void persistent_ram_ecc_old(struct persistent_ram_zone *prz)
--{
--	struct persistent_ram_buffer *buffer = prz->buffer;
--	uint8_t *block;
--	uint8_t *par;
--
--	if (!prz->ecc)
--		return;
--
--	block = buffer->data;
--	par = prz->par_buffer;
--	while (block < buffer->data + buffer_size(prz)) {
--		int numerr;
--		int size = prz->ecc_block_size;
--		if (block + size > buffer->data + prz->buffer_size)
--			size = buffer->data + prz->buffer_size - block;
--		numerr = persistent_ram_decode_rs8(prz, block, size, par);
--		if (numerr > 0) {
--			pr_devel("persistent_ram: error in block %p, %d\n",
--			       block, numerr);
--			prz->corrected_bytes += numerr;
--		} else if (numerr < 0) {
--			pr_devel("persistent_ram: uncorrectable error in block %p\n",
--				block);
--			prz->bad_blocks++;
--		}
--		block += prz->ecc_block_size;
--		par += prz->ecc_size;
--	}
--}
--
--static int persistent_ram_init_ecc(struct persistent_ram_zone *prz,
--	size_t buffer_size)
--{
--	int numerr;
--	struct persistent_ram_buffer *buffer = prz->buffer;
--	int ecc_blocks;
--
--	if (!prz->ecc)
--		return 0;
--
--	prz->ecc_block_size = 128;
--	prz->ecc_size = 16;
--	prz->ecc_symsize = 8;
--	prz->ecc_poly = 0x11d;
--
--	ecc_blocks = DIV_ROUND_UP(prz->buffer_size, prz->ecc_block_size);
--	prz->buffer_size -= (ecc_blocks + 1) * prz->ecc_size;
--
--	if (prz->buffer_size > buffer_size) {
--		pr_err("persistent_ram: invalid size %zu, non-ecc datasize %zu\n",
--		       buffer_size, prz->buffer_size);
--		return -EINVAL;
--	}
--
--	prz->par_buffer = buffer->data + prz->buffer_size;
--	prz->par_header = prz->par_buffer + ecc_blocks * prz->ecc_size;
--
--	/*
--	 * first consecutive root is 0
--	 * primitive element to generate roots = 1
--	 */
--	prz->rs_decoder = init_rs(prz->ecc_symsize, prz->ecc_poly, 0, 1,
--				  prz->ecc_size);
--	if (prz->rs_decoder == NULL) {
--		pr_info("persistent_ram: init_rs failed\n");
--		return -EINVAL;
--	}
--
--	prz->corrected_bytes = 0;
--	prz->bad_blocks = 0;
--
--	numerr = persistent_ram_decode_rs8(prz, buffer, sizeof(*buffer),
--					   prz->par_header);
--	if (numerr > 0) {
--		pr_info("persistent_ram: error in header, %d\n", numerr);
--		prz->corrected_bytes += numerr;
--	} else if (numerr < 0) {
--		pr_info("persistent_ram: uncorrectable error in header\n");
--		prz->bad_blocks++;
--	}
--
--	return 0;
--}
--
--ssize_t persistent_ram_ecc_string(struct persistent_ram_zone *prz,
--	char *str, size_t len)
--{
--	ssize_t ret;
--
--	if (prz->corrected_bytes || prz->bad_blocks)
--		ret = snprintf(str, len, ""
--			"\n%d Corrected bytes, %d unrecoverable blocks\n",
--			prz->corrected_bytes, prz->bad_blocks);
--	else
--		ret = snprintf(str, len, "\nNo errors detected\n");
--
--	return ret;
--}
--
--static void notrace persistent_ram_update(struct persistent_ram_zone *prz,
--	const void *s, unsigned int start, unsigned int count)
--{
--	struct persistent_ram_buffer *buffer = prz->buffer;
--	memcpy(buffer->data + start, s, count);
--	persistent_ram_update_ecc(prz, start, count);
--}
--
--static void __init
--persistent_ram_save_old(struct persistent_ram_zone *prz)
--{
--	struct persistent_ram_buffer *buffer = prz->buffer;
--	size_t size = buffer_size(prz);
--	size_t start = buffer_start(prz);
--	char *dest;
--
--	persistent_ram_ecc_old(prz);
--
--	dest = kmalloc(size, GFP_KERNEL);
--	if (dest == NULL) {
--		pr_err("persistent_ram: failed to allocate buffer\n");
--		return;
--	}
--
--	prz->old_log = dest;
--	prz->old_log_size = size;
--	memcpy(prz->old_log, &buffer->data[start], size - start);
--	memcpy(prz->old_log + size - start, &buffer->data[0], start);
--}
--
--int notrace persistent_ram_write(struct persistent_ram_zone *prz,
--	const void *s, unsigned int count)
--{
--	int rem;
--	int c = count;
--	size_t start;
--
--	if (unlikely(c > prz->buffer_size)) {
--		s += c - prz->buffer_size;
--		c = prz->buffer_size;
--	}
--
--	buffer_size_add(prz, c);
--
--	start = buffer_start_add(prz, c);
--
--	rem = prz->buffer_size - start;
--	if (unlikely(rem < c)) {
--		persistent_ram_update(prz, s, start, rem);
--		s += rem;
--		c -= rem;
--		start = 0;
--	}
--	persistent_ram_update(prz, s, start, c);
--
--	persistent_ram_update_header_ecc(prz);
--
--	return count;
--}
--
--size_t persistent_ram_old_size(struct persistent_ram_zone *prz)
--{
--	return prz->old_log_size;
--}
--
--void *persistent_ram_old(struct persistent_ram_zone *prz)
--{
--	return prz->old_log;
--}
--
--void persistent_ram_free_old(struct persistent_ram_zone *prz)
--{
--	kfree(prz->old_log);
--	prz->old_log = NULL;
--	prz->old_log_size = 0;
--}
--
--static void *persistent_ram_vmap(phys_addr_t start, size_t size)
--{
--	struct page **pages;
--	phys_addr_t page_start;
--	unsigned int page_count;
--	pgprot_t prot;
--	unsigned int i;
--	void *vaddr;
--
--	page_start = start - offset_in_page(start);
--	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
--
--	prot = pgprot_noncached(PAGE_KERNEL);
--
--	pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);
--	if (!pages) {
--		pr_err("%s: Failed to allocate array for %u pages\n", __func__,
--			page_count);
--		return NULL;
--	}
--
--	for (i = 0; i < page_count; i++) {
--		phys_addr_t addr = page_start + i * PAGE_SIZE;
--		pages[i] = pfn_to_page(addr >> PAGE_SHIFT);
--	}
--	vaddr = vmap(pages, page_count, VM_MAP, prot);
--	kfree(pages);
--
--	return vaddr;
--}
--
--static void *persistent_ram_iomap(phys_addr_t start, size_t size)
--{
--	if (!request_mem_region(start, size, "persistent_ram")) {
--		pr_err("request mem region (0x%llx@0x%llx) failed\n",
--			(unsigned long long)size, (unsigned long long)start);
--		return NULL;
--	}
--
--	return ioremap(start, size);
--}
--
--static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
--		struct persistent_ram_zone *prz)
--{
--	prz->paddr = start;
--	prz->size = size;
--
--	if (pfn_valid(start >> PAGE_SHIFT))
--		prz->vaddr = persistent_ram_vmap(start, size);
--	else
--		prz->vaddr = persistent_ram_iomap(start, size);
--
--	if (!prz->vaddr) {
--		pr_err("%s: Failed to map 0x%llx pages at 0x%llx\n", __func__,
--			(unsigned long long)size, (unsigned long long)start);
--		return -ENOMEM;
--	}
--
--	prz->buffer = prz->vaddr + offset_in_page(start);
--	prz->buffer_size = size - sizeof(struct persistent_ram_buffer);
--
--	return 0;
--}
--
--static int __init persistent_ram_buffer_init(const char *name,
--		struct persistent_ram_zone *prz)
--{
--	int i;
--	struct persistent_ram *ram;
--	struct persistent_ram_descriptor *desc;
--	phys_addr_t start;
--
--	list_for_each_entry(ram, &persistent_ram_list, node) {
--		start = ram->start;
--		for (i = 0; i < ram->num_descs; i++) {
--			desc = &ram->descs[i];
--			if (!strcmp(desc->name, name))
--				return persistent_ram_buffer_map(start,
--						desc->size, prz);
--			start += desc->size;
--		}
--	}
--
--	return -EINVAL;
--}
--
--static int __init persistent_ram_post_init(struct persistent_ram_zone *prz, bool ecc)
--{
--	int ret;
--
--	prz->ecc = ecc;
--
--	ret = persistent_ram_init_ecc(prz, prz->buffer_size);
--	if (ret)
--		return ret;
--
--	if (prz->buffer->sig == PERSISTENT_RAM_SIG) {
--		if (buffer_size(prz) > prz->buffer_size ||
--		    buffer_start(prz) > buffer_size(prz))
--			pr_info("persistent_ram: found existing invalid buffer,"
--				" size %zu, start %zu\n",
--			       buffer_size(prz), buffer_start(prz));
--		else {
--			pr_info("persistent_ram: found existing buffer,"
--				" size %zu, start %zu\n",
--			       buffer_size(prz), buffer_start(prz));
--			persistent_ram_save_old(prz);
--		}
--	} else {
--		pr_info("persistent_ram: no valid data in buffer"
--			" (sig = 0x%08x)\n", prz->buffer->sig);
--	}
--
--	prz->buffer->sig = PERSISTENT_RAM_SIG;
--	atomic_set(&prz->buffer->start, 0);
--	atomic_set(&prz->buffer->size, 0);
--
--	return 0;
--}
--
--void persistent_ram_free(struct persistent_ram_zone *prz)
--{
--	if (pfn_valid(prz->paddr >> PAGE_SHIFT)) {
--		vunmap(prz->vaddr);
--	} else {
--		iounmap(prz->vaddr);
--		release_mem_region(prz->paddr, prz->size);
--	}
--	persistent_ram_free_old(prz);
--	kfree(prz);
--}
--
--struct persistent_ram_zone * __init persistent_ram_new(phys_addr_t start,
--						       size_t size,
--						       bool ecc)
--{
--	struct persistent_ram_zone *prz;
--	int ret = -ENOMEM;
--
--	prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
--	if (!prz) {
--		pr_err("persistent_ram: failed to allocate persistent ram zone\n");
--		goto err;
--	}
--
--	ret = persistent_ram_buffer_map(start, size, prz);
--	if (ret)
--		goto err;
--
--	persistent_ram_post_init(prz, ecc);
--	persistent_ram_update_header_ecc(prz);
--
--	return prz;
--err:
--	kfree(prz);
--	return ERR_PTR(ret);
--}
--
--static  __init
--struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
--{
--	struct persistent_ram_zone *prz;
--	int ret = -ENOMEM;
--
--	prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
--	if (!prz) {
--		pr_err("persistent_ram: failed to allocate persistent ram zone\n");
--		goto err;
--	}
--
--	ret = persistent_ram_buffer_init(dev_name(dev), prz);
--	if (ret) {
--		pr_err("persistent_ram: failed to initialize buffer\n");
--		goto err;
--	}
--
--	persistent_ram_post_init(prz, ecc);
--
--	return prz;
--err:
--	kfree(prz);
--	return ERR_PTR(ret);
--}
--
--struct persistent_ram_zone * __init
--persistent_ram_init_ringbuffer(struct device *dev, bool ecc)
--{
--	return __persistent_ram_init(dev, ecc);
--}
--
--int __init persistent_ram_early_init(struct persistent_ram *ram)
--{
--	int ret;
--
--	ret = memblock_reserve(ram->start, ram->size);
--	if (ret) {
--		pr_err("Failed to reserve persistent memory from %08lx-%08lx\n",
--			(long)ram->start, (long)(ram->start + ram->size - 1));
--		return ret;
--	}
--
--	list_add_tail(&ram->node, &persistent_ram_list);
--
--	pr_info("Initialized persistent memory from %08lx-%08lx\n",
--		(long)ram->start, (long)(ram->start + ram->size - 1));
--
--	return 0;
--}
-diff --git a/drivers/staging/android/persistent_ram.h b/drivers/staging/android/persistent_ram.h
-deleted file mode 100644
-index d3b2b45..0000000
---- a/drivers/staging/android/persistent_ram.h
-+++ /dev/null
-@@ -1,84 +0,0 @@
--/*
-- * Copyright (C) 2011 Google, Inc.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#ifndef __LINUX_PERSISTENT_RAM_H__
--#define __LINUX_PERSISTENT_RAM_H__
--
--#include <linux/device.h>
--#include <linux/kernel.h>
--#include <linux/list.h>
--#include <linux/types.h>
--#include <linux/init.h>
--
--struct persistent_ram_buffer;
--
--struct persistent_ram_descriptor {
--	const char	*name;
--	phys_addr_t	size;
--};
--
--struct persistent_ram {
--	phys_addr_t	start;
--	phys_addr_t	size;
--
--	int					num_descs;
--	struct persistent_ram_descriptor	*descs;
--
--	struct list_head node;
--};
--
--struct persistent_ram_zone {
--	phys_addr_t paddr;
--	size_t size;
--	void *vaddr;
--	struct persistent_ram_buffer *buffer;
--	size_t buffer_size;
--
--	/* ECC correction */
--	bool ecc;
--	char *par_buffer;
--	char *par_header;
--	struct rs_control *rs_decoder;
--	int corrected_bytes;
--	int bad_blocks;
--	int ecc_block_size;
--	int ecc_size;
--	int ecc_symsize;
--	int ecc_poly;
--
--	char *old_log;
--	size_t old_log_size;
--	size_t old_log_footer_size;
--	bool early;
--};
--
--int persistent_ram_early_init(struct persistent_ram *ram);
--
--struct persistent_ram_zone * __init persistent_ram_new(phys_addr_t start,
--						       size_t size,
--						       bool ecc);
--void persistent_ram_free(struct persistent_ram_zone *prz);
--struct persistent_ram_zone *persistent_ram_init_ringbuffer(struct device *dev,
--		bool ecc);
--
--int persistent_ram_write(struct persistent_ram_zone *prz, const void *s,
--	unsigned int count);
--
--size_t persistent_ram_old_size(struct persistent_ram_zone *prz);
--void *persistent_ram_old(struct persistent_ram_zone *prz);
--void persistent_ram_free_old(struct persistent_ram_zone *prz);
--ssize_t persistent_ram_ecc_string(struct persistent_ram_zone *prz,
--	char *str, size_t len);
--
--#endif
-diff --git a/drivers/staging/android/ram_console.c b/drivers/staging/android/ram_console.c
-index ce140ff..82323bb 100644
---- a/drivers/staging/android/ram_console.c
-+++ b/drivers/staging/android/ram_console.c
-@@ -21,7 +21,7 @@
- #include <linux/string.h>
- #include <linux/uaccess.h>
- #include <linux/io.h>
--#include "persistent_ram.h"
-+#include <linux/pstore_ram.h>
- #include "ram_console.h"
- 
- static struct persistent_ram_zone *ram_console_zone;
-diff --git a/fs/pstore/Kconfig b/fs/pstore/Kconfig
-index ad6e594..139a07c 100644
---- a/fs/pstore/Kconfig
-+++ b/fs/pstore/Kconfig
-@@ -14,9 +14,12 @@ config PSTORE
- 
- config PSTORE_RAM
- 	tristate "Log panic/oops to a RAM buffer"
--	depends on HAS_IOMEM
- 	depends on PSTORE
--	default n
-+	depends on HAS_IOMEM
-+	depends on HAVE_MEMBLOCK
-+	select REED_SOLOMON
-+	select REED_SOLOMON_ENC8
-+	select REED_SOLOMON_DEC8
- 	help
- 	  This enables panic and oops messages to be logged to a circular
- 	  buffer in RAM where it can be read back at some later point.
-diff --git a/fs/pstore/Makefile b/fs/pstore/Makefile
-index 804e376..76d5284 100644
---- a/fs/pstore/Makefile
-+++ b/fs/pstore/Makefile
-@@ -5,4 +5,4 @@
- obj-y += pstore.o
- 
- pstore-objs += inode.o platform.o
--obj-$(CONFIG_PSTORE_RAM)	+= ram.o
-+obj-$(CONFIG_PSTORE_RAM)	+= ram.o ram_core.o
-diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-new file mode 100644
-index 0000000..7b9556ba
---- /dev/null
-+++ b/fs/pstore/ram_core.c
-@@ -0,0 +1,530 @@
-+/*
-+ * Copyright (C) 2012 Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/err.h>
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/list.h>
-+#include <linux/memblock.h>
-+#include <linux/rslib.h>
-+#include <linux/slab.h>
-+#include <linux/vmalloc.h>
-+#include <linux/pstore_ram.h>
-+#include <asm/page.h>
-+
-+struct persistent_ram_buffer {
-+	uint32_t    sig;
-+	atomic_t    start;
-+	atomic_t    size;
-+	uint8_t     data[0];
-+};
-+
-+#define PERSISTENT_RAM_SIG (0x43474244) /* DBGC */
-+
-+static __initdata LIST_HEAD(persistent_ram_list);
-+
-+static inline size_t buffer_size(struct persistent_ram_zone *prz)
-+{
-+	return atomic_read(&prz->buffer->size);
-+}
-+
-+static inline size_t buffer_start(struct persistent_ram_zone *prz)
-+{
-+	return atomic_read(&prz->buffer->start);
-+}
-+
-+/* increase and wrap the start pointer, returning the old value */
-+static inline size_t buffer_start_add(struct persistent_ram_zone *prz, size_t a)
-+{
-+	int old;
-+	int new;
-+
-+	do {
-+		old = atomic_read(&prz->buffer->start);
-+		new = old + a;
-+		while (unlikely(new > prz->buffer_size))
-+			new -= prz->buffer_size;
-+	} while (atomic_cmpxchg(&prz->buffer->start, old, new) != old);
-+
-+	return old;
-+}
-+
-+/* increase the size counter until it hits the max size */
-+static inline void buffer_size_add(struct persistent_ram_zone *prz, size_t a)
-+{
-+	size_t old;
-+	size_t new;
-+
-+	if (atomic_read(&prz->buffer->size) == prz->buffer_size)
-+		return;
-+
-+	do {
-+		old = atomic_read(&prz->buffer->size);
-+		new = old + a;
-+		if (new > prz->buffer_size)
-+			new = prz->buffer_size;
-+	} while (atomic_cmpxchg(&prz->buffer->size, old, new) != old);
-+}
-+
-+static void notrace persistent_ram_encode_rs8(struct persistent_ram_zone *prz,
-+	uint8_t *data, size_t len, uint8_t *ecc)
-+{
-+	int i;
-+	uint16_t par[prz->ecc_size];
-+
-+	/* Initialize the parity buffer */
-+	memset(par, 0, sizeof(par));
-+	encode_rs8(prz->rs_decoder, data, len, par, 0);
-+	for (i = 0; i < prz->ecc_size; i++)
-+		ecc[i] = par[i];
-+}
-+
-+static int persistent_ram_decode_rs8(struct persistent_ram_zone *prz,
-+	void *data, size_t len, uint8_t *ecc)
-+{
-+	int i;
-+	uint16_t par[prz->ecc_size];
-+
-+	for (i = 0; i < prz->ecc_size; i++)
-+		par[i] = ecc[i];
-+	return decode_rs8(prz->rs_decoder, data, par, len,
-+				NULL, 0, NULL, 0, NULL);
-+}
-+
-+static void notrace persistent_ram_update_ecc(struct persistent_ram_zone *prz,
-+	unsigned int start, unsigned int count)
-+{
-+	struct persistent_ram_buffer *buffer = prz->buffer;
-+	uint8_t *buffer_end = buffer->data + prz->buffer_size;
-+	uint8_t *block;
-+	uint8_t *par;
-+	int ecc_block_size = prz->ecc_block_size;
-+	int ecc_size = prz->ecc_size;
-+	int size = prz->ecc_block_size;
-+
-+	if (!prz->ecc)
-+		return;
-+
-+	block = buffer->data + (start & ~(ecc_block_size - 1));
-+	par = prz->par_buffer + (start / ecc_block_size) * prz->ecc_size;
-+
-+	do {
-+		if (block + ecc_block_size > buffer_end)
-+			size = buffer_end - block;
-+		persistent_ram_encode_rs8(prz, block, size, par);
-+		block += ecc_block_size;
-+		par += ecc_size;
-+	} while (block < buffer->data + start + count);
-+}
-+
-+static void persistent_ram_update_header_ecc(struct persistent_ram_zone *prz)
-+{
-+	struct persistent_ram_buffer *buffer = prz->buffer;
-+
-+	if (!prz->ecc)
-+		return;
-+
-+	persistent_ram_encode_rs8(prz, (uint8_t *)buffer, sizeof(*buffer),
-+				  prz->par_header);
-+}
-+
-+static void persistent_ram_ecc_old(struct persistent_ram_zone *prz)
-+{
-+	struct persistent_ram_buffer *buffer = prz->buffer;
-+	uint8_t *block;
-+	uint8_t *par;
-+
-+	if (!prz->ecc)
-+		return;
-+
-+	block = buffer->data;
-+	par = prz->par_buffer;
-+	while (block < buffer->data + buffer_size(prz)) {
-+		int numerr;
-+		int size = prz->ecc_block_size;
-+		if (block + size > buffer->data + prz->buffer_size)
-+			size = buffer->data + prz->buffer_size - block;
-+		numerr = persistent_ram_decode_rs8(prz, block, size, par);
-+		if (numerr > 0) {
-+			pr_devel("persistent_ram: error in block %p, %d\n",
-+			       block, numerr);
-+			prz->corrected_bytes += numerr;
-+		} else if (numerr < 0) {
-+			pr_devel("persistent_ram: uncorrectable error in block %p\n",
-+				block);
-+			prz->bad_blocks++;
-+		}
-+		block += prz->ecc_block_size;
-+		par += prz->ecc_size;
-+	}
-+}
-+
-+static int persistent_ram_init_ecc(struct persistent_ram_zone *prz,
-+	size_t buffer_size)
-+{
-+	int numerr;
-+	struct persistent_ram_buffer *buffer = prz->buffer;
-+	int ecc_blocks;
-+
-+	if (!prz->ecc)
-+		return 0;
-+
-+	prz->ecc_block_size = 128;
-+	prz->ecc_size = 16;
-+	prz->ecc_symsize = 8;
-+	prz->ecc_poly = 0x11d;
-+
-+	ecc_blocks = DIV_ROUND_UP(prz->buffer_size, prz->ecc_block_size);
-+	prz->buffer_size -= (ecc_blocks + 1) * prz->ecc_size;
-+
-+	if (prz->buffer_size > buffer_size) {
-+		pr_err("persistent_ram: invalid size %zu, non-ecc datasize %zu\n",
-+		       buffer_size, prz->buffer_size);
-+		return -EINVAL;
-+	}
-+
-+	prz->par_buffer = buffer->data + prz->buffer_size;
-+	prz->par_header = prz->par_buffer + ecc_blocks * prz->ecc_size;
-+
-+	/*
-+	 * first consecutive root is 0
-+	 * primitive element to generate roots = 1
-+	 */
-+	prz->rs_decoder = init_rs(prz->ecc_symsize, prz->ecc_poly, 0, 1,
-+				  prz->ecc_size);
-+	if (prz->rs_decoder == NULL) {
-+		pr_info("persistent_ram: init_rs failed\n");
-+		return -EINVAL;
-+	}
-+
-+	prz->corrected_bytes = 0;
-+	prz->bad_blocks = 0;
-+
-+	numerr = persistent_ram_decode_rs8(prz, buffer, sizeof(*buffer),
-+					   prz->par_header);
-+	if (numerr > 0) {
-+		pr_info("persistent_ram: error in header, %d\n", numerr);
-+		prz->corrected_bytes += numerr;
-+	} else if (numerr < 0) {
-+		pr_info("persistent_ram: uncorrectable error in header\n");
-+		prz->bad_blocks++;
-+	}
-+
-+	return 0;
-+}
-+
-+ssize_t persistent_ram_ecc_string(struct persistent_ram_zone *prz,
-+	char *str, size_t len)
-+{
-+	ssize_t ret;
-+
-+	if (prz->corrected_bytes || prz->bad_blocks)
-+		ret = snprintf(str, len, ""
-+			"\n%d Corrected bytes, %d unrecoverable blocks\n",
-+			prz->corrected_bytes, prz->bad_blocks);
-+	else
-+		ret = snprintf(str, len, "\nNo errors detected\n");
-+
-+	return ret;
-+}
-+
-+static void notrace persistent_ram_update(struct persistent_ram_zone *prz,
-+	const void *s, unsigned int start, unsigned int count)
-+{
-+	struct persistent_ram_buffer *buffer = prz->buffer;
-+	memcpy(buffer->data + start, s, count);
-+	persistent_ram_update_ecc(prz, start, count);
-+}
-+
-+static void __init
-+persistent_ram_save_old(struct persistent_ram_zone *prz)
-+{
-+	struct persistent_ram_buffer *buffer = prz->buffer;
-+	size_t size = buffer_size(prz);
-+	size_t start = buffer_start(prz);
-+	char *dest;
-+
-+	persistent_ram_ecc_old(prz);
-+
-+	dest = kmalloc(size, GFP_KERNEL);
-+	if (dest == NULL) {
-+		pr_err("persistent_ram: failed to allocate buffer\n");
-+		return;
-+	}
-+
-+	prz->old_log = dest;
-+	prz->old_log_size = size;
-+	memcpy(prz->old_log, &buffer->data[start], size - start);
-+	memcpy(prz->old_log + size - start, &buffer->data[0], start);
-+}
-+
-+int notrace persistent_ram_write(struct persistent_ram_zone *prz,
-+	const void *s, unsigned int count)
-+{
-+	int rem;
-+	int c = count;
-+	size_t start;
-+
-+	if (unlikely(c > prz->buffer_size)) {
-+		s += c - prz->buffer_size;
-+		c = prz->buffer_size;
-+	}
-+
-+	buffer_size_add(prz, c);
-+
-+	start = buffer_start_add(prz, c);
-+
-+	rem = prz->buffer_size - start;
-+	if (unlikely(rem < c)) {
-+		persistent_ram_update(prz, s, start, rem);
-+		s += rem;
-+		c -= rem;
-+		start = 0;
-+	}
-+	persistent_ram_update(prz, s, start, c);
-+
-+	persistent_ram_update_header_ecc(prz);
-+
-+	return count;
-+}
-+
-+size_t persistent_ram_old_size(struct persistent_ram_zone *prz)
-+{
-+	return prz->old_log_size;
-+}
-+
-+void *persistent_ram_old(struct persistent_ram_zone *prz)
-+{
-+	return prz->old_log;
-+}
-+
-+void persistent_ram_free_old(struct persistent_ram_zone *prz)
-+{
-+	kfree(prz->old_log);
-+	prz->old_log = NULL;
-+	prz->old_log_size = 0;
-+}
-+
-+static void *persistent_ram_vmap(phys_addr_t start, size_t size)
-+{
-+	struct page **pages;
-+	phys_addr_t page_start;
-+	unsigned int page_count;
-+	pgprot_t prot;
-+	unsigned int i;
-+	void *vaddr;
-+
-+	page_start = start - offset_in_page(start);
-+	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
-+
-+	prot = pgprot_noncached(PAGE_KERNEL);
-+
-+	pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);
-+	if (!pages) {
-+		pr_err("%s: Failed to allocate array for %u pages\n", __func__,
-+			page_count);
-+		return NULL;
-+	}
-+
-+	for (i = 0; i < page_count; i++) {
-+		phys_addr_t addr = page_start + i * PAGE_SIZE;
-+		pages[i] = pfn_to_page(addr >> PAGE_SHIFT);
-+	}
-+	vaddr = vmap(pages, page_count, VM_MAP, prot);
-+	kfree(pages);
-+
-+	return vaddr;
-+}
-+
-+static void *persistent_ram_iomap(phys_addr_t start, size_t size)
-+{
-+	if (!request_mem_region(start, size, "persistent_ram")) {
-+		pr_err("request mem region (0x%llx@0x%llx) failed\n",
-+			(unsigned long long)size, (unsigned long long)start);
-+		return NULL;
-+	}
-+
-+	return ioremap(start, size);
-+}
-+
-+static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
-+		struct persistent_ram_zone *prz)
-+{
-+	prz->paddr = start;
-+	prz->size = size;
-+
-+	if (pfn_valid(start >> PAGE_SHIFT))
-+		prz->vaddr = persistent_ram_vmap(start, size);
-+	else
-+		prz->vaddr = persistent_ram_iomap(start, size);
-+
-+	if (!prz->vaddr) {
-+		pr_err("%s: Failed to map 0x%llx pages at 0x%llx\n", __func__,
-+			(unsigned long long)size, (unsigned long long)start);
-+		return -ENOMEM;
-+	}
-+
-+	prz->buffer = prz->vaddr + offset_in_page(start);
-+	prz->buffer_size = size - sizeof(struct persistent_ram_buffer);
-+
-+	return 0;
-+}
-+
-+static int __init persistent_ram_buffer_init(const char *name,
-+		struct persistent_ram_zone *prz)
-+{
-+	int i;
-+	struct persistent_ram *ram;
-+	struct persistent_ram_descriptor *desc;
-+	phys_addr_t start;
-+
-+	list_for_each_entry(ram, &persistent_ram_list, node) {
-+		start = ram->start;
-+		for (i = 0; i < ram->num_descs; i++) {
-+			desc = &ram->descs[i];
-+			if (!strcmp(desc->name, name))
-+				return persistent_ram_buffer_map(start,
-+						desc->size, prz);
-+			start += desc->size;
-+		}
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+static int __init persistent_ram_post_init(struct persistent_ram_zone *prz, bool ecc)
-+{
-+	int ret;
-+
-+	prz->ecc = ecc;
-+
-+	ret = persistent_ram_init_ecc(prz, prz->buffer_size);
-+	if (ret)
-+		return ret;
-+
-+	if (prz->buffer->sig == PERSISTENT_RAM_SIG) {
-+		if (buffer_size(prz) > prz->buffer_size ||
-+		    buffer_start(prz) > buffer_size(prz))
-+			pr_info("persistent_ram: found existing invalid buffer,"
-+				" size %zu, start %zu\n",
-+			       buffer_size(prz), buffer_start(prz));
-+		else {
-+			pr_info("persistent_ram: found existing buffer,"
-+				" size %zu, start %zu\n",
-+			       buffer_size(prz), buffer_start(prz));
-+			persistent_ram_save_old(prz);
-+		}
-+	} else {
-+		pr_info("persistent_ram: no valid data in buffer"
-+			" (sig = 0x%08x)\n", prz->buffer->sig);
-+	}
-+
-+	prz->buffer->sig = PERSISTENT_RAM_SIG;
-+	atomic_set(&prz->buffer->start, 0);
-+	atomic_set(&prz->buffer->size, 0);
-+
-+	return 0;
-+}
-+
-+void persistent_ram_free(struct persistent_ram_zone *prz)
-+{
-+	if (pfn_valid(prz->paddr >> PAGE_SHIFT)) {
-+		vunmap(prz->vaddr);
-+	} else {
-+		iounmap(prz->vaddr);
-+		release_mem_region(prz->paddr, prz->size);
-+	}
-+	persistent_ram_free_old(prz);
-+	kfree(prz);
-+}
-+
-+struct persistent_ram_zone * __init persistent_ram_new(phys_addr_t start,
-+						       size_t size,
-+						       bool ecc)
-+{
+ struct ramoops_context {
+-	void *virt_addr;
++	struct persistent_ram_zone **przs;
+ 	phys_addr_t phys_addr;
+ 	unsigned long size;
+ 	size_t record_size;
+@@ -90,39 +90,56 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+ 				   struct pstore_info *psi)
+ {
+ 	ssize_t size;
+-	char *rambuf;
+ 	struct ramoops_context *cxt = psi->data;
 +	struct persistent_ram_zone *prz;
-+	int ret = -ENOMEM;
-+
-+	prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
-+	if (!prz) {
-+		pr_err("persistent_ram: failed to allocate persistent ram zone\n");
-+		goto err;
-+	}
-+
-+	ret = persistent_ram_buffer_map(start, size, prz);
-+	if (ret)
-+		goto err;
-+
-+	persistent_ram_post_init(prz, ecc);
-+	persistent_ram_update_header_ecc(prz);
-+
-+	return prz;
-+err:
-+	kfree(prz);
-+	return ERR_PTR(ret);
-+}
-+
-+static  __init
-+struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
-+{
-+	struct persistent_ram_zone *prz;
-+	int ret = -ENOMEM;
-+
-+	prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
-+	if (!prz) {
-+		pr_err("persistent_ram: failed to allocate persistent ram zone\n");
-+		goto err;
-+	}
-+
-+	ret = persistent_ram_buffer_init(dev_name(dev), prz);
-+	if (ret) {
-+		pr_err("persistent_ram: failed to initialize buffer\n");
-+		goto err;
-+	}
-+
-+	persistent_ram_post_init(prz, ecc);
-+
-+	return prz;
-+err:
-+	kfree(prz);
-+	return ERR_PTR(ret);
-+}
-+
-+struct persistent_ram_zone * __init
-+persistent_ram_init_ringbuffer(struct device *dev, bool ecc)
-+{
-+	return __persistent_ram_init(dev, ecc);
-+}
-+
-+int __init persistent_ram_early_init(struct persistent_ram *ram)
-+{
-+	int ret;
-+
-+	ret = memblock_reserve(ram->start, ram->size);
-+	if (ret) {
-+		pr_err("Failed to reserve persistent memory from %08lx-%08lx\n",
-+			(long)ram->start, (long)(ram->start + ram->size - 1));
-+		return ret;
-+	}
-+
-+	list_add_tail(&ram->node, &persistent_ram_list);
-+
-+	pr_info("Initialized persistent memory from %08lx-%08lx\n",
-+		(long)ram->start, (long)(ram->start + ram->size - 1));
-+
-+	return 0;
-+}
-diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
-index 484fef8..fa4d6e3 100644
---- a/include/linux/pstore_ram.h
-+++ b/include/linux/pstore_ram.h
-@@ -1,5 +1,87 @@
--#ifndef __RAMOOPS_H
--#define __RAMOOPS_H
-+/*
-+ * Copyright (C) 2010 Marco Stornelli <marco.stornelli@gmail.com>
-+ * Copyright (C) 2011 Kees Cook <keescook@chromium.org>
-+ * Copyright (C) 2011 Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef __LINUX_PSTORE_RAM_H__
-+#define __LINUX_PSTORE_RAM_H__
-+
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/list.h>
-+#include <linux/types.h>
-+#include <linux/init.h>
-+
-+struct persistent_ram_buffer;
-+
-+struct persistent_ram_descriptor {
-+	const char	*name;
-+	phys_addr_t	size;
-+};
-+
-+struct persistent_ram {
-+	phys_addr_t	start;
-+	phys_addr_t	size;
-+
-+	int					num_descs;
-+	struct persistent_ram_descriptor	*descs;
-+
-+	struct list_head node;
-+};
-+
-+struct persistent_ram_zone {
-+	phys_addr_t paddr;
-+	size_t size;
-+	void *vaddr;
-+	struct persistent_ram_buffer *buffer;
-+	size_t buffer_size;
-+
-+	/* ECC correction */
-+	bool ecc;
-+	char *par_buffer;
-+	char *par_header;
-+	struct rs_control *rs_decoder;
-+	int corrected_bytes;
-+	int bad_blocks;
-+	int ecc_block_size;
-+	int ecc_size;
-+	int ecc_symsize;
-+	int ecc_poly;
-+
-+	char *old_log;
-+	size_t old_log_size;
-+	size_t old_log_footer_size;
-+	bool early;
-+};
-+
-+int persistent_ram_early_init(struct persistent_ram *ram);
-+
-+struct persistent_ram_zone * __init persistent_ram_new(phys_addr_t start,
-+						       size_t size,
-+						       bool ecc);
-+void persistent_ram_free(struct persistent_ram_zone *prz);
-+struct persistent_ram_zone *persistent_ram_init_ringbuffer(struct device *dev,
-+		bool ecc);
-+
-+int persistent_ram_write(struct persistent_ram_zone *prz, const void *s,
-+	unsigned int count);
-+
-+size_t persistent_ram_old_size(struct persistent_ram_zone *prz);
-+void *persistent_ram_old(struct persistent_ram_zone *prz);
-+void persistent_ram_free_old(struct persistent_ram_zone *prz);
-+ssize_t persistent_ram_ecc_string(struct persistent_ram_zone *prz,
-+	char *str, size_t len);
  
- /*
-  * Ramoops platform data
+ 	if (cxt->read_count >= cxt->max_count)
+ 		return -EINVAL;
++
+ 	*id = cxt->read_count++;
++	prz = cxt->przs[*id];
++
+ 	/* Only supports dmesg output so far. */
+ 	*type = PSTORE_TYPE_DMESG;
+ 	/* TODO(kees): Bogus time for the moment. */
+ 	time->tv_sec = 0;
+ 	time->tv_nsec = 0;
+ 
+-	rambuf = cxt->virt_addr + (*id * cxt->record_size);
+-	size = strnlen(rambuf, cxt->record_size);
++	size = persistent_ram_old_size(prz);
+ 	*buf = kmalloc(size, GFP_KERNEL);
+ 	if (*buf == NULL)
+ 		return -ENOMEM;
+-	memcpy(*buf, rambuf, size);
++	memcpy(*buf, persistent_ram_old(prz), size);
+ 
+ 	return size;
+ }
+ 
++static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
++{
++	char *hdr;
++	struct timeval timestamp;
++	size_t len;
++
++	do_gettimeofday(&timestamp);
++	hdr = kasprintf(GFP_ATOMIC, RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
++		(long)timestamp.tv_sec, (long)timestamp.tv_usec);
++	WARN_ON_ONCE(!hdr);
++	len = hdr ? strlen(hdr) : 0;
++	persistent_ram_write(prz, hdr, len);
++	kfree(hdr);
++
++	return len;
++}
++
+ static int ramoops_pstore_write(enum pstore_type_id type,
+ 				enum kmsg_dump_reason reason,
+ 				u64 *id,
+ 				unsigned int part,
+ 				size_t size, struct pstore_info *psi)
+ {
+-	char *buf;
+-	size_t res;
+-	struct timeval timestamp;
+ 	struct ramoops_context *cxt = psi->data;
+-	size_t available = cxt->record_size;
++	struct persistent_ram_zone *prz = cxt->przs[cxt->count];
++	size_t hlen;
+ 
+ 	/* Currently ramoops is designed to only store dmesg dumps. */
+ 	if (type != PSTORE_TYPE_DMESG)
+@@ -147,22 +164,10 @@ static int ramoops_pstore_write(enum pstore_type_id type,
+ 	if (part != 1)
+ 		return -ENOSPC;
+ 
+-	buf = cxt->virt_addr + (cxt->count * cxt->record_size);
+-
+-	res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
+-	buf += res;
+-	available -= res;
+-
+-	do_gettimeofday(&timestamp);
+-	res = sprintf(buf, "%lu.%lu\n", (long)timestamp.tv_sec, (long)timestamp.tv_usec);
+-	buf += res;
+-	available -= res;
+-
+-	if (size > available)
+-		size = available;
+-
+-	memcpy(buf, cxt->pstore.buf, size);
+-	memset(buf + size, '\0', available - size);
++	hlen = ramoops_write_kmsg_hdr(prz);
++	if (size + hlen > prz->buffer_size)
++		size = prz->buffer_size - hlen;
++	persistent_ram_write(prz, cxt->pstore.buf, size);
+ 
+ 	cxt->count = (cxt->count + 1) % cxt->max_count;
+ 
+@@ -172,14 +177,12 @@ static int ramoops_pstore_write(enum pstore_type_id type,
+ static int ramoops_pstore_erase(enum pstore_type_id type, u64 id,
+ 				struct pstore_info *psi)
+ {
+-	char *buf;
+ 	struct ramoops_context *cxt = psi->data;
+ 
+ 	if (id >= cxt->max_count)
+ 		return -EINVAL;
+ 
+-	buf = cxt->virt_addr + (id * cxt->record_size);
+-	memset(buf, '\0', cxt->record_size);
++	persistent_ram_free_old(cxt->przs[id]);
+ 
+ 	return 0;
+ }
+@@ -200,6 +203,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	struct ramoops_platform_data *pdata = pdev->dev.platform_data;
+ 	struct ramoops_context *cxt = &oops_cxt;
+ 	int err = -EINVAL;
++	int i;
+ 
+ 	/* Only a single ramoops area allowed at a time, so fail extra
+ 	 * probes.
+@@ -237,32 +241,37 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	cxt->record_size = pdata->record_size;
+ 	cxt->dump_oops = pdata->dump_oops;
+ 
++	cxt->przs = kzalloc(sizeof(*cxt->przs) * cxt->max_count, GFP_KERNEL);
++	if (!cxt->przs) {
++		pr_err("failed to initialize a prz array\n");
++		goto fail_przs;
++	}
++
++	for (i = 0; i < cxt->max_count; i++) {
++		size_t sz = cxt->record_size;
++		phys_addr_t start = cxt->phys_addr + sz * i;
++
++		cxt->przs[i] = persistent_ram_new(start, sz, 0);
++		if (IS_ERR(cxt->przs[i])) {
++			err = PTR_ERR(cxt->przs[i]);
++			pr_err("failed to initialize a prz\n");
++			goto fail_prz;
++		}
++	}
++
+ 	cxt->pstore.data = cxt;
+-	cxt->pstore.bufsize = cxt->record_size;
+-	cxt->pstore.buf = kmalloc(cxt->pstore.bufsize, GFP_KERNEL);
+ 	spin_lock_init(&cxt->pstore.buf_lock);
++	cxt->pstore.bufsize = cxt->przs[0]->buffer_size;
++	cxt->pstore.buf = kmalloc(cxt->pstore.bufsize, GFP_KERNEL);
+ 	if (!cxt->pstore.buf) {
+ 		pr_err("cannot allocate pstore buffer\n");
+ 		goto fail_clear;
+ 	}
+ 
+-	if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
+-		pr_err("request mem region (0x%lx@0x%llx) failed\n",
+-			cxt->size, (unsigned long long)cxt->phys_addr);
+-		err = -EINVAL;
+-		goto fail_buf;
+-	}
+-
+-	cxt->virt_addr = ioremap(cxt->phys_addr,  cxt->size);
+-	if (!cxt->virt_addr) {
+-		pr_err("ioremap failed\n");
+-		goto fail_mem_region;
+-	}
+-
+ 	err = pstore_register(&cxt->pstore);
+ 	if (err) {
+ 		pr_err("registering with pstore failed\n");
+-		goto fail_iounmap;
++		goto fail_pstore;
+ 	}
+ 
+ 	/*
+@@ -280,15 +289,17 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+-fail_iounmap:
+-	iounmap(cxt->virt_addr);
+-fail_mem_region:
+-	release_mem_region(cxt->phys_addr, cxt->size);
+-fail_buf:
++fail_pstore:
+ 	kfree(cxt->pstore.buf);
+ fail_clear:
+ 	cxt->pstore.bufsize = 0;
+ 	cxt->max_count = 0;
++fail_przs:
++	for (i = 0; cxt->przs[i]; i++)
++		persistent_ram_free(cxt->przs[i]);
++	kfree(cxt->przs);
++fail_prz:
++	kfree(cxt->pstore.buf);
+ fail_out:
+ 	return err;
+ }
 -- 
 1.7.9.2
 
