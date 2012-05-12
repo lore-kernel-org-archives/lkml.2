@@ -1,120 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757Ab2ELTyW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 15:54:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51847 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752529Ab2ELTxV (ORCPT
+	id S1753332Ab2ELTyU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 15:54:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35563 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab2ELTxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 12 May 2012 15:53:21 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Arjan van de Ven <arjan@infradead.org>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 5/8] perf annotate: Introduce ->free() method in ins_ops
-Date: Sat, 12 May 2012 16:53:04 -0300
-Message-Id: <1336852387-16322-6-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 0/8] Annotation weekly ponies delivery
+Date: Sat, 12 May 2012 16:52:59 -0300
+Message-Id: <1336852387-16322-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1336852387-16322-1-git-send-email-acme@infradead.org>
-References: <1336852387-16322-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Ingo,
 
-So that we don't special case disasm_line__free, allowing each
-instruction class to provide an specialized destructor, like is needed
-for 'lock'.
+	Please consider pulling,
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-xxw4vs5n077tf35jsvjzylhb@git.kernel.org
+- Arnaldo
+
+The following changes since commit 5dcefda0fd87fefa440abc9b9d3f1089229f8911:
+
+  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2012-05-11 08:13:55 +0200)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to 54e7a4e88eed9ac423e22a259ec51a973fd59bab:
+
+  perf annotate browser: Add key bindings help window (2012-05-12 16:36:55 -0300)
+
+----------------------------------------------------------------
+Arjan & Linus Annotation Edition
+
+More like Linus', but hey at least an attempt at implementing a suggestion by
+Arjan made this time around!
+
+. Fix indirect calls beautifier, reported by Linus.
+
+. Use the objdump comments to nuke specificities about how access to a well
+  know variable is encoded, suggested by Linus.
+
+. Show the number of places that jump to a target, requested by Arjan.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/annotate.c |   28 ++++++++++++++++++++--------
- tools/perf/util/annotate.h |    1 +
- 2 files changed, 21 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 1dce098..8069dfb 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -21,6 +21,14 @@ const char 	*disassembler_style;
- static struct ins *ins__find(const char *name);
- static int disasm_line__parse(char *line, char **namep, char **rawp);
- 
-+static void ins__delete(struct ins_operands *ops)
-+{
-+	free(ops->source.raw);
-+	free(ops->source.name);
-+	free(ops->target.raw);
-+	free(ops->target.name);
-+}
-+
- static int ins__raw_scnprintf(struct ins *ins, char *bf, size_t size,
- 			      struct ins_operands *ops)
- {
-@@ -192,7 +200,15 @@ static int lock__scnprintf(struct ins *ins, char *bf, size_t size,
- 					size - printed, ops->locked.ops);
- }
- 
-+static void lock__delete(struct ins_operands *ops)
-+{
-+	free(ops->locked.ops);
-+	free(ops->target.raw);
-+	free(ops->target.name);
-+}
-+
- static struct ins_ops lock_ops = {
-+	.free	   = lock__delete,
- 	.parse	   = lock__parse,
- 	.scnprintf = lock__scnprintf,
- };
-@@ -542,14 +558,10 @@ void disasm_line__free(struct disasm_line *dl)
- {
- 	free(dl->line);
- 	free(dl->name);
--	if (dl->ins && dl->ins->ops == &lock_ops) {
--		free(dl->ops.locked.ops);
--	} else {
--		free(dl->ops.source.raw);
--		free(dl->ops.source.name);
--	}
--	free(dl->ops.target.raw);
--	free(dl->ops.target.name);
-+	if (dl->ins && dl->ins->ops->free)
-+		dl->ins->ops->free(&dl->ops);
-+	else
-+		ins__delete(&dl->ops);
- 	free(dl);
- }
- 
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index b79d326..78a5692 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -32,6 +32,7 @@ struct ins_operands {
- };
- 
- struct ins_ops {
-+	void (*free)(struct ins_operands *ops);
- 	int (*parse)(struct ins_operands *ops);
- 	int (*scnprintf)(struct ins *ins, char *bf, size_t size,
- 			 struct ins_operands *ops);
--- 
-1.7.9.2.358.g22243
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (8):
+      perf annotate: Use raw form for register indirect call instructions
+      perf annotate: Resolve symbols using objdump comment
+      perf annotate: Resolve symbols using objdump comment for single op ins
+      perf annotate: Augment lock instruction output
+      perf annotate: Introduce ->free() method in ins_ops
+      perf annotate browser: Count the numbers of jump sources to a target
+      perf annotate browser: Show 'jumpy' functions
+      perf annotate browser: Add key bindings help window
 
+ tools/perf/ui/browsers/annotate.c |   94 ++++++++++--
+ tools/perf/util/annotate.c        |  303 +++++++++++++++++++++++++++++++++----
+ tools/perf/util/annotate.h        |   15 +-
+ 3 files changed, 369 insertions(+), 43 deletions(-)
