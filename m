@@ -1,251 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761560Ab2ELAUV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 20:20:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42602 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761454Ab2ELAUP (ORCPT
+	id S1761596Ab2ELAU1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 20:20:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33194 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761407Ab2ELAUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 May 2012 20:20:15 -0400
-Date: Fri, 11 May 2012 17:18:41 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 10/11] pstore/ram: Switch to persistent_ram routines
-Message-ID: <20120512001840.GJ14782@lizard>
-References: <20120512001506.GA8653@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120512001506.GA8653@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] gpio: pch9: Use proper flow type handlers
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+Cc: open list <linux-kernel@vger.kernel.org>,
+        alexander.stein@systec-electronic.com, qi.wang@intel.com,
+        yong.y.wang@intel.com, joel.clark@intel.com, kok.howg.ewe@intel.com,
+        tomoya.rohm@gmail.com
+In-Reply-To: <alpine.LFD.2.02.1204281012420.6271@ionos>
+References: <1311207599-2553-1-git-send-email-tomoya-linux@dsn.okisemi.com> <1311207599-2553-6-git-send-email-tomoya-linux@dsn.okisemi.com> <3D60A4A2-3538-4B24-B65B-219D6ED7B219@gmail.com> <CA46BB56-61AD-45E9-8D03-906B71C21C71@gmail.com> <alpine.LFD.2.02.1204252332070.2542@ionos> <D0A540D9-CFCD-456D-A1DB-C04ED063DF18@gmail.com> <alpine.LFD.2.02.1204281012420.6271@ionos>
+Date: Fri, 11 May 2012 18:20:10 -0600
+Message-Id: <20120512002010.ECE643E0791@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch switches pstore RAM backend to use persistent_ram routines,
-one step closer to the ECC support.
+On Sat, 28 Apr 2012 10:13:45 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
+> Jean-Francois Dagenais reported:
+> 
+>  Configuring a gpio pin with the gpio-pch driver with
+>  "IRQF_TRIGGER_LOW | IRQF_ONESHOT" generates an interrupt storm for
+>  threaded ISR until the ISR thread actually gets to physically clear
+>  the interrupt on the triggering chip!! The immediate observable
+>  symptom is the high CPU usage for my ISR thread task and the
+>  interrupt count in /proc/interrupts incrementing radically.
+> 
+> The driver is wrong in several ways:
+> 
+> 1) Using handle_simple_irq() does not provide proper flow control
+>    handling. In the case of oneshot threaded handlers for the
+>    demultiplexed interrupts this results in an interrupt storm because
+>    the simple handler does not deal with masking/unmasking.  Even
+>    without threaded oneshot handlers an interrupt storm for level type
+>    interrupts can easily be triggered when the interrupt is disabled
+>    and the interrupt line is activated from the device.
+> 
+> 2) Acknowlegding the demultiplexed interrupt before calling the
+>    handler is wrong for level type interrupts.
+> 
+> 3) The set_type function unconditionally enables the interrupt. It's
+>    supposed to set the type and nothing else. The unmasking is done by
+>    the core code.
+> 
+> Move the acknowledge code into a separate function and add it to the
+> demux irqchip callbacks.
+> 
+> Remove the unconditional enabling from the set_type() callback and set
+> the proper flow handlers depending on the selected type (level/edge).
+> 
+> Reported-and-tested-by: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: alexander.stein@systec-electronic.com
+> Cc: qi.wang@intel.com
+> Cc: yong.y.wang@intel.com
+> Cc: joel.clark@intel.com
+> Cc: kok.howg.ewe@intel.com
+> Cc: toshiharu-linux@dsn.okisemi.com
+> Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1204252332070.2542@ionos
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- fs/pstore/ram.c |  109 ++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 60 insertions(+), 49 deletions(-)
+Applied, thanks.  I'll push to Linus right away.
 
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index b26b58e..cf0ad92 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -62,7 +62,7 @@ MODULE_PARM_DESC(dump_oops,
- 		"set to 1 to dump oopses, 0 to only dump panics (default 1)");
- 
- struct ramoops_context {
--	void *virt_addr;
-+	struct persistent_ram_zone **przs;
- 	phys_addr_t phys_addr;
- 	unsigned long size;
- 	size_t record_size;
-@@ -90,39 +90,56 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 				   struct pstore_info *psi)
- {
- 	ssize_t size;
--	char *rambuf;
- 	struct ramoops_context *cxt = psi->data;
-+	struct persistent_ram_zone *prz;
- 
- 	if (cxt->read_count >= cxt->max_count)
- 		return -EINVAL;
-+
- 	*id = cxt->read_count++;
-+	prz = cxt->przs[*id];
-+
- 	/* Only supports dmesg output so far. */
- 	*type = PSTORE_TYPE_DMESG;
- 	/* TODO(kees): Bogus time for the moment. */
- 	time->tv_sec = 0;
- 	time->tv_nsec = 0;
- 
--	rambuf = cxt->virt_addr + (*id * cxt->record_size);
--	size = strnlen(rambuf, cxt->record_size);
-+	size = persistent_ram_old_size(prz);
- 	*buf = kmalloc(size, GFP_KERNEL);
- 	if (*buf == NULL)
- 		return -ENOMEM;
--	memcpy(*buf, rambuf, size);
-+	memcpy(*buf, persistent_ram_old(prz), size);
- 
- 	return size;
- }
- 
-+static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
-+{
-+	char *hdr;
-+	struct timeval timestamp;
-+	size_t len;
-+
-+	do_gettimeofday(&timestamp);
-+	hdr = kasprintf(GFP_ATOMIC, RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
-+		(long)timestamp.tv_sec, (long)timestamp.tv_usec);
-+	WARN_ON_ONCE(!hdr);
-+	len = hdr ? strlen(hdr) : 0;
-+	persistent_ram_write(prz, hdr, len);
-+	kfree(hdr);
-+
-+	return len;
-+}
-+
- static int ramoops_pstore_write(enum pstore_type_id type,
- 				enum kmsg_dump_reason reason,
- 				u64 *id,
- 				unsigned int part,
- 				size_t size, struct pstore_info *psi)
- {
--	char *buf;
--	size_t res;
--	struct timeval timestamp;
- 	struct ramoops_context *cxt = psi->data;
--	size_t available = cxt->record_size;
-+	struct persistent_ram_zone *prz = cxt->przs[cxt->count];
-+	size_t hlen;
- 
- 	/* Currently ramoops is designed to only store dmesg dumps. */
- 	if (type != PSTORE_TYPE_DMESG)
-@@ -147,22 +164,10 @@ static int ramoops_pstore_write(enum pstore_type_id type,
- 	if (part != 1)
- 		return -ENOSPC;
- 
--	buf = cxt->virt_addr + (cxt->count * cxt->record_size);
--
--	res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
--	buf += res;
--	available -= res;
--
--	do_gettimeofday(&timestamp);
--	res = sprintf(buf, "%lu.%lu\n", (long)timestamp.tv_sec, (long)timestamp.tv_usec);
--	buf += res;
--	available -= res;
--
--	if (size > available)
--		size = available;
--
--	memcpy(buf, cxt->pstore.buf, size);
--	memset(buf + size, '\0', available - size);
-+	hlen = ramoops_write_kmsg_hdr(prz);
-+	if (size + hlen > prz->buffer_size)
-+		size = prz->buffer_size - hlen;
-+	persistent_ram_write(prz, cxt->pstore.buf, size);
- 
- 	cxt->count = (cxt->count + 1) % cxt->max_count;
- 
-@@ -172,14 +177,12 @@ static int ramoops_pstore_write(enum pstore_type_id type,
- static int ramoops_pstore_erase(enum pstore_type_id type, u64 id,
- 				struct pstore_info *psi)
- {
--	char *buf;
- 	struct ramoops_context *cxt = psi->data;
- 
- 	if (id >= cxt->max_count)
- 		return -EINVAL;
- 
--	buf = cxt->virt_addr + (id * cxt->record_size);
--	memset(buf, '\0', cxt->record_size);
-+	persistent_ram_free_old(cxt->przs[id]);
- 
- 	return 0;
- }
-@@ -200,6 +203,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 	struct ramoops_platform_data *pdata = pdev->dev.platform_data;
- 	struct ramoops_context *cxt = &oops_cxt;
- 	int err = -EINVAL;
-+	int i;
- 
- 	/* Only a single ramoops area allowed at a time, so fail extra
- 	 * probes.
-@@ -237,32 +241,37 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 	cxt->record_size = pdata->record_size;
- 	cxt->dump_oops = pdata->dump_oops;
- 
-+	cxt->przs = kzalloc(sizeof(*cxt->przs) * cxt->max_count, GFP_KERNEL);
-+	if (!cxt->przs) {
-+		pr_err("failed to initialize a prz array\n");
-+		goto fail_przs;
-+	}
-+
-+	for (i = 0; i < cxt->max_count; i++) {
-+		size_t sz = cxt->record_size;
-+		phys_addr_t start = cxt->phys_addr + sz * i;
-+
-+		cxt->przs[i] = persistent_ram_new(start, sz, 0);
-+		if (IS_ERR(cxt->przs[i])) {
-+			err = PTR_ERR(cxt->przs[i]);
-+			pr_err("failed to initialize a prz\n");
-+			goto fail_prz;
-+		}
-+	}
-+
- 	cxt->pstore.data = cxt;
--	cxt->pstore.bufsize = cxt->record_size;
--	cxt->pstore.buf = kmalloc(cxt->pstore.bufsize, GFP_KERNEL);
- 	spin_lock_init(&cxt->pstore.buf_lock);
-+	cxt->pstore.bufsize = cxt->przs[0]->buffer_size;
-+	cxt->pstore.buf = kmalloc(cxt->pstore.bufsize, GFP_KERNEL);
- 	if (!cxt->pstore.buf) {
- 		pr_err("cannot allocate pstore buffer\n");
- 		goto fail_clear;
- 	}
- 
--	if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
--		pr_err("request mem region (0x%lx@0x%llx) failed\n",
--			cxt->size, (unsigned long long)cxt->phys_addr);
--		err = -EINVAL;
--		goto fail_buf;
--	}
--
--	cxt->virt_addr = ioremap(cxt->phys_addr,  cxt->size);
--	if (!cxt->virt_addr) {
--		pr_err("ioremap failed\n");
--		goto fail_mem_region;
--	}
--
- 	err = pstore_register(&cxt->pstore);
- 	if (err) {
- 		pr_err("registering with pstore failed\n");
--		goto fail_iounmap;
-+		goto fail_pstore;
- 	}
- 
- 	/*
-@@ -280,15 +289,17 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 
- 	return 0;
- 
--fail_iounmap:
--	iounmap(cxt->virt_addr);
--fail_mem_region:
--	release_mem_region(cxt->phys_addr, cxt->size);
--fail_buf:
-+fail_pstore:
- 	kfree(cxt->pstore.buf);
- fail_clear:
- 	cxt->pstore.bufsize = 0;
- 	cxt->max_count = 0;
-+fail_przs:
-+	for (i = 0; cxt->przs[i]; i++)
-+		persistent_ram_free(cxt->przs[i]);
-+	kfree(cxt->przs);
-+fail_prz:
-+	kfree(cxt->pstore.buf);
- fail_out:
- 	return err;
- }
+g.
+
+> ---
+>  drivers/gpio/gpio-pch.c |   57 +++++++++++++++++++++++-------------------------
+>  1 file changed, 28 insertions(+), 29 deletions(-)
+> 
+> Index: linux-2.6/drivers/gpio/gpio-pch.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/gpio/gpio-pch.c
+> +++ linux-2.6/drivers/gpio/gpio-pch.c
+> @@ -230,16 +230,12 @@ static void pch_gpio_setup(struct pch_gp
+>  
+>  static int pch_irq_type(struct irq_data *d, unsigned int type)
+>  {
+> -	u32 im;
+> -	u32 __iomem *im_reg;
+> -	u32 ien;
+> -	u32 im_pos;
+> -	int ch;
+> -	unsigned long flags;
+> -	u32 val;
+> -	int irq = d->irq;
+>  	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+>  	struct pch_gpio *chip = gc->private;
+> +	u32 im, im_pos, val;
+> +	u32 __iomem *im_reg;
+> +	unsigned long flags;
+> +	int ch, irq = d->irq;
+>  
+>  	ch = irq - chip->irq_base;
+>  	if (irq <= chip->irq_base + 7) {
+> @@ -270,30 +266,22 @@ static int pch_irq_type(struct irq_data 
+>  	case IRQ_TYPE_LEVEL_LOW:
+>  		val = PCH_LEVEL_L;
+>  		break;
+> -	case IRQ_TYPE_PROBE:
+> -		goto end;
+>  	default:
+> -		dev_warn(chip->dev, "%s: unknown type(%dd)",
+> -			__func__, type);
+> -		goto end;
+> +		goto unlock;
+>  	}
+>  
+>  	/* Set interrupt mode */
+>  	im = ioread32(im_reg) & ~(PCH_IM_MASK << (im_pos * 4));
+>  	iowrite32(im | (val << (im_pos * 4)), im_reg);
+>  
+> -	/* iclr */
+> -	iowrite32(BIT(ch), &chip->reg->iclr);
+> +	/* And the handler */
+> +	if (type & (IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_LEVEL_HIGH))
+> +		__irq_set_handler_locked(d->irq, handle_level_irq);
+> +	else if (type & (IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING))
+> +		__irq_set_handler_locked(d->irq, handle_edge_irq);
+>  
+> -	/* IMASKCLR */
+> -	iowrite32(BIT(ch), &chip->reg->imaskclr);
+> -
+> -	/* Enable interrupt */
+> -	ien = ioread32(&chip->reg->ien);
+> -	iowrite32(ien | BIT(ch), &chip->reg->ien);
+> -end:
+> +unlock:
+>  	spin_unlock_irqrestore(&chip->spinlock, flags);
+> -
+>  	return 0;
+>  }
+>  
+> @@ -313,18 +301,24 @@ static void pch_irq_mask(struct irq_data
+>  	iowrite32(1 << (d->irq - chip->irq_base), &chip->reg->imask);
+>  }
+>  
+> +static void pch_irq_ack(struct irq_data *d)
+> +{
+> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+> +	struct pch_gpio *chip = gc->private;
+> +
+> +	iowrite32(1 << (d->irq - chip->irq_base), &chip->reg->iclr);
+> +}
+> +
+>  static irqreturn_t pch_gpio_handler(int irq, void *dev_id)
+>  {
+>  	struct pch_gpio *chip = dev_id;
+>  	u32 reg_val = ioread32(&chip->reg->istatus);
+> -	int i;
+> -	int ret = IRQ_NONE;
+> +	int i, ret = IRQ_NONE;
+>  
+>  	for (i = 0; i < gpio_pins[chip->ioh]; i++) {
+>  		if (reg_val & BIT(i)) {
+>  			dev_dbg(chip->dev, "%s:[%d]:irq=%d  status=0x%x\n",
+>  				__func__, i, irq, reg_val);
+> -			iowrite32(BIT(i), &chip->reg->iclr);
+>  			generic_handle_irq(chip->irq_base + i);
+>  			ret = IRQ_HANDLED;
+>  		}
+> @@ -343,6 +337,7 @@ static __devinit void pch_gpio_alloc_gen
+>  	gc->private = chip;
+>  	ct = gc->chip_types;
+>  
+> +	ct->chip.irq_ack = pch_irq_ack;
+>  	ct->chip.irq_mask = pch_irq_mask;
+>  	ct->chip.irq_unmask = pch_irq_unmask;
+>  	ct->chip.irq_set_type = pch_irq_type;
+> @@ -357,6 +352,7 @@ static int __devinit pch_gpio_probe(stru
+>  	s32 ret;
+>  	struct pch_gpio *chip;
+>  	int irq_base;
+> +	u32 msk;
+>  
+>  	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
+>  	if (chip == NULL)
+> @@ -408,8 +404,13 @@ static int __devinit pch_gpio_probe(stru
+>  	}
+>  	chip->irq_base = irq_base;
+>  
+> +	/* Mask all interrupts, but enable them */
+> +	msk = (1 << gpio_pins[chip->ioh]) - 1;
+> +	iowrite32(msk, &chip->reg->imask);
+> +	iowrite32(msk, &chip->reg->ien);
+> +
+>  	ret = request_irq(pdev->irq, pch_gpio_handler,
+> -			     IRQF_SHARED, KBUILD_MODNAME, chip);
+> +			  IRQF_SHARED, KBUILD_MODNAME, chip);
+>  	if (ret != 0) {
+>  		dev_err(&pdev->dev,
+>  			"%s request_irq failed\n", __func__);
+> @@ -418,8 +419,6 @@ static int __devinit pch_gpio_probe(stru
+>  
+>  	pch_gpio_alloc_generic_chip(chip, irq_base, gpio_pins[chip->ioh]);
+>  
+> -	/* Initialize interrupt ien register */
+> -	iowrite32(0, &chip->reg->ien);
+>  end:
+>  	return 0;
+>  
+
 -- 
-1.7.9.2
-
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
