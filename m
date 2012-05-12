@@ -1,232 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab2ELTyR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 15:54:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35565 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763Ab2ELTxW (ORCPT
+	id S1755765Ab2ELUXo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 16:23:44 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43674 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753925Ab2ELUXm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 15:53:22 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/8] perf annotate: Resolve symbols using objdump comment
-Date: Sat, 12 May 2012 16:53:01 -0300
-Message-Id: <1336852387-16322-3-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1336852387-16322-1-git-send-email-acme@infradead.org>
-References: <1336852387-16322-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 12 May 2012 16:23:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMuHMdViZUB1812w3RnVysX6ESZuKAVtP8yyqPv25FJyzHbzCQ@mail.gmail.com>
+References: <1332960678-11879-1-git-send-email-andi@firstfloor.org>
+	<1332960678-11879-2-git-send-email-andi@firstfloor.org>
+	<CAMuHMdVX28zeebzN6277B5p2b=9s-Q06i01o5AHPyXAuKMigGQ@mail.gmail.com>
+	<20120412194016.GA30558@merkur.ravnborg.org>
+	<CAMuHMdXfpvprGD18_YYyctfrAk6iRJonWFGFRf9oSaH0u0zfhw@mail.gmail.com>
+	<4F8733C5.5080609@linux.intel.com>
+	<20120412200752.GA30685@merkur.ravnborg.org>
+	<CAMuHMdXN0PcxZQb6=ReFrpG6U49tP8ujA+OKkeVGd_yeftaydw@mail.gmail.com>
+	<20120412203517.GA30769@merkur.ravnborg.org>
+	<CAMuHMdViZUB1812w3RnVysX6ESZuKAVtP8yyqPv25FJyzHbzCQ@mail.gmail.com>
+Date: Sat, 12 May 2012 22:23:40 +0200
+X-Google-Sender-Auth: XeUcVYOKEC4RJ14uMTZAKHjgfuU
+Message-ID: <CAMuHMdUFXfYhQaCV24yMCi+9x2rWE2qfr9p-ga+x3R3KGj6LnA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Add CONFIG_READABLE_ASM
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        x86@kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Tue, May 8, 2012 at 9:36 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Thu, Apr 12, 2012 at 10:35 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+>> On Thu, Apr 12, 2012 at 10:17:07PM +0200, Geert Uytterhoeven wrote:
+>>> On Thu, Apr 12, 2012 at 22:07, Sam Ravnborg <sam@ravnborg.org> wrote:
+>>> > Could you try this:
+>>> >
+>>> > cc-disable-opt = $(call try-run,\
+>>> >        $(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -f$(strip $(1)) -c -xc /dev/null -o "$TMP",-fno-$(strip $(1)))
+>>> >
+>>> > KBUILD_CFLAGS += $(call cc-disable-opt, ipa-cp-clone)
+>>> >
+>>> >
+>>> > It will try if "gcc -fipa-cp-clone" is supported,
+>>> > and add -fno-ipa-cp-clone in that case.
+>>>
+>>> Unfortunately not:
+>>>
+>>> m68k-linux-gnu-gcc -Wp,-MD,kernel/.bounds.s.d  -nostdinc -isystem
+>>> /usr/lib/gcc/m68k-linux-gnu/4.1.2/include
+>>> -I/scratch/geert/linux/linux-next/arch/m68k/include
+>>> Iarch/m68k/include/generated -Iinclude  -include
+>>> /scratch/geert/linux/linux-next/include/linux/kconfig.h -D__KERNEL__
+>>> -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing
+>>> -fno-common -Werror-implicit-function-declaration -Wno-format-security
+>>> -fno-delete-null-pointer-checks -Os -fno-reorder-blocks
+>>> -fno-ipa-cp-clone -pipe -fno-strength-reduce -ffixed-a2
+>>> -fno-omit-frame-pointer -fno-optimize-sibling-calls -g
+>>> -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(bounds)"
+>>> -D"KBUILD_MODNAME=KBUILD_STR(bounds)" -fverbose-asm -S -o
+>>> kernel/bounds.s kernel/bounds.c
+>>> cc1: error: unrecognized command line option "-fno-ipa-cp-clone"
+>>> make[1]: *** [kernel/bounds.s] Error 1
+>>> make: *** [prepare0] Error 2
+>>
+>> So with the above command-line gcc fails with an exit code for -fno-ipa-cp-clone.
+>> But with cc-option it does not.
+>>
+>> Can you dig out the command-line used for cc-option?
+>> We may be able to analyze why it fails in the above case, but
+>> not with cc-option.
+>
+> gcc -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs
+> -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration
+> -Wno-format-security -fno-delete-null-pointer-checks -Os
+> -fno-ipa-cp-clone -c -xc /dev/null -o .6376.tmp
+>
+> So it's running "gcc" instead of "m68k-linux-gnu-gcc".
 
-This:
+Found it using the patch below to log all try-run invocations:
 
-     mov    0x95bbb6(%rip),%ecx        # ffffffff81ae8d04 <d_hash_shift>
+diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
+index 6a3ee98..12eb839 100644
+--- a/scripts/Kbuild.include
++++ b/scripts/Kbuild.include
+@@ -88,6 +88,7 @@ TMPOUT := $(if $(KBUILD_EXTMOD),$(firstword
+$(KBUILD_EXTMOD))/)
+ try-run = $(shell set -e;              \
+        TMP="$(TMPOUT).$$$$.tmp";       \
+        TMPO="$(TMPOUT).$$$$.o";        \
++       echo "$(1)" >> /tmp/x;          \
+        if ($(1)) >/dev/null 2>&1;      \
+        then echo "$(2)";               \
+        else echo "$(3)";               \
 
-Becomes:
+| --- a/Makefile
+| +++ b/Makefile
+| @@ -564,6 +564,16 @@ else
+|  KBUILD_CFLAGS  += -O2
+|  endif
+|
+| +ifdef CONFIG_READABLE_ASM
+| +# Disable optimizations that make assembler listings hard to read.
+| +# reorder blocks reorders the control in the function
+| +# ipa clone creates specialized cloned functions
+| +# partial inlining inlines only parts of functions
+| +KBUILD_CFLAGS += $(call cc-option,-fno-reorder-blocks,) \
+| +                 $(call cc-option,-fno-ipa-cp-clone,) \
+| +                 $(call cc-option,-fno-partial-inlining)
+| +endif
+| +
 
-     mov    d_hash_shift,%ecx
+The above calls cc-option using CC = gcc, as my cross compiler
+is only setup in the next line:
 
-Ditto for many more instructions that take two operands.
+| include $(srctree)/arch/$(SRCARCH)/Makefile
 
-Requested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-i5opbyai2x6mn9e5yjmhx9k6@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/annotate.c |  112 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/annotate.h |    8 +++-
- 2 files changed, 119 insertions(+), 1 deletion(-)
+This affects all architectures that setup CROSS_COMPILE in their arch/*/Makefile
+(blackfin, h8300, m68k, mips, parisc, score, sh, tile, unicore32, xtensa).
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 9a020d1..82c7f63 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -122,6 +122,89 @@ bool ins__is_jump(const struct ins *ins)
- 	return ins->ops == &jump_ops;
- }
- 
-+static int comment__symbol(char *raw, char *comment, u64 *addrp, char **namep)
-+{
-+	char *endptr, *name, *t;
-+
-+	if (strstr(raw, "(%rip)") == NULL)
-+		return 0;
-+
-+	*addrp = strtoull(comment, &endptr, 16);
-+	name = strchr(endptr, '<');
-+	if (name == NULL)
-+		return -1;
-+
-+	name++;
-+
-+	t = strchr(name, '>');
-+	if (t == NULL)
-+		return 0;
-+
-+	*t = '\0';
-+	*namep = strdup(name);
-+	*t = '>';
-+
-+	return 0;
-+}
-+
-+static int mov__parse(struct ins_operands *ops)
-+{
-+	char *s = strchr(ops->raw, ','), *target, *comment, prev;
-+
-+	if (s == NULL)
-+		return -1;
-+
-+	*s = '\0';
-+	ops->source.raw = strdup(ops->raw);
-+	*s = ',';
-+	
-+	if (ops->source.raw == NULL)
-+		return -1;
-+
-+	target = ++s;
-+
-+	while (s[0] != '\0' && !isspace(s[0]))
-+		++s;
-+	prev = *s;
-+	*s = '\0';
-+
-+	ops->target.raw = strdup(target);
-+	*s = prev;
-+
-+	if (ops->target.raw == NULL)
-+		goto out_free_source;
-+
-+	comment = strchr(s, '#');
-+	if (comment == NULL)
-+		return 0;
-+
-+	while (comment[0] != '\0' && isspace(comment[0]))
-+		++comment;
-+
-+	comment__symbol(ops->source.raw, comment, &ops->source.addr, &ops->source.name);
-+	comment__symbol(ops->target.raw, comment, &ops->target.addr, &ops->target.name);
-+
-+	return 0;
-+
-+out_free_source:
-+	free(ops->source.raw);
-+	ops->source.raw = NULL;
-+	return -1;
-+}
-+
-+static int mov__scnprintf(struct ins *ins, char *bf, size_t size,
-+			   struct ins_operands *ops)
-+{
-+	return scnprintf(bf, size, "%-6.6s %s,%s", ins->name,
-+			 ops->source.name ?: ops->source.raw,
-+			 ops->target.name ?: ops->target.raw);
-+}
-+
-+static struct ins_ops mov_ops = {
-+	.parse	   = mov__parse,
-+	.scnprintf = mov__scnprintf,
-+};
-+
- static int nop__scnprintf(struct ins *ins __used, char *bf, size_t size,
- 			  struct ins_operands *ops __used)
- {
-@@ -136,8 +219,20 @@ static struct ins_ops nop_ops = {
-  * Must be sorted by name!
-  */
- static struct ins instructions[] = {
-+	{ .name = "add",   .ops  = &mov_ops, },
-+	{ .name = "addl",  .ops  = &mov_ops, },
-+	{ .name = "addq",  .ops  = &mov_ops, },
-+	{ .name = "addw",  .ops  = &mov_ops, },
-+	{ .name = "and",   .ops  = &mov_ops, },
- 	{ .name = "call",  .ops  = &call_ops, },
- 	{ .name = "callq", .ops  = &call_ops, },
-+	{ .name = "cmp",   .ops  = &mov_ops, },
-+	{ .name = "cmpb",  .ops  = &mov_ops, },
-+	{ .name = "cmpl",  .ops  = &mov_ops, },
-+	{ .name = "cmpq",  .ops  = &mov_ops, },
-+	{ .name = "cmpw",  .ops  = &mov_ops, },
-+	{ .name = "cmpxch", .ops  = &mov_ops, },
-+	{ .name = "imul",  .ops  = &mov_ops, },
- 	{ .name = "ja",	   .ops  = &jump_ops, },
- 	{ .name = "jae",   .ops  = &jump_ops, },
- 	{ .name = "jb",	   .ops  = &jump_ops, },
-@@ -173,9 +268,23 @@ static struct ins instructions[] = {
- 	{ .name = "jrcxz", .ops  = &jump_ops, },
- 	{ .name = "js",	   .ops  = &jump_ops, },
- 	{ .name = "jz",	   .ops  = &jump_ops, },
-+	{ .name = "lea",   .ops  = &mov_ops, },
-+	{ .name = "mov",   .ops  = &mov_ops, },
-+	{ .name = "movb",  .ops  = &mov_ops, },
-+	{ .name = "movdqa",.ops  = &mov_ops, },
-+	{ .name = "movl",  .ops  = &mov_ops, },
-+	{ .name = "movq",  .ops  = &mov_ops, },
-+	{ .name = "movslq", .ops  = &mov_ops, },
-+	{ .name = "movzbl", .ops  = &mov_ops, },
-+	{ .name = "movzwl", .ops  = &mov_ops, },
- 	{ .name = "nop",   .ops  = &nop_ops, },
- 	{ .name = "nopl",  .ops  = &nop_ops, },
- 	{ .name = "nopw",  .ops  = &nop_ops, },
-+	{ .name = "or",    .ops  = &mov_ops, },
-+	{ .name = "orl",   .ops  = &mov_ops, },
-+	{ .name = "test",  .ops  = &mov_ops, },
-+	{ .name = "testb", .ops  = &mov_ops, },
-+	{ .name = "testl", .ops  = &mov_ops, },
- };
- 
- static int ins__cmp(const void *name, const void *insp)
-@@ -323,6 +432,9 @@ void disasm_line__free(struct disasm_line *dl)
- {
- 	free(dl->line);
- 	free(dl->name);
-+	free(dl->ops.source.raw);
-+	free(dl->ops.source.name);
-+	free(dl->ops.target.raw);
- 	free(dl->ops.target.name);
- 	free(dl);
- }
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index bb0a9f2..066d31d 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -13,10 +13,16 @@ struct ins;
- struct ins_operands {
- 	char	*raw;
- 	struct {
-+		char	*raw;
- 		char	*name;
--		u64	offset;
- 		u64	addr;
-+		u64	offset;
- 	} target;
-+	struct {
-+		char	*raw;
-+		char	*name;
-+		u64	addr;
-+	} source;
- };
- 
- struct ins_ops {
--- 
-1.7.9.2.358.g22243
+Worse, m68k, sh, and xtensa call cc-option in their arch/*/Makefile
+before CROSS_COMPILE is setup, causing those checks to be done against
+the host compiler when cross-compiling.
 
+Sending out patches, as soon as the (automatic) "git gc" completes...
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
