@@ -1,111 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab2ELT3J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 15:29:09 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:40627 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751794Ab2ELT3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 15:29:06 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Subject: Re: [RFC][PATCH 2/2] PM / Domains: Add preliminary cpuidle support
-Date: Sat, 12 May 2012 21:33:57 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Colin Cross <ccross@android.com>, Kevin Hilman <khilman@ti.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-References: <201205092340.26561.rjw@sisk.pl> <201205112059.25233.rjw@sisk.pl> <CAMQu2gzYrzei7Li+m6o0JtiF9LUSDvpQT71KhgMafC_f_KxPJQ@mail.gmail.com>
-In-Reply-To: <CAMQu2gzYrzei7Li+m6o0JtiF9LUSDvpQT71KhgMafC_f_KxPJQ@mail.gmail.com>
+	id S1754857Ab2ELTbz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 15:31:55 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:56568 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167Ab2ELTbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 May 2012 15:31:53 -0400
+Date: Sat, 12 May 2012 21:31:31 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Thomas Abraham <thomas.abraham@linaro.org>
+cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-samsung-soc@vger.kernel.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kgene.kim@samsung.com, cjb@laptop.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/7] mmc: dw_mmc: add device tree support
+In-Reply-To: <CAJuYYwQj7gzZ9piJAJLcf7SiyJnQ6nZ63-X9ieQ-FCj6TNhQPQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1205122117340.11826@axis700.grange>
+References: <1335935266-25289-1-git-send-email-thomas.abraham@linaro.org>
+ <1335935266-25289-4-git-send-email-thomas.abraham@linaro.org>
+ <Pine.LNX.4.64.1205040047280.18111@axis700.grange>
+ <CAJuYYwQj7gzZ9piJAJLcf7SiyJnQ6nZ63-X9ieQ-FCj6TNhQPQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205122133.58164.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:tLEpOd/49ZqeSRMtbNKPekR+AJJQVOwn+ixGdqpAj7c
+ 2oSMSlmE2T5Bqg7MRc8OSKFeEUiecHVhfm7lziHrBdq8AfrBcr
+ 4QufZ1WXDq460eveGIbsGJ+WxHjf5GwXRBj2Ij4999gH2UsHHa
+ CMP6vz7FvD7rANI9lGwgWaMBY4VyLoorAIbMFOzjJ2fiUq8wny
+ GCH6YFDwaIYLK3+1xt2003F1gwvNZqHaW/ZBt4aXlvliCBJRBL
+ 6p8hSrfHaTcrbUJpYQ37QmCURMvrxqSUQAICWm7F+pMqK77ZBh
+ YCVcvCZarZ2B3zBnwiaOgT3TmnUUY3qeNA1QNQM1juTK1B+Ltt
+ /tBqYsulPmh7JaLXkr19bAqUpCREDR/zj2fzodAvPM7k0VKDx5
+ yjPl8cxBM4QuA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, May 12, 2012, Shilimkar, Santosh wrote:
-> On Sat, May 12, 2012 at 12:29 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Friday, May 11, 2012, Santosh Shilimkar wrote:
-> >> On Friday 11 May 2012 12:11 AM, Rafael J. Wysocki wrote:
-> >> > On Thursday, May 10, 2012, Santosh Shilimkar wrote:
-[...]
-> Your case is bit special because CPU is also part of the same power
-> domain as IO's. Since CPU is part of the root power domain along
-> with peripherals, you want CPU to be the device to cut the power in
-> the end(idle) and all the notifiers prepares the IO's for the 'cut
-> power' which CPU can do in the cpuidle.
+Hi Thomas
 
-No, no notifiers, please, they are clearly suboptimal.
+On Sat, 12 May 2012, Thomas Abraham wrote:
 
-> And then on the reverse chain, notifier will help devices to restore
-> the context so that can resume without any issues.
+> On 4 May 2012 04:18, Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
+> >
+> > What do you think about this patch
+> >
+> > http://www.spinics.net/lists/linux-sh/msg11259.html
+> >
+> > and about using mmc-generic OF properties instead of creating yet another
+> > copy of proprietary ones?
+> 
+> Hi Guennadi,
+> 
+> This patch does not intend to add any custom mmc properties. I checked
+> your patch (in the link mentioned above) and most of the bindings are
+> similar to what you have come up with except for the "ro-gpios" for
+> which I have used "wp-gpios". But this is following what Arnd had
+> proposed here: http://www.spinics.net/lists/linux-mmc/msg13564.html.
 
-The idea here is to avoid using notifiers.
- 
-> Well if CPU is added as one more device along with other
-> peripherals, you can still make it work at power domain framework
-> level.
+Thanks for the link! I didn't know about that patch.
 
-What exactly do you mean by "power domain framework level"?  My patch
-is at the power domain framework level as far as I can say.
+> Regarding the MMC_CAP_4_BIT_DATA and MMC_CAP_8_BIT_DATA in your patch,
+> these can be derived from the bus width information that the driver
+> receives.
 
-> This can be debated further but I think, we need an agreement
-> on CPUIDLE exclusivity.
+Sure. I think, my patch, that I mentioned above, shall be dropped, at 
+least in its present form. But if at least in principle we do want to have 
+a common MMC OF parser for common bindings, some code from your patch 
+would become redundant, I think. BTW, isn't this
 
-What do you mean by cpuidle exclusivity?  And what agreement?
++	gpio = of_get_named_gpio(np, "wp_gpios", 0);
 
-> Based on your hardware, say the USB is doing a huge DMA transfer
-> and CPU is not doing anything so it will hit idle thread and can idle.
+a typo? Shouldn't it be "wp-gpios" instead?
 
-Sure, it will.
-
-> At least your CPU sub-domain can idle because it is quite independent
-> even if you can't cut the power for whole domain.
-
-That's correct.  The CPU sub-domain is beyond the scope of my patch.
-
-> Even with your patchset its not possible to cut the power because one of the
-> device in the domain is busy. There can be scenario, where say
-> SPI is not used for thousands of CPU idle entry/exit so there
-> is no need to worry about its context save/restore for every
-> idle entry/exit.
-
-The CPU idle state I'm referring to is not the only CPU idle state.
-It is an extra state allowing the CPU to go to even deeper idle that usually
-if all of the devices in its domain happen to be idle.
-
-Quite obviously there are other idle states along this one that will be used
-if this extra state is not enabled.
-
-> The way I am looking at your issue is, every device in a power domain
-> including CPU will decrement the powerdomain usecount.
-
-The CPU will not do that, only devices.
-
-> This can be handled through runtime PM.
-
-But this patchset is a part of runtime PM!  What exactly do you mean?
-
-> When they idle, they can save the context
-> and the context can be restored only when next time they needs to be
-> used. CPU can also decrements the usecount in the idle entry and then check
-> whether the usecound of the common PD is zero.
-
-This is not how it is supposed to work.
-
-It doesn't make sense for cpuidle to even try to use the "domain" state if
-it is known that some I/O devices in the domain aren't idle.  That's why
-that state is disabled in my code whenever one (the first) of the I/O devices
-is resumed.  It is then enabled when the last I/O device in the domain goes
-idle (the states of all devices are saved at this point, to allow cpuidle to
-use the "domain" state without worrying of the devices).
-
-I'll post a new version of the $subject patch shortly, because I found that
-the previous one wasn't correct.
-
-Thanks,
-Rafael
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
