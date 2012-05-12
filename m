@@ -1,80 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab2ELPBy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 11:01:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39842 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753512Ab2ELPBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 11:01:52 -0400
-Date: Sat, 12 May 2012 17:01:47 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] ftrace: No return value for ftrace_process_locs
-Message-ID: <20120512150146.GA5964@m.brq.redhat.com>
-References: <1335342219-2782-1-git-send-email-jolsa@redhat.com>
- <1335342219-2782-4-git-send-email-jolsa@redhat.com>
- <1336486760.14207.176.camel@gandalf.stny.rr.com>
+	id S1755162Ab2ELPGh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 11:06:37 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:58329 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab2ELPGg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 May 2012 11:06:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336486760.14207.176.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANQmPXgSAw_u-DWEXC48_992F2yzpJ9dA97HVE3FEkfyx5rR4w@mail.gmail.com>
+References: <CANQmPXjYJFzMniWDO8wG57Zj6QxkGSRnKEue4b6MSuB0FU-W+Q@mail.gmail.com>
+	<CAFLxGvx4i19KxCtGcVGvt4ixWRxb3FSRqCN3KM2cgGz6ZsV-Ng@mail.gmail.com>
+	<CANQmPXgSAw_u-DWEXC48_992F2yzpJ9dA97HVE3FEkfyx5rR4w@mail.gmail.com>
+Date: Sat, 12 May 2012 23:06:35 +0800
+Message-ID: <CANQmPXhh-=o6B4YHtwxmWTQkSYc8xNm1ExVGSA4JDWjd362iAw@mail.gmail.com>
+Subject: Re: [ANNOUNCE][PATCH] Rotary Interactivity Favor Scheduler V2 Releaae
+From: mou Chen <hi3766691@gmail.com>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 10:19:20AM -0400, Steven Rostedt wrote:
-> On Wed, 2012-04-25 at 10:23 +0200, Jiri Olsa wrote:
-> > The return value of ftrace_process_locs is never checked. The function
-> > tries to update as many calls as possible and in case of error there's
-> > either warning output or ftrace_bug call.
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > ---
-> >  kernel/trace/ftrace.c |   37 ++++++++++++++++---------------------
-> >  1 files changed, 16 insertions(+), 21 deletions(-)
-> > 
-> > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> > index b3ceecd..e67f5b3 100644
-> > --- a/kernel/trace/ftrace.c
-> > +++ b/kernel/trace/ftrace.c
-> > @@ -1930,7 +1930,7 @@ static int ops_traces_mod(struct ftrace_ops *ops)
-> >  	return ftrace_hash_empty(hash);
-> >  }
-> >  
-> > -static int ftrace_update_code(struct module *mod)
-> > +static void ftrace_update_code(struct module *mod)
-> >  {
-> >  	struct ftrace_page *pg;
-> >  	struct dyn_ftrace *p;
-> > @@ -1959,7 +1959,7 @@ static int ftrace_update_code(struct module *mod)
-> >  		for (i = 0; i < pg->index; i++) {
-> >  			/* If something went wrong, bail without enabling anything */
-> >  			if (unlikely(ftrace_disabled))
-> > -				return -1;
-> > +				return;
-> >  
-> >  			p = &pg->records[i];
-> >  			p->flags = ref;
-> > @@ -1968,8 +1968,8 @@ static int ftrace_update_code(struct module *mod)
-> >  			 * Do the initial record conversion from mcount jump
-> >  			 * to the NOP instructions.
-> >  			 */
-> > -			if (!ftrace_code_disable(mod, p))
-> > -				break;
-> > +			if (WARN_ON_ONCE(!ftrace_code_disable(mod, p)))
-> > +				return;
-> 
-> Why the warning? If ftrace_disabled is set, something broke a long time
-> ago, and the ftrace_bug gives its own warning.
-> 
-> I don't think this is needed.
-
-right, I missed the ftrace_disabled case..
-
-About the ftrace_update_code/ftrace_process_locs return values..
-I still think the void is better, because we dont change the code
-path in case it fails and all errors are already reported.
-
-jirka
+On 5/12/12, mou Chen <hi3766691@gmail.com> wrote:
+> 在 2012-5-12 下午6:23，"richard -rw- weinberger" <richard.weinberger@gmail.com
+>>写道：
+>>
+>> Hi!
+>>
+>> Please create a nice series of patches and follow
+>> Documentation/SubmittingPatches.
+>> Otherwise nobody is able to review your scheduler.
+>>
+>> BTW: Your patch touches lots of other files, why that?
+>>
+>> $ grep rifs-patch-v2 -e "^diff"
+>> diff -ruN linux-3.3.1/arch/powerpc/platforms/cell/spufs/sched.c
+>> linux-3.3.1-RIFS/arch/powerpc/platforms/cell/spufs/sched.c
+>> diff -ruN linux-3.3.1/arch/x86/Kconfig linux-3.3.1-RIFS/arch/x86/Kconfig
+>> diff -ruN linux-3.3.1/arch/x86/kernel/cpu/proc.c
+>> linux-3.3.1-RIFS/arch/x86/kernel/cpu/proc.c
+>> diff -ruN linux-3.3.1/arch/x86/kernel/smpboot.c
+>> linux-3.3.1-RIFS/arch/x86/kernel/smpboot.c
+>> diff -ruN linux-3.3.1/Documentation/sysctl/kernel.txt
+>> linux-3.3.1-RIFS/Documentation/sysctl/kernel.txt
+>> diff -ruN linux-3.3.1/drivers/cpufreq/cpufreq.c
+>> linux-3.3.1-RIFS/drivers/cpufreq/cpufreq.c
+>> diff -ruN linux-3.3.1/drivers/cpufreq/cpufreq_conservative.c
+>> linux-3.3.1-RIFS/drivers/cpufreq/cpufreq_conservative.c
+>> diff -ruN linux-3.3.1/drivers/cpufreq/cpufreq_ondemand.c
+>> linux-3.3.1-RIFS/drivers/cpufreq/cpufreq_ondemand.c
+>> diff -ruN linux-3.3.1/fs/ext2/super.c~ linux-3.3.1-RIFS/fs/ext2/super.c~
+>> diff -ruN linux-3.3.1/fs/proc/base.c linux-3.3.1-RIFS/fs/proc/base.c
+>> diff -ruN linux-3.3.1/include/linux/init_task.h
+>> linux-3.3.1-RIFS/include/linux/init_task.h
+>> diff -ruN linux-3.3.1/include/linux/init_task.h~
+>> linux-3.3.1-RIFS/include/linux/init_task.h~
+>> diff -ruN linux-3.3.1/include/linux/jiffies.h
+>> linux-3.3.1-RIFS/include/linux/jiffies.h
+>> diff -ruN linux-3.3.1/include/linux/nfsd/stats.h
+>> linux-3.3.1-RIFS/include/linux/nfsd/stats.h
+>> diff -ruN linux-3.3.1/include/linux/sched.h
+>> linux-3.3.1-RIFS/include/linux/sched.h
+>> diff -ruN linux-3.3.1/include/linux/swap.h
+> linux-3.3.1-RIFS/include/linux/swap.h
+>> diff -ruN linux-3.3.1/include/net/inet_timewait_sock.h
+>> linux-3.3.1-RIFS/include/net/inet_timewait_sock.h
+>> diff -ruN linux-3.3.1/init/calibrate.c linux-3.3.1-RIFS/init/calibrate.c
+>> diff -ruN linux-3.3.1/init/Kconfig linux-3.3.1-RIFS/init/Kconfig
+>> diff -ruN linux-3.3.1/init/Kconfig~ linux-3.3.1-RIFS/init/Kconfig~
+>> diff -ruN linux-3.3.1/init/main.c linux-3.3.1-RIFS/init/main.c
+>> diff -ruN linux-3.3.1/kernel/delayacct.c
+> linux-3.3.1-RIFS/kernel/delayacct.c
+>> diff -ruN linux-3.3.1/kernel/exit.c linux-3.3.1-RIFS/kernel/exit.c
+>> diff -ruN linux-3.3.1/kernel/Kconfig.hz
+>> linux-3.3.1-RIFS/kernel/Kconfig.hz
+>> diff -ruN linux-3.3.1/kernel/Kconfig.preempt
+>> linux-3.3.1-RIFS/kernel/Kconfig.preempt
+>> diff -ruN linux-3.3.1/kernel/posix-cpu-timers.c
+>> linux-3.3.1-RIFS/kernel/posix-cpu-timers.c
+>> diff -ruN linux-3.3.1/kernel/sched/Makefile
+>> linux-3.3.1-RIFS/kernel/sched/Makefile
+>> diff -ruN linux-3.3.1/kernel/sched/rifs.c
+> linux-3.3.1-RIFS/kernel/sched/rifs.c
+>> diff -ruN linux-3.3.1/kernel/sysctl.c linux-3.3.1-RIFS/kernel/sysctl.c
+>> diff -ruN linux-3.3.1/kernel/sysctl.c~ linux-3.3.1-RIFS/kernel/sysctl.c~
+>> diff -ruN linux-3.3.1/lib/Kconfig.debug
+>> linux-3.3.1-RIFS/lib/Kconfig.debug
+>> diff -ruN linux-3.3.1/Makefile linux-3.3.1-RIFS/Makefile
+>> diff -ruN linux-3.3.1/mm/memory.c linux-3.3.1-RIFS/mm/memory.c
+>> diff -ruN linux-3.3.1/mm/memory.c.orig linux-3.3.1-RIFS/mm/memory.c.orig
+>> diff -ruN linux-3.3.1/mm/page-writeback.c
+> linux-3.3.1-RIFS/mm/page-writeback.c
+>> diff -ruN linux-3.3.1/mm/swapfile.c linux-3.3.1-RIFS/mm/swapfile.c
+>> diff -ruN linux-3.3.1/mm/vmscan.c linux-3.3.1-RIFS/mm/vmscan.c
+>> diff -ruN linux-3.3.1/mm/vmscan.c.orig linux-3.3.1-RIFS/mm/vmscan.c.orig
+>>
+>> --
+>> Thanks,
+>> //richard
+> Hmm the patch is a little bit dirty.I 'll clean it up.Can you now try to
+> patch it to a 3.3.x kernel and give me a review.Testing it with high
+> workload is a good choice and you can test the smoothness of your desktop
+> under high workload. ;-)
+>               Thanks,
+>               Chen
+>
