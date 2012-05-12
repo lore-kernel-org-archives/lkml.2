@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab2ELPls (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 11:41:48 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:45715 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753670Ab2ELPlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 11:41:44 -0400
-Date: Sat, 12 May 2012 08:38:05 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-CC: "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "patches@linaro.org" <patches@linaro.org>
-Subject: Re: [PATCH v4 2/5] hwmon: exynos4: Move thermal sensor driver to
- driver/thermal directory
-Message-ID: <20120512153805.GB5769@ericsson.com>
-References: <1336815645-29625-1-git-send-email-amit.kachhap@linaro.org>
- <1336815645-29625-3-git-send-email-amit.kachhap@linaro.org>
+	id S1756017Ab2ELPnN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 11:43:13 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56700 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754127Ab2ELPnL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 May 2012 11:43:11 -0400
+X-Sasl-enc: 5m5T3lmy6uj+zvMSL1QS6CiJn2FQNl2i3thHft5kzhGd 1336837389
+Date: Sat, 12 May 2012 08:43:07 -0700
+From: Greg KH <greg@kroah.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: stable@vger.kernel.org, linux-pm <linux-pm@lists.linux-foundation.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: 3.3.5 regression: resume doesn't switch to X
+Message-ID: <20120512154307.GA6023@kroah.com>
+References: <4FAE0E88.2030703@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1336815645-29625-3-git-send-email-amit.kachhap@linaro.org>
+In-Reply-To: <4FAE0E88.2030703@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 12, 2012 at 05:40:42AM -0400, Amit Daniel Kachhap wrote:
-> This movement is needed because the hwmon entries and corresponding
-> sysfs interface is a duplicate of utilities already provided by
-> driver/thermal/thermal_sys.c. The goal is to place it in thermal folder
-> and add necessary functions to use the in-kernel thermal interfaces.
+On Sat, May 12, 2012 at 09:17:28AM +0200, Jiri Slaby wrote:
+> Hi,
+
+<side note, it's stable@vger.kernel.org, not stable@kernel.org>
+
+> since update to 3.3.5, my X doesn't show up after resume from
+> hibernation anymore. The only thing I see is "resuming..." on the
+> console. I can switch to any tty and login in text mode, but cannot
+> switch to X despite it is running. I have to restart whole session to
+> have X again.
 > 
-> CC: Guenter Roeck <guenter.roeck@ericsson.com>
-> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-> Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+> Now I'm back to 3.3.4 and everything is OK.
 
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Care to run 'git bisect' to find the offending patch?
 
-Some suggestions, possibly for later cleanup.
+thanks,
 
-> -
-> -       data = kzalloc(sizeof(struct exynos4_tmu_data), GFP_KERNEL);
-
-If you use devm_kzalloc, you won't have to free it.
-
-[ ...]
-
-> -       data->mem = request_mem_region(data->mem->start,
-> -                       resource_size(data->mem), pdev->name);
-
-Same here, with devm_request_mem_region.
-
-[ ... ]
-
-> -       data->base = ioremap(data->mem->start, resource_size(data->mem));
-
-and devm_ioremap
-
-[ ... ]
-
-> -       ret = request_irq(data->irq, exynos4_tmu_irq,
-
-and devm_request_irq
-
-Guenter
+greg k-h
