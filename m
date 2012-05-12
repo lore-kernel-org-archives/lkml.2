@@ -1,93 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825Ab2ELXH2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 19:07:28 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36411 "EHLO
+	id S1755007Ab2ELXOC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 19:14:02 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55476 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754347Ab2ELXH1 (ORCPT
+	with ESMTP id S1753580Ab2ELXOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 19:07:27 -0400
+	Sat, 12 May 2012 19:14:00 -0400
+Date: Sat, 12 May 2012 18:13:49 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: "Tian, Kevin" <kevin.tian@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Fengzhe Zhang <fengzhe.zhang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "JBeulich@novell.com" <JBeulich@novell.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        Lars Boegild Thomsen <lth@cow.dk>,
+        Andreas Wallberg <andreas.wallberg@gmail.com>,
+        Robert Scott <bugs@humanleg.org.uk>
+Subject: Re: [regression] Ideapad S10-3 does not wake up from suspend
+Message-ID: <20120512231349.GA17443@burratino>
+References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
+ <20110829041532.GA22087@elie.gateway.2wire.net>
+ <625BA99ED14B2D499DC4E29D8138F15063048B864D@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-Date: Sat, 12 May 2012 16:07:27 -0700
-Message-ID: <CAOesGMj+Ds+gOX2mSnYb2Cn3e9894bceisPtsnW5qYhT3SPhsA@mail.gmail.com>
-Subject: [GIT PULL] ARM: SoC fixes for 3.4
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <625BA99ED14B2D499DC4E29D8138F15063048B864D@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi again,
 
-The following changes since commit e396dbd4ed2ccfd362261b05027bbdccec192b14:
+In September, Kevin Tian wrote:
+>> Lars Boegild Thomsen writes[1]:
 
-  Merge tag 'omap-fixes-for-v3.4-rc6-take-2' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap into
-fixes (2012-05-09 09:03:34 -0700)
+>>> After update from 2.6 kernel to 3.0 my Idepad S10-3 will not wake up after
+>>> sleep.  Back to latest 2.6 kernel works fine.
+> > [...]
+>>> Upon wakeup, the power light go from slow flashing to on, the battery light
+>>> goes from off to on, the hdd light blink once and then everything is dead.
+[...]
+>>> 983bbf1af0664b78689612b247acb514300f62c7 is the first bad commit
+>> [...]
+>>> I also tried to go back to HEAD and manually change arch/x86/irq.c revert this
+>>> particular commit and it works.
+[...]
+> fixup_irqs is invoked in suspend path. The only impact this change may
+> bring to resume path is the interrupt line state, which is saved later
+> in suspend and then restored in resume. w/ above change after resume
+> given interrupt line is always masked, while w/o it there may be at least
+> one interrupt raising. If this does matter to make your ideapad working,
+> I'd think there may have other bugs which are hidden originally, e.g. by
+> triggering a reschedule from that interrupt though the handler itself
+> does nothing except masking the interrupt line.
+>
+> So... above commit is not important which can be easily reverted. My
+> only concern is whether other severe issues are just hidden.
+>
+> btw, any serial output you may capture?
 
-are available in the git repository at:
+Sorry for the slow response.  Result from reporters is:
 
+ - 3.4-rc2 is affected as well
+ - this only affects suspend-to-RAM --- suspend-to-disk works fine
+ - all five pm_test modes for suspend-to-RAM work fine
+ - this netbook doesn't have a serial port.  Netconsole gives:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git
-tags/fixes-for-linus
+| [  745.161322] PM: Syncing filesystems ... done.
+| [  747.088247] PM: Preparing system for mem sleep
+| [  747.187932] Freezing user space processes ... (elapsed 0.01 seconds) done.
+| [  747.204325] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+| [  747.220416] PM: Entering mem sleep
+| [  747.221085] sd 1:0:0:0: [sda] Synchronizing SCSI cache
+| [  747.222247] sd 1:0:0:0: [sda] Stopping disk
+| 
+| (then nothing)
 
-for you to fetch changes up to 85d5c4a362add39f7491b38ed0160df1dcae1d2b:
+   Serial console via a USB-to-serial converter gives:
 
-  Merge branch 'v3.4-samsung-fixes-5' of
-git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into
-fixes (2012-05-12 15:41:22 -0700)
+| [  814.016541] PM: Syncing filesystems ... done.
+| [  814.018516] PM: Preparing system for mem sleep
+| [  814.100393] Freezing user space processes ... (elapsed 0.01 se
+|
+| before it goes to sleep, and it doesn't output anything on (attempted) wakeup.
 
-----------------------------------------------------------------
+ - passing parameters "hpet=disable highres=off nohz=off" helps some
+   people if I understand correctly, but I might have misunderstood.[2]
 
-ARM: SoC fixes for 3.4-rc
+I'd be interested to hear whether the same problem occurs when trying
+to suspend from the minimal initramfs environment.  (On systems like
+Debian that use initramfs-tools, that means passing the kernel command
+line parameter "break=top", booting, loading some appropriate minimal
+collection of modules --- maybe none ---, and then running
+"echo mem >/sys/power/state".  initramfs-tools(8) has details.)
 
-I was hoping to be done with fixes for 3.4 but we got two branches from
-subarch maintainers the last couple of days. So here is one last(?) pull
-request for arm-soc containing 7 patches:
+Hope that helps,
+Jonathan
 
-- 5 of them are for shmobile dealing with SMP setup and compile failures
-- The remaining two are for regressions on the Samsung platforms
-
-----------------------------------------------------------------
-Guennadi Liakhovetski (2):
-      ARM: mach-shmobile: convert mackerel to use the generic MMC GPIO
-hotplug helper
-      ARM: mach-shmobile: convert ag5evm to use the generic MMC GPIO
-hotplug helper
-
-Kukjin Kim (1):
-      ARM: EXYNOS: fix ctrlbit for exynos5_clk_pdma1
-
-Kuninori Morimoto (1):
-      ARM / mach-shmobile: sh73a0 SMP TWD boot regression fix
-
-Magnus Damm (2):
-      ARM / mach-shmobile: r8a7779 SMP TWD boot regression fix
-      ARM / mach-shmobile: Invalidate caches when booting secondary cores
-
-Marek Szyprowski (1):
-      ARM: EXYNOS: use s5p-timer for UniversalC210 board
-
-Olof Johansson (2):
-      Merge branch 'fixes' of git://git.kernel.org/.../rafael/renesas into fixes
-      Merge branch 'v3.4-samsung-fixes-5' of
-git://git.kernel.org/.../kgene/linux-samsung into fixes
-
- arch/arm/mach-exynos/Kconfig                 |  3 +++
- arch/arm/mach-exynos/clock-exynos5.c         |  2 +-
- arch/arm/mach-exynos/mach-universal_c210.c   |  4 +++-
- arch/arm/mach-shmobile/board-ag5evm.c        | 22 ++--------------------
- arch/arm/mach-shmobile/board-mackerel.c      | 22 ++--------------------
- arch/arm/mach-shmobile/headsmp.S             | 56
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- arch/arm/mach-shmobile/include/mach/common.h |  2 +-
- arch/arm/mach-shmobile/setup-r8a7779.c       |  4 ++++
- arch/arm/mach-shmobile/setup-sh73a0.c        |  4 ++++
- arch/arm/mach-shmobile/smp-r8a7779.c         |  8 +++++++-
- arch/arm/mach-shmobile/smp-sh73a0.c          |  7 ++++++-
- arch/arm/mach-shmobile/timer.c               |  9 ---------
- 12 files changed, 88 insertions(+), 55 deletions(-)
+>> [1] http://bugs.debian.org/635575
+[2] https://bugzilla.kernel.org/show_bug.cgi?id=41932
