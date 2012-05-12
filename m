@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761458Ab2ELASr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 20:18:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55013 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754894Ab2ELASo (ORCPT
+	id S1755019Ab2ELAS4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 20:18:56 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42602 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894Ab2ELASx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 20:18:44 -0400
-Date: Fri, 11 May 2012 17:17:17 -0700
+	Fri, 11 May 2012 20:18:53 -0400
+Date: Fri, 11 May 2012 17:17:25 -0700
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>
@@ -20,8 +20,8 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 02/11] persistent_ram: Fix buffer size clamping during writes
-Message-ID: <20120512001717.GB14782@lizard>
+Subject: [PATCH 03/11] persistent_ram: Introduce persistent_ram_post_init()
+Message-ID: <20120512001725.GC14782@lizard>
 References: <20120512001506.GA8653@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -32,61 +32,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a longstanding bug, almost unnoticeable when calling
-persistent_ram_write() for small buffers.
-
-But when called for large data buffers, the write routine behaves
-incorrectly, as the size may never update: instead of clamping
-the size to the maximum buffer size, buffer_size_add_clamp() returns
-an error (which is never checked by the write routine, btw).
-
-To fix this, we now use buffer_size_add() that actually clamps the
-size to the max value.
-
-Also remove buffer_size_add_clamp(), it is no longer needed.
+Factor post init logic out of __persistent_ram_init(), we'll need
+it for the new persistent_ram_new() routine.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- drivers/staging/android/persistent_ram.c |   19 +------------------
- 1 file changed, 1 insertion(+), 18 deletions(-)
+ drivers/staging/android/persistent_ram.c |   44 ++++++++++++++++++------------
+ 1 file changed, 27 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/staging/android/persistent_ram.c b/drivers/staging/android/persistent_ram.c
-index 12444fd..13a12bc 100644
+index 13a12bc..ec23822 100644
 --- a/drivers/staging/android/persistent_ram.c
 +++ b/drivers/staging/android/persistent_ram.c
-@@ -79,23 +79,6 @@ static inline void buffer_size_add(struct persistent_ram_zone *prz, size_t a)
- 	} while (atomic_cmpxchg(&prz->buffer->size, old, new) != old);
+@@ -378,28 +378,15 @@ static int __init persistent_ram_buffer_init(const char *name,
+ 	return -EINVAL;
  }
  
--/* increase the size counter, retuning an error if it hits the max size */
--static inline ssize_t buffer_size_add_clamp(struct persistent_ram_zone *prz,
--	size_t a)
--{
--	size_t old;
--	size_t new;
--
--	do {
--		old = atomic_read(&prz->buffer->size);
--		new = old + a;
--		if (new > prz->buffer_size)
--			return -ENOMEM;
--	} while (atomic_cmpxchg(&prz->buffer->size, old, new) != old);
--
--	return 0;
--}
--
- static void notrace persistent_ram_encode_rs8(struct persistent_ram_zone *prz,
- 	uint8_t *data, size_t len, uint8_t *ecc)
+-static  __init
+-struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
++static int __init persistent_ram_post_init(struct persistent_ram_zone *prz, bool ecc)
  {
-@@ -300,7 +283,7 @@ int notrace persistent_ram_write(struct persistent_ram_zone *prz,
- 		c = prz->buffer_size;
- 	}
+-	struct persistent_ram_zone *prz;
+-	int ret = -ENOMEM;
+-
+-	prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
+-	if (!prz) {
+-		pr_err("persistent_ram: failed to allocate persistent ram zone\n");
+-		goto err;
+-	}
+-
+-	ret = persistent_ram_buffer_init(dev_name(dev), prz);
+-	if (ret) {
+-		pr_err("persistent_ram: failed to initialize buffer\n");
+-		goto err;
+-	}
++	int ret;
  
--	buffer_size_add_clamp(prz, c);
-+	buffer_size_add(prz, c);
+ 	prz->ecc = ecc;
++
+ 	ret = persistent_ram_init_ecc(prz, prz->buffer_size);
+ 	if (ret)
+-		goto err;
++		return ret;
  
- 	start = buffer_start_add(prz, c);
+ 	if (prz->buffer->sig == PERSISTENT_RAM_SIG) {
+ 		if (buffer_size(prz) > prz->buffer_size ||
+@@ -422,6 +409,29 @@ struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
+ 	atomic_set(&prz->buffer->start, 0);
+ 	atomic_set(&prz->buffer->size, 0);
  
++	return 0;
++}
++
++static  __init
++struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
++{
++	struct persistent_ram_zone *prz;
++	int ret = -ENOMEM;
++
++	prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
++	if (!prz) {
++		pr_err("persistent_ram: failed to allocate persistent ram zone\n");
++		goto err;
++	}
++
++	ret = persistent_ram_buffer_init(dev_name(dev), prz);
++	if (ret) {
++		pr_err("persistent_ram: failed to initialize buffer\n");
++		goto err;
++	}
++
++	persistent_ram_post_init(prz, ecc);
++
+ 	return prz;
+ err:
+ 	kfree(prz);
 -- 
 1.7.9.2
 
