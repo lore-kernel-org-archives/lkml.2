@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab2ELTxW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 15:53:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51840 "EHLO
+	id S1754604Ab2ELTxX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 15:53:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51844 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763Ab2ELTxU (ORCPT
+	with ESMTP id S1750897Ab2ELTxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 12 May 2012 15:53:20 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/8] perf annotate: Use raw form for register indirect call instructions
-Date: Sat, 12 May 2012 16:53:00 -0300
-Message-Id: <1336852387-16322-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 8/8] perf annotate browser: Add key bindings help window
+Date: Sat, 12 May 2012 16:53:07 -0300
+Message-Id: <1336852387-16322-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1336852387-16322-1-git-send-email-acme@infradead.org>
 References: <1336852387-16322-1-git-send-email-acme@infradead.org>
@@ -31,16 +31,6 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-   callq  *0x10(%rax)
-
-was being rendered in simplified mode as:
-
-   callq  *10
-
-I.e. hexa, but without the 0x and omitting the register. In such cases
-just use the raw form.
-
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
@@ -48,39 +38,62 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-m91tv004h2m1fkfgu6ovx3hb@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-1txmtzf71eqie5xcukbfxors@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/annotate.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ tools/perf/ui/browsers/annotate.c |   25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 6b4146b..9a020d1 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -56,6 +56,12 @@ static int call__parse(struct ins_operands *ops)
- 	return ops->target.name == NULL ? -1 : 0;
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index 547bd35..6e0ef79 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -581,10 +581,7 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 	struct rb_node *nd = NULL;
+ 	struct map_symbol *ms = self->b.priv;
+ 	struct symbol *sym = ms->sym;
+-	const char *help = "<-/ESC: Exit, TAB/shift+TAB: Cycle hot lines, "
+-			   "H: Hottest line, ->/ENTER: Line action, "
+-			   "O: Offset view, "
+-			   "S: Source view";
++	const char *help = "Press 'h' for help on key bindings";
+ 	int key;
  
- indirect_call:
-+	tok = strchr(endptr, '(');
-+	if (tok != NULL) {
-+		ops->target.addr = 0;
-+		return 0;
-+	}
-+
- 	tok = strchr(endptr, '*');
- 	if (tok == NULL)
- 		return -1;
-@@ -70,6 +76,9 @@ static int call__scnprintf(struct ins *ins, char *bf, size_t size,
- 	if (ops->target.name)
- 		return scnprintf(bf, size, "%-6.6s %s", ins->name, ops->target.name);
- 
-+	if (ops->target.addr == 0)
-+		return ins__raw_scnprintf(ins, bf, size, ops);
-+
- 	return scnprintf(bf, size, "%-6.6s *%" PRIx64, ins->name, ops->target.addr);
- }
- 
+ 	if (ui_browser__show(&self->b, sym->name, help) < 0)
+@@ -637,16 +634,30 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 			else
+ 				nd = self->curr_hot;
+ 			break;
+-		case 'H':
++		case K_F1:
+ 		case 'h':
++			ui_browser__help_window(&self->b,
++		"UP/DOWN/PGUP\n"
++		"PGDN/SPACE    Navigate\n"
++		"q/ESC/CTRL+C  Exit\n\n"
++		"->            Go to target\n"
++		"<-            Exit\n"
++		"h             Cycle thru hottest instructions\n"
++		"j             Toggle showing jump to target arrows\n"
++		"J             Toggle showing number of jump sources on targets\n"
++		"n             Search next string\n"
++		"o             Toggle disassembler output/simplified view\n"
++		"s             Toggle source code view\n"
++		"/             Search string\n"
++		"?             Search previous string\n");
++			continue;
++		case 'H':
+ 			nd = self->curr_hot;
+ 			break;
+-		case 'S':
+ 		case 's':
+ 			if (annotate_browser__toggle_source(self))
+ 				ui_helpline__puts(help);
+ 			continue;
+-		case 'O':
+ 		case 'o':
+ 			self->use_offset = !self->use_offset;
+ 			if (self->use_offset)
 -- 
 1.7.9.2.358.g22243
 
