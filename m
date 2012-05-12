@@ -1,39 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab2ELQ2b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 12:28:31 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:47552 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751579Ab2ELQ2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 12:28:30 -0400
-Message-ID: <1336840108.17605.14.camel@joe2Laptop>
-Subject: Re: [PATCH] MAINTAINERS: Add maintainer for LED subsystem
-From: Joe Perches <joe@perches.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Bryan Wu <bryan.wu@canonical.com>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org
-Date: Sat, 12 May 2012 09:28:28 -0700
-In-Reply-To: <20120512102528.GB20673@pengutronix.de>
-References: <1336609592-3825-1-git-send-email-bryan.wu@canonical.com>
-	 <20120510111958.7cb00da9.akpm@linux-foundation.org>
-	 <1336674472.22495.24.camel@joe2Laptop>
-	 <20120512102528.GB20673@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1754920Ab2ELRE4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 13:04:56 -0400
+Received: from outrelay03.libero.it ([212.52.84.103]:53516 "EHLO
+	outrelay03.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab2ELREz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 May 2012 13:04:55 -0400
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A0B020D.4FAE9823.0072,ss=1,re=0.000,fgs=0
+X-libjamoibt: 1821
+Message-ID: <19793903.8672561336842275280.JavaMail.defaultUser@defaultHost>
+Date: Sat, 12 May 2012 19:04:35 +0200 (CEST)
+From: abi <abiokom88@yahoo.com>
+Reply-To: abi <abiokom88@yahoo.com>
+Subject: haalloo,
+MIME-Version: 1.0
+Content-Type: text/plain;charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-SenderIP: 84.55.117.251
+X-libjamv: JiaxF7En7ng=
+X-libjamsun: P2/EgNAO9nU5U95ATF1BM6dk8+EOOmO8zLAIfRZ2ODU=
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-05-12 at 12:25 +0200, Wolfram Sang wrote:
-> > If/when patchwork.kernel.org is back up,
-> > that'd be another mechanism to automate
-> > patch notifications for drivers/leds/.
-> 
-> http://patchwork.ozlabs.org/ is still there.
-
-but is lkml tracked there?
-
-
+haalloo,
+how are you doing,i hope you are fine,my name is miss abi okom i got your
+contact and want us to be a good friend,
+please try and write back to me so that i will give you my pictures and tell
+you more about me,
