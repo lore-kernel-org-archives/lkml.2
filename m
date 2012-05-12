@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab2ELDIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 23:08:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6107 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304Ab2ELDIG (ORCPT
+	id S1751819Ab2ELDKm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 23:10:42 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:44857 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab2ELDKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 23:08:06 -0400
-X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=lLL2lZuacRoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=YCgKsIjKAAAA:8 a=_B9tGATgDamWrVDCI7oA:9 a=cv0FsHo0zm6KwsT1FlIA:7 a=PUjeQqilurYA:10 a=f4FvcZ5phd4A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1336792082.14207.262.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 1/1] kernel/trace: gcc warning: uninitialized variable.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Raphael Santana carvalho <utroz@oakcoders.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-Date: Fri, 11 May 2012 23:08:02 -0400
-In-Reply-To: <CADeC0sNq41kGWw6JbASu6WE-SkTHihf9SnKCTaBTSyas4TJoMg@mail.gmail.com>
-References: <CADeC0sNq41kGWw6JbASu6WE-SkTHihf9SnKCTaBTSyas4TJoMg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 11 May 2012 23:10:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FAC418E.6060500@redhat.com>
+References: <1336066477-3964-1-git-send-email-rajman.mekaco@gmail.com>
+	<4FA2C946.60006@redhat.com>
+	<4FA2EA4A.6040703@redhat.com>
+	<CAMYGaxosaVXmpQQqpq+bGV9F7-i8APTpDq=ErWdhw2EHGEzmKg@mail.gmail.com>
+	<CAMYGaxruZbhvtZg76_zo6-BjChObpCAE8-MTA=xbBOavct+XNw@mail.gmail.com>
+	<4FABD6BE.1060401@redhat.com>
+	<CAMYGaxqxb=XR8R26h4e2URA2hG2M3j9V4u0DLJ9ifmkZKJa+eg@mail.gmail.com>
+	<4FAC418E.6060500@redhat.com>
+Date: Sat, 12 May 2012 08:40:39 +0530
+Message-ID: <CAMYGaxrYex7ALY4_5R_jTz-xftu6zVD3-SmUdVDO-Gy4Vom7gA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] mlock: split the shmlock_user_lock spinlock into per
+ user_struct spinlock
+From: rajman mekaco <rajman.mekaco@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@gentwo.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-11 at 23:26 -0300, Raphael Santana carvalho wrote:
-> >From 2f1490c5e8e2a393d9376d959e2ff6836757f51a Mon Sep 17 00:00:00 2001
-> From: Raphael S.Carvalho <utroz@oakcoders.com>
-> Date: Fri, 11 May 2012 22:58:43 -0300
-> Subject: [PATCH 1/1] kernel/trace: gcc warning: uninitialized variable.
-> 
-> I've received a problem in this file when I was compiling my own kernel.
-> It's a simple uninitialized variable, so that gcc is warning about it.
-> 
-> The function is actually working correctly, because it's impossible to use the
-> variable(page2) uninitialized because it's only referenced if nr_pages == 2,
-> and we will have previously set it in that case.
+>>
+>> Maybe you didn't read my last email:
+>> If 2 different user-mode processes executing on 2 CPUs under 2 different
+>> users want to access the same shared memory through the
+>> shmctl(SHM_LOCK) / shmget(SHM_HUGETLB) / usr_shm_lock
+>> primitives, they could compete/spin even though their user_structs
+>> are different.
+>>
+>> Can you please correct me if I am missing some crucial point of
+>> understanding ?
+>
+>
+> Mlock is a very very expensive operation.
+>
+> Updating the mlock statistics is a very cheap operation.
+>
+> Does this spinlock ever show up contention wise?
 
-Correct.
+I just tested for working and not contention. :)
+I was just going by correctness of concept.
+But I understand what you say and I will try to actually test contention
+for this in the coming days.
 
-> 
-> gcc version 4.5.2 (GCC) - Follows the warning:
-
-It's a bug in gcc. If you use gcc 4.6 or later it does not warn.
-
-As this code may change in the future, I don't want to hide errors that
-gcc 4.6 could catch. Thus I'm not going to take this patch.
-
-Don't feel bad, you're probably the 5th person I declined this change
-from. At least you noticed that it was just gcc complaining and did not
-blindly set the variable to NULL.
-
--- Steve
-
-> kernel/trace/trace.c:3755:8 warning: 'page2': may be used uninitialized in this function
-> 
-> Signed-off-by: Raphael S.Carvalho <utroz@oakcoders.com>
-> ---
->  kernel/trace/trace.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 2a22255..4ffff83 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -3752,7 +3752,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
->      int nr_pages = 1;
->      ssize_t written;
->      void *page1;
-> -    void *page2;
-> +    void *uninitialized_var(page2);
->      int offset;
->      int size;
->      int len;
-
-
+>
+> --
+> All rights reversed
