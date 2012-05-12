@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab2ELAdw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 May 2012 20:33:52 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:53894 "EHLO
+	id S1761554Ab2ELAfn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 May 2012 20:35:43 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63290 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761450Ab2ELAdv convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754890Ab2ELAfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 May 2012 20:33:51 -0400
+	Fri, 11 May 2012 20:35:41 -0400
+Date: Fri, 11 May 2012 19:35:33 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Arend van Spriel <arend@broadcom.com>, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Francesco Saverio Schiavarelli <fschiava@libero.it>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Brett Rudley <brudley@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [ 018/167] [PATCH] brcm80211: smac: resume transmit fifo upon
+ receiving frames
+Message-ID: <20120512003533.GA2931@burratino>
+References: <20120509055032.096457048@decadent.org.uk>
+ <1336779723.8274.473.camel@deadeye>
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6vtcOX4X7XYmgFguUUOVCQnHvG4SMu_NbjLgm_uRFeMfQ@mail.gmail.com>
-References: <CACxGe6vtcOX4X7XYmgFguUUOVCQnHvG4SMu_NbjLgm_uRFeMfQ@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 11 May 2012 18:33:30 -0600
-X-Google-Sender-Auth: _JmislxFfC6btDjs0U6epyWEyEQ
-Message-ID: <CACxGe6v-=zmyJ-v4FyAZZd=UK0edfjSYQ8p6N5jeUbKNjUSkGg@mail.gmail.com>
-Subject: Re: [GIT PULL] gpio bug fix for OMAP
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336779723.8274.473.camel@deadeye>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops, missed a couple.  Here's an updated pull req for GPIO
+Ben Hutchings wrote:
 
-The following changes since commit d48b97b403d23f6df0b990cee652bdf9a52337a3:
+> brcms_b_mute() takes three arguments in 3.2.  Can you send me a patch to
+> fix this up in 3.2.y, or should I revert the change?
 
-  Linux 3.4-rc6 (2012-05-06 15:07:32 -0700)
+Sorry to have missed this.  Here's the fixup used when backporting to
+3.0.y.
 
-are available in the git repository at:
+-- >8 --
+Subject: brcm80211: smac: pass missing argument to 'brcms_b_mute'
 
-  git://git.secretlab.ca/git/linux-2.6 tags/gpio-for-linus
+[Not needed upstream --- this bug is specific to 3.2.y.]
 
-for you to fetch changes up to 2760f7adbb6c4e39bd3ae733f56d4ac8fb5e3521:
+Commit c6c44893c864, which removes the flag argument from brcms_b_mute,
+is not part of 3.2.y, and we forgot to adjust a new call accordingly
+when applying commit badc4f07622f ("brcm80211: smac: resume transmit
+fifo upon receiving frames").
 
-  gpio/exynos: Fix compiler warnings when non-exynos machines are
-selected (2012-05-11 18:25:53 -0600)
+ drivers/net/wireless/brcm80211/brcmsmac/main.c: In function 'brcms_c_recvctl':
+ drivers/net/wireless/brcm80211/brcmsmac/main.c:7882:4: error: too few arguments to function 'brcms_b_mute'
+ drivers/net/wireless/brcm80211/brcmsmac/main.c:2538:13: note: declared here
 
-----------------------------------------------------------------
-GPIO bug fixes on top of v3.4-rc6
+Earlier build tests missed this because they didn't include this driver
+due to 'depends on BCMA=n'.
 
-An OMAP bug fix, a set of PCH bug fixes, and one patch to fix up compile
-warnings
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+---
+ drivers/net/wireless/brcm80211/brcmsmac/main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-----------------------------------------------------------------
-Sachin Kamat (1):
-      gpio/exynos: Fix compiler warnings when non-exynos machines are selected
-
-Tarun Kanti DebBarma (1):
-      gpio/omap: fix incorrect initialization of omap_gpio_mod_init
-
-Thomas Gleixner (1):
-      gpio: pch9: Use proper flow type handlers
-
- drivers/gpio/gpio-omap.c    |    9 +++----
- drivers/gpio/gpio-pch.c     |   57 +++++++++++++++++++++----------------------
- drivers/gpio/gpio-samsung.c |   18 +++++++++-----
- 3 files changed, 43 insertions(+), 41 deletions(-)
-
-On Fri, May 11, 2012 at 5:56 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> The following changes since commit d48b97b403d23f6df0b990cee652bdf9a52337a3:
->
->  Linux 3.4-rc6 (2012-05-06 15:07:32 -0700)
->
-> are available in the git repository at:
->
->  git://git.secretlab.ca/git/linux-2.6 tags/gpio-for-linus
->
-> for you to fetch changes up to 6edd94db250038c8fdf176f23ca4017d2f312509:
->
->  gpio/omap: fix incorrect initialization of omap_gpio_mod_init
-> (2012-05-10 07:16:15 -0700)
->
-> ----------------------------------------------------------------
-> GPIO omap bug fixes on top of v3.4-rc6
->
-> ----------------------------------------------------------------
-> Tarun Kanti DebBarma (1):
->      gpio/omap: fix incorrect initialization of omap_gpio_mod_init
->
->  drivers/gpio/gpio-omap.c |    9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
->
->
-> --
-> Grant Likely, B.Sc., P.Eng.
-> Secret Lab Technologies Ltd.
-
-
-
+diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/wireless/brcm80211/brcmsmac/main.c
+index f98becc9e169..833cbefcbfd2 100644
+--- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
++++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
+@@ -7879,7 +7879,7 @@ brcms_c_recvctl(struct brcms_c_info *wlc, struct d11rxhdr *rxh,
+ 	if (wlc->hw->suspended_fifos) {
+ 		hdr = (struct ieee80211_hdr *)p->data;
+ 		if (ieee80211_is_beacon(hdr->frame_control))
+-			brcms_b_mute(wlc->hw, false);
++			brcms_b_mute(wlc->hw, false, 0);
+ 	}
+ 
+ 	memcpy(IEEE80211_SKB_RXCB(p), &rx_status, sizeof(rx_status));
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+1.7.10.1
+
