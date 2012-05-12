@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab2ELNC1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 09:02:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:49172 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755776Ab2ELNCZ (ORCPT
+	id S1755912Ab2ELNIP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 09:08:15 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44941 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755802Ab2ELNIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 09:02:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: adam radford <aradford@gmail.com>
-Subject: Re: [PATCH 6/7] scsi/megaraid: fix sparse warnings
-Date: Sat, 12 May 2012 13:02:21 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: mathieu.poirier@linaro.org, JBottomley@parallels.com,
-        megaraidlinux@lsi.com, linux-scsi@vger.kernel.org,
+	Sat, 12 May 2012 09:08:13 -0400
+Date: Sat, 12 May 2012 15:07:56 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: khali@linux-fr.org, ben-linux@fluff.org, swarren@wwwdotorg.org,
+        olof@lixom.net, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org
-References: <1336774168-26577-1-git-send-email-mathieu.poirier@linaro.org> <1336774168-26577-7-git-send-email-mathieu.poirier@linaro.org> <CAHtARFFnLrk0zQ7GeoiPX3Cyso9zq-05q+RyyeGN0v7q=Dm1gQ@mail.gmail.com>
-In-Reply-To: <CAHtARFFnLrk0zQ7GeoiPX3Cyso9zq-05q+RyyeGN0v7q=Dm1gQ@mail.gmail.com>
+Subject: Re: [PATCH V1 2/2] i2c: tegra: notify transfer-complete after
+ clearing status.
+Message-ID: <20120512130756.GI20673@pengutronix.de>
+References: <1336373179-12739-1-git-send-email-ldewangan@nvidia.com>
+ <1336373179-12739-3-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205121302.21623.arnd@arndb.de>
-X-Provags-ID: V02:K0:JJxlQmHPHieaf58eXEUR/PMZuVEW4ETKvuwDpjts5ri
- MB3u9fnXDdtLQNYNmhPiE2oXKYf9XsbrB43/VLrNsaG0vuj2zH
- RfSPKdJE29cNq+lGDC8UsGjbEzg1vbL4jQkuhlmGfk3KasJsF5
- lB0WQEETkMBN7pnwSivvEkjSOhZZxh1XlvuLJACKdJkCyXIW10
- HfPnLNzlOofTeRwta+dhOgQ9CtYkdC1Rj3ZftFfWa7O8vGZaNj
- D/oExiTTHPA+FvFVKa9YC4U3XdXmC2mz0OjBGW1/saOqDY970l
- Yhmue8+liKnteQjQBCq6npiJytrM6DeRA8ebI4M1zh6xCXxgWu
- PUmBNNtP5j+iQsdrzVh0=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wjoFZxbW4tu+iR6v"
+Content-Disposition: inline
+In-Reply-To: <1336373179-12739-3-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 May 2012, adam radford wrote:
-> 
-> On Fri, May 11, 2012 at 3:09 PM,  <mathieu.poirier@linaro.org> wrote:
-> > From: Arnd Bergmann <arnd@arndb.de>
-> >
-> ...
-> > diff --git a/drivers/scsi/megaraid/megaraid_sas_fusion.c b/drivers/scsi/megaraid/megaraid_sas_fusion.c
-> > index bfd87fa..234ad74 100644
-> > --- a/drivers/scsi/megaraid/megaraid_sas_fusion.c
-> > +++ b/drivers/scsi/megaraid/megaraid_sas_fusion.c
-> > @@ -51,55 +51,16 @@
-> >  #include <scsi/scsi_device.h>
-> >  #include <scsi/scsi_host.h>
-> >
-> > +#include "mega_common.h"
-> 
-> Do not include mega_common.h in the megaraid_sas driver.  It has
-> nothing to do with this driver.  It is for the older Parallel SCSI
-> megaraid drivers.
 
-Ok. I think I first tried moving all declarations into mega_common.h
-and then decided otherwise but forgot to remove that #include statement
-again. Thanks for taking a look!
+--wjoFZxbW4tu+iR6v
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	Arnd
+On Mon, May 07, 2012 at 12:16:19PM +0530, Laxman Dewangan wrote:
+> The notification of the transfer complete by calling complete()
+> should be done after clearing all interrupt status.
+> This may avoid the race condition of misconfigure the i2c controller
+> in multi-core environment.
+
+"may avoid" or "does avoid"? I.e. does it fix any bug that really
+occured? Then I'd add a stable tag.
+
+So far, applied to next.
+
+>  	if (status & I2C_INT_PACKET_XFER_COMPLETE) {
+>  		BUG_ON(i2c_dev->msg_buf_remaining);
+>  		complete(&i2c_dev->msg_complete);
+>  	}
+
+Side note: If you see a way to handle the BUG invocations more
+gracefully, that would be appreciated.
+
+Thanks,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--wjoFZxbW4tu+iR6v
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk+uYKwACgkQD27XaX1/VRsVBgCguFJmH6yHRVL2H34Zc0S0G5Xe
+kIoAn3OmV02dJOiu/S0rBej/Wiz3nLTV
+=34To
+-----END PGP SIGNATURE-----
+
+--wjoFZxbW4tu+iR6v--
