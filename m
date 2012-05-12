@@ -1,85 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab2ELICH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 04:02:07 -0400
-Received: from mga14.intel.com ([143.182.124.37]:4719 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556Ab2ELICD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 04:02:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="142174014"
-Message-ID: <4FAE18D0.6050001@intel.com>
-Date: Sat, 12 May 2012 16:01:20 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, gregkh@linuxfoundation.org, borislav.petkov@amd.com,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
-        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
-        penberg@kernel.org, hughd@google.com, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
-        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
-        oleg@redhat.com, axboe@kernel.dk, a.p.zijlstra@chello.nl,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+	id S1753818Ab2ELIUq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 04:20:46 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:40659 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753577Ab2ELIUd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 May 2012 04:20:33 -0400
+Date: Sat, 12 May 2012 04:20:28 -0400 (EDT)
+Message-Id: <20120512.042028.912019707767582333.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/7] x86/flush_tlb: try flush_tlb_single one by one
- in flush_tlb_range
-References: <1336626013-28413-1-git-send-email-alex.shi@intel.com> <1336626013-28413-4-git-send-email-alex.shi@intel.com> <20120510084213.GD30055@aftab.osrc.amd.com> <4FAB84B6.7060706@intel.com>
-In-Reply-To: <4FAB84B6.7060706@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 12 May 2012 01:20:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2012 05:04 PM, Alex Shi wrote:
 
-> 
->>> +
->>> +#define FLUSHALL_BAR	16
->>> +
->>
->> Btw, you can save a bunch of indenting on this function, let me add
->> the final version here from the whole patchset so I can comment on it
->> easier:
->>
->>> void __flush_tlb_range(struct mm_struct *mm, unsigned long start,
->>>                                 unsigned long end, unsigned long vmflag)
->>> {
->>>         preempt_disable();
->>>         if (current->active_mm == mm) {
->>
->> 	if (current->active_mm != mm)
->> 		goto flush_all;
->>
->> Now this whole piece below can move one indentation level to the left.
+1) Since we do RCU lookups on ipv4 FIB entries, we have to test if the
+   entry is dead before returning it to our caller.
+
+2) openvswitch locking and packet validation fixes from Ansis Atteka,
+   Jesse Gross, and Pravin B Shelar.
+
+3) Fix PM resume locking in IGB driver, from Benjamin Poirier.
+
+4) Fix VLAN header handling in vhost-net and macvtap, from Basil Gor.
+
+5) Revert a bogus network namespace isolation change that was causing
+   regressions on S390 networking devices.
+
+6) If bonding decides to process and handle a LACPDU frame, we shouldn't
+   bump the rx_dropped counter.  From Jiri Bohac.
+
+7) Fix mis-calculation of available TX space in r8169 driver when
+   doing TSO, which can lead to crashes and/or hung device.  From
+   Julien Ducourthial.
+
+8) SCTP does not validate cached routes properly in all cases, from
+   Nicolas Dichtel.
+
+9) Link status interrupt needs to be handled in ks8851 driver, from
+   Stephen Boyd.
+
+10) Use capable(), not cap_raised(), in connector/userns netlink code.
+    From Eric W. Biederman via Andrew Morton.
+
+11) Fix pktgen OOPS on module unload, from Eric Dumazet.
+
+12) iwlwifi under-estimates SKB truesizes, also from Eric Dumazet.
+
+13) Cure division by zero in SFC driver, from Ben Hutchings.
+
+Please pull, thanks a lot!
+
+The following changes since commit 0a6ba092d1c8c75ae0c0617ef7f4e6f5043af311:
+
+  Merge tag 'mfd-for-linus-3.4-rc6' of git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6 (2012-05-03 17:21:05 -0700)
+
+are available in the git repository at:
 
 
-that is helpful and not imply logical too much.
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
 
->>
->> Then you can do:
->>
->> 	if (!current->mm)
->> 		goto leave;
->>
->> and add the "leave" label below.
+for you to fetch changes up to 062e55e3960062fc2fb62a7274b4c253003eba73:
 
+  ks8851: Update link status during link change interrupt (2012-05-11 18:23:34 -0400)
 
-I tried this, found too many goto and label is worse than line breaking. :(
+----------------------------------------------------------------
+Andrei Emeltchenko (1):
+      e1000: Silence sparse warnings by correcting type
 
->>
->> Now you're saving yet another indentation level, bringing the meat of
->> the function at 1st indentation level, which is cool and gives you much
->> more room so that you don't have to linebreak longer statements.
->>
-> 
-> 
-> sure, thanks! :)
+Ansis Atteka (1):
+      openvswitch: Release rtnl_lock if ovs_vport_cmd_build_info() failed.
 
+Ariel Elior (1):
+      bnx2x: bug fix when loading after SAN boot
 
+Basil Gor (2):
+      vhost-net: fix handle_rx buffer size
+      macvtap: restore vlan header on user read
+
+Ben Hutchings (1):
+      sfc: Fix division by zero when using one RX channel and no SR-IOV
+
+Benjamin Poirier (1):
+      igb: fix rtnl race in PM resume path
+
+Bjørn Mork (1):
+      cdc_ether: Ignore bogus union descriptor for RNDIS devices
+
+David S. Miller (6):
+      Merge branch 'master' of git://git.kernel.org/.../jkirsher/net
+      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
+      Merge branch 'fixes' of git://git.kernel.org/.../jesse/openvswitch
+      Merge branch 'sfc-3.4' of git://git.kernel.org/.../bwh/sfc
+      ipv4: Do not use dead fib_info entries.
+      Revert "net: maintain namespace isolation between vlan and real device"
+
+Don Skidmore (1):
+      ixgbe: fix race condition with shutdown
+
+Eric Dumazet (2):
+      iwlwifi: fix skb truesize underestimation
+      pktgen: fix crash at module unload
+
+Eric W. Biederman (1):
+      connector/userns: replace netlink uses of cap_raised() with capable()
+
+Franky Lin (1):
+      brcmfmac: fix a double spin_unlock_irqrestore issue in dpc
+
+Jesse Gross (1):
+      openvswitch: Add length check when retrieving TCP flags.
+
+Jiri Bohac (1):
+      bonding: don't increase rx_dropped after processing LACPDUs
+
+Johannes Berg (1):
+      net: compare_ether_addr[_64bits]() has no ordering
+
+John Fastabend (2):
+      ixgbe: dcb: BIT_APP_UPCHG not set by ixgbe_copy_dcb_cfg()
+      igb, ixgbe: netdev_tx_reset_queue incorrectly called from tx init path
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Julien Ducourthial (1):
+      r8169: fix unsigned int wraparound with TSO
+
+Nicolas Dichtel (1):
+      sctp: check cached dst before using it
+
+Pravin B Shelar (1):
+      openvswitch: Validation of IPv6 set port action uses IPv4 header
+
+Rajkumar Manoharan (1):
+      Revert "ath9k_hw: Fix incorrect spur_freq_sd for AR9003"
+
+Stephen Boyd (1):
+      ks8851: Update link status during link change interrupt
+
+Thadeu Lima de Souza Cascardo (1):
+      ehea: fix losing of NEQ events when one event occurred early
+
+ drivers/block/drbd/drbd_nl.c                       |    2 +-
+ drivers/md/dm-log-userspace-transfer.c             |    2 +-
+ drivers/net/bonding/bond_3ad.c                     |   18 ++++++++++++------
+ drivers/net/bonding/bond_3ad.h                     |    2 +-
+ drivers/net/bonding/bond_main.c                    |   16 +++++++++++-----
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c   |   23 ++++++++++++++++++++++-
+ drivers/net/ethernet/ibm/ehea/ehea_main.c          |    2 ++
+ drivers/net/ethernet/intel/e1000/e1000_main.c      |    4 ++--
+ drivers/net/ethernet/intel/igb/igb_main.c          |   24 ++++++++----------------
+ drivers/net/ethernet/intel/ixgbe/ixgbe.h           |    3 ---
+ drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_nl.c    |   43 ++++++++++++++++++++-----------------------
+ drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c   |    2 ++
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c      |   10 ++++++----
+ drivers/net/ethernet/micrel/ks8851.c               |    7 ++++---
+ drivers/net/ethernet/realtek/r8169.c               |   16 ++++++++++------
+ drivers/net/ethernet/sfc/efx.c                     |    2 +-
+ drivers/net/macvlan.c                              |    2 +-
+ drivers/net/macvtap.c                              |   43 ++++++++++++++++++++++++++++++++++++++-----
+ drivers/net/usb/cdc_ether.c                        |   14 ++++++++++++--
+ drivers/net/wireless/ath/ath9k/ar9003_phy.c        |    4 ++--
+ drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |    1 +
+ drivers/net/wireless/iwlwifi/iwl-agn-rx.c          |   21 ++++++++++++++-------
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c   |    3 ++-
+ drivers/net/wireless/iwlwifi/iwl-trans.h           |    1 +
+ drivers/vhost/net.c                                |    7 ++++++-
+ drivers/video/uvesafb.c                            |    2 +-
+ include/linux/etherdevice.h                        |   11 ++++++-----
+ include/linux/netdevice.h                          |    9 ---------
+ include/net/sctp/sctp.h                            |   13 +++++++++++++
+ net/8021q/vlan_dev.c                               |    2 +-
+ net/core/dev.c                                     |   36 +++++-------------------------------
+ net/core/pktgen.c                                  |   10 ++++++++--
+ net/ipv4/fib_trie.c                                |    2 ++
+ net/openvswitch/datapath.c                         |   27 +++++++++++++++++----------
+ net/openvswitch/flow.c                             |    3 ++-
+ net/sctp/output.c                                  |    4 +---
+ net/sctp/transport.c                               |   17 -----------------
+ 37 files changed, 236 insertions(+), 172 deletions(-)
