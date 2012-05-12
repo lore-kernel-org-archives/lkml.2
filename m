@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842Ab2ELOmg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 10:42:36 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35498 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab2ELOme (ORCPT
+	id S1754647Ab2ELOyG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 10:54:06 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58315 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644Ab2ELOyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 10:42:34 -0400
-Date: Sat, 12 May 2012 16:42:20 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, khali@linux-fr.org,
-        ben-linux@fluff.org, olof@lixom.net, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V1 1/2] i2c: tegra: make all resource allocation through
- devm_*
-Message-ID: <20120512144220.GK20673@pengutronix.de>
-References: <1336373179-12739-1-git-send-email-ldewangan@nvidia.com>
- <4FA7F5E5.4070609@wwwdotorg.org>
+	Sat, 12 May 2012 10:54:04 -0400
+From: Arnd Bergmann <arnd.bergmann@linaro.org>
+Organization: Linaro Limited 
+To: Bryan Wu <bryan.wu@canonical.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Alexander Shiyan <shc_work@mail.ru>
+Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and consolidate LED driver in ARM
+Date: Sat, 12 May 2012 14:53:45 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>, rpurdie@rpsys.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, tim.gardner@canonical.com
+References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com> <alpine.LFD.2.02.1205101351380.21030@xanadu.home> <CAK5ve-L4rcAx-=n5u7G0AQzvUG3ir_jzF_ibaSf-EntXAzFUCw@mail.gmail.com>
+In-Reply-To: <CAK5ve-L4rcAx-=n5u7G0AQzvUG3ir_jzF_ibaSf-EntXAzFUCw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6TC23+W66xmFESAX"
-Content-Disposition: inline
-In-Reply-To: <4FA7F5E5.4070609@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205121453.45242.arnd.bergmann@linaro.org>
+X-Provags-ID: V02:K0:0XvtdL+rAryCPzw6T8LfouprCT9Q9K97HjEJseLdBTV
+ XRacKugmtMU1ME+tEHhBCBUsjgEB8pw1XacjTg6OHr69jKa3Ir
+ vMns6uVJ3jcK9aCSaccFQXyI0WgM2uBH6zcRmXFMnpG8w9TT2Q
+ /Z3iNCF2xa2u7HmOwmz5HHV/3cYMn7p9NEzIaWwfxV+FghXkke
+ N/FnVXKphMmVimOLCwb0go1aWeF4Cjy4ZZD6AEsR3qCjOOBWQp
+ D17a4ZsKfmuMphGVOz7+CCVg5ktUeB3VTc2TVfInPOaYqQc0fm
+ rwFGC7mXIB6dYDarWN5RuqH+A/2W/6uLIP9IT5No/SxJCQNHqY
+ 8X8jaLXfUWi8SQHYI5MzKSqLQOkircZXJtGcV3cnW
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday 11 May 2012, Bryan Wu wrote:
+> OK, I rebased my patch back on 3.4.0-rc6, please find it here:
+> git://kernel.ubuntu.com/roc/linux-2.6/.git leds
+> 
+> linux-next branch can be also found here:
+> git://kernel.ubuntu.com/roc/linux-2.6/.git leds-next
+> 
+> Arnd, could you please help me to merge? if got any issue, please
+> point to me to fix.
+> 
 
---6TC23+W66xmFESAX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Bryan,
 
-On Mon, May 07, 2012 at 10:18:45AM -0600, Stephen Warren wrote:
-> On 05/07/2012 12:46 AM, Laxman Dewangan wrote:
-> > Use the devm_* for the memory region allocation, interrupt request,
-> > clock handler request.
-> > By doing this, it does not require to explicitly free it and hence
-> > saving some code.
-> >=20
-> > Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
->=20
-> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
->=20
-> Note thought that devm_clk_get() appears to have been introduced very
-> recently in linux-next, so in order to merge this patch one of the
-> following has to happen:
->=20
-> a) This patch goes through the tree that merged the addition of
-> devm_clk_get() (which I think is Russell King's ARM tree)
+I've merged it into a new next/leds branch. I got conflicts with the clps711x
+and at91 cleanups that are already in the next/cleanup branch but I think
+I resolved them all correctly.  It would be nice if you and/or the maintainers
+of those platforms could confirm that.
 
-I think it would be way more fitting if those go in via I2C.
+What is the point of your leds-next branch? We usually don't have a branch like
+that because the linux-next tree is rebased every day, and creating a branch based
+on it will not be too helpful. Your patches should be in the next linux-next
+release, so everyone can just use that for testing now.
 
-> b) Whichever tree takes this patch must first merge a branch that
-> contains that patch that adds devm_clk_get().
-
-I have been pointed recently to subtle bugs when converting to devm_*.
-Even more, there is still the ongoing idea of platform_devm_* to
-simplify further. I need to scratch my head about those in general, but
-I won't do this before my 10 day vacation starting tomorrow. Until I am
-done with that, the devm_get_clock is probably in mainline. While devm_*
-patches are nice, they are not really critical. So, I prefer to take
-some extra time to get it right.
-
-Thanks,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---6TC23+W66xmFESAX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk+udswACgkQD27XaX1/VRsOUACfbqPnh7/87f57bU87RajFJidE
-fZkAn3mQSm5t3taootaMcr2Fp0WHsBVn
-=0ssT
------END PGP SIGNATURE-----
-
---6TC23+W66xmFESAX--
+	Arnd
