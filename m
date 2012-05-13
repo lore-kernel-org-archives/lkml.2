@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab2EMQDi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 12:03:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25292 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753776Ab2EMQDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 12:03:36 -0400
-Date: Sun, 13 May 2012 19:03:36 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: kvm@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Glauber Costa <glommer@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Avi Kivity <avi@redhat.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: eoi msi documentation
-Message-ID: <20120513160335.GA26928@redhat.com>
-References: <20120513151321.GA25721@redhat.com>
- <20120513155622.GG15230@redhat.com>
+	id S1753930Ab2EMQHQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 12:07:16 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:48858 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab2EMQHP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 May 2012 12:07:15 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Joe Perches <joe@perches.com>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: Re: [PATCH 2/2] fat: use fat_msg_ratelimit in fat__get_entry.
+References: <1336907039-18638-1-git-send-email-linkinjeon@gmail.com>
+	<1336924011.31383.6.camel@joe2Laptop>
+Date: Mon, 14 May 2012 01:07:11 +0900
+In-Reply-To: <1336924011.31383.6.camel@joe2Laptop> (Joe Perches's message of
+	"Sun, 13 May 2012 08:46:51 -0700")
+Message-ID: <87bolsdpzk.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120513155622.GG15230@redhat.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 13, 2012 at 06:56:23PM +0300, Gleb Natapov wrote:
-> > +	However, hypervisor can set and clear this memory bit at any time:
-> > +	therefore to make sure hypervisor does not interrupt the
-> > +	guest and clear the least significant bit in the memory area
-> > +	in the window between guest testing it to detect
-> > +	whether it can skip EOI apic write and between guest
-> > +	clearing it to signal EOI to the hypervisor,
-> > +	guest must both read the least sgnificant bit in the memory area and
-> > +	clear it using a single CPU instruction, such as test and clear, or
-> > +	compare and exchange.
-> > +
-> Looks good, but everything below this is here by mistake.
+Joe Perches <joe@perches.com> writes:
 
-Ugh. Right. Good catch,
+> On Sun, 2012-05-13 at 07:03 -0400, Namjae Jeon wrote:
+>> So this patch use fat_msg_ratelimit function about this message to decrease this messages.
+> []
+>> diff --git a/fs/fat/dir.c b/fs/fat/dir.c
+>> index aca191b..b2cdbf4 100644
+>> --- a/fs/fat/dir.c
+>> +++ b/fs/fat/dir.c
+>> @@ -98,8 +98,8 @@ next:
+>>  
+>>  	*bh = sb_bread(sb, phys);
+>>  	if (*bh == NULL) {
+>> -		fat_msg(sb, KERN_ERR, "Directory bread(block %llu) failed",
+>> -		       (llu)phys);
+>> +		fat_msg_ratelimit(sb, KERN_ERR, "Directory bread(block %llu) "
+>> +				"failed", (llu)phys);
+>
+> Please don't split format strings.
+> It's much harder to grep.
 
-> Are You still
-> going to resend host side patch to address my other comment?
-
-Yes, like this.
-I'll give more people a chance to review first though.
-
-
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index 77e0244..c7e6ffb 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -1490,6 +1490,7 @@ int kvm_pv_enable_apic_eoi(struct kvm_vcpu *vcpu, u64 data)
- 	if (eoi_enabled(vcpu))
- 		eoi_clr_pending(vcpu);
- 	vcpu->arch.eoi.msr_val = data;
--	kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.eoi.data, addr);
--	return 0;
-+	if (!eoi_enabled(vcpu))
-+		return 0;
-+	return kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.eoi.data, addr);
- }
+Please fight with 80 columns guys before requesting it.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
