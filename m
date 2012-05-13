@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336Ab2EMVAK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 17:00:10 -0400
-Received: from plane.gmane.org ([80.91.229.3]:50941 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487Ab2EMVAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 17:00:09 -0400
-X-Injected-Via-Gmane: http://gmane.org/
+	id S1752506Ab2EMVNd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 17:13:33 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:36159 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab2EMVNc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 May 2012 17:13:32 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 13 May 2012 23:13:27 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 To: linux-kernel@vger.kernel.org
-From: joe <joe4379@gmail.com>
-Subject: Re: Linux-3.4-rc7 [build failure]
-Date: Sun, 13 May 2012 20:50:07 +0000 (UTC)
-Message-ID: <loom.20120513T224943-838@post.gmane.org>
-References: <CA+icZUVY7ZGu+oQLTgkBfuu3gYV8_LKiJtq8wmxPecL1+31gDg@mail.gmail.com>
+Subject: bugzilla.kernel.org administration: Tell users to report at
+ mailinglists, not at the tracker
+Message-ID: <20120513231327.2c28d3d2@stein>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 72.179.48.249 (Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:12.0) Gecko/20100101 Firefox/12.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri's fix also confirmed working here - thanks
+Hi, whoever administers bugzilla.kernel.org:
 
+Please change the text at the start page to say something along the
+lines of:
 
-Sedat Dilek <sedat.dilek <at> googlemail.com> writes:
+    ---------------------------------------------------------------
+    This is a kernel bug tracker.
+    Do *not* report bugs here.
+    Some bugs are /tracked/ here, but they are /not reported/ here.
 
-> 
-> I see the same build-failures as Pawel, Jiri's patch fixes the issue here.
-> 
-> - Sedat -
-> 
+    Please report bugs at the kernel mailinglists.  Thank you.
 
+    Some tips:
+    REPORTING-BUGS - http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=REPORTING-BUGS
 
+    List addresses:
+    MAINTAINERS - http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=MAINTAINERS
+    (Almost all kernel mailinglists are open for postings without
+    prior subscription.)
+    ---------------------------------------------------------------
 
+So, if you could please stop to mislead users into thinking that
+they are welcome to open tickets at bugzilla.kernel.org, that would
+be really helpful to everyone involved.
 
+Thanks.
+-- 
+Stefan Richter
+-=====-===-- -=-= -==-=
+http://arcgraph.de/sr/
