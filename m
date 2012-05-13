@@ -1,115 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab2EMLI1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 07:08:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54293 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945Ab2EMLIZ convert rfc822-to-8bit (ORCPT
+	id S1752893Ab2EMLNp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 07:13:45 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39779 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335Ab2EMLNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 07:08:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyeXdUyj_OzccctFSj1f4su1G8DyxiQwD4W5sV9Dh0Zpg@mail.gmail.com>
-References: <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
- <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
- <CAPXgP13-XQdn0wMP=coVqS=Eko1vWkOrjOtfq4JQLHFZ3JNbgg@mail.gmail.com>
- <1336571457.30189.29.camel@joe2Laptop> <CAPXgP11jt5u=wXs9Pe7QksZ25QTKCwNXgTHn+T6JXD6+2NzgBQ@mail.gmail.com>
- <CAE9FiQUzsu8CFNLXxUyZnu53YobdNdJfQQmPQd8s8r5rgJpcNg@mail.gmail.com>
- <20120509230649.GA10695@kroah.com> <1336617045.25027.2.camel@mop>
- <CA+1xoqft4aM_qedn+TDx0z8creS_4mFf3S+4SUNjz0pe+=YHAg@mail.gmail.com>
- <20120511151944.GA6990@kroah.com> <CA+55aFz8-96rHLfqRrRSgFAzOFmyDaDKSB15WKkCoUssHq8R-A@mail.gmail.com>
- <CAPXgP11teuiH0cPRrhWdvKCW1jtq4_6wkH21wgRT6UpDF0G1gQ@mail.gmail.com>
- <CA+55aFyG2jQFURwWebMWw7bAt3=zbXRsHSOtZVYBw-frUXqiRg@mail.gmail.com>
- <CA+1xoqf5YbkOJgQJWOgck0NpqGzGtxtHHJASZKHvwVuBzkKK6A@mail.gmail.com> <CA+55aFyeXdUyj_OzccctFSj1f4su1G8DyxiQwD4W5sV9Dh0Zpg@mail.gmail.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Sun, 13 May 2012 13:08:04 +0200
-Message-ID: <CAPXgP11xpPk3pZo7VbVsEtQvD7DrX1Jm6=tSLME2dMgWSn4oUg@mail.gmail.com>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
- record buffer
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
-        Joe Perches <joe@perches.com>, Ingo Molnar <mingo@kernel.org>,
+	Sun, 13 May 2012 07:13:44 -0400
+Date: Sun, 13 May 2012 13:13:28 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, gregkh@linuxfoundation.org, borislav.petkov@amd.com,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
+        oleg@redhat.com, axboe@kernel.dk, a.p.zijlstra@chello.nl,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH v4 3/7] x86/flush_tlb: try flush_tlb_single one by one in
+ flush_tlb_range
+Message-ID: <20120513111328.GD28863@aftab.osrc.amd.com>
+References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
+ <1336626013-28413-4-git-send-email-alex.shi@intel.com>
+ <20120510084213.GD30055@aftab.osrc.amd.com>
+ <4FAB84B6.7060706@intel.com>
+ <4FAE18D0.6050001@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FAE18D0.6050001@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 12, 2012 at 8:35 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sat, May 12, 2012 at 12:43 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
->>
->> So I got something like this:
->>
->> # sleep 61 ; echo foo > /dev/kmsg ; sleep 61 ; echo bar > /dev/kmsg ;
->> sleep 5 ; echo zoot > /dev/kmsg ; sleep 10 ; echo foo > /dev/kmsg ;
->> echo bar > /dev/kmsg ; sleep 61 ; echo zoot > /dev/kmsg ; echo foo >
->> /dev/kmsg
->>
->> [  673.222632] foo
->> [  734.315249] bar
->> [   +5.077527] zoot
->> [  +10.235225] foo
->> [   +0.002971] bar
->> [  810.883085] zoot
->> [   +0.003081] foo
->>
->> If that looks right, I can send a patch once this printf overhaul is
->> stable, unless Kay already plans on doing it as part of his work.
->
-> So judging by my own use, I really think that
->
->  (a) the microseconds are *totally* useless for the absolute time. In
-> fact, they are worse than useless: they take up space and are actively
-> distracting.
->
->      If the last message was over a minute ago, *nobody* cares about
-> the microsecond. The microseconds are useful when there are multiple
-> messages and you see that "oh, those events happened within a couple
-> of ms of each other", but for the absolute time they are just bad.
->
->     Even the *seconds* are probably not that interesting.
->
->  (b) The one thing I have often wanted is not "after how many seconds
-> of boot", but "when". So it would actually be nice if the absolute
-> time was converted into local time. The kernel can actually do that,
-> so I suspect that the best format for the relative timestamps would
-> really be something like
->
->   > [May12 11:27] foo
->   > [May12 11:28] bar
->   > [  +5.077527] zoot
->   > [ +10.235225] foo
->   > [  +0.002971] bar
->   > [May12 11:29] zoot
->   > [  +0.003081] foo
->
-> because that would be really useful sometimes.
->
-> (And no, never mind the year. If you log those things long-term, the
-> year will be in the full log, so logging the year in the dmesg is just
-> pointless.)
->
-> I dunno. The above is what I would have liked to see quite often. I
-> look at dmesg, and notice that I had an WARN_ON_ONCE in it, and I have
-> no idea when it happened, because the "seconds since boot" is totally
-> useless information for me, as I'm too lazy to try to use /proc/uptime
-> to calculate what it is.
+On Sat, May 12, 2012 at 04:01:20PM +0800, Alex Shi wrote:
+> I tried this, found too many goto and label is worse than line breaking. :(
 
-Yeah, that looks generally more useful.
+I know exactly what you're saying, I just tried it too. It looks pretty
+ugly and unreadable.
 
-"dmesg -T" tries to translate that to wall clock time too. At the
-moment, it can't really do that reliable at the point of reading the
-timestamps though, because the monotonic time used does not include
-the time spent in suspend.
+Maybe you can carve out the meat of the function into another helper,
+see below.
 
-One other problem with the current logic is that the timestamp we get
-at the moment is not guaranteed to monotonic, log lines from different
-CPUs at the same time can jump forth and back, so the relative-time
-calculation could, with the current code, show negative values.
+Dunno, it kinda looks ok if I haven't fat-fingered all the return paths
+and it could use a bunch of comments and maybe even better naming to
+explain what happens:
 
-Not sure what options we have to use a more better clock source, if
-things are expected to work in NMIs and IRQs.
+---
+static bool __flush_tlb_range(unsigned int cpu, struct mm_struct *mm,
+                              unsigned long start, unsigned long end,
+                              unsigned long vmflag)
+{
+        unsigned long addr;
+        unsigned long act_entries, tlb_entries = 0;
 
-Kay
+        if (end == TLB_FLUSH_ALL || tlb_flushall_factor == (u16)TLB_FLUSH_ALL)
+                goto flush_out;
+
+        tlb_entries = (vmflag & VM_EXEC ? tlb_lli_4k[ENTRIES]
+                                        : tlb_lld_4k[ENTRIES]);
+
+        act_entries = min(mm->total_vm, tlb_entries);
+
+        if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_factor)
+                goto flush_out;
+
+        if (has_large_page(mm, start, end))
+                goto flush_out;
+
+        for (addr = start; addr <= end; addr += PAGE_SIZE)
+                __flush_tlb_single(addr);
+
+        if (cpumask_any_but(mm_cpumask(mm), cpu) < nr_cpu_ids)
+                flush_tlb_others(mm_cpumask(mm), mm, start, end);
+
+        return true;
+
+ flush_out:
+        local_flush_tlb();
+        return false;
+}
+
+void _flush_tlb_range(struct mm_struct *mm, unsigned long start,
+                                unsigned long end, unsigned long vmflag)
+{
+        unsigned int cpu = smp_processor_id();
+
+        preempt_disable();
+
+        if (current->active_mm != mm)
+                goto flush_all;
+
+        if (!current->mm) {
+                leave_mm(cpu);
+                goto flush_all;
+        }
+
+        if (__flush_tlb_range(cpu, mm, start, end, vmflag))
+                goto out;
+
+ flush_all:
+        if (cpumask_any_but(mm_cpumask(mm), cpu) < nr_cpu_ids)
+                flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
+
+ out:
+        preempt_enable();
+}
+--
+
+Oh well, enough games :-).
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
