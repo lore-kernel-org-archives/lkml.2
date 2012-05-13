@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab2EMUvD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 16:51:03 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:34427 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753110Ab2EMUvA (ORCPT
+	id S1753444Ab2EMUxv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 16:53:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37226 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752693Ab2EMUxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 16:51:00 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX198WpMMblB80mNG3m9OLPInBiKx3sSOTizJiNYcGb
-	60xXh2Wj1Wfq2g
-Message-ID: <4FB01EAA.8040504@gmx.de>
-Date: Sun, 13 May 2012 20:50:50 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Icedove/3.0.11
-MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Maik Broemme <mbroemme@plusserver.de>, kernel-janitors@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/video/intelfb/intelfbdrv.c: add missing agp_backend_release
-References: <1334854553-30067-1-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1334854553-30067-1-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Sun, 13 May 2012 16:53:50 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: wm831x: Don't try to flag IRQ 0 as a wake source
+Date: Sun, 13 May 2012 21:53:45 +0100
+Message-Id: <1336942425-26826-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2012 04:55 PM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Release bridge, as done on all other paths out of the function.
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+If we've not got a primary IRQ we shouldn't be trying to flag IRQ 0 as a
+wake source.
 
-Looks good to me, applied.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-irq.c |   23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
 
-
-Thanks,
-
-Florian Tobias Schandinat
-
-> 
-> ---
->  drivers/video/intelfb/intelfbdrv.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/video/intelfb/intelfbdrv.c b/drivers/video/intelfb/intelfbdrv.c
-> index 02fd226..bdcbfba 100644
-> --- a/drivers/video/intelfb/intelfbdrv.c
-> +++ b/drivers/video/intelfb/intelfbdrv.c
-> @@ -680,6 +680,7 @@ static int __devinit intelfb_pci_register(struct pci_dev *pdev,
->  		 + dinfo->fb.size);
->  	if (!dinfo->aperture.virtual) {
->  		ERR_MSG("Cannot remap FB region.\n");
-> +		agp_backend_release(bridge);
->  		cleanup(dinfo);
->  		return -ENODEV;
->  	}
-> @@ -689,6 +690,7 @@ static int __devinit intelfb_pci_register(struct pci_dev *pdev,
->  					      INTEL_REG_SIZE);
->  	if (!dinfo->mmio_base) {
->  		ERR_MSG("Cannot remap MMIO region.\n");
-> +		agp_backend_release(bridge);
->  		cleanup(dinfo);
->  		return -ENODEV;
->  	}
-> 
-> 
+diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
+index bec4d05..2be9628 100644
+--- a/drivers/mfd/wm831x-irq.c
++++ b/drivers/mfd/wm831x-irq.c
+@@ -565,17 +565,6 @@ int wm831x_irq_init(struct wm831x *wm831x, int irq)
+ 	wm831x_set_bits(wm831x, WM831X_IRQ_CONFIG,
+ 			WM831X_IRQ_OD, i);
+ 
+-	/* Try to flag /IRQ as a wake source; there are a number of
+-	 * unconditional wake sources in the PMIC so this isn't
+-	 * conditional but we don't actually care *too* much if it
+-	 * fails.
+-	 */
+-	ret = enable_irq_wake(irq);
+-	if (ret != 0) {
+-		dev_warn(wm831x->dev, "Can't enable IRQ as wake source: %d\n",
+-			 ret);
+-	}
+-
+ 	wm831x->irq = irq;
+ 
+ 	/* Register them with genirq */
+@@ -597,6 +586,18 @@ int wm831x_irq_init(struct wm831x *wm831x, int irq)
+ 	}
+ 
+ 	if (irq) {
++		/* Try to flag /IRQ as a wake source; there are a number of
++		 * unconditional wake sources in the PMIC so this isn't
++		 * conditional but we don't actually care *too* much if it
++		 * fails.
++		 */
++		ret = enable_irq_wake(irq);
++		if (ret != 0) {
++			dev_warn(wm831x->dev,
++				 "Can't enable IRQ as wake source: %d\n",
++				 ret);
++		}
++
+ 		ret = request_threaded_irq(irq, NULL, wm831x_irq_thread,
+ 					   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+ 					   "wm831x", wm831x);
+-- 
+1.7.10
 
