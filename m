@@ -1,107 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab2EMLxF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 07:53:05 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:45253 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199Ab2EMLxA (ORCPT
+	id S1753151Ab2EMMIW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 08:08:22 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36219 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921Ab2EMMIV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 07:53:00 -0400
-Message-ID: <4FAF9F0B.4010305@panasas.com>
-Date: Sun, 13 May 2012 14:46:19 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Sun, 13 May 2012 08:08:21 -0400
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Rob Landley <rob@landley.net>,
-        Ludwig Nussel <ludwig.nussel@suse.de>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        open list:
-	EXT2 FILE SYSTEM <linux-ext4@vger.kernel.org>,
-        "; open list":
-	DOCUMENTATION <linux-doc@vger.kernel.org>, ;
-Illegal-Object: Syntax error in To: addresses found on vger.kernel.org:
-	To:	;open list:DOCUMENTATION <linux-doc@vger.kernel.org>
-			^-extraneous tokens in mailbox, missing end of mailbox
-Subject: Re: [PATCH RESEND] implement uid and gid mount options for ext2,
- ext3 and ext4
-References: <1336660924-9598-1-git-send-email-ludwig.nussel@suse.de> <20120511034945.GA15892@mobil.systemanalysen.net> <4FAD2161.3090108@landley.net> <20120511164605.GC6467@thunk.org> <4FAD49EB.5010804@panasas.com> <20120511192235.GE6467@thunk.org>
-In-Reply-To: <20120511192235.GE6467@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120512200901.811D37C0074@ra.kernel.org>
+References: <20120512200901.811D37C0074@ra.kernel.org>
+Date: Sun, 13 May 2012 14:08:20 +0200
+X-Google-Sender-Auth: KpR2foqR_ADN6l3aseeP214kjsQ
+Message-ID: <CAMuHMdVuDC7LiYuOdVELsxbbyf1PVZ-QvHY_7pUxigk+DWfysg@mail.gmail.com>
+Subject: Re: bonding: don't increase rx_dropped after processing LACPDUs
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jiri Bohac <jbohac@suse.cz>, "David S. Miller" <davem@davemloft.net>
+Cc: "netdev@vger.kernel.org.Linux Kernel Mailing List" 
+	<linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 10:22 PM, Ted Ts'o wrote:
+On Sat, May 12, 2012 at 10:09 PM, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> Author:     Jiri Bohac <jbohac@suse.cz>
 
-> On Fri, May 11, 2012 at 08:18:35PM +0300, Boaz Harrosh wrote:
->> How is that ext* special? You said "Unix systems" there are lots more
->> FSs more common to "Unix" systems
-> 
-> Well, because FreeBSD, NetBSD, and Hurd do support ext2/3*.  So if you
-> want a file system which is higher performance than VFAT, and
-> supported on Unix-like systems beyond Linux, ext* is the best choice
-> in a number of cases.
-> 
+>    bonding: don't increase rx_dropped after processing LACPDUs
+>
+>    Since commit 3aba891d, bonding processes LACP frames (802.3ad
+>    mode) with bond_handle_frame(). Currently a copy of the skb is
+>    made and the original is left to be processed by other
+>    rx_handlers and the rest of the network stack by returning
+>    RX_HANDLER_ANOTHER.  As there is no protocol handler for
+>    PKT_TYPE_LACPDU, the frame is dropped and dev->rx_dropped
+>    increased.
+>
+>    Fix this by making bond_handle_frame() return RX_HANDLER_CONSUMED
+>    if bonding has processed the LACP frame.
+>
+>    Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+>    Signed-off-by: David S. Miller <davem@davemloft.net>
 
+> --- a/drivers/net/bonding/bond_main.c
+> +++ b/drivers/net/bonding/bond_main.c
+> @@ -1444,8 +1444,9 @@ static rx_handler_result_t bond_handle_frame(struct sk_buff **pskb)
+>        struct sk_buff *skb = *pskb;
+>        struct slave *slave;
+>        struct bonding *bond;
+> -       void (*recv_probe)(struct sk_buff *, struct bonding *,
+> +       int (*recv_probe)(struct sk_buff *, struct bonding *,
+>                                struct slave *);
 
-That was a rhetorical questions. I meant  ext* is not special. There
-are plenty of other FFs that are common to unix systems.
+drivers/net/bonding/bonding.h:struct bonding still has a version that
+returns void:
 
-> As far as NTFS is concerned, the *BSD's can only support NTFS via
-> FUSE, and I've been suspicious about the quality of our ntfs support
-> under Linux --- we don't have a full-featured fsck for it, for
-> example.  I'm at least not comfortable using NTFS on my personal
-> machines.  (Last I checked there were all sorts of asterisks about
-> data corruption if the system crashed before Linux mounted it, since
-> apparently NTFS's logging subsystem was never reverse-engineered.)
-> 
+        void     (*recv_probe)(struct sk_buff *, struct bonding *,
+                               struct slave *);
 
+drivers/net/bonding/bond_main.c: In function ‘bond_handle_frame’:
+drivers/net/bonding/bond_main.c:1463: warning: assignment from
+incompatible pointer type
+drivers/net/bonding/bond_main.c: In function ‘bond_open’:
+drivers/net/bonding/bond_main.c:3441: warning: assignment from
+incompatible pointer type
+drivers/net/bonding/bond_main.c:3448: warning: assignment from
+incompatible pointer type
 
-No! on all modern Linux distro's ntfs (ntfs-3g) is supported with
-that infamous FUSE driver. The Kernel driver is long dead. The same
-FUSE driver is also used under *BSD and officially supported by
-Apple in OSX. Last benchmarks I saw where Faster then ext2 and in-par
-with ext3, MetaData faster, IO slower then ext3. Stability is very
-good and I never had an issue, on any of the above systems.
+Can this cause crashes on architectures where the caller needs to
+preserve space for the return value?
 
-There is also a very good fsck and a suit of other tools under the same
-ntfs-3g project. To date I have fixed 10s of friends/family Windows
-machines with a Linux rescue USB-stick, I mean machines that would even
-boot.
+Don't know why I only start seeing this in -rc7, as the prototypes for the
+functions related to the latter 2 warnings haven't changed recently.
 
->> As a maintainer of ext4 filesystem which is the official system for
->> Linux in many distrows, still. Please resists any such crap.
->> User "convenience-vs-security was never a geol of Unix.
-> 
-> Did you look at the proposal I made?  By making it something where the
-> file system is explicitly marked as "for interchange", it avoids the
-> security problem (as much as you can when you put your unencrypted
-> data on removable, portable storage which could be lost or stolen).
-> 
-> Sure, if you don't need to operate on the data as a mounted file
-> system, tar or cpio or zip is a good choice for maximal portability.
-> But if you want to do something like rsync on a portable SSD, 
+Gr{oetje,eeting}s,
 
+                        Geert
 
-Again, for the last time, you are the maintainer, you do what you
-understand, I hope Linus or someone can make it more clear than me.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-There is nothing special about USB sticks and ext* filesystems it
-is the same old "shared files" problem. If you are not under a single
-NIS domain, then these are different users. If files need to be shared
-they need to sit in the proper CHMODed directory and bits.
-
-I have at home a bittorent network directory for the all family, So the
-first time I set it up I had to ssh into the server and fix the permissions.
-That was easy enough listen to learn.
-
-For the last time and I'm off this for good:
-	"Shared files" problem is not solved by mount options.
-
-Been there done that
-
-
-<snip>
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
