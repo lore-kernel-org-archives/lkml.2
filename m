@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab2EMUis (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 16:38:48 -0400
-Received: from tin.tmux.org ([64.85.165.147]:26392 "EHLO tin.tmux.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753236Ab2EMUir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 16:38:47 -0400
-X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 May 2012 16:38:47 EDT
-Date: Sun, 13 May 2012 22:30:49 +0200
-From: Tobias Ulmer <tobiasu@tmux.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mikulas Patocka <mpatocka@redhat.com>, stepanm@codeaurora.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        James.Bottomley@hansenpartnership.com, deller@gmx.de,
-        dhowells@redhat.com, yasutake.koichi@jp.panasonic.com,
-        eike-kernel@sf-tec.de, linux-parisc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.4-rc7
-Message-ID: <20120513203049.GA10797@tin.tmux.org>
-References: <CA+55aFzsygnrJwLUPV8Vg4RPmwxXLuY-uo70fBLEZR8+barT5A@mail.gmail.com>
- <4FB011E7.1000604@linux.vnet.ibm.com>
+	id S1753421Ab2EMUkI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 16:40:08 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56450 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab2EMUkG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 May 2012 16:40:06 -0400
+Date: Sun, 13 May 2012 13:38:36 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        arve@android.com, Jesper Juhl <jj@chaosbits.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: [PATCH 02/11] persistent_ram: Fix buffer size clamping during
+ writes
+Message-ID: <20120513203835.GA30082@lizard>
+References: <20120512001506.GA8653@lizard>
+ <20120512001717.GB14782@lizard>
+ <20120513165601.GC16984@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4FB011E7.1000604@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120513165601.GC16984@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 01:26:23AM +0530, Srivatsa S. Bhat wrote:
-> On 05/13/2012 07:34 AM, Linus Torvalds wrote:
+On Sun, May 13, 2012 at 07:56:01PM +0300, Dan Carpenter wrote:
+> On Fri, May 11, 2012 at 05:17:17PM -0700, Anton Vorontsov wrote:
+> > This is a longstanding bug, almost unnoticeable when calling
+> > persistent_ram_write() for small buffers.
+> > 
+> > But when called for large data buffers, the write routine behaves
+> > incorrectly, as the size may never update: instead of clamping
+> > the size to the maximum buffer size, buffer_size_add_clamp() returns
+> > an error (which is never checked by the write routine, btw).
+> > 
+> > To fix this, we now use buffer_size_add() that actually clamps the
+> > size to the max value.
+> > 
+> > Also remove buffer_size_add_clamp(), it is no longer needed.
+> > 
 > 
-> > This is almost certainly the last -rc in this series - things really
-> > have calmed down, and I even considered just cutting 3.4 this weekend,
-> > but felt that another week wouldn't hurt.
-> [...] 
-> > So go forth and test. And don't send me any pull requests unless they
-> > contain *only* regressions or fixes for really nasty bugs.
-> 
-> 
-> Oh, I just noticed that 2 important fixes which fix boot failures on
-> PA-RISC and mn10300 architectures haven't made it to mainline yet.
-> 
-> The regression was introduced in the 3.4 merge window itself (by commit
-> 5fbd036b55 "sched: Cleanup cpu_active madness").
-> 
-> Links to the original posting:
-> PA_RISC: http://marc.info/?l=linux-parisc&m=133241790810604&w=2
-> mn10300: http://marc.info/?l=linux-parisc&m=133241580509804&w=2
-> 
-> Mikulas confirmed that this fixes the boot failure on PA-RISC:
-> https://lkml.org/lkml/2012/5/8/97
+> Say if you did notice it, what would that look like?  It's just that
+> something gets lost instead of written to the screen right?
 
-Yes, indeed my c8000 boots again :-) Only had to add cpu.h for
-notify_cpu_starting() to make it complile:
+Yep. Suppose the ring buffer size is 4096 bytes, when somebody tries to
+write a data in a 2000 bytes chunk, the first write will succeed (buffer
+size will be 2000), but the second now 3000-bytes write will left the
+size equal to 2000, instead of clamping it to 4096.
 
-The scheduler depends on receiving the CPU_STARTING notification, without
-which we end up into a lot of trouble. So add the missing call to
-notify_cpu_starting() in the bringup code.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Acked-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Tobias Ulmer <tobiasu@tmux.org>
----
- arch/parisc/kernel/smp.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
-
-diff --git a/arch/parisc/kernel/smp.c b/arch/parisc/kernel/smp.c
-index 0bb1d63..4dc7b79 100644
---- a/arch/parisc/kernel/smp.c
-+++ b/arch/parisc/kernel/smp.c
-@@ -31,6 +31,7 @@
- #include <linux/delay.h>
- #include <linux/bitops.h>
- #include <linux/ftrace.h>
-+#include <linux/cpu.h>
- 
- #include <linux/atomic.h>
- #include <asm/current.h>
-@@ -295,8 +296,13 @@ smp_cpu_init(int cpunum)
- 
- 		printk(KERN_CRIT "CPU#%d already initialized!\n", cpunum);
- 		machine_halt();
--	}  
-+	}
-+
-+	notify_cpu_starting(cpunum);
-+
-+	ipi_call_lock();
- 	set_cpu_online(cpunum, true);
-+	ipi_call_unlock();
- 
- 	/* Initialise the idle task for this CPU */
- 	atomic_inc(&init_mm.mm_count);
--- 
-1.7.3.4
-
+When we had a large buffer but a small writes (e.g. ram_console usage
+scenario), this is almost unnoticeable. But when we started using large
+writes the bug showed up.
 
 Thanks,
-Tobias
 
-> 
-> Regards,
-> Srivatsa S. Bhat
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-parisc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
