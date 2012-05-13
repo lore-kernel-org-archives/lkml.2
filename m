@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab2EMRQk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 13:16:40 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36237 "EHLO
+	id S1752110Ab2EMRhK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 13:37:10 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59892 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751100Ab2EMRQj (ORCPT
+	by vger.kernel.org with ESMTP id S1751100Ab2EMRhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 13:16:39 -0400
-Date: Sun, 13 May 2012 18:16:35 +0100
+	Sun, 13 May 2012 13:37:09 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sebastian Hesselbarh <sebastian.hesselbarth@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, mturquette@ti.com
-Subject: Re: [RFC] Common clock framework for external clock generators
-Message-ID: <20120513171634.GC6381@opensource.wolfsonmicro.com>
-References: <4FAB15DB.5050702@googlemail.com>
- <20120513122946.GD706@sirena.org.uk>
- <4FAFE1BF.9050805@googlemail.com>
- <20120513164304.GB6381@opensource.wolfsonmicro.com>
- <4FAFEB2D.5010009@googlemail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5G06lTa6Jq83wMTw"
-Content-Disposition: inline
-In-Reply-To: <4FAFEB2D.5010009@googlemail.com>
-X-Cookie: Beware of Bigfoot!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Liam Girdwood <lrg@ti.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: core: Release regulator-regulator supplies on error
+Date: Sun, 13 May 2012 18:37:03 +0100
+Message-Id: <1336930623-15921-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If we fail while registering a regulator make sure we release the supply
+for the regulator if there is one.
 
---5G06lTa6Jq83wMTw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-On Sun, May 13, 2012 at 07:11:09PM +0200, Sebastian Hesselbarh wrote:
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index a3cfaea..28b9c31 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -3196,6 +3196,8 @@ unset_supplies:
+ 	unset_regulator_supplies(rdev);
+ 
+ scrub:
++	if (rdev->supply)
++		regulator_put(rdev->supply);
+ 	kfree(rdev->constraints);
+ 	device_unregister(&rdev->dev);
+ 	/* device core frees rdev */
+-- 
+1.7.10
 
-> One more thing I thought about: The platform I currently use needs
-> to pass the external clocks to the platform devices that can use
-> them
-> later. IMHO the correct way of creating clocks would be:
-
-> - register i2c clock driver and let it register its clocks with names
->   like e.g. si5351, clkout0. The clock driver itself cannot and should
->   not know who uses it later on.
-> - let drivers look for e.g. kirkwood-i2s.1, extclk because the i2s
->   driver cannot know where the external clock comes from.
-> - have a board-specific function that configures clock hierarchy and
->   create suitable clk_aliases e.g.
->   si5351,clkout0 = kirkwood-i2s.1,extclk.
-
-> Currently I added a callback function pointer to the platform data
-> passed to the i2c clock driver that is called at the end of clock
-> driver probe. I doubt it will be accepted that way but can't think
-> of any other way..
-
-This is what clkdev is for - it provides such a layer of indirection.
-The only trick right now is that it needs the struct clk to add the
-lookup but some platform data for your driver would probably do the
-trick in the short term, I don't know what the plan is long term with
-that stuff.
-
---5G06lTa6Jq83wMTw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPr+uxAAoJEBus8iNuMP3dizYP/32aVF92/FPI08fz/XIpKmwd
-zDTBYkyDvrAQ+DBCxGx7FtHfYi1ng+Dg/xSl8NwEVcUjCILQ8VwmL+h8CUukrjBD
-s3fT0qP9zKiH0R7RNMnH7W7iVmMYZpMxYe/AopKiAemErmBcb0vp5hPaz+zZoE1j
-BtA1FpcHyXep05LAlrVbpjWqHyvlcaYLoEtPu5ItCs73TT61QQ9YcZTwr+xGrKWz
-RM0cJEBiK/Z/hvWzlwE9z/25FAfkZnC4XsXcF4gxuFz4ls00LPIZVf18G5SpSE/e
-Ds92AHlmSxjUSkmu5wbFX2VFgje7/Wcn7DVf5QvHOLXFrhe1tmvzR7SOVtROHmxy
-jjG6/FC055zyHOFNy2vSYv02tN0DI6MNM3jeN25S8pnOVJUPubA6vekHGf97sWqN
-Bq6HCaGx3eW6uDTxdry5qvP1IrX4CjeRHwscZxpjxOjIutwqz0Rv5cPpXDD6izU0
-L7TbB33UM57IAaeFASfQbbMJso+4QSWG7reQ5QquQYvHsT3febUBZgB6MAhkyWvY
-iahMtrPPm0sOOOd91LKAkuc0PRziIrSPxiJ0O3zTj24ItAESNx76aiw9lMpPh7P7
-u7SIB6GvgTlWHvUAv8ssaSJ2Tjvbj8Mhp/lJskBzchDhuZcAh+steZCB6kViCWbo
-1ldVQNTcOmEB8aIXaPWG
-=Xb8q
------END PGP SIGNATURE-----
-
---5G06lTa6Jq83wMTw--
