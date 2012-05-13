@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab2EMEbe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 00:31:34 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35453 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750757Ab2EMEbc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 00:31:32 -0400
-Date: Sun, 13 May 2012 07:31:21 +0300
-From: Johan Hedberg <johan.hedberg@gmail.com>
-To: Gustavo Padovan <gustavo@padovan.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: pull request: bluetooth 2012-05-04
-Message-ID: <20120513043121.GA22845@x220.P-661HNU-F1>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	"John W. Linville" <linville@tuxdriver.com>,
-	David Miller <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-	netdev@vger.kernel.org
-References: <20120505001243.GC23728@joana>
- <20120508070211.GB11843@joana>
- <20120511201620.GD7620@joana>
- <20120512182227.GA30574@tuxdriver.com>
- <20120512190900.GA15956@joana>
+	id S1751763Ab2EMEk5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 00:40:57 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:45019 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750831Ab2EMEkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 May 2012 00:40:55 -0400
+Date: Sun, 13 May 2012 00:40:52 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: =?iso-8859-1?Q?Bj=F6rn?= Christoph <einkaufenbc09@googlemail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: BUG: jbd2 slowing down file copies even though no journaling
+ file system is used
+Message-ID: <20120513044052.GC31866@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	=?iso-8859-1?Q?Bj=F6rn?= Christoph <einkaufenbc09@googlemail.com>,
+	linux-kernel@vger.kernel.org
+References: <CAHOpdHWMcV6LjpaEhk27ULkz-wGUD0-pNH=PC+ahDn47VQ+qmQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120512190900.GA15956@joana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHOpdHWMcV6LjpaEhk27ULkz-wGUD0-pNH=PC+ahDn47VQ+qmQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, May 13, 2012 at 01:21:00AM +0200, Björn Christoph wrote:
+> 
+> IOTOP shows this in some cases, mostly jbd2 is not there:
+>   PRIO  USER     DISK READ  DISK WRITE  SWAPIN     IO>    COMMAND
+>   416 be/3 root        0.00 B/s   97.65 M/s  0.00 % 13.74 % [jbd2/dm-1-8]
 
-On Sat, May 12, 2012, Gustavo Padovan wrote:
-> In my point of view there are two commits there that are really necessary:
-> 
-> Gustavo Padovan (2):
->       Bluetooth: report the right security level in getsockopt
-> 
-> Johan Hedberg (2):
->       Bluetooth: mgmt: Fix device_connected sending order
-> 
-> They fix a userspace breakage caused by:
-> 
-> Author: Marcel Holtmann <marcel@holtmann.org>
-> Date:   Mon Feb 20 21:24:37 2012 +0100
-> 
->     Bluetooth: Always enable management interface
->     
->     The management interface API has reached stable version 1.0 and thus
->     it can now be always enabled. All future changes will be made backwards
->     compatible.
->     
->     Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
->     Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-> 
-> 
-> This cause no crash, but it make bluetooth keyboards stop to work with Linux.
-> This a serious breakage IMO. I really would like to see at least these two
-> patches in. The other fixes can wait.
+Well, the file system in that has the huge write bandwidth is
+whichever device is associated with device mapper device dm-1 (i.e.,
+with a device mapper minor number of 1).  What does "ls -l
+/dev/mapper" show you?
 
-I'd just like to add some further background since I don't think it's
-that obvious how these are regression fixes:
+Whatever file system is associated with it is clearly generating a lot
+of journal activity.
 
-The device_connected fix should be quite self-explanatory, but it's
-actually a wider issue than just for keyboards. All profiles that do
-incoming connection authorization (e.g. headsets) will break without it
-with specific hardware. The reason it wasn't caught earlier is that it
-only occurs with specific Bluetooth adapters.
+Something that may help in determining what process is generating all
+of this journal activity (which is likely the result of something
+calling fsync a lot) is to try this:
 
-As for the security level patch, this fixes L2CAP socket based security
-level elevation during a connection. The HID profile needs this (for
-keyboards) and it is the only way to achieve the security level
-elevation when using the management interface to talk to the kernel
-(hence the management enabling patch being the one that exposes this
-issue).
+echo 1 > /sys/kernel/debug/tracing/events/ext4/ext4_sync_file_enter/enable
 
-Johan
+... then wait for a minute or so, and then capture the output of:
+
+cat /sys/kernel/debug/tracing/trace
+
+See if that shows up anything useful.
+
+Regards,
+
+					- Ted
