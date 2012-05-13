@@ -1,134 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab2EMUk3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 16:40:29 -0400
-Received: from blu0-omc3-s20.blu0.hotmail.com ([65.55.116.95]:54148 "EHLO
-	blu0-omc3-s20.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753110Ab2EMUk0 (ORCPT
+	id S1753529Ab2EMUvD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 16:51:03 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:34427 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753110Ab2EMUvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 16:40:26 -0400
-X-Originating-IP: [64.229.84.125]
-X-Originating-Email: [dave.anglin@bell.net]
-Message-ID: <BLU0-SMTP85D30AAA2BF2CF07B1039897150@phx.gbl>
-From: John David Anglin <dave.anglin@bell.net>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-In-Reply-To: <4FB0197F.6010000@linux.vnet.ibm.com>
-Subject: Re: Linux 3.4-rc7
-References: <CA+55aFzsygnrJwLUPV8Vg4RPmwxXLuY-uo70fBLEZR8+barT5A@mail.gmail.com> <4FB011E7.1000604@linux.vnet.ibm.com> <BLU0-SMTP22F4864AE1F54838C150D797150@phx.gbl> <4FB0197F.6010000@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="US-ASCII"; format=flowed; delsp=yes
+	Sun, 13 May 2012 16:51:00 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX198WpMMblB80mNG3m9OLPInBiKx3sSOTizJiNYcGb
+	60xXh2Wj1Wfq2g
+Message-ID: <4FB01EAA.8040504@gmx.de>
+Date: Sun, 13 May 2012 20:50:50 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Icedove/3.0.11
+MIME-Version: 1.0
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Maik Broemme <mbroemme@plusserver.de>, kernel-janitors@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/video/intelfb/intelfbdrv.c: add missing agp_backend_release
+References: <1334854553-30067-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1334854553-30067-1-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0 (Apple Message framework v936)
-Date: Sun, 13 May 2012 16:40:07 -0400
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mikulas Patocka <mpatocka@redhat.com>, stepanm@codeaurora.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        James.Bottomley@hansenpartnership.com, deller@gmx.de,
-        dhowells@redhat.com, yasutake.koichi@jp.panasonic.com,
-        eike-kernel@sf-tec.de, linux-parisc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: Apple Mail (2.936)
-X-OriginalArrivalTime: 13 May 2012 20:40:24.0825 (UTC) FILETIME=[9F934E90:01CD3148]
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, the revised change fixes the compilation error.  I'll know in a  
-while if
-my config boots.
+On 04/19/2012 04:55 PM, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Release bridge, as done on all other paths out of the function.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+Looks good to me, applied.
+
 
 Thanks,
-Dave
 
-On 13-May-12, at 4:28 PM, Srivatsa S. Bhat wrote:
+Florian Tobias Schandinat
 
-> On 05/14/2012 01:38 AM, John David Anglin wrote:
->
->> On 13-May-12, at 3:56 PM, Srivatsa S. Bhat wrote:
->>
->>> The regression was introduced in the 3.4 merge window itself (by  
->>> commit
->>> 5fbd036b55 "sched: Cleanup cpu_active madness").
->>>
->>> Links to the original posting:
->>> PA_RISC: http://marc.info/?l=linux-parisc&m=133241790810604&w=2
->>
->>
->> If I had the above change, I get
->>
->>  CHK     include/generated/compile.h
->>  CC      arch/parisc/kernel/smp.o
->> arch/parisc/kernel/smp.c: In function 'smp_cpu_init':
->> arch/parisc/kernel/smp.c:300:2: error: implicit declaration of  
->> function
->> 'notify_cpu_starting' [-Werror=implicit-function-declaration]
->> cc1: some warnings being treated as errors
->> make[1]: *** [arch/parisc/kernel/smp.o] Error 1
->>
->
->
-> Sorry about that. I neither have the hardware nor the toolchain
-> to test it. I guess this problem doesn't exist for mn10300 since it
-> already includes linux/cpu.h when CONFIG_HOTPLUG_CPU=y
->
-> Does the below updated patch help for PA-RISC?
->
-> ----
-> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->
-> parisc/CPU hotplug: Add missing call to notify_cpu_starting()
->
-> The scheduler depends on receiving the CPU_STARTING notification,  
-> without
-> which we end up into a lot of trouble. So add the missing call to
-> notify_cpu_starting() in the bringup code.
->
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> 
 > ---
->
-> arch/parisc/kernel/smp.c |    8 +++++++-
-> 1 files changed, 7 insertions(+), 1 deletions(-)
->
->
-> diff --git a/arch/parisc/kernel/smp.c b/arch/parisc/kernel/smp.c
-> index 0bb1d63..4dc7b79 100644
-> --- a/arch/parisc/kernel/smp.c
-> +++ b/arch/parisc/kernel/smp.c
-> @@ -31,6 +31,7 @@
-> #include <linux/delay.h>
-> #include <linux/bitops.h>
-> #include <linux/ftrace.h>
-> +#include <linux/cpu.h>
->
-> #include <linux/atomic.h>
-> #include <asm/current.h>
-> @@ -295,8 +296,13 @@ smp_cpu_init(int cpunum)
->
-> 		printk(KERN_CRIT "CPU#%d already initialized!\n", cpunum);
-> 		machine_halt();
-> -	}
-> +	}
-> +
-> +	notify_cpu_starting(cpunum);
-> +
-> +	ipi_call_lock();
-> 	set_cpu_online(cpunum, true);
-> +	ipi_call_unlock();
->
-> 	/* Initialise the idle task for this CPU */
-> 	atomic_inc(&init_mm.mm_count);
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux- 
-> parisc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
---
-John David Anglin	dave.anglin@bell.net
-
-
+>  drivers/video/intelfb/intelfbdrv.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/video/intelfb/intelfbdrv.c b/drivers/video/intelfb/intelfbdrv.c
+> index 02fd226..bdcbfba 100644
+> --- a/drivers/video/intelfb/intelfbdrv.c
+> +++ b/drivers/video/intelfb/intelfbdrv.c
+> @@ -680,6 +680,7 @@ static int __devinit intelfb_pci_register(struct pci_dev *pdev,
+>  		 + dinfo->fb.size);
+>  	if (!dinfo->aperture.virtual) {
+>  		ERR_MSG("Cannot remap FB region.\n");
+> +		agp_backend_release(bridge);
+>  		cleanup(dinfo);
+>  		return -ENODEV;
+>  	}
+> @@ -689,6 +690,7 @@ static int __devinit intelfb_pci_register(struct pci_dev *pdev,
+>  					      INTEL_REG_SIZE);
+>  	if (!dinfo->mmio_base) {
+>  		ERR_MSG("Cannot remap MMIO region.\n");
+> +		agp_backend_release(bridge);
+>  		cleanup(dinfo);
+>  		return -ENODEV;
+>  	}
+> 
+> 
 
