@@ -1,127 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab2EMLNp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 07:13:45 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39779 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335Ab2EMLNo (ORCPT
+	id S1752963Ab2EMLi7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 07:38:59 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:32013 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab2EMLi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 07:13:44 -0400
-Date: Sun, 13 May 2012 13:13:28 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, gregkh@linuxfoundation.org, borislav.petkov@amd.com,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
-        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
-        penberg@kernel.org, hughd@google.com, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
-        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
-        oleg@redhat.com, axboe@kernel.dk, a.p.zijlstra@chello.nl,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/7] x86/flush_tlb: try flush_tlb_single one by one in
- flush_tlb_range
-Message-ID: <20120513111328.GD28863@aftab.osrc.amd.com>
-References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
- <1336626013-28413-4-git-send-email-alex.shi@intel.com>
- <20120510084213.GD30055@aftab.osrc.amd.com>
- <4FAB84B6.7060706@intel.com>
- <4FAE18D0.6050001@intel.com>
+	Sun, 13 May 2012 07:38:57 -0400
+Message-ID: <4FAF9D3F.4010804@snapgear.com>
+Date: Sun, 13 May 2012 21:38:39 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FAE18D0.6050001@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        Greg Ungerer <gerg@uclinux.org>, <linux-m68k@vger.kernel.org>
+Subject: Re: [PATCH 2/4] m68k: Setup CROSS_COMPILE at the top
+References: <1336855148-18817-1-git-send-email-geert@linux-m68k.org> <1336855148-18817-2-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1336855148-18817-2-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 12, 2012 at 04:01:20PM +0800, Alex Shi wrote:
-> I tried this, found too many goto and label is worse than line breaking. :(
+On 05/13/2012 06:39 AM, Geert Uytterhoeven wrote:
+> CROSS_COMPILE must be setup before using e.g. cc-option (and a few other
+> as-*, cc-*, ld-* macros), else they will check against the wrong compiler
+> when cross-compiling, and may invoke the cross compiler with wrong or
+> suboptimal compiler options.
+>
+> Signed-off-by: Geert Uytterhoeven<geert@linux-m68k.org>
+> Cc: Greg Ungerer<gerg@uclinux.org>
 
-I know exactly what you're saying, I just tried it too. It looks pretty
-ugly and unreadable.
+Acked-by: Greg Ungerer<gerg@uclinux.org>
 
-Maybe you can carve out the meat of the function into another helper,
-see below.
+Regards
+Greg
 
-Dunno, it kinda looks ok if I haven't fat-fingered all the return paths
-and it could use a bunch of comments and maybe even better naming to
-explain what happens:
 
----
-static bool __flush_tlb_range(unsigned int cpu, struct mm_struct *mm,
-                              unsigned long start, unsigned long end,
-                              unsigned long vmflag)
-{
-        unsigned long addr;
-        unsigned long act_entries, tlb_entries = 0;
+> Cc: linux-m68k@lists.linux-m68k.org
+> ---
+>   arch/m68k/Makefile |   13 +++++++------
+>   1 files changed, 7 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/m68k/Makefile b/arch/m68k/Makefile
+> index 804f139..b7f2e2d 100644
+> --- a/arch/m68k/Makefile
+> +++ b/arch/m68k/Makefile
+> @@ -16,6 +16,13 @@
+>
+>   KBUILD_DEFCONFIG := multi_defconfig
+>
+> +ifneq ($(SUBARCH),$(ARCH))
+> +	ifeq ($(CROSS_COMPILE),)
+> +		CROSS_COMPILE := $(call cc-cross-prefix, \
+> +			m68k-linux-gnu- m68k-linux- m68k-unknown-linux-gnu-)
+> +	endif
+> +endif
+> +
+>   #
+>   #	Enable processor type. Ordering of these is important - we want to
+>   #	use the minimum processor type of the range we support. The logic
+> @@ -62,12 +69,6 @@ endif
+>
+>   LDFLAGS := -m m68kelf
+>   KBUILD_LDFLAGS_MODULE += -T $(srctree)/arch/m68k/kernel/module.lds
+> -ifneq ($(SUBARCH),$(ARCH))
+> -	ifeq ($(CROSS_COMPILE),)
+> -		CROSS_COMPILE := $(call cc-cross-prefix, \
+> -			m68k-linux-gnu- m68k-linux- m68k-unknown-linux-gnu-)
+> -	endif
+> -endif
+>
+>   ifdef CONFIG_SUN3
+>   LDFLAGS_vmlinux = -N
 
-        if (end == TLB_FLUSH_ALL || tlb_flushall_factor == (u16)TLB_FLUSH_ALL)
-                goto flush_out;
-
-        tlb_entries = (vmflag & VM_EXEC ? tlb_lli_4k[ENTRIES]
-                                        : tlb_lld_4k[ENTRIES]);
-
-        act_entries = min(mm->total_vm, tlb_entries);
-
-        if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_factor)
-                goto flush_out;
-
-        if (has_large_page(mm, start, end))
-                goto flush_out;
-
-        for (addr = start; addr <= end; addr += PAGE_SIZE)
-                __flush_tlb_single(addr);
-
-        if (cpumask_any_but(mm_cpumask(mm), cpu) < nr_cpu_ids)
-                flush_tlb_others(mm_cpumask(mm), mm, start, end);
-
-        return true;
-
- flush_out:
-        local_flush_tlb();
-        return false;
-}
-
-void _flush_tlb_range(struct mm_struct *mm, unsigned long start,
-                                unsigned long end, unsigned long vmflag)
-{
-        unsigned int cpu = smp_processor_id();
-
-        preempt_disable();
-
-        if (current->active_mm != mm)
-                goto flush_all;
-
-        if (!current->mm) {
-                leave_mm(cpu);
-                goto flush_all;
-        }
-
-        if (__flush_tlb_range(cpu, mm, start, end, vmflag))
-                goto out;
-
- flush_all:
-        if (cpumask_any_but(mm_cpumask(mm), cpu) < nr_cpu_ids)
-                flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
-
- out:
-        preempt_enable();
-}
---
-
-Oh well, enough games :-).
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close,                            FAX:         +61 7 3891 3630
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
