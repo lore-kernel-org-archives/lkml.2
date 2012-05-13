@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab2EMNEV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 09:04:21 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:42179 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752921Ab2EMNET (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 09:04:19 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18BYbs3JAIBGaVCx6bXt46FjHi/2KoaVTy1aiEovk
-	gv8+6xJCCWG61n
-Message-ID: <4FAFB14A.2020705@gmx.de>
-Date: Sun, 13 May 2012 13:04:10 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Icedove/3.0.11
+	id S1753227Ab2EMNFr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 09:05:47 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:41343 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752921Ab2EMNFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 May 2012 09:05:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bojan Smojver <bojan@rexursive.com>
+Subject: Re: [PATCH]: In kernel hibernation, suspend to both
+Date: Sun, 13 May 2012 15:10:37 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        bp@alien8.de
+References: <1336515735.2097.23.camel@shrek.rexursive.com> <201205122347.08176.rjw@sisk.pl> <8b0184d9-0c54-4f6e-b0b7-ce1b7d854b9e@email.android.com>
+In-Reply-To: <8b0184d9-0c54-4f6e-b0b7-ce1b7d854b9e@email.android.com>
 MIME-Version: 1.0
-To: =?ISO-8859-15?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
-CC: Thomas Winischhofer <thomas@winischhofer.net>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] video/sis: Annotate SiS_DRAMType as __devinitconst
-References: <4FAB0986.6090006@gmx.de> <201205102339.09295.PeterHuewe@gmx.de>
-In-Reply-To: <201205102339.09295.PeterHuewe@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205131510.37664.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-On 05/10/2012 09:39 PM, Peter Hüwe wrote:
-> Am Donnerstag 10 Mai 2012, 02:19:18 schrieb Florian Tobias Schandinat:
->> Good that you did this one, it was more to be done than I expected. I
->> ignored the checkpatch errors as you didn't introduce them but maybe it
->> wouldn't be a bad idea to fix things up if you touch them. Applied.
+On Sunday, May 13, 2012, Bojan Smojver wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 > 
-> Oh sorry, usually I do checkpatch, but I missed it on this one somehow.
-> If you want, I can do a checkpatch cleanup for the whole sis driver as 
-> compensation ;)
+> >On Wednesday, May 09, 2012, Bojan Smojver wrote:
+> >> On Wed, 2012-05-09 at 13:40 +0530, Srivatsa S. Bhat wrote:
+> >> > > +             error = suspend_devices_and_enter(PM_SUSPEND_MEM);
+> >> > 
+> >> > 
+> >> > I can imagine running into a host of problems here, since the
+> >suspend
+> >> > sequence is not carried out fully, from the beginning.
+> >> > 
+> >> > For example, this will skip sending out the PM_SUSPEND_PREPARE and
+> >the
+> >> > PM_POST_SUSPEND notifiers. Worse, we actually send out the
+> >> > PM_HIBERNATION_PREPARE
+> >> > and PM_POST_HIBERNATION notifiers and then do a suspend instead,
+> >> > underneath!
+> >> > 
+> >> > (Similar cases for the rest of the notifiers sent during suspend vs
+> >> > hibernation).
+> >> > 
+> >> > Don't we need to handle such things properly, in order to make
+> >> > suspend-to-both
+> >> > work reliably? 
+> >> 
+> >> Honest answer - I have absolutely no idea. I've seen the code of
+> >> suspend-utils (i.e. user mode stuff) and it seems to me that it does
+> >> exactly this. Could be wrong of course, just like many times before.
+> >> 
+> >> Rafael?
+> >
+> >Sorry, that has fallen out of my radar somehow.
+> >
+> >Srivatsa is right, we should generally pay attention to those details.
+> >
+> >I think we should generally use a different "prepare" notification for
+> >the
+> >save-image-and-suspend case.
+> >
+> >Thanks,
+> >Rafael
+> 
+> 
+> OK, I will try to rework then, if that is the case.
+> 
+> What I don't understand is this: should the hibernation fail for some reason,
+> we would get the same hibernation code unwind that failure, right?
 
-That's not necessary.
-I just wanted to highlight that I prefer it if people fix the style
-on-the-fly while working on things rather than sending me individual
-patches for each line and not even fixing the complete line but only one
-special aspect of it so that checkpatch complains about their style fixes.
+Yes, if the failure happens before we attempt to suspend.
 
-btw. Special characters are allowed in sign-offs.
+> So, a suspend after the image write will be just one long "failure", after
+> which hibernation code has to unwind again. No?
 
+Hmm.  Good question.  It should be like this I think, although there may be
+some corner cases lurking.
 
-Best regards,
-
-Florian Tobias Schandinat
+Thanks,
+Rafael
