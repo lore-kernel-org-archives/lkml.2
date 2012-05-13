@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab2EMQHu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 12:07:50 -0400
+	id S1754271Ab2EMQII (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 12:08:08 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:39930 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754108Ab2EMQHs (ORCPT
+	with ESMTP id S1754161Ab2EMQHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 12:07:48 -0400
+	Sun, 13 May 2012 12:07:50 -0400
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         David Herrmann <dh.herrmann@googlemail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 5/7] usb: remove unneeded default value
-Date: Sun, 13 May 2012 18:07:08 +0200
-Message-Id: <1336925230-2853-6-git-send-email-dh.herrmann@googlemail.com>
+        David Airlie <airlied@linux.ie>
+Subject: [PATCH 7/7] drm: do not change selected options based on EXPERT mode
+Date: Sun, 13 May 2012 18:07:10 +0200
+Message-Id: <1336925230-2853-8-git-send-email-dh.herrmann@googlemail.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1336925230-2853-1-git-send-email-dh.herrmann@googlemail.com>
 References: <1336925230-2853-1-git-send-email-dh.herrmann@googlemail.com>
@@ -22,29 +22,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If no default value is specified, then 'n' is used so the default value
-used here is not needed. Furthermore, we should never change default
-values depending on EXPERT mode. EXPERT mode should only make options
-visible, not change them.
+EXPERT mode is designed to toggle visibility of config options. It should
+not have any other effect on config values. Imagine if a user wants to
+tweak a single value that is protected by EXPERT mode. If they enable
+EXPERT mode to change that single option, they might get side effects from
+other subsystems which they didn't expect. This makes EXPERT mode totally
+useless. Hence, simply let the user always select the framebuffer-console
+manually.
+Furthermore, with kmscon or wayland, users might want to disable CONFIG_VT
+which is currently automatically selected by DRM_KMS_HELPER through
+FRAMEBUFFER_CONSOLE if !EXPERT.
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: David Airlie <airlied@linux.ie>
 Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
 ---
- drivers/usb/core/Kconfig |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/gpu/drm/Kconfig         |    1 -
+ drivers/gpu/drm/nouveau/Kconfig |    1 -
+ 2 files changed, 2 deletions(-)
 
-diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
-index 18d02e3..04aec50 100644
---- a/drivers/usb/core/Kconfig
-+++ b/drivers/usb/core/Kconfig
-@@ -125,7 +125,6 @@ config USB_OTG_WHITELIST
- 	bool "Rely on OTG Targeted Peripherals List"
- 	depends on USB_OTG || EXPERT
- 	default y if USB_OTG
--	default n if EXPERT
+diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+index e354bc0..ded991c 100644
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -28,7 +28,6 @@ config DRM_KMS_HELPER
+ 	tristate
+ 	depends on DRM
+ 	select FB
+-	select FRAMEBUFFER_CONSOLE if !EXPERT
+ 	select FRAMEBUFFER_CONSOLE_DETECT_PRIMARY if FRAMEBUFFER_CONSOLE
  	help
- 	  If you say Y here, the "otg_whitelist.h" file will be used as a
- 	  product whitelist, so USB peripherals not listed there will be
+ 	  FB and CRTC helpers for KMS drivers.
+diff --git a/drivers/gpu/drm/nouveau/Kconfig b/drivers/gpu/drm/nouveau/Kconfig
+index 97a8126..d7e2536 100644
+--- a/drivers/gpu/drm/nouveau/Kconfig
++++ b/drivers/gpu/drm/nouveau/Kconfig
+@@ -8,7 +8,6 @@ config DRM_NOUVEAU
+ 	select FB_CFB_COPYAREA
+ 	select FB_CFB_IMAGEBLIT
+ 	select FB
+-	select FRAMEBUFFER_CONSOLE if !EXPERT
+ 	select FB_BACKLIGHT if DRM_NOUVEAU_BACKLIGHT
+ 	select ACPI_VIDEO if ACPI && X86 && BACKLIGHT_CLASS_DEVICE && VIDEO_OUTPUT_CONTROL && INPUT
+ 	select ACPI_WMI if ACPI
 -- 
 1.7.10.2
 
