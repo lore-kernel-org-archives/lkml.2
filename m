@@ -1,140 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594Ab2EMF4Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 01:56:16 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:3175 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab2EMF4O (ORCPT
+	id S1751794Ab2EMGUR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 02:20:17 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:56597 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab2EMGUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 01:56:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6709"; a="190453911"
-Date: Sat, 12 May 2012 22:56:12 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: Olof Johansson <olof@lixom.net>, Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] arm: msm: fix up very basic HTC Sapphire support
-Message-ID: <20120513055612.GA7129@codeaurora.org>
-References: <q7bdy899mt3um93hikst04au.1336884464056@email.android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <q7bdy899mt3um93hikst04au.1336884464056@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 13 May 2012 02:20:15 -0400
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: davem@davemloft.net, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH 1/2] Bluetooth: notify userspace of security level change
+Date: Sun, 13 May 2012 03:20:07 -0300
+Message-Id: <1336890007-10646-1-git-send-email-gustavo@padovan.org>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1336849910-29064-2-git-send-email-gustavo@padovan.org>
+References: <1336849910-29064-2-git-send-email-gustavo@padovan.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 12, 2012 at 09:47:44PM -0700, Daniel Walker wrote:
-> What you did wasn't what I was suggesting you do...
-> 
-> Keep your pull request available as it originally was and ill comment on the thread..
+It fixes L2CAP socket based security level elevation during a
+connection. The HID profile needs this (for keyboards) and it is the only
+way to achieve the security level elevation when using the management
+interface to talk to the kernel (hence the management enabling patch
+being the one that exposes this issue).
 
-Please send out updated patches when you've addressed the issues, and
-I'll gladly pull them in.  As for now, Olof has already pulled the
-tree without the Sapphire changes.
+It enables the userspace a security level change when the socket is
+already connected and create a way to notify the socket the result of the
+request. At the moment of the request the socket is made non writable, if
+the request fails the connections closes, otherwise the socket is made
+writable again, POLL_OUT is emmited.
 
-David
+Signed-off-by: Gustavo Padovan <gustavo@padovan.org>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+---
+ include/net/bluetooth/bluetooth.h |    1 +
+ net/bluetooth/af_bluetooth.c      |    2 +-
+ net/bluetooth/hci_event.c         |    7 +++++++
+ net/bluetooth/l2cap_core.c        |    5 +++++
+ net/bluetooth/l2cap_sock.c        |   12 ++++++++----
+ 5 files changed, 22 insertions(+), 5 deletions(-)
 
-> Daniel
-> 
-> David Brown <davidb@codeaurora.org> wrote:
-> 
-> >On Fri, May 11, 2012 at 10:45:52PM -0700, Olof Johansson wrote:
-> >
-> >> Sorry, I should have found the below items on the first review and not
-> >> now on the second one, but see below.
-> >
-> >Daniel, I don't mind fixing up minor things, but can you take care of
-> >the other issues that Olof has brought up.
-> >
-> >Thanks,
-> >David
-> >
-> >> On Fri, May 11, 2012 at 5:15 PM, David Brown <davidb@codeaurora.org> wrote:
-> >> > From: Daniel Walker <dwalker@fifo99.com>
-> >> >
-> >> > Adds sapphire into the make file, and fixes all the code problems that
-> >> > prevented it from building (including adding board-sapphire.h)
-> >> >
-> >> > [davidb@codeaurora.org: Move MACH_TROUT selection back under
-> >> > ARCH_MSM7X00A]
-> >> >
-> >> > Signed-off-by: Daniel Walker <dwalker@fifo99.com>
-> >> > Signed-off-by: David Brown <davidb@codeaurora.org>
-> >> > ---
-> >> > v2 - Moved MACH_TROUT selection back under the ARCH config target
-> >> >
-> >> >  arch/arm/mach-msm/Kconfig          |    9 +-
-> >> >  arch/arm/mach-msm/Makefile         |    1 +
-> >> >  arch/arm/mach-msm/board-sapphire.c |   18 +--
-> >> >  arch/arm/mach-msm/board-sapphire.h |  224 ++++++++++++++++++++++++++++++++++++
-> >> >  4 files changed, 234 insertions(+), 18 deletions(-)
-> >> >  create mode 100644 arch/arm/mach-msm/board-sapphire.h
-> >> >
-> >> > diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-> >> > index 1cd40ad..70eae63 100644
-> >> > --- a/arch/arm/mach-msm/Kconfig
-> >> > +++ b/arch/arm/mach-msm/Kconfig
-> >> > @@ -6,7 +6,7 @@ choice
-> >> >
-> >> >  config ARCH_MSM7X00A
-> >> >        bool "MSM7x00A / MSM7x01A"
-> >> > -       select MACH_TROUT if !MACH_HALIBUT
-> >> > +       select MACH_TROUT if (!MACH_HALIBUT && !MACH_SAPPHIRE)
-> >> 
-> >> Better, thanks!
-> >> 
-> >> 
-> >> > diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-> >> > index 4ad3969..aff4e5c 100644
-> >> > --- a/arch/arm/mach-msm/Makefile
-> >> > +++ b/arch/arm/mach-msm/Makefile
-> >> > @@ -20,6 +20,7 @@ CFLAGS_scm.o :=$(call as-instr,.arch_extension sec,-DREQUIRES_SEC=1)
-> >> >  obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
-> >> >  obj-$(CONFIG_SMP) += headsmp.o platsmp.o
-> >> >
-> >> > +obj-$(CONFIG_MACH_SAPPHIRE) += board-sapphire.o devices-msm7x00.o
-> >> >  obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
-> >> >  obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o board-trout-panel.o devices-msm7x00.o
-> >> >  obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
-> >> 
-> >> Unrelated to this change per se, but it seems like devices-msm7x00.o
-> >> should be on an obj-$(CONFIG_ARCH_MSM7X00A) statement instead of
-> >> duplicated for all boards.
-> >> 
-> >> Also, the trout line is mostly duplicated, only delta is panel. Looks
-> >> broken. Both of these things is material for a separate patch though.
-> >> 
-> >> > diff --git a/arch/arm/mach-msm/board-sapphire.h b/arch/arm/mach-msm/board-sapphire.h
-> >> > new file mode 100644
-> >> > index 0000000..70f925e
-> >> > --- /dev/null
-> >> > +++ b/arch/arm/mach-msm/board-sapphire.h
-> >> > @@ -0,0 +1,224 @@
-> >> [..]
-> >> > +void config_sapphire_camera_on_gpios(void);
-> >> > +void config_sapphire_camera_off_gpios(void);
-> >> > +int sapphire_get_smi_size(void);
-> >> > +unsigned int sapphire_get_hwid(void);
-> >> > +unsigned int sapphire_get_skuid(void);
-> >> > +unsigned int is_12pin_camera(void);
-> >> > +int sapphire_is_5M_camera(void);
-> >> > +int sapphire_gpio_write(struct gpio_chip *chip, unsigned n, unsigned on);
-> >> 
-> >> Many (all?) of these functions are not to be found in the code. Please
-> >> don't add prototypes for code that isn't there.
-> >> 
-> >> 
-> >> -Olof
-> >
-> >-- 
-> >Sent by an employee of the Qualcomm Innovation Center, Inc.
-> >The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-> >
-
+diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
+index 262ebd1..a65910b 100644
+--- a/include/net/bluetooth/bluetooth.h
++++ b/include/net/bluetooth/bluetooth.h
+@@ -191,6 +191,7 @@ struct bt_sock {
+ 	struct list_head accept_q;
+ 	struct sock *parent;
+ 	u32 defer_setup;
++	bool suspended;
+ };
+ 
+ struct bt_sock_list {
+diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
+index 72eb187..6fb68a9 100644
+--- a/net/bluetooth/af_bluetooth.c
++++ b/net/bluetooth/af_bluetooth.c
+@@ -450,7 +450,7 @@ unsigned int bt_sock_poll(struct file *file, struct socket *sock, poll_table *wa
+ 			sk->sk_state == BT_CONFIG)
+ 		return mask;
+ 
+-	if (sock_writeable(sk))
++	if (!bt_sk(sk)->suspended && sock_writeable(sk))
+ 		mask |= POLLOUT | POLLWRNORM | POLLWRBAND;
+ 	else
+ 		set_bit(SOCK_ASYNC_NOSPACE, &sk->sk_socket->flags);
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 7f87a70..ff38cc6 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -2040,6 +2040,12 @@ static inline void hci_encrypt_change_evt(struct hci_dev *hdev, struct sk_buff *
+ 
+ 		clear_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
+ 
++		if (ev->status && conn->state == BT_CONNECTED) {
++			hci_acl_disconn(conn, 0x13);
++			hci_conn_put(conn);
++			goto unlock;
++		}
++
+ 		if (conn->state == BT_CONFIG) {
+ 			if (!ev->status)
+ 				conn->state = BT_CONNECTED;
+@@ -2050,6 +2056,7 @@ static inline void hci_encrypt_change_evt(struct hci_dev *hdev, struct sk_buff *
+ 			hci_encrypt_cfm(conn, ev->status, ev->encrypt);
+ 	}
+ 
++unlock:
+ 	hci_dev_unlock(hdev);
+ }
+ 
+diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+index 38d934a..c073533 100644
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -4590,6 +4590,11 @@ int l2cap_security_cfm(struct hci_conn *hcon, u8 status, u8 encrypt)
+ 
+ 		if (!status && (chan->state == BT_CONNECTED ||
+ 						chan->state == BT_CONFIG)) {
++			struct sock *sk = chan->sk;
++
++			bt_sk(sk)->suspended = false;
++			sk->sk_state_change(sk);
++
+ 			l2cap_check_encryption(chan, encrypt);
+ 			l2cap_chan_unlock(chan);
+ 			continue;
+diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+index 29122ed..04e7c17 100644
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -592,10 +592,14 @@ static int l2cap_sock_setsockopt(struct socket *sock, int level, int optname, ch
+ 			sk->sk_state = BT_CONFIG;
+ 			chan->state = BT_CONFIG;
+ 
+-		/* or for ACL link, under defer_setup time */
+-		} else if (sk->sk_state == BT_CONNECT2 &&
+-					bt_sk(sk)->defer_setup) {
+-			err = l2cap_chan_check_security(chan);
++		/* or for ACL link */
++		} else if ((sk->sk_state == BT_CONNECT2 &&
++			   bt_sk(sk)->defer_setup) ||
++			   sk->sk_state == BT_CONNECTED) {
++			if (!l2cap_chan_check_security(chan))
++				bt_sk(sk)->suspended = true;
++			else
++				sk->sk_state_change(sk);
+ 		} else {
+ 			err = -EINVAL;
+ 		}
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.10.1
+
