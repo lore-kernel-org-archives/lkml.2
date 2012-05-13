@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab2EMXP1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 19:15:27 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:32851 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753622Ab2EMXPZ (ORCPT
+	id S1753908Ab2EMXQO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 19:16:14 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:46331 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753809Ab2EMXQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 19:15:25 -0400
+	Sun, 13 May 2012 19:16:05 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 0/5] CPU hotplug,
- cpusets: Fix issues with cpusets handling during suspend/resume
+Subject: [PATCH v3 1/5] cpusets,
+ hotplug: Implement cpuset tree traversal in a helper function
 To: a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
         paul@paulmenage.org, akpm@linux-foundation.org
 Cc: rjw@sisk.pl, nacc@us.ibm.com, paulmck@linux.vnet.ibm.com,
@@ -18,59 +18,84 @@ Cc: rjw@sisk.pl, nacc@us.ibm.com, paulmck@linux.vnet.ibm.com,
         vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
         linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         srivatsa.bhat@linux.vnet.ibm.com
-Date: Mon, 14 May 2012 04:44:31 +0530
-Message-ID: <20120513231325.3566.37740.stgit@srivatsabhat>
+Date: Mon, 14 May 2012 04:45:09 +0530
+Message-ID: <20120513231449.3566.70799.stgit@srivatsabhat>
+In-Reply-To: <20120513231325.3566.37740.stgit@srivatsabhat>
+References: <20120513231325.3566.37740.stgit@srivatsabhat>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12051323-2674-0000-0000-00000468B394
+x-cbid: 12051313-6102-0000-0000-00000177BE5C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the kernel doesn't handle cpusets properly during suspend/resume.
-After a resume, all non-root cpusets end up having only 1 cpu (the boot cpu),
-causing massive performance degradation of workloads. One major user of cpusets
-is libvirt, which means that after a suspend/hibernation cycle, all VMs
-suddenly end up running terribly slow!
+At present, the functions that deal with cpusets during CPU/Mem hotplug
+are quite messy, since a lot of the functionality is mixed up without clear
+separation. And this takes a toll on optimization as well. For example,
+the function cpuset_update_active_cpus() is called on both CPU offline and CPU
+online events; and it invokes scan_for_empty_cpusets(), which makes sense
+only for CPU offline events. And hence, the current code ends up unnecessarily
+traversing the cpuset tree during CPU online also.
 
-Also, the kernel moves the tasks from one cpuset to another during CPU hotplug
-in the suspend/resume path, leading to a task-management nightmare after
-resume.
+As a first step towards cleaning up those functions, encapsulate the cpuset
+tree traversal in a helper function, so as to facilitate upcoming changes.
 
-This patchset solves these problems by reworking the way cpusets are handled
-during CPU hotplug in the suspend/resume path. This doesn't involve any
-change in semantics as to how cpusets are handled during regular CPU hotplug
-because it is correct as it is.
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: stable@vger.kernel.org
+---
 
-Patches 1 & 2 are cleanups that separate out hotplug handling so that we can
-implement different logic for different hotplug events (CPU/Mem
-online/offline). This also leads to some optimizations and more importantly
-prepares the ground for any further work dealing with cpusets during hotplug.
+ kernel/cpuset.c |   26 ++++++++++++++++++--------
+ 1 files changed, 18 insertions(+), 8 deletions(-)
 
-Patch 3 is a bug fix - it ensures that the tasks attached to the root cpuset
-see the updated cpus_allowed mask upon CPU hotplug.
-
-Patches 4 and 5 implement the fix for cpusets handling during suspend/resume.
-
---
- Srivatsa S. Bhat (5):
-      cpusets, hotplug: Implement cpuset tree traversal in a helper function
-      cpusets, hotplug: Restructure functions that are invoked during hotplug
-      cpusets: Update tasks' cpus_allowed mask upon updates to root cpuset
-      cpusets: Add provisions for distinguishing CPU Hotplug in suspend/resume path
-      cpusets, suspend: Save and restore cpusets during suspend/resume
-
-
-  include/linux/cpuset.h |    4 -
- kernel/cpuset.c        |  235 +++++++++++++++++++++++++++++++++++++++---------
- kernel/sched/core.c    |   29 +++++-
- 3 files changed, 218 insertions(+), 50 deletions(-)
-
-
-
-Thanks,
-Srivatsa S. Bhat
-IBM Linux Technology Center
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 14f7070..23e5da6 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2000,6 +2000,23 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
+ 	move_member_tasks_to_cpuset(cs, parent);
+ }
+ 
++static struct cpuset *traverse_cpusets(struct list_head *queue)
++{
++	struct cpuset *cp;
++	struct cpuset *child;	/* scans child cpusets of cp */
++	struct cgroup *cont;
++
++	cp = list_first_entry(queue, struct cpuset, stack_list);
++	list_del(queue->next);
++	list_for_each_entry(cont, &cp->css.cgroup->children, sibling) {
++		child = cgroup_cs(cont);
++		list_add_tail(&child->stack_list, queue);
++	}
++
++	return cp;
++}
++
++
+ /*
+  * Walk the specified cpuset subtree and look for empty cpusets.
+  * The tasks of such cpuset must be moved to a parent cpuset.
+@@ -2019,19 +2036,12 @@ static void scan_for_empty_cpusets(struct cpuset *root)
+ {
+ 	LIST_HEAD(queue);
+ 	struct cpuset *cp;	/* scans cpusets being updated */
+-	struct cpuset *child;	/* scans child cpusets of cp */
+-	struct cgroup *cont;
+ 	static nodemask_t oldmems;	/* protected by cgroup_mutex */
+ 
+ 	list_add_tail((struct list_head *)&root->stack_list, &queue);
+ 
+ 	while (!list_empty(&queue)) {
+-		cp = list_first_entry(&queue, struct cpuset, stack_list);
+-		list_del(queue.next);
+-		list_for_each_entry(cont, &cp->css.cgroup->children, sibling) {
+-			child = cgroup_cs(cont);
+-			list_add_tail(&child->stack_list, &queue);
+-		}
++		cp = traverse_cpusets(&queue);
+ 
+ 		/* Continue past cpusets with all cpus, mems online */
+ 		if (cpumask_subset(cp->cpus_allowed, cpu_active_mask) &&
 
