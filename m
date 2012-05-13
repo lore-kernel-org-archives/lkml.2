@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab2EMBAj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 21:00:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50851 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756275Ab2EMBAP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 21:00:15 -0400
-From: Richard Zhao <richard.zhao@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: sameo@linux.intel.com, paul.liu@linaro.org,
-        broonie@opensource.wolfsonmicro.com, shawn.guo@linaro.org,
-        Richard Zhao <richard.zhao@freescale.com>
-Subject: [PATCH 2/2] mfd: anatop: permit adata be NULL when access register
-Date: Sun, 13 May 2012 08:59:54 +0800
-Message-Id: <1336870794-6351-2-git-send-email-richard.zhao@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1336870794-6351-1-git-send-email-richard.zhao@freescale.com>
-References: <1336870794-6351-1-git-send-email-richard.zhao@freescale.com>
+	id S1756604Ab2EMBBS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 21:01:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:45571 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756544Ab2EMBBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 May 2012 21:01:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="165480906"
+Date: Sat, 12 May 2012 18:01:08 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 1/4] [-next] Makefile: Do not call cc-option before
+ including the arch's Makefile
+Message-ID: <20120513010108.GD27196@tassilo.jf.intel.com>
+References: <1336855148-18817-1-git-send-email-geert@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336855148-18817-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It makes anatop register access easier. Anatop has many misc registers,
-which may not be a specific driver.
+On Sat, May 12, 2012 at 10:39:05PM +0200, Geert Uytterhoeven wrote:
+> On architectures that setup CROSS_COMPILE in their arch/*/Makefile
+> (blackfin, h8300, m68k, mips, parisc, score, sh, tile, unicore32, xtensa),
+> cc-option may check against the wrong compiler, causing errors like
+> 
+> cc1: error: unrecognized command line option "-fno-ipa-cp-clone"
+> 
+> if the host gcc supports -fno-ipa-cp-clone, while the cross compiler
+> doesn't support that option.
+> 
+> Move the CONFIG_READABLE_ASM section below the inclusion of the arch's
+> Makefile to fix this.
 
-There's only one anatop device for a running system, so we use a global
-variable to store struct anatop.
+Thanks Geert for tracking that down.
 
-Signed-off-by: Richard Zhao <richard.zhao@freescale.com>
----
- drivers/mfd/anatop-mfd.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Michael, are the patches already in the queue or should I resubmit them?
 
-diff --git a/drivers/mfd/anatop-mfd.c b/drivers/mfd/anatop-mfd.c
-index 3bb7c49..b0313210 100644
---- a/drivers/mfd/anatop-mfd.c
-+++ b/drivers/mfd/anatop-mfd.c
-@@ -41,8 +41,15 @@
- #include <linux/of_address.h>
- #include <linux/mfd/anatop.h>
- 
-+/* For any running system, there's only one anatop device. */
-+static struct anatop *anatop_data;
-+
- u32 anatop_read_reg(struct anatop *adata, u32 addr)
- {
-+	BUG_ON(!anatop_data);
-+	if (!adata)
-+		adata = anatop_data;
-+
- 	return readl(adata->ioreg + addr);
- }
- EXPORT_SYMBOL_GPL(anatop_read_reg);
-@@ -51,6 +58,10 @@ void anatop_write_reg(struct anatop *adata, u32 addr, u32 data, u32 mask)
- {
- 	u32 val;
- 
-+	BUG_ON(!anatop_data);
-+	if (!adata)
-+		adata = anatop_data;
-+
- 	data &= mask;
- 
- 	spin_lock(&adata->reglock);
-@@ -83,6 +94,7 @@ static int __devinit of_anatop_probe(struct platform_device *pdev)
- 	drvdata->ioreg = ioreg;
- 	spin_lock_init(&drvdata->reglock);
- 	platform_set_drvdata(pdev, drvdata);
-+	anatop_data = drvdata;
- 	of_platform_populate(np, of_anatop_match, NULL, dev);
- 
- 	return 0;
--- 
-1.7.9.5
-
+-Andi
