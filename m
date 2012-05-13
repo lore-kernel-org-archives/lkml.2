@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab2EMXDS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 19:03:18 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:49650 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214Ab2EMXDR (ORCPT
+	id S1753696Ab2EMXP1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 19:15:27 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:32851 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753622Ab2EMXPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 19:03:17 -0400
+	Sun, 13 May 2012 19:15:25 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v3 0/5] CPU hotplug,
+ cpusets: Fix issues with cpusets handling during suspend/resume
+To: a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
+        paul@paulmenage.org, akpm@linux-foundation.org
+Cc: rjw@sisk.pl, nacc@us.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com, tj@kernel.org,
+        mschmidt@redhat.com, berrange@redhat.com, nikunj@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Date: Mon, 14 May 2012 04:44:31 +0530
+Message-ID: <20120513231325.3566.37740.stgit@srivatsabhat>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <873974doi6.fsf@devron.myhome.or.jp>
-References: <1336907039-18638-1-git-send-email-linkinjeon@gmail.com>
-	<1336924011.31383.6.camel@joe2Laptop>
-	<87bolsdpzk.fsf@devron.myhome.or.jp>
-	<1336926115.2656.2.camel@joe2Laptop>
-	<873974doi6.fsf@devron.myhome.or.jp>
-Date: Mon, 14 May 2012 08:03:16 +0900
-Message-ID: <CAKYAXd8cPCLvdw-btWmjo=sGQ+tH7Z+6V9NiECwGc5RQxzZp1A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] fat: use fat_msg_ratelimit in fat__get_entry.
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12051323-2674-0000-0000-00000468B394
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/14, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Joe Perches <joe@perches.com> writes:
->
->>> > Please don't split format strings.
->>> > It's much harder to grep.
->>>
->>> Please fight with 80 columns guys before requesting it.
->>
->> That battle is long over.
->>
->> from Documentation/CodingStyle:
->>
->> 		Chapter 2: Breaking long lines and strings
->>
->> []
->>
->> The limit on the length of lines is 80 columns and this is a strongly
->> preferred limit.
->> []
->> However, never break user-visible strings such as
->> printk messages, because that breaks the ability to grep for them.
->
-> Oh, I see. Namjae, can you adjust the patches to adjust for this?
-> I don't care either one, so you can add the following if you tweaked
-> patches.
-Hi. Ogawa.
-Okay, I will send you v2 patches for this.
-Thanks for your help.
->
-> Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
-> Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+Currently the kernel doesn't handle cpusets properly during suspend/resume.
+After a resume, all non-root cpusets end up having only 1 cpu (the boot cpu),
+causing massive performance degradation of workloads. One major user of cpusets
+is libvirt, which means that after a suspend/hibernation cycle, all VMs
+suddenly end up running terribly slow!
+
+Also, the kernel moves the tasks from one cpuset to another during CPU hotplug
+in the suspend/resume path, leading to a task-management nightmare after
+resume.
+
+This patchset solves these problems by reworking the way cpusets are handled
+during CPU hotplug in the suspend/resume path. This doesn't involve any
+change in semantics as to how cpusets are handled during regular CPU hotplug
+because it is correct as it is.
+
+Patches 1 & 2 are cleanups that separate out hotplug handling so that we can
+implement different logic for different hotplug events (CPU/Mem
+online/offline). This also leads to some optimizations and more importantly
+prepares the ground for any further work dealing with cpusets during hotplug.
+
+Patch 3 is a bug fix - it ensures that the tasks attached to the root cpuset
+see the updated cpus_allowed mask upon CPU hotplug.
+
+Patches 4 and 5 implement the fix for cpusets handling during suspend/resume.
+
+--
+ Srivatsa S. Bhat (5):
+      cpusets, hotplug: Implement cpuset tree traversal in a helper function
+      cpusets, hotplug: Restructure functions that are invoked during hotplug
+      cpusets: Update tasks' cpus_allowed mask upon updates to root cpuset
+      cpusets: Add provisions for distinguishing CPU Hotplug in suspend/resume path
+      cpusets, suspend: Save and restore cpusets during suspend/resume
+
+
+  include/linux/cpuset.h |    4 -
+ kernel/cpuset.c        |  235 +++++++++++++++++++++++++++++++++++++++---------
+ kernel/sched/core.c    |   29 +++++-
+ 3 files changed, 218 insertions(+), 50 deletions(-)
+
+
+
+Thanks,
+Srivatsa S. Bhat
+IBM Linux Technology Center
+
