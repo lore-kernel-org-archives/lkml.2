@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab2EMWp7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 18:45:59 -0400
-Received: from imr-mb02.mx.aol.com ([64.12.207.163]:48349 "EHLO
-	imr-mb02.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab2EMWp6 (ORCPT
+	id S1753460Ab2EMXDS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 19:03:18 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49650 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753214Ab2EMXDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 18:45:58 -0400
-Message-Id: <201205132243.q4DMhOuD008325@imr-mb02.mx.aol.com>
-Reply-To: <femi-ajayi360@live.com>
-From: "Tomm Frank" <ABEHRENS49@AOL.COM>
-Subject: WAIT YOUR URGENT REPLY
-Date: Sun, 13 May 2012 23:44:01 +0100
+	Sun, 13 May 2012 19:03:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 120513-1, 05/13/2012), Outbound message
-X-Antivirus-Status: Clean
-x-aol-global-disposition: G
-X-AOL-SCOLL-SCORE: 0:2:287167296:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-sid: 3039ac1d29054fb038fc2ad2
-X-AOL-IP: 41.71.190.153
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <873974doi6.fsf@devron.myhome.or.jp>
+References: <1336907039-18638-1-git-send-email-linkinjeon@gmail.com>
+	<1336924011.31383.6.camel@joe2Laptop>
+	<87bolsdpzk.fsf@devron.myhome.or.jp>
+	<1336926115.2656.2.camel@joe2Laptop>
+	<873974doi6.fsf@devron.myhome.or.jp>
+Date: Mon, 14 May 2012 08:03:16 +0900
+Message-ID: <CAKYAXd8cPCLvdw-btWmjo=sGQ+tH7Z+6V9NiECwGc5RQxzZp1A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] fat: use fat_msg_ratelimit in fat__get_entry.
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WAIT YOUR URGENT REPLY
-
-
-
-Am really sorry i wrote so late about my inquiry i 
-
-actually traveled to china to meet with some 
-
-suppliers and i just came back into town few days 
-
-ago. I was able to meet with some companies and also 
-
-got to see what they have for me but i was surprised 
-
-because the prices are much.
-
-
-We saw a similar product on Alibaba 
-
-Shopping/Business page so please confirm to us if 
-
-you/your company can make provision of the exact 
-
-product as shown on Alibaba Shopping/Business page 
-
-which you can view by clicking the link below and 
-
-login with you email address together with your 
-
-password to download the attachment page to view the 
-
-product. 
-
-Bellow is the link.
-
-http://sollanicsltd.ucoz.com/plasltd.html
-
-
-We will await your response with details, date of 
-
-delivery and send quotation for large qty urgently 
-
-prize and quantity that can be made available.
-
-
-
-Bestregard
- Tonny Frank
+2012/5/14, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Joe Perches <joe@perches.com> writes:
+>
+>>> > Please don't split format strings.
+>>> > It's much harder to grep.
+>>>
+>>> Please fight with 80 columns guys before requesting it.
+>>
+>> That battle is long over.
+>>
+>> from Documentation/CodingStyle:
+>>
+>> 		Chapter 2: Breaking long lines and strings
+>>
+>> []
+>>
+>> The limit on the length of lines is 80 columns and this is a strongly
+>> preferred limit.
+>> []
+>> However, never break user-visible strings such as
+>> printk messages, because that breaks the ability to grep for them.
+>
+> Oh, I see. Namjae, can you adjust the patches to adjust for this?
+> I don't care either one, so you can add the following if you tweaked
+> patches.
+Hi. Ogawa.
+Okay, I will send you v2 patches for this.
+Thanks for your help.
+>
+> Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
+> Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
