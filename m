@@ -1,46 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab2EMLu1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 07:50:27 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48133 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752744Ab2EMLu0 (ORCPT
+	id S1753092Ab2EMLxF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 07:53:05 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:45253 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab2EMLxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 07:50:26 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regmap: Dynamicallly allocate a regmap_irq range if no base is specified
-Date: Sun, 13 May 2012 12:50:21 +0100
-Message-Id: <1336909821-18711-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	Sun, 13 May 2012 07:53:00 -0400
+Message-ID: <4FAF9F0B.4010305@panasas.com>
+Date: Sun, 13 May 2012 14:46:19 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+MIME-Version: 1.0
+To: "Ted Ts'o" <tytso@mit.edu>, Rob Landley <rob@landley.net>,
+        Ludwig Nussel <ludwig.nussel@suse.de>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        open list:
+	EXT2 FILE SYSTEM <linux-ext4@vger.kernel.org>,
+        "; open list":
+	DOCUMENTATION <linux-doc@vger.kernel.org>, ;
+Illegal-Object: Syntax error in To: addresses found on vger.kernel.org:
+	To:	;open list:DOCUMENTATION <linux-doc@vger.kernel.org>
+			^-extraneous tokens in mailbox, missing end of mailbox
+Subject: Re: [PATCH RESEND] implement uid and gid mount options for ext2,
+ ext3 and ext4
+References: <1336660924-9598-1-git-send-email-ludwig.nussel@suse.de> <20120511034945.GA15892@mobil.systemanalysen.net> <4FAD2161.3090108@landley.net> <20120511164605.GC6467@thunk.org> <4FAD49EB.5010804@panasas.com> <20120511192235.GE6467@thunk.org>
+In-Reply-To: <20120511192235.GE6467@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This avoids drivers having to implement the logic and will make it easier
-to add irq_domain support.
+On 05/11/2012 10:22 PM, Ted Ts'o wrote:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regmap-irq.c |    4 ++++
- 1 file changed, 4 insertions(+)
+> On Fri, May 11, 2012 at 08:18:35PM +0300, Boaz Harrosh wrote:
+>> How is that ext* special? You said "Unix systems" there are lots more
+>> FSs more common to "Unix" systems
+> 
+> Well, because FreeBSD, NetBSD, and Hurd do support ext2/3*.  So if you
+> want a file system which is higher performance than VFAT, and
+> supported on Unix-like systems beyond Linux, ext* is the best choice
+> in a number of cases.
+> 
 
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index 0d233cc..f9724af 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -195,6 +195,10 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 			return -EINVAL;
- 	}
- 
-+	/* Ask for a dynamic range if none is specified */
-+	if (!irq_base)
-+		irq_base = -1;
-+
- 	irq_base = irq_alloc_descs(irq_base, 0, chip->num_irqs, 0);
- 	if (irq_base < 0) {
- 		dev_warn(map->dev, "Failed to allocate IRQs: %d\n",
--- 
-1.7.10
 
+That was a rhetorical questions. I meant  ext* is not special. There
+are plenty of other FFs that are common to unix systems.
+
+> As far as NTFS is concerned, the *BSD's can only support NTFS via
+> FUSE, and I've been suspicious about the quality of our ntfs support
+> under Linux --- we don't have a full-featured fsck for it, for
+> example.  I'm at least not comfortable using NTFS on my personal
+> machines.  (Last I checked there were all sorts of asterisks about
+> data corruption if the system crashed before Linux mounted it, since
+> apparently NTFS's logging subsystem was never reverse-engineered.)
+> 
+
+
+No! on all modern Linux distro's ntfs (ntfs-3g) is supported with
+that infamous FUSE driver. The Kernel driver is long dead. The same
+FUSE driver is also used under *BSD and officially supported by
+Apple in OSX. Last benchmarks I saw where Faster then ext2 and in-par
+with ext3, MetaData faster, IO slower then ext3. Stability is very
+good and I never had an issue, on any of the above systems.
+
+There is also a very good fsck and a suit of other tools under the same
+ntfs-3g project. To date I have fixed 10s of friends/family Windows
+machines with a Linux rescue USB-stick, I mean machines that would even
+boot.
+
+>> As a maintainer of ext4 filesystem which is the official system for
+>> Linux in many distrows, still. Please resists any such crap.
+>> User "convenience-vs-security was never a geol of Unix.
+> 
+> Did you look at the proposal I made?  By making it something where the
+> file system is explicitly marked as "for interchange", it avoids the
+> security problem (as much as you can when you put your unencrypted
+> data on removable, portable storage which could be lost or stolen).
+> 
+> Sure, if you don't need to operate on the data as a mounted file
+> system, tar or cpio or zip is a good choice for maximal portability.
+> But if you want to do something like rsync on a portable SSD, 
+
+
+Again, for the last time, you are the maintainer, you do what you
+understand, I hope Linus or someone can make it more clear than me.
+
+There is nothing special about USB sticks and ext* filesystems it
+is the same old "shared files" problem. If you are not under a single
+NIS domain, then these are different users. If files need to be shared
+they need to sit in the proper CHMODed directory and bits.
+
+I have at home a bittorent network directory for the all family, So the
+first time I set it up I had to ssh into the server and fix the permissions.
+That was easy enough listen to learn.
+
+For the last time and I'm off this for good:
+	"Shared files" problem is not solved by mount options.
+
+Been there done that
+
+
+<snip>
