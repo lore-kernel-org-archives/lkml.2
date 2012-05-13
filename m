@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab2EMNs7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 09:48:59 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45023 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304Ab2EMNs6 (ORCPT
+	id S1752967Ab2EMNuU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 09:50:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54517 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304Ab2EMNuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 09:48:58 -0400
-Message-ID: <4FAFBBC7.9020101@gmail.com>
-Date: Sun, 13 May 2012 15:48:55 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH] Fix minixfs size check
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enig303EAED182F7B4BC11AD2DE7"
+	Sun, 13 May 2012 09:50:19 -0400
+From: Ben Minerds <puzzleduck@gmail.com>
+To: alan@lxorguk.ukuu.org.uk
+Cc: gregkh@linuxfoundation.org, richard.weinberger@gmail.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        puzzleduck@gmail.com
+Subject: [PATCH 2/6] USB: serial: Changes to conform with checkpatch. - spaces around '?' and ':'.
+Date: Sun, 13 May 2012 23:52:36 +1000
+Message-Id: <1336917160-27059-2-git-send-email-puzzleduck@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig303EAED182F7B4BC11AD2DE7
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Removed 14 checkpatch.sh errors.
 
-minixfs file size check is buggy and it doesn't allow creating a block wh=
-ich
-can't be fully filled
+Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
+---
+ drivers/usb/serial/keyspan.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-Signed-off-by: Vladimir Serbinenko <phcoder@gmail.com>
+diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
+index b689990..d029a04 100644
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -180,7 +180,7 @@ static void keyspan_set_termios(struct tty_struct *tty,
+ 	tty_encode_baud_rate(tty, baud_rate, baud_rate);
+ 	/* set CTS/RTS handshake etc. */
+ 	p_priv->cflag = cflag;
+-	p_priv->flow_control = (cflag & CRTSCTS)? flow_cts: flow_none;
++	p_priv->flow_control = (cflag & CRTSCTS) ? flow_cts : flow_none;
+ 
+ 	/* Mark/Space not supported */
+ 	tty->termios->c_cflag &= ~CMSPAR;
+@@ -1134,7 +1134,7 @@ static int keyspan_open(struct tty_struct *tty, struct usb_serial_port *port)
+ 	}
+ 	/* set CTS/RTS handshake etc. */
+ 	p_priv->cflag = cflag;
+-	p_priv->flow_control = (cflag & CRTSCTS)? flow_cts: flow_none;
++	p_priv->flow_control = (cflag & CRTSCTS) ? flow_cts : flow_none;
+ 
+ 	keyspan_send_setup(port, 1);
+ 	/* mdelay(100); */
+@@ -1744,7 +1744,7 @@ static int keyspan_usa26_send_setup(struct usb_serial *serial,
+ 		msg.setPrescaler = 0xff;
+ 	}
+ 
+-	msg.lcr = (p_priv->cflag & CSTOPB)? STOPBITS_678_2: STOPBITS_5678_1;
++	msg.lcr = (p_priv->cflag & CSTOPB) ? STOPBITS_678_2 : STOPBITS_5678_1;
+ 	switch (p_priv->cflag & CSIZE) {
+ 	case CS5:
+ 		msg.lcr |= USA_DATABITS_5;
+@@ -1761,7 +1761,7 @@ static int keyspan_usa26_send_setup(struct usb_serial *serial,
+ 	}
+ 	if (p_priv->cflag & PARENB) {
+ 		/* note USA_PARITY_NONE == 0 */
+-		msg.lcr |= (p_priv->cflag & PARODD)?
++		msg.lcr |= (p_priv->cflag & PARODD) ?
+ 			USA_PARITY_ODD : USA_PARITY_EVEN;
+ 	}
+ 	msg.setLcr = 0xff;
+@@ -2033,7 +2033,7 @@ static int keyspan_usa49_send_setup(struct usb_serial *serial,
+ 		/* msg.setPrescaler = 0xff; */
+ 	}
+ 
+-	msg.lcr = (p_priv->cflag & CSTOPB)? STOPBITS_678_2: STOPBITS_5678_1;
++	msg.lcr = (p_priv->cflag & CSTOPB) ? STOPBITS_678_2 : STOPBITS_5678_1;
+ 	switch (p_priv->cflag & CSIZE) {
+ 	case CS5:
+ 		msg.lcr |= USA_DATABITS_5;
+@@ -2050,7 +2050,7 @@ static int keyspan_usa49_send_setup(struct usb_serial *serial,
+ 	}
+ 	if (p_priv->cflag & PARENB) {
+ 		/* note USA_PARITY_NONE == 0 */
+-		msg.lcr |= (p_priv->cflag & PARODD)?
++		msg.lcr |= (p_priv->cflag & PARODD) ?
+ 			USA_PARITY_ODD : USA_PARITY_EVEN;
+ 	}
+ 	msg.setLcr = 0xff;
+@@ -2219,7 +2219,7 @@ static int keyspan_usa90_send_setup(struct usb_serial *serial,
+ 		msg.txMode = TXMODE_BYHAND;
+ 	}
+ 
+-	msg.lcr = (p_priv->cflag & CSTOPB)? STOPBITS_678_2: STOPBITS_5678_1;
++	msg.lcr = (p_priv->cflag & CSTOPB) ? STOPBITS_678_2 : STOPBITS_5678_1;
+ 	switch (p_priv->cflag & CSIZE) {
+ 	case CS5:
+ 		msg.lcr |= USA_DATABITS_5;
+@@ -2236,7 +2236,7 @@ static int keyspan_usa90_send_setup(struct usb_serial *serial,
+ 	}
+ 	if (p_priv->cflag & PARENB) {
+ 		/* note USA_PARITY_NONE == 0 */
+-		msg.lcr |= (p_priv->cflag & PARODD)?
++		msg.lcr |= (p_priv->cflag & PARODD) ?
+ 			USA_PARITY_ODD : USA_PARITY_EVEN;
+ 	}
+ 	if (p_priv->old_cflag != p_priv->cflag) {
+@@ -2365,7 +2365,7 @@ static int keyspan_usa67_send_setup(struct usb_serial *serial,
+ 	}
+ 	if (p_priv->cflag & PARENB) {
+ 		/* note USA_PARITY_NONE == 0 */
+-		msg.lcr |= (p_priv->cflag & PARODD)?
++		msg.lcr |= (p_priv->cflag & PARODD) ?
+ 					USA_PARITY_ODD : USA_PARITY_EVEN;
+ 	}
+ 	msg.setLcr = 0xff;
+-- 
+1.7.2.5
 
-diff --git a/fs/minix/itree_v1.c b/fs/minix/itree_v1.c
-index 282e15a..4f8f8b2 100644
---- a/fs/minix/itree_v1.c
-+++ b/fs/minix/itree_v1.c
-@@ -29,7 +29,8 @@ static int block_to_path(struct inode * inode, long blo=
-ck, int offsets[DEPTH])
- 	if (block < 0) {
- 		printk("MINIX-fs: block_to_path: block %ld < 0 on dev %s\n",
- 			block, bdevname(inode->i_sb->s_bdev, b));
--	} else if (block >=3D (minix_sb(inode->i_sb)->s_max_size/BLOCK_SIZE)) {=
-
-+	} else if ((u64) block * (u64) BLOCK_SIZE
-+		   >=3D minix_sb(inode->i_sb)->s_max_size) {
- 		if (printk_ratelimit())
- 			printk("MINIX-fs: block_to_path: "
- 			       "block %ld too big on dev %s\n",
-diff --git a/fs/minix/itree_v2.c b/fs/minix/itree_v2.c
-index 13487ad..4a9a19d 100644
---- a/fs/minix/itree_v2.c
-+++ b/fs/minix/itree_v2.c
-@@ -32,7 +32,8 @@ static int block_to_path(struct inode * inode, long blo=
-ck, int offsets[DEPTH])
- 	if (block < 0) {
- 		printk("MINIX-fs: block_to_path: block %ld < 0 on dev %s\n",
- 			block, bdevname(sb->s_bdev, b));
--	} else if (block >=3D (minix_sb(inode->i_sb)->s_max_size/sb->s_blocksiz=
-e)) {
-+	} else if ((u64) block * (u64) sb->s_blocksize
-+		   >=3D minix_sb(inode->i_sb)->s_max_size) {
- 		if (printk_ratelimit())
- 			printk("MINIX-fs: block_to_path: "
- 			       "block %ld too big on dev %s\n",
-
-
---------------enig303EAED182F7B4BC11AD2DE7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iF4EAREKAAYFAk+vu8cACgkQNak7dOguQgm6mAD9HNDWjEbqZnv4UYblP1ZhX+iX
-i3A1vNE8DYQ9NxSFnhwA/jEGGoS7fJlueezZEjc3tXa+gofYIdYD6ax9oRlN6ke4
-=0jTV
------END PGP SIGNATURE-----
-
---------------enig303EAED182F7B4BC11AD2DE7--
