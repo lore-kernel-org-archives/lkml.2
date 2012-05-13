@@ -1,169 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab2EMIrm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 04:47:42 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:41455
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1751675Ab2EMIrk (ORCPT
+	id S1752384Ab2EMIzb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 04:55:31 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:55694 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751924Ab2EMIz3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 04:47:40 -0400
-Date: Sun, 13 May 2012 10:47:37 +0200 (CEST)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [patch] UBI: add means to clear ubi work queue for particular
- lnums
-In-Reply-To: <alpine.DEB.2.00.1205121712410.24689@eristoteles.iwoars.net>
-Message-ID: <alpine.DEB.2.00.1205131043370.654@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205121712410.24689@eristoteles.iwoars.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sun, 13 May 2012 04:55:29 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120513044052.GC31866@thunk.org>
+References: <CAHOpdHWMcV6LjpaEhk27ULkz-wGUD0-pNH=PC+ahDn47VQ+qmQ@mail.gmail.com>
+	<20120513044052.GC31866@thunk.org>
+Date: Sun, 13 May 2012 10:55:28 +0200
+Message-ID: <CAHOpdHW0fKaUwCkr7uKuxhkZyazjYBCe2dCjHHeQ9XaFiNhX+w@mail.gmail.com>
+Subject: Re: BUG: jbd2 slowing down file copies even though no journaling file
+ system is used
+From: =?ISO-8859-1?Q?Bj=F6rn_Christoph?= <einkaufenbc09@googlemail.com>
+To: "Ted Ts'o" <tytso@mit.edu>,
+        =?ISO-8859-1?Q?Bj=F6rn_Christoph?= <einkaufenbc09@googlemail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the second part of a patch to allow UBI to force the erasure of
-particular logical eraseblock numbers. In this patch, a new function,
-ubi_lnum_purge, is added that allows the caller to synchronously erase all
-unmapped erase blocks whose LEB number corresponds to the parameter. This
-requires a previous patch that stores the LEB number in struct ubi_work.
+Ted,
 
-This was tested by disabling the call to do_work in ubi thread, which results
-in the work queue remaining unless explicitly called to remove. UBIFS was
-changed to call ubifs_leb_change 50 times for three different LEBs. Then the
-new function was called to clear the queue for the three differnt LEB numbers
-one at a time. The work queue was dumped each time and the selective removal
-of the particular LEB numbers was observed.
+dm-1 points to my Linux-OS partition which is actually the encrypted
+LVM one. However, I could also see that on some copies this actually
+points to the related truecrypt partition so that makes sense there
+(the dm-1 doesn't imo but not important at this point).
 
-Calls to down_read(&ubi->work_sem) are not being done (unlike in
-do_work).. I'm not sure
-exactly where its needed / what it does, so perhaps someone can enlighten
-me.
+"echo 1 > /sys/kernel/debug/tracing/events/ext4/ext4_sync_file_enter/enable"
+didn't work for me, I got a "permission denied" error. So then I
+figured out I have to use "sudo -i" to get a root shell, then I can
+actually echo into that file ? Very strange but an Ubuntu
+issue/feature I guess.
 
+However, I don't see that the file /sys/kernel/debug/tracing/trace
+changes a lot? All I see is this even though I am clearly copying data
+onto the disk via samba:
 
-Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
----
- drivers/mtd/ubi/kapi.c  |   31 +++++++++++++++++++++++++++++++
- drivers/mtd/ubi/ubi.h   |    1 +
- drivers/mtd/ubi/wl.c    |   35 +++++++++++++++++++++++++++++++++++
- include/linux/mtd/ubi.h |    1 +
- 4 files changed, 68 insertions(+), 0 deletions(-)
+# tracer: nop
+#
+#           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+#              | |       |          |         |
+           <...>-2096  [001]  1111.151516: ext4_sync_file_enter: dev
+252,1 ino 3410181 parent 3410196 datasync 1
+           <...>-2096  [000]  1111.201520: ext4_sync_file_enter: dev
+252,1 ino 3410181 parent 3410196 datasync 0
+           <...>-2096  [001]  1111.252939: ext4_sync_file_enter: dev
+252,1 ino 3410181 parent 3410196 datasync 1
+           <...>-2096  [000]  1111.290241: ext4_sync_file_enter: dev
+252,1 ino 3410181 parent 3410196 datasync 0
+           <...>-2096  [001]  1111.341757: ext4_sync_file_enter: dev
+252,1 ino 3410181 parent 3410196 datasync 1
+           <...>-2096  [000]  1111.367540: ext4_sync_file_enter: dev
+252,1 ino 3410181 parent 3410196 datasync 0
+           <...>-2096  [001]  1111.419511: ext4_sync_file_enter: dev
+252,1 ino 3410181 parent 3410196 datasync 1
+           <...>-2096  [000]  1111.456354: ext4_sync_file_enter: dev
+252,1 ino 3410181 parent 3410196 datasync 0
 
-diff --git a/drivers/mtd/ubi/kapi.c b/drivers/mtd/ubi/kapi.c
-index 9fdb353..bfd4e22 100644
---- a/drivers/mtd/ubi/kapi.c
-+++ b/drivers/mtd/ubi/kapi.c
-@@ -720,6 +720,37 @@ int ubi_sync(int ubi_num)
- }
- EXPORT_SYMBOL_GPL(ubi_sync);
+PID 2096 is sshd acc. to "top" (I think this was my local copying to a
+file from /dev/zero?).
 
-+/**
-+ * ubi_lnum_purge - synchronously erase unmapped PEBs by LEB number.
-+ * @ubi_num: UBI device to erase PEBs
-+ * @lnum: the LEB number to erase old unmapped PEBs.
-+ *
-+ * This function is designed to offer a means to ensure that the contents of
-+ * old, unmapped LEBs are securely erased without having to flush the entire
-+ * work queue of all erase blocks that need erasure.  Simply erasing the block
-+ * at the time of unmapped is insufficient, as the wear-levelling subsystem
-+ * may have already moved the contents. This function navigates the list of
-+ * erase blocks that need erasures, and performs an immediate and synchronous
-+ * erasure of any erase block that has held data for this particular @lnum.
-+ * This may include eraseblocks that held older versions of the same @lnum.
-+ * Returns zero in case of success and a negative error code in case of
-+ * failure.
-+ */
-+int ubi_lnum_purge(int ubi_num, int lnum)
-+{
-+	int err;
-+	struct ubi_device *ubi;
-+
-+	ubi = ubi_get_device(ubi_num);
-+	if (!ubi)
-+		return -ENODEV;
-+
-+	err = ubi_wl_flush_lnum(ubi, lnum);
-+	ubi_put_device(ubi);
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(ubi_lnum_purge);
-+
- BLOCKING_NOTIFIER_HEAD(ubi_notifiers);
+Even if I copy data now, the file never changes, I always see the same
+"cat" output?
 
- /**
-diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
-index 14443a0..e1a29ea 100644
---- a/drivers/mtd/ubi/ubi.h
-+++ b/drivers/mtd/ubi/ubi.h
-@@ -539,6 +539,7 @@ int ubi_eba_init_scan(struct ubi_device *ubi, struct ubi_scan_info *si);
- int ubi_wl_get_peb(struct ubi_device *ubi, int dtype);
- int ubi_wl_put_peb(struct ubi_device *ubi, int pnum, int torture, int lnum);
- int ubi_wl_flush(struct ubi_device *ubi);
-+int ubi_wl_flush_lnum(struct ubi_device *ubi, int lnum);
- int ubi_wl_scrub_peb(struct ubi_device *ubi, int pnum);
- int ubi_wl_init_scan(struct ubi_device *ubi, struct ubi_scan_info *si);
- void ubi_wl_close(struct ubi_device *ubi);
-diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-index 7f6dd7e..bc8111d 100644
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -1278,6 +1278,41 @@ retry:
- }
+I changed the entry back to 0, rebooted, changed it back to 1, started
+copying a file to an ext4 partition and cat
+/sys/kernel/debug/tracing/trace is just plain empty (shows "tracer:
+nop", TASK-PID etc but no data).
 
- /**
-+ * ubi_wl_flush_lnum - flush all pending works associated with a LEB number
-+ * @ubi: UBI device description object
-+ * @lnum: the LEB number only for which work should be synchronously executed
-+ *
-+ * This function executes all pending works for PEBs whose associated with a
-+ * particular LEB number. This function returns zero in case of success and a
-+ * negative error code in case of failure.
-+ */
-+int ubi_wl_flush_lnum(struct ubi_device *ubi, int lnum)
-+{
-+	int err = 0;
-+	struct ubi_work *wrk, *tmp;
-+
-+	/* For each pending work, if it corresponds to the parameter @lnum,
-+	 * then execute the work.
-+	 */
-+	dbg_wl("flush lnum %d", lnum);
-+	list_for_each_entry_safe(wrk, tmp, &ubi->works, list) {
-+		if (wrk->lnum == lnum) {
-+			spin_lock(&ubi->wl_lock);
-+			list_del(&wrk->list);
-+			ubi->works_count -= 1;
-+			ubi_assert(ubi->works_count >= 0);
-+			spin_unlock(&ubi->wl_lock);
-+
-+			err = wrk->func(ubi, wrk, 0);
-+			if (err)
-+				ubi_err("work failed with error code %d", err);
-+		}
-+	}
-+
-+	return err;
-+}
-+
-+/**
-  * ubi_wl_flush - flush all pending works.
-  * @ubi: UBI device description object
-  *
-diff --git a/include/linux/mtd/ubi.h b/include/linux/mtd/ubi.h
-index db4836b..1d1b6a1 100644
---- a/include/linux/mtd/ubi.h
-+++ b/include/linux/mtd/ubi.h
-@@ -216,6 +216,7 @@ int ubi_leb_unmap(struct ubi_volume_desc *desc, int lnum);
- int ubi_leb_map(struct ubi_volume_desc *desc, int lnum, int dtype);
- int ubi_is_mapped(struct ubi_volume_desc *desc, int lnum);
- int ubi_sync(int ubi_num);
-+int ubi_lnum_purge(int ubi_num, int lnum);
+I'm a bit lost on how to gather the required traces :(
 
- /*
-  * This function is the same as the 'ubi_leb_read()' function, but it does not
--- 
-1.7.5.4
+Thanks and regards,
+Bjoern
 
-
+2012/5/13 Ted Ts'o <tytso@mit.edu>:
+> On Sun, May 13, 2012 at 01:21:00AM +0200, Björn Christoph wrote:
+>>
+>> IOTOP shows this in some cases, mostly jbd2 is not there:
+>>   PRIO  USER     DISK READ  DISK WRITE  SWAPIN     IO>    COMMAND
+>>   416 be/3 root        0.00 B/s   97.65 M/s  0.00 % 13.74 % [jbd2/dm-1-8]
+>
+> Well, the file system in that has the huge write bandwidth is
+> whichever device is associated with device mapper device dm-1 (i.e.,
+> with a device mapper minor number of 1).  What does "ls -l
+> /dev/mapper" show you?
+>
+> Whatever file system is associated with it is clearly generating a lot
+> of journal activity.
+>
+> Something that may help in determining what process is generating all
+> of this journal activity (which is likely the result of something
+> calling fsync a lot) is to try this:
+>
+> echo 1 > /sys/kernel/debug/tracing/events/ext4/ext4_sync_file_enter/enable
+>
+> ... then wait for a minute or so, and then capture the output of:
+>
+> cat /sys/kernel/debug/tracing/trace
+>
+> See if that shows up anything useful.
+>
+> Regards,
+>
+>                                        - Ted
