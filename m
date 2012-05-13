@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab2EMRKH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 13:10:07 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:46312 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab2EMRKF (ORCPT
+	id S1751842Ab2EMRLO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 13:11:14 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54449 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab2EMRLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 13:10:05 -0400
-Date: Sun, 13 May 2012 20:09:38 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Joerg Roedel <joerg.roedel@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, walter harms <wharms@bfs.de>
-Subject: [patch v2] iommu: off by one in dmar_get_fault_reason()
-Message-ID: <20120513170938.GA4280@elgon.mountain>
+	Sun, 13 May 2012 13:11:13 -0400
+Message-ID: <4FAFEB2D.5010009@googlemail.com>
+Date: Sun, 13 May 2012 19:11:09 +0200
+From: Sebastian Hesselbarh <sebastian.hesselbarth@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FAE595A.6010605@bfs.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org, mturquette@ti.com
+Subject: Re: [RFC] Common clock framework for external clock generators
+References: <4FAB15DB.5050702@googlemail.com> <20120513122946.GD706@sirena.org.uk> <4FAFE1BF.9050805@googlemail.com> <20120513164304.GB6381@opensource.wolfsonmicro.com>
+In-Reply-To: <20120513164304.GB6381@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fault_reason - 0x20 == ARRAY_SIZE(irq_remap_fault_reasons) is one past
-the end of the array.
+On 05/13/2012 06:43 PM, Mark Brown wrote:
+> One of the patches I've been sending adds a dummy clk_unregister() for
+> the sake of making the drivers look nicer - practically speaking it's
+> not likely to be terribly important as these things don't get unloaded
+> terribly often.  It looks like that patch didn't get applied either.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-v2: re-arranged slightly for readability
+Well, of course I don't plan to unload the driver ever but basically it
+is possible..
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 5ef65cf..3a74e44 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -1057,8 +1057,8 @@ static const char *irq_remap_fault_reasons[] =
- 
- const char *dmar_get_fault_reason(u8 fault_reason, int *fault_type)
- {
--	if (fault_reason >= 0x20 && (fault_reason <= 0x20 +
--				     ARRAY_SIZE(irq_remap_fault_reasons))) {
-+	if (fault_reason >= 0x20 && (fault_reason - 0x20 <
-+					ARRAY_SIZE(irq_remap_fault_reasons))) {
- 		*fault_type = INTR_REMAP;
- 		return irq_remap_fault_reasons[fault_reason - 0x20];
- 	} else if (fault_reason < ARRAY_SIZE(dma_remap_fault_reasons)) {
+One more thing I thought about: The platform I currently use needs to 
+pass the external clocks to the platform devices that can use them
+later. IMHO the correct way of creating clocks would be:
+
+- register i2c clock driver and let it register its clocks with names
+   like e.g. si5351, clkout0. The clock driver itself cannot and should
+   not know who uses it later on.
+- let drivers look for e.g. kirkwood-i2s.1, extclk because the i2s
+   driver cannot know where the external clock comes from.
+- have a board-specific function that configures clock hierarchy and
+   create suitable clk_aliases e.g.
+   si5351,clkout0 = kirkwood-i2s.1,extclk.
+
+Currently I added a callback function pointer to the platform data
+passed to the i2c clock driver that is called at the end of clock
+driver probe. I doubt it will be accepted that way but can't think
+of any other way..
+
+Sebastian
