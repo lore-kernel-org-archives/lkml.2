@@ -1,89 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab2EMOD3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 10:03:29 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44900 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304Ab2EMOD1 (ORCPT
+	id S1753207Ab2EMOYU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 10:24:20 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:48812 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab2EMOYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 10:03:27 -0400
-Date: Mon, 14 May 2012 00:03:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, cpufreq@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: Add myself as the cpufreq maintainer
-Message-Id: <20120514000312.3da77a8b29be4c33be3509e6@canb.auug.org.au>
-In-Reply-To: <201205131512.36250.rjw@sisk.pl>
-References: <20120504160417.GA421@redhat.com>
-	<201205112135.46097.rjw@sisk.pl>
-	<20120513101931.39617e4909fcc10d6739bc75@canb.auug.org.au>
-	<201205131512.36250.rjw@sisk.pl>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__14_May_2012_00_03_12_+1000_iBZQBly5FYiZRf+w"
+	Sun, 13 May 2012 10:24:19 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Amit Sahrawat <amit.sahrawat83@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] fat: add fat_msg_ratelimit.
+References: <1336907005-18602-1-git-send-email-linkinjeon@gmail.com>
+Date: Sun, 13 May 2012 23:24:15 +0900
+In-Reply-To: <1336907005-18602-1-git-send-email-linkinjeon@gmail.com> (Namjae
+	Jeon's message of "Sun, 13 May 2012 07:03:25 -0400")
+Message-ID: <87likwdur4.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__14_May_2012_00_03_12_+1000_iBZQBly5FYiZRf+w
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Hi Rafael,
-
-On Sun, 13 May 2012 15:12:36 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> I tried to add fat_msg_ratelimit to limit many message at once.
 >
-> On Sunday, May 13, 2012, Stephen Rothwell wrote:
-> >=20
-> > On Fri, 11 May 2012 21:35:45 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wr=
-ote:
-> > >
-> > > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > >=20
-> > > Since cpufreq has no official maintainer at the moment, I'm willing
-> > > to maintain it along some other power management core code I've been
-> > > maintaining already.
-> >=20
-> > I have cpufreq-current and cpufreq trees in linux-next (both currently
-> > empty and with Dave as contact).  What should I do with them?
-> >=20
-> > cpufreq-current	git://git.kernel.org/pub/scm/linux/kernel/git/davej/cpu=
-freq.git#fixes
-> > cpufreq		git://git.kernel.org/pub/scm/linux/kernel/git/davej/cpufreq.gi=
-t#next
->=20
-> I will push future cpufreq updates through the linux-pm tree.
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
 
-OK, I will remove the two trees above from linux-next.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Looks fine.
 
---Signature=_Mon__14_May_2012_00_03_12_+1000_iBZQBly5FYiZRf+w
-Content-Type: application/pgp-signature
+Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks.
 
-iQIcBAEBCAAGBQJPr78gAAoJEECxmPOUX5FEHdYP/RbNC9HWFVZM2y+kOJt43kAO
-yZPoOYUPusYoz3lX3Myei0LcsRTLW7WGVl/fofZzfxiA7vZvMzIj+immPkF+hb+f
-y28BZZ72/r2/ZJuUNEbuU8xuF5ARVOBGUZFRdwELhk5PtI5/iktdXe9GIYBu9GGC
-IXQXvbJwftgYPULltNt+sMNQX0H3SXf+aF2iT+p8RHsBOaZDk0fydMslkrmy4+Qw
-TtJsmdrG/UJ/3wF61B5rniFYRzJw1rSIbRthfIIW0oq3ZTF0hiePK9B17Xoeo9V0
-q5/IPp1bAYi/MFdZcwxLEPe2MLd0DmpF7TsA4Ks0JSXu73JPl7LcwObX4e6MuosU
-wKqV8B8JtSnNPdubQf0P1mjsg5QabJyPVB59dViefmwMnGLqjJBMIZQFzDk0Dvg0
-55qkB3o13AdWhRIv/9DGRPk/YHSbyOqQ5sdmXerDBvP0vpwndITEABY500PxLice
-Wbkd3wH/nxCHRNVD/DpgAkZkIXP4B3RD8GLk3R03Ka8JylQakUotyV7ZW0PJIMtY
-tNs0/g0pr4k5KISglHh8ZHf57a9qlyl9yZNrWVKc/oTevJeVinGOEK12EtspfLhO
-cWevX+cHeXxOnsQjo2dsXE0yWTwV4KOiusCzx+VmUrzPA58QpiHueacJp81l2PNs
-ZlMs6rIurWvy35+vTjU/
-=CwVU
------END PGP SIGNATURE-----
+> ---
+>  fs/fat/fat.h  |    9 +++++++--
+>  fs/fat/misc.c |   18 ++++++++++--------
+>  2 files changed, 17 insertions(+), 10 deletions(-)
+>
+> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+> index 951d12b..3c581c7 100644
+> --- a/fs/fat/fat.h
+> +++ b/fs/fat/fat.h
+> @@ -333,8 +333,13 @@ void __fat_fs_error(struct super_block *sb, int report, const char *fmt, ...);
+>  	__fat_fs_error(sb, 1, fmt , ## args)
+>  #define fat_fs_error_ratelimit(sb, fmt, args...) \
+>  	__fat_fs_error(sb, __ratelimit(&MSDOS_SB(sb)->ratelimit), fmt , ## args)
+> -__printf(3, 4) __cold
+> -void fat_msg(struct super_block *sb, const char *level, const char *fmt, ...);
+> +__printf(4, 5) __cold
+> +void __fat_msg(struct super_block *sb, int report, const char *level,
+> +			const char *fmt, ...);
+> +#define	fat_msg(sb, level, fmt, args...)		\
+> +	__fat_msg(sb, 1, level, fmt, ## args)
+> +#define	fat_msg_ratelimit(sb, level, fmt, args...)	\
+> +	__fat_msg(sb, __ratelimit(&MSDOS_SB(sb)->ratelimit), level, fmt, ## args)
+>  extern int fat_clusters_flush(struct super_block *sb);
+>  extern int fat_chain_add(struct inode *inode, int new_dclus, int nr_cluster);
+>  extern void fat_time_fat2unix(struct msdos_sb_info *sbi, struct timespec *ts,
+> diff --git a/fs/fat/misc.c b/fs/fat/misc.c
+> index 6d93360..dcdb091 100644
+> --- a/fs/fat/misc.c
+> +++ b/fs/fat/misc.c
+> @@ -45,19 +45,21 @@ void __fat_fs_error(struct super_block *sb, int report, const char *fmt, ...)
+>  EXPORT_SYMBOL_GPL(__fat_fs_error);
+>  
+>  /**
+> - * fat_msg() - print preformated FAT specific messages. Every thing what is
+> + * __fat_msg() - print preformated FAT specific messages. Every thing what is
+>   * not fat_fs_error() should be fat_msg().
+>   */
+> -void fat_msg(struct super_block *sb, const char *level, const char *fmt, ...)
+> +void __fat_msg(struct super_block *sb, int report, const char *level,
+> +			const char *fmt, ...)
+>  {
+>  	struct va_format vaf;
+>  	va_list args;
+> -
+> -	va_start(args, fmt);
+> -	vaf.fmt = fmt;
+> -	vaf.va = &args;
+> -	printk("%sFAT-fs (%s): %pV\n", level, sb->s_id, &vaf);
+> -	va_end(args);
+> +	if (report) {
+> +		va_start(args, fmt);
+> +		vaf.fmt = fmt;
+> +		vaf.va = &args;
+> +		printk("%sFAT-fs (%s): %pV\n", level, sb->s_id, &vaf);
+> +		va_end(args);
+> +	}
+>  }
+>  
+>  /* Flushes the number of free clusters on FAT32 */
 
---Signature=_Mon__14_May_2012_00_03_12_+1000_iBZQBly5FYiZRf+w--
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
