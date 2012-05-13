@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab2EMBWf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 21:22:35 -0400
-Received: from 4607ds7-vby.0.fullrate.dk ([95.166.183.192]:33180 "EHLO
-	cow.netcompartner.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab2EMBWe (ORCPT
+	id S1751901Ab2EMBiO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 21:38:14 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:34234 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab2EMBiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 21:22:34 -0400
-From: Lars Boegild Thomsen <lth@cow.dk>
-Organization: Call of the Wild BBS
-To: Jonathan Nieder <jrnieder@gmail.com>
-Subject: Re: [regression] Ideapad S10-3 does not wake up from suspend
-Date: Sun, 13 May 2012 09:22:10 +0800
-User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.7.4; x86_64; ; )
-Cc: "Tian, Kevin" <kevin.tian@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Fengzhe Zhang <fengzhe.zhang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "JBeulich@novell.com" <JBeulich@novell.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        Andreas Wallberg <andreas.wallberg@gmail.com>,
-        Robert Scott <bugs@humanleg.org.uk>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com> <625BA99ED14B2D499DC4E29D8138F15063048B864D@shsmsx502.ccr.corp.intel.com> <20120512231349.GA17443@burratino>
-In-Reply-To: <20120512231349.GA17443@burratino>
+	Sat, 12 May 2012 21:38:13 -0400
+References: <1336515735.2097.23.camel@shrek.rexursive.com> <4FAA2673.50007@linux.vnet.ibm.com> <1336560579.2097.32.camel@shrek.rexursive.com> <201205122347.08176.rjw@sisk.pl>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <201205122347.08176.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205130922.10945.lth@cow.dk>
-X-Spam-Score: -2.9 (--)
-X-Spam-Report: Spam detection software, running on the system "cow.netcompartner.com", has
- identified this incoming email as possible spam.  The original message
- has been attached to this so you can view it (if it isn't spam) or label
- similar future email.  If you have any questions, see
- the administrator of that system for details.
- Content preview:  On Sunday 13 May 2012 07:13:49 Jonathan Nieder wrote: > In
-    September, Kevin Tian wrote: > >> Lars Boegild Thomsen writes[1]: > >>> After
-    update from 2.6 kernel to 3.0 my Idepad S10-3 will not wake up > >>> after
-    sleep. Back to latest 2.6 kernel works fine. > - passing parameters "hpet=disable
-    highres=off nohz=off" helps some > people if I understand correctly, but
-   I might have misunderstood.[2] [...] 
- Content analysis details:   (-2.9 points, 5.0 required)
-  pts rule name              description
- ---- ---------------------- --------------------------------------------------
- -1.0 ALL_TRUSTED            Passed through trusted hosts only via SMTP
- -1.9 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH]: In kernel hibernation, suspend to both
+From: Bojan Smojver <bojan@rexursive.com>
+Date: Sun, 13 May 2012 11:37:09 +1000
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        bp@alien8.de
+Message-ID: <8b0184d9-0c54-4f6e-b0b7-ce1b7d854b9e@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 13 May 2012 07:13:49 Jonathan Nieder wrote:
-> In September, Kevin Tian wrote:
-> >> Lars Boegild Thomsen writes[1]:
-> >>> After update from 2.6 kernel to 3.0 my Idepad S10-3 will not wake up
-> >>> after sleep.  Back to latest 2.6 kernel works fine.
->  - passing parameters "hpet=disable highres=off nohz=off" helps some
->    people if I understand correctly, but I might have misunderstood.[2]
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-I didn't notice this one before but that actually works for me.  Adding those 
-kernel params and sleep works again.  I tried combinations thereof but no-go - 
-all 3 required.
+>On Wednesday, May 09, 2012, Bojan Smojver wrote:
+>> On Wed, 2012-05-09 at 13:40 +0530, Srivatsa S. Bhat wrote:
+>> > > +             error = suspend_devices_and_enter(PM_SUSPEND_MEM);
+>> > 
+>> > 
+>> > I can imagine running into a host of problems here, since the
+>suspend
+>> > sequence is not carried out fully, from the beginning.
+>> > 
+>> > For example, this will skip sending out the PM_SUSPEND_PREPARE and
+>the
+>> > PM_POST_SUSPEND notifiers. Worse, we actually send out the
+>> > PM_HIBERNATION_PREPARE
+>> > and PM_POST_HIBERNATION notifiers and then do a suspend instead,
+>> > underneath!
+>> > 
+>> > (Similar cases for the rest of the notifiers sent during suspend vs
+>> > hibernation).
+>> > 
+>> > Don't we need to handle such things properly, in order to make
+>> > suspend-to-both
+>> > work reliably? 
+>> 
+>> Honest answer - I have absolutely no idea. I've seen the code of
+>> suspend-utils (i.e. user mode stuff) and it seems to me that it does
+>> exactly this. Could be wrong of course, just like many times before.
+>> 
+>> Rafael?
+>
+>Sorry, that has fallen out of my radar somehow.
+>
+>Srivatsa is right, we should generally pay attention to those details.
+>
+>I think we should generally use a different "prepare" notification for
+>the
+>save-image-and-suspend case.
+>
+>Thanks,
+>Rafael
 
-> I'd be interested to hear whether the same problem occurs when trying
-> to suspend from the minimal initramfs environment.  (On systems like
-> Debian that use initramfs-tools, that means passing the kernel command
-> line parameter "break=top", booting, loading some appropriate minimal
-> collection of modules --- maybe none ---, and then running
-> "echo mem >/sys/power/state".  initramfs-tools(8) has details.)
 
-And I just tried this loading no modules manually and it's the same - never 
-wakes up after sleep.
+OK, I will try to rework then, if that is the case.
 
-//Lars...
+What I don't understand is this: should the hibernation fail for some reason, we would get the same hibernation code unwind that failure, right? So, a suspend after the image write will be just one long "failure", after which hibernation code has to unwind again. No?
+
+-- 
+Bojan
