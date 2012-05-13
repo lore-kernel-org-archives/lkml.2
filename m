@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab2EMPhL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 11:37:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62814 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab2EMPhK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 11:37:10 -0400
-From: joseph daniel <josephdanielwalter@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sylwester Nawrocki <snjw23@gmail.com>,
-        Piotr Chmura <chmooreck@poczta.onet.pl>,
-        Devin Heitmueller <dheitmueller@kernellabs.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: joseph daniel <josephdanielwalter@gmail.com>
-Subject: [PATCH] staging/media/as102: remove version.h include at as102_fe.c
-Date: Sun, 13 May 2012 21:06:57 +0530
-Message-Id: <1336923417-7359-1-git-send-email-josephdanielwalter@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753683Ab2EMPpM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 11:45:12 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40166 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753236Ab2EMPpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 May 2012 11:45:10 -0400
+Message-ID: <1336923908.31383.4.camel@joe2Laptop>
+Subject: Re: [PATCH 1/2] fat: add fat_msg_ratelimit.
+From: Joe Perches <joe@perches.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Date: Sun, 13 May 2012 08:45:08 -0700
+In-Reply-To: <1336907005-18602-1-git-send-email-linkinjeon@gmail.com>
+References: <1336907005-18602-1-git-send-email-linkinjeon@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was a warning when ran "make versioncheck"
+On Sun, 2012-05-13 at 07:03 -0400, Namjae Jeon wrote:
+> I tried to add fat_msg_ratelimit to limit many message at once.
+> 
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+> ---
+>  fs/fat/fat.h  |    9 +++++++--
+>  fs/fat/misc.c |   18 ++++++++++--------
+>  2 files changed, 17 insertions(+), 10 deletions(-)
+> 
+> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+> index 951d12b..3c581c7 100644
+> --- a/fs/fat/fat.h
+> +++ b/fs/fat/fat.h
+> @@ -333,8 +333,13 @@ void __fat_fs_error(struct super_block *sb, int report, const char *fmt, ...);
+>  	__fat_fs_error(sb, 1, fmt , ## args)
+>  #define fat_fs_error_ratelimit(sb, fmt, args...) \
+>  	__fat_fs_error(sb, __ratelimit(&MSDOS_SB(sb)->ratelimit), fmt , ## args)
+> -__printf(3, 4) __cold
+> -void fat_msg(struct super_block *sb, const char *level, const char *fmt, ...);
+> +__printf(4, 5) __cold
+> +void __fat_msg(struct super_block *sb, int report, const char *level,
+> +			const char *fmt, ...);
+> +#define	fat_msg(sb, level, fmt, args...)		\
+> +	__fat_msg(sb, 1, level, fmt, ## args)
+> +#define	fat_msg_ratelimit(sb, level, fmt, args...)	\
+> +	__fat_msg(sb, __ratelimit(&MSDOS_SB(sb)->ratelimit), level, fmt, ## args)
 
-drivers/staging/media/as102/as102_fe.c: 20 linux/version.h not needed.
+I think it better to move the test above the call
+and not change the fat_msg function at all.
 
-Signed-off-by: joseph daniel <josephdanielwalter@gmail.com>
----
- drivers/staging/media/as102/as102_fe.c |    2 --
- 1 file changed, 2 deletions(-)
+#define fat_msg_ratelimit(sb, level, fmt, args...)		\
+do {								\
+	if (! __ratelimit(&MSDOS_SB(sb)->ratelimit))		\
+		fsg_msg(sb, level, fmt, ##args);		\
+} while (0)
 
-diff --git a/drivers/staging/media/as102/as102_fe.c b/drivers/staging/media/as102/as102_fe.c
-index 5917657..9ce8c9d 100644
---- a/drivers/staging/media/as102/as102_fe.c
-+++ b/drivers/staging/media/as102/as102_fe.c
-@@ -17,8 +17,6 @@
-  * along with this program; if not, write to the Free Software
-  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  */
--#include <linux/version.h>
--
- #include "as102_drv.h"
- #include "as10x_types.h"
- #include "as10x_cmd.h"
--- 
-1.7.9.5
 
