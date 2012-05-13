@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028Ab2EMVuS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 17:50:18 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:53411 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab2EMVuQ convert rfc822-to-8bit (ORCPT
+	id S1753249Ab2EMWQe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 18:16:34 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47342 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764Ab2EMWQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 17:50:16 -0400
+	Sun, 13 May 2012 18:16:32 -0400
+Message-ID: <4FB032BB.6060209@gmail.com>
+Date: Mon, 14 May 2012 00:16:27 +0200
+From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
+	<phcoder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-In-Reply-To: <20120511154836.aff26ad3.akpm@linux-foundation.org>
-References: <1336745414-5530-1-git-send-email-akinobu.mita@gmail.com>
-	<20120511154836.aff26ad3.akpm@linux-foundation.org>
-Date: Mon, 14 May 2012 06:50:15 +0900
-Message-ID: <CAC5umyjP9DLVJXvpVEwOOS6EK47zT+zYabyTCDLFSmNis5E8QA@mail.gmail.com>
-Subject: Re: [PATCH] Optimize bitmap_weight
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Evgeniy Dushistov <dushistov@mail.ru>
+Subject: Re: [PATCH] update i_blocks on UFS
+References: <4FAFBCAE.1050401@gmail.com> <20120513215925.GA1998@maclin>
+In-Reply-To: <20120513215925.GA1998@maclin>
+X-Enigmail-Version: 1.4.1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enig5A543657D5A42F93CDB03259"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/12 Andrew Morton <akpm@linux-foundation.org>:
-> On Fri, 11 May 2012 23:10:14 +0900
-> Akinobu Mita <akinobu.mita@gmail.com> wrote:
->
->> The current implementation of bitmap_weight simply evaluates the
->> population count for each long word of the array, and adds.
->>
->> The subsection "Counting 1-bits in an Array" in the revisions of
->> the book 'Hacker's Delight' explains more superior methods than
->> the naive method.
->>
->> http://www.hackersdelight.org/revisions.pdf
->> http://www.hackersdelight.org/HDcode/newCode/pop_arrayHS.c.txt
->>
->> My benchmark results on Intel Core i3 CPU with 32-bit kernel
->> showed 50% faster for 8192 bits bitmap.  However, it is not faster
->> for small bitmap (< BITS_PER_LONG * 8) than the naive method.
->> So if the bitmap size is known to be small at compile time,
->> use the naive method.
->>
->> ...
->>
->>  extern void bitmap_clear(unsigned long *map, int start, int nr);
->> @@ -277,7 +278,9 @@ static inline int bitmap_weight(const unsigned long *src, int nbits)
->>  {
->>       if (small_const_nbits(nbits))
->>               return hweight_long(*src & BITMAP_LAST_WORD_MASK(nbits));
->
-> Why do we require a constant_p `nbits' for this case?
->
->> -     return __bitmap_weight(src, nbits);
->> +     else if (__builtin_constant_p(nbits) && (nbits) < BITS_PER_LONG * 8)
->> +             return __bitmap_weight(src, nbits);
->> +     return __bitmap_weight_fast(src, nbits);
->>  }
->
-> BITS_PER_LONG*8 sounds like a large bitmap: 256 or 512 entries.  Will
-> the kernel call __bitmap_weight_fast() sufficiently often to make this
-> extra code worth merging?
->
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig5A543657D5A42F93CDB03259
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I roughly checked the call sites of bitmap_weight() and picked up some
-outstanding usages below.
+On 13.05.2012 23:59, Evgeniy Dushistov wrote:
 
-Some filesystems (udf, omfs, ntfs, and hpfs) use bitmap_weight() to
-the block size bytes region in statfs() path.
+> On Sun, May 13, 2012 at 03:52:46PM +0200, Vladimir '=CF=86-coder/phcode=
+r' Serbinenko wrote:
+>> UFS code dosn't update i_blocks which leads to the problems ranging fr=
+om wrong
+>> stat/du to long symlinks (as opposed to inline ones) being damaged. Th=
+is is
+>> a fix.
+>>
+>=20
+> Yes, when quota support was removed, code that update statistic
+> about usage of blocks also was removed. But why so big change to fix th=
+is?
+> I found this problem some time ago and fixed it with code bellow,
+> but may be I missed something?
+>=20
 
-num_online_cpus() and the variants are bitmap_weight() to the NR_CPUS
-bitmap and num_online_nodes() and the variants are to the MAX_NUMNODES
-bitmap.  So these bitmaps could be large on extremely large system.
+Hm, I don't know why this code wasn't in my copy. Was it already
+propagated to Linus' tree? When will it be? Which tree I should merge
+from to get your latest fixes?
+My code avoided counting metadata blocks (the ones holding the pointers
+to actual blocks in indirect, double-indirect and triple-indirect
+chains). I thought that i_blocks doesn't take into account the
+metablocks but quick experiment with NetBSD image proved me wrong. So I
+retract this patch altogether.
+My UFS file size limit patch remains though.
 
-bm_count_bits() in drivers/block/drbd/drbd_bitmap.c computes the
-population count for multiple pages.  But it is currently open-coded
-loops with hweight_long() which can be converted to bitmap_weight().
+--=20
+Regards
+Vladimir '=CF=86-coder/phcoder' Serbinenko
 
-I consider introducing bitmap_weight_large() which is specialized for
-the large bitmap instead of optimizing bitmap_weight() and replace the
-call sites like above.
+
+--------------enig5A543657D5A42F93CDB03259
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iF4EAREKAAYFAk+wMrwACgkQNak7dOguQgk1ZQEAqd8Jsj+L5ZzHY1zM/X28Y+T3
+BmuugZPsL7ZwaBolwesA/1iaNkvyEkSsMXq5qrZ5rflF/zxLcY2UTlzG6PyNsjwS
+=zzKc
+-----END PGP SIGNATURE-----
+
+--------------enig5A543657D5A42F93CDB03259--
