@@ -1,153 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab2EMBSd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 21:18:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60897 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab2EMBSb (ORCPT
+	id S1753020Ab2EMBWf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 21:22:35 -0400
+Received: from 4607ds7-vby.0.fullrate.dk ([95.166.183.192]:33180 "EHLO
+	cow.netcompartner.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465Ab2EMBWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 21:18:31 -0400
-From: Richard Zhao <richard.zhao@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: sameo@linux.intel.com, paul.liu@linaro.org,
-        broonie@opensource.wolfsonmicro.com, shawn.guo@linaro.org,
-        Richard Zhao <richard.zhao@freescale.com>
-Subject: [PATCH V2] mfd: anatop: make register accessor more flexible and rename meaningfully
-Date: Sun, 13 May 2012 09:18:02 +0800
-Message-Id: <1336871882-6796-1-git-send-email-richard.zhao@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1336870794-6351-1-git-send-email-richard.zhao@freescale.com>
-References: <1336870794-6351-1-git-send-email-richard.zhao@freescale.com>
+	Sat, 12 May 2012 21:22:34 -0400
+From: Lars Boegild Thomsen <lth@cow.dk>
+Organization: Call of the Wild BBS
+To: Jonathan Nieder <jrnieder@gmail.com>
+Subject: Re: [regression] Ideapad S10-3 does not wake up from suspend
+Date: Sun, 13 May 2012 09:22:10 +0800
+User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.7.4; x86_64; ; )
+Cc: "Tian, Kevin" <kevin.tian@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Fengzhe Zhang <fengzhe.zhang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "JBeulich@novell.com" <JBeulich@novell.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        Andreas Wallberg <andreas.wallberg@gmail.com>,
+        Robert Scott <bugs@humanleg.org.uk>
+References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com> <625BA99ED14B2D499DC4E29D8138F15063048B864D@shsmsx502.ccr.corp.intel.com> <20120512231349.GA17443@burratino>
+In-Reply-To: <20120512231349.GA17443@burratino>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205130922.10945.lth@cow.dk>
+X-Spam-Score: -2.9 (--)
+X-Spam-Report: Spam detection software, running on the system "cow.netcompartner.com", has
+ identified this incoming email as possible spam.  The original message
+ has been attached to this so you can view it (if it isn't spam) or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  On Sunday 13 May 2012 07:13:49 Jonathan Nieder wrote: > In
+    September, Kevin Tian wrote: > >> Lars Boegild Thomsen writes[1]: > >>> After
+    update from 2.6 kernel to 3.0 my Idepad S10-3 will not wake up > >>> after
+    sleep. Back to latest 2.6 kernel works fine. > - passing parameters "hpet=disable
+    highres=off nohz=off" helps some > people if I understand correctly, but
+   I might have misunderstood.[2] [...] 
+ Content analysis details:   (-2.9 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+ -1.0 ALL_TRUSTED            Passed through trusted hosts only via SMTP
+ -1.9 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- - rename to anatop_read_reg and anatop_write_reg
- - anatop_read_reg directly return reg value
- - anatop_write_reg write reg with mask
+On Sunday 13 May 2012 07:13:49 Jonathan Nieder wrote:
+> In September, Kevin Tian wrote:
+> >> Lars Boegild Thomsen writes[1]:
+> >>> After update from 2.6 kernel to 3.0 my Idepad S10-3 will not wake up
+> >>> after sleep.  Back to latest 2.6 kernel works fine.
+>  - passing parameters "hpet=disable highres=off nohz=off" helps some
+>    people if I understand correctly, but I might have misunderstood.[2]
 
-Signed-off-by: Richard Zhao <richard.zhao@freescale.com>
----
-Changes since V1:
-correct bit operation in anatop_write_reg
+I didn't notice this one before but that actually works for me.  Adding those 
+kernel params and sleep works again.  I tried combinations thereof but no-go - 
+all 3 required.
 
- drivers/mfd/anatop-mfd.c             |   35 +++++++++++-----------------------
- drivers/regulator/anatop-regulator.c |   18 ++++++++---------
- include/linux/mfd/anatop.h           |    4 ++--
- 3 files changed, 21 insertions(+), 36 deletions(-)
+> I'd be interested to hear whether the same problem occurs when trying
+> to suspend from the minimal initramfs environment.  (On systems like
+> Debian that use initramfs-tools, that means passing the kernel command
+> line parameter "break=top", booting, loading some appropriate minimal
+> collection of modules --- maybe none ---, and then running
+> "echo mem >/sys/power/state".  initramfs-tools(8) has details.)
 
-diff --git a/drivers/mfd/anatop-mfd.c b/drivers/mfd/anatop-mfd.c
-index 2af4248..6da0634 100644
---- a/drivers/mfd/anatop-mfd.c
-+++ b/drivers/mfd/anatop-mfd.c
-@@ -41,39 +41,26 @@
- #include <linux/of_address.h>
- #include <linux/mfd/anatop.h>
- 
--u32 anatop_get_bits(struct anatop *adata, u32 addr, int bit_shift,
--		    int bit_width)
-+u32 anatop_read_reg(struct anatop *adata, u32 addr)
- {
--	u32 val, mask;
--
--	if (bit_width == 32)
--		mask = ~0;
--	else
--		mask = (1 << bit_width) - 1;
--
--	val = readl(adata->ioreg + addr);
--	val = (val >> bit_shift) & mask;
--
--	return val;
-+	return readl(adata->ioreg + addr);
- }
--EXPORT_SYMBOL_GPL(anatop_get_bits);
-+EXPORT_SYMBOL_GPL(anatop_read_reg);
- 
--void anatop_set_bits(struct anatop *adata, u32 addr, int bit_shift,
--		     int bit_width, u32 data)
-+void anatop_write_reg(struct anatop *adata, u32 addr, u32 data, u32 mask)
- {
--	u32 val, mask;
-+	u32 val;
- 
--	if (bit_width == 32)
--		mask = ~0;
--	else
--		mask = (1 << bit_width) - 1;
-+	data &= mask;
- 
- 	spin_lock(&adata->reglock);
--	val = readl(adata->ioreg + addr) & ~(mask << bit_shift);
--	writel((data << bit_shift) | val, adata->ioreg + addr);
-+	val = readl(adata->ioreg + addr);
-+	val &= ~mask;
-+	val |= data;
-+	writel(val, adata->ioreg + addr);
- 	spin_unlock(&adata->reglock);
- }
--EXPORT_SYMBOL_GPL(anatop_set_bits);
-+EXPORT_SYMBOL_GPL(anatop_write_reg);
- 
- static const struct of_device_id of_anatop_match[] = {
- 	{ .compatible = "fsl,imx6q-anatop", },
-diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
-index 81fd606..0a34085 100644
---- a/drivers/regulator/anatop-regulator.c
-+++ b/drivers/regulator/anatop-regulator.c
-@@ -47,7 +47,7 @@ static int anatop_set_voltage(struct regulator_dev *reg, int min_uV,
- 				  int max_uV, unsigned *selector)
- {
- 	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
--	u32 val, sel;
-+	u32 val, sel, mask;
- 	int uv;
- 
- 	uv = min_uV;
-@@ -71,11 +71,10 @@ static int anatop_set_voltage(struct regulator_dev *reg, int min_uV,
- 	val = anatop_reg->min_bit_val + sel;
- 	*selector = sel;
- 	dev_dbg(&reg->dev, "%s: calculated val %d\n", __func__, val);
--	anatop_set_bits(anatop_reg->mfd,
--			anatop_reg->control_reg,
--			anatop_reg->vol_bit_shift,
--			anatop_reg->vol_bit_width,
--			val);
-+	mask = ((1 << anatop_reg->vol_bit_width) - 1) <<
-+		anatop_reg->vol_bit_shift;
-+	val <<= anatop_reg->vol_bit_shift;
-+	anatop_write_reg(anatop_reg->mfd, anatop_reg->control_reg, val, mask);
- 
- 	return 0;
- }
-@@ -88,10 +87,9 @@ static int anatop_get_voltage_sel(struct regulator_dev *reg)
- 	if (!anatop_reg->control_reg)
- 		return -ENOTSUPP;
- 
--	val = anatop_get_bits(anatop_reg->mfd,
--			      anatop_reg->control_reg,
--			      anatop_reg->vol_bit_shift,
--			      anatop_reg->vol_bit_width);
-+	val = anatop_read_reg(anatop_reg->mfd, anatop_reg->control_reg);
-+	val = (val & ((1 << anatop_reg->vol_bit_width) - 1)) >>
-+		anatop_reg->vol_bit_shift;
- 
- 	return val - anatop_reg->min_bit_val;
- }
-diff --git a/include/linux/mfd/anatop.h b/include/linux/mfd/anatop.h
-index 22c1007..7f92acf 100644
---- a/include/linux/mfd/anatop.h
-+++ b/include/linux/mfd/anatop.h
-@@ -34,7 +34,7 @@ struct anatop {
- 	spinlock_t reglock;
- };
- 
--extern u32 anatop_get_bits(struct anatop *, u32, int, int);
--extern void anatop_set_bits(struct anatop *, u32, int, int, u32);
-+extern u32 anatop_read_reg(struct anatop *, u32);
-+extern void anatop_write_reg(struct anatop *, u32, u32, u32);
- 
- #endif /*  __LINUX_MFD_ANATOP_H */
--- 
-1.7.9.5
+And I just tried this loading no modules manually and it's the same - never 
+wakes up after sleep.
 
+//Lars...
