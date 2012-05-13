@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055Ab2EMS5a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 14:57:30 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58006 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752580Ab2EMS53 (ORCPT
+	id S1753025Ab2EMTSb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 15:18:31 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:20953 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752580Ab2EMTSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 14:57:29 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: wm8994: Update to fully use irq_domain
-Date: Sun, 13 May 2012 19:57:22 +0100
-Message-Id: <1336935442-1920-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	Sun, 13 May 2012 15:18:30 -0400
+Date: Sun, 13 May 2012 22:21:48 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Volokh Konstantin <volokh84@gmail.com>
+Cc: my84@bk.ru, devel@driverdev.osuosl.org, hverkuil@xs4all.nl,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        mchehab@infradead.org, dhowells@redhat.com, justinmattock@gmail.com,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH 1/2] staging: media: go7007: Adlink MPG24 board
+Message-ID: <20120513192148.GE16984@mwanda>
+References: <1336935162-5068-1-git-send-email-volokh84@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336935162-5068-1-git-send-email-volokh84@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Take advantage of the new regmap irq_domain support to dynamically
-allocate interrupts, using regmap_irq_get_virq() rather than irq_base
-to look up the interrupts. This means that most users should not need
-to specify an irq_base at all.
+On Sun, May 13, 2012 at 10:52:41PM +0400, Volokh Konstantin wrote:
+> This patch applies only for Adlink MPG24 board with go7007, all these changes were tested for continuous loading & restarting modes
+> 
+> This is minimal changes needed for start up go7007 to work correctly
+>   in 3.4 branch
+> 
+> Changes:
+>   - When go7007 reset device, i2c was not working (need rewrite GPIO5)
+>   - As wis2804 has i2c_addr=0x00/*really*/, so Need set I2C_CLIENT_TEN flag for validity
+>   - some main nonzero initialization, rewrites with kzalloc instead kmalloc
+>   - STATUS_SHUTDOWN was placed in incorrect place, so if firmware wasn`t loaded, we
+>     failed v4l2_device_unregister with kernel panic (OOPS)
+>   - some new v4l2 style features as call_all(...s_stream...) for using subdev calls
+> 
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
+In some ways, yes, I can see that this seems like one thing "Make
+go7007 work correctly", but really it would be better if each of
+the bullet points was its own patch.
 
-The regmap-irq irq_domain support is only in -next, is it OK to merge
-this via regmap?  There's no massive urgency but it'd be nice.
+The changelogs should explain why you do something not what you do.
+We can all see that kmalloc() was changed to kzalloc() but why? Is
+their and information leak for example?  That might have security
+implications and be good thing to know about.
 
- drivers/mfd/wm8994-irq.c        |    6 ------
- include/linux/mfd/wm8994/core.h |   12 ++++++------
- 2 files changed, 6 insertions(+), 12 deletions(-)
+regards,
+dan carpenter
 
-diff --git a/drivers/mfd/wm8994-irq.c b/drivers/mfd/wm8994-irq.c
-index 46b20c4..f1837f6 100644
---- a/drivers/mfd/wm8994-irq.c
-+++ b/drivers/mfd/wm8994-irq.c
-@@ -147,12 +147,6 @@ int wm8994_irq_init(struct wm8994 *wm8994)
- 		return 0;
- 	}
- 
--	if (!wm8994->irq_base) {
--		dev_err(wm8994->dev,
--			"No interrupt base specified, no interrupts\n");
--		return 0;
--	}
--
- 	ret = regmap_add_irq_chip(wm8994->regmap, wm8994->irq,
- 				  IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
- 				  wm8994->irq_base, &wm8994_irq_chip,
-diff --git a/include/linux/mfd/wm8994/core.h b/include/linux/mfd/wm8994/core.h
-index d41bc7b..1f17330 100644
---- a/include/linux/mfd/wm8994/core.h
-+++ b/include/linux/mfd/wm8994/core.h
-@@ -17,6 +17,7 @@
- 
- #include <linux/mutex.h>
- #include <linux/interrupt.h>
-+#include <linux/regmap.h>
- 
- enum wm8994_type {
- 	WM8994 = 0,
-@@ -26,7 +27,6 @@ enum wm8994_type {
- 
- struct regulator_dev;
- struct regulator_bulk_data;
--struct regmap;
- 
- #define WM8994_NUM_GPIO_REGS 11
- #define WM8994_NUM_LDO_REGS   2
-@@ -95,17 +95,17 @@ static inline int wm8994_request_irq(struct wm8994 *wm8994, int irq,
- 				     irq_handler_t handler, const char *name,
- 				     void *data)
- {
--	if (!wm8994->irq_base)
-+	if (!wm8994->irq_data)
- 		return -EINVAL;
--	return request_threaded_irq(wm8994->irq_base + irq, NULL, handler,
--				    IRQF_TRIGGER_RISING, name,
-+	return request_threaded_irq(regmap_irq_get_virq(wm8994->irq_data, irq),
-+				    NULL, handler, IRQF_TRIGGER_RISING, name,
- 				    data);
- }
- static inline void wm8994_free_irq(struct wm8994 *wm8994, int irq, void *data)
- {
--	if (!wm8994->irq_base)
-+	if (!wm8994->irq_data)
- 		return;
--	free_irq(wm8994->irq_base + irq, data);
-+	free_irq(regmap_irq_get_virq(wm8994->irq_data, irq), data);
- }
- 
- int wm8994_irq_init(struct wm8994 *wm8994);
--- 
-1.7.10
 
