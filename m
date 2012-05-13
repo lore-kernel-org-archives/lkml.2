@@ -1,233 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801Ab2EMPwN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 11:52:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31176 "EHLO mx1.redhat.com"
+	id S1753854Ab2EMP40 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 11:56:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5583 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753236Ab2EMPwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 11:52:10 -0400
-Date: Sun, 13 May 2012 18:52:06 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Stephen Hemminger <shemminger@vyatta.com>, Joe Perches <joe@perches.com>,
-        Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ian.Campbell@citrix.com,
-        kvm@vger.kernel.org
-Subject: [PATCH RFC] tun: experimental zero copy tx support
-Message-ID: <20120513155206.GA26847@redhat.com>
+	id S1753495Ab2EMP4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 May 2012 11:56:25 -0400
+Date: Sun, 13 May 2012 18:56:23 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: kvm@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Glauber Costa <glommer@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Avi Kivity <avi@redhat.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: eoi msi documentation
+Message-ID: <20120513155622.GG15230@redhat.com>
+References: <20120513151321.GA25721@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120513151321.GA25721@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let vhost-net utilize zero copy tx when the experimental
-zero copy mode is enabled and when used with tun.  This works on
-top of the patchset 'copy aside frags with destructors' that I posted
-previously. This is not using tcp so doesn't have the
-issue with early skb cloning noticed by Ian.
+On Sun, May 13, 2012 at 06:13:22PM +0300, Michael S. Tsirkin wrote:
+> Document the new EOI MSR.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+> 
+> This documents my PV EOI patchset and applies on top.
+> Will make it part of the patchset on the next respin.
+> 
+>  Documentation/virtual/kvm/msr.txt |   56 +++++++++++++++++++++++++++++++++++++
+>  1 files changed, 56 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/virtual/kvm/msr.txt b/Documentation/virtual/kvm/msr.txt
+> index 5031780..bdbd337 100644
+> --- a/Documentation/virtual/kvm/msr.txt
+> +++ b/Documentation/virtual/kvm/msr.txt
+> @@ -219,3 +219,59 @@ MSR_KVM_STEAL_TIME: 0x4b564d03
+>  		steal: the amount of time in which this vCPU did not run, in
+>  		nanoseconds. Time during which the vcpu is idle, will not be
+>  		reported as steal time.
+> +
+> +MSR_KVM_EOI_EN: 0x4b564d04
+> +	data: Bit 0 is 1 when PV end of interrupt is enabled on the vcpu; 0
+> +	when disabled.  When enabled, bits 63-1 hold 2-byte aligned physical address
+> +	of a 2 byte memory area which must be in guest RAM and must be zeroed.
+> +
+> +	The first, least significant bit of 2 byte memory location will be
+> +	written to by the hypervisor, typically at the time of interrupt
+> +	injection.  Value of 1 means that guest can skip writing EOI to the apic
+> +	(using MSR or MMIO write); instead, it is sufficient to signal
+> +	EOI by clearing the bit in guest memory - this location will
+> +	later be polled by the hypervisor.
+> +	Value of 0 means that the EOI write is required.
+> +
+> +	It is always safe for the guest to ignore the optimization and perform
+> +	the APIC EOI write anyway.
+> +
+> +	Hypervisor is guaranteed to only modify this least
+> +	significant bit while in the current VCPU context, this means that
+> +	guest does not need to use either lock prefix or memory ordering
+> +	primitives to synchronise with the hypervisor.
+> +
+> +	However, hypervisor can set and clear this memory bit at any time:
+> +	therefore to make sure hypervisor does not interrupt the
+> +	guest and clear the least significant bit in the memory area
+> +	in the window between guest testing it to detect
+> +	whether it can skip EOI apic write and between guest
+> +	clearing it to signal EOI to the hypervisor,
+> +	guest must both read the least sgnificant bit in the memory area and
+> +	clear it using a single CPU instruction, such as test and clear, or
+> +	compare and exchange.
+> +
+Looks good, but everything below this is here by mistake. Are You still
+going to resend host side patch to address my other comment?
 
-For those that wish to test this with kvm, I intend to post a patchset +
-git tree with just the necessary bits from the destructor patch
-a bit later.
+> +the page referred to by the page fault is not
+> +	present. Value 2 means that the page is now available. Disabling
+> +	interrupt inhibits APFs. Guest must not enable interrupt
+> +	before the reason is read, or it may be overwritten by another
+> +	APF. Since APF uses the same exception vector as regular page
+> +	fault guest must reset the reason to 0 before it does
+> +	something that can generate normal page fault.  If during page
+> +	fault APF reason is 0 it means that this is regular page
+> +	fault.
+> +
+> +	During delivery of type 1 APF cr2 contains a token that will
+> +	be used to notify a guest when missing page becomes
+> +	available. When page becomes available type 2 APF is sent with
+> +	cr2 set to the token associated with the page. There is special
+> +	kind of token 0xffffffff which tells vcpu that it should wake
+> +	up all processes waiting for APFs and no individual type 2 APFs
+> +	will be sent.
+> +
+> +	If APF is disabled while there are outstanding APFs, they will
+> +	not be delivered.
+> +
+> +	Currently type 2 APF will be always delivered on the same vcpu as
+> +	type 1 was, but guest should not rely on that.
+> +
+> -- 
+> MST
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/net/tun.c |  125 ++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 120 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index fe5cd2f3..eb10ee7 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -100,6 +100,8 @@ do {								\
- } while (0)
- #endif
- 
-+#define GOODCOPY_LEN 128
-+
- #define FLT_EXACT_COUNT 8
- struct tap_filter {
- 	unsigned int    count;    /* Number of addrs. Zero means disabled */
-@@ -602,8 +604,80 @@ static struct sk_buff *tun_alloc_skb(struct tun_struct *tun,
- 	return skb;
- }
- 
-+/* set skb frags from iovec, this can move to core network code for reuse */
-+static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
-+				  int offset, size_t count)
-+{
-+	int len = iov_length(from, count) - offset;
-+	int copy = skb_headlen(skb);
-+	int size, offset1 = 0;
-+	int i = 0;
-+
-+	/* Skip over from offset */
-+	while (count && (offset >= from->iov_len)) {
-+		offset -= from->iov_len;
-+		++from;
-+		--count;
-+	}
-+
-+	/* copy up to skb headlen */
-+	while (count && (copy > 0)) {
-+		size = min_t(unsigned int, copy, from->iov_len - offset);
-+		if (copy_from_user(skb->data + offset1, from->iov_base + offset,
-+				   size))
-+			return -EFAULT;
-+		if (copy > size) {
-+			++from;
-+			--count;
-+		}
-+		copy -= size;
-+		offset1 += size;
-+		offset = 0;
-+	}
-+
-+	if (len == offset1)
-+		return 0;
-+
-+	while (count--) {
-+		struct page *page[MAX_SKB_FRAGS];
-+		int num_pages;
-+		unsigned long base;
-+
-+		len = from->iov_len - offset1;
-+		if (!len) {
-+			offset1 = 0;
-+			++from;
-+			continue;
-+		}
-+		base = (unsigned long)from->iov_base + offset1;
-+		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-+		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
-+		if ((num_pages != size) ||
-+		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags))
-+			/* put_page is in skb free */
-+			return -EFAULT;
-+		skb->data_len += len;
-+		skb->len += len;
-+		skb->truesize += len;
-+		atomic_add(len, &skb->sk->sk_wmem_alloc);
-+		while (len) {
-+			int off = base & ~PAGE_MASK;
-+			int size = min_t(int, len, PAGE_SIZE - off);
-+			__skb_fill_page_desc(skb, i, page[i], off, size);
-+			skb_shinfo(skb)->nr_frags++;
-+			/* increase sk_wmem_alloc */
-+			base += size;
-+			len -= size;
-+			i++;
-+		}
-+		offset1 = 0;
-+		++from;
-+	}
-+	return 0;
-+}
-+
- /* Get packet from user space buffer */
--static ssize_t tun_get_user(struct tun_struct *tun,
-+static ssize_t tun_get_user(struct tun_struct *tun, void *msg_control,
- 			    const struct iovec *iv, size_t count,
- 			    int noblock)
- {
-@@ -612,6 +686,9 @@ static ssize_t tun_get_user(struct tun_struct *tun,
- 	size_t len = count, align = NET_SKB_PAD;
- 	struct virtio_net_hdr gso = { 0 };
- 	int offset = 0;
-+	int copylen;
-+	bool zerocopy = false;
-+	int err;
- 
- 	if (!(tun->flags & TUN_NO_PI)) {
- 		if ((len -= sizeof(pi)) > count)
-@@ -645,14 +722,47 @@ static ssize_t tun_get_user(struct tun_struct *tun,
- 			return -EINVAL;
- 	}
- 
--	skb = tun_alloc_skb(tun, align, len, gso.hdr_len, noblock);
-+	if (msg_control)
-+		zerocopy = true;
-+
-+	if (zerocopy) {
-+		/* Userspace may produce vectors with count greater than
-+		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
-+		 * to let the rest of data to be fit in the frags.
-+		 */
-+		if (count > MAX_SKB_FRAGS) {
-+			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
-+			if (copylen < offset)
-+				copylen = 0;
-+			else
-+				copylen -= offset;
-+		} else
-+				copylen = 0;
-+		/* There are 256 bytes to be copied in skb, so there is enough
-+		 * room for skb expand head in case it is used.
-+		 * The rest of the buffer is mapped from userspace.
-+		 */
-+		if (copylen < gso.hdr_len)
-+			copylen = gso.hdr_len;
-+		if (!copylen)
-+			copylen = GOODCOPY_LEN;
-+	} else
-+		copylen = len;
-+
-+	skb = tun_alloc_skb(tun, align, copylen, gso.hdr_len, noblock);
- 	if (IS_ERR(skb)) {
- 		if (PTR_ERR(skb) != -EAGAIN)
- 			tun->dev->stats.rx_dropped++;
- 		return PTR_ERR(skb);
- 	}
- 
--	if (skb_copy_datagram_from_iovec(skb, 0, iv, offset, len)) {
-+	if (zerocopy) {
-+		err = zerocopy_sg_from_iovec(skb, iv, offset, count);
-+		skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
-+	} else
-+		err = skb_copy_datagram_from_iovec(skb, 0, iv, offset, len);
-+
-+	if (err) {
- 		tun->dev->stats.rx_dropped++;
- 		kfree_skb(skb);
- 		return -EFAULT;
-@@ -726,6 +836,10 @@ static ssize_t tun_get_user(struct tun_struct *tun,
- 		skb_shinfo(skb)->gso_segs = 0;
- 	}
- 
-+	/* copy skb_ubuf_info for callback when skb has no error */
-+	if (zerocopy)
-+		skb_shinfo(skb)->destructor_arg = msg_control;
-+
- 	netif_rx_ni(skb);
- 
- 	tun->dev->stats.rx_packets++;
-@@ -746,7 +860,7 @@ static ssize_t tun_chr_aio_write(struct kiocb *iocb, const struct iovec *iv,
- 
- 	tun_debug(KERN_INFO, tun, "tun_chr_write %ld\n", count);
- 
--	result = tun_get_user(tun, iv, iov_length(iv, count),
-+	result = tun_get_user(tun, NULL, iv, iov_length(iv, count),
- 			      file->f_flags & O_NONBLOCK);
- 
- 	tun_put(tun);
-@@ -960,7 +1074,7 @@ static int tun_sendmsg(struct kiocb *iocb, struct socket *sock,
- 		       struct msghdr *m, size_t total_len)
- {
- 	struct tun_struct *tun = container_of(sock, struct tun_struct, socket);
--	return tun_get_user(tun, m->msg_iov, total_len,
-+	return tun_get_user(tun, m->msg_control, m->msg_iov, total_len,
- 			    m->msg_flags & MSG_DONTWAIT);
- }
- 
-@@ -1130,6 +1244,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		sock_init_data(&tun->socket, sk);
- 		sk->sk_write_space = tun_sock_write_space;
- 		sk->sk_sndbuf = INT_MAX;
-+		sock_set_flag(sk, SOCK_ZEROCOPY);
- 
- 		tun_sk(sk)->tun = tun;
- 
--- 
-MST
+--
+			Gleb.
