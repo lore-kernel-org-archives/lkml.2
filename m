@@ -1,112 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab2EMKN3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 06:13:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46794 "EHLO mx2.suse.de"
+	id S1752506Ab2EMKNz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 06:13:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47724 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751608Ab2EMKN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 06:13:28 -0400
-Date: Sun, 13 May 2012 12:13:15 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: =?ISO-8859-2?Q?Pawe=B3_Sikora?= <pluto@pld-linux.org>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Linux-3.4-rc7 [build failure]
-In-Reply-To: <102840232.3uDVBpYK9X@localhost>
-Message-ID: <alpine.LRH.2.00.1205131157290.22597@twin.jikos.cz>
-References: <102840232.3uDVBpYK9X@localhost>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1751722Ab2EMKNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 May 2012 06:13:51 -0400
+Message-ID: <4FAF8941.2010308@redhat.com>
+Date: Sun, 13 May 2012 13:13:21 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+To: Christoph Lameter <cl@linux.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCHv2] bitops: add _local bitops
+References: <20120509162819.GA21328@redhat.com> <alpine.DEB.2.00.1205101401010.18664@router.home>
+In-Reply-To: <alpine.DEB.2.00.1205101401010.18664@router.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 May 2012, Pawe³ Sikora wrote:
+On 05/10/2012 10:04 PM, Christoph Lameter wrote:
+> On Wed, 9 May 2012, Michael S. Tsirkin wrote:
+>
+> > kvm needs to update some hypervisor variables atomically
+> > in a sense that the operation can't be interrupted
+> > in the middle. However the hypervisor always runs
+> > on the same CPU so it does not need any memory
+> > barrier or lock prefix.
+> >
+> > Add _local bitops for this purpose: define them
+> > as non-atomics for x86 and (for now) atomics for
+> > everyone else.
+>
+> Have you tried to use the this_cpu_ops for that purpose? They create the
+> per cpu atomic instructions that you want without a lock prefix and can
+> also relocate the per cpu pointer to the correct processor via a
+> segment register prefix.
+>
+> There are no bit operations provided right now but those can either be
+> improvised using this_cpu_cmpxchg or added.
 
-> Hi all,
-> i see a build failure on modular kernel.
-> 
-> (...)
-> Kernel: arch/x86/boot/bzImage is ready  (#15)
->   MODPOST 3501 modules
-> ERROR: "handle_edge_irq" [drivers/gpio/gpio-pch.ko] undefined!
-> ERROR: "irq_to_desc" [drivers/gpio/gpio-pch.ko] undefined!
-> WARNING: modpost: Found 4 section mismatch(es).
-> (...)
+this_cpu_xchg() should be sufficient, since only bit zero has any
+meaning in our use case (so xchg with zero is equivalent to
+test_and_clear_bit).
 
-This is caused by
-
-commit df9541a60af0985c3a756dc5f99b9253d2565a07
-Author: Thomas Gleixner <tglx@linutronix.de>
-Date:   Sat Apr 28 10:13:45 2012 +0200
-
-    gpio: pch9: Use proper flow type handlers
-
-
-as it adds
-
-	__irq_set_handler_locked(d->irq, handle_edge_irq);
-
-but handle_edge_irq() is not exported for modules (and inlined 
-__irq_set_handler_locked() requires irq_to_desc() exported as well)
-
-Thus the patch below fixes it; adding Thomas to CC to get his Ack for this 
-first though.
-
-
-
-
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] genirq: export handle_edge_irq() and irq_to_desc()
-
-Export handle_edge_irq() and irq_to_desc() to modules to allow them to
-do things such as
-
-	__irq_set_handler_locked(...., handle_edge_irq);
-
-This fixes
-
-	ERROR: "handle_edge_irq" [drivers/gpio/gpio-pch.ko] undefined!
-	ERROR: "irq_to_desc" [drivers/gpio/gpio-pch.ko] undefined!
-
-when gpio-pch is being built as a module.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- kernel/irq/chip.c    |    1 +
- kernel/irq/irqdesc.c |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 6080f6b..3914c1e 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -518,6 +518,7 @@ handle_edge_irq(unsigned int irq, struct irq_desc *desc)
- out_unlock:
- 	raw_spin_unlock(&desc->lock);
- }
-+EXPORT_SYMBOL(handle_edge_irq);
- 
- #ifdef CONFIG_IRQ_EDGE_EOI_HANDLER
- /**
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index d86e254..192a302 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -112,6 +112,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
- {
- 	return radix_tree_lookup(&irq_desc_tree, irq);
- }
-+EXPORT_SYMBOL(irq_to_desc);
- 
- static void delete_irq_desc(unsigned int irq)
- {
 
 -- 
-Jiri Kosina
-SUSE Labs
+error compiling committee.c: too many arguments to function
 
