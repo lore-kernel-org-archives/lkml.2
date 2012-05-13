@@ -1,44 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819Ab2EMKxj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 06:53:39 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54734 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199Ab2EMKxh (ORCPT
+	id S1752660Ab2EMLDu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 07:03:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51493 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624Ab2EMLDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 06:53:37 -0400
-Date: Sun, 13 May 2012 11:53:32 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, dmitry.torokhov@gmail.com,
-        peter.ujfalusi@ti.com, broonie@opensource.wolfsonicro.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] TWL6040: fix build error
-Message-ID: <20120513105331.GC706@sirena.org.uk>
-References: <1336675473-24774-1-git-send-email-levinsasha928@gmail.com>
- <CAP=VYLqwAO8x4aWw7_pH1LH_SPO9Td2ec9oOmKPL-_5LOEQw3g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAP=VYLqwAO8x4aWw7_pH1LH_SPO9Td2ec9oOmKPL-_5LOEQw3g@mail.gmail.com>
-X-Cookie: I'm not proud.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Sun, 13 May 2012 07:03:49 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: hirofumi@mail.parknet.co.jp
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: [PATCH 1/2] fat: add fat_msg_ratelimit.
+Date: Sun, 13 May 2012 07:03:25 -0400
+Message-Id: <1336907005-18602-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 06:49:16PM -0400, Paul Gortmaker wrote:
-> On Thu, May 10, 2012 at 2:44 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > Fixes build error due to missing of_property_read_u32.
+I tried to add fat_msg_ratelimit to limit many message at once.
 
-> Yes, I saw the same on x86-64 allyesconfig -- which means that in addition to
-> this missing header, it needs to have a Kconfig dependency that limits
-> it to just being enabled on the platforms where it physically is possible to
-> have the hardware.  I'm guessing limiting to ARM would be a good start?
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+---
+ fs/fat/fat.h  |    9 +++++++--
+ fs/fat/misc.c |   18 ++++++++++--------
+ 2 files changed, 17 insertions(+), 10 deletions(-)
 
-Half the idea is to get better test coverage and help people who want to
-do things like build test API updates - the more systems the driver can
-be built on the better from that point of view.
+diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+index 951d12b..3c581c7 100644
+--- a/fs/fat/fat.h
++++ b/fs/fat/fat.h
+@@ -333,8 +333,13 @@ void __fat_fs_error(struct super_block *sb, int report, const char *fmt, ...);
+ 	__fat_fs_error(sb, 1, fmt , ## args)
+ #define fat_fs_error_ratelimit(sb, fmt, args...) \
+ 	__fat_fs_error(sb, __ratelimit(&MSDOS_SB(sb)->ratelimit), fmt , ## args)
+-__printf(3, 4) __cold
+-void fat_msg(struct super_block *sb, const char *level, const char *fmt, ...);
++__printf(4, 5) __cold
++void __fat_msg(struct super_block *sb, int report, const char *level,
++			const char *fmt, ...);
++#define	fat_msg(sb, level, fmt, args...)		\
++	__fat_msg(sb, 1, level, fmt, ## args)
++#define	fat_msg_ratelimit(sb, level, fmt, args...)	\
++	__fat_msg(sb, __ratelimit(&MSDOS_SB(sb)->ratelimit), level, fmt, ## args)
+ extern int fat_clusters_flush(struct super_block *sb);
+ extern int fat_chain_add(struct inode *inode, int new_dclus, int nr_cluster);
+ extern void fat_time_fat2unix(struct msdos_sb_info *sbi, struct timespec *ts,
+diff --git a/fs/fat/misc.c b/fs/fat/misc.c
+index 6d93360..dcdb091 100644
+--- a/fs/fat/misc.c
++++ b/fs/fat/misc.c
+@@ -45,19 +45,21 @@ void __fat_fs_error(struct super_block *sb, int report, const char *fmt, ...)
+ EXPORT_SYMBOL_GPL(__fat_fs_error);
+ 
+ /**
+- * fat_msg() - print preformated FAT specific messages. Every thing what is
++ * __fat_msg() - print preformated FAT specific messages. Every thing what is
+  * not fat_fs_error() should be fat_msg().
+  */
+-void fat_msg(struct super_block *sb, const char *level, const char *fmt, ...)
++void __fat_msg(struct super_block *sb, int report, const char *level,
++			const char *fmt, ...)
+ {
+ 	struct va_format vaf;
+ 	va_list args;
+-
+-	va_start(args, fmt);
+-	vaf.fmt = fmt;
+-	vaf.va = &args;
+-	printk("%sFAT-fs (%s): %pV\n", level, sb->s_id, &vaf);
+-	va_end(args);
++	if (report) {
++		va_start(args, fmt);
++		vaf.fmt = fmt;
++		vaf.va = &args;
++		printk("%sFAT-fs (%s): %pV\n", level, sb->s_id, &vaf);
++		va_end(args);
++	}
+ }
+ 
+ /* Flushes the number of free clusters on FAT32 */
+-- 
+1.7.5.4
+
