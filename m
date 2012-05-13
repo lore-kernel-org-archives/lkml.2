@@ -1,36 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab2EMPPN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 11:15:13 -0400
-Received: from mail.agmk.net ([91.192.224.71]:40876 "EHLO mail.agmk.net"
+	id S1753584Ab2EMPPZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 11:15:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42584 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753397Ab2EMPPL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 11:15:11 -0400
-From: =?utf-8?B?UGF3ZcWC?= Sikora <pluto@pld-linux.org>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org
-Subject: Re: Linux-3.4-rc7
-Date: Sun, 13 May 2012 17:15:04 +0200
-Message-ID: <1968221.ZfIukAANIQ@localhost>
-User-Agent: KMail/4.8.3 (Linux/3.3.5-1; KDE/4.8.3; x86_64; ; )
+	id S1753511Ab2EMPPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 May 2012 11:15:22 -0400
+Date: Sun, 13 May 2012 18:15:20 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 7/7] kvm: host side for eoi optimization
+Message-ID: <20120513151520.GA25752@redhat.com>
+References: <cover.1336679924.git.mst@redhat.com>
+ <cb4203d10594c055fde1c6fd0b02df1d030fad3b.1336679924.git.mst@redhat.com>
+ <20120513093317.GE4296@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120513093317.GE4296@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, May 13, 2012 at 12:33:17PM +0300, Gleb Natapov wrote:
+> >  arch/x86/include/asm/kvm_host.h |    6 ++
+> >  arch/x86/include/asm/kvm_para.h |    2 +
+> >  arch/x86/kvm/cpuid.c            |    1 +
+> >  arch/x86/kvm/irq.c              |    2 +-
+> >  arch/x86/kvm/lapic.c            |  109 +++++++++++++++++++++++++++++++++++++--
+> >  arch/x86/kvm/lapic.h            |    2 +
+> >  arch/x86/kvm/trace.h            |   34 ++++++++++++
+> >  arch/x86/kvm/x86.c              |    8 +++-
+> Documentation ++++++ :)
 
-i've found one more issue in install log:
+I just sent out some documentation. Didn't want to
+repost the whole patchset to acoid spamming the list,
+I hope you and others can use it for review.
 
-(...)
-  DEPMOD  3.4.0-rc7
-WARNING: /lib/modules/3.4.0-rc7/kernel/drivers/net/macvlan.ko needs unknown symbol skb_set_dev
-WARNING: /lib/modules/3.4.0-rc7/kernel/net/8021q/8021q.ko needs unknown symbol skb_set_dev
-(...)
-
-BR,
-Paweł.
-
+Thanks,
+MST
