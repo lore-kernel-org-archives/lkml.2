@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab2EMQnL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 12:43:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36080 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750831Ab2EMQnJ (ORCPT
+	id S1753512Ab2EMQxT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 12:53:19 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:19082 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab2EMQxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 12:43:09 -0400
-Date: Sun, 13 May 2012 17:43:05 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sebastian Hesselbarh <sebastian.hesselbarth@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, mturquette@ti.com
-Subject: Re: [RFC] Common clock framework for external clock generators
-Message-ID: <20120513164304.GB6381@opensource.wolfsonmicro.com>
-References: <4FAB15DB.5050702@googlemail.com>
- <20120513122946.GD706@sirena.org.uk>
- <4FAFE1BF.9050805@googlemail.com>
+	Sun, 13 May 2012 12:53:18 -0400
+Date: Sun, 13 May 2012 19:56:01 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        arve@android.com, Jesper Juhl <jj@chaosbits.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: [PATCH 02/11] persistent_ram: Fix buffer size clamping during
+ writes
+Message-ID: <20120513165601.GC16984@mwanda>
+References: <20120512001506.GA8653@lizard>
+ <20120512001717.GB14782@lizard>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Bn2rw/3z4jIqBvZU"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FAFE1BF.9050805@googlemail.com>
-X-Cookie: Beware of Bigfoot!
+In-Reply-To: <20120512001717.GB14782@lizard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 11, 2012 at 05:17:17PM -0700, Anton Vorontsov wrote:
+> This is a longstanding bug, almost unnoticeable when calling
+> persistent_ram_write() for small buffers.
+> 
+> But when called for large data buffers, the write routine behaves
+> incorrectly, as the size may never update: instead of clamping
+> the size to the maximum buffer size, buffer_size_add_clamp() returns
+> an error (which is never checked by the write routine, btw).
+> 
+> To fix this, we now use buffer_size_add() that actually clamps the
+> size to the max value.
+> 
+> Also remove buffer_size_add_clamp(), it is no longer needed.
+> 
 
---Bn2rw/3z4jIqBvZU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Say if you did notice it, what would that look like?  It's just that
+something gets lost instead of written to the screen right?
 
-On Sun, May 13, 2012 at 06:30:55PM +0200, Sebastian Hesselbarh wrote:
+regards,
+dan carpenter
 
-> One question that remains from my original RFC is the missing
-> clk_unregister() as i2c can be removed there also should be an
-> function to unregister previously registered clocks?
 
-One of the patches I've been sending adds a dummy clk_unregister() for
-the sake of making the drivers look nicer - practically speaking it's
-not likely to be terribly important as these things don't get unloaded
-terribly often.  It looks like that patch didn't get applied either.
-
-Mike's stuff is due to hit -next on Monday so I was planning to refresh
-my driver and resend it then, probably with the unregister() though I'm
-considering just removing the unregistration code to try to get make it
-a bit more likely to get applied.
-
---Bn2rw/3z4jIqBvZU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPr+SDAAoJEBus8iNuMP3dGQoP/1u+gLA29jKSrP0Xdeil/eMw
-6zFr7EeaDyhianDKj83hQEgpV08Yj9i9j/QT0QVC+ThVvDE0fggn89Yo9EBoqfXL
-OEzOdVTHVbwyiXbSWZg1wn+Dq76yCCUxAz3vlqhYqvJcLNFSpe5VsKTmmpPKX56E
-2G3rHT8sGzw2llYZTWmkhG7+ixLSJT3rVtbZI2zEpLbXtVyNqlgWBZ1aXz2sQOXx
-BxKPEMmtP7Y5ajVqLL3LXeGsJgcp7+4eAq1GRoElT56NNw6m57d9iBUMLGgoYLsF
-BZE+4ZbbIRLvY6z9WorLfbSFPHwXFwY+eFQ2FZVujin5ZxmxHSQk8Xbjq6BMnYQ5
-7Yyrj9laYsnfGdUN3US49/wlSTZRPC5bb1ZMPsUhsAnvMyTp6PC2ozJEZl7OLhlR
-9TBwF8xCtYJSM33su6hS78Y4X0Duu9bOadV9SqEBA0PuRfQqfxxqoRi5rFRg4+aC
-EGIKy+U2nWqaZbUNN8JRITWBw8lKDxE3UCaNbU+52TrCg/PUda+umDOf6avrg+o2
-pHodbD6lDHIsgMobcKynLyXaJ4aFXnLB4y9rvobsTvuQJ2FLEvMq07c4epjHdZxn
-nsNMlOKcVSs+aweVUrUICX4zZFlV5cWhgZUPx67obgjEgzsAfkV1T6AGwmcw37lG
-tGxmrQo2gThIFa3iLQwQ
-=U03i
------END PGP SIGNATURE-----
-
---Bn2rw/3z4jIqBvZU--
