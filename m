@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab2EMMIW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 08:08:22 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36219 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921Ab2EMMIV convert rfc822-to-8bit (ORCPT
+	id S1752942Ab2EMM3u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 08:29:50 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50325 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab2EMM3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 08:08:21 -0400
+	Sun, 13 May 2012 08:29:48 -0400
+Date: Sun, 13 May 2012 13:29:46 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sebastian Hesselbarh <sebastian.hesselbarth@googlemail.com>
+Cc: linux-kernel@vger.kernel.org, mturquette@ti.com
+Subject: Re: [RFC] Common clock framework for external clock generators
+Message-ID: <20120513122946.GD706@sirena.org.uk>
+References: <4FAB15DB.5050702@googlemail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120512200901.811D37C0074@ra.kernel.org>
-References: <20120512200901.811D37C0074@ra.kernel.org>
-Date: Sun, 13 May 2012 14:08:20 +0200
-X-Google-Sender-Auth: KpR2foqR_ADN6l3aseeP214kjsQ
-Message-ID: <CAMuHMdVuDC7LiYuOdVELsxbbyf1PVZ-QvHY_7pUxigk+DWfysg@mail.gmail.com>
-Subject: Re: bonding: don't increase rx_dropped after processing LACPDUs
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Bohac <jbohac@suse.cz>, "David S. Miller" <davem@davemloft.net>
-Cc: "netdev@vger.kernel.org.Linux Kernel Mailing List" 
-	<linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FAB15DB.5050702@googlemail.com>
+X-Cookie: I'm not proud.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 12, 2012 at 10:09 PM, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
-> Author:     Jiri Bohac <jbohac@suse.cz>
+On Thu, May 10, 2012 at 03:11:55AM +0200, Sebastian Hesselbarh wrote:
 
->    bonding: don't increase rx_dropped after processing LACPDUs
->
->    Since commit 3aba891d, bonding processes LACP frames (802.3ad
->    mode) with bond_handle_frame(). Currently a copy of the skb is
->    made and the original is left to be processed by other
->    rx_handlers and the rest of the network stack by returning
->    RX_HANDLER_ANOTHER.  As there is no protocol handler for
->    PKT_TYPE_LACPDU, the frame is dropped and dev->rx_dropped
->    increased.
->
->    Fix this by making bond_handle_frame() return RX_HANDLER_CONSUMED
->    if bonding has processed the LACP frame.
->
->    Signed-off-by: Jiri Bohac <jbohac@suse.cz>
->    Signed-off-by: David S. Miller <davem@davemloft.net>
+Always CC maintainers on mails, things get lost on high volume lists.
 
-> --- a/drivers/net/bonding/bond_main.c
-> +++ b/drivers/net/bonding/bond_main.c
-> @@ -1444,8 +1444,9 @@ static rx_handler_result_t bond_handle_frame(struct sk_buff **pskb)
->        struct sk_buff *skb = *pskb;
->        struct slave *slave;
->        struct bonding *bond;
-> -       void (*recv_probe)(struct sk_buff *, struct bonding *,
-> +       int (*recv_probe)(struct sk_buff *, struct bonding *,
->                                struct slave *);
+> I recently read about the newly introduced common clock framework (ccf)
+> and wondered if this could be also used for external, e.g. i2c attached,
+> clock generators.
 
-drivers/net/bonding/bonding.h:struct bonding still has a version that
-returns void:
+Yes, it should be able to be used for this.  I've been posting a driver
+for the wm831x PMICs for quite some considerable time.
 
-        void     (*recv_probe)(struct sk_buff *, struct bonding *,
-                               struct slave *);
+> static inline u8 si5351_reg_read(struct si5351_driver_data *data, u8 addr)
+> {
+> 	return (u8)i2c_smbus_read_byte_data(data->client, addr);
+> }
 
-drivers/net/bonding/bond_main.c: In function ‘bond_handle_frame’:
-drivers/net/bonding/bond_main.c:1463: warning: assignment from
-incompatible pointer type
-drivers/net/bonding/bond_main.c: In function ‘bond_open’:
-drivers/net/bonding/bond_main.c:3441: warning: assignment from
-incompatible pointer type
-drivers/net/bonding/bond_main.c:3448: warning: assignment from
-incompatible pointer type
+I'd suggest using regmap for the cache support (which helps with
+read/modify/write cycles) and because...
 
-Can this cause crashes on architectures where the caller needs to
-preserve space for the return value?
+> static int si5351_xtal_enable(struct clk_hw *hw)
+> {
+> 	struct si5351_driver_data *sidata = 
+> 		container_of(hw, struct si5351_driver_data, hw_xtal);
+> 	u8 reg;
+> 
+> 	reg = si5351_reg_read(sidata, SI5351_FANOUT_ENABLE);
+> 	reg |= SI5351_XTAL_ENABLE;
+> 	si5351_reg_write(sidata, SI5351_FANOUT_ENABLE, reg);
+> 	return 0;
+> }
 
-Don't know why I only start seeing this in -rc7, as the prototypes for the
-functions related to the latter 2 warnings haven't changed recently.
+...we should be able to factor things like this out of the drivers using
+regmap (we've been getting some great results doing that for regulator
+over this release).
 
-Gr{oetje,eeting}s,
+> static const struct clk_ops si5351_xtal_ops = {
+> 	.enable = si5351_xtal_enable,
+> 	.disable = si5351_xtal_disable,
 
-                        Geert
+These should be prepare() and unprepare() - enable() and disable() are
+called from atomic context so you can't do I2C I/O.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> static u8 si5351_clkout_get_parent(struct clk_hw *hw)
+> {
+> 	struct si5351_driver_data *sidata = si5351_clkout_get_data(hw);
+> 	return 0;
+> }
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+If we need empty functions like this we should fix the framework.
+
+> 	sidata = kzalloc(sizeof(struct si5351_driver_data), GFP_KERNEL);
+> 	if (sidata == NULL) {
+> 		dev_err(&client->dev, "unable to allocate driver data\n");
+> 		return -ENOMEM;
+> 	}
+
+devm_kzalloc().
