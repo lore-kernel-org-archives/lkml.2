@@ -1,80 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab2EMKss (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 06:48:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751739Ab2EMKsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 06:48:46 -0400
-Message-ID: <4FAF917A.1080904@redhat.com>
-Date: Sun, 13 May 2012 13:48:26 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752819Ab2EMKxj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 06:53:39 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54734 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab2EMKxh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 May 2012 06:53:37 -0400
+Date: Sun, 13 May 2012 11:53:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, dmitry.torokhov@gmail.com,
+        peter.ujfalusi@ti.com, broonie@opensource.wolfsonicro.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TWL6040: fix build error
+Message-ID: <20120513105331.GC706@sirena.org.uk>
+References: <1336675473-24774-1-git-send-email-levinsasha928@gmail.com>
+ <CAP=VYLqwAO8x4aWw7_pH1LH_SPO9Td2ec9oOmKPL-_5LOEQw3g@mail.gmail.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Christoph Lameter <cl@linux.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCHv2] bitops: add _local bitops
-References: <20120509162819.GA21328@redhat.com> <alpine.DEB.2.00.1205101401010.18664@router.home> <4FAF8941.2010308@redhat.com> <20120513104502.GD23273@redhat.com>
-In-Reply-To: <20120513104502.GD23273@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAP=VYLqwAO8x4aWw7_pH1LH_SPO9Td2ec9oOmKPL-_5LOEQw3g@mail.gmail.com>
+X-Cookie: I'm not proud.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2012 01:45 PM, Michael S. Tsirkin wrote:
-> On Sun, May 13, 2012 at 01:13:21PM +0300, Avi Kivity wrote:
-> > On 05/10/2012 10:04 PM, Christoph Lameter wrote:
-> > > On Wed, 9 May 2012, Michael S. Tsirkin wrote:
-> > >
-> > > > kvm needs to update some hypervisor variables atomically
-> > > > in a sense that the operation can't be interrupted
-> > > > in the middle. However the hypervisor always runs
-> > > > on the same CPU so it does not need any memory
-> > > > barrier or lock prefix.
-> > > >
-> > > > Add _local bitops for this purpose: define them
-> > > > as non-atomics for x86 and (for now) atomics for
-> > > > everyone else.
-> > >
-> > > Have you tried to use the this_cpu_ops for that purpose? They create the
-> > > per cpu atomic instructions that you want without a lock prefix and can
-> > > also relocate the per cpu pointer to the correct processor via a
-> > > segment register prefix.
-> > >
-> > > There are no bit operations provided right now but those can either be
-> > > improvised using this_cpu_cmpxchg or added.
-> > 
-> > this_cpu_xchg() should be sufficient, since only bit zero has any
-> > meaning in our use case (so xchg with zero is equivalent to
-> > test_and_clear_bit).
->
-> Yes it should work. No idea how it'd perform:
-> arch/x86/include/asm/percpu.h implies it's expensive.  
+On Thu, May 10, 2012 at 06:49:16PM -0400, Paul Gortmaker wrote:
+> On Thu, May 10, 2012 at 2:44 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> > Fixes build error due to missing of_property_read_u32.
 
-It says a naive implementation is expensive, whereas the implementation
-actually used (a cmpxchg loop) is better.
+> Yes, I saw the same on x86-64 allyesconfig -- which means that in addition to
+> this missing header, it needs to have a Kconfig dependency that limits
+> it to just being enabled on the platforms where it physically is possible to
+> have the hardware.  I'm guessing limiting to ARM would be a good start?
 
-> My latest version
-> simply documents what __test_and_clear does anyway.
-> Which was indicated is acceptable ...
-> Did you change your mind?
-
-No.
-
--- 
-error compiling committee.c: too many arguments to function
-
+Half the idea is to get better test coverage and help people who want to
+do things like build test API updates - the more systems the driver can
+be built on the better from that point of view.
