@@ -1,296 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab2EMOyy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 10:54:54 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55672 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751573Ab2EMOyx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 10:54:53 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regmap: Convert regmap_irq to use irq_domain
-Date: Sun, 13 May 2012 15:54:49 +0100
-Message-Id: <1336920889-22516-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	id S1753444Ab2EMPNZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 11:13:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21089 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753233Ab2EMPNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 May 2012 11:13:23 -0400
+Date: Sun, 13 May 2012 18:13:22 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: kvm@vger.kernel.org
+Cc: Rob Landley <rob@landley.net>, Glauber Costa <glommer@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        gleb@redhat.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] kvm: eoi msi documentation
+Message-ID: <20120513151321.GA25721@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This gets us up to date with the recommended current kernel infrastructure
-and should transparently give us device tree interrupt bindings for any
-devices using the framework. If an explicit IRQ mapping is passed in then
-a legacy interrupt range is created, otherwise a simple linear mapping is
-used.
+Document the new EOI MSR.
 
-A function regmap_irq_get_virq() is provided to allow drivers to map
-individual IRQs which should be used in preference to the existing
-regmap_irq_chip_get_base() since it avoids the need to create the mappings
-for the full range of interrupts.
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/base/regmap/regmap-irq.c |  110 ++++++++++++++++++++++++++------------
- drivers/mfd/Kconfig              |    3 ++
- include/linux/regmap.h           |    1 +
- 3 files changed, 80 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index f9724af..e73998d 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -15,6 +15,7 @@
- #include <linux/regmap.h>
- #include <linux/irq.h>
- #include <linux/interrupt.h>
-+#include <linux/irqdomain.h>
- #include <linux/slab.h>
- 
- #include "internal.h"
-@@ -25,7 +26,7 @@ struct regmap_irq_chip_data {
- 	struct regmap *map;
- 	struct regmap_irq_chip *chip;
- 
--	int irq_base;
-+	struct irq_domain *domain;
- 
- 	void *status_reg_buf;
- 	unsigned int *status_buf;
-@@ -37,7 +38,7 @@ static inline const
- struct regmap_irq *irq_to_regmap_irq(struct regmap_irq_chip_data *data,
- 				     int irq)
- {
--	return &data->chip->irqs[irq - data->irq_base];
-+	return &data->chip->irqs[irq];
- }
- 
- static void regmap_irq_lock(struct irq_data *data)
-@@ -74,7 +75,7 @@ static void regmap_irq_enable(struct irq_data *data)
- {
- 	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
- 	struct regmap *map = d->map;
--	const struct regmap_irq *irq_data = irq_to_regmap_irq(d, data->irq);
-+	const struct regmap_irq *irq_data = irq_to_regmap_irq(d, data->hwirq);
- 
- 	d->mask_buf[irq_data->reg_offset / map->reg_stride] &= ~irq_data->mask;
- }
-@@ -83,7 +84,7 @@ static void regmap_irq_disable(struct irq_data *data)
- {
- 	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
- 	struct regmap *map = d->map;
--	const struct regmap_irq *irq_data = irq_to_regmap_irq(d, data->irq);
-+	const struct regmap_irq *irq_data = irq_to_regmap_irq(d, data->hwirq);
- 
- 	d->mask_buf[irq_data->reg_offset / map->reg_stride] |= irq_data->mask;
- }
-@@ -153,7 +154,7 @@ static irqreturn_t regmap_irq_thread(int irq, void *d)
- 	for (i = 0; i < chip->num_irqs; i++) {
- 		if (data->status_buf[chip->irqs[i].reg_offset /
- 				     map->reg_stride] & chip->irqs[i].mask) {
--			handle_nested_irq(data->irq_base + i);
-+			handle_nested_irq(irq_find_mapping(data->domain, i));
- 			handled = true;
- 		}
- 	}
-@@ -164,6 +165,31 @@ static irqreturn_t regmap_irq_thread(int irq, void *d)
- 		return IRQ_NONE;
- }
- 
-+static int regmap_irq_map(struct irq_domain *h, unsigned int virq,
-+			  irq_hw_number_t hw)
-+{
-+	struct regmap_irq_chip_data *data = h->host_data;
+This documents my PV EOI patchset and applies on top.
+Will make it part of the patchset on the next respin.
+
+ Documentation/virtual/kvm/msr.txt |   56 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 56 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/virtual/kvm/msr.txt b/Documentation/virtual/kvm/msr.txt
+index 5031780..bdbd337 100644
+--- a/Documentation/virtual/kvm/msr.txt
++++ b/Documentation/virtual/kvm/msr.txt
+@@ -219,3 +219,59 @@ MSR_KVM_STEAL_TIME: 0x4b564d03
+ 		steal: the amount of time in which this vCPU did not run, in
+ 		nanoseconds. Time during which the vcpu is idle, will not be
+ 		reported as steal time.
 +
-+	irq_set_chip_data(virq, data);
-+	irq_set_chip_and_handler(virq, &regmap_irq_chip, handle_edge_irq);
-+	irq_set_nested_thread(virq, 1);
++MSR_KVM_EOI_EN: 0x4b564d04
++	data: Bit 0 is 1 when PV end of interrupt is enabled on the vcpu; 0
++	when disabled.  When enabled, bits 63-1 hold 2-byte aligned physical address
++	of a 2 byte memory area which must be in guest RAM and must be zeroed.
 +
-+	/* ARM needs us to explicitly flag the IRQ as valid
-+	 * and will set them noprobe when we do so. */
-+#ifdef CONFIG_ARM
-+	set_irq_flags(virq, IRQF_VALID);
-+#else
-+	irq_set_noprobe(virq);
-+#endif
++	The first, least significant bit of 2 byte memory location will be
++	written to by the hypervisor, typically at the time of interrupt
++	injection.  Value of 1 means that guest can skip writing EOI to the apic
++	(using MSR or MMIO write); instead, it is sufficient to signal
++	EOI by clearing the bit in guest memory - this location will
++	later be polled by the hypervisor.
++	Value of 0 means that the EOI write is required.
 +
-+	return 0;
-+}
++	It is always safe for the guest to ignore the optimization and perform
++	the APIC EOI write anyway.
 +
-+static struct irq_domain_ops regmap_domain_ops = {
-+	.map	= regmap_irq_map,
-+	.xlate	= irq_domain_xlate_twocell,
-+};
++	Hypervisor is guaranteed to only modify this least
++	significant bit while in the current VCPU context, this means that
++	guest does not need to use either lock prefix or memory ordering
++	primitives to synchronise with the hypervisor.
 +
- /**
-  * regmap_add_irq_chip(): Use standard regmap IRQ controller handling
-  *
-@@ -184,7 +210,7 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 			struct regmap_irq_chip_data **data)
- {
- 	struct regmap_irq_chip_data *d;
--	int cur_irq, i;
-+	int i;
- 	int ret = -ENOMEM;
- 
- 	for (i = 0; i < chip->num_irqs; i++) {
-@@ -195,15 +221,13 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 			return -EINVAL;
- 	}
- 
--	/* Ask for a dynamic range if none is specified */
--	if (!irq_base)
--		irq_base = -1;
--
--	irq_base = irq_alloc_descs(irq_base, 0, chip->num_irqs, 0);
--	if (irq_base < 0) {
--		dev_warn(map->dev, "Failed to allocate IRQs: %d\n",
--			 irq_base);
--		return irq_base;
-+	if (irq_base) {
-+		irq_base = irq_alloc_descs(irq_base, 0, chip->num_irqs, 0);
-+		if (irq_base < 0) {
-+			dev_warn(map->dev, "Failed to allocate IRQs: %d\n",
-+				 irq_base);
-+			return irq_base;
-+		}
- 	}
- 
- 	d = kzalloc(sizeof(*d), GFP_KERNEL);
-@@ -234,7 +258,6 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 
- 	d->map = map;
- 	d->chip = chip;
--	d->irq_base = irq_base;
- 	mutex_init(&d->lock);
- 
- 	for (i = 0; i < chip->num_irqs; i++)
-@@ -253,33 +276,31 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 		}
- 	}
- 
--	/* Register them with genirq */
--	for (cur_irq = irq_base;
--	     cur_irq < chip->num_irqs + irq_base;
--	     cur_irq++) {
--		irq_set_chip_data(cur_irq, d);
--		irq_set_chip_and_handler(cur_irq, &regmap_irq_chip,
--					 handle_edge_irq);
--		irq_set_nested_thread(cur_irq, 1);
--
--		/* ARM needs us to explicitly flag the IRQ as valid
--		 * and will set them noprobe when we do so. */
--#ifdef CONFIG_ARM
--		set_irq_flags(cur_irq, IRQF_VALID);
--#else
--		irq_set_noprobe(cur_irq);
--#endif
-+	if (irq_base)
-+		d->domain = irq_domain_add_legacy(map->dev->of_node,
-+						  chip->num_irqs, irq_base, 0,
-+						  &regmap_domain_ops, d);
-+	else
-+		d->domain = irq_domain_add_linear(map->dev->of_node,
-+						  chip->num_irqs,
-+						  &regmap_domain_ops, d);
-+	if (!d->domain) {
-+		dev_err(map->dev, "Failed to create IRQ domain\n");
-+		ret = -ENOMEM;
-+		goto err_alloc;
- 	}
- 
- 	ret = request_threaded_irq(irq, NULL, regmap_irq_thread, irq_flags,
- 				   chip->name, d);
- 	if (ret != 0) {
- 		dev_err(map->dev, "Failed to request IRQ %d: %d\n", irq, ret);
--		goto err_alloc;
-+		goto err_domain;
- 	}
- 
- 	return 0;
- 
-+err_domain:
-+	/* Should really dispose of the domain but... */
- err_alloc:
- 	kfree(d->mask_buf_def);
- 	kfree(d->mask_buf);
-@@ -302,6 +323,7 @@ void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *d)
- 		return;
- 
- 	free_irq(irq, d);
-+	/* We should unmap the domain but... */
- 	kfree(d->mask_buf_def);
- 	kfree(d->mask_buf);
- 	kfree(d->status_reg_buf);
-@@ -319,6 +341,26 @@ EXPORT_SYMBOL_GPL(regmap_del_irq_chip);
-  */
- int regmap_irq_chip_get_base(struct regmap_irq_chip_data *data)
- {
--	return data->irq_base;
-+	int i;
++	However, hypervisor can set and clear this memory bit at any time:
++	therefore to make sure hypervisor does not interrupt the
++	guest and clear the least significant bit in the memory area
++	in the window between guest testing it to detect
++	whether it can skip EOI apic write and between guest
++	clearing it to signal EOI to the hypervisor,
++	guest must both read the least sgnificant bit in the memory area and
++	clear it using a single CPU instruction, such as test and clear, or
++	compare and exchange.
 +
-+	/* Make sure all the IRQs are mapped, users will be assuming this */
-+	for (i = 1; i < data->chip->num_irqs; i++)
-+		irq_create_mapping(data->domain, i);
++the page referred to by the page fault is not
++	present. Value 2 means that the page is now available. Disabling
++	interrupt inhibits APFs. Guest must not enable interrupt
++	before the reason is read, or it may be overwritten by another
++	APF. Since APF uses the same exception vector as regular page
++	fault guest must reset the reason to 0 before it does
++	something that can generate normal page fault.  If during page
++	fault APF reason is 0 it means that this is regular page
++	fault.
 +
-+	return irq_create_mapping(data->domain, 0);
- }
- EXPORT_SYMBOL_GPL(regmap_irq_chip_get_base);
++	During delivery of type 1 APF cr2 contains a token that will
++	be used to notify a guest when missing page becomes
++	available. When page becomes available type 2 APF is sent with
++	cr2 set to the token associated with the page. There is special
++	kind of token 0xffffffff which tells vcpu that it should wake
++	up all processes waiting for APFs and no individual type 2 APFs
++	will be sent.
 +
-+/**
-+ * regmap_irq_get_virq(): Map an interrupt on a chip to a virtual IRQ
-+ *
-+ * Useful for drivers to request their own IRQs.
-+ *
-+ * @data: regmap_irq controller to operate on.
-+ * @irq: index of the interrupt requested in the chip IRQs
-+ */
-+int regmap_irq_get_virq(struct regmap_irq_chip_data *data, int irq)
-+{
-+	return irq_create_mapping(data->domain, irq);
-+}
-+EXPORT_SYMBOL_GPL(regmap_irq_get_virq);
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index c618e3a..9846424 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -389,6 +389,7 @@ config PMIC_DA9052
- 
- config MFD_DA9052_SPI
- 	bool "Support Dialog Semiconductor DA9052/53 PMIC variants with SPI"
-+	select IRQ_DOMAIN
- 	select REGMAP_SPI
- 	select REGMAP_IRQ
- 	select PMIC_DA9052
-@@ -401,6 +402,7 @@ config MFD_DA9052_SPI
- 
- config MFD_DA9052_I2C
- 	bool "Support Dialog Semiconductor DA9052/53 PMIC variants with I2C"
-+	select IRQ_DOMAIN
- 	select REGMAP_I2C
- 	select REGMAP_IRQ
- 	select PMIC_DA9052
-@@ -571,6 +573,7 @@ config MFD_WM8994
- 	bool "Support Wolfson Microelectronics WM8994"
- 	select MFD_CORE
- 	select REGMAP_I2C
-+	select IRQ_DOMAIN
- 	select REGMAP_IRQ
- 	depends on I2C=y && GENERIC_HARDIRQS
- 	help
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index 9dbc9a1..7208668 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -245,6 +245,7 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 			struct regmap_irq_chip_data **data);
- void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *data);
- int regmap_irq_chip_get_base(struct regmap_irq_chip_data *data);
-+int regmap_irq_get_virq(struct regmap_irq_chip_data *data, int irq);
- 
- #else
- 
++	If APF is disabled while there are outstanding APFs, they will
++	not be delivered.
++
++	Currently type 2 APF will be always delivered on the same vcpu as
++	type 1 was, but guest should not rely on that.
++
 -- 
-1.7.10
-
+MST
