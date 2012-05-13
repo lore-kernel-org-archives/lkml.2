@@ -1,80 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab2EMATp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 May 2012 20:19:45 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44953 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964Ab2EMATn (ORCPT
+	id S1756046Ab2EMBAM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 May 2012 21:00:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50851 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808Ab2EMBAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 May 2012 20:19:43 -0400
-Date: Sun, 13 May 2012 10:19:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, cpufreq@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: Add myself as the cpufreq maintainer
-Message-Id: <20120513101931.39617e4909fcc10d6739bc75@canb.auug.org.au>
-In-Reply-To: <201205112135.46097.rjw@sisk.pl>
-References: <20120504160417.GA421@redhat.com>
-	<201205112116.25257.rjw@sisk.pl>
-	<20120511192420.GA10041@redhat.com>
-	<201205112135.46097.rjw@sisk.pl>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sun__13_May_2012_10_19_31_+1000_2AiNKWVvWj.PxLel"
+	Sat, 12 May 2012 21:00:10 -0400
+From: Richard Zhao <richard.zhao@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: sameo@linux.intel.com, paul.liu@linaro.org,
+        broonie@opensource.wolfsonmicro.com, shawn.guo@linaro.org,
+        Richard Zhao <richard.zhao@freescale.com>
+Subject: [PATCH 1/2] mfd: anatop: make register accessor more flexible and rename meaningfully
+Date: Sun, 13 May 2012 08:59:53 +0800
+Message-Id: <1336870794-6351-1-git-send-email-richard.zhao@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__13_May_2012_10_19_31_+1000_2AiNKWVvWj.PxLel
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+ - rename to anatop_read_reg and anatop_write_reg
+ - anatop_read_reg directly return reg value
+ - anatop_write_reg write reg with mask
 
-Hi Rafael,  Dave,
+Signed-off-by: Richard Zhao <richard.zhao@freescale.com>
+---
+ drivers/mfd/anatop-mfd.c             |   35 +++++++++++-----------------------
+ drivers/regulator/anatop-regulator.c |   18 ++++++++---------
+ include/linux/mfd/anatop.h           |    4 ++--
+ 3 files changed, 21 insertions(+), 36 deletions(-)
 
-On Fri, 11 May 2012 21:35:45 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
->
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->=20
-> Since cpufreq has no official maintainer at the moment, I'm willing
-> to maintain it along some other power management core code I've been
-> maintaining already.
+diff --git a/drivers/mfd/anatop-mfd.c b/drivers/mfd/anatop-mfd.c
+index 2af4248..3bb7c49 100644
+--- a/drivers/mfd/anatop-mfd.c
++++ b/drivers/mfd/anatop-mfd.c
+@@ -41,39 +41,26 @@
+ #include <linux/of_address.h>
+ #include <linux/mfd/anatop.h>
+ 
+-u32 anatop_get_bits(struct anatop *adata, u32 addr, int bit_shift,
+-		    int bit_width)
++u32 anatop_read_reg(struct anatop *adata, u32 addr)
+ {
+-	u32 val, mask;
+-
+-	if (bit_width == 32)
+-		mask = ~0;
+-	else
+-		mask = (1 << bit_width) - 1;
+-
+-	val = readl(adata->ioreg + addr);
+-	val = (val >> bit_shift) & mask;
+-
+-	return val;
++	return readl(adata->ioreg + addr);
+ }
+-EXPORT_SYMBOL_GPL(anatop_get_bits);
++EXPORT_SYMBOL_GPL(anatop_read_reg);
+ 
+-void anatop_set_bits(struct anatop *adata, u32 addr, int bit_shift,
+-		     int bit_width, u32 data)
++void anatop_write_reg(struct anatop *adata, u32 addr, u32 data, u32 mask)
+ {
+-	u32 val, mask;
++	u32 val;
+ 
+-	if (bit_width == 32)
+-		mask = ~0;
+-	else
+-		mask = (1 << bit_width) - 1;
++	data &= mask;
+ 
+ 	spin_lock(&adata->reglock);
+-	val = readl(adata->ioreg + addr) & ~(mask << bit_shift);
+-	writel((data << bit_shift) | val, adata->ioreg + addr);
++	val = readl(adata->ioreg + addr);
++	val |= data;
++	val &= ~data;
++	writel(val, adata->ioreg + addr);
+ 	spin_unlock(&adata->reglock);
+ }
+-EXPORT_SYMBOL_GPL(anatop_set_bits);
++EXPORT_SYMBOL_GPL(anatop_write_reg);
+ 
+ static const struct of_device_id of_anatop_match[] = {
+ 	{ .compatible = "fsl,imx6q-anatop", },
+diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+index 81fd606..0a34085 100644
+--- a/drivers/regulator/anatop-regulator.c
++++ b/drivers/regulator/anatop-regulator.c
+@@ -47,7 +47,7 @@ static int anatop_set_voltage(struct regulator_dev *reg, int min_uV,
+ 				  int max_uV, unsigned *selector)
+ {
+ 	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
+-	u32 val, sel;
++	u32 val, sel, mask;
+ 	int uv;
+ 
+ 	uv = min_uV;
+@@ -71,11 +71,10 @@ static int anatop_set_voltage(struct regulator_dev *reg, int min_uV,
+ 	val = anatop_reg->min_bit_val + sel;
+ 	*selector = sel;
+ 	dev_dbg(&reg->dev, "%s: calculated val %d\n", __func__, val);
+-	anatop_set_bits(anatop_reg->mfd,
+-			anatop_reg->control_reg,
+-			anatop_reg->vol_bit_shift,
+-			anatop_reg->vol_bit_width,
+-			val);
++	mask = ((1 << anatop_reg->vol_bit_width) - 1) <<
++		anatop_reg->vol_bit_shift;
++	val <<= anatop_reg->vol_bit_shift;
++	anatop_write_reg(anatop_reg->mfd, anatop_reg->control_reg, val, mask);
+ 
+ 	return 0;
+ }
+@@ -88,10 +87,9 @@ static int anatop_get_voltage_sel(struct regulator_dev *reg)
+ 	if (!anatop_reg->control_reg)
+ 		return -ENOTSUPP;
+ 
+-	val = anatop_get_bits(anatop_reg->mfd,
+-			      anatop_reg->control_reg,
+-			      anatop_reg->vol_bit_shift,
+-			      anatop_reg->vol_bit_width);
++	val = anatop_read_reg(anatop_reg->mfd, anatop_reg->control_reg);
++	val = (val & ((1 << anatop_reg->vol_bit_width) - 1)) >>
++		anatop_reg->vol_bit_shift;
+ 
+ 	return val - anatop_reg->min_bit_val;
+ }
+diff --git a/include/linux/mfd/anatop.h b/include/linux/mfd/anatop.h
+index 22c1007..7f92acf 100644
+--- a/include/linux/mfd/anatop.h
++++ b/include/linux/mfd/anatop.h
+@@ -34,7 +34,7 @@ struct anatop {
+ 	spinlock_t reglock;
+ };
+ 
+-extern u32 anatop_get_bits(struct anatop *, u32, int, int);
+-extern void anatop_set_bits(struct anatop *, u32, int, int, u32);
++extern u32 anatop_read_reg(struct anatop *, u32);
++extern void anatop_write_reg(struct anatop *, u32, u32, u32);
+ 
+ #endif /*  __LINUX_MFD_ANATOP_H */
+-- 
+1.7.9.5
 
-I have cpufreq-current and cpufreq trees in linux-next (both currently
-empty and with Dave as contact).  What should I do with them?
-
-cpufreq-current	git://git.kernel.org/pub/scm/linux/kernel/git/davej/cpufreq=
-.git#fixes
-cpufreq		git://git.kernel.org/pub/scm/linux/kernel/git/davej/cpufreq.git#ne=
-xt
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Sun__13_May_2012_10_19_31_+1000_2AiNKWVvWj.PxLel
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPrv4TAAoJEECxmPOUX5FEbfcP/39UlN8diBfot+JDX9E1BpRg
-eDGi60JQru/RE+5HzED8BmP+sWKrTqP5fLapnGdntsdmOz0+1YGphBdk1Eypt3RC
-EatxAuhNE/dR4T71PuARn8vDkyIdMIDifdF6+Uaa/95tkBvaYE6AJszzYMllAemT
-N8LAqoR/uSWXaG7gTyS+1sfOKHpyJi6zabcx0WZxq+Vh11lVxe1F06X5x2HJbVvE
-HHRcWV4oUnuFtc++dBNC5bqQSapSe/M76QK8m9cnSM7TLgGpMGOnpDUZ7aruelJx
-brad0Lpb7uK/b2G1MeN1+VLmNm3TTjthdf0J8YD9JQQFE8nnaXdy+0eW+XNNvrJg
-gStBR2wWz9EVVfIIj9T5DQOyzrGTiGoSPrKEjlF0oTCsQigFjrvpyoMcsThhCiy5
-1tMzxVlAYj4gBiHH/Moc0HhqcaW8Bl9jY1a8ztfaujlbtEZBzCh6jJpOHbny+ve1
-vD/4FGrU4uU6kgFC3wxQ4sfob43CdXeNJxuEaCT53i7bnH2WyhqHJ9Jpq7G0Vos9
-lhFZK5x75+7BKrz/Dpmofpoo5FojuhEvv9vdKaSyShqVuLMHIbiLbt/B2NEsN+5W
-ISrExGbxKYbVMwiVmMb9HDQRtfpXSFC33M+lGuB/owAL9looFOYU+E5HlutXlCI8
-HxFSY8tubV9OEpDuc7jv
-=56ga
------END PGP SIGNATURE-----
-
---Signature=_Sun__13_May_2012_10_19_31_+1000_2AiNKWVvWj.PxLel--
