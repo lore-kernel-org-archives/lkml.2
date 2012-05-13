@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328Ab2EMRud (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 13:50:33 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:49956 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751926Ab2EMRub (ORCPT
+	id S1752342Ab2EMSAV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 14:00:21 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:37341 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751479Ab2EMSAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 13:50:31 -0400
-Message-ID: <4FAFF473.7050000@xenotime.net>
-Date: Sun, 13 May 2012 10:50:43 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Sun, 13 May 2012 14:00:19 -0400
+Message-ID: <4FAFF680.6030307@linux.vnet.ibm.com>
+Date: Sun, 13 May 2012 23:29:28 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Carlos Chinea <carlos.chinea@nokia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] hsi: fix kernel-doc warnings
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Attilio Rao <attilio.rao@citrix.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
+References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com> <20120507082928.GI16608@gmail.com> <4FA7888F.80505@redhat.com> <4FA7AAD8.6050003@linux.vnet.ibm.com> <4FA7BABA.4040700@redhat.com>
+In-Reply-To: <4FA7BABA.4040700@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+x-cbid: 12051307-5140-0000-0000-0000014E561A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On 05/07/2012 05:36 PM, Avi Kivity wrote:
+> On 05/07/2012 01:58 PM, Raghavendra K T wrote:
+>> On 05/07/2012 02:02 PM, Avi Kivity wrote:
+>>> On 05/07/2012 11:29 AM, Ingo Molnar wrote:
+>> (Less is better. Below is time elapsed in sec for x86_64_defconfig
+>> (3+3 runs)).
+>>
+>>           BASE                    BASE+patch            %improvement
+>>           mean (sd)               mean (sd)
+>> case 1x:     66.0566 (74.0304)      61.3233 (68.8299)     7.16552
+>> case 2x:     1253.2 (1795.74)      131.606 (137.358)     89.4984
+>> case 3x:     3431.04 (5297.26)      134.964 (149.861)     96.0664
+>>
+>
+> You're calculating the improvement incorrectly.  In the last case, it's
+> not 96%, rather it's 2400% (25x).  Similarly the second case is about
+> 900% faster.
+>
 
-Fix kernel-doc warnings in hsi files:
+speedup calculation is clear.
 
-Warning(include/linux/hsi/hsi.h:136): Excess struct/union/enum/typedef member 'e_handler' description in 'hsi_client'
-Warning(include/linux/hsi/hsi.h:136): Excess struct/union/enum/typedef member 'pclaimed' description in 'hsi_client'
-Warning(include/linux/hsi/hsi.h:136): Excess struct/union/enum/typedef member 'nb' description in 'hsi_client'
-Warning(drivers/hsi/hsi.c:434): No description found for parameter 'handler'
-Warning(drivers/hsi/hsi.c:434): Excess function parameter 'cb' description in 'hsi_register_port_event'
+I think confusion for me was more because of the types of benchmarks.
 
-Don't document "private:" fields with kernel-doc notation.
-If you want to leave them fully documented, that's OK, but
-then don't mark them as "private:".
+I always did
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Carlos Chinea <carlos.chinea@nokia.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/hsi/hsi.c       |    2 +-
- include/linux/hsi/hsi.h |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+|(patch - base)| * 100 / base
 
---- lnx-34-rc7.orig/drivers/hsi/hsi.c
-+++ lnx-34-rc7/drivers/hsi/hsi.c
-@@ -420,7 +420,7 @@ static int hsi_event_notifier_call(struc
- /**
-  * hsi_register_port_event - Register a client to receive port events
-  * @cl: HSI client that wants to receive port events
-- * @cb: Event handler callback
-+ * @handler: Event handler callback
-  *
-  * Clients should register a callback to be able to receive
-  * events from the ports. Registration should happen after
---- lnx-34-rc7.orig/include/linux/hsi/hsi.h
-+++ lnx-34-rc7/include/linux/hsi/hsi.h
-@@ -121,9 +121,9 @@ static inline int hsi_register_board_inf
-  * @device: Driver model representation of the device
-  * @tx_cfg: HSI TX configuration
-  * @rx_cfg: HSI RX configuration
-- * @e_handler: Callback for handling port events (RX Wake High/Low)
-- * @pclaimed: Keeps tracks if the clients claimed its associated HSI port
-- * @nb: Notifier block for port events
-+ * e_handler: Callback for handling port events (RX Wake High/Low)
-+ * pclaimed: Keeps tracks if the clients claimed its associated HSI port
-+ * nb: Notifier block for port events
-  */
- struct hsi_client {
- 	struct device		device;
+
+So,  for
+(1) lesser is better sort of benchmarks,
+improvement calculation would be like
+
+|(patched -  base)| * 100/ patched
+e.g for kernbench,
+
+suppose base    = 150 sec
+         patched = 100 sec
+improvement = 50 % ( = 33% degradation of base)
+
+
+(2) for higher is better sort of benchmarks improvement calculation 
+would be like
+
+|(patched - base)| * 100 / base
+
+for e.g say for pgbench/ ebizzy...
+
+     base = 100 tps (transactions per sec)
+     patched = 150 tps
+
+  improvement  = 50 % of pathched kernel ( OR 33 % degradation of base )
+
+
+Is this is what generally done? just wanted to be on same page before 
+publishing benchmark results, other than kernbench.
+
