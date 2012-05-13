@@ -1,101 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342Ab2EMSAV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 14:00:21 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:37341 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751479Ab2EMSAT (ORCPT
+	id S1752510Ab2EMSBy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 14:01:54 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:64925 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab2EMSBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 14:00:19 -0400
-Message-ID: <4FAFF680.6030307@linux.vnet.ibm.com>
-Date: Sun, 13 May 2012 23:29:28 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Sun, 13 May 2012 14:01:53 -0400
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Attilio Rao <attilio.rao@citrix.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
-        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
-References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com> <20120507082928.GI16608@gmail.com> <4FA7888F.80505@redhat.com> <4FA7AAD8.6050003@linux.vnet.ibm.com> <4FA7BABA.4040700@redhat.com>
-In-Reply-To: <4FA7BABA.4040700@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12051307-5140-0000-0000-0000014E561A
+In-Reply-To: <4FAFB57C.40906@teksavvy.com>
+References: <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com>
+ <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com>
+ <CAPXgP13-XQdn0wMP=coVqS=Eko1vWkOrjOtfq4JQLHFZ3JNbgg@mail.gmail.com>
+ <1336571457.30189.29.camel@joe2Laptop> <CAPXgP11jt5u=wXs9Pe7QksZ25QTKCwNXgTHn+T6JXD6+2NzgBQ@mail.gmail.com>
+ <CAE9FiQUzsu8CFNLXxUyZnu53YobdNdJfQQmPQd8s8r5rgJpcNg@mail.gmail.com>
+ <20120509230649.GA10695@kroah.com> <1336617045.25027.2.camel@mop>
+ <CA+1xoqft4aM_qedn+TDx0z8creS_4mFf3S+4SUNjz0pe+=YHAg@mail.gmail.com>
+ <20120511151944.GA6990@kroah.com> <CA+55aFz8-96rHLfqRrRSgFAzOFmyDaDKSB15WKkCoUssHq8R-A@mail.gmail.com>
+ <CAPXgP11teuiH0cPRrhWdvKCW1jtq4_6wkH21wgRT6UpDF0G1gQ@mail.gmail.com>
+ <CA+55aFyG2jQFURwWebMWw7bAt3=zbXRsHSOtZVYBw-frUXqiRg@mail.gmail.com>
+ <CA+1xoqf5YbkOJgQJWOgck0NpqGzGtxtHHJASZKHvwVuBzkKK6A@mail.gmail.com>
+ <CA+55aFyeXdUyj_OzccctFSj1f4su1G8DyxiQwD4W5sV9Dh0Zpg@mail.gmail.com> <4FAFB57C.40906@teksavvy.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 13 May 2012 11:01:31 -0700
+X-Google-Sender-Auth: Rd41rgrXga14tanVOCBKyHWApj8
+Message-ID: <CA+55aFwrc2rbDyJgChwkfWBrZtmoVdC-abH0eOvs_zpnq1MPDQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
+ record buffer
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
+        Joe Perches <joe@perches.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2012 05:36 PM, Avi Kivity wrote:
-> On 05/07/2012 01:58 PM, Raghavendra K T wrote:
->> On 05/07/2012 02:02 PM, Avi Kivity wrote:
->>> On 05/07/2012 11:29 AM, Ingo Molnar wrote:
->> (Less is better. Below is time elapsed in sec for x86_64_defconfig
->> (3+3 runs)).
->>
->>           BASE                    BASE+patch            %improvement
->>           mean (sd)               mean (sd)
->> case 1x:     66.0566 (74.0304)      61.3233 (68.8299)     7.16552
->> case 2x:     1253.2 (1795.74)      131.606 (137.358)     89.4984
->> case 3x:     3431.04 (5297.26)      134.964 (149.861)     96.0664
->>
+On Sun, May 13, 2012 at 6:22 AM, Mark Lord <kernel@teksavvy.com> wrote:
 >
-> You're calculating the improvement incorrectly.  In the last case, it's
-> not 96%, rather it's 2400% (25x).  Similarly the second case is about
-> 900% faster.
->
+> Look in syslog ?
 
-speedup calculation is clear.
+That usually requires root permission, so it's an extra (annoying)
+step. It also gives all kinds or other mostly irrelevant information
+for a kernel person.
 
-I think confusion for me was more because of the types of benchmarks.
+Besides, according to the same argument, dmesg shouldn't have times
+*at*all*. So the "look in your syslog" is pointless for discussing the
+dmesg timestamp.
 
-I always did
-
-|(patch - base)| * 100 / base
-
-
-So,  for
-(1) lesser is better sort of benchmarks,
-improvement calculation would be like
-
-|(patched -  base)| * 100/ patched
-e.g for kernbench,
-
-suppose base    = 150 sec
-         patched = 100 sec
-improvement = 50 % ( = 33% degradation of base)
-
-
-(2) for higher is better sort of benchmarks improvement calculation 
-would be like
-
-|(patched - base)| * 100 / base
-
-for e.g say for pgbench/ ebizzy...
-
-     base = 100 tps (transactions per sec)
-     patched = 150 tps
-
-  improvement  = 50 % of pathched kernel ( OR 33 % degradation of base )
-
-
-Is this is what generally done? just wanted to be on same page before 
-publishing benchmark results, other than kernbench.
-
+                   Linus
