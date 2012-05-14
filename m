@@ -1,35 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756484Ab2ENNlu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:41:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56513 "EHLO
+	id S1756597Ab2ENNm1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 09:42:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56531 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517Ab2ENNlt (ORCPT
+	with ESMTP id S1752717Ab2ENNmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:41:49 -0400
-Date: Mon, 14 May 2012 06:41:15 -0700
-From: tip-bot for Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Message-ID: <tip-73eff9f56e15598c8399c0b86899fd889b97f085@git.kernel.org>
-Cc: acme@redhat.com, mingo@kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, anton@redhat.com, rostedt@goodmis.org,
-        jkenisto@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        oleg@redhat.com, tglx@linutronix.de, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, andi@firstfloor.org,
-        hch@infradead.org, ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, acme@redhat.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, anton@redhat.com, rostedt@goodmis.org,
-        jkenisto@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, oleg@redhat.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, andi@firstfloor.org,
-        hch@infradead.org, ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <20120416120925.30661.40409.sendpatchset@srdronam.in.ibm.com>
-References: <20120416120925.30661.40409.sendpatchset@srdronam.in.ibm.com>
+	Mon, 14 May 2012 09:42:25 -0400
+Date: Mon, 14 May 2012 06:42:05 -0700
+From: tip-bot for Dan Carpenter <dan.carpenter@oracle.com>
+Message-ID: <tip-fefe1ed1398b81e3fadc92d11d91162d343c8836@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        joerg.roedel@amd.com, youquan.song@intel.com, stable@kernel.org,
+        suresh.b.siddha@intel.com, tglx@linutronix.de, wharms@bfs.de,
+        dan.carpenter@oracle.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        joerg.roedel@amd.com, youquan.song@intel.com, stable@kernel.org,
+        suresh.b.siddha@intel.com, tglx@linutronix.de, wharms@bfs.de,
+        dan.carpenter@oracle.com
+In-Reply-To: <20120513170938.GA4280@elgon.mountain>
+References: <20120513170938.GA4280@elgon.mountain>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/uprobes] perf probe: Detect probe target when m/
- x options are absent
-Git-Commit-ID: 73eff9f56e15598c8399c0b86899fd889b97f085
+Subject: [tip:core/iommu] iommu: Fix off by one in dmar_get_fault_reason()
+Git-Commit-ID: fefe1ed1398b81e3fadc92d11d91162d343c8836
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,141 +31,47 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 14 May 2012 06:41:21 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 14 May 2012 06:42:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  73eff9f56e15598c8399c0b86899fd889b97f085
-Gitweb:     http://git.kernel.org/tip/73eff9f56e15598c8399c0b86899fd889b97f085
-Author:     Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-AuthorDate: Mon, 16 Apr 2012 17:39:25 +0530
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 11 May 2012 13:58:53 -0300
+Commit-ID:  fefe1ed1398b81e3fadc92d11d91162d343c8836
+Gitweb:     http://git.kernel.org/tip/fefe1ed1398b81e3fadc92d11d91162d343c8836
+Author:     Dan Carpenter <dan.carpenter@oracle.com>
+AuthorDate: Sun, 13 May 2012 20:09:38 +0300
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 14 May 2012 14:37:47 +0200
 
-perf probe: Detect probe target when m/x options are absent
+iommu: Fix off by one in dmar_get_fault_reason()
 
-Options -m and -x explicitly allow tracing of modules / user space
-binaries. In absense of these options, check if the first argument can
-be used as a target.
+fault_reason - 0x20 == ARRAY_SIZE(irq_remap_fault_reasons) is
+one past the end of the array.
 
-perf probe /bin/zsh zfree is equivalent to perf probe -x /bin/zsh zfree.
-
-Suggested-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux-mm <linux-mm@kvack.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20120416120925.30661.40409.sendpatchset@srdronam.in.ibm.com
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Youquan Song <youquan.song@intel.com>
+Cc: walter harms <wharms@bfs.de>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/20120513170938.GA4280@elgon.mountain
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/Documentation/perf-probe.txt |    8 ++++-
- tools/perf/builtin-probe.c              |   43 ++++++++++++++++++++++++++++--
- 2 files changed, 46 insertions(+), 5 deletions(-)
+ drivers/iommu/dmar.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index fb673be..b715cb7 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -104,6 +104,10 @@ OPTIONS
- 	Specify path to the executable or shared library file for user
- 	space tracing. Can also be used with --funcs option.
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index 5ef65cf..3a74e44 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -1057,8 +1057,8 @@ static const char *irq_remap_fault_reasons[] =
  
-+In absence of -m/-x options, perf probe checks if the first argument after
-+the options is an absolute path name. If its an absolute path, perf probe
-+uses it as a target module/target user space binary to probe.
-+
- PROBE SYNTAX
- ------------
- Probe points are defined by following syntax.
-@@ -190,11 +194,11 @@ Delete all probes on schedule().
- 
- Add probes at zfree() function on /bin/zsh
- 
-- ./perf probe -x /bin/zsh zfree
-+ ./perf probe -x /bin/zsh zfree or ./perf probe /bin/zsh zfree
- 
- Add probes at malloc() function on libc
- 
-- ./perf probe -x /lib/libc.so.6 malloc
-+ ./perf probe -x /lib/libc.so.6 malloc or ./perf probe /lib/libc.so.6 malloc
- 
- SEE ALSO
- --------
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index ee3d84a..e215ae6 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -85,21 +85,58 @@ static int parse_probe_event(const char *str)
- 	return ret;
- }
- 
-+static int set_target(const char *ptr)
-+{
-+	int found = 0;
-+	const char *buf;
-+
-+	/*
-+	 * The first argument after options can be an absolute path
-+	 * to an executable / library or kernel module.
-+	 *
-+	 * TODO: Support relative path, and $PATH, $LD_LIBRARY_PATH,
-+	 * short module name.
-+	 */
-+	if (!params.target && ptr && *ptr == '/') {
-+		params.target = ptr;
-+		found = 1;
-+		buf = ptr + (strlen(ptr) - 3);
-+
-+		if (strcmp(buf, ".ko"))
-+			params.uprobes = true;
-+
-+	}
-+
-+	return found;
-+}
-+
- static int parse_probe_event_argv(int argc, const char **argv)
+ const char *dmar_get_fault_reason(u8 fault_reason, int *fault_type)
  {
--	int i, len, ret;
-+	int i, len, ret, found_target;
- 	char *buf;
- 
-+	found_target = set_target(argv[0]);
-+	if (found_target && argc == 1)
-+		return 0;
-+
- 	/* Bind up rest arguments */
- 	len = 0;
--	for (i = 0; i < argc; i++)
-+	for (i = 0; i < argc; i++) {
-+		if (i == 0 && found_target)
-+			continue;
-+
- 		len += strlen(argv[i]) + 1;
-+	}
- 	buf = zalloc(len + 1);
- 	if (buf == NULL)
- 		return -ENOMEM;
- 	len = 0;
--	for (i = 0; i < argc; i++)
-+	for (i = 0; i < argc; i++) {
-+		if (i == 0 && found_target)
-+			continue;
-+
- 		len += sprintf(&buf[len], "%s ", argv[i]);
-+	}
- 	params.mod_events = true;
- 	ret = parse_probe_event(buf);
- 	free(buf);
+-	if (fault_reason >= 0x20 && (fault_reason <= 0x20 +
+-				     ARRAY_SIZE(irq_remap_fault_reasons))) {
++	if (fault_reason >= 0x20 && (fault_reason - 0x20 <
++					ARRAY_SIZE(irq_remap_fault_reasons))) {
+ 		*fault_type = INTR_REMAP;
+ 		return irq_remap_fault_reasons[fault_reason - 0x20];
+ 	} else if (fault_reason < ARRAY_SIZE(dma_remap_fault_reasons)) {
