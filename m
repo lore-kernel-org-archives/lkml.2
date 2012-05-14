@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605Ab2ENS5N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 14:57:13 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7191 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757559Ab2ENS5M convert rfc822-to-8bit (ORCPT
+	id S932181Ab2ENS7E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 14:59:04 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:34113 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757562Ab2ENS7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 14:57:12 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 14 May 2012 11:57:11 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 14 May 2012 20:57:07 +0200
-Subject: Re: [v2 1/1] memory: tegra{20,30}-mc: Use dev_err_ratelimited()
-Thread-Topic: [v2 1/1] memory: tegra{20,30}-mc: Use dev_err_ratelimited()
-Thread-Index: Ac0yA1yES7p35ucpRV6ak8kIhfSZ9A==
-Message-ID: <20120514.215707.1844280772142880591.hdoyu@nvidia.com>
-References: <1336981680-15297-2-git-send-email-hdoyu@nvidia.com><1336990031-15567-1-git-send-email-hdoyu@nvidia.com><4FB14FDE.2080409@wwwdotorg.org>
-In-Reply-To: <4FB14FDE.2080409@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Mon, 14 May 2012 14:59:03 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: j3I4HmIVM1kamc5A39ngvxszFMGhUyOdwenMTRCuWL3G8sG
+ JR9tD53vTADNyvOxRxYl9FftaCTDYXHuz9RsqSgyKDwCVNNe5nFEAg4a3aKJ
+ vWKXrUstqDg8lq1nMPEtamAfiHK.pjPbyMpQ7l2Se7PiBoF859AtZPPCh93l
+ AAhof1itlqV2V5ddF_tUxOgd0vBAbkWMFKMsMqH0oOCfQsVkZAk8mdGehOUg
+ EGRieDJ2AWXOY6rB2P0A_9z4wVU.lAtf7fikM7gZ2o_w8CbqySLNfXoA885f
+ VAPPf.kehWngK.QKybNSUUjDqXlHTttb9Pz0f2CWbVnjfxBEDuA4uRb7BMpB
+ 8VcuteOUCxDE_xWnt3xqURjWSWvvoO9FGvdSQOX71Z65UsXJUpmrtR60lAVN
+ J
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 14 May 2012 13:58:59 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pravin B Shelar <pshelar@nicira.com>
+cc: penberg@kernel.org, mpm@selenic.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, jesse@nicira.com, abhide@nicira.com
+Subject: Re: [PATCH 2/2] mm: Fix slab->page _count corruption.
+In-Reply-To: <1337020900-20120-1-git-send-email-pshelar@nicira.com>
+Message-ID: <alpine.DEB.2.00.1205141353310.26304@router.home>
+References: <1337020900-20120-1-git-send-email-pshelar@nicira.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stepehn,
+On Mon, 14 May 2012, Pravin B Shelar wrote:
 
-Stephen Warren <swarren@wwwdotorg.org> wrote @ Mon, 14 May 2012 20:33:02 +0200:
+> On arches that do not support this_cpu_cmpxchg_double slab_lock is used
+> to do atomic cmpxchg() on double word which contains page->_count.
+> page count can be changed from get_page() or put_page() without taking
+> slab_lock. That corrupts page counter.
+>
+> Following patch fixes it by moving page->_count out of cmpxchg_double
+> data. So that slub does no change it while updating slub meta-data in
+> struct page.
 
-> On 05/14/2012 04:07 AM, Hiroshi DOYU wrote:
-> > Introduce a new dev_*_ratelimited() instead of pr_*_ratelimited() for
-> > better info to print.
-> > 
-> > Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
-> 
-> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
-> 
-> But note that this relies on the following patch or a variant of it:
-> 
-> http://patchwork.ozlabs.org/patch/158899/
-> 
-> which isn't anywhere yet.
-> 
-> (A variant of that patch was patch 1/2 the first time this patch was
-> posted, but v2 of this patch was posted separately without mentioning
-> the dependency)
+Ugly. Maybe its best to not touch the count in the page lock case in slub?
 
-Greg has put the dependee patch in:
+You could accomplish that by changing the definition of counters in
+mm_types.h. Make it unsigned instead of unsigned long so that it only
+covers the first part of the struct (which excludes the refcounter)
 
-http://git.kernel.org/?p=linux/kernel/git/gregkh/driver-core.git;a=commit;h=6ca045930338485a8cdef117e74372aa1678009d
 
-Anyway, I should have described the above dependency in commit note in
-the patch, sorry for confusion.
