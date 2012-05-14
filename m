@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599Ab2ENNTE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:19:04 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:61792 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756096Ab2ENNTA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:19:00 -0400
+	id S1756563Ab2ENNVA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 09:21:00 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:5562 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755924Ab2ENNU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 09:20:59 -0400
+Subject: [RFC PATCH 14/13] NFSd: make grace end flag per network namespace
+To: bfields@fieldses.org, Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Mon, 14 May 2012 17:19:34 +0400
+Message-ID: <20120514131834.2055.54788.stgit@localhost.localdomain>
+In-Reply-To: <20120505170722.11559.74503.stgit@localhost.localdomain>
+References: <20120505170722.11559.74503.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Date: Mon, 14 May 2012 21:18:59 +0800
-Message-ID: <CAJd=RBDAp3URro5FP=tOyuKVSEtAcmT=7GLNTuaZPn+SvJ+0JA@mail.gmail.com>
-Subject: [1/3] BFS 420: correct getting rr interval
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tasks, no matter schedule policy and priority, should have the same interval,
-which could be tuned with the /proc interface. Here simply feed back the knob.
+NFSd's grace_ender flag is a part of grace period facility.
 
---- a/kernel/sched/bfs.c	Mon May 14 20:34:42 2012
-+++ b/kernel/sched/bfs.c	Mon May 14 20:42:20 2012
-@@ -729,25 +729,6 @@ static inline void requeue_task(struct t
- 	sched_info_queued(p);
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ fs/nfsd/netns.h     |    1 +
+ fs/nfsd/nfs4state.c |    8 +++-----
+ 2 files changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
+index e99767d..b6deebd 100644
+--- a/fs/nfsd/netns.h
++++ b/fs/nfsd/netns.h
+@@ -36,6 +36,7 @@ struct nfsd_net {
+ 	struct cache_detail *nametoid_cache;
+ 
+ 	struct lock_manager nfsd4_manager;
++	bool grace_ended;
+ };
+ 
+ extern int nfsd_net_id;
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 2f940c1..7c88ee8 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3188,19 +3188,17 @@ out:
+ 	return status;
  }
-
--/*
-- * Returns the relative length of deadline all compared to the shortest
-- * deadline which is that of nice -20.
-- */
--static inline int task_prio_ratio(struct task_struct *p)
--{
--	return prio_ratios[TASK_USER_PRIO(p)];
--}
+ 
+-static bool grace_ended;
 -
--/*
-- * task_timeslice - all tasks of all priorities get the exact same timeslice
-- * length. CPU distribution is handled by giving different deadlines to
-- * tasks of different priorities. Use 128 as the base value for fast shifts.
-- */
--static inline int task_timeslice(struct task_struct *p)
--{
--	return (rr_interval * task_prio_ratio(p) / 128);
--}
--
- #ifdef CONFIG_SMP
- /*
-  * qnr is the "queued but not running" count which is the total number of
-@@ -4824,7 +4805,7 @@ SYSCALL_DEFINE2(sched_rr_get_interval, p
- 		goto out_unlock;
+ static void
+ nfsd4_end_grace(struct net *net)
+ {
+ 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+ 
+ 	/* do nothing if grace period already ended */
+-	if (grace_ended)
++	if (nn->grace_ended)
+ 		return;
+ 
+ 	dprintk("NFSD: end of grace period\n");
+-	grace_ended = true;
++	nn->grace_ended = true;
+ 	nfsd4_record_grace_done(net, boot_time);
+ 	locks_end_grace(&nn->nfsd4_manager);
+ 	/*
+@@ -4761,7 +4759,7 @@ nfs4_state_start(void)
+ 	nfsd4_client_tracking_init(net);
+ 	boot_time = get_seconds();
+ 	locks_start_grace(net, &nn->nfsd4_manager);
+-	grace_ended = false;
++	nn->grace_ended = false;
+ 	printk(KERN_INFO "NFSD: starting %ld-second grace period\n",
+ 	       nfsd4_grace);
+ 	ret = set_callback_cred();
 
- 	grq_lock_irqsave(&flags);
--	time_slice = p->policy == SCHED_FIFO ? 0 : MS_TO_NS(task_timeslice(p));
-+	time_slice = p->policy == SCHED_FIFO ? 0 : MS_TO_NS(rr_interval);
- 	grq_unlock_irqrestore(&flags);
-
- 	rcu_read_unlock();
---
