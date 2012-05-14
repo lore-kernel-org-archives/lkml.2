@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab2ENQkr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 12:40:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:1800 "EHLO mga03.intel.com"
+	id S1756986Ab2ENQlO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 12:41:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15249 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753490Ab2ENQkn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 12:40:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="99908187"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, "Yu, Fenghua" <fenghua.yu@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: RE: [PATCH v6 04/12] x86/smpboot.c: Don't offline CPU0 if any irq
- can not be migrated out of it and remove CPU0 check in smp_callin()
-Thread-Topic: [PATCH v6 04/12] x86/smpboot.c: Don't offline CPU0 if any irq
- can not be migrated out of it and remove CPU0 check in smp_callin()
-Thread-Index: AQHNLsnrDnWT9m5F3ESFhoZxeANiH5bE9IsAgARE+bGAAEfbIA==
-Date: Mon, 14 May 2012 16:40:37 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F192EED9F@ORSMSX104.amr.corp.intel.com>
-References: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
- <1336666614-21090-5-git-send-email-fenghua.yu@intel.com>
- <alpine.LFD.2.02.1205111352330.3231@ionos>
- <CA+8MBbJbEWTR2Tawa2SzcJ-mZSPzZ12a9usR5eQu=PhArZwXLA@mail.gmail.com>
- <20120514121725.GA10840@gmail.com>
-In-Reply-To: <20120514121725.GA10840@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753490Ab2ENQlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 12:41:11 -0400
+Date: Mon, 14 May 2012 12:41:06 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Fedora Kernel Team <kernel-team@fedoraproject.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Paul Mackerras <paulus@samba.org>
+Subject: Remove empty /proc/device-tree when no openfirmware exists.
+Message-ID: <20120514164106.GB4439@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Fedora Kernel Team <kernel-team@fedoraproject.org>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	Paul Mackerras <paulus@samba.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Could we just standardize on NMI bringup during regular bootup?
+distribution kernels might want to build in support for /proc/device-tree
+for kernels that might end up running on hardware that doesn't support openfirmware.
+This results in an empty /proc/device-tree existing.
+Remove it if the OFW root node doesn't exist.
 
-I don't know for sure (Fenghua?) but I'd guess not. CPU#0 is being brought *back* online
-by this NMI ... i.e. it has been online before, so interrupt vector tables and CR3
-etc. have been set to Linux-y values. When bringing other cpus online for the first
-time they have nothing set so we'd still have to use INIT.
+[This situation actually confuses grub2, resulting in install failures.
+ grub2 sees the /proc/device-tree and picks the wrong install target
+ cf. http://bzr.savannah.gnu.org/lh/grub/trunk/grub/annotate/4300/util/grub-install.in#L311
+ grub should be more robust, but still, leaving an empty proc dir seems pointless. ]
 
--Tony
+Signed-off-by: Dave Jones <davej@redhat.com>
+
+diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
+index 927cbd1..f060f28 100644
+--- a/fs/proc/proc_devtree.c
++++ b/fs/proc/proc_devtree.c
+@@ -233,6 +233,7 @@ void __init proc_device_tree_init(void)
+ 		return;
+ 	root = of_find_node_by_path("/");
+ 	if (root == NULL) {
++		remove_proc_entry("device-tree", NULL);
+ 		pr_debug("/proc/device-tree: can't find root\n");
+ 		return;
+ 	}
