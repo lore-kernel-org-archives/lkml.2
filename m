@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab2ENRUw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 13:20:52 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:33193
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1757317Ab2ENRUv (ORCPT
+	id S1757341Ab2ENRXk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 13:23:40 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:45555 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586Ab2ENRXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 13:20:51 -0400
-Date: Mon, 14 May 2012 19:20:49 +0200 (CEST)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] UBIFS: add crypto lookup field to tree node cache
-In-Reply-To: <1337001716.2528.56.camel@sauron.fi.intel.com>
-Message-ID: <alpine.DEB.2.00.1205141907290.12448@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205111323010.17715@eristoteles.iwoars.net> <1337001716.2528.56.camel@sauron.fi.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 14 May 2012 13:23:39 -0400
+Date: Mon, 14 May 2012 19:23:23 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Chen Gong <gong.chen@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 2/2] x86/mce: Add instruction recovery signatures to
+ mce-severity table
+Message-ID: <20120514172323.GD21960@aftab.osrc.amd.com>
+References: <cover.1336674796.git.tony.luck@intel.com>
+ <0e89440bf6444635bde0b876eedd26e5c51f9ca3.1336674796.git.tony.luck@intel.com>
+ <4FACC25B.80305@linux.intel.com>
+ <3908561D78D1C84285E8C5FCA982C28F192ED617@ORSMSX104.amr.corp.intel.com>
+ <20120513100532.GC28863@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F192EED4A@ORSMSX104.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192EED4A@ORSMSX104.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The long long is divided as follows:
-32 bits for the (KSA-relative) LEB number, 32 bits for the offset in the
-leb where the key is found. So its the same as the lnum/offs for the
-current one. Theres substancial compression though, that is available,
-since theres likely not more than 2^^32 LEBS for the KSA and the number of
-bits needed for key offset is LEB_SHIFT - 4.
+On Mon, May 14, 2012 at 04:28:35PM +0000, Luck, Tony wrote:
+> > > I'm trying to figure out a quirk for processors that do generate
+> > > EIPV=RIPV=0 signature for IFU errors. There are some case where
+> > > we can work around the lack of EIPV.
+> >
+> > __mcheck_cpu_apply_quirks?
+> 
+> The quirk is a bit more extensive than just setting some flag in there
+> for "if (c->x86 == 6 && c->x86_model == 45)". Sometime EIPV isn't set
+> because the regs->ip and regs->cs really aren't valid. So  I'll need
+> to do something like:
+> 
+> 	if (we are on Intel family 6 model 45 AND
+>           this is a UC=1, PCC=0, AR=1, S=1, ADDRV=1, MCACOD=0x150 error AND
+> 	    (virtophys(regs->ip) >> PAGE_SHIFT) == (MC(bank)_ADDR >> PAGE_SHIFT)) {
+> 		/* ok to trust CS & IP */
+> 		m.mcgstatus |= MCG_STATUS_EIPV;
+> 	}
 
-Is 32 bits sufficient to address all keys:
-one key per datanode means 4096 * 2^32 = 2^44, so only 16 TB available
-for 32 bit key addresses.
+Hmm, maybe add a flag to struct mce or whatever comes handy in that
+codepath which says ->on_this_cpu_it_is_ok_to_set_MCG_STATUS_EIPV and
+query it in the mce_severity() thing?
 
-Though there is similar waste for lnum/offs as well. Perhaps zbranches can
-be stored as a u8[] and demarshalled with bit-op macros when needed for
-computations.
+Btw, this severities deal could be much more helpful if it were a bunch
+of per-vendor, per-bank or whatever function pointers so that you can do
+arbitrary filtering there.
 
-Joel Reardon
+> before running through the mce_severity() table lookup.
+> 
+> x86 doesn't seem to have a "virtophys()" that I can find. Closest is lookup_address(vaddr, level)
+> which gets a pte (which is almost all the work).
+> 
+> Sigh!
 
+What does __pa() do actually?
 
+Oh, that's only for kernel memory, it seems.
 
+-- 
+Regards/Gruss,
+Boris.
 
-On Mon, 14 May 2012, Artem Bityutskiy wrote:
-
-> On Fri, 2012-05-11 at 13:24 +0200, Joel Reardon wrote:
-> >  struct ubifs_zbranch {
-> >  	union ubifs_key key;
-> > @@ -751,6 +752,7 @@ struct ubifs_zbranch {
-> >  	int lnum;
-> >  	int offs;
-> >  	int len;
-> > +	long long crypto_lookup;
-> >  };
->
-> Why is it "long long" which is 64 bit? What will it contain? Could we
-> make it unsigned int - we'd waste less RAM then - remember that we
-> allocate a lot of these structures.
->
-> --
-> Best Regards,
-> Artem Bityutskiy
->
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
