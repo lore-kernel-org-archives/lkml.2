@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab2ENCZM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 22:25:12 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:56323 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753963Ab2ENCZK (ORCPT
+	id S1754134Ab2ENCZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 22:25:56 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51230 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753963Ab2ENCZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 22:25:10 -0400
-Date: Sun, 13 May 2012 22:25:08 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Bojan Smojver <bojan@rexursive.com>
-cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>, <bp@alien8.de>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-In-Reply-To: <1336957376.4914.5.camel@shrek.rexursive.com>
-Message-ID: <Pine.LNX.4.44L0.1205132212070.5628-100000@netrider.rowland.org>
+	Sun, 13 May 2012 22:25:55 -0400
+X-AuditID: 9c930179-b7bb9ae000000ea5-77-4fb06d304ea6
+Message-ID: <4FB06D4C.1050209@kernel.org>
+Date: Mon, 14 May 2012 11:26:20 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+References: <4FABD503.4030808@vflare.org> <4FABDA9F.1000105@linux.vnet.ibm.com> <20120510151941.GA18302@kroah.com> <4FABECF5.8040602@vflare.org> <20120510164418.GC13964@kroah.com> <4FABF9D4.8080303@vflare.org> <20120510173322.GA30481@phenom.dumpdata.com> <4FAC4E3B.3030909@kernel.org> <8473859b-42f3-4354-b5ba-fd5b8cbac22f@default> <4FAC59F6.4080503@kernel.org> <20120511192915.GD3785@phenom.dumpdata.com> <4FAD8984.2050201@linux.vnet.ibm.com>
+In-Reply-To: <4FAD8984.2050201@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 May 2012, Bojan Smojver wrote:
+On 05/12/2012 06:49 AM, Seth Jennings wrote:
 
-> On Mon, 2012-05-14 at 05:02 +0530, Srivatsa S. Bhat wrote:
-> > This is the point where your patch gets scary - Suspend is not carried
-> > out in its fullest sense; instead you jump directly to
-> > suspend_devices_and_enter(). Luckily, most of the things that happen
-> > before this are common between suspend and hibernation. However, one
-> > thing that really stands out is the notifications: if you directly
-> > call suspend_devices_and_enter(), we end up missing the
-> > PM_SUSPEND_PREPARE notifications.
+> On 05/11/2012 02:29 PM, Konrad Rzeszutek Wilk wrote:
 > 
-> I'm guessing because at the point of suspend to RAM here, we are not
-> really doing the real, full suspend to RAM, things would be different.
-> At this point, not the whole system is alive - most of it is frozen.
-> Only devices required for image writing are alive. Or maybe I'm
-> misunderstanding the hibernation process...
-
-Yes, you misunderstand it.  It's documented pretty thoroughly in
-Documentation/power/devices.txt and there's a fair amount of kerneldoc
-in include/linux/pm.h.  After the memory image has been prepared,
-_every_ device goes back to full functionality before the image gets
-written out (with maybe a few platform-specific exceptions).
-
-> > And there is no guarantee that everybody implements the same thing for
-> > both PM_SUSPEND_PREPARE and PM_HIBERNATION_PREPARE notifications. That
-> > is the reason I don't think it is safe.
+>>> At least, zram is also primary user and it also has such mess
+>>> although it's not severe than zcache. zram->table[index].handle
+>>> sometime has real (void*) handle, sometime (struct page*).
+>>
+>> Yikes. Yeah that needs to be fixed.
+>>
 > 
-> OK.
 > 
-> So, you would do:
+> How about this (untested)?  Changes to zram_bvec_write() are a little
+> hard to make out in this format.  There are a couple of checkpatch fixes
+> (two split line strings) and an unused variable store_offset removal mixed
+> in too. If this patch is good, I'll break them up for official submission
+> after I test.
 > 
-> - prepare for hibernation (includes suspension of devices)
+> diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+> index fbe8ac9..10dcd99 100644
+> --- a/drivers/staging/zram/zram_drv.h
+> +++ b/drivers/staging/zram/zram_drv.h
+> @@ -81,7 +81,10 @@ enum zram_pageflags {
+>  
+>  /* Allocated for each disk page */
+>  struct table {
+> -	void *handle;
+> +	union {
+> +		void *handle; /* compressible */
+> +		struct page *page; /* incompressible */
 
-No, devices are not suspended -- they are "frozen".  There's a
-difference (frozen devices are supposed to remain at full power).
 
-> - resume devices involved in image writing
+You read my mind. That's exactly same idea with my patch which queued up to my tree.
+But there is still problem.
 
-Resume all devices.  Except that it's not called "resume"; it's called 
-"thaw" -- the reverse of freezing.
+zram has like this code
 
-> - write image
-> - prepare for suspend
-> - suspend to RAM
-> - resume from RAM
-> - post suspend from RAM
+void *handle = zram->table[index].handle;
+if (!handle) {
 
-It's not clear what you mean by this last step.
+}
 
-> - unwind unsuccessful hibernation
+zram->table[index].handle = NULL;
 
-Not exactly.  For example, the devices are already back at full power 
-so they don't need any "unwinding".  Basically you just have to 
-invalidate the hibernation image stored on disk and unfreeze the tasks.
+It assume handle's size is greater than or equal to sizeof(struct page*)) for union working.
+But we can't make sure handle's size.
+If Nitin confirm this, too, the problem would be easy to fix.
 
-> Isn't that going to confuse devices involved in image writing even more
-> by essentially executing post-resume twice (once for suspend to RAM,
-> once for hibernation)?
-
-Not if you do it as described above.
-
-Alan Stern
-
+-- 
+Kind regards,
+Minchan Kim
