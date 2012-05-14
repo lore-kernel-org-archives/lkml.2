@@ -1,189 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab2ENHMh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 03:12:37 -0400
+	id S1754628Ab2ENHMJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 03:12:09 -0400
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:62027 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754410Ab2ENHMK (ORCPT
+	with ESMTP id S1754410Ab2ENHMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 03:12:10 -0400
-X-AuditID: 9c93016f-b7cecae000000e00-de-4fb0b0464315
+	Mon, 14 May 2012 03:12:08 -0400
+X-AuditID: 9c93016f-b7cecae000000e00-c2-4fb0b0459a64
 From: Namhyung Kim <namhyung.kim@lge.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/5] perf tools: Support minimal build
-Date: Mon, 14 May 2012 16:10:23 +0900
-Message-Id: <1336979424-17206-5-git-send-email-namhyung.kim@lge.com>
+Subject: [RFC 0/5] perf tools: Minimalistic build without libelf dependency
+Date: Mon, 14 May 2012 16:10:19 +0900
+Message-Id: <1336979424-17206-1-git-send-email-namhyung.kim@lge.com>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1336979424-17206-1-git-send-email-namhyung.kim@lge.com>
-References: <1336979424-17206-1-git-send-email-namhyung.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we have isolated all ELF-specific stuff, it's possible
-to build without libelf. The output binary can do most of
-jobs but lacks (user level) symbol information - kernel
-symbols are still accessable thanks to the kallsyms.
+Hi,
 
-For now, only 'perf probe' command is removed since it
-depends on libelf/libdw heavily.
+NOTE: This is a RFC patchset and it contains a lot of rough edges
+and ugly codes.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- tools/perf/Makefile                 |   28 ++++++++++++++++++++++++++++
+Current build procedure of perf tools requires a couple of external
+libraries. Although most of them are optional, elfutils' libelf is
+mandatory for resolving symbols and build-id of the binaries being
+profiled. For some reason, it makes embedded guys' life harder who
+want to build and run perf tools on their boards.
+
+This patch set tries to fix the problem by letting the perf could
+be built without libelf. The initial intent was just providing
+perf record command to gather performance events interested on the
+system and copies the data to development box to be used by perf
+report for analysis.
+
+However it's changed to have most of perf commands as is because
+perf can resolve kernel symbols without libelf and many of perf
+commands deal (mostly) with kernel events - so no need to restrict
+capability of perf tools. Therefore, the end result is not so
+minimalistic in fact and only thing it cannot do is "perf probe".
+
+And then I realized that the perf record needs to know about the
+build-id's anyway :(. So I implemented a poor man's version of elf
+parser only for parsing the build-id info.
+
+To build a minimal perf tools, pass MINIMAL=1 to make. The perf
+report will not display symbol names:
+
+ # Samples: 988  of event 'cycles'
+ # Event count (approx.): 3726465542
+ #
+ # Overhead  Command      Shared Object                     Symbol
+ # ........  .......  .................  .........................
+ #
+     98.40%  noploop  noploop            [.] 0x000000000000066d   
+      1.35%  noploop  ld-2.15.so         [.] 0x000000000000bab1   
+      0.10%  noploop  [kernel.kallsyms]  [k] native_write_msr_safe
+      0.10%  noploop  [kernel.kallsyms]  [k] scheduler_tick       
+      0.03%  noploop  [kernel.kallsyms]  [k] bad_range            
+      0.01%  noploop  [kernel.kallsyms]  [k] pipe_read            
+
+But perf buildid-list can show you the build-id's:
+
+ $ ./perf buildid-list
+ ebfc1bdb98999c64d36ddfe394c58df3de6cbcfb [kernel.kallsyms]
+ 52f0c5f25b95075e6fd7682763f7c3a779a4e889 /usr/lib64/ld-2.15.so
+ 43a7a2b399b6ee2ff29c6bdadbda6bff88712ed4 /home/namhyung/bin/noploop
+
+So it can be packed using perf archive so copied and analized
+with full-fledged perf tools on a development machine.
+
+This patchset is based on commit cb04ff9ac424 ("sched, perf: Use
+a single callback into the scheduler") and tested on x86_64 and arm.
+
+Any comments are welcome, thanks.
+Namhyung
+
+
+Namhyung Kim (5):
+  perf symbols: Introduce symbol__elf_init()
+  perf symbols: Do not use ELF's symbol binding constants
+  perf tools: Split out util/symbol-elf.c
+  perf tools: Support minimal build
+  perf symbols: Implement poor man's ELF parser
+
+ tools/perf/Makefile                 |   29 ++
+ tools/perf/builtin-buildid-list.c   |    4 +-
+ tools/perf/builtin-top.c            |    5 +-
  tools/perf/command-list.txt         |    2 +-
- tools/perf/perf.c                   |    2 ++
- tools/perf/util/generate-cmdlist.sh |   15 +++++++++++++++
- tools/perf/util/symbol-minimal.c    |   32 ++++++++++++++++++++++++++++++++
- 5 files changed, 78 insertions(+), 1 deletion(-)
+ tools/perf/perf.c                   |    2 +
+ tools/perf/ui/browsers/map.c        |    5 +-
+ tools/perf/util/elf-minimal.h       |  153 ++++++++
+ tools/perf/util/generate-cmdlist.sh |   15 +
+ tools/perf/util/symbol-elf.c        |  691 +++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol-minimal.c    |  258 +++++++++++++
+ tools/perf/util/symbol.c            |  712 ++---------------------------------
+ tools/perf/util/symbol.h            |   20 +
+ 12 files changed, 1195 insertions(+), 701 deletions(-)
+ create mode 100644 tools/perf/util/elf-minimal.h
+ create mode 100644 tools/perf/util/symbol-elf.c
  create mode 100644 tools/perf/util/symbol-minimal.c
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 7198c6cbc006..001aec806903 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -424,6 +424,32 @@ PYRF_OBJS += $(OUTPUT)util/xyarray.o
- -include config.mak.autogen
- -include config.mak
- 
-+ifdef MINIMAL
-+NO_DWARF := 1
-+NO_NEWT := 1
-+NO_GTK2 := 1
-+NO_LIBPERL := 1
-+NO_LIBPYTHON := 1
-+NO_DEMANGLE := 1
-+NO_STRLCPY := 1
-+
-+BASIC_CFLAGS += -DMINIMAL_BUILD
-+
-+EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
-+
-+# Remove ELF/DWARF dependent codes
-+LIB_OBJS := $(filter-out $(OUTPUT)util/symbol-elf.o,$(LIB_OBJS))
-+LIB_OBJS := $(filter-out $(OUTPUT)util/dwarf-aux.o,$(LIB_OBJS))
-+LIB_OBJS := $(filter-out $(OUTPUT)util/probe-event.o,$(LIB_OBJS))
-+LIB_OBJS := $(filter-out $(OUTPUT)util/probe-finder.o,$(LIB_OBJS))
-+
-+BUILTIN_OBJS := $(filter-out $(OUTPUT)builtin-probe.o,$(BUILTIN_OBJS))
-+
-+# Use minimal symbol handling
-+LIB_OBJS += $(OUTPUT)util/symbol-minimal.o
-+
-+endif # MINIMAL
-+
- ifndef NO_DWARF
- FLAGS_DWARF=$(ALL_CFLAGS) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
- ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
-@@ -438,6 +464,7 @@ ifneq ($(OUTPUT),)
- 	BASIC_CFLAGS += -I$(OUTPUT)
- endif
- 
-+ifndef MINIMAL
- FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
- ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
- 	FLAGS_GLIBC=$(ALL_CFLAGS) $(ALL_LDFLAGS)
-@@ -447,6 +474,7 @@ ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
- 		msg := $(error No libelf.h/libelf found, please install libelf-dev/elfutils-libelf-devel);
- 	endif
- endif
-+endif # MINIMAL
- 
- ifneq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_COMMON)),y)
- 	BASIC_CFLAGS += -DLIBELF_NO_MMAP
-diff --git a/tools/perf/command-list.txt b/tools/perf/command-list.txt
-index d695fe40fbff..0303ec692274 100644
---- a/tools/perf/command-list.txt
-+++ b/tools/perf/command-list.txt
-@@ -18,7 +18,7 @@ perf-stat			mainporcelain common
- perf-timechart			mainporcelain common
- perf-top			mainporcelain common
- perf-script			mainporcelain common
--perf-probe			mainporcelain common
-+perf-probe			mainporcelain full
- perf-kmem			mainporcelain common
- perf-lock			mainporcelain common
- perf-kvm			mainporcelain common
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 2b2e225a4d4c..1640d96c1716 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -313,7 +313,9 @@ static void handle_internal_command(int argc, const char **argv)
- 		{ "version",	cmd_version,	0 },
- 		{ "script",	cmd_script,	0 },
- 		{ "sched",	cmd_sched,	0 },
-+#ifndef MINIMAL_BUILD
- 		{ "probe",	cmd_probe,	0 },
-+#endif
- 		{ "kmem",	cmd_kmem,	0 },
- 		{ "lock",	cmd_lock,	0 },
- 		{ "kvm",	cmd_kvm,	0 },
-diff --git a/tools/perf/util/generate-cmdlist.sh b/tools/perf/util/generate-cmdlist.sh
-index f06f6fd148f8..829badc0f56a 100755
---- a/tools/perf/util/generate-cmdlist.sh
-+++ b/tools/perf/util/generate-cmdlist.sh
-@@ -21,4 +21,19 @@ do
- 	    p
-      }' "Documentation/perf-$cmd.txt"
- done
-+
-+echo "#ifndef MINIMAL_BUILD"
-+sed -n -e 's/^perf-\([^ 	]*\)[ 	].* full.*/\1/p' command-list.txt |
-+sort |
-+while read cmd
-+do
-+     sed -n '
-+     /^NAME/,/perf-'"$cmd"'/H
-+     ${
-+            x
-+            s/.*perf-'"$cmd"' - \(.*\)/  {"'"$cmd"'", "\1"},/
-+	    p
-+     }' "Documentation/perf-$cmd.txt"
-+done
-+echo "#endif /* MINIMAL_BUILD */"
- echo "};"
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-new file mode 100644
-index 000000000000..2917ede1d5ba
---- /dev/null
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -0,0 +1,32 @@
-+#include "symbol.h"
-+
-+
-+int filename__read_build_id(const char *filename __used, void *bf __used,
-+			    size_t size __used)
-+{
-+	return -1;
-+}
-+
-+int sysfs__read_build_id(const char *filename __used, void *build_id __used,
-+			 size_t size __used)
-+{
-+	return -1;
-+}
-+
-+int dso__synthesize_plt_symbols(struct dso *dso __used, struct map *map __used,
-+				symbol_filter_t filter __used)
-+{
-+	return 0;
-+}
-+
-+int dso__load_sym(struct dso *dso __used, struct map *map __used,
-+		  const char *name __used, int fd __used,
-+		  symbol_filter_t filter __used, int kmodule __used,
-+		  int want_symtab __used)
-+{
-+	return 0;
-+}
-+
-+void symbol__elf_init(void)
-+{
-+}
 -- 
 1.7.10.1
 
