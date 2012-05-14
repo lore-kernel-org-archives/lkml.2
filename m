@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab2ENApH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 20:45:07 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34772 "EHLO
+	id S1753622Ab2ENAue (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 20:50:34 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49315 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab2ENApF (ORCPT
+	with ESMTP id S1752864Ab2ENAud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 20:45:05 -0400
-Date: Mon, 14 May 2012 10:44:52 +1000
+	Sun, 13 May 2012 20:50:33 -0400
+Date: Mon, 14 May 2012 10:50:25 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Bohac <jbohac@suse.cz>
-Subject: linux-next: build warning after merge of the origin tree
-Message-Id: <20120514104452.2411b761e8f98076d1ae88ee@canb.auug.org.au>
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Jean-Francois Dagenais" <jeff.dagenais@gmail.com>
+Subject: linux-next: build failure in Linus' tree
+Message-Id: <20120514105025.0ba1b124f5e9c192fc11e132@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__14_May_2012_10_44_52_+1000_nn5NlLWeccAn5.r5"
+ boundary="Signature=_Mon__14_May_2012_10_50_25_+1000_h6vTK.C+Wv_by3fE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__14_May_2012_10_44_52_+1000_nn5NlLWeccAn5.r5
+--Signature=_Mon__14_May_2012_10_50_25_+1000_h6vTK.C+Wv_by3fE
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Dave,
+Hi Linus,
 
-Buildinf Linus' tree, today's linux-next build (powerpc ppc64_defconfig)
-produced these warnings:
+Building Linus' tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-drivers/net/bonding/bond_main.c: In function 'bond_handle_frame':
-drivers/net/bonding/bond_main.c:1463:13: warning: assignment from incompati=
-ble pointer type [enabled by default]
-drivers/net/bonding/bond_main.c: In function 'bond_open':
-drivers/net/bonding/bond_main.c:3441:21: warning: assignment from incompati=
-ble pointer type [enabled by default]
-drivers/net/bonding/bond_main.c:3448:20: warning: assignment from incompati=
-ble pointer type [enabled by default]
+ERROR: "handle_edge_irq" [drivers/gpio/gpio-pch.ko] undefined!
+ERROR: "irq_to_desc" [drivers/gpio/gpio-pch.ko] undefined!
 
-Introduced by commit 13a8e0c8cdb4 ("bonding: don't increase rx_dropped
-after processing LACPDUs"). recv-probe in struct bonding is a function
-returning void, but the local variable it assigned to/from has been
-changed to a function returning int ...
+This has been reported elsewhere by DaveM.
 
+Caused by commit df9541a60af0 ("gpio: pch9: Use proper flow type handlers").
+
+I have reverted that commit for today.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Mon__14_May_2012_10_44_52_+1000_nn5NlLWeccAn5.r5
+--Signature=_Mon__14_May_2012_10_50_25_+1000_h6vTK.C+Wv_by3fE
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPsFWEAAoJEECxmPOUX5FEM5gP/2/TKpRgct74/l9s1WOFDD8Y
-OjBBQJRvsWzc56bhI/sJoc5MFW+yZIO/aFDGJk1b0+4dks5wnWyfgZyrns9TuDti
-ca1zWa8EJH441SMbh6HdDl4o0D0Hl+XwV0zHuyOJX6i4v3JsDmoateFXYdjDMGka
-ZHX7yxjcbH7W3PUpt/6fWb4+4QjmCAEGTUG881HxzJ7gxfdZtgMx72wWjI4GmTsi
-q3oxlajhEtiNd41viqkp+Be4UZR3W6i0SjKaBcWAOZVPS0xtlcUOKZECk44jWs+D
-I6b5DrFXTiol9b7yw2tvBjVc6l0LtnPnZFRJ9JEc62pdP7qiJLVMuAzlm/iAyn+A
-V/2T3jbmnoWOd8Xj4N9UTwSn0N4bn/gxvVKk+0xJHgIpqfHtIqoQMGtOPkW7cbXv
-f2LqtVt121+8Sk83u4qgR/JMP+jAhf41wxFLzwNy3e4NRPv5ojFu1VKmxJ2sg5ua
-OPMgIaDdwiEPqTrVZJxVPJJv36NWy/vqa3/GwsX38Af/0PKkODh6zeBfOl5b64+q
-4TmyVZ4jQF+llHrIA9vfZ9yhuxl9+GY9TpaJFh6OcFMm8SzSrM87p9YVOsvfm/4u
-JUXLs/rPxdYaJFkbdvLbRf8PU3DE4/a3lPzhbzMLymfpwDbhOT74ceewlQNRX07x
-K/KkmfJIuTe8/6ryiix5
-=lpOb
+iQIcBAEBCAAGBQJPsFbRAAoJEECxmPOUX5FEByQP/3vCpLP53CBmu6/rnzy2ySBD
+Vo9fFWu9tre1Yh95GzbTzfzXpr6Y9spqAUtU3Sm8InsKgXFqj6pXEVoi5MybDLA7
+/uNLFVE1EtHndEFAQ2ZqrLDaFkcCqu3wmpf+gVFH+P+IC2NzZgFfAkbbDO0kuDV4
+vMR/4HgvCZzasdLMvSQOkVm6YNuReaHam2d1sJ6WnXg4MUdKsFZk+QgzoPpFCipt
+d68iPiYQBWVdHELWMyWG8xeiGQ+bnVbZFEm1FU6fLjOESis7eNYnLsO/ONrZj56l
+hncoOZJI9BHKwGBMjGPlwXbJqg2dJ6FLfsPDhTodCGQ4/kcQqHcp+8SgYjzIC9im
+3kla8zYGp1vZG7WTkGmKfRNRFRc9HejGQW+xh7CxmB16BZyCDZUXvAO8kgrl6Cmb
+8E7652oSrt+8Lk5EnJ6GpN10Kz2uEahGew06Qy6Wn+j2LsanWsVoBkNhhYmrTIy4
+Jk+1KkqvhWXprsz5QtbZRplNT/9pLabN56AHt1X1zvAElsI7hm3hsyuutDy5No4J
+icCCnLRBphQJ8g94ipwzGTVOiULjNeWEKupp04Kd5JC40XuHwVDcN5awznldkDq9
+HOEeFJHsktqVKLKPvO00SaJBduuDGg9hh3yn3GbVYP/xXTUriew2aB/ToTcWqfOG
+CkwG+pCeY4AWB8AlEDIK
+=WoGJ
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__14_May_2012_10_44_52_+1000_nn5NlLWeccAn5.r5--
+--Signature=_Mon__14_May_2012_10_50_25_+1000_h6vTK.C+Wv_by3fE--
