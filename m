@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120Ab2ENQQM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 12:16:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:30895 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757097Ab2ENQQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 12:16:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="99899007"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Chen Gong <gong.chen@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: RE: [PATCH 1/2] x86/mce: Only restart instruction after machine
- check recovery if it is safe
-Thread-Topic: [PATCH 1/2] x86/mce: Only restart instruction after machine
- check recovery if it is safe
-Thread-Index: AQHNMO8MV8VH9kbX5E+oEyS4j60vMJbJdKrg
-Date: Mon, 14 May 2012 16:16:05 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F192EED2B@ORSMSX104.amr.corp.intel.com>
-References: <cover.1336674796.git.tony.luck@intel.com>
- <e6fa674d2f4ded80201f733d06b234b21559f0fe.1336674796.git.tony.luck@intel.com>
- <20120513095913.GB28863@aftab.osrc.amd.com>
-In-Reply-To: <20120513095913.GB28863@aftab.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
+	id S1757039Ab2ENQSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 12:18:18 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3940 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756290Ab2ENQSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 12:18:16 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 14 May 2012 09:18:10 -0700
+From: Hiroshi DOYU <hdoyu@nvidia.com>
+To: <hdoyu@nvidia.com>
+CC: <linux-tegra@vger.kernel.org>, <kay@vrfy.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] printk: Make it compile with !CONFIG_PRINTK
+Date: Mon, 14 May 2012 19:18:02 +0300
+Message-ID: <1337012284-18680-1-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q4EGGP38004398
 
->> +	int			restartable;
->
-> Is it me or does this look like a flag, or a bitfield? Instead of
-> wasting a whole integer for a single bit of information.
+Add missing prepend_timestamp() dummy.
 
-I could make it "int flags;" and "#define MCE_INFO_RESTARTABLE 1"
-to make it clear that we have lots more bits available for special
-cases?
+Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+---
+ kernel/printk.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> It will probably end up the same size though due to compiler padding
-> since this struct is currently 4 + 2*8 byte without the ->restartable
-> thing.
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 8b027bd..5f9e278 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1438,6 +1438,7 @@ EXPORT_SYMBOL(printk);
+ static struct log *log_from_idx(u32 idx) { return NULL; }
+ static u32 log_next(u32 idx) { return 0; }
+ static char *log_text(const struct log *msg) { return NULL; }
++static size_t prepend_timestamp(unsigned long long t, char *buf) { return 0; }
+ static void call_console_drivers(int level, const char *text, size_t len) {}
+ 
+ #endif /* CONFIG_PRINTK */
+-- 
+1.7.5.4
 
-Yup - we can't save any memory (unless we introduce more complexity to
-the code ... low PAGE_SHIFT bits of the "paddr" field are simply thrown
-away ... so we could allocate a bit there ... but I don't think that
-the resulting ugliness is worth the memory savings).
-
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
