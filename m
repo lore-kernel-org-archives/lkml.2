@@ -1,37 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab2ENDDH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 23:03:07 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:51569 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963Ab2ENDDF (ORCPT
+	id S1754183Ab2ENDGv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 23:06:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53080 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162Ab2ENDGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 23:03:05 -0400
-Date: Sun, 13 May 2012 23:00:26 -0400 (EDT)
-Message-Id: <20120513.230026.1170494017599992321.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        jbohac@suse.cz
-Subject: Re: linux-next: build warning after merge of the origin tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120514104452.2411b761e8f98076d1ae88ee@canb.auug.org.au>
-References: <20120514104452.2411b761e8f98076d1ae88ee@canb.auug.org.au>
-X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sun, 13 May 2012 23:06:50 -0400
+Message-ID: <1336964804.24732.10.camel@phoenix>
+Subject: [PATCH] regulator: anatop: Convert to
+ regulator_list_voltage_linear()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Nancy Chen <Nancy.Chen@freescale.com>,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Mon, 14 May 2012 11:06:44 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 13 May 2012 20:00:31 -0700 (PDT)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 14 May 2012 10:44:52 +1000
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/anatop-regulator.c |   15 +++------------
+ 1 files changed, 3 insertions(+), 12 deletions(-)
 
-> Introduced by commit 13a8e0c8cdb4 ("bonding: don't increase rx_dropped
-> after processing LACPDUs"). recv-probe in struct bonding is a function
-> returning void, but the local variable it assigned to/from has been
-> changed to a function returning int ...
+diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+index 49b2112..e433b36 100644
+--- a/drivers/regulator/anatop-regulator.c
++++ b/drivers/regulator/anatop-regulator.c
+@@ -96,21 +96,10 @@ static int anatop_get_voltage_sel(struct regulator_dev *reg)
+ 	return val - anatop_reg->min_bit_val;
+ }
+ 
+-static int anatop_list_voltage(struct regulator_dev *reg, unsigned selector)
+-{
+-	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
+-	int uv;
+-
+-	uv = anatop_reg->min_voltage + selector * 25000;
+-	dev_dbg(&reg->dev, "vddio = %d, selector = %u\n", uv, selector);
+-
+-	return uv;
+-}
+-
+ static struct regulator_ops anatop_rops = {
+ 	.set_voltage     = anatop_set_voltage,
+ 	.get_voltage_sel = anatop_get_voltage_sel,
+-	.list_voltage    = anatop_list_voltage,
++	.list_voltage    = regulator_list_voltage_linear,
+ };
+ 
+ static int __devinit anatop_regulator_probe(struct platform_device *pdev)
+@@ -178,6 +167,8 @@ static int __devinit anatop_regulator_probe(struct platform_device *pdev)
+ 
+ 	rdesc->n_voltages = (sreg->max_voltage - sreg->min_voltage)
+ 		/ 25000 + 1;
++	rdesc->min_uV = sreg->min_voltage;
++	rdesc->uV_step = 25000;
+ 
+ 	config.dev = &pdev->dev;
+ 	config.init_data = initdata;
+-- 
+1.7.5.4
 
-http://marc.info/?l=linux-netdev&m=133693883404392&w=2
+
+
