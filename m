@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab2ENWQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 18:16:30 -0400
-Received: from apollo.dupie.be ([94.75.207.143]:46996 "EHLO apollo.dupie.be"
+	id S932572Ab2ENWUH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 18:20:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34383 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757900Ab2ENWQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 18:16:28 -0400
-X-Greylist: delayed 381 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 May 2012 18:16:28 EDT
-Message-ID: <4FB182BB.6090303@dupond.be>
-Date: Tue, 15 May 2012 00:10:03 +0200
-From: Jean-Louis Dupond <jean-louis@dupond.be>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1757900Ab2ENWUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 18:20:05 -0400
+Date: Tue, 15 May 2012 00:19:48 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Vladimir =?utf-8?Q?'=CF=86-coder=2Fphcoder'?= Serbinenko" 
+	<phcoder@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] Fix minixfs size check
+Message-ID: <20120514221948.GV5353@quack.suse.cz>
+References: <4FAFBBC7.9020101@gmail.com>
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Mario Limonciello <mario_limonciello@dell.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dell-laptop: rfkill blacklist Dell XPS 13z, 15z
-References: <1337023652-11661-1-git-send-email-kamal@canonical.com> <20120514193718.GA6438@srcf.ucam.org> <4FB16659.6040704@dell.com> <20120514211959.GA9394@srcf.ucam.org> <4FB1774D.4080106@dell.com> <20120514212842.GA9561@srcf.ucam.org> <4FB17DA8.1040808@dell.com> <20120514215533.GA10378@srcf.ucam.org>
-In-Reply-To: <20120514215533.GA10378@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FAFBBC7.9020101@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sun 13-05-12 15:48:55, Vladimir 'φ-coder/phcoder' Serbinenko wrote:
+> minixfs file size check is buggy and it doesn't allow creating a block which
+> can't be fully filled
+  Umm, I'm not really minix expert but who'd set s_max_size to something
+which is not a multiple of block size? This looks rather artifical problem
+to me...
 
-I'm the owner of a XPS 15, which has this issue.
-The best solution would indeed be to solve the real bug, and not work
-around it in Linux.
+								Honza
+> 
+> Signed-off-by: Vladimir Serbinenko <phcoder@gmail.com>
+> 
+> diff --git a/fs/minix/itree_v1.c b/fs/minix/itree_v1.c
+> index 282e15a..4f8f8b2 100644
+> --- a/fs/minix/itree_v1.c
+> +++ b/fs/minix/itree_v1.c
+> @@ -29,7 +29,8 @@ static int block_to_path(struct inode * inode, long block, int offsets[DEPTH])
+>  	if (block < 0) {
+>  		printk("MINIX-fs: block_to_path: block %ld < 0 on dev %s\n",
+>  			block, bdevname(inode->i_sb->s_bdev, b));
+> -	} else if (block >= (minix_sb(inode->i_sb)->s_max_size/BLOCK_SIZE)) {
+> +	} else if ((u64) block * (u64) BLOCK_SIZE
+> +		   >= minix_sb(inode->i_sb)->s_max_size) {
+>  		if (printk_ratelimit())
+>  			printk("MINIX-fs: block_to_path: "
+>  			       "block %ld too big on dev %s\n",
+> diff --git a/fs/minix/itree_v2.c b/fs/minix/itree_v2.c
+> index 13487ad..4a9a19d 100644
+> --- a/fs/minix/itree_v2.c
+> +++ b/fs/minix/itree_v2.c
+> @@ -32,7 +32,8 @@ static int block_to_path(struct inode * inode, long block, int offsets[DEPTH])
+>  	if (block < 0) {
+>  		printk("MINIX-fs: block_to_path: block %ld < 0 on dev %s\n",
+>  			block, bdevname(sb->s_bdev, b));
+> -	} else if (block >= (minix_sb(inode->i_sb)->s_max_size/sb->s_blocksize)) {
+> +	} else if ((u64) block * (u64) sb->s_blocksize
+> +		   >= minix_sb(inode->i_sb)->s_max_size) {
+>  		if (printk_ratelimit())
+>  			printk("MINIX-fs: block_to_path: "
+>  			       "block %ld too big on dev %s\n",
+> 
 
-But still, if we can fix it with rather small impact/code on linux, I
-think we should just do it.
-It makes linux more user friendly this way.
 
-A small remark also:
-Is it really possible to disable bluetooth without killing wifi in
-Windows on the XPS?
-Not that I use windows alot, but it doesn't seem to work perfectly in
-windows neither.
-This bug is prolly not very common, as default XPS doesn't have a
-bluetooth chip.
-
-
-Thanks
-Jean-Louis
-
-Op 14-05-12 23:55, Matthew Garrett schreef:
-> On Mon, May 14, 2012 at 04:48:24PM -0500, Mario Limonciello wrote:
->
->> The problems were exposed on newer XPS laptops because those platforms 
->> were not tested during platform development.  There really isn't a 
->> scalable way to represent whether a platform was or wasn't tested 
->> during development.  In a lot of situation things just work.  I would 
->> like to do the right thing for the users with what information and 
->> resources are available right now to put them in a better state.  An 
->> aggressive approach of not taking patches to cover a broken interface 
->> won't fix the problem of not testing machines already in the market, 
->> it will just put end users of the kernel module at a disadvantage.
-> That's why it's better to just remove the interface. Providing a feature 
-> when we know it's broken on some unknown subset of hardware doesn't 
-> benefit anyone. If even Dell don't have any idea which set of machines 
-> it works on then how are we ever expected to make sure it's correct?
->
->> 1) Don't blacklist any Latitude or Vostro.  These are tested during platform development.
->> 2) Leave those compal_laptop supported ones blacklisted.
->> 3) Blacklist 2010-2012 XPS.  These are currently not tested during platform development.
->> 4) If problems start to show up on Inspiron, blacklist them invidually.  These platforms are currently tested during platform development though, so hopefully issues don't crop up.
-> Is this the set of criteria that the Windows tools use? If so, I'll 
-> implement it. If not, then either provide the set of criteria that the 
-> Windows tools use or I'll remove the interface.
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
