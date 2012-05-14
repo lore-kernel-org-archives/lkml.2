@@ -1,81 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab2ENOVI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 10:21:08 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54515 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756242Ab2ENOVG (ORCPT
+	id S1756804Ab2ENOZw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 10:25:52 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37378 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756444Ab2ENOZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 10:21:06 -0400
-Message-ID: <4FB114CE.10904@gmail.com>
-Date: Mon, 14 May 2012 08:21:02 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung.kim@lge.com>
-CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf-record: Create events initially disabled -- again
-References: <1336968088-11531-1-git-send-email-dsahern@gmail.com> <87sjf31a8c.fsf@sejong.aot.lge.com> <4FB1041C.1050903@gmail.com>
-In-Reply-To: <4FB1041C.1050903@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 14 May 2012 10:25:51 -0400
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: edwin_rong@realsil.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH NEXT]staging: "rts5139" Fix typos.
+Date: Mon, 14 May 2012 07:25:35 -0700
+Message-Id: <1337005535-27800-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/14/12 7:09 AM, David Ahern wrote:
->> A problem I see is that it'll break group handling again:
->>
->> $ ./perf stat -g sleep 1
->>
->> Performance counter stats for 'sleep 1':
->>
->> <not counted> task-clock
->> <not counted> context-switches
->> <not counted> CPU-migrations
->> <not counted> page-faults
->> <not counted> cycles
->> <not counted> stalled-cycles-frontend
->> <not counted> stalled-cycles-backend
->> <not counted> instructions
->> <not counted> branches
->> <not counted> branch-misses
->>
->> 1.000868932 seconds time elapsed
->>
->> So I suggest changing perf_target__none() check to a proper one
->> (perf_target__no_cpu? - the name might be changed soon) for your
->> purpose.
->>
->> Thanks,
->> Namhyung
->
-> Something else is wrong then. I tested that command (saw your patch in
-> the history) and it worked for me. Also, this code path does not affect
-> perf-stat -- it touches perf-record and perf-test only.
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-I think it is something else. I am running latest git tree (3.4.0-rc7). 
-perf from Linus' tree and acme/core both show:
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-perf stat -g  -- find /usr >/dev/null
+---
 
-  Performance counter stats for 'find /usr':
+The below patch fixes some typos found while reading through rts5139.
 
-      <not counted> task-clock
-      <not counted> context-switches
-      <not counted> CPU-migrations
-      <not counted> page-faults
-      <not counted> cycles
-      <not counted> stalled-cycles-frontend
-      <not counted> stalled-cycles-backend
-      <not counted> instructions
-      <not counted> branches
-      <not counted> branch-misses
+ drivers/staging/rts5139/ms.c               |    2 +-
+ drivers/staging/rts5139/ms_mg.c            |    2 +-
+ drivers/staging/rts5139/rts51x_chip.h      |   10 +++++-----
+ drivers/staging/rts5139/rts51x_transport.c |    2 +-
+ drivers/staging/rts5139/sd.c               |    6 +++---
+ drivers/staging/rts5139/xd.c               |    2 +-
+ 6 files changed, 12 insertions(+), 12 deletions(-)
 
-        0.111976940 seconds time elapsed
+diff --git a/drivers/staging/rts5139/ms.c b/drivers/staging/rts5139/ms.c
+index 02aad2d..512f9f9 100644
+--- a/drivers/staging/rts5139/ms.c
++++ b/drivers/staging/rts5139/ms.c
+@@ -3149,7 +3149,7 @@ Fail:
+ 		TRACE_RET(chip, STATUS_FAIL);
+ 
+ 	sec_cnt = chip->rsp_buf[0];
+-	RTS51X_DEBUGP("%d pages need be trasferred, %d pages remained\n",
++	RTS51X_DEBUGP("%d pages need be transferred, %d pages remained\n",
+ 		       (int)page_cnt, (int)sec_cnt);
+ 	page_addr = start_page + (page_cnt - sec_cnt);
+ 
+diff --git a/drivers/staging/rts5139/ms_mg.c b/drivers/staging/rts5139/ms_mg.c
+index 154b523..fcda587 100644
+--- a/drivers/staging/rts5139/ms_mg.c
++++ b/drivers/staging/rts5139/ms_mg.c
+@@ -444,7 +444,7 @@ int mg_rsp(struct scsi_cmnd *srb, struct rts51x_chip *chip)
+   *
+   * Since the extra 4 bytes data is just only a prefix to original data
+   * that read from medium, so that the 4-byte data pushed into Ring buffer
+-  * precedes data tramsinssion from medium to Ring buffer by DMA mechanisim
++  * precedes data transmission from medium to Ring buffer by DMA mechanism
+   * in order to get maximum performance and minimum code size simultaneously.
+   */
+ int mg_get_ICV(struct scsi_cmnd *srb, struct rts51x_chip *chip)
+diff --git a/drivers/staging/rts5139/rts51x_chip.h b/drivers/staging/rts5139/rts51x_chip.h
+index 13fc2a4..cd56012 100644
+--- a/drivers/staging/rts5139/rts51x_chip.h
++++ b/drivers/staging/rts5139/rts51x_chip.h
+@@ -222,7 +222,7 @@ struct trace_msg_t {
+ #define HARDWARE_ERR            0x04	/* hardware error                   */
+ #define ILGAL_REQ               0x05	/* CDB/parameter/identify msg error */
+ #define UNIT_ATTENTION          0x06	/* unit attention condition occur   */
+-#define DAT_PRTCT               0x07	/* read/write is desable            */
++#define DAT_PRTCT               0x07	/* read/write is disable            */
+ #define BLNC_CHK                0x08	/* find blank/DOF in read           */
+ 					/* write to unblank area            */
+ #define CPY_ABRT                0x0a	/* Copy/Compare/Copy&Verify illgal  */
+@@ -243,7 +243,7 @@ struct trace_msg_t {
+ #define DEF_ERR                 0x71	/* specific command error           */
+ 
+ /*---- sense key Infomation ----*/
+-#define SNSKEYINFO_LEN          3	/* length of sense key infomation   */
++#define SNSKEYINFO_LEN          3	/* length of sense key information   */
+ 
+ #define SKSV                    0x80
+ #define CDB_ILLEGAL             0x40
+@@ -298,11 +298,11 @@ struct sense_data_t {
+ 	/* bit3-0 : sense key              */
+ 	unsigned char info[4];	/* infomation                       */
+ 	unsigned char ad_sense_len;	/* additional sense data length     */
+-	unsigned char cmd_info[4];	/* command specific infomation      */
++	unsigned char cmd_info[4];	/* command specific information      */
+ 	unsigned char asc;	/* ASC                              */
+ 	unsigned char ascq;	/* ASCQ                             */
+ 	unsigned char rfu;	/* FRU                              */
+-	unsigned char sns_key_info[3];	/* sense key specific infomation    */
++	unsigned char sns_key_info[3];	/* sense key specific information    */
+ };
+ 
+ /* sd_ctl bit map */
+@@ -405,7 +405,7 @@ struct rts51x_option {
+ 	u8 ddr50_rx_phase;
+ 	u8 sdr50_tx_phase;
+ 	u8 sdr50_rx_phase;
+-	/* used to enable select sdr50 tx phase according to  proportion. */
++	/* used to enable select sdr50 tx phase according to proportion. */
+ 	u8 sdr50_phase_sel;
+ 	u8 ms_errreg_fix;
+ 	u8 reset_mmc_first;
+diff --git a/drivers/staging/rts5139/rts51x_transport.c b/drivers/staging/rts5139/rts51x_transport.c
+index da9c83b..8faae9a 100644
+--- a/drivers/staging/rts5139/rts51x_transport.c
++++ b/drivers/staging/rts5139/rts51x_transport.c
+@@ -630,7 +630,7 @@ int rts51x_sg_wait(struct usb_sg_request *io, int timeout)
+ 		 */
+ 		spin_unlock_irq(&io->lock);
+ 		switch (retval) {
+-			/* maybe we retrying will recover */
++			/* maybe the retry will recover */
+ 		case -ENXIO:	/* hc didn't queue this one */
+ 		case -EAGAIN:
+ 		case -ENOMEM:
+diff --git a/drivers/staging/rts5139/sd.c b/drivers/staging/rts5139/sd.c
+index d5dd2f9..c9fa5fb 100644
+--- a/drivers/staging/rts5139/sd.c
++++ b/drivers/staging/rts5139/sd.c
+@@ -2182,7 +2182,7 @@ RTY_CMD55:
+ 	sd_card->sd_addr += (u32) rsp[2] << 16;
+ 
+ 	/* Get CSD register for Calculating Timing,Capacity,
+-	 * Check CSD to determaine as if this is the SD ROM card */
++	 * Check CSD to determine as if this is the SD ROM card */
+ 	retval = sd_check_csd(chip, 1);
+ 	if (retval != STATUS_SUCCESS)
+ 		TRACE_RET(chip, retval);
+@@ -2745,7 +2745,7 @@ RTY_MMC_RST:
+ 		TRACE_RET(chip, retval);
+ 
+ 	/* Get CSD register for Calculating Timing,Capacity
+-	 * Check CSD to determaine as if this is the SD ROM card */
++	 * Check CSD to determine as if this is the SD ROM card */
+ 	retval = sd_check_csd(chip, 1);
+ 	if (retval != STATUS_SUCCESS)
+ 		TRACE_RET(chip, retval);
+@@ -3346,7 +3346,7 @@ int release_sd_card(struct rts51x_chip *chip)
+ 	struct sd_info *sd_card = &(chip->sd_card);
+ 	int retval;
+ 
+-	RTS51X_DEBUGP("elease_sd_card\n");
++	RTS51X_DEBUGP("release_sd_card\n");
+ 
+ 	chip->card_ready &= ~SD_CARD;
+ 	chip->card_fail &= ~SD_CARD;
+diff --git a/drivers/staging/rts5139/xd.c b/drivers/staging/rts5139/xd.c
+index 5820605..f54d332 100644
+--- a/drivers/staging/rts5139/xd.c
++++ b/drivers/staging/rts5139/xd.c
+@@ -2232,7 +2232,7 @@ int release_xd_card(struct rts51x_chip *chip)
+ 	struct xd_info *xd_card = &(chip->xd_card);
+ 	int retval;
+ 
+-	RTS51X_DEBUGP("elease_xd_card\n");
++	RTS51X_DEBUGP("release_xd_card\n");
+ 
+ 	chip->card_ready &= ~XD_CARD;
+ 	chip->card_fail &= ~XD_CARD;
+-- 
+1.7.5.4
 
-
-(Using find to make sure some work is done as opposed to sleep; openssl 
-speed also shows the above.)
-
-David
