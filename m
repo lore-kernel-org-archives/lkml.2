@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633Ab2ENWeK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 18:34:10 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64606 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932312Ab2ENWeI (ORCPT
+	id S932647Ab2ENWe7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 18:34:59 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:54597 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932312Ab2ENWe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 18:34:08 -0400
-Message-ID: <4FB18850.8090704@gmail.com>
-Date: Tue, 15 May 2012 00:33:52 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] Fix minixfs size check
-References: <4FAFBBC7.9020101@gmail.com> <20120514221948.GV5353@quack.suse.cz>
-In-Reply-To: <20120514221948.GV5353@quack.suse.cz>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enig6090094148AF6DB53ADA9E9D"
+	Mon, 14 May 2012 18:34:57 -0400
+Subject: Re: [PATCH v2] mm: Fix slab->page _count corruption.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Pravin B Shelar <pshelar@nicira.com>
+Cc: cl@linux.com, penberg@kernel.org, mpm@selenic.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, jesse@nicira.com,
+        abhide@nicira.com
+In-Reply-To: <1337034597-1826-1-git-send-email-pshelar@nicira.com>
+References: <1337034597-1826-1-git-send-email-pshelar@nicira.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 May 2012 00:34:52 +0200
+Message-ID: <1337034892.8512.652.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig6090094148AF6DB53ADA9E9D
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-05-14 at 15:29 -0700, Pravin B Shelar wrote:
+> On arches that do not support this_cpu_cmpxchg_double slab_lock is used
+> to do atomic cmpxchg() on double word which contains page->_count.
+> page count can be changed from get_page() or put_page() without taking
+> slab_lock. That corrupts page counter.
+> 
+> Following patch fixes it by moving page->_count out of cmpxchg_double
+> data. So that slub does no change it while updating slub meta-data in
+> struct page.
 
-On 15.05.2012 00:19, Jan Kara wrote:
+I say again : Page is owned by slub, so get_page() or put_page() is not
+allowed ?
 
-> On Sun 13-05-12 15:48:55, Vladimir '=CF=86-coder/phcoder' Serbinenko wr=
-ote:
->> minixfs file size check is buggy and it doesn't allow creating a block=
- which
->> can't be fully filled
->   Umm, I'm not really minix expert but who'd set s_max_size to somethin=
-g
-> which is not a multiple of block size? This looks rather artifical prob=
-lem
-> to me...
->=20
+How is put_page() going to work with order-1 or order-2 allocations ?
 
-The usual and natural limit comes from interpreting 32-bit size field as
-signed or unsigned. So it's either 2G - 1 or 4G - 1. Neither of which is
-a multiple of block size.
---=20
-Regards
-Vladimir '=CF=86-coder/phcoder' Serbinenko
+Me very confused by these Nicira patches.
 
 
---------------enig6090094148AF6DB53ADA9E9D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iF4EAREKAAYFAk+xiFoACgkQNak7dOguQgng6gD/TsKeks/ncOwvFSrYPi3jtOdW
-l+ogoa539pHPSHqHQloA/Arn4PM8X5H23cKy9RLAnppkvywLA9JbgcsPVhg3iBi6
-=pQJG
------END PGP SIGNATURE-----
-
---------------enig6090094148AF6DB53ADA9E9D--
