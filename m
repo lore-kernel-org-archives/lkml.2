@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645Ab2ENWh1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 18:37:27 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:60210 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932305Ab2ENWh0 (ORCPT
+	id S932643Ab2ENWlK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 18:41:10 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36128 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112Ab2ENWlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 18:37:26 -0400
-Date: Mon, 14 May 2012 18:37:21 -0400 (EDT)
-Message-Id: <20120514.183721.1989442389245940694.davem@davemloft.net>
-To: JBeulich@suse.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xfrm: make xfrm_algo.c a module
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4FAA3EAF02000078000826E4@nat28.tlf.novell.com>
-References: <4FAA3EAF02000078000826E4@nat28.tlf.novell.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 14 May 2012 15:37:23 -0700 (PDT)
+	Mon, 14 May 2012 18:41:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMLZHHTM6fojwcPAeyL07hz9U=7uNnxnwxm4kWY_-ffOtHm=vQ@mail.gmail.com>
+References: <CAMLZHHTM6fojwcPAeyL07hz9U=7uNnxnwxm4kWY_-ffOtHm=vQ@mail.gmail.com>
+Date: Mon, 14 May 2012 16:41:07 -0600
+X-Google-Sender-Auth: dF50ufuoQ-iM_fG8OodZuKTxxHk
+Message-ID: <CAMLZHHToiBUw-pTm6R=EZ5mHK5B55Y6arqdqDn-tzLicEdwMjA@mail.gmail.com>
+Subject: Re: Hang while loading firmware when going into suspend
+From: Daniel Drake <dsd@laptop.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Jan Beulich" <JBeulich@suse.com>
-Date: Wed, 09 May 2012 08:53:51 +0100
+Hi,
 
-> By making this a standalone config option (selected as needed),
-> selecting CRYPTO from here rather than from XFRM (which is boolean)
-> allows the core crypto code to become a module again even when XFRM=y.
-> 
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
- ...
-> @@ -15,9 +15,6 @@
->  #include <linux/crypto.h>
->  #include <linux/scatterlist.h>
->  #include <net/xfrm.h>
-> -#if defined(CONFIG_INET_AH) || defined(CONFIG_INET_AH_MODULE) || defined(CONFIG_INET6_AH) || defined(CONFIG_INET6_AH_MODULE)
-> -#include <net/ah.h>
-> -#endif
+On Thu, Apr 26, 2012 at 1:15 PM, Daniel Drake <dsd@laptop.org> wrote:
+> I can easily reproduce a hang related to loading firmware
+> (asynchronously) while going into suspend.
+>
+> This is running on kernel 3.3.3.
+>
+> I run:
+>
+> echo mem > /sys/power/state; echo mem > /sys/power/state
+>
+> i.e. I tell the system to suspend, and when I wake it up it will go
+> very quickly into suspend again.
+>
+> After waking up, it will start to re-detect the libertas SDIO wifi
+> card which was completely powered down during suspend.
+> This triggers a firmware loading sequence.
+> However, the system then immediately goes into suspend, and at this
+> point the system becomes unhappy.
 
-This is completely unrelated to the change you are trying to make in
-this patch.
+We're still suffering from this issue.
 
-It belongs in a separate change.
+As far as I can see there are 2 items in question:
+
+1. If a firmware load is in-progress as the system goes into suspend,
+the relevant userspace processes get frozen and then we have to wait
+for the timeout - the firmware loader in the kernel doesn't do
+anything special on this important event.
+
+2. There are no safety traps for if a new firmware load request
+happens while the system is being suspended with userspace processes
+already frozen. Then we have to wait for another timeout.
+
+
+Do you have any suggested approaches to solve this?
+
+I'm wondering if this is appropriate: firmware_class should add a
+pm_notifier so that it is notified when the system is going into
+suspend. It would set an internal flag noting that the system is
+suspending, and then it can call fw_load_abort() on any active
+firmware loads, making them fail immediately.
+_request_firmware() would check the internal flag when it is called,
+immediately returning failure -ENODATA (?) when the system is going
+into suspend.
+
+Does this sound reasonable or should I be looking for another approach?
+
+Thanks,
+Daniel
