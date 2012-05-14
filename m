@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab2ENSgE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 14:36:04 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61051 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757382Ab2ENSgB (ORCPT
+	id S932151Ab2ENSiy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 14:38:54 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49183 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab2ENSix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 14:36:01 -0400
-Date: Mon, 14 May 2012 11:35:57 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>
-Cc: Reinhard Tartler <tartler@cs.fau.de>, Felipe Balbi <balbi@ti.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vamos-dev@lists.cs.fau.de
-Subject: Re: [PATCH] usb: musb: cppi: add missing include to fix compilation
-Message-ID: <20120514183557.GA3832@kroah.com>
-References: <1337011520-15286-1-git-send-email-tartler@cs.fau.de>
- <20120514163154.GA17555@kroah.com>
- <87ipfyemb8.fsf@faui43f.informatik.uni-erlangen.de>
+	Mon, 14 May 2012 14:38:53 -0400
+Message-ID: <4FB1513A.4070002@wwwdotorg.org>
+Date: Mon, 14 May 2012 12:38:50 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ipfyemb8.fsf@faui43f.informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Tony Lindgren <tony@atomide.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-omap@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] pinctrl: Add generic pinctrl-simple driver that supports
+ omap2+ padconf
+References: <20120503065131.GA3738@game.jcrosoft.org> <20120503152708.GC5140@atomide.com> <4FA30805.5050804@wwwdotorg.org> <20120504044305.GD7788@game.jcrosoft.org> <20120504150342.GI5140@atomide.com> <20120504153251.GE7788@game.jcrosoft.org> <20120504163420.GA5613@atomide.com> <4FA42631.6060304@wwwdotorg.org> <20120504220809.GW5613@atomide.com> <4FAAD141.3090306@wwwdotorg.org> <20120509204925.GV5088@atomide.com> <4FABF553.20601@wwwdotorg.org> <CACRpkdbqjofEi-5J+GTMOXFK1VvbXqa6At1fKXCge+5_y6aaRA@mail.gmail.com>
+In-Reply-To: <CACRpkdbqjofEi-5J+GTMOXFK1VvbXqa6At1fKXCge+5_y6aaRA@mail.gmail.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 06:53:31PM +0200, Reinhard Tartler wrote:
-> On Mo, Mai 14, 2012 at 18:31:54 (CEST), Greg KH wrote:
+On 05/12/2012 05:49 PM, Linus Walleij wrote:
+> On Thu, May 10, 2012 at 7:05 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 > 
-> > On Mon, May 14, 2012 at 06:05:20PM +0200, Reinhard Tartler wrote:
-> >> This fixes compilation as module.
-> >> 
-> >> Signed-off-by: Reinhard Tartler <tartler@cs.fau.de>
-> >> ---
-> >>  drivers/usb/musb/cppi_dma.c |    1 +
-> >>  1 file changed, 1 insertion(+)
-> >> 
-> >> This patch was found by tools developed in the VAMOS project:
-> >> http://www4.cs.fau.de/Research/VAMOS/
-> >
-> > Does that mean that no one actually can hit this in "real life"?  Or is
-> > there a valid .config that this solves a problem for?  If so, is it also
-> > needed for the 3.4/3.3-stable tree and older ones?
+>> Also, were you intending pinctrl-simple to actually be the GPIO
+>> controller itself? That'd be another case that one might consider fairly
+>> simple, but then extends to being gpio-simple as well as pinctrl-simple...
 > 
-> My tool has generated the attached configuration that exposes this
-> compilation failure. I have used kernel v3.2 with Ubuntu's arm
-> cross-compiler for the analysis and verification.
+> We have some pinctrl drivers implementing gpiolib too already,
+> and it's unavoidable I think, as some recent discussion about
+> matcing struct gpio_chip and pinctrl GPIO ranges shows.
 
-Does this show up on the 3.4-rc kernels?  3.3?  I can't do anything
-about going back in time and fixing 3.2 right now, sorry.
+I strongly believe we should only do this when the exact same HW module
+is both pinctrl and GPIO.
 
-greg k-h
+When there are separate HW modules, we should have separate drivers. The
+fact that the two drivers need to co-ordinate with each-other isn't a
+good argument to make them one driver.
+
+And irrespective of how the drivers are structured, if there are two HW
+modules, we really need two separate nodes in DT to describe them, since
+the SW architecture (1 vs. 2 drivers) shouldn't influence the DT
+representation unduly.
+
+> Maybe "-simple" isn't such a good name for this thing. Noone thinks
+> any kind of pin control is simple in any sense of the word anyway :-D
+> 
+> Tony, would pinctrl-dt-only.c be a better name perhaps?
+
+That might be OK for the filename, but it doesn't seem like a useful
+change for the DT compatible value.
