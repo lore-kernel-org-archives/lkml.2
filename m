@@ -1,34 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab2ENIWe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 04:22:34 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:43853 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753336Ab2ENIWd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 04:22:33 -0400
-Message-ID: <1336983748.4898.0.camel@odin>
-Subject: Re: [PATCH] regulator: core: Release regulator-regulator supplies
- on error
-From: Liam Girdwood <lrg@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 14 May 2012 09:22:28 +0100
-In-Reply-To: <1336930623-15921-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1336930623-15921-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754826Ab2ENIXx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 04:23:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40045 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754447Ab2ENIXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 04:23:52 -0400
+Date: Mon, 14 May 2012 10:23:45 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/7] HID: Do not switch default values in EXPERT mode
+In-Reply-To: <1336925230-2853-2-git-send-email-dh.herrmann@googlemail.com>
+Message-ID: <alpine.LNX.2.00.1205141021530.15448@pobox.suse.cz>
+References: <1336925230-2853-1-git-send-email-dh.herrmann@googlemail.com> <1336925230-2853-2-git-send-email-dh.herrmann@googlemail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-05-13 at 18:37 +0100, Mark Brown wrote:
-> If we fail while registering a regulator make sure we release the supply
-> for the regulator if there is one.
+On Sun, 13 May 2012, David Herrmann wrote:
+
+> Expert mode was designed to toggle visibility of options and not to
+> change their behavior. If a user wants to tweak a single value and
+> enables EXPERT mode to do this, he will have several unexpected
+> side effects when other subsystems toggle their default values based
+> on EXPERT mode. This makes EXPERT pretty useless.
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Jiri Kosina <jkosina@suse.cz>
+> Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
 
-Acked-by: Liam Girdwood <lrg@ti.com>
+Please see
 
+	d04b431e3d769fbbf26c4f4072002375c8cc4ed9
+	b36299bcc0feae4c1bcff6a1561b8beb635e9c80
+	
+for some reasoning why this is done the way it's done.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
