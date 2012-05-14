@@ -1,92 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab2ENKdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 06:33:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51082 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754997Ab2ENKdk (ORCPT
+	id S1755564Ab2ENKes (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 06:34:48 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54909 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755019Ab2ENKer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 06:33:40 -0400
-Date: Mon, 14 May 2012 11:33:35 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Graeme Gregory <gg@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, lrg@ti.com,
-        b-cousson@ti.com, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 1/4] MFD: palmas PMIC device support
-Message-ID: <20120514103334.GP31985@opensource.wolfsonmicro.com>
-References: <1336960712-2812-1-git-send-email-gg@slimlogic.co.uk>
- <1336960712-2812-2-git-send-email-gg@slimlogic.co.uk>
- <20120514082832.GF31985@opensource.wolfsonmicro.com>
- <4FB0DDD7.8020803@slimlogic.co.uk>
+	Mon, 14 May 2012 06:34:47 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FB0DF4A.5010506@jp.fujitsu.com>
+Date: Mon, 14 May 2012 19:32:42 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fjEAjMKpll6GDq3U"
-Content-Disposition: inline
-In-Reply-To: <4FB0DDD7.8020803@slimlogic.co.uk>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        Tejun Heo <tj@kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] add res_counter_uncharge_until()
+References: <4FACDED0.3020400@jp.fujitsu.com> <4FACE01A.4040405@jp.fujitsu.com> <20120511141945.c487e94c.akpm@linux-foundation.org> <4FB05B8F.8020408@jp.fujitsu.com> <CAFTL4hwGEhyxZO0sXx5gVyK_xjhMQEbHojJbHzQmVKafNyVWtw@mail.gmail.com>
+In-Reply-To: <CAFTL4hwGEhyxZO0sXx5gVyK_xjhMQEbHojJbHzQmVKafNyVWtw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2012/05/14 19:08), Frederic Weisbecker wrote:
 
---fjEAjMKpll6GDq3U
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> 2012/5/14 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>:
+>> (2012/05/12 6:19), Andrew Morton wrote:
+>>
+>>> On Fri, 11 May 2012 18:47:06 +0900
+>>> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>>>
+>>>> From: Frederic Weisbecker <fweisbec@gmail.com>
+>>>>
+>>>> At killing res_counter which is a child of other counter,
+>>>> we need to do
+>>>>      res_counter_uncharge(child, xxx)
+>>>>      res_counter_charge(parent, xxx)
+>>>>
+>>>> This is not atomic and wasting cpu. This patch adds
+>>>> res_counter_uncharge_until(). This function's uncharge propagates
+>>>> to ancestors until specified res_counter.
+>>>>
+>>>>      res_counter_uncharge_until(child, parent, xxx)
+>>>>
+>>>> Now, ops is atomic and efficient.
+>>>>
+>>>> Changelog since v2
+>>>>  - removed unnecessary lines.
+>>>>  - Fixed 'From' , this patch comes from his series. Please signed-off-by if good.
+>>>>
+>>>> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>>>
+>>> Frederic's Signed-off-by: is unavaliable?
+>>>
+>>
+>> I didn't add his Signed-off because I modified his orignal patch a little...
+>> I dropped res_counter_charge_until() because it's not used in this series,
+>> I have no justification for adding it.
+>> The idea of res_counter_uncharge_until() is from his patch.
+> 
+> The property of Signed-off-by is that as long as you
+> carry/relay/modify a patch, you add your
+> own signed-off-by. But you can't remove the signed off by of somebody
+> in the chain.
+> 
 
-On Mon, May 14, 2012 at 07:26:31PM +0900, Graeme Gregory wrote:
-> On 14/05/12 17:28, Mark Brown wrote:
-> > On Mon, May 14, 2012 at 10:58:29AM +0900, Graeme Gregory wrote:
+> Even if you did a change in the patch, you need to preserve the chain.
+> 
 
-> >>  drivers/mfd/palmas-irq.c   |  241 +++++
+Oh, sorry. 
 
-> > The IRQ support here seems to be following a pretty common pattern for
-> > dense IRQ maps - could we factor it out into regmap-irq?  It'd also be
-> > nice if it were using an irq_domain - while it's far from essential it
-> > is something Grant has been pushing and I believe it'll be required when
-> > you do device tree support.
+> There may be some special cases with "Original-patch-from:" tags used when
+> one heavily inspire from a patch without taking much of its original code.
+> 
 
-> The IRQ map is not dense. It is split into 4 registers which are not
-> contiguous. I think the overhead of translating to 4 reqmap irqs would
-> negate the point of using regmap irq. I can add to TODO to add this
-> handling to regmap_irq.
 
-If the register blocks are nicely spaced we can probably find a
-framework way to do this. =20
+Is this ok ?
 
-> I am confused on the whole irq_domain business, is it replacement for
-> sparse irq? I don't see many users in drivers/mfd and not much
-> Documentation.
+==
+[PATCH 2/6] memcg: add res_counter_uncharge_until()
 
-regmap-irq in -next as of today has an example of using them for this
-type of device (and of course half the point of regmap-irq is that it
-avoids individual drivers needing to worry so much about things like
-this, they can just use data!).  I also posted a patch for wm831x though
-that's got a bunch of noise in the function drivers due to passing the
-interrupt numbers through as resources, the core should be fairly clear
-though and is a bit more direct.
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
---fjEAjMKpll6GDq3U
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+At killing res_counter which is a child of other counter,
+we need to do
+	res_counter_uncharge(child, xxx)
+	res_counter_charge(parent, xxx)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+This is not atomic and wasting cpu. This patch adds
+res_counter_uncharge_until(). This function's uncharge propagates
+to ancestors until specified res_counter.
 
-iQIcBAEBAgAGBQJPsN94AAoJEBus8iNuMP3dfx4P/2JciwNFtQIGdZF3IjZRday4
-XV33bZf+tYrZc48ge/go7P+nV3PDivIZ/CBpYXGeU/APyjCk2+cAvksQkNTgw9sl
-uWph4NDYoZuAtkHh729gsYYPkm1SulhE/hkKEvZ/RpSFJj47twZvlfy3DZnfE9MM
-Waoj2IjF0nYIgXY72RC9XnnBd6XLo2qqoX179s5B6yRwHSg1n2zAzep9HluwaNWH
-LhFSsxxepPQgAkI/m7Iv8EO49ouOpaV0XYUNVtRh6utga/xcvZTg3jKbU/uIju4a
-bT6JP784kapTCdIHX5EUYf+1V2j6PX4Lnbz9hdo7URdMJQ9FNFFGU1m09cw2Jcf9
-4l0njMhkudSAykAkh8znMsjNT3QK4Jsd2EOe91CUwFkHsuQ2flG6aPWdqzuenIUH
-QO16t27O6fJ/U+LCbxhsN05qUbGCaUmYVuBvXqoq9IQF68XuwT/6qKoTVadaz9ai
-VqkCnVIN1i1eWD8qZC6Ae5u1+L/eZukSElpT+H8m2iZ5TQ6IFc+95z6SbzdopmD8
-LwTlrngxPx4NuQduUiOhc0gpY/XW8QEJbwZBPuN+a06PZbYl8Hbg7PfLp/CDKIxG
-c1JxvJvLPDpRgFuO9vGTEV5iBwIZEZoJ5coAVURh36YdWQ5hlSZ5KDA4LolpvIqM
-4b1kPvVqwhZTuawgtR4T
-=V6tX
------END PGP SIGNATURE-----
+	res_counter_uncharge_until(child, parent, xxx)
 
---fjEAjMKpll6GDq3U--
+Now, ops is atomic and efficient.
+
+Changelog since v2
+ - removed unnecessary lines.
+ - added 'From' , this patch comes from his one.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ Documentation/cgroups/resource_counter.txt |    8 ++++++++
+ include/linux/res_counter.h                |    3 +++
+ kernel/res_counter.c                       |   10 ++++++++--
+ 3 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
+index 95b24d7..703103a 100644
+--- a/Documentation/cgroups/resource_counter.txt
++++ b/Documentation/cgroups/resource_counter.txt
+@@ -92,6 +92,14 @@ to work with it.
+ 
+ 	The _locked routines imply that the res_counter->lock is taken.
+ 
++ f. void res_counter_uncharge_until
++		(struct res_counter *rc, struct res_counter *top,
++		 unsinged long val)
++
++	Almost same as res_cunter_uncharge() but propagation of uncharge
++	stops when rc == top. This is useful when kill a res_coutner in
++	child cgroup.
++
+  2.1 Other accounting routines
+ 
+     There are more routines that may help you with common needs, like
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+index da81af0..d11c1cd 100644
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -135,6 +135,9 @@ int __must_check res_counter_charge_nofail(struct res_counter *counter,
+ void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
+ void res_counter_uncharge(struct res_counter *counter, unsigned long val);
+ 
++void res_counter_uncharge_until(struct res_counter *counter,
++				struct res_counter *top,
++				unsigned long val);
+ /**
+  * res_counter_margin - calculate chargeable space of a counter
+  * @cnt: the counter
+diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+index d508363..d9ea45e 100644
+--- a/kernel/res_counter.c
++++ b/kernel/res_counter.c
+@@ -99,13 +99,15 @@ void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
+ 	counter->usage -= val;
+ }
+ 
+-void res_counter_uncharge(struct res_counter *counter, unsigned long val)
++void res_counter_uncharge_until(struct res_counter *counter,
++				struct res_counter *top,
++				unsigned long val)
+ {
+ 	unsigned long flags;
+ 	struct res_counter *c;
+ 
+ 	local_irq_save(flags);
+-	for (c = counter; c != NULL; c = c->parent) {
++	for (c = counter; c != top; c = c->parent) {
+ 		spin_lock(&c->lock);
+ 		res_counter_uncharge_locked(c, val);
+ 		spin_unlock(&c->lock);
+@@ -113,6 +115,10 @@ void res_counter_uncharge(struct res_counter *counter, unsigned long val)
+ 	local_irq_restore(flags);
+ }
+ 
++void res_counter_uncharge(struct res_counter *counter, unsigned long val)
++{
++	res_counter_uncharge_until(counter, NULL, val);
++}
+ 
+ static inline unsigned long long *
+ res_counter_member(struct res_counter *counter, int member)
+-- 
+1.7.4.1
+
+
+
+
