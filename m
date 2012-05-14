@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622Ab2ENAue (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 20:50:34 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:49315 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864Ab2ENAud (ORCPT
+	id S1753753Ab2ENAxJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 20:53:09 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:60945 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090Ab2ENAxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 20:50:33 -0400
-Date: Mon, 14 May 2012 10:50:25 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Jean-Francois Dagenais" <jeff.dagenais@gmail.com>
-Subject: linux-next: build failure in Linus' tree
-Message-Id: <20120514105025.0ba1b124f5e9c192fc11e132@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__14_May_2012_10_50_25_+1000_h6vTK.C+Wv_by3fE"
+	Sun, 13 May 2012 20:53:07 -0400
+X-AuditID: cbfee61b-b7b94ae000002e44-43-4fb05771686a
+Message-id: <4FB05770.3050809@samsung.com>
+Date: Mon, 14 May 2012 09:53:04 +0900
+From: Minho Ban <mhban@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329
+ Thunderbird/11.0.1
+MIME-version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] PM / Hibernate : Use get_gendisk to verify partition if
+ resume_file is integer format
+References: <4FAA4597.7060302@samsung.com> <201205122339.01696.rjw@sisk.pl>
+In-reply-to: <201205122339.01696.rjw@sisk.pl>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__14_May_2012_10_50_25_+1000_h6vTK.C+Wv_by3fE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/13/2012 06:39 AM, Rafael J. Wysocki wrote:
+> On Wednesday, May 09, 2012, Minho Ban wrote:
+>>  	/* Check if the device is there */
+>>  	swsusp_resume_device = name_to_dev_t(resume_file);
+>> +
+>> +	/*
+>> +	 * name_to_dev_t is ineffective to verify parition if resume_file is in
+>> +	 * integer format. (e.g. major:minor)
+>> +	 */
+>> +	if (isdigit(resume_file[0]) && resume_wait) {
+>> +		int partno;
+>> +		while (!get_gendisk(swsusp_resume_device, &partno))
+>> +			msleep(10);
+>> +	}
+> 
+> Hmm.  Wouldn't it be better to do:
+> 
+> 	if (isdigit(resume_file[0]) && resume_wait) {
+> 		int partno;
+> 		while (!get_gendisk(swsusp_resume_device, &partno))
+> 			msleep(10);
+> 	} else {
+> 		swsusp_resume_device = name_to_dev_t(resume_file);
+> 	}
+> 
+> ?
 
-Hi Linus,
+Do you want name_to_dev_t to be called again?  If not, swsusp_resume_device parameter 
+in get_gendisk can not be used because it is not initialized yet.
 
-Building Linus' tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+> 
+> Your new code will overwrite whatever swsusp_resume_device is set to by the
+> preceding statement anyway.
+> 
 
-ERROR: "handle_edge_irq" [drivers/gpio/gpio-pch.ko] undefined!
-ERROR: "irq_to_desc" [drivers/gpio/gpio-pch.ko] undefined!
+Sorry, I don't understand what will be overwritten by the new code. It would be very 
+much appreciated if you point it again.
 
-This has been reported elsewhere by DaveM.
-
-Caused by commit df9541a60af0 ("gpio: pch9: Use proper flow type handlers").
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__14_May_2012_10_50_25_+1000_h6vTK.C+Wv_by3fE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPsFbRAAoJEECxmPOUX5FEByQP/3vCpLP53CBmu6/rnzy2ySBD
-Vo9fFWu9tre1Yh95GzbTzfzXpr6Y9spqAUtU3Sm8InsKgXFqj6pXEVoi5MybDLA7
-/uNLFVE1EtHndEFAQ2ZqrLDaFkcCqu3wmpf+gVFH+P+IC2NzZgFfAkbbDO0kuDV4
-vMR/4HgvCZzasdLMvSQOkVm6YNuReaHam2d1sJ6WnXg4MUdKsFZk+QgzoPpFCipt
-d68iPiYQBWVdHELWMyWG8xeiGQ+bnVbZFEm1FU6fLjOESis7eNYnLsO/ONrZj56l
-hncoOZJI9BHKwGBMjGPlwXbJqg2dJ6FLfsPDhTodCGQ4/kcQqHcp+8SgYjzIC9im
-3kla8zYGp1vZG7WTkGmKfRNRFRc9HejGQW+xh7CxmB16BZyCDZUXvAO8kgrl6Cmb
-8E7652oSrt+8Lk5EnJ6GpN10Kz2uEahGew06Qy6Wn+j2LsanWsVoBkNhhYmrTIy4
-Jk+1KkqvhWXprsz5QtbZRplNT/9pLabN56AHt1X1zvAElsI7hm3hsyuutDy5No4J
-icCCnLRBphQJ8g94ipwzGTVOiULjNeWEKupp04Kd5JC40XuHwVDcN5awznldkDq9
-HOEeFJHsktqVKLKPvO00SaJBduuDGg9hh3yn3GbVYP/xXTUriew2aB/ToTcWqfOG
-CkwG+pCeY4AWB8AlEDIK
-=WoGJ
------END PGP SIGNATURE-----
-
---Signature=_Mon__14_May_2012_10_50_25_+1000_h6vTK.C+Wv_by3fE--
+Regards,
+Minho Ban
