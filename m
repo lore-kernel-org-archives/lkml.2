@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757039Ab2ENQSS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 12:18:18 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3940 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756290Ab2ENQSQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 12:18:16 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 14 May 2012 09:18:10 -0700
-From: Hiroshi DOYU <hdoyu@nvidia.com>
-To: <hdoyu@nvidia.com>
-CC: <linux-tegra@vger.kernel.org>, <kay@vrfy.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] printk: Make it compile with !CONFIG_PRINTK
-Date: Mon, 14 May 2012 19:18:02 +0300
-Message-ID: <1337012284-18680-1-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1757112Ab2ENQTC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 12:19:02 -0400
+Received: from mail2.unitix.de ([176.9.2.175]:41498 "EHLO mail2.unitix.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756290Ab2ENQTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 12:19:00 -0400
+Message-ID: <4FB12FE1.2070909@arndnet.de>
+Date: Mon, 14 May 2012 18:16:33 +0200
+From: Arnd Hannemann <arnd@arndnet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: dave@jikos.cz
+CC: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.4.0-rc6: WARNING: at fs/btrfs/super.c:219 __btrfs_abort_transaction+0xae/0xc0
+ [btrfs]()
+References: <4FB10636.2010003@arndnet.de> <20120514150509.GJ25501@twin.jikos.cz>
+In-Reply-To: <20120514150509.GJ25501@twin.jikos.cz>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing prepend_timestamp() dummy.
+Hello David,
 
-Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
----
- kernel/printk.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Am 14.05.2012 17:05, schrieb David Sterba:
+> On Mon, May 14, 2012 at 03:18:46PM +0200, Arnd Hannemann wrote:
+>> I just got the following warning on a compressed btrfs filesystem, while writing on it
+>> until no remaining space was available.
+>> Looks like a bit verbose "disk full" message, is it expected behavior?
+> 
+> Shouldn't be the case for regular ENOSPC (ie. when the space is reserved
+> in advance and with the possibility to fail early). If the transaction
+> is aborted, it means it's too late and there was some logic error.
+> 
+> Can you please describe more the fs and how did you fill it? Like single
+> process or multiple, dd or whatever.
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 8b027bd..5f9e278 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1438,6 +1438,7 @@ EXPORT_SYMBOL(printk);
- static struct log *log_from_idx(u32 idx) { return NULL; }
- static u32 log_next(u32 idx) { return 0; }
- static char *log_text(const struct log *msg) { return NULL; }
-+static size_t prepend_timestamp(unsigned long long t, char *buf) { return 0; }
- static void call_console_drivers(int level, const char *text, size_t len) {}
- 
- #endif /* CONFIG_PRINTK */
--- 
-1.7.5.4
+the particular filesystem is used for chroots (/opt/chroots). It got full while
+installing texlive-extra on a debian squeeze (i386) chroot.
+It was probably a single process, but it involed a lot of small files.
+
+Best regards
+Arnd
 
