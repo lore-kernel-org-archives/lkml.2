@@ -1,112 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab2ENNv0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:51:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55035 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755210Ab2ENNvY (ORCPT
+	id S1756844Ab2ENN6h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 09:58:37 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:49102 "HELO
+	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756741Ab2ENN6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:51:24 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>,
-        Maciej Sosnowski <maciej.sosnowski@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Keping Chen <chenkeping@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v2 7/7] dmaengine: assign DMA channel to CPU according to NUMA affinity
-Date: Mon, 14 May 2012 21:47:09 +0800
-Message-Id: <1337003229-9158-8-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1337003229-9158-1-git-send-email-jiang.liu@huawei.com>
-References: <1337003229-9158-1-git-send-email-jiang.liu@huawei.com>
+	Mon, 14 May 2012 09:58:35 -0400
+To: Eric.Moore@lsi.com, akpm@linux-foundation.org
+Subject: [PATCH v3 resend] fusion: use pci_dev->revision
+Cc: DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org, support@lsi.com,
+        linux-kernel@vger.kernel.org
+Content-Disposition: inline
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Organization: MontaVista Software Inc.
+Date: Mon, 14 May 2012 17:50:41 +0400
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205141750.41522.sshtylyov@ru.mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+This driver uses PCI_CLASS_REVISION instead of PCI_REVISION_ID, so it wasn't
+converted by commit 44c10138fd4bbc4b6d6bff0873c24902f2a9da65 (PCI: Change all
+drivers to use pci_device->revision).
 
-On systems with multiple CPUs and DMA devices, try optimize DMA
-performance by assigning DMA channels to CPUs according to NUMA
-affinity relationship. This may help architectures with memory
-controllers and DMA devices built into the same physical processor
-to avoid unnecessary cross socket traffic.
+In one case, it even reads PCI revision ID without using it -- that code is now
+removed...
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Acked-by: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
+
 ---
- drivers/dma/dmaengine.c |   45 +++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 43 insertions(+), 2 deletions(-)
+This patch is refreshed against the recent Linus' tree.
 
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index eca45c0..8a41bdf 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -266,6 +266,7 @@ static dma_cap_mask_t dma_cap_mask_all;
- struct dma_chan_tbl_ent {
- 	struct dma_chan *chan;
- 	struct dma_chan *prev_chan;
-+	int node;
- };
- 
- /**
-@@ -467,6 +468,46 @@ static void dma_channel_quiesce(void)
- #endif
- }
- 
-+/* Assign DMA channels to CPUs according to NUMA affinity relationship */
-+static void dma_channel_set(int cap, int cpu, struct dma_chan *chan)
-+{
-+	int node;
-+	int src_cpu;
-+	struct dma_chan *src_chan;
-+	struct dma_chan_tbl_ent *entry;
-+	struct dma_chan_tbl_ent *src_entry;
-+
-+	entry = per_cpu_ptr(channel_table[cap], cpu);
-+	node = dev_to_node(chan->device->dev);
-+
-+	/* Try to optimize if CPU and DMA channel belong to different node. */
-+	if (node != -1 && node != cpu_to_node(cpu)) {
-+		for_each_online_cpu(src_cpu) {
-+			src_entry = per_cpu_ptr(channel_table[cap], src_cpu);
-+			src_chan = src_entry->chan;
-+
-+			/*
-+			 * CPU online map may change beneath us due to
-+			 * CPU hotplug operations.
-+			 */
-+			if (src_chan == NULL)
-+				continue;
-+
-+			if (src_entry->node == node ||
-+			    cpu_to_node(src_cpu) == node) {
-+				entry->node = src_entry->node;
-+				src_entry->node = node;
-+				entry->chan = src_chan;
-+				src_entry->chan = chan;
-+				return;
-+			}
-+		}
-+	}
-+
-+	entry->node = node;
-+	entry->chan = chan;
-+}
-+
- /**
-  * dma_channel_rebalance - redistribute the available channels
-  *
-@@ -501,8 +542,8 @@ static void dma_channel_rebalance(bool quiesce)
- 					chan = nth_chan(cap, n++);
- 				else
- 					chan = nth_chan(cap, -1);
--				entry = per_cpu_ptr(channel_table[cap], cpu);
--				entry->chan = chan;
-+				if (chan)
-+					dma_channel_set(cap, cpu, chan);
- 			}
- 
- 	if (quiesce)
--- 
-1.7.9.5
+This patch hasn't been applied to 3.1, 3.2, 3.3, or 3.4. Hopefully it can be
+applied to 3.5 at last...
 
+Andrew M., maybe you can take it if the maintainers don't seem to be bothered?
+
+ drivers/message/fusion/mptbase.c |   12 ++++--------
+ drivers/message/fusion/mptctl.c  |    4 +---
+ 2 files changed, 5 insertions(+), 11 deletions(-)
+
+Index: linux-2.6/drivers/message/fusion/mptbase.c
+===================================================================
+--- linux-2.6.orig/drivers/message/fusion/mptbase.c
++++ linux-2.6/drivers/message/fusion/mptbase.c
+@@ -1652,7 +1652,6 @@ mpt_mapresources(MPT_ADAPTER *ioc)
+ 	unsigned long	 port;
+ 	u32		 msize;
+ 	u32		 psize;
+-	u8		 revision;
+ 	int		 r = -ENODEV;
+ 	struct pci_dev *pdev;
+ 
+@@ -1669,8 +1668,6 @@ mpt_mapresources(MPT_ADAPTER *ioc)
+ 		return r;
+ 	}
+ 
+-	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
+-
+ 	if (sizeof(dma_addr_t) > 4) {
+ 		const uint64_t required_mask = dma_get_required_mask
+ 		    (&pdev->dev);
+@@ -1778,7 +1775,6 @@ mpt_attach(struct pci_dev *pdev, const s
+ 	MPT_ADAPTER	*ioc;
+ 	u8		 cb_idx;
+ 	int		 r = -ENODEV;
+-	u8		 revision;
+ 	u8		 pcixcmd;
+ 	static int	 mpt_ids = 0;
+ #ifdef CONFIG_PROC_FS
+@@ -1886,8 +1882,8 @@ mpt_attach(struct pci_dev *pdev, const s
+ 	dinitprintk(ioc, printk(MYIOC_s_INFO_FMT "facts @ %p, pfacts[0] @ %p\n",
+ 	    ioc->name, &ioc->facts, &ioc->pfacts[0]));
+ 
+-	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
+-	mpt_get_product_name(pdev->vendor, pdev->device, revision, ioc->prod_name);
++	mpt_get_product_name(pdev->vendor, pdev->device, pdev->revision,
++			     ioc->prod_name);
+ 
+ 	switch (pdev->device)
+ 	{
+@@ -1902,7 +1898,7 @@ mpt_attach(struct pci_dev *pdev, const s
+ 		break;
+ 
+ 	case MPI_MANUFACTPAGE_DEVICEID_FC929X:
+-		if (revision < XL_929) {
++		if (pdev->revision < XL_929) {
+ 			/* 929X Chip Fix. Set Split transactions level
+ 		 	* for PCIX. Set MOST bits to zero.
+ 		 	*/
+@@ -1933,7 +1929,7 @@ mpt_attach(struct pci_dev *pdev, const s
+ 		/* 1030 Chip Fix. Disable Split transactions
+ 		 * for PCIX. Set MOST bits to zero if Rev < C0( = 8).
+ 		 */
+-		if (revision < C0_1030) {
++		if (pdev->revision < C0_1030) {
+ 			pci_read_config_byte(pdev, 0x6a, &pcixcmd);
+ 			pcixcmd &= 0x8F;
+ 			pci_write_config_byte(pdev, 0x6a, pcixcmd);
+Index: linux-2.6/drivers/message/fusion/mptctl.c
+===================================================================
+--- linux-2.6.orig/drivers/message/fusion/mptctl.c
++++ linux-2.6/drivers/message/fusion/mptctl.c
+@@ -1250,7 +1250,6 @@ mptctl_getiocinfo (unsigned long arg, un
+ 	int			iocnum;
+ 	unsigned int		port;
+ 	int			cim_rev;
+-	u8			revision;
+ 	struct scsi_device 	*sdev;
+ 	VirtDevice		*vdevice;
+ 
+@@ -1324,8 +1323,7 @@ mptctl_getiocinfo (unsigned long arg, un
+ 	pdev = (struct pci_dev *) ioc->pcidev;
+ 
+ 	karg->pciId = pdev->device;
+-	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
+-	karg->hwRev = revision;
++	karg->hwRev = pdev->revision;
+ 	karg->subSystemDevice = pdev->subsystem_device;
+ 	karg->subSystemVendor = pdev->subsystem_vendor;
+ 
