@@ -1,103 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab2ENHmU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 03:42:20 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55513 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754894Ab2ENHmT (ORCPT
+	id S1754944Ab2ENHpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 03:45:18 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10827 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596Ab2ENHpR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 03:42:19 -0400
-X-AuditID: 9c930197-b7be2ae000000ebb-08-4fb0b7596d96
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf-record: Create events initially disabled -- again
-References: <1336968088-11531-1-git-send-email-dsahern@gmail.com>
-Date: Mon, 14 May 2012 16:40:35 +0900
-In-Reply-To: <1336968088-11531-1-git-send-email-dsahern@gmail.com> (David
-	Ahern's message of "Sun, 13 May 2012 22:01:28 -0600")
-Message-ID: <87sjf31a8c.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	Mon, 14 May 2012 03:45:17 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 14 May 2012 00:45:16 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "joe@perches.com" <joe@perches.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Mon, 14 May 2012 09:45:12 +0200
+Subject: Re: [RFC 1/1] driver core: Add dev_*_ratelimited() family
+Thread-Topic: [RFC 1/1] driver core: Add dev_*_ratelimited() family
+Thread-Index: Ac0xpX+bFPhxNhl7RTqy5kYJAq04DQ==
+Message-ID: <20120514.104512.775373956832728793.hdoyu@nvidia.com>
+References: <1336973155.2656.10.camel@joe2Laptop><20120514.084014.1683295633804914511.hdoyu@nvidia.com><1336975539.2656.21.camel@joe2Laptop>
+In-Reply-To: <1336975539.2656.21.camel@joe2Laptop>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Joe Perches <joe@perches.com> wrote @ Mon, 14 May 2012 08:05:39 +0200:
 
-On Sun, 13 May 2012 22:01:28 -0600, David Ahern wrote:
-> 764e16a changed perf-record to create events disabled by default and
-> enable them once perf initializations are done. This setting was dropped
-> by 0f82ebc. Now perf events are once again generated during perf's
-> initialization phase (e.g., generating maps).
->
-> As an example, perf opens a lot of files at startup. Unpatched:
->
-> perf record -e syscalls:sys_enter_open -ga -fo /tmp/perf.data -- sleep 1
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.087 MB /tmp/perf.data (~3798 samples) ]
->
-> Using perf-script to look at the samples shows the perf command generating
-> 563 of the 566 total events.
->
-> Patched:
->
-> perf record -e syscalls:sys_enter_open -ga -fo /tmp/perf.data -- sleep 1
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.028 MB /tmp/perf.data (~1206 samples) ]
->
-> Using perf-script to look at the samples does not show perf command.
->
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> ---
->  tools/perf/util/evsel.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> index 21eaab2..6710cfe 100644
-> --- a/tools/perf/util/evsel.c
-> +++ b/tools/perf/util/evsel.c
-> @@ -70,6 +70,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
->  	struct perf_event_attr *attr = &evsel->attr;
->  	int track = !evsel->idx; /* only the first counter needs these */
->  
-> +	attr->disabled = 1;
->  	attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
->  	attr->inherit	    = !opts->no_inherit;
->  	attr->read_format   = PERF_FORMAT_TOTAL_TIME_ENABLED |
-> @@ -138,7 +139,6 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
->  
->  	if (perf_target__none(&opts->target) &&
->  	    (!opts->group || evsel == first)) {
-> -		attr->disabled = 1;
->  		attr->enable_on_exec = 1;
->  	}
->  }
+> On Mon, 2012-05-14 at 07:40 +0200, Hiroshi Doyu wrote:
+> > Joe Perches <joe@perches.com> wrote @ Mon, 14 May 2012 07:25:55 +0200:
+> > > On Mon, 2012-05-14 at 07:00 +0200, Hiroshi Doyu wrote:
+> > > > Joe Perches <joe@perches.com> wrote @ Sat, 12 May 2012 17:31:35 +0200:
+> > > > > On Sat, 2012-05-12 at 12:52 +0200, Hiroshi Doyu wrote:
+> > > > > > An unclosed "if" statement in the MACRO seems a bit risky, but I don't
+> > > > > > have any better/simple solution for this, ATM. Is there any alternative?
+> > > > > 
+> > > > > maybe something like:
+> > > > > 
+> > > > > #define dev_ratelimited_level(dev, level, fmt, ...)
+> > > > > do {
+> > > > > 	static DEFINE_RATELIMIT_STATE(_rs,				\
+> > > > > 				      DEFAULT_RATELIMIT_INTERVAL,	\
+> > > > > 				      DEFAULT_RATELIMIT_BURST);		\
+> > > > > 	if (__ratelimit(&_rs))						\
+> > > > > 		dev_##level(fmt, ##__VA_ARGS__);			\
+> > > > > } while (0)
+> > > > > 
+> > > > > #define dev_emerg_ratelimited(dev, fmt, ...)				\
+> > > > > 	dev_ratelimited_level(dev, emerg, fmt, ##__VA_ARGS__)
+> [...]
+> > > > > #define dev_dbg_ratelimited(dev, fmt, ...)				\
+> > > > > 	dev_ratelimited_level(dev, dbg, fmt, ##__VA_ARGS__)
+> > > > 
+> > > > "dev" isn't handled separately with __VA_ARGS__, and failed to build
+> > > > as below:
+> > > > 
+> > > >   Example:
+> > > >     dev_err_ratelimited(&pdev->dev, "%d\n", __LINE__);
+> > > >   
+> > > >   After preprocessded:
+> > > >     do { ... if (___ratelimit(&_rs, __func__)) dev_err("%d\n", 18); } while (0);
+> > > > 
+> > > 
+> > > Sorry, I was just typing in the email client and
+> > > I missed the "dev" argument.
+> > > 
+> > > Add "dev" to the dev_##level statement like:
+> > > 
+> > > #define dev_ratelimited_level(dev, level, fmt, ...)			\
+> > > do {									\
+> > > 	static DEFINE_RATELIMIT_STATE(_rs,				\
+> > > 				      DEFAULT_RATELIMIT_INTERVAL,	\
+> > > 				      DEFAULT_RATELIMIT_BURST);		\
+> > > 	if (__ratelimit(&_rs))						\
+> > > 		dev_##level(dev, fmt, ##__VA_ARGS__);			\
+> > > } while (0)
+> > 
+> > Verified that the above works. Would you mind sending the complete version of this patch?
+> 
+> Hello Hiroshi.
+> 
+> It's your patch and your idea.
+> I think you should submit it.
+> You were just asking for alternatives or a bit
+> of guidance.
 
-A problem I see is that it'll break group handling again:
+Thanks.
 
-$ ./perf stat -g sleep 1
+> Maybe a better name for dev_ratelimited_level is
+> dev_level_ratelimited and the macro should be
+> 
+> #define dev_level_ratelimited(dev_level, dev, fmt, ...)			\
+> do {									\
+> 	static DEFINE_RATELIMIT_STATE(_rs,				\
+> 				      DEFAULT_RATELIMIT_INTERVAL,	\
+> 				      DEFAULT_RATELIMIT_BURST);		\
+> 	if (__ratelimit(&_rs))						\
+> 		dev_level(dev, fmt, ##__VA_ARGS__);			\
+> } while (0)
+> 
+> with uses like
+> 
+> #define dev_notice_ratelimited(dev, fmt, ...)				\
+> 	dev_level_ratelimited(dev_notice, fmt, ##__VA_ARGS__)
+> 
+> 
+> Your choice though I think the last option above
+> may be better because it more closely follows the
+> style a dev_printk_ratelimited would use.
 
- Performance counter stats for 'sleep 1':
-
-     <not counted> task-clock              
-     <not counted> context-switches        
-     <not counted> CPU-migrations          
-     <not counted> page-faults             
-     <not counted> cycles                  
-     <not counted> stalled-cycles-frontend 
-     <not counted> stalled-cycles-backend  
-     <not counted> instructions            
-     <not counted> branches                
-     <not counted> branch-misses           
-
-       1.000868932 seconds time elapsed
-
-So I suggest changing perf_target__none() check to a proper one
-(perf_target__no_cpu? - the name might be changed soon) for your
-purpose.
-
-Thanks,
-Namhyung
+Agree. The complete version of the above patch follows this email.
