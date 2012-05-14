@@ -1,572 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab2ENLkR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 07:40:17 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:24006 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755831Ab2ENLkI (ORCPT
+	id S1756135Ab2ENLrT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 07:47:19 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:46251 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755681Ab2ENLrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 07:40:08 -0400
-X-AuditID: cbfee61b-b7b94ae000002e44-10-4fb0ef172135
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        jonghwa3.lee@samsung.com, linux-kernel@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH v4 1/2] MFD: MAX77693: add MAX77693 MFD driver
-Date: Mon, 14 May 2012 20:40:01 +0900
-Message-id: <1336995601-1542-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.7.0.4
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Mon, 14 May 2012 07:47:18 -0400
+Message-ID: <1336996035.1628.2.camel@shrek.rexursive.com>
+Subject: Re: [PATCH]: In kernel hibernation, suspend to both
+From: Bojan Smojver <bojan@rexursive.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>, bp@alien8.de
+Date: Mon, 14 May 2012 21:47:15 +1000
+In-Reply-To: <1336993890.1662.1.camel@shrek.rexursive.com>
+References: <Pine.LNX.4.44L0.1205132212070.5628-100000@netrider.rowland.org>
+	 <1336963067.2154.2.camel@shrek.rexursive.com>
+	 <1336963613.2154.4.camel@shrek.rexursive.com>
+	 <1336964335.2154.5.camel@shrek.rexursive.com>
+	 <1336981522.1678.0.camel@shrek.rexursive.com>
+	 <1336993890.1662.1.camel@shrek.rexursive.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds MFD driver for MAX77693 to enable its sub devices.
+On Mon, 2012-05-14 at 21:11 +1000, Bojan Smojver wrote:
+> Totally untested...
 
-The MAX77693 is a multi-function devices. It includes PMIC,
-MUIC(Micro USB Interface Controller), flash LED control and
-haptic motor control.
+No. That hangs my box.
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/mfd/Kconfig                  |   12 ++
- drivers/mfd/Makefile                 |    1 +
- drivers/mfd/max77693.c               |  217 ++++++++++++++++++++++++++++++++++
- include/linux/mfd/max77693-private.h |  217 ++++++++++++++++++++++++++++++++++
- include/linux/mfd/max77693.h         |   37 ++++++
- 5 files changed, 484 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/max77693.c
- create mode 100644 include/linux/mfd/max77693-private.h
- create mode 100644 include/linux/mfd/max77693.h
+This triggers a bug in workqueues code (essentially the same as the
+previous patch, except for sys_sync() not being done):
+---------------
+ Documentation/power/swsusp.txt |    5 +++
+ kernel/power/hibernate.c       |   36 ++++++++++++++++++
+ kernel/power/power.h           |    6 +++
+ kernel/power/suspend.c         |   79 +++++++++++++++++++++++++++++++---------
+ kernel/power/swap.c            |   28 ++++++++++++++
+ 5 files changed, 137 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 11e4438..a8619eb 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -452,6 +452,18 @@ config MFD_S5M_CORE
- 	 additional drivers must be enabled in order to use the functionality
- 	 of the device
+diff --git a/Documentation/power/swsusp.txt b/Documentation/power/swsusp.txt
+index ac190cf..92341b8 100644
+--- a/Documentation/power/swsusp.txt
++++ b/Documentation/power/swsusp.txt
+@@ -33,6 +33,11 @@ echo shutdown > /sys/power/disk; echo disk > /sys/power/state
  
-+config MFD_MAX77693
-+	bool "Maxim Semiconductor MAX77693 PMIC Support"
-+	depends on I2C=y && GENERIC_HARDIRQS
-+	select MFD_CORE
-+	help
-+	  Say yes here to support for Maxim Semiconductor MAX77693.
-+	  This is a companion Power Management IC with Flash, Haptic, Charger,
-+	  and MUIC(Micro USB Interface Controller) controls on chip.
-+	  This driver provides common support for accessing the device;
-+	  additional drivers must be enabled in order to use the functionality
-+	  of the device.
+ echo platform > /sys/power/disk; echo disk > /sys/power/state
+ 
++. If you would like to write hibernation image to swap and then suspend
++to RAM (provided your platform supports it), you can try
 +
- config MFD_WM8400
- 	tristate "Support Wolfson Microelectronics WM8400"
- 	select MFD_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 05fa538..ae18cf1 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -79,6 +79,7 @@ max8925-objs			:= max8925-core.o max8925-i2c.o
- obj-$(CONFIG_MFD_MAX8925)	+= max8925.o
- obj-$(CONFIG_MFD_MAX8997)	+= max8997.o max8997-irq.o
- obj-$(CONFIG_MFD_MAX8998)	+= max8998.o max8998-irq.o
-+obj-$(CONFIG_MFD_MAX77693)	+= max77693.o
++echo suspend > /sys/power/disk; echo disk > /sys/power/state
++
+ . If you have SATA disks, you'll need recent kernels with SATA suspend
+ support. For suspend and resume to work, make sure your disk drivers
+ are built into kernel -- not modules. [There's way to make
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index e09dfbf..f48a9ba 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -5,6 +5,7 @@
+  * Copyright (c) 2003 Open Source Development Lab
+  * Copyright (c) 2004 Pavel Machek <pavel@ucw.cz>
+  * Copyright (c) 2009 Rafael J. Wysocki, Novell Inc.
++ * Copyright (C) 2012 Bojan Smojver <bojan@rexursive.com>
+  *
+  * This file is released under the GPLv2.
+  */
+@@ -44,6 +45,9 @@ enum {
+ 	HIBERNATION_PLATFORM,
+ 	HIBERNATION_SHUTDOWN,
+ 	HIBERNATION_REBOOT,
++#ifdef CONFIG_SUSPEND
++	HIBERNATION_SUSPEND,
++#endif
+ 	/* keep last */
+ 	__HIBERNATION_AFTER_LAST
+ };
+@@ -572,6 +576,10 @@ int hibernation_platform_enter(void)
+  */
+ static void power_down(void)
+ {
++#ifdef CONFIG_SUSPEND
++	int error;
++#endif
++
+ 	switch (hibernation_mode) {
+ 	case HIBERNATION_REBOOT:
+ 		kernel_restart(NULL);
+@@ -581,6 +589,25 @@ static void power_down(void)
+ 	case HIBERNATION_SHUTDOWN:
+ 		kernel_power_off();
+ 		break;
++#ifdef CONFIG_SUSPEND
++	case HIBERNATION_SUSPEND:
++		error = suspend_locked(PM_SUSPEND_MEM);
++		if (error) {
++			if (hibernation_ops)
++				hibernation_mode = HIBERNATION_PLATFORM;
++			else
++				hibernation_mode = HIBERNATION_SHUTDOWN;
++			power_down();
++		}
++		/*
++		 * Restore swap signature.
++		 */
++		error = swsusp_unmark();
++		if (error)
++			printk(KERN_ERR "PM: Swap will be unusable! "
++			                "Try swapon -a.\n");
++		return;
++#endif
+ 	}
+ 	kernel_halt();
+ 	/*
+@@ -814,6 +841,9 @@ static const char * const hibernation_modes[] = {
+ 	[HIBERNATION_PLATFORM]	= "platform",
+ 	[HIBERNATION_SHUTDOWN]	= "shutdown",
+ 	[HIBERNATION_REBOOT]	= "reboot",
++#ifdef CONFIG_SUSPEND
++	[HIBERNATION_SUSPEND]	= "suspend",
++#endif
+ };
  
- pcf50633-objs			:= pcf50633-core.o pcf50633-irq.o
- obj-$(CONFIG_MFD_PCF50633)	+= pcf50633.o
-diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-new file mode 100644
-index 0000000..c852515
---- /dev/null
-+++ b/drivers/mfd/max77693.c
-@@ -0,0 +1,217 @@
-+/*
-+ * max77693.c - mfd core driver for the MAX 77693
+ /*
+@@ -854,6 +884,9 @@ static ssize_t disk_show(struct kobject *kobj, struct kobj_attribute *attr,
+ 		switch (i) {
+ 		case HIBERNATION_SHUTDOWN:
+ 		case HIBERNATION_REBOOT:
++#ifdef CONFIG_SUSPEND
++		case HIBERNATION_SUSPEND:
++#endif
+ 			break;
+ 		case HIBERNATION_PLATFORM:
+ 			if (hibernation_ops)
+@@ -894,6 +927,9 @@ static ssize_t disk_store(struct kobject *kobj, struct kobj_attribute *attr,
+ 		switch (mode) {
+ 		case HIBERNATION_SHUTDOWN:
+ 		case HIBERNATION_REBOOT:
++#ifdef CONFIG_SUSPEND
++		case HIBERNATION_SUSPEND:
++#endif
+ 			hibernation_mode = mode;
+ 			break;
+ 		case HIBERNATION_PLATFORM:
+diff --git a/kernel/power/power.h b/kernel/power/power.h
+index 98f3622..cb8e09e 100644
+--- a/kernel/power/power.h
++++ b/kernel/power/power.h
+@@ -156,6 +156,9 @@ extern void swsusp_free(void);
+ extern int swsusp_read(unsigned int *flags_p);
+ extern int swsusp_write(unsigned int flags);
+ extern void swsusp_close(fmode_t);
++#ifdef CONFIG_SUSPEND
++extern int swsusp_unmark(void);
++#endif
+ 
+ /* kernel/power/block_io.c */
+ extern struct block_device *hib_resume_bdev;
+@@ -177,6 +180,9 @@ extern const char *const pm_states[];
+ 
+ extern bool valid_state(suspend_state_t state);
+ extern int suspend_devices_and_enter(suspend_state_t state);
++#ifdef CONFIG_HIBERNATION
++extern int suspend_locked(suspend_state_t state);
++#endif
+ #else /* !CONFIG_SUSPEND */
+ static inline int suspend_devices_and_enter(suspend_state_t state)
+ {
+diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+index 396d262..3402d6e 100644
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -261,28 +261,19 @@ static void suspend_finish(void)
+  * enter_state - Do common work needed to enter system sleep state.
+  * @state: System sleep state to enter.
+  *
+- * Make sure that no one else is trying to put the system into a sleep state.
+- * Fail if that's not the case.  Otherwise, prepare for system suspend, make the
+- * system enter the given sleep state and clean up after wakeup.
++ * The system lock needs to be held already when this function is called.
+  */
+-static int enter_state(suspend_state_t state)
++static int enter_state_locked(suspend_state_t state)
+ {
+ 	int error;
+ 
+ 	if (!valid_state(state))
+ 		return -ENODEV;
+ 
+-	if (!mutex_trylock(&pm_mutex))
+-		return -EBUSY;
+-
+-	printk(KERN_INFO "PM: Syncing filesystems ... ");
+-	sys_sync();
+-	printk("done.\n");
+-
+ 	pr_debug("PM: Preparing system for %s sleep\n", pm_states[state]);
+ 	error = suspend_prepare();
+ 	if (error)
+-		goto Unlock;
++		return error;
+ 
+ 	if (suspend_test(TEST_FREEZER))
+ 		goto Finish;
+@@ -295,26 +286,54 @@ static int enter_state(suspend_state_t state)
+  Finish:
+ 	pr_debug("PM: Finishing wakeup.\n");
+ 	suspend_finish();
+- Unlock:
++	return error;
++}
++
++/**
++ * enter_state - Do common work needed to enter system sleep state.
++ * @state: System sleep state to enter.
 + *
-+ * Copyright (C) 2012 Samsung Electronics
-+ * SangYoung Son <hello.son@smasung.com>
++ * Make sure that no one else is trying to put the system into a sleep state.
++ * Fail if that's not the case.  Otherwise, prepare for system suspend, make the
++ * system enter the given sleep state and clean up after wakeup.
++ */
++static int enter_state(suspend_state_t state)
++{
++	int error;
++
++	if (!valid_state(state))
++		return -ENODEV;
++
++	if (!mutex_trylock(&pm_mutex))
++		return -EBUSY;
++
++	printk(KERN_INFO "PM: Syncing filesystems ... ");
++	sys_sync();
++	printk("done.\n");
++
++	error = enter_state_locked(state);
++
+ 	mutex_unlock(&pm_mutex);
+ 	return error;
+ }
+ 
+ /**
+- * pm_suspend - Externally visible function for suspending the system.
++ * suspend - Suspend the system.
+  * @state: System sleep state to enter.
++ * @lock:  Whether to acquire a system lock.
+  *
+  * Check if the value of @state represents one of the supported states,
+- * execute enter_state() and update system suspend statistics.
++ * execute enter_state() or enter_state_locked() and update system suspend
++ * statistics.
+  */
+-int pm_suspend(suspend_state_t state)
++static int suspend(suspend_state_t state, int lock)
+ {
+ 	int error;
+ 
+ 	if (state <= PM_SUSPEND_ON || state >= PM_SUSPEND_MAX)
+ 		return -EINVAL;
+ 
+-	error = enter_state(state);
++	error = lock ? enter_state(state) : enter_state_locked(state);
+ 	if (error) {
+ 		suspend_stats.fail++;
+ 		dpm_save_failed_errno(error);
+@@ -323,4 +342,30 @@ int pm_suspend(suspend_state_t state)
+ 	}
+ 	return error;
+ }
++
++/**
++ * suspend_locked - Suspend the system when the system lock is already held.
++ * @state: System sleep state to enter.
 + *
-+ * This program is not provided / owned by Maxim Integrated Products.
++ * Check if the value of @state represents one of the supported states,
++ * execute enter_state_locked() and update system suspend statistics.
++ */
++#ifdef CONFIG_HIBERNATION
++int suspend_locked(suspend_state_t state)
++{
++	return suspend(state, 0);
++}
++#endif
++
++/**
++ * pm_suspend - Externally visible function for suspending the system.
++ * @state: System sleep state to enter.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * This driver is based on max8997.c
++ * Check if the value of @state represents one of the supported states,
++ * execute enter_state() and update system suspend statistics.
++ */
++int pm_suspend(suspend_state_t state)
++{
++	return suspend(state, 1);
++}
+ EXPORT_SYMBOL(pm_suspend);
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index eef311a..1027da8 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -1456,6 +1456,34 @@ void swsusp_close(fmode_t mode)
+ 	blkdev_put(hib_resume_bdev, mode);
+ }
+ 
++/**
++ *      swsusp_unmark - Unmark swsusp signature in the resume device
 + */
 +
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/err.h>
-+#include <linux/interrupt.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/mutex.h>
-+#include <linux/mfd/core.h>
-+#include <linux/mfd/max77693.h>
-+#include <linux/mfd/max77693-private.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regmap.h>
-+
-+#define I2C_ADDR_PMIC	(0xCC >> 1)	/* Charger, Flash LED */
-+#define I2C_ADDR_MUIC	(0x4A >> 1)
-+#define I2C_ADDR_HAPTIC	(0x90 >> 1)
-+
-+static struct mfd_cell max77693_devs[] = {
-+	{ .name = "max77693-pmic", },
-+	{ .name = "max77693-charger", },
-+	{ .name = "max77693-flash", },
-+	{ .name = "max77693-muic", },
-+	{ .name = "max77693-haptic", },
-+};
-+
-+int max77693_read_reg(struct regmap *map, u8 reg, u8 *dest)
++#ifdef CONFIG_SUSPEND
++int swsusp_unmark(void)
 +{
-+	unsigned int val;
-+	int ret;
++	int error;
 +
-+	ret = regmap_read(map, reg, &val);
-+	*dest = val;
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(max77693_read_reg);
-+
-+int max77693_bulk_read(struct regmap *map, u8 reg, int count, u8 *buf)
-+{
-+	int ret;
-+
-+	ret = regmap_bulk_read(map, reg, buf, count);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(max77693_bulk_read);
-+
-+int max77693_write_reg(struct regmap *map, u8 reg, u8 value)
-+{
-+	int ret;
-+
-+	ret = regmap_write(map, reg, value);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(max77693_write_reg);
-+
-+int max77693_bulk_write(struct regmap *map, u8 reg, int count, u8 *buf)
-+{
-+	int ret;
-+
-+	ret = regmap_bulk_write(map, reg, buf, count);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(max77693_bulk_write);
-+
-+int max77693_update_reg(struct regmap *map, u8 reg, u8 val, u8 mask)
-+{
-+	int ret;
-+
-+	ret = regmap_update_bits(map, reg, mask, val);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(max77693_update_reg);
-+
-+static const struct regmap_config max77693_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.max_register = MAX77693_PMIC_REG_END,
-+};
-+
-+static int max77693_i2c_probe(struct i2c_client *i2c,
-+			      const struct i2c_device_id *id)
-+{
-+	struct max77693_dev *max77693;
-+	struct max77693_platform_data *pdata = i2c->dev.platform_data;
-+	u8 reg_data;
-+	int ret = 0;
-+
-+	max77693 = devm_kzalloc(&i2c->dev,
-+			sizeof(struct max77693_dev), GFP_KERNEL);
-+	if (max77693 == NULL)
-+		return -ENOMEM;
-+
-+	max77693->regmap = devm_regmap_init_i2c(i2c, &max77693_regmap_config);
-+	if (IS_ERR(max77693->regmap)) {
-+		ret = PTR_ERR(max77693->regmap);
-+		dev_err(max77693->dev,"failed to allocate register map: %d\n",
-+				ret);
-+		goto err_regmap;
++	hib_bio_read_page(swsusp_resume_block, swsusp_header, NULL);
++	if (!memcmp(HIBERNATE_SIG,swsusp_header->sig, 10)) {
++		memcpy(swsusp_header->sig,swsusp_header->orig_sig, 10);
++		error = hib_bio_write_page(swsusp_resume_block,
++					swsusp_header, NULL);
++	} else {
++		printk(KERN_ERR "PM: Cannot find swsusp signature!\n");
++		error = -ENODEV;
 +	}
 +
-+	i2c_set_clientdata(i2c, max77693);
-+	max77693->dev = &i2c->dev;
-+	max77693->i2c = i2c;
-+	max77693->irq = i2c->irq;
-+	max77693->type = id->driver_data;
++	/*
++	 * We just returned from suspend, we don't need the image any more.
++	 */
++	free_all_swap_pages(root_swap);
 +
-+	if (!pdata)
-+		goto err_regmap;
-+
-+	max77693->wakeup = pdata->wakeup;
-+
-+	mutex_init(&max77693->iolock);
-+
-+	if (max77693_read_reg(max77693->regmap,
-+				MAX77693_PMIC_REG_PMIC_ID2, &reg_data) < 0) {
-+		dev_err(max77693->dev, "device not found on this channel\n");
-+		ret = -ENODEV;
-+		goto err_regmap;
-+	} else
-+		dev_info(max77693->dev, "device ID: 0x%x\n", reg_data);
-+
-+	max77693->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
-+	i2c_set_clientdata(max77693->muic, max77693);
-+
-+	max77693->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
-+	i2c_set_clientdata(max77693->haptic, max77693);
-+
-+	pm_runtime_set_active(max77693->dev);
-+
-+	ret = mfd_add_devices(max77693->dev, -1, max77693_devs,
-+			ARRAY_SIZE(max77693_devs), NULL, 0);
-+	if (ret < 0)
-+		goto err_mfd;
-+
-+	return ret;
-+
-+err_mfd:
-+	i2c_unregister_device(max77693->muic);
-+	i2c_unregister_device(max77693->haptic);
-+err_regmap:
-+	kfree(max77693);
-+
-+	return ret;
++	return error;
 +}
++#endif
 +
-+static int max77693_i2c_remove(struct i2c_client *i2c)
-+{
-+	struct max77693_dev *max77693 = i2c_get_clientdata(i2c);
-+
-+	mfd_remove_devices(max77693->dev);
-+	i2c_unregister_device(max77693->muic);
-+	i2c_unregister_device(max77693->haptic);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id max77693_i2c_id[] = {
-+	{ "max77693", TYPE_MAX77693 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, max77693_i2c_id);
-+
-+static struct i2c_driver max77693_i2c_driver = {
-+	.driver = {
-+		   .name = "max77693",
-+		   .owner = THIS_MODULE,
-+	},
-+	.probe = max77693_i2c_probe,
-+	.remove = max77693_i2c_remove,
-+	.id_table = max77693_i2c_id,
-+};
-+
-+static int __init max77693_i2c_init(void)
-+{
-+	return i2c_add_driver(&max77693_i2c_driver);
-+}
-+/* init early so consumer devices can complete system boot */
-+subsys_initcall(max77693_i2c_init);
-+
-+static void __exit max77693_i2c_exit(void)
-+{
-+	i2c_del_driver(&max77693_i2c_driver);
-+}
-+module_exit(max77693_i2c_exit);
-+
-+MODULE_DESCRIPTION("MAXIM 77693 multi-function core driver");
-+MODULE_AUTHOR("SangYoung, Son <hello.son@samsung.com>");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
-new file mode 100644
-index 0000000..bf6077d
---- /dev/null
-+++ b/include/linux/mfd/max77693-private.h
-@@ -0,0 +1,217 @@
-+/*
-+ * max77693-private.h - Voltage regulator driver for the Maxim 77693
-+ *
-+ *  Copyright (C) 2012 Samsung Electrnoics
-+ *  SangYoung Son <hello.son@samsung.com>
-+ *
-+ * This program is not provided / owned by Maxim Integrated Products.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#ifndef __LINUX_MFD_MAX77693_PRIV_H
-+#define __LINUX_MFD_MAX77693_PRIV_H
-+
-+#include <linux/i2c.h>
-+
-+#define MAX77693_NUM_IRQ_MUIC_REGS	3
-+#define MAX77693_REG_INVALID		(0xff)
-+
-+/* Slave addr = 0xCC: PMIC, Charger, Flash LED */
-+enum max77693_pmic_reg {
-+	MAX77693_LED_REG_IFLASH1			= 0x00,
-+	MAX77693_LED_REG_IFLASH2			= 0x01,
-+	MAX77693_LED_REG_ITORCH				= 0x02,
-+	MAX77693_LED_REG_ITORCHTIMER			= 0x03,
-+	MAX77693_LED_REG_FLASH_TIMER			= 0x04,
-+	MAX77693_LED_REG_FLASH_EN			= 0x05,
-+	MAX77693_LED_REG_MAX_FLASH1			= 0x06,
-+	MAX77693_LED_REG_MAX_FLASH2			= 0x07,
-+	MAX77693_LED_REG_MAX_FLASH3			= 0x08,
-+	MAX77693_LED_REG_MAX_FLASH4			= 0x09,
-+	MAX77693_LED_REG_VOUT_CNTL			= 0x0A,
-+	MAX77693_LED_REG_VOUT_FLASH1			= 0x0B,
-+	MAX77693_LED_REG_VOUT_FLASH2			= 0x0C,
-+	MAX77693_LED_REG_FLASH_INT			= 0x0E,
-+	MAX77693_LED_REG_FLASH_INT_MASK			= 0x0F,
-+	MAX77693_LED_REG_FLASH_INT_STATUS		= 0x10,
-+
-+	MAX77693_PMIC_REG_PMIC_ID1			= 0x20,
-+	MAX77693_PMIC_REG_PMIC_ID2			= 0x21,
-+	MAX77693_PMIC_REG_INTSRC			= 0x22,
-+	MAX77693_PMIC_REG_INTSRC_MASK			= 0x23,
-+	MAX77693_PMIC_REG_TOPSYS_INT			= 0x24,
-+	MAX77693_PMIC_REG_TOPSYS_INT_MASK		= 0x26,
-+	MAX77693_PMIC_REG_TOPSYS_STAT			= 0x28,
-+	MAX77693_PMIC_REG_MAINCTRL1			= 0x2A,
-+	MAX77693_PMIC_REG_LSCNFG			= 0x2B,
-+
-+	MAX77693_CHG_REG_CHG_INT			= 0xB0,
-+	MAX77693_CHG_REG_CHG_INT_MASK			= 0xB1,
-+	MAX77693_CHG_REG_CHG_INT_OK			= 0xB2,
-+	MAX77693_CHG_REG_CHG_DETAILS_00			= 0xB3,
-+	MAX77693_CHG_REG_CHG_DETAILS_01			= 0xB4,
-+	MAX77693_CHG_REG_CHG_DETAILS_02			= 0xB5,
-+	MAX77693_CHG_REG_CHG_DETAILS_03			= 0xB6,
-+	MAX77693_CHG_REG_CHG_CNFG_00			= 0xB7,
-+	MAX77693_CHG_REG_CHG_CNFG_01			= 0xB8,
-+	MAX77693_CHG_REG_CHG_CNFG_02			= 0xB9,
-+	MAX77693_CHG_REG_CHG_CNFG_03			= 0xBA,
-+	MAX77693_CHG_REG_CHG_CNFG_04			= 0xBB,
-+	MAX77693_CHG_REG_CHG_CNFG_05			= 0xBC,
-+	MAX77693_CHG_REG_CHG_CNFG_06			= 0xBD,
-+	MAX77693_CHG_REG_CHG_CNFG_07			= 0xBE,
-+	MAX77693_CHG_REG_CHG_CNFG_08			= 0xBF,
-+	MAX77693_CHG_REG_CHG_CNFG_09			= 0xC0,
-+	MAX77693_CHG_REG_CHG_CNFG_10			= 0xC1,
-+	MAX77693_CHG_REG_CHG_CNFG_11			= 0xC2,
-+	MAX77693_CHG_REG_CHG_CNFG_12			= 0xC3,
-+	MAX77693_CHG_REG_CHG_CNFG_13			= 0xC4,
-+	MAX77693_CHG_REG_CHG_CNFG_14			= 0xC5,
-+	MAX77693_CHG_REG_SAFEOUT_CTRL			= 0xC6,
-+
-+	MAX77693_PMIC_REG_END,
-+};
-+
-+/* Slave addr = 0x4A: MUIC */
-+enum max77693_muic_reg {
-+	MAX77693_MUIC_REG_ID		= 0x00,
-+	MAX77693_MUIC_REG_INT1		= 0x01,
-+	MAX77693_MUIC_REG_INT2		= 0x02,
-+	MAX77693_MUIC_REG_INT3		= 0x03,
-+	MAX77693_MUIC_REG_STATUS1	= 0x04,
-+	MAX77693_MUIC_REG_STATUS2	= 0x05,
-+	MAX77693_MUIC_REG_STATUS3	= 0x06,
-+	MAX77693_MUIC_REG_INTMASK1	= 0x07,
-+	MAX77693_MUIC_REG_INTMASK2	= 0x08,
-+	MAX77693_MUIC_REG_INTMASK3	= 0x09,
-+	MAX77693_MUIC_REG_CDETCTRL1	= 0x0A,
-+	MAX77693_MUIC_REG_CDETCTRL2	= 0x0B,
-+	MAX77693_MUIC_REG_CTRL1		= 0x0C,
-+	MAX77693_MUIC_REG_CTRL2		= 0x0D,
-+	MAX77693_MUIC_REG_CTRL3		= 0x0E,
-+
-+	MAX77693_MUIC_REG_END,
-+};
-+
-+/* Slave addr = 0x90: Haptic */
-+enum max77693_haptic_reg {
-+	MAX77693_HAPTIC_REG_STATUS		= 0x00,
-+	MAX77693_HAPTIC_REG_CONFIG1		= 0x01,
-+	MAX77693_HAPTIC_REG_CONFIG2		= 0x02,
-+	MAX77693_HAPTIC_REG_CONFIG_CHNL		= 0x03,
-+	MAX77693_HAPTIC_REG_CONFG_CYC1		= 0x04,
-+	MAX77693_HAPTIC_REG_CONFG_CYC2		= 0x05,
-+	MAX77693_HAPTIC_REG_CONFIG_PER1		= 0x06,
-+	MAX77693_HAPTIC_REG_CONFIG_PER2		= 0x07,
-+	MAX77693_HAPTIC_REG_CONFIG_PER3		= 0x08,
-+	MAX77693_HAPTIC_REG_CONFIG_PER4		= 0x09,
-+	MAX77693_HAPTIC_REG_CONFIG_DUTY1	= 0x0A,
-+	MAX77693_HAPTIC_REG_CONFIG_DUTY2	= 0x0B,
-+	MAX77693_HAPTIC_REG_CONFIG_PWM1		= 0x0C,
-+	MAX77693_HAPTIC_REG_CONFIG_PWM2		= 0x0D,
-+	MAX77693_HAPTIC_REG_CONFIG_PWM3		= 0x0E,
-+	MAX77693_HAPTIC_REG_CONFIG_PWM4		= 0x0F,
-+	MAX77693_HAPTIC_REG_REV			= 0x10,
-+
-+	MAX77693_HAPTIC_REG_END,
-+};
-+
-+enum max77693_irq_source {
-+	LED_INT = 0,
-+	TOPSYS_INT,
-+	CHG_INT,
-+	MUIC_INT1,
-+	MUIC_INT2,
-+	MUIC_INT3,
-+
-+	MAX77693_IRQ_GROUP_NR,
-+};
-+
-+enum max77693_irq {
-+	/* PMIC - FLASH */
-+	MAX77693_LED_IRQ_FLED2_OPEN,
-+	MAX77693_LED_IRQ_FLED2_SHORT,
-+	MAX77693_LED_IRQ_FLED1_OPEN,
-+	MAX77693_LED_IRQ_FLED1_SHORT,
-+	MAX77693_LED_IRQ_MAX_FLASH,
-+
-+	/* PMIC - TOPSYS */
-+	MAX77693_TOPSYS_IRQ_T120C_INT,
-+	MAX77693_TOPSYS_IRQ_T140C_INT,
-+	MAX77693_TOPSYS_IRQ_LOWSYS_INT,
-+
-+	/* PMIC - Charger */
-+	MAX77693_CHG_IRQ_BYP_I,
-+	MAX77693_CHG_IRQ_THM_I,
-+	MAX77693_CHG_IRQ_BAT_I,
-+	MAX77693_CHG_IRQ_CHG_I,
-+	MAX77693_CHG_IRQ_CHGIN_I,
-+
-+	/* MUIC INT1 */
-+	MAX77693_MUIC_IRQ_INT1_ADC,
-+	MAX77693_MUIC_IRQ_INT1_ADC_LOW,
-+	MAX77693_MUIC_IRQ_INT1_ADC_ERR,
-+	MAX77693_MUIC_IRQ_INT1_ADC1K,
-+
-+	/* MUIC INT2 */
-+	MAX77693_MUIC_IRQ_INT2_CHGTYP,
-+	MAX77693_MUIC_IRQ_INT2_CHGDETREUN,
-+	MAX77693_MUIC_IRQ_INT2_DCDTMR,
-+	MAX77693_MUIC_IRQ_INT2_DXOVP,
-+	MAX77693_MUIC_IRQ_INT2_VBVOLT,
-+	MAX77693_MUIC_IRQ_INT2_VIDRM,
-+
-+	/* MUIC INT3 */
-+	MAX77693_MUIC_IRQ_INT3_EOC,
-+	MAX77693_MUIC_IRQ_INT3_CGMBC,
-+	MAX77693_MUIC_IRQ_INT3_OVP,
-+	MAX77693_MUIC_IRQ_INT3_MBCCHG_ERR,
-+	MAX77693_MUIC_IRQ_INT3_CHG_ENABLED,
-+	MAX77693_MUIC_IRQ_INT3_BAT_DET,
-+
-+	MAX77693_IRQ_NR,
-+};
-+
-+struct max77693_dev {
-+	struct device *dev;
-+	struct i2c_client *i2c;		/* 0xCC , PMIC, Charger, Flash LED */
-+	struct i2c_client *muic;	/* 0x4A , MUIC */
-+	struct i2c_client *haptic;	/* 0x90 , Haptic */
-+	struct mutex iolock;
-+
-+	int type;
-+
-+	struct regmap *regmap;
-+	struct regmap *regmap_muic;
-+	struct regmap *regmap_haptic;
-+
-+	int irq;
-+	bool wakeup;
-+};
-+
-+enum max77693_types {
-+	TYPE_MAX77693,
-+};
-+
-+extern int max77693_read_reg(struct regmap *map, u8 reg, u8 *dest);
-+extern int max77693_bulk_read(struct regmap *map, u8 reg, int count,
-+				u8 *buf);
-+extern int max77693_write_reg(struct regmap *map, u8 reg, u8 value);
-+extern int max77693_bulk_write(struct regmap *map, u8 reg, int count,
-+				u8 *buf);
-+extern int max77693_update_reg(struct regmap *map, u8 reg, u8 val, u8 mask);
-+
-+#endif /*  __LINUX_MFD_MAX77693_PRIV_H */
-diff --git a/include/linux/mfd/max77693.h b/include/linux/mfd/max77693.h
-new file mode 100644
-index 0000000..5020b86
---- /dev/null
-+++ b/include/linux/mfd/max77693.h
-@@ -0,0 +1,37 @@
-+/*
-+ * max77693.h - Driver for the Maxim 77693
-+ *
-+ *  Copyright (C) 2012 Samsung Electrnoics
-+ *  SangYoung Son <hello.son@samsung.com>
-+ *
-+ * This program is not provided / owned by Maxim Integrated Products.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * This driver is based on max8997.h
-+ *
-+ * MAX77693 has PMIC, Charger, Flash LED, Haptic, MUIC devices.
-+ * The devices share the same I2C bus and included in
-+ * this mfd driver.
-+ */
-+
-+#ifndef __LINUX_MFD_MAX77693_H
-+#define __LINUX_MFD_MAX77693_H
-+
-+struct max77693_platform_data {
-+	/* IRQ */
-+	int wakeup;
-+};
-+#endif	/* __LINUX_MFD_MAX77693_H */
+ static int swsusp_header_init(void)
+ {
+ 	swsusp_header = (struct swsusp_header*) __get_free_page(GFP_KERNEL);
+---------------
+
+I think I'll need to break this down into even smaller steps.
+
+PS. It seems obvious now why user space code simply did
+suspend_devices_and_enter()... :-)
+
 -- 
-1.7.0.4
+Bojan
 
