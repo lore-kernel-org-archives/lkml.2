@@ -1,188 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758004Ab2ENVD5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 17:03:57 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:54111 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757400Ab2ENVDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 17:03:55 -0400
-Message-ID: <1337029512.5614.6.camel@key-ThinkPad-W510>
-Subject: [PATCH v4 07/17] powerpc: crypto: AES-CBC mode routines for nx
- encryption
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: benh@kernel.crashing.org
-Cc: rcj@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Date: Mon, 14 May 2012 16:05:12 -0500
-In-Reply-To: <1336955527.6727.2.camel@pasglop>
-References: <1336955527.6727.2.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051421-7182-0000-0000-000001815B93
+	id S932274Ab2ENVEI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 17:04:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47164 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758008Ab2ENVED (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 17:04:03 -0400
+Date: Mon, 14 May 2012 14:03:53 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Dave Jones <davej@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Szymon Gruszczynski <sz.gruszczynski@googlemail.com>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>,
+        Al Viro <viro@zeniv.linux.org>
+Subject: [PATCH] block: fix buffer overflow when printing partition UUIDs
+Message-ID: <20120514210353.GJ2366@google.com>
+References: <20120509195848.GA961@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120509195848.GA961@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines add support for AES in CBC mode on the Power7+ CPU's
-in-Nest accelerator driver.
+6d1d8050b4bc8 "block, partition: add partition_meta_info to hd_struct"
+added part_unpack_uuid() which assumes that the passed in buffer has
+enough space for sprintfing "%pU" - 37 characters including '\0'.
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+Unfortunately, b5af921ec0233 "init: add support for root devices
+specified by partition UUID" supplied 33 bytes buffer to the function
+leading to the following panic with stackprotector enabled.
+
+  Kernel panic - not syncing: stack-protector: Kernel stack corrupted in: ffffffff81b14c7e
+
+  [<ffffffff815e226b>] panic+0xba/0x1c6
+  [<ffffffff81b14c7e>] ? printk_all_partitions+0x259/0x26xb
+  [<ffffffff810566bb>] __stack_chk_fail+0x1b/0x20
+  [<ffffffff81b15c7e>] printk_all_paritions+0x259/0x26xb
+  [<ffffffff81aedfe0>] mount_block_root+0x1bc/0x27f
+  [<ffffffff81aee0fa>] mount_root+0x57/0x5b
+  [<ffffffff81aee23b>] prepare_namespace+0x13d/0x176
+  [<ffffffff8107eec0>] ? release_tgcred.isra.4+0x330/0x30
+  [<ffffffff81aedd60>] kernel_init+0x155/0x15a
+  [<ffffffff81087b97>] ? schedule_tail+0x27/0xb0
+  [<ffffffff815f4d24>] kernel_thread_helper+0x5/0x10
+  [<ffffffff81aedc0b>] ? start_kernel+0x3c5/0x3c5
+  [<ffffffff815f4d20>] ? gs_change+0x13/0x13
+
+Increase the buffer size, remove the dangerous part_unpack_uuid() and
+use snprintf() directly from printk_all_partitions().
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Szymon Gruszczynski <sz.gruszczynski@googlemail.com>
+Cc: Will Drewry <wad@chromium.org>
+Cc: stable@vger.kernel.org
 ---
- drivers/crypto/nx/nx-aes-cbc.c |  141 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 141 insertions(+), 0 deletions(-)
- create mode 100644 drivers/crypto/nx/nx-aes-cbc.c
+ block/genhd.c         |   10 ++++++----
+ include/linux/genhd.h |    6 ------
+ 2 files changed, 6 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/crypto/nx/nx-aes-cbc.c b/drivers/crypto/nx/nx-aes-cbc.c
-new file mode 100644
-index 0000000..69ed796
---- /dev/null
-+++ b/drivers/crypto/nx/nx-aes-cbc.c
-@@ -0,0 +1,141 @@
-+/**
-+ * AES CBC routines supporting the Power 7+ Nest Accelerators driver
-+ *
-+ * Copyright (C) 2011-2012 International Business Machines Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 only.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Author: Kent Yoder <yoder1@us.ibm.com>
-+ */
-+
-+#include <crypto/aes.h>
-+#include <crypto/algapi.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/crypto.h>
-+#include <asm/vio.h>
-+
-+#include "nx_csbcpb.h"
-+#include "nx.h"
-+
-+
-+static int cbc_aes_nx_set_key(struct crypto_tfm *tfm,
-+			      const u8          *in_key,
-+			      unsigned int       key_len)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(tfm);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+
-+	nx_ctx_init(nx_ctx, HCOP_FC_AES);
-+
-+	switch (key_len) {
-+	case AES_KEYSIZE_128:
-+		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_128);
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_128];
-+		break;
-+	case AES_KEYSIZE_192:
-+		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_192);
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_192];
-+		break;
-+	case AES_KEYSIZE_256:
-+		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_256);
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_256];
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	csbcpb->cpb.hdr.mode = NX_MODE_AES_CBC;
-+	memcpy(csbcpb->cpb.aes_cbc.key, in_key, key_len);
-+
-+	return 0;
-+}
-+
-+static int cbc_aes_nx_crypt(struct blkcipher_desc *desc,
-+			    struct scatterlist    *dst,
-+			    struct scatterlist    *src,
-+			    unsigned int           nbytes,
-+			    int                    enc)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	int rc;
-+
-+	if (nbytes > nx_ctx->ap->databytelen)
-+		return -EINVAL;
-+
-+	if (enc)
-+		NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
-+	else
-+		NX_CPB_FDM(csbcpb) &= ~NX_FDM_ENDE_ENCRYPT;
-+
-+	rc = nx_build_sg_lists(nx_ctx, desc, dst, src, nbytes,
-+			       csbcpb->cpb.aes_cbc.iv);
-+	if (rc)
-+		goto out;
-+
-+	if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
-+			   desc->flags & CRYPTO_TFM_REQ_MAY_SLEEP);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->aes_ops));
-+	atomic64_add(csbcpb->csb.processed_byte_count,
-+		     &(nx_ctx->stats->aes_bytes));
-+out:
-+	return rc;
-+}
-+
-+static int cbc_aes_nx_encrypt(struct blkcipher_desc *desc,
-+			      struct scatterlist    *dst,
-+			      struct scatterlist    *src,
-+			      unsigned int           nbytes)
-+{
-+	return cbc_aes_nx_crypt(desc, dst, src, nbytes, 1);
-+}
-+
-+static int cbc_aes_nx_decrypt(struct blkcipher_desc *desc,
-+			      struct scatterlist    *dst,
-+			      struct scatterlist    *src,
-+			      unsigned int           nbytes)
-+{
-+	return cbc_aes_nx_crypt(desc, dst, src, nbytes, 0);
-+}
-+
-+struct crypto_alg nx_cbc_aes_alg = {
-+	.cra_name        = "cbc(aes)",
-+	.cra_driver_name = "cbc-aes-nx",
-+	.cra_priority    = 300,
-+	.cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
-+	.cra_blocksize   = AES_BLOCK_SIZE,
-+	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+	.cra_type        = &crypto_blkcipher_type,
-+	.cra_module      = THIS_MODULE,
-+	.cra_list        = LIST_HEAD_INIT(nx_cbc_aes_alg.cra_list),
-+	.cra_init        = nx_crypto_ctx_aes_cbc_init,
-+	.cra_exit        = nx_crypto_ctx_exit,
-+	.cra_blkcipher = {
-+		.min_keysize = AES_MIN_KEY_SIZE,
-+		.max_keysize = AES_MAX_KEY_SIZE,
-+		.ivsize      = AES_BLOCK_SIZE,
-+		.setkey      = cbc_aes_nx_set_key,
-+		.encrypt     = cbc_aes_nx_encrypt,
-+		.decrypt     = cbc_aes_nx_decrypt,
-+	}
-+};
--- 
-1.7.5.4
-
-
+diff --git a/block/genhd.c b/block/genhd.c
+index df9816e..9cf5583 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -743,7 +743,7 @@ void __init printk_all_partitions(void)
+ 		struct hd_struct *part;
+ 		char name_buf[BDEVNAME_SIZE];
+ 		char devt_buf[BDEVT_SIZE];
+-		u8 uuid[PARTITION_META_INFO_UUIDLTH * 2 + 1];
++		char uuid_buf[PARTITION_META_INFO_UUIDLTH * 2 + 5];
+ 
+ 		/*
+ 		 * Don't show empty devices or things that have been
+@@ -762,14 +762,16 @@ void __init printk_all_partitions(void)
+ 		while ((part = disk_part_iter_next(&piter))) {
+ 			bool is_part0 = part == &disk->part0;
+ 
+-			uuid[0] = 0;
++			uuid_buf[0] = '\0';
+ 			if (part->info)
+-				part_unpack_uuid(part->info->uuid, uuid);
++				snprintf(uuid_buf, sizeof(uuid_buf), "%pU",
++					 part->info->uuid);
+ 
+ 			printk("%s%s %10llu %s %s", is_part0 ? "" : "  ",
+ 			       bdevt_str(part_devt(part), devt_buf),
+ 			       (unsigned long long)part->nr_sects >> 1,
+-			       disk_name(disk, part->partno, name_buf), uuid);
++			       disk_name(disk, part->partno, name_buf),
++			       uuid_buf);
+ 			if (is_part0) {
+ 				if (disk->driverfs_dev != NULL &&
+ 				    disk->driverfs_dev->driver != NULL)
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index e61d319..017a7fb 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -222,12 +222,6 @@ static inline void part_pack_uuid(const u8 *uuid_str, u8 *to)
+ 	}
+ }
+ 
+-static inline char *part_unpack_uuid(const u8 *uuid, char *out)
+-{
+-	sprintf(out, "%pU", uuid);
+-	return out;
+-}
+-
+ static inline int disk_max_parts(struct gendisk *disk)
+ {
+ 	if (disk->flags & GENHD_FL_EXT_DEVT)
