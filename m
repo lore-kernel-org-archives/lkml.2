@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab2ENNm1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:42:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56531 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717Ab2ENNmZ (ORCPT
+	id S1756634Ab2ENNmf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 09:42:35 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43095 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881Ab2ENNmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:42:25 -0400
-Date: Mon, 14 May 2012 06:42:05 -0700
-From: tip-bot for Dan Carpenter <dan.carpenter@oracle.com>
-Message-ID: <tip-fefe1ed1398b81e3fadc92d11d91162d343c8836@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        joerg.roedel@amd.com, youquan.song@intel.com, stable@kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, wharms@bfs.de,
-        dan.carpenter@oracle.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        joerg.roedel@amd.com, youquan.song@intel.com, stable@kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, wharms@bfs.de,
-        dan.carpenter@oracle.com
-In-Reply-To: <20120513170938.GA4280@elgon.mountain>
-References: <20120513170938.GA4280@elgon.mountain>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/iommu] iommu: Fix off by one in dmar_get_fault_reason()
-Git-Commit-ID: fefe1ed1398b81e3fadc92d11d91162d343c8836
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 14 May 2012 09:42:33 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] tty: Fix LED error return
+To: greg@kroah.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
+Date: Mon, 14 May 2012 14:41:31 +0100
+Message-ID: <20120514134105.20268.84451.stgit@bluebook>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 14 May 2012 06:42:13 -0700 (PDT)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fefe1ed1398b81e3fadc92d11d91162d343c8836
-Gitweb:     http://git.kernel.org/tip/fefe1ed1398b81e3fadc92d11d91162d343c8836
-Author:     Dan Carpenter <dan.carpenter@oracle.com>
-AuthorDate: Sun, 13 May 2012 20:09:38 +0300
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 14 May 2012 14:37:47 +0200
+From: Alan Cox <alan@linux.intel.com>
 
-iommu: Fix off by one in dmar_get_fault_reason()
+3.4-rc introduced a regression when setting the LEDS. We do the right thing
+but then return an error code.
 
-fault_reason - 0x20 == ARRAY_SIZE(irq_remap_fault_reasons) is
-one past the end of the array.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Youquan Song <youquan.song@intel.com>
-Cc: walter harms <wharms@bfs.de>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: <stable@kernel.org>
-Link: http://lkml.kernel.org/r/20120513170938.GA4280@elgon.mountain
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=43144
+Reported-by: Christian Casteyde
+Signed-off-by: Alan Cox <alan@linux/intel.com>
 ---
- drivers/iommu/dmar.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 5ef65cf..3a74e44 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -1057,8 +1057,8 @@ static const char *irq_remap_fault_reasons[] =
+ drivers/tty/vt/keyboard.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+index 86dd1e3..9f5c462 100644
+--- a/drivers/tty/vt/keyboard.c
++++ b/drivers/tty/vt/keyboard.c
+@@ -2032,7 +2032,7 @@ int vt_do_kdskled(int console, int cmd, unsigned long arg, int perm)
+ 		kbd->default_ledflagstate = ((arg >> 4) & 7);
+ 		set_leds();
+                 spin_unlock_irqrestore(&kbd_event_lock, flags);
+-		break;
++		return 0;
  
- const char *dmar_get_fault_reason(u8 fault_reason, int *fault_type)
- {
--	if (fault_reason >= 0x20 && (fault_reason <= 0x20 +
--				     ARRAY_SIZE(irq_remap_fault_reasons))) {
-+	if (fault_reason >= 0x20 && (fault_reason - 0x20 <
-+					ARRAY_SIZE(irq_remap_fault_reasons))) {
- 		*fault_type = INTR_REMAP;
- 		return irq_remap_fault_reasons[fault_reason - 0x20];
- 	} else if (fault_reason < ARRAY_SIZE(dma_remap_fault_reasons)) {
+ 	/* the ioctls below only set the lights, not the functions */
+ 	/* for those, see KDGKBLED and KDSKBLED above */
+
