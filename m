@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab2ENTOu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 15:14:50 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:32827 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757521Ab2ENTOt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 15:14:49 -0400
-Message-ID: <1337022885.2042.9.camel@koala>
-Subject: Re: [PATCH] UBIFS: add crypto lookup field to tree node cache
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 14 May 2012 22:14:45 +0300
-In-Reply-To: <alpine.DEB.2.00.1205142032210.12448@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205111323010.17715@eristoteles.iwoars.net>
-	  <1337001716.2528.56.camel@sauron.fi.intel.com>
-	  <alpine.DEB.2.00.1205141907290.12448@eristoteles.iwoars.net>
-	 <1337020106.2042.2.camel@koala>
-	 <alpine.DEB.2.00.1205142032210.12448@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-vtxncxwPCgGRk6DEufF1"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S932209Ab2ENTPE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 15:15:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62242 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932173Ab2ENTPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 15:15:01 -0400
+Date: Mon, 14 May 2012 22:14:56 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ian.Campbell@citrix.com,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH RFC] tun: experimental zero copy tx support
+Message-ID: <20120514191456.GC17086@redhat.com>
+References: <20120513155206.GA26847@redhat.com>
+ <20120514095446.3ce307d2@nehalam.linuxnetplumber.net>
+ <20120514170412.GA17086@redhat.com>
+ <1337022146.8512.606.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337022146.8512.606.camel@edumazet-glaptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 14, 2012 at 09:02:26PM +0200, Eric Dumazet wrote:
+> On Mon, 2012-05-14 at 20:04 +0300, Michael S. Tsirkin wrote:
+> > On Mon, May 14, 2012 at 09:54:46AM -0700, Stephen Hemminger wrote:
+> > > On Sun, 13 May 2012 18:52:06 +0300
+> > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > 
+> > > > +		/* Userspace may produce vectors with count greater than
+> > > > +		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
+> > > > +		 * to let the rest of data to be fit in the frags.
+> > > > +		 */
+> > > Rather than complex partial code, just go through slow path for
+> > > requests with too many frags (or for really small requests).
+> > > Creating mixed skb's seems too easy to get wrong.
+> > 
+> > I don't object in principle but macvtap has same code
+> > so seems better to stay consistent.
+> > 
+> 
+> If I remember well, code in vtap was buggy and still is.
+> 
+> Jason Wang fixes are not yet in,
 
---=-vtxncxwPCgGRk6DEufF1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+They seem to be in net-next, or did I miss something?
 
-On Mon, 2012-05-14 at 20:45 +0200, Joel Reardon wrote:
-> I use this because I figured it should be abstracted in functions that
-> have these values, but don't need to know about the internal structure.
-> From the view of all UBIFS components (except the new keymap), two values
-> have no more meaning than one, its all just some value the keymap gives
-> out and returns the same key on read_key.
-
-Well, dunno, OK, let's see - we can changes this later if needed. I'll
-apply this patch tomorrow.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-vtxncxwPCgGRk6DEufF1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPsVmlAAoJECmIfjd9wqK0sGIP/20pvklcq9bsxpgdmVY8RRdD
-zD4hSNMZhwv2TXXm+O9uQUisui5pveFxL4aPBDBfZYpDZoAokb+yvn6iridS6LZK
-+/n1ZX50+6HjAWZ24wTBvzlO8YGmPQs9FYKEtNCP0TMN51x5hKzMEjwV7ooMAmxX
-PZ8emy0f7tG/E2zpZ0MUpt/W9Z8ijpem/W7K3eTriKTjkwg0TmXdnyzh/kZobzeL
-iHXNHMXddBPfiEYysaKRiphU2Tzpc3NBAI5z0YkfamESo65Uz2b8h3Q7ynju5kQB
-yI3CQsuF8WOMrSQl1YhAVAD2FlJqnWuOD889oI48HpKiQrzf7oV6sxl9CuHFOAqd
-7kTrgov20ppulHdt/KTI4JaxlgG1nQHp9OnqK6QqiodgS1dCALSf7Rp6iPOrX261
-C6kLVFaHW/twk/RuPQFbsNRUs9EZaYukUCAnex8tjy0TQmKj1HFHkiSpQ8Ko5Kyt
-dJm6OVFudk0FVQwjxsQ25yc95F15blTyv5NUKrQpPdc2B7v/j0xcGdyk3K+T7bmO
-rCC7hJz26V2TtUHKO4ju6xZqc/dwg1GUqYzZKQ3QMSDFGX2g7qy+GGssrzWYVp5k
-ngCgL5KKT1P9p24oaAQ7cH45AduDcBMnh0mZWrigeRbTpfLjYY8oFPT9m8w3J6tW
-I9RcUjM5ksNguKPgesR9
-=rKvC
------END PGP SIGNATURE-----
-
---=-vtxncxwPCgGRk6DEufF1--
-
+> so maybe wait a bit, so that we dont
+> add a pile of new bugs ?
+> 
+> 
+> 
