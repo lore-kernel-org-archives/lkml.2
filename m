@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab2ENJYm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 05:24:42 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:59153
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754469Ab2ENJYk (ORCPT
+	id S1755371Ab2ENJfK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 05:35:10 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44351 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754984Ab2ENJfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 05:24:40 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Mon, 14 May 2012 17:43:58 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Richard Zhao <richard.zhao@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Richard Zhao <richard.zhao@freescale.com>, <sameo@linux.intel.com>,
-        <shawn.guo@linaro.org>
-Subject: Re: [PATCH 2/2] mfd: anatop: permit adata be NULL when access
- register
-Message-ID: <20120514094357.GF20367@S2100-06.ap.freescale.net>
-References: <1336870794-6351-1-git-send-email-richard.zhao@freescale.com>
- <1336870794-6351-2-git-send-email-richard.zhao@freescale.com>
- <20120514035137.GB20367@S2100-06.ap.freescale.net>
- <20120514080835.GB31985@opensource.wolfsonmicro.com>
- <4FB0C9D4.2060409@linaro.org>
+	Mon, 14 May 2012 05:35:08 -0400
+Message-ID: <4FB0D1C6.7090801@gmail.com>
+Date: Mon, 14 May 2012 17:35:02 +0800
+From: Cong Wang <xiyou.wangcong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4FB0C9D4.2060409@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/10] tmpfs: enable NOSEC optimization
+References: <alpine.LSU.2.00.1205120447380.28861@eggly.anvils> <alpine.LSU.2.00.1205120500040.28861@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1205120500040.28861@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 05:01:08PM +0800, Ying-Chun Liu (PaulLiu) wrote:
-> I think what the concern is we probably don't want several
-> non-continuous memory blocks of misc hardwares.
-> If we look into the current registers in anatop, it is really sparse.
-> Several regulators are using non-continuous address and the thermals are
-> also using different addresses. If the addresses are continuous then we
-> don't need the mfd driver.
-> 
-I do not quite follow that.  The reason we need mfd driver isn't because
-we do not want to both regulator and thermal drivers to map and access
-the same address on their own which may have synchronization issue?
+On 05/12/2012 08:02 PM, Hugh Dickins wrote:
+> Let tmpfs into the NOSEC optimization (avoiding file_remove_suid()
+> overhead on most common writes): set MS_NOSEC on its superblocks.
+>
+> Signed-off-by: Hugh Dickins<hughd@google.com>
+> ---
+>   mm/shmem.c |    1 +
+>   1 file changed, 1 insertion(+)
+>
+> --- 3045N.orig/mm/shmem.c	2012-05-05 10:45:17.888060878 -0700
+> +++ 3045N/mm/shmem.c	2012-05-05 10:46:05.732062006 -0700
+> @@ -2361,6 +2361,7 @@ int shmem_fill_super(struct super_block
+>   		}
+>   	}
+>   	sb->s_export_op =&shmem_export_ops;
+> +	sb->s_flags |= MS_NOSEC;
 
--- 
-Regards,
-Shawn
+Isn't setting the flag on inode better? Something like:
 
+diff --git a/mm/shmem.c b/mm/shmem.c
+index f99ff3e..7d98fb5 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2325,6 +2325,7 @@ static void shmem_init_inode(void *foo)
+  {
+         struct shmem_inode_info *info = foo;
+         inode_init_once(&info->vfs_inode);
++       info->vfs_inode.i_flags |= S_NOSEC;
+  }
+
+  static int shmem_init_inodecache(void)
