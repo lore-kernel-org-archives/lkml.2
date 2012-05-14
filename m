@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab2ENJIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 05:08:15 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38172 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754894Ab2ENJIN (ORCPT
+	id S1755406Ab2ENJI0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 05:08:26 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55416 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755375Ab2ENJIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 05:08:13 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FB0CAFF.6060705@jp.fujitsu.com>
-Date: Mon, 14 May 2012 18:06:07 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 14 May 2012 05:08:24 -0400
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Stephane Marchesin <marcheu@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>, Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <ffwll.ch@google.com>, Rob Clark <rob.clark@linaro.org>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/10] shmem: replace page if mapping excludes its zone
-References: <alpine.LSU.2.00.1205120447380.28861@eggly.anvils> <alpine.LSU.2.00.1205120453210.28861@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1205120453210.28861@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201205140859.52921.arnd@arndb.de>
+References: <CAMP44s2eVtquLoB6Zjbs4nGVKP6e=Dxse4uicL4s8vmrFeJdTQ@mail.gmail.com>
+	<CAMP44s1anUhxRqvdEVYdvu9+xedoQmRiEOHii3yaJQWfM2zauA@mail.gmail.com>
+	<201205101049.58818.arnd@arndb.de>
+	<201205140859.52921.arnd@arndb.de>
+Date: Mon, 14 May 2012 11:08:22 +0200
+Message-ID: <CAMP44s2mmK2DdkbJjPQ1Wcj4gRXTY33XobVAm9MrXdRvOeFbhw@mail.gmail.com>
+Subject: Re: Big I/O latencies, except when iotop is hooked
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/05/12 20:59), Hugh Dickins wrote:
+Hi,
 
-> The GMA500 GPU driver uses GEM shmem objects, but with a new twist:
-> the backing RAM has to be below 4GB.  Not a problem while the boards
-> supported only 4GB: but now Intel's D2700MUD boards support 8GB, and
-> their GMA3600 is managed by the GMA500 driver.
-> 
-> shmem/tmpfs has never pretended to support hardware restrictions on
-> the backing memory, but it might have appeared to do so before v3.1,
-> and even now it works fine until a page is swapped out then back in.
-> When read_cache_page_gfp() supplied a freshly allocated page for copy,
-> that compensated for whatever choice might have been made by earlier
-> swapin readahead; but swapoff was likely to destroy the illusion.
-> 
-> We'd like to continue to support GMA500, so now add a new
-> shmem_should_replace_page() check on the zone when about to move
-> a page from swapcache to filecache (in swapin and swapoff cases),
-> with shmem_replace_page() to allocate and substitute a suitable page
-> (given gma500/gem.c's mapping_set_gfp_mask GFP_KERNEL | __GFP_DMA32).
-> 
-> This does involve a minor extension to mem_cgroup_replace_page_cache()
-> (the page may or may not have already been charged); and I've removed
-> a comment and call to mem_cgroup_uncharge_cache_page(), which in fact
-> is always a no-op while PageSwapCache.
-> 
-> Also removed optimization of an unlikely path in shmem_getpage_gfp(),
-> now that we need to check PageSwapCache more carefully (a racing caller
-> might already have made the copy).  And at one point shmem_unuse_inode()
-> needs to use the hitherto private page_swapcount(), to guard against
-> racing with inode eviction.
-> 
-> It would make sense to extend shmem_should_replace_page(), to cover
-> cpuset and NUMA mempolicy restrictions too, but set that aside for
-> now: needs a cleanup of shmem mempolicy handling, and more testing,
-> and ought to handle swap faults in do_swap_page() as well as shmem.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
+On Mon, May 14, 2012 at 10:59 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 10 May 2012, Arnd Bergmann wrote:
+>> 176 is extremely bad, yes. A good value would be between 1 and 3.
+>> The algorithm is probably not 'la' but 'dl' and the page size (-b)
+>> could be smaller -- you have to test by passing '--blocksize=1024' to
+>> the --open-au test and see where it starts getting drastically
+>> smaller (if 4KB gives you about half the throughput of 8KB,
+>> 8KB is the page size). Those two can make the result better.
+>>
+>> As I said, the erase block size is more likely to be 4MB, which
+>> will make the flashsim result worse.
+>>
+>> Does flashsim give a better number for a trace taken with iotop
+>> running?
+>>
+>> Can you send me or upload that iolog file?
+>
+> Hi Felipe,
+>
+> Any update?
 
+Nope, sorry, my laptop got fried. I have a new one and I might be able
+to test later today, I don't see why I would have any problems
+reproducing this there, but lets see.
 
+> I'd really be interested in the trace file so that we
+> can look at data of a real-world case that hurts. I've discussed
+> your problem in the Linaro storage team meeting, and the question
+> came up whether this only happens with encryption enabled.
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+As I already said, this also happens without encryption.
 
+> Which kind of encryption method do you actually use? Depending
+> on how the encryption is implemented, two things could possibly
+> go wrong that would not happen without it:
 
+I just do 'cryptsetup luksFormat' I'm not sure what is their default.
+According to the manpage it's aes-cbc-essiv:sha256. I tried with
+different --align-payload values, but none that actually improved the
+situation.
+
+Anyway, the problem is visible even with plain ext4.
+
+Cheers.
+
+-- 
+Felipe Contreras
