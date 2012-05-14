@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341Ab2ENRXk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 13:23:40 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:45555 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752586Ab2ENRXj (ORCPT
+	id S1757373Ab2ENR1U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 13:27:20 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:58111 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757147Ab2ENR1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 13:23:39 -0400
-Date: Mon, 14 May 2012 19:23:23 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Chen Gong <gong.chen@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 2/2] x86/mce: Add instruction recovery signatures to
- mce-severity table
-Message-ID: <20120514172323.GD21960@aftab.osrc.amd.com>
-References: <cover.1336674796.git.tony.luck@intel.com>
- <0e89440bf6444635bde0b876eedd26e5c51f9ca3.1336674796.git.tony.luck@intel.com>
- <4FACC25B.80305@linux.intel.com>
- <3908561D78D1C84285E8C5FCA982C28F192ED617@ORSMSX104.amr.corp.intel.com>
- <20120513100532.GC28863@aftab.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F192EED4A@ORSMSX104.amr.corp.intel.com>
+	Mon, 14 May 2012 13:27:17 -0400
+Message-ID: <4FB1402A.4020609@mvista.com>
+Date: Mon, 14 May 2012 21:26:02 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192EED4A@ORSMSX104.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>
+CC: Greg KH <gregkh@linuxfoundation.org>, Reinhard Tartler <tartler@cs.fau.de>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vamos-dev@lists.cs.fau.de
+Subject: Re: [PATCH] usb: musb: cppi: add missing include to fix compilation
+References: <1337011520-15286-1-git-send-email-tartler@cs.fau.de> <20120514163154.GA17555@kroah.com> <87ipfyemb8.fsf@faui43f.informatik.uni-erlangen.de>
+In-Reply-To: <87ipfyemb8.fsf@faui43f.informatik.uni-erlangen.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 04:28:35PM +0000, Luck, Tony wrote:
-> > > I'm trying to figure out a quirk for processors that do generate
-> > > EIPV=RIPV=0 signature for IFU errors. There are some case where
-> > > we can work around the lack of EIPV.
-> >
-> > __mcheck_cpu_apply_quirks?
-> 
-> The quirk is a bit more extensive than just setting some flag in there
-> for "if (c->x86 == 6 && c->x86_model == 45)". Sometime EIPV isn't set
-> because the regs->ip and regs->cs really aren't valid. So  I'll need
-> to do something like:
-> 
-> 	if (we are on Intel family 6 model 45 AND
->           this is a UC=1, PCC=0, AR=1, S=1, ADDRV=1, MCACOD=0x150 error AND
-> 	    (virtophys(regs->ip) >> PAGE_SHIFT) == (MC(bank)_ADDR >> PAGE_SHIFT)) {
-> 		/* ok to trust CS & IP */
-> 		m.mcgstatus |= MCG_STATUS_EIPV;
-> 	}
+Hello.
 
-Hmm, maybe add a flag to struct mce or whatever comes handy in that
-codepath which says ->on_this_cpu_it_is_ok_to_set_MCG_STATUS_EIPV and
-query it in the mce_severity() thing?
+On 05/14/2012 08:53 PM, Reinhard Tartler wrote:
 
-Btw, this severities deal could be much more helpful if it were a bunch
-of per-vendor, per-bank or whatever function pointers so that you can do
-arbitrary filtering there.
+>> On Mon, May 14, 2012 at 06:05:20PM +0200, Reinhard Tartler wrote:
+>>> This fixes compilation as module.
 
-> before running through the mce_severity() table lookup.
-> 
-> x86 doesn't seem to have a "virtophys()" that I can find. Closest is lookup_address(vaddr, level)
-> which gets a pte (which is almost all the work).
-> 
-> Sigh!
+>>> Signed-off-by: Reinhard Tartler<tartler@cs.fau.de>
+>>> ---
+>>>   drivers/usb/musb/cppi_dma.c |    1 +
+>>>   1 file changed, 1 insertion(+)
 
-What does __pa() do actually?
+>>> This patch was found by tools developed in the VAMOS project:
+>>> http://www4.cs.fau.de/Research/VAMOS/
 
-Oh, that's only for kernel memory, it seems.
+>> Does that mean that no one actually can hit this in "real life"?  Or is
+>> there a valid .config that this solves a problem for?  If so, is it also
+>> needed for the 3.4/3.3-stable tree and older ones?
 
--- 
-Regards/Gruss,
-Boris.
+> My tool has generated the attached configuration that exposes this
+> compilation failure. I have used kernel v3.2 with Ubuntu's arm
+> cross-compiler for the analysis and verification.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+    Strange, your .config indicated that DMA driver and MUSB driver into which 
+it is linked are build monolithic. You also should use 3.3 series kernel.
+
+> Cheers,
+> Reinhard
+
+WBR, Sergei
+
