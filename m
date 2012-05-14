@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab2ENIJc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 04:09:32 -0400
-Received: from mail.telros.ru ([83.136.244.21]:65130 "EHLO mail.telros.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752402Ab2ENIJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 04:09:29 -0400
-Date: Mon, 14 May 2012 12:09:18 +0400
-From: volokh@telros.ru
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Volokh Konstantin <volokh84@gmail.com>, my84@bk.ru,
-        devel@driverdev.osuosl.org, hverkuil@xs4all.nl,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        mchehab@infradead.org, dhowells@redhat.com, justinmattock@gmail.com,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 1/2] staging: media: go7007: Adlink MPG24 board
-Message-ID: <20120514080918.GC1497@VPir.telros.lan>
-References: <1336935162-5068-1-git-send-email-volokh84@gmail.com>
- <20120513192148.GE16984@mwanda>
+	id S1754498Ab2ENIMb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 04:12:31 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43620 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752402Ab2ENIMa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 04:12:30 -0400
+Date: Mon, 14 May 2012 09:12:27 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFT 1/2] regulator: tps62360: Convert to
+ regulator_list_voltage_linear()
+Message-ID: <20120514081227.GD31985@opensource.wolfsonmicro.com>
+References: <1336965942.24732.14.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8nsIa27JVQLqB7/C"
 Content-Disposition: inline
-In-Reply-To: <20120513192148.GE16984@mwanda>
+In-Reply-To: <1336965942.24732.14.camel@phoenix>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 13, 2012 at 10:21:48PM +0300, Dan Carpenter wrote:
-> On Sun, May 13, 2012 at 10:52:41PM +0400, Volokh Konstantin wrote:
-> > This patch applies only for Adlink MPG24 board with go7007, all these changes were tested for continuous loading & restarting modes
-> > 
-> > This is minimal changes needed for start up go7007 to work correctly
-> >   in 3.4 branch
-> > 
-> > Changes:
-> >   - When go7007 reset device, i2c was not working (need rewrite GPIO5)
-> >   - As wis2804 has i2c_addr=0x00/*really*/, so Need set I2C_CLIENT_TEN flag for validity
-> >   - some main nonzero initialization, rewrites with kzalloc instead kmalloc
-> >   - STATUS_SHUTDOWN was placed in incorrect place, so if firmware wasn`t loaded, we
-> >     failed v4l2_device_unregister with kernel panic (OOPS)
-> >   - some new v4l2 style features as call_all(...s_stream...) for using subdev calls
-> > 
-> 
-> In some ways, yes, I can see that this seems like one thing "Make
-> go7007 work correctly", but really it would be better if each of
-> the bullet points was its own patch.
-> 
-> The changelogs should explain why you do something not what you do.
-> We can all see that kmalloc() was changed to kzalloc() but why? Is
 
-struct go7007 contains "struct v4l2_device v4l2_dev;" field, so if transfer it uninitialized (may be nonzero)
-in function: "int v4l2_device_register_subdev(struct v4l2_device *v4l2_dev, struct v4l2_subdev *sd)"
-(drivers/media/video/v4l2-device.c), so next code may be called:
-#if defined(CONFIG_MEDIA_CONTROLLER)
-	/* Register the entity. */
-	if (v4l2_dev->mdev) {
-		err = media_device_register_entity(v4l2_dev->mdev, entity);
-		if (err < 0) {
-			if (sd->internal_ops && sd->internal_ops->unregistered)
-				sd->internal_ops->unregistered(sd);
-			module_put(sd->owner);
-			return err;
-		}
-	}
-#endif
-I`ve got error here. because go7007 don`t control mdev field.
+--8nsIa27JVQLqB7/C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The next kzalloc: "gofh = kzalloc(sizeof(struct go7007_file), GFP_KERNEL);" was written only for zero initialization on creation purpose, driver work properly without it changing
-> their and information leak for example?  That might have security
-> implications and be good thing to know about.
-> 
-> regards,
-> dan carpenter
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Mon, May 14, 2012 at 11:25:42AM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-It`s very horrible to describe every changing...
+Applied both, thanks.
 
-Volokh Konstantin
+--8nsIa27JVQLqB7/C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPsL5kAAoJEBus8iNuMP3dV0cP/0wX7of79QnnlymkIrqyhlPj
+Tk8pwAbVsnhPfGVaTynwwW4IF9f6e4lhbT/Zk6c/DqTzU3hc0bVBmTfc5OmYGFTB
+aJF/q5Xkv79nd/w/3lWQS12T996eKBkmPjCJTLPOkEOK0D61orCNOM8unxKnqZ1y
+viCaPY31ZCGYhE/KKSn8CkG3pt8yjwPn0vbS4MTGUr37dEYJNd34PzRXX3xgePIS
+9pSuqfaVCbxd1v5oiy94M/GXq29hyvGtXz0n8UKRjSorxSLNGZ8lQ5HnCOCLaRcH
+Nn7qbkIu2feHSQnAfTwGJXOtLmWLYnKf6whm/v1dw4wQmttG9rRByxXlgGMKrhgJ
+HPDZPPpqABfm23eARiLsKbDrbP4c1+FTdddpDc6vXkxoK/YizQ61zi1ZLU0epJQN
+48N/N60+Gp+WsOjGelYHWwuaeSS1x9RJaIvVg+WFndC5Qm6pIrTPzE4Ip7qn4wP0
+B7QB6r6m+9WMUhrnDYQBHUSjqI5QcXuREI/5RxwgEZWYbM6h+onz7sjSgmyuYBr1
+svVmWgjW42WeteKeaEOUpRnPaiGsY3mTOOu7wibIdHSNqn083AcUZuFesmZiL8Ss
+X/cdzUGn3WBWjT//yUvdwrUQNSdOhChK0RGgmiWhIrIvoK1iSzZAhB1boVe/hxVU
+Ds3OILSZip169UmPq2g7
+=zN34
+-----END PGP SIGNATURE-----
+
+--8nsIa27JVQLqB7/C--
