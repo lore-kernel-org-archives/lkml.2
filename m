@@ -1,93 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758158Ab2ENWlg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 18:41:36 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:51194 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756759Ab2ENWlf (ORCPT
+	id S932659Ab2ENWl7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 18:41:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62329 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932599Ab2ENWl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 18:41:35 -0400
-Date: Mon, 14 May 2012 15:41:23 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: skip nr_running sanity check in
- worker_enter_idle() if trustee is active
-Message-ID: <20120514224123.GO2441@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120506153814.GA25681@linux.vnet.ibm.com>
- <20120507194042.GG19417@google.com>
- <20120507205516.GD21152@linux.vnet.ibm.com>
- <20120507213449.GM19417@google.com>
- <20120514221250.GA8414@google.com>
+	Mon, 14 May 2012 18:41:58 -0400
+Date: Mon, 14 May 2012 15:41:53 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ngupta@vflare.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, sjenning@linux.vnet.ibm.com
+Subject: Re: [PATCH] ramster: switch over to zsmalloc and crypto interface
+Message-ID: <20120514224153.GB28559@kroah.com>
+References: <1336676781-8571-1-git-send-email-dan.magenheimer@oracle.com>
+ <20120514200659.GA15604@kroah.com>
+ <0966a902-a35e-4c06-ab04-7d088bf25696@default>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120514221250.GA8414@google.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <0966a902-a35e-4c06-ab04-7d088bf25696@default>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051422-6148-0000-0000-000005D5A42E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 03:12:50PM -0700, Tejun Heo wrote:
-> >From 544ecf310f0e7f51fa057ac2a295fc1b3b35a9d3 Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Mon, 14 May 2012 15:04:50 -0700
+On Mon, May 14, 2012 at 01:45:36PM -0700, Dan Magenheimer wrote:
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Subject: Re: [PATCH] ramster: switch over to zsmalloc and crypto interface
+> > 
+> > On Thu, May 10, 2012 at 12:06:21PM -0700, Dan Magenheimer wrote:
+> > > RAMster does many zcache-like things.  In order to avoid major
+> > > merge conflicts at 3.4, ramster used lzo1x directly for compression
+> > > and retained a local copy of xvmalloc, while zcache moved to the
+> > > new zsmalloc allocator and the crypto API.
+> > >
+> > > This patch moves ramster forward to use zsmalloc and crypto.
+> > >
+> > > Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> > 
 > 
-> worker_enter_idle() has WARN_ON_ONCE() which triggers if nr_running
-> isn't zero when every worker is idle.  This can trigger spuriously
-> while a cpu is going down due to the way trustee sets %WORKER_ROGUE
-> and zaps nr_running.
+> Hi Greg --
 > 
-> It first sets %WORKER_ROGUE on all workers without updating
-> nr_running, releases gcwq->lock, schedules, regrabs gcwq->lock and
-> then zaps nr_running.  If the last running worker enters idle
-> inbetween, it would see stale nr_running which hasn't been zapped yet
-> and trigger the WARN_ON_ONCE().
+> > I finally enabled building this one (didn't realize it required ZCACHE
+> > to be disabled, I can only build one or the other)
 > 
-> Fix it by performing the sanity check iff the trustee is idle.
+> Yes, correct.  This overlap is explained in drivers/staging/ramster/TODO
+> (which IIRC you were the one that asked me to create that file).
+> In short the TODO says: ramster is a superset of zcache that also
+> "remotifies" zcache-compressed pages to another machine, and the overlap
+> with zcache will need to be rectified before either is promoted
+> from staging.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Cc: stable@vger.kernel.org
-> ---
-> Sorry about the delay.  After scratching my head quite a bit, I found
-> where during cpu-offlining such discrepancy may happen.  I'm fairly
-> sure this is it but I might be wrong, so please include this patch in
-> your test setup and let me know how it goes.
+> > and I noticed after
+> > this patch the following warnings in my build:
+> > 
+> > drivers/staging/ramster/zcache-main.c:950:13: warning: ‘zcache_do_remotify_ops’ defined but not used
+> > [-Wunused-function]
+> > drivers/staging/ramster/zcache-main.c:1039:13: warning: ‘ramster_remotify_init’ defined but not used
+> > [-Wunused-function]
+> 
+> These are because CONFIG_FRONTSWAP isn't yet in your tree.  It is
+> in linux-next and will hopefully finally be in Linus' tree at
+> the next window.  Ramster (and zcache) has low value without
+> frontswap, so the correct fix, after frontswap is merged, is
+> to remove all the "ifdef CONFIG_FRONTSWAP" and force the
+> dependency in Kconfig... but I can't do that until frontswap
+> is merged. :-(
 
-Thank you -- I have applied it, and will let you know how it goes.
+Ok, no problem then.
 
-							Thanx, Paul
+> > drivers/staging/ramster/zcache-main.c: In function ‘zcache_put’:
+> > drivers/staging/ramster/zcache-main.c:1594:4: warning: ‘page’ may be used uninitialized in this
+> > function [-Wuninitialized]
+> > drivers/staging/ramster/zcache-main.c:1536:8: note: ‘page’ was declared here
+> 
+> Hmmm... this looks like an overzealous compiler.  The code
+> is correct and was unchanged by this patch.  My compiler
+> (gcc 4.4.4) doesn't even report it.  I think I could fix it
+> by assigning a superfluous NULL at the declaration and will
+> do that if you want but I can't test the fix with my compiler
+> since it doesn't report it.
+> 
+> > Care to please fix them up?
+> 
+> It looks like you've taken the patch... if my whining
+> above falls on deaf ears and you still want me to "fix"
+> one or both, let me know and I will submit a fixup patch.
+> (And then... what gcc are you using?)
 
-> Thank you.
-> 
->  kernel/workqueue.c |    9 +++++++--
->  1 files changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 211eadb..c36c86c 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -1213,8 +1213,13 @@ static void worker_enter_idle(struct worker *worker)
->  	} else
->  		wake_up_all(&gcwq->trustee_wait);
-> 
-> -	/* sanity check nr_running */
-> -	WARN_ON_ONCE(gcwq->nr_workers == gcwq->nr_idle &&
-> +	/*
-> +	 * Sanity check nr_running.  Because trustee releases gcwq->lock
-> +	 * between setting %WORKER_ROGUE and zapping nr_running, the
-> +	 * warning may trigger spuriously.  Check iff trustee is idle.
-> +	 */
-> +	WARN_ON_ONCE(gcwq->trustee_state == TRUSTEE_DONE &&
-> +		     gcwq->nr_workers == gcwq->nr_idle &&
->  		     atomic_read(get_gcwq_nr_running(gcwq->cpu)));
->  }
-> 
-> -- 
-> 1.7.7.3
-> 
+I'm using gcc 4.6.2 from openSUSE 12.1, if that matters.  No big deal if
+these are compiler warnings you are used to, it's just the first time
+I've built the code in a long time and wanted to ensure that you were
+aware of them.
 
+thanks,
+
+greg k-h
