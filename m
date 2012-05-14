@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125Ab2ENSMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 14:12:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51370 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932067Ab2ENSMm (ORCPT
+	id S932137Ab2ENSNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 14:13:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41450 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932078Ab2ENSNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 14:12:42 -0400
-Date: Mon, 14 May 2012 19:12:40 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Turquette, Mike" <mturquette@ti.com>
-Cc: Sebastian Hesselbarh <sebastian.hesselbarth@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Common clock framework for external clock generators
-Message-ID: <20120514181240.GI25668@opensource.wolfsonmicro.com>
-References: <4FAB15DB.5050702@googlemail.com>
- <20120513122946.GD706@sirena.org.uk>
- <4FAFE1BF.9050805@googlemail.com>
- <20120513164304.GB6381@opensource.wolfsonmicro.com>
- <4FAFEB2D.5010009@googlemail.com>
- <CAJOA=zOXh_+HbtSr8cXXNJWCWJroC2Cy+62y9nx7tdH4ZbhXKw@mail.gmail.com>
+	Mon, 14 May 2012 14:13:45 -0400
+Message-ID: <4FB14B55.4070604@gmail.com>
+Date: Mon, 14 May 2012 11:13:41 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="STPqjqpCrtky8aYs"
-Content-Disposition: inline
-In-Reply-To: <CAJOA=zOXh_+HbtSr8cXXNJWCWJroC2Cy+62y9nx7tdH4ZbhXKw@mail.gmail.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+CC: David Daney <ddaney.cavm@gmail.com>, devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        spi-devel-general@lists.sourceforge.net, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 2/2] spi: Add SPI master controller for OCTEON SOCs.
+References: <1336772086-17248-1-git-send-email-ddaney.cavm@gmail.com>	<1336772086-17248-3-git-send-email-ddaney.cavm@gmail.com> <CAM=Q2csSQWbCOCQpubDok1=hmPvHU0MTEUg+-FGhp91=O5L6Hw@mail.gmail.com>
+In-Reply-To: <CAM=Q2csSQWbCOCQpubDok1=hmPvHU0MTEUg+-FGhp91=O5L6Hw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/13/2012 10:46 PM, Shubhrajyoti Datta wrote:
+> Hi David,
+> A few comments.
+>
+> On Sat, May 12, 2012 at 3:04 AM, David Daney<ddaney.cavm@gmail.com>  wrote:
+[...]
 
---STPqjqpCrtky8aYs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>> +
+>> +#define DRV_VERSION "2.0" /* Version 1 was the out-of-tree driver */
+> This could be given a miss. As it is less meaningful once accepted.
 
-On Mon, May 14, 2012 at 11:08:58AM -0700, Turquette, Mike wrote:
 
-> Seems like the clk_unregister patch fell through the cracks.  My
-> mistake.  I'm going to be sending another pull request to arm-soc with
-> Orion/Kirkwood support.  I'll add your patch in at that time.
+Well, this leads to the question, what is the purpose of the 
+'MODULE_VERSION()' macro?  If I use that, I need to populate it with a 
+value.
 
-Ah, great.  I dropped usage from the wm831x driver I just posted, I'd
-rather get that merged if I can, but I can easily add it back - I'll
-either roll it in to the next version or send a followup if this version
-is basically OK.
+>
+[...]
+>> +static void octeon_spi_wait_ready(struct octeon_spi *p)
+>> +{
+>> +       union cvmx_mpi_sts mpi_sts;
+>> +       unsigned int loops = 0;
+>> +
+>> +       do {
+>> +               if (loops++)
+>> +                       __delay(500);
+> Could we allow  have a non-busy loop here?
+>
 
---STPqjqpCrtky8aYs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+We could, but I thought about it and chose not to.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+The SPI hardware can queue a maximum of 9 bytes (72 bits) before 
+software has to take action.  That works out to 3.6 uS at a 20MHz clock 
+rate.  Sleeping, scheduling to a different task, taking an interrupt and 
+then switching back to this task will likely not be faster than that.
 
-iQIcBAEBAgAGBQJPsUsRAAoJEBus8iNuMP3d6k4P/3Sc4NMb9jH5iWlcqh4AsJO4
-jzjUNQHaJ7/W7A4JUxvX5iFhnvvvGBDy4pnd7BQnbbUCTrMlwWRwVu9A3TfEgP7A
-7q1CMfyppNDV+IcmEqI5KlLKmQnPTZHtYKETxzQKIrjRaA2pQjU9yIJcUEFxcy8+
-J5tcxy0ja3gqwUDVZS980d3FPv0MdJlYZFqlAmAKK64ebFNNdZV0xQNqPpBCgtcG
-r3e5f1dNDLRl8OmERuIne4b0mKwhcLq8rG5t3a4CsZYuOjZo+nKHlYafM6JUn4jH
-OyuQDWFd56+U6aJrB8VJFxd9H7+I6R+Uobx2RzJO/scCQGiXknRAWw2fGoV41ajY
-XSWPjyYZjSemI/X1y2TKE/8c1fu/biXkC9HkrRoGQzDc0A1hNa4ecGEsEOdNS1kC
-gc7qBQk1iAB9FQAO8hhce5rZKPQVAh/neAi6/LqdgW2bxSwVvD4Pc6+K6Z4gHq02
-6F9ma86B9kPRJ7fLz8d1AN7jLlXMeMChDtqlQkM+ZCvUeY2oLD0j0cy/EagsFSC/
-e4G+/mf8fHEGRWVaG6XKu/GaVbCZXshzh9UMkd2zYkrKgS3ZQjRojbbagDjEVyFM
-X9mx1YCUso1ul3dOXzk4g8CubCXiXGZP+NUSrnp6nRTfq5/DYOeVRKycQsTT5Rpu
-/0onv+kOks9Vq1SmwIin
-=d7aB
------END PGP SIGNATURE-----
+At lower clock rates, it would make more sense, but it adds complexity 
+to the driver.  We can always revisit this decision if it proves to be a 
+problem.
 
---STPqjqpCrtky8aYs--
+David Daney
