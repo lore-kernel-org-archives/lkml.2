@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826Ab2ENPCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 11:02:30 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:27819 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755780Ab2ENPC3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 11:02:29 -0400
-Message-ID: <1337007747.2476.2.camel@lorien2>
-Subject: Re: [PATCH RESEND] x86: kernel/dumpstack.c simple_strtoul cleanup
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: mingo@redhat.com
-Cc: shuahkhan@gmail.com, hpa@zytor.com, tglx@linutronix.de,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 14 May 2012 09:02:27 -0600
-In-Reply-To: <1336327084.2897.15.camel@lorien2>
-References: <1336327084.2897.15.camel@lorien2>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756300Ab2ENPFQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 11:05:16 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:56657 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752402Ab2ENPFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 11:05:15 -0400
+Date: Mon, 14 May 2012 17:05:09 +0200
+From: David Sterba <dave@jikos.cz>
+To: Arnd Hannemann <arnd@arndnet.de>
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.4.0-rc6: WARNING: at fs/btrfs/super.c:219
+ __btrfs_abort_transaction+0xae/0xc0 [btrfs]()
+Message-ID: <20120514150509.GJ25501@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Arnd Hannemann <arnd@arndnet.de>,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <4FB10636.2010003@arndnet.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB10636.2010003@arndnet.de>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-05-06 at 11:58 -0600, Shuah Khan wrote:
-> Change kstack_setup() and code_bytes_setup() in kernel/dumpstack.c
-> to call kstrtoul() instead of calling obsoleted simple_strtoul().
-> 
-How about this patch? Are you not interested in this type of cleanup
-patches? Looking for some feedback so I can spend my energies on 
-something that would be worth while :)
+On Mon, May 14, 2012 at 03:18:46PM +0200, Arnd Hannemann wrote:
+> I just got the following warning on a compressed btrfs filesystem, while writing on it
+> until no remaining space was available.
+> Looks like a bit verbose "disk full" message, is it expected behavior?
 
--- Shuah
-> 
-> Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
-> ---
->  arch/x86/kernel/dumpstack.c |   21 +++++++++++++++++++--
->  1 files changed, 19 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-> index 1b81839..b154f6d 100644
-> --- a/arch/x86/kernel/dumpstack.c
-> +++ b/arch/x86/kernel/dumpstack.c
-> @@ -311,16 +311,33 @@ void die(const char *str, struct pt_regs *regs, long err)
->  
->  static int __init kstack_setup(char *s)
->  {
-> +	ssize_t ret;
-> +	unsigned long val;
-> +
->  	if (!s)
->  		return -EINVAL;
-> -	kstack_depth_to_print = simple_strtoul(s, NULL, 0);
-> +
-> +	ret = kstrtoul(s, 0, &val);
-> +	if (ret)
-> +		return ret;
-> +	kstack_depth_to_print = val;
->  	return 0;
->  }
->  early_param("kstack", kstack_setup);
->  
->  static int __init code_bytes_setup(char *s)
->  {
-> -	code_bytes = simple_strtoul(s, NULL, 0);
-> +	ssize_t ret;
-> +	unsigned long val;
-> +
-> +	if (!s)
-> +		return -EINVAL;
-> +
-> +	ret = kstrtoul(s, 0, &val);
-> +	if (ret)
-> +		return ret;
-> +
-> +	code_bytes = val;
->  	if (code_bytes > 8192)
->  		code_bytes = 8192;
->  
+Shouldn't be the case for regular ENOSPC (ie. when the space is reserved
+in advance and with the possibility to fail early). If the transaction
+is aborted, it means it's too late and there was some logic error.
+
+Can you please describe more the fs and how did you fill it? Like single
+process or multiple, dd or whatever.
 
 
+thanks,
+david
