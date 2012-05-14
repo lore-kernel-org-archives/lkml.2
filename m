@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756460Ab2ENNF6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:05:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56223 "EHLO
+	id S1756540Ab2ENNGp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 09:06:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56234 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756148Ab2ENNF5 (ORCPT
+	with ESMTP id S1756305Ab2ENNGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:05:57 -0400
-Date: Mon, 14 May 2012 06:05:42 -0700
+	Mon, 14 May 2012 09:06:44 -0400
+Date: Mon, 14 May 2012 06:06:30 -0700
 From: tip-bot for Don Zickus <dzickus@redhat.com>
-Message-ID: <tip-7d007d21e539dbecb6942c5734e6649f720982cf@git.kernel.org>
+Message-ID: <tip-3aac27aba79b7c52e709ef6de0f7d8139caedc01@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, tglx@linutronix.de, dzickus@redhat.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, tglx@linutronix.de, dzickus@redhat.com
-In-Reply-To: <1336761675-24296-3-git-send-email-dzickus@redhat.com>
-References: <1336761675-24296-3-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1336761675-24296-4-git-send-email-dzickus@redhat.com>
+References: <1336761675-24296-4-git-send-email-dzickus@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/reboot] x86/reboot:
-  Use NMI to assist in shutting down if IRQ fails
-Git-Commit-ID: 7d007d21e539dbecb6942c5734e6649f720982cf
+Subject: [tip:x86/reboot] x86/reboot: Update nonmi_ipi parameter
+Git-Commit-ID: 3aac27aba79b7c52e709ef6de0f7d8139caedc01
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,166 +27,74 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 14 May 2012 06:05:47 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 14 May 2012 06:06:36 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7d007d21e539dbecb6942c5734e6649f720982cf
-Gitweb:     http://git.kernel.org/tip/7d007d21e539dbecb6942c5734e6649f720982cf
+Commit-ID:  3aac27aba79b7c52e709ef6de0f7d8139caedc01
+Gitweb:     http://git.kernel.org/tip/3aac27aba79b7c52e709ef6de0f7d8139caedc01
 Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Fri, 11 May 2012 14:41:14 -0400
+AuthorDate: Fri, 11 May 2012 14:41:15 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 14 May 2012 11:49:37 +0200
+CommitDate: Mon, 14 May 2012 11:49:38 +0200
 
-x86/reboot: Use NMI to assist in shutting down if IRQ fails
+x86/reboot: Update nonmi_ipi parameter
 
-For v3.3, I added code to use the NMI to stop other cpus in the
-panic case.  The idea was to make sure all cpus on the system
-were definitely halted to help serialize the panic path to
-execute the rest of the code on a single cpu.
-
-The main problem it was trying to solve was how to stop a cpu
-that was spinning with its irqs disabled.  A IPI irq would be
-stuck and couldn't get in there, but an NMI could.
-
-Things were great until we had another conversation about some
-pstore changes.  Because some of the backend pstore still uses
-spinlocks to protect the device access, things could get ugly if
-a panic happened and we were stuck spinning on a lock.
-
-Now with the NMI shutting down cpus, we could assume no other
-cpus were running and just bust the spin lock and proceed.
-
-The counter argument was, well if you do that the backend could
-be in a screwed up state and you might not be able to save
-anything as a result. If we could have just given the cpu a
-little more time to finish things, we could have grabbed the
-spin lock cleanly and everything would have been fine.
-
-Well, how do give a cpu a 'little more time' in the panic case?
-For the most part you can't without spinning on the lock and
-even in that case, how long do you spin for?
-
-So instead of making it ugly in the pstore code, just mimic the
-idea that stop_machine had, which is block on an IRQ IPI until
-the remote cpu has re-enabled interrupts and left the critical
-region.  Which is what happens now using REBOOT_IRQ.
-
-Then leave the NMI case for those cpus that are truly stuck
-after a short time.  This leaves the current behaviour alone and
-just handle a corner case.  Most systems should never have to
-enter the NMI code and if they do, print out a message in case
-the NMI itself causes another issue.
+Update the nonmi_ipi parameter to reflect the simple change
+instead of the previous complicated one.  There should be less
+of a need to use it but there may still be corner cases on older
+hardware that stumble into NMI issues.
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1336761675-24296-3-git-send-email-dzickus@redhat.com
+Link: http://lkml.kernel.org/r/1336761675-24296-4-git-send-email-dzickus@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/smp.c |   61 +++++++++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 56 insertions(+), 5 deletions(-)
+ arch/x86/kernel/smp.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
 diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 6d20f52..228e740 100644
+index 228e740..48d2b7d 100644
 --- a/arch/x86/kernel/smp.c
 +++ b/arch/x86/kernel/smp.c
-@@ -29,6 +29,7 @@
- #include <asm/mmu_context.h>
- #include <asm/proto.h>
- #include <asm/apic.h>
-+#include <asm/nmi.h>
- /*
-  *	Some notes on x86 processor bugs affecting SMP operation:
-  *
-@@ -108,6 +109,8 @@
-  *	about nothing of note with C stepping upwards.
+@@ -110,6 +110,7 @@
   */
  
-+static atomic_t stopping_cpu = ATOMIC_INIT(-1);
-+
+ static atomic_t stopping_cpu = ATOMIC_INIT(-1);
++static bool smp_no_nmi_ipi = false;
+ 
  /*
   * this function sends a 'reschedule' IPI to another CPU.
-  * it goes straight through and wastes no time serializing
-@@ -148,6 +151,17 @@ void native_send_call_func_ipi(const struct cpumask *mask)
- 	free_cpumask_var(allbutself);
+@@ -216,7 +217,7 @@ static void native_stop_other_cpus(int wait)
+ 	}
+ 	
+ 	/* if the REBOOT_VECTOR didn't work, try with the NMI */
+-	if ((num_online_cpus() > 1))  {
++	if ((num_online_cpus() > 1) && (!smp_no_nmi_ipi))  {
+ 		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
+ 					 NMI_FLAG_FIRST, "smp_stop"))
+ 			/* Note: we ignore failures here */
+@@ -245,11 +246,6 @@ finish:
+ 	local_irq_restore(flags);
  }
  
-+static int smp_stop_nmi_callback(unsigned int val, struct pt_regs *regs)
-+{
-+	/* We are registered on stopping cpu too, avoid spurious NMI */
-+	if (raw_smp_processor_id() == atomic_read(&stopping_cpu))
-+		return NMI_HANDLED;
-+
-+	stop_this_cpu(NULL);
-+
-+	return NMI_HANDLED;
-+}
-+
+-static void native_smp_disable_nmi_ipi(void)
+-{
+-	smp_ops.stop_other_cpus = native_irq_stop_other_cpus;
+-}
+-
  /*
-  * this function calls the 'stop' function on all other CPUs in the system.
+  * Reschedule call back.
   */
-@@ -171,13 +185,25 @@ static void native_stop_other_cpus(int wait)
- 	/*
- 	 * Use an own vector here because smp_call_function
- 	 * does lots of things not suitable in a panic situation.
--	 * On most systems we could also use an NMI here,
--	 * but there are a few systems around where NMI
--	 * is problematic so stay with an non NMI for now
--	 * (this implies we cannot stop CPUs spinning with irq off
--	 * currently)
-+	 */
-+
-+	/*
-+	 * We start by using the REBOOT_VECTOR irq.
-+	 * The irq is treated as a sync point to allow critical
-+	 * regions of code on other cpus to release their spin locks
-+	 * and re-enable irqs.  Jumping straight to an NMI might
-+	 * accidentally cause deadlocks with further shutdown/panic
-+	 * code.  By syncing, we give the cpus up to one second to
-+	 * finish their work before we force them off with the NMI.
- 	 */
- 	if (num_online_cpus() > 1) {
-+		/* did someone beat us here? */
-+		if (atomic_cmpxchg(&stopping_cpu, -1, safe_smp_processor_id()) != -1)
-+			return;
-+
-+		/* sync above data before sending IRQ */
-+		wmb();
-+
- 		apic->send_IPI_allbutself(REBOOT_VECTOR);
+@@ -283,8 +279,8 @@ void smp_call_function_single_interrupt(struct pt_regs *regs)
  
- 		/*
-@@ -188,7 +214,32 @@ static void native_stop_other_cpus(int wait)
- 		while (num_online_cpus() > 1 && (wait || timeout--))
- 			udelay(1);
- 	}
-+	
-+	/* if the REBOOT_VECTOR didn't work, try with the NMI */
-+	if ((num_online_cpus() > 1))  {
-+		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
-+					 NMI_FLAG_FIRST, "smp_stop"))
-+			/* Note: we ignore failures here */
-+			/* Hope the REBOOT_IRQ is good enough */
-+			goto finish;
-+
-+		/* sync above data before sending IRQ */
-+		wmb();
-+
-+		pr_emerg("Shutting down cpus with NMI\n");
-+
-+		apic->send_IPI_allbutself(NMI_VECTOR);
-+
-+		/*
-+		 * Don't wait longer than a 10 ms if the caller
-+		 * didn't ask us to wait.
-+		 */
-+		timeout = USEC_PER_MSEC * 10;
-+		while (num_online_cpus() > 1 && (wait || timeout--))
-+			udelay(1);
-+	}
+ static int __init nonmi_ipi_setup(char *str)
+ {
+-        native_smp_disable_nmi_ipi();
+-        return 1;
++	smp_no_nmi_ipi = true;
++	return 1;
+ }
  
-+finish:
- 	local_irq_save(flags);
- 	disable_local_APIC();
- 	local_irq_restore(flags);
+ __setup("nonmi_ipi", nonmi_ipi_setup);
