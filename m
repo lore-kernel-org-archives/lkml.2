@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758144Ab2ENV4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 17:56:07 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:47051 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758094Ab2ENV4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 17:56:03 -0400
-Date: Mon, 14 May 2012 23:55:46 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Chen Gong <gong.chen@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 1/2] x86/mce: Only restart instruction after machine
- check recovery if it is safe
-Message-ID: <20120514215546.GA23488@aftab.osrc.amd.com>
-References: <cover.1336674796.git.tony.luck@intel.com>
- <e6fa674d2f4ded80201f733d06b234b21559f0fe.1336674796.git.tony.luck@intel.com>
- <20120513095913.GB28863@aftab.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F192EED2B@ORSMSX104.amr.corp.intel.com>
- <20120514171702.GC21960@aftab.osrc.amd.com>
- <CA+8MBbKr-dc2MFNCvthqWzy3MvQmb8UEKy74mi36BkYHLDTOPg@mail.gmail.com>
+	id S932490Ab2ENV6V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 17:58:21 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:44602 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757935Ab2ENV6T convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 17:58:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+8MBbKr-dc2MFNCvthqWzy3MvQmb8UEKy74mi36BkYHLDTOPg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120514192404.91f9477851ad8485a2112973@canb.auug.org.au>
+References: <20120514192404.91f9477851ad8485a2112973@canb.auug.org.au>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Mon, 14 May 2012 14:57:56 -0700
+Message-ID: <CAJOA=zOvLak8ua+0dJTvgOuhF=TrpXaXZt+UXcn9-EEnh1+KBA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the akpm tree with the arm-soc tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 11:02:59AM -0700, Tony Luck wrote:
-> On Mon, May 14, 2012 at 10:17 AM, Borislav Petkov <bp@amd64.org> wrote:
-> > I was wondering about that but don't have any other flags/use cases.
-> > Well, we can always change it later if needed.
-> 
-> So is that an Ack? I was thinking that I should send this part to
-> Linus now ... since restarting from a fault when RIPV isn't set
-> could result in an application doing something bad (like getting
-> the wrong answer).
+On Mon, May 14, 2012 at 2:24 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Andrew,
+>
+> Today's linux-next merge of the akpm tree got a conflict in
+> drivers/clk/Kconfig between commit d269b974e32c ("clk: remove
+> COMMON_CLK_DISABLE_UNUSED") from the arm-soc tree and commit "clk: remove
+> redundant depends on from drivers/Kconfig" from the akpm tree.
+>
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Yep, sure.
+Hi Stephen,
 
-Thanks.
+The fix-up is correct.
 
--- 
-Regards/Gruss,
-Boris.
+Thanks,
+Mike
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc drivers/clk/Kconfig
+> index 4864407,4f10a21..0000000
+> --- a/drivers/clk/Kconfig
+> +++ b/drivers/clk/Kconfig
+> @@@ -23,9 -22,18 +23,8 @@@ config COMMON_CL
+>  menu "Common Clock Framework"
+>        depends on COMMON_CLK
+>
+>  -config COMMON_CLK_DISABLE_UNUSED
+>  -      bool "Disabled unused clocks at boot"
+>  -      ---help---
+>  -        Traverses the entire clock tree and disables any clocks that are
+>  -        enabled in hardware but have not been enabled by any device drivers.
+>  -        This saves power and keeps the software model of the clock in line
+>  -        with reality.
+>  -
+>  -        If in doubt, say "N".
+>  -
+>  config COMMON_CLK_DEBUG
+>        bool "DebugFS representation of clock tree"
+> -       depends on COMMON_CLK
+>        select DEBUG_FS
+>        ---help---
+>          Creates a directory hierchy in debugfs for visualizing the clk
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
