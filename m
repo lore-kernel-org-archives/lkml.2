@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964774Ab2ENX6a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 19:58:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55058 "EHLO
+	id S932743Ab2ENX63 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 19:58:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34168 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757855Ab2ENX61 (ORCPT
+	with ESMTP id S1756346Ab2ENX61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 May 2012 19:58:27 -0400
-Date: Mon, 14 May 2012 16:58:25 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-cc: a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
-        paul@paulmenage.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        nacc@us.ibm.com, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
-        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v3 0/5] CPU hotplug, cpusets: Fix issues with cpusets
- handling during suspend/resume
-In-Reply-To: <20120513231325.3566.37740.stgit@srivatsabhat>
-Message-ID: <alpine.DEB.2.00.1205141654080.25235@chino.kir.corp.google.com>
-References: <20120513231325.3566.37740.stgit@srivatsabhat>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Date: Mon, 14 May 2012 16:58:23 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sage Ahn <syahn@gctsemi.com>
+Cc: devel@driverdev.osuosl.org, olofj@chromium.org,
+        linux-kernel@vger.kernel.org, benchan@chromium.org
+Subject: Re: [PATCH] staging: gdm72xx: Add GCT GDM72xx WiMAX driver.
+Message-ID: <20120514235823.GA21256@kroah.com>
+References: <1337039376-15345-1-git-send-email-syahn@gctsemi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337039376-15345-1-git-send-email-syahn@gctsemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 May 2012, Srivatsa S. Bhat wrote:
-
-> Currently the kernel doesn't handle cpusets properly during suspend/resume.
-> After a resume, all non-root cpusets end up having only 1 cpu (the boot cpu),
-> causing massive performance degradation of workloads. One major user of cpusets
-> is libvirt, which means that after a suspend/hibernation cycle, all VMs
-> suddenly end up running terribly slow!
+On Tue, May 15, 2012 at 08:49:36AM +0900, Sage Ahn wrote:
+> This patch provides the kernel driver for the GDM72xx WiMAX chips
+> developed by GCT Semiconductor, Inc., which enables mobile WiMAX
+> connection on the Linux host.
 > 
-> Also, the kernel moves the tasks from one cpuset to another during CPU hotplug
-> in the suspend/resume path, leading to a task-management nightmare after
-> resume.
-> 
+> Signed-off-by: Sage Ahn <syahn@gctsemi.com>
+> Cc: Ben Chan <benchan@chromium.org>
 
-To deal with mempolicy rebinding when a cpuset changes, I made a change to 
-mempolicies to store the user nodemask passed to set_mempolicy() or 
-mbind() so the intention of the user could be preserved.  It seems like 
-you should do the same thing for cpusets to store the "intended" set of 
-cpus and respect that during cpu online?
+Nice.
 
-> Patches 1 & 2 are cleanups that separate out hotplug handling so that we can
-> implement different logic for different hotplug events (CPU/Mem
-> online/offline). This also leads to some optimizations and more importantly
-> prepares the ground for any further work dealing with cpusets during hotplug.
-> 
-> Patch 3 is a bug fix - it ensures that the tasks attached to the root cpuset
-> see the updated cpus_allowed mask upon CPU hotplug.
-> 
-> Patches 4 and 5 implement the fix for cpusets handling during suspend/resume.
+A few minor comments:
 
-All of your patches are labeled to stable@vger.kernel.org, but I seriously 
-doubt any of this is stable material since it has been a long-standing 
-issue (and perhaps intentional in some cases) and your series includes 
-cleanups and optimizations that wouldn't be stable candidates, so I'd 
-suggest removing that annotation.
+>  drivers/staging/gdm72xx/ChangeLog   |   88 +++
+
+This file is not needed.
+
+>  drivers/staging/gdm72xx/LICENSE     |   26 +
+
+This file should not be needed either.
+
+And that is where this gets wierd, your LICENSE file looks like a
+BSD-like license:
+
+> --- /dev/null
+> +++ b/drivers/staging/gdm72xx/LICENSE
+> @@ -0,0 +1,26 @@
+> +Copyright (c) 2012, GCT Semiconductor, Inc. All rights reserved.
+> +
+> +Redistribution and use in source and binary forms, with or without
+> +modification, are permitted provided that the following conditions are met:
+> +    * Redistributions of source code must retain the above copyright
+> +      notice, this list of conditions and the following disclaimer.
+> +    * Redistributions in binary form must reproduce the above copyright
+> +      notice, this list of conditions and the following disclaimer in the
+> +      documentation and/or other materials provided with the distribution.
+> +    * Neither the name of GCT Semiconductor, Inc. nor
+> +      the names of its contributors may be used to endorse or promote
+> +      products derived from this software without specific prior written
+> +      permission.
+> +
+> +
+> +THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+> +AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+> +IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+> +ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+> +LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+> +CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+> +SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+> +INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+> +CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+> +ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+> +POSSIBILITY OF SUCH DAMAGE.
+
+And the code says:
+
+> --- /dev/null
+> +++ b/drivers/staging/gdm72xx/gdm_qos.c
+> @@ -0,0 +1,453 @@
+> +/*
+> + * Copyright (c) 2012 GCT Semiconductor, Inc. All rights reserved.
+> + * Use of this source code is governed by a BSD-style license that can be
+> + * found in the LICENSE file.
+> + */
+
+But then you say later on in the file:
+
+> +MODULE_LICENSE("GPL");
+
+Which seems to be a contradiction here, don't you agree?
+
+Care to discuss this with your company's lawyers and let us know what
+they say?
+
+thanks,
+
+greg k-h
