@@ -1,128 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756844Ab2ENN6h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:58:37 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:49102 "HELO
-	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756741Ab2ENN6f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:58:35 -0400
-To: Eric.Moore@lsi.com, akpm@linux-foundation.org
-Subject: [PATCH v3 resend] fusion: use pci_dev->revision
-Cc: DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org, support@lsi.com,
-        linux-kernel@vger.kernel.org
-Content-Disposition: inline
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Organization: MontaVista Software Inc.
-Date: Mon, 14 May 2012 17:50:41 +0400
+	id S1756839Ab2ENOCE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 10:02:04 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:3514 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756722Ab2ENOCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 10:02:02 -0400
+Subject: [RFC PATCH 15/13] NFSd: make boot_time variable per network namespace
+To: bfields@fieldses.org, Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Mon, 14 May 2012 18:00:19 +0400
+Message-ID: <20120514140006.10879.82518.stgit@localhost.localdomain>
+In-Reply-To: <20120505170722.11559.74503.stgit@localhost.localdomain>
+References: <20120505170722.11559.74503.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205141750.41522.sshtylyov@ru.mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver uses PCI_CLASS_REVISION instead of PCI_REVISION_ID, so it wasn't
-converted by commit 44c10138fd4bbc4b6d6bff0873c24902f2a9da65 (PCI: Change all
-drivers to use pci_device->revision).
+NFSd's boot_time represents grace period start point in time.
 
-In one case, it even reads PCI revision ID without using it -- that code is now
-removed...
-
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Acked-by: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
-
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
-This patch is refreshed against the recent Linus' tree.
+ fs/nfsd/netns.h     |    1 +
+ fs/nfsd/nfs4state.c |   47 ++++++++++++++++++++++++++++-------------------
+ fs/nfsd/state.h     |    4 +++-
+ 3 files changed, 32 insertions(+), 20 deletions(-)
 
-This patch hasn't been applied to 3.1, 3.2, 3.3, or 3.4. Hopefully it can be
-applied to 3.5 at last...
+diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
+index b6deebd..65c2431 100644
+--- a/fs/nfsd/netns.h
++++ b/fs/nfsd/netns.h
+@@ -37,6 +37,7 @@ struct nfsd_net {
+ 
+ 	struct lock_manager nfsd4_manager;
+ 	bool grace_ended;
++	time_t boot_time;
+ };
+ 
+ extern int nfsd_net_id;
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 7c88ee8..e858ce7 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -51,7 +51,6 @@
+ /* Globals */
+ time_t nfsd4_lease = 90;     /* default lease time */
+ time_t nfsd4_grace = 90;
+-static time_t boot_time;
+ 
+ #define all_ones {{~0,~0},~0}
+ static const stateid_t one_stateid = {
+@@ -1011,12 +1010,12 @@ renew_client(struct nfs4_client *clp)
+ 
+ /* SETCLIENTID and SETCLIENTID_CONFIRM Helper functions */
+ static int
+-STALE_CLIENTID(clientid_t *clid)
++STALE_CLIENTID(clientid_t *clid, struct nfsd_net *nn)
+ {
+-	if (clid->cl_boot == boot_time)
++	if (clid->cl_boot == nn->boot_time)
+ 		return 0;
+ 	dprintk("NFSD stale clientid (%08x/%08x) boot_time %08lx\n",
+-		clid->cl_boot, clid->cl_id, boot_time);
++		clid->cl_boot, clid->cl_id, nn->boot_time);
+ 	return 1;
+ }
+ 
+@@ -1170,8 +1169,9 @@ same_creds(struct svc_cred *cr1, struct svc_cred *cr2)
+ static void gen_clid(struct nfs4_client *clp)
+ {
+ 	static u32 current_clientid = 1;
++	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
+-	clp->cl_clientid.cl_boot = boot_time;
++	clp->cl_clientid.cl_boot = nn->boot_time;
+ 	clp->cl_clientid.cl_id = current_clientid++; 
+ }
+ 
+@@ -2221,8 +2221,9 @@ nfsd4_setclientid_confirm(struct svc_rqst *rqstp,
+ 	nfs4_verifier confirm = setclientid_confirm->sc_confirm; 
+ 	clientid_t * clid = &setclientid_confirm->sc_clientid;
+ 	__be32 status;
++	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
+-	if (STALE_CLIENTID(clid))
++	if (STALE_CLIENTID(clid, nn))
+ 		return nfserr_stale_clientid;
+ 	/* 
+ 	 * XXX The Duplicate Request Cache (DRC) has been checked (??)
+@@ -2621,8 +2622,9 @@ nfsd4_process_open1(struct nfsd4_compound_state *cstate,
+ 	unsigned int strhashval;
+ 	struct nfs4_openowner *oo = NULL;
+ 	__be32 status;
++	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
+-	if (STALE_CLIENTID(&open->op_clientid))
++	if (STALE_CLIENTID(&open->op_clientid, nn))
+ 		return nfserr_stale_clientid;
+ 	/*
+ 	 * In case we need it later, after we've already created the
+@@ -3164,12 +3166,13 @@ nfsd4_renew(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ {
+ 	struct nfs4_client *clp;
+ 	__be32 status;
++	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
+ 	nfs4_lock_state();
+ 	dprintk("process_renew(%08x/%08x): starting\n", 
+ 			clid->cl_boot, clid->cl_id);
+ 	status = nfserr_stale_clientid;
+-	if (STALE_CLIENTID(clid))
++	if (STALE_CLIENTID(clid, nn))
+ 		goto out;
+ 	clp = find_confirmed_client(clid);
+ 	status = nfserr_expired;
+@@ -3199,7 +3202,7 @@ nfsd4_end_grace(struct net *net)
+ 
+ 	dprintk("NFSD: end of grace period\n");
+ 	nn->grace_ended = true;
+-	nfsd4_record_grace_done(net, boot_time);
++	nfsd4_record_grace_done(net, nn->boot_time);
+ 	locks_end_grace(&nn->nfsd4_manager);
+ 	/*
+ 	 * Now that every NFSv4 client has had the chance to recover and
+@@ -3305,9 +3308,9 @@ static inline __be32 nfs4_check_fh(struct svc_fh *fhp, struct nfs4_ol_stateid *s
+ }
+ 
+ static int
+-STALE_STATEID(stateid_t *stateid)
++STALE_STATEID(stateid_t *stateid, struct nfsd_net *nn)
+ {
+-	if (stateid->si_opaque.so_clid.cl_boot == boot_time)
++	if (stateid->si_opaque.so_clid.cl_boot == nn->boot_time)
+ 		return 0;
+ 	dprintk("NFSD: stale stateid " STATEID_FMT "!\n",
+ 		STATEID_VAL(stateid));
+@@ -3407,13 +3410,14 @@ static __be32 check_stateid_generation(stateid_t *in, stateid_t *ref, bool has_s
+ 	return nfserr_old_stateid;
+ }
+ 
+-__be32 nfs4_validate_stateid(struct nfs4_client *cl, stateid_t *stateid)
++__be32 nfs4_validate_stateid(struct nfs4_client *cl, stateid_t *stateid,
++			     struct nfsd_net *nn)
+ {
+ 	struct nfs4_stid *s;
+ 	struct nfs4_ol_stateid *ols;
+ 	__be32 status;
+ 
+-	if (STALE_STATEID(stateid))
++	if (STALE_STATEID(stateid, nn))
+ 		return nfserr_stale_stateid;
+ 
+ 	s = find_stateid(cl, stateid);
+@@ -3434,10 +3438,11 @@ __be32 nfs4_validate_stateid(struct nfs4_client *cl, stateid_t *stateid)
+ static __be32 nfsd4_lookup_stateid(stateid_t *stateid, unsigned char typemask, struct nfs4_stid **s)
+ {
+ 	struct nfs4_client *cl;
++	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
+ 	if (ZERO_STATEID(stateid) || ONE_STATEID(stateid))
+ 		return nfserr_bad_stateid;
+-	if (STALE_STATEID(stateid))
++	if (STALE_STATEID(stateid, nn))
+ 		return nfserr_stale_stateid;
+ 	cl = find_confirmed_client(&stateid->si_opaque.so_clid);
+ 	if (!cl)
+@@ -3534,10 +3539,11 @@ nfsd4_test_stateid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ {
+ 	struct nfsd4_test_stateid_id *stateid;
+ 	struct nfs4_client *cl = cstate->session->se_client;
++	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
+ 	nfs4_lock_state();
+ 	list_for_each_entry(stateid, &test_stateid->ts_stateid_list, ts_id_list)
+-		stateid->ts_id_status = nfs4_validate_stateid(cl, &stateid->ts_id_stateid);
++		stateid->ts_id_status = nfs4_validate_stateid(cl, &stateid->ts_id_stateid, nn);
+ 	nfs4_unlock_state();
+ 
+ 	return nfs_ok;
+@@ -4101,6 +4107,7 @@ nfsd4_lock(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ 	bool new_state = false;
+ 	int lkflg;
+ 	int err;
++	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
+ 	dprintk("NFSD: nfsd4_lock: start=%Ld length=%Ld\n",
+ 		(long long) lock->lk_offset,
+@@ -4132,7 +4139,7 @@ nfsd4_lock(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ 				sizeof(clientid_t));
+ 
+ 		status = nfserr_stale_clientid;
+-		if (STALE_CLIENTID(&lock->lk_new_clientid))
++		if (STALE_CLIENTID(&lock->lk_new_clientid, nn))
+ 			goto out;
+ 
+ 		/* validate and update open stateid and open seqid */
+@@ -4273,6 +4280,7 @@ nfsd4_lockt(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ 	struct nfs4_lockowner *lo;
+ 	int error;
+ 	__be32 status;
++	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
+ 	if (locks_in_grace(SVC_NET(rqstp)))
+ 		return nfserr_grace;
+@@ -4283,7 +4291,7 @@ nfsd4_lockt(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ 	nfs4_lock_state();
+ 
+ 	status = nfserr_stale_clientid;
+-	if (!nfsd4_has_session(cstate) && STALE_CLIENTID(&lockt->lt_clientid))
++	if (!nfsd4_has_session(cstate) && STALE_CLIENTID(&lockt->lt_clientid, nn))
+ 		goto out;
+ 
+ 	if ((status = fh_verify(rqstp, &cstate->current_fh, S_IFREG, 0)))
+@@ -4434,6 +4442,7 @@ nfsd4_release_lockowner(struct svc_rqst *rqstp,
+ 	struct list_head matches;
+ 	unsigned int hashval = ownerstr_hashval(clid->cl_id, owner);
+ 	__be32 status;
++	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+ 
+ 	dprintk("nfsd4_release_lockowner clientid: (%08x/%08x):\n",
+ 		clid->cl_boot, clid->cl_id);
+@@ -4441,7 +4450,7 @@ nfsd4_release_lockowner(struct svc_rqst *rqstp,
+ 	/* XXX check for lease expiration */
+ 
+ 	status = nfserr_stale_clientid;
+-	if (STALE_CLIENTID(clid))
++	if (STALE_CLIENTID(clid, nn))
+ 		return status;
+ 
+ 	nfs4_lock_state();
+@@ -4757,7 +4766,7 @@ nfs4_state_start(void)
+ 	 */
+ 	get_net(net);
+ 	nfsd4_client_tracking_init(net);
+-	boot_time = get_seconds();
++	nn->boot_time = get_seconds();
+ 	locks_start_grace(net, &nn->nfsd4_manager);
+ 	nn->grace_ended = false;
+ 	printk(KERN_INFO "NFSD: starting %ld-second grace period\n",
+diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
+index 29d9f0b..5946ffd 100644
+--- a/fs/nfsd/state.h
++++ b/fs/nfsd/state.h
+@@ -451,6 +451,7 @@ static inline struct nfs4_ol_stateid *openlockstateid(struct nfs4_stid *s)
+ #define WR_STATE	        0x00000020
+ 
+ struct nfsd4_compound_state;
++struct nfsd_net;
+ 
+ extern __be32 nfs4_preprocess_stateid_op(struct net *net,
+ 		struct nfsd4_compound_state *cstate,
+@@ -477,7 +478,8 @@ extern __be32 nfs4_make_rec_clidname(char *clidname, struct xdr_netobj *clname);
+ extern int nfs4_client_to_reclaim(const char *name);
+ extern int nfs4_has_reclaimed_state(const char *name, bool use_exchange_id);
+ extern void release_session_client(struct nfsd4_session *);
+-extern __be32 nfs4_validate_stateid(struct nfs4_client *, stateid_t *);
++extern __be32 nfs4_validate_stateid(struct nfs4_client *, stateid_t *,
++				    struct nfsd_net *);
+ extern void nfsd4_purge_closed_stateid(struct nfs4_stateowner *);
+ 
+ /* nfs4recover operations */
 
-Andrew M., maybe you can take it if the maintainers don't seem to be bothered?
-
- drivers/message/fusion/mptbase.c |   12 ++++--------
- drivers/message/fusion/mptctl.c  |    4 +---
- 2 files changed, 5 insertions(+), 11 deletions(-)
-
-Index: linux-2.6/drivers/message/fusion/mptbase.c
-===================================================================
---- linux-2.6.orig/drivers/message/fusion/mptbase.c
-+++ linux-2.6/drivers/message/fusion/mptbase.c
-@@ -1652,7 +1652,6 @@ mpt_mapresources(MPT_ADAPTER *ioc)
- 	unsigned long	 port;
- 	u32		 msize;
- 	u32		 psize;
--	u8		 revision;
- 	int		 r = -ENODEV;
- 	struct pci_dev *pdev;
- 
-@@ -1669,8 +1668,6 @@ mpt_mapresources(MPT_ADAPTER *ioc)
- 		return r;
- 	}
- 
--	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
--
- 	if (sizeof(dma_addr_t) > 4) {
- 		const uint64_t required_mask = dma_get_required_mask
- 		    (&pdev->dev);
-@@ -1778,7 +1775,6 @@ mpt_attach(struct pci_dev *pdev, const s
- 	MPT_ADAPTER	*ioc;
- 	u8		 cb_idx;
- 	int		 r = -ENODEV;
--	u8		 revision;
- 	u8		 pcixcmd;
- 	static int	 mpt_ids = 0;
- #ifdef CONFIG_PROC_FS
-@@ -1886,8 +1882,8 @@ mpt_attach(struct pci_dev *pdev, const s
- 	dinitprintk(ioc, printk(MYIOC_s_INFO_FMT "facts @ %p, pfacts[0] @ %p\n",
- 	    ioc->name, &ioc->facts, &ioc->pfacts[0]));
- 
--	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
--	mpt_get_product_name(pdev->vendor, pdev->device, revision, ioc->prod_name);
-+	mpt_get_product_name(pdev->vendor, pdev->device, pdev->revision,
-+			     ioc->prod_name);
- 
- 	switch (pdev->device)
- 	{
-@@ -1902,7 +1898,7 @@ mpt_attach(struct pci_dev *pdev, const s
- 		break;
- 
- 	case MPI_MANUFACTPAGE_DEVICEID_FC929X:
--		if (revision < XL_929) {
-+		if (pdev->revision < XL_929) {
- 			/* 929X Chip Fix. Set Split transactions level
- 		 	* for PCIX. Set MOST bits to zero.
- 		 	*/
-@@ -1933,7 +1929,7 @@ mpt_attach(struct pci_dev *pdev, const s
- 		/* 1030 Chip Fix. Disable Split transactions
- 		 * for PCIX. Set MOST bits to zero if Rev < C0( = 8).
- 		 */
--		if (revision < C0_1030) {
-+		if (pdev->revision < C0_1030) {
- 			pci_read_config_byte(pdev, 0x6a, &pcixcmd);
- 			pcixcmd &= 0x8F;
- 			pci_write_config_byte(pdev, 0x6a, pcixcmd);
-Index: linux-2.6/drivers/message/fusion/mptctl.c
-===================================================================
---- linux-2.6.orig/drivers/message/fusion/mptctl.c
-+++ linux-2.6/drivers/message/fusion/mptctl.c
-@@ -1250,7 +1250,6 @@ mptctl_getiocinfo (unsigned long arg, un
- 	int			iocnum;
- 	unsigned int		port;
- 	int			cim_rev;
--	u8			revision;
- 	struct scsi_device 	*sdev;
- 	VirtDevice		*vdevice;
- 
-@@ -1324,8 +1323,7 @@ mptctl_getiocinfo (unsigned long arg, un
- 	pdev = (struct pci_dev *) ioc->pcidev;
- 
- 	karg->pciId = pdev->device;
--	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
--	karg->hwRev = revision;
-+	karg->hwRev = pdev->revision;
- 	karg->subSystemDevice = pdev->subsystem_device;
- 	karg->subSystemVendor = pdev->subsystem_vendor;
- 
