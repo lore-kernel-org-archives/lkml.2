@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994Ab2ENQPS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 12:15:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38963 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756607Ab2ENQPQ (ORCPT
+	id S1757049Ab2ENQPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 12:15:47 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16364 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756989Ab2ENQPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 12:15:16 -0400
-Message-ID: <1337012111.13224.4.camel@phoenix>
-Subject: [PATCH 4/4] regulator: max8649: Convert to
- regulator_set_voltage_sel_regmap and regulator_map_voltage_linear
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jonghwan Choi <jhbird.choi@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Tue, 15 May 2012 00:15:11 +0800
-In-Reply-To: <1337011930.13224.1.camel@phoenix>
-References: <1337011930.13224.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Mon, 14 May 2012 12:15:43 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 14 May 2012 09:15:36 -0700
+Message-ID: <4FB12EA3.504@nvidia.com>
+Date: Mon, 14 May 2012 21:41:15 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] regulator: tps62360: Fix build error due to missing semicolon
+References: <1337011088.6054.0.camel@phoenix>
+In-Reply-To: <1337011088.6054.0.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max8649.c |   22 ++--------------------
- 1 files changed, 2 insertions(+), 20 deletions(-)
+On Monday 14 May 2012 09:28 PM, Axel Lin wrote:
+> Fix below build error:
+>    CC [M]  drivers/regulator/tps62360-regulator.o
+> drivers/regulator/tps62360-regulator.c:351:1: error: expected ',' or ';' before 'extern'
+> make[2]: *** [drivers/regulator/tps62360-regulator.o] Error 1
+> make[1]: *** [drivers/regulator] Error 2
+> make: *** [drivers] Error 2
+>
+> Signed-off-by: Axel Lin<axel.lin@gmail.com>
+> ---
+>   drivers/regulator/tps62360-regulator.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
+> index 60765cc..82cd763 100644
+> --- a/drivers/regulator/tps62360-regulator.c
+> +++ b/drivers/regulator/tps62360-regulator.c
+> @@ -347,7 +347,7 @@ static const struct of_device_id tps62360_of_match[] = {
+>   	 { .compatible = "ti,tps62362", .data = (void *)TPS62362},
+>   	 { .compatible = "ti,tps62363", .data = (void *)TPS62363},
+>   	{},
+> -}
+> +};
+>   MODULE_DEVICE_TABLE(of, tps62360_of_match);
+>   #endif
+>
+Really strange!! I am not getting this compilation error in my build.
 
-diff --git a/drivers/regulator/max8649.c b/drivers/regulator/max8649.c
-index 0cfd172..39fffb2 100644
---- a/drivers/regulator/max8649.c
-+++ b/drivers/regulator/max8649.c
-@@ -70,25 +70,6 @@ static inline int check_range(int min_uV, int max_uV)
- 	return 0;
- }
- 
--static int max8649_set_voltage(struct regulator_dev *rdev,
--			       int min_uV, int max_uV, unsigned *selector)
--{
--	struct max8649_regulator_info *info = rdev_get_drvdata(rdev);
--	unsigned char data, mask;
--
--	if (check_range(min_uV, max_uV)) {
--		dev_err(info->dev, "invalid voltage range (%d, %d) uV\n",
--			min_uV, max_uV);
--		return -EINVAL;
--	}
--	data = DIV_ROUND_UP(min_uV - MAX8649_DCDC_VMIN, MAX8649_DCDC_STEP);
--	mask = MAX8649_VOL_MASK;
--	*selector = data & mask;
--
--	return regmap_update_bits(info->regmap, rdev->desc->vsel_reg, mask,
--				  data);
--}
--
- /* EN_PD means pulldown on EN input */
- static int max8649_enable(struct regulator_dev *rdev)
- {
-@@ -176,9 +157,10 @@ static unsigned int max8649_get_mode(struct regulator_dev *rdev)
- }
- 
- static struct regulator_ops max8649_dcdc_ops = {
--	.set_voltage	= max8649_set_voltage,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
- 	.list_voltage	= regulator_list_voltage_linear,
-+	.map_voltage	= regulator_map_voltage_linear,
- 	.enable		= max8649_enable,
- 	.disable	= max8649_disable,
- 	.is_enabled	= max8649_is_enabled,
--- 
-1.7.5.4
-
-
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
 
