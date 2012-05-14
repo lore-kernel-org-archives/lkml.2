@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab2ENIaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 04:30:04 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:4877 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210Ab2ENIaC (ORCPT
+	id S1754933Ab2ENIbq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 04:31:46 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:45699 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab2ENIbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 04:30:02 -0400
-Date: Mon, 14 May 2012 18:28:44 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Integrating a new programming language into the kernel
-Message-ID: <20120514182844.1b9c3614@linux-j2xc>
-In-Reply-To: <20120514074149.GA12756@kroah.com>
-References: <20120513120009.18cb3e17@linux-j2xc>
-	<4FB05533.5010807@zytor.com>
-	<20120514135731.2e989a81@linux-j2xc>
-	<20120514074149.GA12756@kroah.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	Mon, 14 May 2012 04:31:44 -0400
+Date: Mon, 14 May 2012 18:31:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: linux-next: manual merge of the gpio tree with Linus' tree
+Message-Id: <20120514183133.e5b44bd8f61cd6bd6805fff4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-2.017, required 4, AWL 0.48, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__14_May_2012_18_31_33_+1000_c2W6jm=bxxmD3WFR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, I will. It's all part of the hacking fun!
+--Signature=_Mon__14_May_2012_18_31_33_+1000_c2W6jm=bxxmD3WFR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Grant,
 
-Cheers
+Today's linux-next merge of the gpio tree got a conflict in
+drivers/gpio/gpio-samsung.c between commit 2760f7adbb6c ("gpio/exynos:
+Fix compiler warnings when non-exynos machines are selected") from Linus'
+tree and commit fd454997d687 ("gpio: samsung: refactor gpiolib init for
+exynos4/5") from the gpio tree.
 
-Chris Jones
+I used the version from the gpio tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Mon__14_May_2012_18_31_33_+1000_c2W6jm=bxxmD3WFR
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-On Mon, 14 May 2012 00:41:49 -0700
-Greg KH <greg@kroah.com> wrote:
+iQIcBAEBCAAGBQJPsMLlAAoJEECxmPOUX5FE3moP/jRbNJIjv8CfQfAO8LcKRSxW
+qz9utAiSXbM9fCApjhdThoeI4dVa+WeTX4OfHxKA7fqiWUKALzS8uO0590OblWBE
+SRFsf4SVAdP4W/YY3VHd5RT82ySdIlvP5ExBYtVSIiDhqElBp8m9iIycZyLiJ0G1
+9DQVxyvP97jLCy90CQimGix2d4X/Lp8IpGZh3MCO4A1GDOZ20x/FJIN939KTU3fm
+EcYb8NjUXXr1Nlu65TkLtdlrbWXIDhY7YNOWxkdzRzbWqDbbKniZKZoX8a6oIOBU
+oLb+CJnlX+dWMwaY5Aq4MST5rGdil9Zt/asykkXFkS8k/fJs8gR+LDtpkJhnQwZT
+af9+ulGXNiIYPBKqUEWoGY57fQ1JVLK2i27A7SlYINZbNzvKg1W/RoqCv8Hr6O0m
+qc1boHFpneEWc7DBiD8Jfaz/9heuCAHjnOMy3fjeNhHx0g0JaHM7SV7iohdgHfqa
+rP9m8sOU/F0yc+2Pg7k/QAADLAs4T0KIZtcYD4kMuptiIN19kRUyL7kscuRj5lut
+r+pJjpyAbF9WfE+6aVyO28j9MpBCif8sMb/KVscmlr877U610fvZxKgS/BBlEGCv
+D1pOVVJOX5gcIiZIQKUCQDm9fqMR03tT9ctTC+WZBd7/W4LwlAcvGbSXFxwHcCEB
+7CnnCtsMQQf1qSsRiGUE
+=zkRZ
+-----END PGP SIGNATURE-----
 
-> On Mon, May 14, 2012 at 01:57:31PM +1000, Chris Jones wrote:
-> > I'm curious as to why you suggest "no"?
-> > 
-> > And if it were to successfully eventuate and I were to do this, it
-> > would only ever be a custom kernel. And that's why I'm curious as to
-> > why you say to not do it.
-> 
-> Try it and find out why he, and others, recommend not to do so :)
-> 
-> Best of luck,
-> 
-> greg k-h
-
+--Signature=_Mon__14_May_2012_18_31_33_+1000_c2W6jm=bxxmD3WFR--
