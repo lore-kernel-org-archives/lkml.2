@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab2ENS7E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 14:59:04 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:34113 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757562Ab2ENS7D (ORCPT
+	id S1757575Ab2ENTCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 15:02:36 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63876 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757262Ab2ENTCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 14:59:03 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: j3I4HmIVM1kamc5A39ngvxszFMGhUyOdwenMTRCuWL3G8sG
- JR9tD53vTADNyvOxRxYl9FftaCTDYXHuz9RsqSgyKDwCVNNe5nFEAg4a3aKJ
- vWKXrUstqDg8lq1nMPEtamAfiHK.pjPbyMpQ7l2Se7PiBoF859AtZPPCh93l
- AAhof1itlqV2V5ddF_tUxOgd0vBAbkWMFKMsMqH0oOCfQsVkZAk8mdGehOUg
- EGRieDJ2AWXOY6rB2P0A_9z4wVU.lAtf7fikM7gZ2o_w8CbqySLNfXoA885f
- VAPPf.kehWngK.QKybNSUUjDqXlHTttb9Pz0f2CWbVnjfxBEDuA4uRb7BMpB
- 8VcuteOUCxDE_xWnt3xqURjWSWvvoO9FGvdSQOX71Z65UsXJUpmrtR60lAVN
- J
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 14 May 2012 13:58:59 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pravin B Shelar <pshelar@nicira.com>
-cc: penberg@kernel.org, mpm@selenic.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, jesse@nicira.com, abhide@nicira.com
-Subject: Re: [PATCH 2/2] mm: Fix slab->page _count corruption.
-In-Reply-To: <1337020900-20120-1-git-send-email-pshelar@nicira.com>
-Message-ID: <alpine.DEB.2.00.1205141353310.26304@router.home>
-References: <1337020900-20120-1-git-send-email-pshelar@nicira.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 14 May 2012 15:02:34 -0400
+Subject: Re: [PATCH RFC] tun: experimental zero copy tx support
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ian.Campbell@citrix.com,
+        kvm@vger.kernel.org
+In-Reply-To: <20120514170412.GA17086@redhat.com>
+References: <20120513155206.GA26847@redhat.com>
+	 <20120514095446.3ce307d2@nehalam.linuxnetplumber.net>
+	 <20120514170412.GA17086@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 May 2012 21:02:26 +0200
+Message-ID: <1337022146.8512.606.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 May 2012, Pravin B Shelar wrote:
+On Mon, 2012-05-14 at 20:04 +0300, Michael S. Tsirkin wrote:
+> On Mon, May 14, 2012 at 09:54:46AM -0700, Stephen Hemminger wrote:
+> > On Sun, 13 May 2012 18:52:06 +0300
+> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > 
+> > > +		/* Userspace may produce vectors with count greater than
+> > > +		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
+> > > +		 * to let the rest of data to be fit in the frags.
+> > > +		 */
+> > Rather than complex partial code, just go through slow path for
+> > requests with too many frags (or for really small requests).
+> > Creating mixed skb's seems too easy to get wrong.
+> 
+> I don't object in principle but macvtap has same code
+> so seems better to stay consistent.
+> 
 
-> On arches that do not support this_cpu_cmpxchg_double slab_lock is used
-> to do atomic cmpxchg() on double word which contains page->_count.
-> page count can be changed from get_page() or put_page() without taking
-> slab_lock. That corrupts page counter.
->
-> Following patch fixes it by moving page->_count out of cmpxchg_double
-> data. So that slub does no change it while updating slub meta-data in
-> struct page.
+If I remember well, code in vtap was buggy and still is.
 
-Ugly. Maybe its best to not touch the count in the page lock case in slub?
+Jason Wang fixes are not yet in, so maybe wait a bit, so that we dont
+add a pile of new bugs ?
 
-You could accomplish that by changing the definition of counters in
-mm_types.h. Make it unsigned instead of unsigned long so that it only
-covers the first part of the struct (which excludes the refcounter)
+
 
 
