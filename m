@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756180Ab2ENMxp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 08:53:45 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:59306 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755830Ab2ENMxo (ORCPT
+	id S1756227Ab2ENM6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 08:58:23 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:60129 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755855Ab2ENM6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 08:53:44 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArkIAA4AsU9bdWOb/2dsb2JhbABEhXmlSiKIDoEHghUBAQUjBFIQCxgqAgJXBoglp2aSWYsahHCBGASmPYJr
-X-IronPort-AV: E=Sophos;i="4.75,586,1330902000"; 
-   d="asc'?scan'208";a="907431132"
-Message-ID: <1337000016.3438.5.camel@fourier.local.igalia.com>
-Subject: Re: [PATCH 1/5] Staging ipack: fix a few sparse warnings
-From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Mon, 14 May 2012 14:53:36 +0200
-In-Reply-To: <20120514122628.GH16984@mwanda>
-References: <1336992089-2733-1-git-send-email-siglesias@igalia.com>
-	 <1336992089-2733-2-git-send-email-siglesias@igalia.com>
-	 <20120514122628.GH16984@mwanda>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-hFT4ldoF/s+JDrAzdKK6"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
+	Mon, 14 May 2012 08:58:22 -0400
+Message-ID: <4FB10156.2080900@stericsson.com>
+Date: Mon, 14 May 2012 14:57:58 +0200
+From: Ulf Hansson <ulf.hansson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: yongd <yongd@marvell.com>
+Cc: "cjb@laptop.org" <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "stefan.xk.nilsson@stericsson.com" <stefan.xk.nilsson@stericsson.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "svenkatr@ti.com" <svenkatr@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mmc:sdio:retry CMD52/53 when error happens
+References: <1336984792-13956-1-git-send-email-yongd@marvell.com>
+In-Reply-To: <1336984792-13956-1-git-send-email-yongd@marvell.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Yongd,
 
---=-hFT4ldoF/s+JDrAzdKK6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+ From my perspective I don't think this patch is wanted.
 
-On Mon, 2012-05-14 at 15:26 +0300, Dan Carpenter wrote:
-> On Mon, May 14, 2012 at 12:41:25PM +0200, Samuel Iglesias Gonsalvez wrote=
-:
-> >  	/* Read status register */
-> > -	status_reg =3D readw((unsigned short *) (tpci200->info->interface_reg=
-s +
-> > +	status_reg =3D readw((void __iomem *) (tpci200->info->interface_regs =
-+
-> >  					       TPCI200_STATUS_REG));
-> > =20
->=20
-> Later in the patch, you do the right thing which is to declare this
-> as an __iomem pointer in the header.  The cast here can be removed
-> and it all fits on one line.
->=20
-> Remove it in a follow on patch if you want.  Same for several of the
-> other casts in this patch.
+A retry mechanism is likely very much hw-SDIO device dependent. Upper 
+layers (SDIO func driver) is thus the only software that is able to 
+handle retries correctly.
 
-Thanks a lot. I will do it.
-
-Regards,
-
-Sam
+Kind regards
+Ulf Hansson
 
 
-
---=-hFT4ldoF/s+JDrAzdKK6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEABECAAYFAk+xAFAACgkQWrfbyfmd9eLnxgCfaXBsWfSqcdGs0S5iVrYWdJOg
-/UMAoIhvICSS1U935i/axo3jSUZrmsQP
-=Oi1j
------END PGP SIGNATURE-----
-
---=-hFT4ldoF/s+JDrAzdKK6--
+On 05/14/2012 10:39 AM, yongd wrote:
+>    Set sdio CMD52/53's retry time as MMC_CMD_RETRIES. As a result,
+> sdio might benefit from core-internal CMD retry mechanism when
+> some errors happen(CRC, etc).
+>
+> Signed-off-by: yongd<yongd@marvell.com>
+> ---
+>   drivers/mmc/core/sdio_ops.c |    3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/core/sdio_ops.c b/drivers/mmc/core/sdio_ops.c
+> index d29e206..884c27e 100644
+> --- a/drivers/mmc/core/sdio_ops.c
+> +++ b/drivers/mmc/core/sdio_ops.c
+> @@ -86,7 +86,7 @@ static int mmc_io_rw_direct_host(struct mmc_host *host, int write, unsigned fn,
+>   	cmd.arg |= in;
+>   	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_AC;
+>
+> -	err = mmc_wait_for_cmd(host,&cmd, 0);
+> +	err = mmc_wait_for_cmd(host,&cmd, MMC_CMD_RETRIES);
+>   	if (err)
+>   		return err;
+>
+> @@ -147,6 +147,7 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
+>   	else
+>   		cmd.arg |= 0x08000000 | blocks;		/* block mode */
+>   	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_ADTC;
+> +	cmd.retries = MMC_CMD_RETRIES;
+>
+>   	data.blksz = blksz;
+>   	/* Code in host drivers/fwk assumes that "blocks" always is>=1 */
 
