@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab2ENVTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 17:19:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38041 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757683Ab2ENVTS (ORCPT
+	id S932375Ab2ENVUE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 17:20:04 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:56229 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932257Ab2ENVUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 17:19:18 -0400
-Date: Mon, 14 May 2012 14:19:13 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
-        NeilBrown <neilb@suse.de>, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH] floppy: remove floppy-specific O_EXCL handling
-Message-ID: <20120514211913.GL2366@google.com>
-References: <alpine.LNX.2.00.1205131059410.15448@pobox.suse.cz>
- <20120514162521.GA2366@google.com>
- <alpine.LNX.2.00.1205142237590.15448@pobox.suse.cz>
+	Mon, 14 May 2012 17:20:02 -0400
+Date: Mon, 14 May 2012 22:19:59 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Mario Limonciello <mario_limonciello@dell.com>
+Cc: Kamal Mostafa <kamal@canonical.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] dell-laptop: rfkill blacklist Dell XPS 13z, 15z
+Message-ID: <20120514211959.GA9394@srcf.ucam.org>
+References: <1337023652-11661-1-git-send-email-kamal@canonical.com>
+ <20120514193718.GA6438@srcf.ucam.org>
+ <4FB16659.6040704@dell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1205142237590.15448@pobox.suse.cz>
+In-Reply-To: <4FB16659.6040704@dell.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, May 14, 2012 at 10:42:58PM +0200, Jiri Kosina wrote:
-> Because since
+On Mon, May 14, 2012 at 03:08:57PM -0500, Mario Limonciello wrote:
 > 
-> 	commit e525fd89d380c4a94c0d63913a1dd1a593ed25e7
-> 	Author: Tejun Heo <tj@kernel.org>
-> 	Date:   Sat Nov 13 11:55:17 2010 +0100
-> 
-> 	    block: make blkdev_get/put() handle exclusive access
-> 
-> mount of /dev/fd0 actually causes the fd0 block device be claimed with 
-> _EXCL. Before this commit, you are able to mount /dev/fd0 and then open() 
-> it afterward. After this commit you can't any more, because mounting 
-> /dev/fd0 already passes O_EXCL to floppy_open(), and thus noone else can 
-> open(/dev/fd0) any more.
-> 
-> My commit brings things back into shape, i.e. you can, equally to other 
-> block devices, both mount it and open() it afterwards.
+> On 05/14/2012 02:37 PM, Matthew Garrett wrote:
+> >What does "Improper BIOS interaction" mean? What's the proper BIOS interaction?
+> These platforms are not obeying the smbios interface specs for turning on and off radios.  It's not currently expected that the interaction will improve during the lifetime of these platforms.  If it does, then this can be adjusted to only apply to the BIOS versions before the fix.
 
-Ah, that makes sense.  Maybe it's a good idea to note why the change
-is necessary in the commit message too?
+Ok, pretty bored of this at this point. If the bios interface is 
+unreliable then I'll just remove the rfkill support. I'm not going to 
+continue adding machines to a blacklist some time after users find 
+things are broken.
 
- Acked-by: Tejun Heo <tj@kernel.org>
-
-Thanks.
+Is this just as broken under Windows?
 
 -- 
-tejun
+Matthew Garrett | mjg59@srcf.ucam.org
