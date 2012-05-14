@@ -1,261 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256Ab2ENXNe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 19:13:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56330 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757353Ab2ENXNc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 19:13:32 -0400
-Date: Mon, 14 May 2012 16:13:30 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Stephane Marchesin <marcheu@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>, Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <ffwll.ch@google.com>, Rob Clark <rob.clark@linaro.org>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/10] shmem: replace page if mapping excludes its zone
-Message-Id: <20120514161330.def0ac52.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.00.1205120453210.28861@eggly.anvils>
-References: <alpine.LSU.2.00.1205120447380.28861@eggly.anvils>
-	<alpine.LSU.2.00.1205120453210.28861@eggly.anvils>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S932668Ab2ENXQD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 19:16:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36636 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758267Ab2ENXP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 19:15:59 -0400
+Date: Tue, 15 May 2012 09:15:42 +1000
+From: NeilBrown <neilb@suse.de>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Ludwig Nussel <ludwig.nussel@suse.de>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        EXT2 FILE SYSTEM <linux-ext4@vger.kernel.org>,
+        DOCUMENTATION <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH RESEND] implement uid and gid mount options for ext2,
+ ext3 and ext4
+Message-ID: <20120515091542.51f3dd78@notabene.brown>
+In-Reply-To: <4FAD30D7.3070208@panasas.com>
+References: <1336660924-9598-1-git-send-email-ludwig.nussel@suse.de>
+ <20120511034945.GA15892@mobil.systemanalysen.net>
+ <4FAD30D7.3070208@panasas.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/JN2F3xW84eIpxNCXYnxuere"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 12 May 2012 04:59:56 -0700 (PDT)
-Hugh Dickins <hughd@google.com> wrote:
+--Sig_/JN2F3xW84eIpxNCXYnxuere
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> The GMA500 GPU driver uses GEM shmem objects, but with a new twist:
-> the backing RAM has to be below 4GB.  Not a problem while the boards
-> supported only 4GB: but now Intel's D2700MUD boards support 8GB, and
-> their GMA3600 is managed by the GMA500 driver.
-> 
-> shmem/tmpfs has never pretended to support hardware restrictions on
-> the backing memory, but it might have appeared to do so before v3.1,
-> and even now it works fine until a page is swapped out then back in.
-> When read_cache_page_gfp() supplied a freshly allocated page for copy,
-> that compensated for whatever choice might have been made by earlier
-> swapin readahead; but swapoff was likely to destroy the illusion.
-> 
-> We'd like to continue to support GMA500, so now add a new
-> shmem_should_replace_page() check on the zone when about to move
-> a page from swapcache to filecache (in swapin and swapoff cases),
-> with shmem_replace_page() to allocate and substitute a suitable page
-> (given gma500/gem.c's mapping_set_gfp_mask GFP_KERNEL | __GFP_DMA32).
-> 
-> This does involve a minor extension to mem_cgroup_replace_page_cache()
-> (the page may or may not have already been charged); and I've removed
-> a comment and call to mem_cgroup_uncharge_cache_page(), which in fact
-> is always a no-op while PageSwapCache.
-> 
-> Also removed optimization of an unlikely path in shmem_getpage_gfp(),
-> now that we need to check PageSwapCache more carefully (a racing caller
-> might already have made the copy).  And at one point shmem_unuse_inode()
-> needs to use the hitherto private page_swapcount(), to guard against
-> racing with inode eviction.
-> 
-> It would make sense to extend shmem_should_replace_page(), to cover
-> cpuset and NUMA mempolicy restrictions too, but set that aside for
-> now: needs a cleanup of shmem mempolicy handling, and more testing,
-> and ought to handle swap faults in do_swap_page() as well as shmem.
-> 
-> ...
->
->  static int shmem_unuse_inode(struct shmem_inode_info *info,
-> -			     swp_entry_t swap, struct page *page)
-> +			     swp_entry_t swap, struct page **pagep)
->  {
->  	struct address_space *mapping = info->vfs_inode.i_mapping;
->  	void *radswap;
->  	pgoff_t index;
-> -	int error;
-> +	gfp_t gfp;
-> +	int error = 0;
->  
->  	radswap = swp_to_radix_entry(swap);
->  	index = radix_tree_locate_item(&mapping->page_tree, radswap);
-> @@ -625,22 +629,37 @@ static int shmem_unuse_inode(struct shme
->  	if (shmem_swaplist.next != &info->swaplist)
->  		list_move_tail(&shmem_swaplist, &info->swaplist);
->  
-> +	gfp = mapping_gfp_mask(mapping);
-> +	if (shmem_should_replace_page(*pagep, gfp)) {
-> +		mutex_unlock(&shmem_swaplist_mutex);
-> +		error = shmem_replace_page(pagep, gfp, info, index);
-> +		mutex_lock(&shmem_swaplist_mutex);
-> +		/*
-> +		 * We needed to drop mutex to make that restrictive page
-> +		 * allocation; but the inode might already be freed by now,
-> +		 * and we cannot refer to inode or mapping or info to check.
-> +		 * However, we do hold page lock on the PageSwapCache page,
-> +		 * so can check if that still has our reference remaining.
-> +		 */
-> +		if (!page_swapcount(*pagep))
-> +			error = -ENOENT;
+On Fri, 11 May 2012 18:31:35 +0300 Boaz Harrosh <bharrosh@panasas.com> wrot=
+e:
 
-This has my head spinning a bit.  What is "our reference"?  I'd expect
-that to mean a temporary reference which was taken by this thread of
-control.  But such a thing has no relevance when trying to determine
-the state of the page and/or data structures which refer to it.
+> On 05/11/2012 06:49 AM, Roland Eggner wrote:
+>=20
+> > On 2012-05-10 Thu 16:42 +0200, Ludwig Nussel wrote:
+> >> =E2=80=A6
+> >> When using 'real' file systems on removable storage devices such as
+> >> hard disks or usb sticks people quickly face the problem that their
+> >> Linux users have different uids on different machines. Therefore one
+> >> cannot modify or even read files created on a different machine
+> >> without running chown as root or storing everything with mode 777.
+> >> Simple file systems such as vfat don't have that problem as they
+> >> don't store file ownership information and one can pass the uid
+> >> files should belong to as mount option.
+> >>
+> >> The following two patches (for 3.4.0-rc4) implement the uid (and
+> >> gid) mount option for ext2, ext3 and ext4 to make them actually
+> >> useful on removable media. If a file system is mounted with the uid
+> >> option all files appear to be owned by the specified uid. Only newly
+> >> created files actually end up with that uid as owner on disk though.
+> >> Ownership of existing files cannot be changed permanently if the uid
+> >> option was specified.
+> >>
+> >> Acked-by: Rob Landley <rob@landley.net>
+> >> Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
+> >> ---
+> >>  Documentation/filesystems/ext2.txt |    9 ++++++
+> >>  Documentation/filesystems/ext3.txt |    9 ++++++
+> >>  Documentation/filesystems/ext4.txt |    9 ++++++
+> >>  fs/ext2/ext2.h                     |    8 +++++
+> >>  fs/ext2/inode.c                    |   42 ++++++++++++++++++++------
+> >>  fs/ext2/super.c                    |   57 +++++++++++++++++++++++++++=
+++++++++-
+> >>  fs/ext3/ext3.h                     |    8 +++++
+> >>  fs/ext3/inode.c                    |   50 ++++++++++++++++++++++-----=
+----
+> >>  fs/ext3/super.c                    |   57 +++++++++++++++++++++++++++=
+++++++++-
+> >>  fs/ext4/ext4.h                     |    4 ++
+> >>  fs/ext4/inode.c                    |   50 ++++++++++++++++++++++-----=
+----
+> >>  fs/ext4/super.c                    |   49 +++++++++++++++++++++++++++=
++++-
+> >>  12 files changed, 311 insertions(+), 41 deletions(-)
+> >>
+> >> =E2=80=A6
+> >=20
+> >=20
+> > In short:
+> > .........
+> > Problem solving at its root is more efficient than at =E2=80=9Cend of p=
+ipe=E2=80=9D.
+> >=20
+> >=20
+> >=20
+> > IMHO this is an example of =E2=80=9Cend of pipe=E2=80=9C thinking with =
+following downsides:
+> > .......................................................................=
+....
+> > *  Maintainers point of view:
+> >    *  Introduces new problems:  Breaking holes in the access restrictio=
+ns
+> >       provided by the Linux kernel at will of unprivileged users would =
+render
+> >       the kernel unusable for reliable operation in multiuser environme=
+nts.
+> >    *  Adds code complexity and risk of bugs.
+> >    *  Adds future maintainance load.
+> > *  Users point of view:
+> >    *  Editing /etc/fstab or using mount commands with options not in
+> >       /etc/fstab require root privileges anyway, at least on sane syste=
+ms.
+> >    *  Adds usage complexity (new vs. old files, on disk vs. pretended U=
+IDs =E2=80=A6).
+> >    *  Adds risk of usage errors.
+> >=20
+> >=20
+> >=20
+> > IMHO the =E2=80=9Cright thing to do=E2=80=9D is to solve the problem at=
+ its root:
+> > .................................................................
+> > My habit is, whenever I use {group,user}add commands:
+> > *  In advance I create a list of all current and future users (user, GI=
+D, UID)
+> >    common to all systems that might exchange files.  The list is design=
+ed to
+> >    have =E2=80=9Cheadroom=E2=80=9D for future additions.
+> > *  I always consult this list and use options --gid $userGID --uid $use=
+rUID to
+> >    {group,user}add commands.
+> > *  Exchanging files with an unforeseen system is an exception, which re=
+quires
+> >    root privileges anyway,
+> >=20
+> > Advantages:
+> > *  Decent migration of files to other systems via backups, external sto=
+rage =E2=80=A6
+> > *  No NEW wholes in the access restrictions provided by the Linux kerne=
+l.
+> > *  No NEW kernel code possibly introducing bugs.
+> > *  No need to learn new mount options.
+> > *  No NEW risks of usage errors.
+> >=20
+> >=20
+> > Summary:
+> > ........
+> > *  If UIDs differ on machines FORESEEN for file exchange, this is an
+> >    administrator error, not a kernel deficit.
+> > *  File exchange with an UNFORESEEN system requires root privileges any=
+way.
+> >=20
+> >=20
+>=20
+>=20
+> I agree with Ludwig completely!!! Thanks, good policy rules.
 
-Also, what are we trying to determine here with this test?  Whether the
-page was removed from swapcache under our feet?  Presumably not, as it
-is locked.
+I think you mean "Roland" - you seem to disagree with Ludwig.
 
-So perhaps you could spell out in more detail what we're trying to do
-here, and what contributes to page_swapcount() here?
+For the record I don't agree with Roland.. though I'm not 100% sure what he
+is saying.  I cannot quite figure out what the "pipe" is that he is talking
+about.
+
+The thrust of the argument seems to be that by establishing good habits from
+the very beginning you can avoid the need for change.  That may well be tru=
+e,
+but it isn't particularly "user friendly".  We should make things simple and
+safe so that people don't *need* to carefully form good habits.
 
 
-> +	}
-> +
->  	/*
->  	 * We rely on shmem_swaplist_mutex, not only to protect the swaplist,
->  	 * but also to hold up shmem_evict_inode(): so inode cannot be freed
->  	 * beneath us (pagelock doesn't help until the page is in pagecache).
->  	 */
-> -	error = shmem_add_to_page_cache(page, mapping, index,
-> +	if (!error)
-> +		error = shmem_add_to_page_cache(*pagep, mapping, index,
->  						GFP_NOWAIT, radswap);
-> -	/* which does mem_cgroup_uncharge_cache_page on error */
-> -
->  	if (error != -ENOMEM) {
->  		/*
->  		 * Truncation and eviction use free_swap_and_cache(), which
->  		 * only does trylock page: if we raced, best clean up here.
->  		 */
-> -		delete_from_swap_cache(page);
-> -		set_page_dirty(page);
-> +		delete_from_swap_cache(*pagep);
-> +		set_page_dirty(*pagep);
->  		if (!error) {
->  			spin_lock(&info->lock);
->  			info->swapped--;
-> @@ -660,7 +679,14 @@ int shmem_unuse(swp_entry_t swap, struct
->  	struct list_head *this, *next;
->  	struct shmem_inode_info *info;
->  	int found = 0;
-> -	int error;
-> +	int error = 0;
-> +
-> +	/*
-> +	 * There's a faint possibility that swap page was replaced before
-> +	 * caller locked it: it will come back later with the right page.
+>=20
+> 1. ext* are nothing special and are not a special domain of removable med=
+ia.
+>    (If any vfat is dominant at that end)
 
-So a caller locked the page then failed to check that it's still the
-right sort of page?  Shouldn't the caller locally clean up its own mess
-rather than requiring a callee to know about the caller's intricate
-shortcomings?
+VFAT is indeed dominant.  But cannot handle files >4GB and cannot handle a
+variety of special characters in file names.  But that isn't really relevan=
+t.
+Given that we have ext[234] rather than everyone using VFAT or NTFS
+everywhere, we should make them as broadly usable as possible.  That path in
+general encourages innovation.
 
-> +	 */
-> +	if (unlikely(!PageSwapCache(page)))
-> +		goto out;
->  
->  	/*
->  	 * Charge page using GFP_KERNEL while we can wait, before taking
->
-> ...
->
-> @@ -856,6 +880,84 @@ static inline struct mempolicy *shmem_ge
->  #endif
->  
->  /*
-> + * When a page is moved from swapcache to shmem filecache (either by the
-> + * usual swapin of shmem_getpage_gfp(), or by the less common swapoff of
-> + * shmem_unuse_inode()), it may have been read in earlier from swap, in
-> + * ignorance of the mapping it belongs to.  If that mapping has special
-> + * constraints (like the gma500 GEM driver, which requires RAM below 4GB),
-> + * we may need to copy to a suitable page before moving to filecache.
-> + *
-> + * In a future release, this may well be extended to respect cpuset and
-> + * NUMA mempolicy, and applied also to anonymous pages in do_swap_page();
-> + * but for now it is a simple matter of zone.
-> + */
-> +static bool shmem_should_replace_page(struct page *page, gfp_t gfp)
-> +{
-> +	return page_zonenum(page) > gfp_zone(gfp);
-> +}
-> +
-> +static int shmem_replace_page(struct page **pagep, gfp_t gfp,
-> +				struct shmem_inode_info *info, pgoff_t index)
-> +{
-> +	struct page *oldpage, *newpage;
-> +	struct address_space *swap_mapping;
-> +	pgoff_t swap_index;
-> +	int error;
-> +
-> +	oldpage = *pagep;
-> +	swap_index = page_private(oldpage);
-> +	swap_mapping = page_mapping(oldpage);
-> +
-> +	/*
-> +	 * We have arrived here because our zones are constrained, so don't
-> +	 * limit chance of success by further cpuset and node constraints.
-> +	 */
-> +	gfp &= ~GFP_CONSTRAINT_MASK;
-> +	newpage = shmem_alloc_page(gfp, info, index);
-> +	if (!newpage)
-> +		return -ENOMEM;
-> +	VM_BUG_ON(shmem_should_replace_page(newpage, gfp));
-> +
-> +	*pagep = newpage;
-> +	page_cache_get(newpage);
-> +	copy_highpage(newpage, oldpage);
 
-copy_highpage() doesn't do flush_dcache_page() - did we need copy_user_highpage()?
+>=20
+> 2. What the hell does removable-media means? and how is it different then
+>    something else? is ext* over iscsi removable? a soft-mount NFS, is it
+>    removable?
 
-> +	VM_BUG_ON(!PageLocked(oldpage));
-> +	__set_page_locked(newpage);
-> +	VM_BUG_ON(!PageUptodate(oldpage));
-> +	SetPageUptodate(newpage);
-> +	VM_BUG_ON(!PageSwapBacked(oldpage));
-> +	SetPageSwapBacked(newpage);
-> +	VM_BUG_ON(!swap_index);
-> +	set_page_private(newpage, swap_index);
-> +	VM_BUG_ON(!PageSwapCache(oldpage));
-> +	SetPageSwapCache(newpage);
-> +
-> +	/*
-> +	 * Our caller will very soon move newpage out of swapcache, but it's
-> +	 * a nice clean interface for us to replace oldpage by newpage there.
-> +	 */
-> +	spin_lock_irq(&swap_mapping->tree_lock);
-> +	error = shmem_radix_tree_replace(swap_mapping, swap_index, oldpage,
-> +								   newpage);
-> +	__inc_zone_page_state(newpage, NR_FILE_PAGES);
-> +	__dec_zone_page_state(oldpage, NR_FILE_PAGES);
-> +	spin_unlock_irq(&swap_mapping->tree_lock);
-> +	BUG_ON(error);
-> +
-> +	mem_cgroup_replace_page_cache(oldpage, newpage);
-> +	lru_cache_add_anon(newpage);
-> +
-> +	ClearPageSwapCache(oldpage);
-> +	set_page_private(oldpage, 0);
-> +
-> +	unlock_page(oldpage);
-> +	page_cache_release(oldpage);
-> +	page_cache_release(oldpage);
-> +	return 0;
-> +}
+"removable-media" means "The owner is the person holding the physical devic=
+e,
+not the person who knows the password which is stored in some databases alo=
+ng
+side some id which is attached to files in the filesystem".
 
-shmem_replace_page() is a fairly generic and unexceptional sounding
-thing.  Methinks shmem_substitute_page() would be a better name.
+So if I hold a device which has an ethernet port on which it talks NFS or
+ISCSI, then yes: it is removable.
 
-> +/*
->   * shmem_getpage_gfp - find page in cache, or get from swap, or allocate
->   *
->   * If we allocate a new one we do not mark it dirty. That's up to the
->
-> ...
->
+And this is not at all far-fetched.  Mobile internet devices (aka phones) a=
+re
+quite capable for serving NFS.  The current common practice where you need =
+to
+tell your device how to appear on the USB (mass storage?  media device?
+propriety thingy?) is not very friendly.  If we just do IP (IPv6 of course)
+to the devices (whether over USB or BT or Wifi) and provided every service
+over that concurrently, that would be much better.
 
+And with NFS, I could write to my uSD card in my smart-phone over the USB
+cable at the same time that the phone itself was using the storage of other
+purposes.  You cannot do that with usb/mass-storage/VFAT.
+
+My access to files on that filesystem should not be guided by the uid of my
+processes, but rather by the crypto-key that I made available.
+And I suspect you can do exactly that using kerberos - and that is awesome.
+We should have that access to ext4 over usb/mass storage too.
+
+To make that clear: if I "own" a filesystem - whether because I hold the
+physical non-encrypted devices or because I know the encryption key - then I
+want to be able to  leverage that "ownership" to full access rights to
+the contents of the filesystem.  By typing in a key or plugging in a device=
+ I
+want to get full "root" access to the filesystem on the device.  Not giving
+that to me is just getting in my way.
+
+>=20
+> Above sounds to me like a huge security breach, and actually a data-corru=
+ption.
+
+It can certainly be used to cause a security breach, just as "rm -r" can be
+used to cause data corruption.  We shouldn't disallow it for that reason
+though.
+
+
+>=20
+> In the NFS world I hang around, we constantly encounter multiple domain
+> uid/gid views, and it does not mean we blow a hole in POSIX security rule=
+s.
+
+The Linux NFS server has "all_squash" and "anon_uid=3D" export options.
+
+>=20
+> The root that mounts this FS can just copy+chmod or just-chmod them.
+
+Sorry, I don't understand.  It sounds like you are suggesting that when I
+mount an ext3 filesystem on my usb-stick, I should chmod -R all 3,000,000
+files to make them world writeable?  Or maybe chown them all to me?  Or copy
+them to my home directory?
+And somehow this is safer than making it appear as though this has already
+happened through mount options?
+I must have misunderstood something.
+
+> Next we'll see auto-mounters use these flags and goodbye file-access-cont=
+rol.
+
+Yes, of course auto-mounters will do this.  It makes perfect sense for any
+removable (physically carry in my hand) media.  You cannot prevent data
+destruction on such devices if you lose physical control, and the only
+workable data privacy option is encryption.  Trying to pretend that file
+permission bits mean anything is extremely naive.
+
+>=20
+> There is some convenience you do not allow. a password-less root, and no =
+access
+> control at all is most convenient would you say?
+>=20
+> I bet this code opens up an attack vector like crazy. Windows viruses wel=
+come.
+>=20
+> No thanks
+
+I'm sure we could provide a CONFIG option for you.
+
+NeilBrown
+
+
+> Boaz
+>=20
+> >=20
+>=20
+> > Thanks,
+> > Roland Eggner
+>=20
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+--Sig_/JN2F3xW84eIpxNCXYnxuere
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBT7GSHjnsnt1WYoG5AQLqzw//cLXhWccpcf0ymPH0+PkRBuUIWEnJmpLz
+G6zo0cVtnbLjEvHepqXjZidqG0GLeKtjcgmo22VwP9ld8HWG39XcvRmhGY+/vIhm
++roUYy8EDtTE5qrksn5pSQQ7TOicaK8mhPCjGtfQ7Q+Oeoa7ceXa9hZjcwfnNrPp
+nG51RfNmniKS8qiT5GGRkAEdfuRWnk6WERet/LACLwR7g6vyOcoxqB3/39ZyNI+9
+54mBqDVHG+7yek/9BTZiViDW04VPMccSa/HdgAdxomJx9rRfH/tRvoWHRg0P+kS0
+1WJMl3URC3MR01DuLvhomPGuayUIgW2FD+ZaQqYR+C2OdICfpzRzcO3+7BtrEOZi
+JsFvvDDIN8fkbhfXUZFr+z/hoyfSgaaq78B6+19oh7V/Ruw+0tOltdy/XyOuOfLn
+WbuBBN/jbcVkVU3sWAPo3SBEPQXafE/4I4o1bYQYqHywQ2Nt2lDDw1Rs/ac7Xi6V
+xHSjwFtuqNl+fjhai08NPh+s/CK7AFfpWQ4feR8TndSzfN49vLXTiA0CIrDRGhZ3
+Tl7ippWcRb86+9DrlcoKrhgEmlHkXg/CERU3QtW5Y04F6T034ijX9TH6xcXcshhu
+Pi+7ZJuc5mInoBALvAc05sk2i67QguB9FE9WDQ7Lvv+Dbk5xbCctL86uf/6yVE1r
+wxsCaST5BRY=
+=40fS
+-----END PGP SIGNATURE-----
+
+--Sig_/JN2F3xW84eIpxNCXYnxuere--
