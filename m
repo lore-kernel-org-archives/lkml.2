@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab2ENLz6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 07:55:58 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57096 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755595Ab2ENLz4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 07:55:56 -0400
-Date: Mon, 14 May 2012 13:55:51 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/8] Annotation weekly ponies delivery
-Message-ID: <20120514115551.GA6479@gmail.com>
-References: <1336852387-16322-1-git-send-email-acme@infradead.org>
- <CA+55aFxeqrCj71fSe2r9kwzyO9q2BT9A89f7nLUgbrTG_uPP2g@mail.gmail.com>
- <1336994000.2443.24.camel@twins>
+	id S1756226Ab2ENL47 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 07:56:59 -0400
+Received: from smtp24.mail.ru ([94.100.176.177]:53301 "EHLO smtp24.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755681Ab2ENL46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 07:56:58 -0400
+Date: Mon, 14 May 2012 15:57:02 +0400
+From: Evgeniy Dushistov <dushistov@mail.ru>
+To: "Vladimir =?utf-8?Q?'=CF=86-coder=2Fphcoder'?= Serbinenko" 
+	<phcoder@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] update i_blocks on UFS
+Message-ID: <20120514115702.GA11251@maclin>
+Mail-Followup-To: Vladimir =?utf-8?Q?'=CF=86-coder=2Fphcoder'?= Serbinenko <phcoder@gmail.com>,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+References: <4FAFBCAE.1050401@gmail.com>
+ <20120513215925.GA1998@maclin>
+ <4FB032BB.6060209@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1336994000.2443.24.camel@twins>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FB032BB.6060209@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Sat, 2012-05-12 at 13:40 -0700, Linus Torvalds wrote:
-> > The whole "-e cycles:pp" doesn't work any more. I don't get any nice
-> > PEBS information, I get the totally useless irq-based profiling.
-> > 
-> > The difference for a "make -j" profile is quite stunning:
-> > 
-> > Doing "perf record -f -e cycles:pp -F 20000 make -j"
-> > 
-> >  - my current git:
-> > 
-> >     [ perf record: Woken up 47 times to write data ]
-> >     [ perf record: Captured and wrote 11.890 MB perf.data (~519462 samples) ]
-> > 
-> >  - with the above tree pulled into my current git tree (but compiling
-> > the same old tree):
-> > 
-> >     [ perf record: Woken up 1 times to write data ]
-> >     [ perf record: Captured and wrote 0.031 MB perf.data (~1375 samples) ] 
+On Mon, May 14, 2012 at 12:16:27AM +0200, Vladimir 'φ-coder/phcoder' Serbinenko wrote:
+> On 13.05.2012 23:59, Evgeniy Dushistov wrote:
 > 
-> The output simply suggests we're not getting enough samples 
-> not that PEBS isn't working, in fact I can could reproduce 
-> without using PEBS.
+> > On Sun, May 13, 2012 at 03:52:46PM +0200, Vladimir 'φ-coder/phcoder' Serbinenko wrote:
+> >> UFS code dosn't update i_blocks which leads to the problems ranging from wrong
+> >> stat/du to long symlinks (as opposed to inline ones) being damaged. This is
+> >> a fix.
+> >>
+> > 
+> > Yes, when quota support was removed, code that update statistic
+> > about usage of blocks also was removed. But why so big change to fix this?
+> > I found this problem some time ago and fixed it with code bellow,
+> > but may be I missed something?
+> > 
 > 
-> This bisected to the below commit, the code has since been 
-> changed again and all that evlist stuff gives me a head-ache. 
-> Acme, Namhyung ?
+> Hm, I don't know why this code wasn't in my copy. Was it already
+> propagated to Linus' tree? When will it be? Which tree I should merge
+> from to get your latest fixes?
+
+I created this patch some time ago, but forgot to merge it to main tree.
+You email remind me about this problem.
+
+> My code avoided counting metadata blocks (the ones holding the pointers
+> to actual blocks in indirect, double-indirect and triple-indirect
+> chains). I thought that i_blocks doesn't take into account the
+> metablocks but quick experiment with NetBSD image proved me wrong. So I
+> retract this patch altogether.
+> My UFS file size limit patch remains though.
 > 
-> 55261f46702cec96911a81aacfb3cba13434d304 is the first bad commit
-> commit 55261f46702cec96911a81aacfb3cba13434d304
-> Author: Namhyung Kim <namhyung.kim@lge.com>
-> Date:   Mon May 7 14:08:59 2012 +0900
-> 
->     perf evlist: Fix creation of cpu map
 
-Another detail seems to be that the bug takes per-task-inherited 
-profiling. Doing:
+ok, so I will test your patch and my and then take care about merging
+them into mainline.
 
-   perf record -a -e cycles:pp make -j64 bzImage
 
-produces the expected number of events. Without the '-a' the bug 
-Linus found triggers.
+-- 
+/Evgeniy
 
-Similarly, 'perf top' does not trigger the bug - because it's 
-using per CPU, not per task (inherited) profiling.
-
-Thanks,
-
-	Ingo
