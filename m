@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab2ENKG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 06:06:56 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:39027 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841Ab2ENKGz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 06:06:55 -0400
-X-AuditID: cbfee61b-b7b94ae000002e44-91-4fb0d93d33ce
-Message-id: <4FB0D93A.7000108@samsung.com>
-Date: Mon, 14 May 2012 19:06:50 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: sameo@linux.intel.com, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        jonghwa3.lee@samsung.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] MFD: MAX77693: add IRQ handler
-References: <1336972835-15203-1-git-send-email-cw00.choi@samsung.com>
- <20120514095719.GK31985@opensource.wolfsonmicro.com>
-In-reply-to: <20120514095719.GK31985@opensource.wolfsonmicro.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	id S1755772Ab2ENKG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 06:06:59 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:41467 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752841Ab2ENKG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 06:06:57 -0400
+Date: Mon, 14 May 2012 12:06:45 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: broonie@opensource.wolfsonmicro.com
+Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        giancarlo.asnaghi@st.com, alan@linux.intel.com, sameo@linux.intel.com,
+        linus.walleij@stericsson.com
+Subject: Re: [PATCH V3 2/2] gpio: add STA2X11 GPIO block
+Message-ID: <20120514100645.GA5712@mail.gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <20120514095800.GL31985@opensource.wolfsonmicro.com>
+References: <20120514095800.GL31985@opensource.wolfsonmicro.com>
+  <20120514094737.GB2189@sirena.org.uk>
+  <20120511233402.43D813E0791@localhost>
+  <cover.1334219873.git.rubini@gnudd.com>
+  <5e419c41c8e3bcbeac341aa9457a9c93bc4c8309.1334219874.git.rubini@gnudd.com>
+  <20120514072534.GA29871@mail.gnudd.com>
+  <20120514095111.GA4972@mail.gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+> If you use platform data why would you get unpredicatable numbers?
 
-On 05/14/2012 06:57 PM, Mark Brown wrote:
+Because I request the irq numbers from the gpio driver (now I request
+a free slot starting from 384, because previous drivers had it
+hardwired).  So if the gpio driver requests a slot starting from 0 it
+may get different values -- in general I can't now what it gets.
 
-> On Mon, May 14, 2012 at 02:20:35PM +0900, Chanwoo Choi wrote:
-> 
->> +	if (!max77693->irq) {
->> +		dev_warn(max77693->dev, "No interrupt specified.\n");
->> +		return 0;
->> +	}
-> 
-> I'd suggest just setting up the IRQ domain anyway - it makes life
-> simpler in the other drivers for the chip as they don't need to worry if
-> interrupts are registered unless it's very important to them that they
-> go off which is often not the case.  Just skip actually claiming the
-> IRQ.
-> 
+So the irq number is unknown at compile time, and can't be written in
+the platform data.
 
-This patch add support irq domain for MAX77693 in the
-max77693_irq_init() function.
-You can check on patchset. Then, The 'max77693->irq' is gpio pin for
-IRQ. max77693->irq
-is meant to indicate to the application processor that the status of
-MAX77693 has changed.
+Actually, the problem is there in any case if you plug two chips in
+the same computer -- this is extremely unlikely because the sta2x11 is
+currently only used as a motherboard chipset.  The thing must be
+fixed in any case, because it's a pci device, but still using 384
+allows me to use platform data for the current drivers that I'm running
+until they are ported to upstream quality standards.
 
->> +EXPORT_SYMBOL_GPL(max77693_irq_resume);
->> +EXPORT_SYMBOL_GPL(max77693_irq_init);
->> +EXPORT_SYMBOL_GPL(max77693_irq_exit);
-> 
-> These shouldn't need to be exported, they're only used by the MFD core.
-
-OK, I remove it.
-
-Thank you,
-Chanwoo Choi
+/alessandro
