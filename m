@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964799Ab2EOB0g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 21:26:36 -0400
-Received: from kandzendo.ru ([195.178.208.66]:57890 "EHLO tservice.net.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932652Ab2EOB0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 21:26:35 -0400
-Date: Tue, 15 May 2012 05:26:34 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] w1: Introduce a slave mutex for serializing IO.
-Message-ID: <20120515012634.GF25482@ioremap.net>
-References: <20120425124914.3187a794@notabene.brown>
- <20120501213958.GA15560@ioremap.net>
- <20120502162627.50544c8b@notabene.brown>
- <20120503175857.GA13988@ioremap.net>
- <20120504070838.5bd23110@notabene.brown>
- <20120503212706.GA26612@ioremap.net>
- <20120509114349.5ceee472@notabene.brown>
+	id S964803Ab2EOB1s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 21:27:48 -0400
+Received: from ozlabs.org ([203.10.76.45]:60050 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932708Ab2EOB1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 21:27:46 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, anton@samba.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PULL] cpumask: finally make them variable size w/ CPUMASK_OFFSTACK.
+In-Reply-To: <20120510074215.GA28395@gmail.com>
+References: <87ipg5c2bk.fsf@rustcorp.com.au> <20120509084453.GA6429@gmail.com> <87fwb8dgkn.fsf@rustcorp.com.au> <20120510074215.GA28395@gmail.com>
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 14 May 2012 12:52:51 +0930
+Message-ID: <87y5ovtpis.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120509114349.5ceee472@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 11:43:49AM +1000, NeilBrown (neilb@suse.de) wrote:
-> However lockdep didn't like it.  There are ordering problems between this
-> mutex and and sysfs's s_active.
+On Thu, 10 May 2012 09:42:15 +0200, Ingo Molnar <mingo@kernel.org> wrote:
 > 
-> When you access battery properies via sysfs, the sysfs lock is taken first,
-> then the master->mutex.
-> When w1_reconnect_slaves calls through to device_del and sys_addrm_finish,
-> the mutex is held while the sysfs lock is wanted.
+> * Rusty Russell <rusty@rustcorp.com.au> wrote:
+> 
+> > Mainly because I didn't want to disturb the archs which don't 
+> > care at all about large cpumasks.  After all, putting a struct 
+> > cpumask on the stack is pretty convenient.
+> 
+> Yes.
+> 
+> > But we could add a new arch config which removes it, and set 
+> > it from x86.
+> 
+> Could we just use a single cpumask type, cpumask_t or so, which 
+> would be the *only* generic method to use cpumasks?
+> 
+> (Current cpumask_t would move to cpumask_full_t.)
+> 
+> This would be the 'final' destiation for the cpumask code: the 
+> natural type to use in new code is cpumask_t, while in special 
+> cases we could use cpumask_full_t - but the name signals that 
+> it's a potentially large structure.
+> 
+> On architectures that don't worry about large cpumasks (yet ...) 
+> cpumask_t and cpumask_full_t maps to the same thing, so there's 
+> no difference.
+> 
+> This would make things more natural IMO.
+> 
+> There would be no 'struct cpumask'. (and 'cpumask_var_t' would 
+> disappear too due to the rename.)
+> 
+> Thoughts?
 
-I only came to idea of not allowing sysfs in ->probe() and instead
-introduce new callback, which will initialize 'external' to w1 core
-parts without holding master's mutex
+I don't understand, sorry.  I think I'd need some code to understand.
 
--- 
-	Evgeniy Polyakov
+Unfortunately I was wrong about being able to remove struct cpumask's
+definition when CONFIG_CPUMASK_OFFSTACK=n: we need it for cpumask_var_t
+in that case :(
+
+Cheers,
+Rusty.
