@@ -1,85 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755084Ab2ENIry (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 04:47:54 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45705 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab2ENIrx (ORCPT
+	id S1755310Ab2ENIv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 04:51:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47970 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755107Ab2ENIv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 04:47:53 -0400
-Date: Mon, 14 May 2012 18:47:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>, Huang Shijie <b32955@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Subject: linux-next: manual merge of the arm-soc tree with the l2-mtd tree
-Message-Id: <20120514184746.3eef413d8e27a6b874e5cd1d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__14_May_2012_18_47_46_+1000_PKWcr.Fw/XEtXk3."
+	Mon, 14 May 2012 04:51:27 -0400
+Message-ID: <4FB0C789.6010107@gmail.com>
+Date: Mon, 14 May 2012 16:51:21 +0800
+From: Cong Wang <xiyou.wangcong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: raise MemFree by reverting percpu_pagelist_fraction
+ to 0
+References: <alpine.LSU.2.00.1205110054520.2801@eggly.anvils> <CA+1xoqcChazS=TRt6-7GjJAzQNFLFXmO623rWwjRkdD5x3k=iw@mail.gmail.com> <4FACD00D.4060003@kernel.org> <4FACD573.4060103@kernel.org> <CA+55aFxsZqU4bXRz61ngnR2ozH=AAhwGHR+PqzdTRfnCxJY0oQ@mail.gmail.com> <CA+1xoqc15HY1rECsJ6Aj1WMzwT12z4DByJhFopyBAiKawEFh3Q@mail.gmail.com>
+In-Reply-To: <CA+1xoqc15HY1rECsJ6Aj1WMzwT12z4DByJhFopyBAiKawEFh3Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__14_May_2012_18_47_46_+1000_PKWcr.Fw/XEtXk3.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/12/2012 12:35 AM, Sasha Levin wrote:
+> On Fri, May 11, 2012 at 6:27 PM, Linus Torvalds
+> <torvalds@linux-foundation.org>  wrote:
+>> On Fri, May 11, 2012 at 2:01 AM, Minchan Kim<minchan@kernel.org>  wrote:
+>>>
+>>> I didn't have a time so made quick patch to show just concept.
+>>> Not tested and Not consider carefully.
+>>> If anyone doesn't oppose, I will send formal patch which will have more beauty code.
+>>
+>> What's so magical about that '8' *anyway*? We do we have that minimum at all?
+>>
+>> At the very least, the 8-vs-0 thing needs to be explained.
+>
+> The '0' acts as an "off" switch.
+>
+> Once it's on, we reserve 1/x of the pages for the pagelists. I'm not
+> sure why 8 was selected in the first place, but I guess it made sense
+> that you don't want to reserve 15%+ of your memory for the pagelists.
 
-Hi all,
-
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/mtd/nand/gpmi-nand/gpmi-nand.c between commit 2890c63138a4 ("mtd:
-gpmi: add device tree support to gpmi-nand") from the l2-mtd tree and
-commit 39febc018bd2 ("mtd: nand: gpmi: adopt pinctrl support") from the
-arm-soc tree.
-
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-index 95f2af8,8478fd9..0000000
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-@@@ -24,8 -24,7 +24,9 @@@
-  #include <linux/module.h>
-  #include <linux/mtd/gpmi-nand.h>
-  #include <linux/mtd/partitions.h>
- +#include <linux/of.h>
- +#include <linux/of_device.h>
-+ #include <linux/pinctrl/consumer.h>
-  #include "gpmi-nand.h"
- =20
-  /* add our owner bbt descriptor */
-
---Signature=_Mon__14_May_2012_18_47_46_+1000_PKWcr.Fw/XEtXk3.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPsMayAAoJEECxmPOUX5FEVeIP/RBte0MZl9nuDrOB2puaEgoY
-sWBAH98nyEyET4AfIAxUkDIXwIGjucf0mHd+WrTrGofGmTNAibhab2h9UB7U2Hks
-II0qWsPdB+bNkrmBrhT0IrV/6h4ML/qP/v4aJdCLMhuO7VGgtUhmRU/w7rkgYtMt
-reFBFSaD4DPb/KCY8OyOaygJ590f+htWYYyRXgiuakJq/uDBBdVFvzWdqVGtSPyO
-mJHLB8pq9JuzzTfCXagSmKNSF2J4XcQLZoVg5Hu7uS8cXTgta0JB8nyDRsgs0ZuV
-t1iMLWvlMf9teU+7wC4ohpLHc4PFny6VtaVRnn8Ha7lflVChMsFbqkuHGLwlfpLy
-hU9agW/wuRCIUL8wr8LpgwETeUZuBJkyw9PlJnARw5dqEMBYDpeDB+GyM3UjBYWl
-h4rFUDjJAvGLIujFhvAF36Llc3Ag0t6nE6xX69ji6S/27c7qA18RTixXR5rNQ8ab
-UcShGzd54LCrhLXd0QQ5ppiCaUoM3RLZBzzN65c42vsdow+UoGaQoqiQLNd/syAj
-Y/WrSN3dn/iIrDgxcBAqRwivZE0U6ws5ByoWDXppWN0aQ3/rxix+CjXACVycB+e/
-wthUricqxbgfwX4aEE0QgQ+e8Vw08raTmF2p6E3nVjeOXytEwKLNbcRTQfa4i7ij
-Z/8a/5GR0xjPBIKbfZUh
-=3Vdn
------END PGP SIGNATURE-----
-
---Signature=_Mon__14_May_2012_18_47_46_+1000_PKWcr.Fw/XEtXk3.--
+1/x is not user-friendly, other vm sysctl's use percentage (x%), for 
+example, overcommit_ratio.
