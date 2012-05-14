@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab2ENNDj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:03:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56172 "EHLO
+	id S1756464Ab2ENNEY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 09:04:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56185 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756144Ab2ENNDh (ORCPT
+	with ESMTP id S1756272Ab2ENNEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:03:37 -0400
-Date: Mon, 14 May 2012 06:03:09 -0700
+	Mon, 14 May 2012 09:04:22 -0400
+Date: Mon, 14 May 2012 06:03:59 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-7452y0dmc02a20ooins7rn79@git.kernel.org>
+Message-ID: <tip-1txmtzf71eqie5xcukbfxors@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, arjan@infradead.org,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+        efault@gmx.de, namhyung@gmail.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, arjan@infradead.org,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+        peterz@infradead.org, namhyung@gmail.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate browser: Show 'jumpy' functions
-Git-Commit-ID: 2402e4a936a02a24772c9823e1fd2085f0e8ec93
+Subject: [tip:perf/core] perf annotate browser:
+  Add key bindings help window
+Git-Commit-ID: 54e7a4e88eed9ac423e22a259ec51a973fd59bab
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,26 +30,20 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 14 May 2012 06:03:15 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 14 May 2012 06:04:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2402e4a936a02a24772c9823e1fd2085f0e8ec93
-Gitweb:     http://git.kernel.org/tip/2402e4a936a02a24772c9823e1fd2085f0e8ec93
+Commit-ID:  54e7a4e88eed9ac423e22a259ec51a973fd59bab
+Gitweb:     http://git.kernel.org/tip/54e7a4e88eed9ac423e22a259ec51a973fd59bab
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Sat, 12 May 2012 16:21:53 -0300
+AuthorDate: Sat, 12 May 2012 16:36:55 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 12 May 2012 16:21:53 -0300
+CommitDate: Sat, 12 May 2012 16:36:55 -0300
 
-perf annotate browser: Show 'jumpy' functions
+perf annotate browser: Add key bindings help window
 
-Just press 'J' and see how many places jump to jump targets.
-
-The hottest jump target appears in red, targets with more than one
-source have a different color than single source jump targets.
-
-Suggested-by: Arjan van de Ven <arjan@infradead.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
@@ -56,136 +51,59 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-7452y0dmc02a20ooins7rn79@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-1txmtzf71eqie5xcukbfxors@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/annotate.c |   65 ++++++++++++++++++++++++++++++++++---
- 1 files changed, 60 insertions(+), 5 deletions(-)
+ tools/perf/ui/browsers/annotate.c |   25 ++++++++++++++++++-------
+ 1 files changed, 18 insertions(+), 7 deletions(-)
 
 diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 4463626..547bd35 100644
+index 547bd35..6e0ef79 100644
 --- a/tools/perf/ui/browsers/annotate.c
 +++ b/tools/perf/ui/browsers/annotate.c
-@@ -28,11 +28,16 @@ struct annotate_browser {
- 	u64		    start;
- 	int		    nr_asm_entries;
- 	int		    nr_entries;
-+	int		    max_jump_sources;
-+	int		    nr_jumps;
- 	bool		    hide_src_code;
- 	bool		    use_offset;
- 	bool		    jump_arrows;
-+	bool		    show_nr_jumps;
- 	bool		    searching_backwards;
- 	u8		    addr_width;
-+	u8		    jumps_width;
-+	u8		    target_width;
- 	u8		    min_addr_width;
- 	u8		    max_addr_width;
- 	char		    search_bf[128];
-@@ -55,6 +60,25 @@ static bool disasm_line__filter(struct ui_browser *browser, void *entry)
- 	return false;
- }
+@@ -581,10 +581,7 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 	struct rb_node *nd = NULL;
+ 	struct map_symbol *ms = self->b.priv;
+ 	struct symbol *sym = ms->sym;
+-	const char *help = "<-/ESC: Exit, TAB/shift+TAB: Cycle hot lines, "
+-			   "H: Hottest line, ->/ENTER: Line action, "
+-			   "O: Offset view, "
+-			   "S: Source view";
++	const char *help = "Press 'h' for help on key bindings";
+ 	int key;
  
-+static int annotate_browser__jumps_percent_color(struct annotate_browser *browser,
-+						 int nr, bool current)
-+{
-+	if (current && (!browser->b.use_navkeypressed || browser->b.navkeypressed))
-+		return HE_COLORSET_SELECTED;
-+	if (nr == browser->max_jump_sources)
-+		return HE_COLORSET_TOP;
-+	if (nr > 1)
-+		return HE_COLORSET_MEDIUM;
-+	return HE_COLORSET_NORMAL;
-+}
-+
-+static int annotate_browser__set_jumps_percent_color(struct annotate_browser *browser,
-+						     int nr, bool current)
-+{
-+	 int color = annotate_browser__jumps_percent_color(browser, nr, current);
-+	 return ui_browser__set_color(&browser->b, color);
-+}
-+
- static void annotate_browser__write(struct ui_browser *self, void *entry, int row)
- {
- 	struct annotate_browser *ab = container_of(self, struct annotate_browser, b);
-@@ -99,8 +123,19 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 			printed = scnprintf(bf, sizeof(bf), "%" PRIx64 ": ", addr);
- 		} else {
- 			if (bdl->jump_sources) {
-+				if (ab->show_nr_jumps) {
-+					int prev;
-+					printed = scnprintf(bf, sizeof(bf), "%*d ",
-+							    ab->jumps_width,
-+							    bdl->jump_sources);
-+					prev = annotate_browser__set_jumps_percent_color(ab, bdl->jump_sources,
-+											 current_entry);
-+					slsmg_write_nstring(bf, printed);
-+					ui_browser__set_color(self, prev);
-+				}
-+
- 				printed = scnprintf(bf, sizeof(bf), "%*" PRIx64 ": ",
--						    ab->addr_width, addr);
-+						    ab->target_width, addr);
- 			} else {
- 				printed = scnprintf(bf, sizeof(bf), "%*s  ",
- 						    ab->addr_width, " ");
-@@ -615,13 +650,20 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 	if (ui_browser__show(&self->b, sym->name, help) < 0)
+@@ -637,16 +634,30 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 			else
+ 				nd = self->curr_hot;
+ 			break;
+-		case 'H':
++		case K_F1:
+ 		case 'h':
++			ui_browser__help_window(&self->b,
++		"UP/DOWN/PGUP\n"
++		"PGDN/SPACE    Navigate\n"
++		"q/ESC/CTRL+C  Exit\n\n"
++		"->            Go to target\n"
++		"<-            Exit\n"
++		"h             Cycle thru hottest instructions\n"
++		"j             Toggle showing jump to target arrows\n"
++		"J             Toggle showing number of jump sources on targets\n"
++		"n             Search next string\n"
++		"o             Toggle disassembler output/simplified view\n"
++		"s             Toggle source code view\n"
++		"/             Search string\n"
++		"?             Search previous string\n");
++			continue;
++		case 'H':
+ 			nd = self->curr_hot;
+ 			break;
+-		case 'S':
+ 		case 's':
+ 			if (annotate_browser__toggle_source(self))
+ 				ui_helpline__puts(help);
+ 			continue;
+-		case 'O':
  		case 'o':
  			self->use_offset = !self->use_offset;
  			if (self->use_offset)
--				self->addr_width = self->min_addr_width;
-+				self->target_width = self->min_addr_width;
- 			else
--				self->addr_width = self->max_addr_width;
-+				self->target_width = self->max_addr_width;
-+update_addr_width:
-+			self->addr_width = self->target_width;
-+			if (self->show_nr_jumps)
-+				self->addr_width += self->jumps_width + 1;
- 			continue;
- 		case 'j':
- 			self->jump_arrows = !self->jump_arrows;
- 			continue;
-+		case 'J':
-+			self->show_nr_jumps = !self->show_nr_jumps;
-+			goto update_addr_width;
- 		case '/':
- 			if (annotate_browser__search(self, delay_secs)) {
- show_help:
-@@ -707,11 +749,23 @@ static void annotate_browser__mark_jump_targets(struct annotate_browser *browser
- 			continue;
- 
- 		bdlt = disasm_line__browser(dlt);
--		++bdlt->jump_sources;
-+		if (++bdlt->jump_sources > browser->max_jump_sources)
-+			browser->max_jump_sources = bdlt->jump_sources;
-+
-+		++browser->nr_jumps;
- 	}
- 		
- }
- 
-+static inline int width_jumps(int n)
-+{
-+	if (n >= 100)
-+		return 5;
-+	if (n / 10)
-+		return 2;
-+	return 1;
-+}
-+
- int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 			 void(*timer)(void *arg), void *arg,
- 			 int delay_secs)
-@@ -784,8 +838,9 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 
- 	annotate_browser__mark_jump_targets(&browser, size);
- 
--	browser.addr_width = browser.min_addr_width = hex_width(size);
-+	browser.addr_width = browser.target_width = browser.min_addr_width = hex_width(size);
- 	browser.max_addr_width = hex_width(sym->end);
-+	browser.jumps_width = width_jumps(browser.max_jump_sources);
- 	browser.b.nr_entries = browser.nr_entries;
- 	browser.b.entries = &notes->src->source,
- 	browser.b.width += 18; /* Percentage */
