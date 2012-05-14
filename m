@@ -1,34 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab2ENQUx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 12:20:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34803 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756984Ab2ENQUv (ORCPT
+	id S1757187Ab2ENQVd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 12:21:33 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4494 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756835Ab2ENQVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 12:20:51 -0400
+	Mon, 14 May 2012 12:21:31 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 14 May 2012 09:21:31 -0700
+From: Hiroshi DOYU <hdoyu@nvidia.com>
+To: <hdoyu@nvidia.com>
+CC: <linux-tegra@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] amba: tegra-ahb: Remove empty *_remove()
+Date: Mon, 14 May 2012 19:21:18 +0300
+Message-ID: <1337012479-19421-1-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-In-Reply-To: <1337012284-18680-1-git-send-email-hdoyu@nvidia.com>
-References: <1337012284-18680-1-git-send-email-hdoyu@nvidia.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Mon, 14 May 2012 18:20:30 +0200
-Message-ID: <CAPXgP11SJQWkfAOidv2nFXAAWxOmjeBpd_uZSCgjX+7+qSH9nQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] printk: Make it compile with !CONFIG_PRINTK
-To: Hiroshi DOYU <hdoyu@nvidia.com>
-Cc: linux-tegra@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 6:18 PM, Hiroshi DOYU <hdoyu@nvidia.com> wrote:
-> Add missing prepend_timestamp() dummy.
+Remove unnecessary empty function.
 
-That was fixed already last week:
-http://git.kernel.org/?p=linux/kernel/git/gregkh/driver-core.git;a=commitdiff;h=1fce677971e29ceaa7c569741fa9c685a7b1052a
+Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+---
+ drivers/amba/tegra-ahb.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-Thanks,
-Kay
+diff --git a/drivers/amba/tegra-ahb.c b/drivers/amba/tegra-ahb.c
+index aa0b1f1..0b6f0b2 100644
+--- a/drivers/amba/tegra-ahb.c
++++ b/drivers/amba/tegra-ahb.c
+@@ -264,11 +264,6 @@ static int __devinit tegra_ahb_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int __devexit tegra_ahb_remove(struct platform_device *pdev)
+-{
+-	return 0;
+-}
+-
+ static const struct of_device_id tegra_ahb_of_match[] __devinitconst = {
+ 	{ .compatible = "nvidia,tegra30-ahb", },
+ 	{ .compatible = "nvidia,tegra20-ahb", },
+@@ -277,7 +272,6 @@ static const struct of_device_id tegra_ahb_of_match[] __devinitconst = {
+ 
+ static struct platform_driver tegra_ahb_driver = {
+ 	.probe = tegra_ahb_probe,
+-	.remove = __devexit_p(tegra_ahb_remove),
+ 	.driver = {
+ 		.name = DRV_NAME,
+ 		.owner = THIS_MODULE,
+-- 
+1.7.5.4
+
