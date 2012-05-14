@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab2ENBzv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 21:55:51 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:53274 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753769Ab2ENBzu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 21:55:50 -0400
-Date: Mon, 14 May 2012 09:55:36 +0800
-From: Richard Yang <weiyang@linux.vnet.ibm.com>
-To: yinghai@kernel.org
-Cc: Richard Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: One problem in reassign pci bus number?
-Message-ID: <20120514015536.GA3331@richard>
-Reply-To: Richard Yang <weiyang@linux.vnet.ibm.com>
-References: <20120410090306.GA7056@richard>
- <20120422155202.GA13540@richard>
- <4F95B17B.3030401@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F95B17B.3030401@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12051315-9264-0000-0000-000001786F18
+	id S1754126Ab2ENCGS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 22:06:18 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:59185 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753963Ab2ENCGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 May 2012 22:06:16 -0400
+X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 May 2012 22:06:16 EDT
+From: Graeme Gregory <gg@slimlogic.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        b-cousson@ti.com, linux-omap@vger.kernel.org,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: [PATCH 2/4] MFD: palmas PMIC device support Kconfig
+Date: Mon, 14 May 2012 10:58:30 +0900
+Message-Id: <1336960712-2812-3-git-send-email-gg@slimlogic.co.uk>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1336960712-2812-1-git-send-email-gg@slimlogic.co.uk>
+References: <1336960712-2812-1-git-send-email-gg@slimlogic.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 23, 2012 at 03:46:03PM -0400, Don Dutile wrote:
->On 04/22/2012 11:52 AM, Richard Yang wrote:
->>All,
->>
->>I am reading the pci_scan_bridge() and not sure what will happen in
->>following situation.
->>
->>Suppose the kernel is not passed the pci=assign-busses.
->>
->>Below is a picture about the pci system.
->>
->>                    +-------+
->>                    |       | root bridge(0,255)
->>                    +---+---+
->>                        |          Bus 0
->>       -----+-----------+------------------------------+--
->>            |                                          |
->>            |                                          |
->>            |                                          |
->>       +----+----+                               +-----+-----+
->>       |         |  B1(1,15)                     |           |B2(16,28)
->>       +----+----+                               +-----+-----+
->>            |  Bus 1                                   |    Bus 16
->>       -----+-----------------------         ----------+----------------
->>                             |
->>                        +----+----+
->>                        |         | B3
->>                        +---------+
->>
->>Suppose B1 and B2 works fine with the BIOS, which get the right bus
->>number and range.
->>
->>B3 does not works fine with the BIOS, which doesn't get the bus number.
->>
->>So in pci_scan_bridge(), B3 will be met in the second pass and get bus
->>number 16?
->
-Yinghai,
+Add the new palmas MFD to Kconfig and Makefile
 
-Take my original question. 
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+---
+ drivers/mfd/Kconfig  |    8 ++++++++
+ drivers/mfd/Makefile |    1 +
+ 2 files changed, 9 insertions(+)
 
-B3 doesn't get the bus number, which its parent doesn't have free bus
-number and there is no gap between B1 and B2. 
-
-So in this case, the probe_resource() can't find bus number for B3. 
-Then cause pci_bridge_probe_busn_res() return non-zero. 
-
-Then B3 couldn't work fine?
-
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index c618e3a..1528bdd 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -906,6 +906,14 @@ config MFD_ANATOP
+ 	  MFD controller. This controller embeds regulator and
+ 	  thermal devices for Freescale i.MX platforms.
+ 
++config MFD_PALMAS
++	bool "Support for the TI Palmas series chips"
++	select MFD_CORE
++	depends on I2C=y
++	help
++	  If you say yes here you get support for the Palmas
++	  series of PMIC chips from Texas Instruments.
++
+ endmenu
+ endif
+ 
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index acc888d..f4a342e 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -118,3 +118,4 @@ obj-$(CONFIG_MFD_RC5T583)	+= rc5t583.o rc5t583-irq.o
+ obj-$(CONFIG_MFD_S5M_CORE)	+= s5m-core.o s5m-irq.o
+ obj-$(CONFIG_MFD_ANATOP)	+= anatop-mfd.o
+ obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
++obj-$(CONFIG_MFD_PALMAS)	+= palmas.o palmas-irq.o
 -- 
-Richard Yang
-Help you, Help me
+1.7.9.5
 
