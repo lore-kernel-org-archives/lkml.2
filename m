@@ -1,94 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab2ENLQk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 07:16:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23219 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756028Ab2ENLQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 07:16:38 -0400
-Message-ID: <4FB0E992.2070402@redhat.com>
-Date: Mon, 14 May 2012 08:16:34 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756051Ab2ENLUN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 07:20:13 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:32976 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755708Ab2ENLUL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 07:20:11 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sedat Dilek <sedat.dilek@gmail.com>
+Subject: Re: [PATCH 0/5] overlayfs v3.4-rc5 updates
+References: <1335885475-11990-1-git-send-email-apw@canonical.com>
+Date: Mon, 14 May 2012 13:20:40 +0200
+In-Reply-To: <1335885475-11990-1-git-send-email-apw@canonical.com> (Andy
+	Whitcroft's message of "Tue, 1 May 2012 16:17:50 +0100")
+Message-ID: <87r4unqa9j.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for v3.4-final] media fixes
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Andy Whitcroft <apw@canonical.com> writes:
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+> I have been playing with getting overlayfs to work for v3.4, following
+> this email are the patches I am using on top of the stock overlayfs.v12
+> branch on the v3.4-rc5 base.  The first two are yet another revamp of the
+> security permissions patch which I posted a few times (hopefully fixing
+> your remaining comments).  The other three are porting issues for the
+> v3.2->v3.4 base.
+>
+> These are also available as below:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/apw/overlayfs.git overlayfs.v12apw1
+>
+> Thanks to Sedat Dilek for all their testing feedback and Jordi Pojol for
+> his test scripts.
+>
+> Please consider.
 
-For a some fix patches for v3.4, including a regression fix at DVB core.
+Thanks, applied.  Should appear shortly at:
 
-Thanks!
-Mauro
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v13
 
--
-
-Latest commit at the branch: 
-788ab1bb03d304232711b6ca9718534f588ee9fc [media] gspca - sonixj: Fix a zero divide in isoc interrupt
-The following changes since commit 36be50515fe2aef61533b516fa2576a2c7fe7664:
-
-  Linux 3.4-rc7 (2012-05-12 18:37:47 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
-
-Dan Carpenter (1):
-      [media] fintek-cir: change || to &&
-
-Guennadi Liakhovetski (1):
-      [media] V4L: soc-camera: protect hosts during probing from overzealous user-space
-
-H Hartley Sweeten (2):
-      [media] media: videobuf2-dma-contig: quiet sparse noise about plain integer as NULL pointer
-      [media] media: videobuf2-dma-contig: include header for exported symbols
-
-Jean-François Moine (1):
-      [media] gspca - sonixj: Fix a zero divide in isoc interrupt
-
-Jonathan Corbet (1):
-      [media] marvell-cam: fix an ARM build error
-
-Laurent Pinchart (1):
-      [media] media: vb2-memops: Export vb2_get_vma symbol
-
-Luis Henriques (1):
-      [media] rc: Postpone ISR registration
-
-Mauro Carvalho Chehab (1):
-      [media] dvb_frontend: fix a regression with DVB-S zig-zag
-
-Sylwester Nawrocki (3):
-      [media] V4L: Schedule V4L2_CID_HCENTER, V4L2_CID_VCENTER controls for removal
-      [media] s5p-fimc: Fix locking in subdev set_crop op
-      [media] s5p-fimc: Correct memory allocation for VIDIOC_CREATE_BUFS
-
- Documentation/feature-removal-schedule.txt    |   10 +++
- drivers/media/dvb/dvb-core/dvb_frontend.c     |    4 +
- drivers/media/rc/ene_ir.c                     |   32 +++++-----
- drivers/media/rc/fintek-cir.c                 |   22 ++++----
- drivers/media/rc/ite-cir.c                    |   20 +++---
- drivers/media/rc/nuvoton-cir.c                |   36 ++++++------
- drivers/media/rc/winbond-cir.c                |   78 ++++++++++++------------
- drivers/media/video/gspca/sonixj.c            |    8 +-
- drivers/media/video/marvell-ccic/mmp-driver.c |    1 -
- drivers/media/video/s5p-fimc/fimc-capture.c   |   33 +++++++----
- drivers/media/video/s5p-fimc/fimc-core.c      |    4 +-
- drivers/media/video/s5p-fimc/fimc-core.h      |    2 +-
- drivers/media/video/soc_camera.c              |    8 ++-
- drivers/media/video/videobuf2-dma-contig.c    |    3 +-
- drivers/media/video/videobuf2-memops.c        |    1 +
- include/media/soc_camera.h                    |    3 +-
- 16 files changed, 147 insertions(+), 118 deletions(-)
-
+Thanks,
+Miklos
