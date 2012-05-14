@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab2ENJNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 05:13:46 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55759 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755212Ab2ENJNo (ORCPT
+	id S1755414Ab2ENJTW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 05:19:22 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49086 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755034Ab2ENJTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 05:13:44 -0400
-Date: Mon, 14 May 2012 19:13:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the userns tree
-Message-Id: <20120514191337.e06ca84184b73b20b5c52689@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__14_May_2012_19_13_37_+1000_MoF7UAlD2SODTuYX"
+	Mon, 14 May 2012 05:19:21 -0400
+Date: Mon, 14 May 2012 10:19:18 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: sameo@linux.intel.com, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        jonghwa3.lee@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] MFD: MAX77693: add MAX77693 MFD driver
+Message-ID: <20120514091917.GJ31985@opensource.wolfsonmicro.com>
+References: <1336972830-15169-1-git-send-email-cw00.choi@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2fjX3cMESU3XgGmZ"
+Content-Disposition: inline
+In-Reply-To: <1336972830-15169-1-git-send-email-cw00.choi@samsung.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__14_May_2012_19_13_37_+1000_MoF7UAlD2SODTuYX
-Content-Type: text/plain; charset=US-ASCII
+
+--2fjX3cMESU3XgGmZ
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Eric,
+On Mon, May 14, 2012 at 02:20:30PM +0900, Chanwoo Choi wrote:
 
-After merging the userns tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+> Signef-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 
-fs/stat.c: In function 'cp_new_stat64':
-fs/stat.c:354:61: error: expected ';' before ')' token
-fs/stat.c:354:61: error: expected statement before ')' token
-fs/stat.c:355:61: error: expected ';' before ')' token
-fs/stat.c:355:61: error: expected statement before ')' token
+Typo :)
 
-I have dropped the userns tree for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> +int max77693_read_reg(struct regmap *map, u8 reg, u8 *dest)
+> +{
+> +	unsigned int val;
+> +	int ret;
+> +
+> +	ret = regmap_read(map, reg, &val);
+> +	val &= 0xff;
+> +	*dest = val;
 
---Signature=_Mon__14_May_2012_19_13_37_+1000_MoF7UAlD2SODTuYX
-Content-Type: application/pgp-signature
+Should be no need for the val &= 0xff - if there is there's a bug we
+ought to fix in regmap.
+
+> +int max77693_update_reg(struct regmap *map, u8 reg, u8 val, u8 mask)
+> +{
+> +	unsigned int old_val, new_val;
+> +	int ret;
+> +
+> +	ret = regmap_read(map, reg, &old_val);
+> +	old_val &= 0xff;
+> +	new_val = (val & mask) | (old_val & (~mask));
+> +	ret = regmap_write(map, reg, new_val);
+
+This should be using regmap_update_bits(), the current code is buggy as
+it does not lock which means that multiple simultaneous updaters could
+conflict with each other.
+
+> +static struct regmap_config max77693_regmap_config = {
+> +	.reg_bits = 8,
+> +	.val_bits = 8,
+
+Defining max_register would let you see the register map in debugfs but
+this is optional.
+
+> +	max77693->regmap = regmap_init_i2c(i2c, &max77693_regmap_config);
+> +	if (IS_ERR(max77693->regmap)) {
+
+devm_regmap_init_i2c().
+
+--2fjX3cMESU3XgGmZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPsMzBAAoJEECxmPOUX5FEbBsP/3ne4Bfomq6Vt0TgOO2PMoH1
-+Flhmk/I8N1fTYvCeC8TkGm995Fp9kNXKBuNA8TOuqlCkdF1kQxijWA1Y6dYDAAc
-J+L6yK3/Oipy2OBMykrZLr7K9TBXbqPrfMScjvuYFWaQrN8ZCbc5qk4CWEd8GwMD
-jICHkN2nucgNvjlr6p8l6KIna7vrNo6jvnFbQYj+4riLt8LNd8FIUSty3kMCraJ4
-M1EpYgW8eWwB+g7o/KK0qZajroZWheTfQJNvFjzXU3BS7JgdJ9AK0HRKelmC/qT7
-9EOKl7MlDUfI8zSbR2QoNFIJB0SX6oHQ7yzm3IDOCdTm7eYjJA57yTas5TNVWdsS
-Zu266y/gRnIMPgP05M9f+gx3e7ReHaHZwZPd1OmRFlmrqdTiM1QIwRI6YFH4PIA9
-qem/AfAkqSKKX329noyN8Ts+iBNnES3Grt5cs8xDB6NSJ8cbCIeFe6+XD29wiSfT
-RibmVSAAi7dVlxgkjaFa8hwabkrcFSbdbHUOied+9QJxABArBlKfZ/q09VQ+bCVM
-sHOmPXd4txjDbtkEf3Fn96EHTVV7L8wErGUhRjW+A1X1kD7FFIFqknmwOYMXVCnU
-sJTaNJobt9pyDK36SVSaD/HykT3gztDjqm7Ff7TSA2uV9WuoMAuxtQgqRWtYt5oJ
-ucO7a3bOUk6o1PRQWACg
-=Yz3A
+iQIcBAEBAgAGBQJPsM4GAAoJEBus8iNuMP3dWJ4P/1Kw5je1QqFgbw+0AnRZFdQi
+UBXRYB1UJMNXBg53qI7/AmpG6vnmOa6pk/O8//DW9e14sqSd8JCKJWeiulA6wV9Z
+8W669eJ7I5XO65yJC7mimqf6Qz5+Q5GcDWCV0HYX0UsWmLznBg6hhIquReFcc5kQ
+DUQv6vWp0b1gxZwMFKSPkUfZ4AZCixrzrNzgLuy/LTcy+8dn85ZlznqHqJlgdd3m
+BNaWnnRKhNkZlLLD0btJse1kLY5ciujQS/sa/fmh32VYGXPoWLI4QSswBLXiaORU
+ff0vd420ekjZpLvte+UQub7H4LOdC8uJZ8LGukQYX0Fqra30DqqSUV6bxwNISPey
+q01oG52gXRMb4xjlaAorSa/f1RMZgc1zIYg7SDU4YkGwWRT0nKGnNAgvmTk/6b5K
+oYJSuh580CuQxFipM5H6DLGHIs4LrzWLXhlXl6q3+MO2GVyq51xMT+1VYrAUjiTx
+hDiPSZpcIPa3QVJ39l4W/dGw5V931M0hFVUTqQWaJUHgfi/E1Dn1096/vZR69ank
+OvbwwKg1fJ0HFY9qSOz6uTA8MmivvxNlYWJ4avzsbHVwbtkkTXpTe8D62Cchke/V
+LYWvN/C45oWyE+hShjuvbkjFRK4EvaefueF58FCIn48lxAbXI32+HbBTO9SWVIhA
+OSfdglKyJlTTq2Bm1mUS
+=56xB
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__14_May_2012_19_13_37_+1000_MoF7UAlD2SODTuYX--
+--2fjX3cMESU3XgGmZ--
