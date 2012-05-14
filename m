@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932572Ab2ENWUH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 18:20:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34383 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757900Ab2ENWUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 18:20:05 -0400
-Date: Tue, 15 May 2012 00:19:48 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Vladimir =?utf-8?Q?'=CF=86-coder=2Fphcoder'?= Serbinenko" 
-	<phcoder@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] Fix minixfs size check
-Message-ID: <20120514221948.GV5353@quack.suse.cz>
-References: <4FAFBBC7.9020101@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4FAFBBC7.9020101@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932568Ab2ENWVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 18:21:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50347 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757900Ab2ENWVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 18:21:07 -0400
+Subject: Re: Perf events warning..
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CA+55aFzNQqa9nuhZUog-+B0SfU6ip_QSt73R=2Du=M2ua1cFBA@mail.gmail.com>
+References: <CA+55aFzNQqa9nuhZUog-+B0SfU6ip_QSt73R=2Du=M2ua1cFBA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 May 2012 00:20:48 +0200
+Message-ID: <1337034048.27020.137.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 13-05-12 15:48:55, Vladimir 'φ-coder/phcoder' Serbinenko wrote:
-> minixfs file size check is buggy and it doesn't allow creating a block which
-> can't be fully filled
-  Umm, I'm not really minix expert but who'd set s_max_size to something
-which is not a multiple of block size? This looks rather artifical problem
-to me...
-
-								Honza
+On Fri, 2012-05-11 at 08:43 -0700, Linus Torvalds wrote:
+> Peter, Ingo, Arnaldo,
+>  google doesn't find a warning like this, so it can't be *too*
+> commonly reported.
 > 
-> Signed-off-by: Vladimir Serbinenko <phcoder@gmail.com>
+> Anyway, doing some profiling of git "make test" (wonderful load for
+> doing lots of small processes that do lots of page faults etc), this
+> WARN_ON_ONCE() triggered:
 > 
-> diff --git a/fs/minix/itree_v1.c b/fs/minix/itree_v1.c
-> index 282e15a..4f8f8b2 100644
-> --- a/fs/minix/itree_v1.c
-> +++ b/fs/minix/itree_v1.c
-> @@ -29,7 +29,8 @@ static int block_to_path(struct inode * inode, long block, int offsets[DEPTH])
->  	if (block < 0) {
->  		printk("MINIX-fs: block_to_path: block %ld < 0 on dev %s\n",
->  			block, bdevname(inode->i_sb->s_bdev, b));
-> -	} else if (block >= (minix_sb(inode->i_sb)->s_max_size/BLOCK_SIZE)) {
-> +	} else if ((u64) block * (u64) BLOCK_SIZE
-> +		   >= minix_sb(inode->i_sb)->s_max_size) {
->  		if (printk_ratelimit())
->  			printk("MINIX-fs: block_to_path: "
->  			       "block %ld too big on dev %s\n",
-> diff --git a/fs/minix/itree_v2.c b/fs/minix/itree_v2.c
-> index 13487ad..4a9a19d 100644
-> --- a/fs/minix/itree_v2.c
-> +++ b/fs/minix/itree_v2.c
-> @@ -32,7 +32,8 @@ static int block_to_path(struct inode * inode, long block, int offsets[DEPTH])
->  	if (block < 0) {
->  		printk("MINIX-fs: block_to_path: block %ld < 0 on dev %s\n",
->  			block, bdevname(sb->s_bdev, b));
-> -	} else if (block >= (minix_sb(inode->i_sb)->s_max_size/sb->s_blocksize)) {
-> +	} else if ((u64) block * (u64) sb->s_blocksize
-> +		   >= minix_sb(inode->i_sb)->s_max_size) {
->  		if (printk_ratelimit())
->  			printk("MINIX-fs: block_to_path: "
->  			       "block %ld too big on dev %s\n",
+>     ------------[ cut here ]------------
+>     WARNING: at kernel/events/core.c:2066 task_ctx_sched_out+0x63/0x70()
+>     Hardware name: System Product Name
+>     Pid: 18120, comm: git Not tainted 3.4.0-rc6-00089-g4a01c681d58f-dirty #3
+>     Call Trace:
+>      [<ffffffff810308c5>] warn_slowpath_common+0x75/0xb0
+>      [<ffffffff810309c5>] warn_slowpath_null+0x15/0x20
+>      [<ffffffff81096d63>] task_ctx_sched_out+0x63/0x70
+>      [<ffffffff8109af06>] perf_event_comm+0x1d6/0x2e0
+>      [<ffffffff81368ba8>] ? get_random_int+0x88/0xb0
+>      [<ffffffff8102e1e2>] ? __mmdrop+0x62/0x90
+>      [<ffffffff810e1f93>] set_task_comm+0x63/0x80
+>      [<ffffffff810e3206>] setup_new_exec+0x86/0x250
+>      [<ffffffff81126b69>] load_elf_binary+0x389/0x1930
+>      [<ffffffff81125222>] ? load_misc_binary+0x292/0x390
+>      [<ffffffff810bcbdd>] ? get_user_pages+0x4d/0x50
+>      [<ffffffff810e13b2>] ? get_arg_page+0xa2/0xd0
+>      [<ffffffff810e2b65>] search_binary_handler+0xd5/0x200
+>      [<ffffffff811267e0>] ? elf_map+0x170/0x170
+>      [<ffffffff810e300d>] do_execve_common.clone.39+0x37d/0x430
+>      [<ffffffff810e30d6>] do_execve+0x16/0x20
+>      [<ffffffff8100ab75>] sys_execve+0x45/0x70
+>      [<ffffffff816b10ac>] stub_execve+0x6c/0xc0
+>     ---[ end trace 6fccf3db70f1b560 ]---
 > 
+> any comments/ideas?
 
+So far I can't make any of the things I came up stick. You ran something
+simple like: 'perf record -e cycles:pp -F 20000 make test' ? Or did you
+do something more interesting?
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
