@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab2ENS2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 14:28:41 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:59351 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635Ab2ENS2k (ORCPT
+	id S1757538Ab2ENScZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 14:32:25 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51611 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757477Ab2ENScX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 14:28:40 -0400
-Message-ID: <1337020106.2042.2.camel@koala>
-Subject: Re: [PATCH] UBIFS: add crypto lookup field to tree node cache
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 14 May 2012 21:28:26 +0300
-In-Reply-To: <alpine.DEB.2.00.1205141907290.12448@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205111323010.17715@eristoteles.iwoars.net>
-	 <1337001716.2528.56.camel@sauron.fi.intel.com>
-	 <alpine.DEB.2.00.1205141907290.12448@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-W8EzLtb+GwEtoYYZhfq+"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	Mon, 14 May 2012 14:32:23 -0400
+Date: Mon, 14 May 2012 11:32:19 -0700
+From: Tejun Heo <tj@kernel.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/6] memcg: fix error code in
+ hugetlb_force_memcg_empty()
+Message-ID: <20120514183219.GG2366@google.com>
+References: <4FACDED0.3020400@jp.fujitsu.com>
+ <4FACDFAE.5050808@jp.fujitsu.com>
+ <20120514181556.GE2366@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120514181556.GE2366@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 14, 2012 at 11:15:56AM -0700, Tejun Heo wrote:
+> On Fri, May 11, 2012 at 06:45:18PM +0900, KAMEZAWA Hiroyuki wrote:
+> > -		if (cgroup_task_count(cgroup) || !list_empty(&cgroup->children))
+> > +		if (cgroup_task_count(cgroup)
+> > +			|| !list_empty(&cgroup->children)) {
+> > +			ret = -EBUSY;
+> >  			goto out;
+> 
+> Why break the line?  It doesn't go over 80 col.
 
---=-W8EzLtb+GwEtoYYZhfq+
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Ooh, it does.  Sorry, my bad.  But still, isn't it more usual to leave
+the operator in the preceding line and align the start of the second
+line with the first?  ie.
 
-On Mon, 2012-05-14 at 19:20 +0200, Joel Reardon wrote:
-> The long long is divided as follows:
-> 32 bits for the (KSA-relative) LEB number, 32 bits for the offset in the
-> leb where the key is found. So its the same as the lnum/offs for the
-> current one. Theres substancial compression though, that is available,
-> since theres likely not more than 2^^32 LEBS for the KSA and the number o=
-f
-> bits needed for key offset is LEB_SHIFT - 4.
->=20
-> Is 32 bits sufficient to address all keys:
-> one key per datanode means 4096 * 2^32 =3D 2^44, so only 16 TB available
-> for 32 bit key addresses.
->=20
-> Though there is similar waste for lnum/offs as well. Perhaps zbranches ca=
-n
-> be stored as a u8[] and demarshalled with bit-op macros when needed for
-> computations.
+		if (cgroup_task_count(cgroup) ||
+		    !list_empty(&cgroup->children)) {
 
-OK, thanks for explanation. Why not to then store 2x32-bit fields
-instead, which is consistent with the current style? Why "long long"?
+Thanks.
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-W8EzLtb+GwEtoYYZhfq+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPsU7KAAoJECmIfjd9wqK0JygP/RjDbKbWrWM6fM7KbZZ2S+3i
-ZyD1C/qdeb1RVfzLJ2bCNFqbbjXVI3e2bZ2xO5l2eojOxWHh1WPBEPWHrjV/p6B2
-cJ9zlMLJMAuW7vOU+DMBZPwZiCmH+mtzgPhzePRl1650Gk/3H9BcWzNAFkfeQSCt
-D40m3ddnT63h91s+WpLibcKy8vx3FEaXARrFQAEVMUCImFag4qPWN4slTuXYtbxK
-ad+oV+Oj2VZEbdCtYi5iT4Uw243a1hb2LWVjggTcGNKOpJNUNgs3lwvATZpquT8c
-P/oMfw+rbU54ELupu4U17vJhouMrCHUlEveTBlDIPRauJHqejpkqJS6cYIbkEVtO
-Pg7AqlF7jJL6RaRSkVQ5yrvdZcf2y7p4vRNC8jpnEOEl9eQ5xbYA86qk7XriSfC7
-NFeDWN/pmqEqQ8VGV1+yLEFbX+drV5YUs4bl3ESajrSO4QNmNg4uIyKTtpGSuAVx
-zJGqfbNl0sfHgl/ixLXPZDyW5wgg6IDhalm5O5iKgW8+tvEpIWO3CTFsOOWG4ol7
-wM3GUTJcu+mviXALWQoWHc6nB5UuBCIvQEHo4q1e92WcrOuvenITXH7tV/X5DOso
-7l69Mp9pSzdP5TqoQ61MGMnkCgPqxutAXhNeLJa2AFT0NNRqJw0Y64MgDw0/6Yqn
-FeW2nWHk6QP35ShvNmBH
-=Mdc5
------END PGP SIGNATURE-----
-
---=-W8EzLtb+GwEtoYYZhfq+--
-
+-- 
+tejun
