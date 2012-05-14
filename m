@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755770Ab2ENK4l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 06:56:41 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34944 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755368Ab2ENK4j (ORCPT
+	id S1755806Ab2ENLBb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 07:01:31 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:22901 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755562Ab2ENLB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 06:56:39 -0400
+	Mon, 14 May 2012 07:01:29 -0400
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1202h1082kzz8275dhz2dh2a8h668h839hd24he5bh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng <b29396@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
+        <swarren@wwwdotorg.org>, <haojian.zhuang@marvell.com>,
+        <shawn.guo@freescale.com>
+Subject: [PATCH 1/5] pinctrl: a minor error checking improvement for pinconf
+Date: Mon, 14 May 2012 19:06:36 +0800
+Message-ID: <1336993600-30065-1-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-In-Reply-To: <4FB0DF4A.5010506@jp.fujitsu.com>
-References: <4FACDED0.3020400@jp.fujitsu.com>
-	<4FACE01A.4040405@jp.fujitsu.com>
-	<20120511141945.c487e94c.akpm@linux-foundation.org>
-	<4FB05B8F.8020408@jp.fujitsu.com>
-	<CAFTL4hwGEhyxZO0sXx5gVyK_xjhMQEbHojJbHzQmVKafNyVWtw@mail.gmail.com>
-	<4FB0DF4A.5010506@jp.fujitsu.com>
-Date: Mon, 14 May 2012 12:56:38 +0200
-Message-ID: <CAFTL4hzFiFDTUAAgo=1RBLFhG5Xe8VEUESkpc-RgN7L-haMMbA@mail.gmail.com>
-Subject: Re: [PATCH 2/6] add res_counter_uncharge_until()
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/14 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>:
->> There may be some special cases with "Original-patch-from:" tags used when
->> one heavily inspire from a patch without taking much of its original code.
->>
->
->
-> Is this ok ?
+From: Dong Aisheng <dong.aisheng@linaro.org>
 
-Yep, or even better since I plan to use my company's address now to
-sign my patches:
+Also checking invalid num_configs when validate the pinconf map.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@redhat.com>
+Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+---
+ drivers/pinctrl/pinconf.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks!
+diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
+index 7ce139e..43f474c 100644
+--- a/drivers/pinctrl/pinconf.c
++++ b/drivers/pinctrl/pinconf.c
+@@ -50,9 +50,9 @@ int pinconf_validate_map(struct pinctrl_map const *map, int i)
+ 		return -EINVAL;
+ 	}
+ 
+-	if (map->data.configs.num_configs &&
++	if (!map->data.configs.num_configs ||
+ 			!map->data.configs.configs) {
+-		pr_err("failed to register map %s (%d): no configs ptr given\n",
++		pr_err("failed to register map %s (%d): no configs given\n",
+ 		       map->name, i);
+ 		return -EINVAL;
+ 	}
+-- 
+1.7.0.4
+
+
