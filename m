@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab2ENV0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 17:26:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60121 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932258Ab2ENV0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 17:26:21 -0400
-Message-ID: <4FB17876.5060604@suse.cz>
-Date: Mon, 14 May 2012 23:26:14 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	id S1758100Ab2ENV2A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 17:28:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42546 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757691Ab2ENV16 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 17:27:58 -0400
+Date: Mon, 14 May 2012 14:27:53 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: linux-next oops in __lock_acquire for process_one_work
+Message-ID: <20120514212753.GM2366@google.com>
+References: <alpine.LSU.2.00.1205070951170.1544@eggly.anvils>
+ <20120507175743.GC19417@google.com>
+ <1336482202.16236.29.camel@twins>
+ <20120508165819.GB10687@google.com>
+ <alpine.LSU.2.00.1205081106160.4071@eggly.anvils>
+ <1336516260.8226.61.camel@twins>
+ <alpine.LSU.2.00.1205081553250.4497@eggly.anvils>
+ <20120509092536.GC8585@gmail.com>
+ <alpine.LSU.2.00.1205091219590.20881@eggly.anvils>
+ <alpine.LSU.2.00.1205101049460.17714@eggly.anvils>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: =?UTF-8?B?UGF3ZcWCIFNpa29yYQ==?= <pluto@pld-linux.org>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: stale object files (was Re: Linux-3.4-rc7)
-References: <CA+55aFwB-3rsrVo1vur6drZMvhSWNHAJZfEYC=WXfpwwvLfxFQ@mail.gmail.com>
-In-Reply-To: <CA+55aFwB-3rsrVo1vur6drZMvhSWNHAJZfEYC=WXfpwwvLfxFQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1205101049460.17714@eggly.anvils>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 13.5.2012 23:40, Linus Torvalds napsal(a):
-> Ok, added the appropriate kbuild people: Machal - skb_dev_set() no
-> longer exists, there are no users of it, so it looks like something
-> doesn't get rebuilt correctly.
+On Thu, May 10, 2012 at 10:52:46AM -0700, Hugh Dickins wrote:
+> On Wed, 9 May 2012, Hugh Dickins wrote:
+> > On Wed, 9 May 2012, Ingo Molnar wrote:
+> > > * Hugh Dickins <hughd@google.com> wrote:
+> > > 
+> > > > I'll set it going when I get home later - thanks.
+> > 
+> > Going fine so far, but a more convincing final report tomorrow.
 > 
-> Paweł, can you please also send us the config file you're using, then
-> we can recreate the exact setup you have.
-> 
->                      Linus
-> 
-> On Sun, May 13, 2012 at 2:13 PM, Paweł Sikora <pluto@pld-linux.org> wrote:
->>
->> starting from current rc7 build tree...
->>
->> $ cp .config ../config
->> $ make distclean
->> $ git co v3.4-rc5
->> $ cp ../config .config
->> $ make oldconfig
->> $ make -j8
->> $ git co v3.4-rc7
->> $ make oldconfig
->> $ make -j8
+> Yes, as expected, Peter's patch (+ ,) is good: that load ran four
+> times longer than the longest it managed before without the patch.
+> Just needs Peter's signoff, I think.
 
-This make results in
+Peter, can I take your patch with Hugh's description w/ your SOB?
 
-ERROR: "handle_edge_irq" [drivers/gpio/gpio-pch.ko] undefined!
-ERROR: "irq_to_desc" [drivers/gpio/gpio-pch.ko] undefined!
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
+Thanks.
 
-The second failure is simply GIGO.
-
-Michal
+-- 
+tejun
