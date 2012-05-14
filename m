@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493Ab2ENWB5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 18:01:57 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56526 "EHLO bear.ext.ti.com"
+	id S932565Ab2ENWCl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 18:02:41 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:57018 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757935Ab2ENWB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 18:01:56 -0400
+	id S1757935Ab2ENWB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 18:01:58 -0400
 From: <manjunatha_halli@ti.com>
 To: <linux-media@vger.kernel.org>
 CC: <linux-kernel@vger.kernel.org>, Manjunatha Halli <x0130808@ti.com>
-Subject: [PATCH V6 0/5] [Media] Radio: Fixes and New features for FM
-Date: Mon, 14 May 2012 17:01:48 -0500
-Message-ID: <1337032913-18646-1-git-send-email-manjunatha_halli@ti.com>
+Subject: [PATCH V6 4/5] Media: Update docs for V4L2 FM new features
+Date: Mon, 14 May 2012 17:01:52 -0500
+Message-ID: <1337032913-18646-5-git-send-email-manjunatha_halli@ti.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1337032913-18646-1-git-send-email-manjunatha_halli@ti.com>
+References: <1337032913-18646-1-git-send-email-manjunatha_halli@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,53 +23,264 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunatha Halli <x0130808@ti.com>
 
-Mauro and the list,
+The list of new features -
+	1) New control class for FM RX
+	2) New FM RX CID's - De-Emphasis filter mode and RDS AF switch
+	3) New FM TX CID - RDS Alternate frequency set.
+	4) New capability struct v4l2_tuner flags for band selection
 
-Fixed version 6 of patchset 2/5.
- 
-This version 6 of patchset resolves the comments received from
-Han's on patchset v5.
-     
-This patchset creates new control class 'V4L2_CTRL_CLASS_FM_RX' for FM RX,
-introduces 2 new CID's for FM RX and and 1 new CID for FM TX. Also adds 1
-field in struct v4l2_hw_freq_seek.
-      
-This patch adds few new features to TI's FM driver features
-are listed below,
-       
-1) FM TX RDS Support (RT, PS, AF, PI, PTY)          
-2) FM RX Russian band support
-3) FM RX AF set/get
-4) FM RX De-emphasis mode set/get
-        
-Along with new features this patch also fixes few issues in the driver
-like default rssi level for seek, unnecessory logs etc.
-
-Manjunatha Halli (5):
-  WL128x: Add support for FM TX RDS
-  New control class and features for FM RX
-  Add new CID for FM TX RDS Alternate Frequency
-  Media: Update docs for V4L2 FM new features
-  WL12xx: Add support for FM new features.
-
+Signed-off-by: Manjunatha Halli <x0130808@ti.com>
+---
  Documentation/DocBook/media/v4l/compat.xml         |    3 +
- Documentation/DocBook/media/v4l/controls.xml       |   77 ++++++++++
+ Documentation/DocBook/media/v4l/controls.xml       |   77 ++++++++++++++++++++
  Documentation/DocBook/media/v4l/dev-rds.xml        |    5 +-
- .../DocBook/media/v4l/vidioc-g-ext-ctrls.xml       |    7 +
- Documentation/DocBook/media/v4l/vidioc-g-tuner.xml |   25 ++++
- .../DocBook/media/v4l/vidioc-s-hw-freq-seek.xml    |   38 +++++-
- drivers/media/radio/wl128x/fmdrv.h                 |    3 +-
- drivers/media/radio/wl128x/fmdrv_common.c          |   55 ++++++--
- drivers/media/radio/wl128x/fmdrv_common.h          |   43 +++++-
- drivers/media/radio/wl128x/fmdrv_rx.c              |   92 ++++++++++---
- drivers/media/radio/wl128x/fmdrv_rx.h              |    2 +-
- drivers/media/radio/wl128x/fmdrv_tx.c              |   41 +++---
- drivers/media/radio/wl128x/fmdrv_tx.h              |    3 +-
- drivers/media/radio/wl128x/fmdrv_v4l2.c            |  148 +++++++++++++++++++-
- drivers/media/video/v4l2-ctrls.c                   |   18 ++-
- include/linux/videodev2.h                          |   25 +++-
- 16 files changed, 503 insertions(+), 82 deletions(-)
+ .../DocBook/media/v4l/vidioc-g-ext-ctrls.xml       |    7 ++
+ Documentation/DocBook/media/v4l/vidioc-g-tuner.xml |   25 +++++++
+ .../DocBook/media/v4l/vidioc-s-hw-freq-seek.xml    |   38 +++++++++-
+ 6 files changed, 151 insertions(+), 4 deletions(-)
 
+diff --git a/Documentation/DocBook/media/v4l/compat.xml b/Documentation/DocBook/media/v4l/compat.xml
+index bce97c5..df1f345 100644
+--- a/Documentation/DocBook/media/v4l/compat.xml
++++ b/Documentation/DocBook/media/v4l/compat.xml
+@@ -2311,6 +2311,9 @@ more information.</para>
+ 	  <para>Added FM Modulator (FM TX) Extended Control Class: <constant>V4L2_CTRL_CLASS_FM_TX</constant> and their Control IDs.</para>
+ 	</listitem>
+ 	<listitem>
++	<para>Added FM Receiver (FM RX) Extended Control Class: <constant>V4L2_CTRL_CLASS_FM_RX</constant> and their Control IDs.</para>
++	</listitem>
++	<listitem>
+ 	  <para>Added Remote Controller chapter, describing the default Remote Controller mapping for media devices.</para>
+ 	</listitem>
+       </orderedlist>
+diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+index b84f25e..ced2bee 100644
+--- a/Documentation/DocBook/media/v4l/controls.xml
++++ b/Documentation/DocBook/media/v4l/controls.xml
+@@ -3018,6 +3018,12 @@ to find receivers which can scroll strings sized as 32 x N or 64 x N characters.
+ with steps of 32 or 64 characters. The result is it must always contain a string with size multiple of 32 or 64. </entry>
+ 	  </row>
+ 	  <row>
++	  <entry spanname="id"><constant>V4L2_CID_RDS_TX_AF_FREQ</constant>&nbsp;</entry>
++	  <entry>integer</entry>
++	  </row>
++	  <row><entry spanname="descr">Sets the RDS Alternate Frequency value which allows a receiver to re-tune to a different frequency providing the same station when the first signal becomes too weak (e.g., when moving out of range). </entry>
++	  </row>
++	  <row>
+ 	    <entry spanname="id"><constant>V4L2_CID_AUDIO_LIMITER_ENABLED</constant>&nbsp;</entry>
+ 	    <entry>boolean</entry>
+ 	  </row>
+@@ -3146,6 +3152,77 @@ manually or automatically if set to zero. Unit, range and step are driver-specif
+ <xref linkend="en50067" /> document, from CENELEC.</para>
+     </section>
+ 
++    <section id="fm-rx-controls">
++      <title>FM Receiver Control Reference</title>
++
++      <para>The FM Receiver (FM_RX) class includes controls for common features of
++FM Reception capable devices.</para>
++
++      <table pgwide="1" frame="none" id="fm-rx-control-id">
++      <title>FM_RX Control IDs</title>
++
++      <tgroup cols="4">
++        <colspec colname="c1" colwidth="1*" />
++        <colspec colname="c2" colwidth="6*" />
++        <colspec colname="c3" colwidth="2*" />
++        <colspec colname="c4" colwidth="6*" />
++        <spanspec namest="c1" nameend="c2" spanname="id" />
++        <spanspec namest="c2" nameend="c4" spanname="descr" />
++        <thead>
++          <row>
++            <entry spanname="id" align="left">ID</entry>
++            <entry align="left">Type</entry>
++          </row><row rowsep="1"><entry spanname="descr" align="left">Description</entry>
++          </row>
++        </thead>
++        <tbody valign="top">
++          <row><entry></entry></row>
++          <row>
++            <entry spanname="id"><constant>V4L2_CID_FM_RX_CLASS</constant>&nbsp;</entry>
++            <entry>class</entry>
++          </row><row><entry spanname="descr">The FM_RX class
++descriptor. Calling &VIDIOC-QUERYCTRL; for this control will return a
++description of this control class.</entry>
++          </row>
++          <row>
++            <entry spanname="id"><constant>V4L2_CID_RDS_AF_SWITCH</constant>&nbsp;</entry>
++            <entry>boolean</entry>
++          </row>
++          <row><entry spanname="descr">Enable or Disable the RDS Alternate frequency feature. When enabled the driver will decode the RDS AF field and tries to switch to this AF frequency once the current frequency RSSI (Received signal strength indication) level goes below the threshold. If the frequency is switched, then &VIDIOC-G-FREQUENCY; will return the new frequency.</entry>
++          </row>
++          <row>
++	    <entry spanname="id"><constant>V4L2_CID_TUNE_DEEMPHASIS</constant>&nbsp;</entry>
++	    <entry>integer</entry>
++	  </row>
++	  <row id="v4l2-deemphasis"><entry spanname="descr">Configures the de-emphasis value for reception.
++A pre-emphasis filter is applied to the broadcast to accentuate the high audio frequencies.
++Depending on the region, a time constant of either 50 or 75 useconds is used. The enum&nbsp;v4l2_preemphasis
++defines possible values for pre-emphasis. Here they are:</entry>
++	</row><row>
++	<entrytbl spanname="descr" cols="2">
++		  <tbody valign="top">
++		    <row>
++		      <entry><constant>V4L2_PREEMPHASIS_DISABLED</constant>&nbsp;</entry>
++		      <entry>No de-emphasis is applied.</entry>
++		    </row>
++		    <row>
++		      <entry><constant>V4L2_PREEMPHASIS_50_uS</constant>&nbsp;</entry>
++		      <entry>A de-emphasis of 50 uS is used.</entry>
++		    </row>
++		    <row>
++		      <entry><constant>V4L2_PREEMPHASIS_75_uS</constant>&nbsp;</entry>
++		      <entry>A de-emphasis of 75 uS is used.</entry>
++		    </row>
++		  </tbody>
++		</entrytbl>
++
++	  </row>
++          <row><entry></entry></row>
++        </tbody>
++      </tgroup>
++      </table>
++
++      </section>
+     <section id="flash-controls">
+       <title>Flash Control Reference</title>
+ 
+diff --git a/Documentation/DocBook/media/v4l/dev-rds.xml b/Documentation/DocBook/media/v4l/dev-rds.xml
+index 38883a4..8188161 100644
+--- a/Documentation/DocBook/media/v4l/dev-rds.xml
++++ b/Documentation/DocBook/media/v4l/dev-rds.xml
+@@ -55,8 +55,9 @@ If the driver only passes RDS blocks without interpreting the data
+ the <constant>V4L2_TUNER_CAP_RDS_BLOCK_IO</constant> flag has to be set. If the
+ tuner is capable of handling RDS entities like program identification codes and radio
+ text, the flag <constant>V4L2_TUNER_CAP_RDS_CONTROLS</constant> should be set,
+-see <link linkend="writing-rds-data">Writing RDS data</link> and
+-<link linkend="fm-tx-controls">FM Transmitter Control Reference</link>.</para>
++see <link linkend="writing-rds-data">Writing RDS data</link>,
++<link linkend="fm-tx-controls">FM Transmitter Control Reference</link>
++<link linkend="fm-rx-controls">FM Receiver Control Reference</link>.</para>
+   </section>
+ 
+   <section  id="reading-rds-data">
+diff --git a/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml b/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
+index b17a7aa..2a8b44e 100644
+--- a/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
++++ b/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
+@@ -258,6 +258,13 @@ These controls are described in <xref
+ These controls are described in <xref
+ 		linkend="fm-tx-controls" />.</entry>
+ 	  </row>
++          <row>
++            <entry><constant>V4L2_CTRL_CLASS_FM_RX</constant></entry>
++             <entry>0x9c0000</entry>
++             <entry>The class containing FM Receiver (FM RX) controls.
++These controls are described in <xref
++                 linkend="fm-rx-controls" />.</entry>
++           </row>
+ 	  <row>
+ 	    <entry><constant>V4L2_CTRL_CLASS_FLASH</constant></entry>
+ 	    <entry>0x9c0000</entry>
+diff --git a/Documentation/DocBook/media/v4l/vidioc-g-tuner.xml b/Documentation/DocBook/media/v4l/vidioc-g-tuner.xml
+index 91ec2fb..edad182 100644
+--- a/Documentation/DocBook/media/v4l/vidioc-g-tuner.xml
++++ b/Documentation/DocBook/media/v4l/vidioc-g-tuner.xml
+@@ -328,6 +328,31 @@ radio tuners.</entry>
+ 	<entry>0x0200</entry>
+ 	<entry>The RDS data is parsed by the hardware and set via controls.</entry>
+ 	  </row>
++	  <row>
++	<entry><constant>V4L2_TUNER_CAP_BAND_TYPE_DEFAULT</constant></entry>
++	<entry>0x010000</entry>
++	<entry>This is the default band, which should be the widest frequency range supported by the hardware.</entry>
++	  </row>
++	  <row>
++	<entry><constant>V4L2_TUNER_CAP_BAND_TYPE_EUROPE_US</constant></entry>
++	<entry>0x020000</entry>
++	<entry>Europe or US band (87.5 Mhz - 108 MHz).</entry>
++	  </row>
++	  <row>
++	<entry><constant>V4L2_TUNER_CAP_BAND_TYPE_JAPAN</constant></entry>
++	<entry>0x030000</entry>
++	<entry>Japan band (76 MHz - 90 MHz).</entry>
++	  </row>
++	  <row>
++	<entry><constant>V4L2_TUNER_CAP_BAND_TYPE_RUSSIAN</constant></entry>
++	<entry>0x040000</entry>
++	<entry>OIRT or Russian band (65.8 MHz - 74 MHz).</entry>
++	  </row>
++	  <row>
++	<entry><constant>V4L2_TUNER_CAP_BAND_TYPE_WEATHER</constant></entry>
++	<entry>0x050000</entry>
++	<entry>Weather band (162.4 MHz - 162.55 MHz).</entry>
++	  </row>
+ 	</tbody>
+       </tgroup>
+     </table>
+diff --git a/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml b/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml
+index 18b1a82..b86c1db 100644
+--- a/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml
++++ b/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml
+@@ -95,7 +95,12 @@ field and the &v4l2-tuner; <structfield>index</structfield> field.</entry>
+ 	  </row>
+ 	  <row>
+ 	    <entry>__u32</entry>
+-	    <entry><structfield>reserved</structfield>[7]</entry>
++	    <entry><structfield>band</structfield></entry>
++	    <entry>Configure the FM chip to a specific band before starting seek operation. Please refer to table 'Radio Band Types'.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>reserved</structfield>[6]</entry>
+ 	    <entry>Reserved for future extensions. Applications
+ 	    must set the array to zero.</entry>
+ 	  </row>
+@@ -103,6 +108,35 @@ field and the &v4l2-tuner; <structfield>index</structfield> field.</entry>
+       </tgroup>
+     </table>
+   </refsect1>
++    <table pgwide="1" frame="none" id="Radio band Types">
++      <title>Radio Band Types</title>
++      <tgroup cols="2">
++	&cs-str;
++	<tbody valign="top">
++		    <row>
++		      <entry><constant>V4L2_FM_BAND_DEFAULT</constant>&nbsp;</entry>
++		      <entry>This is the default band, which should be the widest frequency range supported by
++		      the hardware.</entry>
++		    </row>
++		    <row>
++		      <entry><constant>V4L2_FM_BAND_EUROPE_US</constant>&nbsp;</entry>
++		      <entry>Europe or US band (87.5 Mhz - 108 MHz).</entry>
++		    </row>
++		    <row>
++		      <entry><constant>V4L2_FM_BAND_JAPAN</constant>&nbsp;</entry>
++		      <entry>Japan band (76 MHz - 90 MHz).</entry>
++		    </row>
++		    <row>
++		      <entry><constant>V4L2_FM_BAND_RUSSIAN</constant>&nbsp;</entry>
++		      <entry>OIRT or Russian band (65.8 MHz - 74 MHz).</entry>
++		    </row>
++		    <row>
++		      <entry><constant>V4L2_FM_BAND_WEATHER</constant>&nbsp;</entry>
++		      <entry>Weather band (162.4 MHz - 162.55 MHz).</entry>
++		    </row>
++	</tbody>
++      </tgroup>
++    </table>
+ 
+   <refsect1>
+     &return-value;
+@@ -112,7 +146,7 @@ field and the &v4l2-tuner; <structfield>index</structfield> field.</entry>
+ 	<term><errorcode>EINVAL</errorcode></term>
+ 	<listitem>
+ 	  <para>The <structfield>tuner</structfield> index is out of
+-bounds, the wrap_around value is not supported or the value in the <structfield>type</structfield> field is
++bounds, the band is not supported, the wrap_around value is not supported or the value in the <structfield>type</structfield> field is
+ wrong.</para>
+ 	</listitem>
+       </varlistentry>
 -- 
 1.7.4.1
 
