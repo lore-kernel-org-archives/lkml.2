@@ -1,25 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab2ENJ5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 05:57:24 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51575 "EHLO
+	id S1755582Ab2ENJ6I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 05:58:08 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51582 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752841Ab2ENJ5Y (ORCPT
+	by vger.kernel.org with ESMTP id S1752841Ab2ENJ6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 05:57:24 -0400
-Date: Mon, 14 May 2012 10:57:20 +0100
+	Mon, 14 May 2012 05:58:06 -0400
+Date: Mon, 14 May 2012 10:58:01 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: sameo@linux.intel.com, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        jonghwa3.lee@samsung.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] MFD: MAX77693: add IRQ handler
-Message-ID: <20120514095719.GK31985@opensource.wolfsonmicro.com>
-References: <1336972835-15203-1-git-send-email-cw00.choi@samsung.com>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        giancarlo.asnaghi@st.com, alan@linux.intel.com, sameo@linux.intel.com,
+        linus.walleij@stericsson.com
+Subject: Re: [PATCH V3 2/2] gpio: add STA2X11 GPIO block
+Message-ID: <20120514095800.GL31985@opensource.wolfsonmicro.com>
+References: <20120514094737.GB2189@sirena.org.uk>
+ <20120511233402.43D813E0791@localhost>
+ <cover.1334219873.git.rubini@gnudd.com>
+ <5e419c41c8e3bcbeac341aa9457a9c93bc4c8309.1334219874.git.rubini@gnudd.com>
+ <20120514072534.GA29871@mail.gnudd.com>
+ <20120514095111.GA4972@mail.gnudd.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="F55Y67F01HNW3AgB"
+	protocol="application/pgp-signature"; boundary="yaPAUYI/0vT2YKpA"
 Content-Disposition: inline
-In-Reply-To: <1336972835-15203-1-git-send-email-cw00.choi@samsung.com>
+In-Reply-To: <20120514095111.GA4972@mail.gnudd.com>
 X-Cookie: You will be awarded some great honor.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,49 +33,50 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---F55Y67F01HNW3AgB
+--yaPAUYI/0vT2YKpA
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Mon, May 14, 2012 at 02:20:35PM +0900, Chanwoo Choi wrote:
+On Mon, May 14, 2012 at 11:51:11AM +0200, Alessandro Rubini wrote:
+> Me:
+> >> I'm not completely clear (yet) about how to get the right interrupt
+> >> number in those other drivers, but I'm willing to remove the constraint
+> >> as they are cleaned up and submitted.
 
-> +	if (!max77693->irq) {
-> +		dev_warn(max77693->dev, "No interrupt specified.\n");
-> +		return 0;
-> +	}
+> Mark Brown:
+> > Use platform data for both this driver and the other drivers (or device
+> > tree if you're doing that).  This will hard code the magic numbers in
+> > the board files, not in the driver.
 
-I'd suggest just setting up the IRQ domain anyway - it makes life
-simpler in the other drivers for the chip as they don't need to worry if
-interrupts are registered unless it's very important to them that they
-go off which is often not the case.  Just skip actually claiming the
-IRQ.
+> Yes, but it's not that easy. If the gpio driver gets unpredictable
+> interrupt numbers associated to the pins, the other drivers must
+> recover those numbers in some way.  That's why I currently started
+> from 384, like the prevoous gpio driver was doing: the platform data
+> uses that knowledge in the drivers I'm still using internally (but are
+> not submittable as-is, so I'm working on them).
 
-> +EXPORT_SYMBOL_GPL(max77693_irq_resume);
-> +EXPORT_SYMBOL_GPL(max77693_irq_init);
-> +EXPORT_SYMBOL_GPL(max77693_irq_exit);
+If you use platform data why would you get unpredicatable numbers?
 
-These shouldn't need to be exported, they're only used by the MFD core.
-
---F55Y67F01HNW3AgB
+--yaPAUYI/0vT2YKpA
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPsNb5AAoJEBus8iNuMP3dkfAP/3et0R5sZ+7qXtYlkrMXchKH
-5jl3sm/Fln9KA9IbMzEY92CPHvV+olZ5q6hpqVLnEb6N6LBEZz8JER2rk7ma/NgF
-VZCEfllapU1Z4vTuHkHdz+hLuasndLhhOOytUisJLSI7XlGBLKj+SRgFZk9swope
-ROVor7sw140J6ZFl8fdmiNKchpsO9yE38hGagOud9KCklJM+KwX78nw11xVKJ8mY
-IIuc0s4gJ1vvUgG1AAmVN0fyKvBavZSHXPuN8WdXTy28cquSTpeEHvEyn0VlC7hx
-B5wFbAD1VENF+fQP0QD2PG1hUOs9iVdqIKEiIVkyELarWhaUfNs5ACNA6HVDiDMc
-8yQQMnlnv3bQ/kCmfYT7Ryf+EGrn25JKLI561ygZZABUJjjLFzuesCUWI0QUgY27
-8gHOFmLnDJHrCDDa5Or0rdpBeUIsn3M0BrT8aYe8PcPsnIZmGOvtjkgKkSrLh7SH
-ljcfW7aBf0+Cy+in1Imv1dFRjwL3C/ILE79Uzef6cf9LBWrMlTdVuM36bvm3LUP7
-92sCFREVN3/elxkUrti+4IAKNj9R8/8NkbsMAXPgldw0KkCUfKd2JvPcXiclxa4S
-vFrl6mozweySJ1vgS+SuL+aDbzLvRjQByRGhCflrG7q+ohz+xE5CniMHJwl3QQen
-8ubOrObyY8PFiqR2iCyH
-=qJAC
+iQIcBAEBAgAGBQJPsNcgAAoJEBus8iNuMP3dwckP/08HGi7uScBRbxL6xdLDvs9w
+KyxNddCfl3Ka4W/YQKr6TTES9ZifpNpQfsYTgfqJuMrsZtbDcy/CYsWE0nhkmIOA
+WLTolYiIQtq+iTncENgsYCDhTm1MDowPs2iKSyW0ax2kchJMXu44fDwRr5JTRsLb
+sLuro0qA1/muIStWFOXz38XcCeEjiIDrAswi9y+lpZG1uLeHhwzK66llISws1mGe
+xnfPKBR52KFJXVa/6Q6gLEOH8X65yNAQO26qIa5pV6UWuqJpvo8+s1zNP7/ng5/y
+9eV/aoA3bHkJ4LOQvGh5/qb7Wk2WgqbhxODf9ydP85TBoTY5QwxCbkgJqVutU6Ht
+xju9w6+4MRWNYWeYFhz19FHpIyqNd7l550ardRs1ZMCCZR0sNqv+Z2tPvvAnJycO
+0WgfhvCEiIW6NYThdY6U5RsGzmZjOp0XGWVXE19hwhcBt4K92NGHRb8A6PAL9zkX
+m07e1RfI+MV4f09suy1j+aL5LV5CSxC6jQ4UvnpSx0FqW+qF4ZJMd3HsrholEMBr
+lC234N8CHLgG/mJvfYmuTn6vCXEQAda/Y6VXdjlUwVyBlySZTROInV1WWDIWyYbn
+nM/lf7pN82OYbUBaFMVlADxLBDWi2X88NyotTz0sWu92LG3aFpFFK46nymTBl+ak
+bhWpDvrja9BShL24J1AB
+=DNnT
 -----END PGP SIGNATURE-----
 
---F55Y67F01HNW3AgB--
+--yaPAUYI/0vT2YKpA--
