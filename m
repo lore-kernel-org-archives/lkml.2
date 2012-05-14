@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab2ENL2L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 07:28:11 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64658 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755708Ab2ENL2J (ORCPT
+	id S1756121Ab2ENLkF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 07:40:05 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:23978 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755914Ab2ENLkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 07:28:09 -0400
-Message-ID: <4FB0EC2E.9090704@mvista.com>
-Date: Mon, 14 May 2012 15:27:42 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "Du, ChangbinX" <changbinx.du@intel.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "mina86@mina86.com" <mina86@mina86.com>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        "balbi@ti.com" <balbi@ti.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] testusb: add path /dev/bus/usb to default search paths
- for usbfs
-References: <1337021163-1487-1-git-send-email-changbinx.du@intel.com> <0C18FE92A7765D4EB9EE5D38D86A563A062C91@SHSMSX101.ccr.corp.intel.com> <4FB0D76B.2060603@mvista.com> <0C18FE92A7765D4EB9EE5D38D86A563A062DC8@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A062DC8@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 14 May 2012 07:40:04 -0400
+X-AuditID: cbfee61b-b7b94ae000002e44-03-4fb0ef12d5fe
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        jonghwa3.lee@samsung.com, linux-kernel@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH v4 0/2] MAX77693: add initial MAX77693 MFD driver
+Date: Mon, 14 May 2012 20:39:52 +0900
+Message-id: <1336995592-1505-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-05-2012 14:49, Du, ChangbinX wrote:
+MAX77693 is sub PMIC(Power Management IC) working
+with other main PMIC. It has several features:
+-PMIC
+-MUIC(Micro USB Interface Controller)
+-Camera flash LED control
+-Haptic motor control
 
->> As real device-nodes managed by udev whose nodes lived in /dev/bus/usb
->> are mostly used today, let testusb tool use that directory as one
->> default path make tool be more convenient to use.
+This patch adds initial basis for several devices.
+It is tested on TRATS board.
 
->> Signed-off-by: Du Changbin<changbinx.du@intel.com>
->> ---
->>    tools/usb/testusb.c |    6 ++++++
->>    1 file changed, 6 insertions(+)
+v4
+- Use regmap_update_bits to update max77693 register
+- Add max_register field to struct regmap_config for debugfs
+- Use devm_regmap_init_i2c() to register regmap instaad of
+  regmap_init_i2c()
+- Fix typo and remove unnecessary code
+- Set irq domain for MAX77693 interrupts regardless of max77693->irq
 
->> diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c index
->> 6e0f567..c6c839e 100644
->> --- a/tools/usb/testusb.c
->> +++ b/tools/usb/testusb.c
-> [...]
->> @@ -376,6 +377,11 @@ static const char *usbfs_dir_find(void)
->>    		}
->>    	} while (++it != end);
->>
->> +	/* real device-nodes managed by udev */
->> +	if (access(udev_usb_path, F_OK) == 0) {
->> +		return udev_usb_path;
->> +	}
+v3
+- Add support irq domain for MAX77693 interrupts
+- Apply regmap for i2c
 
->      Why {} with single statement?
+v2
+- with comments from Mark
+- use devm_kzalloc rather than kzalloc
+- print device ID read from device
 
-> Hi, thanks for your tip. It's a code style issue. I will remove {}.
+Chanwoo Choi (2):
+  MFD: MAX77693: add MAX77693 MFD driver
+  MFD: MAX77693: add IRQ handler
 
-> By the way, I don't know how I can do with this case? Resend a new patch?
+ drivers/mfd/Kconfig                  |   12 ++
+ drivers/mfd/Makefile                 |    1 +
+ drivers/mfd/max77693-irq.c           |  309 ++++++++++++++++++++++++++++++++++
+ drivers/mfd/max77693.c               |  249 +++++++++++++++++++++++++++
+ include/linux/mfd/max77693-private.h |  217 ++++++++++++++++++++++++
+ include/linux/mfd/max77693.h         |   36 ++++
+ 6 files changed, 824 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/max77693-irq.c
+ create mode 100644 drivers/mfd/max77693.c
+ create mode 100644 include/linux/mfd/max77693-private.h
+ create mode 100644 include/linux/mfd/max77693.h
 
-    Yes, marking that thsi is a new version of patch in the [PATCH] prefix, 
-like [PATCH v2].
-
-> Do I need include discussion message in new patch mail?
-
-    Not necessarily, just indicate the change compared to the old version 
-under the --- tear line.
-
-> And how can I know my patch has be accepted? I am a newbie, could you help me?
-
-    You will get a reply from the maintainer, Greg Kroah-Hartman, I think.
-
-> Changbin
-
-WBR, Sergei
