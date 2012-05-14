@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab2ENTsf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 15:48:35 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49428 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757713Ab2ENTse (ORCPT
+	id S932245Ab2ENUAY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 16:00:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50249 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757130Ab2ENUAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 15:48:34 -0400
-Date: Mon, 14 May 2012 12:48:16 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Cong Wang <xiyou.wangcong@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/10] tmpfs: enable NOSEC optimization
-In-Reply-To: <4FB0D1C6.7090801@gmail.com>
-Message-ID: <alpine.LSU.2.00.1205141242530.1623@eggly.anvils>
-References: <alpine.LSU.2.00.1205120447380.28861@eggly.anvils> <alpine.LSU.2.00.1205120500040.28861@eggly.anvils> <4FB0D1C6.7090801@gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 14 May 2012 16:00:23 -0400
+Message-ID: <1337025618.8218.41.camel@fourier>
+Subject: Re: [PATCH] dell-laptop: rfkill blacklist Dell XPS 13z, 15z
+From: Kamal Mostafa <kamal@canonical.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mario Limonciello <mario_limonciello@dell.com>
+Date: Mon, 14 May 2012 13:00:18 -0700
+In-Reply-To: <20120514193718.GA6438@srcf.ucam.org>
+References: <1337023652-11661-1-git-send-email-kamal@canonical.com>
+	 <20120514193718.GA6438@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 May 2012, Cong Wang wrote:
-> On 05/12/2012 08:02 PM, Hugh Dickins wrote:
-> > Let tmpfs into the NOSEC optimization (avoiding file_remove_suid()
-> > overhead on most common writes): set MS_NOSEC on its superblocks.
+On Mon, 2012-05-14 at 20:37 +0100, Matthew Garrett wrote:
+> On Mon, May 14, 2012 at 12:27:32PM -0700, Kamal Mostafa wrote:
+> > From: Mario Limonciello <mario_limonciello@dell.com>
 > > 
-> > Signed-off-by: Hugh Dickins<hughd@google.com>
-> > ---
-> >   mm/shmem.c |    1 +
-> >   1 file changed, 1 insertion(+)
-> > 
-> > --- 3045N.orig/mm/shmem.c	2012-05-05 10:45:17.888060878 -0700
-> > +++ 3045N/mm/shmem.c	2012-05-05 10:46:05.732062006 -0700
-> > @@ -2361,6 +2361,7 @@ int shmem_fill_super(struct super_block
-> >   		}
-> >   	}
-> >   	sb->s_export_op =&shmem_export_ops;
-> > +	sb->s_flags |= MS_NOSEC;
+> > On Dell XPS 13z (L321X) and 15z (L502X), switching off Bluetooth also
+> > disables wifi due to improper improper BIOS interaction with dell-laptop.
+> > Add those models to the rfkill blacklist.
 > 
-> Isn't setting the flag on inode better? Something like:
-
-I don't think so.  The MS_NOSEC S_NOSEC business is fairly subtle,
-and easy to miss if it's gone wrong, so I would much rather follow
-the established pattern in local block filesystems: which is to set
-MS_NOSEC in superblock flags, and leave S_NOSEC to file_remove_suid().
-
-Hugh
-
+> What does "Improper BIOS interaction" mean? What's the proper BIOS 
+> interaction?
 > 
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index f99ff3e..7d98fb5 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -2325,6 +2325,7 @@ static void shmem_init_inode(void *foo)
->  {
->         struct shmem_inode_info *info = foo;
->         inode_init_once(&info->vfs_inode);
-> +       info->vfs_inode.i_flags |= S_NOSEC;
->  }
-> 
->  static int shmem_init_inodecache(void)
+
+Just that disabling bluetooth also incorrectly disables wifi on those
+models (the same as happens for other Dell models in the table?), but
+they behave properly (their disable behaviors are no longer linked) once
+added to the dell_blacklist table.
+
+I'll resubmit the patch, with perhaps better wording, and since I've
+been advised that the model name "XPS 15z" should actually be just "XPS
+15".
+
+ -Kamal
+
