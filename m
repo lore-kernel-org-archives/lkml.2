@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab2ENMvo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 08:51:44 -0400
-Received: from d1.icnet.pl ([212.160.220.21]:55980 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755830Ab2ENMvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 08:51:43 -0400
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-To: Jarkko Nikula <jarkko.nikula@bitmer.com>
-Cc: Tony Lindgren <tony@atomide.com>, Oleg Matcovschi <oleg.matcovschi@ti.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: Re: [PATCH] omap: dma: Clear status registers on enable/disable irq.
-Date: Mon, 14 May 2012 14:48:31 +0200
-Message-ID: <5693144.pkJCBoTAMO@vclass>
-Organization: Tele-Info-System, Poznan, PL
-User-Agent: KMail/4.7.4 (Linux/3.1.10-gentoo-r1; KDE/4.7.4; i686; ; )
-In-Reply-To: <4FA69DB8.7060000@bitmer.com>
-References: <1334954578-10478-1-git-send-email-oleg.matcovschi@ti.com> <1633215.yCrxk1mQVq@acer> <4FA69DB8.7060000@bitmer.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+	id S1756180Ab2ENMxp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 08:53:45 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:59306 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755830Ab2ENMxo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 08:53:44 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArkIAA4AsU9bdWOb/2dsb2JhbABEhXmlSiKIDoEHghUBAQUjBFIQCxgqAgJXBoglp2aSWYsahHCBGASmPYJr
+X-IronPort-AV: E=Sophos;i="4.75,586,1330902000"; 
+   d="asc'?scan'208";a="907431132"
+Message-ID: <1337000016.3438.5.camel@fourier.local.igalia.com>
+Subject: Re: [PATCH 1/5] Staging ipack: fix a few sparse warnings
+From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Mon, 14 May 2012 14:53:36 +0200
+In-Reply-To: <20120514122628.GH16984@mwanda>
+References: <1336992089-2733-1-git-send-email-siglesias@igalia.com>
+	 <1336992089-2733-2-git-send-email-siglesias@igalia.com>
+	 <20120514122628.GH16984@mwanda>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-hFT4ldoF/s+JDrAzdKK6"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 06 of May 2012 18:50:16 Jarkko Nikula wrote:
-> On 05/04/2012 10:39 PM, Janusz Krzysztofik wrote:
-> >> This seems like a nice fix to me. As it affects all omaps, I'd like to
-> >> see some tested-by from Janusz/Jarkko/Peter. Can you guys give it a 
-> > try
-> >> with some audio tests?
-> > 
-> > OK, I can do, but perhaps not before next Saturday, when I'm back home, 
-> > able to actually listen to the audio, not only watch the IRQ counters 
-> > rising up ;-).
-> > 
-> Ok from omap3
-> 
-> Tested-by: Jarkko Nikula <jarkko.nikula@bitmer.com>
 
-Works for me on OMAP1.
+--=-hFT4ldoF/s+JDrAzdKK6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Tested-by: Janusz Krzyszofik <jkrzyszt@tis.inet.pl>
+On Mon, 2012-05-14 at 15:26 +0300, Dan Carpenter wrote:
+> On Mon, May 14, 2012 at 12:41:25PM +0200, Samuel Iglesias Gonsalvez wrote=
+:
+> >  	/* Read status register */
+> > -	status_reg =3D readw((unsigned short *) (tpci200->info->interface_reg=
+s +
+> > +	status_reg =3D readw((void __iomem *) (tpci200->info->interface_regs =
++
+> >  					       TPCI200_STATUS_REG));
+> > =20
+>=20
+> Later in the patch, you do the right thing which is to declare this
+> as an __iomem pointer in the header.  The cast here can be removed
+> and it all fits on one line.
+>=20
+> Remove it in a follow on patch if you want.  Same for several of the
+> other casts in this patch.
+
+Thanks a lot. I will do it.
+
+Regards,
+
+Sam
+
+
+
+--=-hFT4ldoF/s+JDrAzdKK6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEABECAAYFAk+xAFAACgkQWrfbyfmd9eLnxgCfaXBsWfSqcdGs0S5iVrYWdJOg
+/UMAoIhvICSS1U935i/axo3jSUZrmsQP
+=Oi1j
+-----END PGP SIGNATURE-----
+
+--=-hFT4ldoF/s+JDrAzdKK6--
 
