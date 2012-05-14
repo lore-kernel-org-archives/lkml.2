@@ -1,32 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab2ENCGU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 22:06:20 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:59187 "EHLO slimlogic.co.uk"
+	id S1754173Ab2ENCGT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 22:06:19 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:59186 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754000Ab2ENCGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753982Ab2ENCGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 May 2012 22:06:16 -0400
 From: Graeme Gregory <gg@slimlogic.co.uk>
 To: linux-kernel@vger.kernel.org
 Cc: sameo@linux.intel.com, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
-        b-cousson@ti.com, linux-omap@vger.kernel.org
-Subject: [PATCH 0/4] Adding support for Palmas PMIC
-Date: Mon, 14 May 2012 10:58:28 +0900
-Message-Id: <1336960712-2812-1-git-send-email-gg@slimlogic.co.uk>
+        b-cousson@ti.com, linux-omap@vger.kernel.org,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: [PATCH 4/4] REGULATOR: regulator for Palmas Kconfig
+Date: Mon, 14 May 2012 10:58:32 +0900
+Message-Id: <1336960712-2812-5-git-send-email-gg@slimlogic.co.uk>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1336960712-2812-1-git-send-email-gg@slimlogic.co.uk>
+References: <1336960712-2812-1-git-send-email-gg@slimlogic.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the MFD and regulator parts for the Palmas family of chips from
-Texas Instruments.
+Add the Kconfig/Makefile stuff for the palmas regulator driver
 
-It has been decided to use the Palmas name in the driver instead of
-the various marketing names the family will be avilable with to avoid
-confusion. The driver will in the future determine the exact product
-from the OTP information and adapt accordingly.
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+---
+ drivers/regulator/Kconfig  |   12 ++++++++++++
+ drivers/regulator/Makefile |    1 +
+ 2 files changed, 13 insertions(+)
 
-Currently the driver will handle the twl6035 and twl6037 varients.
-
-Graeme
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 4ad4e8d..c86b886 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -268,6 +268,18 @@ config REGULATOR_DB8500_PRCMU
+ 	  This driver supports the voltage domain regulators controlled by the
+ 	  DB8500 PRCMU
+ 
++config REGULATOR_PALMAS
++	tristate "TI Palmas PMIC Regulators"
++	depends on MFD_PALMAS
++	help
++	  If you wish to control the regulators on the Palmas series of
++	  chips say Y here. This will enable support for all the software
++	  controllable SMPS/LDO regulators.
++
++	  The regulators available on Palmas series chips vary depending
++	  on the muxing. This is handled automatically in the driver by
++	  reading the mux info from OTP.
++
+ config REGULATOR_TPS6105X
+ 	tristate "TI TPS6105X Power regulators"
+ 	depends on TPS6105X
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index dcc56dc..977fd46 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -33,6 +33,7 @@ obj-$(CONFIG_REGULATOR_MAX8998) += max8998.o
+ obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
+ obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
+ obj-$(CONFIG_REGULATOR_MC13XXX_CORE) +=  mc13xxx-regulator-core.o
++obj-$(CONFIG_REGULATOR_PALMAS) += palmas-regulator.o
+ obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o
+ obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
+ obj-$(CONFIG_REGULATOR_RC5T583)  += rc5t583-regulator.o
+-- 
+1.7.9.5
 
