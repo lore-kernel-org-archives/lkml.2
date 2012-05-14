@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab2ENRfi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 13:35:38 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:42370 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab2ENRfg (ORCPT
+	id S1757410Ab2ENRiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 13:38:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42262 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756604Ab2ENRiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 13:35:36 -0400
-Subject: Re: [PATCH RFC] tun: experimental zero copy tx support
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Joe Perches <joe@perches.com>, Jason Wang <jasowang@redhat.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ian.Campbell@citrix.com, kvm@vger.kernel.org
-In-Reply-To: <20120513155206.GA26847@redhat.com>
-References: <20120513155206.GA26847@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 May 2012 10:34:50 -0700
-Message-ID: <1337016890.3851.20.camel@oc3660625478.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051417-3270-0000-0000-0000065461CC
+	Mon, 14 May 2012 13:38:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120514103526.1f1a4399@nehalam.linuxnetplumber.net>
+References: <1337015687-17693-1-git-send-email-levinsasha928@gmail.com> <20120514103526.1f1a4399@nehalam.linuxnetplumber.net>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 14 May 2012 19:37:50 +0200
+Message-ID: <CA+1xoqdAzeZ2gHAakT2jA359ngSA6vAs96m0rNuXSmy6C5yQ_Q@mail.gmail.com>
+Subject: Re: [PATCH] net: codel: fix build errors
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: edumazet@google.com, dave.taht@bufferbloat.net, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-05-13 at 18:52 +0300, Michael S. Tsirkin wrote:
-> Let vhost-net utilize zero copy tx when the experimental
-> zero copy mode is enabled and when used with tun.  This works on
-> top of the patchset 'copy aside frags with destructors' that I posted
-> previously. This is not using tcp so doesn't have the
-> issue with early skb cloning noticed by Ian.
-> 
-> For those that wish to test this with kvm, I intend to post a patchset
-> +
-> git tree with just the necessary bits from the destructor patch
-> a bit later.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com> 
+On Mon, May 14, 2012 at 7:35 PM, Stephen Hemminger
+<shemminger@vyatta.com> wrote:
+> On Mon, 14 May 2012 19:14:47 +0200
+> Sasha Levin <levinsasha928@gmail.com> wrote:
+>
+>> Fix the following build error:
+>>
+>> net/sched/sch_fq_codel.c: In function 'fq_codel_dump_stats':
+>> net/sched/sch_fq_codel.c:464:3: error: unknown field 'qdisc_stats' specified in initializer
+>> net/sched/sch_fq_codel.c:464:3: warning: missing braces around initializer
+>> net/sched/sch_fq_codel.c:464:3: warning: (near initialization for 'st.<anonymous>')
+>> net/sched/sch_fq_codel.c:465:3: error: unknown field 'qdisc_stats' specified in initializer
+>> net/sched/sch_fq_codel.c:465:3: warning: excess elements in struct initializer
+>> net/sched/sch_fq_codel.c:465:3: warning: (near initialization for 'st')
+>> net/sched/sch_fq_codel.c:466:3: error: unknown field 'qdisc_stats' specified in initializer
+>> net/sched/sch_fq_codel.c:466:3: warning: excess elements in struct initializer
+>> net/sched/sch_fq_codel.c:466:3: warning: (near initialization for 'st')
+>> net/sched/sch_fq_codel.c:467:3: error: unknown field 'qdisc_stats' specified in initializer
+>> net/sched/sch_fq_codel.c:467:3: warning: excess elements in struct initializer
+>> net/sched/sch_fq_codel.c:467:3: warning: (near initialization for 'st')
+>> make[1]: *** [net/sched/sch_fq_codel.o] Error 1
+>>
+>> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+>
+> Which Gcc version, looks like your compiler is old.
 
-Hello Mike,
+gcc version 4.5.3 (Gentoo 4.5.3-r2 p1.1, pie-0.4.7)
 
-Have you tested this patch? I think the difference between macvtap and
-tap is tap forwarding the packet to bridge. The zerocopy is disabled in
-this case.
-
-Shirley
-
+This is the latest gcc provided by gentoo.
