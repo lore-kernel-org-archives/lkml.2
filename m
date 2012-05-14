@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab2ENOI4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 10:08:56 -0400
-Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:44772 "EHLO
-	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756421Ab2ENOIy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 10:08:54 -0400
-From: Philip Rakity <prakity@marvell.com>
-To: Yong Ding <yongd@marvell.com>
-CC: "cjb@laptop.org" <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "ulf.hansson@stericsson.com" <ulf.hansson@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 14 May 2012 07:08:35 -0700
-Subject: Re: [PATCH] mmc:sdio:guarantee setting card data bus width as 4-bit
-Thread-Topic: [PATCH] mmc:sdio:guarantee setting card data bus width as 4-bit
-Thread-Index: Ac0x2w19O8a6sSP8R12jR/qLrJN3mQ==
-Message-ID: <C59CB72C-E949-470A-A6F3-82AC4004AD16@marvell.com>
-References: <1336984510-9723-1-git-send-email-yongd@marvell.com>
-In-Reply-To: <1336984510-9723-1-git-send-email-yongd@marvell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1756906Ab2ENOVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 10:21:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54515 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756242Ab2ENOVG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 10:21:06 -0400
+Message-ID: <4FB114CE.10904@gmail.com>
+Date: Mon, 14 May 2012 08:21:02 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
+To: Namhyung Kim <namhyung.kim@lge.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf-record: Create events initially disabled -- again
+References: <1336968088-11531-1-git-send-email-dsahern@gmail.com> <87sjf31a8c.fsf@sejong.aot.lge.com> <4FB1041C.1050903@gmail.com>
+In-Reply-To: <4FB1041C.1050903@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 5/14/12 7:09 AM, David Ahern wrote:
+>> A problem I see is that it'll break group handling again:
+>>
+>> $ ./perf stat -g sleep 1
+>>
+>> Performance counter stats for 'sleep 1':
+>>
+>> <not counted> task-clock
+>> <not counted> context-switches
+>> <not counted> CPU-migrations
+>> <not counted> page-faults
+>> <not counted> cycles
+>> <not counted> stalled-cycles-frontend
+>> <not counted> stalled-cycles-backend
+>> <not counted> instructions
+>> <not counted> branches
+>> <not counted> branch-misses
+>>
+>> 1.000868932 seconds time elapsed
+>>
+>> So I suggest changing perf_target__none() check to a proper one
+>> (perf_target__no_cpu? - the name might be changed soon) for your
+>> purpose.
+>>
+>> Thanks,
+>> Namhyung
+>
+> Something else is wrong then. I tested that command (saw your patch in
+> the history) and it worked for me. Also, this code path does not affect
+> perf-stat -- it touches perf-record and perf-test only.
 
-ACK
+I think it is something else. I am running latest git tree (3.4.0-rc7). 
+perf from Linus' tree and acme/core both show:
 
-but see below for printk change
+perf stat -g  -- find /usr >/dev/null
+
+  Performance counter stats for 'find /usr':
+
+      <not counted> task-clock
+      <not counted> context-switches
+      <not counted> CPU-migrations
+      <not counted> page-faults
+      <not counted> cycles
+      <not counted> stalled-cycles-frontend
+      <not counted> stalled-cycles-backend
+      <not counted> instructions
+      <not counted> branches
+      <not counted> branch-misses
+
+        0.111976940 seconds time elapsed
 
 
-On May 14, 2012, at 1:35 AM, yongd wrote:
+(Using find to make sure some work is done as opposed to sleep; openssl 
+speed also shows the above.)
 
->  SDIO_CCCR_IF[1:0] in SDIO card is used for card data bus width
-> setting as below,
->     00b: 1-bit bus
->     01b: Reserved
->     10b: 4-bit bus
->     11b: 8-bit bus(only for embedded SDIO)
->  And sdio_enable_wide is for setting data bus width as 4-bit. But
-> currently, it 1stly read the register, 2ndly OR' 1b with SDIO_CCCR_IF[1],
-> and then write it back.
->  As we can see, such way is based on such assumption that the
-> SDIO_CCCR_IF[0] is always 0. Apparently, this is not right.
-> 
-> Signed-off-by: yongd <yongd@marvell.com>
-> ---
-> drivers/mmc/core/sdio.c  |    6 ++++++
-> include/linux/mmc/sdio.h |    2 ++
-> 2 files changed, 8 insertions(+)
-> 
-> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-> index 13d0e95..6b6f902 100644
-> --- a/drivers/mmc/core/sdio.c
-> +++ b/drivers/mmc/core/sdio.c
-> @@ -218,6 +218,12 @@ static int sdio_enable_wide(struct mmc_card *card)
-> 	if (ret)
-> 		return ret;
-> 
-> +	if ((ctrl & SDIO_BUS_WIDTH_MASK)
-> +				== SDIO_BUS_WIDTH_RESERVED)
-> +		printk(KERN_WARNING"SDIO_CCCR_IF is invalid: %d\n", ctrl);
-printk(KERN_WARNING("%s: SDIO_CCCR_IF is invalid: %02X\n", mmc_hostname(card->host), ctrl);
-
-please double check mmc_hostname argument.
-
-> +
-> +	/* set as 4-bit bus width */
-> +	ctrl &= ~SDIO_BUS_WIDTH_MASK;
-> 	ctrl |= SDIO_BUS_WIDTH_4BIT;
-> 
-> 	ret = mmc_io_rw_direct(card, 1, 0, SDIO_CCCR_IF, ctrl, NULL);
-> diff --git a/include/linux/mmc/sdio.h b/include/linux/mmc/sdio.h
-> index c9fe66c..17446d3 100644
-> --- a/include/linux/mmc/sdio.h
-> +++ b/include/linux/mmc/sdio.h
-> @@ -98,7 +98,9 @@
-> 
-> #define SDIO_CCCR_IF		0x07	/* bus interface controls */
-> 
-> +#define  SDIO_BUS_WIDTH_MASK	0x03	/* data bus width setting */
-> #define  SDIO_BUS_WIDTH_1BIT	0x00
-> +#define  SDIO_BUS_WIDTH_RESERVED 0x01
-> #define  SDIO_BUS_WIDTH_4BIT	0x02
-> #define  SDIO_BUS_ECSI		0x20	/* Enable continuous SPI interrupt */
-> #define  SDIO_BUS_SCSI		0x40	/* Support continuous SPI interrupt */
-> -- 
-> 1.7.9.5
-> 
-
+David
