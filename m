@@ -1,180 +1,472 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab2ENNrZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:47:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56633 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517Ab2ENNrX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:47:23 -0400
-Date: Mon, 14 May 2012 06:47:10 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-tp4kj18xdd5aj4vvj0qg55s2@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/nohz: Fix rq->cpu_load[] calculations
-Git-Commit-ID: 556061b00c9f2fd6a5524b6bde823ef12f299ecf
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756696Ab2ENNre (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 09:47:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48239 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756592Ab2ENNrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 09:47:32 -0400
+Message-ID: <4FB10CE4.4040709@redhat.com>
+Date: Mon, 14 May 2012 10:47:16 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: Borislav Petkov <bp@amd64.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>, gregkh <gregkh@linuxfoundation.org>
+Subject: Re: [EDAC ABI v13 01/25] edac: Initialize the dimm label with the
+ known information
+References: <1334608729-30803-1-git-send-email-mchehab@redhat.com> <1334608729-30803-2-git-send-email-mchehab@redhat.com> <20120507155226.GE11462@aftab.osrc.amd.com> <20120514124808.GC4231@aftab.osrc.amd.com>
+In-Reply-To: <20120514124808.GC4231@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 14 May 2012 06:47:16 -0700 (PDT)
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  556061b00c9f2fd6a5524b6bde823ef12f299ecf
-Gitweb:     http://git.kernel.org/tip/556061b00c9f2fd6a5524b6bde823ef12f299ecf
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Fri, 11 May 2012 17:31:26 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 14 May 2012 15:05:27 +0200
+Em 14-05-2012 09:48, Borislav Petkov escreveu:
+> Review comments to the one below are still not addressed, maybe slipped
+> through the cracks?
 
-sched/nohz: Fix rq->cpu_load[] calculations
+Yeah, I lost that comments. Thanks for reminding it!
+> 
+> On Mon, May 07, 2012 at 05:52:26PM +0200, Borislav Petkov wrote:
+>> Adding latest version here:
+>>
+>>> From 50e9a89aad7045909780d635d73ab2893f8c1f90 Mon Sep 17 00:00:00 2001
+>>> From: Mauro Carvalho Chehab <mchehab@redhat.com>
+>>> Date: Thu, 9 Feb 2012 11:05:20 -0300
+>>> Subject: [PATCH] edac: Initialize the dimm label with the known information
+>>>
+>>> While userspace doesn't fill the dimm labels, add there the dimm location,
+>>> as described by the used memory model. This could eventually match what
+>>> is described at the dmidecode, making easier for people to identify the
+>>
+>> 	       in		 making it easier
+>>
+>>> memory.
+>>
+>> 	 stick in error.
 
-While investigating why the load-balancer did funny I found that the
-rq->cpu_load[] tables were completely screwy.. a bit more digging
-revealed that the updates that got through were missing ticks followed
-by a catchup of 2 ticks.
+Fixed.
 
-The catchup assumes the cpu was idle during that time (since only nohz
-can cause missed ticks and the machine is idle etc..) this means that
-esp. the higher indices were significantly lower than they ought to
-be.
+>>
+>>> For example, on an Intel motherboard, the memory is described as:
+>>>
+>>> Memory Device
+>>> 	Array Handle: 0x0029
+>>> 	Error Information Handle: Not Provided
+>>> 	Total Width: 64 bits
+>>> 	Data Width: 64 bits
+>>> 	Size: 2048 MB
+>>> 	Form Factor: DIMM
+>>> 	Set: 1
+>>> 	Locator: A1_DIMM0
+>>> 	Bank Locator: A1_Node0_Channel0_Dimm0
+>>> 	Type: <OUT OF SPEC>
+>>> 	Type Detail: Synchronous
+>>> 	Speed: 800 MHz
+>>> 	Manufacturer: A1_Manufacturer0
+>>> 	Serial Number: A1_SerNum0
+>>> 	Asset Tag: A1_AssetTagNum0
+>>> 	Part Number: A1_PartNum0
+>>>
+>>> After this patch, the memory label will be filled with:
+>>> 	/sys/devices/system/edac/mc/mc0/dimm0/dimm_label:mc#0channel#0slot#0
+>>
+>> This is only with the Intel-MCs, right, I still have the csrows here:
 
-The reason for this is that its not correct to compare against jiffies
-on every jiffy on any other cpu than the cpu that updates jiffies.
+The example is for Intel, but this will also fill the dimm labels on csrows-based
+memory controllers.
 
-This patch cludges around it by only doing the catch-up stuff from
-nohz_idle_balance() and doing the regular stuff unconditionally from
-the tick.
+It should be noticed that, due to the rebases, expecially because Greg's request 
+of converting the EDAC MC core to struct device, the patches that added the 
+edac/mc/mc0/dimm* API is now after this changeset.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: pjt@google.com
-Cc: Venkatesh Pallipadi <venki@google.com>
-Link: http://lkml.kernel.org/n/tip-tp4kj18xdd5aj4vvj0qg55s2@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c  |   53 ++++++++++++++++++++++++++++++++++++-------------
- kernel/sched/fair.c  |    2 +-
- kernel/sched/sched.h |    2 +-
- 3 files changed, 41 insertions(+), 16 deletions(-)
+So, the sysfs nodes that you'll see with the labels are the
+	/sys/devices/system/edac/mc/csrow*/ch*_dimm_label
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 6883d99..860fddf 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -692,8 +692,6 @@ int tg_nop(struct task_group *tg, void *data)
- }
- #endif
- 
--void update_cpu_load(struct rq *this_rq);
+I'll add it to the comments.
+
+>>
+>> tree /sys/devices/system/edac/mc/
+>> /sys/devices/system/edac/mc/
+>> |-- mc0
+>> |   |-- ce_count
+>> |   |-- ce_noinfo_count
+>> |   |-- csrow0
+>> |   |   |-- ce_count
+>> |   |   |-- ch0_ce_count
+>> |   |   |-- ch0_dimm_label
+>> |   |   |-- ch1_ce_count
+>> |   |   |-- ch1_dimm_label
+>> |   |   |-- dev_type
+>> |   |   |-- edac_mode
+>> |   |   |-- mem_type
+>> |   |   |-- size_mb
+>> |   |   `-- ue_count
+>> |   |-- csrow1
+>> |   |   |-- ce_count
+>> |   |   |-- ch0_ce_count
+>> |   |   |-- ch0_dimm_label
+>> |   |   |-- ch1_ce_count
+>> |   |   |-- ch1_dimm_label
+>> |   |   |-- dev_type
+>> |   |   |-- edac_mode
+>> |   |   |-- mem_type
+>> |   |   |-- size_mb
+>> |   |   `-- ue_count
+>> |   |-- csrow2
+>> |   |   |-- ce_count
+>> |   |   |-- ch0_ce_count
+>> |   |   |-- ch0_dimm_label
+>> |   |   |-- ch1_ce_count
+>> |   |   |-- ch1_dimm_label
+>> |   |   |-- dev_type
+>> |   |   |-- edac_mode
+>> |   |   |-- mem_type
+>> |   |   |-- size_mb
+>> |   |   `-- ue_count
+>>  …
+>>
+>>
+>>> With somewhat matches what it is at the Bank Locator DMI information.
+>>
+>> I wouldn't say that - DMI is notoriously unreliable, let's look at some
+>> boxes:
+>>
+>> 1st box:
+>>
+>> Handle 0x0038, DMI type 17, 28 bytes
+>> Memory Device
+>>         Array Handle: 0x0036
+>>         Error Information Handle: Not Provided
+>>         Total Width: 72 bits
+>>         Data Width: 64 bits
+>>         Size: 2048 MB
+>>         Form Factor: DIMM
+>>         Set: None
+>>         Locator: DIMM0
+>>
+>> 2nd box:
+>>
+>> Memory Device
+>>         Array Handle: 0x0014
+>>         Error Information Handle: Not Provided
+>>         Total Width: 64 bits
+>>         Data Width: 4096 bits
+>>         Size: 9 MB
+>>         Form Factor: <OUT OF SPEC>
+>>         Set: 73
+>>         Locator: P0_DIMM_A1
+>>         Bank Locator: CHANNEL A
+>>
+>> 3rd box:
+>>
+>> Handle 0x0033, DMI type 17, 28 bytes
+>> Memory Device
+>>         Array Handle: 0x0031
+>>         Error Information Handle: Not Provided
+>>         Total Width: 64 bits
+>>         Data Width: 64 bits
+>>         Size: 4096 MB
+>>         Form Factor: SODIMM
+>>         Set: 2
+>>         Locator: J401
+>>         Bank Locator: Channel B
+>>
+>> and so on.
+
+Yes, DMI is not very reliable. On that specific motherboard, the DMI table
+is reliable, so it can be used as a reference for that specific system.
+It is easier to put the DMI info there than to try to find for a public
+datasheet for the system(or motherboard), in order to point how the memories
+are addressed there.
+
+>>
+>> IOW, DMI fields are almost random permutations of [a-zA-Z0-9].
+
+:)
+
+>>
+>>> So, it is easier to associate the dimm labels, of course assuming that
+>>> the DMI has the Bank Locator filled, and the BIOS doesn't have any bugs.
+>>>
+>>> Yet, even without it, several motherboards are provided with enough
+>>> info to map from channel/slot (or branch/channel/slot) into the DIMM
+>>> label. So, letting the EDAC core fill it, by default is a good thing.
+>>>
+>>> It should noticed that, as the label filling happens at the
+>>> edac_mc_alloc(), drivers can override it to better describe the memories
+>>> (and some actually do it).
+>>
+>> But I guess having the info is still fine, simply remove the DMI
+>> references in the commit message pls.
+
+I changed the comment there to:
+
+	"For example, on an Intel motherboard where the DMI table is reliable, 
+	the first memory stick is described as:
+
+	Memory Device"
+	...
+
+>>
+>>> Cc: Aristeu Rozanski <arozansk@redhat.com>
+>>> Cc: Doug Thompson <norsk5@yahoo.com>
+>>> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+>>> ---
+>>>  drivers/edac/edac_mc.c       |   25 +++++++++++++++++++------
+>>>  drivers/edac/edac_mc_sysfs.c |    8 ++++----
+>>>  include/linux/edac.h         |    2 +-
+>>>  3 files changed, 24 insertions(+), 11 deletions(-)
+>>>
+>>> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+>>> index 4c44cd298c0b..77263b33b7f0 100644
+>>> --- a/drivers/edac/edac_mc.c
+>>> +++ b/drivers/edac/edac_mc.c
+>>> @@ -210,10 +210,10 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+>>>  	struct dimm_info *dimm;
+>>>  	u32 *ce_per_layer[EDAC_MAX_LAYERS], *ue_per_layer[EDAC_MAX_LAYERS];
+>>>  	unsigned pos[EDAC_MAX_LAYERS];
+>>> -	void *pvt, *ptr = NULL;
+>>>  	unsigned size, tot_dimms = 1, count = 1;
+>>>  	unsigned tot_csrows = 1, tot_channels = 1, tot_errcount = 0;
+>>> -	int i, j, err, row, chn;
+>>> +	void *pvt, *p, *ptr = NULL;
+>>> +	int i, j, err, row, chn, n, len;
+>>>  	bool per_rank = false;
+>>>  
+>>>  	BUG_ON(n_layers > EDAC_MAX_LAYERS || n_layers == 0);
+>>> @@ -325,9 +325,22 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+>>>  			i, per_rank ? "rank" : "dimm", (dimm - mci->dimms),
+>>>  			pos[0], pos[1], pos[2], row, chn);
+>>>  
+>>> -		/* Copy DIMM location */
+>>> -		for (j = 0; j < n_layers; j++)
+>>> +		/*
+>>> +		 * Copy DIMM location and initialize the memory location
+>>
+>> 					 initialize it.
+>>
+>> or do you mean two different locations?
+
+Fixed.
+
+>>
+>>> +		 */
+>>> +		len = sizeof(dimm->label);
+>>> +		p = dimm->label;
+>>> +		n = snprintf(p, len, "mc#%u", mc_num);
+>>> +		p += n;
+>>> +		len -= n;
+>>> +		for (j = 0; j < n_layers; j++) {
+>>> +			n = snprintf(p, len, "%s#%u",
+>>> +				     edac_layer_name[layers[j].type],
+>>> +				     pos[j]);
+>>> +			p += n;
+>>> +			len -= n;
+>>
+>> Err, you're not checking how much len is left here, i.e.
+>> EDAC_MC_LABEL_LEN. Or even better, each time before you do snprintf.
+
+len is initialized with sizeof(dimm->label):
+	 struct dimm_info {
+	        char label[EDAC_MC_LABEL_LEN + 1];	/* DIMM label on motherboard */
+	...
+
+I'll add a break after decrementing len:
+		if (len <= 0)
+			break;
+
+>>
+>>>  			dimm->location[j] = pos[j];
+>>> +		}
+>>>  
+>>>  		/* Link it to the csrows old API data */
+>>>  		chan->dimm = dimm;
+>>> @@ -837,7 +850,7 @@ static void edac_inc_ce_error(struct mem_ctl_info *mci,
+>>>  {
+>>>  	int i, index = 0;
+>>>  
+>>> -	mci->ce_count++;
+>>> +	mci->ce_mc++;
+>>
+>> Oh, renaming them back, ok.
+
+Yes. That's because "ce_mc" is a better name than "ce_count", as it indicates a 
+memory-controller-wide error.
+>>
+>> <rest snipped>
+> 
+
+Patch enclosed.
+
+Thanks,
+Mauro
+
 -
- static void set_load_weight(struct task_struct *p)
- {
- 	int prio = p->static_prio - MAX_RT_PRIO;
-@@ -2486,22 +2484,13 @@ decay_load_missed(unsigned long load, unsigned long missed_updates, int idx)
-  * scheduler tick (TICK_NSEC). With tickless idle this will not be called
-  * every tick. We fix it up based on jiffies.
-  */
--void update_cpu_load(struct rq *this_rq)
-+static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
-+			      unsigned long pending_updates)
- {
--	unsigned long this_load = this_rq->load.weight;
--	unsigned long curr_jiffies = jiffies;
--	unsigned long pending_updates;
- 	int i, scale;
+
+edac: Initialize the dimm label with the known information
+
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+While userspace doesn't fill the dimm labels, add there the dimm location,
+as described by the used memory model. This could eventually match what
+is described at the dmidecode, making easier for people to identify the
+memory.
+
+For example, on an Intel motherboard where the DMI table is reliable,
+the first memory stick is described as:
+
+Memory Device
+	Array Handle: 0x0029
+	Error Information Handle: Not Provided
+	Total Width: 64 bits
+	Data Width: 64 bits
+	Size: 2048 MB
+	Form Factor: DIMM
+	Set: 1
+	Locator: A1_DIMM0
+	Bank Locator: A1_Node0_Channel0_Dimm0
+	Type: <OUT OF SPEC>
+	Type Detail: Synchronous
+	Speed: 800 MHz
+	Manufacturer: A1_Manufacturer0
+	Serial Number: A1_SerNum0
+	Asset Tag: A1_AssetTagNum0
+	Part Number: A1_PartNum0
+
+The memory named as "A1_DIMM0" is physically located at the first
+memory controller (node 0), at channel 0, dimm slot 0.
+
+After this patch, the memory label will be filled with:
+	/sys/devices/system/edac/mc/csrow0/ch0_dimm_label:mc#0channel#0slot#0
+
+And (after the new EDAC API patches) as:
+	/sys/devices/system/edac/mc/mc0/dimm0/dimm_label:mc#0channel#0slot#0
+
+So, even if the memory label is not initialized on userspace, an useful
+information with the error location is filled there, expecially since
+several systems/motherboards are provided with enough info to map from
+channel/slot (or branch/channel/slot) into the DIMM label. So, letting the
+EDAC core fill it by default is a good thing.
+
+It should noticed that, as the label filling happens at the
+edac_mc_alloc(), drivers can override it to better describe the memories
+(and some actually do it).
+
+Cc: Aristeu Rozanski <arozansk@redhat.com>
+Cc: Doug Thompson <norsk5@yahoo.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index 03f8fb2..7246a3c 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -210,10 +210,10 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+ 	struct dimm_info *dimm;
+ 	u32 *ce_per_layer[EDAC_MAX_LAYERS], *ue_per_layer[EDAC_MAX_LAYERS];
+ 	unsigned pos[EDAC_MAX_LAYERS];
+-	void *pvt, *ptr = NULL;
+ 	unsigned size, tot_dimms = 1, count = 1;
+ 	unsigned tot_csrows = 1, tot_channels = 1, tot_errcount = 0;
+-	int i, j, err, row, chn;
++	void *pvt, *p, *ptr = NULL;
++	int i, j, err, row, chn, n, len;
+ 	bool per_rank = false;
  
- 	this_rq->nr_load_updates++;
+ 	BUG_ON(n_layers > EDAC_MAX_LAYERS || n_layers == 0);
+@@ -325,10 +325,26 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+ 			i, per_rank ? "rank" : "dimm", (dimm - mci->dimms),
+ 			pos[0], pos[1], pos[2], row, chn);
  
--	/* Avoid repeated calls on same jiffy, when moving in and out of idle */
--	if (curr_jiffies == this_rq->last_load_update_tick)
--		return;
--
--	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
--	this_rq->last_load_update_tick = curr_jiffies;
--
- 	/* Update our load: */
- 	this_rq->cpu_load[0] = this_load; /* Fasttrack for idx 0 */
- 	for (i = 1, scale = 2; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
-@@ -2526,9 +2515,45 @@ void update_cpu_load(struct rq *this_rq)
- 	sched_avg_update(this_rq);
+-		/* Copy DIMM location */
+-		for (j = 0; j < n_layers; j++)
++		/*
++		 * Copy DIMM location and initialize it.
++		 */
++		len = sizeof(dimm->label);
++		p = dimm->label;
++		n = snprintf(p, len, "mc#%u", mc_num);
++		p += n;
++		len -= n;
++		for (j = 0; j < n_layers; j++) {
++			n = snprintf(p, len, "%s#%u",
++				     edac_layer_name[layers[j].type],
++				     pos[j]);
++			p += n;
++			len -= n;
+ 			dimm->location[j] = pos[j];
+ 
++			if (len <= 0)
++				break;
++		}
++
+ 		/* Link it to the csrows old API data */
+ 		chan->dimm = dimm;
+ 		dimm->csrow = row;
+@@ -834,7 +850,7 @@ static void edac_inc_ce_error(struct mem_ctl_info *mci,
+ {
+ 	int i, index = 0;
+ 
+-	mci->ce_count++;
++	mci->ce_mc++;
+ 
+ 	if (!enable_per_layer_report) {
+ 		mci->ce_noinfo_count++;
+@@ -858,7 +874,7 @@ static void edac_inc_ue_error(struct mem_ctl_info *mci,
+ {
+ 	int i, index = 0;
+ 
+-	mci->ue_count++;
++	mci->ue_mc++;
+ 
+ 	if (!enable_per_layer_report) {
+ 		mci->ce_noinfo_count++;
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index c0275e6..cfeb92c 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -425,8 +425,8 @@ static ssize_t mci_reset_counters_store(struct mem_ctl_info *mci,
+ 
+ 	mci->ue_noinfo_count = 0;
+ 	mci->ce_noinfo_count = 0;
+-	mci->ue_count = 0;
+-	mci->ce_count = 0;
++	mci->ue_mc = 0;
++	mci->ce_mc = 0;
+ 
+ 	for (row = 0; row < mci->nr_csrows; row++) {
+ 		struct csrow_info *ri = &mci->csrows[row];
+@@ -495,12 +495,12 @@ static ssize_t mci_sdram_scrub_rate_show(struct mem_ctl_info *mci, char *data)
+ /* default attribute files for the MCI object */
+ static ssize_t mci_ue_count_show(struct mem_ctl_info *mci, char *data)
+ {
+-	return sprintf(data, "%d\n", mci->ue_count);
++	return sprintf(data, "%d\n", mci->ue_mc);
  }
  
-+/*
-+ * Called from nohz_idle_balance() to update the load ratings before doing the
-+ * idle balance.
-+ */
-+void update_idle_cpu_load(struct rq *this_rq)
-+{
-+	unsigned long curr_jiffies = jiffies;
-+	unsigned long load = this_rq->load.weight;
-+	unsigned long pending_updates;
-+
-+	/*
-+	 * Bloody broken means of dealing with nohz, but better than nothing..
-+	 * jiffies is updated by one cpu, another cpu can drift wrt the jiffy
-+	 * update and see 0 difference the one time and 2 the next, even though
-+	 * we ticked at roughtly the same rate.
-+	 *
-+	 * Hence we only use this from nohz_idle_balance() and skip this
-+	 * nonsense when called from the scheduler_tick() since that's
-+	 * guaranteed a stable rate.
-+	 */
-+	if (load || curr_jiffies == this_rq->last_load_update_tick)
-+		return;
-+
-+	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
-+	this_rq->last_load_update_tick = curr_jiffies;
-+
-+	__update_cpu_load(this_rq, load, pending_updates);
-+}
-+
-+/*
-+ * Called from scheduler_tick()
-+ */
- static void update_cpu_load_active(struct rq *this_rq)
+ static ssize_t mci_ce_count_show(struct mem_ctl_info *mci, char *data)
  {
--	update_cpu_load(this_rq);
-+	/*
-+	 * See the mess in update_idle_cpu_load().
-+	 */
-+	this_rq->last_load_update_tick = jiffies;
-+	__update_cpu_load(this_rq, this_rq->load.weight, 1);
- 
- 	calc_load_account_active(this_rq);
+-	return sprintf(data, "%d\n", mci->ce_count);
++	return sprintf(data, "%d\n", mci->ce_mc);
  }
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index a259a61..124e6b6 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5012,7 +5012,7 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
  
- 		raw_spin_lock_irq(&this_rq->lock);
- 		update_rq_clock(this_rq);
--		update_cpu_load(this_rq);
-+		update_idle_cpu_load(this_rq);
- 		raw_spin_unlock_irq(&this_rq->lock);
+ static ssize_t mci_ce_noinfo_show(struct mem_ctl_info *mci, char *data)
+diff --git a/include/linux/edac.h b/include/linux/edac.h
+index c8f507d..d6b0c25 100644
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -577,7 +577,7 @@ struct mem_ctl_info {
+ 	 * already handles that.
+ 	 */
+ 	u32 ce_noinfo_count, ue_noinfo_count;
+-	u32 ue_count, ce_count;
++	u32 ue_mc, ce_mc;
+ 	u32 *ce_per_layer[EDAC_MAX_LAYERS], *ue_per_layer[EDAC_MAX_LAYERS];
  
- 		rebalance_domains(balance_cpu, CPU_IDLE);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 7282e7b..ba9dccf 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -876,7 +876,7 @@ extern void resched_cpu(int cpu);
- extern struct rt_bandwidth def_rt_bandwidth;
- extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime);
- 
--extern void update_cpu_load(struct rq *this_rq);
-+extern void update_idle_cpu_load(struct rq *this_rq);
- 
- #ifdef CONFIG_CGROUP_CPUACCT
- #include <linux/cgroup.h>
+ 	struct completion complete;
+
