@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab2ENG5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 02:57:52 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62117 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754431Ab2ENG5u (ORCPT
+	id S1754587Ab2ENG7x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 02:59:53 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:39448 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754441Ab2ENG7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 02:57:50 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: linux-next: build failure in Linus' tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-In-Reply-To: <20120514105025.0ba1b124f5e9c192fc11e132@canb.auug.org.au>
-References: <20120514105025.0ba1b124f5e9c192fc11e132@canb.auug.org.au>
-Date: Mon, 14 May 2012 00:57:47 -0600
-Message-Id: <20120514065747.D73403E0532@localhost>
+	Mon, 14 May 2012 02:59:51 -0400
+Message-ID: <4FB0AD32.6020104@linux.vnet.ibm.com>
+Date: Mon, 14 May 2012 14:58:58 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH] KVM: VMX: unlike vmcs on fail path
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12051320-7014-0000-0000-000001250191
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 May 2012 10:50:25 +1000, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Linus,
-> 
-> Building Linus' tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> ERROR: "handle_edge_irq" [drivers/gpio/gpio-pch.ko] undefined!
-> ERROR: "irq_to_desc" [drivers/gpio/gpio-pch.ko] undefined!
-> 
-> This has been reported elsewhere by DaveM.
-> 
-> Caused by commit df9541a60af0 ("gpio: pch9: Use proper flow type handlers").
-> 
-> I have reverted that commit for today.
+fix:
 
-Gah, I tested that patch with CONFIG_GPIO_PCH=Y, but not as a module.
-I see three options here; revert the patch now and fix it up in v3.4,
-add exports for those two symbols, or disable building that code as a
-module (patch below).  Personally I prefer the third option for the
-immediate fix.
+[ 1529.577273] Call Trace:
+[ 1529.577289]  [<ffffffffa060d58f>] kvm_arch_hardware_disable+0x13/0x30 [kvm]
+[ 1529.577302]  [<ffffffffa05fa2d4>] hardware_disable_nolock+0x35/0x39 [kvm]
+[ 1529.577311]  [<ffffffffa05fa29f>] ? cpumask_clear_cpu.constprop.31+0x13/0x13 [kvm]
+[ 1529.577315]  [<ffffffff81096ba8>] on_each_cpu+0x44/0x84
+[ 1529.577326]  [<ffffffffa05f98b5>] hardware_disable_all_nolock+0x34/0x36 [kvm]
+[ 1529.577335]  [<ffffffffa05f98e2>] hardware_disable_all+0x2b/0x39 [kvm]
+[ 1529.577349]  [<ffffffffa05fafe5>] kvm_put_kvm+0xed/0x10f [kvm]
+[ 1529.577358]  [<ffffffffa05fb3d7>] kvm_vm_release+0x22/0x28 [kvm]
 
-g.
-
->From 7fd0fcff9f0d65734415fed756271c1ae2267666 Mon Sep 17 00:00:00 2001
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 14 May 2012 00:52:49 -0600
-Subject: [PATCH] gpio/pch: Fix build failure when selected as a module
-
-x86_64 allmodconfig fails like this:
-
-ERROR: "handle_edge_irq" [drivers/gpio/gpio-pch.ko] undefined!
-ERROR: "irq_to_desc" [drivers/gpio/gpio-pch.ko] undefined!
-
-This patch fixes the issue by not allowing gpio-pch.c to be built as a
-module.  It can be reenabled when the core interrupt handling code
-exports the missing symbols, but that change needs some review first.
-
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- drivers/gpio/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/vmx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index e03653d..db146d5 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -403,7 +403,7 @@ config GPIO_LANGWELL
-	  Say Y here to support Intel Langwell/Penwell GPIO.
- 
- config GPIO_PCH
--	tristate "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7223/ML7831) GPIO"
-+	bool "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7223/ML7831) GPIO"
-	depends on PCI && X86
-	select GENERIC_IRQ_CHIP
-	help
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 2c98057..5203428 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -6354,7 +6354,7 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
+ 	return &vmx->vcpu;
+
+ free_vmcs:
+-	free_vmcs(vmx->loaded_vmcs->vmcs);
++	free_loaded_vmcs(vmx->loaded_vmcs);
+ free_msrs:
+ 	kfree(vmx->guest_msrs);
+ uninit_vcpu:
 -- 
-1.7.9.5
-
-
+1.7.7.6
 
