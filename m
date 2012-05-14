@@ -1,98 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab2ENLXQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 07:23:16 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:22936 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787Ab2ENLXP (ORCPT
+	id S1756098Ab2ENL2L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 07:28:11 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64658 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755708Ab2ENL2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 07:23:15 -0400
-X-IronPort-AV: E=Sophos;i="4.75,584,1330923600"; 
-   d="scan'208";a="194671041"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: konrad.wilk@oracle.com
-CC: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        Stefano.Stabellini@eu.citrix.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH] xen: mark local pages as FOREIGN in the m2p_override
-Date: Mon, 14 May 2012 12:23:07 +0100
-Message-ID: <1336994587-10203-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 14 May 2012 07:28:09 -0400
+Message-ID: <4FB0EC2E.9090704@mvista.com>
+Date: Mon, 14 May 2012 15:27:42 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Du, ChangbinX" <changbinx.du@intel.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "mina86@mina86.com" <mina86@mina86.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "balbi@ti.com" <balbi@ti.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] testusb: add path /dev/bus/usb to default search paths
+ for usbfs
+References: <1337021163-1487-1-git-send-email-changbinx.du@intel.com> <0C18FE92A7765D4EB9EE5D38D86A563A062C91@SHSMSX101.ccr.corp.intel.com> <4FB0D76B.2060603@mvista.com> <0C18FE92A7765D4EB9EE5D38D86A563A062DC8@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A062DC8@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the frontend and the backend reside on the same domain, even if we
-add pages to the m2p_override, these pages will never be returned by
-mfn_to_pfn because the check "get_phys_to_machine(pfn) != mfn" will
-always fail, so the pfn of the frontend will be returned instead
-(resulting in a deadlock because the frontend pages are already locked).
+On 14-05-2012 14:49, Du, ChangbinX wrote:
 
-However m2p_add_override can easily find out whether another pfn
-corresponding to the mfn exists in the m2p, and can set the FOREIGN bit
-in the p2m, making sure that mfn_to_pfn returns the pfn of the backend.
+>> As real device-nodes managed by udev whose nodes lived in /dev/bus/usb
+>> are mostly used today, let testusb tool use that directory as one
+>> default path make tool be more convenient to use.
 
-This allows the backend to perform direct_IO on these pages, but as a
-side effect prevents the frontend from using get_user_pages_fast on
-them while they are being shared with the backend.
+>> Signed-off-by: Du Changbin<changbinx.du@intel.com>
+>> ---
+>>    tools/usb/testusb.c |    6 ++++++
+>>    1 file changed, 6 insertions(+)
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/x86/xen/p2m.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+>> diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c index
+>> 6e0f567..c6c839e 100644
+>> --- a/tools/usb/testusb.c
+>> +++ b/tools/usb/testusb.c
+> [...]
+>> @@ -376,6 +377,11 @@ static const char *usbfs_dir_find(void)
+>>    		}
+>>    	} while (++it != end);
+>>
+>> +	/* real device-nodes managed by udev */
+>> +	if (access(udev_usb_path, F_OK) == 0) {
+>> +		return udev_usb_path;
+>> +	}
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 7ece122..c62ae5c 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -687,6 +687,7 @@ int m2p_add_override(unsigned long mfn, struct page *page,
- 	unsigned long uninitialized_var(address);
- 	unsigned level;
- 	pte_t *ptep = NULL;
-+	int ret = 0;
- 
- 	pfn = page_to_pfn(page);
- 	if (!PageHighMem(page)) {
-@@ -722,6 +723,16 @@ int m2p_add_override(unsigned long mfn, struct page *page,
- 	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
- 	spin_unlock_irqrestore(&m2p_override_lock, flags);
- 
-+	/* p2m(m2p(mfn)) == mfn: the mfn is already present somewhere in
-+	 * this domain. Set the FOREIGN_FRAME_BIT in the p2m for the other
-+	 * pfn so that the following mfn_to_pfn(mfn) calls will return the
-+	 * pfn from the m2p_override (the backend pfn) instead.
-+	 * As a side effect GUPF might not be safe on the frontend pages
-+	 * while they are being shared with the backend. */
-+	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
-+	if (ret >= 0 && get_phys_to_machine(pfn) == mfn)
-+		set_phys_to_machine(pfn, FOREIGN_FRAME(mfn));
-+
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(m2p_add_override);
-@@ -733,6 +744,7 @@ int m2p_remove_override(struct page *page, bool clear_pte)
- 	unsigned long uninitialized_var(address);
- 	unsigned level;
- 	pte_t *ptep = NULL;
-+	int ret = 0;
- 
- 	pfn = page_to_pfn(page);
- 	mfn = get_phys_to_machine(pfn);
-@@ -802,6 +814,12 @@ int m2p_remove_override(struct page *page, bool clear_pte)
- 	} else
- 		set_phys_to_machine(pfn, page->index);
- 
-+	mfn &= ~FOREIGN_FRAME_BIT;
-+	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
-+	if (ret >= 0 && get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
-+			m2p_find_override(mfn) == NULL)
-+		set_phys_to_machine(pfn, mfn);
-+
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(m2p_remove_override);
--- 
-1.7.2.5
+>      Why {} with single statement?
 
+> Hi, thanks for your tip. It's a code style issue. I will remove {}.
+
+> By the way, I don't know how I can do with this case? Resend a new patch?
+
+    Yes, marking that thsi is a new version of patch in the [PATCH] prefix, 
+like [PATCH v2].
+
+> Do I need include discussion message in new patch mail?
+
+    Not necessarily, just indicate the change compared to the old version 
+under the --- tear line.
+
+> And how can I know my patch has be accepted? I am a newbie, could you help me?
+
+    You will get a reply from the maintainer, Greg Kroah-Hartman, I think.
+
+> Changbin
+
+WBR, Sergei
