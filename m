@@ -1,110 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab2ENGFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 02:05:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:36828 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751819Ab2ENGFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 02:05:41 -0400
-Message-ID: <1336975539.2656.21.camel@joe2Laptop>
-Subject: Re: [RFC 1/1] driver core: Add dev_*_ratelimited() family
-From: Joe Perches <joe@perches.com>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Sun, 13 May 2012 23:05:39 -0700
-In-Reply-To: <20120514.084014.1683295633804914511.hdoyu@nvidia.com>
-References: <1336836695.17605.12.camel@joe2Laptop>
-	 <20120514.080008.1401340884821155549.hdoyu@nvidia.com>
-	 <1336973155.2656.10.camel@joe2Laptop>
-	 <20120514.084014.1683295633804914511.hdoyu@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1753539Ab2ENGIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 02:08:16 -0400
+Received: from imr-da05.mx.aol.com ([205.188.105.147]:56740 "EHLO
+	imr-da05.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab2ENGIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 02:08:15 -0400
+Message-Id: <201205140606.q4E66cYI019410@imr-da05.mx.aol.com>
+Reply-To: <femi-ajayi360@live.com>
+From: "Tomm Frank" <ABEHRENS49@AOL.COM>
+Subject: WAIT YOUR URGENT REPLY
+Date: Mon, 14 May 2012 07:06:38 +0100
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 120513-1, 05/13/2012), Outbound message
+X-Antivirus-Status: Clean
+x-aol-global-disposition: G
+X-AOL-SCOLL-SCORE: 0:2:278379936:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-sid: 3039ac1d29444fb0a0df11b0
+X-AOL-IP: 41.71.185.240
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-14 at 07:40 +0200, Hiroshi Doyu wrote:
-> Joe Perches <joe@perches.com> wrote @ Mon, 14 May 2012 07:25:55 +0200:
-> > On Mon, 2012-05-14 at 07:00 +0200, Hiroshi Doyu wrote:
-> > > Joe Perches <joe@perches.com> wrote @ Sat, 12 May 2012 17:31:35 +0200:
-> > > > On Sat, 2012-05-12 at 12:52 +0200, Hiroshi Doyu wrote:
-> > > > > An unclosed "if" statement in the MACRO seems a bit risky, but I don't
-> > > > > have any better/simple solution for this, ATM. Is there any alternative?
-> > > > 
-> > > > maybe something like:
-> > > > 
-> > > > #define dev_ratelimited_level(dev, level, fmt, ...)
-> > > > do {
-> > > > 	static DEFINE_RATELIMIT_STATE(_rs,				\
-> > > > 				      DEFAULT_RATELIMIT_INTERVAL,	\
-> > > > 				      DEFAULT_RATELIMIT_BURST);		\
-> > > > 	if (__ratelimit(&_rs))						\
-> > > > 		dev_##level(fmt, ##__VA_ARGS__);			\
-> > > > } while (0)
-> > > > 
-> > > > #define dev_emerg_ratelimited(dev, fmt, ...)				\
-> > > > 	dev_ratelimited_level(dev, emerg, fmt, ##__VA_ARGS__)
-[...]
-> > > > #define dev_dbg_ratelimited(dev, fmt, ...)				\
-> > > > 	dev_ratelimited_level(dev, dbg, fmt, ##__VA_ARGS__)
-> > > 
-> > > "dev" isn't handled separately with __VA_ARGS__, and failed to build
-> > > as below:
-> > > 
-> > >   Example:
-> > >     dev_err_ratelimited(&pdev->dev, "%d\n", __LINE__);
-> > >   
-> > >   After preprocessded:
-> > >     do { ... if (___ratelimit(&_rs, __func__)) dev_err("%d\n", 18); } while (0);
-> > > 
-> > 
-> > Sorry, I was just typing in the email client and
-> > I missed the "dev" argument.
-> > 
-> > Add "dev" to the dev_##level statement like:
-> > 
-> > #define dev_ratelimited_level(dev, level, fmt, ...)			\
-> > do {									\
-> > 	static DEFINE_RATELIMIT_STATE(_rs,				\
-> > 				      DEFAULT_RATELIMIT_INTERVAL,	\
-> > 				      DEFAULT_RATELIMIT_BURST);		\
-> > 	if (__ratelimit(&_rs))						\
-> > 		dev_##level(dev, fmt, ##__VA_ARGS__);			\
-> > } while (0)
-> 
-> Verified that the above works. Would you mind sending the complete version of this patch?
-
-Hello Hiroshi.
-
-It's your patch and your idea.
-I think you should submit it.
-You were just asking for alternatives or a bit
-of guidance.
-
-Maybe a better name for dev_ratelimited_level is
-dev_level_ratelimited and the macro should be
-
-#define dev_level_ratelimited(dev_level, dev, fmt, ...)			\
-do {									\
-	static DEFINE_RATELIMIT_STATE(_rs,				\
-				      DEFAULT_RATELIMIT_INTERVAL,	\
-				      DEFAULT_RATELIMIT_BURST);		\
-	if (__ratelimit(&_rs))						\
-		dev_level(dev, fmt, ##__VA_ARGS__);			\
-} while (0)
-
-with uses like
-
-#define dev_notice_ratelimited(dev, fmt, ...)				\
-	dev_level_ratelimited(dev_notice, fmt, ##__VA_ARGS__)
+Am really sorry i wrote so late about my inquiry i actually traveled to china to meet with some suppliers and i just came back into town few days ago. I was able to meet with some companies and also got to see what they have for me but i was surprised because the prices are much.
 
 
-Your choice though I think the last option above
-may be better because it more closely follows the
-style a dev_printk_ratelimited would use.
+We saw a similar product on Alibaba Shopping/Business page so please confirm to us if you/your company can make provision of the exact product as shown on Alibaba Shopping/Business page which you can view by clicking the link below and login with you email address together with your password to download the attachment page to view the product. 
 
-cheers, Joe
+Bellow is the link.
 
+http://sollanicsltd.ucoz.com/plasltd.html
+
+
+We will await your response with details, date of delivery and send quotation for large qty urgently prize and quantity that can be made available.
