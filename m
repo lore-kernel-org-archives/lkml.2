@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932574Ab2ENWM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 18:12:56 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64506 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757900Ab2ENWMz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 18:12:55 -0400
-Date: Mon, 14 May 2012 15:12:50 -0700
-From: Tejun Heo <tj@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] workqueue: skip nr_running sanity check in
- worker_enter_idle() if trustee is active
-Message-ID: <20120514221250.GA8414@google.com>
-References: <20120506153814.GA25681@linux.vnet.ibm.com>
- <20120507194042.GG19417@google.com>
- <20120507205516.GD21152@linux.vnet.ibm.com>
- <20120507213449.GM19417@google.com>
+	id S1758107Ab2ENWQa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 18:16:30 -0400
+Received: from apollo.dupie.be ([94.75.207.143]:46996 "EHLO apollo.dupie.be"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757900Ab2ENWQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 18:16:28 -0400
+X-Greylist: delayed 381 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 May 2012 18:16:28 EDT
+Message-ID: <4FB182BB.6090303@dupond.be>
+Date: Tue, 15 May 2012 00:10:03 +0200
+From: Jean-Louis Dupond <jean-louis@dupond.be>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120507213449.GM19417@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Mario Limonciello <mario_limonciello@dell.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] dell-laptop: rfkill blacklist Dell XPS 13z, 15z
+References: <1337023652-11661-1-git-send-email-kamal@canonical.com> <20120514193718.GA6438@srcf.ucam.org> <4FB16659.6040704@dell.com> <20120514211959.GA9394@srcf.ucam.org> <4FB1774D.4080106@dell.com> <20120514212842.GA9561@srcf.ucam.org> <4FB17DA8.1040808@dell.com> <20120514215533.GA10378@srcf.ucam.org>
+In-Reply-To: <20120514215533.GA10378@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 544ecf310f0e7f51fa057ac2a295fc1b3b35a9d3 Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Mon, 14 May 2012 15:04:50 -0700
+Hi
 
-worker_enter_idle() has WARN_ON_ONCE() which triggers if nr_running
-isn't zero when every worker is idle.  This can trigger spuriously
-while a cpu is going down due to the way trustee sets %WORKER_ROGUE
-and zaps nr_running.
+I'm the owner of a XPS 15, which has this issue.
+The best solution would indeed be to solve the real bug, and not work
+around it in Linux.
 
-It first sets %WORKER_ROGUE on all workers without updating
-nr_running, releases gcwq->lock, schedules, regrabs gcwq->lock and
-then zaps nr_running.  If the last running worker enters idle
-inbetween, it would see stale nr_running which hasn't been zapped yet
-and trigger the WARN_ON_ONCE().
+But still, if we can fix it with rather small impact/code on linux, I
+think we should just do it.
+It makes linux more user friendly this way.
 
-Fix it by performing the sanity check iff the trustee is idle.
+A small remark also:
+Is it really possible to disable bluetooth without killing wifi in
+Windows on the XPS?
+Not that I use windows alot, but it doesn't seem to work perfectly in
+windows neither.
+This bug is prolly not very common, as default XPS doesn't have a
+bluetooth chip.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: stable@vger.kernel.org
----
-Sorry about the delay.  After scratching my head quite a bit, I found
-where during cpu-offlining such discrepancy may happen.  I'm fairly
-sure this is it but I might be wrong, so please include this patch in
-your test setup and let me know how it goes.
 
-Thank you.
+Thanks
+Jean-Louis
 
- kernel/workqueue.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 211eadb..c36c86c 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1213,8 +1213,13 @@ static void worker_enter_idle(struct worker *worker)
- 	} else
- 		wake_up_all(&gcwq->trustee_wait);
- 
--	/* sanity check nr_running */
--	WARN_ON_ONCE(gcwq->nr_workers == gcwq->nr_idle &&
-+	/*
-+	 * Sanity check nr_running.  Because trustee releases gcwq->lock
-+	 * between setting %WORKER_ROGUE and zapping nr_running, the
-+	 * warning may trigger spuriously.  Check iff trustee is idle.
-+	 */
-+	WARN_ON_ONCE(gcwq->trustee_state == TRUSTEE_DONE &&
-+		     gcwq->nr_workers == gcwq->nr_idle &&
- 		     atomic_read(get_gcwq_nr_running(gcwq->cpu)));
- }
- 
--- 
-1.7.7.3
-
+Op 14-05-12 23:55, Matthew Garrett schreef:
+> On Mon, May 14, 2012 at 04:48:24PM -0500, Mario Limonciello wrote:
+>
+>> The problems were exposed on newer XPS laptops because those platforms 
+>> were not tested during platform development.  There really isn't a 
+>> scalable way to represent whether a platform was or wasn't tested 
+>> during development.  In a lot of situation things just work.  I would 
+>> like to do the right thing for the users with what information and 
+>> resources are available right now to put them in a better state.  An 
+>> aggressive approach of not taking patches to cover a broken interface 
+>> won't fix the problem of not testing machines already in the market, 
+>> it will just put end users of the kernel module at a disadvantage.
+> That's why it's better to just remove the interface. Providing a feature 
+> when we know it's broken on some unknown subset of hardware doesn't 
+> benefit anyone. If even Dell don't have any idea which set of machines 
+> it works on then how are we ever expected to make sure it's correct?
+>
+>> 1) Don't blacklist any Latitude or Vostro.  These are tested during platform development.
+>> 2) Leave those compal_laptop supported ones blacklisted.
+>> 3) Blacklist 2010-2012 XPS.  These are currently not tested during platform development.
+>> 4) If problems start to show up on Inspiron, blacklist them invidually.  These platforms are currently tested during platform development though, so hopefully issues don't crop up.
+> Is this the set of criteria that the Windows tools use? If so, I'll 
+> implement it. If not, then either provide the set of criteria that the 
+> Windows tools use or I'll remove the interface.
