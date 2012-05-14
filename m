@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab2ENNSa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:18:30 -0400
-Received: from mga03.intel.com ([143.182.124.21]:60232 "EHLO mga03.intel.com"
+	id S1756576Ab2ENNSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 09:18:51 -0400
+Received: from mail2.unitix.de ([176.9.2.175]:41118 "EHLO mail2.unitix.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755617Ab2ENNS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:18:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="142837334"
-Message-ID: <1337001716.2528.56.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] UBIFS: add crypto lookup field to tree node cache
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 14 May 2012 16:21:56 +0300
-In-Reply-To: <alpine.DEB.2.00.1205111323010.17715@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205111323010.17715@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-LaZhxDAxEYqZZoaYXZkJ"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1756096Ab2ENNSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 09:18:50 -0400
+Message-ID: <4FB10636.2010003@arndnet.de>
+Date: Mon, 14 May 2012 15:18:46 +0200
+From: Arnd Hannemann <arnd@arndnet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: linux-btrfs@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: 3.4.0-rc6: WARNING: at fs/btrfs/super.c:219 __btrfs_abort_transaction+0xae/0xc0
+ [btrfs]()
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-LaZhxDAxEYqZZoaYXZkJ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I just got the following warning on a compressed btrfs filesystem, while writing on it
+until no remaining space was available.
+Looks like a bit verbose "disk full" message, is it expected behavior?
 
-On Fri, 2012-05-11 at 13:24 +0200, Joel Reardon wrote:
->  struct ubifs_zbranch {
->  	union ubifs_key key;
-> @@ -751,6 +752,7 @@ struct ubifs_zbranch {
->  	int lnum;
->  	int offs;
->  	int len;
-> +	long long crypto_lookup;
->  };
+[22403.015529] ------------[ cut here ]------------
+[22403.015572] WARNING: at /home/arnd/Projekte/kernel/linux-2.6/fs/btrfs/super.c:219 __btrfs_abort_transaction+0xae/0xc0 [btrfs]()
+[22403.015577] Hardware name: 4384GEG
+[22403.015579] btrfs: Transaction aborted
+[22403.015581] Modules linked in: dm_crypt ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp iptable_filter ip_tables x_tables joydev bridge stp llc kvm_intel kvm bnep rfcomm bluetooth binfmt_misc arc4 snd_hda_codec_hdmi snd_hda_codec_conexant coretemp snd_hda_intel thinkpad_acpi microcode snd_hda_codec snd_hwdep snd_pcm qcserial usb_wwan psmouse usbserial snd_seq_midi serio_raw snd_rawmidi iwlwifi snd_seq_midi_event snd_seq intel_ips mac80211 snd_timer snd_seq_device cfg80211 snd snd_page_alloc mei(C) soundcore tpm_tis nvram btrfs zlib_deflate libcrc32c mxm_wmi ghash_clmulni_intel aesni_intel cryptd aes_x86_64 i915 drm_kms_helper sdhci_pci sdhci drm firewire_ohci i2c_algo_bit firewire_core crc_itu_t ahci libahci wmi video e1000e
+[22403.015668] Pid: 24802, comm: btrfs-delalloc- Tainted: G         C   3.4.0-rc6aha+ #8
+[22403.015671] Call Trace:
+[22403.015683]  [<ffffffff8104e35f>] warn_slowpath_common+0x7f/0xc0
+[22403.015689]  [<ffffffff8104e456>] warn_slowpath_fmt+0x46/0x50
+[22403.015711]  [<ffffffffa01c63fd>] ? btrfs_reserve_extent+0xed/0x250 [btrfs]
+[22403.015728]  [<ffffffffa01b1bde>] __btrfs_abort_transaction+0xae/0xc0 [btrfs]
+[22403.015754]  [<ffffffffa01dea12>] submit_compressed_extents+0x212/0x480 [btrfs]
+[22403.015781]  [<ffffffffa01ded04>] async_cow_submit+0x84/0x90 [btrfs]
+[22403.015807]  [<ffffffffa0206988>] run_ordered_completions+0x78/0xf0 [btrfs]
+[22403.015833]  [<ffffffffa0207395>] worker_loop+0x185/0x5d0 [btrfs]
+[22403.015840]  [<ffffffff810792c8>] ? __wake_up_common+0x58/0x90
+[22403.015867]  [<ffffffffa0207210>] ? btrfs_queue_worker+0x310/0x310 [btrfs]
+[22403.015873]  [<ffffffff81070b83>] kthread+0x93/0xa0
+[22403.015880]  [<ffffffff81628224>] kernel_thread_helper+0x4/0x10
+[22403.015886]  [<ffffffff81070af0>] ? kthread_freezable_should_stop+0x70/0x70
+[22403.015891]  [<ffffffff81628220>] ? gs_change+0x13/0x13
+[22403.015895] ---[ end trace 768f569fb0306239 ]---
+[22403.015898] BTRFS warning (device dm-6): Aborting unused transaction.
+[22403.064892] BTRFS warning (device dm-6): Aborting unused transaction.
+[22403.094675] BTRFS warning (device dm-6): Aborting unused transaction.
+[22403.512902] BTRFS warning (device dm-6): Aborting unused transaction.
+[22403.703871] BTRFS warning (device dm-6): Aborting unused transaction.
+[22403.709637] BTRFS warning (device dm-6): Aborting unused transaction.
+[22403.721362] BTRFS warning (device dm-6): Aborting unused transaction.
+[22403.736999] BTRFS warning (device dm-6): Aborting unused transaction.
+[22403.794067] BTRFS warning (device dm-6): Aborting unused transaction.
+[22403.799009] BTRFS warning (device dm-6): Aborting unused transaction.
+[22404.035483] BTRFS warning (device dm-6): Aborting unused transaction.
+[22404.108751] BTRFS warning (device dm-6): Aborting unused transaction.
 
-Why is it "long long" which is 64 bit? What will it contain? Could we
-make it unsigned int - we'd waste less RAM then - remember that we
-allocate a lot of these structures.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-LaZhxDAxEYqZZoaYXZkJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPsQb0AAoJECmIfjd9wqK0IYEQAIk1esjjLDoaj53RN879un89
-DAJZotdsuVkZsoHHx1hIA258dFsHML05I3ZKY82hy0acdYdWFDpfIsvIYDK3f16k
-2uNZqVZ9lcRiP2nibViO7fcB2lrIe707BSBRArFL6nN9zl1wqyl1X6amv/hPTxZE
-buJrB5g5b/6vgWNIXTUgUToLnAac7DGO9oBJc6bZkUimFedR/T/7EYGkB6B5htPo
-q/+9t3tqXNqtCLYT8lkALxUVS2w2hD6rMFNCa/zN2Nsfwh2f0jVAbginPm7ZXkJ/
-DPcA9fSFJz9GvkG3b6oP1fjROHjfVuIsaJd73NPMvgnAKOXTRd7Ydf9dy5uKZ/A6
-4kgGZ8JEzej6V4hP2+yT7cIkciogNSZqBJ2tlwpx0twEzkVX1d9wro/btpblU3MR
-3Ww3wB7KNlvf6sqdXrWEwTnUCkGBB45Y4vBbYIlkIHwq4F7EqjNohWRju55cr8Xj
-5THk9VuknCVvy2lbySjkJMtOVInYb7BYlzOJcBMszGLRDhvWZ0mhPkM7cp8XCufn
-gdWhohZs7BA5Gmr3GU/LE1UBq63NGbB9iOPpWbMfsn9RFHLk4Uv4hE4sxy4M7EX/
-NGR77CLfZNT1SiKk+UEVMJ7ZBuoOAiHtemHhZ4fHQr0elzagaB9kKhuUXPntADoU
-LoPenukOam30663asNVb
-=dp0H
------END PGP SIGNATURE-----
-
---=-LaZhxDAxEYqZZoaYXZkJ--
+Best regards
+Arnd
 
