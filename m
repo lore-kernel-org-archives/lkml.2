@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757554Ab2ENSdI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 14:33:08 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55585 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757477Ab2ENSdF (ORCPT
+	id S932127Ab2ENSgE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 14:36:04 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61051 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757382Ab2ENSgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 14:33:05 -0400
-Message-ID: <4FB14FDE.2080409@wwwdotorg.org>
-Date: Mon, 14 May 2012 12:33:02 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 14 May 2012 14:36:01 -0400
+Date: Mon, 14 May 2012 11:35:57 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>
+Cc: Reinhard Tartler <tartler@cs.fau.de>, Felipe Balbi <balbi@ti.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vamos-dev@lists.cs.fau.de
+Subject: Re: [PATCH] usb: musb: cppi: add missing include to fix compilation
+Message-ID: <20120514183557.GA3832@kroah.com>
+References: <1337011520-15286-1-git-send-email-tartler@cs.fau.de>
+ <20120514163154.GA17555@kroah.com>
+ <87ipfyemb8.fsf@faui43f.informatik.uni-erlangen.de>
 MIME-Version: 1.0
-To: Hiroshi DOYU <hdoyu@nvidia.com>
-CC: linux-tegra@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [v2 1/1] memory: tegra{20,30}-mc: Use dev_err_ratelimited()
-References: <1336981680-15297-2-git-send-email-hdoyu@nvidia.com> <1336990031-15567-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1336990031-15567-1-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ipfyemb8.fsf@faui43f.informatik.uni-erlangen.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2012 04:07 AM, Hiroshi DOYU wrote:
-> Introduce a new dev_*_ratelimited() instead of pr_*_ratelimited() for
-> better info to print.
+On Mon, May 14, 2012 at 06:53:31PM +0200, Reinhard Tartler wrote:
+> On Mo, Mai 14, 2012 at 18:31:54 (CEST), Greg KH wrote:
 > 
-> Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+> > On Mon, May 14, 2012 at 06:05:20PM +0200, Reinhard Tartler wrote:
+> >> This fixes compilation as module.
+> >> 
+> >> Signed-off-by: Reinhard Tartler <tartler@cs.fau.de>
+> >> ---
+> >>  drivers/usb/musb/cppi_dma.c |    1 +
+> >>  1 file changed, 1 insertion(+)
+> >> 
+> >> This patch was found by tools developed in the VAMOS project:
+> >> http://www4.cs.fau.de/Research/VAMOS/
+> >
+> > Does that mean that no one actually can hit this in "real life"?  Or is
+> > there a valid .config that this solves a problem for?  If so, is it also
+> > needed for the 3.4/3.3-stable tree and older ones?
+> 
+> My tool has generated the attached configuration that exposes this
+> compilation failure. I have used kernel v3.2 with Ubuntu's arm
+> cross-compiler for the analysis and verification.
 
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+Does this show up on the 3.4-rc kernels?  3.3?  I can't do anything
+about going back in time and fixing 3.2 right now, sorry.
 
-But note that this relies on the following patch or a variant of it:
-
-http://patchwork.ozlabs.org/patch/158899/
-
-which isn't anywhere yet.
-
-(A variant of that patch was patch 1/2 the first time this patch was
-posted, but v2 of this patch was posted separately without mentioning
-the dependency)
+greg k-h
