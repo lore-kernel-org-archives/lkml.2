@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab2ENQ0P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 12:26:15 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44506 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757084Ab2ENQ0N (ORCPT
+	id S1757217Ab2ENQ2i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 12:28:38 -0400
+Received: from mga14.intel.com ([143.182.124.37]:62689 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757183Ab2ENQ2h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 12:26:13 -0400
-Message-ID: <4FB13221.3000704@wwwdotorg.org>
-Date: Mon, 14 May 2012 10:26:09 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 14 May 2012 12:28:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="99903896"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: Chen Gong <gong.chen@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: RE: [PATCH 2/2] x86/mce: Add instruction recovery signatures to
+ mce-severity table
+Thread-Topic: [PATCH 2/2] x86/mce: Add instruction recovery signatures to
+ mce-severity table
+Thread-Index: AQHNL0lNX6PGPdBkbUOeJPxXhK/15JbE0YwAgAMlFwCAAYSpAA==
+Date: Mon, 14 May 2012 16:28:35 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F192EED4A@ORSMSX104.amr.corp.intel.com>
+References: <cover.1336674796.git.tony.luck@intel.com>
+ <0e89440bf6444635bde0b876eedd26e5c51f9ca3.1336674796.git.tony.luck@intel.com>
+ <4FACC25B.80305@linux.intel.com>
+ <3908561D78D1C84285E8C5FCA982C28F192ED617@ORSMSX104.amr.corp.intel.com>
+ <20120513100532.GC28863@aftab.osrc.amd.com>
+In-Reply-To: <20120513100532.GC28863@aftab.osrc.amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: tegra: Fix flow controller accesses
-References: <1336991229-18859-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1336991229-18859-1-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2012 04:27 AM, Peter De Schrijver wrote:
-> flowctrl_write_cpu_csr uses the cpu halt offsets and vice versa. This patch
-> fixes this bug.
-> 
-> Reported-by: Dan Willemsen <dwillemsen@nvidia.com>
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> > I'm trying to figure out a quirk for processors that do generate
+> > EIPV=RIPV=0 signature for IFU errors. There are some case where
+> > we can work around the lack of EIPV.
+>
+> __mcheck_cpu_apply_quirks?
 
-Applied, thanks.
+The quirk is a bit more extensive than just setting some flag in there
+for "if (c->x86 == 6 && c->x86_model == 45)". Sometime EIPV isn't set
+because the regs->ip and regs->cs really aren't valid. So  I'll need
+to do something like:
 
-I fixed the patch description to mention when this problem was introduced.
+	if (we are on Intel family 6 model 45 AND
+          this is a UC=1, PCC=0, AR=1, S=1, ADDRV=1, MCACOD=0x150 error AND
+	    (virtophys(regs->ip) >> PAGE_SHIFT) == (MC(bank)_ADDR >> PAGE_SHIFT)) {
+		/* ok to trust CS & IP */
+		m.mcgstatus |= MCG_STATUS_EIPV;
+	}
+before running through the mce_severity() table lookup.
 
-I'll send a pull request to include this in 3.4-final in a second.
+x86 doesn't seem to have a "virtophys()" that I can find. Closest is lookup_address(vaddr, level)
+which gets a pte (which is almost all the work).
+
+Sigh!
+
+-Tony
