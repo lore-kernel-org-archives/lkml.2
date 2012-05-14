@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab2ENMXE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 08:23:04 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44732 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755255Ab2ENMXC (ORCPT
+	id S1755887Ab2ENMXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 08:23:16 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:31375 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755802Ab2ENMXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 08:23:02 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: core: Don't open code _regulator_is_enabled()
-Date: Mon, 14 May 2012 13:22:58 +0100
-Message-Id: <1336998178-5229-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	Mon, 14 May 2012 08:23:13 -0400
+Date: Mon, 14 May 2012 15:26:28 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] Staging ipack: fix a few sparse warnings
+Message-ID: <20120514122628.GH16984@mwanda>
+References: <1336992089-2733-1-git-send-email-siglesias@igalia.com>
+ <1336992089-2733-2-git-send-email-siglesias@igalia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336992089-2733-2-git-send-email-siglesias@igalia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/core.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+On Mon, May 14, 2012 at 12:41:25PM +0200, Samuel Iglesias Gonsalvez wrote:
+>  	/* Read status register */
+> -	status_reg = readw((unsigned short *) (tpci200->info->interface_regs +
+> +	status_reg = readw((void __iomem *) (tpci200->info->interface_regs +
+>  					       TPCI200_STATUS_REG));
+>  
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 28b9c31..56768bd 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -3163,8 +3163,7 @@ regulator_register(const struct regulator_desc *regulator_desc,
- 			goto scrub;
- 
- 		/* Enable supply if rail is enabled */
--		if (rdev->desc->ops->is_enabled &&
--				rdev->desc->ops->is_enabled(rdev)) {
-+		if (_regulator_is_enabled(rdev)) {
- 			ret = regulator_enable(rdev->supply);
- 			if (ret < 0)
- 				goto scrub;
-@@ -3296,7 +3295,7 @@ int regulator_suspend_finish(void)
- 				goto unlock;
- 			if (!ops->disable)
- 				goto unlock;
--			if (ops->is_enabled && !ops->is_enabled(rdev))
-+			if (!_regulator_is_enabled(rdev))
- 				goto unlock;
- 
- 			error = ops->disable(rdev);
--- 
-1.7.10
+Later in the patch, you do the right thing which is to declare this
+as an __iomem pointer in the header.  The cast here can be removed
+and it all fits on one line.
+
+Remove it in a follow on patch if you want.  Same for several of the
+other casts in this patch.
+
+regards,
+dan carpenter
+
 
