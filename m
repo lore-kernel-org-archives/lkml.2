@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634Ab2ENNmf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:42:35 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43095 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881Ab2ENNmd (ORCPT
+	id S1755537Ab2ENNoT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 09:44:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56566 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab2ENNoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:42:33 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] tty: Fix LED error return
-To: greg@kroah.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Date: Mon, 14 May 2012 14:41:31 +0100
-Message-ID: <20120514134105.20268.84451.stgit@bluebook>
-User-Agent: StGIT/0.14.3
+	Mon, 14 May 2012 09:44:18 -0400
+Date: Mon, 14 May 2012 06:43:47 -0700
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-0sqhrht34phowgclj12dgk8h@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, a.p.zijlstra@chello.nl, greg.pearson@hp.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, a.p.zijlstra@chello.nl, greg.pearson@hp.com,
+        tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/numa: Fix the new NUMA topology bits
+Git-Commit-ID: dd7d8634e619b715a537402672d1383535ff4c54
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 14 May 2012 06:43:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+Commit-ID:  dd7d8634e619b715a537402672d1383535ff4c54
+Gitweb:     http://git.kernel.org/tip/dd7d8634e619b715a537402672d1383535ff4c54
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Fri, 11 May 2012 00:56:20 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 14 May 2012 15:05:25 +0200
 
-3.4-rc introduced a regression when setting the LEDS. We do the right thing
-but then return an error code.
+sched/numa: Fix the new NUMA topology bits
 
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=43144
-Reported-by: Christian Casteyde
-Signed-off-by: Alan Cox <alan@linux/intel.com>
+There's no need to convert a node number to a node number by
+pretending its a cpu number..
+
+Reported-by: Yinghai Lu <yinghai@kernel.org>
+Reported-and-Tested-by: Greg Pearson <greg.pearson@hp.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-0sqhrht34phowgclj12dgk8h@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
+ kernel/sched/core.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
- drivers/tty/vt/keyboard.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
-index 86dd1e3..9f5c462 100644
---- a/drivers/tty/vt/keyboard.c
-+++ b/drivers/tty/vt/keyboard.c
-@@ -2032,7 +2032,7 @@ int vt_do_kdskled(int console, int cmd, unsigned long arg, int perm)
- 		kbd->default_ledflagstate = ((arg >> 4) & 7);
- 		set_leds();
-                 spin_unlock_irqrestore(&kbd_event_lock, flags);
--		break;
-+		return 0;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b4f2096..0738036 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6395,8 +6395,7 @@ static void sched_init_numa(void)
+ 			sched_domains_numa_masks[i][j] = mask;
  
- 	/* the ioctls below only set the lights, not the functions */
- 	/* for those, see KDGKBLED and KDSKBLED above */
-
+ 			for (k = 0; k < nr_node_ids; k++) {
+-				if (node_distance(cpu_to_node(j), k) >
+-						sched_domains_numa_distance[i])
++				if (node_distance(j, k) > sched_domains_numa_distance[i])
+ 					continue;
+ 
+ 				cpumask_or(mask, mask, cpumask_of_node(k));
