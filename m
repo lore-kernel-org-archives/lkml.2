@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab2ENUC1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 16:02:27 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64131 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932207Ab2ENUCZ convert rfc822-to-8bit (ORCPT
+	id S932288Ab2ENUCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 16:02:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43845 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932268Ab2ENUCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 16:02:25 -0400
+	Mon, 14 May 2012 16:02:47 -0400
+Date: Mon, 14 May 2012 13:02:18 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm/memcg: apply add/del_page to lruvec
+In-Reply-To: <4FB0E985.9000107@openvz.org>
+Message-ID: <alpine.LSU.2.00.1205141252060.1693@eggly.anvils>
+References: <alpine.LSU.2.00.1205132152530.6148@eggly.anvils> <alpine.LSU.2.00.1205132201210.6148@eggly.anvils> <4FB0E985.9000107@openvz.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1336772086-17248-2-git-send-email-ddaney.cavm@gmail.com>
-References: <1336772086-17248-1-git-send-email-ddaney.cavm@gmail.com>
-	<1336772086-17248-2-git-send-email-ddaney.cavm@gmail.com>
-Date: Mon, 14 May 2012 22:02:24 +0200
-Message-ID: <CACRpkdaXgcYTxb4qHPkzsrU+x6=zg8mQGVxmgCV59R1s2eqn+g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] MIPS: OCTEON: Add register definitions for SPI host hardware.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        spi-devel-general@lists.sourceforge.net, linux-mips@linux-mips.org,
-        David Daney <david.daney@cavium.com>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 11:34 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+On Mon, 14 May 2012, Konstantin Khlebnikov wrote:
+> Hugh Dickins wrote:
+> > Take lruvec further: pass it instead of zone to add_page_to_lru_list()
+> > and del_page_from_lru_list(); and pagevec_lru_move_fn() pass lruvec
+> > down to its target functions.
+> > 
+> > This cleanup eliminates a swathe of cruft in memcontrol.c,
+> > including mem_cgroup_lru_add_list(), mem_cgroup_lru_del_list() and
+> > mem_cgroup_lru_move_lists() - which never actually touched the lists.
+> > 
+> > In their place, mem_cgroup_page_lruvec() to decide the lruvec,
+> > previously a side-effect of add, and mem_cgroup_update_lru_size()
+> > to maintain the lru_size stats.
+> > 
+> > Whilst these are simplifications in their own right, the goal is to
+> > bring the evaluation of lruvec next to the spin_locking of the lrus,
+> > in preparation for a future patch.
+> > 
+> > Signed-off-by: Hugh Dickins<hughd@google.com>
+> > ---
+> > The horror, the horror: I have three lines of 81 columns:
+> > I do think they look better this way than split up.
+> 
+> This too huge and hard to review. =(
 
-> From: David Daney <david.daney@cavium.com>
->
-> Needed by SPI driver.
+Hah, we have very different preferences: whereas I found your
+split into twelve a hindrance to review rather than a help.
 
-That's not very verbose, plese tell atleast tell which SPI driver it's for.
+> I have the similar thing splitted into several patches.
 
-> +union cvmx_mpi_cfg {
-> +       uint64_t u64;
+I had been hoping to get this stage, where I think we're still in
+agreement (except perhaps on the ordering of function arguments!),
+into 3.5 as a basis for later discussion.
 
-The kernel already has a type (in <linux/kernel.h>) used in many places in the
-kernel, called "u64" so this gets very confusing.
+But I won't have time to split it into bite-sized pieces for
+linux-next now before 3.4 goes out, so it sounds like we'll have
+to drop it this time around.  Oh well.
 
-Can you call it something else?
+Thanks (you and Kame and Michal) for the very quick review of
+the other, even more trivial, patches.
 
-BTW: you could then s/uint64_t/u64 and use that u64.
-(Some don't like the three-letter types so no big deal.)
+> 
+> Also I want to replace page_cgroup->mem_cgroup pointer with
+> page_cgroup->lruvec
+> and rework "surreptitious switching any uncharged page to root"
+> In my set I have mem_cgroup_page_lruvec() without side-effects and
+> mem_cgroup_page_lruvec_putback() with can switch page's lruvec, but it not
+> always moves pages to root: in
+> putback_inactive_pages()/move_active_pages_to_lru()
+> we have better candidate for lruvec switching.
 
-> +       struct cvmx_mpi_cfg_s {
-> +#ifdef __BIG_ENDIAN_BITFIELD
-> +               uint64_t reserved_29_63:35;
-> +               uint64_t clkdiv:13;
-> +               uint64_t csena3:1;
-> +               uint64_t csena2:1;
-> +               uint64_t csena1:1;
-> +               uint64_t csena0:1;
-> +               uint64_t cslate:1;
-> +               uint64_t tritx:1;
-> +               uint64_t idleclks:2;
-> +               uint64_t cshi:1;
-> +               uint64_t csena:1;
-> +               uint64_t int_ena:1;
-> +               uint64_t lsbfirst:1;
-> +               uint64_t wireor:1;
-> +               uint64_t clk_cont:1;
-> +               uint64_t idlelo:1;
-> +               uint64_t enable:1;
-> +#else
-> +               uint64_t enable:1;
-> +               uint64_t idlelo:1;
-> +               uint64_t clk_cont:1;
-> +               uint64_t wireor:1;
-> +               uint64_t lsbfirst:1;
-> +               uint64_t int_ena:1;
-> +               uint64_t csena:1;
-> +               uint64_t cshi:1;
-> +               uint64_t idleclks:2;
-> +               uint64_t tritx:1;
-> +               uint64_t cslate:1;
-> +               uint64_t csena0:1;
-> +               uint64_t csena1:1;
-> +               uint64_t csena2:1;
-> +               uint64_t csena3:1;
-> +               uint64_t clkdiv:13;
-> +               uint64_t reserved_29_63:35;
-> +#endif
+But those sound like later developments on top of this to me.
 
-This boggles my mind, but I see there are many drivers doing this,
-but using uint64_t looks overly scary.
-
-Can't you break it apart using a set of u32's like in
-drivers/net/ethernet/micrel/ksz884x.c?
-
-Yours,
-Linus Walleij
+Hugh
