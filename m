@@ -1,353 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab2ENLrT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 07:47:19 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:46251 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681Ab2ENLrS (ORCPT
+	id S1756165Ab2ENLtv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 07:49:51 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39835 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755595Ab2ENLtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 07:47:18 -0400
-Message-ID: <1336996035.1628.2.camel@shrek.rexursive.com>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-From: Bojan Smojver <bojan@rexursive.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>, bp@alien8.de
-Date: Mon, 14 May 2012 21:47:15 +1000
-In-Reply-To: <1336993890.1662.1.camel@shrek.rexursive.com>
-References: <Pine.LNX.4.44L0.1205132212070.5628-100000@netrider.rowland.org>
-	 <1336963067.2154.2.camel@shrek.rexursive.com>
-	 <1336963613.2154.4.camel@shrek.rexursive.com>
-	 <1336964335.2154.5.camel@shrek.rexursive.com>
-	 <1336981522.1678.0.camel@shrek.rexursive.com>
-	 <1336993890.1662.1.camel@shrek.rexursive.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+	Mon, 14 May 2012 07:49:50 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Message-ID: <4FB0F174.1000400@jp.fujitsu.com>
+Date: Mon, 14 May 2012 20:50:12 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memory: add kernelcore_max_addr boot option
+References: <4FACA79C.9070103@cn.fujitsu.com>
+In-Reply-To: <4FACA79C.9070103@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-14 at 21:11 +1000, Bojan Smojver wrote:
-> Totally untested...
+Hi Lai,
 
-No. That hangs my box.
+Your patch does not consider allocated memory from  memblock.
+Thus even if I set the kernelcore_max_addr boot option, movable
+node cannot be created.
 
-This triggers a bug in workqueues code (essentially the same as the
-previous patch, except for sys_sync() not being done):
----------------
- Documentation/power/swsusp.txt |    5 +++
- kernel/power/hibernate.c       |   36 ++++++++++++++++++
- kernel/power/power.h           |    6 +++
- kernel/power/suspend.c         |   79 +++++++++++++++++++++++++++++++---------
- kernel/power/swap.c            |   28 ++++++++++++++
- 5 files changed, 137 insertions(+), 17 deletions(-)
+I made sample patches that limited the memory from memblock.
 
-diff --git a/Documentation/power/swsusp.txt b/Documentation/power/swsusp.txt
-index ac190cf..92341b8 100644
---- a/Documentation/power/swsusp.txt
-+++ b/Documentation/power/swsusp.txt
-@@ -33,6 +33,11 @@ echo shutdown > /sys/power/disk; echo disk > /sys/power/state
- 
- echo platform > /sys/power/disk; echo disk > /sys/power/state
- 
-+. If you would like to write hibernation image to swap and then suspend
-+to RAM (provided your platform supports it), you can try
-+
-+echo suspend > /sys/power/disk; echo disk > /sys/power/state
-+
- . If you have SATA disks, you'll need recent kernels with SATA suspend
- support. For suspend and resume to work, make sure your disk drivers
- are built into kernel -- not modules. [There's way to make
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index e09dfbf..f48a9ba 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -5,6 +5,7 @@
-  * Copyright (c) 2003 Open Source Development Lab
-  * Copyright (c) 2004 Pavel Machek <pavel@ucw.cz>
-  * Copyright (c) 2009 Rafael J. Wysocki, Novell Inc.
-+ * Copyright (C) 2012 Bojan Smojver <bojan@rexursive.com>
-  *
-  * This file is released under the GPLv2.
-  */
-@@ -44,6 +45,9 @@ enum {
- 	HIBERNATION_PLATFORM,
- 	HIBERNATION_SHUTDOWN,
- 	HIBERNATION_REBOOT,
-+#ifdef CONFIG_SUSPEND
-+	HIBERNATION_SUSPEND,
-+#endif
- 	/* keep last */
- 	__HIBERNATION_AFTER_LAST
- };
-@@ -572,6 +576,10 @@ int hibernation_platform_enter(void)
-  */
- static void power_down(void)
- {
-+#ifdef CONFIG_SUSPEND
-+	int error;
-+#endif
-+
- 	switch (hibernation_mode) {
- 	case HIBERNATION_REBOOT:
- 		kernel_restart(NULL);
-@@ -581,6 +589,25 @@ static void power_down(void)
- 	case HIBERNATION_SHUTDOWN:
- 		kernel_power_off();
- 		break;
-+#ifdef CONFIG_SUSPEND
-+	case HIBERNATION_SUSPEND:
-+		error = suspend_locked(PM_SUSPEND_MEM);
-+		if (error) {
-+			if (hibernation_ops)
-+				hibernation_mode = HIBERNATION_PLATFORM;
-+			else
-+				hibernation_mode = HIBERNATION_SHUTDOWN;
-+			power_down();
-+		}
-+		/*
-+		 * Restore swap signature.
-+		 */
-+		error = swsusp_unmark();
-+		if (error)
-+			printk(KERN_ERR "PM: Swap will be unusable! "
-+			                "Try swapon -a.\n");
-+		return;
-+#endif
- 	}
- 	kernel_halt();
- 	/*
-@@ -814,6 +841,9 @@ static const char * const hibernation_modes[] = {
- 	[HIBERNATION_PLATFORM]	= "platform",
- 	[HIBERNATION_SHUTDOWN]	= "shutdown",
- 	[HIBERNATION_REBOOT]	= "reboot",
-+#ifdef CONFIG_SUSPEND
-+	[HIBERNATION_SUSPEND]	= "suspend",
-+#endif
- };
- 
- /*
-@@ -854,6 +884,9 @@ static ssize_t disk_show(struct kobject *kobj, struct kobj_attribute *attr,
- 		switch (i) {
- 		case HIBERNATION_SHUTDOWN:
- 		case HIBERNATION_REBOOT:
-+#ifdef CONFIG_SUSPEND
-+		case HIBERNATION_SUSPEND:
-+#endif
- 			break;
- 		case HIBERNATION_PLATFORM:
- 			if (hibernation_ops)
-@@ -894,6 +927,9 @@ static ssize_t disk_store(struct kobject *kobj, struct kobj_attribute *attr,
- 		switch (mode) {
- 		case HIBERNATION_SHUTDOWN:
- 		case HIBERNATION_REBOOT:
-+#ifdef CONFIG_SUSPEND
-+		case HIBERNATION_SUSPEND:
-+#endif
- 			hibernation_mode = mode;
- 			break;
- 		case HIBERNATION_PLATFORM:
-diff --git a/kernel/power/power.h b/kernel/power/power.h
-index 98f3622..cb8e09e 100644
---- a/kernel/power/power.h
-+++ b/kernel/power/power.h
-@@ -156,6 +156,9 @@ extern void swsusp_free(void);
- extern int swsusp_read(unsigned int *flags_p);
- extern int swsusp_write(unsigned int flags);
- extern void swsusp_close(fmode_t);
-+#ifdef CONFIG_SUSPEND
-+extern int swsusp_unmark(void);
-+#endif
- 
- /* kernel/power/block_io.c */
- extern struct block_device *hib_resume_bdev;
-@@ -177,6 +180,9 @@ extern const char *const pm_states[];
- 
- extern bool valid_state(suspend_state_t state);
- extern int suspend_devices_and_enter(suspend_state_t state);
-+#ifdef CONFIG_HIBERNATION
-+extern int suspend_locked(suspend_state_t state);
-+#endif
- #else /* !CONFIG_SUSPEND */
- static inline int suspend_devices_and_enter(suspend_state_t state)
- {
-diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-index 396d262..3402d6e 100644
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -261,28 +261,19 @@ static void suspend_finish(void)
-  * enter_state - Do common work needed to enter system sleep state.
-  * @state: System sleep state to enter.
-  *
-- * Make sure that no one else is trying to put the system into a sleep state.
-- * Fail if that's not the case.  Otherwise, prepare for system suspend, make the
-- * system enter the given sleep state and clean up after wakeup.
-+ * The system lock needs to be held already when this function is called.
-  */
--static int enter_state(suspend_state_t state)
-+static int enter_state_locked(suspend_state_t state)
- {
- 	int error;
- 
- 	if (!valid_state(state))
- 		return -ENODEV;
- 
--	if (!mutex_trylock(&pm_mutex))
--		return -EBUSY;
--
--	printk(KERN_INFO "PM: Syncing filesystems ... ");
--	sys_sync();
--	printk("done.\n");
--
- 	pr_debug("PM: Preparing system for %s sleep\n", pm_states[state]);
- 	error = suspend_prepare();
- 	if (error)
--		goto Unlock;
-+		return error;
- 
- 	if (suspend_test(TEST_FREEZER))
- 		goto Finish;
-@@ -295,26 +286,54 @@ static int enter_state(suspend_state_t state)
-  Finish:
- 	pr_debug("PM: Finishing wakeup.\n");
- 	suspend_finish();
-- Unlock:
-+	return error;
-+}
-+
-+/**
-+ * enter_state - Do common work needed to enter system sleep state.
-+ * @state: System sleep state to enter.
-+ *
-+ * Make sure that no one else is trying to put the system into a sleep state.
-+ * Fail if that's not the case.  Otherwise, prepare for system suspend, make the
-+ * system enter the given sleep state and clean up after wakeup.
-+ */
-+static int enter_state(suspend_state_t state)
-+{
-+	int error;
-+
-+	if (!valid_state(state))
-+		return -ENODEV;
-+
-+	if (!mutex_trylock(&pm_mutex))
-+		return -EBUSY;
-+
-+	printk(KERN_INFO "PM: Syncing filesystems ... ");
-+	sys_sync();
-+	printk("done.\n");
-+
-+	error = enter_state_locked(state);
-+
- 	mutex_unlock(&pm_mutex);
- 	return error;
- }
- 
- /**
-- * pm_suspend - Externally visible function for suspending the system.
-+ * suspend - Suspend the system.
-  * @state: System sleep state to enter.
-+ * @lock:  Whether to acquire a system lock.
-  *
-  * Check if the value of @state represents one of the supported states,
-- * execute enter_state() and update system suspend statistics.
-+ * execute enter_state() or enter_state_locked() and update system suspend
-+ * statistics.
-  */
--int pm_suspend(suspend_state_t state)
-+static int suspend(suspend_state_t state, int lock)
- {
- 	int error;
- 
- 	if (state <= PM_SUSPEND_ON || state >= PM_SUSPEND_MAX)
- 		return -EINVAL;
- 
--	error = enter_state(state);
-+	error = lock ? enter_state(state) : enter_state_locked(state);
- 	if (error) {
- 		suspend_stats.fail++;
- 		dpm_save_failed_errno(error);
-@@ -323,4 +342,30 @@ int pm_suspend(suspend_state_t state)
- 	}
- 	return error;
- }
-+
-+/**
-+ * suspend_locked - Suspend the system when the system lock is already held.
-+ * @state: System sleep state to enter.
-+ *
-+ * Check if the value of @state represents one of the supported states,
-+ * execute enter_state_locked() and update system suspend statistics.
-+ */
-+#ifdef CONFIG_HIBERNATION
-+int suspend_locked(suspend_state_t state)
-+{
-+	return suspend(state, 0);
-+}
-+#endif
-+
-+/**
-+ * pm_suspend - Externally visible function for suspending the system.
-+ * @state: System sleep state to enter.
-+ *
-+ * Check if the value of @state represents one of the supported states,
-+ * execute enter_state() and update system suspend statistics.
-+ */
-+int pm_suspend(suspend_state_t state)
-+{
-+	return suspend(state, 1);
-+}
- EXPORT_SYMBOL(pm_suspend);
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index eef311a..1027da8 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -1456,6 +1456,34 @@ void swsusp_close(fmode_t mode)
- 	blkdev_put(hib_resume_bdev, mode);
- }
- 
-+/**
-+ *      swsusp_unmark - Unmark swsusp signature in the resume device
-+ */
-+
-+#ifdef CONFIG_SUSPEND
-+int swsusp_unmark(void)
-+{
-+	int error;
-+
-+	hib_bio_read_page(swsusp_resume_block, swsusp_header, NULL);
-+	if (!memcmp(HIBERNATE_SIG,swsusp_header->sig, 10)) {
-+		memcpy(swsusp_header->sig,swsusp_header->orig_sig, 10);
-+		error = hib_bio_write_page(swsusp_resume_block,
-+					swsusp_header, NULL);
-+	} else {
-+		printk(KERN_ERR "PM: Cannot find swsusp signature!\n");
-+		error = -ENODEV;
-+	}
-+
-+	/*
-+	 * We just returned from suspend, we don't need the image any more.
-+	 */
-+	free_all_swap_pages(root_swap);
-+
-+	return error;
-+}
-+#endif
-+
- static int swsusp_header_init(void)
- {
- 	swsusp_header = (struct swsusp_header*) __get_free_page(GFP_KERNEL);
----------------
+[Patch 1/4] x86: get pg_data_t's memory from other node
+[Patch 2/4] x86: use memblock_set_current_limit() to set memblock.current_limit
+[Patch 3/4] memblock: limit memory address from memblock
+[Patch 4/4] memblock: compare current_limit with end variable at memblock_find_in_range_node()
 
-I think I'll need to break this down into even smaller steps.
+System seems to be able to create movable node by applying these
+patches.
 
-PS. It seems obvious now why user space code simply did
-suspend_devices_and_enter()... :-)
+But there are two problems.
+   - When online memory of movable zone is under 512MB by offlining
+     memory, system cannot create new process.
+   - When all memory of movable zone is offlined, "kernel BUG at
+     mm/slub.c:3587!" message is shown.
 
--- 
-Bojan
+I have not understood the root cause of the problems.
+
+Thanks,
+Yasuaki Ishimatsu
+
+2012/05/11 14:46, Lai Jiangshan wrote:
+> Current ZONE_MOVABLE (kernelcore=) setting policy with boot option doesn't meet
+> our requirement. We need something like kernelcore_max_addr= boot option
+> to limit the kernelcore upper address.
+>
+> The memory with higher address will be migratable(movable) and they
+> are easier to be offline(always ready to be offline when the system don't require
+> so much memory).
+>
+> All kernelcore_max_addr=, kernelcore= and movablecore= can be safely specified
+> at the same time(or any 2 of them).
+>
+> Signed-off-by: Lai Jiangshan<laijs@cn.fujitsu.com>
+> ---
+>   Documentation/kernel-parameters.txt |    9 +++++++++
+>   mm/page_alloc.c                     |   27 ++++++++++++++++++++++++++-
+>   2 files changed, 35 insertions(+), 1 deletions(-)
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index c1601e5..9f42787 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1184,6 +1184,15 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>   			use the HighMem zone if it exists, and the Normal
+>   			zone if it does not.
+>
+> +	kernelcore_max_addr=nn[KMG]	[KNL,X86,IA-64,PPC] This parameter
+> +			is the same effect as kernelcore parameter, except it
+> +			specifies the up physical address of memory range
+> +			usable by the kernel for non-movable allocations.
+> +			If both kernelcore and kernelcore_max_addr are
+> +			specified, this requested's priority is higher than
+> +			kernelcore's.
+> +			See the kernelcore parameter.
+> +
+>   	kgdbdbgp=	[KGDB,HW] kgdb over EHCI usb debug port.
+>   			Format:<Controller#>[,poll interval]
+>   			The controller # is the number of the ehci usb debug
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index a712fb9..9169ea9 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -200,6 +200,7 @@ static unsigned long __meminitdata dma_reserve;
+>   #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+>   static unsigned long __meminitdata arch_zone_lowest_possible_pfn[MAX_NR_ZONES];
+>   static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
+> +static unsigned long __initdata required_kernelcore_max_pfn;
+>   static unsigned long __initdata required_kernelcore;
+>   static unsigned long __initdata required_movablecore;
+>   static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
+> @@ -4568,6 +4569,7 @@ static void __init find_zone_movable_pfns_for_nodes(void)
+>   {
+>   	int i, nid;
+>   	unsigned long usable_startpfn;
+> +	unsigned long kernelcore_max_pfn;
+>   	unsigned long kernelcore_node, kernelcore_remaining;
+>   	/* save the state before borrow the nodemask */
+>   	nodemask_t saved_node_state = node_states[N_HIGH_MEMORY];
+> @@ -4596,6 +4598,9 @@ static void __init find_zone_movable_pfns_for_nodes(void)
+>   		required_kernelcore = max(required_kernelcore, corepages);
+>   	}
+>
+> +	if (required_kernelcore_max_pfn&&  !required_kernelcore)
+> +		required_kernelcore = totalpages;
+> +
+>   	/* If kernelcore was not specified, there is no ZONE_MOVABLE */
+>   	if (!required_kernelcore)
+>   		goto out;
+> @@ -4604,6 +4609,12 @@ static void __init find_zone_movable_pfns_for_nodes(void)
+>   	find_usable_zone_for_movable();
+>   	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
+>
+> +	if (required_kernelcore_max_pfn)
+> +		kernelcore_max_pfn = required_kernelcore_max_pfn;
+> +	else
+> +		kernelcore_max_pfn = ULONG_MAX>>  PAGE_SHIFT;
+> +	kernelcore_max_pfn = max(kernelcore_max_pfn, usable_startpfn);
+> +
+>   restart:
+>   	/* Spread kernelcore memory as evenly as possible throughout nodes */
+>   	kernelcore_node = required_kernelcore / usable_nodes;
+> @@ -4630,8 +4641,12 @@ restart:
+>   			unsigned long size_pages;
+>
+>   			start_pfn = max(start_pfn, zone_movable_pfn[nid]);
+> -			if (start_pfn>= end_pfn)
+> +			end_pfn = min(kernelcore_max_pfn, end_pfn);
+> +			if (start_pfn>= end_pfn) {
+> +				if (!zone_movable_pfn[nid])
+> +					zone_movable_pfn[nid] = start_pfn;
+>   				continue;
+> +			}
+>
+>   			/* Account for what is only usable for kernelcore */
+>   			if (start_pfn<  usable_startpfn) {
+> @@ -4816,6 +4831,15 @@ static int __init cmdline_parse_core(char *p, unsigned long *core)
+>   }
+>
+>   /*
+> + * kernelcore_max_addr=addr sets the up physical address of memory range
+> + * for use for allocations that cannot be reclaimed or migrated.
+> + */
+> +static int __init cmdline_parse_kernelcore_max_addr(char *p)
+> +{
+> +	return cmdline_parse_core(p,&required_kernelcore_max_pfn);
+> +}
+> +
+> +/*
+>    * kernelcore=size sets the amount of memory for use for allocations that
+>    * cannot be reclaimed or migrated.
+>    */
+> @@ -4833,6 +4857,7 @@ static int __init cmdline_parse_movablecore(char *p)
+>   	return cmdline_parse_core(p,&required_movablecore);
+>   }
+>
+> +early_param("kernelcore_max_addr", cmdline_parse_kernelcore_max_addr);
+>   early_param("kernelcore", cmdline_parse_kernelcore);
+>   early_param("movablecore", cmdline_parse_movablecore);
+>
+>
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
+>
+>
+
 
