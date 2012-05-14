@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab2ENSzn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 14:55:43 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:43491 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757157Ab2ENSzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 14:55:41 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Minho Ban <mhban@samsung.com>
-Subject: Re: [PATCH] PM / Hibernate : Use get_gendisk to verify partition if resume_file is integer format
-Date: Mon, 14 May 2012 21:00:38 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-pm@vger.kernel.org
-References: <4FAA4597.7060302@samsung.com> <201205122339.01696.rjw@sisk.pl> <4FB05770.3050809@samsung.com>
-In-Reply-To: <4FB05770.3050809@samsung.com>
+	id S1757605Ab2ENS5N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 14:57:13 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7191 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757559Ab2ENS5M convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 14:57:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 14 May 2012 11:57:11 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 14 May 2012 20:57:07 +0200
+Subject: Re: [v2 1/1] memory: tegra{20,30}-mc: Use dev_err_ratelimited()
+Thread-Topic: [v2 1/1] memory: tegra{20,30}-mc: Use dev_err_ratelimited()
+Thread-Index: Ac0yA1yES7p35ucpRV6ak8kIhfSZ9A==
+Message-ID: <20120514.215707.1844280772142880591.hdoyu@nvidia.com>
+References: <1336981680-15297-2-git-send-email-hdoyu@nvidia.com><1336990031-15567-1-git-send-email-hdoyu@nvidia.com><4FB14FDE.2080409@wwwdotorg.org>
+In-Reply-To: <4FB14FDE.2080409@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205142100.38738.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 14, 2012, Minho Ban wrote:
-> On 05/13/2012 06:39 AM, Rafael J. Wysocki wrote:
-> > On Wednesday, May 09, 2012, Minho Ban wrote:
-> >>  	/* Check if the device is there */
-> >>  	swsusp_resume_device = name_to_dev_t(resume_file);
-> >> +
-> >> +	/*
-> >> +	 * name_to_dev_t is ineffective to verify parition if resume_file is in
-> >> +	 * integer format. (e.g. major:minor)
-> >> +	 */
-> >> +	if (isdigit(resume_file[0]) && resume_wait) {
-> >> +		int partno;
-> >> +		while (!get_gendisk(swsusp_resume_device, &partno))
-> >> +			msleep(10);
-> >> +	}
+Hi Stepehn,
+
+Stephen Warren <swarren@wwwdotorg.org> wrote @ Mon, 14 May 2012 20:33:02 +0200:
+
+> On 05/14/2012 04:07 AM, Hiroshi DOYU wrote:
+> > Introduce a new dev_*_ratelimited() instead of pr_*_ratelimited() for
+> > better info to print.
 > > 
-> > Hmm.  Wouldn't it be better to do:
-> > 
-> > 	if (isdigit(resume_file[0]) && resume_wait) {
-> > 		int partno;
-> > 		while (!get_gendisk(swsusp_resume_device, &partno))
-> > 			msleep(10);
-> > 	} else {
-> > 		swsusp_resume_device = name_to_dev_t(resume_file);
-> > 	}
-> > 
-> > ?
+> > Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
 > 
-> Do you want name_to_dev_t to be called again?  If not, swsusp_resume_device parameter 
-> in get_gendisk can not be used because it is not initialized yet.
+> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+> 
+> But note that this relies on the following patch or a variant of it:
+> 
+> http://patchwork.ozlabs.org/patch/158899/
+> 
+> which isn't anywhere yet.
+> 
+> (A variant of that patch was patch 1/2 the first time this patch was
+> posted, but v2 of this patch was posted separately without mentioning
+> the dependency)
 
-Ah, OK, I didn't notice that.
+Greg has put the dependee patch in:
 
-I think I can take the patch for v3.5 as is.
+http://git.kernel.org/?p=linux/kernel/git/gregkh/driver-core.git;a=commit;h=6ca045930338485a8cdef117e74372aa1678009d
 
-Thanks,
-Rafael
+Anyway, I should have described the above dependency in commit note in
+the patch, sorry for confusion.
