@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab2ENKIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 06:08:34 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57182 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755709Ab2ENKId convert rfc822-to-8bit (ORCPT
+	id S1755709Ab2ENKQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 06:16:32 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47272 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755400Ab2ENKQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 06:08:33 -0400
+	Mon, 14 May 2012 06:16:31 -0400
+Date: Mon, 14 May 2012 11:16:27 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: sameo@linux.intel.com, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        jonghwa3.lee@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] MFD: MAX77693: add IRQ handler
+Message-ID: <20120514101626.GO31985@opensource.wolfsonmicro.com>
+References: <1336972835-15203-1-git-send-email-cw00.choi@samsung.com>
+ <20120514095719.GK31985@opensource.wolfsonmicro.com>
+ <4FB0D93A.7000108@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <4FB05B8F.8020408@jp.fujitsu.com>
-References: <4FACDED0.3020400@jp.fujitsu.com>
-	<4FACE01A.4040405@jp.fujitsu.com>
-	<20120511141945.c487e94c.akpm@linux-foundation.org>
-	<4FB05B8F.8020408@jp.fujitsu.com>
-Date: Mon, 14 May 2012 12:08:31 +0200
-Message-ID: <CAFTL4hwGEhyxZO0sXx5gVyK_xjhMQEbHojJbHzQmVKafNyVWtw@mail.gmail.com>
-Subject: Re: [PATCH 2/6] add res_counter_uncharge_until()
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="B3NBd8mrXZtPJEYR"
+Content-Disposition: inline
+In-Reply-To: <4FB0D93A.7000108@samsung.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/14 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>:
-> (2012/05/12 6:19), Andrew Morton wrote:
->
->> On Fri, 11 May 2012 18:47:06 +0900
->> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->>
->>> From: Frederic Weisbecker <fweisbec@gmail.com>
->>>
->>> At killing res_counter which is a child of other counter,
->>> we need to do
->>>      res_counter_uncharge(child, xxx)
->>>      res_counter_charge(parent, xxx)
->>>
->>> This is not atomic and wasting cpu. This patch adds
->>> res_counter_uncharge_until(). This function's uncharge propagates
->>> to ancestors until specified res_counter.
->>>
->>>      res_counter_uncharge_until(child, parent, xxx)
->>>
->>> Now, ops is atomic and efficient.
->>>
->>> Changelog since v2
->>>  - removed unnecessary lines.
->>>  - Fixed 'From' , this patch comes from his series. Please signed-off-by if good.
->>>
->>> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>
->> Frederic's Signed-off-by: is unavaliable?
->>
->
-> I didn't add his Signed-off because I modified his orignal patch a little...
-> I dropped res_counter_charge_until() because it's not used in this series,
-> I have no justification for adding it.
-> The idea of res_counter_uncharge_until() is from his patch.
 
-The property of Signed-off-by is that as long as you
-carry/relay/modify a patch, you add your
-own signed-off-by. But you can't remove the signed off by of somebody
-in the chain.
+--B3NBd8mrXZtPJEYR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Even if you did a change in the patch, you need to preserve the chain.
+On Mon, May 14, 2012 at 07:06:50PM +0900, Chanwoo Choi wrote:
+> On 05/14/2012 06:57 PM, Mark Brown wrote:
+> > On Mon, May 14, 2012 at 02:20:35PM +0900, Chanwoo Choi wrote:
 
-There may be some special cases with "Original-patch-from:" tags used when
-one heavily inspire from a patch without taking much of its original code.
+> >> +	if (!max77693->irq) {
+> >> +		dev_warn(max77693->dev, "No interrupt specified.\n");
+> >> +		return 0;
+> >> +	}
+
+> > I'd suggest just setting up the IRQ domain anyway - it makes life
+> > simpler in the other drivers for the chip as they don't need to worry if
+> > interrupts are registered unless it's very important to them that they
+> > go off which is often not the case.  Just skip actually claiming the
+> > IRQ.
+
+> This patch add support irq domain for MAX77693 in the
+> max77693_irq_init() function.
+> You can check on patchset. Then, The 'max77693->irq' is gpio pin for
+> IRQ. max77693->irq
+> is meant to indicate to the application processor that the status of
+> MAX77693 has changed.
+
+Sure.  What I'm saying is that it's probably going to be easier all
+round if you run through all the init except actually calling
+request_threaded_irq() (and unmasking the external interrupt if you have
+control of that) - that way the interrupt numbers for the interrupts on
+the PMIC can always be requested, even if they can't actually occur.
+Only child drivers that *really* need the interrupts to happen will need
+to have conditional code.
+
+--B3NBd8mrXZtPJEYR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPsNtwAAoJEBus8iNuMP3ddLwP/jLlQIu20q+wFdwSGpfFQrQZ
+lRX13fXS5aTnafvhDJE9PMsm4nWL0if7QAv0I0GY7BH4gMx09zGDim2tKWLzJUZS
+j4/oB7RdNKWvIGcL3vwfnW32b/EbHlupXIq1aFSuWseZdKek8G4Rnk6uG2j2X1ch
+C6Nub4VMTOW1HexyTDLPZEkI9skBNiKtUtJrg4tBc7lAK/7U1HsfQ6oqD3Z5DFwD
+xJ5bOIf/WznLMz602TYWR2w2+7Zajz/y/r/2jrYgmTfJrMa7c5XAae830mdV+FL8
+E72kSSPii3DaMbTtQ/H+2Miko1zZC68chZSD44BqXL3Sm2fGKuUuHUNaaFOgHr/X
+id4ydo9Yx2fkzytpLpPI++RkBv8gjDurbi0KgzcpV5wys5H+jnWDp7Z0ttgagT1p
+KkkCyFmyPr+QRDOjtKzhDziIzz7obeEBb+y4GNtdGHkT3LQtszoYAFaj/pxVRd+f
+JL6L3tClEC5cWOLD/2VVGDjEjoEntvbxYFrxSl/CCiA65vQaXEmZRBdRM9bLzYJl
+mIX4k6PI8Q6IaEI0ceSvcoU95Ji1Usx7hAr8xS9Ilrd6DQImSNJejHIm99cZfrhb
+ktZW8kdgfnsCD+Go/eqaeLIXYtP1LC4beMmfi3wFNgkxIxIVHGtcnIDy5gjNeNoN
+iyhzn5TIiTNz0UjAna3M
+=kxFo
+-----END PGP SIGNATURE-----
+
+--B3NBd8mrXZtPJEYR--
