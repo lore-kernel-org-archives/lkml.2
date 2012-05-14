@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758177Ab2ENWBg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 18:01:36 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:59833 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757935Ab2ENWBe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 18:01:34 -0400
-Date: Mon, 14 May 2012 17:59:27 -0400 (EDT)
-Message-Id: <20120514.175927.44485931953538590.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: geert@linux-m68k.org, edumazet@google.com, dave.taht@bufferbloat.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH -next] net/codel: Add missing #include
- <linux/prefetch.h>
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1337029498.8512.624.camel@edumazet-glaptop>
-References: <1337024825-20130-1-git-send-email-geert@linux-m68k.org>
-	<1337029498.8512.624.camel@edumazet-glaptop>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 14 May 2012 14:59:29 -0700 (PDT)
+	id S932513Ab2ENWCA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 18:02:00 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56527 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932455Ab2ENWB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 18:01:57 -0400
+From: <manjunatha_halli@ti.com>
+To: <linux-media@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Manjunatha Halli <x0130808@ti.com>
+Subject: [PATCH V6 3/5] Add new CID for FM TX RDS Alternate Frequency
+Date: Mon, 14 May 2012 17:01:51 -0500
+Message-ID: <1337032913-18646-4-git-send-email-manjunatha_halli@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1337032913-18646-1-git-send-email-manjunatha_halli@ti.com>
+References: <1337032913-18646-1-git-send-email-manjunatha_halli@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q4EM1jGi006346
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Mon, 14 May 2012 23:04:58 +0200
+From: Manjunatha Halli <x0130808@ti.com>
 
-> On Mon, 2012-05-14 at 21:47 +0200, Geert Uytterhoeven wrote:
->> m68k allmodconfig:
->> 
->> net/sched/sch_codel.c: In function ¡dequeue¢:
->> net/sched/sch_codel.c:70: error: implicit declaration of function ¡prefetch¢
->> make[1]: *** [net/sched/sch_codel.o] Error 1
->> 
->> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> ---
-> 
-> I plaid guilty
-> 
-> Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Manjunatha Halli <x0130808@ti.com>
+---
+ drivers/media/video/v4l2-ctrls.c |    1 +
+ include/linux/videodev2.h        |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-Applied.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/drivers/media/video/v4l2-ctrls.c b/drivers/media/video/v4l2-ctrls.c
+index 9d7608e..610076c 100644
+--- a/drivers/media/video/v4l2-ctrls.c
++++ b/drivers/media/video/v4l2-ctrls.c
+@@ -608,6 +608,7 @@ const char *v4l2_ctrl_get_name(u32 id)
+ 	case V4L2_CID_RDS_TX_PTY:		return "RDS Program Type";
+ 	case V4L2_CID_RDS_TX_PS_NAME:		return "RDS PS Name";
+ 	case V4L2_CID_RDS_TX_RADIO_TEXT:	return "RDS Radio Text";
++	case V4L2_CID_RDS_TX_AF_FREQ:		return "RDS Alternate Frequency";
+ 	case V4L2_CID_AUDIO_LIMITER_ENABLED:	return "Audio Limiter Feature Enabled";
+ 	case V4L2_CID_AUDIO_LIMITER_RELEASE_TIME: return "Audio Limiter Release Time";
+ 	case V4L2_CID_AUDIO_LIMITER_DEVIATION:	return "Audio Limiter Deviation";
+diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+index 7b3dd95..b16d603 100644
+--- a/include/linux/videodev2.h
++++ b/include/linux/videodev2.h
+@@ -1699,6 +1699,7 @@ enum  v4l2_exposure_auto_type {
+ #define V4L2_CID_RDS_TX_PTY			(V4L2_CID_FM_TX_CLASS_BASE + 3)
+ #define V4L2_CID_RDS_TX_PS_NAME			(V4L2_CID_FM_TX_CLASS_BASE + 5)
+ #define V4L2_CID_RDS_TX_RADIO_TEXT		(V4L2_CID_FM_TX_CLASS_BASE + 6)
++#define V4L2_CID_RDS_TX_AF_FREQ			(V4L2_CID_FM_TX_CLASS_BASE + 7)
+ 
+ #define V4L2_CID_AUDIO_LIMITER_ENABLED		(V4L2_CID_FM_TX_CLASS_BASE + 64)
+ #define V4L2_CID_AUDIO_LIMITER_RELEASE_TIME	(V4L2_CID_FM_TX_CLASS_BASE + 65)
+-- 
+1.7.4.1
+
