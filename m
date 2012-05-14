@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab2ENSBE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 14:01:04 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58821 "EHLO zene.cmpxchg.org"
+	id S1757465Ab2ENSBD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 14:01:03 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58817 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757431Ab2ENSBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756685Ab2ENSBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 May 2012 14:01:00 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -12,134 +12,22 @@ Cc: Michal Hocko <mhocko@suse.cz>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         cgroups@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 3/6] mm: memcg: print statistics directly to seq_file
-Date: Mon, 14 May 2012 20:00:48 +0200
-Message-Id: <1337018451-27359-4-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 0/6] mm: memcg: statistics implementation cleanups
+Date: Mon, 14 May 2012 20:00:45 +0200
+Message-Id: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
-References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Being able to use seq_printf() allows being smarter about statistics
-name strings, which are currently listed twice, with the only
-difference being a "total_" prefix on the hierarchical version.
+Before piling more things (reclaim stats) on top of the current mess,
+I thought it'd be better to clean up a bit.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c |   56 +++++++++++++++++++++++++++----------------------------
- 1 file changed, 28 insertions(+), 28 deletions(-)
+The biggest change is printing statistics directly from live counters,
+it has always been annoying to declare a new counter in two separate
+enums and corresponding name string arrays.  After this series we are
+down to one of each.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f0d248b..9e8551c 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4274,24 +4274,21 @@ struct mcs_total_stat {
- 	s64 stat[NR_MCS_STAT];
- };
- 
--static struct {
--	char *local_name;
--	char *total_name;
--} memcg_stat_strings[NR_MCS_STAT] = {
--	{"cache", "total_cache"},
--	{"rss", "total_rss"},
--	{"mapped_file", "total_mapped_file"},
--	{"mlock", "total_mlock"},
--	{"pgpgin", "total_pgpgin"},
--	{"pgpgout", "total_pgpgout"},
--	{"swap", "total_swap"},
--	{"pgfault", "total_pgfault"},
--	{"pgmajfault", "total_pgmajfault"},
--	{"inactive_anon", "total_inactive_anon"},
--	{"active_anon", "total_active_anon"},
--	{"inactive_file", "total_inactive_file"},
--	{"active_file", "total_active_file"},
--	{"unevictable", "total_unevictable"}
-+static const char *memcg_stat_strings[NR_MCS_STAT] = {
-+	"cache",
-+	"rss",
-+	"mapped_file",
-+	"mlock",
-+	"pgpgin",
-+	"pgpgout",
-+	"swap",
-+	"pgfault",
-+	"pgmajfault",
-+	"inactive_anon",
-+	"active_anon",
-+	"inactive_file",
-+	"active_file",
-+	"unevictable",
- };
- 
- 
-@@ -4392,7 +4389,7 @@ static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
- #endif /* CONFIG_NUMA */
- 
- static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
--				 struct cgroup_map_cb *cb)
-+				 struct seq_file *m)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
- 	struct mcs_total_stat mystat;
-@@ -4405,16 +4402,18 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
- 	for (i = 0; i < NR_MCS_STAT; i++) {
- 		if (i == MCS_SWAP && !do_swap_account)
- 			continue;
--		cb->fill(cb, memcg_stat_strings[i].local_name, mystat.stat[i]);
-+		seq_printf(m, "%s %llu\n", memcg_stat_strings[i],
-+			   (unsigned long long)mystat.stat[i]);
- 	}
- 
- 	/* Hierarchical information */
- 	{
- 		unsigned long long limit, memsw_limit;
- 		memcg_get_hierarchical_limit(memcg, &limit, &memsw_limit);
--		cb->fill(cb, "hierarchical_memory_limit", limit);
-+		seq_printf(m, "hierarchical_memory_limit %llu\n", limit);
- 		if (do_swap_account)
--			cb->fill(cb, "hierarchical_memsw_limit", memsw_limit);
-+			seq_printf(m, "hierarchical_memsw_limit %llu\n",
-+				   memsw_limit);
- 	}
- 
- 	memset(&mystat, 0, sizeof(mystat));
-@@ -4422,7 +4421,8 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
- 	for (i = 0; i < NR_MCS_STAT; i++) {
- 		if (i == MCS_SWAP && !do_swap_account)
- 			continue;
--		cb->fill(cb, memcg_stat_strings[i].total_name, mystat.stat[i]);
-+		seq_printf(m, "total_%s %llu\n", memcg_stat_strings[i],
-+			   (unsigned long long)mystat.stat[i]);
- 	}
- 
- #ifdef CONFIG_DEBUG_VM
-@@ -4443,10 +4443,10 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
- 				recent_scanned[0] += rstat->recent_scanned[0];
- 				recent_scanned[1] += rstat->recent_scanned[1];
- 			}
--		cb->fill(cb, "recent_rotated_anon", recent_rotated[0]);
--		cb->fill(cb, "recent_rotated_file", recent_rotated[1]);
--		cb->fill(cb, "recent_scanned_anon", recent_scanned[0]);
--		cb->fill(cb, "recent_scanned_file", recent_scanned[1]);
-+		seq_printf(m, "recent_rotated_anon %lu\n", recent_rotated[0]);
-+		seq_printf(m, "recent_rotated_file %lu\n", recent_rotated[1]);
-+		seq_printf(m, "recent_scanned_anon %lu\n", recent_scanned[0]);
-+		seq_printf(m, "recent_scanned_file %lu\n", recent_scanned[1]);
- 	}
- #endif
- 
-@@ -4880,7 +4880,7 @@ static struct cftype mem_cgroup_files[] = {
- 	},
- 	{
- 		.name = "stat",
--		.read_map = mem_control_stat_show,
-+		.read_seq_string = mem_control_stat_show,
- 	},
- 	{
- 		.name = "force_empty",
--- 
-1.7.10.1
+ mm/memcontrol.c |  223 +++++++++++++++++------------------------------
+ 1 file changed, 82 insertions(+), 141 deletions(-)
 
