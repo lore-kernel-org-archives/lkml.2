@@ -1,102 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757615Ab2ENTQi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 15:16:38 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9341 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757521Ab2ENTQg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 15:16:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 14 May 2012 12:16:30 -0700
-From: Hiroshi DOYU <hdoyu@nvidia.com>
-To: <hdoyu@nvidia.com>
-CC: <linux-tegra@vger.kernel.org>, <iommu@lists.linux-foundation.org>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Stephen Warren <swarren@wwwdotorg.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] iommu/tegra: smmu: Remove unnecessary cleanups with devm_*()
-Date: Mon, 14 May 2012 22:16:11 +0300
-Message-ID: <1337022975-23999-2-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1337022975-23999-1-git-send-email-hdoyu@nvidia.com>
-References: <1337022975-23999-1-git-send-email-hdoyu@nvidia.com>
+	id S932206Ab2ENTRZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 15:17:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13390 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755118Ab2ENTRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 15:17:23 -0400
+Date: Mon, 14 May 2012 22:17:20 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ian.Campbell@citrix.com,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH RFC] tun: experimental zero copy tx support
+Message-ID: <20120514191719.GD17086@redhat.com>
+References: <20120513155206.GA26847@redhat.com>
+ <20120514095446.3ce307d2@nehalam.linuxnetplumber.net>
+ <20120514170412.GA17086@redhat.com>
+ <1337022146.8512.606.camel@edumazet-glaptop>
+ <20120514191456.GC17086@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120514191456.GC17086@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unnecessary cleanup procedures with devm_*() functions.
+On Mon, May 14, 2012 at 10:14:56PM +0300, Michael S. Tsirkin wrote:
+> On Mon, May 14, 2012 at 09:02:26PM +0200, Eric Dumazet wrote:
+> > On Mon, 2012-05-14 at 20:04 +0300, Michael S. Tsirkin wrote:
+> > > On Mon, May 14, 2012 at 09:54:46AM -0700, Stephen Hemminger wrote:
+> > > > On Sun, 13 May 2012 18:52:06 +0300
+> > > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > > 
+> > > > > +		/* Userspace may produce vectors with count greater than
+> > > > > +		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
+> > > > > +		 * to let the rest of data to be fit in the frags.
+> > > > > +		 */
+> > > > Rather than complex partial code, just go through slow path for
+> > > > requests with too many frags (or for really small requests).
+> > > > Creating mixed skb's seems too easy to get wrong.
+> > > 
+> > > I don't object in principle but macvtap has same code
+> > > so seems better to stay consistent.
+> > > 
+> > 
+> > If I remember well, code in vtap was buggy and still is.
+> > 
+> > Jason Wang fixes are not yet in,
+> 
+> They seem to be in net-next, or did I miss something?
+> 
+> > so maybe wait a bit, so that we dont
+> > add a pile of new bugs ?
+> > 
+> > 
 
-Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
----
- drivers/iommu/tegra-smmu.c |   37 ++++++-------------------------------
- 1 files changed, 6 insertions(+), 31 deletions(-)
+Things progress smoother upstream than out of tree
+is my experience.
 
-diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
-index e4acd44..9d0cc33 100644
---- a/drivers/iommu/tegra-smmu.c
-+++ b/drivers/iommu/tegra-smmu.c
-@@ -972,51 +972,26 @@ static int tegra_smmu_probe(struct platform_device *pdev)
- 	spin_lock_init(&smmu->lock);
- 	err = smmu_setup_regs(smmu);
- 	if (err)
--		goto fail;
-+		return err;
- 	platform_set_drvdata(pdev, smmu);
- 
- 	smmu->avp_vector_page = alloc_page(GFP_KERNEL);
- 	if (!smmu->avp_vector_page)
--		goto fail;
-+		return -ENOMEM;
- 
- 	smmu_handle = smmu;
- 	return 0;
--
--fail:
--	if (smmu->avp_vector_page)
--		__free_page(smmu->avp_vector_page);
--	if (smmu && smmu->as) {
--		for (i = 0; i < smmu->num_as; i++) {
--			if (smmu->as[i].pdir_page) {
--				ClearPageReserved(smmu->as[i].pdir_page);
--				__free_page(smmu->as[i].pdir_page);
--			}
--		}
--		devm_kfree(dev, smmu->as);
--	}
--	devm_kfree(dev, smmu);
--	return err;
- }
- 
- static int tegra_smmu_remove(struct platform_device *pdev)
- {
- 	struct smmu_device *smmu = platform_get_drvdata(pdev);
--	struct device *dev = smmu->dev;
-+	int i;
- 
- 	smmu_write(smmu, SMMU_CONFIG_DISABLE, SMMU_CONFIG);
--	platform_set_drvdata(pdev, NULL);
--	if (smmu->as) {
--		int i;
--
--		for (i = 0; i < smmu->num_as; i++)
--			free_pdir(&smmu->as[i]);
--		devm_kfree(dev, smmu->as);
--	}
--	if (smmu->avp_vector_page)
--		__free_page(smmu->avp_vector_page);
--	if (smmu->regs)
--		devm_iounmap(dev, smmu->regs);
--	devm_kfree(dev, smmu);
-+	for (i = 0; i < smmu->num_as; i++)
-+		free_pdir(&smmu->as[i]);
-+	__free_page(smmu->avp_vector_page);
- 	smmu_handle = NULL;
- 	return 0;
- }
--- 
-1.7.5.4
+Also everything is guarded by a mod param in vhost
+which is off by default and the name
+experimental_zcopytx makes it hopefully clear there's
+risk involved.
+
+So the chance of hurting someone is imo minimal.
 
