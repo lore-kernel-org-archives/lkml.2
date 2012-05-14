@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757159Ab2ENQcf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 12:32:35 -0400
-Received: from faui45.informatik.uni-erlangen.de ([131.188.34.45]:34646 "EHLO
-	faui45.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751257Ab2ENQce (ORCPT
+	id S1757076Ab2ENQdi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 12:33:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20980 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab2ENQdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 12:32:34 -0400
-From: tartler@cs.fau.de
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Eric Miao <eric.y.miao@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: vamos-dev@lists.cs.fau.de, Reinhard Tartler <siretart@tauware.de>,
-        Reinhard Tartler <tartler@cs.fau.de>
-Subject: [PATCH] mbxfb: unbreak compilation with CONFIG_FB_MBX_DEBUG
-Date: Mon, 14 May 2012 18:31:51 +0200
-Message-Id: <1337013111-7732-1-git-send-email-tartler@cs.fau.de>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 14 May 2012 12:33:37 -0400
+X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=2zXq7MZ2Si8Ta2czGxIA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337013214.14207.278.camel@gandalf.stny.rr.com>
+Subject: [ANNOUNCE] 3.0.31-rt51
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Mon, 14 May 2012 12:33:34 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Reinhard Tartler <siretart@tauware.de>
 
-This patch adds missing function prototypes.
+Dear RT Folks,
 
-Signed-off-by: Reinhard Tartler <tartler@cs.fau.de>
----
- drivers/video/mbx/mbxfb.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-This patch was found with tools developed in the VAMOS project:
-http://www4.cs.fau.de/Research/VAMOS/
-
-TBH, I'm not sure if this is the correct solution. However, I'd
-appreciate if someone could confirm that this is a real bug.
+I'm pleased to announce the 3.0.31-rt51 stable release.
 
 
-diff --git a/drivers/video/mbx/mbxfb.c b/drivers/video/mbx/mbxfb.c
-index 6ce3416..c2200ec 100644
---- a/drivers/video/mbx/mbxfb.c
-+++ b/drivers/video/mbx/mbxfb.c
-@@ -878,6 +878,9 @@ static int mbxfb_resume(struct platform_device *dev)
- #ifndef CONFIG_FB_MBX_DEBUG
- #define mbxfb_debugfs_init(x)	do {} while(0)
- #define mbxfb_debugfs_remove(x)	do {} while(0)
-+#else
-+void mbxfb_debugfs_init(struct fb_info *fbi);
-+void mbxfb_debugfs_remove(struct fb_info *fbi);
- #endif
- 
- #define res_size(_r) (((_r)->end - (_r)->start) + 1)
--- 
-1.7.9.5
+This release is just an update to the new stable 3.0.31 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: f4162227ef21455c1b1bd74565e49e4c596cecb0
+
+
+Or to build 3.0.31-rt51 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.31.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.31-rt51.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
 
