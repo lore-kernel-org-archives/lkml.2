@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab2END1c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 23:27:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37148 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753165Ab2END1b (ORCPT
+	id S1754393Ab2ENDbU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 23:31:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:18069 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753162Ab2ENDbT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 23:27:31 -0400
-Message-ID: <1336966045.24732.16.camel@phoenix>
-Subject: [PATCH RFT 2/2] regulator: tps62360: Convert to set_voltage_sel and
- regulator_map_voltage_linear
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Mon, 14 May 2012 11:27:25 +0800
-In-Reply-To: <1336965942.24732.14.camel@phoenix>
-References: <1336965942.24732.14.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 13 May 2012 23:31:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="99661619"
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "mina86@mina86.com" <mina86@mina86.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "balbi@ti.com" <balbi@ti.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH 2/3] testusb: using real device-nodes managed by udev
+ instead of using usbfs
+Thread-Topic: [PATCH 2/3] testusb: using real device-nodes managed by udev
+ instead of using usbfs
+Thread-Index: AQHNL1p/cPl9Qq41ikap8bVWXEqTwJbEa8gQgAA01ACABAJikA==
+Date: Mon, 14 May 2012 03:31:14 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A062A08@SHSMSX101.ccr.corp.intel.com>
+References: <0C18FE92A7765D4EB9EE5D38D86A563A060D0C@SHSMSX101.ccr.corp.intel.com>
+ <20120511220920.GD13675@kroah.com>
+In-Reply-To: <20120511220920.GD13675@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/tps62360-regulator.c |   24 +++++++-----------------
- 1 files changed, 7 insertions(+), 17 deletions(-)
+I am sorry I haven't consider of that. I just want testusb tool can work with default option since path /dev/bus/usb exists on most computer, not /proc/bus/usb.
+So, if I just add /dev/bus/usb to the default search path, is it ok? Thanks.
 
-diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
-index dae08a8..926c0e8 100644
---- a/drivers/regulator/tps62360-regulator.c
-+++ b/drivers/regulator/tps62360-regulator.c
-@@ -137,35 +137,24 @@ static int tps62360_dcdc_get_voltage_sel(struct regulator_dev *dev)
- 	return vsel;
- }
- 
--static int tps62360_dcdc_set_voltage(struct regulator_dev *dev,
--	     int min_uV, int max_uV, unsigned *selector)
-+static int tps62360_dcdc_set_voltage_sel(struct regulator_dev *dev,
-+					 unsigned selector)
- {
- 	struct tps62360_chip *tps = rdev_get_drvdata(dev);
--	int vsel;
- 	int ret;
- 	bool found = false;
- 	int new_vset_id = tps->curr_vset_id;
- 
--	if ((max_uV < min_uV) || (max_uV < tps->voltage_base))
--		return -EINVAL;
--
--	if (min_uV > (tps->voltage_base + (tps->desc.n_voltages - 1) * 10000))
--		return -EINVAL;
--
--	vsel = DIV_ROUND_UP(min_uV - tps->voltage_base, 10000);
--	if (selector)
--		*selector = (vsel & tps->voltage_reg_mask);
--
- 	/*
- 	 * If gpios are available to select the VSET register then least
- 	 * recently used register for new configuration.
- 	 */
- 	if (tps->valid_gpios)
--		found = find_voltage_set_register(tps, vsel, &new_vset_id);
-+		found = find_voltage_set_register(tps, selector, &new_vset_id);
- 
- 	if (!found) {
- 		ret = regmap_update_bits(tps->regmap, REG_VSET0 + new_vset_id,
--				tps->voltage_reg_mask, vsel);
-+				tps->voltage_reg_mask, selector);
- 		if (ret < 0) {
- 			dev_err(tps->dev,
- 				"%s(): register %d update failed with err %d\n",
-@@ -173,7 +162,7 @@ static int tps62360_dcdc_set_voltage(struct regulator_dev *dev,
- 			return ret;
- 		}
- 		tps->curr_vset_id = new_vset_id;
--		tps->curr_vset_vsel[new_vset_id] = vsel;
-+		tps->curr_vset_vsel[new_vset_id] = selector;
- 	}
- 
- 	/* Select proper VSET register vio gpios */
-@@ -204,8 +193,9 @@ static int tps62360_set_voltage_time_sel(struct regulator_dev *rdev,
- 
- static struct regulator_ops tps62360_dcdc_ops = {
- 	.get_voltage_sel	= tps62360_dcdc_get_voltage_sel,
--	.set_voltage		= tps62360_dcdc_set_voltage,
-+	.set_voltage_sel	= tps62360_dcdc_set_voltage_sel,
- 	.list_voltage		= regulator_list_voltage_linear,
-+	.map_voltage		= regulator_map_voltage_linear,
- 	.set_voltage_time_sel	= tps62360_set_voltage_time_sel,
- };
- 
--- 
-1.7.5.4
+-----Original Message-----
+From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org] 
+Sent: Saturday, May 12, 2012 6:09 AM
+To: Du, ChangbinX
+Cc: mina86@mina86.com; Fleming, Matt; balbi@ti.com; hpa@zytor.com; linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org
+Subject: Re: [PATCH 2/3] testusb: using real device-nodes managed by udev instead of using usbfs
 
+On Fri, May 11, 2012 at 11:02:01AM +0000, Du, ChangbinX wrote:
+> As the usbfs functionality have replaced by real device-nodes managed by udev whose nodes lived in /dev/bus/usb for a long time, testusb tool need update correspondingly.
 
+Why?  Is this causing problems as it is today?
 
+> Because udev path is fixed, so the "-A" option no longer need and it is removed.
+
+Did you just break scripts that was using that option?  That's not nice, and not acceptable.
+
+greg k-h
