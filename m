@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab2ENNMl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:12:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56300 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755802Ab2ENNMk convert rfc822-to-8bit (ORCPT
+	id S1756369Ab2ENNPA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 09:15:00 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:41396 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756045Ab2ENNO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:12:40 -0400
-Message-ID: <1337001125.2443.26.camel@twins>
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.5
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        dipankar@in.ibm.com, pascal.chapperon@wanadoo.fr, davej@redhat.com,
-        michel@digirati.com.br, joern@purestorage.com, jengelh@medozas.de,
-        efault@gmx.de, sivanich@sgi.com, torvalds@linux-foundation.org,
-        laijs@cn.fujitsu.com
-Date: Mon, 14 May 2012 15:12:05 +0200
-In-Reply-To: <20120511184236.GA10133@linux.vnet.ibm.com>
-References: <20120511184236.GA10133@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Mon, 14 May 2012 09:14:59 -0400
+Date: Mon, 14 May 2012 15:14:54 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH -next] via_wdt: depends on PCI
+Message-ID: <20120514131454.GG3074@spo001.leaseweb.com>
+References: <20120511162738.1d65b6efe099a54841be6313@canb.auug.org.au> <4FADA2B2.8070302@xenotime.net>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FADA2B2.8070302@xenotime.net>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-11 at 11:42 -0700, Paul E. McKenney wrote:
-> 4.      Lai Jiangshan's algorithmic implementation of SRCU, which includes
->         call_srcu() and srcu_barrier().  A major feature of this new
->         implementation is that synchronize_srcu() no longer disturbs
->         the execution of other CPUs.  This work is based on earlier
->         implementations by Peter Zijlstra and myself.  Posted to
->         LKML: https://lkml.org/lkml/2012/2/22/82. 
+Hello Rancy,
 
-Great, thanks! I've been manually merging rcu/srcu for a while, I guess
-I can stop doing that now.
+> From: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> via_wdt is a PCI driver so it should depend on PCI so that
+> it will not cause build errors.
+> 
+> drivers/watchdog/via_wdt.c:256:1: warning: data definition has no type or storage class
+> drivers/watchdog/via_wdt.c:256:1: warning: type defaults to 'int' in declaration of 'module_pci_driver'
+> drivers/watchdog/via_wdt.c:256:1: warning: parameter names (without types) in function declaration
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+
+Fix added.
+
+Thanks,
+Wim.
+
