@@ -1,98 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab2ENM6g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 08:58:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56066 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755855Ab2ENM6e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 08:58:34 -0400
-Date: Mon, 14 May 2012 05:58:08 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-m91tv004h2m1fkfgu6ovx3hb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, efault@gmx.de,
-        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, efault@gmx.de, peterz@infradead.org,
-        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate:
-  Use raw form for register indirect call instructions
-Git-Commit-ID: e8ea1561952b04276cf4c02500e363de76c142aa
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 14 May 2012 05:58:15 -0700 (PDT)
+	id S1756342Ab2ENM6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 08:58:54 -0400
+Received: from mga03.intel.com ([143.182.124.21]:23641 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756122Ab2ENM6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 08:58:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="142827894"
+Message-ID: <1337000538.2528.50.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v4] Add security.* XATTR support for the UBIFS
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: snijsure@grid-net.com
+Cc: linux-mtd@lists.infradead.org, penguin-kernel@I-love.SAKURA.ne.jp,
+        Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Date: Mon, 14 May 2012 16:02:18 +0300
+In-Reply-To: <1336915488-23943-1-git-send-email-snijsure@grid-net.com>
+References: <1336915488-23943-1-git-send-email-snijsure@grid-net.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-uFcVq+Ipq9V/mIaQIYnj"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e8ea1561952b04276cf4c02500e363de76c142aa
-Gitweb:     http://git.kernel.org/tip/e8ea1561952b04276cf4c02500e363de76c142aa
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 11 May 2012 12:28:55 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 11 May 2012 12:28:55 -0300
 
-perf annotate: Use raw form for register indirect call instructions
+--=-uFcVq+Ipq9V/mIaQIYnj
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-   callq  *0x10(%rax)
+On Sun, 2012-05-13 at 06:24 -0700, snijsure@grid-net.com wrote:
+> +int ubifs_security_getxattr(struct dentry *d, const char *name,
+> +			    void *buffer, size_t size, int flags)
+> +{
+> +	if (strcmp(name, "") =3D=3D 0)
+> +		return -EINVAL;
+> +	return __ubifs_getxattr(d->d_inode, name, buffer, size);
+> +}
+> +
+> +
+> +int ubifs_security_setxattr(struct dentry *d, const char *name,
+> +			    const void *value, size_t size,
+> +			    int flags, int handler_flags)
+> +{
+> +	if (strcmp(name, "") =3D=3D 0)
+> +		return -EINVAL;
 
-was being rendered in simplified mode as:
+Should this check pushed town to __ubifs_getxattr/__ubifs_setxattr ?
+Does an extended attribute in general with zero name length legitimate?
+Did you check whether the generic code already performs this check?
 
-   callq  *10
+> +	return __ubifs_setxattr(d->d_inode, name, value,
+> +				size, flags);
+> +}
+> +
+> +struct xattr_handler ubifs_xattr_security_handler =3D {
+> +	.prefix =3D XATTR_SECURITY_PREFIX,
+> +	.list   =3D ubifs_security_listxattr,
+> +	.get    =3D ubifs_security_getxattr,
+> +	.set    =3D ubifs_security_setxattr,
+> +};
+> +
+> +const struct xattr_handler *ubifs_xattr_handlers[] =3D {
+> +	&ubifs_xattr_security_handler,
+> +	NULL
+> +};
+> +
+> +static int ubifs_initxattrs(struct inode *inode,
+> +			    const struct xattr *xattr_array, void *fs_info)
+> +{
+> +	const struct xattr *xattr;
+> +	char *name;
+> +	int err =3D 0;
+> +
+> +	for (xattr =3D xattr_array; xattr->name !=3D NULL; xattr++) {
+> +		name =3D kmalloc(XATTR_SECURITY_PREFIX_LEN +
+> +			       strlen(xattr->name) + 1, GFP_NOFS);
+> +		if (!name) {
+> +			err =3D -ENOMEM;
+> +			break;
 
-I.e. hexa, but without the 0x and omitting the register. In such cases
-just use the raw form.
+Where is the already allocated memory freed in this case?
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-m91tv004h2m1fkfgu6ovx3hb@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/annotate.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+> +		}
+> +		strcpy(name, XATTR_SECURITY_PREFIX);
+> +		strcpy(name + XATTR_SECURITY_PREFIX_LEN, xattr->name);
+> +		err =3D __ubifs_setxattr(inode, name, xattr->value,
+> +				       xattr->value_len, 0);
+> +		kfree(name);
+> +		if (err < 0)
+> +			break;
+> +	}
+> +	return err;
+> +}
+> +
+> +int
+> +ubifs_init_security(struct inode *dentry, struct inode *inode,
+> +		   const struct qstr *qstr)
+> +{
+> +	struct ubifs_inode *dir_ui =3D ubifs_inode(inode);
+> +	int err =3D 0;
+> +
+> +	mutex_lock(&inode->i_mutex);
+> +	mutex_lock(&dir_ui->ui_mutex);
+> +
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 6b4146b..9a020d1 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -56,6 +56,12 @@ static int call__parse(struct ins_operands *ops)
- 	return ops->target.name == NULL ? -1 : 0;
- 
- indirect_call:
-+	tok = strchr(endptr, '(');
-+	if (tok != NULL) {
-+		ops->target.addr = 0;
-+		return 0;
-+	}
-+
- 	tok = strchr(endptr, '*');
- 	if (tok == NULL)
- 		return -1;
-@@ -70,6 +76,9 @@ static int call__scnprintf(struct ins *ins, char *bf, size_t size,
- 	if (ops->target.name)
- 		return scnprintf(bf, size, "%-6.6s %s", ins->name, ops->target.name);
- 
-+	if (ops->target.addr == 0)
-+		return ins__raw_scnprintf(ins, bf, size, ops);
-+
- 	return scnprintf(bf, size, "%-6.6s *%" PRIx64, ins->name, ops->target.addr);
- }
- 
+You do not actually need these mutexes, because "inode" is new, it is
+not added to any lists yet, so you own it entirely. Which means that you
+do not even need to introduce this helper function - just call
+'security_inode_init_security()' directly.
+
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-uFcVq+Ipq9V/mIaQIYnj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPsQJaAAoJECmIfjd9wqK0seIP/1J40sHpJ6JsCVX4dOJBnpTO
+HSyrgKVj9rNqvm81gfRj3deekf1dw/lZTyzsZd3AaD+5kkxWJx/Sb6u2yOudgBXf
+rqI9x5kHQ3zDHzmZFM3RYOj8oYx/FMdCcGRphQfQ44YQrlNPuzSAPzghfbOpxhtm
+3mtAEVkoMxQvi6a5hUo+mbo2JfEHGlHGK7OPCY4EYy1cgKdBjOdp/z9+SAp8TIPq
+mr2D00rUrrTmcIq24vP5ls4sSU/WwCNSHuni45EF266qyKrVhdDpxslNOSXOKxD9
+G9VEUp4KsnHu408RySSxJQcIK+rtPiw09rbBkqYZ577pAjBG+wI5zTRAV1lmfMUv
+MCWaRAftsXR1UDWfNu5EY+Lcrb7OPjGNhTNVQ55DiZ5M6mmztb9iVPF7ZAQ7AbZG
+sJvEporOx6PBDO4sHtm4r02cuVybIr5wJ8mJnG1U4WGcj5a4/zoTcUyT8JOkPAr+
+UpPsvH1FLEcR4Belk/JeTa43RZK641OX5gNjrIFn1djLSH95DlXXUNXUYc2CdDf0
+xj/uCyikLFbiPInrk4q/UDEpJ9i7Q+TKRBgf6H/2MCVnnxoa/Gk2W+lWW/TRwp9p
++GmEy1JjqJZa7APdOVJxZ6AXQ1yuP7flpkD1pPSMemqCQckSxuLDuiuMjkokW7u9
+J+S4dSMaDz3L/Iety9HT
+=IkfA
+-----END PGP SIGNATURE-----
+
+--=-uFcVq+Ipq9V/mIaQIYnj--
+
