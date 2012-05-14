@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757509Ab2ENSBj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 14:01:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45686 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757376Ab2ENSBf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 14:01:35 -0400
-Date: Mon, 14 May 2012 11:01:28 -0700
-From: Tejun Heo <tj@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Alex Shi <alex.shi@intel.com>, tglx@linutronix.de, mingo@redhat.com,
-        cl@linux-foundation.org, tony.luck@intel.com, bp@amd64.org,
-        davem@davemloft.net, akpm@linux-foundation.org, ebiederm@xmission.com,
-        sfr@canb.auug.org.au, luto@mit.edu, glommer@parallels.com,
-        fernando@oss.ntt.co.jp, vapier@gentoo.org, eric.dumazet@gmail.com,
-        dzickus@redhat.com, dhowells@redhat.com, cbouatmailru@gmail.com,
-        fenghua.yu@intel.com, jkosina@suse.cz, ext-phil.2.carmody@nokia.com,
-        dan.carpenter@oracle.com, len.brown@intel.com, fweisbec@gmail.com,
-        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org, anton@samba.org,
-        kamezawa.hiroyu@jp.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] replace percpu_ops function with this_cpu_ops
-Message-ID: <20120514180128.GC2366@google.com>
-References: <1336723215-16660-1-git-send-email-alex.shi@intel.com>
- <20120514173421.GB2366@google.com>
- <4FB142D1.7080403@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB142D1.7080403@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757541Ab2ENSCD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 14:02:03 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58822 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757433Ab2ENSBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 14:01:00 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 2/6] mm: memcg: convert numa stat to read_seq_string interface
+Date: Mon, 14 May 2012 20:00:47 +0200
+Message-Id: <1337018451-27359-3-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
+References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 10:37:21AM -0700, H. Peter Anvin wrote:
-> I would be happier if we kept the patchset together.
-> 
-> So I would greatly prefer if you'd take the whole patchset with my:
-> 
-> Acked-by: H. Peter Anvin <hpa@zytor.com>
+Instead of using the raw seq_file file interface, switch over to the
+read_seq_string cftype callback and let cgroup core code set up the
+seq_file.
 
-Yeap, that works too.  David, can I route the network part too with
-your ack?
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c |   23 +++--------------------
+ 1 file changed, 3 insertions(+), 20 deletions(-)
 
-Thanks.
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index aef89c1..f0d248b 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4345,12 +4345,12 @@ mem_cgroup_get_total_stat(struct mem_cgroup *memcg, struct mcs_total_stat *s)
+ }
+ 
+ #ifdef CONFIG_NUMA
+-static int mem_control_numa_stat_show(struct seq_file *m, void *arg)
++static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
++				      struct seq_file *m)
+ {
+ 	int nid;
+ 	unsigned long total_nr, file_nr, anon_nr, unevictable_nr;
+ 	unsigned long node_nr;
+-	struct cgroup *cont = m->private;
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+ 
+ 	total_nr = mem_cgroup_nr_lru_pages(memcg, LRU_ALL);
+@@ -4825,22 +4825,6 @@ static int mem_cgroup_oom_control_write(struct cgroup *cgrp,
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_NUMA
+-static const struct file_operations mem_control_numa_stat_file_operations = {
+-	.read = seq_read,
+-	.llseek = seq_lseek,
+-	.release = single_release,
+-};
+-
+-static int mem_control_numa_stat_open(struct inode *unused, struct file *file)
+-{
+-	struct cgroup *cont = file->f_dentry->d_parent->d_fsdata;
+-
+-	file->f_op = &mem_control_numa_stat_file_operations;
+-	return single_open(file, mem_control_numa_stat_show, cont);
+-}
+-#endif /* CONFIG_NUMA */
+-
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ {
+@@ -4928,8 +4912,7 @@ static struct cftype mem_cgroup_files[] = {
+ #ifdef CONFIG_NUMA
+ 	{
+ 		.name = "numa_stat",
+-		.open = mem_control_numa_stat_open,
+-		.mode = S_IRUGO,
++		.read_seq_string = mem_control_numa_stat_show,
+ 	},
+ #endif
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
 -- 
-tejun
+1.7.10.1
+
