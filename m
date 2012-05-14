@@ -1,187 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757813Ab2ENVEk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 17:04:40 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:48800 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757955Ab2ENVEi (ORCPT
+	id S1758046Ab2ENVEz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 17:04:55 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:59328 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758038Ab2ENVEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 17:04:38 -0400
-Message-ID: <1337029542.5614.12.camel@key-ThinkPad-W510>
-Subject: [PATCH v4 10/17] powerpc: crypto: AES-ECB mode routines for nx
- encryption
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: benh@kernel.crashing.org
-Cc: rcj@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Date: Mon, 14 May 2012 16:05:42 -0500
-In-Reply-To: <1336955527.6727.2.camel@pasglop>
-References: <1336955527.6727.2.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	Mon, 14 May 2012 17:04:40 -0400
+Date: Mon, 14 May 2012 16:57:56 -0400 (EDT)
+Message-Id: <20120514.165756.1176186192047419316.davem@davemloft.net>
+To: tj@kernel.org
+Cc: hpa@zytor.com, alex.shi@intel.com, tglx@linutronix.de, mingo@redhat.com,
+        cl@linux-foundation.org, tony.luck@intel.com, bp@amd64.org,
+        akpm@linux-foundation.org, ebiederm@xmission.com, sfr@canb.auug.org.au,
+        luto@mit.edu, glommer@parallels.com, fernando@oss.ntt.co.jp,
+        vapier@gentoo.org, eric.dumazet@gmail.com, dzickus@redhat.com,
+        dhowells@redhat.com, cbouatmailru@gmail.com, fenghua.yu@intel.com,
+        jkosina@suse.cz, ext-phil.2.carmody@nokia.com,
+        dan.carpenter@oracle.com, len.brown@intel.com, fweisbec@gmail.com,
+        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org, anton@samba.org,
+        kamezawa.hiroyu@jp.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] replace percpu_ops function with this_cpu_ops
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120514180128.GC2366@google.com>
+References: <20120514173421.GB2366@google.com>
+	<4FB142D1.7080403@zytor.com>
+	<20120514180128.GC2366@google.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051421-7606-0000-0000-000000574D01
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 14 May 2012 13:58:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines add support for AES in ECB mode on the Power7+ CPU's
-in-Nest accelerator driver.
+From: Tejun Heo <tj@kernel.org>
+Date: Mon, 14 May 2012 11:01:28 -0700
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
----
- drivers/crypto/nx/nx-aes-ecb.c |  139 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 139 insertions(+), 0 deletions(-)
- create mode 100644 drivers/crypto/nx/nx-aes-ecb.c
+> On Mon, May 14, 2012 at 10:37:21AM -0700, H. Peter Anvin wrote:
+>> I would be happier if we kept the patchset together.
+>> 
+>> So I would greatly prefer if you'd take the whole patchset with my:
+>> 
+>> Acked-by: H. Peter Anvin <hpa@zytor.com>
+> 
+> Yeap, that works too.  David, can I route the network part too with
+> your ack?
 
-diff --git a/drivers/crypto/nx/nx-aes-ecb.c b/drivers/crypto/nx/nx-aes-ecb.c
-new file mode 100644
-index 0000000..7b77bc2
---- /dev/null
-+++ b/drivers/crypto/nx/nx-aes-ecb.c
-@@ -0,0 +1,139 @@
-+/**
-+ * AES ECB routines supporting the Power 7+ Nest Accelerators driver
-+ *
-+ * Copyright (C) 2011-2012 International Business Machines Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 only.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Author: Kent Yoder <yoder1@us.ibm.com>
-+ */
-+
-+#include <crypto/aes.h>
-+#include <crypto/algapi.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/crypto.h>
-+#include <asm/vio.h>
-+
-+#include "nx_csbcpb.h"
-+#include "nx.h"
-+
-+
-+static int ecb_aes_nx_set_key(struct crypto_tfm *tfm,
-+			      const u8          *in_key,
-+			      unsigned int       key_len)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(tfm);
-+	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
-+
-+	nx_ctx_init(nx_ctx, HCOP_FC_AES);
-+
-+	switch (key_len) {
-+	case AES_KEYSIZE_128:
-+		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_128);
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_128];
-+		break;
-+	case AES_KEYSIZE_192:
-+		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_192);
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_192];
-+		break;
-+	case AES_KEYSIZE_256:
-+		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_256);
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_256];
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	csbcpb->cpb.hdr.mode = NX_MODE_AES_ECB;
-+	memcpy(csbcpb->cpb.aes_ecb.key, in_key, key_len);
-+
-+	return 0;
-+}
-+
-+static int ecb_aes_nx_crypt(struct blkcipher_desc *desc,
-+			    struct scatterlist    *dst,
-+			    struct scatterlist    *src,
-+			    unsigned int           nbytes,
-+			    int                    enc)
-+{
-+	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
-+	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	int rc;
-+
-+	if (nbytes > nx_ctx->ap->databytelen)
-+		return -EINVAL;
-+
-+	if (enc)
-+		NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
-+	else
-+		NX_CPB_FDM(csbcpb) &= ~NX_FDM_ENDE_ENCRYPT;
-+
-+	rc = nx_build_sg_lists(nx_ctx, desc, dst, src, nbytes, NULL);
-+	if (rc)
-+		goto out;
-+
-+	if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
-+			   desc->flags & CRYPTO_TFM_REQ_MAY_SLEEP);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->aes_ops));
-+	atomic64_add(csbcpb->csb.processed_byte_count,
-+		     &(nx_ctx->stats->aes_bytes));
-+out:
-+	return rc;
-+}
-+
-+static int ecb_aes_nx_encrypt(struct blkcipher_desc *desc,
-+			      struct scatterlist    *dst,
-+			      struct scatterlist    *src,
-+			      unsigned int           nbytes)
-+{
-+	return ecb_aes_nx_crypt(desc, dst, src, nbytes, 1);
-+}
-+
-+static int ecb_aes_nx_decrypt(struct blkcipher_desc *desc,
-+			      struct scatterlist    *dst,
-+			      struct scatterlist    *src,
-+			      unsigned int           nbytes)
-+{
-+	return ecb_aes_nx_crypt(desc, dst, src, nbytes, 0);
-+}
-+
-+struct crypto_alg nx_ecb_aes_alg = {
-+	.cra_name        = "ecb(aes)",
-+	.cra_driver_name = "ecb-aes-nx",
-+	.cra_priority    = 300,
-+	.cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
-+	.cra_blocksize   = AES_BLOCK_SIZE,
-+	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+	.cra_type        = &crypto_blkcipher_type,
-+	.cra_module      = THIS_MODULE,
-+	.cra_list        = LIST_HEAD_INIT(nx_ecb_aes_alg.cra_list),
-+	.cra_init        = nx_crypto_ctx_aes_ecb_init,
-+	.cra_exit        = nx_crypto_ctx_exit,
-+	.cra_blkcipher = {
-+		.min_keysize = AES_MIN_KEY_SIZE,
-+		.max_keysize = AES_MAX_KEY_SIZE,
-+		.setkey      = ecb_aes_nx_set_key,
-+		.encrypt     = ecb_aes_nx_encrypt,
-+		.decrypt     = ecb_aes_nx_decrypt,
-+	}
-+};
--- 
-1.7.5.4
+Sure:
 
-
+Acked-by: David S. Miller <davem@davemloft.net>
