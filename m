@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab2ENINI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 04:13:08 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43626 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754149Ab2ENINF (ORCPT
+	id S1754721Ab2ENINb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 04:13:31 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:45594 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659Ab2ENIN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 04:13:05 -0400
-Date: Mon, 14 May 2012 09:13:02 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: core: Ensure simple linear voltage mappings
- falls within the specified range
-Message-ID: <20120514081301.GE31985@opensource.wolfsonmicro.com>
-References: <1336962817.24732.1.camel@phoenix>
+	Mon, 14 May 2012 04:13:28 -0400
+Message-ID: <4FB0BE4A.6060604@linux.vnet.ibm.com>
+Date: Mon, 14 May 2012 13:41:54 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LSp5EJdfMPwZcMS1"
-Content-Disposition: inline
-In-Reply-To: <1336962817.24732.1.camel@phoenix>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Avi Kivity <avi@redhat.com>, Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Attilio Rao <attilio.rao@citrix.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
+References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com> <20120507082928.GI16608@gmail.com> <4FA7888F.80505@redhat.com> <4FA7AAD8.6050003@linux.vnet.ibm.com> <4FA7BABA.4040700@redhat.com> <4FA7CC05.50808@linux.vnet.ibm.com> <4FA7CCA2.4030408@redhat.com> <4FA7D06B.60005@linux.vnet.ibm.com> <20120507134611.GB5533@linux.vnet.ibm.com> <4FA7D2E5.1020607@redhat.com> <4FA7D3F7.9080005@linux.vnet.ibm.com> <4FA7D50D.1020209@redhat.com> <4FA7E06E.20304@linux.vnet.ibm.com> <4FA7E1C8.7010509@redhat.com> <4FB0014A.90604@linux.vnet.ibm.com> <4FB0B679.1020600@goop.org>
+In-Reply-To: <4FB0B679.1020600@goop.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12051408-5816-0000-0000-00000298FFBF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/14/2012 01:08 PM, Jeremy Fitzhardinge wrote:
+> On 05/13/2012 11:45 AM, Raghavendra K T wrote:
+>> On 05/07/2012 08:22 PM, Avi Kivity wrote:
+>>
+>> I could not come with pv-flush results (also Nikunj had clarified that
+>> the result was on NOn PLE
+>>
+>>> I'd like to see those numbers, then.
+>>>
+>>> Ingo, please hold on the kvm-specific patches, meanwhile.
+>>>
+>>
+>> 3 guests 8GB RAM, 1 used for kernbench
+>> (kernbench -f -H -M -o 20) other for cpuhog (shell script with  while
+>> true do hackbench)
+>>
+>> 1x: no hogs
+>> 2x: 8hogs in one guest
+>> 3x: 8hogs each in two guest
+>>
+>> kernbench on PLE:
+>> Machine : IBM xSeries with Intel(R) Xeon(R)  X7560 2.27GHz CPU with 32
+>> core, with 8 online cpus and 4*64GB RAM.
+>>
+>> The average is taken over 4 iterations with 3 run each (4*3=12). and
+>> stdev is calculated over mean reported in each run.
+>>
+>>
+>> A): 8 vcpu guest
+>>
+>>                   BASE                    BASE+patch %improvement w.r.t
+>>                   mean (sd)               mean (sd)
+>> patched kernel time
+>> case 1*1x:    61.7075  (1.17872)    60.93     (1.475625)    1.27605
+>> case 1*2x:    107.2125 (1.3821349)    97.506675 (1.3461878)   9.95401
+>> case 1*3x:    144.3515 (1.8203927)    138.9525  (0.58309319)  3.8855
+>>
+>>
+>> B): 16 vcpu guest
+>>                   BASE                    BASE+patch %improvement w.r.t
+>>                   mean (sd)               mean (sd)
+>> patched kernel time
+>> case 2*1x:    70.524   (1.5941395)    69.68866  (1.9392529)   1.19867
+>> case 2*2x:    133.0738 (1.4558653)    124.8568  (1.4544986)   6.58114
+>> case 2*3x:    206.0094 (1.3437359)    181.4712  (2.9134116)   13.5218
+>>
+>> B): 32 vcpu guest
+>>                   BASE                    BASE+patch %improvementw.r.t
+>>                   mean (sd)               mean (sd)
+>> patched kernel time
+>> case 4*1x:    100.61046 (2.7603485)     85.48734  (2.6035035)  17.6905
+>
+> What does the "4*1x" notation mean? Do these workloads have overcommit
+> of the PCPU resources?
+>
+> When I measured it, even quite small amounts of overcommit lead to large
+> performance drops with non-pv ticket locks (on the order of 10%
+> improvements when there were 5 busy VCPUs on a 4 cpu system).  I never
+> tested it on larger machines, but I guess that represents around 25%
+> overcommit, or 40 busy VCPUs on a 32-PCPU system.
 
---LSp5EJdfMPwZcMS1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+All the above measurements are on PLE machine. It is 32 vcpu single
+guest on a 8 pcpu.
 
-On Mon, May 14, 2012 at 10:33:37AM +0800, Axel Lin wrote:
-> Integer division may truncate the result.
-> Use DIV_ROUND_UP to ensure simple linear voltage mappings falls within the
-> specified range.
+(PS:One problem I saw in my kernbench run itself is that
+number of threads spawned = 20 instead of 2* number of vcpu. I ll
+correct during next measurement.)
 
-Applied, thanks.
+"even quite small amounts of overcommit lead to large performance drops
+with non-pv ticket locks":
 
---LSp5EJdfMPwZcMS1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+This is very much true on non PLE machine. probably compilation takes
+even a day vs just one hour. ( with just 1:3x overcommit I had got 25 x
+speedup).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPsL59AAoJEBus8iNuMP3dXK0QAIptLa9l2bOfgCi4jkkAMDoX
-3f+oUkeHhwVwAfEcQCm3jLpEWATLB4Utw/3agZeyZcWuNU49NCPg+3Be7jMGEBQp
-3+5F7Pvd6cRJAnZx1zyzeo3e8gmPa3fLelL3ug4b6dXBwKwTU9pLW+Sj3i5dBcKO
-kwab3NgKbmUbwQzW9uhOGAaBLL89dHw0WPMPLh5wN9XZ1zDN7TiosvaekNLzG5uL
-mm09o3+gNucSA94L547YRgQ2Q4oU/UmHc4hXHk3yD/MLJs3rn67mY3Ot1F6DwtF4
-FUH0rPTfciKKFqiJLcke6kmCl3ZW2gHal8GQ/Q7M0RGm5m/poDOiKEkOeKqLBlGY
-vdrlVra4RG6tFTFqHTt7Jm/lkskGmZcq+0bDAbnbftFwUPRi+Nyb1SCpXWFDIgMV
-bdmxFfLEolvTs89w6jy5vJNI3FlrTuiTjn/2qzZjkmmbIcrRsT56PhvQa8I/ZF79
-jVJ1vEStFzwjQiBQ0EsDlcdSiCSODu+Bkh6iYqnVz3DIexukV1csEY2kBHimfjBQ
-/ZREYZG4sPMnhnVrtJ3vabD/+O60a9RBxHVRRojOkOzSlVp8keD1+GIH82s/PE5J
-cnrExLLl3h/w3jvgKMYm2jZFi4ZyJK49VFnlbp5WrXOnzji4M6yQn9B/hfZ/IlXZ
-nO20BmPKE5kv9DILC3FR
-=cmFj
------END PGP SIGNATURE-----
-
---LSp5EJdfMPwZcMS1--
