@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121Ab2ENVFT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 17:05:19 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:50045 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758040Ab2ENVFO (ORCPT
+	id S1758134Ab2ENVFm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 17:05:42 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:44680 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758067Ab2ENVFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 17:05:14 -0400
-Message-ID: <1337029559.5614.14.camel@key-ThinkPad-W510>
-Subject: [PATCH v4 11/17] powerpc: crypto: AES-GCM mode routines for nx
+	Mon, 14 May 2012 17:05:39 -0400
+Message-ID: <1337029523.5614.8.camel@key-ThinkPad-W510>
+Subject: [PATCH v4 08/17] powerpc: crypto: AES-CCM mode routines for nx
  encryption
 From: Kent Yoder <key@linux.vnet.ibm.com>
 To: benh@kernel.crashing.org
 Cc: rcj@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
         linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Date: Mon, 14 May 2012 16:05:59 -0500
+Date: Mon, 14 May 2012 16:05:23 -0500
 In-Reply-To: <1336955527.6727.2.camel@pasglop>
 References: <1336955527.6727.2.camel@pasglop>
 Content-Type: text/plain; charset="UTF-8"
@@ -22,32 +22,28 @@ X-Mailer: Evolution 3.2.2-
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051421-1780-0000-0000-000005934100
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000275; HX=3.00000188; KW=3.00000007;
- PH=3.00000001; SC=3.00000002; SDB=6.00139188; UDB=6.00032295; UTC=2012-05-14
- 21:05:06
+x-cbid: 12051421-7408-0000-0000-00000506CD5D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines add support for AES in GCM mode on the Power7+ CPU's
+These routines add support for AES in CCM mode on the Power7+ CPU's
 in-Nest accelerator driver.
 
 Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
 ---
- drivers/crypto/nx/nx-aes-gcm.c |  353 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 353 insertions(+), 0 deletions(-)
- create mode 100644 drivers/crypto/nx/nx-aes-gcm.c
+ drivers/crypto/nx/nx-aes-ccm.c |  468 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 468 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/crypto/nx/nx-aes-ccm.c
 
-diff --git a/drivers/crypto/nx/nx-aes-gcm.c b/drivers/crypto/nx/nx-aes-gcm.c
+diff --git a/drivers/crypto/nx/nx-aes-ccm.c b/drivers/crypto/nx/nx-aes-ccm.c
 new file mode 100644
-index 0000000..9ab1c73
+index 0000000..7aeac67
 --- /dev/null
-+++ b/drivers/crypto/nx/nx-aes-gcm.c
-@@ -0,0 +1,353 @@
++++ b/drivers/crypto/nx/nx-aes-ccm.c
+@@ -0,0 +1,468 @@
 +/**
-+ * AES GCM routines supporting the Power 7+ Nest Accelerators driver
++ * AES CCM routines supporting the Power 7+ Nest Accelerators driver
 + *
 + * Copyright (C) 2012 International Business Machines Inc.
 + *
@@ -80,7 +76,7 @@ index 0000000..9ab1c73
 +#include "nx.h"
 +
 +
-+static int gcm_aes_nx_set_key(struct crypto_aead *tfm,
++static int ccm_aes_nx_set_key(struct crypto_aead *tfm,
 +			      const u8           *in_key,
 +			      unsigned int        key_len)
 +{
@@ -96,63 +92,58 @@ index 0000000..9ab1c73
 +		NX_CPB_SET_KEY_SIZE(csbcpb_aead, NX_KS_AES_128);
 +		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_128];
 +		break;
-+	case AES_KEYSIZE_192:
-+		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_192);
-+		NX_CPB_SET_KEY_SIZE(csbcpb_aead, NX_KS_AES_192);
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_192];
-+		break;
-+	case AES_KEYSIZE_256:
-+		NX_CPB_SET_KEY_SIZE(csbcpb, NX_KS_AES_256);
-+		NX_CPB_SET_KEY_SIZE(csbcpb_aead, NX_KS_AES_256);
-+		nx_ctx->ap = &nx_ctx->props[NX_PROPS_AES_256];
-+		break;
 +	default:
 +		return -EINVAL;
 +	}
 +
-+	csbcpb->cpb.hdr.mode = NX_MODE_AES_GCM;
-+	memcpy(csbcpb->cpb.aes_gcm.key, in_key, key_len);
++	csbcpb->cpb.hdr.mode = NX_MODE_AES_CCM;
++	memcpy(csbcpb->cpb.aes_ccm.key, in_key, key_len);
 +
-+	csbcpb_aead->cpb.hdr.mode = NX_MODE_AES_GCA;
-+	memcpy(csbcpb_aead->cpb.aes_gca.key, in_key, key_len);
++	csbcpb_aead->cpb.hdr.mode = NX_MODE_AES_CCA;
++	memcpy(csbcpb_aead->cpb.aes_cca.key, in_key, key_len);
 +
 +	return 0;
++
 +}
 +
-+static int gcm4106_aes_nx_set_key(struct crypto_aead *tfm,
++static int ccm4309_aes_nx_set_key(struct crypto_aead *tfm,
 +				  const u8           *in_key,
 +				  unsigned int        key_len)
 +{
 +	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&tfm->base);
-+	char *nonce = nx_ctx->priv.gcm.nonce;
-+	int rc;
 +
-+	if (key_len < 4)
++	if (key_len < 3)
 +		return -EINVAL;
 +
-+	key_len -= 4;
++	key_len -= 3;
 +
-+	rc = gcm_aes_nx_set_key(tfm, in_key, key_len);
-+	if (rc)
-+		goto out;
++	memcpy(nx_ctx->priv.ccm.nonce, in_key + key_len, 3);
 +
-+	memcpy(nonce, in_key + key_len, 4);
-+out:
-+	return rc;
++	return ccm_aes_nx_set_key(tfm, in_key, key_len);
 +}
 +
-+static int gcm_aes_nx_setauthsize(struct crypto_aead *tfm,
++static int ccm_aes_nx_setauthsize(struct crypto_aead *tfm,
 +				  unsigned int authsize)
 +{
-+	if (authsize > crypto_aead_alg(tfm)->maxauthsize)
++	switch (authsize) {
++	case 4:
++	case 6:
++	case 8:
++	case 10:
++	case 12:
++	case 14:
++	case 16:
++		break;
++	default:
 +		return -EINVAL;
++	}
 +
 +	crypto_aead_crt(tfm)->authsize = authsize;
 +
 +	return 0;
 +}
 +
-+static int gcm4106_aes_nx_setauthsize(struct crypto_aead *tfm,
++static int ccm4309_aes_nx_setauthsize(struct crypto_aead *tfm,
 +				      unsigned int authsize)
 +{
 +	switch (authsize) {
@@ -169,112 +160,185 @@ index 0000000..9ab1c73
 +	return 0;
 +}
 +
-+static int nx_gca(struct nx_crypto_ctx  *nx_ctx,
-+		  struct aead_request   *req,
-+		  u8                    *out)
++/* taken from crypto/ccm.c */
++static int set_msg_len(u8 *block, unsigned int msglen, int csize)
 +{
-+	struct nx_csbcpb *csbcpb_aead = nx_ctx->csbcpb_aead;
-+	int rc = -EINVAL;
-+	struct scatter_walk walk;
-+	struct nx_sg *nx_sg = nx_ctx->in_sg;
++	__be32 data;
 +
-+	if (req->assoclen > nx_ctx->ap->databytelen)
-+		goto out;
++	memset(block, 0, csize);
++	block += csize;
 +
-+	if (req->assoclen <= AES_BLOCK_SIZE) {
-+		scatterwalk_start(&walk, req->assoc);
-+		scatterwalk_copychunks(out, &walk, req->assoclen,
-+				       SCATTERWALK_FROM_SG);
-+		scatterwalk_done(&walk, SCATTERWALK_FROM_SG, 0);
++	if (csize >= 4)
++		csize = 4;
++	else if (msglen > (unsigned int)(1 << (8 * csize)))
++		return -EOVERFLOW;
 +
-+		rc = 0;
-+		goto out;
-+	}
++	data = cpu_to_be32(msglen);
++	memcpy(block - csize, (u8 *)&data + 4 - csize, csize);
 +
-+	nx_sg = nx_walk_and_build(nx_sg, nx_ctx->ap->sglen, req->assoc, 0,
-+				  req->assoclen);
-+	nx_ctx->op_aead.inlen = (nx_ctx->in_sg - nx_sg) * sizeof(struct nx_sg);
++	return 0;
++}
 +
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op_aead,
-+			   req->base.flags & CRYPTO_TFM_REQ_MAY_SLEEP);
-+	if (rc)
-+		goto out;
++/* taken from crypto/ccm.c */
++static inline int crypto_ccm_check_iv(const u8 *iv)
++{
++	/* 2 <= L <= 8, so 1 <= L' <= 7. */
++	if (1 > iv[0] || iv[0] > 7)
++		return -EINVAL;
 +
-+	atomic_inc(&(nx_ctx->stats->aes_ops));
-+	atomic64_add(req->assoclen, &(nx_ctx->stats->aes_bytes));
++	return 0;
++}
 +
-+	memcpy(out, csbcpb_aead->cpb.aes_gca.out_pat, AES_BLOCK_SIZE);
-+out:
++/* based on code from crypto/ccm.c */
++static int generate_b0(u8 *iv, unsigned int assoclen, unsigned int authsize,
++		       unsigned int cryptlen, u8 *b0)
++{
++	unsigned int l, lp, m = authsize;
++	int rc;
++
++	memcpy(b0, iv, 16);
++
++	lp = b0[0];
++	l = lp + 1;
++
++	/* set m, bits 3-5 */
++	*b0 |= (8 * ((m - 2) / 2));
++
++	/* set adata, bit 6, if associated data is used */
++	if (assoclen)
++		*b0 |= 64;
++
++	rc = set_msg_len(b0 + 16 - l, cryptlen, l);
++
 +	return rc;
 +}
 +
-+static int gcm_aes_nx_crypt(struct aead_request *req, int enc)
++static int generate_pat(u8                   *iv,
++			struct aead_request  *req,
++			struct nx_crypto_ctx *nx_ctx,
++			unsigned int          authsize,
++			unsigned int          nbytes,
++			u8                   *out)
++{
++	struct nx_sg *nx_insg = nx_ctx->in_sg;
++	struct nx_sg *nx_outsg = nx_ctx->out_sg;
++	unsigned int iauth_len = 0;
++	struct vio_pfo_op *op = NULL;
++	u8 tmp[16], *b1 = NULL, *b0 = NULL, *result = NULL;
++	int rc;
++
++	/* zero the ctr value */
++	memset(iv + 15 - iv[0], 0, iv[0] + 1);
++
++	if (!req->assoclen) {
++		b0 = nx_ctx->csbcpb->cpb.aes_ccm.in_pat_or_b0;
++	} else if (req->assoclen <= 14) {
++		/* if associated data is 14 bytes or less, we do 1 GCM
++		 * operation on 2 AES blocks, B0 (stored in the csbcpb) and B1,
++		 * which is fed in through the source buffers here */
++		b0 = nx_ctx->csbcpb->cpb.aes_ccm.in_pat_or_b0;
++		b1 = nx_ctx->priv.ccm.iauth_tag;
++		iauth_len = req->assoclen;
++
++		nx_insg = nx_build_sg_list(nx_insg, b1, 16, nx_ctx->ap->sglen);
++		nx_outsg = nx_build_sg_list(nx_outsg, tmp, 16,
++					    nx_ctx->ap->sglen);
++
++		/* inlen should be negative, indicating to phyp that its a
++		 * pointer to an sg list */
++		nx_ctx->op.inlen = (nx_ctx->in_sg - nx_insg) *
++					sizeof(struct nx_sg);
++		nx_ctx->op.outlen = (nx_ctx->out_sg - nx_outsg) *
++					sizeof(struct nx_sg);
++
++		NX_CPB_FDM(nx_ctx->csbcpb) |= NX_FDM_ENDE_ENCRYPT;
++		NX_CPB_FDM(nx_ctx->csbcpb) |= NX_FDM_INTERMEDIATE;
++
++		op = &nx_ctx->op;
++		result = nx_ctx->csbcpb->cpb.aes_ccm.out_pat_or_mac;
++	} else if (req->assoclen <= 65280) {
++		/* if associated data is less than (2^16 - 2^8), we construct
++		 * B1 differently and feed in the associated data to a CCA
++		 * operation */
++		b0 = nx_ctx->csbcpb_aead->cpb.aes_cca.b0;
++		b1 = nx_ctx->csbcpb_aead->cpb.aes_cca.b1;
++		iauth_len = 14;
++
++		/* remaining assoc data must have scatterlist built for it */
++		nx_insg = nx_walk_and_build(nx_insg, nx_ctx->ap->sglen,
++					    req->assoc, iauth_len,
++					    req->assoclen - iauth_len);
++		nx_ctx->op_aead.inlen = (nx_ctx->in_sg - nx_insg) *
++						sizeof(struct nx_sg);
++
++		op = &nx_ctx->op_aead;
++		result = nx_ctx->csbcpb_aead->cpb.aes_cca.out_pat_or_b0;
++	} else {
++		/* if associated data is less than (2^32), we construct B1
++		 * differently yet again and feed in the associated data to a
++		 * CCA operation */
++		pr_err("associated data len is %u bytes (returning -EINVAL)\n",
++		       req->assoclen);
++		rc = -EINVAL;
++	}
++
++	rc = generate_b0(iv, req->assoclen, authsize, nbytes, b0);
++	if (rc)
++		goto done;
++
++	if (b1) {
++		memset(b1, 0, 16);
++		*(u16 *)b1 = (u16)req->assoclen;
++
++		scatterwalk_map_and_copy(b1 + 2, req->assoc, 0,
++					 iauth_len, SCATTERWALK_FROM_SG);
++
++		rc = nx_hcall_sync(nx_ctx, op,
++				   req->base.flags & CRYPTO_TFM_REQ_MAY_SLEEP);
++		if (rc)
++			goto done;
++
++		atomic_inc(&(nx_ctx->stats->aes_ops));
++		atomic64_add(req->assoclen, &(nx_ctx->stats->aes_bytes));
++
++		memcpy(out, result, AES_BLOCK_SIZE);
++	}
++done:
++	return rc;
++}
++
++static int ccm_nx_decrypt(struct aead_request   *req,
++			  struct blkcipher_desc *desc)
 +{
 +	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(req->base.tfm);
 +	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
-+	struct blkcipher_desc desc;
 +	unsigned int nbytes = req->cryptlen;
-+	int rc = -EINVAL;
++	unsigned int authsize = crypto_aead_authsize(crypto_aead_reqtfm(req));
++	struct nx_ccm_priv *priv = &nx_ctx->priv.ccm;
++	int rc = -1;
 +
 +	if (nbytes > nx_ctx->ap->databytelen)
-+		goto out;
++		return -EINVAL;
 +
-+	desc.info = nx_ctx->priv.gcm.iv;
-+	/* initialize the counter */
-+	*(u32 *)(desc.info + NX_GCM_CTR_OFFSET) = 1;
++	nbytes -= authsize;
 +
-+	/* For scenarios where the input message is zero length, AES CTR mode
-+	 * may be used. Set the source data to be a single block (16B) of all
-+	 * zeros, and set the input IV value to be the same as the GMAC IV
-+	 * value. - nx_wb 4.8.1.3 */
-+	if (nbytes == 0) {
-+		char src[AES_BLOCK_SIZE] = {};
-+		struct scatterlist sg;
++	/* copy out the auth tag to compare with later */
++	scatterwalk_map_and_copy(priv->oauth_tag,
++				 req->src, nbytes, authsize,
++				 SCATTERWALK_FROM_SG);
 +
-+		desc.tfm = crypto_alloc_blkcipher("ctr(aes)", 0, 0);
-+		if (IS_ERR(desc.tfm)) {
-+			rc = -ENOMEM;
-+			goto out;
-+		}
-+
-+		crypto_blkcipher_setkey(desc.tfm, csbcpb->cpb.aes_gcm.key,
-+			NX_CPB_KEY_SIZE(csbcpb) == NX_KS_AES_128 ? 16 :
-+			NX_CPB_KEY_SIZE(csbcpb) == NX_KS_AES_192 ? 24 : 32);
-+
-+		sg_init_one(&sg, src, AES_BLOCK_SIZE);
-+		if (enc)
-+			crypto_blkcipher_encrypt_iv(&desc, req->dst, &sg,
-+						    AES_BLOCK_SIZE);
-+		else
-+			crypto_blkcipher_decrypt_iv(&desc, req->dst, &sg,
-+						    AES_BLOCK_SIZE);
-+		crypto_free_blkcipher(desc.tfm);
-+
-+		rc = 0;
-+		goto out;
-+	}
-+
-+	desc.tfm = (struct crypto_blkcipher *)req->base.tfm;
-+
-+	csbcpb->cpb.aes_gcm.bit_length_aad = req->assoclen * 8;
-+
-+	if (req->assoclen) {
-+		rc = nx_gca(nx_ctx, req, csbcpb->cpb.aes_gcm.in_pat_or_aad);
-+		if (rc)
-+			goto out;
-+	}
-+
-+	if (enc)
-+		NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
-+	else
-+		nbytes -= AES_BLOCK_SIZE;
-+
-+	csbcpb->cpb.aes_gcm.bit_length_data = nbytes * 8;
-+
-+	rc = nx_build_sg_lists(nx_ctx, &desc, req->dst, req->src, nbytes,
-+			       csbcpb->cpb.aes_gcm.iv_or_cnt);
++	rc = generate_pat(desc->info, req, nx_ctx, authsize, nbytes,
++			  csbcpb->cpb.aes_ccm.in_pat_or_b0);
 +	if (rc)
 +		goto out;
++
++	rc = nx_build_sg_lists(nx_ctx, desc, req->dst, req->src, nbytes,
++			       csbcpb->cpb.aes_ccm.iv_or_ctr);
++	if (rc)
++		goto out;
++
++	NX_CPB_FDM(nx_ctx->csbcpb) &= ~NX_FDM_ENDE_ENCRYPT;
++	NX_CPB_FDM(nx_ctx->csbcpb) &= ~NX_FDM_INTERMEDIATE;
 +
 +	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
 +			   req->base.flags & CRYPTO_TFM_REQ_MAY_SLEEP);
@@ -285,69 +349,114 @@ index 0000000..9ab1c73
 +	atomic64_add(csbcpb->csb.processed_byte_count,
 +		     &(nx_ctx->stats->aes_bytes));
 +
-+	if (enc) {
-+		/* copy out the auth tag */
-+		scatterwalk_map_and_copy(csbcpb->cpb.aes_gcm.out_pat_or_mac,
-+				 req->dst, nbytes,
-+				 crypto_aead_authsize(crypto_aead_reqtfm(req)),
-+				 SCATTERWALK_TO_SG);
-+	} else if (req->assoclen) {
-+		u8 *itag = nx_ctx->priv.gcm.iauth_tag;
-+		u8 *otag = csbcpb->cpb.aes_gcm.out_pat_or_mac;
-+
-+		scatterwalk_map_and_copy(itag, req->dst, nbytes,
-+				 crypto_aead_authsize(crypto_aead_reqtfm(req)),
-+				 SCATTERWALK_FROM_SG);
-+		rc = memcmp(itag, otag,
-+			    crypto_aead_authsize(crypto_aead_reqtfm(req))) ?
-+		     -EBADMSG : 0;
-+	}
++	rc = memcmp(csbcpb->cpb.aes_ccm.out_pat_or_mac, priv->oauth_tag,
++		    authsize) ? -EBADMSG : 0;
 +out:
 +	return rc;
 +}
 +
-+static int gcm_aes_nx_encrypt(struct aead_request *req)
++static int ccm_nx_encrypt(struct aead_request   *req,
++			  struct blkcipher_desc *desc)
 +{
 +	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(req->base.tfm);
-+	char *iv = nx_ctx->priv.gcm.iv;
++	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
++	unsigned int nbytes = req->cryptlen;
++	unsigned int authsize = crypto_aead_authsize(crypto_aead_reqtfm(req));
++	int rc = -1;
 +
-+	memcpy(iv, req->iv, 12);
++	if (nbytes > nx_ctx->ap->databytelen)
++		return -EINVAL;
 +
-+	return gcm_aes_nx_crypt(req, 1);
++	rc = generate_pat(desc->info, req, nx_ctx, authsize, nbytes,
++			  csbcpb->cpb.aes_ccm.in_pat_or_b0);
++	if (rc)
++		goto out;
++
++	rc = nx_build_sg_lists(nx_ctx, desc, req->dst, req->src, nbytes,
++			       csbcpb->cpb.aes_ccm.iv_or_ctr);
++	if (rc)
++		goto out;
++
++	NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
++	NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
++
++	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
++			   req->base.flags & CRYPTO_TFM_REQ_MAY_SLEEP);
++	if (rc)
++		goto out;
++
++	atomic_inc(&(nx_ctx->stats->aes_ops));
++	atomic64_add(csbcpb->csb.processed_byte_count,
++		     &(nx_ctx->stats->aes_bytes));
++
++	/* copy out the auth tag */
++	scatterwalk_map_and_copy(csbcpb->cpb.aes_ccm.out_pat_or_mac,
++				 req->dst, nbytes, authsize,
++				 SCATTERWALK_TO_SG);
++out:
++	return rc;
 +}
 +
-+static int gcm_aes_nx_decrypt(struct aead_request *req)
++static int ccm4309_aes_nx_encrypt(struct aead_request *req)
 +{
 +	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(req->base.tfm);
-+	char *iv = nx_ctx->priv.gcm.iv;
++	struct blkcipher_desc desc;
++	u8 *iv = nx_ctx->priv.ccm.iv;
 +
-+	memcpy(iv, req->iv, 12);
++	iv[0] = 3;
++	memcpy(iv + 1, nx_ctx->priv.ccm.nonce, 3);
++	memcpy(iv + 4, req->iv, 8);
 +
-+	return gcm_aes_nx_crypt(req, 0);
++	desc.info = iv;
++	desc.tfm = (struct crypto_blkcipher *)req->base.tfm;
++
++	return ccm_nx_encrypt(req, &desc);
 +}
 +
-+static int gcm4106_aes_nx_encrypt(struct aead_request *req)
++static int ccm_aes_nx_encrypt(struct aead_request *req)
 +{
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(req->base.tfm);
-+	char *iv = nx_ctx->priv.gcm.iv;
-+	char *nonce = nx_ctx->priv.gcm.nonce;
++	struct blkcipher_desc desc;
++	int rc;
 +
-+	memcpy(iv, nonce, NX_GCM4106_NONCE_LEN);
-+	memcpy(iv + NX_GCM4106_NONCE_LEN, req->iv, 8);
++	desc.info = req->iv;
++	desc.tfm = (struct crypto_blkcipher *)req->base.tfm;
 +
-+	return gcm_aes_nx_crypt(req, 1);
++	rc = crypto_ccm_check_iv(desc.info);
++	if (rc)
++		return rc;
++
++	return ccm_nx_encrypt(req, &desc);
 +}
 +
-+static int gcm4106_aes_nx_decrypt(struct aead_request *req)
++static int ccm4309_aes_nx_decrypt(struct aead_request *req)
 +{
 +	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(req->base.tfm);
-+	char *iv = nx_ctx->priv.gcm.iv;
-+	char *nonce = nx_ctx->priv.gcm.nonce;
++	struct blkcipher_desc desc;
++	u8 *iv = nx_ctx->priv.ccm.iv;
 +
-+	memcpy(iv, nonce, NX_GCM4106_NONCE_LEN);
-+	memcpy(iv + NX_GCM4106_NONCE_LEN, req->iv, 8);
++	iv[0] = 3;
++	memcpy(iv + 1, nx_ctx->priv.ccm.nonce, 3);
++	memcpy(iv + 4, req->iv, 8);
 +
-+	return gcm_aes_nx_crypt(req, 0);
++	desc.info = iv;
++	desc.tfm = (struct crypto_blkcipher *)req->base.tfm;
++
++	return ccm_nx_decrypt(req, &desc);
++}
++
++static int ccm_aes_nx_decrypt(struct aead_request *req)
++{
++	struct blkcipher_desc desc;
++	int rc;
++
++	desc.info = req->iv;
++	desc.tfm = (struct crypto_blkcipher *)req->base.tfm;
++
++	rc = crypto_ccm_check_iv(desc.info);
++	if (rc)
++		return rc;
++
++	return ccm_nx_decrypt(req, &desc);
 +}
 +
 +/* tell the block cipher walk routines that this is a stream cipher by
@@ -355,48 +464,50 @@ index 0000000..9ab1c73
 + * during encrypt/decrypt doesn't solve this problem, because it calls
 + * blkcipher_walk_done under the covers, which doesn't use walk->blocksize,
 + * but instead uses this tfm->blocksize. */
-+struct crypto_alg nx_gcm_aes_alg = {
-+	.cra_name        = "gcm(aes)",
-+	.cra_driver_name = "gcm-aes-nx",
++struct crypto_alg nx_ccm_aes_alg = {
++	.cra_name        = "ccm(aes)",
++	.cra_driver_name = "ccm-aes-nx",
 +	.cra_priority    = 300,
-+	.cra_flags       = CRYPTO_ALG_TYPE_AEAD,
++	.cra_flags       = CRYPTO_ALG_TYPE_AEAD |
++			   CRYPTO_ALG_NEED_FALLBACK,
 +	.cra_blocksize   = 1,
 +	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
 +	.cra_type        = &crypto_aead_type,
 +	.cra_module      = THIS_MODULE,
-+	.cra_list        = LIST_HEAD_INIT(nx_gcm_aes_alg.cra_list),
-+	.cra_init        = nx_crypto_ctx_aes_gcm_init,
++	.cra_list        = LIST_HEAD_INIT(nx_ccm_aes_alg.cra_list),
++	.cra_init        = nx_crypto_ctx_aes_ccm_init,
 +	.cra_exit        = nx_crypto_ctx_exit,
 +	.cra_aead = {
 +		.ivsize      = AES_BLOCK_SIZE,
 +		.maxauthsize = AES_BLOCK_SIZE,
-+		.setkey      = gcm_aes_nx_set_key,
-+		.setauthsize = gcm_aes_nx_setauthsize,
-+		.encrypt     = gcm_aes_nx_encrypt,
-+		.decrypt     = gcm_aes_nx_decrypt,
++		.setkey      = ccm_aes_nx_set_key,
++		.setauthsize = ccm_aes_nx_setauthsize,
++		.encrypt     = ccm_aes_nx_encrypt,
++		.decrypt     = ccm_aes_nx_decrypt,
 +	}
 +};
 +
-+struct crypto_alg nx_gcm4106_aes_alg = {
-+	.cra_name        = "rfc4106(gcm(aes))",
-+	.cra_driver_name = "rfc4106-gcm-aes-nx",
++struct crypto_alg nx_ccm4309_aes_alg = {
++	.cra_name        = "rfc4309(ccm(aes))",
++	.cra_driver_name = "rfc4309-ccm-aes-nx",
 +	.cra_priority    = 300,
-+	.cra_flags       = CRYPTO_ALG_TYPE_AEAD,
++	.cra_flags       = CRYPTO_ALG_TYPE_AEAD |
++			   CRYPTO_ALG_NEED_FALLBACK,
 +	.cra_blocksize   = 1,
 +	.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
 +	.cra_type        = &crypto_nivaead_type,
 +	.cra_module      = THIS_MODULE,
-+	.cra_list        = LIST_HEAD_INIT(nx_gcm4106_aes_alg.cra_list),
-+	.cra_init        = nx_crypto_ctx_aes_gcm_init,
++	.cra_list        = LIST_HEAD_INIT(nx_ccm4309_aes_alg.cra_list),
++	.cra_init        = nx_crypto_ctx_aes_ccm_init,
 +	.cra_exit        = nx_crypto_ctx_exit,
 +	.cra_aead = {
 +		.ivsize      = 8,
 +		.maxauthsize = AES_BLOCK_SIZE,
++		.setkey      = ccm4309_aes_nx_set_key,
++		.setauthsize = ccm4309_aes_nx_setauthsize,
++		.encrypt     = ccm4309_aes_nx_encrypt,
++		.decrypt     = ccm4309_aes_nx_decrypt,
 +		.geniv       = "seqiv",
-+		.setkey      = gcm4106_aes_nx_set_key,
-+		.setauthsize = gcm4106_aes_nx_setauthsize,
-+		.encrypt     = gcm4106_aes_nx_encrypt,
-+		.decrypt     = gcm4106_aes_nx_decrypt,
 +	}
 +};
 -- 
