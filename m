@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab2ENIIo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 04:08:44 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57456 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752402Ab2ENIIl (ORCPT
+	id S1754446Ab2ENIJH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 04:09:07 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:59797 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754233Ab2ENIJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 04:08:41 -0400
-Date: Mon, 14 May 2012 09:08:36 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Richard Zhao <richard.zhao@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, paul.liu@linaro.org,
-        Richard Zhao <richard.zhao@freescale.com>, sameo@linux.intel.com,
-        shawn.guo@linaro.org
-Subject: Re: [PATCH 2/2] mfd: anatop: permit adata be NULL when access
- register
-Message-ID: <20120514080835.GB31985@opensource.wolfsonmicro.com>
-References: <1336870794-6351-1-git-send-email-richard.zhao@freescale.com>
- <1336870794-6351-2-git-send-email-richard.zhao@freescale.com>
- <20120514035137.GB20367@S2100-06.ap.freescale.net>
+	Mon, 14 May 2012 04:09:03 -0400
+Message-ID: <4FB0BD92.5030202@linux.vnet.ibm.com>
+Date: Mon, 14 May 2012 16:08:50 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lEGEL1/lMxI0MVQ2"
-Content-Disposition: inline
-In-Reply-To: <20120514035137.GB20367@S2100-06.ap.freescale.net>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@elte.hu>, Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: About dynamic schedule domain
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12051408-8256-0000-0000-0000026DA6B5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Peter
 
---lEGEL1/lMxI0MVQ2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I have read the mail thread on the topic about dynamic sched domain in link:
+http://marc.info/?l=linux-kernel&m=130822782111533&w=2
 
-On Mon, May 14, 2012 at 11:51:38AM +0800, Shawn Guo wrote:
+But I'm not sure, is the dynamical sched domain means we can change the
+sched domain at running time through proc or something else?
 
-> From what I see, it's reasonable.  Then the immediate question I have
-> is, should we remove "struct anatop *adata" from anatop_read_reg and
-> anatop_write_reg completely?
+If it is still pending on implementation, could you please tell me how
+things going on and what's the idea you have mentioned in the mail?
 
-Given the way these things tend to go it's probably guaranteeing that
-your next round of SoCs will have two register compatible anatop blocks :)
+I want to do some help if I could :)
 
---lEGEL1/lMxI0MVQ2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Regards,
+Michael Wang
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPsL10AAoJEBus8iNuMP3dQ0kP/253lpwpSw3tTtNNWCPON0QI
-Cq4DV/lsxxU7CoJKp6jPDItKSBZ2yawpxP/2aD24S7DBnRX3MnArJhbqjjX9dJjB
-dQdn+B5w57thiYpBNfh6HnnzifaEMIGeOVMC5et33Sx/mmzIbS8JCFHwDtGYV7dE
-kwiRkb/yUsy9Oko7MbussUT4NiVJCQJRybILuMR1kIDh1o5hChaQFrR1xFQxjwyP
-VKLbWcuq9Q9EG3miKjYdIksfRYmDPxFZZY4FI1t/aaPM+EYOBoMGCUUENSgyMchQ
-NuMDIS8/X69/im+Lve+6qpa7oVuzplsncjRfIiq9PmB148fLgZD6kmMpUDhgUfoi
-2qJ7zlJ4dyi7qiGZsp4cpQPOVXP3My6Jd9oEIB5Cj8ClhNFBvQ/ts41uCMKxksVO
-CuwZf0cvJLPnTEekQDonKAN7y94/CdOC9NQGdPrvXIHhfWpPYFobQmiq+9209CLF
-gPZpRqPdQMt0JPrvaYo2lizpq83wLOJfptkT5nDKVdH/44dDkDBUGRli34D0J3Ik
-9kON/NCSHiG5b2M5TwmGOp2hX91mkhO9WWbYxTRxFF0xbg+G4c2rB2As3Mx4QhsS
-wQyZAhROPrZSQjUMMoBBoN8LjMp9B5nSGVXdNSQrg1rsD8nHKNFrqLH7b2IKBhzk
-Nip6Q4gKyZAWyMddNq4H
-=Y7im
------END PGP SIGNATURE-----
-
---lEGEL1/lMxI0MVQ2--
