@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757473Ab2ENSCd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 14:02:33 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58820 "EHLO zene.cmpxchg.org"
+	id S1757427Ab2ENSA7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 14:00:59 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58808 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757420Ab2ENSBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 14:01:00 -0400
+	id S1756685Ab2ENSA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 14:00:58 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         cgroups@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 4/6] mm: memcg: keep ratelimit counter separate from event counters
-Date: Mon, 14 May 2012 20:00:49 +0200
-Message-Id: <1337018451-27359-5-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 1/6] mm: memcg: remove obsolete statistics array boundary enum item
+Date: Mon, 14 May 2012 20:00:46 +0200
+Message-Id: <1337018451-27359-2-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
 References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
@@ -22,52 +22,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All events except the ratelimit counter are statistics exported to
-userspace.  Keep this internal value out of the event count array.
+MEM_CGROUP_STAT_DATA is a leftover from when item counters were living
+in the same array as ever-increasing event counters.  It's no longer
+needed, use MEM_CGROUP_STAT_NSTATS to iterate over the stat array.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/memcontrol.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/memcontrol.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9e8551c..546e7db 100644
+index 9520ee9..aef89c1 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -105,7 +105,6 @@ enum mem_cgroup_stat_index {
- enum mem_cgroup_events_index {
- 	MEM_CGROUP_EVENTS_PGPGIN,	/* # of pages paged in */
- 	MEM_CGROUP_EVENTS_PGPGOUT,	/* # of pages paged out */
--	MEM_CGROUP_EVENTS_COUNT,	/* # of pages paged in/out */
- 	MEM_CGROUP_EVENTS_PGFAULT,	/* # of page-faults */
- 	MEM_CGROUP_EVENTS_PGMAJFAULT,	/* # of major page-faults */
- 	MEM_CGROUP_EVENTS_NSTATS,
-@@ -129,6 +128,7 @@ enum mem_cgroup_events_target {
- struct mem_cgroup_stat_cpu {
- 	long count[MEM_CGROUP_STAT_NSTATS];
- 	unsigned long events[MEM_CGROUP_EVENTS_NSTATS];
-+	unsigned long nr_page_events;
- 	unsigned long targets[MEM_CGROUP_NTARGETS];
+@@ -99,7 +99,6 @@ enum mem_cgroup_stat_index {
+ 	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+ 	MEM_CGROUP_STAT_MLOCK, /* # of pages charged as mlock()ed */
+ 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
+-	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
+ 	MEM_CGROUP_STAT_NSTATS,
  };
  
-@@ -736,7 +736,7 @@ static void mem_cgroup_charge_statistics(struct mem_cgroup *memcg,
- 		nr_pages = -nr_pages; /* for event */
- 	}
+@@ -2158,7 +2157,7 @@ static void mem_cgroup_drain_pcp_counter(struct mem_cgroup *memcg, int cpu)
+ 	int i;
  
--	__this_cpu_add(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT], nr_pages);
-+	__this_cpu_add(memcg->stat->nr_page_events, nr_pages);
+ 	spin_lock(&memcg->pcp_counter_lock);
+-	for (i = 0; i < MEM_CGROUP_STAT_DATA; i++) {
++	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
+ 		long x = per_cpu(memcg->stat->count[i], cpu);
  
- 	preempt_enable();
- }
-@@ -797,7 +797,7 @@ static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
- {
- 	unsigned long val, next;
- 
--	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
-+	val = __this_cpu_read(memcg->stat->nr_page_events);
- 	next = __this_cpu_read(memcg->stat->targets[target]);
- 	/* from time_after() in jiffies.h */
- 	if ((long)next - (long)val < 0) {
+ 		per_cpu(memcg->stat->count[i], cpu) = 0;
 -- 
 1.7.10.1
 
