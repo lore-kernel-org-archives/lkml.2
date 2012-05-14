@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab2ENT1r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 15:27:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50133 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756466Ab2ENT1p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 15:27:45 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Mario Limonciello <mario_limonciello@dell.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH] dell-laptop: rfkill blacklist Dell XPS 13z, 15z
-Date: Mon, 14 May 2012 12:27:32 -0700
-Message-Id: <1337023652-11661-1-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S932248Ab2ENTbm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 15:31:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2486 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757613Ab2ENTbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 15:31:40 -0400
+Date: Mon, 14 May 2012 22:31:35 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ian.Campbell@citrix.com,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH RFC] tun: experimental zero copy tx support
+Message-ID: <20120514193134.GA18366@redhat.com>
+References: <20120513155206.GA26847@redhat.com>
+ <20120514095446.3ce307d2@nehalam.linuxnetplumber.net>
+ <20120514170412.GA17086@redhat.com>
+ <1337022146.8512.606.camel@edumazet-glaptop>
+ <20120514191456.GC17086@redhat.com>
+ <1337023307.8512.617.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337023307.8512.617.camel@edumazet-glaptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mario Limonciello <mario_limonciello@dell.com>
+On Mon, May 14, 2012 at 09:21:47PM +0200, Eric Dumazet wrote:
+> On Mon, 2012-05-14 at 22:14 +0300, Michael S. Tsirkin wrote:
+> 
+> > They seem to be in net-next, or did I miss something?
+> 
+> Yes, you re-introduce in this patch some bugs already fixed in macvtap
 
-On Dell XPS 13z (L321X) and 15z (L502X), switching off Bluetooth also
-disables wifi due to improper improper BIOS interaction with dell-laptop.
-Add those models to the rfkill blacklist.
+Could explain why I see some problems in testing :)
+Maybe common code should go into net/core?
+I couldn't decide whether the increase in kernel
+size is worth it.
 
-BugLink: https://bugs.launchpad.net/bugs/901410
-
-Signed-off-by: Mario Limonciello <mario_limonciello@dell.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/platform/x86/dell-laptop.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-diff --git a/drivers/platform/x86/dell-laptop.c b/drivers/platform/x86/dell-laptop.c
-index e6c08ee..8223b6c 100644
---- a/drivers/platform/x86/dell-laptop.c
-+++ b/drivers/platform/x86/dell-laptop.c
-@@ -120,6 +120,21 @@ static const struct dmi_system_id __initdata dell_device_table[] = {
- MODULE_DEVICE_TABLE(dmi, dell_device_table);
- 
- static struct dmi_system_id __devinitdata dell_blacklist[] = {
-+	/* dell_laptop breaks rfkill behavior (LP: #901410) */
-+	{
-+		.ident = "Dell XPS 13z",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Dell System XPS L321X"),
-+		},
-+	},
-+	{
-+		.ident = "Dell XPS 15z",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Dell System XPS L502X"),
-+		},
-+	},
- 	/* Supported by compal-laptop */
- 	{
- 		.ident = "Dell Mini 9",
 -- 
-1.7.9.5
-
+MST
