@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab2ENHzU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 03:55:20 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56575 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754845Ab2ENHzR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 03:55:17 -0400
-X-AuditID: 9c93016f-b7cecae000000e00-ac-4fb0ba60b0e3
-Message-ID: <4FB0BA7B.1050200@kernel.org>
-Date: Mon, 14 May 2012 16:55:39 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel.mmc,gmane.linux.file-systems,gmane.linux.ports.arm.omap,gmane.linux.kernel
-To: mani <manishrma@gmail.com>
-CC: linux-mmc@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 00/16] [FS, MM, block, MMC]: eMMC High Priority Interrupt
- Feature
-References: <1336054995-22988-1-git-send-email-svenkatr@ti.com> <4FA8CF5E.1070202@kernel.org> <CANfBPZ-d-0FqY8Gruv+KDNoL3+FoQ68JEnxya5PydhY80x8yhA@mail.gmail.com> <4FA9BE10.1030007@kernel.org> <CAB+TZU-r6aYn8WRZjZ0DojxMTMoc5MSx7c93W0pAad1coscPwQ@mail.gmail.com>
-In-Reply-To: <CAB+TZU-r6aYn8WRZjZ0DojxMTMoc5MSx7c93W0pAad1coscPwQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	id S1755256Ab2ENH5T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 03:57:19 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:54230 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755212Ab2ENH5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 03:57:16 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Subject: [RFC net-next 1/2] net: Add net_ratelimited_function and net_<level>_ratelimited macros
+Date: Mon, 14 May 2012 00:56:25 -0700
+Message-Id: <96871aa331061e890357662c22633926dd42ffa9.1336981915.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
+In-Reply-To: <cover.1336981915.git.joe@perches.com>
+References: <cover.1336981915.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2012 04:43 PM, mani wrote:
+__ratelimit() can be considered an inverted bool test because
+it returns true when not ratelimited.  Several tests in the
+kernel tree use this __ratelimit() function incorrectly.
 
-> Dear Kim,
-> 
-> I have a query here ..
-> 
-> 
->     My point is that it would be better for read to not preempt
->     write-for-page_reclaim.
->     And we can identify it by PG_reclaim. You can get the idea.
-> 
-> I think If there is no page available then no read will proceed.
+No net_ratelimit uses are incorrect currently though.
 
-> When read request comes it reclaim the pages (starts the write if
+Most uses of net_ratelimit are to log something via printk or
+pr_<level>.
 
-> syncable pages ) and get back after reclaiming the pages.
-> Only then a read request will come to the MMC subsystem.
+In order to minimize the uses of net_ratelimit, and to start
+standardizing the code style used for __ratelimit() and net_ratelimit(),
+add a net_ratelimited_function() macro and net_<level>_ratelimited()
+logging macros similar to pr_<level>_ratelimited that use the global
+net_ratelimit instead of a static per call site "struct ratelimit_state".
 
-> And i think the reclaim algorithm will reclaim some substantial amount
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ include/linux/net.h |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
 
-> of pages at a time instead of a single page.
-> So if we get few pages during the reclamation so there will be no
-> problem in halting the another write ops for proceeding the reads ?
-> 
-> Can we think of a scenario when we are reclaiming the pages and write
-> ops is going on where as a high priority read for the interrupt handler
-> is pending ?
-> 
-> Please correct me if i am wrong.
-
-
-For example, System can have lots of order-0 pages but little order-big pages.
-In this case, for getting big contiguos memory, reclaimer should write out
-dirty pages while it can handle order-0 page read request.
-
-
-> 
-> Thanks & Regards
-> Manish
-
-
-
+diff --git a/include/linux/net.h b/include/linux/net.h
+index be60c7f..2d7510f 100644
+--- a/include/linux/net.h
++++ b/include/linux/net.h
+@@ -250,6 +250,29 @@ extern struct socket *sockfd_lookup(int fd, int *err);
+ #define		     sockfd_put(sock) fput(sock->file)
+ extern int	     net_ratelimit(void);
+ 
++#define net_ratelimited_function(function, ...)			\
++do {								\
++	if (net_ratelimit())					\
++		function(__VA_ARGS__);				\
++} while (0)
++
++#define net_emerg_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_emerg, fmt, ##__VA_ARGS__)
++#define net_alert_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_alert, fmt, ##__VA_ARGS__)
++#define net_crit_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_crit, fmt, ##__VA_ARGS__)
++#define net_err_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_err, fmt, ##__VA_ARGS__)
++#define net_notice_ratelimited(fmt, ...)			\
++	net_ratelimited_function(pr_notice, fmt, ##__VA_ARGS__)
++#define net_warn_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_warn, fmt, ##__VA_ARGS__)
++#define net_info_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_info, fmt, ##__VA_ARGS__)
++#define net_dbg_ratelimited(fmt, ...)				\
++	net_ratelimited_function(pr_debug, fmt, ##__VA_ARGS__)
++
+ #define net_random()		random32()
+ #define net_srandom(seed)	srandom32((__force u32)seed)
+ 
 -- 
-Kind regards,
-Minchan Kim
+1.7.8.111.gad25c.dirty
+
