@@ -1,92 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab2ENCyc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 22:54:32 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60749 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753922Ab2ENCyb convert rfc822-to-8bit (ORCPT
+	id S1754328Ab2ENCyx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 22:54:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45177 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753922Ab2ENCyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 22:54:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMbhsRSe-SNd8iDResx=Yqja96OD69unCH_WpcmFEH08jzv3EA@mail.gmail.com>
-References: <CAG9bXvkn6bm1xXpBxqvOxxzSrPPRdvP7RzKrfhSVJebN54psHQ@mail.gmail.com>
-	<CAG9bXvkm6KVRpca9-YBq9oRiUyFLeaD+gwysCjpMO4Xo69XBXQ@mail.gmail.com>
-	<CAMbhsRSe-SNd8iDResx=Yqja96OD69unCH_WpcmFEH08jzv3EA@mail.gmail.com>
-Date: Mon, 14 May 2012 10:54:30 +0800
-Message-ID: <CAG9bXvn6McQFxwstuh2QS5D2A=nHdw75ABg_qq9zELiPNfQ3ow@mail.gmail.com>
-Subject: Re: [PATCH] cpu_pm: fix some typos in comments
-From: Raul Xiong <raulxiong@gmail.com>
-To: Colin Cross <ccross@android.com>
-Cc: linux-arm-kernel@lists.infradead.org, khilman@ti.com,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        santosh.shilimkar@ti.com, Nicolas Pitre <nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 13 May 2012 22:54:52 -0400
+Message-ID: <1336964086.24732.7.camel@phoenix>
+Subject: [PATCH RFT 1/2] regulator: rc5t583: Convert to
+ regulator_list_voltage_linear()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Mon, 14 May 2012 10:54:46 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/14 Colin Cross <ccross@android.com>:
-> On Sun, May 13, 2012 at 7:43 PM, Raul Xiong <raulxiong@gmail.com> wrote:
->> 2012/5/11 Raul Xiong <raulxiong@gmail.com>:
->>> Fix some comment typos in function names
->>>
->>> Signed-off-by: Raul Xiong <raulxiong@gmail.com>
->>> ---
->>>  kernel/cpu_pm.c |    8 ++++----
->>>  1 files changed, 4 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/kernel/cpu_pm.c b/kernel/cpu_pm.c
->>> index 249152e..957b151 100644
->>> --- a/kernel/cpu_pm.c
->>> +++ b/kernel/cpu_pm.c
->>> @@ -81,7 +81,7 @@ int cpu_pm_unregister_notifier(struct notifier_block *nb)
->>>  EXPORT_SYMBOL_GPL(cpu_pm_unregister_notifier);
->>>
->>>  /**
->>> - * cpm_pm_enter - CPU low power entry notifier
->>> + * cpu_pm_enter - CPU low power entry notifier
->>>  *
->>>  * Notifies listeners that a single CPU is entering a low power state that may
->>>  * cause some blocks in the same power domain as the cpu to reset.
->>> @@ -115,7 +115,7 @@ int cpu_pm_enter(void)
->>>  EXPORT_SYMBOL_GPL(cpu_pm_enter);
->>>
->>>  /**
->>> - * cpm_pm_exit - CPU low power exit notifier
->>> + * cpu_pm_exit - CPU low power exit notifier
->>>  *
->>>  * Notifies listeners that a single CPU is exiting a low power state that may
->>>  * have caused some blocks in the same power domain as the cpu to reset.
->>> @@ -139,7 +139,7 @@ int cpu_pm_exit(void)
->>>  EXPORT_SYMBOL_GPL(cpu_pm_exit);
->>>
->>>  /**
->>> - * cpm_cluster_pm_enter - CPU cluster low power entry notifier
->>> + * cpu_cluster_pm_enter - CPU cluster low power entry notifier
->>>  *
->>>  * Notifies listeners that all cpus in a power domain are entering a low power
->>>  * state that may cause some blocks in the same power domain to reset.
->>> @@ -174,7 +174,7 @@ int cpu_cluster_pm_enter(void)
->>>  EXPORT_SYMBOL_GPL(cpu_cluster_pm_enter);
->>>
->>>  /**
->>> - * cpm_cluster_pm_exit - CPU cluster low power exit notifier
->>> + * cpu_cluster_pm_exit - CPU cluster low power exit notifier
->>>  *
->>>  * Notifies listeners that all cpus in a power domain are exiting form a
->>>  * low power state that may have caused some blocks in the same power domain
->>
->>
->> Hi Colin, all,
->>
->> Is there any problem to accept this patch?
->>
->>
->> Raul
->> Best Regards
->
-> Nicolas Pitre posted a similar patch in March that fixed these plus
-> one more typo, and got two acks.  That one should probably go in.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/rc5t583-regulator.c |   28 +++++++++-------------------
+ 1 files changed, 9 insertions(+), 19 deletions(-)
 
-Got it, thanks for let me know that.
+diff --git a/drivers/regulator/rc5t583-regulator.c b/drivers/regulator/rc5t583-regulator.c
+index 7951260..f5d8537 100644
+--- a/drivers/regulator/rc5t583-regulator.c
++++ b/drivers/regulator/rc5t583-regulator.c
+@@ -41,9 +41,7 @@ struct rc5t583_regulator_info {
+ 	uint8_t			deepsleep_reg;
+ 
+ 	/* Chip constraints on regulator behavior */
+-	int			min_uV;
+ 	int			max_uV;
+-	int			step_uV;
+ 
+ 	/* Regulator specific turn-on delay  and voltage settling time*/
+ 	int			enable_uv_per_us;
+@@ -62,24 +60,16 @@ struct rc5t583_regulator {
+ 	struct regulator_dev	*rdev;
+ };
+ 
+-static int rc5t583_list_voltage(struct regulator_dev *rdev, unsigned selector)
+-{
+-	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
+-	struct rc5t583_regulator_info *ri = reg->reg_info;
+-	return ri->min_uV + (ri->step_uV * selector);
+-}
+-
+ static int rc5t583_set_voltage(struct regulator_dev *rdev,
+ 			       int min_uV, int max_uV, unsigned *selector)
+ {
+ 	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
+-	struct rc5t583_regulator_info *ri = reg->reg_info;
+ 	int sel, ret;
+ 
+-	if (min_uV < ri->min_uV)
+-		min_uV = ri->min_uV;
++	if (min_uV < rdev->desc->min_uV)
++		min_uV = rdev->desc->min_uV;
+ 
+-	sel = DIV_ROUND_UP(min_uV - ri->min_uV, ri->step_uV);
++	sel = DIV_ROUND_UP(min_uV - rdev->desc->min_uV, rdev->desc->uV_step);
+ 
+ 	if (sel >= rdev->desc->n_voltages) {
+ 		dev_err(&rdev->dev, "Invalid selector 0x%02x\n", sel);
+@@ -100,7 +90,7 @@ static int rc5t583_regulator_enable_time(struct regulator_dev *rdev)
+ {
+ 	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
+ 	int vsel = regulator_get_voltage_sel_regmap(rdev);
+-	int curr_uV = rc5t583_list_voltage(rdev, vsel);
++	int curr_uV = regulator_list_voltage_linear(rdev, vsel);
+ 
+ 	return DIV_ROUND_UP(curr_uV, reg->reg_info->enable_uv_per_us);
+ }
+@@ -110,12 +100,12 @@ static int rc5t583_set_voltage_time_sel(struct regulator_dev *rdev,
+ {
+ 	struct rc5t583_regulator *reg = rdev_get_drvdata(rdev);
+ 	int old_uV, new_uV;
+-	old_uV = rc5t583_list_voltage(rdev, old_selector);
++	old_uV = regulator_list_voltage_linear(rdev, old_selector);
+ 
+ 	if (old_uV < 0)
+ 		return old_uV;
+ 
+-	new_uV = rc5t583_list_voltage(rdev, new_selector);
++	new_uV = regulator_list_voltage_linear(rdev, new_selector);
+ 	if (new_uV < 0)
+ 		return new_uV;
+ 
+@@ -131,7 +121,7 @@ static struct regulator_ops rc5t583_ops = {
+ 	.enable_time		= rc5t583_regulator_enable_time,
+ 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+ 	.set_voltage		= rc5t583_set_voltage,
+-	.list_voltage		= rc5t583_list_voltage,
++	.list_voltage		= regulator_list_voltage_linear,
+ 	.set_voltage_time_sel	= rc5t583_set_voltage_time_sel,
+ };
+ 
+@@ -141,9 +131,7 @@ static struct regulator_ops rc5t583_ops = {
+ 	.reg_disc_reg	= RC5T583_REG_##_disc_reg,		\
+ 	.disc_bit	= _disc_bit,				\
+ 	.deepsleep_reg	= RC5T583_REG_##_id##DAC_DS,		\
+-	.min_uV		= _min_mv * 1000,			\
+ 	.max_uV		= _max_mv * 1000,			\
+-	.step_uV	= _step_uV,				\
+ 	.enable_uv_per_us = _enable_mv * 1000,			\
+ 	.change_uv_per_us = 40 * 1000,				\
+ 	.deepsleep_id	= RC5T583_DS_##_id,			\
+@@ -158,6 +146,8 @@ static struct regulator_ops rc5t583_ops = {
+ 		.vsel_mask = _vout_mask,			\
+ 		.enable_reg = RC5T583_REG_##_en_reg,		\
+ 		.enable_mask = BIT(_en_bit),			\
++		.min_uV	= _min_mv * 1000,			\
++		.uV_step = _step_uV,				\
+ 	},							\
+ }
+ 
+-- 
+1.7.5.4
+
+
+
