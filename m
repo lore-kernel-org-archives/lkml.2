@@ -1,63 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab2ENOme (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 10:42:34 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:47933 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755139Ab2ENOmd (ORCPT
+	id S1756636Ab2ENOyc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 10:54:32 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:39522 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755667Ab2ENOyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 10:42:33 -0400
-Message-ID: <4FB119CA.2080606@linux.vnet.ibm.com>
-Date: Mon, 14 May 2012 09:42:18 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 14 May 2012 10:54:22 -0400
+Date: Mon, 14 May 2012 11:54:16 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf-record: Create events initially disabled -- again
+Message-ID: <20120514145416.GB4254@infradead.org>
+References: <1336968088-11531-1-git-send-email-dsahern@gmail.com>
+ <87sjf31a8c.fsf@sejong.aot.lge.com>
+ <4FB1041C.1050903@gmail.com>
+ <4FB114CE.10904@gmail.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] zram: remove comment in Kconfig
-References: <1336985134-31967-1-git-send-email-minchan@kernel.org> <1336985134-31967-2-git-send-email-minchan@kernel.org>
-In-Reply-To: <1336985134-31967-2-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051414-3270-0000-0000-00000652F23F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB114CE.10904@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2012 03:45 AM, Minchan Kim wrote:
-
-> Exactly speaking, zram should has dependency with
-> zsmalloc, not x86. So x86 dependeny check is redundant.
+Em Mon, May 14, 2012 at 08:21:02AM -0600, David Ahern escreveu:
+> On 5/14/12 7:09 AM, David Ahern wrote:
+> >>A problem I see is that it'll break group handling again:
+> >>
+> >>$ ./perf stat -g sleep 1
+> >>
+> >>Performance counter stats for 'sleep 1':
+> >>
+> >><not counted> task-clock
+> >><not counted> context-switches
+> >><not counted> CPU-migrations
+> >><not counted> page-faults
+> >><not counted> cycles
+> >><not counted> stalled-cycles-frontend
+> >><not counted> stalled-cycles-backend
+> >><not counted> instructions
+> >><not counted> branches
+> >><not counted> branch-misses
+> >>
+> >>1.000868932 seconds time elapsed
+> >>
+> >>So I suggest changing perf_target__none() check to a proper one
+> >>(perf_target__no_cpu? - the name might be changed soon) for your
+> >>purpose.
+> >
+> >Something else is wrong then. I tested that command (saw your patch in
+> >the history) and it worked for me. Also, this code path does not affect
+> >perf-stat -- it touches perf-record and perf-test only.
 > 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/staging/zram/Kconfig |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+> I think it is something else. I am running latest git tree
+> (3.4.0-rc7). perf from Linus' tree and acme/core both show:
 > 
-> diff --git a/drivers/staging/zram/Kconfig b/drivers/staging/zram/Kconfig
-> index 9d11a4c..ee23a86 100644
-> --- a/drivers/staging/zram/Kconfig
-> +++ b/drivers/staging/zram/Kconfig
-> @@ -1,8 +1,6 @@
->  config ZRAM
->  	tristate "Compressed RAM block device support"
-> -	# X86 dependency is because zsmalloc uses non-portable pte/tlb
-> -	# functions
-> -	depends on BLOCK && SYSFS && X86
-> +	depends on BLOCK && SYSFS
+> perf stat -g  -- find /usr >/dev/null
+> 
+>  Performance counter stats for 'find /usr':
+> 
+>      <not counted> task-clock
+>      <not counted> context-switches
+>      <not counted> CPU-migrations
+>      <not counted> page-faults
+>      <not counted> cycles
+>      <not counted> stalled-cycles-frontend
+>      <not counted> stalled-cycles-backend
+>      <not counted> instructions
+>      <not counted> branches
+>      <not counted> branch-misses
+> 
+>        0.111976940 seconds time elapsed
+> 
+> (Using find to make sure some work is done as opposed to sleep;
+> openssl speed also shows the above.)
+
+[acme@sandy ~]$ perf stat -g  -- find /usr >/dev/null
+find: `/usr/lib64/audit': Permission denied
+^Cfind: Interrupt
+
+ Performance counter stats for 'find /usr':
+
+     <not counted> task-clock              
+     <not counted> context-switches        
+     <not counted> CPU-migrations          
+     <not counted> page-faults             
+     <not counted> cycles                  
+     <not counted> stalled-cycles-frontend 
+     <not counted> stalled-cycles-backend  
+     <not counted> instructions            
+     <not counted> branches                
+     <not counted> branch-misses           
+
+       1.282060271 seconds time elapsed
 
 
-Two comments here:
+[acme@sandy ~]$ uname -r
+3.4.0-rc4-uprobes+
 
-1) zram should really depend on ZSMALLOC instead of selecting it
-because, as the patch has it, zram could be selected on an arch that
-zsmalloc doesn't support.
+But:
 
-2) This change would need to be done in zcache as well.
+[acme@felicio linux]$ uname -r
+3.4.0-rc3+
+[acme@felicio linux]$ perf stat -g  -- find /usr >/dev/null
+^Cfind: Interrupt
 
-Seth
+ Performance counter stats for 'find /usr':
 
+        126.499751 task-clock                #    0.122 CPUs utilized          
+     <not counted> context-switches        
+     <not counted> CPU-migrations          
+     <not counted> page-faults             
+       366,694,182 cycles                    #    2.899 GHz                    
+       151,332,137 stalled-cycles-frontend   #   41.27% frontend cycles idle   
+       103,373,418 stalled-cycles-backend    #   28.19% backend  cycles idle   
+       408,309,250 instructions              #    1.11  insns per cycle        
+                                             #    0.37  stalled cycles
+                                             #    per insn
+        77,453,802 branches                  #  612.284 M/sec                  
+         1,703,728 branch-misses             #    2.20% of all branches        
+
+       1.032917277 seconds time elapsed
+
+
+[acme@felicio linux]$
+
+Bisecting...
+
+- Arnaldo
