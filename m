@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757941Ab2ENUrI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 16:47:08 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50866 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757829Ab2ENUrD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 16:47:03 -0400
-Date: Mon, 14 May 2012 13:45:31 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Sergiu Iordache <sergiu@chromium.org>, linux-kernel@vger.kernel.org,
-        arve@android.com, Jesper Juhl <jj@chaosbits.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
-        Thomas Meyer <thomas@m3y3r.de>, tony.luck@intel.com
-Subject: Re: [PATCH 0/11] Merge ramoops and persistent_ram, generic pstore
- RAM backend
-Message-ID: <20120514204531.GA13828@lizard>
-References: <20120512001506.GA8653@lizard>
- <20120514155846.GA19538@kroah.com>
- <1337013022.2476.17.camel@lorien2>
+	id S1757930Ab2ENUtF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 16:49:05 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:43721 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757829Ab2ENUtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 16:49:02 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Subject: [PATCH] ACPI / PM: Fix error message in __acpi_bus_set_power()
+Date: Mon, 14 May 2012 22:53:56 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1337013022.2476.17.camel@lorien2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205142253.57023.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 10:30:22AM -0600, Shuah Khan wrote:
-[...]
-> Anton! Is it safe to assume you are planning to cover the second feature
-> as well, in which case I can drop my plans to get this work done.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Yep, absolutely. I'm fully committed to add runtime logging support
-to pstore. Actually, I'll post patches pretty soon.
+After recent changes of the ACPI device low-power states definitions
+an error message in __acpi_bus_set_power() needs to be updated so
+that it prints the correct name of the state that has been requested
+(currently it will print "D3" for D3hot and "D4" for D3cold).
 
-Thanks!
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/acpi/bus.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Index: linux/drivers/acpi/bus.c
+===================================================================
+--- linux.orig/drivers/acpi/bus.c
++++ linux/drivers/acpi/bus.c
+@@ -240,7 +240,9 @@ static int __acpi_bus_set_power(struct a
+ 	}
+ 
+ 	if (!device->power.states[state].flags.valid) {
+-		printk(KERN_WARNING PREFIX "Device does not support D%d\n", state);
++		printk(KERN_WARNING PREFIX "Device does not support D%d%s\n",
++			state == ACPI_STATE_D3_COLD ? 3 : state,
++			state == ACPI_STATE_D3_HOT ? "hot" : "");
+ 		return -ENODEV;
+ 	}
+ 	if (device->parent && (state < device->parent->power.state)) {
