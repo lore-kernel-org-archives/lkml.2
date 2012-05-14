@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757893Ab2ENUnJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 16:43:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58495 "EHLO mx2.suse.de"
+	id S1757902Ab2ENUpx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 16:45:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49502 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757829Ab2ENUnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 16:43:07 -0400
-Date: Mon, 14 May 2012 22:42:58 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
-        NeilBrown <neilb@suse.de>, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH] floppy: remove floppy-specific O_EXCL handling
-In-Reply-To: <20120514162521.GA2366@google.com>
-Message-ID: <alpine.LNX.2.00.1205142237590.15448@pobox.suse.cz>
-References: <alpine.LNX.2.00.1205131059410.15448@pobox.suse.cz> <20120514162521.GA2366@google.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757777Ab2ENUpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 16:45:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="152883726"
+Date: Mon, 14 May 2012 22:55:38 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, jonghwa3.lee@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/2] MAX77693: add initial MAX77693 MFD driver
+Message-ID: <20120514205538.GG12740@sortiz-mobl>
+References: <1336995592-1505-1-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336995592-1505-1-git-send-email-cw00.choi@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 May 2012, Tejun Heo wrote:
+Hi Chanwoo,
 
-> > Block layer now handles O_EXCL in a generic way for block devices.
-> > 
-> > The semantics is however different for floppy and all other block devices,
-> > as floppy driver contains its own O_EXCL handling.
-> > 
-> > The semantics for all-but-floppy bdevs is "there can be at most one O_EXCL 
-> > open of this file", while for floppy bdev the semantics is "if someone has 
-> > the bdev open with O_EXCL, noone else can open it".
-> > 
-> > Remove the floppy-specific handling and let the generic bdev code O_EXCL
-> > handling take over.
-> > 
-> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+On Mon, May 14, 2012 at 08:39:52PM +0900, Chanwoo Choi wrote:
+> MAX77693 is sub PMIC(Power Management IC) working
+> with other main PMIC. It has several features:
+> -PMIC
+> -MUIC(Micro USB Interface Controller)
+> -Camera flash LED control
+> -Haptic motor control
 > 
-> Patch looks good to me 
+> This patch adds initial basis for several devices.
+> It is tested on TRATS board.
+Applied both patches, thanks. And thanks to Mark for the quick review.
 
-Thanks.
-
-> but why do we want to change this at this point?
-
-Because since
-
-	commit e525fd89d380c4a94c0d63913a1dd1a593ed25e7
-	Author: Tejun Heo <tj@kernel.org>
-	Date:   Sat Nov 13 11:55:17 2010 +0100
-
-	    block: make blkdev_get/put() handle exclusive access
-
-mount of /dev/fd0 actually causes the fd0 block device be claimed with 
-_EXCL. Before this commit, you are able to mount /dev/fd0 and then open() 
-it afterward. After this commit you can't any more, because mounting 
-/dev/fd0 already passes O_EXCL to floppy_open(), and thus noone else can 
-open(/dev/fd0) any more.
-
-My commit brings things back into shape, i.e. you can, equally to other 
-block devices, both mount it and open() it afterwards.
+Cheers,
+Samuel.
 
 -- 
-Jiri Kosina
-SUSE Labs
+Intel Open Source Technology Centre
+http://oss.intel.com/
