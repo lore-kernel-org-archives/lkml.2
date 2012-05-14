@@ -1,182 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab2ENVpe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 17:45:34 -0400
-Received: from smtp-vbr16.xs4all.nl ([194.109.24.36]:1418 "EHLO
-	smtp-vbr16.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932437Ab2ENVpc (ORCPT
+	id S932485Ab2ENVph (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 17:45:37 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:63679 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932453Ab2ENVpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 17:45:32 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: manjunatha_halli@ti.com
-Subject: Re: [PATCH V6 2/5] New control class and features for FM RX
-Date: Mon, 14 May 2012 23:45:25 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4.0-rc3-durdane; KDE/4.7.4; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Manjunatha Halli <x0130808@ti.com>
-References: <1337027244-2595-1-git-send-email-manjunatha_halli@ti.com> <1337027244-2595-3-git-send-email-manjunatha_halli@ti.com>
-In-Reply-To: <1337027244-2595-3-git-send-email-manjunatha_halli@ti.com>
+	Mon, 14 May 2012 17:45:34 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205142345.25136.hverkuil@xs4all.nl>
+In-Reply-To: <201205142107.51335.arnd@arndb.de>
+References: <20120514105424.8596.38355.sendpatchset@w520>
+	<20120514123034.GD10453@n2100.arm.linux.org.uk>
+	<CANqRtoTYWGhto7Zf=C=WHrT5fjc1p=6GE0cnozYLUuqbz=+LhA@mail.gmail.com>
+	<201205142107.51335.arnd@arndb.de>
+Date: Tue, 15 May 2012 06:45:33 +0900
+Message-ID: <CANqRtoSts80a-Pgas23Um8FFtnSeeu2oZKNehdfymLWoTOSspA@mail.gmail.com>
+Subject: Re: [PATCH 03/03] ARM: Undelete KZM9D mach-type
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        lethal@linux-sh.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        horms@verge.net.au, olof@lixom.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon May 14 2012 22:27:21 manjunatha_halli@ti.com wrote:
-> From: Manjunatha Halli <x0130808@ti.com>
-> 
-> This patch creates new ctrl class for FM RX and adds new CID's for
-> below FM features,
->       1) De-Emphasis filter mode
->       2) RDS Alternate Frequency switch
-> 
-> Also this patch adds a field for band selection in struct v4l2_hw_freq_seek
-> and adds new capability flags for all below FM bands
-> 	1) V4L2_TUNER_CAP_BAND_TYPE_DEFAULT -> Default Band
-> 	2) V4L2_TUNER_CAP_BAND_TYPE_EUROPE_US -> Europe/US Band
-> 	3) V4L2_TUNER_CAP_BAND_TYPE_JAPAN   -> Japan Band
-> 	4) V4L2_TUNER_CAP_BAND_TYPE_RUSSIAN -> Russian Band
-> 	5) V4L2_TUNER_CAP_BAND_TYPE_WEATHER -> Weather Band
-> 
-> Signed-off-by: Manjunatha Halli <x0130808@ti.com>
-> ---
->  drivers/media/video/v4l2-ctrls.c |   17 ++++++++++++++---
->  include/linux/videodev2.h        |   24 +++++++++++++++++++++++-
->  2 files changed, 37 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/media/video/v4l2-ctrls.c b/drivers/media/video/v4l2-ctrls.c
-> index 18015c0..9d7608e 100644
-> --- a/drivers/media/video/v4l2-ctrls.c
-> +++ b/drivers/media/video/v4l2-ctrls.c
-> @@ -243,8 +243,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
->  		"Vivid",
->  		NULL
->  	};
-> -	static const char * const tune_preemphasis[] = {
-> -		"No Preemphasis",
-> +	static const char * const tune_emphasis[] = {
-> +		"None",
->  		"50 Microseconds",
->  		"75 Microseconds",
->  		NULL,
-> @@ -413,7 +413,9 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
->  	case V4L2_CID_COLORFX:
->  		return colorfx;
->  	case V4L2_CID_TUNE_PREEMPHASIS:
-> -		return tune_preemphasis;
-> +		return tune_emphasis;
-> +	case V4L2_CID_TUNE_DEEMPHASIS:
-> +		return tune_emphasis;
->  	case V4L2_CID_FLASH_LED_MODE:
->  		return flash_led_mode;
->  	case V4L2_CID_FLASH_STROBE_SOURCE:
-> @@ -644,6 +646,12 @@ const char *v4l2_ctrl_get_name(u32 id)
->  	case V4L2_CID_JPEG_COMPRESSION_QUALITY:	return "Compression Quality";
->  	case V4L2_CID_JPEG_ACTIVE_MARKER:	return "Active Markers";
->  
-> +	/* FM Radio Receiver control */
-> +	/* Keep the order of the 'case's the same as in videodev2.h! */
-> +	case V4L2_CID_FM_RX_CLASS:		return "FM Radio Receiver Controls";
-> +	case V4L2_CID_RDS_AF_SWITCH:		return "RDS Alternate Frequency Switch";
-> +	case V4L2_CID_TUNE_DEEMPHASIS:		return "De-Emphasis";
-> +
->  	default:
->  		return NULL;
->  	}
-> @@ -688,6 +696,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
->  	case V4L2_CID_MPEG_VIDEO_H264_8X8_TRANSFORM:
->  	case V4L2_CID_MPEG_VIDEO_H264_VUI_SAR_ENABLE:
->  	case V4L2_CID_MPEG_VIDEO_MPEG4_QPEL:
-> +	case V4L2_CID_RDS_AF_SWITCH:
->  		*type = V4L2_CTRL_TYPE_BOOLEAN;
->  		*min = 0;
->  		*max = *step = 1;
-> @@ -733,6 +742,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
->  	case V4L2_CID_MPEG_VIDEO_MPEG4_LEVEL:
->  	case V4L2_CID_MPEG_VIDEO_MPEG4_PROFILE:
->  	case V4L2_CID_JPEG_CHROMA_SUBSAMPLING:
-> +	case V4L2_CID_TUNE_DEEMPHASIS:
->  		*type = V4L2_CTRL_TYPE_MENU;
->  		break;
->  	case V4L2_CID_RDS_TX_PS_NAME:
-> @@ -745,6 +755,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
->  	case V4L2_CID_FM_TX_CLASS:
->  	case V4L2_CID_FLASH_CLASS:
->  	case V4L2_CID_JPEG_CLASS:
-> +	case V4L2_CID_FM_RX_CLASS:
->  		*type = V4L2_CTRL_TYPE_CTRL_CLASS;
->  		/* You can neither read not write these */
->  		*flags |= V4L2_CTRL_FLAG_READ_ONLY | V4L2_CTRL_FLAG_WRITE_ONLY;
-> diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-> index c9c9a46..91bc47b 100644
-> --- a/include/linux/videodev2.h
-> +++ b/include/linux/videodev2.h
-> @@ -1137,6 +1137,7 @@ struct v4l2_ext_controls {
->  #define V4L2_CTRL_CLASS_FM_TX 0x009b0000	/* FM Modulator control class */
->  #define V4L2_CTRL_CLASS_FLASH 0x009c0000	/* Camera flash controls */
->  #define V4L2_CTRL_CLASS_JPEG 0x009d0000		/* JPEG-compression controls */
-> +#define V4L2_CTRL_CLASS_FM_RX 0x009e0000	/* FM Receiver control class */
->  
->  #define V4L2_CTRL_ID_MASK      	  (0x0fffffff)
->  #define V4L2_CTRL_ID2CLASS(id)    ((id) & 0x0fff0000UL)
-> @@ -1782,6 +1783,13 @@ enum v4l2_jpeg_chroma_subsampling {
->  #define	V4L2_JPEG_ACTIVE_MARKER_DQT		(1 << 17)
->  #define	V4L2_JPEG_ACTIVE_MARKER_DHT		(1 << 18)
->  
-> +/* FM Receiver class control IDs */
-> +#define V4L2_CID_FM_RX_CLASS_BASE		(V4L2_CTRL_CLASS_FM_RX | 0x900)
-> +#define V4L2_CID_FM_RX_CLASS			(V4L2_CTRL_CLASS_FM_RX | 1)
-> +
-> +#define V4L2_CID_RDS_AF_SWITCH			(V4L2_CID_FM_RX_CLASS_BASE + 1)
-> +#define V4L2_CID_TUNE_DEEMPHASIS		(V4L2_CID_FM_RX_CLASS_BASE + 2)
-> +
->  /*
->   *	T U N I N G
->   */
-> @@ -1819,6 +1827,12 @@ struct v4l2_modulator {
->  #define V4L2_TUNER_CAP_RDS		0x0080
->  #define V4L2_TUNER_CAP_RDS_BLOCK_IO	0x0100
->  #define V4L2_TUNER_CAP_RDS_CONTROLS	0x0200
-> +#define V4L2_TUNER_CAP_BAND_TYPE_DEFAULT	0x00000000	/* Default band */
-> +#define V4L2_TUNER_CAP_BAND_TYPE_EUROPE_US	0x00010000	/* Europe/US band */
-> +#define V4L2_TUNER_CAP_BAND_TYPE_JAPAN		0x00020000	/* Japan band */
-> +#define V4L2_TUNER_CAP_BAND_TYPE_RUSSIAN	0x00030000	/* Russian band */
-> +#define V4L2_TUNER_CAP_BAND_TYPE_WEATHER	0x00040000	/* Weather band */
-> +
->  
->  /*  Flags for the 'rxsubchans' field */
->  #define V4L2_TUNER_SUB_MONO		0x0001
-> @@ -1843,13 +1857,21 @@ struct v4l2_frequency {
->  	__u32		      reserved[8];
->  };
->  
-> +
-> +#define V4L2_FM_BAND__DEFAULT	0
+On Tue, May 15, 2012 at 6:07 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 14 May 2012, Magnus Damm wrote:
+>> On Mon, May 14, 2012 at 9:30 PM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>> > On Mon, May 14, 2012 at 07:54:51PM +0900, Magnus Damm wrote:
+>> >> From: Magnus Damm <damm@opensource.se>
+>> >>
+>> >> Undelete the KZM9D mach-type to allow build of board
+>> >> for EMEV2 SoC support.
+>> >
+>> > If you've converted to use DT for KZM9D, do you still need this?
+>>
+>> Good question. I guess it depends on how we want to make use of DT on
+>> that piece of hardware. I do intend to convert the KZM9D board (not to
+>> be mistaken for KZM9G!) to DT (and drop the generic EMEV2 SoC DT
+>> unless someone really wants it at this timing), but I'm still not sure
+>> if the SMP code in V2 is the way we want to do it. I suspect that
+>> there is no way to support SMP without static entity mappings, so
+>> perhaps I should rework that part and redo a V3? Or perhaps I should
+>> interpret the EMEV2 silence as a good thing. =)
+>
+> I don't understand why you want to have a KZM9D board file at all,
+> since it from looking at it, I can find nothing that is truely
+> board specific and doesn't already have bindings. This is different
+> from the other boards that you just converted to DT_MACHINE_START
+> but still left using individual board files because some bindings
+> are missing.
+>
+> The only board specific device you add for KZM9D is smsc911x, and
+> that has bindings, all the other devices can just be hardcoded
+> for the soc because they are always the same, until we have bindings
+> for all of them. Am I missing something?
 
-Just report this one to fix the double underscore (__DEFAULT) :-)
+Right, I understand your observation. Let me try to explain the reason
+behind the board code - please excuse me not doing that in the first
+place already.
 
-Regards,
+So yes, in the EMEV2 case the serial port and timers have DT bindings.
+Same for the already existing bindings for the SMSC chip. And I'm
+working on a EMEV2 GPIO V2 and DT for that GPIO driver. So those are
+moving along nicely.
 
-	Hans
+Hardware that doesn't have any DT bindings at this point are: pinmux,
+clocks and SMP.
 
-> +#define V4L2_FM_BAND_EUROPE_US	1	/* 87.5 Mhz - 108 MHz */
-> +#define V4L2_FM_BAND_JAPAN	2	/* 76 MHz - 90 MHz */
-> +#define V4L2_FM_BAND_RUSSIAN	3	/* 65.8 MHz - 74 MHz */
-> +#define V4L2_FM_BAND_WEATHER	4	/* 162.4 MHz - 162.55 MHz */
-> +
->  struct v4l2_hw_freq_seek {
->  	__u32		      tuner;
->  	enum v4l2_tuner_type  type;
->  	__u32		      seek_upward;
->  	__u32		      wrap_around;
->  	__u32		      spacing;
-> -	__u32		      reserved[7];
-> +	__u32		      band;
-> +	__u32		      reserved[6];
->  };
->  
->  /*
-> 
+Perhaps my view of DT support is somewhat odd, but I'm rather hesitant
+to commit to DT for a SoC when I don't use DT for _all_ the hardware
+blocks. As you can see in the EMEV2 SoC DT V2 patch I have
+intentionally left out the clock setup dependency and there board code
+is in the sad state that it assumes that the boot loader has done all
+the work already. There is no SMP bindings in place either. So with
+the clock portion missing the kernel is not really that useful as-is,
+but I prefer that over locking ourselves into something we don't know
+fully yet. On a SoC level that is.
+
+The reason why I don't want to tie in the clock and the pinmux in a
+static fashion on a SoC and release DT support is that I don't know to
+migrate from that state to all-DT and still remain backwards
+compatible. I'd be very happy to hear suggestions how to do that. If
+this is possible without causing too much pain for the user then I
+will of course go that way.
+
+I am very comfortable doing things on a board level, like in the KZM9G
+/ Armadillo EVA 800 cases. Perhaps I can adjust the EMEV2 KZM9D board
+to follow that style? As for EMEV2 SoC DT, I prefer either keeping the
+EMEV2 SoC DT V2 as-is with no clock, pinmux and SMP, or ditching the
+EMEV2 SoC DT portion all together and go KZM9D DT board only.
+
+What is your preference?
+
+>> Unfortunately the KZM9D board only takes uImages, but good news is
+>> that it actually feeds us the correct mach-type. This seems to be a
+>> pretty common thing around here these days. I'm trying to get people
+>> to actually store the DTB in the boot loader and pass it along, but
+>> that seems rather far away at this point.
+>
+> The preferred way would be to store the dtb on the same medium that
+> contains the kernel, so you can update them together if necessary,
+> even though we try to keep dtb files compatible across kernel versions.
+> I would not want to rely on a hardcoded dtb file in the boot loader.
+
+Right, I agree. Relying on a fixed DTB in an unreliable boot loader is
+the last thing I want to do.
+
+So if your boot loader can't pass DTB to the kernel, and you want to
+have a single kernel supporting multiple boards, then do you see
+anything wrong with based on mach-type do a run time decision (in
+arch/arm/boot/compressed/) to override the ATAG from the boot loader
+with a compiled-in per-board DTB?
+
+The alternative is to have a raw zImage and a set of DTB files and
+force the user to manually append the DTB to the zImage depending on
+board type. Seems a bit too manual process for my liking, so as you
+probably are tired of hearing now - I prefer extending the boot code
+to switch on something we already have - the mach-type - and then
+based on that feed one of the compiled-in DTBs to the kernel.
+
+I'll try to cook something up unless there are any objections.
+
+Thanks for your help!
+
+Cheers,
+
+/ magnus
