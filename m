@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab2ENSDC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 14:03:02 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:53063 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757364Ab2ENSDA (ORCPT
+	id S932075Ab2ENSJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 14:09:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12111 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757157Ab2ENSJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 14:03:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120514171702.GC21960@aftab.osrc.amd.com>
-References: <cover.1336674796.git.tony.luck@intel.com>
-	<e6fa674d2f4ded80201f733d06b234b21559f0fe.1336674796.git.tony.luck@intel.com>
-	<20120513095913.GB28863@aftab.osrc.amd.com>
-	<3908561D78D1C84285E8C5FCA982C28F192EED2B@ORSMSX104.amr.corp.intel.com>
-	<20120514171702.GC21960@aftab.osrc.amd.com>
-Date: Mon, 14 May 2012 11:02:59 -0700
-X-Google-Sender-Auth: p8h3nIDJwX9MkNmrT-GmORe4z4Q
-Message-ID: <CA+8MBbKr-dc2MFNCvthqWzy3MvQmb8UEKy74mi36BkYHLDTOPg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] x86/mce: Only restart instruction after machine check
- recovery if it is safe
-From: Tony Luck <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Chen Gong <gong.chen@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 14 May 2012 14:09:07 -0400
+X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=ouS_5Wv3gPVaVS_zl0sA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337018944.14207.280.camel@gandalf.stny.rr.com>
+Subject: [ANNOUNCE] 3.2.17-rt28
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Mon, 14 May 2012 14:09:04 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 10:17 AM, Borislav Petkov <bp@amd64.org> wrote:
-> I was wondering about that but don't have any other flags/use cases.
-> Well, we can always change it later if needed.
 
-So is that an Ack? I was thinking that I should send this part to
-Linus now ... since restarting from a fault when RIPV isn't set
-could result in an application doing something bad (like getting
-the wrong answer).
+Dear RT Folks,
 
-The instruction stuff is new and needs to wait for the merge window.
+I'm pleased to announce the 3.2.17 stable release.
 
--Tony
+
+This release is just an update to the new stable 3.2.17 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: 1b5c78bddb7cd30df391c91122d8d77114d8da37
+
+
+Or to build 3.2.17 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.17.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.17.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
