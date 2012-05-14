@@ -1,166 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822Ab2ENNuf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:50:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61835 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755210Ab2ENNuc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:50:32 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>,
-        Maciej Sosnowski <maciej.sosnowski@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Keping Chen <chenkeping@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH v2 4/7] dmaengine: enhance network subsystem to support DMA device hotplug
-Date: Mon, 14 May 2012 21:47:06 +0800
-Message-Id: <1337003229-9158-5-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1337003229-9158-1-git-send-email-jiang.liu@huawei.com>
-References: <1337003229-9158-1-git-send-email-jiang.liu@huawei.com>
+	id S1756832Ab2ENNuv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 09:50:51 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:35993
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755210Ab2ENNut convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 09:50:49 -0400
+X-SpamScore: -11
+X-BigFish: VS-11(zzc89bh168aJ1432N98dKzz1202hzzz2dh2a8h668h839h93fhd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Mon, 14 May 2012 21:50:36 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+CC: Shawn Guo <shawn.guo@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Richard Zhao <richard.zhao@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <sameo@linux.intel.com>,
+        <shawn.guo@linaro.org>
+Subject: Re: [PATCH 2/2] mfd: anatop: permit adata be NULL when access
+ register
+Message-ID: <20120514135035.GC29393@b20223-02.ap.freescale.net>
+References: <1336870794-6351-1-git-send-email-richard.zhao@freescale.com>
+ <1336870794-6351-2-git-send-email-richard.zhao@freescale.com>
+ <20120514035137.GB20367@S2100-06.ap.freescale.net>
+ <20120514080835.GB31985@opensource.wolfsonmicro.com>
+ <4FB0C9D4.2060409@linaro.org>
+ <20120514094357.GF20367@S2100-06.ap.freescale.net>
+ <4FB10821.4000004@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <4FB10821.4000004@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+On Mon, May 14, 2012 at 09:26:57PM +0800, Ying-Chun Liu (PaulLiu) wrote:
+> (2012年05月14日 17:43), Shawn Guo wrote:
+> > On Mon, May 14, 2012 at 05:01:08PM +0800, Ying-Chun Liu (PaulLiu) wrote:
+> >> I think what the concern is we probably don't want several
+> >> non-continuous memory blocks of misc hardwares.
+> >> If we look into the current registers in anatop, it is really sparse.
+> >> Several regulators are using non-continuous address and the thermals are
+> >> also using different addresses. If the addresses are continuous then we
+> >> don't need the mfd driver.
+> >>
+> > I do not quite follow that.  The reason we need mfd driver isn't because
+> > we do not want to both regulator and thermal drivers to map and access
+> > the same address on their own which may have synchronization issue?
+> > 
+> 
+> Not sure about the synchronization issue. But currently thermal driver
+> in Linaro kernel do map and access the same address on its own now. It
+> is not a device driver yet and just access the address directly and
+> work. It seems to me that each different type of misc devices in Anatop
+> just work alone.
+> 
+> So let's go back to the patch. Why do we need this modification? Anatop
+> thermal driver can be written as a device driver and don't need this
+> patch. And we might get benefits when thermal driver written in this
+> way. Especially some boards do not have a correct fuse data. Any real
+> use cases of this patch?
+Some bits in anatop is not owned by any driver.
+It's for below code:
+        /* Some phy and power's special controls for host1           
+         * 1. The external charger detector needs to be disabled
+         * or the signal at DP will be poor                          
+         * 2. The PLL's power and output to usb for host 1
+         * is totally controlled by IC, so the Software only needs   
+         * to enable them at initializtion.
+         */ 
+        
+        anatop_write_reg(NULL, HW_ANADIG_USB2_CHRG_DETECT,           
+                        BM_ANADIG_USB2_CHRG_DETECT_EN_B |
+                        BM_ANADIG_USB2_CHRG_DETECT_CHK_CHRG_B,       
+                        ~0);
+        anatop_write_reg(NULL, HW_ANADIG_USB2_PLL_480_CTRL, 0,       
+                        BM_ANADIG_USB2_PLL_480_CTRL_BYPASS);
 
-Enhance network subsystem to correctly update DMA channel reference counts,
-so it won't break DMA device hotplug logic.
+        val = BM_ANADIG_USB2_PLL_480_CTRL_ENABLE |                   
+              BM_ANADIG_USB2_PLL_480_CTRL_POWER |
+              BM_ANADIG_USB2_PLL_480_CTRL_EN_USB_CLKS;               
+        anatop_write_reg(NULL, HW_ANADIG_USB2_PLL_480_CTRL, val, val);
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
----
- include/net/netdma.h |   26 ++++++++++++++++++++++++++
- net/ipv4/tcp.c       |   10 +++-------
- net/ipv4/tcp_input.c |    5 +----
- net/ipv4/tcp_ipv4.c  |    4 +---
- net/ipv6/tcp_ipv6.c  |    4 +---
- 5 files changed, 32 insertions(+), 17 deletions(-)
-
-diff --git a/include/net/netdma.h b/include/net/netdma.h
-index 8ba8ce2..6d71724 100644
---- a/include/net/netdma.h
-+++ b/include/net/netdma.h
-@@ -24,6 +24,32 @@
- #include <linux/dmaengine.h>
- #include <linux/skbuff.h>
- 
-+static inline bool
-+net_dma_capable(void)
-+{
-+	struct dma_chan *chan = net_dma_find_channel();
-+	dma_put_channel(chan);
-+
-+	return !!chan;
-+}
-+
-+static inline struct dma_chan *
-+net_dma_get_channel(struct tcp_sock *tp)
-+{
-+	if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
-+		tp->ucopy.dma_chan = net_dma_find_channel();
-+	return tp->ucopy.dma_chan;
-+}
-+
-+static inline void
-+net_dma_put_channel(struct tcp_sock *tp)
-+{
-+	if (tp->ucopy.dma_chan) {
-+		dma_put_channel(tp->ucopy.dma_chan);
-+		tp->ucopy.dma_chan = NULL;
-+	}
-+}
-+
- int dma_skb_copy_datagram_iovec(struct dma_chan* chan,
- 		struct sk_buff *skb, int offset, struct iovec *to,
- 		size_t len, struct dma_pinned_list *pinned_list);
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 8bb6ade..aea4032 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1451,8 +1451,7 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 			available = TCP_SKB_CB(skb)->seq + skb->len - (*seq);
- 		if ((available < target) &&
- 		    (len > sysctl_tcp_dma_copybreak) && !(flags & MSG_PEEK) &&
--		    !sysctl_tcp_low_latency &&
--		    net_dma_find_channel()) {
-+		    !sysctl_tcp_low_latency && net_dma_capable()) {
- 			preempt_enable_no_resched();
- 			tp->ucopy.pinned_list =
- 					dma_pin_iovec_pages(msg->msg_iov, len);
-@@ -1666,10 +1665,7 @@ do_prequeue:
- 
- 		if (!(flags & MSG_TRUNC)) {
- #ifdef CONFIG_NET_DMA
--			if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
--				tp->ucopy.dma_chan = net_dma_find_channel();
--
--			if (tp->ucopy.dma_chan) {
-+			if (net_dma_get_channel(tp)) {
- 				tp->ucopy.dma_cookie = dma_skb_copy_datagram_iovec(
- 					tp->ucopy.dma_chan, skb, offset,
- 					msg->msg_iov, used,
-@@ -1758,7 +1754,7 @@ skip_copy:
- 
- #ifdef CONFIG_NET_DMA
- 	tcp_service_net_dma(sk, true);  /* Wait for queue to drain */
--	tp->ucopy.dma_chan = NULL;
-+	net_dma_put_channel(tp);
- 
- 	if (tp->ucopy.pinned_list) {
- 		dma_unpin_iovec_pages(tp->ucopy.pinned_list);
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 9944c1d..3878916 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5227,10 +5227,7 @@ static int tcp_dma_try_early_copy(struct sock *sk, struct sk_buff *skb,
- 	if (tp->ucopy.wakeup)
- 		return 0;
- 
--	if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
--		tp->ucopy.dma_chan = net_dma_find_channel();
--
--	if (tp->ucopy.dma_chan && skb_csum_unnecessary(skb)) {
-+	if (net_dma_get_channel(tp) && skb_csum_unnecessary(skb)) {
- 
- 		dma_cookie = dma_skb_copy_datagram_iovec(tp->ucopy.dma_chan,
- 							 skb, hlen,
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 0cb86ce..90ea1c0 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1729,9 +1729,7 @@ process:
- 	if (!sock_owned_by_user(sk)) {
- #ifdef CONFIG_NET_DMA
- 		struct tcp_sock *tp = tcp_sk(sk);
--		if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
--			tp->ucopy.dma_chan = net_dma_find_channel();
--		if (tp->ucopy.dma_chan)
-+		if (net_dma_get_channel(tp))
- 			ret = tcp_v4_do_rcv(sk, skb);
- 		else
- #endif
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 86cfe60..fb81bbd 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1644,9 +1644,7 @@ process:
- 	if (!sock_owned_by_user(sk)) {
- #ifdef CONFIG_NET_DMA
- 		struct tcp_sock *tp = tcp_sk(sk);
--		if (!tp->ucopy.dma_chan && tp->ucopy.pinned_list)
--			tp->ucopy.dma_chan = net_dma_find_channel();
--		if (tp->ucopy.dma_chan)
-+		if (net_dma_get_channel(tp))
- 			ret = tcp_v6_do_rcv(sk, skb);
- 		else
- #endif
--- 
-1.7.9.5
+Thanks
+Richard
+> 
+> Yours Sincerely,
+> Paul
+> 
 
