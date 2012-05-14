@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab2ENBJf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 21:09:35 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51157 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753377Ab2ENBJe (ORCPT
+	id S1753957Ab2ENBMj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 21:12:39 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48798 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab2ENBMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 21:09:34 -0400
+	Sun, 13 May 2012 21:12:37 -0400
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FB05AD6.1090400@jp.fujitsu.com>
-Date: Mon, 14 May 2012 10:07:34 +0900
+Message-ID: <4FB05B8F.8020408@jp.fujitsu.com>
+Date: Mon, 14 May 2012 10:10:39 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -23,44 +23,48 @@ CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
         Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/6] memcg: fix error code in hugetlb_force_memcg_empty()
-References: <4FACDED0.3020400@jp.fujitsu.com> <4FACDFAE.5050808@jp.fujitsu.com> <20120511141754.e0719c26.akpm@linux-foundation.org>
-In-Reply-To: <20120511141754.e0719c26.akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/6] add res_counter_uncharge_until()
+References: <4FACDED0.3020400@jp.fujitsu.com> <4FACE01A.4040405@jp.fujitsu.com> <20120511141945.c487e94c.akpm@linux-foundation.org>
+In-Reply-To: <20120511141945.c487e94c.akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/05/12 6:17), Andrew Morton wrote:
+(2012/05/12 6:19), Andrew Morton wrote:
 
-> On Fri, 11 May 2012 18:45:18 +0900
+> On Fri, 11 May 2012 18:47:06 +0900
 > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 > 
->> The conditions are handled as -EBUSY, _now_.
+>> From: Frederic Weisbecker <fweisbec@gmail.com>
+>>
+>> At killing res_counter which is a child of other counter,
+>> we need to do
+>> 	res_counter_uncharge(child, xxx)
+>> 	res_counter_charge(parent, xxx)
+>>
+>> This is not atomic and wasting cpu. This patch adds
+>> res_counter_uncharge_until(). This function's uncharge propagates
+>> to ancestors until specified res_counter.
+>>
+>> 	res_counter_uncharge_until(child, parent, xxx)
+>>
+>> Now, ops is atomic and efficient.
+>>
+>> Changelog since v2
+>>  - removed unnecessary lines.
+>>  - Fixed 'From' , this patch comes from his series. Please signed-off-by if good.
+>>
+>> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> The changelog is poor.  I rewrote it to
-> 
-> : hugetlb_force_memcg_empty() incorrectly returns 0 (success) when the
-> : cgroup is found to be busy.  Return -EBUSY instead.
-> 
-> But it still doesn't tell us the end-user-visible effects of the bug. 
-> It should.
+> Frederic's Signed-off-by: is unavaliable?
 > 
 
-
-Ah, sorry. How about this ?
-
-
-
-The force_empty interface allows to make the memcg only when the cgroup
-doesn't include any tasks.
-
-	# echo 0 > /cgroup/xxxx/memory.force_empty
-
-If cgroup isn't empty, force_empty does nothing and retruns -EBUSY in usual
-memcg, memcontrol.c. But hugetlb implementation has inconsitency with
-it and returns 0 and do nothing. Fix it to return -EBUSY.
+I didn't add his Signed-off because I modified his orignal patch a little...
+I dropped res_counter_charge_until() because it's not used in this series,
+I have no justification for adding it.
+The idea of res_counter_uncharge_until() is from his patch.
 
 Thanks,
 -Kame
