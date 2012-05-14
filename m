@@ -1,293 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab2ENVHg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 17:07:36 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:37673 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757964Ab2ENVHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 17:07:35 -0400
-Message-ID: <1337029580.5614.18.camel@key-ThinkPad-W510>
-Subject: [PATCH v4 13/17] powerpc: crypto: SHA256 hash routines for nx
- encryption
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: benh@kernel.crashing.org
-Cc: rcj@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Date: Mon, 14 May 2012 16:06:20 -0500
-In-Reply-To: <1336955527.6727.2.camel@pasglop>
-References: <1336955527.6727.2.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1758116Ab2ENVIJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 17:08:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62701 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758082Ab2ENVIG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 17:08:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH 03/03] ARM: Undelete KZM9D mach-type
+Date: Mon, 14 May 2012 21:07:51 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        lethal@linux-sh.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        horms@verge.net.au, olof@lixom.net
+References: <20120514105424.8596.38355.sendpatchset@w520> <20120514123034.GD10453@n2100.arm.linux.org.uk> <CANqRtoTYWGhto7Zf=C=WHrT5fjc1p=6GE0cnozYLUuqbz=+LhA@mail.gmail.com>
+In-Reply-To: <CANqRtoTYWGhto7Zf=C=WHrT5fjc1p=6GE0cnozYLUuqbz=+LhA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051421-8974-0000-0000-0000091759A6
+Message-Id: <201205142107.51335.arnd@arndb.de>
+X-Provags-ID: V02:K0:KUakyvxnf2HfTGV8mf15KkpsmTJVzRuw6YmbHZmiJjo
+ 12NcMoHg8mUfmLDznSog2AOXQet5YoEn01egcdW+sSbEDugElZ
+ 4rKUXCgR+Lqugy0GILYDbrtpHupbu23hrx00eoBdXbX8CYVGPB
+ C9k45IwypCo7AdKEAvhxoOSqNAGoYjixesc5aydFgJgs7xZ6EJ
+ bmUKcwoMBhk1yQGJk9d8QPaDhDIyw0BjpjuC86YsfMD9dpAkT6
+ Bu5aq7RhOOEhbpC/ji6Eq5tPEQrsIHnkTV/wOMCh2THKK6/4HJ
+ 6L84ZyqjbJp9SDv+scNOpiGYqdhBtO5vBL9QZFkoSnbopZlLpE
+ /BHWpy4EWDyHNLaZUIOQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These routines add support for SHA-256 hashing on the Power7+ CPU's
-in-Nest accelerator driver.
+On Monday 14 May 2012, Magnus Damm wrote:
+> On Mon, May 14, 2012 at 9:30 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Mon, May 14, 2012 at 07:54:51PM +0900, Magnus Damm wrote:
+> >> From: Magnus Damm <damm@opensource.se>
+> >>
+> >> Undelete the KZM9D mach-type to allow build of board
+> >> for EMEV2 SoC support.
+> >
+> > If you've converted to use DT for KZM9D, do you still need this?
+> 
+> Good question. I guess it depends on how we want to make use of DT on
+> that piece of hardware. I do intend to convert the KZM9D board (not to
+> be mistaken for KZM9G!) to DT (and drop the generic EMEV2 SoC DT
+> unless someone really wants it at this timing), but I'm still not sure
+> if the SMP code in V2 is the way we want to do it. I suspect that
+> there is no way to support SMP without static entity mappings, so
+> perhaps I should rework that part and redo a V3? Or perhaps I should
+> interpret the EMEV2 silence as a good thing. =)
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
----
- drivers/crypto/nx/nx-sha256.c |  246 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 246 insertions(+), 0 deletions(-)
- create mode 100644 drivers/crypto/nx/nx-sha256.c
+I don't understand why you want to have a KZM9D board file at all,
+since it from looking at it, I can find nothing that is truely
+board specific and doesn't already have bindings. This is different
+from the other boards that you just converted to DT_MACHINE_START
+but still left using individual board files because some bindings
+are missing.
 
-diff --git a/drivers/crypto/nx/nx-sha256.c b/drivers/crypto/nx/nx-sha256.c
-new file mode 100644
-index 0000000..9767315
---- /dev/null
-+++ b/drivers/crypto/nx/nx-sha256.c
-@@ -0,0 +1,246 @@
-+/**
-+ * SHA-256 routines supporting the Power 7+ Nest Accelerators driver
-+ *
-+ * Copyright (C) 2011-2012 International Business Machines Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 only.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Author: Kent Yoder <yoder1@us.ibm.com>
-+ */
-+
-+#include <crypto/internal/hash.h>
-+#include <crypto/sha.h>
-+#include <linux/module.h>
-+#include <asm/vio.h>
-+
-+#include "nx_csbcpb.h"
-+#include "nx.h"
-+
-+
-+static int nx_sha256_init(struct shash_desc *desc)
-+{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_sg *out_sg;
-+
-+	nx_ctx_init(nx_ctx, HCOP_FC_SHA);
-+
-+	memset(sctx, 0, sizeof *sctx);
-+
-+	nx_ctx->ap = &nx_ctx->props[NX_PROPS_SHA256];
-+
-+	NX_CPB_SET_DIGEST_SIZE(nx_ctx->csbcpb, NX_DS_SHA256);
-+	out_sg = nx_build_sg_list(nx_ctx->out_sg, (u8 *)sctx->state,
-+				  SHA256_DIGEST_SIZE, nx_ctx->ap->sglen);
-+	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
-+
-+	return 0;
-+}
-+
-+static int nx_sha256_update(struct shash_desc *desc, const u8 *data,
-+			    unsigned int len)
-+{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
-+	struct nx_sg *in_sg;
-+	u64 to_process, leftover;
-+	int rc = 0;
-+
-+	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
-+		/* we've hit the nx chip previously and we're updating again,
-+		 * so copy over the partial digest */
-+		memcpy(csbcpb->cpb.sha256.input_partial_digest,
-+		       csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
-+	}
-+
-+	/* 2 cases for total data len:
-+	 *  1: <= SHA256_BLOCK_SIZE: copy into state, return 0
-+	 *  2: > SHA256_BLOCK_SIZE: process X blocks, copy in leftover
-+	 */
-+	if (len + sctx->count <= SHA256_BLOCK_SIZE) {
-+		memcpy(sctx->buf + sctx->count, data, len);
-+		sctx->count += len;
-+		goto out;
-+	}
-+
-+	/* to_process: the SHA256_BLOCK_SIZE data chunk to process in this
-+	 * update */
-+	to_process = (sctx->count + len) & ~(SHA256_BLOCK_SIZE - 1);
-+	leftover = (sctx->count + len) & (SHA256_BLOCK_SIZE - 1);
-+
-+	if (sctx->count) {
-+		in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buf,
-+					 sctx->count, nx_ctx->ap->sglen);
-+		in_sg = nx_build_sg_list(in_sg, (u8 *)data,
-+					 to_process - sctx->count,
-+					 nx_ctx->ap->sglen);
-+		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
-+					sizeof(struct nx_sg);
-+	} else {
-+		in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)data,
-+					 to_process, nx_ctx->ap->sglen);
-+		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
-+					sizeof(struct nx_sg);
-+	}
-+
-+	NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
-+
-+	if (!nx_ctx->op.inlen || !nx_ctx->op.outlen) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
-+			   desc->flags & CRYPTO_TFM_REQ_MAY_SLEEP);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->sha256_ops));
-+
-+	/* copy the leftover back into the state struct */
-+	memcpy(sctx->buf, data + len - leftover, leftover);
-+	sctx->count = leftover;
-+
-+	csbcpb->cpb.sha256.message_bit_length += (u64)
-+		(csbcpb->cpb.sha256.spbc * 8);
-+
-+	/* everything after the first update is continuation */
-+	NX_CPB_FDM(csbcpb) |= NX_FDM_CONTINUATION;
-+out:
-+	return rc;
-+}
-+
-+static int nx_sha256_final(struct shash_desc *desc, u8 *out)
-+{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
-+	struct nx_sg *in_sg, *out_sg;
-+	int rc;
-+
-+	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
-+		/* we've hit the nx chip previously, now we're finalizing,
-+		 * so copy over the partial digest */
-+		memcpy(csbcpb->cpb.sha256.input_partial_digest,
-+		       csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
-+	}
-+
-+	/* final is represented by continuing the operation and indicating that
-+	 * this is not an intermediate operation */
-+	NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
-+
-+	csbcpb->cpb.sha256.message_bit_length += (u64)(sctx->count * 8);
-+
-+	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buf,
-+				 sctx->count, nx_ctx->ap->sglen);
-+	out_sg = nx_build_sg_list(nx_ctx->out_sg, out, SHA256_DIGEST_SIZE,
-+				  nx_ctx->ap->sglen);
-+	nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) * sizeof(struct nx_sg);
-+	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
-+
-+	if (!nx_ctx->op.outlen) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
-+			   desc->flags & CRYPTO_TFM_REQ_MAY_SLEEP);
-+	if (rc)
-+		goto out;
-+
-+	atomic_inc(&(nx_ctx->stats->sha256_ops));
-+
-+	atomic64_add(csbcpb->cpb.sha256.message_bit_length,
-+		     &(nx_ctx->stats->sha256_bytes));
-+	memcpy(out, csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
-+out:
-+	return rc;
-+}
-+
-+static int nx_sha256_export(struct shash_desc *desc, void *out)
-+{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
-+	struct sha256_state *octx = out;
-+
-+	octx->count = sctx->count +
-+		      (csbcpb->cpb.sha256.message_bit_length / 8);
-+	memcpy(octx->buf, sctx->buf, sizeof(octx->buf));
-+
-+	/* if no data has been processed yet, we need to export SHA256's
-+	 * initial data, in case this context gets imported into a software
-+	 * context */
-+	if (csbcpb->cpb.sha256.message_bit_length)
-+		memcpy(octx->state, csbcpb->cpb.sha256.message_digest,
-+		       SHA256_DIGEST_SIZE);
-+	else {
-+		octx->state[0] = SHA256_H0;
-+		octx->state[1] = SHA256_H1;
-+		octx->state[2] = SHA256_H2;
-+		octx->state[3] = SHA256_H3;
-+		octx->state[4] = SHA256_H4;
-+		octx->state[5] = SHA256_H5;
-+		octx->state[6] = SHA256_H6;
-+		octx->state[7] = SHA256_H7;
-+	}
-+
-+	return 0;
-+}
-+
-+static int nx_sha256_import(struct shash_desc *desc, const void *in)
-+{
-+	struct sha256_state *sctx = shash_desc_ctx(desc);
-+	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
-+	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
-+	const struct sha256_state *ictx = in;
-+
-+	memcpy(sctx->buf, ictx->buf, sizeof(ictx->buf));
-+
-+	sctx->count = ictx->count & 0x3f;
-+	csbcpb->cpb.sha256.message_bit_length = (ictx->count & ~0x3f) * 8;
-+
-+	if (csbcpb->cpb.sha256.message_bit_length) {
-+		memcpy(csbcpb->cpb.sha256.message_digest, ictx->state,
-+		       SHA256_DIGEST_SIZE);
-+
-+		NX_CPB_FDM(csbcpb) |= NX_FDM_CONTINUATION;
-+		NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
-+	}
-+
-+	return 0;
-+}
-+
-+struct shash_alg nx_shash_sha256_alg = {
-+	.digestsize = SHA256_DIGEST_SIZE,
-+	.init       = nx_sha256_init,
-+	.update     = nx_sha256_update,
-+	.final      = nx_sha256_final,
-+	.export     = nx_sha256_export,
-+	.import     = nx_sha256_import,
-+	.descsize   = sizeof(struct sha256_state),
-+	.statesize  = sizeof(struct sha256_state),
-+	.base       = {
-+		.cra_name        = "sha256",
-+		.cra_driver_name = "sha256-nx",
-+		.cra_priority    = 300,
-+		.cra_flags       = CRYPTO_ALG_TYPE_SHASH,
-+		.cra_blocksize   = SHA256_BLOCK_SIZE,
-+		.cra_module      = THIS_MODULE,
-+		.cra_ctxsize     = sizeof(struct nx_crypto_ctx),
-+		.cra_init        = nx_crypto_ctx_sha_init,
-+		.cra_exit        = nx_crypto_ctx_exit,
-+	}
-+};
--- 
-1.7.5.4
+The only board specific device you add for KZM9D is smsc911x, and
+that has bindings, all the other devices can just be hardcoded
+for the soc because they are always the same, until we have bindings
+for all of them. Am I missing something?
 
+> Unfortunately the KZM9D board only takes uImages, but good news is
+> that it actually feeds us the correct mach-type. This seems to be a
+> pretty common thing around here these days. I'm trying to get people
+> to actually store the DTB in the boot loader and pass it along, but
+> that seems rather far away at this point.
 
+The preferred way would be to store the dtb on the same medium that
+contains the kernel, so you can update them together if necessary,
+even though we try to keep dtb files compatible across kernel versions.
+I would not want to rely on a hardcoded dtb file in the boot loader.
+
+	Arnd
