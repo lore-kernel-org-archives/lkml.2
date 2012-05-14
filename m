@@ -1,42 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab2ENChv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 22:37:51 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:47195 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882Ab2ENChu (ORCPT
+	id S1754193Ab2ENCnd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 22:43:33 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61840 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882Ab2ENCnc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 22:37:50 -0400
-Message-ID: <1336963067.2154.2.camel@shrek.rexursive.com>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-From: Bojan Smojver <bojan@rexursive.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>, bp@alien8.de
-Date: Mon, 14 May 2012 12:37:47 +1000
-In-Reply-To: <Pine.LNX.4.44L0.1205132212070.5628-100000@netrider.rowland.org>
-References: <Pine.LNX.4.44L0.1205132212070.5628-100000@netrider.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 13 May 2012 22:43:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAG9bXvkn6bm1xXpBxqvOxxzSrPPRdvP7RzKrfhSVJebN54psHQ@mail.gmail.com>
+References: <CAG9bXvkn6bm1xXpBxqvOxxzSrPPRdvP7RzKrfhSVJebN54psHQ@mail.gmail.com>
+Date: Mon, 14 May 2012 10:43:31 +0800
+Message-ID: <CAG9bXvkm6KVRpca9-YBq9oRiUyFLeaD+gwysCjpMO4Xo69XBXQ@mail.gmail.com>
+Subject: Re: [PATCH] cpu_pm: fix some typos in comments
+From: Raul Xiong <raulxiong@gmail.com>
+To: linux-arm-kernel@lists.infradead.org, ccross@android.com, khilman@ti.com,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        santosh.shilimkar@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-05-13 at 22:25 -0400, Alan Stern wrote:
-> Yes, you misunderstand it.
+2012/5/11 Raul Xiong <raulxiong@gmail.com>:
+> Fix some comment typos in function names
+>
+> Signed-off-by: Raul Xiong <raulxiong@gmail.com>
+> ---
+>  kernel/cpu_pm.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/kernel/cpu_pm.c b/kernel/cpu_pm.c
+> index 249152e..957b151 100644
+> --- a/kernel/cpu_pm.c
+> +++ b/kernel/cpu_pm.c
+> @@ -81,7 +81,7 @@ int cpu_pm_unregister_notifier(struct notifier_block *nb)
+>  EXPORT_SYMBOL_GPL(cpu_pm_unregister_notifier);
+>
+>  /**
+> - * cpm_pm_enter - CPU low power entry notifier
+> + * cpu_pm_enter - CPU low power entry notifier
+>  *
+>  * Notifies listeners that a single CPU is entering a low power state that may
+>  * cause some blocks in the same power domain as the cpu to reset.
+> @@ -115,7 +115,7 @@ int cpu_pm_enter(void)
+>  EXPORT_SYMBOL_GPL(cpu_pm_enter);
+>
+>  /**
+> - * cpm_pm_exit - CPU low power exit notifier
+> + * cpu_pm_exit - CPU low power exit notifier
+>  *
+>  * Notifies listeners that a single CPU is exiting a low power state that may
+>  * have caused some blocks in the same power domain as the cpu to reset.
+> @@ -139,7 +139,7 @@ int cpu_pm_exit(void)
+>  EXPORT_SYMBOL_GPL(cpu_pm_exit);
+>
+>  /**
+> - * cpm_cluster_pm_enter - CPU cluster low power entry notifier
+> + * cpu_cluster_pm_enter - CPU cluster low power entry notifier
+>  *
+>  * Notifies listeners that all cpus in a power domain are entering a low power
+>  * state that may cause some blocks in the same power domain to reset.
+> @@ -174,7 +174,7 @@ int cpu_cluster_pm_enter(void)
+>  EXPORT_SYMBOL_GPL(cpu_cluster_pm_enter);
+>
+>  /**
+> - * cpm_cluster_pm_exit - CPU cluster low power exit notifier
+> + * cpu_cluster_pm_exit - CPU cluster low power exit notifier
+>  *
+>  * Notifies listeners that all cpus in a power domain are exiting form a
+>  * low power state that may have caused some blocks in the same power domain
 
-OK, thanks. I did read the rest of your response as well, thanks for the
-pointers.
 
-I'll work on redoing the patch with proper prepare to suspend to RAM.
+Hi Colin, all,
 
-PS. I don't really use user space suspend to both, but whoever is
-familiar with it may then have a look at it as well.
+Is there any problem to accept this patch?
 
--- 
-Bojan
 
+Raul
+Best Regards
