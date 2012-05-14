@@ -1,46 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab2ENMXQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 08:23:16 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:31375 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755802Ab2ENMXN (ORCPT
+	id S1755792Ab2ENMbD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 08:31:03 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37027 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab2ENMbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 08:23:13 -0400
-Date: Mon, 14 May 2012 15:26:28 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] Staging ipack: fix a few sparse warnings
-Message-ID: <20120514122628.GH16984@mwanda>
-References: <1336992089-2733-1-git-send-email-siglesias@igalia.com>
- <1336992089-2733-2-git-send-email-siglesias@igalia.com>
+	Mon, 14 May 2012 08:31:01 -0400
+Date: Mon, 14 May 2012 13:30:34 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linux-sh@vger.kernel.org, lethal@linux-sh.org,
+        linux-kernel@vger.kernel.org, rjw@sisk.pl, horms@verge.net.au,
+        olof@lixom.net
+Subject: Re: [PATCH 03/03] ARM: Undelete KZM9D mach-type
+Message-ID: <20120514123034.GD10453@n2100.arm.linux.org.uk>
+References: <20120514105424.8596.38355.sendpatchset@w520> <20120514105451.8596.92367.sendpatchset@w520>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1336992089-2733-2-git-send-email-siglesias@igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20120514105451.8596.92367.sendpatchset@w520>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 12:41:25PM +0200, Samuel Iglesias Gonsalvez wrote:
->  	/* Read status register */
-> -	status_reg = readw((unsigned short *) (tpci200->info->interface_regs +
-> +	status_reg = readw((void __iomem *) (tpci200->info->interface_regs +
->  					       TPCI200_STATUS_REG));
->  
+On Mon, May 14, 2012 at 07:54:51PM +0900, Magnus Damm wrote:
+> From: Magnus Damm <damm@opensource.se>
+> 
+> Undelete the KZM9D mach-type to allow build of board
+> for EMEV2 SoC support.
 
-Later in the patch, you do the right thing which is to declare this
-as an __iomem pointer in the header.  The cast here can be removed
-and it all fits on one line.
-
-Remove it in a follow on patch if you want.  Same for several of the
-other casts in this patch.
-
-regards,
-dan carpenter
-
-
+If you've converted to use DT for KZM9D, do you still need this?
