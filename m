@@ -1,85 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477Ab2ENOFv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 10:05:51 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:25480
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756364Ab2ENOFu convert rfc822-to-8bit
+	id S1756874Ab2ENOI4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 10:08:56 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:44772 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756421Ab2ENOIy convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 10:05:50 -0400
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h683h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>
-Subject: RE: [PATCH 0000/0003] drivers: hv: util
-Thread-Topic: [PATCH 0000/0003] drivers: hv: util
-Thread-Index: AQHNMJVll6Q+xHNFYUq67tizkEemMJbJUjnQ
-Date: Mon, 14 May 2012 14:04:59 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF90305B719@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1336855466-3942-1-git-send-email-kys@microsoft.com>
- <426367E2313C2449837CD2DE46E7EAF90305A56E@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120512231651.GB9375@kroah.com>
-In-Reply-To: <20120512231651.GB9375@kroah.com>
+	Mon, 14 May 2012 10:08:54 -0400
+From: Philip Rakity <prakity@marvell.com>
+To: Yong Ding <yongd@marvell.com>
+CC: "cjb@laptop.org" <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "ulf.hansson@stericsson.com" <ulf.hansson@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 14 May 2012 07:08:35 -0700
+Subject: Re: [PATCH] mmc:sdio:guarantee setting card data bus width as 4-bit
+Thread-Topic: [PATCH] mmc:sdio:guarantee setting card data bus width as 4-bit
+Thread-Index: Ac0x2w19O8a6sSP8R12jR/qLrJN3mQ==
+Message-ID: <C59CB72C-E949-470A-A6F3-82AC4004AD16@marvell.com>
+References: <1336984510-9723-1-git-send-email-yongd@marvell.com>
+In-Reply-To: <1336984510-9723-1-git-send-email-yongd@marvell.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.53.133]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC104.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC104.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+ACK
 
-> -----Original Message-----
-> From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org]
-> Sent: Saturday, May 12, 2012 7:17 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; ohering@suse.com
-> Subject: Re: [PATCH 0000/0003] drivers: hv: util
+but see below for printk change
+
+
+On May 14, 2012, at 1:35 AM, yongd wrote:
+
+>  SDIO_CCCR_IF[1:0] in SDIO card is used for card data bus width
+> setting as below,
+>     00b: 1-bit bus
+>     01b: Reserved
+>     10b: 4-bit bus
+>     11b: 8-bit bus(only for embedded SDIO)
+>  And sdio_enable_wide is for setting data bus width as 4-bit. But
+> currently, it 1stly read the register, 2ndly OR' 1b with SDIO_CCCR_IF[1],
+> and then write it back.
+>  As we can see, such way is based on such assumption that the
+> SDIO_CCCR_IF[0] is always 0. Apparently, this is not right.
 > 
-> On Sat, May 12, 2012 at 08:41:06PM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: K. Y. Srinivasan [mailto:kys@microsoft.com]
-> > > Sent: Saturday, May 12, 2012 4:44 PM
-> > > To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org;
-> ohering@suse.com
-> > > Cc: KY Srinivasan
-> > > Subject: [PATCH 0000/0003] drivers: hv: util
-> >
-> > There are only two patches following this mail; sorry for the typo in the subject
-> line.
+> Signed-off-by: yongd <yongd@marvell.com>
+> ---
+> drivers/mmc/core/sdio.c  |    6 ++++++
+> include/linux/mmc/sdio.h |    2 ++
+> 2 files changed, 8 insertions(+)
 > 
-> What's with the 0000 stuff as well?  You do know that git send-mail can
-> handle all of that for you properly, right?
+> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+> index 13d0e95..6b6f902 100644
+> --- a/drivers/mmc/core/sdio.c
+> +++ b/drivers/mmc/core/sdio.c
+> @@ -218,6 +218,12 @@ static int sdio_enable_wide(struct mmc_card *card)
+> 	if (ret)
+> 		return ret;
+> 
+> +	if ((ctrl & SDIO_BUS_WIDTH_MASK)
+> +				== SDIO_BUS_WIDTH_RESERVED)
+> +		printk(KERN_WARNING"SDIO_CCCR_IF is invalid: %d\n", ctrl);
+printk(KERN_WARNING("%s: SDIO_CCCR_IF is invalid: %02X\n", mmc_hostname(card->host), ctrl);
 
-I am aware of the compose option; in this instance I hand edited the summary patch.
+please double check mmc_hostname argument.
 
-Regards,
-
-K. Y
-
-
+> +
+> +	/* set as 4-bit bus width */
+> +	ctrl &= ~SDIO_BUS_WIDTH_MASK;
+> 	ctrl |= SDIO_BUS_WIDTH_4BIT;
+> 
+> 	ret = mmc_io_rw_direct(card, 1, 0, SDIO_CCCR_IF, ctrl, NULL);
+> diff --git a/include/linux/mmc/sdio.h b/include/linux/mmc/sdio.h
+> index c9fe66c..17446d3 100644
+> --- a/include/linux/mmc/sdio.h
+> +++ b/include/linux/mmc/sdio.h
+> @@ -98,7 +98,9 @@
+> 
+> #define SDIO_CCCR_IF		0x07	/* bus interface controls */
+> 
+> +#define  SDIO_BUS_WIDTH_MASK	0x03	/* data bus width setting */
+> #define  SDIO_BUS_WIDTH_1BIT	0x00
+> +#define  SDIO_BUS_WIDTH_RESERVED 0x01
+> #define  SDIO_BUS_WIDTH_4BIT	0x02
+> #define  SDIO_BUS_ECSI		0x20	/* Enable continuous SPI interrupt */
+> #define  SDIO_BUS_SCSI		0x40	/* Support continuous SPI interrupt */
+> -- 
+> 1.7.9.5
+> 
 
