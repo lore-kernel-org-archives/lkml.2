@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab2ENIkK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 04:40:10 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:44051 "HELO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754331Ab2ENIkH (ORCPT
+	id S1755095Ab2ENIlQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 04:41:16 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46939 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754801Ab2ENIlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 04:40:07 -0400
-From: yongd <yongd@marvell.com>
-To: cjb@laptop.org, linux-mmc@vger.kernel.org
-Cc: stefan.xk.nilsson@stericsson.com, linus.walleij@linaro.org,
-        ulf.hansson@stericsson.com, svenkatr@ti.com,
-        linux-kernel@vger.kernel.org, yongd <yongd@marvell.com>
-Subject: [PATCH] mmc:sdio:retry CMD52/53 when error happens
-Date: Mon, 14 May 2012 16:39:52 +0800
-Message-Id: <1336984792-13956-1-git-send-email-yongd@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
-X-OriginalArrivalTime: 14 May 2012 08:39:52.0857 (UTC) FILETIME=[21BA4090:01CD31AD]
+	Mon, 14 May 2012 04:41:14 -0400
+Date: Mon, 14 May 2012 10:41:13 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Miller <davem@davemloft.net>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: allmodconfig build broken by gpio changes
+In-Reply-To: <20120513.001049.1690048451766768688.davem@davemloft.net>
+Message-ID: <alpine.LFD.2.02.1205141039530.3231@ionos>
+References: <20120513.001049.1690048451766768688.davem@davemloft.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Set sdio CMD52/53's retry time as MMC_CMD_RETRIES. As a result,
-sdio might benefit from core-internal CMD retry mechanism when
-some errors happen(CRC, etc).
+On Sun, 13 May 2012, David Miller wrote:
+> 
+> You can't reference handle_edge_irq in the pch9 driver, since pch9 can
+> be built modular yet handle_edge_irq is not exported to modules.
+> 
+> I assume allmodconfig is part of your standard validation procedures,
 
-Signed-off-by: yongd <yongd@marvell.com>
----
- drivers/mmc/core/sdio_ops.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Yep, it is, but I merily posted the patch, w/o running it through my
+testing :)
 
-diff --git a/drivers/mmc/core/sdio_ops.c b/drivers/mmc/core/sdio_ops.c
-index d29e206..884c27e 100644
---- a/drivers/mmc/core/sdio_ops.c
-+++ b/drivers/mmc/core/sdio_ops.c
-@@ -86,7 +86,7 @@ static int mmc_io_rw_direct_host(struct mmc_host *host, int write, unsigned fn,
- 	cmd.arg |= in;
- 	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_AC;
- 
--	err = mmc_wait_for_cmd(host, &cmd, 0);
-+	err = mmc_wait_for_cmd(host, &cmd, MMC_CMD_RETRIES);
- 	if (err)
- 		return err;
- 
-@@ -147,6 +147,7 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
- 	else
- 		cmd.arg |= 0x08000000 | blocks;		/* block mode */
- 	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_ADTC;
-+	cmd.retries = MMC_CMD_RETRIES;
- 
- 	data.blksz = blksz;
- 	/* Code in host drivers/fwk assumes that "blocks" always is >=1 */
--- 
-1.7.9.5
+> so I'm really surprised this made it all the way to Linus's tree :-)
 
+Me too :)
