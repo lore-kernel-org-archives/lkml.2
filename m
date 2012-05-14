@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303Ab2ENUJc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 16:09:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56703 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757694Ab2ENUJa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 16:09:30 -0400
-Date: Mon, 14 May 2012 13:09:25 -0700
-From: Tejun Heo <tj@kernel.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 6/6] remove __must_check for
- res_counter_charge_nofail()
-Message-ID: <20120514200925.GH2366@google.com>
-References: <4FACDED0.3020400@jp.fujitsu.com>
- <4FACE184.6020307@jp.fujitsu.com>
+	id S932338Ab2ENULf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 16:11:35 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29763 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932218Ab2ENULe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 16:11:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="99993858"
+Date: Mon, 14 May 2012 22:21:19 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 1/2] mfd: wm8400: Don't support non-modular build
+Message-ID: <20120514202119.GB12740@sortiz-mobl>
+References: <1336986796-31491-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FACE184.6020307@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1336986796-31491-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 06:53:08PM +0900, KAMEZAWA Hiroyuki wrote:
-> I picked this up from Costa's slub memcg series. For fixing added warning
-> by patch 4.
-> ==
-> From: Glauber Costa <glommer@parallels.com>
-> Subject: [PATCH 6/6] remove __must_check for res_counter_charge_nofail()
+Hi Mark,
+
+On Mon, May 14, 2012 at 10:13:15AM +0100, Mark Brown wrote:
+> It's relying on non-exported symbols.
 > 
-> Since we will succeed with the allocation no matter what, there
-> isn't the need to use __must_check with it. It can very well
-> be optional.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Both patches applied, thanks a lot.
 
-For 3-6,
-
- Reviewed-by: Tejun Heo <tj@kernel.org>
-
-Thanks a lot for doing this.  This doesn't solve all the failure paths
-tho.  ie. what about -EINTR failures from lock contention?
-pre_destroy() would probably need delay and retry logic with
-WARN_ON_ONCE() on !-EINTR failures.
-
-Thank you.
+Cheers,
+Samuel.
 
 -- 
-tejun
+Intel Open Source Technology Centre
+http://oss.intel.com/
