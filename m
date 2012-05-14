@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab2ENI3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 04:29:25 -0400
-Received: from plane.gmane.org ([80.91.229.3]:45331 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753479Ab2ENI3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 04:29:23 -0400
-X-Injected-Via-Gmane: http://gmane.org/
+	id S1754965Ab2ENIaE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 04:30:04 -0400
+Received: from smtp.syd.comcen.com.au ([203.23.236.77]:4877 "EHLO
+	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754210Ab2ENIaC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 04:30:02 -0400
+Date: Mon, 14 May 2012 18:28:44 +1000
+From: Chris Jones <chrisjones@spin.net.au>
 To: linux-kernel@vger.kernel.org
-From: Cong Wang <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH 0/2] kdump: Enter 2nd kernel with BSP for enabling
- multiple CPUs
-Date: Mon, 14 May 2012 08:29:08 +0000 (UTC)
-Message-ID: <joqfok$pu1$1@dough.gmane.org>
-References: <20120416021951.9303.58568.stgit@localhost6.localdomain6>
+Subject: Re: Integrating a new programming language into the kernel
+Message-ID: <20120514182844.1b9c3614@linux-j2xc>
+In-Reply-To: <20120514074149.GA12756@kroah.com>
+References: <20120513120009.18cb3e17@linux-j2xc>
+	<4FB05533.5010807@zytor.com>
+	<20120514135731.2e989a81@linux-j2xc>
+	<20120514074149.GA12756@kroah.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 203.114.244.89
-User-Agent: slrn/0.9.9p1 (Linux)
-Cc: kexec@lists.infradead.org
+X-comcen-MailScanner-Information: Please contact the ISP for more information
+X-comcen-MailScanner: Found to be clean
+X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.017, required 4, AWL 0.48, BAYES_00 -2.60, RDNS_NONE 0.10)
+X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So, the reason why you want to have multiple CPU's enabled in the 2nd
-kernel is to speed up the compression of the core dump?
+Thanks, I will. It's all part of the hacking fun!
 
-The first question is that, why the speed is important? Given the fact
-that the whole kdump progress happens automatically nowdays, there should
-be very few guys waiting for a kdump to complete, so the speed is not that
-important.
 
-Second, currently we use nr_cpus=1 for the 2nd kernel on RHEL6,
-to reduce the memory usage in the 2nd kernel. You mentioned
-512M is a limit, but we want to make it even less, even 512M is
-not a good choice for us on x86. Bringing up more than 1 CPU will
-of course need more memory in the 2nd kernel.
+Cheers
 
-The limit is not only the size, but also the max address of loading
-initrd, which is 896M on x86 IIRC. A contiguos memory area larger
-than 512M usually sit above 869M, due to the fragmentation in
-the lower memory, so I am afraid you need to do (much?) more work.
+Chris Jones
 
-So, I am afraid you spend too much effort to fix a not-that-important
-issue, but I may miss something here...
 
-Thanks.
+
+On Mon, 14 May 2012 00:41:49 -0700
+Greg KH <greg@kroah.com> wrote:
+
+> On Mon, May 14, 2012 at 01:57:31PM +1000, Chris Jones wrote:
+> > I'm curious as to why you suggest "no"?
+> > 
+> > And if it were to successfully eventuate and I were to do this, it
+> > would only ever be a custom kernel. And that's why I'm curious as to
+> > why you say to not do it.
+> 
+> Try it and find out why he, and others, recommend not to do so :)
+> 
+> Best of luck,
+> 
+> greg k-h
 
