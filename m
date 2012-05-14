@@ -1,92 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab2ENKoH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 06:44:07 -0400
-Received: from relay.parallels.com ([195.214.232.42]:51293 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755418Ab2ENKoF (ORCPT
+	id S1755267Ab2ENKoW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 06:44:22 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45861 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755418Ab2ENKoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 06:44:05 -0400
-Message-ID: <4FB0E1EE.6080002@parallels.com>
-Date: Mon, 14 May 2012 14:43:58 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120425 Thunderbird/10.0.4
+	Mon, 14 May 2012 06:44:19 -0400
+Message-ID: <4FB0E1FD.7030505@openvz.org>
+Date: Mon, 14 May 2012 14:44:13 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "Venkatesh Pallipadi (Venki)" <venki@google.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "x86@kernel.org" <x86@kernel.org>,
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch: x86: init hpet event_handler to noop
-References: <1335283031-12942-1-git-send-email-vdavydov@parallels.com> <alpine.LFD.2.02.1205072150590.6271@ionos>
-In-Reply-To: <alpine.LFD.2.02.1205072150590.6271@ionos>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Subject: Re: [PATCH 1/3] mm/memcg: get_lru_size not get_lruvec_size
+References: <alpine.LSU.2.00.1205132152530.6148@eggly.anvils> <alpine.LSU.2.00.1205132158470.6148@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1205132158470.6148@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2012 12:26 AM, Thomas Gleixner wrote:
-> On Tue, 24 Apr 2012, Vladimir Davydov wrote:
->
->> If hpet is enabled by hpet_late_init() - this usually occurs on systems
->> with buggy BIOS, which does not report about hpet presence through ACPI,
->> hpet_clockevent's event_handler can be left uninitialized by
->> clockevents_register_device() because of hpet_clockevent low rating (by
->> the time hpet_late_init() is called, high prio apic timers have already
->> been setup). The event_handler is then initialized a bit later by the
->> clocksource_done_booting() procedure.
->>
-> This explanation is worse than an oracle and aside of that, it's
-> patently wrong.
->
-> How the hell is clocksource_done_booting() related to the HPET
-> clockevent mechanism?
->
->> Normally, timer interrupts should not be delivered between these two
->> calls, but if e.g. the kernel is booted using kexec, there might be some
->> pending interrupts from the previous kernel's context, which can lead to
->> a NULL pointer dereference in timer_interrupt().
-> How is kexec related to this?
->
-> And how should pending interrupts be not handled by the always first
-> initialized PIT ?
+Hugh Dickins wrote:
+> Konstantin just introduced mem_cgroup_get_lruvec_size() and
+> get_lruvec_size(), I'm about to add mem_cgroup_update_lru_size():
+> but we're dealing with the same thing, lru_size[lru].  We ought to
+> agree on the naming, and I do think lru_size is the more correct:
+> so rename his ones to get_lru_size().
 
- From timer_interrupt() global_clock_event->event_handler is called.
+Acked-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-global_clock_event is first initialized to i8253_clockevent (PIT), but 
-from hpet_late_init() it is reinitialized as follows (see 
-hpet_legacy_clockevent_register()):
-
-clockevents_config_and_register(&hpet_clockevent, ...);
-global_clock_event = &hpet_clockevent;
-
-It turns out that clockevents_config_and_register() lefts 
-global_clock_event->event_handler unintialized (NULL).
-
-After digging deeper into clockevent_config_and_register(), I've found 
-that the event_handler should be set inside tick_check_new_device(), but 
-by the time we call it, high prio apic timers have already been setup 
-(see setup_APIC_timer()) so that hpet is not initialized as a oneshot 
-device. The attempt to set it as a broadcast device also fails since the 
-broadcast cpumask is empty (see tick_check_broadcast_device()).
-
-Thus, for some time we have event_handler=NULL, which can lead to a NULL 
-ptr deref in timer_interrupt() if a pending interrupt is handled.
+BTW I plan to move lru_size[] and recent_rotated[] directly to
+struct lruvec and update them both right in add_page_to_lru_list()
 
 >
->> Avoid this by initializing hpet's event_handler to noop in its definition.
-> "Avoid" is the correct term: You're avoiding to track down the root
-> cause of the problem.
+> Signed-off-by: Hugh Dickins<hughd@google.com>
+> ---
+> But I'd prefer this patch to vanish and you just edit Konstantin's.
 >
-> This is fairy tale mode. I really love fairy tales, just not in the
-> context of kernel code.
+>   include/linux/memcontrol.h |    4 ++--
+>   mm/memcontrol.c            |   10 +++++-----
+>   mm/vmscan.c                |   19 +++++++++----------
+>   3 files changed, 16 insertions(+), 17 deletions(-)
 >
-> Please provide proper proof why this can happen instead of some
-> handwavy explanations.
+> --- 3046N.orig/include/linux/memcontrol.h	2012-05-13 20:41:20.506117289 -0700
+> +++ 3046N/include/linux/memcontrol.h	2012-05-13 20:41:24.330117381 -0700
+> @@ -121,7 +121,7 @@ void mem_cgroup_iter_break(struct mem_cg
+>   int mem_cgroup_inactive_anon_is_low(struct lruvec *lruvec);
+>   int mem_cgroup_inactive_file_is_low(struct lruvec *lruvec);
+>   int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
+> -unsigned long mem_cgroup_get_lruvec_size(struct lruvec *lruvec, enum lru_list);
+> +unsigned long mem_cgroup_get_lru_size(struct lruvec *lruvec, enum lru_list);
+>   struct zone_reclaim_stat*
+>   mem_cgroup_get_reclaim_stat_from_page(struct page *page);
+>   extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
+> @@ -340,7 +340,7 @@ mem_cgroup_inactive_file_is_low(struct l
+>   }
 >
-> Thanks,
+>   static inline unsigned long
+> -mem_cgroup_get_lruvec_size(struct lruvec *lruvec, enum lru_list lru)
+> +mem_cgroup_get_lru_size(struct lruvec *lruvec, enum lru_list lru)
+>   {
+>   	return 0;
+>   }
+> --- 3046N.orig/mm/memcontrol.c	2012-05-13 20:41:20.510117289 -0700
+> +++ 3046N/mm/memcontrol.c	2012-05-13 20:41:24.334117380 -0700
+> @@ -742,7 +742,7 @@ static void mem_cgroup_charge_statistics
+>   }
 >
-> 	tglx
+>   unsigned long
+> -mem_cgroup_get_lruvec_size(struct lruvec *lruvec, enum lru_list lru)
+> +mem_cgroup_get_lru_size(struct lruvec *lruvec, enum lru_list lru)
+>   {
+>   	struct mem_cgroup_per_zone *mz;
+>
+> @@ -1234,8 +1234,8 @@ int mem_cgroup_inactive_anon_is_low(stru
+>   	unsigned long active;
+>   	unsigned long gb;
+>
+> -	inactive = mem_cgroup_get_lruvec_size(lruvec, LRU_INACTIVE_ANON);
+> -	active = mem_cgroup_get_lruvec_size(lruvec, LRU_ACTIVE_ANON);
+> +	inactive = mem_cgroup_get_lru_size(lruvec, LRU_INACTIVE_ANON);
+> +	active = mem_cgroup_get_lru_size(lruvec, LRU_ACTIVE_ANON);
+>
+>   	gb = (inactive + active)>>  (30 - PAGE_SHIFT);
+>   	if (gb)
+> @@ -1251,8 +1251,8 @@ int mem_cgroup_inactive_file_is_low(stru
+>   	unsigned long active;
+>   	unsigned long inactive;
+>
+> -	inactive = mem_cgroup_get_lruvec_size(lruvec, LRU_INACTIVE_FILE);
+> -	active = mem_cgroup_get_lruvec_size(lruvec, LRU_ACTIVE_FILE);
+> +	inactive = mem_cgroup_get_lru_size(lruvec, LRU_INACTIVE_FILE);
+> +	active = mem_cgroup_get_lru_size(lruvec, LRU_ACTIVE_FILE);
+>
+>   	return (active>  inactive);
+>   }
+> --- 3046N.orig/mm/vmscan.c	2012-05-13 20:41:20.510117289 -0700
+> +++ 3046N/mm/vmscan.c	2012-05-13 20:41:24.334117380 -0700
+> @@ -145,10 +145,10 @@ static bool global_reclaim(struct scan_c
+>   }
+>   #endif
+>
+> -static unsigned long get_lruvec_size(struct lruvec *lruvec, enum lru_list lru)
+> +static unsigned long get_lru_size(struct lruvec *lruvec, enum lru_list lru)
+>   {
+>   	if (!mem_cgroup_disabled())
+> -		return mem_cgroup_get_lruvec_size(lruvec, lru);
+> +		return mem_cgroup_get_lru_size(lruvec, lru);
+>
+>   	return zone_page_state(lruvec_zone(lruvec), NR_LRU_BASE + lru);
+>   }
+> @@ -1608,10 +1608,10 @@ static void get_scan_count(struct lruvec
+>   		goto out;
+>   	}
+>
+> -	anon  = get_lruvec_size(lruvec, LRU_ACTIVE_ANON) +
+> -		get_lruvec_size(lruvec, LRU_INACTIVE_ANON);
+> -	file  = get_lruvec_size(lruvec, LRU_ACTIVE_FILE) +
+> -		get_lruvec_size(lruvec, LRU_INACTIVE_FILE);
+> +	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
+> +		get_lru_size(lruvec, LRU_INACTIVE_ANON);
+> +	file  = get_lru_size(lruvec, LRU_ACTIVE_FILE) +
+> +		get_lru_size(lruvec, LRU_INACTIVE_FILE);
+>
+>   	if (global_reclaim(sc)) {
+>   		free  = zone_page_state(zone, NR_FREE_PAGES);
+> @@ -1674,7 +1674,7 @@ out:
+>   		int file = is_file_lru(lru);
+>   		unsigned long scan;
+>
+> -		scan = get_lruvec_size(lruvec, lru);
+> +		scan = get_lru_size(lruvec, lru);
+>   		if (sc->priority || noswap) {
+>   			scan>>= sc->priority;
+>   			if (!scan&&  force_scan)
+> @@ -1743,10 +1743,9 @@ static inline bool should_continue_recla
+>   	 * inactive lists are large enough, continue reclaiming
+>   	 */
+>   	pages_for_compaction = (2UL<<  sc->order);
+> -	inactive_lru_pages = get_lruvec_size(lruvec, LRU_INACTIVE_FILE);
+> +	inactive_lru_pages = get_lru_size(lruvec, LRU_INACTIVE_FILE);
+>   	if (nr_swap_pages>  0)
+> -		inactive_lru_pages += get_lruvec_size(lruvec,
+> -						      LRU_INACTIVE_ANON);
+> +		inactive_lru_pages += get_lru_size(lruvec, LRU_INACTIVE_ANON);
+>   	if (sc->nr_reclaimed<  pages_for_compaction&&
+>   			inactive_lru_pages>  pages_for_compaction)
+>   		return true;
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
 
