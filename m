@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822Ab2ENKlC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 06:41:02 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:63666 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280Ab2ENKkt convert rfc822-to-8bit (ORCPT
+	id S1755706Ab2ENKmU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 06:42:20 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42530 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755267Ab2ENKmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 06:40:49 -0400
+	Mon, 14 May 2012 06:42:19 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FB0E119.7040103@jp.fujitsu.com>
+Date: Mon, 14 May 2012 19:40:25 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120514094543.GC5353@quack.suse.cz>
-References: <4FAFBAC1.20603@gmail.com>
-	<20120514094543.GC5353@quack.suse.cz>
-Date: Mon, 14 May 2012 12:40:45 +0200
-Message-ID: <CANGUGtA=XfraVL28YqAM0t3oMjfud0Fn1VtJNxwt8=reG10nGA@mail.gmail.com>
-Subject: Re: [PATCH v2] Fix AFFS race condition.
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: =?ISO-8859-7?Q?Vladimir_=27=F6=2Dcoder=2Fphcoder=27_Serbinenko?= 
-	<phcoder@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Josef Bacik <josef@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mm/memcg: apply add/del_page to lruvec
+References: <alpine.LSU.2.00.1205132152530.6148@eggly.anvils> <alpine.LSU.2.00.1205132201210.6148@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1205132201210.6148@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/14 Jan Kara <jack@suse.cz>:
-> On Sun 13-05-12 15:44:33, Vladimir 'ö-coder/phcoder' Serbinenko wrote:
->> AFFS code preallocates several blocks as an optimisation. Unfortunately
->> it's not protected by lock so the same blocks may end up allocated twice.
->> Here is a fix.
->>
->> Signed-off-by: Vladimir Serbinenko <phcoder@gmail.com>
->  The patch looks good to me now. Thanks! You can add:
-> Reviewed-by: Jan Kara <jack@suse.cz>
->
->  Al, will you merge this patch through your tree? AFFS does not seem to
-> have a maintainer so you are a default fallback...
->
->                                                                Honza
->
+(2012/05/14 14:02), Hugh Dickins wrote:
 
-I don't know the AFFS code, so only a question. Instead to use a spin
-lock, I think we can use a simple mutex. Or is the spin lock
-mandatory?
+> Take lruvec further: pass it instead of zone to add_page_to_lru_list()
+> and del_page_from_lru_list(); and pagevec_lru_move_fn() pass lruvec
+> down to its target functions.
+> 
+> This cleanup eliminates a swathe of cruft in memcontrol.c,
+> including mem_cgroup_lru_add_list(), mem_cgroup_lru_del_list() and
+> mem_cgroup_lru_move_lists() - which never actually touched the lists.
+> 
+> In their place, mem_cgroup_page_lruvec() to decide the lruvec,
+> previously a side-effect of add, and mem_cgroup_update_lru_size()
+> to maintain the lru_size stats.
+> 
+> Whilst these are simplifications in their own right, the goal is to
+> bring the evaluation of lruvec next to the spin_locking of the lrus,
+> in preparation for a future patch.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-Marco
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+
