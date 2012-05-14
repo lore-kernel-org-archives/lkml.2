@@ -1,100 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab2ENNGp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:06:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56234 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756305Ab2ENNGo (ORCPT
+	id S1756528Ab2ENNJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 09:09:56 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48420 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756336Ab2ENNJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:06:44 -0400
-Date: Mon, 14 May 2012 06:06:30 -0700
-From: tip-bot for Don Zickus <dzickus@redhat.com>
-Message-ID: <tip-3aac27aba79b7c52e709ef6de0f7d8139caedc01@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, dzickus@redhat.com
-In-Reply-To: <1336761675-24296-4-git-send-email-dzickus@redhat.com>
-References: <1336761675-24296-4-git-send-email-dzickus@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/reboot] x86/reboot: Update nonmi_ipi parameter
-Git-Commit-ID: 3aac27aba79b7c52e709ef6de0f7d8139caedc01
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 14 May 2012 09:09:55 -0400
+Message-ID: <4FB1041C.1050903@gmail.com>
+Date: Mon, 14 May 2012 07:09:48 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 14 May 2012 06:06:36 -0700 (PDT)
+To: Namhyung Kim <namhyung.kim@lge.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf-record: Create events initially disabled -- again
+References: <1336968088-11531-1-git-send-email-dsahern@gmail.com> <87sjf31a8c.fsf@sejong.aot.lge.com>
+In-Reply-To: <87sjf31a8c.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3aac27aba79b7c52e709ef6de0f7d8139caedc01
-Gitweb:     http://git.kernel.org/tip/3aac27aba79b7c52e709ef6de0f7d8139caedc01
-Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Fri, 11 May 2012 14:41:15 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 14 May 2012 11:49:38 +0200
+On 5/14/12 1:40 AM, Namhyung Kim wrote:
+> Hi,
+>
+> On Sun, 13 May 2012 22:01:28 -0600, David Ahern wrote:
+>> 764e16a changed perf-record to create events disabled by default and
+>> enable them once perf initializations are done. This setting was dropped
+>> by 0f82ebc. Now perf events are once again generated during perf's
+>> initialization phase (e.g., generating maps).
+>>
+>> As an example, perf opens a lot of files at startup. Unpatched:
+>>
+>> perf record -e syscalls:sys_enter_open -ga -fo /tmp/perf.data -- sleep 1
+>> [ perf record: Woken up 1 times to write data ]
+>> [ perf record: Captured and wrote 0.087 MB /tmp/perf.data (~3798 samples) ]
+>>
+>> Using perf-script to look at the samples shows the perf command generating
+>> 563 of the 566 total events.
+>>
+>> Patched:
+>>
+>> perf record -e syscalls:sys_enter_open -ga -fo /tmp/perf.data -- sleep 1
+>> [ perf record: Woken up 1 times to write data ]
+>> [ perf record: Captured and wrote 0.028 MB /tmp/perf.data (~1206 samples) ]
+>>
+>> Using perf-script to look at the samples does not show perf command.
+>>
+>> Signed-off-by: David Ahern<dsahern@gmail.com>
+>> ---
+>>   tools/perf/util/evsel.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+>> index 21eaab2..6710cfe 100644
+>> --- a/tools/perf/util/evsel.c
+>> +++ b/tools/perf/util/evsel.c
+>> @@ -70,6 +70,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+>>   	struct perf_event_attr *attr =&evsel->attr;
+>>   	int track = !evsel->idx; /* only the first counter needs these */
+>>
+>> +	attr->disabled = 1;
+>>   	attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
+>>   	attr->inherit	    = !opts->no_inherit;
+>>   	attr->read_format   = PERF_FORMAT_TOTAL_TIME_ENABLED |
+>> @@ -138,7 +139,6 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+>>
+>>   	if (perf_target__none(&opts->target)&&
+>>   	(!opts->group || evsel == first)) {
+>> -		attr->disabled = 1;
+>>   		attr->enable_on_exec = 1;
+>>   	}
+>>   }
+>
+> A problem I see is that it'll break group handling again:
+>
+> $ ./perf stat -g sleep 1
+>
+>   Performance counter stats for 'sleep 1':
+>
+>       <not counted>  task-clock
+>       <not counted>  context-switches
+>       <not counted>  CPU-migrations
+>       <not counted>  page-faults
+>       <not counted>  cycles
+>       <not counted>  stalled-cycles-frontend
+>       <not counted>  stalled-cycles-backend
+>       <not counted>  instructions
+>       <not counted>  branches
+>       <not counted>  branch-misses
+>
+>         1.000868932 seconds time elapsed
+>
+> So I suggest changing perf_target__none() check to a proper one
+> (perf_target__no_cpu? - the name might be changed soon) for your
+> purpose.
+>
+> Thanks,
+> Namhyung
 
-x86/reboot: Update nonmi_ipi parameter
+Something else is wrong then. I tested that command (saw your patch in 
+the history) and it worked for me. Also, this code path does not affect 
+perf-stat -- it touches perf-record and perf-test only.
 
-Update the nonmi_ipi parameter to reflect the simple change
-instead of the previous complicated one.  There should be less
-of a need to use it but there may still be corner cases on older
-hardware that stumble into NMI issues.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1336761675-24296-4-git-send-email-dzickus@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/smp.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 228e740..48d2b7d 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -110,6 +110,7 @@
-  */
- 
- static atomic_t stopping_cpu = ATOMIC_INIT(-1);
-+static bool smp_no_nmi_ipi = false;
- 
- /*
-  * this function sends a 'reschedule' IPI to another CPU.
-@@ -216,7 +217,7 @@ static void native_stop_other_cpus(int wait)
- 	}
- 	
- 	/* if the REBOOT_VECTOR didn't work, try with the NMI */
--	if ((num_online_cpus() > 1))  {
-+	if ((num_online_cpus() > 1) && (!smp_no_nmi_ipi))  {
- 		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
- 					 NMI_FLAG_FIRST, "smp_stop"))
- 			/* Note: we ignore failures here */
-@@ -245,11 +246,6 @@ finish:
- 	local_irq_restore(flags);
- }
- 
--static void native_smp_disable_nmi_ipi(void)
--{
--	smp_ops.stop_other_cpus = native_irq_stop_other_cpus;
--}
--
- /*
-  * Reschedule call back.
-  */
-@@ -283,8 +279,8 @@ void smp_call_function_single_interrupt(struct pt_regs *regs)
- 
- static int __init nonmi_ipi_setup(char *str)
- {
--        native_smp_disable_nmi_ipi();
--        return 1;
-+	smp_no_nmi_ipi = true;
-+	return 1;
- }
- 
- __setup("nonmi_ipi", nonmi_ipi_setup);
+David
