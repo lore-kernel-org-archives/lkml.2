@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248Ab2ENTbm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 15:31:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2486 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757613Ab2ENTbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 15:31:40 -0400
-Date: Mon, 14 May 2012 22:31:35 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ian.Campbell@citrix.com,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH RFC] tun: experimental zero copy tx support
-Message-ID: <20120514193134.GA18366@redhat.com>
-References: <20120513155206.GA26847@redhat.com>
- <20120514095446.3ce307d2@nehalam.linuxnetplumber.net>
- <20120514170412.GA17086@redhat.com>
- <1337022146.8512.606.camel@edumazet-glaptop>
- <20120514191456.GC17086@redhat.com>
- <1337023307.8512.617.camel@edumazet-glaptop>
+	id S1757687Ab2ENThX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 15:37:23 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:35087 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757653Ab2ENThV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 15:37:21 -0400
+Date: Mon, 14 May 2012 20:37:18 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mario Limonciello <mario_limonciello@dell.com>
+Subject: Re: [PATCH] dell-laptop: rfkill blacklist Dell XPS 13z, 15z
+Message-ID: <20120514193718.GA6438@srcf.ucam.org>
+References: <1337023652-11661-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337023307.8512.617.camel@edumazet-glaptop>
+In-Reply-To: <1337023652-11661-1-git-send-email-kamal@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 09:21:47PM +0200, Eric Dumazet wrote:
-> On Mon, 2012-05-14 at 22:14 +0300, Michael S. Tsirkin wrote:
+On Mon, May 14, 2012 at 12:27:32PM -0700, Kamal Mostafa wrote:
+> From: Mario Limonciello <mario_limonciello@dell.com>
 > 
-> > They seem to be in net-next, or did I miss something?
-> 
-> Yes, you re-introduce in this patch some bugs already fixed in macvtap
+> On Dell XPS 13z (L321X) and 15z (L502X), switching off Bluetooth also
+> disables wifi due to improper improper BIOS interaction with dell-laptop.
+> Add those models to the rfkill blacklist.
 
-Could explain why I see some problems in testing :)
-Maybe common code should go into net/core?
-I couldn't decide whether the increase in kernel
-size is worth it.
+What does "Improper BIOS interaction" mean? What's the proper BIOS 
+interaction?
 
 -- 
-MST
+Matthew Garrett | mjg59@srcf.ucam.org
