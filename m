@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757659Ab2ENTYf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 15:24:35 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48481 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757378Ab2ENTYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 15:24:32 -0400
+	id S932237Ab2ENTYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 15:24:49 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38547 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757637Ab2ENTYe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 15:24:34 -0400
 From: <manjunatha_halli@ti.com>
 To: <linux-media@vger.kernel.org>
 CC: <linux-kernel@vger.kernel.org>, Manjunatha Halli <x0130808@ti.com>
-Subject: [PATCH V5 1/5] WL128x: Add support for FM TX RDS
-Date: Mon, 14 May 2012 14:24:25 -0500
-Message-ID: <1337023469-24990-2-git-send-email-manjunatha_halli@ti.com>
+Subject: [PATCH V5 4/5] Media: Update docs for V4L2 FM new features
+Date: Mon, 14 May 2012 14:24:28 -0500
+Message-ID: <1337023469-24990-5-git-send-email-manjunatha_halli@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1337023469-24990-1-git-send-email-manjunatha_halli@ti.com>
 References: <1337023469-24990-1-git-send-email-manjunatha_halli@ti.com>
@@ -23,376 +24,264 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunatha Halli <x0130808@ti.com>
 
-This patch adds support for following FM TX RDS features,
-     1. Radio Text
-     2. PS Name
-     3. PI Code
-     4. PTY Code.
-
-Along with above this patch fixes few other minor issues(like
-fm tx get frequency, unnecessary error messages etc).
+The list of new features -
+	1) New control class for FM RX
+	2) New FM RX CID's - De-Emphasis filter mode and RDS AF switch
+	3) New FM TX CID - RDS Alternate frequency set.
+	4) New capability struct v4l2_tuner flags for band selection
 
 Signed-off-by: Manjunatha Halli <x0130808@ti.com>
 ---
- drivers/media/radio/wl128x/fmdrv_common.c |   17 +++++++---
- drivers/media/radio/wl128x/fmdrv_common.h |   17 +++++++----
- drivers/media/radio/wl128x/fmdrv_rx.c     |    2 +-
- drivers/media/radio/wl128x/fmdrv_tx.c     |   41 ++++++++++---------------
- drivers/media/radio/wl128x/fmdrv_tx.h     |    3 +-
- drivers/media/radio/wl128x/fmdrv_v4l2.c   |   47 +++++++++++++++++++++++++++++
- 6 files changed, 90 insertions(+), 37 deletions(-)
+ Documentation/DocBook/media/v4l/compat.xml         |    3 +
+ Documentation/DocBook/media/v4l/controls.xml       |   77 ++++++++++++++++++++
+ Documentation/DocBook/media/v4l/dev-rds.xml        |    5 +-
+ .../DocBook/media/v4l/vidioc-g-ext-ctrls.xml       |    7 ++
+ Documentation/DocBook/media/v4l/vidioc-g-tuner.xml |   25 +++++++
+ .../DocBook/media/v4l/vidioc-s-hw-freq-seek.xml    |   38 +++++++++-
+ 6 files changed, 151 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/media/radio/wl128x/fmdrv_common.c b/drivers/media/radio/wl128x/fmdrv_common.c
-index bf867a6..fcce61a 100644
---- a/drivers/media/radio/wl128x/fmdrv_common.c
-+++ b/drivers/media/radio/wl128x/fmdrv_common.c
-@@ -354,7 +354,7 @@ static void send_tasklet(unsigned long arg)
+diff --git a/Documentation/DocBook/media/v4l/compat.xml b/Documentation/DocBook/media/v4l/compat.xml
+index bce97c5..df1f345 100644
+--- a/Documentation/DocBook/media/v4l/compat.xml
++++ b/Documentation/DocBook/media/v4l/compat.xml
+@@ -2311,6 +2311,9 @@ more information.</para>
+ 	  <para>Added FM Modulator (FM TX) Extended Control Class: <constant>V4L2_CTRL_CLASS_FM_TX</constant> and their Control IDs.</para>
+ 	</listitem>
+ 	<listitem>
++	<para>Added FM Receiver (FM RX) Extended Control Class: <constant>V4L2_CTRL_CLASS_FM_RX</constant> and their Control IDs.</para>
++	</listitem>
++	<listitem>
+ 	  <para>Added Remote Controller chapter, describing the default Remote Controller mapping for media devices.</para>
+ 	</listitem>
+       </orderedlist>
+diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+index b84f25e..976b11b 100644
+--- a/Documentation/DocBook/media/v4l/controls.xml
++++ b/Documentation/DocBook/media/v4l/controls.xml
+@@ -3018,6 +3018,12 @@ to find receivers which can scroll strings sized as 32 x N or 64 x N characters.
+ with steps of 32 or 64 characters. The result is it must always contain a string with size multiple of 32 or 64. </entry>
+ 	  </row>
+ 	  <row>
++	  <entry spanname="id"><constant>V4L2_CID_RDS_TX_AF_FREQ</constant>&nbsp;</entry>
++	  <entry>integer</entry>
++	  </row>
++	  <row><entry spanname="descr">Sets the RDS Alternate Frequency value which allows a receiver to re-tune to a different frequency providing the same station when the first signal becomes too weak (e.g., when moving out of range). </entry>
++	  </row>
++	  <row>
+ 	    <entry spanname="id"><constant>V4L2_CID_AUDIO_LIMITER_ENABLED</constant>&nbsp;</entry>
+ 	    <entry>boolean</entry>
+ 	  </row>
+@@ -3146,6 +3152,77 @@ manually or automatically if set to zero. Unit, range and step are driver-specif
+ <xref linkend="en50067" /> document, from CENELEC.</para>
+     </section>
  
- 	/* Check, is there any timeout happened to last transmitted packet */
- 	if ((jiffies - fmdev->last_tx_jiffies) > FM_DRV_TX_TIMEOUT) {
--		fmerr("TX timeout occurred\n");
-+		fmdbg("TX timeout occurred\n");
- 		atomic_set(&fmdev->tx_cnt, 1);
- 	}
- 
-@@ -615,7 +615,11 @@ static void fm_irq_handle_rds_start(struct fmdev *fmdev)
- {
- 	if (fmdev->irq_info.flag & FM_RDS_EVENT & fmdev->irq_info.mask) {
- 		fmdbg("irq: rds threshold reached\n");
--		fmdev->irq_info.stage = FM_RDS_SEND_RDS_GETCMD_IDX;
-+		/* If RSSI reached below threshold then dont get RDS data */
-+		if (fmdev->irq_info.flag & FM_LEV_EVENT)
-+			fmdev->irq_info.stage = FM_HW_TUNE_OP_ENDED_IDX;
-+		else
-+			fmdev->irq_info.stage = FM_RDS_SEND_RDS_GETCMD_IDX;
- 	} else {
- 		/* Continue next function in interrupt handler table */
- 		fmdev->irq_info.stage = FM_HW_TUNE_OP_ENDED_IDX;
-@@ -1129,8 +1133,9 @@ int fmc_set_freq(struct fmdev *fmdev, u32 freq_to_set)
- 
- int fmc_get_freq(struct fmdev *fmdev, u32 *cur_tuned_frq)
- {
--	if (fmdev->rx.freq == FM_UNDEFINED_FREQ) {
--		fmerr("RX frequency is not set\n");
-+	if (fmdev->rx.freq == FM_UNDEFINED_FREQ &&
-+			fmdev->tx_data.tx_frq == FM_UNDEFINED_FREQ) {
-+		fmerr("RX/TX frequency is not set\n");
- 		return -EPERM;
- 	}
- 	if (cur_tuned_frq == NULL) {
-@@ -1144,7 +1149,7 @@ int fmc_get_freq(struct fmdev *fmdev, u32 *cur_tuned_frq)
- 		return 0;
- 
- 	case FM_MODE_TX:
--		*cur_tuned_frq = 0;	/* TODO : Change this later */
-+		*cur_tuned_frq = fmdev->tx_data.tx_frq;
- 		return 0;
- 
- 	default:
-@@ -1574,6 +1579,8 @@ int fmc_prepare(struct fmdev *fmdev)
- 	fmdev->rx.af_mode = FM_RX_RDS_AF_SWITCH_MODE_OFF;
- 	fmdev->irq_info.retry = 0;
- 
-+	fmdev->tx_data.tx_frq = FM_UNDEFINED_FREQ;
++    <section id="fm-rx-controls">
++      <title>FM Receiver Control Reference</title>
 +
- 	fm_rx_reset_rds_cache(fmdev);
- 	init_waitqueue_head(&fmdev->rx.rds.read_queue);
- 
-diff --git a/drivers/media/radio/wl128x/fmdrv_common.h b/drivers/media/radio/wl128x/fmdrv_common.h
-index d9b9c6c..196ff7d 100644
---- a/drivers/media/radio/wl128x/fmdrv_common.h
-+++ b/drivers/media/radio/wl128x/fmdrv_common.h
-@@ -48,8 +48,8 @@ struct fm_reg_table {
- #define SEARCH_LVL_SET           15
- #define BAND_SET                 16
- #define MUTE_STATUS_SET          17
--#define RDS_PAUSE_LVL_SET        18
--#define RDS_PAUSE_DUR_SET        19
-+#define AUD_PAUSE_LVL_SET        18
-+#define AUD_PAUSE_DUR_SET        19
- #define RDS_MEM_SET              20
- #define RDS_BLK_B_SET            21
- #define RDS_MSK_B_SET            22
-@@ -84,11 +84,12 @@ struct fm_reg_table {
- 
- #define FM_POWER_MODE            254
- #define FM_INTERRUPT             255
-+#define STATION_VALID		 123
- 
- /* Transmitter API */
- 
- #define CHANL_SET                55
--#define CHANL_BW_SET		56
-+#define SCAN_SPACING_SET         56
- #define REF_SET                  57
- #define POWER_ENB_SET            90
- #define POWER_ATT_SET            58
-@@ -103,7 +104,8 @@ struct fm_reg_table {
- #define MONO_SET                 66
- #define MUTE                     92
- #define MPX_LMT_ENABLE           67
--#define PI_SET                   93
-+#define REF_ERR_SET		 93
-+#define PI_SET                   68
- #define ECC_SET                  69
- #define PTY                      70
- #define AF                       71
-@@ -120,6 +122,10 @@ struct fm_reg_table {
- #define TX_AUDIO_LEVEL_TEST      96
- #define TX_AUDIO_LEVEL_TEST_THRESHOLD    73
- #define TX_AUDIO_INPUT_LEVEL_RANGE_SET   54
-+#define TX_AUDIO_LEVEL_GET		 7
-+#define READ_FMANT_TUNE_VALUE            104
++      <para>The FM Receiver (FM_RX) class includes controls for common features of
++FM Reception capable devices.</para>
 +
-+/* New FM APIs (Rx and Tx) */
- #define RX_ANTENNA_SELECT        87
- #define I2C_DEV_ADDR_SET         86
- #define REF_ERR_CALIB_PARAM_SET          88
-@@ -131,7 +137,6 @@ struct fm_reg_table {
- #define RSSI_BLOCK_SCAN_FREQ_SET 95
- #define RSSI_BLOCK_SCAN_START    97
- #define RSSI_BLOCK_SCAN_DATA_GET  5
--#define READ_FMANT_TUNE_VALUE            104
- 
- /* SKB helpers */
- struct fm_skb_cb {
-@@ -348,7 +353,7 @@ struct fm_event_msg_hdr {
-  * with this default values after loading RX firmware.
-  */
- #define FM_DEFAULT_RX_VOLUME		10
--#define FM_DEFAULT_RSSI_THRESHOLD	3
-+#define FM_DEFAULT_RSSI_THRESHOLD	20
- 
- /* Range for TX power level in units for dB/uV */
- #define FM_PWR_LVL_LOW			91
-diff --git a/drivers/media/radio/wl128x/fmdrv_rx.c b/drivers/media/radio/wl128x/fmdrv_rx.c
-index 43fb722..a806bda 100644
---- a/drivers/media/radio/wl128x/fmdrv_rx.c
-+++ b/drivers/media/radio/wl128x/fmdrv_rx.c
-@@ -156,7 +156,7 @@ static int fm_rx_set_channel_spacing(struct fmdev *fmdev, u32 spacing)
- 
- 	/* set channel spacing */
- 	payload = spacing;
--	ret = fmc_send_cmd(fmdev, CHANL_BW_SET, REG_WR, &payload,
-+	ret = fmc_send_cmd(fmdev, SCAN_SPACING_SET, REG_WR, &payload,
- 			sizeof(payload), NULL, NULL);
- 	if (ret < 0)
- 		return ret;
-diff --git a/drivers/media/radio/wl128x/fmdrv_tx.c b/drivers/media/radio/wl128x/fmdrv_tx.c
-index 6ea33e0..6d879fb 100644
---- a/drivers/media/radio/wl128x/fmdrv_tx.c
-+++ b/drivers/media/radio/wl128x/fmdrv_tx.c
-@@ -51,6 +51,7 @@ static int set_rds_text(struct fmdev *fmdev, u8 *rds_text)
- 	u16 payload;
- 	int ret;
- 
-+	*(u16 *)rds_text = cpu_to_be16(*(u16 *)rds_text);
- 	ret = fmc_send_cmd(fmdev, RDS_DATA_SET, REG_WR, rds_text,
- 			strlen(rds_text), NULL, NULL);
- 	if (ret < 0)
-@@ -66,26 +67,31 @@ static int set_rds_text(struct fmdev *fmdev, u8 *rds_text)
- 	return 0;
- }
- 
--static int set_rds_data_mode(struct fmdev *fmdev, u8 mode)
-+int set_rds_picode(struct fmdev *fmdev, u16 pi_val)
- {
- 	u16 payload;
- 	int ret;
- 
--	/* Setting unique PI TODO: how unique? */
--	payload = (u16)0xcafe;
-+	payload = pi_val;
- 	ret = fmc_send_cmd(fmdev, PI_SET, REG_WR, &payload,
- 			sizeof(payload), NULL, NULL);
- 	if (ret < 0)
- 		return ret;
- 
--	/* Set decoder id */
--	payload = (u16)0xa;
--	ret = fmc_send_cmd(fmdev, DI_SET, REG_WR, &payload,
-+	return 0;
-+}
++      <table pgwide="1" frame="none" id="fm-rx-control-id">
++      <title>FM_RX Control IDs</title>
 +
-+int set_rds_pty(struct fmdev *fmdev, u16 pty)
-+{
-+	u16 payload;
-+	u32 ret;
++      <tgroup cols="4">
++        <colspec colname="c1" colwidth="1*" />
++        <colspec colname="c2" colwidth="6*" />
++        <colspec colname="c3" colwidth="2*" />
++        <colspec colname="c4" colwidth="6*" />
++        <spanspec namest="c1" nameend="c2" spanname="id" />
++        <spanspec namest="c2" nameend="c4" spanname="descr" />
++        <thead>
++          <row>
++            <entry spanname="id" align="left">ID</entry>
++            <entry align="left">Type</entry>
++          </row><row rowsep="1"><entry spanname="descr" align="left">Description</entry>
++          </row>
++        </thead>
++        <tbody valign="top">
++          <row><entry></entry></row>
++          <row>
++            <entry spanname="id"><constant>V4L2_CID_FM_RX_CLASS</constant>&nbsp;</entry>
++            <entry>class</entry>
++          </row><row><entry spanname="descr">The FM_RX class
++descriptor. Calling &VIDIOC-QUERYCTRL; for this control will return a
++description of this control class.</entry>
++          </row>
++          <row>
++            <entry spanname="id"><constant>V4L2_CID_RDS_AF_SWITCH</constant>&nbsp;</entry>
++            <entry>boolean</entry>
++          </row>
++          <row><entry spanname="descr">Enable or Disable the RDS Alternate frequency feature. When enabled the driver will decode the RDS AF field and tries to switch to this AF frequency once the current frequency RSSI(Received signal strength indication) level goes below the threshold. If the frequency is switched, then &VIDIOC-G-FREQUENCY; will return the new frequency.</entry>
++          </row>
++          <row>
++	    <entry spanname="id"><constant>V4L2_CID_TUNE_DEEMPHASIS</constant>&nbsp;</entry>
++	    <entry>integer</entry>
++	  </row>
++	  <row id="v4l2-deemphasis"><entry spanname="descr">Configures the de-emphasis value for reception.
++A pre-emphasis filter is applied to the broadcast to accentuate the high audio frequencies.
++Depending on the region, a time constant of either 50 or 75 useconds is used. The enum&nbsp;v4l2_preemphasis
++defines possible values for pre-emphasis. Here they are:</entry>
++	</row><row>
++	<entrytbl spanname="descr" cols="2">
++		  <tbody valign="top">
++		    <row>
++		      <entry><constant>V4L2_PREEMPHASIS_DISABLED</constant>&nbsp;</entry>
++		      <entry>No de-emphasis is applied.</entry>
++		    </row>
++		    <row>
++		      <entry><constant>V4L2_PREEMPHASIS_50_uS</constant>&nbsp;</entry>
++		      <entry>A de-emphasis of 50 uS is used.</entry>
++		    </row>
++		    <row>
++		      <entry><constant>V4L2_PREEMPHASIS_75_uS</constant>&nbsp;</entry>
++		      <entry>A de-emphasis of 75 uS is used.</entry>
++		    </row>
++		  </tbody>
++		</entrytbl>
 +
-+	payload = pty;
-+	ret = fmc_send_cmd(fmdev, PTY, REG_WR, &payload,
- 			sizeof(payload), NULL, NULL);
- 	if (ret < 0)
- 		return ret;
- 
--	/* TODO: RDS_MODE_GET? */
- 	return 0;
- }
- 
-@@ -101,7 +107,6 @@ static int set_rds_len(struct fmdev *fmdev, u8 type, u16 len)
- 	if (ret < 0)
- 		return ret;
- 
--	/* TODO: LENGTH_GET? */
- 	return 0;
- }
- 
-@@ -109,20 +114,17 @@ int fm_tx_set_rds_mode(struct fmdev *fmdev, u8 rds_en_dis)
- {
- 	u16 payload;
- 	int ret;
--	u8 rds_text[] = "Zoom2\n";
-+	u8 rds_text[] = "WL12XX Radio\n";
- 
- 	fmdbg("rds_en_dis:%d(E:%d, D:%d)\n", rds_en_dis,
- 		   FM_RDS_ENABLE, FM_RDS_DISABLE);
- 
- 	if (rds_en_dis == FM_RDS_ENABLE) {
- 		/* Set RDS length */
--		set_rds_len(fmdev, 0, strlen(rds_text));
-+		set_rds_len(fmdev, 2, strlen(rds_text));
- 
- 		/* Set RDS text */
- 		set_rds_text(fmdev, rds_text);
--
--		/* Set RDS mode */
--		set_rds_data_mode(fmdev, 0x0);
- 	}
- 
- 	/* Send command to enable RDS */
-@@ -136,13 +138,6 @@ int fm_tx_set_rds_mode(struct fmdev *fmdev, u8 rds_en_dis)
- 	if (ret < 0)
- 		return ret;
- 
--	if (rds_en_dis == FM_RDS_ENABLE) {
--		/* Set RDS length */
--		set_rds_len(fmdev, 0, strlen(rds_text));
--
--		/* Set RDS text */
--		set_rds_text(fmdev, rds_text);
--	}
- 	fmdev->tx_data.rds.flag = rds_en_dis;
- 
- 	return 0;
-@@ -156,7 +151,6 @@ int fm_tx_set_radio_text(struct fmdev *fmdev, u8 *rds_text, u8 rds_type)
- 	if (fmdev->curr_fmmode != FM_MODE_TX)
- 		return -EPERM;
- 
--	fm_tx_set_rds_mode(fmdev, 0);
- 
- 	/* Set RDS length */
- 	set_rds_len(fmdev, rds_type, strlen(rds_text));
-@@ -164,9 +158,6 @@ int fm_tx_set_radio_text(struct fmdev *fmdev, u8 *rds_text, u8 rds_type)
- 	/* Set RDS text */
- 	set_rds_text(fmdev, rds_text);
- 
--	/* Set RDS mode */
--	set_rds_data_mode(fmdev, 0x0);
--
- 	payload = 1;
- 	ret = fmc_send_cmd(fmdev, RDS_DATA_ENB, REG_WR, &payload,
- 			sizeof(payload), NULL, NULL);
-@@ -421,6 +412,8 @@ int fm_tx_set_freq(struct fmdev *fmdev, u32 freq_to_set)
- 	tx->aud_mode = FM_STEREO_MODE;
- 	tx->rds.flag = FM_RDS_DISABLE;
- 
-+	tx->tx_frq = freq_to_set * 1000; /* in KHz */
++	  </row>
++          <row><entry></entry></row>
++        </tbody>
++      </tgroup>
++      </table>
 +
- 	return 0;
- }
++      </section>
+     <section id="flash-controls">
+       <title>Flash Control Reference</title>
  
-diff --git a/drivers/media/radio/wl128x/fmdrv_tx.h b/drivers/media/radio/wl128x/fmdrv_tx.h
-index 11ae2e4..8ed71bd 100644
---- a/drivers/media/radio/wl128x/fmdrv_tx.h
-+++ b/drivers/media/radio/wl128x/fmdrv_tx.h
-@@ -32,6 +32,7 @@ int fm_tx_set_radio_text(struct fmdev *, u8 *, u8);
- int fm_tx_set_af(struct fmdev *, u32);
- int fm_tx_set_preemph_filter(struct fmdev *, u32);
- int fm_tx_get_tune_cap_val(struct fmdev *);
--
-+int set_rds_picode(struct fmdev *, u16);
-+int set_rds_pty(struct fmdev *, u16);
- #endif
+diff --git a/Documentation/DocBook/media/v4l/dev-rds.xml b/Documentation/DocBook/media/v4l/dev-rds.xml
+index 38883a4..8188161 100644
+--- a/Documentation/DocBook/media/v4l/dev-rds.xml
++++ b/Documentation/DocBook/media/v4l/dev-rds.xml
+@@ -55,8 +55,9 @@ If the driver only passes RDS blocks without interpreting the data
+ the <constant>V4L2_TUNER_CAP_RDS_BLOCK_IO</constant> flag has to be set. If the
+ tuner is capable of handling RDS entities like program identification codes and radio
+ text, the flag <constant>V4L2_TUNER_CAP_RDS_CONTROLS</constant> should be set,
+-see <link linkend="writing-rds-data">Writing RDS data</link> and
+-<link linkend="fm-tx-controls">FM Transmitter Control Reference</link>.</para>
++see <link linkend="writing-rds-data">Writing RDS data</link>,
++<link linkend="fm-tx-controls">FM Transmitter Control Reference</link>
++<link linkend="fm-rx-controls">FM Receiver Control Reference</link>.</para>
+   </section>
  
-diff --git a/drivers/media/radio/wl128x/fmdrv_v4l2.c b/drivers/media/radio/wl128x/fmdrv_v4l2.c
-index 077d369..494faaf 100644
---- a/drivers/media/radio/wl128x/fmdrv_v4l2.c
-+++ b/drivers/media/radio/wl128x/fmdrv_v4l2.c
-@@ -210,6 +210,8 @@ static int fm_v4l2_s_ctrl(struct v4l2_ctrl *ctrl)
- 	struct fmdev *fmdev = container_of(ctrl->handler,
- 			struct fmdev, ctrl_handler);
+   <section  id="reading-rds-data">
+diff --git a/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml b/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
+index b17a7aa..2a8b44e 100644
+--- a/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
++++ b/Documentation/DocBook/media/v4l/vidioc-g-ext-ctrls.xml
+@@ -258,6 +258,13 @@ These controls are described in <xref
+ These controls are described in <xref
+ 		linkend="fm-tx-controls" />.</entry>
+ 	  </row>
++          <row>
++            <entry><constant>V4L2_CTRL_CLASS_FM_RX</constant></entry>
++             <entry>0x9c0000</entry>
++             <entry>The class containing FM Receiver (FM RX) controls.
++These controls are described in <xref
++                 linkend="fm-rx-controls" />.</entry>
++           </row>
+ 	  <row>
+ 	    <entry><constant>V4L2_CTRL_CLASS_FLASH</constant></entry>
+ 	    <entry>0x9c0000</entry>
+diff --git a/Documentation/DocBook/media/v4l/vidioc-g-tuner.xml b/Documentation/DocBook/media/v4l/vidioc-g-tuner.xml
+index 91ec2fb..bdc5986 100644
+--- a/Documentation/DocBook/media/v4l/vidioc-g-tuner.xml
++++ b/Documentation/DocBook/media/v4l/vidioc-g-tuner.xml
+@@ -328,6 +328,31 @@ radio tuners.</entry>
+ 	<entry>0x0200</entry>
+ 	<entry>The RDS data is parsed by the hardware and set via controls.</entry>
+ 	  </row>
++	  <row>
++	<entry><constant>V4L2_TUNER_CAP_BAND_TYPE_DEFAULT</constant></entry>
++	<entry>0x010000</entry>
++	<entry>This is the default band, which should be the widest frequency range supported by the hardware.</entry>
++	  </row>
++	  <row>
++	<entry><constant>V4L2_TUNER_CAP_BAND_TYPE_EUROPE_US</constant></entry>
++	<entry>0x020000</entry>
++	<entry>Europe or US band(87.5 Mhz - 108 MHz).</entry>
++	  </row>
++	  <row>
++	<entry><constant>V4L2_TUNER_CAP_BAND_TYPE_JAPAN</constant></entry>
++	<entry>0x030000</entry>
++	<entry>Japan band(76 MHz - 90 MHz).</entry>
++	  </row>
++	  <row>
++	<entry><constant>V4L2_TUNER_CAP_BAND_TYPE_RUSSIAN</constant></entry>
++	<entry>0x040000</entry>
++	<entry>OIRT or Russian band(65.8 MHz - 74 MHz).</entry>
++	  </row>
++	  <row>
++	<entry><constant>V4L2_TUNER_CAP_BAND_TYPE_WEATHER</constant></entry>
++	<entry>0x050000</entry>
++	<entry>Weather band(162.4 MHz - 162.55 MHz).</entry>
++	  </row>
+ 	</tbody>
+       </tgroup>
+     </table>
+diff --git a/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml b/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml
+index 18b1a82..0d36c14 100644
+--- a/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml
++++ b/Documentation/DocBook/media/v4l/vidioc-s-hw-freq-seek.xml
+@@ -95,7 +95,12 @@ field and the &v4l2-tuner; <structfield>index</structfield> field.</entry>
+ 	  </row>
+ 	  <row>
+ 	    <entry>__u32</entry>
+-	    <entry><structfield>reserved</structfield>[7]</entry>
++	    <entry><structfield>band</structfield></entry>
++	    <entry>Configure the FM chip to a specific band before starting seek operation. Please refer table 'Radio Band Types'.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>reserved</structfield>[6]</entry>
+ 	    <entry>Reserved for future extensions. Applications
+ 	    must set the array to zero.</entry>
+ 	  </row>
+@@ -103,6 +108,35 @@ field and the &v4l2-tuner; <structfield>index</structfield> field.</entry>
+       </tgroup>
+     </table>
+   </refsect1>
++    <table pgwide="1" frame="none" id="Radio band Types">
++      <title>Radio Band Types</title>
++      <tgroup cols="2">
++	&cs-str;
++	<tbody valign="top">
++		    <row>
++		      <entry><constant>FM_BAND_TYPE_DEFAULT</constant>&nbsp;</entry>
++		      <entry>This is the default band, which should be the widest frequency range supported by
++		      the hardware.</entry>
++		    </row>
++		    <row>
++		      <entry><constant>FM_BAND_TYPE_EUROPE_US</constant>&nbsp;</entry>
++		      <entry>Europe or US band(87.5 Mhz - 108 MHz).</entry>
++		    </row>
++		    <row>
++		      <entry><constant>FM_BAND_TYPE_JAPAN</constant>&nbsp;</entry>
++		      <entry>Japan band(76 MHz - 90 MHz).</entry>
++		    </row>
++		    <row>
++		      <entry><constant>FM_BAND_TYPE_RUSSIAN</constant>&nbsp;</entry>
++		      <entry>OIRT or Russian band(65.8 MHz - 74 MHz).</entry>
++		    </row>
++		    <row>
++		      <entry><constant>FM_BAND_TYPE_WEATHER</constant>&nbsp;</entry>
++		      <entry>Weather band(162.4 MHz - 162.55 MHz).</entry>
++		    </row>
++	</tbody>
++      </tgroup>
++    </table>
  
-+	int ret;
-+
- 	switch (ctrl->id) {
- 	case V4L2_CID_AUDIO_VOLUME:	/* set volume */
- 		return fm_rx_set_volume(fmdev, (u16)ctrl->val);
-@@ -224,6 +226,38 @@ static int fm_v4l2_s_ctrl(struct v4l2_ctrl *ctrl)
- 	case V4L2_CID_TUNE_PREEMPHASIS:
- 		return fm_tx_set_preemph_filter(fmdev, (u8) ctrl->val);
- 
-+	case V4L2_CID_RDS_TX_PI:
-+		ret = set_rds_picode(fmdev, ctrl->val);
-+		if (ret < 0) {
-+			fmerr("Failed to set RDS Radio PS Name\n");
-+			return ret;
-+		}
-+		return 0;
-+
-+	case V4L2_CID_RDS_TX_PTY:
-+		ret = set_rds_pty(fmdev, ctrl->val);
-+		if (ret < 0) {
-+			fmerr("Failed to set RDS Radio PS Name\n");
-+			return ret;
-+		}
-+		return 0;
-+
-+	case V4L2_CID_RDS_TX_PS_NAME:
-+		ret = fm_tx_set_radio_text(fmdev, ctrl->string, 1);
-+		if (ret < 0) {
-+			fmerr("Failed to set RDS Radio PS Name\n");
-+			return ret;
-+		}
-+		return 0;
-+
-+	case V4L2_CID_RDS_TX_RADIO_TEXT:
-+		ret = fm_tx_set_radio_text(fmdev, ctrl->string, 2);
-+		if (ret < 0) {
-+			fmerr("Failed to set RDS Radio Text\n");
-+			return ret;
-+		}
-+		return 0;
-+
- 	default:
- 		return -EINVAL;
- 	}
-@@ -455,6 +489,7 @@ static int fm_v4l2_vidioc_s_modulator(struct file *file, void *priv,
- 		fmerr("Failed to set mono/stereo mode for TX\n");
- 		return ret;
- 	}
-+
- 	ret = fm_tx_set_rds_mode(fmdev, rds_mode);
- 	if (ret < 0)
- 		fmerr("Failed to set rds mode for TX\n");
-@@ -549,6 +584,18 @@ int fm_v4l2_init_video_device(struct fmdev *fmdev, int radio_nr)
- 	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
- 			V4L2_CID_AUDIO_MUTE, 0, 1, 1, 1);
- 
-+	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
-+			V4L2_CID_RDS_TX_PI, 0x0, 0xf, 1, 0x0);
-+
-+	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
-+			V4L2_CID_RDS_TX_PTY, 0, 32, 1, 0);
-+
-+	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
-+			V4L2_CID_RDS_TX_PS_NAME, 0, 0xf, 1, 0);
-+
-+	v4l2_ctrl_new_std(&fmdev->ctrl_handler, &fm_ctrl_ops,
-+			V4L2_CID_RDS_TX_RADIO_TEXT, 0, 0xff, 1, 0);
-+
- 	v4l2_ctrl_new_std_menu(&fmdev->ctrl_handler, &fm_ctrl_ops,
- 			V4L2_CID_TUNE_PREEMPHASIS, V4L2_PREEMPHASIS_75_uS,
- 			0, V4L2_PREEMPHASIS_75_uS);
+   <refsect1>
+     &return-value;
+@@ -112,7 +146,7 @@ field and the &v4l2-tuner; <structfield>index</structfield> field.</entry>
+ 	<term><errorcode>EINVAL</errorcode></term>
+ 	<listitem>
+ 	  <para>The <structfield>tuner</structfield> index is out of
+-bounds, the wrap_around value is not supported or the value in the <structfield>type</structfield> field is
++bounds, the band is not supported, the wrap_around value is not supported or the value in the <structfield>type</structfield> field is
+ wrong.</para>
+ 	</listitem>
+       </varlistentry>
 -- 
 1.7.4.1
 
